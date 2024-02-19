@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -163,11 +163,11 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
   if (data_in_order.begin()->first <= 0.0)
     return true;
 
-  vector<std::pair<index_type, uint32_t>> retrospective_assignments;
+  std::vector<std::pair<index_type, uint32_t>> retrospective_assignments;
 
   for (const auto &i : data_in_order) {
 
-    vector<uint32_t> adj_lobes;
+    std::vector<uint32_t> adj_lobes;
     for (uint32_t l = 0; l != out.size(); ++l) {
       if ((((i.first <= 0.0) && out[l].is_negative()) || ((i.first > 0.0) && !out[l].is_negative())) &&
           (out[l].get_mask().is_adjacent(i.second))) {
@@ -214,7 +214,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
           }
         }
         for (size_t j = adj_lobes.size() - 1; j; --j) {
-          vector<FOD_lobe>::iterator ptr = out.begin();
+          std::vector<FOD_lobe>::iterator ptr = out.begin();
           advance(ptr, adj_lobes[j]);
           out.erase(ptr);
         }
@@ -295,15 +295,15 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
     if (dilate_lookup_table && out.size()) {
 
       DWI::Directions::Mask processed(dirs);
-      for (vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
+      for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
         processed |= i->get_mask();
 
-      NON_POD_VLA(new_assignments, vector<uint32_t>, dirs.size());
+      NON_POD_VLA(new_assignments, std::vector<uint32_t>, dirs.size());
       while (!processed.full()) {
 
         for (index_type dir = 0; dir != dirs.size(); ++dir) {
           if (!processed[dir]) {
-            for (vector<index_type>::const_iterator neighbour = dirs.get_adj_dirs(dir).begin();
+            for (std::vector<index_type>::const_iterator neighbour = dirs.get_adj_dirs(dir).begin();
                  neighbour != dirs.get_adj_dirs(dir).end();
                  ++neighbour) {
               if (processed[*neighbour])
@@ -322,7 +322,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
             uint32_t best_lobe = 0;
             default_type max_integral = 0.0;
-            for (vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin();
+            for (std::vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin();
                  lobe_no != new_assignments[dir].end();
                  ++lobe_no) {
               if (out[*lobe_no].get_integral() > max_integral) {
@@ -341,7 +341,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
   if (create_null_lobe) {
     DWI::Directions::Mask null_mask(dirs, true);
-    for (vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
+    for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
       null_mask &= i->get_mask();
     out.push_back(FOD_lobe(null_mask));
   }

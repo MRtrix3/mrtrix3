@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
-project(mrtrix3 VERSION 3.0.4)
+project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
+
 include(GNUInstallDirs)
 
 string(TIMESTAMP CURRENT_YEAR "%Y")
@@ -28,8 +29,6 @@ if(MRTRIX_USE_QT6)
 else()
     set(QT_MAJOR_VERSION 5)
 endif()
-
-option(BUILD_GUI "Build the MRtrix3 GUI" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -139,4 +138,5 @@ add_custom_target(Github SOURCES
     .github/workflows/package-macos-anaconda.yml
     .github/workflows/package-macos-native.yml
     .github/workflows/package-windows-msys2.yml
+    .github/workflows/clang-tidy.yml
 )

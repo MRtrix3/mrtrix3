@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ LocalSocketReader::LocalSocketReader(QLocalSocket *mySocket) : QObject(0) {
  * Fires when data is received from another process
  */
 void LocalSocketReader::OnDataReceived() {
-  vector<std::shared_ptr<QByteArray>> messagesReceived;
+  std::vector<std::shared_ptr<QByteArray>> messagesReceived;
   while (socket->bytesAvailable() > 0) {
     // First byte must always by an unsigned int32 stating how much data to read
     // Wait until we've read all of that

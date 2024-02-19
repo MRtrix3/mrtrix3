@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -131,8 +131,8 @@ default_type erfcinv(const default_type q) {
 
   private:
     const size_t N;
-    vector<default_type> m_Y;
-    vector<Eigen::Array<default_type, Eigen::Dynamic, 1>> m_P, m_Q;
+    std::vector<default_type> m_Y;
+    std::vector<Eigen::Array<default_type, Eigen::Dynamic, 1>> m_P, m_Q;
   };
   static const Shared shared;
 

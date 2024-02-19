@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,8 +40,8 @@ public:
   using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
   TrackProcessor(Image<index_type> &fixel_indexer,
-                 const vector<Eigen::Vector3d> &fixel_directions,
-                 vector<uint16_t> &fixel_TDI,
+                 const std::vector<Eigen::Vector3d> &fixel_directions,
+                 std::vector<uint16_t> &fixel_TDI,
                  const float angular_threshold)
       : fixel_indexer(fixel_indexer),
         fixel_directions(fixel_directions),
@@ -50,7 +50,7 @@ public:
 
   bool operator()(const SetVoxelDir &in) {
     // For each voxel tract tangent, assign to a fixel
-    vector<int32_t> tract_fixel_indices;
+    std::vector<int32_t> tract_fixel_indices;
     for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
       assign_pos_of(*i).to(fixel_indexer);
       fixel_indexer.index(3) = 0;
@@ -80,8 +80,8 @@ public:
 
 private:
   Image<index_type> fixel_indexer;
-  const vector<Eigen::Vector3d> &fixel_directions;
-  vector<uint16_t> &fixel_TDI;
+  const std::vector<Eigen::Vector3d> &fixel_directions;
+  std::vector<uint16_t> &fixel_TDI;
   const float angular_threshold_dp;
 };
 
@@ -128,8 +128,8 @@ void run() {
 
   const float angular_threshold = get_option_value("angle", DEFAULT_ANGLE_THRESHOLD);
 
-  vector<Eigen::Vector3d> positions(num_fixels);
-  vector<Eigen::Vector3d> directions(num_fixels);
+  std::vector<Eigen::Vector3d> positions(num_fixels);
+  std::vector<Eigen::Vector3d> directions(num_fixels);
 
   const std::string output_fixel_folder = argument[2];
   Fixel::copy_index_and_directions_file(input_fixel_folder, output_fixel_folder);
@@ -151,7 +151,7 @@ void run() {
     }
   }
 
-  vector<uint16_t> fixel_TDI(num_fixels, 0.0);
+  std::vector<uint16_t> fixel_TDI(num_fixels, 0.0);
   const std::string track_filename = argument[0];
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> track_file(track_filename, properties);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,7 @@ public slots:
   void set_show_as_row_slot(bool state);
 
 protected:
-  vector<Projection> projections;
+  std::vector<Projection> projections;
   int current_plane;
   GL::VertexBuffer frame_VB;
   GL::VertexArrayObject frame_VAO;

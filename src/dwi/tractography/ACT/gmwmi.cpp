@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,12 +31,12 @@ Eigen::Vector3f GMWMI_finder::normal(const Eigen::Vector3f &p) const {
   return get_normal(p, interp);
 }
 
-Eigen::Vector3f GMWMI_finder::find_interface(const vector<Eigen::Vector3f> &tck, const bool end) const {
+Eigen::Vector3f GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool end) const {
   Interp interp(interp_template);
   return find_interface(tck, end, interp);
 }
 
-void GMWMI_finder::crop_track(vector<Eigen::Vector3f> &tck) const {
+void GMWMI_finder::crop_track(std::vector<Eigen::Vector3f> &tck) const {
   if (tck.size() < 3)
     return;
   Interp interp(interp_template);
@@ -153,7 +153,8 @@ Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &
   return step;
 }
 
-Eigen::Vector3f GMWMI_finder::find_interface(const vector<Eigen::Vector3f> &tck, const bool end, Interp &interp) const {
+Eigen::Vector3f
+GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool end, Interp &interp) const {
 
   if (tck.size() == 0)
     return {NaN, NaN, NaN};

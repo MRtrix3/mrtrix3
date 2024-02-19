@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -94,7 +94,7 @@ private:
 // Convenience function for constructing a mapping from one lookup table to another
 // NOTE: If the TARGET LUT contains multiple entries for a particular index, and a
 //   mapping TO that index is required, the conversion is ill-formed.
-vector<node_t> get_lut_mapping(const LUT &, const LUT &);
+std::vector<node_t> get_lut_mapping(const LUT &, const LUT &);
 
 } // namespace Connectome
 } // namespace MR

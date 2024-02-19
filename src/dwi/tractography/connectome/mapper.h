@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,7 +46,7 @@ public:
   bool operator()(const Tractography::Streamline<float> &in, Mapped_track_nodelist &out) {
     assert(!tck2nodes.provides_pair());
     out.set_track_index(in.get_index());
-    vector<node_t> nodes;
+    std::vector<node_t> nodes;
     tck2nodes(in, nodes);
     out.set_nodes(std::move(nodes));
     out.set_factor(metric(in, out.get_nodes()));

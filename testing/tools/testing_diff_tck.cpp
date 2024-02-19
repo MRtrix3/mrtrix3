@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -79,7 +79,7 @@ within_haussdorf(const DWI::Tractography::Streamline<> &tck1, const DWI::Tractog
 }
 
 inline bool within_haussdorf(const DWI::Tractography::Streamline<> &tck,
-                             const vector<DWI::Tractography::Streamline<>> &list,
+                             const std::vector<DWI::Tractography::Streamline<>> &list,
                              float tol) {
   for (auto &tck2 : list) {
     if (within_haussdorf(tck, tck2, tol))
@@ -100,7 +100,7 @@ void run() {
 
   if (get_options("unordered").size()) {
 
-    vector<DWI::Tractography::Streamline<>> ref_list;
+    std::vector<DWI::Tractography::Streamline<>> ref_list;
     DWI::Tractography::Streamline<> tck;
 
     while (reader2(tck))

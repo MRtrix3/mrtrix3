@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -149,14 +149,14 @@ inline void replace(std::string &str, const std::string &from, const std::string
   }
 }
 
-vector<std::string> split(const std::string &string,
-                          const char *delimiters = " \t\n",
-                          bool ignore_empty_fields = false,
-                          size_t num = std::numeric_limits<size_t>::max());
+std::vector<std::string> split(const std::string &string,
+                               const char *delimiters = " \t\n",
+                               bool ignore_empty_fields = false,
+                               size_t num = std::numeric_limits<size_t>::max());
 
-inline vector<std::string> split_lines(const std::string &string,
-                                       bool ignore_empty_fields = true,
-                                       size_t num = std::numeric_limits<size_t>::max()) {
+inline std::vector<std::string> split_lines(const std::string &string,
+                                            bool ignore_empty_fields = true,
+                                            size_t num = std::numeric_limits<size_t>::max()) {
   return split(string, "\n", ignore_empty_fields, num);
 }
 
@@ -268,7 +268,7 @@ template <> inline cfloat to<cfloat>(const std::string &string) {
     throw Exception("cannot convert empty string to complex float");
 
   const std::string stripped = strip(string);
-  vector<cfloat> candidates;
+  std::vector<cfloat> candidates;
   for (ssize_t i = -1; i <= ssize_t(stripped.size()); ++i) {
     std::string first, second;
     if (i == -1) {
@@ -325,7 +325,7 @@ template <> inline cdouble to<cdouble>(const std::string &string) {
     throw Exception("cannot convert empty string to complex double");
 
   const std::string stripped = strip(string);
-  vector<cdouble> candidates;
+  std::vector<cdouble> candidates;
   for (ssize_t i = -1; i <= ssize_t(stripped.size()); ++i) {
     std::string first, second;
     if (i == -1) {
@@ -366,10 +366,10 @@ template <> inline cdouble to<cdouble>(const std::string &string) {
   return candidates[0];
 }
 
-vector<default_type> parse_floats(const std::string &spec);
+std::vector<default_type> parse_floats(const std::string &spec);
 
 template <typename IntType>
-vector<IntType> parse_ints(const std::string &spec, const IntType last = std::numeric_limits<IntType>::max()) {
+std::vector<IntType> parse_ints(const std::string &spec, const IntType last = std::numeric_limits<IntType>::max()) {
   typedef typename std::make_signed<IntType>::type SignedIntType;
   if (!spec.size())
     throw Exception("integer sequence specifier is empty");
@@ -380,7 +380,7 @@ vector<IntType> parse_ints(const std::string &spec, const IntType last = std::nu
     return IntType(value);
   };
 
-  vector<IntType> V;
+  std::vector<IntType> V;
   std::string::size_type start = 0, end;
   std::array<SignedIntType, 3> num;
   size_t i = 0;
@@ -451,22 +451,22 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(const std:
   return M;
 }
 
-inline std::string join(const vector<std::string> &V, const std::string &delimiter) {
+inline std::string join(const std::vector<std::string> &V, const std::string &delimiter) {
   std::string ret;
   if (V.empty())
     return ret;
   ret = V[0];
-  for (vector<std::string>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
+  for (std::vector<std::string>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
     ret += delimiter + *i;
   return ret;
 }
 
-template <typename T> inline std::string join(const vector<T> &V, const std::string &delimiter) {
+template <typename T> inline std::string join(const std::vector<T> &V, const std::string &delimiter) {
   std::string ret;
   if (V.empty())
     return ret;
   ret = str(V[0]);
-  for (typename vector<T>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
+  for (typename std::vector<T>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
     ret += delimiter + str(*i);
   return ret;
 }

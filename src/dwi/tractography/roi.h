@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -124,7 +124,7 @@ public:
   friend inline std::ostream &operator<<(std::ostream &stream, const ROISetBase &R) {
     if (R.R.empty())
       return (stream);
-    vector<ROI>::const_iterator i = R.R.begin();
+    std::vector<ROI>::const_iterator i = R.R.begin();
     stream << *i;
     ++i;
     for (; i != R.R.end(); ++i)
@@ -133,7 +133,7 @@ public:
   }
 
 protected:
-  vector<ROI> R;
+  std::vector<ROI> R;
 };
 
 class ROIUnorderedSet : public ROISetBase {

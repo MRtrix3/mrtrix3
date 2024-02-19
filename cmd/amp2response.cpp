@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -101,8 +101,8 @@ Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix(const Eigen::Vector3d &dir
   return R;
 }
 
-vector<size_t> all_volumes(const size_t num) {
-  vector<size_t> result(num);
+std::vector<size_t> all_volumes(const size_t num) {
+  std::vector<size_t> result(num);
   for (size_t i = 0; i != num; ++i)
     result[i] = i;
   return result;
@@ -112,7 +112,7 @@ class Accumulator {
 public:
   class Shared {
   public:
-    Shared(int lmax, const vector<size_t> &volumes, const Eigen::MatrixXd &dirs)
+    Shared(int lmax, const std::vector<size_t> &volumes, const Eigen::MatrixXd &dirs)
         : lmax(lmax),
           dirs(dirs),
           volumes(volumes),
@@ -122,7 +122,7 @@ public:
 
     const int lmax;
     const Eigen::MatrixXd &dirs;
-    const vector<size_t> &volumes;
+    const std::vector<size_t> &volumes;
     Eigen::MatrixXd M;
     Eigen::VectorXd b;
     size_t count;
@@ -196,8 +196,8 @@ void run() {
   auto header = Header::open(argument[0]);
 
   // May be dealing with multiple shells
-  vector<Eigen::MatrixXd> dirs_azel;
-  vector<vector<size_t>> volumes;
+  std::vector<Eigen::MatrixXd> dirs_azel;
+  std::vector<std::vector<size_t>> volumes;
   std::unique_ptr<DWI::Shells> shells;
 
   auto opt = get_options("directions");
@@ -207,7 +207,7 @@ void run() {
   } else {
     auto hit = header.keyval().find("directions");
     if (hit != header.keyval().end()) {
-      vector<default_type> dir_vector;
+      std::vector<default_type> dir_vector;
       for (auto line : split_lines(hit->second)) {
         auto v = parse_floats(line);
         dir_vector.insert(dir_vector.end(), v.begin(), v.end());
@@ -230,7 +230,7 @@ void run() {
     }
   }
 
-  vector<uint32_t> lmax;
+  std::vector<uint32_t> lmax;
   uint32_t max_lmax = 0;
   opt = get_options("lmax");
   if (get_options("isotropic").size()) {

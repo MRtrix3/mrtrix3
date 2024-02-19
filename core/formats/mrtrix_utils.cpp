@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,8 +19,8 @@
 namespace MR {
 namespace Formats {
 
-vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
-  vector<ssize_t> parsed(ndim);
+std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
+  std::vector<ssize_t> parsed(ndim);
 
   size_t sub = 0;
   size_t lim = 0;

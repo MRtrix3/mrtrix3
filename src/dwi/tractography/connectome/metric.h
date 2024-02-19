@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,10 +52,10 @@ public:
     return (*this)(tck);
   }
 
-  double operator()(const Streamline<> &tck, const vector<node_t> &nodes) const {
+  double operator()(const Streamline<> &tck, const std::vector<node_t> &nodes) const {
     if (scale_by_invnodevol) {
       double sum_volumes = 0.0;
-      for (vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+      for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
         assert(*n < node_volumes.size());
         sum_volumes += node_volumes[*n];
       }
