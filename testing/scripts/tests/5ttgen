@@ -1,14 +1,17 @@
 mkdir -p ../tmp/5ttgen/freesurfer && 5ttgen freesurfer BIDS/sub-01/anat/aparc+aseg.mgz ../tmp/5ttgen/freesurfer/default.mif -force && testing_diff_image ../tmp/5ttgen/freesurfer/default.mif 5ttgen/freesurfer/default.mif.gz
+mrconvert BIDS/sub-01/anat/aparc+aseg.mgz - | 5ttgen freesurfer - - && testing_diff_image - 5ttgen/freesurfer/default.mif.gz
 5ttgen freesurfer BIDS/sub-01/anat/aparc+aseg.mgz ../tmp/5ttgen/freesurfer/nocrop.mif -nocrop -force && testing_diff_image ../tmp/5ttgen/freesurfer/nocrop.mif 5ttgen/freesurfer/nocrop.mif.gz
 5ttgen freesurfer BIDS/sub-01/anat/aparc+aseg.mgz ../tmp/5ttgen/freesurfer/sgm_amyg_hipp.mif -sgm_amyg_hipp -force && testing_diff_image ../tmp/5ttgen/freesurfer/sgm_amyg_hipp.mif 5ttgen/freesurfer/sgm_amyg_hipp.mif.gz
 mkdir -p ../tmp/5ttgen/fsl && 5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz ../tmp/5ttgen/fsl/default.mif -force # && testing_diff_header ../tmp/5ttgen/fsl/default.mif 5ttgen/fsl/default.mif.gz
+mrconvert BIDS/sub-01/anat/sub-01_T1w.nii.gz - | 5ttgen fsl - - | mrconvert - ../tmp/5ttgen/fsl/default.mif -force
 5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz ../tmp/5ttgen/fsl/nocrop.mif -nocrop -force && testing_diff_header ../tmp/5ttgen/fsl/nocrop.mif 5ttgen/fsl/nocrop.mif.gz
 5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz ../tmp/5ttgen/fsl/sgm_amyg_hipp.mif -sgm_amyg_hipp -force # && testing_diff_header ../tmp/5ttgen/fsl/sgm_amyg_hipp.mif 5ttgen/fsl/sgm_amyg_hipp.mif.gz
 5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz ../tmp/5ttgen/fsl/masked.mif -mask BIDS/sub-01/anat/sub-01_brainmask.nii.gz -force && testing_diff_header ../tmp/5ttgen/fsl/masked.mif 5ttgen/fsl/masked.mif.gz
 mrcalc BIDS/sub-01/anat/sub-01_T1w.nii.gz BIDS/sub-01/anat/sub-01_brainmask.nii.gz -mult tmp1.mif -force && 5ttgen fsl tmp1.mif ../tmp/5ttgen/fsl/premasked.mif -premasked -force && testing_diff_header ../tmp/5ttgen/fsl/premasked.mif 5ttgen/fsl/masked.mif.gz
 mkdir -p ../tmp/5ttgen/hsvs && 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/default.mif -force && testing_diff_header ../tmp/5ttgen/hsvs/default.mif 5ttgen/hsvs/default.mif.gz
+5ttgen hsvs freesurfer/sub-01 - && testing_diff_header - 5ttgen/hsvs/default.mif.gz
 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/white_stem.mif -white_stem -force && testing_diff_header ../tmp/5ttgen/hsvs/white_stem.mif 5ttgen/hsvs/white_stem.mif.gz
 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/modules.mif -hippocampi subfields -thalami nuclei -force && testing_diff_header ../tmp/5ttgen/hsvs/modules.mif 5ttgen/hsvs/modules.mif.gz
-5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/first.mif -hippocampi first -thalami first -force && testing_diff_header ../tmp/5ttgen/hsvs/first.mif  5ttgen/hsvs/first.mif.gz
-5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/aseg.mif -hippocampi aseg -thalami aseg -force && testing_diff_header ../tmp/5ttgen/hsvs/aseg.mif  5ttgen/hsvs/aseg.mif.gz
+5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/first.mif -hippocampi first -thalami first -force && testing_diff_header ../tmp/5ttgen/hsvs/first.mif 5ttgen/hsvs/first.mif.gz
+5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/aseg.mif -hippocampi aseg -thalami aseg -force && testing_diff_header ../tmp/5ttgen/hsvs/aseg.mif 5ttgen/hsvs/aseg.mif.gz
 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/template.mif -template BIDS/sub-01/anat/sub-01_T1w.nii.gz -force && testing_diff_header ../tmp/5ttgen/hsvs/template.mif 5ttgen/hsvs/template.mif.gz
