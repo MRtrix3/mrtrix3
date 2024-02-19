@@ -212,9 +212,9 @@ def execute(): #pylint: disable=unused-variable
     perm = ''.join(map(str, best[2]))
     suffix = f'_flip{best[1]}_perm{perm}_{best[3]}'
     if best[3] == 'scanner':
-      grad_import_option = ['-grad', 'grad{suffix}.b']
+      grad_import_option = ['-grad', f'grad{suffix}.b']
     elif best[3] == 'image':
-      grad_import_option = ['-fslgrad', 'bvecs{suffix}', 'bvals']
+      grad_import_option = ['-fslgrad', f'bvecs{suffix}', 'bvals']
     else:
       assert False
     run.command(['mrinfo', 'data.mif']
