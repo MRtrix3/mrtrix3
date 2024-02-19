@@ -23,6 +23,8 @@
 
 #include "connectome/connectome.h"
 
+#include <iomanip>
+
 using namespace MR;
 using namespace App;
 
