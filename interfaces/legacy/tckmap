@@ -1,0 +1,89 @@
+Map streamlines to an image, with various options for generating image contrast
+The -contrast option controls how a value is derived for each streamline that is subsequently contributed to the image elements intersected by that streamline, and therefore strongly influences the contrast of that image. The permissible values are briefly summarised as follows: 
+- tdi: Each streamline effectively contributes a value of unity to the final map (equivalent to the original Track Density Imaging (TDI) method)
+- length: The length of the streamline in mm
+- invlength: The reciprocal of streamline length
+- scalar_map: Values are sampled from a scalar image (which must be provided via -image)
+- scalar_map_count: If a non-zero value is sampled from a scalar image (as provided via -image), the streamline contributes a value of 1, otherwise it contributes 0, such that an image can be produced reflecting the density of streamlines that intersect such an image
+- fod_amp: The amplitudes of a Fibre Orientation Distribution (FOD) image
+- curvature: The curvature of the streamline
+- vector_file: A value for each streamline has been pre-calculated, and these are provided in a text file via the -vector_file option
+A "super-resolution" output image can be generated using the -vox option, whether or not a template image is provided using the -template option. If -template is used in conjunction with -vox, the image axes and FoV will still match that of the template image, but the spatial resolution will differ.
+Note: if you run into limitations with RAM usage, try writing the output image as a .mif file or .mih / .dat file pair to a local hard drive: this will allow tckmap to dump the generated image contents directly to disk, rather than allocating an additional buffer to store the output image for write-out, thereby potentially halving RAM usage.
+ARGUMENT tracks 0 0 FILEIN
+the input track file.
+ARGUMENT output 0 0 IMAGEOUT
+the output track-weighted image
+OPTION template 1 0
+an image file to be used as a template for the output (the output image will have the same transform and field of view).
+ARGUMENT image 0 0 IMAGEIN
+OPTION vox 1 0
+provide either an isotropic voxel size (in mm), or comma-separated list of 3 voxel dimensions.
+ARGUMENT size 0 0 FSEQ
+OPTION datatype 1 0
+specify output image data type.
+ARGUMENT spec 0 0 CHOICE float16 float16le float16be float32 float32le float32be float64 float64le float64be int64 uint64 int64le uint64le int64be uint64be int32 uint32 int32le uint32le int32be uint32be int16 uint16 int16le uint16le int16be uint16be cfloat16 cfloat16le cfloat16be cfloat32 cfloat32le cfloat32be cfloat64 cfloat64le cfloat64be int8 uint8 bit
+OPTION dec 1 0
+perform track mapping in directionally-encoded colour (DEC) space
+OPTION dixel 1 0
+map streamlines to dixels within each voxel; requires either a number of dixels (references an internal direction set), or a path to a text file containing a set of directions stored as azimuth/elevation pairs
+ARGUMENT path 0 0 VARIOUS
+OPTION tod 1 0
+generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum spherical harmonic degree lmax to use when generating Apodised Point Spread Functions
+ARGUMENT lmax 0 0 INT 2 20
+OPTION contrast 1 0
+define the desired form of contrast for the output image
+Options are: tdi, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature, vector_file (default: tdi)
+ARGUMENT type 0 0 CHOICE tdi length invlength scalar_map scalar_map_count fod_amp curvature vector_file
+OPTION image 1 0
+provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast, or the spherical harmonics image for 'fod_amp' contrast
+ARGUMENT image 0 0 IMAGEIN
+OPTION vector_file 1 0
+provide the vector data file for generating images with 'vector_file' contrast
+ARGUMENT path 0 0 FILEIN
+OPTION stat_vox 1 0
+define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxel. 
+Options are: sum, min, mean, max (default: sum)
+ARGUMENT type 0 0 CHOICE sum min mean max
+OPTION stat_tck 1 0
+define the statistic for choosing the contribution to be made by each streamline as a function of the samples taken along their lengths. 
+Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types. 
+Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod (default: mean)
+ARGUMENT type 0 0 CHOICE sum min mean max median mean_nonzero gaussian ends_min ends_mean ends_max ends_prod
+OPTION fwhm_tck 1 0
+when using gaussian-smoothed per-track statistic, specify the desired full-width half-maximum of the Gaussian smoothing kernel (in mm)
+ARGUMENT value 0 0 FLOAT 1e-06 inf
+OPTION map_zero 1 0
+if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; use this option to still contribute to the map even if this is the case (these non-contributing voxels can then influence the mean value in each voxel of the map)
+OPTION backtrack 1 0
+when using -stat_tck ends_*, if the streamline endpoint is outside the FoV, backtrack along the streamline trajectory until an appropriate point is found
+OPTION upsample 1 0
+upsample the tracks by some ratio using Hermite interpolation before mappping
+(If omitted, an appropriate ratio will be determined automatically)
+ARGUMENT factor 0 0 INT 1 9223372036854775807
+OPTION precise 1 0
+use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel (these lengths are then taken into account during TWI calculation)
+OPTION ends_only 1 0
+only map the streamline endpoints to the image
+OPTION tck_weights_in 1 0
+specify a text scalar file containing the streamline weights
+ARGUMENT path 0 0 FILEIN
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

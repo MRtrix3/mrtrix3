@@ -1,0 +1,30 @@
+Invert a non-linear warp field
+By default, this command assumes that the input warp field is a deformation field, i.e. each voxel stores the corresponding position in the other image (in scanner space), and the calculated output warp image will also be a deformation field. If the input warp field is instead a displacment field, i.e. where each voxel stores an offset from which to sample the other image (but still in scanner space), then the -displacement option should be used; the output warp field will additionally be calculated as a displacement field in this case.
+ARGUMENT in 0 0 IMAGEIN
+the input warp image.
+ARGUMENT out 0 0 IMAGEOUT
+the output warp image.
+OPTION template 1 0
+define a template image grid for the output warp
+ARGUMENT image 0 0 IMAGEIN
+OPTION displacement 1 0
+indicates that the input warp field is a displacement field; the output will also be a displacement field
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

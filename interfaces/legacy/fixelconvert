@@ -1,0 +1,45 @@
+Convert between the old format fixel image (.msf / .msh) and the new fixel directory format
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+Convert from the old file format to the new directory format: $ fixelconvert old_fixels.msf new_fixels/ -out_size  This performs a simple conversion from old to new format, and additionally writes the contents of the "size" field within old-format fixel images stored using the "FixelMetric" class (likely all of them) as an additional fixel data file.
+Convert multiple files from old to new format, preserving fixel correspondence: $ for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/  In this example, the for_each script is used to execute the fixelconvert command once for each of a series of input files in the old fixel format, generating a new output fixel directory for each.Importantly here though, the -template option is used to ensure that the ordering of fixels within these output directories is identical, such that fixel data files can be exchanged between them (e.g. accumulating fixel data files across subjects into a single template fixel directory
+Convert from the new directory format to the old file format: $ fixelconvert new_fixels/ old_fixels.msf -value parameter.mif -in_size new_fixels/afd.mif  Conversion from the new directory format will contain the value 1.0 for all output fixels in both the "size" and "value" fields of the "FixelMetric" class, unless the -in_size and/or -value options are used respectively to indicate which fixel data files should be used as the source(s) of this information.
+ARGUMENT fixel_in 0 0 VARIOUS
+the input fixel file / directory.
+ARGUMENT fixel_out 0 0 VARIOUS
+the output fixel file / directory.
+OPTION name 1 0
+assign a different name to the value field output (Default: value). Do not include the file extension.
+ARGUMENT string 0 0 TEXT
+OPTION nii 1 0
+output the index, directions and data file in NIfTI format instead of .mif
+OPTION out_size 1 0
+also output the 'size' field from the old format
+OPTION template 1 0
+specify an existing fixel directory (in the new format) to which the new output should conform
+ARGUMENT path 0 0 DIRIN
+OPTION value 1 0
+nominate the data file to import to the 'value' field in the old format
+ARGUMENT path 0 0 FILEIN
+OPTION in_size 1 0
+import data for the 'size' field in the old format
+ARGUMENT path 0 0 FILEIN
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

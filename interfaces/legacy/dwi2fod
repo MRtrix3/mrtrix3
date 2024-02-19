@@ -1,0 +1,77 @@
+Estimate fibre orientation distributions from diffusion data using spherical deconvolution
+The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/concepts/spherical_harmonics.html
+Perform single-shell single-tissue CSD: $ dwi2fod csd dwi.mif response_wm.txt wmfod.mif  This algorithm is designed for single-shell data and only uses a single b-value. The response function text file provided should only contain a a single row, corresponding to the b-value used for CSD.
+Perform multi-shell multi-tissue CSD: $ dwi2fod msmt_csd dwi.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif  This example is the most common use case of multi-tissue CSD, estimating a white matter FOD, and grey matter and CSF compartments. This algorithm requires at least three unique b-values to estimate three tissue compartments. Each response function text file should have a number of rows equal to the number of b-values used. If only two unique b-values are available, it's also possible to estimate only two tissue compartments, e.g., white matter and CSF.
+ARGUMENT algorithm 0 0 CHOICE csd msmt_csd
+the algorithm to use for FOD estimation. (options are: csd,msmt_csd)
+ARGUMENT dwi 0 0 IMAGEIN
+the input diffusion-weighted image
+ARGUMENT response odf 0 1 
+pairs of input tissue response and output ODF images
+OPTION grad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT file 0 0 FILEIN
+OPTION fslgrad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION shells 1 0
+specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided. 
+WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
+ARGUMENT b-values 0 0 FSEQ
+OPTION directions 1 0
+specify the directions over which to apply the non-negativity constraint (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
+ARGUMENT file 0 0 FILEIN
+OPTION lmax 1 0
+the maximum spherical harmonic order for the output FOD(s).For algorithms with multiple outputs, this should be provided as a comma-separated list of integers, one for each output image; for single-output algorithms, only a single integer should be provided. If omitted, the command will use the lmax of the corresponding response function (i.e based on its number of coefficients), up to a maximum of 8.
+ARGUMENT order 0 0 ISEQ
+OPTION mask 1 0
+only perform computation within the specified binary brain mask image.
+ARGUMENT image 0 0 IMAGEIN
+OPTION filter 1 0
+the linear frequency filtering parameters used for the initial linear spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be  supplied as a text file containing the filtering coefficients for each even harmonic order.
+ARGUMENT spec 0 0 FILEIN
+OPTION neg_lambda 1 0
+the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1).
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION norm_lambda 1 0
+the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1).
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION threshold 1 0
+the threshold below which the amplitude of the FOD is assumed to be zero, expressed as an absolute amplitude (default = 0).
+ARGUMENT value 0 0 FLOAT -1 10
+OPTION niter 1 0
+the maximum number of iterations to perform for each voxel (default = 50). Use '-niter 0' for a linear unconstrained spherical deconvolution.
+ARGUMENT number 0 0 INT 0 1000
+OPTION norm_lambda 1 0
+the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1e-10).
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION neg_lambda 1 0
+the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-10).
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION predicted_signal 1 0
+output the predicted dwi image.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION strides 1 0
+specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
+ARGUMENT spec 0 0 VARIOUS
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

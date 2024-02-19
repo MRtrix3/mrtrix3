@@ -1,0 +1,37 @@
+Concatenating multiple DWI series accounting for differential intensity scaling
+This script concatenates two or more 4D DWI series, accounting for the fact that there may be differences in intensity scaling between those series. This intensity scaling is corrected by determining scaling factors that will make the overall image intensities in the b=0 volumes of each series approximately equivalent.
+ARGUMENT inputs 0 1 IMAGEIN
+Multiple input diffusion MRI series
+ARGUMENT output 0 0 IMAGEOUT
+The output image series (all DWIs concatenated)
+OPTION -mask 1 0
+Provide a binary mask within which image intensities will be matched
+ARGUMENT image 0 0 IMAGEIN
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

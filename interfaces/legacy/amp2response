@@ -1,0 +1,44 @@
+Estimate response function coefficients based on the DWI signal in single-fibre voxels
+This command uses the image data from all selected single-fibre voxels concurrently, rather than simply averaging their individual spherical harmonic coefficients. It also ensures that the response function is non-negative, and monotonic (i.e. its amplitude must increase from the fibre direction out to the orthogonal plane).
+If multi-shell data are provided, and one or more b-value shells are not explicitly requested, the command will generate a response function for every b-value shell (including b=0 if present).
+ARGUMENT amps 0 0 IMAGEIN
+the amplitudes image
+ARGUMENT mask 0 0 IMAGEIN
+the mask containing the voxels from which to estimate the response function
+ARGUMENT directions 0 0 IMAGEIN
+a 4D image containing the estimated fibre directions
+ARGUMENT response 0 0 FILEOUT
+the output zonal spherical harmonic coefficients
+OPTION isotropic 1 0
+estimate an isotropic response function (lmax=0 for all shells)
+OPTION noconstraint 1 0
+disable the non-negativity and monotonicity constraints
+OPTION directions 1 0
+provide an external text file containing the directions along which the amplitudes are sampled
+ARGUMENT path 0 0 FILEIN
+OPTION shells 1 0
+specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided. 
+WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
+ARGUMENT b-values 0 0 FSEQ
+OPTION lmax 1 0
+specify the maximum harmonic degree of the response function to estimate (can be a comma-separated list for multi-shell data)
+ARGUMENT values 0 0 ISEQ
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

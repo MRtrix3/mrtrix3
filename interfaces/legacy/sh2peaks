@@ -1,0 +1,48 @@
+Extract the peaks of a spherical harmonic function in each voxel
+Peaks of the spherical harmonic function in each voxel are located by commencing a Newton search along each of a set of pre-specified directions
+The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/concepts/spherical_harmonics.html
+ARGUMENT SH 0 0 IMAGEIN
+the input image of SH coefficients.
+ARGUMENT output 0 0 IMAGEOUT
+the output image. Each volume corresponds to the x, y & z component of each peak direction vector in turn.
+OPTION num 1 0
+the number of peaks to extract (default: 3).
+ARGUMENT peaks 0 0 INT 0 9223372036854775807
+OPTION direction 1 1
+the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.
+ARGUMENT phi 0 0 FLOAT -inf inf
+ARGUMENT theta 0 0 FLOAT -inf inf
+OPTION peaks 1 0
+the program will try to find the peaks that most closely match those in the image provided.
+ARGUMENT image 0 0 IMAGEIN
+OPTION threshold 1 0
+only peak amplitudes greater than the threshold will be considered.
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION seeds 1 0
+specify a set of directions from which to start the multiple restarts of the optimisation (by default, the built-in 60 direction set is used)
+ARGUMENT file 0 0 FILEIN
+OPTION mask 1 0
+only perform computation within the specified binary brain mask image.
+ARGUMENT image 0 0 IMAGEIN
+OPTION fast 1 0
+use lookup table to compute associated Legendre polynomials (faster, but approximate).
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

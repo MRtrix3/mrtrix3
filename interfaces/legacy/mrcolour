@@ -1,0 +1,37 @@
+Apply a colour map to an image
+Under typical usage, this command will receive as input ad 3D greyscale image, and output a 4D image with 3 volumes corresponding to red-green-blue components; other use cases are possible, and are described in more detail below.
+By default, the command will automatically determine the maximum and minimum intensities of the input image, and use that information to set the upper and lower bounds of the applied colourmap. This behaviour can be overridden by manually specifying these bounds using the -upper and -lower options respectively.
+ARGUMENT input 0 0 IMAGEIN
+the input image
+ARGUMENT map 0 0 CHOICE gray hot cool jet inferno viridis pet colour rgb
+the colourmap to apply; choices are: gray,hot,cool,jet,inferno,viridis,pet,colour,rgb
+ARGUMENT output 0 0 IMAGEOUT
+the output image
+OPTION upper 1 0
+manually set the upper intensity of the colour mapping
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION lower 1 0
+manually set the lower intensity of the colour mapping
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION colour 1 0
+set the target colour for use of the 'colour' map (three comma-separated floating-point values)
+ARGUMENT values 0 0 FSEQ
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

@@ -1,0 +1,78 @@
+Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with modified orientation, location and or resolution. The image content remains in place in real world coordinates.
+- regrid: This operation performs changes of the voxel grid that require interpolation of the image such as changing the resolution or location and orientation of the voxel grid. If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless nearest neighbour interpolation is selected or oversample is changed explicitly. The resolution can only be changed for spatial dimensions. 
+- crop: The image extent after cropping, can be specified either manually for each axis dimensions, or via a mask or reference image. The image can be cropped to the extent of a mask. This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. Note that cropping does not extend the image beyond the original FOV unless explicitly specified (via -crop_unbound or negative -axis extent).
+- pad: Analogously to cropping, padding increases the FOV of an image without image interpolation. Pad and crop can be performed simultaneously by specifying signed specifier argument values to the -axis option.
+This command encapsulates and extends the functionality of the superseded commands 'mrpad', 'mrcrop' and 'mrresize'. Note the difference in -axis convention used for 'mrcrop' and 'mrpad' (see -axis option description).
+Crop and pad the first axis: $ mrgrid in.mif crop -axis 0 10,-5 out.mif  This removes 10 voxels on the lower and pads with 5 on the upper bound, which is equivalent to padding with the negated specifier (mrgrid in.mif pad -axis 0 -10,5 out.mif).
+Right-pad the image to the number of voxels of a reference image: $ mrgrid in.mif pad -as ref.mif -all_axes -axis 3 0,0 out.mif -fill nan  This pads the image on the upper bound of all axes except for the volume dimension. The headers of in.mif and ref.mif are ignored and the output image uses NAN values to fill in voxels outside the original range of in.mif.
+Regrid and interpolate to match the voxel grid of a reference image: $ mrgrid in.mif regrid -template ref.mif -scale 1,1,0.5 out.mif -fill nan  The -template instructs to regrid in.mif to match the voxel grid of ref.mif (voxel size, grid orientation and voxel centres). The -scale option overwrites the voxel scaling factor yielding voxel sizes in the third dimension that are twice as coarse as those of the template image.
+ARGUMENT input 0 0 IMAGEIN
+input image to be regridded.
+ARGUMENT operation 0 0 CHOICE regrid crop pad
+the operation to be performed, one of: regrid, crop, pad.
+ARGUMENT output 0 0 IMAGEOUT
+the output image.
+OPTION template 1 0
+match the input image grid (voxel spacing, image size, header transformation) to that of a reference image. The image resolution relative to the template image can be changed with one of -size, -voxel, -scale.
+ARGUMENT image 0 0 IMAGEIN
+OPTION size 1 0
+define the size (number of voxels) in each spatial dimension for the output image. This should be specified as a comma-separated list.
+ARGUMENT dims 0 0 ISEQ
+OPTION voxel 1 0
+define the new voxel size for the output image. This can be specified either as a single value to be used for all spatial dimensions, or as a comma-separated list of the size for each voxel dimension.
+ARGUMENT size 0 0 FSEQ
+OPTION scale 1 0
+scale the image resolution by the supplied factor. This can be specified either as a single value to be used for all dimensions, or as a comma-separated list of scale factors for each dimension.
+ARGUMENT factor 0 0 FSEQ
+OPTION interp 1 0
+set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).
+ARGUMENT method 0 0 CHOICE nearest linear cubic sinc
+OPTION oversample 1 0
+set the amount of over-sampling (in the target space) to perform when regridding. This is particularly relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled for nearest-neighbour interpolation).
+ARGUMENT factor 0 0 ISEQ
+OPTION as 1 0
+pad or crop the input image on the upper bound to match the specified reference image grid. This operation ignores differences in image transformation between input and reference image.
+ARGUMENT reference image 0 0 IMAGEIN
+OPTION uniform 1 0
+pad or crop the input image by a uniform number of voxels on all sides
+ARGUMENT number 0 0 INT -9223372036854775808 9223372036854775807
+OPTION mask 1 0
+crop the input image according to the spatial extent of a mask image. The mask must share a common voxel grid with the input image but differences in image transformations are ignored. Note that even though only 3 dimensions are cropped when using a mask, the bounds are computed by checking the extent for all dimensions. Note that by default a gap of 1 voxel is left at all edges of the image to allow valid trilinear interpolation. This gap can be modified with the -uniform option but by default it does not extend beyond the FOV unless -crop_unbound is used.
+ARGUMENT image 0 0 IMAGEIN
+the mask image. 
+OPTION crop_unbound 1 0
+Allow padding beyond the original FOV when cropping.
+OPTION axis 1 1
+pad or crop the input image along the provided axis (defined by index). The specifier argument defines the number of voxels added or removed on the lower or upper end of the axis (-axis index delta_lower,delta_upper) or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the input image (overriding all other extent-specifying options). Negative delta specifier values trigger the inverse operation (pad instead of crop and vice versa) and negative range specifier trigger padding. Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, respectively.
+ARGUMENT index 0 0 INT 0 9223372036854775807
+ARGUMENT spec 0 0 TEXT
+OPTION all_axes 1 0
+Crop or pad all, not just spatial axes.
+OPTION fill 1 0
+Use number as the out of bounds value. nan, inf and -inf are valid arguments. (Default: 0.0)
+ARGUMENT number 0 0 FLOAT -inf inf
+OPTION strides 1 0
+specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
+ARGUMENT spec 0 0 VARIOUS
+OPTION datatype 1 0
+specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+ARGUMENT spec 0 0 CHOICE float16 float16le float16be float32 float32le float32be float64 float64le float64be int64 uint64 int64le uint64le int64be uint64be int32 uint32 int32le uint32le int32be uint32be int16 uint16 int16le uint16le int16be uint16be cfloat16 cfloat16le cfloat16be cfloat32 cfloat32le cfloat32be cfloat64 cfloat64le cfloat64be int8 uint8 bit
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

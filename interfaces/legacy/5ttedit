@@ -1,0 +1,42 @@
+Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images
+ARGUMENT input 0 0 IMAGEIN
+the 5TT image to be modified
+ARGUMENT output 0 0 IMAGEOUT
+the output modified 5TT image
+OPTION cgm 1 0
+provide a mask of voxels that should be set to cortical grey matter
+ARGUMENT image 0 0 IMAGEIN
+OPTION sgm 1 0
+provide a mask of voxels that should be set to sub-cortical grey matter
+ARGUMENT image 0 0 IMAGEIN
+OPTION wm 1 0
+provide a mask of voxels that should be set to white matter
+ARGUMENT image 0 0 IMAGEIN
+OPTION csf 1 0
+provide a mask of voxels that should be set to CSF
+ARGUMENT image 0 0 IMAGEIN
+OPTION path 1 0
+provide a mask of voxels that should be set to pathological tissue
+ARGUMENT image 0 0 IMAGEIN
+OPTION none 1 0
+provide a mask of voxels that should be cleared (i.e. are non-brain); note that this will supersede all other provided masks
+ARGUMENT image 0 0 IMAGEIN
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

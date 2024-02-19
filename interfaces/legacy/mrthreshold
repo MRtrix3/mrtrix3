@@ -1,0 +1,59 @@
+Create bitwise image by thresholding image intensity
+The threshold value to be applied can be determined in one of a number of ways:
+- If no relevant command-line option is used, the command will automatically determine an optimal threshold;
+- The -abs option provides the threshold value explicitly;
+- The -percentile, -top and -bottom options enable more fine-grained control over how the threshold value is determined.
+The -mask option only influences those image values that contribute toward the determination of the threshold value; once the threshold is determined, it is applied to the entire image, irrespective of use of the -mask option. If you wish for the voxels outside of the specified mask to additionally be excluded from the output mask, this can be achieved by providing the -out_masked option.
+The four operators available through the "-comparison" option ("lt", "le", "ge" and "gt") correspond to "less-than" (<), "less-than-or-equal" (<=), "greater-than-or-equal" (>=) and "greater-than" (>). This offers fine-grained control over how the thresholding operation will behave in the presence of values equivalent to the threshold. By default, the command will select voxels with values greater than or equal to the determined threshold ("ge"); unless the -bottom option is used, in which case after a threshold is determined from the relevant lowest-valued image voxels, those voxels with values less than or equal to that threshold ("le") are selected. This provides more fine-grained control than the -invert option; the latter is provided for backwards compatibility, but is equivalent to selection of the opposite comparison within this selection.
+If no output image path is specified, the command will instead write to standard output the determined threshold value.
+ARGUMENT input 0 0 IMAGEIN
+the input image to be thresholded
+ARGUMENT output 1 0 IMAGEOUT
+the (optional) output binary image mask
+OPTION abs 1 0
+specify threshold value as absolute intensity
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION percentile 1 0
+determine threshold based on some percentile of the image intensity distribution
+ARGUMENT value 0 0 FLOAT 0 100
+OPTION top 1 0
+determine threshold that will result in selection of some number of top-valued voxels
+ARGUMENT count 0 0 INT 1 9223372036854775807
+OPTION bottom 1 0
+determine & apply threshold resulting in selection of some number of bottom-valued voxels (note: implies threshold application operator of "le" unless otherwise specified)
+ARGUMENT count 0 0 INT 1 9223372036854775807
+OPTION allvolumes 1 0
+compute a single threshold for all image volumes, rather than an individual threshold per volume
+OPTION ignorezero 1 0
+ignore zero-valued input values during threshold determination
+OPTION mask 1 0
+compute the threshold based only on values within an input mask image
+ARGUMENT image 0 0 IMAGEIN
+OPTION comparison 1 0
+comparison operator to use when applying the threshold; options are: lt,le,ge,gt (default = "le" for -bottom; "ge" otherwise)
+ARGUMENT choice 0 0 CHOICE lt le ge gt
+OPTION invert 1 0
+invert the output binary mask (equivalent to flipping the operator; provided for backwards compatibility)
+OPTION out_masked 1 0
+mask the output image based on the provided input mask image
+OPTION nan 1 0
+set voxels that fail the threshold to NaN rather than zero (output image will be floating-point rather than binary)
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

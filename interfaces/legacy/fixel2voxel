@@ -1,0 +1,44 @@
+Convert a fixel-based sparse-data image into some form of scalar image
+Fixel data can be reduced to voxel data in a number of ways:
+- Some statistic computed across all fixel values within a voxel: mean, sum, product, min, max, absmax, magmax
+- The number of fixels in each voxel: count
+- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')
+- A 4D directionally-encoded colour image: dec_unit, dec_scaled
+- A 4D image containing all fixel data values in each voxel unmodified: none
+The -weighted option deals with the case where there is some per-fixel metric of interest that you wish to collapse into a single scalar measure per voxel, but each fixel possesses a different volume, and you wish for those fixels with greater volume to have a greater influence on the calculation than fixels with lesser volume. For instance, when estimating a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's mean axon diameter should be weigthed by its relative volume within the voxel in the calculation of that voxel mean.
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+ARGUMENT fixel_in 0 0 IMAGEIN
+the input fixel data file
+ARGUMENT operation 0 0 CHOICE mean sum product min max absmax magmax count complexity sf dec_unit dec_scaled none
+the operation to apply, one of: mean, sum, product, min, max, absmax, magmax, count, complexity, sf, dec_unit, dec_scaled, none.
+ARGUMENT image_out 0 0 IMAGEOUT
+the output scalar image.
+OPTION number 1 0
+use only the largest N fixels in calculation of the voxel-wise statistic; in the case of operation "none", output only the largest N fixels in each voxel.
+ARGUMENT N 0 0 INT 1 9223372036854775807
+OPTION fill 1 0
+for "none" operation, specify the value to fill when number of fixels is fewer than the maximum (default: 0.0)
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION weighted 1 0
+weight the contribution of each fixel to the per-voxel result according to its volume.
+ARGUMENT fixel_in 0 0 IMAGEIN
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

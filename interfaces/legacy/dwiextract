@@ -1,0 +1,62 @@
+Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset
+Calculate the mean b=0 image from a 4D DWI series: $ dwiextract dwi.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3  The dwiextract command extracts all volumes for which the b-value is (approximately) zero; the resulting 4D image can then be provided to the mrmath command to calculate the mean intensity across volumes for each voxel.
+ARGUMENT input 0 0 IMAGEIN
+the input DW image.
+ARGUMENT output 0 0 IMAGEOUT
+the output image (diffusion-weighted volumes by default).
+OPTION bzero 1 0
+Output b=0 volumes (instead of the diffusion weighted volumes, if -singleshell is not specified).
+OPTION no_bzero 1 0
+Output only non b=0 volumes (default, if -singleshell is not specified).
+OPTION singleshell 1 0
+Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no_bzero to exclude them.
+OPTION grad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT file 0 0 FILEIN
+OPTION fslgrad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION shells 1 0
+specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided. 
+WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
+ARGUMENT b-values 0 0 FSEQ
+OPTION export_grad_mrtrix 1 0
+export the diffusion-weighted gradient table to file in MRtrix format
+ARGUMENT path 0 0 FILEOUT
+OPTION export_grad_fsl 1 0
+export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
+ARGUMENT bvecs_path 0 0 FILEOUT
+ARGUMENT bvals_path 0 0 FILEOUT
+OPTION import_pe_table 1 0
+import a phase-encoding table from file
+ARGUMENT file 0 0 FILEIN
+OPTION import_pe_eddy 1 0
+import phase-encoding information from an EDDY-style config / index file pair
+ARGUMENT config 0 0 FILEIN
+ARGUMENT indices 0 0 FILEIN
+OPTION pe 1 0
+select volumes with a particular phase encoding; this can be three comma-separated values (for i,j,k components of vector direction) or four (direction & total readout time)
+ARGUMENT desc 0 0 FSEQ
+OPTION strides 1 0
+specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
+ARGUMENT spec 0 0 VARIOUS
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

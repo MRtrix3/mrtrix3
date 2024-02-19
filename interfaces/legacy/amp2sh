@@ -1,0 +1,53 @@
+Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation
+The spherical harmonic decomposition is calculated by least-squares linear fitting to the amplitude data.
+The directions can be defined either as a DW gradient scheme (for example to compute the SH representation of the DW signal), a set of [az el] pairs as output by the dirgen command, or a set of [ x y z ] directions in Cartesian coordinates. The DW gradient scheme or direction set can be supplied within the input image header or using the -gradient or -directions option. Note that if a direction set and DW gradient scheme can be found, the direction set will be used by default.
+The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/concepts/spherical_harmonics.html
+ARGUMENT amp 0 0 IMAGEIN
+the input amplitude image.
+ARGUMENT SH 0 0 IMAGEOUT
+the output spherical harmonics coefficients image.
+OPTION lmax 1 0
+set the maximum harmonic order for the output series. By default, the program will use the highest possible lmax given the number of diffusion-weighted images, up to a maximum of 8.
+ARGUMENT order 0 0 INT 0 30
+OPTION normalise 1 0
+normalise the DW signal to the b=0 image
+OPTION directions 1 0
+the directions corresponding to the input amplitude image used to sample AFD. By default this option is not required providing the direction set is supplied in the amplitude image. This should be supplied as a list of directions [az el], as generated using the dirgen command, or as a list of [ x y z ] Cartesian coordinates.
+ARGUMENT file 0 0 FILEIN
+OPTION rician 1 0
+correct for Rician noise induced bias, using noise map supplied
+ARGUMENT noise 0 0 IMAGEIN
+OPTION grad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT file 0 0 FILEIN
+OPTION fslgrad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION shells 1 0
+specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided. 
+WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
+ARGUMENT b-values 0 0 FSEQ
+OPTION strides 1 0
+specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
+ARGUMENT spec 0 0 VARIOUS
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

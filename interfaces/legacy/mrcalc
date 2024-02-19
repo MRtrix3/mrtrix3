@@ -1,0 +1,134 @@
+Apply generic voxel-wise mathematical operations to images
+This command will only compute per-voxel operations. Use 'mrmath' to compute summary statistics across images or along image axes.
+This command uses a stack-based syntax, with operators (specified using options) operating on the top-most entries (i.e. images or values) in the stack. Operands (values or images) are pushed onto the stack in the order they appear (as arguments) on the command-line, and operators (specified as options) operate on and consume the top-most entries in the stack, and push their output as a new entry on the stack.
+As an additional feature, this command will allow images with different dimensions to be processed, provided they satisfy the following conditions: for each axis, the dimensions match if they are the same size, or one of them has size one. In the latter case, the entire image will be replicated along that axis. This allows for example a 4D image of size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if it consisted of N copies of the 3D image along the 4th axis (the missing dimension is assumed to have size 1). Another example would a single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of size [ X Y Z ], which would allow the creation of a 4D image where each volume consists of the 3D image scaled by the corresponding value for that volume in the single-voxel image.
+Double the value stored in every voxel: $ mrcalc a.mif 2 -mult r.mif  This performs the operation: r = 2*a  for every voxel a,r in images a.mif and r.mif respectively.
+A more complex example: $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif  This performs the operation: r = 9.3*exp(-a/b)
+Another complex example: $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif  This performs: r = (a+b)/(c*d+4.2).
+Rescale the densities in a SH l=0 image: $ mrcalc ODF_CSF.mif 4 pi -mult -sqrt -div ODF_CSF_scaled.mif  This applies the spherical harmonic basis scaling factor: 1.0/sqrt(4*pi), such that a single-tissue voxel containing the same intensities as the response function of that tissue should contain the value 1.0.
+ARGUMENT operand 0 1 VARIOUS
+an input image, intensity value, or the special keywords 'rand' (random number between 0 and 1) or 'randn' (random number from unit std.dev. normal distribution) or the mathematical constants 'e' and 'pi'.
+OPTION abs 1 1
+|%1| : return absolute value (magnitude) of real or complex number
+OPTION neg 1 1
+-%1 : negative value
+OPTION add 1 1
+(%1 + %2) : add values
+OPTION subtract 1 1
+(%1 - %2) : subtract nth operand from (n-1)th
+OPTION multiply 1 1
+(%1 * %2) : multiply values
+OPTION divide 1 1
+(%1 / %2) : divide (n-1)th operand by nth
+OPTION modulo 1 1
+(%1 % %2) : remainder after dividing (n-1)th operand by nth
+OPTION min 1 1
+min (%1, %2) : smallest of last two operands
+OPTION max 1 1
+max (%1, %2) : greatest of last two operands
+OPTION lt 1 1
+(%1 < %2) : less-than operator (true=1, false=0)
+OPTION gt 1 1
+(%1 > %2) : greater-than operator (true=1, false=0)
+OPTION le 1 1
+(%1 <= %2) : less-than-or-equal-to operator (true=1, false=0)
+OPTION ge 1 1
+(%1 >= %2) : greater-than-or-equal-to operator (true=1, false=0)
+OPTION eq 1 1
+(%1 == %2) : equal-to operator (true=1, false=0)
+OPTION neq 1 1
+(%1 != %2) : not-equal-to operator (true=1, false=0)
+OPTION if 1 1
+(%1 ? %2 : %3) : if first operand is true (non-zero), return second operand, otherwise return third operand
+OPTION replace 1 1
+(%1, %2 -> %3) : Wherever first operand is equal to the second operand, replace with third operand
+OPTION sqrt 1 1
+sqrt (%1) : square root
+OPTION pow 1 1
+%1^%2 : raise (n-1)th operand to nth power
+OPTION round 1 1
+round (%1) : round to nearest integer
+OPTION ceil 1 1
+ceil (%1) : round up to nearest integer
+OPTION floor 1 1
+floor (%1) : round down to nearest integer
+OPTION not 1 1
+!%1 : NOT operator: true (1) if operand is false (i.e. zero)
+OPTION and 1 1
+(%1 && %2) : AND operator: true (1) if both operands are true (i.e. non-zero)
+OPTION or 1 1
+(%1 || %2) : OR operator: true (1) if either operand is true (i.e. non-zero)
+OPTION xor 1 1
+(%1 ^^ %2) : XOR operator: true (1) if only one of the operands is true (i.e. non-zero)
+OPTION isnan 1 1
+isnan (%1) : true (1) if operand is not-a-number (NaN)
+OPTION isinf 1 1
+isinf (%1) : true (1) if operand is infinite (Inf)
+OPTION finite 1 1
+finite (%1) : true (1) if operand is finite (i.e. not NaN or Inf)
+OPTION complex 1 1
+(%1 + %2 i) : create complex number using the last two operands as real,imaginary components
+OPTION polar 1 1
+(%1 /_ %2) : create complex number using the last two operands as magnitude,phase components (phase in radians)
+OPTION real 1 1
+real (%1) : real part of complex number
+OPTION imag 1 1
+imag (%1) : imaginary part of complex number
+OPTION phase 1 1
+phase (%1) : phase of complex number (use -abs for magnitude)
+OPTION conj 1 1
+conj (%1) : complex conjugate
+OPTION proj 1 1
+proj (%1) : projection onto the Riemann sphere
+OPTION exp 1 1
+exp (%1) : exponential function
+OPTION log 1 1
+log (%1) : natural logarithm
+OPTION log10 1 1
+log10 (%1) : common logarithm
+OPTION cos 1 1
+cos (%1) : cosine
+OPTION sin 1 1
+sin (%1) : sine
+OPTION tan 1 1
+tan (%1) : tangent
+OPTION acos 1 1
+acos (%1) : inverse cosine
+OPTION asin 1 1
+asin (%1) : inverse sine
+OPTION atan 1 1
+atan (%1) : inverse tangent
+OPTION cosh 1 1
+cosh (%1) : hyperbolic cosine
+OPTION sinh 1 1
+sinh (%1) : hyperbolic sine
+OPTION tanh 1 1
+tanh (%1) : hyperbolic tangent
+OPTION acosh 1 1
+acosh (%1) : inverse hyperbolic cosine
+OPTION asinh 1 1
+asinh (%1) : inverse hyperbolic sine
+OPTION atanh 1 1
+atanh (%1) : inverse hyperbolic tangent
+OPTION datatype 1 0
+specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+ARGUMENT spec 0 0 CHOICE float16 float16le float16be float32 float32le float32be float64 float64le float64be int64 uint64 int64le uint64le int64be uint64be int32 uint32 int32le uint32le int32be uint32be int16 uint16 int16le uint16le int16be uint16be cfloat16 cfloat16le cfloat16be cfloat32 cfloat32le cfloat32be cfloat64 cfloat64le cfloat64be int8 uint8 bit
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

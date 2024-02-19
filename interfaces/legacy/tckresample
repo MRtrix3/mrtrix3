@@ -1,0 +1,51 @@
+Resample each streamline in a track file to a new set of vertices
+It is necessary to specify precisely ONE of the command-line options for controlling how this resampling takes place; this may be either increasing or decreasing the number of samples along each streamline, or may involve changing the positions of the samples according to some specified trajectory.
+Note that because the length of a streamline is calculated based on the sums of distances between adjacent vertices, resampling a streamline to a new set of vertices will typically change the quantified length of that streamline; the magnitude of the difference will typically depend on the discrepancy in the number of vertices, with less vertices leading to a shorter length (due to taking chordal lengths of curved trajectories).
+ARGUMENT in_tracks 0 0 TRACKSIN
+the input track file
+ARGUMENT out_tracks 0 0 TRACKSOUT
+the output resampled tracks
+OPTION upsample 1 0
+increase the density of points along the length of each streamline by some factor (may improve mapping streamlines to ROIs, and/or visualisation)
+ARGUMENT ratio 0 0 INT 1 9223372036854775807
+OPTION downsample 1 0
+increase the density of points along the length of each streamline by some factor (decreases required storage space)
+ARGUMENT ratio 0 0 INT 1 9223372036854775807
+OPTION step_size 1 0
+re-sample the streamlines to a desired step size (in mm)
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION num_points 1 0
+re-sample each streamline to a fixed number of points
+ARGUMENT count 0 0 INT 2 9223372036854775807
+OPTION endpoints 1 0
+only output the two endpoints of each streamline
+OPTION line 1 0
+resample tracks at 'num' equidistant locations along a line between 'start' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
+ARGUMENT num 0 0 INT 2 9223372036854775807
+ARGUMENT start 0 0 FSEQ
+ARGUMENT end 0 0 FSEQ
+OPTION arc 1 0
+resample tracks at 'num' equidistant locations along a circular arc specified by points 'start', 'mid' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
+ARGUMENT num 0 0 INT 2 9223372036854775807
+ARGUMENT start 0 0 FSEQ
+ARGUMENT mid 0 0 FSEQ
+ARGUMENT end 0 0 FSEQ
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

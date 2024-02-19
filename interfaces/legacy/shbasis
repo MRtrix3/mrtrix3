@@ -1,0 +1,30 @@
+Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used
+In previous versions of MRtrix, the convention used for storing spherical harmonic coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of sqrt(2) too large). This error has been rectified in newer versions of MRtrix, but will cause issues if processing SH data that was generated using an older version of MRtrix (or vice-versa).
+This command provides a mechanism for testing the basis used in storage of image data representing a spherical harmonic series per voxel, and allows the user to forcibly modify the raw image data to conform to the desired basis.
+Note that the "force_*" conversion choices should only be used in cases where this command has previously been unable to automatically determine the SH basis from the image data, but the user themselves are confident of the SH basis of the data.
+The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/concepts/spherical_harmonics.html
+ARGUMENT SH 0 1 IMAGEIN
+the input image(s) of SH coefficients.
+OPTION convert 1 0
+convert the image data in-place to the desired basis; options are: old,new,force_oldtonew,force_newtoold.
+ARGUMENT mode 0 0 CHOICE old new force_oldtonew force_newtoold
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

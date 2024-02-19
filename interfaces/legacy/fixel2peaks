@@ -1,0 +1,32 @@
+Convert data in the fixel directory format into a 4D image of 3-vectors
+If a fixel data file is provided as input, then the 3-vectors in the output image will be scaled based on the data in that file. If the input is instead the fixel directory, or the index or directions file, then all output 3-vectors will possess unit norm.
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+ARGUMENT in 0 0 VARIOUS
+the input fixel information
+ARGUMENT out 0 0 IMAGEOUT
+the output peaks image
+OPTION number 1 0
+maximum number of fixels in each voxel (default: based on input data)
+ARGUMENT value 0 0 INT 1 9223372036854775807
+OPTION nan 1 0
+fill excess peak data with NaNs rather than zeroes
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

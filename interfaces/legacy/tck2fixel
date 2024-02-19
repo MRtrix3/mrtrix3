@@ -1,0 +1,33 @@
+Compute a fixel TDI map from a tractogram
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+ARGUMENT tracks 0 0 TRACKSIN
+the input tracks.
+ARGUMENT fixel_folder_in 0 0 DIRIN
+the input fixel folder. Used to define the fixels and their directions
+ARGUMENT fixel_folder_out 0 0 TEXT
+the fixel folder to which the output will be written. This can be the same as the input folder if desired
+ARGUMENT fixel_data_out 0 0 TEXT
+the name of the fixel data image.
+OPTION angle 1 0
+the max angle threshold for assigning streamline tangents to fixels (Default: 45 degrees)
+ARGUMENT value 0 0 FLOAT 0 90
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

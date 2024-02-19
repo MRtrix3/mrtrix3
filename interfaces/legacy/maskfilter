@@ -1,0 +1,54 @@
+Perform filtering operations on 3D / 4D mask images
+Many filters have their own unique set of optional parameters; see the option groups dedicated to each filter type.
+ARGUMENT input 0 0 IMAGEIN
+the input mask.
+ARGUMENT filter 0 0 CHOICE clean connect dilate erode fill median
+the name of the filter to be applied; options are: clean, connect, dilate, erode, fill, median
+ARGUMENT output 0 0 IMAGEOUT
+the output mask.
+OPTION scale 1 0
+the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. (Default: 2)
+ARGUMENT value 0 0 INT 1 1000000
+OPTION axes 1 0
+specify which axes should be included in the connected components. By default only the first 3 axes are included. The axes should be provided as a comma-separated list of values.
+ARGUMENT axes 0 0 ISEQ
+OPTION largest 1 0
+only retain the largest connected component
+OPTION connectivity 1 0
+use 26-voxel-neighbourhood connectivity (Default: 6)
+OPTION minsize 1 0
+impose minimum size of segmented components (Default: select all components)
+ARGUMENT value 0 0 INT 1 1000000
+OPTION npass 1 0
+the number of times to repeatedly apply the filter
+ARGUMENT value 0 0 INT 1 1000000
+OPTION axes 1 0
+specify which axes should be included in the connected components. By default only the first 3 axes are included. The axes should be provided as a comma-separated list of values.
+ARGUMENT axes 0 0 ISEQ
+OPTION connectivity 1 0
+use 26-voxel-neighbourhood connectivity (Default: 6)
+OPTION extent 1 0
+specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default is 3x3x3.
+ARGUMENT voxels 0 0 ISEQ
+OPTION strides 1 0
+specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
+ARGUMENT spec 0 0 VARIOUS
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

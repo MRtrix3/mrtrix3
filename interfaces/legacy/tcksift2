@@ -1,0 +1,90 @@
+Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities
+ARGUMENT in_tracks 0 0 TRACKSIN
+the input track file
+ARGUMENT in_fod 0 0 IMAGEIN
+input image containing the spherical harmonics of the fibre orientation distributions
+ARGUMENT out_weights 0 0 FILEOUT
+output text file containing the weighting factor for each streamline
+OPTION proc_mask 1 0
+provide an image containing the processing mask weights for the model; image spatial dimensions must match the fixel image
+ARGUMENT image 0 0 IMAGEIN
+OPTION act 1 0
+use an ACT five-tissue-type segmented anatomical image to derive the processing mask
+ARGUMENT image 0 0 IMAGEIN
+OPTION fd_scale_gm 1 0
+provide this option (in conjunction with -act) to heuristically downsize the fibre density estimates based on the presence of GM in the voxel. This can assist in reducing tissue interface effects when using a single-tissue deconvolution algorithm
+OPTION no_dilate_lut 1 0
+do NOT dilate FOD lobe lookup tables; only map streamlines to FOD lobes if the precise tangent lies within the angular spread of that lobe
+OPTION make_null_lobes 1 0
+add an additional FOD lobe to each voxel, with zero integral, that covers all directions with zero / negative FOD amplitudes
+OPTION remove_untracked 1 0
+remove FOD lobes that do not have any streamline density attributed to them; this improves filtering slightly, at the expense of longer computation time (and you can no longer do quantitative comparisons between reconstructions if this is enabled)
+OPTION fd_thresh 1 0
+fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount (streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)
+ARGUMENT value 0 0 FLOAT 0 6.28319
+OPTION csv 1 0
+output statistics of execution per iteration to a .csv file
+ARGUMENT file 0 0 FILEOUT
+OPTION out_mu 1 0
+output the final value of SIFT proportionality coefficient mu to a text file
+ARGUMENT file 0 0 FILEOUT
+OPTION output_debug 1 0
+write to a directory various output images for assessing & debugging performance etc.
+ARGUMENT dirpath 0 0 DIROUT
+OPTION out_coeffs 1 0
+output text file containing the weighting coefficient for each streamline
+ARGUMENT path 0 0 FILEOUT
+OPTION reg_tikhonov 1 0
+provide coefficient for regularising streamline weighting coefficients (Tikhonov regularisation) (default: 0)
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION reg_tv 1 0
+provide coefficient for regularising variance of streamline weighting coefficient to fixels along its length (Total Variation regularisation) (default: 0.1)
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION min_td_frac 1 0
+minimum fraction of the FOD integral reconstructed by streamlines; if the reconstructed streamline density is below this fraction, the fixel is excluded from optimisation (default: 0.1)
+ARGUMENT fraction 0 0 FLOAT 0 1
+OPTION min_iters 1 0
+minimum number of iterations to run before testing for convergence; this can prevent premature termination at early iterations if the cost function increases slightly (default: 10)
+ARGUMENT count 0 0 INT 0 9223372036854775807
+OPTION max_iters 1 0
+maximum number of iterations to run before terminating program
+ARGUMENT count 0 0 INT 0 9223372036854775807
+OPTION min_factor 1 0
+minimum weighting factor for an individual streamline; if the factor falls below this number the streamline will be rejected entirely (factor set to zero) (default: 0)
+ARGUMENT factor 0 0 FLOAT 0 1
+OPTION min_coeff 1 0
+minimum weighting coefficient for an individual streamline; similar to the '-min_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). Note that the -min_factor and -min_coeff options are mutually exclusive - you can only provide one. (default: -inf)
+ARGUMENT coeff 0 0 FLOAT -inf 0
+OPTION max_factor 1 0
+maximum weighting factor that can be assigned to any one streamline (default: inf)
+ARGUMENT factor 0 0 FLOAT 1 inf
+OPTION max_coeff 1 0
+maximum weighting coefficient for an individual streamline; similar to the '-max_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). Note that the -max_factor and -max_coeff options are mutually exclusive - you can only provide one. (default: inf)
+ARGUMENT coeff 0 0 FLOAT 1 inf
+OPTION max_coeff_step 1 0
+maximum change to a streamline's weighting coefficient in a single iteration (default: 1)
+ARGUMENT step 0 0 FLOAT -inf inf
+OPTION min_cf_decrease 1 0
+minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue (default: 2.5e-05)
+ARGUMENT frac 0 0 FLOAT 0 1
+OPTION linear 1 0
+perform a linear estimation of streamline weights, rather than the standard non-linear optimisation (typically does not provide as accurate a model fit; but only requires a single pass)
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

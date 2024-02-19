@@ -1,0 +1,67 @@
+Diffusion (kurtosis) tensor estimation
+By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted to the log-signal in two steps: firstly, using weighted least-squares (WLS) with weights based on the empirical signal intensities; secondly, by further iterated weighted least-squares (IWLS) with weights determined by the signal predictions from the previous iteration (by default, 2 iterations will be performed). This behaviour can be altered in two ways:
+* The -ols option will cause the first fitting step to be performed using ordinary least-squares (OLS); that is, all measurements contribute equally to the fit, instead of the default behaviour of weighting based on the empirical signal intensities.
+* The -iter option controls the number of iterations of the IWLS prodedure. If this is set to zero, then the output model parameters will be those resulting from the first fitting step only: either WLS by default, or OLS if the -ols option is used in conjunction with -iter 0.
+By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted using unconstrained optimization. This can result in unexpected diffusion parameters, e.g. parameters that represent negative apparent diffusivities or negative apparent kurtoses, or parameters that correspond to non-monotonic decay of the predicted signal. By supplying the -constrain option, constrained optimization is performed instead and such physically implausible parameters can be avoided. Depending on the presence  of the -dkt option, the -constrain option will enforce the following constraints:
+* Non-negative apparent diffusivity (always).
+* Non-negative apparent kurtosis (when the -dkt option is provided).
+* Monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided).
+The tensor coefficients are stored in the output image as follows:
+volumes 0-5: D11, D22, D33, D12, D13, D23
+If diffusion kurtosis is estimated using the -dkt option, these are stored as follows:
+volumes 0-2: W1111, W2222, W3333
+volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333
+volumes 9-11: W1122, W1133, W2233
+volumes 12-14: W1123, W1223, W1233
+ARGUMENT dwi 0 0 IMAGEIN
+the input dwi image.
+ARGUMENT dt 0 0 IMAGEOUT
+the output dt image.
+OPTION ols 1 0
+perform initial fit using an ordinary least-squares (OLS) fit (see Description).
+OPTION iter 1 0
+number of iterative reweightings for IWLS algorithm (default: 2) (see Description).
+ARGUMENT integer 0 0 INT 0 10
+OPTION constrain 1 0
+constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).
+OPTION directions 1 0
+specify the directions along which to apply the constraints (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
+ARGUMENT file 0 0 FILEIN
+OPTION mask 1 0
+only perform computation within the specified binary brain mask image.
+ARGUMENT image 0 0 IMAGEIN
+OPTION b0 1 0
+the output b0 image.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION dkt 1 0
+the output dkt image.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION predicted_signal 1 0
+the predicted dwi image.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION grad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT file 0 0 FILEIN
+OPTION fslgrad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

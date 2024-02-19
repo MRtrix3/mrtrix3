@@ -1,0 +1,41 @@
+Directly edit the intensities within an image from the command-line
+A range of options are provided to enable direct editing of voxel intensities based on voxel / real-space coordinates. If only one image path is provided, the image will be edited in-place (use at own risk); if input and output image paths are provided, the output will contain the edited image, and the original image will not be modified in any way.
+ARGUMENT input 0 0 IMAGEIN
+the input image
+ARGUMENT output 1 0 IMAGEOUT
+the (optional) output image
+OPTION plane 1 1
+fill one or more planes on a particular image axis
+ARGUMENT axis 0 0 INT 0 2
+ARGUMENT coord 0 0 ISEQ
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION sphere 1 1
+draw a sphere with radius in mm
+ARGUMENT position 0 0 FSEQ
+ARGUMENT radius 0 0 FLOAT -inf inf
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION voxel 1 1
+change the image value within a single voxel
+ARGUMENT position 0 0 FSEQ
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION scanner 1 0
+indicate that coordinates are specified in scanner space, rather than as voxel coordinates
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

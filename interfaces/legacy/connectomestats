@@ -1,0 +1,89 @@
+Connectome group-wise statistics at the edge level using non-parametric permutation testing
+For the TFNBS algorithm, default parameters for statistical enhancement have been set based on the work in: 
+Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. OHBM, 2015, 4144; 
+and: 
+Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A novel threshold-free network-based statistical method: Demonstration and parameter optimisation using in vivo simulated pathology. In Proc ISMRM, 2015, 2846. 
+Note however that not only was the optimisation of these parameters not very precise, but the outcomes of statistical inference (for both this algorithm and the NBS method) can vary markedly for even small changes to enhancement parameters. Therefore the specificity of results obtained using either of these methods should be interpreted with caution.
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
+ARGUMENT input 0 0 FILEIN
+a text file listing the file names of the input connectomes
+ARGUMENT algorithm 0 0 CHOICE nbs tfnbs none
+the algorithm to use in network-based clustering/enhancement. Options are: nbs, tfnbs, none
+ARGUMENT design 0 0 FILEIN
+the design matrix
+ARGUMENT contrast 0 0 FILEIN
+the contrast matrix
+ARGUMENT output 0 0 TEXT
+the filename prefix for all output.
+OPTION notest 1 0
+don't perform statistical inference; only output population statistics (effect size, stdev etc)
+OPTION errors 1 0
+specify nature of errors for shuffling; options are: ee,ise,both (default: ee)
+ARGUMENT spec 0 0 CHOICE ee ise both
+OPTION exchange_within 1 0
+specify blocks of observations within each of which data may undergo restricted exchange
+ARGUMENT file 0 0 FILEIN
+OPTION exchange_whole 1 0
+specify blocks of observations that may be exchanged with one another (for independent and symmetric errors, sign-flipping will occur block-wise)
+ARGUMENT file 0 0 FILEIN
+OPTION strong 1 0
+use strong familywise error control across multiple hypotheses
+OPTION nshuffles 1 0
+the number of shuffles (default: 5000)
+ARGUMENT number 0 0 INT 1 9223372036854775807
+OPTION permutations 1 0
+manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). Overrides the -nshuffles option.
+ARGUMENT file 0 0 FILEIN
+OPTION nonstationarity 1 0
+perform non-stationarity correction
+OPTION skew_nonstationarity 1 0
+specify the skew parameter for empirical statistic calculation (default for this command is 1)
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION nshuffles_nonstationarity 1 0
+the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: 5000)
+ARGUMENT number 0 0 INT 1 9223372036854775807
+OPTION permutations_nonstationarity 1 0
+manually define the permutations (relabelling) for computing the emprical statistics for non-stationarity correction. The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) Overrides the -nshuffles_nonstationarity option.
+ARGUMENT file 0 0 FILEIN
+OPTION tfce_dh 1 0
+the height increment used in the tfce integration (default: 0.1)
+ARGUMENT value 0 0 FLOAT 1e-06 inf
+OPTION tfce_e 1 0
+tfce extent exponent (default: 0.4)
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION tfce_h 1 0
+tfce height exponent (default: 3)
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION variance 1 0
+define variance groups for the G-statistic; measurements for which the expected variance is equivalent should contain the same index
+ARGUMENT file 0 0 FILEIN
+OPTION ftests 1 0
+perform F-tests; input text file should contain, for each F-test, a row containing ones and zeros, where ones indicate the rows of the contrast matrix to be included in the F-test.
+ARGUMENT path 0 0 FILEIN
+OPTION fonly 1 0
+only assess F-tests; do not perform statistical inference on entries in the contrast matrix
+OPTION column 1 1
+add a column to the design matrix corresponding to subject edge-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
+ARGUMENT path 0 0 FILEIN
+OPTION threshold 1 0
+the t-statistic value to use in threshold-based clustering algorithms
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

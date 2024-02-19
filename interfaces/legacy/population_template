@@ -1,0 +1,131 @@
+Generates an unbiased group-average template from a series of images
+First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.
+Multi-contrast registration: $ population_template input_WM_ODFs/ output_WM_template.mif input_GM_ODFs/ output_GM_template.mif; When performing multi-contrast registration, the input directory and corresponding output template image for a given contrast are to be provided as a pair, with the pairs corresponding to different contrasts provided sequentially.
+ARGUMENT input_dir 0 1 VARIOUS
+Input directory containing all images of a given contrast
+ARGUMENT template 0 0 IMAGEOUT
+Output template image
+OPTION -type 1 0
+Specify the types of registration stages to perform. Options are: "rigid" (perform rigid registration only, which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration), "nonlinear", as well as cominations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
+ARGUMENT type 0 0 CHOICE rigid affine nonlinear rigid_affine rigid_nonlinear affine_nonlinear rigid_affine_nonlinear
+OPTION -voxel_size 1 0
+Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma-separated values.
+ARGUMENT voxel_size 0 0 FSEQ
+OPTION -initial_alignment 1 0
+Method of alignment to form the initial template. Options are: "mass" (default), "robust_mass" (requires masks), "geometric", "none".
+ARGUMENT initial_alignment 0 0 CHOICE mass robust_mass geometric none
+OPTION -mask_dir 1 0
+Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly. Note that masks are used for registration, not for aggregation. To exclude areas from aggregation, NaN-mask your input images.
+ARGUMENT mask_dir 0 0 DIRIN
+OPTION -warp_dir 1 0
+Output a directory containing warps from each input to the template. If the folder does not exist it will be created
+ARGUMENT warp_dir 0 0 DIROUT
+OPTION -transformed_dir 1 0
+Output a directory containing the input images transformed to the template. If the folder does not exist it will be created. For multi-contrast registration, this path will contain a sub-directory for the images per contrast.
+ARGUMENT transformed_dir 0 0 DIROUT
+OPTION -linear_transformations_dir 1 0
+Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created
+ARGUMENT linear_transformations_dir 0 0 DIROUT
+OPTION -template_mask 1 0
+Output a template mask. Only works if -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.
+ARGUMENT template_mask 0 0 IMAGEOUT
+OPTION -noreorientation 1 0
+Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
+OPTION -leave_one_out 1 0
+Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects larger than 2 and smaller than 15))
+ARGUMENT leave_one_out 0 0 CHOICE 0 1 auto
+OPTION -aggregate 1 0
+Measure used to aggregate information from transformed images to the template image. Valid choices: mean, median. Default: mean
+ARGUMENT aggregate 0 0 CHOICE mean median
+OPTION -aggregation_weights 1 0
+Comma-separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).
+ARGUMENT aggregation_weights 0 0 FILEIN
+OPTION -nanmask 1 0
+Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.
+OPTION -copy_input 1 0
+Copy input images and masks into local scratch directory.
+OPTION -delete_temporary_files 1 0
+Delete temporary files from scratch directory during template creation.
+OPTION -nl_scale 1 0
+Specify the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0). This implicitly defines the number of template levels
+ARGUMENT nl_scale 0 0 FSEQ
+OPTION -nl_lmax 1 0
+Specify the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the nl_scale factor list
+ARGUMENT nl_lmax 0 0 ISEQ
+OPTION -nl_niter 1 0
+Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list
+ARGUMENT nl_niter 0 0 ISEQ
+OPTION -nl_update_smooth 1 0
+Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)
+ARGUMENT nl_update_smooth 0 0 FLOAT 0.0 inf
+OPTION -nl_disp_smooth 1 0
+Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)
+ARGUMENT nl_disp_smooth 0 0 FLOAT 0.0 inf
+OPTION -nl_grad_step 1 0
+The gradient step size for non-linear registration (Default: 0.5)
+ARGUMENT nl_grad_step 0 0 FLOAT 0.0 inf
+OPTION -linear_no_pause 1 0
+Do not pause the script if a linear registration seems implausible
+OPTION -linear_no_drift_correction 1 0
+Deactivate correction of template appearance (scale and shear) over iterations
+OPTION -linear_estimator 1 0
+Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), none (no robust estimator). Default: none.
+ARGUMENT linear_estimator 0 0 CHOICE l1 l2 lp none
+OPTION -rigid_scale 1 0
+Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly define the number of template levels
+ARGUMENT rigid_scale 0 0 FSEQ
+OPTION -rigid_lmax 1 0
+Specify the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
+ARGUMENT rigid_lmax 0 0 ISEQ
+OPTION -rigid_niter 1 0
+Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 50 for each scale). This must be a single number or a list of same length as the linear_scale factor list
+ARGUMENT rigid_niter 0 0 ISEQ
+OPTION -affine_scale 1 0
+Specify the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and rigid_scale implicitly define the number of template levels
+ARGUMENT affine_scale 0 0 FSEQ
+OPTION -affine_lmax 1 0
+Specify the lmax used for affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
+ARGUMENT affine_lmax 0 0 ISEQ
+OPTION -affine_niter 1 0
+Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 500 for each scale). This must be a single number or a list of same length as the linear_scale factor list
+ARGUMENT affine_niter 0 0 ISEQ
+OPTION -mc_weight_initial_alignment 1 0
+Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0 for each contrast (ie. equal weighting).
+ARGUMENT mc_weight_initial_alignment 0 0 FSEQ
+OPTION -mc_weight_rigid 1 0
+Weight contribution of each contrast to the objective of rigid registration. Comma separated, default: 1.0 for each contrast (ie. equal weighting)
+ARGUMENT mc_weight_rigid 0 0 FSEQ
+OPTION -mc_weight_affine 1 0
+Weight contribution of each contrast to the objective of affine registration. Comma separated, default: 1.0 for each contrast (ie. equal weighting)
+ARGUMENT mc_weight_affine 0 0 FSEQ
+OPTION -mc_weight_nl 1 0
+Weight contribution of each contrast to the objective of nonlinear registration. Comma separated, default: 1.0 for each contrast (ie. equal weighting)
+ARGUMENT mc_weight_nl 0 0 FSEQ
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

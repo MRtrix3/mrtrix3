@@ -1,0 +1,200 @@
+The MRtrix image viewer
+Any images listed as arguments will be loaded and available through the image menu, with the first listed displayed initially. Any subsequent command-line options will be processed as if the corresponding action had been performed through the GUI.
+Note that because images loaded as arguments (i.e. simply listed on the command-line) are opened before the GUI is shown, subsequent actions to be performed via the various command-line options must appear after the last argument. This is to avoid confusion about which option will apply to which image. If you need fine control over this, please use the -load or -select_image options. For example:
+$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0
+or
+$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0
+ARGUMENT image 1 1 IMAGEIN
+An image to be loaded.
+OPTION mode 1 1
+Switch to view mode specified by the integer index, as per the view menu.
+ARGUMENT index 0 0 INT -9223372036854775808 9223372036854775807
+OPTION load 1 1
+Load image specified and make it current.
+ARGUMENT image 0 0 IMAGEIN
+OPTION reset 1 1
+Reset the view according to current image. This resets the FOV, projection and focus.
+OPTION fov 1 1
+Set the field of view, in mm.
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION focus 1 1
+Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values or show or hide the focus cross hair using a boolean value as argument.
+ARGUMENT x,y,z or boolean 0 0 VARIOUS
+OPTION target 1 1
+Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
+ARGUMENT x,y,z 0 0 FSEQ
+OPTION orientation 1 0
+Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).
+ARGUMENT w,x,y,z 0 0 FSEQ
+OPTION voxel 1 1
+Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
+ARGUMENT x,y,z 0 0 FSEQ
+OPTION volume 1 1
+Set the volume index for the image displayed, as a comma-separated list of integers.
+ARGUMENT idx 0 0 ISEQ
+OPTION plane 1 1
+Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.
+ARGUMENT index 0 0 INT 0 2
+OPTION lock 1 1
+Set whether view is locked to image axes (0: no, 1: yes).
+ARGUMENT yesno 0 0 
+OPTION select_image 1 1
+Switch to image number specified, with reference to the list of currently loaded images.
+ARGUMENT index 0 0 INT 0 9223372036854775807
+OPTION autoscale 1 1
+Reset the image scaling to automatically determined range.
+OPTION interpolation 1 1
+Enable or disable image interpolation in main image.
+ARGUMENT boolean 0 0 
+OPTION colourmap 1 1
+Switch the image colourmap to that specified, as per the colourmap menu.
+ARGUMENT index 0 0 INT 0 9223372036854775807
+OPTION noannotations 1 1
+Hide all image annotation overlays
+OPTION comments 1 1
+Show or hide image comments overlay.
+ARGUMENT boolean 0 0 
+OPTION voxelinfo 1 1
+Show or hide voxel information overlay.
+ARGUMENT boolean 0 0 
+OPTION orientlabel 1 1
+Show or hide orientation label overlay.
+ARGUMENT boolean 0 0 
+OPTION colourbar 1 1
+Show or hide colourbar overlay.
+ARGUMENT boolean 0 0 
+OPTION imagevisible 1 1
+Show or hide the main image.
+ARGUMENT boolean 0 0 
+OPTION intensity_range 1 1
+Set the image intensity range to that specified.
+ARGUMENT min,max 0 0 FSEQ
+OPTION size 1 1
+Set the size of the view area, in pixel units.
+ARGUMENT width,height 0 0 ISEQ
+OPTION position 1 1
+Set the position of the main window, in pixel units.
+ARGUMENT x,y 0 0 ISEQ
+OPTION fullscreen 1 0
+Start fullscreen.
+OPTION exit 1 0
+Quit MRView.
+OPTION sync.focus 1 0
+Sync the focus with other MRView windows that also have this turned on.
+OPTION fps 1 0
+Display frames per second, averaged over the last 10 frames. The maximum over the last 3 seconds is also displayed.
+OPTION overlay.load 1 1
+Loads the specified image on the overlay tool.
+ARGUMENT image 0 0 IMAGEIN
+OPTION overlay.opacity 1 1
+Sets the overlay opacity to floating value [0-1].
+ARGUMENT value 0 0 FLOAT 0 1
+OPTION overlay.colourmap 1 1
+Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
+ARGUMENT index 0 0 INT -9223372036854775808 9223372036854775807
+OPTION overlay.colour 1 1
+Specify a manual colour for the overlay, as three comma-separated values
+ARGUMENT R,G,B 0 0 FSEQ
+OPTION overlay.intensity 1 1
+Set the intensity windowing of the overlay
+ARGUMENT Min,Max 0 0 FSEQ
+OPTION overlay.threshold_min 1 1
+Set the lower threshold value of the overlay
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION overlay.threshold_max 1 1
+Set the upper threshold value of the overlay
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION overlay.no_threshold_min 1 1
+Disable the lower threshold for the overlay
+OPTION overlay.no_threshold_max 1 1
+Disable the upper threshold for the overlay
+OPTION overlay.interpolation 1 1
+Enable or disable overlay image interpolation.
+ARGUMENT value 0 0 
+OPTION roi.load 1 1
+Loads the specified image on the ROI editor tool.
+ARGUMENT image 0 0 IMAGEIN
+OPTION roi.opacity 1 1
+Sets the overlay opacity to floating value [0-1].
+ARGUMENT value 0 0 FLOAT 0 1
+OPTION roi.colour 1 1
+Sets the colour of the ROI overlay
+ARGUMENT R,G,B 0 0 FSEQ
+OPTION tractography.load 1 1
+Load the specified tracks file into the tractography tool.
+ARGUMENT tracks 0 0 FILEIN
+OPTION tractography.thickness 1 1
+Line thickness of tractography display, [-1.0, 1.0], default is 0.0.
+ARGUMENT value 0 0 FLOAT -1 1
+OPTION tractography.geometry 1 1
+The geometry type to use when rendering tractograms (options are: pseudotubes, lines, points)
+ARGUMENT value 0 0 CHOICE pseudotubes lines points
+OPTION tractography.opacity 1 1
+Opacity of tractography display, [0.0, 1.0], default is 1.0.
+ARGUMENT value 0 0 FLOAT 0 1
+OPTION tractography.slab 1 1
+Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
+ARGUMENT value 0 0 FLOAT -1 1e+06
+OPTION tractography.lighting 1 1
+Toggle the use of lighting of tractogram geometry
+ARGUMENT value 0 0 
+OPTION tractography.colour 1 1
+Specify a manual colour for the tractogram, as three comma-separated values
+ARGUMENT R,G,B 0 0 FSEQ
+OPTION tractography.tsf_load 1 1
+Load the specified tractography scalar file.
+ARGUMENT tsf 0 0 FILEIN
+OPTION tractography.tsf_range 1 1
+Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
+ARGUMENT RangeMin,RangeMax 0 0 FSEQ
+OPTION tractography.tsf_thresh 1 1
+Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
+ARGUMENT ThresholdMin,ThesholdMax 0 0 FSEQ
+OPTION tractography.tsf_colourmap 1 1
+Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.
+ARGUMENT index 0 0 INT -9223372036854775808 9223372036854775807
+OPTION odf.load_sh 1 1
+Loads the specified SH-based ODF image on the ODF tool.
+ARGUMENT image 0 0 IMAGEIN
+OPTION odf.load_tensor 1 1
+Loads the specified tensor image on the ODF tool.
+ARGUMENT image 0 0 IMAGEIN
+OPTION odf.load_dixel 1 1
+Loads the specified dixel-based image on the ODF tool.
+ARGUMENT image 0 0 IMAGEIN
+OPTION fixel.load 1 1
+Load a fixel file (any file inside a fixel directory, or an old .msf / .msh legacy format file) into the fixel tool.
+ARGUMENT image 0 0 IMAGEIN
+OPTION connectome.init 1 0
+Initialise the connectome tool using a parcellation image.
+ARGUMENT image 0 0 IMAGEIN
+OPTION connectome.load 1 1
+Load a matrix file into the connectome tool.
+ARGUMENT path 0 0 FILEIN
+OPTION capture.folder 1 1
+Set the output folder for the screen capture tool.
+ARGUMENT path 0 0 TEXT
+OPTION capture.prefix 1 1
+Set the output file prefix for the screen capture tool.
+ARGUMENT string 0 0 TEXT
+OPTION capture.grab 1 1
+Start the screen capture process.
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

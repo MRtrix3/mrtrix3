@@ -1,0 +1,32 @@
+Compute images statistics
+ARGUMENT image 0 0 IMAGEIN
+the input image from which statistics will be computed.
+OPTION output 1 1
+output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, std_rv, min, max, count. Useful for use in scripts. Both std options refer to the unbiased (sample) standard deviation. For complex data, min, max and std are calculated separately for real and imaginary parts, std_rv is based on the real valued variance (equals sqrt of sum of variances of imaginary and real parts).
+ARGUMENT field 0 0 CHOICE mean median std std_rv min max count
+OPTION mask 1 0
+only perform computation within the specified binary mask image.
+ARGUMENT image 0 0 IMAGEIN
+OPTION ignorezero 1 0
+ignore zero values during statistics calculation
+OPTION allvolumes 1 0
+generate statistics across all image volumes, rather than one set of statistics per image volume
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

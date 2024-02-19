@@ -1,0 +1,44 @@
+Computes a dissimilarity metric between two images
+Currently only the mean squared difference is fully implemented.
+ARGUMENT image1 0 0 IMAGEIN
+the first input image.
+ARGUMENT image2 0 0 IMAGEIN
+the second input image.
+OPTION space 1 0
+voxel (default): per voxel image1: scanner space of image 1 image2: scanner space of image 2 average: scanner space of the average affine transformation of image 1 and 2 
+ARGUMENT iteration method 0 0 CHOICE voxel image1 image2 average
+OPTION interp 1 0
+set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: linear).
+ARGUMENT method 0 0 CHOICE nearest linear cubic sinc
+OPTION metric 1 0
+define the dissimilarity metric used to calculate the cost. Choices: diff (squared differences), cc (non-normalised negative cross correlation aka negative cross covariance). Default: diff). cc is only implemented for -space average and -interp linear and cubic.
+ARGUMENT method 0 0 CHOICE diff cc
+OPTION mask1 1 0
+mask for image 1
+ARGUMENT image 0 0 IMAGEIN
+OPTION mask2 1 0
+mask for image 2
+ARGUMENT image 0 0 IMAGEIN
+OPTION nonormalisation 1 0
+do not normalise the dissimilarity metric to the number of voxels.
+OPTION overlap 1 0
+output number of voxels that were used.
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

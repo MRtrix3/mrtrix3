@@ -1,0 +1,53 @@
+Report statistics on a direction set
+This command will accept as inputs:
+- directions file in spherical coordinates (ASCII text, [ az el ] space-separated values, one per line);
+- directions file in Cartesian coordinates (ASCII text, [ x y z ] space-separated values, one per line);
+- DW gradient files (MRtrix format: ASCII text, [ x y z b ] space-separated values, one per line);
+- image files, using the DW gradient scheme found in the header (or provided using the appropriate command line options below).
+By default, this produces all relevant metrics for the direction set provided. If the direction set contains multiple shells, metrics are provided for each shell separately.
+Metrics are produced assuming a unipolar or bipolar electrostatic repulsion model, producing the potential energy (total, mean, min & max), and the nearest-neighbour angles (mean, min & max). The condition number is also produced for the spherical harmonic fits up to the highest harmonic order supported by the number of volumes. Finally, the norm of the mean direction vector is provided as a measure of the overall symmetry of the direction set (important with respect to eddy-current resilience).
+Specific metrics can also be queried independently via the "-output" option, using these shorthands: 
+U/B for unipolar/bipolar model, 
+E/N for energy and nearest-neighbour respectively, 
+t/-/+ for total/min/max respectively (mean implied otherwise); 
+SHn for condition number of SH fit at order n (with n an even integer); 
+ASYM for asymmetry index (norm of mean direction vector); 
+N for the number of directions.
+Default usage: $ dirstat directions.txt  This provides a pretty-printed list of all metrics available.
+Write a single metric of interest to standard output: $ dirstat grad.b -shell 3000 -output SH8  requests the condition number of SH fit of b=3000 shell directions at SH order 8
+Write multiple metrics of interest to standard output: $ dirstat dwi.mif -output BN,BN-,BN+  requests the mean, min and max nearest-neighour angles assuming a bipolar model.
+ARGUMENT dirs 0 0 FILEIN
+the text file or image containing the directions.
+OPTION output 1 0
+output selected metrics as a space-delimited list, suitable for use in scripts. This will produce one line of values per selected shell. Valid metrics are as specified in the description above.
+ARGUMENT list 0 0 
+OPTION shells 1 0
+specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided. 
+WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
+ARGUMENT b-values 0 0 FSEQ
+OPTION grad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT file 0 0 FILEIN
+OPTION fslgrad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

@@ -1,0 +1,45 @@
+Use FSL commands to generate the 5TT image based on a T1-weighted image
+ARGUMENT input 0 0 IMAGEIN
+The input T1-weighted image
+ARGUMENT output 0 0 IMAGEOUT
+The output 5TT image
+OPTION -t2 1 0
+Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
+ARGUMENT image 0 0 IMAGEIN
+OPTION -mask 1 0
+Manually provide a brain mask, rather than deriving one in the script
+ARGUMENT image 0 0 IMAGEIN
+OPTION -premasked 1 0
+Indicate that brain masking has already been applied to the input image
+OPTION -nocrop 1 0
+Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
+OPTION -sgm_amyg_hipp 1 0
+Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

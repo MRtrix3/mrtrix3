@@ -1,0 +1,94 @@
+Display image header information, or extract specific information from the header
+By default, all information contained in each image header will be printed to the console in a reader-friendly format.
+Alternatively, command-line options may be used to extract specific details from the header(s); these are printed to the console in a format more appropriate for scripting purposes or piping to file. If multiple options and/or images are provided, the requested header fields will be printed in the order in which they appear in the help page, with all requested details from each input image in sequence printed before the next image is processed.
+The command can also write the diffusion gradient table from a single input image to file; either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion gradient vector reorientation)
+The -dwgrad, -export_* and -shell_* options provide (information about) the diffusion weighting gradient table after it has been processed by the MRtrix3 back-end (vectors normalised, b-values scaled by the square of the vector norm, depending on the -bvalue_scaling option). To see the raw gradient table information as stored in the image header, i.e. without MRtrix3 back-end processing, use "-property dw_scheme".
+The -bvalue_scaling option controls an aspect of the import of diffusion gradient tables. When the input diffusion-weighting direction vectors have norms that differ substantially from unity, the b-values will be scaled by the square of their corresponding vector norm (this is how multi-shell acquisitions are frequently achieved on scanner platforms). However in some rare instances, the b-values may be correct, despite the vectors not being of unit norm (or conversely, the b-values may need to be rescaled even though the vectors are close to unit norm). This option allows the user to control this operation and override MRrtix3's automatic detection.
+ARGUMENT image 0 1 IMAGEIN
+the input image(s).
+OPTION all 1 0
+print all properties, rather than the first and last 2 of each.
+OPTION name 1 0
+print the file system path of the image
+OPTION format 1 0
+image file format
+OPTION ndim 1 0
+number of image dimensions
+OPTION size 1 0
+image size along each axis
+OPTION spacing 1 0
+voxel spacing along each image dimension
+OPTION datatype 1 0
+data type used for image data storage
+OPTION strides 1 0
+data strides i.e. order and direction of axes data layout
+OPTION offset 1 0
+image intensity offset
+OPTION multiplier 1 0
+image intensity multiplier
+OPTION transform 1 0
+the transformation from image coordinates [mm] to scanner / real world coordinates [mm]
+OPTION property 1 1
+any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
+ARGUMENT key 0 0 TEXT
+OPTION json_keyval 1 0
+export header key/value entries to a JSON file
+ARGUMENT file 0 0 FILEOUT
+OPTION json_all 1 0
+export all header contents to a JSON file
+ARGUMENT file 0 0 FILEOUT
+OPTION grad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT file 0 0 FILEIN
+OPTION fslgrad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION bvalue_scaling 1 0
+enable or disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption). Valid choices are yes/no, true/false, 0/1 (default: automatic).
+ARGUMENT mode 0 0 
+OPTION export_grad_mrtrix 1 0
+export the diffusion-weighted gradient table to file in MRtrix format
+ARGUMENT path 0 0 FILEOUT
+OPTION export_grad_fsl 1 0
+export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
+ARGUMENT bvecs_path 0 0 FILEOUT
+ARGUMENT bvals_path 0 0 FILEOUT
+OPTION dwgrad 1 0
+the diffusion-weighting gradient table, as interpreted by MRtrix3
+OPTION shell_bvalues 1 0
+list the average b-value of each shell
+OPTION shell_sizes 1 0
+list the number of volumes in each shell
+OPTION shell_indices 1 0
+list the image volumes attributed to each b-value shell
+OPTION export_pe_table 1 0
+export phase-encoding table to file
+ARGUMENT file 0 0 FILEOUT
+OPTION export_pe_eddy 1 0
+export phase-encoding information to an EDDY-style config / index file pair
+ARGUMENT config 0 0 FILEOUT
+ARGUMENT indices 0 0 FILEOUT
+OPTION petable 1 0
+print the phase encoding table
+OPTION nodelete 1 0
+don't delete temporary images or images passed to mrinfo via Unix pipes
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

@@ -1,0 +1,96 @@
+Multi-Shell Multi-Tissue Global Tractography
+This command will reconstruct the global white matter fibre tractogram that best explains the input DWI data, using a multi-tissue spherical convolution model.
+A more thorough description of the operation of global tractography in MRtrix3 can be found in the online documentation: 
+https://mrtrix.readthedocs.io/en/3.0.4/quantitative_structural_connectivity/global_tractography.html
+Basic usage: $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck  dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization and thus affected by spatial regularization.
+ARGUMENT source 0 0 IMAGEIN
+the image containing the raw DWI data.
+ARGUMENT response 0 0 FILEIN
+the response of a track segment on the DWI signal.
+ARGUMENT tracks 0 0 TRACKSOUT
+the output file containing the tracks generated.
+OPTION grad 1 0
+specify the diffusion encoding scheme (required if not supplied in the header).
+ARGUMENT scheme 0 0 FILEIN
+OPTION mask 1 0
+only reconstruct the tractogram within the specified brain mask image.
+ARGUMENT image 0 0 IMAGEIN
+OPTION riso 1 1
+set one or more isotropic response functions. (multiple allowed)
+ARGUMENT response 0 0 FILEIN
+OPTION lmax 1 0
+set the maximum harmonic order for the output series. (default = 8)
+ARGUMENT order 0 0 INT 2 30
+OPTION length 1 0
+set the length of the particles (fibre segments). (default = 1mm)
+ARGUMENT size 0 0 FLOAT 1e-06 inf
+OPTION weight 1 0
+set the weight by which particles contribute to the model. (default = 0.1)
+ARGUMENT w 0 0 FLOAT 1e-06 1
+OPTION ppot 1 0
+set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = 0.05)
+ARGUMENT u 0 0 FLOAT 0 1
+OPTION cpot 1 0
+set the connection potential, i.e., the energy term that drives two segments together. (default = 0.5)
+ARGUMENT v 0 0 FLOAT 0 inf
+OPTION t0 1 0
+set the initial temperature of the metropolis hastings optimizer. (default = 0.1)
+ARGUMENT start 0 0 FLOAT 1e-06 1e+06
+OPTION t1 1 0
+set the final temperature of the metropolis hastings optimizer. (default = 0.001)
+ARGUMENT end 0 0 FLOAT 1e-06 1e+06
+OPTION niter 1 0
+set the number of iterations of the metropolis hastings optimizer. (default = 10M)
+ARGUMENT n 0 0 INT 0 9223372036854775807
+OPTION fod 1 0
+Predicted fibre orientation distribution function (fODF).
+This fODF is estimated as part of the global track optimization, and therefore incorporates the spatial regularization that it imposes. Internally, the fODF is represented as a discrete sum of apodized point spread functions (aPSF) oriented along the directions of all particles in the voxel, used to predict the DWI signal from the particle configuration.
+ARGUMENT odf 0 0 IMAGEOUT
+OPTION noapo 1 0
+disable spherical convolution of fODF with apodized PSF, to output a sum of delta functions rather than a sum of aPSFs.
+OPTION fiso 1 0
+Predicted isotropic fractions of the tissues for which response functions were provided with -riso. Typically, these are CSF and GM.
+ARGUMENT iso 0 0 IMAGEOUT
+OPTION eext 1 0
+Residual external energy in every voxel.
+ARGUMENT eext 0 0 IMAGEOUT
+OPTION etrend 1 0
+internal and external energy trend and cooling statistics.
+ARGUMENT stats 0 0 FILEOUT
+OPTION balance 1 0
+balance internal and external energy. (default = 0)
+Negative values give more weight to the internal energy, positive to the external energy.
+ARGUMENT b 0 0 FLOAT -100 100
+OPTION density 1 0
+set the desired density of the free Poisson process. (default = 1)
+ARGUMENT lambda 0 0 FLOAT 0 inf
+OPTION prob 1 0
+set the probabilities of generating birth, death, randshift, optshift and connect proposals respectively. (default = 0.25,0.05,0.25,0.1,0.35)
+ARGUMENT prob 0 0 FSEQ
+OPTION beta 1 0
+set the width of the Hanning interpolation window. (in [0, 1], default = 0)
+If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box.
+ARGUMENT b 0 0 FLOAT 0 1
+OPTION lambda 1 0
+set the weight of the internal energy directly. (default = 1)
+If provided, any value of -balance will be ignored.
+ARGUMENT lam 0 0 FLOAT 0 inf
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

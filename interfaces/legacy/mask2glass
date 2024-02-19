@@ -1,0 +1,44 @@
+Create a glass brain from mask input
+The output of this command is a glass brain image, which can be viewed using the volume render option in mrview, and used for visualisation purposes to view results in 3D.
+While the name of this script indicates that a binary mask image is required as input, it can also operate on a floating-point image. One way in which this can be exploited is to compute the mean of all subject masks within template space, in which case this script will produce a smoother result than if a binary template mask were to be used as input.
+ARGUMENT input 0 0 IMAGEIN
+The input mask image
+ARGUMENT output 0 0 IMAGEOUT
+The output glass brain image
+OPTION -dilate 1 0
+Provide number of passes for dilation step; default = 2
+ARGUMENT dilate 0 0 INT 0 9223372036854775807
+OPTION -scale 1 0
+Provide resolution upscaling value; default = 2.0
+ARGUMENT scale 0 0 FLOAT 0.0 inf
+OPTION -smooth 1 0
+Provide standard deviation of smoothing (in mm); default = 1.0
+ARGUMENT smooth 0 0 FLOAT 0.0 inf
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

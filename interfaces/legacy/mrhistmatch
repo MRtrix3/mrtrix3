@@ -1,0 +1,37 @@
+Modify the intensities of one image to match the histogram of another
+ARGUMENT type 0 0 CHOICE scale linear nonlinear
+type of histogram matching to perform; options are: scale,linear,nonlinear
+ARGUMENT input 0 0 IMAGEIN
+the input image to be modified
+ARGUMENT target 0 0 IMAGEIN
+the input image from which to derive the target histogram
+ARGUMENT output 0 0 IMAGEOUT
+the output image
+OPTION mask_input 1 0
+only generate input histogram based on a specified binary mask image
+ARGUMENT image 0 0 IMAGEIN
+OPTION mask_target 1 0
+only generate target histogram based on a specified binary mask image
+ARGUMENT image 0 0 IMAGEIN
+OPTION bins 1 0
+the number of bins to use to generate the histograms
+ARGUMENT num 0 0 INT 2 9223372036854775807
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

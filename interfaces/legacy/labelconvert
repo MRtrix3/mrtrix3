@@ -1,0 +1,35 @@
+Convert a connectome node image from one lookup table to another
+Typical usage is to convert a parcellation image provided by some other software, based on the lookup table provided by that software, to conform to a new lookup table, particularly one where the node indices increment from 1, in preparation for connectome construction; examples of such target lookup table files are provided in share//mrtrix3//labelconvert//, but can be created by the user to provide the desired node set // ordering // colours.
+A more thorough description of the operation and purpose of the labelconvert command can be found in the online documentation: 
+https://mrtrix.readthedocs.io/en/3.0.4/quantitative_structural_connectivity/labelconvert_tutorial.html
+Convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1: $ labelconvert aparc+aseg.mgz FreeSurferColorLUT.txt mrtrix3//share//mrtrix3//labelconvert//fs_default.txt nodes.mif  Paths to the files in the example above would need to be revised according to their locations on the user's system.
+ARGUMENT path_in 0 0 IMAGEIN
+the input image
+ARGUMENT lut_in 0 0 FILEIN
+the connectome lookup table corresponding to the input image
+ARGUMENT lut_out 0 0 FILEIN
+the target connectome lookup table for the output image
+ARGUMENT image_out 0 0 IMAGEOUT
+the output image
+OPTION spine 1 0
+provide a manually-defined segmentation of the base of the spine where the streamlines terminate, so that this can become a node in the connection matrix.
+ARGUMENT image 0 0 IMAGEIN
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

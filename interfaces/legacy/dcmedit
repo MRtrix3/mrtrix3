@@ -1,0 +1,37 @@
+Edit DICOM file in-place
+Note that this command simply replaces the existing values without modifying the DICOM structure in any way. Replacement text will be truncated if it is too long to fit inside the existing tag.
+WARNING: this command will modify existing data! It is recommended to run this command on a copy of the original data set to avoid loss of data.
+ARGUMENT file 0 0 FILEIN
+the DICOM file to be edited.
+OPTION anonymise 1 0
+remove any identifiable information, by replacing the following tags:
+- any tag with Value Representation PN will be replaced with 'anonymous'
+- tag (0010,0030) PatientBirthDate will be replaced with an empty string
+WARNING: there is no guarantee that this command will remove all identiable information, since such information may be contained in any number of private vendor-specific tags. You will need to double-check the results independently if you need to ensure anonymity.
+OPTION id 1 0
+replace all ID tags with string supplied. This consists of tags (0010, 0020) PatientID and (0010, 1000) OtherPatientIDs
+ARGUMENT text 0 0 TEXT
+OPTION tag 1 1
+replace specific tag.
+ARGUMENT group 0 0 
+ARGUMENT element 0 0 
+ARGUMENT newvalue 0 0 
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

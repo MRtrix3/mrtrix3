@@ -1,0 +1,100 @@
+Apply spatial transformations to an image
+If a linear transform is applied without a template image the command will modify the image header transform matrix
+FOD reorientation (with apodised point spread functions) can be performed if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). For such data, the -reorient_fod yes/no option must be used to specify if reorientation is required.
+The output image intensity can be modulated using the (local or global) volume change if a linear or nonlinear transformation is applied. 'FOD' modulation preserves the apparent fibre density across the fibre bundle width and can only be applied if FOD reorientation is used. Alternatively, non-directional scaling by the Jacobian determinant can be applied to any image type. 
+If a DW scheme is contained in the header (or specified separately), and the number of directions matches the number of volumes in the images, any transformation applied using the -linear option will also be applied to the directions.
+When the -template option is used to specify the target image grid, the image provided via this option will not influence the axis data strides of the output image; these are determined based on the input image, or the input to the -strides option.
+ARGUMENT input 0 0 IMAGEIN
+input image to be transformed.
+ARGUMENT output 0 0 IMAGEOUT
+the output image.
+OPTION linear 1 0
+specify a linear transform to apply, in the form of a 3x4 or 4x4 ascii file. Note the standard 'reverse' convention is used, where the transform maps points in the template image to the moving image. Note that the reverse convention is still assumed even if no -template image is supplied
+ARGUMENT transform 0 0 FILEIN
+OPTION flip 1 0
+flip the specified axes, provided as a comma-separated list of indices (0:x, 1:y, 2:z).
+ARGUMENT axes 0 0 ISEQ
+OPTION inverse 1 0
+apply the inverse transformation
+OPTION half 1 0
+apply the matrix square root of the transformation. This can be combined with the inverse option.
+OPTION replace 1 0
+replace the linear transform of the original image by that specified, rather than applying it to the original image. The specified transform can be either a template image, or a 3x4 or 4x4 ascii file.
+ARGUMENT file 0 0 FILEIN
+OPTION identity 1 0
+set the header transform of the image to the identity matrix
+OPTION template 1 0
+reslice the input image to match the specified template image grid.
+ARGUMENT image 0 0 IMAGEIN
+OPTION midway_space 1 0
+reslice the input image to the midway space. Requires either the -template or -warp option. If used with -template and -linear option the input image will be resliced onto the grid halfway between the input and template. If used with the -warp option the input will be warped to the midway space defined by the grid of the input warp (i.e. half way between image1 and image2)
+OPTION interp 1 0
+set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).
+ARGUMENT method 0 0 CHOICE nearest linear cubic sinc
+OPTION oversample 1 0
+set the amount of over-sampling (in the target space) to perform when regridding. This is particularly relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled for nearest-neighbour interpolation).
+ARGUMENT factor 0 0 ISEQ
+OPTION warp 1 0
+apply a non-linear 4D deformation field to warp the input image. Each voxel in the deformation field must define the scanner space position that will be used to interpolate the input image during warping (i.e. pull-back/reverse warp convention). If the -template image is also supplied the deformation field will be resliced first to the template image grid. If no -template option is supplied then the output image will have the same image grid as the deformation field. This option can be used in combination with the -affine option, in which case the affine will be applied first)
+ARGUMENT image 0 0 IMAGEIN
+OPTION warp_full 1 0
+warp the input image using a 5D warp file output from mrregister. Any linear transforms in the warp image header will also be applied. The -warp_full option must be used in combination with either the -template option or the -midway_space option. If a -template image is supplied then the full warp will be used. By default the image1->image2 transform will be applied, however the -from 2 option can be used to apply the image2->image1 transform. Use the -midway_space option to warp the input image to the midway space. The -from option can also be used to define which warp to use when transforming to midway space
+ARGUMENT image 0 0 IMAGEIN
+OPTION from 1 0
+used to define which space the input image is when using the -warp_mid option. Use -from 1 to warp from image1 or -from 2 to warp from image2
+ARGUMENT image 0 0 INT 1 2
+OPTION modulate 1 0
+Valid choices are: fod and jac. 
+fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation. 
+jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation to preserve the total intensity before and after the transformation.
+ARGUMENT method 0 0 CHOICE fod jac
+OPTION directions 1 0
+directions defining the number and orientation of the apodised point spread functions used in FOD reorientation (Default: 300 directions)
+ARGUMENT file 0 0 FILEIN
+a list of directions [az el] generated using the dirgen command.
+OPTION reorient_fod 1 0
+specify whether to perform FOD reorientation. This is required if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes).
+ARGUMENT boolean 0 0 
+OPTION grad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT file 0 0 FILEIN
+OPTION fslgrad 1 0
+Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION export_grad_mrtrix 1 0
+export the diffusion-weighted gradient table to file in MRtrix format
+ARGUMENT path 0 0 FILEOUT
+OPTION export_grad_fsl 1 0
+export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
+ARGUMENT bvecs_path 0 0 FILEOUT
+ARGUMENT bvals_path 0 0 FILEOUT
+OPTION datatype 1 0
+specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+ARGUMENT spec 0 0 CHOICE float16 float16le float16be float32 float32le float32be float64 float64le float64be int64 uint64 int64le uint64le int64be uint64be int32 uint32 int32le uint32le int32be uint32be int16 uint16 int16le uint16le int16be uint16be cfloat16 cfloat16le cfloat16be cfloat32 cfloat32le cfloat32be cfloat64 cfloat64le cfloat64be int8 uint8 bit
+OPTION strides 1 0
+specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
+ARGUMENT spec 0 0 VARIOUS
+OPTION nan 1 0
+Use NaN as the out of bounds value (Default: 0.0)
+OPTION no_reorientation 1 0
+deprecated, use -reorient_fod instead
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

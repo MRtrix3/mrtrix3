@@ -1,0 +1,44 @@
+Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference
+The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.
+All input DWI files must contain an embedded diffusion gradient table; for this reason, these images must all be in either .mif or .mif.gz format.
+ARGUMENT input_dir 0 0 DIRIN
+The input directory containing all DWI images
+ARGUMENT mask_dir 0 0 DIRIN
+Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
+ARGUMENT output_dir 0 0 DIROUT
+The output directory containing all of the intensity normalised DWI images
+ARGUMENT fa_template 0 0 IMAGEOUT
+The output population-specific FA template, which is thresholded to estimate a white matter mask
+ARGUMENT wm_mask 0 0 IMAGEOUT
+The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation
+OPTION -fa_threshold 1 0
+The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
+ARGUMENT value 0 0 FLOAT 0.0 1.0
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

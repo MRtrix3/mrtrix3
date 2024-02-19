@@ -1,0 +1,69 @@
+Generate a connectome matrix from a streamlines file and a node parcellation image
+Default usage: $ tck2connectome tracks.tck nodes.mif connectome.csv -tck_weights_in weights.csv -out_assignments assignments.txt  By default, the metric of connectivity quantified in the connectome matrix is the number of streamlines; or, if tcksift2 is used, the sum of streamline weights via the -tck_weights_in option. Use of the -out_assignments option is recommended as this enables subsequent use of the connectome2tck command.
+Generate a matrix consisting of the mean streamline length between each node pair: $ tck2connectome tracks.tck nodes.mif distances.csv -scale_length -stat_edge mean  By multiplying the contribution of each streamline to the connectome by the length of that streamline, and then, for each edge, computing the mean value across the contributing streamlines, one obtains a matrix where the value in each entry is the mean length across those streamlines belonging to that edge.
+Generate a connectome matrix where the value of connectivity is the "mean FA": $ tcksample tracks.tck FA.mif mean_FA_per_streamline.csv -stat_tck mean; tck2connectome tracks.tck nodes.mif mean_FA_connectome.csv -scale_file mean_FA_per_streamline.csv -stat_edge mean  Here, a connectome matrix that is "weighted by FA" is generated in multiple steps: firstly, for each streamline, the value of the underlying FA image is sampled at each vertex, and the mean of these values is calculated to produce a single scalar value of "mean FA" per streamline; then, as each streamline is assigned to nodes within the connectome, the magnitude of the contribution of that streamline to the matrix is multiplied by the mean FA value calculated prior for that streamline; finally, for each connectome edge, across the values of "mean FA" that were contributed by all of the streamlines assigned to that particular edge, the mean value is calculated.
+Generate the connectivity fingerprint for streamlines seeded from a particular region: $ tck2connectome fixed_seed_tracks.tck nodes.mif fingerprint.csv -vector  This usage assumes that the streamlines being provided to the command have all been seeded from the (effectively) same location, and as such, only the endpoint of each streamline (not their starting point) is assigned based on the provided parcellation image. Accordingly, the output file contains only a vector of connectivity values rather than a matrix, since each streamline is assigned to only one node rather than two.
+ARGUMENT tracks_in 0 0 TRACKSIN
+the input track file
+ARGUMENT nodes_in 0 0 IMAGEIN
+the input node parcellation image
+ARGUMENT connectome_out 0 0 FILEOUT
+the output .csv file containing edge weights
+OPTION assignment_end_voxels 1 0
+use a simple voxel lookup value at each streamline endpoint
+OPTION assignment_radial_search 1 0
+perform a radial search from each streamline endpoint to locate the nearest node. Argument is the maximum radius in mm; if no node is found within this radius, the streamline endpoint is not assigned to any node. Default search distance is 4mm.
+ARGUMENT radius 0 0 FLOAT 0 inf
+OPTION assignment_reverse_search 1 0
+traverse from each streamline endpoint inwards along the streamline, in search of the last node traversed by the streamline. Argument is the maximum traversal length in mm (set to 0 to allow search to continue to the streamline midpoint).
+ARGUMENT max_dist 0 0 FLOAT 0 inf
+OPTION assignment_forward_search 1 0
+project the streamline forwards from the endpoint in search of a parcellation node voxel. Argument is the maximum traversal length in mm.
+ARGUMENT max_dist 0 0 FLOAT 0 inf
+OPTION assignment_all_voxels 1 0
+assign the streamline to all nodes it intersects along its length (note that this means a streamline may be assigned to more than two nodes, or indeed none at all)
+OPTION scale_length 1 0
+scale each contribution to the connectome edge by the length of the streamline
+OPTION scale_invlength 1 0
+scale each contribution to the connectome edge by the inverse of the streamline length
+OPTION scale_invnodevol 1 0
+scale each contribution to the connectome edge by the inverse of the two node volumes
+OPTION scale_file 1 0
+scale each contribution to the connectome edge according to the values in a vector file
+ARGUMENT path 0 0 IMAGEIN
+OPTION symmetric 1 0
+Make matrices symmetric on output
+OPTION zero_diagonal 1 0
+Set matrix diagonal to zero on output
+OPTION stat_edge 1 0
+statistic for combining the values from all streamlines in an edge into a single scale value for that edge (options are: sum,mean,min,max; default=sum)
+ARGUMENT statistic 0 0 CHOICE sum mean min max
+OPTION tck_weights_in 1 0
+specify a text scalar file containing the streamline weights
+ARGUMENT path 0 0 FILEIN
+OPTION keep_unassigned 1 0
+By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. Set this option to keep these values (will be the first row/column in the output matrix)
+OPTION out_assignments 1 0
+output the node assignments of each streamline to a file; this can be used subsequently e.g. by the command connectome2tck
+ARGUMENT path 0 0 FILEOUT
+OPTION vector 1 0
+output a vector representing connectivities from a given seed point to target nodes, rather than a matrix of node-node connectivities
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

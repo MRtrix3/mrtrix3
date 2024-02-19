@@ -1,0 +1,34 @@
+Perform calculations on linear transformation matrices
+Invert a transformation: $ transformcalc matrix_in.txt invert matrix_out.txt  
+Calculate the matrix square root of the input transformation (halfway transformation): $ transformcalc matrix_in.txt half matrix_out.txt  
+Calculate the rigid component of an affine input transformation: $ transformcalc affine_in.txt rigid rigid_out.txt  
+Calculate the transformation matrix from an original image and an image with modified header: $ transformcalc mov mapmovhdr header output  
+Calculate the average affine matrix of a set of input matrices: $ transformcalc input1.txt ... inputN.txt average matrix_out.txt  
+Create interpolated transformation matrix between two inputs: $ transformcalc input1.txt input2.txt interpolate matrix_out.txt  Based on matrix decomposition with linear interpolation of translation, rotation and stretch described in: Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. Matrix, 92, 258-264. doi:10.1.1.56.1336
+Decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S): $ transformcalc matrix_in.txt decompose matrixes_out.txt  The output is a key-value text file containing: scaling: vector of 3 scaling factors in x, y, z direction; shear: list of shear factors for xy, xz, yz axes; angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; angle_axis: angle in radians and rotation axis; translation : translation vector along x, y, z axes in mm; R: composed roation matrix (R = rot_x * rot_y * rot_z); S: composed scaling and shear matrix
+Calculate transformation that aligns two images based on sets of corresponding landmarks: $ transformcalc input moving.txt fixed.txt align_vertices_rigid rigid.txt  Similary, 'align_vertices_rigid_scale' produces an affine matrix (rigid and global scale). Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row of moving.txt and fixed.txt. Requires 3 or more vertices in each file. Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873
+ARGUMENT inputs 0 1 
+the input(s) for the specified operation
+ARGUMENT operation 0 0 CHOICE invert half rigid header average interpolate decompose align_vertices_rigid align_vertices_rigid_scale
+the operation to perform, one of: invert, half, rigid, header, average, interpolate, decompose, align_vertices_rigid, align_vertices_rigid_scale (see description section for details).
+ARGUMENT output 0 0 FILEOUT
+the output transformation matrix.
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

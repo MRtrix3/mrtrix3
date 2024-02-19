@@ -1,0 +1,34 @@
+Apply filter operations to meshes
+While this command has only one filter operation currently available, it nevertheless presents with a comparable interface to the MRtrix3 commands maskfilter and mrfilter commands.
+Apply a mesh smoothing filter (currently the only filter available: $ meshfilter input.vtk smooth output.vtk  The usage of this command may cause confusion due to the generic interface despite only one filtering operation being currently available. This simple example usage is therefore provided for clarity.
+ARGUMENT input 0 0 FILEIN
+the input mesh file
+ARGUMENT filter 0 0 CHOICE smooth
+the filter to apply.Options are: smooth
+ARGUMENT output 0 0 FILEOUT
+the output mesh file
+OPTION smooth_spatial 1 0
+spatial extent of smoothing (default: 10mm)
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION smooth_influence 1 0
+influence factor for smoothing (default: 10)
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

@@ -1,0 +1,101 @@
+Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible
+This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.
+More information on use of the dwifslpreproc command can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/dwifslpreproc.html
+Note that the MRtrix3 command dwi2mask will automatically be called to derive a processing mask for the FSL command "eddy", which determines which voxels contribute to the estimation of geometric distortion parameters and possibly also the classification of outlier slices. If FSL command "topup" is used to estimate a susceptibility field, then dwi2mask will be executed on the resuts of running FSL command "applytopup" to the input DWIs; otherwise it will be executed directly on the input DWIs. Alternatively, the -eddy_mask option can be specified in order to manually provide such a processing mask. More information on mask derivation from DWI data can be found at: https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
+The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; (eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide
+The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.
+Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to topup is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).
+A basic DWI acquisition, where all image volumes are acquired in a single protocol with fixed phase encoding: $ dwifslpreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55; Due to use of a single fixed phase encoding, no EPI distortion correction can be applied in this case.
+DWIs all acquired with a single fixed phase encoding; but additionally a pair of b=0 images with reversed phase encoding to estimate the inhomogeneity field: $ mrcat b0_ap.mif b0_pa.mif b0_pair.mif -axis 3; dwifslpreproc DWI_in.mif DWI_out.mif -rpe_pair -se_epi b0_pair.mif -pe_dir ap -readout_time 0.72 -align_seepi; Here the two individual b=0 volumes are concatenated into a single 4D image series, and this is provided to the script via the -se_epi option. Note that with the -rpe_pair option used here, which indicates that the SE-EPI image series contains one or more pairs of b=0 images with reversed phase encoding, the FIRST HALF of the volumes in the SE-EPI series must possess the same phase encoding as the input DWI series, while the second half are assumed to contain the opposite phase encoding direction but identical total readout time. Use of the -align_seepi option is advocated as long as its use is valid (more information in the Description section).
+All DWI directions & b-values are acquired twice, with the phase encoding direction of the second acquisition protocol being reversed with respect to the first: $ mrcat DWI_lr.mif DWI_rl.mif DWI_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_all -pe_dir lr -readout_time 0.66; Here the two acquisition protocols are concatenated into a single DWI series containing all acquired volumes. The direction indicated via the -pe_dir option should be the direction of phase encoding used in acquisition of the FIRST HALF of volumes in the input DWI series; ie. the first of the two files that was provided to the mrcat command. In this usage scenario, the output DWI series will contain the same number of image volumes as ONE of the acquired DWI series (ie. half of the number in the concatenated series); this is because the script will identify pairs of volumes that possess the same diffusion sensitisation but reversed phase encoding, and perform explicit recombination of those volume pairs in such a way that image contrast in regions of inhomogeneity is determined from the stretched rather than the compressed image.
+Any acquisition scheme that does not fall into one of the example usages above: $ mrcat DWI_*.mif DWI_all.mif -axis 3; mrcat b0_*.mif b0_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_header -se_epi b0_all.mif -align_seepi; With this usage, the relevant phase encoding information is determined entirely based on the contents of the relevant image headers, and dwifslpreproc prepares all metadata for the executed FSL commands accordingly. This can therefore be used if the particular DWI acquisition strategy used does not correspond to one of the simple examples as described in the prior examples. This usage is predicated on the headers of the input files containing appropriately-named key-value fields such that MRtrix3 tools identify them as such. In some cases, conversion from DICOM using MRtrix3 commands will automatically extract and embed this information; however this is not true for all scanner vendors and/or software versions. In the latter case it may be possible to manually provide these metadata; either using the -json_import command-line option of dwifslpreproc, or the -json_import or one of the -import_pe_* command-line options of MRtrix3's mrconvert command (and saving in .mif format) prior to running dwifslpreproc.
+ARGUMENT input 0 0 IMAGEIN
+The input DWI series to be corrected
+ARGUMENT output 0 0 IMAGEOUT
+The output corrected image series
+OPTION -json_import 1 0
+Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
+ARGUMENT file 0 0 FILEIN
+OPTION -rpe_none 1 0
+Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only
+OPTION -rpe_pair 1 0
+Specify that a set of images (typically b=0 volumes) will be provided for use in inhomogeneity field estimation only (using the -se_epi option)
+OPTION -rpe_all 1 0
+Specify that ALL DWIs have been acquired with opposing phase-encoding
+OPTION -rpe_header 1 0
+Specify that the phase-encoding information can be found in the image header(s), and that this is the information that the script should use
+OPTION -grad 1 0
+Provide the diffusion gradient table in MRtrix format
+ARGUMENT file 0 0 FILEIN
+OPTION -fslgrad 1 0
+Provide the diffusion gradient table in FSL bvecs/bvals format
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION -export_grad_mrtrix 1 0
+Export the final gradient table in MRtrix format
+ARGUMENT grad 0 0 FILEOUT
+OPTION -export_grad_fsl 1 0
+Export the final gradient table in FSL bvecs/bvals format
+ARGUMENT bvecs 0 0 FILEOUT
+ARGUMENT bvals 0 0 FILEOUT
+OPTION -eddyqc_text 1 0
+Copy the various text-based statistical outputs generated by eddy, and the output of eddy_qc (if installed), into an output directory
+ARGUMENT directory 0 0 DIROUT
+OPTION -eddyqc_all 1 0
+Copy ALL outputs generated by eddy (including images), and the output of eddy_qc (if installed), into an output directory
+ARGUMENT directory 0 0 DIROUT
+OPTION -eddy_mask 1 0
+Provide a processing mask to use for eddy, instead of having dwifslpreproc generate one internally using dwi2mask
+ARGUMENT image 0 0 IMAGEIN
+OPTION -eddy_slspec 1 0
+Provide a file containing slice groupings for eddy's slice-to-volume registration
+ARGUMENT file 0 0 FILEIN
+OPTION -eddy_options 1 0
+Manually provide additional command-line options to the eddy command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to eddy)
+ARGUMENT " EddyOptions" 0 0 TEXT
+OPTION -se_epi 1 0
+Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
+ARGUMENT image 0 0 IMAGEIN
+OPTION -align_seepi 1 0
+Achieve alignment between the SE-EPI images used for inhomogeneity field estimation and the DWIs (more information in Description section)
+OPTION -topup_options 1 0
+Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)
+ARGUMENT " TopupOptions" 0 0 TEXT
+OPTION -topup_files 1 0
+Provide files generated by prior execution of the FSL "topup" command to be utilised by eddy
+ARGUMENT prefix 0 0 TEXT
+OPTION -pe_dir 1 0
+Manually specify the phase encoding direction of the input series; can be a signed axis number (e.g. -0, 1, +2), an axis designator (e.g. RL, PA, IS), or NIfTI axis codes (e.g. i-, j, k)
+ARGUMENT PE 0 0 TEXT
+OPTION -readout_time 1 0
+Manually specify the total readout time of the input series (in seconds)
+ARGUMENT time 0 0 FLOAT 0.0 inf
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

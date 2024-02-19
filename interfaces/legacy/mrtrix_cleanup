@@ -1,0 +1,39 @@
+Clean up residual temporary files & scratch directories from MRtrix3 commands
+This script will search the file system at the specified location (and in sub-directories thereof) for any temporary files or directories that have been left behind by failed or terminated MRtrix3 commands, and attempt to delete them.
+Note that the script's search for temporary items will not extend beyond the user-specified filesystem location. This means that any built-in or user-specified default location for MRtrix3 piped data and scripts will not be automatically searched. Cleanup of such locations should instead be performed explicitly: e.g. "mrtrix_cleanup /tmp/" to remove residual piped images from /tmp/.
+This script should not be run while other MRtrix3 commands are being executed: it may delete temporary items during operation that may lead to unexpected behaviour.
+ARGUMENT path 0 0 DIRIN
+Directory from which to commence filesystem search
+OPTION -test 1 0
+Run script in test mode: will list identified files / directories, but not attempt to delete them
+OPTION -failed 1 0
+Write list of items that the script failed to delete to a text file
+ARGUMENT file 0 0 FILEOUT
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

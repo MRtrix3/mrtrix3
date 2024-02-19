@@ -1,0 +1,36 @@
+Sample values of an associated image along tracks
+By default, the value of the underlying image at each point along the track is written to either an ASCII file (with all values for each track on the same line), or a track scalar file (.tsf). Alternatively, some statistic can be taken from the values along each streamline and written to a vector file.
+ARGUMENT tracks 0 0 TRACKSIN
+the input track file
+ARGUMENT image 0 0 IMAGEIN
+the image to be sampled
+ARGUMENT values 0 0 FILEOUT
+the output sampled values
+OPTION stat_tck 1 0
+compute some statistic from the values along each streamline (options are: mean,median,min,max)
+ARGUMENT statistic 0 0 CHOICE mean median min max
+OPTION nointerp 1 0
+do not use trilinear interpolation when sampling image values
+OPTION precise 1 0
+use the precise mechanism for mapping streamlines to voxels (obviates the need for trilinear interpolation) (only applicable if some per-streamline statistic is requested)
+OPTION use_tdi_fraction 1 0
+each streamline is assigned a fraction of the image intensity in each voxel based on the fraction of the track density contributed by that streamline (this is only appropriate for processing a whole-brain tractogram, and images for which the quantiative parameter is additive)
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

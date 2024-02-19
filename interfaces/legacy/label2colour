@@ -1,0 +1,28 @@
+Convert a parcellated image (where values are node indices) into a colour image
+Many software packages handle this colouring internally within their viewer program; this binary explicitly converts a parcellation image into a colour image that should be viewable in any software.
+ARGUMENT nodes_in 0 0 IMAGEIN
+the input node parcellation image
+ARGUMENT colour_out 0 0 IMAGEOUT
+the output colour image
+OPTION lut 1 0
+Provide the relevant colour lookup table (if not provided, nodes will be coloured randomly)
+ARGUMENT file 0 0 FILEIN
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

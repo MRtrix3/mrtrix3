@@ -1,0 +1,55 @@
+Normalise a DWI series to the estimated b=0 CSF intensity
+This algorithm determines an appropriate global scaling factor to apply to a DWI series such that after the scaling is applied, the b=0 CSF intensity corresponds to some reference value (1000 by default).
+The operation of this script is a subset of that performed by the script "dwibiasnormmask". Many users may find that comprehensive solution preferable; this dwinormalise algorithm is nevertheless provided to demonstrate specifically the global intensituy normalisation portion of that command.
+The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic degree than what would be advised for analysis. This is done for computational efficiency. This behaviour can be modified through the -lmax command-line option.
+ARGUMENT input 0 0 IMAGEIN
+The input DWI series
+ARGUMENT output 0 0 IMAGEOUT
+The normalised DWI series
+OPTION -grad 1 0
+Provide the diffusion gradient table in MRtrix format
+ARGUMENT file 0 0 FILEIN
+OPTION -fslgrad 1 0
+Provide the diffusion gradient table in FSL bvecs/bvals format
+ARGUMENT bvecs 0 0 FILEIN
+ARGUMENT bvals 0 0 FILEIN
+OPTION -lmax 1 0
+The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
+ARGUMENT values 0 0 ISEQ
+OPTION -mask 1 0
+Provide a mask image for relevant calculations (if not provided, the default dwi2mask algorithm will be used)
+ARGUMENT image 0 0 IMAGEIN
+OPTION -reference 1 0
+Set the target CSF b=0 intensity in the output DWI series (default: 1000)
+ARGUMENT value 0 0 FLOAT 0.0 inf
+OPTION -scale 1 0
+Write the scaling factor applied to the DWI series to a text file
+ARGUMENT file 0 0 FILEOUT
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

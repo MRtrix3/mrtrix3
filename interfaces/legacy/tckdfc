@@ -1,0 +1,52 @@
+Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method
+This command generates a Track-Weighted Image (TWI), where the contribution from each streamline to the image is the Pearson correlation between the fMRI time series at the streamline endpoints.
+The output image can be generated in one of two ways (note that one of these two command-line options MUST be provided): 
+- "Static" functional connectivity (-static option): Each streamline contributes to a static 3D output image based on the correlation between the signals at the streamline endpoints using the entirety of the input time series.
+- "Dynamic" functional connectivity (-dynamic option): The output image is a 4D image, with the same number of volumes as the input fMRI time series. For each volume, the contribution from each streamline is calculated based on a finite-width sliding time window, centred at the timepoint corresponding to that volume.
+Note that the -backtrack option in this command is similar, but not precisely equivalent, to back-tracking as can be used with Anatomically-Constrained Tractography (ACT) in the tckgen command. However, here the feature does not change the streamlines trajectories in any way; it simply enables detection of the fact that the input fMRI image may not contain a valid timeseries underneath the streamline endpoint, and where this occurs, searches from the streamline endpoint inwards along the streamline trajectory in search of a valid timeseries to sample from the input image.
+ARGUMENT tracks 0 0 FILEIN
+the input track file.
+ARGUMENT fmri 0 0 IMAGEIN
+the pre-processed fMRI time series
+ARGUMENT output 0 0 IMAGEOUT
+the output TW-dFC image
+OPTION static 1 0
+generate a "static" (3D) output image.
+OPTION dynamic 1 0
+generate a "dynamic" (4D) output image; must additionally provide the shape and width (in volumes) of the sliding window.
+ARGUMENT shape 0 0 CHOICE rectangle triangle cosine hann hamming lanczos
+ARGUMENT width 0 0 INT 3 9223372036854775807
+OPTION template 1 0
+an image file to be used as a template for the output (the output image will have the same transform and field of view).
+ARGUMENT image 0 0 IMAGEIN
+OPTION vox 1 0
+provide either an isotropic voxel size (in mm), or comma-separated list of 3 voxel dimensions.
+ARGUMENT size 0 0 FSEQ
+OPTION stat_vox 1 0
+define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxel
+Options are: sum, min, mean, max (default: mean)
+ARGUMENT type 0 0 CHOICE sum min mean max
+OPTION backtrack 1 0
+if no valid timeseries is found at the streamline endpoint, back-track along the streamline trajectory until a valid timeseries is found
+OPTION upsample 1 0
+upsample the tracks by some ratio using Hermite interpolation before mapping (if omitted, an appropriate ratio will be determined automatically)
+ARGUMENT factor 0 0 INT 1 9223372036854775807
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

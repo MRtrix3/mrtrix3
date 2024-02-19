@@ -1,0 +1,29 @@
+Splice / merge multiple sets of directions in such a way as to maintain near-optimality upon truncation
+ARGUMENT subsets 0 0 INT 1 10000
+the number of subsets (eg. phase encoding directions) per b-value
+ARGUMENT bvalue files 0 1 TEXT
+the b-value and sets of corresponding files, in order
+ARGUMENT out 0 0 FILEOUT
+the output directions file, with each row listing the X Y Z gradient directions, the b-value, and an index representing the phase encode direction
+OPTION unipolar_weight 1 0
+set the weight given to the unipolar electrostatic repulsion model compared to the bipolar model (default: 0.2).
+ARGUMENT value 0 0 FLOAT 0 1
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

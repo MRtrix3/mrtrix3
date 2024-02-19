@@ -1,0 +1,40 @@
+Calculate the mean response function from a set of text files
+All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.
+As long as the number of unique b-values is identical across all input files, the coefficients will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the responsemean command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.
+Usage where all response functions are in the same directory:: $ responsemean input_response1.txt input_response2.txt input_response3.txt output_average_response.txt
+Usage selecting response functions within a directory using a wildcard:: $ responsemean input_response*.txt output_average_response.txt
+Usage where data for each participant reside in a participant-specific directory:: $ responsemean subject-*/response.txt output_average_response.txt
+ARGUMENT inputs 0 1 FILEIN
+The input response function files
+ARGUMENT output 0 0 FILEOUT
+The output mean response function file
+OPTION -legacy 1 0
+Use the legacy behaviour of former command "average_response": average response function coefficients directly, without compensating for global magnitude differences between input files
+OPTION -nocleanup 1 0
+do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+OPTION -scratch 1 0
+manually specify the path in which to generate the scratch directory.
+ARGUMENT /path/to/scratch/ 0 0 DIROUT
+OPTION -continue 1 0
+continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+ARGUMENT ScratchDir 0 0 VARIOUS
+ARGUMENT LastFile 0 0 VARIOUS
+OPTION -info 1 0
+display information messages.
+OPTION -quiet 1 0
+do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION -debug 1 0
+display debugging messages.
+OPTION -force 1 0
+force overwrite of output files.
+OPTION -nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION -config 1 0
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION -help 1 0
+display this information page and exit.
+OPTION -version 1 0
+display version information and exit.

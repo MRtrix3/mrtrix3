@@ -1,0 +1,80 @@
+Perform filtering operations on 3D / 4D MR images
+The available filters are: fft, gradient, median, smooth, normalise, zclean.
+Each filter has its own unique set of optional parameters.
+For 4D images, each 3D volume is processed independently.
+ARGUMENT input 0 0 IMAGEIN
+the input image.
+ARGUMENT filter 0 0 CHOICE fft gradient median smooth normalise zclean
+the type of filter to be applied
+ARGUMENT output 0 0 IMAGEOUT
+the output image.
+OPTION axes 1 0
+the axes along which to apply the Fourier Transform. By default, the transform is applied along the three spatial axes. Provide as a comma-separate list of axis indices.
+ARGUMENT list 0 0 ISEQ
+OPTION inverse 1 0
+apply the inverse FFT
+OPTION magnitude 1 0
+output a magnitude image rather than a complex-valued image
+OPTION rescale 1 0
+rescale values so that inverse FFT recovers original values
+OPTION centre_zero 1 0
+re-arrange the FFT results so that the zero-frequency component appears in the centre of the image, rather than at the edges
+OPTION stdev 1 0
+the standard deviation of the Gaussian kernel used to smooth the input image (in mm). The image is smoothed to reduced large spurious gradients caused by noise. Use this option to override the default stdev of 1 voxel. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis.
+ARGUMENT sigma 0 0 FSEQ
+OPTION magnitude 1 0
+output the gradient magnitude, rather than the default x,y,z components
+OPTION scanner 1 0
+define the gradient with respect to the scanner coordinate frame of reference.
+OPTION extent 1 0
+specify extent of median filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
+ARGUMENT size 0 0 ISEQ
+OPTION extent 1 0
+specify extent of normalisation filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
+ARGUMENT size 0 0 ISEQ
+OPTION stdev 1 0
+apply Gaussian smoothing with the specified standard deviation. The standard deviation is defined in mm (Default 1 voxel). This can be specified either as a single value to be used for all axes, or as a comma-separated list of the stdev for each axis.
+ARGUMENT mm 0 0 FSEQ
+OPTION fwhm 1 0
+apply Gaussian smoothing with the specified full-width half maximum. The FWHM is defined in mm (Default 1 voxel * 2.3548). This can be specified either as a single value to be used for all axes, or as a comma-separated list of the FWHM for each axis.
+ARGUMENT mm 0 0 FSEQ
+OPTION extent 1 0
+specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.
+ARGUMENT voxels 0 0 ISEQ
+OPTION zupper 1 0
+define high intensity outliers: default: 2.5
+ARGUMENT num 0 0 FLOAT 0.1 inf
+OPTION zlower 1 0
+define low intensity outliers: default: 2.5
+ARGUMENT num 0 0 FLOAT 0.1 inf
+OPTION bridge 1 0
+number of voxels to gap to fill holes in mask: default: 4
+ARGUMENT num 0 0 INT 0 9223372036854775807
+OPTION maskin 1 0
+initial mask that defines the maximum spatial extent and the region from which to smaple the intensity range.
+ARGUMENT image 0 0 IMAGEIN
+OPTION maskout 1 0
+Output a refined mask based on a spatially coherent region with normal intensity range.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION strides 1 0
+specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
+ARGUMENT spec 0 0 VARIOUS
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

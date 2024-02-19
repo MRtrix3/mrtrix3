@@ -1,0 +1,35 @@
+Calculate the average (unbiased) coordinate space of all input images
+ARGUMENT input 0 1 IMAGEIN
+the input image(s).
+ARGUMENT output 0 0 IMAGEOUT
+the output image
+OPTION padding 1 0
+ boundary box padding in voxels. Default: 0
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION resolution 1 0
+ subsampling of template compared to smallest voxel size in any input image. Valid options are 'mean': unbiased but loss of resolution for individual images possible, and 'max': smallest voxel size of any input image defines the resolution. Default: mean
+ARGUMENT type 0 0 CHOICE max mean
+OPTION fill 1 0
+ set the intensity in the first volume of the average space to 1
+OPTION datatype 1 0
+specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+ARGUMENT spec 0 0 CHOICE float16 float16le float16be float32 float32le float32be float64 float64le float64be int64 uint64 int64le uint64le int64be uint64be int32 uint32 int32le uint32le int32be uint32be int16 uint16 int16le uint16le int16be uint16be cfloat16 cfloat16le cfloat16be cfloat32 cfloat32le cfloat32be cfloat64 cfloat64le cfloat64be int8 uint8 bit
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

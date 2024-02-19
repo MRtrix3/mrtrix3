@@ -1,0 +1,209 @@
+Register two images together using a symmetric rigid, affine or non-linear transformation model
+By default this application will perform an affine, followed by non-linear registration.
+FOD registration (with apodised point spread reorientation) will be performed by default if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). The -no_reorientation option can be used to force reorientation off if required.
+Non-linear registration computes warps to map from both image1->image2 and image2->image1. Similar to Avants (2008) Med Image Anal. 12(1): 26–41, registration is performed by matching both the image1 and image2 in a 'midway space'. Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or if using -nl_warp_full as a single 5D file that stores all 4 warps image1->mid->image2, and image2->mid->image1. The 5D warp format stores x,y,z deformations in the 4th dimension, and uses the 5th dimension to index the 4 warps. The affine transforms estimated (to midway space) are also stored as comments in the image header. The 5D warp file can be used to reinitialise subsequent registrations, in addition to transforming images to midway space (e.g. for intra-subject alignment in a 2-time-point longitudinal analysis).
+ARGUMENT image1 image2 0 0 IMAGEIN
+input image 1 ('moving') and input image 2 ('template')
+ARGUMENT contrast1 contrast2 1 1 IMAGEIN
+optional list of additional input images used as additional contrasts. Can be used multiple times. contrastX and imageX must share the same coordinate system. 
+OPTION type 1 0
+the registration type. Valid choices are: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)
+ARGUMENT choice 0 0 CHOICE rigid affine nonlinear rigid_affine rigid_nonlinear affine_nonlinear rigid_affine_nonlinear
+OPTION transformed 1 1
+image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION transformed_midway 1 1
+image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used.
+ARGUMENT image1_transformed 0 0 IMAGEOUT
+ARGUMENT image2_transformed 0 0 IMAGEOUT
+OPTION mask1 1 0
+a mask to define the region of image1 to use for optimisation.
+ARGUMENT filename 0 0 IMAGEIN
+OPTION mask2 1 0
+a mask to define the region of image2 to use for optimisation.
+ARGUMENT filename 0 0 IMAGEIN
+OPTION nan 1 0
+use NaN as out of bounds value. (Default: 0.0)
+OPTION rigid 1 0
+the output text file containing the rigid transformation as a 4x4 matrix
+ARGUMENT file 0 0 FILEOUT
+OPTION rigid_1tomidway 1 0
+the output text file containing the rigid transformation that aligns image1 to image2 in their common midway space as a 4x4 matrix
+ARGUMENT file 0 0 FILEOUT
+OPTION rigid_2tomidway 1 0
+the output text file containing the rigid transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
+ARGUMENT file 0 0 FILEOUT
+OPTION rigid_init_translation 1 0
+initialise the translation and centre of rotation 
+Valid choices are: 
+mass (aligns the centers of mass of both images, default), 
+geometric (aligns geometric image centres) and none.
+ARGUMENT type 0 0 CHOICE mass geometric none
+OPTION rigid_init_rotation 1 0
+initialise the rotation Valid choices are: 
+search (search for the best rotation using mean squared residuals), 
+moments (rotation based on directions of intensity variance with respect to centre of mass), 
+none (default).
+ARGUMENT type 0 0 CHOICE search moments none
+OPTION rigid_init_matrix 1 0
+initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides rigid_init_translation and rigid_init_rotation initialisation 
+ARGUMENT file 0 0 FILEIN
+OPTION rigid_scale 1 0
+use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
+ARGUMENT factor 0 0 FSEQ
+OPTION rigid_niter 1 0
+the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
+ARGUMENT num 0 0 ISEQ
+OPTION rigid_metric 1 0
+valid choices are: diff (intensity differences), Default: diff
+ARGUMENT type 0 0 CHOICE diff ncc
+OPTION rigid_metric.diff.estimator 1 0
+Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), none (no robust estimator). Default: l2
+ARGUMENT type 0 0 CHOICE l1 l2 lp none
+OPTION rigid_lmax 1 0
+explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+ARGUMENT num 0 0 ISEQ
+OPTION rigid_log 1 0
+write gradient descent parameter evolution to log file
+ARGUMENT file 0 0 FILEOUT
+OPTION affine 1 0
+the output text file containing the affine transformation as a 4x4 matrix
+ARGUMENT file 0 0 FILEOUT
+OPTION affine_1tomidway 1 0
+the output text file containing the affine transformation that aligns image1 to image2 in their common midway space as a 4x4 matrix
+ARGUMENT file 0 0 FILEOUT
+OPTION affine_2tomidway 1 0
+the output text file containing the affine transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
+ARGUMENT file 0 0 FILEOUT
+OPTION affine_init_translation 1 0
+initialise the translation and centre of rotation 
+Valid choices are: 
+mass (aligns the centers of mass of both images), 
+geometric (aligns geometric image centres) and none. (Default: mass)
+ARGUMENT type 0 0 CHOICE mass geometric none
+OPTION affine_init_rotation 1 0
+initialise the rotation Valid choices are: 
+search (search for the best rotation using mean squared residuals), 
+moments (rotation based on directions of intensity variance with respect to centre of mass), 
+none (Default: none).
+ARGUMENT type 0 0 CHOICE search moments none
+OPTION affine_init_matrix 1 0
+initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides affine_init_translation and affine_init_rotation initialisation 
+ARGUMENT file 0 0 FILEIN
+OPTION affine_scale 1 0
+use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
+ARGUMENT factor 0 0 FSEQ
+OPTION affine_niter 1 0
+the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
+ARGUMENT num 0 0 ISEQ
+OPTION affine_metric 1 0
+valid choices are: diff (intensity differences), Default: diff
+ARGUMENT type 0 0 CHOICE diff ncc
+OPTION affine_metric.diff.estimator 1 0
+Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
+ARGUMENT type 0 0 CHOICE l1 l2 lp none
+OPTION affine_lmax 1 0
+explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+ARGUMENT num 0 0 ISEQ
+OPTION affine_log 1 0
+write gradient descent parameter evolution to log file
+ARGUMENT file 0 0 FILEOUT
+OPTION init_translation.unmasked1 1 0
+disregard mask1 for the translation initialisation (affects 'mass')
+OPTION init_translation.unmasked2 1 0
+disregard mask2 for the translation initialisation (affects 'mass')
+OPTION init_rotation.unmasked1 1 0
+disregard mask1 for the rotation initialisation (affects 'search' and 'moments')
+OPTION init_rotation.unmasked2 1 0
+disregard mask2 for the rotation initialisation (affects 'search' and 'moments')
+OPTION init_rotation.search.angles 1 0
+rotation angles for the local search in degrees between 0 and 180. (Default: 2,5,10,15,20)
+ARGUMENT angles 0 0 FSEQ
+OPTION init_rotation.search.scale 1 0
+relative size of the images used for the rotation search. (Default: 0.15)
+ARGUMENT scale 0 0 FLOAT 0.0001 1
+OPTION init_rotation.search.directions 1 0
+number of rotation axis for local search. (Default: 250)
+ARGUMENT num 0 0 INT 1 10000
+OPTION init_rotation.search.run_global 1 0
+perform a global search. (Default: local)
+OPTION init_rotation.search.global.iterations 1 0
+number of rotations to investigate (Default: 10000)
+ARGUMENT num 0 0 INT 1 10000000000
+OPTION linstage.iterations 1 0
+number of iterations for each registration stage, not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
+ARGUMENT num or comma separated list 0 0 ISEQ
+OPTION linstage.optimiser.first 1 0
+Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+ARGUMENT algorithm 0 0 CHOICE bbgd gd
+OPTION linstage.optimiser.last 1 0
+Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+ARGUMENT algorithm 0 0 CHOICE bbgd gd
+OPTION linstage.optimiser.default 1 0
+Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+ARGUMENT algorithm 0 0 CHOICE bbgd gd
+OPTION linstage.diagnostics.prefix 1 0
+generate diagnostics images after every registration stage
+ARGUMENT file prefix 0 0 TEXT
+OPTION nl_warp 1 0
+the non-linear warp output defined as two deformation fields, where warp1 can be used to transform image1->image2 and warp2 to transform image2->image1. The deformation fields also encapsulate any linear transformation estimated prior to non-linear registration.
+ARGUMENT warp1 0 0 IMAGEOUT
+ARGUMENT warp2 0 0 IMAGEOUT
+OPTION nl_warp_full 1 0
+output all warps used during registration. This saves four different warps that map each image to a midway space and their inverses in a single 5D image file. The 4th image dimension indexes the x,y,z component of the deformation vector and the 5th dimension indexes the field in this order: image1->midway, midway->image1, image2->midway, midway->image2. Where image1->midway defines the field that maps image1 onto the midway space using the reverse convention When linear registration is performed first, the estimated linear transform will be included in the comments of the image header, and therefore the entire linear and non-linear transform can be applied (in either direction) using this output warp file with mrtransform
+ARGUMENT image 0 0 IMAGEOUT
+OPTION nl_init 1 0
+initialise the non-linear registration with the supplied warp image. The supplied warp must be in the same format as output using the -nl_warp_full option (i.e. have 4 deformation fields with the linear transforms in the image header)
+ARGUMENT image 0 0 IMAGEIN
+OPTION nl_scale 1 0
+use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
+ARGUMENT factor 0 0 FSEQ
+OPTION nl_niter 1 0
+the maximum number of iterations. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 50)
+ARGUMENT num 0 0 ISEQ
+OPTION nl_update_smooth 1 0
+regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0)
+ARGUMENT stdev 0 0 FLOAT -inf inf
+OPTION nl_disp_smooth 1 0
+regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0)
+ARGUMENT stdev 0 0 FLOAT -inf inf
+OPTION nl_grad_step 1 0
+the gradient step size for non-linear registration (Default: 0.5)
+ARGUMENT num 0 0 FLOAT 0.0001 1
+OPTION nl_lmax 1 0
+explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+ARGUMENT num 0 0 ISEQ
+OPTION diagnostics_image 1 0
+write intermediate images for diagnostics purposes
+ARGUMENT path 0 0 
+OPTION directions 1 0
+the directions used for FOD reorientation using apodised point spread functions (Default: 60 directions)
+ARGUMENT file 0 0 FILEIN
+a list of directions [az el] generated using the gendir command.
+OPTION noreorientation 1 0
+turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
+OPTION mc_weights 1 0
+relative weight of images used for multi-contrast registration. Default: 1.0 (equal weighting)
+ARGUMENT weights 0 0 FSEQ
+OPTION datatype 1 0
+specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+ARGUMENT spec 0 0 CHOICE float16 float16le float16be float32 float32le float32be float64 float64le float64be int64 uint64 int64le uint64le int64be uint64be int32 uint32 int32le uint32le int32be uint32be int16 uint16 int16le uint16le int16be uint16be cfloat16 cfloat16le cfloat16be cfloat32 cfloat32le cfloat32be cfloat64 cfloat64le cfloat64be int8 uint8 bit
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

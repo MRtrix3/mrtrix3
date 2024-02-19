@@ -1,0 +1,32 @@
+Map fixel values to a track scalar file based on an input tractogram
+This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+ARGUMENT fixel_in 0 0 IMAGEIN
+the input fixel data file (within the fixel directory)
+ARGUMENT tracks 0 0 TRACKSIN
+the input track file 
+ARGUMENT tsf 0 0 FILEOUT
+the output track scalar file
+OPTION angle 1 0
+the max anglular threshold for computing correspondence between a fixel direction and track tangent (default = 45 degrees)
+ARGUMENT value 0 0 FLOAT 0.001 90
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

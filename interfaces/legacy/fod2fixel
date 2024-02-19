@@ -1,0 +1,56 @@
+Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+ARGUMENT fod 0 0 IMAGEIN
+the input fod image.
+ARGUMENT fixel_directory 0 0 DIROUT
+the output fixel directory
+OPTION afd 1 0
+output the total Apparent Fibre Density per fixel (integral of FOD lobe)
+ARGUMENT image 0 0 IMAGEOUT
+OPTION peak_amp 1 0
+output the amplitude of the FOD at the maximal peak per fixel
+ARGUMENT image 0 0 IMAGEOUT
+OPTION disp 1 0
+output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude
+ARGUMENT image 0 0 IMAGEOUT
+OPTION fmls_integral 1 0
+threshold absolute numerical integral of positive FOD lobes. Any lobe for which the integral is smaller than this threshold will be discarded. Default: 0.
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION fmls_peak_value 1 0
+threshold peak amplitude of positive FOD lobes. Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded. Default: 0.1.
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION fmls_no_thresholds 1 0
+disable all FOD lobe thresholding; every lobe where the FOD is positive will be retained.
+OPTION fmls_lobe_merge_ratio 1 0
+Specify the ratio between a given FOD amplitude sample between two lobes, and the smallest peak amplitude of the adjacent lobes, above which those lobes will be merged. This is the amplitude of the FOD at the 'bridge' point between the two lobes, divided by the peak amplitude of the smaller of the two adjoining lobes. A value of 1.0 will never merge two lobes into one; a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing. Default: 1.
+ARGUMENT value 0 0 FLOAT 0 1
+OPTION mask 1 0
+only perform computation within the specified binary brain mask image.
+ARGUMENT image 0 0 IMAGEIN
+OPTION maxnum 1 0
+maximum number of fixels to output for any particular voxel (default: no limit)
+ARGUMENT number 0 0 INT 1 9223372036854775807
+OPTION nii 1 0
+output the directions and index file in nii format (instead of the default mif)
+OPTION dirpeak 1 0
+define the fixel direction as that of the lobe's maximal peak as opposed to its weighted mean direction (the default)
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

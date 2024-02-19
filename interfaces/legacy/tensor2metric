@@ -1,0 +1,76 @@
+Generate maps of tensor-derived parameters
+ARGUMENT tensor 0 0 IMAGEIN
+the input tensor image.
+OPTION mask 1 0
+only perform computation within the specified binary brain mask image.
+ARGUMENT image 0 0 IMAGEIN
+OPTION adc 1 0
+compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor. (sometimes also referred to as the mean diffusivity (MD))
+ARGUMENT image 0 0 IMAGEOUT
+OPTION fa 1 0
+compute the fractional anisotropy (FA) of the diffusion tensor.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION ad 1 0
+compute the axial diffusivity (AD) of the diffusion tensor. (equivalent to the principal eigenvalue)
+ARGUMENT image 0 0 IMAGEOUT
+OPTION rd 1 0
+compute the radial diffusivity (RD) of the diffusion tensor. (equivalent to the mean of the two non-principal eigenvalues)
+ARGUMENT image 0 0 IMAGEOUT
+OPTION value 1 0
+compute the selected eigenvalue(s) of the diffusion tensor.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION vector 1 0
+compute the selected eigenvector(s) of the diffusion tensor.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION num 1 0
+specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues can be specified as a number sequence. For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors (default = 1).
+ARGUMENT sequence 0 0 ISEQ
+OPTION modulate 1 0
+specify how to modulate the magnitude of the eigenvectors. Valid choices are: none, FA, eigval (default = FA).
+ARGUMENT choice 0 0 CHOICE none fa eigval
+OPTION cl 1 0
+compute the linearity metric of the diffusion tensor. (one of the three Westin shape metrics)
+ARGUMENT image 0 0 IMAGEOUT
+OPTION cp 1 0
+compute the planarity metric of the diffusion tensor. (one of the three Westin shape metrics)
+ARGUMENT image 0 0 IMAGEOUT
+OPTION cs 1 0
+compute the sphericity metric of the diffusion tensor. (one of the three Westin shape metrics)
+ARGUMENT image 0 0 IMAGEOUT
+OPTION dkt 1 0
+input diffusion kurtosis tensor.
+ARGUMENT image 0 0 IMAGEIN
+OPTION mk 1 0
+compute the mean kurtosis (MK) of the kurtosis tensor.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION ak 1 0
+compute the axial kurtosis (AK) of the kurtosis tensor.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION rk 1 0
+compute the radial kurtosis (RK) of the kurtosis tensor.
+ARGUMENT image 0 0 IMAGEOUT
+OPTION mk_dirs 1 0
+specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
+ARGUMENT file 0 0 FILEIN
+OPTION rk_ndirs 1 0
+specify the number of directions used to numerically calculate radial kurtosis (by default, 300 directions are used).
+ARGUMENT integer 0 0 INT 0 1000
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.

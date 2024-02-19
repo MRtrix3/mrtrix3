@@ -1,0 +1,30 @@
+Convert linear transformation matrices
+This command allows to convert transformation matrices provided by other registration softwares to a format usable in MRtrix3. Example usages are provided below.
+Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix3: $ transformconvert transform_flirt.mat flirt_in.nii flirt_ref.nii flirt_import transform_mrtrix.txt  The two images provided as inputs for this operation must be in the correct order: first the image that was provided to flirt via the -in option, second the image that was provided to flirt via the -ref option.
+Convert a plain text transformation matrix file produced by ITK's affine registration (e.g. ANTS, Slicer) into a format usable by MRtrix3: $ transformconvert transform_itk.txt itk_import transform_mrtrix.txt  
+ARGUMENT input 0 1 
+the input(s) for the specified operation
+ARGUMENT operation 0 0 CHOICE flirt_import itk_import
+the operation to perform, one of:
+flirt_import, itk_import
+ARGUMENT output 0 0 FILEOUT
+the output transformation matrix.
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.
