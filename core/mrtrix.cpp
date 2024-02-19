@@ -233,8 +233,8 @@ size_t char_is_dash(const char *arg) {
   return 0;
 }
 
-size_t is_dash(const std::string &arg) {
-  size_t nbytes = char_is_dash(arg.c_str());
+bool is_dash(const std::string &arg) {
+  const size_t nbytes = char_is_dash(arg.c_str());
   return nbytes != 0 && nbytes == arg.size();
 }
 
