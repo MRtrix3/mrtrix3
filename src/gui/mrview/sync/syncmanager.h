@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,7 +41,7 @@ public:
 
 private slots:
   void OnWindowFocusChanged();
-  void OnIPSDataReceived(vector<std::shared_ptr<QByteArray>> all_messages);
+  void OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all_messages);
 
 private:
   InterprocessCommunicator *ips;                                       // used to communicate with other processes

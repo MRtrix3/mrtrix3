@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -326,7 +326,7 @@ public:
  * Options can also be specified as required (see required() function), or
  * as multiple (see allow_multiple() function).
  */
-class Option : public vector<Argument> {
+class Option : public std::vector<Argument> {
 public:
   Option() : id(nullptr), flags(Optional) {}
 
@@ -391,7 +391,7 @@ public:
  * }
  * \endcode
  */
-class OptionGroup : public vector<Option> {
+class OptionGroup : public std::vector<Option> {
 public:
   OptionGroup(const char *group_name = "OPTIONS") : name(group_name) {}
   const char *name;
@@ -410,7 +410,7 @@ public:
   Option &back() {
     if (empty())
       push_back(Option());
-    return vector<Option>::back();
+    return std::vector<Option>::back();
   }
 
   std::string header(int format) const;

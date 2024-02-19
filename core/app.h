@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,7 +65,7 @@ std::string usage_syntax(int format);
 // @{
 
 //! vector of strings to hold more comprehensive command description
-class Description : public vector<const char *> {
+class Description : public std::vector<const char *> {
 public:
   Description &operator+(const char *text) {
     push_back(text);
@@ -93,7 +93,7 @@ public:
 };
 
 //! a class to hold the list of Example's
-class ExampleList : public vector<Example> {
+class ExampleList : public std::vector<Example> {
 public:
   ExampleList &operator+(const Example &example) {
     push_back(example);
@@ -104,7 +104,7 @@ public:
 };
 
 //! a class to hold the list of Argument's
-class ArgumentList : public vector<Argument> {
+class ArgumentList : public std::vector<Argument> {
 public:
   ArgumentList &operator+(const Argument &argument) {
     push_back(argument);
@@ -115,7 +115,7 @@ public:
 };
 
 //! a class to hold the list of option groups
-class OptionList : public vector<OptionGroup> {
+class OptionList : public std::vector<OptionGroup> {
 public:
   OptionList &operator+(const OptionGroup &option_group) {
     push_back(option_group);
@@ -135,7 +135,7 @@ public:
   OptionGroup &back() {
     if (empty())
       push_back(OptionGroup());
-    return vector<OptionGroup>::back();
+    return std::vector<OptionGroup>::back();
   }
 
   std::string syntax(int format) const;
@@ -184,34 +184,34 @@ public:
   uint64_t as_uint() const { return uint64_t(as_int()); }
   default_type as_float() const;
 
-  vector<int32_t> as_sequence_int() const {
+  std::vector<int32_t> as_sequence_int() const {
     assert(arg->type == IntSeq);
     try {
       return parse_ints<int32_t>(p);
     } catch (Exception &e) {
       error(e);
     }
-    return vector<int32_t>();
+    return std::vector<int32_t>();
   }
 
-  vector<uint32_t> as_sequence_uint() const {
+  std::vector<uint32_t> as_sequence_uint() const {
     assert(arg->type == IntSeq);
     try {
       return parse_ints<uint32_t>(p);
     } catch (Exception &e) {
       error(e);
     }
-    return vector<uint32_t>();
+    return std::vector<uint32_t>();
   }
 
-  vector<default_type> as_sequence_float() const {
+  std::vector<default_type> as_sequence_float() const {
     assert(arg->type == FloatSeq);
     try {
       return parse_floats(p);
     } catch (Exception &e) {
       error(e);
     }
-    return vector<default_type>();
+    return std::vector<default_type>();
   }
 
   operator bool() const { return as_bool(); }
@@ -223,9 +223,9 @@ public:
   operator long long unsigned int() const { return as_uint(); }
   operator float() const { return as_float(); }
   operator double() const { return as_float(); }
-  operator vector<int32_t>() const { return as_sequence_int(); }
-  operator vector<uint32_t>() const { return as_sequence_uint(); }
-  operator vector<default_type>() const { return as_sequence_float(); }
+  operator std::vector<int32_t>() const { return as_sequence_int(); }
+  operator std::vector<uint32_t>() const { return as_sequence_uint(); }
+  operator std::vector<default_type>() const { return as_sequence_float(); }
 
   const char *c_str() const { return p; }
 
@@ -298,9 +298,9 @@ public:
 };
 
 //! the list of arguments parsed from the command-line
-extern vector<ParsedArgument> argument;
+extern std::vector<ParsedArgument> argument;
 //! the list of options parsed from the command-line
-extern vector<ParsedOption> option;
+extern std::vector<ParsedOption> option;
 
 //! additional description of the command over and above the synopsis
 /*! This is designed to be used within each command's usage() function. Add
@@ -409,11 +409,11 @@ extern OptionGroup __standard_options;
  *    std::string arg1 = opt[0][0];
  *    int arg2 = opt[0][1];
  *    float arg3 = opt[0][2];
- *    vector<int> arg4 = opt[0][3];
+ *    std::vector<int> arg4 = opt[0][3];
  *    auto values = opt[0][4].as_sequence_float();
  * }
  * \endcode */
-const vector<ParsedOption> get_options(const std::string &name);
+const std::vector<ParsedOption> get_options(const std::string &name);
 
 //! Returns the option value if set, and the default otherwise.
 /*! Only be used for command-line options that do not specify

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -101,7 +101,7 @@ protected:
         raw_signals.push_back(Eigen::VectorXf(size(3)));
     }
 
-    vector<Eigen::VectorXf> raw_signals;
+    std::vector<Eigen::VectorXf> raw_signals;
 
     bool get(const Eigen::Vector3f &pos, Eigen::VectorXf &data) {
       if (!scanner(pos)) {

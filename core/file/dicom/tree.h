@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@ namespace Dicom {
 class Series;
 class Patient;
 
-class Tree : public vector<std::shared_ptr<Patient>> {
+class Tree : public std::vector<std::shared_ptr<Patient>> {
 public:
   std::string description;
   void read(const std::string &filename);
@@ -50,7 +50,7 @@ protected:
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item);
 
-extern vector<std::shared_ptr<Series>> (*select_func)(const Tree &tree);
+extern std::vector<std::shared_ptr<Series>> (*select_func)(const Tree &tree);
 
 } // namespace Dicom
 } // namespace File

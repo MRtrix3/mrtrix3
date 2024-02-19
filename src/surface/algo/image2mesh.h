@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -88,7 +88,7 @@ template <class ImageType> void image2mesh_blocky(const ImageType &input_image, 
           // Break this voxel face into two triangles
 
           // Get the integer positions of the four vertices
-          vector<Vox> voxels(4, p);
+          std::vector<Vox> voxels(4, p);
           voxels[1][plane_axes[adj][0]]++;
           voxels[2][plane_axes[adj][0]]++;
           voxels[2][plane_axes[adj][1]]++;

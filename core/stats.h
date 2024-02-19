@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -68,7 +68,7 @@ public:
     }
   }
 
-  template <class ImageType> void print(ImageType &ima, const vector<std::string> &fields) {
+  template <class ImageType> void print(ImageType &ima, const std::vector<std::string> &fields) {
 
     if (count > 1) {
       std = complex_type(sqrt(m2.real() / value_type(count - 1)), sqrt(m2.imag() / value_type(count - 1)));
@@ -136,7 +136,7 @@ private:
   complex_type mean, delta, delta2, m2, std, std_rv, min, max;
   size_t count;
   const bool is_complex, ignore_zero;
-  vector<float> values;
+  std::vector<float> values;
 };
 
 inline void print_header(bool is_complex) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -345,7 +345,7 @@ protected:
   const Problem<value_type> &P;
   matrix_type BtB, B;
   vector_type y_u, c, c_u, lambda, lambda_prev, l;
-  vector<bool> active;
+  std::vector<bool> active;
 };
 
 } // namespace ICLS

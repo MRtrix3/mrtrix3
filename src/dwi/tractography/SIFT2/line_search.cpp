@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,7 +46,7 @@ LineSearchFunctor::Result LineSearchFunctor::get(const double dFs) const {
 
   Result data_result, tik_result, tv_result;
 
-  for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+  for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
 
     const double contribution = i->length * factor;
     const double scaled_contribution = mu * contribution;
@@ -76,7 +76,7 @@ LineSearchFunctor::Result LineSearchFunctor::get(const double dFs) const {
 double LineSearchFunctor::operator()(const double dFs) const {
   double cf_data = 0.0;
   double cf_reg_tv = 0.0;
-  for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+  for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
     cf_data += i->cost_frac * i->PM *
                Math::pow2((mu * (i->TD + (i->length * std::exp(Fs + dFs)) + (i->dTD_dFs * dFs))) - i->FOD);
     cf_reg_tv += i->SL_eff * SIFT2::tvreg(Fs + dFs, i->meanFs);

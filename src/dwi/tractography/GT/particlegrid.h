@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace GT {
  */
 class ParticleGrid {
 public:
-  using ParticleVectorType = vector<Particle *>;
+  using ParticleVectorType = std::vector<Particle *>;
 
   template <class HeaderType> ParticleGrid(const HeaderType &image) {
     DEBUG("Initialise particle grid.");
@@ -79,7 +79,7 @@ public:
 protected:
   std::mutex mutex;
   ParticlePool pool;
-  vector<ParticleVectorType> grid;
+  std::vector<ParticleVectorType> grid;
   Math::RNG rng;
   transform_type T_s2g;
   size_t dims[3];

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -111,8 +111,8 @@ public:
 
 private:
   const size_t window_size, max_offset_from_kernel_centre;
-  vector<size_t> indices;
-  vector<value_type> weights;
+  std::vector<size_t> indices;
+  std::vector<value_type> weights;
   value_type current_pos;
 };
 

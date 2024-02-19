@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -68,7 +68,7 @@ void NodeOverlay::update_texture2D(const int plane, const int slice) {
   get_axes(plane, x, y);
   const ssize_t xsize = data.size(x), ysize = data.size(y);
 
-  vector<float> texture_data;
+  std::vector<float> texture_data;
   texture_data.resize(4 * xsize * ysize, 0.0f);
   if (tex_positions[plane] >= 0 && tex_positions[plane] < data.size(plane)) {
     data.index(plane) = slice;

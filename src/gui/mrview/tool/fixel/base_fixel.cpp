@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -433,7 +433,7 @@ void BaseFixel::load_image(const std::string &filename) {
 
   set_colour_type_index(colour_index);
 
-  regular_grid_buffer_pos = vector<Eigen::Vector3f>(pos_buffer_store.size());
+  regular_grid_buffer_pos = std::vector<Eigen::Vector3f>(pos_buffer_store.size());
 
   regular_grid_vao.gen();
 

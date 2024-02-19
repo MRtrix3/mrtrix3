@@ -66,6 +66,7 @@ if(MRTRIX_BUILD_GUI)
     set_target_properties(mrtrix-gui PROPERTIES
         AUTOMOC ON
         AUTOUIC ON
+        LINK_DEPENDS_NO_SHARED ON
     )
 
     target_link_libraries(mrtrix-gui PUBLIC

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,7 +50,7 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
 }
 
 void TckFactor::store_orig_TDs() {
-  for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
+  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
     i->store_orig_TD();
 }
 
@@ -66,7 +66,7 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   const double cf = calc_cost_function();
   SIFT::track_t excluded_count = 0, zero_TD_count = 0;
   double zero_TD_cf_sum = 0.0, excluded_cf_sum = 0.0;
-  for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
+  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
     if (!i->get_orig_TD()) {
       ++zero_TD_count;
       zero_TD_cf_sum += i->get_cost(fixed_mu);
@@ -90,7 +90,7 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
 void TckFactor::test_streamline_length_scaling() {
   VAR(calc_cost_function());
 
-  for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
+  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
     i->clear_TD();
 
   coefficients.resize(num_tracks(), 0.0);
@@ -165,7 +165,7 @@ void TckFactor::calc_afcsa() {
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(functor));
   }
 
-  for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
+  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
     i->clear_TD();
     i->clear_mean_coeff();
   }
@@ -233,7 +233,7 @@ void TckFactor::estimate_factors() {
   // Initial estimates of how each weighting coefficient is going to change
   // The ProjectionCalculator classes overwrite these in place, so do an initial allocation but
   //   don't bother wiping it at every iteration
-  // vector<float> projected_steps (num_tracks(), 0.0);
+  // std::vector<float> projected_steps (num_tracks(), 0.0);
 
   // Logging which fixels need to be excluded from optimisation in subsequent iterations,
   //   due to driving streamlines to unwanted high weights
@@ -274,7 +274,7 @@ void TckFactor::estimate_factors() {
     }
 
     // Multi-threaded calculation of updated streamline density, and mean weighting coefficient, in each fixel
-    for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
+    for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
       i->clear_TD();
       i->clear_mean_coeff();
     }
@@ -284,7 +284,7 @@ void TckFactor::estimate_factors() {
       Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
     }
     // Scale the fixel mean coefficient terms (each streamline in the fixel is weighted by its length)
-    for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
+    for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
       i->normalise_mean_coeff();
     indicate_progress();
 
@@ -391,10 +391,10 @@ void TckFactor::output_all_debug_images(const std::string &dirpath, const std::s
   if (!coefficients.size())
     return;
 
-  vector<double> mins(fixels.size(), std::numeric_limits<double>::infinity());
-  vector<double> stdevs(fixels.size(), 0.0);
-  vector<double> maxs(fixels.size(), -std::numeric_limits<double>::infinity());
-  vector<size_t> zeroed(fixels.size(), 0);
+  std::vector<double> mins(fixels.size(), std::numeric_limits<double>::infinity());
+  std::vector<double> stdevs(fixels.size(), 0.0);
+  std::vector<double> maxs(fixels.size(), -std::numeric_limits<double>::infinity());
+  std::vector<size_t> zeroed(fixels.size(), 0);
 
   {
     ProgressBar progress("Generating streamline coefficient statistic images", num_tracks());

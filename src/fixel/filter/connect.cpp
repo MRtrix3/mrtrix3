@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,14 +50,14 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
 
   BitSet processed(input.size(0));
   using IndexAndSize = std::pair<size_t, size_t>;
-  vector<IndexAndSize> cluster_sizes;
+  std::vector<IndexAndSize> cluster_sizes;
   for (index_type seed = 0; seed != input.size(0); ++seed) {
     if (!processed[seed]) {
       input.index(0) = seed;
       if (input.value() >= value_threshold) {
         processed[seed] = true;
         size_t cluster_size = 1;
-        std::stack<index_type, vector<index_type>> to_expand;
+        std::stack<index_type, std::vector<index_type>> to_expand;
         to_expand.push(seed);
         const size_t cluster_index = cluster_sizes.size() + 1;
         while (to_expand.size()) {
@@ -90,7 +90,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
   // For a given value in the output image (as determined by the order in which the
   //   clusters were segmented), what should the new value be, such that the clusters
   //   are indexed sequentially according to size, with 1 being the biggest cluster?
-  vector<size_t> index_remapper(cluster_sizes.size() + 1);
+  std::vector<size_t> index_remapper(cluster_sizes.size() + 1);
   index_remapper[0] = 0;
   for (size_t index = 0; index != cluster_sizes.size(); ++index)
     index_remapper[cluster_sizes[index].first] = index + 1;

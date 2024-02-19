@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -125,7 +125,7 @@ inline bool has_suffix(const std::string &name, const std::initializer_list<cons
       suffix_list.begin(), suffix_list.end(), [&](const std::string &suffix) { return has_suffix(name, suffix); });
 }
 
-inline bool has_suffix(const std::string &name, const vector<std::string> &suffix_list) {
+inline bool has_suffix(const std::string &name, const std::vector<std::string> &suffix_list) {
   return std::any_of(
       suffix_list.begin(), suffix_list.end(), [&](const std::string &suffix) { return has_suffix(name, suffix); });
 }

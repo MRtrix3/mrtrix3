@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,7 +75,7 @@ public:
 
   void compute_wrt_scanner(bool do_wrt_scanner) { wrt_scanner = do_wrt_scanner; }
 
-  void set_stdev(const vector<default_type> &stdevs) { stdev = stdevs; }
+  void set_stdev(const std::vector<default_type> &stdevs) { stdev = stdevs; }
 
   template <class InputImageType, class OutputImageType> void operator()(InputImageType &in, OutputImageType &out) {
     if (magnitude) {
@@ -142,7 +142,7 @@ protected:
   Filter::Smooth smoother;
   bool wrt_scanner;
   const bool magnitude;
-  vector<default_type> stdev;
+  std::vector<default_type> stdev;
 };
 //! @}
 } // namespace Filter

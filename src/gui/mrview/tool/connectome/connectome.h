@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -228,8 +228,8 @@ private:
   // have access to the parcellation image
   std::unique_ptr<MR::Image<node_t>> buffer;
 
-  vector<Node> nodes;
-  vector<Edge> edges;
+  std::vector<Node> nodes;
+  std::vector<Edge> edges;
 
   // For converting connectome matrices to vectors
   std::unique_ptr<MR::Connectome::Mat2Vec> mat2vec;
@@ -327,7 +327,7 @@ private:
   void clear_all();
   void enable_all(const bool);
   void initialise(const std::string &);
-  void add_matrices(const vector<std::string> &);
+  void add_matrices(const std::vector<std::string> &);
 
   void draw_nodes(const Projection &);
   void draw_edges(const Projection &);
@@ -351,7 +351,7 @@ private:
 
   // Helper functions for determining actual node / edge visual properties
   //   given current selection status
-  void node_selection_changed(const vector<node_t> &);
+  void node_selection_changed(const std::vector<node_t> &);
   bool node_visibility_given_selection(const node_t);
   Eigen::Array3f node_colour_given_selection(const node_t);
   float node_size_given_selection(const node_t);

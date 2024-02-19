@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -481,8 +481,8 @@ private:
   T **back;
   size_t capacity;
   size_t writer_count, reader_count;
-  std::stack<T *, vector<T *>> item_stack;
-  vector<std::unique_ptr<T>> items;
+  std::stack<T *, std::vector<T *>> item_stack;
+  std::vector<std::unique_ptr<T>> items;
   std::string name;
 
   void register_writer() {
@@ -604,7 +604,7 @@ template <class Item> struct Type {
 
 template <class Item> struct Type<__Batch<Item>> {
   using item = Item;
-  using queue = Queue<vector<Item>>;
+  using queue = Queue<std::vector<Item>>;
   using reader = typename queue::Reader;
   using writer = typename queue::Writer;
   using read_item = typename reader::Item;
