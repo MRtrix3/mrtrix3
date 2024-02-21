@@ -32,38 +32,41 @@ namespace Resampling {
 
 using namespace App;
 
+// clang-format off
 const OptionGroup ResampleOption =
     OptionGroup("Streamline resampling options")
-
     + Option("upsample",
-             "increase the density of points along the length of each streamline by some factor "
-             "(may improve mapping streamlines to ROIs, and/or visualisation)") +
-    Argument("ratio").type_integer(1)
-
+             "increase the density of points along the length of each streamline by some factor"
+             " (may improve mapping streamlines to ROIs, and/or visualisation)")
+      + Argument("ratio").type_integer(1)
     + Option("downsample",
-             "increase the density of points along the length of each streamline by some factor "
-             "(decreases required storage space)") +
-    Argument("ratio").type_integer(1)
-
-    + Option("step_size", "re-sample the streamlines to a desired step size (in mm)") +
-    Argument("value").type_float(0.0)
-
-    + Option("num_points", "re-sample each streamline to a fixed number of points") + Argument("count").type_integer(2)
-
-    + Option("endpoints", "only output the two endpoints of each streamline")
-
+             "increase the density of points along the length of each streamline by some factor"
+             " (decreases required storage space)")
+      + Argument("ratio").type_integer(1)
+    + Option("step_size",
+             "re-sample the streamlines to a desired step size (in mm)")
+      + Argument("value").type_float(0.0)
+    + Option("num_points",
+             "re-sample each streamline to a fixed number of points")
+      + Argument("count").type_integer(2)
+    + Option("endpoints",
+             "only output the two endpoints of each streamline")
     + Option("line",
-             "resample tracks at 'num' equidistant locations "
-             "along a line between 'start' and 'end' (specified as "
-             "comma-separated 3-vectors in scanner coordinates)") +
-    Argument("num").type_integer(2) + Argument("start").type_sequence_float() + Argument("end").type_sequence_float()
+             "resample tracks at 'num' equidistant locations along a line between 'start' and 'end'"
+             " (specified as comma-separated 3-vectors in scanner coordinates)")
+      + Argument("num").type_integer(2)
+      + Argument("start").type_sequence_float()
+      + Argument("end").type_sequence_float()
 
     + Option("arc",
-             "resample tracks at 'num' equidistant locations "
-             "along a circular arc specified by points 'start', 'mid' and 'end' "
-             "(specified as comma-separated 3-vectors in scanner coordinates)") +
-    Argument("num").type_integer(2) + Argument("start").type_sequence_float() + Argument("mid").type_sequence_float() +
-    Argument("end").type_sequence_float();
+             "resample tracks at 'num' equidistant locations"
+             " along a circular arc specified by points 'start', 'mid' and 'end'"
+             " (specified as comma-separated 3-vectors in scanner coordinates)")
+      + Argument("num").type_integer(2)
+      + Argument("start").type_sequence_float()
+      + Argument("mid").type_sequence_float()
+      + Argument("end").type_sequence_float();
+// clang-format on
 
 namespace {
 

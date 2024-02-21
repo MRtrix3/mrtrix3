@@ -28,25 +28,29 @@ using namespace App;
 
 using Fixel::index_type;
 
+// clang-format on
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Map the scalar value in each voxel to all fixels within that voxel";
 
   DESCRIPTION
-  +"This command is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures." +
-      Fixel::format_description;
+  + "This command is designed to enable CFE-based statistical analysis"
+    " to be performed on voxel-wise measures."
+
+  + Fixel::format_description;
 
   ARGUMENTS
-  +Argument("image_in", "the input image.").type_image_in() +
-      Argument("fixel_directory_in", "the input fixel directory. Used to define the fixels and their directions")
-          .type_directory_in() +
-      Argument("fixel_directory_out",
-               "the fixel directory where the output will be written. This can be the same as the input directory if "
-               "desired")
-          .type_text() +
-      Argument("fixel_data_out", "the name of the fixel data image.").type_text();
+  + Argument ("image_in", "the input image.").type_image_in()
+  + Argument ("fixel_directory_in",  "the input fixel directory;"
+                                     " used to define the fixels and their directions").type_directory_in()
+  + Argument ("fixel_directory_out", "the fixel directory where the output will be written;"
+                                     " this can be the same as the input directory if desired").type_text()
+  + Argument ("fixel_data_out", "the name of the fixel data image.").type_text();
+
 }
+// clang-format on
 
 void run() {
   auto scalar = Image<float>::open(argument[0]);

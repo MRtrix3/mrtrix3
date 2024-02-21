@@ -17,7 +17,7 @@ Usage
 
 -  *tracks_in*: the input track file
 -  *nodes_in*: the input node parcellation image
--  *connectome_out*: the output .csv file containing edge weights
+-  *connectome_out*: the output file containing edge weights
 
 Example usages
 --------------
@@ -44,7 +44,7 @@ Example usages
 
         $ tck2connectome fixed_seed_tracks.tck nodes.mif fingerprint.csv -vector
 
-    This usage assumes that the streamlines being provided to the command have all been seeded from the (effectively) same location, and as such, only the endpoint of each streamline (not their starting point) is assigned based on the provided parcellation image. Accordingly, the output file contains only a vector of connectivity values rather than a matrix, since each streamline is assigned to only one node rather than two.
+    This usage assumes that the streamlines being provided to the command  have all been seeded from the (effectively) same location, and as such, only the endpoint of each streamline (not their starting point) is assigned based on the provided parcellation image. Accordingly, the output file contains only a vector of connectivity values rather than a matrix, since each streamline is assigned to only one node rather than two.
 
 Options
 -------

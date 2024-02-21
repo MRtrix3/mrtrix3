@@ -47,53 +47,60 @@ using Stats::PermTest::count_matrix_type;
 
 #define DEFAULT_EMPIRICAL_SKEW 1.0
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Voxel-based analysis using permutation testing and threshold-free cluster enhancement";
 
   DESCRIPTION
-  +Math::Stats::GLM::column_ones_description;
+      + Math::Stats::GLM::column_ones_description;
 
   REFERENCES
-  +"* If not using the -threshold command-line option:\n"
-   "Smith, S. M. & Nichols, T. E. "
-   "Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in "
-   "cluster inference. "
-   "NeuroImage, 2009, 44, 83-98"
+   + "* If not using the -threshold command-line option:\n"
+     "Smith, S. M. & Nichols, T. E. "
+     "Threshold-free cluster enhancement:"
+     " Addressing problems of smoothing, threshold dependence and localisation in cluster inference. "
+     "NeuroImage, 2009, 44, 83-98"
 
-      + "* If using the -nonstationary option:\n"
-        "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and "
-        "TFCE inference. "
-        "Neuroimage, 2011, 54(3), 2006-19";
+   + "* If using the -nonstationary option:\n"
+   "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. "
+   "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. "
+   "Neuroimage, 2011, 54(3), 2006-19";
+
 
   ARGUMENTS
-  +Argument("input", "a text file containing the file names of the input images, one file per line").type_file_in()
+  + Argument ("input", "a text file containing the file names of the input images,"
+                       " one file per line").type_file_in()
 
-      + Argument("design", "the design matrix").type_file_in()
+  + Argument ("design", "the design matrix").type_file_in()
 
-      + Argument("contrast", "the contrast matrix").type_file_in()
+  + Argument ("contrast", "the contrast matrix").type_file_in()
 
-      + Argument("mask", "a mask used to define voxels included in the analysis.").type_image_in()
+  + Argument ("mask", "a mask used to define voxels included in the analysis.").type_image_in()
 
-      + Argument("output", "the filename prefix for all output.").type_text();
+  + Argument ("output", "the filename prefix for all output.").type_text();
+
 
   OPTIONS
-  +Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
+  + Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
 
-      + Stats::TFCE::Options(DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
+  + Stats::TFCE::Options(DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
 
-      + Math::Stats::GLM::glm_options("voxel")
+  + Math::Stats::GLM::glm_options("voxel")
 
-      + OptionGroup("Additional options for mrclusterstats")
+  + OptionGroup ("Additional options for mrclusterstats")
 
-      + Option("threshold",
-               "the cluster-forming threshold to use for a standard cluster-based analysis. "
-               "This disables TFCE, which is the default otherwise.") +
-      Argument("value").type_float(1.0e-6)
+    + Option ("threshold", "the cluster-forming threshold to use for a standard cluster-based analysis."
+                           " This disables TFCE, which is the default otherwise.")
+      + Argument ("value").type_float (1.0e-6)
 
-      + Option("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
+    + Option ("connectivity", "use 26-voxel-neighbourhood connectivity"
+                              " (Default: 6)");
+
 }
+// clang-format on
 
 using value_type = Stats::TFCE::value_type;
 

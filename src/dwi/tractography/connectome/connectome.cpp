@@ -32,34 +32,33 @@ const char *modes[] = {"assignment_end_voxels",
                        "assignment_all_voxels",
                        NULL};
 
+// clang-format off
 const OptionGroup AssignmentOptions =
     OptionGroup("Structural connectome streamline assignment option")
-
-    + Option("assignment_end_voxels", "use a simple voxel lookup value at each streamline endpoint")
-
+    + Option("assignment_end_voxels",
+             "use a simple voxel lookup value at each streamline endpoint")
     + Option("assignment_radial_search",
-             "perform a radial search from each streamline endpoint to locate the nearest node. "
-             "Argument is the maximum radius in mm; if no node is found within this radius, the streamline endpoint is "
-             "not assigned to any node. "
-             "Default search distance is " +
-                 str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm.") +
-    Argument("radius").type_float(0.0)
-
+             "perform a radial search from each streamline endpoint to locate the nearest node."
+             " Argument is the maximum radius in mm;"
+             " if no node is found within this radius,"
+             " the streamline endpoint is not assigned to any node."
+             " Default search distance is " + str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm.")
+      + Argument("radius").type_float(0.0)
     + Option("assignment_reverse_search",
-             "traverse from each streamline endpoint inwards along the streamline, in search of the last node "
-             "traversed by the streamline. "
-             "Argument is the maximum traversal length in mm (set to 0 to allow search to continue to the streamline "
-             "midpoint).") +
-    Argument("max_dist").type_float(0.0)
-
+             "traverse from each streamline endpoint inwards along the streamline,"
+             " in search of the last node traversed by the streamline."
+             " Argument is the maximum traversal length in mm"
+             " (set to 0 to allow search to continue to the streamline midpoint).")
+      + Argument("max_dist").type_float(0.0)
     + Option("assignment_forward_search",
-             "project the streamline forwards from the endpoint in search of a parcellation node voxel. "
-             "Argument is the maximum traversal length in mm.") +
-    Argument("max_dist").type_float(0.0)
-
+             "project the streamline forwards from the endpoint in search of a parcellation node voxel."
+             " Argument is the maximum traversal length in mm.")
+      + Argument("max_dist").type_float(0.0)
     + Option("assignment_all_voxels",
-             "assign the streamline to all nodes it intersects along its length "
-             "(note that this means a streamline may be assigned to more than two nodes, or indeed none at all)");
+             "assign the streamline to all nodes it intersects along its length"
+             " (note that this means a streamline may be assigned to more than two nodes,"
+             " or indeed none at all)");
+// clang-format on
 
 Tck2nodes_base *load_assignment_mode(Image<node_t> &nodes_data) {
 

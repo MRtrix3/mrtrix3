@@ -22,27 +22,30 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Compute the total power of a spherical harmonics image";
 
   DESCRIPTION
-  +"This command computes the sum of squared SH coefficients, "
-   "which equals the mean-squared amplitude "
-   "of the spherical function it represents."
+    + "This command computes the sum of squared SH coefficients,"
+      " which equals the mean-squared amplitude of the spherical function it represents."
 
-      + Math::SH::encoding_description;
+    + Math::SH::encoding_description;
 
   ARGUMENTS
-  +Argument("SH", "the input spherical harmonics coefficients image.").type_image_in() +
-      Argument("power", "the output power image.").type_image_out();
+    + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
+    + Argument ("power", "the output power image.").type_image_out ();
 
   OPTIONS
-  +Option("spectrum",
-          "output the power spectrum, i.e., the power contained within each harmonic degree (l=0, 2, 4, ...) as a 4-D "
-          "image.");
+    + Option ("spectrum", "output the power spectrum,"
+                          " i.e., the power contained within each harmonic degree (l=0, 2, 4, ...)"
+                          " as a 4-D image.");
+
 }
+// clang-format on
 
 void run() {
   auto SH_data = Image<float>::open(argument[0]);

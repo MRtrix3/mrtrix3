@@ -23,26 +23,31 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Output DICOM fields in human-readable format";
 
   ARGUMENTS
-  +Argument("file", "the DICOM file to be scanned.").type_file_in();
+  + Argument ("file", "the DICOM file to be scanned.").type_file_in();
 
   OPTIONS
-  +Option("all", "print all DICOM fields.")
+  + Option ("all", "print all DICOM fields.")
 
-      + Option("csa", "print all Siemens CSA fields (excluding Phoenix unless requested)") +
-      Option("phoenix", "print Siemens Phoenix protocol information")
+  + Option ("csa", "print all Siemens CSA fields"
+                   " (excluding Phoenix unless requested)")
+  + Option ("phoenix", "print Siemens Phoenix protocol information")
 
-      + Option("tag",
-               "print field specified by the group & element tags supplied. "
-               "Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).")
-            .allow_multiple() +
-      Argument("group").type_text() + Argument("element").type_text();
+  + Option ("tag", "print field specified by the group & element tags supplied."
+                   " Tags should be supplied as Hexadecimal"
+                   " (i.e. as they appear in the -all listing).").allow_multiple()
+    + Argument ("group").type_text()
+    + Argument ("element").type_text();
+
 }
+// clang-format on
 
 class Tag {
 public:

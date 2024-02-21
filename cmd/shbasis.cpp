@@ -33,39 +33,46 @@ using namespace App;
 const char *conversions[] = {"old", "new", "force_oldtonew", "force_newtoold", nullptr};
 enum conv_t { NONE, OLD, NEW, FORCE_OLDTONEW, FORCE_NEWTOOLD };
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used";
+  SYNOPSIS = "Examine the values in spherical harmonic images"
+             " to estimate (and optionally change) the SH basis used";
 
   DESCRIPTION
-  +"In previous versions of MRtrix, the convention used for storing spherical harmonic "
-   "coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of "
-   "sqrt(2) too large). This error has been rectified in newer versions of MRtrix, "
-   "but will cause issues if processing SH data that was generated using an older version "
-   "of MRtrix (or vice-versa)."
+    + "In previous versions of MRtrix,"
+      " the convention used for storing spherical harmonic coefficients was a non-orthonormal basis"
+      " (the m!=0 coefficients were a factor of sqrt(2) too large)."
+      " This error has been rectified in newer versions of MRtrix,"
+      " but will cause issues if processing SH data that was generated using an older version of MRtrix"
+      " (or vice-versa)."
 
-      + "This command provides a mechanism for testing the basis used in storage of image data "
-        "representing a spherical harmonic series per voxel, and allows the user to forcibly "
-        "modify the raw image data to conform to the desired basis."
+    + "This command provides a mechanism for testing the basis used in storage of image data "
+      "representing a spherical harmonic series per voxel,"
+      " and allows the user to forcibly modify the raw image data to conform to the desired basis."
 
-      + "Note that the \"force_*\" conversion choices should only be used in cases where this "
-        "command has previously been unable to automatically determine the SH basis from the "
-        "image data, but the user themselves are confident of the SH basis of the data."
+    + "Note that the \"force_*\" conversion choices should only be used"
+      " in cases where this command has previously been unable to"
+      " automatically determine the SH basis from the image data,"
+      " but the user themselves are confident of the SH basis of the data."
 
-      + Math::SH::encoding_description;
+    + Math::SH::encoding_description;
+
 
   ARGUMENTS
-  +Argument("SH", "the input image(s) of SH coefficients.").allow_multiple().type_image_in();
+    + Argument ("SH", "the input image(s) of SH coefficients.").allow_multiple().type_image_in();
+
 
   OPTIONS
-  +Option("convert",
-          "convert the image data in-place to the desired basis; "
-          "options are: " +
-              join(conversions, ",") + ".") +
-      Argument("mode").type_choice(conversions);
+    + Option ("convert", "convert the image data in-place to the desired basis;"
+                         " options are: " + join(conversions, ",") + ".")
+      + Argument ("mode").type_choice (conversions);
+
 }
+// clang-format on
+
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution

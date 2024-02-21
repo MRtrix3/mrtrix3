@@ -38,6 +38,7 @@ using namespace App;
 using namespace MR::Connectome;
 using MR::Connectome::node_t;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -45,36 +46,41 @@ void usage() {
   SYNOPSIS = "Convert a connectome node image from one lookup table to another";
 
   DESCRIPTION
-  +"Typical usage is to convert a parcellation image provided by some other software, based on "
-   "the lookup table provided by that software, to conform to a new lookup table, particularly "
-   "one where the node indices increment from 1, in preparation for connectome construction; "
-   "examples of such target lookup table files are provided in share//mrtrix3//labelconvert//, "
-   "but can be created by the user to provide the desired node set // ordering // colours."
+  + "Typical usage is to convert a parcellation image provided by some other software,"
+    " based on the lookup table provided by that software,"
+    " to conform to a new lookup table,"
+    " particularly one where the node indices increment from 1,"
+    " in preparation for connectome construction;"
+    " examples of such target lookup table files are provided in share//mrtrix3//labelconvert//,"
+    " but can be created by the user to provide the desired node set // ordering // colours."
 
-      + "A more thorough description of the operation and purpose of the labelconvert command "
-        "can be found in the online documentation: \n"
-        "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION
-        "/quantitative_structural_connectivity/labelconvert_tutorial.html";
+  + "A more thorough description of the operation and purpose of the labelconvert command "
+    "can be found in the online documentation: \n"
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION
+    "/quantitative_structural_connectivity/labelconvert_tutorial.html";
 
   EXAMPLES
-  +Example("Convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1",
-           "labelconvert aparc+aseg.mgz FreeSurferColorLUT.txt mrtrix3//share//mrtrix3//labelconvert//fs_default.txt "
-           "nodes.mif",
-           "Paths to the files in the example above would need to be revised according to their "
-           "locations on the user's system.");
+  + Example ("Convert a Desikan-Killiany parcellation image as provided by FreeSurfer"
+             " to have nodes incrementing from 1",
+             "labelconvert aparc+aseg.mgz FreeSurferColorLUT.txt mrtrix3//share//mrtrix3//labelconvert//fs_default.txt nodes.mif",
+             "Paths to the files in the example above would need to be revised"
+             " according to their locations on the user's system.");
 
   ARGUMENTS
-  +Argument("path_in", "the input image").type_image_in() +
-      Argument("lut_in", "the connectome lookup table corresponding to the input image").type_file_in() +
-      Argument("lut_out", "the target connectome lookup table for the output image").type_file_in() +
-      Argument("image_out", "the output image").type_image_out();
+  + Argument ("path_in",   "the input image").type_image_in()
+  + Argument ("lut_in",    "the connectome lookup table corresponding to the input image").type_file_in()
+  + Argument ("lut_out",   "the target connectome lookup table for the output image").type_file_in()
+  + Argument ("image_out", "the output image").type_image_out();
+
 
   OPTIONS
-  +Option("spine",
-          "provide a manually-defined segmentation of the base of the spine where the streamlines terminate, so that "
-          "this can become a node in the connection matrix.") +
-      Argument("image").type_image_in();
+  + Option ("spine", "provide a manually-defined segmentation of the base of the spine"
+                     " where the streamlines terminate,"
+                     " so that this can become a node in the connection matrix.")
+    + Argument ("image").type_image_in();
+
 }
+// clang-format on
 
 void run() {
 
@@ -89,7 +95,8 @@ void run() {
   // Build the mapping from input to output indices
   const auto mapping = get_lut_mapping(lut_in, lut_out);
   if (*std::max_element(mapping.begin(), mapping.end()) == 0)
-    throw Exception("Mapping between input and output LUTs is empty, i.e. no common node names between these two LUTs");
+    throw Exception("Mapping between input and output LUTs is empty,"
+                    " i.e. no common node names between these two LUTs");
 
   // Modify the header for the output file
   H.datatype() = DataType::from<node_t>();

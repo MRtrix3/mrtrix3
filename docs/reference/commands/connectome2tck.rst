@@ -61,7 +61,7 @@ Example usages
 
         $ connectome2tck tracks.tck assignments.txt exemplars.tck -files single -exemplars nodes.mif
 
-    This produces the track file that is required as input when attempting to display connectome edges using the streamlines or streamtubes geometries within the meview connectome tool.
+    This produces the track file that is required as input when attempting to display connectome edges using the streamlines or streamtubes geometries within the mrview connectome tool.
 
 Options
 -------

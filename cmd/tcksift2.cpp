@@ -37,122 +37,109 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::SIFT2;
 
-const OptionGroup SIFT2RegularisationOption =
-    OptionGroup("Regularisation options for SIFT2")
+// clang-format off
+const OptionGroup SIFT2RegularisationOption = OptionGroup ("Regularisation options for SIFT2")
+  + Option ("reg_tikhonov", "provide coefficient for regularising streamline weighting coefficients"
+                            " (Tikhonov regularisation)"
+                            " (default: " + str(SIFT2_REGULARISATION_TIKHONOV_DEFAULT, 2) + ")")
+    + Argument ("value").type_float(0.0)
+  + Option ("reg_tv", "provide coefficient for regularising variance of streamline weighting coefficient"
+                      " to fixels along its length"
+                      " (Total Variation regularisation)"
+                      " (default: " + str(SIFT2_REGULARISATION_TV_DEFAULT, 2) + ")")
+    + Argument ("value").type_float(0.0);
 
-    +
-    Option(
-        "reg_tikhonov",
-        "provide coefficient for regularising streamline weighting coefficients (Tikhonov regularisation) (default: " +
-            str(SIFT2_REGULARISATION_TIKHONOV_DEFAULT, 2) + ")") +
-    Argument("value").type_float(0.0)
-
-    + Option("reg_tv",
-             "provide coefficient for regularising variance of streamline weighting coefficient to fixels along its "
-             "length (Total Variation regularisation) (default: " +
-                 str(SIFT2_REGULARISATION_TV_DEFAULT, 2) + ")") +
-    Argument("value").type_float(0.0);
-
-const OptionGroup SIFT2AlgorithmOption =
-    OptionGroup("Options for controlling the SIFT2 optimisation algorithm")
-
-    + Option("min_td_frac",
-             "minimum fraction of the FOD integral reconstructed by streamlines; "
-             "if the reconstructed streamline density is below this fraction, the fixel is excluded from optimisation "
-             "(default: " +
-                 str(SIFT2_MIN_TD_FRAC_DEFAULT, 2) + ")") +
-    Argument("fraction").type_float(0.0, 1.0)
-
-    + Option("min_iters",
-             "minimum number of iterations to run before testing for convergence; "
-             "this can prevent premature termination at early iterations if the cost function increases slightly "
-             "(default: " +
-                 str(SIFT2_MIN_ITERS_DEFAULT) + ")") +
-    Argument("count").type_integer(0)
-
-    + Option("max_iters", "maximum number of iterations to run before terminating program") +
-    Argument("count").type_integer(0)
-
-    + Option("min_factor",
-             "minimum weighting factor for an individual streamline; "
-             "if the factor falls below this number the streamline will be rejected entirely (factor set to zero) "
-             "(default: " +
-                 str(std::exp(SIFT2_MIN_COEFF_DEFAULT), 2) + ")") +
-    Argument("factor").type_float(0.0, 1.0)
-
-    + Option("min_coeff",
-             "minimum weighting coefficient for an individual streamline; "
-             "similar to the '-min_factor' option, but using the exponential coefficient basis of the SIFT2 model; "
-             "these parameters are related as: factor = e^(coeff). "
-             "Note that the -min_factor and -min_coeff options are mutually exclusive - you can only provide one. "
-             "(default: " +
-                 str(SIFT2_MIN_COEFF_DEFAULT, 2) + ")") +
-    Argument("coeff").type_float(-std::numeric_limits<default_type>::infinity(), 0.0)
-
-    + Option("max_factor",
-             "maximum weighting factor that can be assigned to any one streamline "
-             "(default: " +
-                 str(std::exp(SIFT2_MAX_COEFF_DEFAULT), 2) + ")") +
-    Argument("factor").type_float(1.0)
-
-    + Option("max_coeff",
-             "maximum weighting coefficient for an individual streamline; "
-             "similar to the '-max_factor' option, but using the exponential coefficient basis of the SIFT2 model; "
-             "these parameters are related as: factor = e^(coeff). "
-             "Note that the -max_factor and -max_coeff options are mutually exclusive - you can only provide one. "
-             "(default: " +
-                 str(SIFT2_MAX_COEFF_DEFAULT, 2) + ")") +
-    Argument("coeff").type_float(1.0)
-
-    + Option("max_coeff_step",
-             "maximum change to a streamline's weighting coefficient in a single iteration "
-             "(default: " +
-                 str(SIFT2_MAX_COEFF_STEP_DEFAULT, 2) + ")") +
-    Argument("step").type_float()
-
-    + Option("min_cf_decrease",
-             "minimum decrease in the cost function (as a fraction of the initial value) that must occur each "
-             "iteration for the algorithm to continue "
-             "(default: " +
-                 str(SIFT2_MIN_CF_DECREASE_DEFAULT, 2) + ")") +
-    Argument("frac").type_float(0.0, 1.0)
-
-    + Option("linear",
-             "perform a linear estimation of streamline weights, rather than the standard non-linear optimisation "
-             "(typically does not provide as accurate a model fit; but only requires a single pass)");
+const OptionGroup SIFT2AlgorithmOption = OptionGroup ("Options for controlling the SIFT2 optimisation algorithm")
+  + Option ("min_td_frac", "minimum fraction of the FOD integral reconstructed by streamlines;"
+                           " if the reconstructed streamline density is below this fraction,"
+                           " the fixel is excluded from optimisation"
+                           " (default: " + str(SIFT2_MIN_TD_FRAC_DEFAULT, 2) + ")")
+    + Argument ("fraction").type_float(0.0, 1.0)
+  + Option ("min_iters", "minimum number of iterations to run before testing for convergence;"
+                         " this can prevent premature termination at early iterations"
+                         " if the cost function increases slightly"
+                         " (default: " + str(SIFT2_MIN_ITERS_DEFAULT) + ")")
+    + Argument ("count").type_integer(0)
+  + Option ("max_iters", "maximum number of iterations to run before terminating program")
+    + Argument ("count").type_integer(0)
+  + Option ("min_factor", "minimum weighting factor for an individual streamline;"
+                          " if the factor falls below this number,"
+                          " the streamline will be rejected entirely"
+                          " (factor set to zero)"
+                          " (default: " + str(std::exp (SIFT2_MIN_COEFF_DEFAULT), 2) + ")")
+    + Argument ("factor").type_float(0.0, 1.0)
+  + Option ("min_coeff", "minimum weighting coefficient for an individual streamline;"
+                         " similar to the '-min_factor' option,"
+                         " but using the exponential coefficient basis of the SIFT2 model;"
+                         " these parameters are related as:"
+                         " factor = e^(coeff)."
+                         " Note that the -min_factor and -min_coeff options are mutually exclusive;"
+                         " you can only provide one."
+                         " (default: " + str(SIFT2_MIN_COEFF_DEFAULT, 2) + ")")
+    + Argument ("coeff").type_float(-std::numeric_limits<default_type>::infinity(), 0.0)
+  + Option ("max_factor", "maximum weighting factor that can be assigned to any one streamline"
+                          " (default: " + str(std::exp (SIFT2_MAX_COEFF_DEFAULT), 2) + ")")
+    + Argument ("factor").type_float(1.0)
+  + Option ("max_coeff", "maximum weighting coefficient for an individual streamline;"
+                         " similar to the '-max_factor' option,"
+                         " but using the exponential coefficient basis of the SIFT2 model;"
+                         " these parameters are related as:"
+                         " factor = e^(coeff)."
+                         " Note that the -max_factor and -max_coeff options are mutually exclusive;"
+                         " you can only provide one."
+                         " (default: " + str(SIFT2_MAX_COEFF_DEFAULT, 2) + ")")
+    + Argument ("coeff").type_float(1.0)
+  + Option ("max_coeff_step", "maximum change to a streamline's weighting coefficient in a single iteration"
+                              " (default: " + str(SIFT2_MAX_COEFF_STEP_DEFAULT, 2) + ")")
+    + Argument ("step").type_float()
+  + Option ("min_cf_decrease", "minimum decrease in the cost function"
+                               " (as a fraction of the initial value)"
+                               " that must occur each iteration for the algorithm to continue"
+                               " (default: " + str(SIFT2_MIN_CF_DECREASE_DEFAULT, 2) + ")")
+    + Argument ("frac").type_float(0.0, 1.0)
+  + Option ("linear", "perform a linear estimation of streamline weights,"
+                      " rather than the standard non-linear optimisation"
+                      " (typically does not provide as accurate a model fit;"
+                      " but only requires a single pass)");
 
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre "
-             "densities";
+  SYNOPSIS = "Optimise per-streamline cross-section multipliers"
+             " to match a whole-brain tractogram to fixel-wise fibre densities";
 
   REFERENCES
-  +"Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
-   "NeuroImage, 2015, 119, 338-351"
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity"
+    " using streamlines tractography. "
+    "NeuroImage, 2015, 119, 338-351"
 
-      + "* If using the -linear option: \n"
-        "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
-        "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
-        "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    + "* If using the -linear option: \n"
+    "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
+    "Quantitative Streamlines Tractography:"
+    " Methods and Inter-Subject Normalisation. "
+    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
 
   ARGUMENTS
-  +Argument("in_tracks", "the input track file").type_tracks_in() +
-      Argument("in_fod", "input image containing the spherical harmonics of the fibre orientation distributions")
-          .type_image_in() +
-      Argument("out_weights", "output text file containing the weighting factor for each streamline").type_file_out();
+  + Argument ("in_tracks", "the input track file").type_tracks_in()
+  + Argument ("in_fod", "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
+  + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_file_out();
 
   OPTIONS
 
-  +SIFT::SIFTModelProcMaskOption + SIFT::SIFTModelOption + SIFT::SIFTOutputOption
+  + SIFT::SIFTModelProcMaskOption
+  + SIFT::SIFTModelOption
+  + SIFT::SIFTOutputOption
 
-      + Option("out_coeffs", "output text file containing the weighting coefficient for each streamline") +
-      Argument("path").type_file_out()
+  + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")
+    + Argument ("path").type_file_out()
 
-      + SIFT2RegularisationOption + SIFT2AlgorithmOption;
+  + SIFT2RegularisationOption
+  + SIFT2AlgorithmOption;
+
 }
+// clang-format off
 
 void run() {
 

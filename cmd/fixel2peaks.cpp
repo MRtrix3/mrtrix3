@@ -30,6 +30,7 @@ using namespace App;
 
 using Fixel::index_type;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -37,21 +38,26 @@ void usage() {
   SYNOPSIS = "Convert data in the fixel directory format into a 4D image of 3-vectors";
 
   DESCRIPTION
-  +"If a fixel data file is provided as input, then the 3-vectors in the "
-   "output image will be scaled based on the data in that file. If the input "
-   "is instead the fixel directory, or the index or directions file, then "
-   "all output 3-vectors will possess unit norm."
+  + "If a fixel data file is provided as input,"
+    " then the 3-vectors in the output image will be scaled based on the data in that file."
+    " If the input is instead the fixel directory,"
+    " or the index or directions file,"
+    " then all output 3-vectors will possess unit norm.";
 
-      + Fixel::format_description;
+  + Fixel::format_description;
 
   ARGUMENTS
-  +Argument("in", "the input fixel information").type_various() +
-      Argument("out", "the output peaks image").type_image_out();
+  + Argument ("in",  "the input fixel information").type_various ()
+  + Argument ("out", "the output peaks image").type_image_out ();
 
   OPTIONS
-  +Option("number", "maximum number of fixels in each voxel (default: based on input data)") +
-      Argument("value").type_integer(1) + Option("nan", "fill excess peak data with NaNs rather than zeroes");
+  + Option ("number", "maximum number of fixels in each voxel"
+                      " (default: based on input data)")
+    + Argument ("value").type_integer(1)
+  + Option ("nan", "fill excess peak data with NaNs rather than zeroes");
+
 }
+// clang-format on
 
 void run() {
   Header index_header, directions_header, data_header;

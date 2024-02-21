@@ -16,8 +16,7 @@ Usage
     transformconvert [ options ]  input [ input ... ] operation output
 
 -  *input*: the input(s) for the specified operation
--  *operation*: the operation to perform, one of: |br|
-   flirt_import, itk_import
+-  *operation*: the operation to perform; one of: flirt_import, itk_import
 -  *output*: the output transformation matrix.
 
 Description
