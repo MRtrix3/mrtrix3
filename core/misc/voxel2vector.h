@@ -72,8 +72,8 @@ private:
   Image<index_t> forward;
   std::vector<std::vector<index_t>> reverse;
 
-  vector<index_t> pos() const {
-    vector<index_t> result;
+  std::vector<index_t> pos() const {
+    std::vector<index_t> result;
     for (size_t index = 0; index != forward.ndim(); ++index)
       result.push_back(forward.index(index));
     return result;
