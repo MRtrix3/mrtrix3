@@ -79,8 +79,9 @@ case $1 in
 esac
 
 
-LOGFILE="testing_"$1".log"
+LOGFILE="testing/log/"$1".log"
 echo logging to \""$LOGFILE"\"
+mkdir -p "testing/log"
 cat > $LOGFILE <<EOD
 ------------------------------------------
   Testing MRtrix3 $teststring

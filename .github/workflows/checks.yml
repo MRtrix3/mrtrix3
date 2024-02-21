@@ -42,10 +42,10 @@ jobs:
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
 
     - name: unit tests
-      run: ./run_tests units || { cat testing_units.log; false; }
+      run: ./run_tests units || { cat testing/log/units.log; false; }
 
     - name: binary tests
-      run: ./run_tests binaries || { cat testing_binaries.log; false; }
+      run: ./run_tests binaries || { cat testing/log/binaries.log; false; }
 
 
 
@@ -113,10 +113,10 @@ jobs:
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
 
     - name: unit tests
-      run: ./run_tests units || { cat testing_units.log; false; }
+      run: ./run_tests units || { cat testing/log/units.log; false; }
 
     - name: binary tests
-      run: ./run_tests binaries || { cat testing_binaries.log; false; }
+      run: ./run_tests binaries || { cat testing/log/binaries.log; false; }
 
     - name: check command documentation
       run: ./docs/generate_user_docs.sh && git diff --exit-code docs/
@@ -177,10 +177,10 @@ jobs:
         run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
 
       - name: unit tests
-        run: ./run_tests units || { cat testing_units.log; false; }
+        run: ./run_tests units || { cat testing/log/units.log; false; }
 
       - name: binary tests
-        run: ./run_tests binaries || { cat testing_binaries.log; false; }
+        run: ./run_tests binaries || { cat testing/log/binaries.log; false; }
 
 
 
