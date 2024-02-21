@@ -171,7 +171,7 @@ ENVIRONMENT VARIABLES
 
    CXXSTD
         Set the version of the C++ standard to use. The minimum (and default)
-        is c++11. To use Qt6, you will need to set this to c++17.
+        is c++17.
 '''
 
 system = platform.system().lower()
@@ -302,7 +302,7 @@ else:
 log ('PATH set to: ' + path)
 
 
-cpp_std = 'c++11'
+cpp_std = 'c++17'
 if 'CXXSTD' in os.environ:
   std = os.environ['CXXSTD']
   if std:
@@ -313,7 +313,7 @@ if 'CXXSTD' in os.environ:
 try:
   from shlex import quote # pylint: disable=unused-variable, unused-import
   from shutil import which # pylint: disable=unused-variable, unused-import
-  report ('Python verion: ' + platform.python_version())
+  report ('Python verion: ' + platform.python_version() + '\n')
 except ImportError:
   error ('Incompatible Python version detected: ' + platform.python_version() + '(at least 3.3 is required)')
 
@@ -803,7 +803,7 @@ for candidate in cxx:
     report ('not found\n')
     continue
 
-  if compile_test ('C++11 compliance', cpp_flags, ld_flags, '''
+  if compile_test ('C++17 compliance', cpp_flags, ld_flags, '''
 #include <cstddef>
 struct Base {
     Base (int);
@@ -813,7 +813,8 @@ struct Derived : Base {
 };
 
 int main() {
-  Derived D (int); // check for contructor inheritance
+  Derived D (int); // check for C++11 contructor inheritance
+  auto f = [](auto i) { }; // check for C++17 auto in lambda parameter
   return 0;
 }
 ''', on_failure='test failed (see configure.log for details)\n'):
