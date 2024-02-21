@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -195,8 +195,8 @@ public:
   }
 
 protected:
-  vector<std::future<void>> threads;
-  vector<typename std::remove_reference<Functor>::type> functors;
+  std::vector<std::future<void>> threads;
+  std::vector<typename std::remove_reference<Functor>::type> functors;
 };
 
 template <class Functor> class __Multi {

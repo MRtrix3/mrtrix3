@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,9 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
+// clang-format off
 #include "gui/gui.h"
-#include "gui/mrview/file_open.h"
+#include "command.h"
+// clang-format on
+
 #include "gui/mrview/icons.h"
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/sync/syncmanager.h"
@@ -77,6 +79,20 @@ void usage() {
 }
 
 void run() {
+  GUI::App::setEventHandler([](QEvent *event) {
+    if (event->type() == QEvent::FileOpen) {
+      QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
+      std::vector<std::unique_ptr<MR::Header>> list;
+      try {
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
+      } catch (Exception &E) {
+        E.display();
+      }
+      reinterpret_cast<MR::GUI::MRView::Window *>(MR::GUI::App::main_window)->add_images(list);
+    }
+    return false;
+  });
+  Q_INIT_RESOURCE(icons);
   GUI::MRView::Window window;
   MR::GUI::MRView::Sync::SyncManager sync; // sync allows syncing between mrview windows in different processes
   window.show();

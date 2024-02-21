@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <zlib.h>
 
-#ifdef MRTRIX_MACOSX
+#if defined(MRTRIX_MACOSX) || defined(MRTRIX_FREEBSD)
 #include <sys/mount.h>
 #include <sys/param.h>
 #elif !defined(MRTRIX_WINDOWS)

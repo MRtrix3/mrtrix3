@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,7 +84,7 @@ bool median_weiszfeld(const MatrixType &X,
   }
 
   bool convergence = false;
-  vector<default_type> dist(numIter);
+  std::vector<default_type> dist(numIter);
 
   // Minimizing the sum of the squares of the distances between each point in 'X' and the median.
   size_t i = 0;

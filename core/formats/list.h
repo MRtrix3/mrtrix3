@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -97,9 +97,6 @@ DECLARE_IMAGEFORMAT(XDS, "XDS");
 DECLARE_IMAGEFORMAT(MGH, "MGH");
 DECLARE_IMAGEFORMAT(MGZ, "MGZ (compressed MGH)");
 DECLARE_IMAGEFORMAT(PAR, "Philips PAR/REG");
-#ifdef MRTRIX_TIFF_SUPPORT
-DECLARE_IMAGEFORMAT(TIFF, "TIFF");
-#endif
 #ifdef MRTRIX_PNG_SUPPORT
 DECLARE_IMAGEFORMAT(PNG, "PNG");
 #endif

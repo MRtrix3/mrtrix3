@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,9 +31,9 @@ using fixel_index_type = MR::Fixel::index_type;
 using count_type = uint32_t;
 using connectivity_value_type = float;
 
-class MappedTrack : public vector<fixel_index_type> {
+class MappedTrack : public std::vector<fixel_index_type> {
 public:
-  using BaseType = vector<fixel_index_type>;
+  using BaseType = std::vector<fixel_index_type>;
   default_type get_weight() const { return weight; }
   void set_weight(const default_type w) { weight = w; }
 
@@ -109,9 +109,9 @@ private:
   ValueType sum_weights;
 };
 
-template <class ElementType> class InitFixelBase : public vector<ElementType> {
+template <class ElementType> class InitFixelBase : public std::vector<ElementType> {
 public:
-  using BaseType = vector<ElementType>;
+  using BaseType = std::vector<ElementType>;
   virtual ~InitFixelBase() {}
   void add(const MappedTrack &mapped_track);
   virtual default_type norm_factor() const = 0;
@@ -145,8 +145,8 @@ private:
   void increment(InitElementWeighted &element, const MappedTrack &data) override { element += data.get_weight(); }
 };
 
-using InitMatrixUnweighted = vector<InitFixelUnweighted>;
-using InitMatrixWeighted = vector<InitFixelWeighted>;
+using InitMatrixUnweighted = std::vector<InitFixelUnweighted>;
+using InitMatrixWeighted = std::vector<InitFixelWeighted>;
 
 // A class to store fixel index / connectivity value pairs
 //   only after the connectivity matrix has been thresholded / normalised
@@ -167,10 +167,10 @@ private:
 
 // With the internally normalised CFE expression, want to store a
 //   multiplicative factor per fixel
-class NormFixel : public vector<NormElement> {
+class NormFixel : public std::vector<NormElement> {
 public:
   using ElementType = NormElement;
-  using BaseType = vector<NormElement>;
+  using BaseType = std::vector<NormElement>;
   using ValueType = connectivity_value_type;
   NormFixel() : norm_multiplier(ValueType(1)) {}
   NormFixel(const BaseType &i) : BaseType(i), norm_multiplier(ValueType(1)) {}

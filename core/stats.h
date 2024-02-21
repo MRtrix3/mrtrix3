@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,9 +17,9 @@
 #ifndef __stats_h_
 #define __stats_h_
 
-#include "app.h"
-#include "file/ofstream.h"
 #include "math/median.h"
+
+#include <iomanip>
 
 namespace MR {
 
@@ -46,29 +46,9 @@ public:
         is_complex(is_complex),
         ignore_zero(ignorezero) {}
 
-  void operator()(complex_type val) {
-    if (std::isfinite(val.real()) && std::isfinite(val.imag()) &&
-        !(ignore_zero && val.real() == 0.0 && val.imag() == 0.0)) {
-      if (min.real() > val.real())
-        min = complex_type(val.real(), min.imag());
-      if (min.imag() > val.imag())
-        min = complex_type(min.real(), val.imag());
-      if (max.real() < val.real())
-        max = complex_type(val.real(), max.imag());
-      if (max.imag() < val.imag())
-        max = complex_type(max.real(), val.imag());
-      count++;
-      // Welford's online algorithm for variance calculation:
-      delta = val - mean;
-      mean += cdouble(delta.real() / count, delta.imag() / count);
-      delta2 = val - mean;
-      m2 += cdouble(delta.real() * delta2.real(), delta.imag() * delta2.imag());
-      if (!is_complex)
-        values.push_back(val.real());
-    }
-  }
+  void operator()(complex_type val);
 
-  template <class ImageType> void print(ImageType &ima, const vector<std::string> &fields) {
+  template <class ImageType> void print(ImageType &ima, const std::vector<std::string> &fields) {
 
     if (count > 1) {
       std = complex_type(sqrt(m2.real() / value_type(count - 1)), sqrt(m2.imag() / value_type(count - 1)));
@@ -136,21 +116,10 @@ private:
   complex_type mean, delta, delta2, m2, std, std_rv, min, max;
   size_t count;
   const bool is_complex, ignore_zero;
-  vector<float> values;
+  std::vector<float> values;
 };
 
-inline void print_header(bool is_complex) {
-  int width = is_complex ? 20 : 10;
-  std::cout << std::setw(12) << std::right << "volume"
-            << " " << std::setw(width) << std::right << "mean";
-  if (!is_complex)
-    std::cout << " " << std::setw(width) << std::right << "median";
-  std::cout << " " << std::setw(width) << std::right << "std"
-            << " " << std::setw(width) << std::right << "min"
-            << " " << std::setw(width) << std::right << "max"
-            << " " << std::setw(10) << std::right << "count"
-            << "\n";
-}
+void print_header(bool is_complex);
 
 } // namespace Stats
 

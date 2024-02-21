@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -125,7 +125,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
 
   float version = NaN;
   ParCols cols;
-  vector<SliceData> slices;
+  std::vector<SliceData> slices;
 
   while (in.good()) {
     std::string line;
@@ -163,7 +163,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
     }
   }
 
-  vector<std::array<float, 4>> G;
+  std::vector<std::array<float, 4>> G;
 
   int nslices = 0;
   int nvols = 0;

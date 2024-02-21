@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -60,7 +60,7 @@ void ParticleGrid::exportTracks(Tractography::Writer<float> &writer) {
   Particle *par;
   Particle *nextpar;
   int alpha = 0;
-  vector<Point_t> track;
+  std::vector<Point_t> track;
   // Loop through all unvisited particles
   for (ParticleVectorType &gridvox : grid) {
     for (Particle *par0 : gridvox) {

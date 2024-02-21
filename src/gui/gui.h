@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,8 @@
 #include "file/config.h"
 #include "gui/opengl/gl.h"
 
+#include <functional>
+
 namespace MR {
 namespace GUI {
 
@@ -46,6 +48,11 @@ public:
 
   static QWidget *main_window;
   static App *application;
+
+  static void setEventHandler(std::function<bool(QEvent *)> handler) { App::application->event_handler = handler; }
+
+private:
+  std::function<bool(QEvent *)> event_handler;
 };
 
 } // namespace GUI

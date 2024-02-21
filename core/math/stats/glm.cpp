@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -117,7 +117,7 @@ index_array_type load_variance_groups(const index_type num_inputs) {
       WARN("Only a single variance group is defined in file \"" + opt[0][0] + "\"; variance groups will not be used");
       return index_array_type();
     }
-    vector<index_type> count_per_group(max_coeff + 1, 0);
+    std::vector<index_type> count_per_group(max_coeff + 1, 0);
     for (index_type i = 0; i != index_type(data.size()); ++i)
       count_per_group[data[i]]++;
     for (index_type vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
@@ -132,8 +132,8 @@ index_array_type load_variance_groups(const index_type num_inputs) {
   }
 }
 
-vector<Hypothesis> load_hypotheses(const std::string &file_path) {
-  vector<Hypothesis> hypotheses;
+std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
+  std::vector<Hypothesis> hypotheses;
   const matrix_type contrast_matrix = File::Matrix::load_matrix(file_path);
   for (index_type row = 0; row != index_type(contrast_matrix.rows()); ++row)
     hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), row));
@@ -157,7 +157,7 @@ vector<Hypothesis> load_hypotheses(const std::string &file_path) {
       hypotheses.emplace_back(Hypothesis(this_f_matrix, ftest_index));
     }
     if (App::get_options("fonly").size()) {
-      vector<Hypothesis> new_hypotheses;
+      std::vector<Hypothesis> new_hypotheses;
       for (index_type index = contrast_matrix.rows(); index != hypotheses.size(); ++index)
         new_hypotheses.push_back(std::move(hypotheses[index]));
       std::swap(hypotheses, new_hypotheses);
@@ -181,7 +181,7 @@ vector_type abs_effect_size(const matrix_type &measurements, const matrix_type &
 }
 
 matrix_type
-abs_effect_size(const matrix_type &measurements, const matrix_type &design, const vector<Hypothesis> &hypotheses) {
+abs_effect_size(const matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses) {
   matrix_type result(measurements.cols(), hypotheses.size());
   for (index_type ic = 0; ic != hypotheses.size(); ++ic)
     result.col(ic) = abs_effect_size(measurements, design, hypotheses[ic]);
@@ -230,7 +230,7 @@ vector_type std_effect_size(const matrix_type &measurements, const matrix_type &
 }
 
 matrix_type
-std_effect_size(const matrix_type &measurements, const matrix_type &design, const vector<Hypothesis> &hypotheses) {
+std_effect_size(const matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses) {
   const vector_type stdev_reciprocal =
       vector_type::Ones(measurements.cols()) / stdev(measurements, design).array().col(0);
   matrix_type result(measurements.cols(), hypotheses.size());
@@ -241,7 +241,7 @@ std_effect_size(const matrix_type &measurements, const matrix_type &design, cons
 
 void all_stats(const matrix_type &measurements,
                const matrix_type &design,
-               const vector<Hypothesis> &hypotheses,
+               const std::vector<Hypothesis> &hypotheses,
                const index_array_type &variance_groups,
                matrix_type &betas,
                matrix_type &abs_effect_size,
@@ -306,8 +306,8 @@ void all_stats(const matrix_type &measurements,
 
 void all_stats(const matrix_type &measurements,
                const matrix_type &fixed_design,
-               const vector<CohortDataImport> &extra_data,
-               const vector<Hypothesis> &hypotheses,
+               const std::vector<CohortDataImport> &extra_data,
+               const std::vector<Hypothesis> &hypotheses,
                const index_array_type &variance_groups,
                vector_type &cond,
                matrix_type &betas,
@@ -346,8 +346,8 @@ void all_stats(const matrix_type &measurements,
   public:
     Functor(const matrix_type &data,
             const matrix_type &design_fixed,
-            const vector<CohortDataImport> &extra_data,
-            const vector<Hypothesis> &hypotheses,
+            const std::vector<CohortDataImport> &extra_data,
+            const std::vector<Hypothesis> &hypotheses,
             const index_array_type &variance_groups,
             vector_type &cond,
             matrix_type &betas,
@@ -442,8 +442,8 @@ void all_stats(const matrix_type &measurements,
   private:
     const matrix_type &data;
     const matrix_type &design_fixed;
-    const vector<CohortDataImport> &extra_data;
-    const vector<Hypothesis> &hypotheses;
+    const std::vector<CohortDataImport> &extra_data;
+    const std::vector<Hypothesis> &hypotheses;
     const index_array_type &variance_groups;
     vector_type &global_cond;
     matrix_type &global_betas;
@@ -526,7 +526,7 @@ void TestBase::operator()(const matrix_type &shuffling_matrix, matrix_type &outp
 
 TestFixedHomoscedastic::TestFixedHomoscedastic(const matrix_type &measurements,
                                                const matrix_type &design,
-                                               const vector<Hypothesis> &hypotheses)
+                                               const std::vector<Hypothesis> &hypotheses)
     : TestBase(measurements, design, hypotheses),
       pinvM(Math::pinv(M)),
       Rm(matrix_type::Identity(num_inputs(), num_inputs()) - (M * pinvM)) {
@@ -619,7 +619,7 @@ void TestFixedHomoscedastic::operator()(const matrix_type &shuffling_matrix,
 
 TestFixedHeteroscedastic::TestFixedHeteroscedastic(const matrix_type &measurements,
                                                    const matrix_type &design,
-                                                   const vector<Hypothesis> &hypotheses,
+                                                   const std::vector<Hypothesis> &hypotheses,
                                                    const index_array_type &variance_groups)
     : TestFixedHomoscedastic(measurements, design, hypotheses),
       VG(variance_groups),
@@ -767,10 +767,10 @@ void TestFixedHeteroscedastic::operator()(const matrix_type &shuffling_matrix,
   }
 }
 
-TestVariableHomoscedastic::TestVariableHomoscedastic(const vector<CohortDataImport> &importers,
+TestVariableHomoscedastic::TestVariableHomoscedastic(const std::vector<CohortDataImport> &importers,
                                                      const matrix_type &measurements,
                                                      const matrix_type &design,
-                                                     const vector<Hypothesis> &hypotheses,
+                                                     const std::vector<Hypothesis> &hypotheses,
                                                      const bool nans_in_data,
                                                      const bool nans_in_columns)
     : TestBase(measurements, design, hypotheses),
@@ -989,10 +989,10 @@ void TestVariableHomoscedastic::apply_mask(const BitSet &mask,
   }
 }
 
-TestVariableHeteroscedastic::TestVariableHeteroscedastic(const vector<CohortDataImport> &importers,
+TestVariableHeteroscedastic::TestVariableHeteroscedastic(const std::vector<CohortDataImport> &importers,
                                                          const matrix_type &measurements,
                                                          const matrix_type &design,
-                                                         const vector<Hypothesis> &hypotheses,
+                                                         const std::vector<Hypothesis> &hypotheses,
                                                          const index_array_type &variance_groups,
                                                          const bool nans_in_data,
                                                          const bool nans_in_columns)

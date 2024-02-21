@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -127,7 +127,7 @@ void run() {
     report(argument[0], directions);
 }
 
-vector<default_type> summarise_NN(const vector<double> &NN) {
+std::vector<default_type> summarise_NN(const std::vector<double> &NN) {
   double NN_min = std::numeric_limits<double>::max();
   double NN_mean = 0.0;
   double NN_max = 0.0;
@@ -142,7 +142,7 @@ vector<default_type> summarise_NN(const vector<double> &NN) {
   return {NN_mean, NN_min, NN_max};
 }
 
-vector<default_type> summarise_E(const vector<double> &E) {
+std::vector<default_type> summarise_E(const std::vector<double> &E) {
   double E_min = std::numeric_limits<double>::max();
   double E_total = 0.0;
   double E_max = 0.0;
@@ -157,7 +157,7 @@ vector<default_type> summarise_E(const vector<double> &E) {
 
 class Metrics {
 public:
-  vector<default_type> BN, UN, BE, UE, SH;
+  std::vector<default_type> BN, UN, BE, UE, SH;
   default_type ASYM;
   size_t ndirs;
 };
@@ -167,11 +167,11 @@ Metrics compute(Eigen::MatrixXd &directions) {
     throw Exception("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
   Math::Sphere::normalise_cartesian(directions);
 
-  vector<double> NN_bipolar(directions.rows(), -1.0);
-  vector<double> NN_unipolar(directions.rows(), -1.0);
+  std::vector<double> NN_bipolar(directions.rows(), -1.0);
+  std::vector<double> NN_unipolar(directions.rows(), -1.0);
 
-  vector<double> E_bipolar(directions.rows(), 0.0);
-  vector<double> E_unipolar(directions.rows(), 0.0);
+  std::vector<double> E_bipolar(directions.rows(), 0.0);
+  std::vector<double> E_unipolar(directions.rows(), 0.0);
 
   for (ssize_t i = 0; i < directions.rows() - 1; ++i) {
     for (ssize_t j = i + 1; j < directions.rows(); ++j) {

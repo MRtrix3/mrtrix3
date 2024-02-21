@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -132,7 +132,7 @@ struct inc_pos {
  * following example:
  * \code
  * float value = 0.0;
- * vector<size_t> order = { 1, 0, 2 };
+ * std::vector<size_t> order = { 1, 0, 2 };
  *
  * LoopInOrder loop (vox, order);
  * for (auto i = loop.run (vox); i; ++i)
@@ -188,10 +188,10 @@ struct LoopAlongSingleAxis {
     const ssize_t size0;
     FORCE_INLINE Run(const size_t axis, const std::tuple<ImageType &...> &vox)
         : axis(axis), vox(vox), size0(std::get<0>(vox).size(axis)) {
-      MR::apply(set_pos(axis, 0), vox);
+      MR::apply_for_each(set_pos(axis, 0), vox);
     }
     FORCE_INLINE operator bool() const { return std::get<0>(vox).index(axis) < size0; }
-    FORCE_INLINE void operator++() const { MR::apply(inc_pos(axis), vox); }
+    FORCE_INLINE void operator++() const { MR::apply_for_each(inc_pos(axis), vox); }
     FORCE_INLINE void operator++(int) const { operator++(); }
   };
 
@@ -211,11 +211,11 @@ struct LoopAlongSingleAxisProgress {
     const ssize_t size0;
     FORCE_INLINE Run(const std::string &text, const size_t axis, const std::tuple<ImageType &...> &vox)
         : progress(text, std::get<0>(vox).size(axis)), axis(axis), vox(vox), size0(std::get<0>(vox).size(axis)) {
-      MR::apply(set_pos(axis, 0), vox);
+      MR::apply_for_each(set_pos(axis, 0), vox);
     }
     FORCE_INLINE operator bool() const { return std::get<0>(vox).index(axis) < size0; }
     FORCE_INLINE void operator++() {
-      MR::apply(inc_pos(axis), vox);
+      MR::apply_for_each(inc_pos(axis), vox);
       ++progress;
     }
     FORCE_INLINE void operator++(int) { operator++(); }
@@ -241,21 +241,21 @@ struct LoopAlongAxisRange {
           size0(std::get<0>(vox).size(from)),
           ok(true) {
       for (size_t n = from; n < to; ++n)
-        MR::apply(set_pos(n, 0), vox);
+        MR::apply_for_each(set_pos(n, 0), vox);
     }
     FORCE_INLINE operator bool() const { return ok; }
     FORCE_INLINE void operator++() {
-      MR::apply(inc_pos(from), vox);
+      MR::apply_for_each(inc_pos(from), vox);
       if (std::get<0>(vox).index(from) < size0)
         return;
 
-      MR::apply(set_pos(from, 0), vox);
+      MR::apply_for_each(set_pos(from, 0), vox);
       size_t axis = from + 1;
       while (axis < to) {
-        MR::apply(inc_pos(axis), vox);
+        MR::apply_for_each(inc_pos(axis), vox);
         if (std::get<0>(vox).index(axis) < std::get<0>(vox).size(axis))
           return;
-        MR::apply(set_pos(axis, 0), vox);
+        MR::apply_for_each(set_pos(axis, 0), vox);
         ++axis;
       }
       ok = false;
@@ -306,29 +306,29 @@ struct LoopAlongAxesProgress {
 };
 
 struct LoopAlongDynamicAxes {
-  const vector<size_t> axes;
+  const std::vector<size_t> axes;
 
   template <class... ImageType> struct Run {
-    const vector<size_t> axes;
+    const std::vector<size_t> axes;
     const std::tuple<ImageType &...> vox;
     const size_t from;
     const ssize_t size0;
     bool ok;
-    FORCE_INLINE Run(const vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(const std::vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
         : axes(axes), vox(vox), from(axes[0]), size0(std::get<0>(vox).size(from)), ok(true) {
       for (auto axis : axes)
-        MR::apply(set_pos(axis, 0), vox);
+        MR::apply_for_each(set_pos(axis, 0), vox);
     }
     FORCE_INLINE operator bool() const { return ok; }
     FORCE_INLINE void operator++() {
-      MR::apply(inc_pos(from), vox);
+      MR::apply_for_each(inc_pos(from), vox);
       if (std::get<0>(vox).index(from) < size0)
         return;
 
       auto axis = axes.cbegin() + 1;
       while (axis != axes.cend()) {
-        MR::apply(set_pos(*(axis - 1), 0), vox);
-        MR::apply(inc_pos(*axis), vox);
+        MR::apply_for_each(set_pos(*(axis - 1), 0), vox);
+        MR::apply_for_each(inc_pos(*axis), vox);
         if (std::get<0>(vox).index(*axis) < std::get<0>(vox).size(*axis))
           return;
         ++axis;
@@ -345,12 +345,12 @@ struct LoopAlongDynamicAxes {
 
 struct LoopAlongDynamicAxesProgress : public LoopAlongDynamicAxes {
   const std::string text;
-  LoopAlongDynamicAxesProgress(const std::string &text, const vector<size_t> &axes)
+  LoopAlongDynamicAxesProgress(const std::string &text, const std::vector<size_t> &axes)
       : LoopAlongDynamicAxes({axes}), text(text) {}
 
   template <class... ImageType> struct Run : public LoopAlongDynamicAxes::Run<ImageType...> {
     MR::ProgressBar progress;
-    FORCE_INLINE Run(const std::string &text, const vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(const std::string &text, const std::vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
         : LoopAlongDynamicAxes::Run<ImageType...>(axes, vox), progress(text, MR::voxel_count(std::get<0>(vox), axes)) {}
     FORCE_INLINE void operator++() {
       LoopAlongDynamicAxes::Run<ImageType...>::operator++();
@@ -380,9 +380,9 @@ FORCE_INLINE LoopAlongAxisRangeProgress Loop(const std::string &progress_message
   return {progress_message, axis_from, axis_to};
 }
 
-FORCE_INLINE LoopAlongDynamicAxes Loop(const vector<size_t> &axes) { return {axes}; }
+FORCE_INLINE LoopAlongDynamicAxes Loop(const std::vector<size_t> &axes) { return {axes}; }
 
-FORCE_INLINE LoopAlongDynamicAxesProgress Loop(const std::string &progress_message, const vector<size_t> &axes) {
+FORCE_INLINE LoopAlongDynamicAxesProgress Loop(const std::string &progress_message, const std::vector<size_t> &axes) {
   return {progress_message, axes};
 }
 

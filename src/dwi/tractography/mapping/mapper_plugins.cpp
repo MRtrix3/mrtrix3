@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -89,7 +89,7 @@ const Streamline<>::point_type TWIImagePluginBase::get_end_point(const Streamlin
   return tck[index];
 }
 
-void TWIScalarImagePlugin::load_factors(const Streamline<> &tck, vector<default_type> &factors) const {
+void TWIScalarImagePlugin::load_factors(const Streamline<> &tck, std::vector<default_type> &factors) const {
   if (statistic == ENDS_MIN || statistic == ENDS_MEAN || statistic == ENDS_MAX || statistic == ENDS_PROD) {
 
     // Only the track endpoints contribute
@@ -117,7 +117,7 @@ void TWIScalarImagePlugin::load_factors(const Streamline<> &tck, vector<default_
   }
 }
 
-void TWIFODImagePlugin::load_factors(const Streamline<> &tck, vector<default_type> &factors) const {
+void TWIFODImagePlugin::load_factors(const Streamline<> &tck, std::vector<default_type> &factors) const {
   assert(statistic != ENDS_CORR);
   if (statistic == ENDS_MAX || statistic == ENDS_MEAN || statistic == ENDS_MIN || statistic == ENDS_PROD) {
 
@@ -158,11 +158,11 @@ void TWIFODImagePlugin::load_factors(const Streamline<> &tck, vector<default_typ
   }
 }
 
-void TWDFCStaticImagePlugin::load_factors(const Streamline<> &tck, vector<default_type> &factors) const {
+void TWDFCStaticImagePlugin::load_factors(const Streamline<> &tck, std::vector<default_type> &factors) const {
   // Use trilinear interpolation
   // Store values into local vectors, since it's a two-pass operation
   factors.assign(1, NaN);
-  vector<float> values[2];
+  std::vector<float> values[2];
   for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
     const ssize_t index = get_end_index(tck, bool(tck_end_index));
     if (index < 0)
@@ -197,13 +197,13 @@ void TWDFCStaticImagePlugin::load_factors(const Streamline<> &tck, vector<defaul
     factors[0] = product_expectation / (stdevs[0] * stdevs[1]);
 }
 
-void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, vector<default_type> &factors) const {
+void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<default_type> &factors) const {
   assert(statistic == ENDS_CORR);
   factors.assign(1, NaN);
 
   // Use trilinear interpolation
   // Store values into local vectors, since it's a two-pass operation
-  vector<default_type> values[2];
+  std::vector<default_type> values[2];
   for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
     const ssize_t index = get_end_index(tck, tck_end_index);
     if (index < 0)

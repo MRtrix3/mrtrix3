@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,12 +38,12 @@ class Overlay::Model : public ListModelBase {
 public:
   Model(QObject *parent) : ListModelBase(parent) {}
 
-  void add_items(vector<std::unique_ptr<MR::Header>> &list);
+  void add_items(std::vector<std::unique_ptr<MR::Header>> &list);
 
   Item *get_image(QModelIndex &index) { return dynamic_cast<Item *>(items[index.row()].get()); }
 };
 
-void Overlay::Model::add_items(vector<std::unique_ptr<MR::Header>> &list) {
+void Overlay::Model::add_items(std::vector<std::unique_ptr<MR::Header>> &list) {
   beginInsertRows(QModelIndex(), items.size(), items.size() + list.size());
   for (size_t i = 0; i < list.size(); ++i) {
     Item *overlay = new Item(std::move(*list[i]));
@@ -174,13 +174,14 @@ Overlay::Overlay(Dock *parent) : Base(parent) {
 }
 
 void Overlay::image_open_slot() {
-  vector<std::string> overlay_names = Dialog::File::get_images(this, "Select overlay images to open", &current_folder);
+  std::vector<std::string> overlay_names =
+      Dialog::File::get_images(this, "Select overlay images to open", &current_folder);
   if (overlay_names.empty())
     return;
-  vector<std::unique_ptr<MR::Header>> list;
+  std::vector<std::unique_ptr<MR::Header>> list;
   for (size_t n = 0; n < overlay_names.size(); ++n) {
     try {
-      list.push_back(make_unique<MR::Header>(MR::Header::open(overlay_names[n])));
+      list.push_back(std::make_unique<MR::Header>(MR::Header::open(overlay_names[n])));
     } catch (Exception &e) {
       e.display();
     }
@@ -188,7 +189,7 @@ void Overlay::image_open_slot() {
   add_images(list);
 }
 
-void Overlay::add_images(vector<std::unique_ptr<MR::Header>> &list) {
+void Overlay::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
   size_t previous_size = image_list_model->rowCount();
   image_list_model->add_items(list);
 
@@ -202,11 +203,11 @@ void Overlay::dropEvent(QDropEvent *event) {
 
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
-    vector<std::unique_ptr<MR::Header>> list;
+    std::vector<std::unique_ptr<MR::Header>> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
       } catch (Exception &e) {
         e.display();
       }
@@ -660,9 +661,9 @@ void Overlay::add_commandline_options(MR::App::OptionList &options) {
 
 bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("overlay.load")) {
-    vector<std::unique_ptr<MR::Header>> list;
+    std::vector<std::unique_ptr<MR::Header>> list;
     try {
-      list.push_back(make_unique<MR::Header>(MR::Header::open(opt[0])));
+      list.push_back(std::make_unique<MR::Header>(MR::Header::open(opt[0])));
     } catch (Exception &e) {
       e.display();
     }

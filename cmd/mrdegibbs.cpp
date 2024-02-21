@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -102,12 +102,12 @@ void run() {
 
   int mode = get_option_value("mode", 0);
 
-  vector<size_t> slice_axes = {0, 1};
+  std::vector<size_t> slice_axes = {0, 1};
   auto opt = get_options("axes");
   const bool axes_set_manually = opt.size();
   if (opt.size()) {
-    vector<uint32_t> axes = parse_ints<uint32_t>(opt[0][0]);
-    if (axes == vector<uint32_t>({0, 1, 2})) {
+    std::vector<uint32_t> axes = parse_ints<uint32_t>(opt[0][0]);
+    if (axes == std::vector<uint32_t>({0, 1, 2})) {
       mode = 1;
     } else {
       if (axes.size() != 2)
@@ -128,7 +128,7 @@ void run() {
     } else {
       try {
         const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir(slice_encoding_it->second);
-        vector<size_t> auto_slice_axes = {0, 0};
+        std::vector<size_t> auto_slice_axes = {0, 0};
         if (slice_encoding_axis_onehot[0])
           auto_slice_axes = {1, 2};
         else if (slice_encoding_axis_onehot[1])
@@ -170,7 +170,7 @@ void run() {
   }
 
   // build vector of outer axes:
-  vector<size_t> outer_axes(header.ndim());
+  std::vector<size_t> outer_axes(header.ndim());
   std::iota(outer_axes.begin(), outer_axes.end(), 0);
   for (const auto axis : slice_axes) {
     auto it = std::find(outer_axes.begin(), outer_axes.end(), axis);

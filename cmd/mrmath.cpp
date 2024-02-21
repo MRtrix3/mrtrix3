@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,9 +20,11 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "math/math.h"
 #include "math/median.h"
 #include "memory.h"
+#include "misc/voxel2vector.h"
 #include "phase_encoding.h"
 #include "progressbar.h"
 
@@ -119,7 +121,7 @@ public:
       values.push_back(val);
   }
   value_type result() { return Math::median(values); }
-  vector<value_type> values;
+  std::vector<value_type> values;
 };
 
 class Sum {
@@ -277,40 +279,38 @@ public:
 
 template <class Operation> class ImageKernel : public ImageKernelBase {
 protected:
-  class InitFunctor {
-  public:
-    template <class ImageType> void operator()(ImageType &out) const { out.value() = Operation(); }
-  };
   class ProcessFunctor {
   public:
-    template <class ImageType1, class ImageType2> void operator()(ImageType1 &out, ImageType2 &in) const {
-      Operation op = out.value();
-      op(in.value());
-      out.value() = op;
-    }
+    ProcessFunctor(ImageKernel &master) : master(master) {}
+    template <class ImageType> void operator()(ImageType &in) const { master.data[master.v2v(in)](in.value()); }
+
+  protected:
+    ImageKernel &master;
   };
   class ResultFunctor {
   public:
-    template <class ImageType1, class ImageType2> void operator()(ImageType1 &out, ImageType2 &in) const {
-      Operation op = in.value();
-      out.value() = op.result();
+    ResultFunctor(ImageKernel &master) : master(master) {}
+    template <class ImageType> void operator()(ImageType &out) const {
+      out.value() = master.data[master.v2v(out)].result();
     }
+
+  protected:
+    ImageKernel &master;
   };
 
 public:
-  ImageKernel(const Header &header) : image(Header::scratch(header).get_image<Operation>()) {
-    ThreadedLoop(image).run(InitFunctor(), image);
-  }
+  ImageKernel(const Header &header) : v2v(header), data(voxel_count(header)) {}
 
-  void write_back(Image<value_type> &out) { ThreadedLoop(image).run(ResultFunctor(), out, image); }
+  void write_back(Image<value_type> &out) { ThreadedLoop(out).run(ResultFunctor(*this), out); }
 
   void process(Header &header_in) {
     auto in = header_in.get_image<value_type>();
-    ThreadedLoop(image).run(ProcessFunctor(), image, in);
+    ThreadedLoop(in).run(ProcessFunctor(*this), in);
   }
 
 protected:
-  Image<Operation> image;
+  Voxel2Vector v2v;
+  std::vector<Operation> data;
 };
 
 void run() {
@@ -400,7 +400,7 @@ void run() {
       throw Exception("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    vector<Header> headers_in(num_inputs);
+    std::vector<Header> headers_in(num_inputs);
 
     // Header of first input image is the template to which all other input images are compared
     headers_in[0] = Header::open(argument[0]);

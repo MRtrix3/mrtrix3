@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -284,10 +284,10 @@ void Writer::save(uint8_t *data) {
   const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 
   auto finish = [&](uint8_t *to_write) {
-    png_bytepp row_pointers = new png_bytep[height];
+    std::unique_ptr<png_bytep[]> row_pointers(new png_bytep[height]);
     for (size_t row = 0; row != height; ++row)
       row_pointers[row] = to_write + row * row_bytes;
-    png_write_image(png_ptr, row_pointers);
+    png_write_image(png_ptr, row_pointers.get());
     png_write_end(png_ptr, info_ptr);
   };
 
