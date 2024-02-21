@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,10 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-#include "file/path.h"
+// clang-format off
 #include "gui/gui.h"
-#include "gui/shview/file_open.h"
+#include "command.h"
+// clang-format on
+
+#include "file/path.h"
 #include "gui/shview/icons.h"
 #include "gui/shview/render_window.h"
 #include "math/SH.h"

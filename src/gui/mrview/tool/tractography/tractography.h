@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -112,10 +112,10 @@ protected:
 
   void dropEvent(QDropEvent *event) override;
   void update_scalar_options();
-  void add_tractogram(vector<std::string> &list);
+  void add_tractogram(std::vector<std::string> &list);
   void select_last_added_tractogram();
   bool process_commandline_option_tsf_check_tracto_loaded();
-  bool process_commandline_option_tsf_option(const MR::App::ParsedOption &, uint, vector<default_type> &range);
+  bool process_commandline_option_tsf_option(const MR::App::ParsedOption &, uint, std::vector<default_type> &range);
   void update_geometry_type_gui();
 };
 } // namespace Tool

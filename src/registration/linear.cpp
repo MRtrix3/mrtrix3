@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@ void parse_general_options(Registration::Linear &registration) {
     registration.init.init_rotation.search.run_global = true;
   auto opt = get_options("init_rotation.search.angles");
   if (opt.size()) {
-    vector<default_type> angles = parse_floats(opt[0][0]);
+    std::vector<default_type> angles = parse_floats(opt[0][0]);
     for (auto &a : angles) {
       if (a < 0.0 or a > 180.0)
         throw Exception("init_rotation.search.angles have to be between 0 and 180 degree.");
@@ -124,7 +124,7 @@ void parse_general_options(Registration::Linear &registration) {
     const auto iterations = parse_ints<uint32_t>(opt[0][0]);
     registration.set_stage_iterations(iterations);
   } else {
-    registration.set_stage_iterations(vector<uint32_t>{1});
+    registration.set_stage_iterations(std::vector<uint32_t>{1});
   }
 
   opt = get_options("linstage.diagnostics.prefix");

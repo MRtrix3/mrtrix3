@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,7 +50,7 @@ void usage() {
 
 using value_type = double;
 using Direction = Eigen::Matrix<value_type, 3, 1>;
-using DirectionSet = vector<Direction>;
+using DirectionSet = std::vector<Direction>;
 
 struct OutDir {
   Direction d;
@@ -68,8 +68,8 @@ void run() {
   value_type unipolar_weight = App::get_option_value("unipolar_weight", 0.2);
   value_type bipolar_weight = 1.0 - unipolar_weight;
 
-  vector<vector<DirectionSet>> dirs;
-  vector<value_type> bvalue((argument.size() - 2) / (1 + num_subsets));
+  std::vector<std::vector<DirectionSet>> dirs;
+  std::vector<value_type> bvalue((argument.size() - 2) / (1 + num_subsets));
   INFO("expecting " + str(bvalue.size()) + " b-values");
   if (bvalue.size() * (1 + num_subsets) + 2 != argument.size())
     throw Exception("inconsistent number of arguments");
@@ -78,7 +78,7 @@ void run() {
   size_t current = 1, nb = 0;
   while (current < argument.size() - 1) {
     bvalue[nb] = to<value_type>(argument[current++]);
-    vector<DirectionSet> d;
+    std::vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
       auto m = DWI::Directions::load_cartesian(argument[current++]);
       DirectionSet set;
@@ -87,7 +87,7 @@ void run() {
       d.push_back(set);
     }
     INFO("found b = " + str(bvalue[nb]) + ", " + str([&] {
-           vector<size_t> s;
+           std::vector<size_t> s;
            for (auto &n : d)
              s.push_back(n.size());
            return s;
@@ -112,7 +112,7 @@ void run() {
   std::mt19937 rng(rd());
   size_t first = std::uniform_int_distribution<size_t>(0, dirs[0][0].size() - 1)(rng);
 
-  vector<OutDir> merged;
+  std::vector<OutDir> merged;
 
   auto push = [&](size_t b, size_t p, size_t n) {
     merged.push_back({Direction(dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2]), b, p});
@@ -149,7 +149,7 @@ void run() {
     return best;
   };
 
-  vector<float> fraction;
+  std::vector<float> fraction;
   for (auto &d : dirs) {
     size_t n = 0;
     for (auto &m : d)
@@ -159,7 +159,7 @@ void run() {
 
   push(0, 0, first);
 
-  vector<size_t> counts(bvalue.size(), 0);
+  std::vector<size_t> counts(bvalue.size(), 0);
   ++counts[0];
 
   auto num_for_b = [&](size_t b) {

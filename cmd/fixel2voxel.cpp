@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -130,12 +130,12 @@ struct LoopFixelsInVoxelWithMax {
                      const index_type offset,
                      const std::tuple<DataType &...> &data)
         : num_fixels(num_fixels), max_fixels(max_fixels), offset(offset), fixel_index(0), data(data) {
-      MR::apply(set_offset(offset), data);
+      MR::apply_for_each(set_offset(offset), data);
     }
     FORCE_INLINE operator bool() const { return max_fixels ? (fixel_index < max_fixels) : (fixel_index < num_fixels); }
     FORCE_INLINE void operator++() {
       if (!padding())
-        MR::apply(inc_fixel(), data);
+        MR::apply_for_each(inc_fixel(), data);
       ++fixel_index;
     }
     FORCE_INLINE void operator++(int) { operator++(); }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -100,7 +100,7 @@ public:
   UpdateType *get_gradient_descent_updator() { return &gradient_descent_updator; }
 
   bool robust_estimate(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &gradient,
-                       vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> &grad_estimates,
+                       std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> &grad_estimates,
                        const Eigen::Matrix<default_type, 4, 4> &control_points,
                        const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &parameter_vector,
                        const default_type &weiszfeld_precision,

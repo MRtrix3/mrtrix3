@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -124,8 +124,8 @@ Rejection::Rejection(const std::string &in)
   auto vox = Image<float>::open(in);
   if (!(vox.ndim() == 3 || (vox.ndim() == 4 && vox.size(3) == 1)))
     throw Exception("Seed image must be a 3D image");
-  vector<size_t> bottom(3, std::numeric_limits<size_t>::max());
-  vector<size_t> top(3, 0);
+  std::vector<size_t> bottom(3, std::numeric_limits<size_t>::max());
+  std::vector<size_t> top(3, 0);
 
   for (auto i = Loop(0, 3)(vox); i; ++i) {
     const float value = vox.value();

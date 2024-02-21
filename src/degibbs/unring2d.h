@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -108,8 +108,8 @@ private:
 
 class Unring2DFunctor {
 public:
-  Unring2DFunctor(const vector<size_t> &outer_axes,
-                  const vector<size_t> &slice_axes,
+  Unring2DFunctor(const std::vector<size_t> &outer_axes,
+                  const std::vector<size_t> &slice_axes,
                   const int &nsh,
                   const int &minW,
                   const int &maxW,
@@ -137,8 +137,8 @@ public:
   }
 
 protected:
-  const vector<size_t> &outer_axes;
-  const vector<size_t> &slice_axes;
+  const std::vector<size_t> &outer_axes;
+  const std::vector<size_t> &slice_axes;
   Image<value_type> in, out;
   Eigen::MatrixXcd slice;
   Unring2D unring2d;

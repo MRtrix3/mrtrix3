@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2023 the MRtrix3 contributors.
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -64,20 +64,6 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | $grep -v '_m
 # remove quoted strings:
   cat .check_syntax2.tmp | perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax.tmp
 
-# detect any instances of std::vector:
-  res="$res"$(
-    cat .check_syntax.tmp | \
-# match for the parts we're interested in and output just the bits that match:
-    $grep -Po '(?<!::)std::vector\b'
-  )
-
-
-# detect any instances of std::make_shared:
-  res="$res"$(
-    cat .check_syntax.tmp | \
-# match for the parts we're interested in and output just the bits that match:
-    $grep -Po '(?<!::)std::make_shared\b'
-  )
 
 # detect any instances of "using namespace std;":
   res="$res"$(
@@ -126,8 +112,6 @@ else
   echo "" >> $LOG
   echo "Please check the following syntax requirements:
   - Add MEMALIGN() or NOMEMALIGN macro to any class declarations identified above;
-  - Replace all occurrences of std::vector<> with MR::vector<> (or just vector<>);
-  - Avoid use of std::make_shared();
   - Replace all instances of std::abs() with MR::abs() (or just abs());
   - Replace all instances of %zu in print() calls with PRI_SIZET." >> $LOG
   exit 1

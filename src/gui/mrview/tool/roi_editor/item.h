@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -57,7 +57,7 @@ public:
   float min_brush_size, max_brush_size, brush_size;
 
 private:
-  vector<ROI_UndoEntry> undo_list;
+  std::vector<ROI_UndoEntry> undo_list;
   int current_undo;
 
   static int number_of_undos;

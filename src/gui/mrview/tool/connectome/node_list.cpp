@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -139,7 +139,7 @@ int Node_list::row_height() const { return node_list_view->fontMetrics().height(
 
 void Node_list::clear_selection_slot() {
   node_list_view->clearSelection();
-  vector<node_t> empty_node_list;
+  std::vector<node_t> empty_node_list;
   connectome.node_selection_changed(empty_node_list);
 }
 
@@ -152,7 +152,7 @@ void Node_list::node_selection_settings_dialog_slot() {
 
 void Node_list::node_selection_changed_slot(const QItemSelection &, const QItemSelection &) {
   QModelIndexList list = node_list_view->selectionModel()->selectedRows();
-  vector<node_t> nodes;
+  std::vector<node_t> nodes;
   for (int i = 0; i != list.size(); ++i)
     nodes.push_back(list[i].row());
   connectome.node_selection_changed(nodes);

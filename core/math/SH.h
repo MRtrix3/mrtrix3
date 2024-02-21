@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -323,7 +323,7 @@ template <typename ValueType> class PrecomputedFraction {
 public:
   PrecomputedFraction() : f1(0.0), f2(0.0) {}
   ValueType f1, f2;
-  typename vector<ValueType>::const_iterator p1, p2;
+  typename std::vector<ValueType>::const_iterator p1, p2;
 };
 
 //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
@@ -346,7 +346,7 @@ public:
     Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> buf(lmax + 1);
 
     for (int n = 0; n < ndir; n++) {
-      typename vector<value_type>::iterator p = AL.begin() + n * nAL;
+      typename std::vector<value_type>::iterator p = AL.begin() + n * nAL;
       value_type cos_el = std::cos(n * inc);
       for (int m = 0; m <= lmax; m++) {
         Legendre::Plm_sph(buf, lmax, m, cos_el);
@@ -418,7 +418,7 @@ public:
 protected:
   int lmax, ndir, nAL;
   ValueType inc;
-  vector<ValueType> AL;
+  std::vector<ValueType> AL;
 };
 
 //! estimate direction & amplitude of SH peak

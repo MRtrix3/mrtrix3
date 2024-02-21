@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -94,14 +94,14 @@ public:
   void clear() {
     std::lock_guard<std::mutex> lock(mutex);
     pool.clear();
-    std::stack<Particle *, deque<Particle *>> e{};
+    std::stack<Particle *, std::deque<Particle *>> e{};
     avail.swap(e);
   }
 
 protected:
   std::mutex mutex;
-  deque<Particle> pool;
-  std::stack<Particle *, deque<Particle *>> avail;
+  std::deque<Particle> pool;
+  std::stack<Particle *, std::deque<Particle *>> avail;
   Math::RNG rng;
 };
 
