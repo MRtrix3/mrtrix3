@@ -478,7 +478,7 @@ void run() {
     case 3:
       rigid_estimator = Registration::None;
     default:
-      assert (false);
+      assert(false);
     }
   }
 
