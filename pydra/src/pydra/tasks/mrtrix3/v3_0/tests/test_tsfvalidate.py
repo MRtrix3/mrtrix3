@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tsfvalidate
 
 
 def test_tsfvalidate(tmp_path, cli_parse_only):
+
     task = tsfvalidate(
         tsf=File.sample(),
         tracks=File.sample(),

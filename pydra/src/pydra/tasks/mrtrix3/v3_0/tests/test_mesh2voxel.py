@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mesh2voxel
 
 
 def test_mesh2voxel(tmp_path, cli_parse_only):
+
     task = mesh2voxel(
         source=File.sample(),
         template=Nifti1.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import maskfilter
 
 
 def test_maskfilter(tmp_path, cli_parse_only):
+
     task = maskfilter(
         input=Nifti1.sample(),
         filter="clean",

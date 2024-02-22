@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrthreshold
 
 
 def test_mrthreshold(tmp_path, cli_parse_only):
+
     task = mrthreshold(
         input=Nifti1.sample(),
         output=ImageFormat.sample(),

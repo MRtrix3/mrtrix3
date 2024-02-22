@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrstats
 
 
 def test_mrstats(tmp_path, cli_parse_only):
+
     task = mrstats(
         image_=Nifti1.sample(),
         output="mean",

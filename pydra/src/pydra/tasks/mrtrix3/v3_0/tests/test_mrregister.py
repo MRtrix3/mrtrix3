@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrregister
 
 
 def test_mrregister(tmp_path, cli_parse_only):
+
     task = mrregister(
         image1_image2=Nifti1.sample(),
         contrast1_contrast2=[Nifti1.sample()],

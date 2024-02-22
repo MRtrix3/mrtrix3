@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import afdconnectivity
 
 
 def test_afdconnectivity(tmp_path, cli_parse_only):
+
     task = afdconnectivity(
         image_=Nifti1.sample(),
         tracks=Tracks.sample(),

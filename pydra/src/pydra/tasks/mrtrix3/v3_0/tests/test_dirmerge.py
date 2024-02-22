@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dirmerge
 
 
 def test_dirmerge(tmp_path, cli_parse_only):
+
     task = dirmerge(
         subsets=1,
         bvalue_files=["a-string"],

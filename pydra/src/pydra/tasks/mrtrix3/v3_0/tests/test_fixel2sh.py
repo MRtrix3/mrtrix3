@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fixel2sh
 
 
 def test_fixel2sh(tmp_path, cli_parse_only):
+
     task = fixel2sh(
         fixel_in=Nifti1.sample(),
         sh_out=ImageFormat.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tckgen
 
 
 def test_tckgen(tmp_path, cli_parse_only):
+
     task = tckgen(
         source=Nifti1.sample(),
         tracks=Tracks.sample(),

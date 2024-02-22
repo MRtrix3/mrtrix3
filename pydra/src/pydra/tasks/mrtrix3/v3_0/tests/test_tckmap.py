@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tckmap
 
 
 def test_tckmap(tmp_path, cli_parse_only):
+
     task = tckmap(
         tracks=File.sample(),
         output=ImageFormat.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fixelreorient
 
 
 def test_fixelreorient(tmp_path, cli_parse_only):
+
     task = fixelreorient(
         fixel_in=File.sample(),
         warp=Nifti1.sample(),

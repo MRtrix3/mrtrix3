@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fixelfilter
 
 
 def test_fixelfilter(tmp_path, cli_parse_only):
+
     task = fixelfilter(
         input=File.sample(),
         filter="connect",

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrview
 
 
 def test_mrview(tmp_path, cli_parse_only):
+
     task = mrview(
         image_=[Nifti1.sample()],
         mode=[1],

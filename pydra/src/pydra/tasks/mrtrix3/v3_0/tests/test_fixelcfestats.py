@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fixelcfestats
 
 
 def test_fixelcfestats(tmp_path, cli_parse_only):
+
     task = fixelcfestats(
         in_fixel_directory=File.sample(),
         subjects=Nifti1.sample(),

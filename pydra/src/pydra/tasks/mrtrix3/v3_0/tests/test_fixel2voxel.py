@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fixel2voxel
 
 
 def test_fixel2voxel(tmp_path, cli_parse_only):
+
     task = fixel2voxel(
         fixel_in=Nifti1.sample(),
         operation="mean",

@@ -227,8 +227,7 @@ class dwidenoise(ShellCommandTask):
 
              5. The Software may only be used for non-commercial research and may not be used for clinical care.
 
-             6. Any publication by Recipient of research involving the Software shall cite the references listed below.
-    """
+             6. Any publication by Recipient of research involving the Software shall cite the references listed below."""
 
     executable = "dwidenoise"
     input_spec = dwidenoise_input_spec

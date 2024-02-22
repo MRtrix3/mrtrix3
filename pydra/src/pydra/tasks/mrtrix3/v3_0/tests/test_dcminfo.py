@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dcminfo
 
 
 def test_dcminfo(tmp_path, cli_parse_only):
+
     task = dcminfo(
         file=File.sample(),
         all=True,

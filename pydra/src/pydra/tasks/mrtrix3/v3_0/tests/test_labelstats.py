@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import labelstats
 
 
 def test_labelstats(tmp_path, cli_parse_only):
+
     task = labelstats(
         input=Nifti1.sample(),
         output="mass",

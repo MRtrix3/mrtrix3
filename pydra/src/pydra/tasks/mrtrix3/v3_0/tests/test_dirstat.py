@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dirstat
 
 
 def test_dirstat(tmp_path, cli_parse_only):
+
     task = dirstat(
         dirs=File.sample(),
         output=File.sample(),

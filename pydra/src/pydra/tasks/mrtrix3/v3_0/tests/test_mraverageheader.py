@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mraverageheader
 
 
 def test_mraverageheader(tmp_path, cli_parse_only):
+
     task = mraverageheader(
         input=[Nifti1.sample()],
         output=ImageFormat.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fivettcheck
 
 
 def test_fivettcheck(tmp_path, cli_parse_only):
+
     task = fivettcheck(
         input=[Nifti1.sample()],
         voxels="a-string",

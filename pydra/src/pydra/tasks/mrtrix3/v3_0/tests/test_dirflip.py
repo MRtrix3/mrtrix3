@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dirflip
 
 
 def test_dirflip(tmp_path, cli_parse_only):
+
     task = dirflip(
         in_=File.sample(),
         out=File.sample(),

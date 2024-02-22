@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import amp2response
 
 
 def test_amp2response(tmp_path, cli_parse_only):
+
     task = amp2response(
         amps=Nifti1.sample(),
         mask=Nifti1.sample(),

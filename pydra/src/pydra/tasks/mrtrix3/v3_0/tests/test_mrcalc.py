@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrcalc
 
 
 def test_mrcalc(tmp_path, cli_parse_only):
+
     task = mrcalc(
         operand=[File.sample()],
         abs=[True],

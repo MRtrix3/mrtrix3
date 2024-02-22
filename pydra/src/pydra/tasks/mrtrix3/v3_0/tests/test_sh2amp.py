@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import sh2amp
 
 
 def test_sh2amp(tmp_path, cli_parse_only):
+
     task = sh2amp(
         input=Nifti1.sample(),
         directions=File.sample(),

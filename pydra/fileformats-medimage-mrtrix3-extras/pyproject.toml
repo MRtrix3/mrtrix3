@@ -63,7 +63,7 @@ repository = "https://github.com/MRtrix3/mrtrix3"
 
 [tool.hatch.version]
 source = "vcs"
-raw-options = { root = "../../" }
+raw-options = { root = "../../.." }
 
 [tool.hatch.build.hooks.vcs]
 version-file = "fileformats/extras/medimage_mrtrix3/_version.py"

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tckinfo
 
 
 def test_tckinfo(tmp_path, cli_parse_only):
+
     task = tckinfo(
         tracks=[Tracks.sample()],
         count=True,

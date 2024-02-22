@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dwi2fod
 
 
 def test_dwi2fod(tmp_path, cli_parse_only):
+
     task = dwi2fod(
         algorithm="csd",
         dwi=Nifti1.sample(),

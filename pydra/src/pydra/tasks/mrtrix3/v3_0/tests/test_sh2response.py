@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import sh2response
 
 
 def test_sh2response(tmp_path, cli_parse_only):
+
     task = sh2response(
         SH=Nifti1.sample(),
         mask=Nifti1.sample(),

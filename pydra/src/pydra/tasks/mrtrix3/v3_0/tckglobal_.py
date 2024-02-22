@@ -369,8 +369,7 @@ class tckglobal(ShellCommandTask):
     Herestraat 49 box 7003, 3000 Leuven, Belgium
 
     This is free software; see the source for copying conditions.
-    There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    """
+    There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
 
     executable = "tckglobal"
     input_spec = tckglobal_input_spec

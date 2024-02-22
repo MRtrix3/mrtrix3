@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrdump
 
 
 def test_mrdump(tmp_path, cli_parse_only):
+
     task = mrdump(
         input=Nifti1.sample(),
         output=File.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dwidenoise
 
 
 def test_dwidenoise(tmp_path, cli_parse_only):
+
     task = dwidenoise(
         dwi=Nifti1.sample(),
         out=ImageFormat.sample(),

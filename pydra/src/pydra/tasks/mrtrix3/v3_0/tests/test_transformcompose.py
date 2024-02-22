@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import transformcompose
 
 
 def test_transformcompose(tmp_path, cli_parse_only):
+
     task = transformcompose(
         input=[File.sample()],
         output=File.sample(),

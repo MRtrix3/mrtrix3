@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dwi2tensor
 
 
 def test_dwi2tensor(tmp_path, cli_parse_only):
+
     task = dwi2tensor(
         dwi=Nifti1.sample(),
         dt=ImageFormat.sample(),

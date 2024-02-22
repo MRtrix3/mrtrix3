@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import vectorstats
 
 
 def test_vectorstats(tmp_path, cli_parse_only):
+
     task = vectorstats(
         input=File.sample(),
         design=File.sample(),

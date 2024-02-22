@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tcksift
 
 
 def test_tcksift(tmp_path, cli_parse_only):
+
     task = tcksift(
         in_tracks=Tracks.sample(),
         in_fod=Nifti1.sample(),

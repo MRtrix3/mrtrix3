@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import connectome2tck
 
 
 def test_connectome2tck(tmp_path, cli_parse_only):
+
     task = connectome2tck(
         tracks_in=File.sample(),
         assignments_in=File.sample(),

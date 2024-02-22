@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import peaks2fixel
 
 
 def test_peaks2fixel(tmp_path, cli_parse_only):
+
     task = peaks2fixel(
         directions=Nifti1.sample(),
         fixels=Directory.sample(),

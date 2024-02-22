@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fixel2peaks
 
 
 def test_fixel2peaks(tmp_path, cli_parse_only):
+
     task = fixel2peaks(
         in_=File.sample(),
         out=ImageFormat.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tsfdivide
 
 
 def test_tsfdivide(tmp_path, cli_parse_only):
+
     task = tsfdivide(
         input1=File.sample(),
         input2=File.sample(),

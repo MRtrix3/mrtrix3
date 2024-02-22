@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrinfo
 
 
 def test_mrinfo(tmp_path, cli_parse_only):
+
     task = mrinfo(
         image_=[Nifti1.sample()],
         all=True,

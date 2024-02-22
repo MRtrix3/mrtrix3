@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrcolour
 
 
 def test_mrcolour(tmp_path, cli_parse_only):
+
     task = mrcolour(
         input=Nifti1.sample(),
         map="gray",

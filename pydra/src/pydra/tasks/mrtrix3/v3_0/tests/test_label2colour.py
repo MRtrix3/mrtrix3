@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import label2colour
 
 
 def test_label2colour(tmp_path, cli_parse_only):
+
     task = label2colour(
         nodes_in=Nifti1.sample(),
         colour_out=ImageFormat.sample(),

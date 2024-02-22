@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrgrid
 
 
 def test_mrgrid(tmp_path, cli_parse_only):
+
     task = mrgrid(
         input=Nifti1.sample(),
         operation="regrid",

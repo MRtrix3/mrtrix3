@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fivett2gmwmi
 
 
 def test_fivett2gmwmi(tmp_path, cli_parse_only):
+
     task = fivett2gmwmi(
         in_5tt=Nifti1.sample(),
         mask_out=ImageFormat.sample(),

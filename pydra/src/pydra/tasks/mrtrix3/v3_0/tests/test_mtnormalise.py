@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mtnormalise
 
 
 def test_mtnormalise(tmp_path, cli_parse_only):
+
     task = mtnormalise(
         input_output=[File.sample()],
         mask=Nifti1.sample(),

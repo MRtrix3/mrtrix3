@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrhistmatch
 
 
 def test_mrhistmatch(tmp_path, cli_parse_only):
+
     task = mrhistmatch(
         type="scale",
         input=Nifti1.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrdegibbs
 
 
 def test_mrdegibbs(tmp_path, cli_parse_only):
+
     task = mrdegibbs(
         in_=Nifti1.sample(),
         out=ImageFormat.sample(),

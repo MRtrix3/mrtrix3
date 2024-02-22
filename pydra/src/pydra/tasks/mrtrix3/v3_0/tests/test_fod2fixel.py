@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fod2fixel
 
 
 def test_fod2fixel(tmp_path, cli_parse_only):
+
     task = fod2fixel(
         fod=Nifti1.sample(),
         fixel_directory=Directory.sample(),

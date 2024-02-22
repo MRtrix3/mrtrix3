@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fixelcrop
 
 
 def test_fixelcrop(tmp_path, cli_parse_only):
+
     task = fixelcrop(
         input_fixel_directory=File.sample(),
         input_fixel_mask=Nifti1.sample(),

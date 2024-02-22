@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tensor2metric
 
 
 def test_tensor2metric(tmp_path, cli_parse_only):
+
     task = tensor2metric(
         tensor=Nifti1.sample(),
         mask=Nifti1.sample(),

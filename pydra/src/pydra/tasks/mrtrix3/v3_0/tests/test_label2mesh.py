@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import label2mesh
 
 
 def test_label2mesh(tmp_path, cli_parse_only):
+
     task = label2mesh(
         nodes_in=Nifti1.sample(),
         mesh_out=File.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fivett2vis
 
 
 def test_fivett2vis(tmp_path, cli_parse_only):
+
     task = fivett2vis(
         input=Nifti1.sample(),
         output=ImageFormat.sample(),

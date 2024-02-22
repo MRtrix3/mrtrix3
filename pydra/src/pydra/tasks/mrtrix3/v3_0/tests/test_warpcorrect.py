@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import warpcorrect
 
 
 def test_warpcorrect(tmp_path, cli_parse_only):
+
     task = warpcorrect(
         in_=Nifti1.sample(),
         out=ImageFormat.sample(),

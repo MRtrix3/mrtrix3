@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrmetric
 
 
 def test_mrmetric(tmp_path, cli_parse_only):
+
     task = mrmetric(
         image1=Nifti1.sample(),
         image2=Nifti1.sample(),

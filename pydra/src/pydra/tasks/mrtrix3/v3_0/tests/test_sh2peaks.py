@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import sh2peaks
 
 
 def test_sh2peaks(tmp_path, cli_parse_only):
+
     task = sh2peaks(
         SH=Nifti1.sample(),
         output=ImageFormat.sample(),

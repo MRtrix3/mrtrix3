@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fixelconnectivity
 
 
 def test_fixelconnectivity(tmp_path, cli_parse_only):
+
     task = fixelconnectivity(
         fixel_directory=File.sample(),
         tracks=Tracks.sample(),

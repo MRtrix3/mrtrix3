@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import labelconvert
 
 
 def test_labelconvert(tmp_path, cli_parse_only):
+
     task = labelconvert(
         path_in=Nifti1.sample(),
         lut_in=File.sample(),

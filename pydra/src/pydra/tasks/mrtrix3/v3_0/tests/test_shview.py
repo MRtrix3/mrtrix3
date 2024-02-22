@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import shview
 
 
 def test_shview(tmp_path, cli_parse_only):
+
     task = shview(
         coefs=File.sample(),
         response=True,

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fod2dec
 
 
 def test_fod2dec(tmp_path, cli_parse_only):
+
     task = fod2dec(
         input=Nifti1.sample(),
         output=ImageFormat.sample(),

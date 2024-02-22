@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dirorder
 
 
 def test_dirorder(tmp_path, cli_parse_only):
+
     task = dirorder(
         input=File.sample(),
         output=File.sample(),

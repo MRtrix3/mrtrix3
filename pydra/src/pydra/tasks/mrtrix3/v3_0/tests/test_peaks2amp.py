@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import peaks2amp
 
 
 def test_peaks2amp(tmp_path, cli_parse_only):
+
     task = peaks2amp(
         directions=Nifti1.sample(),
         amplitudes=ImageFormat.sample(),

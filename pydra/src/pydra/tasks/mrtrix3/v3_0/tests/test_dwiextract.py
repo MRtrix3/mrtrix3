@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import dwiextract
 
 
 def test_dwiextract(tmp_path, cli_parse_only):
+
     task = dwiextract(
         input=Nifti1.sample(),
         output=ImageFormat.sample(),

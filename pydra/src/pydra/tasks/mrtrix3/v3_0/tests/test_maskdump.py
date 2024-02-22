@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import maskdump
 
 
 def test_maskdump(tmp_path, cli_parse_only):
+
     task = maskdump(
         input=Nifti1.sample(),
         output=File.sample(),

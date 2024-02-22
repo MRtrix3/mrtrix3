@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrhistogram
 
 
 def test_mrhistogram(tmp_path, cli_parse_only):
+
     task = mrhistogram(
         image_=Nifti1.sample(),
         hist=File.sample(),

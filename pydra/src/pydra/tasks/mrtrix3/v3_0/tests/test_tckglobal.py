@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tckglobal
 
 
 def test_tckglobal(tmp_path, cli_parse_only):
+
     task = tckglobal(
         source=Nifti1.sample(),
         response=File.sample(),

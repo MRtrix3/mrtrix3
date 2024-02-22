@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrmath
 
 
 def test_mrmath(tmp_path, cli_parse_only):
+
     task = mrmath(
         input=[Nifti1.sample()],
         operation="mean",

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import fivettedit
 
 
 def test_fivettedit(tmp_path, cli_parse_only):
+
     task = fivettedit(
         input=Nifti1.sample(),
         output=ImageFormat.sample(),

@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import connectomestats
 
 
 def test_connectomestats(tmp_path, cli_parse_only):
+
     task = connectomestats(
         input=File.sample(),
         algorithm="nbs",

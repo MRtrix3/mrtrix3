@@ -196,8 +196,7 @@ class fod2dec(ShellCommandTask):
 
         Author: Thijs Dhollander (thijs.dhollander@gmail.com)
 
-        Copyright: Copyright (C) 2014 The Florey Institute of Neuroscience and Mental Health, Melbourne, Australia. This is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    """
+        Copyright: Copyright (C) 2014 The Florey Institute of Neuroscience and Mental Health, Melbourne, Australia. This is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
 
     executable = "fod2dec"
     input_spec = fod2dec_input_spec

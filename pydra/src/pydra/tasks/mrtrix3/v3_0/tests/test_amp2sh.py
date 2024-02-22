@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import amp2sh
 
 
 def test_amp2sh(tmp_path, cli_parse_only):
+
     task = amp2sh(
         amp=Nifti1.sample(),
         SH=ImageFormat.sample(),

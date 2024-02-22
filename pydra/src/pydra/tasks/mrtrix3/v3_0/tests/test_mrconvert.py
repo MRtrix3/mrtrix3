@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrconvert
 
 
 def test_mrconvert(tmp_path, cli_parse_only):
+
     task = mrconvert(
         input=Nifti1.sample(),
         output=ImageFormat.sample(),

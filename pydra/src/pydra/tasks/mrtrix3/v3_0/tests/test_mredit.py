@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mredit
 
 
 def test_mredit(tmp_path, cli_parse_only):
+
     task = mredit(
         input=Nifti1.sample(),
         output=ImageFormat.sample(),

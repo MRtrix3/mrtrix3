@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import mrfilter
 
 
 def test_mrfilter(tmp_path, cli_parse_only):
+
     task = mrfilter(
         input=Nifti1.sample(),
         filter="fft",

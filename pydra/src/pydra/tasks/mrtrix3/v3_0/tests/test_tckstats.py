@@ -7,6 +7,7 @@ from pydra.tasks.mrtrix3.v3_0 import tckstats
 
 
 def test_tckstats(tmp_path, cli_parse_only):
+
     task = tckstats(
         tracks_in=Tracks.sample(),
         output="mean",
