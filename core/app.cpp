@@ -804,14 +804,13 @@ std::string pydra_usage() {
       if (!result.size() && c == '5') {
         result += "Five"; // handle 5tt prefixes so they don't create invalid Python identifiers
         capitalizeNext = false;
-      } else if (capitalizeNext) {
+      } else if (std::isalpha(c) && capitalizeNext) {
         result += std::toupper(c);
         capitalizeNext = false;
-      } else if (c == '2' && result.size() > 2) {
-        capitalizeNext = true;
-        result += c;
       } else {
         result += c;
+        if (c == '2')
+          capitalizeNext = true;
         for (const std::string &prefix : CMD_PREFIXES) {
           if (result == prefix) {
             capitalizeNext = true;
@@ -1015,6 +1014,22 @@ std::string pydra_usage() {
     return f;
   };
 
+  auto format_arg_name = [&](const Argument &arg) {
+    std::string id = arg.id;
+    std::string arg_name;
+    if (id == "input" && (arg.type == ImageIn || arg.type == ArgFileIn))
+      arg_name = "in_file";
+    else if (id == "input" && arg.type == ArgDirectoryIn)
+      arg_name = "in_dir";
+    else if (id == "output" && (arg.type == ImageOut || arg.type == ArgFileOut))
+      arg_name = "out_file";
+    else if (id == "output" && arg.type == ArgDirectoryOut)
+      arg_name = "out_dir";
+    else
+      arg_name = escape_id(arg.id);
+    return arg_name;
+  };
+
   // Print out input spec
   s += "\n\ninput_fields = [\n\n" + base_indent + "# Arguments\n";
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
@@ -1022,7 +1037,8 @@ std::string pydra_usage() {
     bool is_multi = (ARGUMENTS[i].flags & AllowMultiple) && (ARGUMENTS[i].type != ArgFileOut);
     s += base_indent + "(\n";
     // Print name of field
-    s += indent + "\"" + escape_id(ARGUMENTS[i].id) + "\",\n";
+    std::string arg_name = format_arg_name(ARGUMENTS[i]);
+    s += indent + "\"" + arg_name + "\",\n";
     // Print type
     s += indent;
     if (is_multi) {
@@ -1038,8 +1054,7 @@ std::string pydra_usage() {
     s += md_indent + "\"position\": " + std::to_string(i) + ",\n";
     bool output_type = false;
     if (ARGUMENTS[i].type == ImageOut || ARGUMENTS[i].type == ArgFileOut || ARGUMENTS[i].type == ArgDirectoryOut) {
-      s += md_indent + "\"output_file_template\": \"" +
-           format_output_template(escape_id(ARGUMENTS[i].id), ARGUMENTS[i].type) + "\",\n";
+      s += md_indent + "\"output_file_template\": \"" + format_output_template(arg_name, ARGUMENTS[i].type) + "\",\n";
       output_type = true;
     }
     s += md_indent + "\"help_string\": \"\"\"" + ARGUMENTS[i].desc + "\"\"\",\n";
@@ -1089,7 +1104,7 @@ std::string pydra_usage() {
       bool is_multi = ARGUMENTS[i].flags & AllowMultiple;
       s += base_indent + "(\n";
       // Print name of field
-      s += indent + "\"" + escape_id(ARGUMENTS[i].id) + "\",\n";
+      s += indent + "\"" + format_arg_name(ARGUMENTS[i]) + "\",\n";
       // Print type
       std::string type_string;
       if (is_multi)
