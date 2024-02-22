@@ -46,8 +46,6 @@ CMakeLists.txt.user
 *.venv
 __pycache__
 .DS_Store
-/pydra/src/pydra/tasks/mrtrix3/_version.py
-/pydra/fileformats-medimage-mrtrix3/fileformats/medimage_mrtrix3/_version.py
-/pydra/fileformats-medimage-mrtrix3-extras/fileformats/extras/medimage_mrtrix3/_version.py
-/pydra/src/pydra/tasks/mrtrix3/v3_0
-/pydra/**/dist/**
+_version.py
+/interfaces/pydra/src/pydra/tasks/mrtrix3/v3_0
+/interfaces/pydra/**/dist/**
