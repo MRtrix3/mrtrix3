@@ -793,12 +793,43 @@ std::string restructured_text_usage() {
 
 std::string pydra_usage() {
 
-  std::string name_string(NAME);
+  std::string CMD_PREFIXES[] = {"Fivett", "Afd", "Amp",   "Connectome", "Dcm",  "Dir",   "Dwi",
+                                "Fixel",  "Fod", "Label", "Mask",       "Mesh", "Mr",    "Mt",
+                                "Peaks",  "Sh",  "Tck",   "Transform",  "Tsf",  "Voxel", "Vector"};
+
+  auto convert_to_pascal_case = [&](const std::string &input) {
+    std::string result;
+    bool capitalizeNext = true;
+    for (char c : input) {
+      if (!result.size() && c == '5') {
+        result += "Five"; // handle 5tt prefixes so they don't create invalid Python identifiers
+        capitalizeNext = false;
+      } else if (capitalizeNext) {
+        result += std::toupper(c);
+        capitalizeNext = false;
+      } else if (c == '2' && result.size() > 2) {
+        capitalizeNext = true;
+        result += c;
+      } else {
+        result += c;
+        for (const std::string &prefix : CMD_PREFIXES) {
+          if (result == prefix) {
+            capitalizeNext = true;
+            break;
+          }
+        }
+      }
+    }
+    return result;
+  };
+
+  std::string name_string = convert_to_pascal_case(NAME);
   // Check whether name starts with 5tt and escape the name if so
+
   if (name_string.length() > 3) {
     std::string prefix = name_string.substr(0, 3);
     if (!prefix.compare("5tt")) {
-      name_string = "fivett" + name_string.substr(3, name_string.length());
+      name_string = "Fivett" + name_string.substr(3, name_string.length());
     }
   }
 
@@ -1021,7 +1052,7 @@ std::string pydra_usage() {
     s += indent + "},\n" + base_indent + "),\n";
   }
 
-  vector<std::string> group_names;
+  std::vector<std::string> group_names;
   for (size_t i = 0; i < OPTIONS.size(); ++i) {
     if (std::find(group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
       group_names.push_back(OPTIONS[i].name);
@@ -1048,8 +1079,8 @@ std::string pydra_usage() {
 
   s += "]\n\n";
 
-  s += name_string + "_input_spec = specs.SpecInfo(name='" + name_string +
-       "_input', fields=input_fields, bases=(specs.ShellSpec,))\n\n\n";
+  s += name_string + "InputSpec = specs.SpecInfo(name='" + name_string +
+       "Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n\n";
 
   s += "output_fields = [\n";
 
@@ -1105,8 +1136,8 @@ std::string pydra_usage() {
   }
 
   s += "]\n";
-  s += name_string + "_output_spec = specs.SpecInfo(name='" + name_string +
-       "_output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n\n";
+  s += name_string + "OutputSpec = specs.SpecInfo(name='" + name_string +
+       "Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n\n";
 
   // Create actual class
   s += "class " + name_string + "(ShellCommandTask):\n";
@@ -1137,8 +1168,8 @@ std::string pydra_usage() {
        ", built " + build_date + "\n\n" + indent + "Author: " + AUTHOR + "\n\n" + indent + "Copyright: " + COPYRIGHT;
   s += "    \"\"\"\n";
   s += "    executable = \"" + name_string + "\"\n";
-  s += "    input_spec = " + name_string + "_input_spec\n";
-  s += "    output_spec = " + name_string + "_output_spec\n\n";
+  s += "    input_spec = " + name_string + "InputSpec\n";
+  s += "    output_spec = " + name_string + "OutputSpec\n\n";
 
   return s;
 }
@@ -1147,7 +1178,7 @@ const Option *match_option(const char *arg) {
   if (consume_dash(arg) && *arg && !isdigit(*arg) && *arg != '.') {
     while (consume_dash(arg))
       ;
-    vector<const Option *> candidates;
+    std::vector<const Option *> candidates;
     std::string root(arg);
 
     for (size_t i = 0; i < OPTIONS.size(); ++i)
