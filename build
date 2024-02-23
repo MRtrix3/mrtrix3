@@ -18,6 +18,7 @@ if [ "$(uname)" = "Darwin" ]; then
   OS=macos
 fi
 
+HOST_ARCH=$(arch)
 
 ARCHS="x86_64"
 if [ "${OS}" = "macos" ]; then
@@ -55,7 +56,12 @@ else
     fi
     tar xf ${FNAME}
     cd ${DNAME}
-    CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
+    # In order to cross-compile for arm64 on a x86 host, we need to explicitly set the host
+    if [ "${ARCH}" = "arm64" ] && [ "${HOST_ARCH}" = "i386" ]; then
+      CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD} --host=i386-apple-darwin
+    else
+      CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
+    fi
     make install > /dev/null
     cd ..
     rm -r ${DNAME}
