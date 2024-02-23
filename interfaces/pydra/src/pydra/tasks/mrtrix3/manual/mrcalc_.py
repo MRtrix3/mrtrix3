@@ -206,7 +206,7 @@ input_fields = [
     ),
 ]
 
-mrcalc_input_spec = specs.SpecInfo(
+MrCalcInputSpec = specs.SpecInfo(
     name="mrcalc_input", fields=input_fields, bases=(specs.ShellSpec,)
 )
 
@@ -220,12 +220,12 @@ output_fields = [
         },
     ),
 ]
-mrcalc_output_spec = specs.SpecInfo(
+MrCalcOutputSpec = specs.SpecInfo(
     name="mrcalc_output", fields=output_fields, bases=(specs.ShellOutSpec,)
 )
 
 
-class mrcalc(ShellCommandTask):
+class MrCalc(ShellCommandTask):
     """This command will only compute per-voxel operations. Use 'mrmath' to compute summary statistics across images or along image axes.
 
         This command uses a stack-based syntax, with operators (specified using options) operating on the top-most entries (i.e. images or values) in the stack. Operands (values or images) are pushed onto the stack in the order they appear (as arguments) on the command-line, and operators (specified as options) operate on and consume the top-most entries in the stack, and push their output as a new entry on the stack.
@@ -296,5 +296,5 @@ class mrcalc(ShellCommandTask):
     Op = Operator = MrCalcOp
 
     executable = "mrcalc"
-    input_spec = mrcalc_input_spec
-    output_spec = mrcalc_output_spec
+    input_spec = MrCalcInputSpec
+    output_spec = MrCalcOutputSpec

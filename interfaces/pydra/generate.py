@@ -7,6 +7,7 @@ import typing as ty
 from importlib import import_module
 import logging
 import re
+from tqdm import tqdm
 import click
 import black.report
 import black.parsing
@@ -26,6 +27,37 @@ IGNORE = [
     "convert_bruker",
     "gen_scheme",
     "notfound",
+    "for_each",
+    "mrview",
+    "shview",
+]
+
+
+CMD_PREFIXES = [
+    "fivett",
+    "afd",
+    "amp",
+    "connectome",
+    "dcm",
+    "dir",
+    "dwi",
+    "fixel",
+    "fod",
+    "label",
+    "mask",
+    "mesh",
+    "mr",
+    "mt",
+    "peaks",
+    "sh",
+    "tck",
+    "tensor",
+    "transform",
+    "tsf",
+    "voxel",
+    "vector",
+    "warp",
+    "response",
 ]
 
 
@@ -68,17 +100,35 @@ def auto_gen_mrtrix3_pydra(
     # generate the tests
     sys.path.insert(0, str(output_dir))
 
-    cmds = []
+    manual_cmds = []
+    manual_path = output_dir / "pydra" / "tasks" / "mrtrix3" / "manual"
+    if manual_path.exists():
+        for manual_file in manual_path.iterdir():
+            manual_cmd = manual_file.stem[:-1]
+            if not manual_cmd.startswith(".") and not manual_cmd.startswith("__"):
+                manual_cmds.append(manual_cmd)
 
-    for cmd_name in sorted(os.listdir(cmd_dir)):
-        if cmd_name.startswith("_") or "." in cmd_name or cmd_name in IGNORE:
+    cmds = []
+    for cmd_name in tqdm(
+        sorted(os.listdir(cmd_dir)),
+        "generating Pydra interfaces for all MRtrix3 commands",
+    ):
+        if (
+            cmd_name.startswith("_")
+            or "." in cmd_name
+            or cmd_name in IGNORE
+            or cmd_name in manual_cmds
+        ):
             continue
         cmd = [str(cmd_dir / cmd_name)]
-        cmds.extend(auto_gen_cmd(cmd, cmd_name, output_dir, log_errors, pkg_version))
+        cmds.extend(auto_gen_cmd(cmd, cmd_name, output_dir, cmd_dir, log_errors, pkg_version))
 
     # Write init
     init_path = output_dir / "pydra" / "tasks" / "mrtrix3" / pkg_version / "__init__.py"
-    imports = "\n".join(f"from .{c}_ import {c}" for c in cmds)
+    imports = "\n".join(f"from .{c}_ import {pascal_case_task_name(c)}" for c in cmds)
+    imports += "\n" + "\n".join(
+        f"from ..manual.{c}_ import {pascal_case_task_name(c)}" for c in manual_cmds
+    )
     init_path.write_text(f"# Auto-generated, do not edit\n\n{imports}\n")
 
     if latest:
@@ -88,14 +138,19 @@ def auto_gen_mrtrix3_pydra(
         )
         print(f"Generated pydra.tasks.mrtrix3.{pkg_version} package")
 
+    # Test out import
+    import_module(f"pydra.tasks.mrtrix3.{pkg_version}")
 
 def auto_gen_cmd(
     cmd: ty.List[str],
     cmd_name: str,
     output_dir: Path,
+    cmd_dir: Path,
     log_errors: bool,
     pkg_version: str,
 ) -> ty.List[str]:
+    base_cmd = str(cmd_dir / cmd[0])
+    cmd = [base_cmd] + cmd[1:]
     try:
         code_str = sp.check_output(cmd + ["__print_usage_pydra__"]).decode("utf-8")
     except sp.CalledProcessError:
@@ -113,6 +168,7 @@ def auto_gen_cmd(
                     cmd + [algorithm],
                     f"{cmd_name}_{algorithm}",
                     output_dir,
+                    cmd_dir,
                     log_errors,
                     pkg_version,
                 )
@@ -154,7 +210,7 @@ def auto_gen_test(cmd_name: str, output_dir: Path, log_errors: bool, pkg_version
     tests_dir = output_dir / "pydra" / "tasks" / "mrtrix3" / pkg_version / "tests"
     tests_dir.mkdir(exist_ok=True)
     module = import_module(f"pydra.tasks.mrtrix3.{pkg_version}.{cmd_name}_")
-    interface = getattr(module, cmd_name)
+    interface = getattr(module, pascal_case_task_name(cmd_name))
     task = interface()
 
     code_str = f"""# Auto-generated test for {cmd_name}
@@ -165,7 +221,7 @@ from fileformats.medimage_mrtrix3 import ImageFormat, ImageIn, Tracks  # noqa
 from pydra.tasks.mrtrix3.{pkg_version} import {cmd_name}
 
 
-def test_{cmd_name}(tmp_path, cli_parse_only):
+def test_{cmd_name.lower()}(tmp_path, cli_parse_only):
 
     task = {cmd_name}(
 """
@@ -264,6 +320,21 @@ def escape_cmd_name(cmd_name: str) -> str:
     return cmd_name.replace("5tt", "fivett")
 
 
+def pascal_case_task_name(cmd_name: str) -> str:
+    # convert to PascalCase
+    if cmd_name == "population_template":
+        return "PopulationTemplate"
+    try:
+        return "".join(
+            g.capitalize()
+            for g in re.match(rf"({'|'.join(CMD_PREFIXES)}?)(2?)([^_]+)(_?)(.*)", cmd_name).groups()
+        )
+    except AttributeError as e:
+        raise ValueError(
+            f"Could not convert {cmd_name} to PascalCase, please add its prefix to CMD_PREFIXES"
+        ) from e
+
+
 if __name__ == "__main__":
     from pathlib import Path
 
@@ -275,7 +346,7 @@ if __name__ == "__main__":
 
     auto_gen_mrtrix3_pydra(
         [
-            str(script_dir.parent / "bin"),
+            sys.argv[1],
             str(script_dir / "src"),
             mrtrix_version,
             "--raise-errors",

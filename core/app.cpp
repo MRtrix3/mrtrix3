@@ -793,9 +793,9 @@ std::string restructured_text_usage() {
 
 std::string pydra_usage() {
 
-  std::string CMD_PREFIXES[] = {"Fivett", "Afd", "Amp",   "Connectome", "Dcm",  "Dir",   "Dwi",
-                                "Fixel",  "Fod", "Label", "Mask",       "Mesh", "Mr",    "Mt",
-                                "Peaks",  "Sh",  "Tck",   "Transform",  "Tsf",  "Voxel", "Vector"};
+  std::string CMD_PREFIXES[] = {"Fivett", "Afd",    "Amp",       "Connectome", "Dcm",   "Dir",    "Dwi",   "Fixel",
+                                "Fod",    "Label",  "Mask",      "Mesh",       "Mr",    "Mt",     "Peaks", "Sh",
+                                "Tck",    "Tensor", "Transform", "Tsf",        "Voxel", "Vector", "Warp"};
 
   auto convert_to_pascal_case = [&](const std::string &input) {
     std::string result;
