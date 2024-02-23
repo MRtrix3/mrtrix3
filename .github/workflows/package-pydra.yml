@@ -59,34 +59,40 @@ jobs:
           -D MRTRIX_WARNINGS_AS_ERRORS=ON
           -D CMAKE_C_COMPILER=clang
           -D CMAKE_CXX_COMPILER=clang++
+          -D CMAKE_INSTALL_PREFIX=$(pwd)/install
   
       - name: build
         run: cmake --build build      
 
       - name: Set PATH Variable
-        run: echo "PATH=$PATH:$(pwd)/bin" >> $GITHUB_ENV
+        run: echo "PATH=$PATH:$(pwd)/install/bin" >> $GITHUB_ENV
 
       - name: Set LD_LIBRARY_PATH Variable
-        run: echo "LD_LIBRARY_PATH=$(pwd)/lib" >> $GITHUB_ENV        
+        run: echo "LD_LIBRARY_PATH=$(pwd)/install/lib" >> $GITHUB_ENV
+
       - name: Set up Python
         uses: actions/setup-python@v2
+
       - name: Install Python build dependencies
         run: |
           python -m pip install --upgrade pip
+
       - name: Install pydra-auto-gen requirements
         run: |
           pip install -e interfaces/pydra/fileformats-medimage-mrtrix3
           pip install -e interfaces/pydra/fileformats-medimage-mrtrix3-extras
           pip install -e interfaces/pydra/src
           pip install -r interfaces/pydra/requirements.txt          
+
       - name: Generate task specifications
         run: |
-          python interfaces/pydra/generate.py 
+          python interfaces/pydra/generate.py $(pwd)/install/bin
+
       - name: Upload auto-gen pydra
         uses: actions/upload-artifact@v2
         with:
           name: AutoGen
-          path: pydra/src/pydra/tasks/mrtrix3/v3_0
+          path: interfaces/pydra/src/pydra/tasks/mrtrix3/v3_0
 
   devcheck:
     needs: [generate-pydra]
@@ -101,22 +107,27 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Download auto-gen pydra
       uses: actions/download-artifact@v2
       with:
         name: AutoGen
         path: interfaces/pydra/src/pydra/tasks/mrtrix3/v3_0
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install build dependencies
       run: |
         python -m pip install --upgrade pip
+
     - name: Install Pydra
       run: |
         pip install ${{ matrix.pydra }}
         python -c "import pydra as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
+
     - name: Install task package
       run: |
         pip install ${{ matrix.pip-flags }} "pydra/src[dev]"
@@ -172,27 +183,34 @@ jobs:
         python-version: [3.11]
     steps:
     - uses: actions/checkout@v2
+
     - name: Download auto-gen pydra
       uses: actions/download-artifact@v2
       with:
         name: AutoGen
-        path: interfaces/pydra/src/pydra/tasks/mrtrix3/v3_0    
+        path: interfaces/pydra/src/pydra/tasks/mrtrix3/v3_0
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install build tools
       run: python -m pip install --upgrade pip twine build
+
     - name: Build source and wheel distributions
       working-directory: ./interfaces/pydra/src
       run: python -m build
+
     - name: Check distributions
       run: twine check interfaces/pydra/src/dist/*
+
     - name: Upload sdist
       uses: actions/upload-artifact@v2
       with:
         name: SDist
         path: interfaces/pydra/src/dist/*.tar.gz
+
     # Deploy on tags if PYPI_API_TOKEN is defined in the repository secrets.
     # Secrets are not accessible in the if: condition [0], so set an output variable [1]
     # [0] https://github.community/t/16928
@@ -203,6 +221,7 @@ jobs:
       env:
         PYPI_API_TOKEN: "${{ secrets.PYPI_API_TOKEN }}"
       run: if [ -n "$PYPI_API_TOKEN" ]; then echo ::set-output name=DEPLOY::true; fi
+
     - name: Upload to PyPI
       if: steps.deployable.outputs.DEPLOY
       uses: pypa/gh-action-pypi-publish@release/v1
