@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import sys
 import attrs
@@ -344,12 +345,4 @@ if __name__ == "__main__":
         "git describe --tags --abbrev=0", cwd=script_dir, shell=True
     ).decode("utf-8")
 
-    auto_gen_mrtrix3_pydra(
-        [
-            sys.argv[1],
-            str(script_dir / "src"),
-            mrtrix_version,
-            "--raise-errors",
-            "--latest",
-        ]
-    )
+    auto_gen_mrtrix3_pydra(sys.argv[1:])
