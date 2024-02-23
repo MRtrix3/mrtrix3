@@ -96,6 +96,7 @@ jobs:
           $(pwd)/install/bin
           $(pwd)/interfaces/pydra/src
           $MRTRIX3_VERSION
+          --log-errors
           --latest
 
       - name: Upload auto-gen pydra
