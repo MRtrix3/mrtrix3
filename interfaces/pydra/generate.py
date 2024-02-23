@@ -7,6 +7,7 @@ import subprocess as sp
 import typing as ty
 from importlib import import_module
 import logging
+from traceback import format_exc
 import re
 from tqdm import tqdm
 import click
@@ -17,8 +18,6 @@ from fileformats.medimage_mrtrix3 import ImageFormat, ImageIn, ImageOut, Tracks
 from pydra.engine.helpers import make_klass
 from pydra.engine import specs
 
-
-logging.basicConfig(level=logging.WARNING)
 
 logger = logging.getLogger("pydra-auto-gen")
 
@@ -90,9 +89,23 @@ MRTRIX_VERSION the version of MRTrix the commands are generated for
     default=False,
     help="whether to write 'latest' module",
 )
+@click.option(
+    "--log-level",
+    type=click.Choice(["debug", "info", "warning", "error", "critical"]),
+    default="warning",
+    help="logging level",
+)
 def auto_gen_mrtrix3_pydra(
-    cmd_dir: Path, mrtrix_version: str, output_dir: Path, log_errors: bool, latest: bool
+    cmd_dir: Path,
+    mrtrix_version: str,
+    output_dir: Path,
+    log_errors: bool,
+    latest: bool,
+    log_level: str,
 ):
+
+    logging.basicConfig(level=getattr(logging, log_level.upper()))
+
     pkg_version = "v" + "_".join(mrtrix_version.split(".")[:2])
 
     cmd_dir = cmd_dir.absolute()
@@ -122,7 +135,9 @@ def auto_gen_mrtrix3_pydra(
         ):
             continue
         cmd = [str(cmd_dir / cmd_name)]
-        cmds.extend(auto_gen_cmd(cmd, cmd_name, output_dir, cmd_dir, log_errors, pkg_version))
+        cmds.extend(
+            auto_gen_cmd(cmd, cmd_name, output_dir, cmd_dir, log_errors, pkg_version)
+        )
 
     # Write init
     init_path = output_dir / "pydra" / "tasks" / "mrtrix3" / pkg_version / "__init__.py"
@@ -142,6 +157,7 @@ def auto_gen_mrtrix3_pydra(
     # Test out import
     import_module(f"pydra.tasks.mrtrix3.{pkg_version}")
 
+
 def auto_gen_cmd(
     cmd: ty.List[str],
     cmd_name: str,
@@ -157,6 +173,7 @@ def auto_gen_cmd(
     except sp.CalledProcessError:
         if log_errors:
             logger.error("Could not generate interface for '%s'", cmd_name)
+            logger.error(format_exc())
             return []
         else:
             raise
@@ -194,6 +211,8 @@ def auto_gen_cmd(
     except black.parsing.InvalidInput:
         if log_errors:
             logger.error("Could not parse generated interface for '%s'", cmd_name)
+            logger.error(format_exc())
+            return []
         else:
             raise
     output_path = (
@@ -203,7 +222,15 @@ def auto_gen_cmd(
     with open(output_path, "w") as f:
         f.write(code_str)
     logger.info("%s", cmd_name)
-    auto_gen_test(cmd_name, output_dir, log_errors, pkg_version)
+    try:
+        auto_gen_test(cmd_name, output_dir, log_errors, pkg_version)
+    except Exception:
+        if log_errors:
+            logger.error("Test generation failed for '%s'", cmd_name)
+            logger.error(format_exc())
+            return []
+        else:
+            raise
     return [cmd_name]
 
 
@@ -307,11 +334,6 @@ def test_{cmd_name.lower()}(tmp_path, cli_parse_only):
         )
     except black.report.NothingChanged:
         pass
-    except black.parsing.InvalidInput:
-        if log_errors:
-            logger.error("Could not parse generated interface for '%s'", cmd_name)
-        else:
-            raise
 
     with open(tests_dir / f"test_{cmd_name}.py", "w") as f:
         f.write(code_str)
@@ -328,7 +350,9 @@ def pascal_case_task_name(cmd_name: str) -> str:
     try:
         return "".join(
             g.capitalize()
-            for g in re.match(rf"({'|'.join(CMD_PREFIXES)}?)(2?)([^_]+)(_?)(.*)", cmd_name).groups()
+            for g in re.match(
+                rf"({'|'.join(CMD_PREFIXES)}?)(2?)([^_]+)(_?)(.*)", cmd_name
+            ).groups()
         )
     except AttributeError as e:
         raise ValueError(
