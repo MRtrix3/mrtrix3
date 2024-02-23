@@ -8,6 +8,16 @@ find_package(Threads REQUIRED)
 find_package(PNG QUIET)
 find_package(TIFF QUIET)
 
+# The find modules for Eigen3, PNG and TIFF don't log the location
+# of the libraries, so we do it manually here
+message(STATUS "Found Eigen3: ${EIGEN3_INCLUDE_DIR}")
+if(PNG_FOUND)
+    message(STATUS "Found PNG: ${PNG_LIBRARIES}")
+endif()
+if(TIFF_FOUND)
+    message(STATUS "Found TIFF: ${TIFF_LIBRARIES}")
+endif()
+
 add_library(mrtrix-core SHARED ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
 

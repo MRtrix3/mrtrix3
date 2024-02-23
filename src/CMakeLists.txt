@@ -11,6 +11,9 @@ if(MRTRIX_BUILD_GUI)
         find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL Network OpenGLWidgets REQUIRED)
         qt6_add_resources(RCC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../icons/icons.qrc)
     endif()
+    # Explicitly log Qt's location since it's not done automatically by the FindQt module
+    message(STATUS "Qt${QT_MAJOR_VERSION}_DIR is set to: ${Qt${QT_MAJOR_VERSION}_DIR}")
+
     find_package(OpenGL REQUIRED)
     find_package(Threads REQUIRED)
 endif()
