@@ -23,26 +23,49 @@ jobs:
 
     env:
       CFLAGS: -Werror
-      QT_SELECT: qt5
+      QT_SELECT: qt6
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
-      CXX_COMPILER_LAUNCHER: sccache
 
     steps:
       - uses: actions/checkout@v1
-
-      - name: Install MRtrix dependencies
+        with:
+          submodules: true
+  
+      - name: install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+           sudo apt-get update
+           sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+  
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3
-      - name: Configure MRtrix
-        run: ./configure -assert || { cat configure.log; false; }
-      - name: Build MRtrix
-        run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+      
+      - name: Get CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: '3.16.3'
+  
+      - name: Print CMake version
+        run: cmake --version
+  
+      - name: configure
+        run: >
+          cmake
+          -B build
+          -G Ninja
+          -D CMAKE_BUILD_TYPE=Release
+          -D MRTRIX_BUILD_TESTS=ON
+          -D MRTRIX_STL_DEBUGGING=ON
+          -D MRTRIX_WARNINGS_AS_ERRORS=ON
+          -D CMAKE_C_COMPILER=clang
+          -D CMAKE_CXX_COMPILER=clang++
+  
+      - name: build
+        run: cmake --build build      
+
       - name: Set PATH Variable
         run: echo "PATH=$PATH:$(pwd)/bin" >> $GITHUB_ENV
+
       - name: Set LD_LIBRARY_PATH Variable
         run: echo "LD_LIBRARY_PATH=$(pwd)/lib" >> $GITHUB_ENV        
       - name: Set up Python
@@ -52,17 +75,18 @@ jobs:
           python -m pip install --upgrade pip
       - name: Install pydra-auto-gen requirements
         run: |
-          pip install -r pydra/fileformats-mrtrix
-          pip install -r pydra/fileformats-mrtrix-extras
-          pip install -r pydra/requirements.txt          
+          pip install -e interfaces/pydra/fileformats-medimage-mrtrix3
+          pip install -e interfaces/pydra/fileformats-medimage-mrtrix3-extras
+          pip install -e interfaces/pydra/src
+          pip install -r interfaces/pydra/requirements.txt          
       - name: Generate task specifications
         run: |
-          python pydra/pydra-auto-gen.py
+          python interfaces/pydra/generate.py 
       - name: Upload auto-gen pydra
         uses: actions/upload-artifact@v2
         with:
           name: AutoGen
-          path: pydra/src/pydra/tasks/mrtrix3/latest
+          path: pydra/src/pydra/tasks/mrtrix3/v3_0
 
   devcheck:
     needs: [generate-pydra]
@@ -81,7 +105,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: AutoGen
-        path: pydra/src/pydra/tasks/mrtrix3/latest
+        path: interfaces/pydra/src/pydra/tasks/mrtrix3/v3_0
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -97,6 +121,7 @@ jobs:
       run: |
         pip install ${{ matrix.pip-flags }} "pydra/src[dev]"
         python -c "import pydra.tasks.mrtrix3 as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
+        python -c "import pydra.tasks.mrtrix3.v3_0"
         python -c "import pydra as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
 
   # test:
@@ -128,12 +153,12 @@ jobs:
   #       python -m pip install --upgrade pip
   #   - name: Install task package
   #     run: |
-  #       pip install ".[test]"
+  #       pip install interfaces/pydra/fileformats-medimage-mrtrix interfaces/pydra/fileformats-medimage-mrtrix-extras 'interfaces/pydra/src[test]'
   #       python -c "import pydra.tasks.mrtrix3 as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
   #       python -c "import pydra as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
   #   - name: Test with pytest
   #     run: |
-  #       pytest -sv --doctest-modules pydra/tasks/mrtrix3 \
+  #       pytest -sv --doctest-modules interfaces/src/pydra/tasks/mrtrix3 \
   #           --cov pydra.tasks.mrtrix3 --cov-report xml
   #   - uses: codecov/codecov-action@v1
   #     if: ${{ always() }}
@@ -151,7 +176,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: AutoGen
-        path: pydra/src/pydra/tasks/mrtrix3/latest    
+        path: interfaces/pydra/src/pydra/tasks/mrtrix3/v3_0    
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -159,15 +184,15 @@ jobs:
     - name: Install build tools
       run: python -m pip install --upgrade pip twine build
     - name: Build source and wheel distributions
-      working-directory: ./pydra/src
+      working-directory: ./interfaces/pydra/src
       run: python -m build
     - name: Check distributions
-      run: twine check pydra/src/dist/*
+      run: twine check interfaces/pydra/src/dist/*
     - name: Upload sdist
       uses: actions/upload-artifact@v2
       with:
         name: SDist
-        path: pydra/src/dist/*.tar.gz
+        path: interfaces/pydra/src/dist/*.tar.gz
     # Deploy on tags if PYPI_API_TOKEN is defined in the repository secrets.
     # Secrets are not accessible in the if: condition [0], so set an output variable [1]
     # [0] https://github.community/t/16928
@@ -184,4 +209,4 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
-        packages-dir: pydra/src/dist/
+        packages-dir: interfaces/pydra/src/dist/
