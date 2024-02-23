@@ -141,7 +141,8 @@ jobs:
 
     - name: Install task package
       run: |
-        pip install ${{ matrix.pip-flags }} "pydra/src[dev]"
+        pip install ${{ matrix.pip-flags }} "interfaces/pydra/fileformats-medimage-mrtrix"
+        pip install ${{ matrix.pip-flags }} "interfaces/pydra/src[dev]"
         python -c "import pydra.tasks.mrtrix3 as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
         python -c "import pydra.tasks.mrtrix3.v3_0"
         python -c "import pydra as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
