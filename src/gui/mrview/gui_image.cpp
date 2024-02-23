@@ -631,6 +631,61 @@ namespace MR
         return interp.value();
       }
 
+      Eigen::VectorXcf Image::trilinear_values (const Eigen::Vector3f& scanner_point, const size_t axis) const
+      {
+        auto interp = Interp::make_linear (image);
+        if (!interp.scanner (scanner_point)) {
+          Eigen::VectorXcf val (image.ndim() - 2);
+          val.fill(cfloat(NAN, NAN));
+          return val;
+        }
+        return interp.row(axis);
+      }
+
+      Eigen::VectorXcf Image::nearest_neighbour_values (const Eigen::Vector3f& scanner_point, const size_t axis) const
+      {
+        auto interp = Interp::make_nearest (image);
+        if (!interp.scanner (scanner_point)) {
+          Eigen::VectorXcf val (image.ndim() - 2);
+          val.fill(cfloat(NAN, NAN));
+          return val;
+        }
+        return interp.row(axis);
+      }
+
+      std::string Image::describe_value (const Eigen::Vector3f& focus) const
+      {
+        std::string value_str (interpolate() ? "interp" : "voxel");
+        if (colourmap == 8 && header().ndim() > 3 && header().size(3) > 1) { // show RGB values
+          Eigen::VectorXcf values;
+          if (interpolate())
+            values = trilinear_values (focus);
+          else
+            values = nearest_neighbour_values (focus);
+          value_str += " values: ";
+          for (ssize_t n = 0; (n + image.index(3)) < values.rows() && n < 3; n++) {
+            if (n > 0) value_str += ", ";
+            value_str += "rgb"[n]; value_str += ": ";
+            ssize_t v = n + image.index(3);
+            if (std::isfinite (abs (values[v])))
+              value_str += str(values[v]);
+            else
+              value_str += "?";
+          }
+        } else { // show single value
+          cfloat value;
+          value_str += " value: ";
+          if (interpolate())
+            value = trilinear_value (focus);
+          else
+            value = nearest_neighbour_value (focus);
+          if (std::isfinite (abs (value)))
+            value_str += str(value);
+          else
+            value_str += "?";
+        }
+        return value_str;
+      }
 
 
       void Image::reset_windowing (const int plane, const bool axis_locked)
