@@ -25,55 +25,63 @@ namespace DWI {
 using namespace App;
 using namespace Eigen;
 
+// clang-format off
 OptionGroup GradImportOptions() {
-  OptionGroup group("DW gradient table import options");
-
-  group +
-      Option("grad",
-             "Provide the diffusion-weighted gradient scheme used in the acquisition "
-             "in a text file. This should be supplied as a 4xN text file with each line "
-             "in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
-             "applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion "
-             "gradient scheme is present in the input image header, the data provided with "
-             "this option will be instead used.") +
-      Argument("file").type_file_in()
+  return OptionGroup("DW gradient table import options")
+      + Option("grad",
+               "Provide the diffusion-weighted gradient scheme used in the acquisition"
+               " in a text file."
+               " This should be supplied as a 4xN text file"
+               " with each line in the format [ X Y Z b ],"
+               " where [ X Y Z ] describe the direction of the applied gradient,"
+               " and b gives the b-value in units of s/mm^2."
+               " If a diffusion gradient scheme is present in the input image header,"
+               " the data provided with this option will be instead used.")
+        + Argument("file").type_file_in()
 
       + Option("fslgrad",
-               "Provide the diffusion-weighted gradient scheme used in the acquisition in FSL "
-               "bvecs/bvals format files. If a diffusion gradient scheme is present in the "
-               "input image header, the data provided with this option will be instead used.") +
-      Argument("bvecs").type_file_in() + Argument("bvals").type_file_in();
-
-  return group;
+               "Provide the diffusion-weighted gradient scheme used in the acquisition"
+               " in FSL bvecs/bvals format files."
+               " If a diffusion gradient scheme is present in the input image header,"
+               " the data provided with this option will be instead used.")
+        + Argument("bvecs").type_file_in()
+        + Argument("bvals").type_file_in();
 }
 
 OptionGroup GradExportOptions() {
   return OptionGroup("DW gradient table export options")
+      + Option("export_grad_mrtrix",
+               "export the diffusion-weighted gradient table to file in MRtrix format")
+        + Argument("path").type_file_out()
 
-         + Option("export_grad_mrtrix", "export the diffusion-weighted gradient table to file in MRtrix format") +
-         Argument("path").type_file_out()
-
-         + Option("export_grad_fsl",
-                  "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format") +
-         Argument("bvecs_path").type_file_out() + Argument("bvals_path").type_file_out();
+      + Option("export_grad_fsl",
+               "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
+        + Argument("bvecs_path").type_file_out()
+        + Argument("bvals_path").type_file_out();
 }
 
 Option bvalue_scaling_option = Option("bvalue_scaling",
-                                      "enable or disable scaling of diffusion b-values by the square of the "
-                                      "corresponding DW gradient norm (see Desciption). "
-                                      "Valid choices are: yes/no, true/false, 0/1 (default: automatic).") +
-                               Argument("mode").type_bool();
+                                      "enable or disable scaling of diffusion b-values"
+                                      " by the square of the corresponding DW gradient norm"
+                                      " (see Desciption)."
+                                      " Valid choices are: yes/no, true/false, 0/1"
+                                      " (default: automatic).")
+                               + Argument("mode").type_bool();
 
-const char *const bvalue_scaling_description("The -bvalue_scaling option controls an aspect of the import of "
-                                             "diffusion gradient tables. When the input diffusion-weighting "
-                                             "direction vectors have norms that differ substantially from unity, "
-                                             "the b-values will be scaled by the square of their corresponding "
-                                             "vector norm (this is how multi-shell acquisitions are frequently "
-                                             "achieved on scanner platforms). However in some rare instances, the "
-                                             "b-values may be correct, despite the vectors not being of unit norm "
-                                             "(or conversely, the b-values may need to be rescaled even though the "
-                                             "vectors are close to unit norm). This option allows the user to "
-                                             "control this operation and override MRrtix3's automatic detection.");
+const char *const bvalue_scaling_description(
+    "The -bvalue_scaling option controls an aspect of the import of diffusion gradient tables."
+    " When the input diffusion-weighting direction vectors"
+    " have norms that differ substantially from unity,"
+    " the b-values will be scaled by the square of their corresponding vector norm"
+    " (this is how multi-shell acquisitions are frequently achieved on scanner platforms)."
+    " However in some rare instances,"
+    " the b-values may be correct,"
+    " despite the vectors not being of unit norm"
+    " (or conversely, the b-values may need to be rescaled"
+    " even though the vectors are close to unit norm)."
+    " This option allows the user to control this operation"
+    " and override MRrtix3's automatic detection.");
+// clang-format on
 
 BValueScalingBehaviour get_cmdline_bvalue_scaling_behaviour() {
   auto opt = App::get_options("bvalue_scaling");

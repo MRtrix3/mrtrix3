@@ -34,7 +34,7 @@ Options
 
 -  **-extent window** Set the patch size of the denoising filter. By default, the command will select the smallest isotropic patch size that exceeds the number of DW images in the input data, e.g., 5x5x5 for data with <= 125 DWI volumes, 7x7x7 for data with <= 343 DWI volumes, etc.
 
--  **-noise level** The output noise map, i.e., the estimated noise level 'sigma' in the data. Note that on complex input data, this will be the total noise level across real and imaginary channels, so a scale factor sqrt(2) applies.
+-  **-noise level** The output noise map, i.e., the estimated noise level 'sigma' in the data.Note that on complex input data, this will be the total noise level across real and imaginary channels, so a scale factor sqrt(2) applies.
 
 -  **-rank cutoff** The selected signal rank of the output denoised image.
 

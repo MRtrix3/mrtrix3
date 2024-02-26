@@ -66,7 +66,7 @@ Example usages
 Options
 -------
 
--  **-output list** output selected metrics as a space-delimited list, suitable for use in scripts. This will produce one line of values per selected shell. Valid metrics are as specified in the description above.
+-  **-output list** output selected metrics as a space-delimited list,suitable for use in scripts. This will produce one line of values per selected shell. Valid metrics are as specified in the description above.
 
 DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

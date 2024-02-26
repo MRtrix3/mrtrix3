@@ -27,11 +27,11 @@ A deformation field is defined as an image where each voxel defines the correspo
 Options
 -------
 
--  **-template image** define a template image when converting a warpfull file (which is defined on a grid in the midway space between image 1 & 2). For example, to generate the deformation field that maps image1 to image2, supply image2 as the template image
+-  **-template image** define a template image when converting a warpfull file (which is defined on a grid in the midway space between image 1 & 2). For example, to generate the deformation field that maps image1 to image2, then supply image2 as the template image
 
 -  **-midway_space** to be used only with warpfull2deformation and warpfull2displacement conversion types. The output will only contain the non-linear warp to map an input image to the midway space (defined by the warpfull grid). If a linear transform exists in the warpfull file header then it will be composed and included in the output.
 
--  **-from image** to be used only with warpfull2deformation and warpfull2displacement conversion types. Used to define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in combination with the -midway_space option to produce a field that only maps to midway space.
+-  **-from image** to be used only with warpfull2deformation and warpfull2displacement conversion types. Used to define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in combination with the -midway_space option  to produce a field that only maps to midway space.
 
 Standard options
 ^^^^^^^^^^^^^^^^

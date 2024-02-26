@@ -45,180 +45,203 @@ using namespace App;
 const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", nullptr};
 const char *modulation_choices[] = {"fod", "jac", nullptr};
 
+// clang-format off
 void usage() {
 
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch "
-           "(maximilian.pietsch@kcl.ac.uk)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)"
+           " and David Raffelt (david.raffelt@florey.edu.au)"
+           " and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   SYNOPSIS = "Apply spatial transformations to an image";
 
   DESCRIPTION
-  +"If a linear transform is applied without a template image, the command "
-   "will modify the image header transform matrix."
+  + "If a linear transform is applied without a template image,"
+    " the command will modify the image header transform matrix"
 
-      + "FOD reorientation (with apodised point spread functions) can be performed "
-        "if the number of volumes in the 4th dimension equals the number "
-        "of coefficients in an antipodally symmetric spherical harmonic series (e.g. "
-        "6, 15, 28 etc). For such data, the -reorient_fod yes/no option must be used to specify "
-        "if reorientation is required."
+  + "FOD reorientation (with apodised point spread functions)"
+    " can be performed if the number of volumes in the 4th dimension"
+    " equals the number of coefficients in an antipodally symmetric spherical harmonic series"
+    " (e.g. 6, 15, 28 etc)."
+    " For such data, "
+    " the -reorient_fod yes/no option must be used to specify if reorientation is required."
 
-      + "The output image intensity can be modulated using the (local or global) volume change "
-        "if a linear or nonlinear transformation is applied. 'FOD' modulation preserves the "
-        "apparent fibre density across the fibre bundle width and can only be applied if FOD reorientation "
-        "is used. Alternatively, non-directional scaling by the Jacobian determinant can be applied to "
-        "any image type. "
+  + "The output image intensity can be modulated using the (local or global) volume change"
+    " if a linear or nonlinear transformation is applied."
+    " 'FOD' modulation preserves the apparent fibre density across the fibre bundle width"
+    " and can only be applied if FOD reorientation is used."
+    " Alternatively, non-directional scaling by the Jacobian determinant"
+    " can be applied to any image type. "
 
-      + "If a DW scheme is contained in the header (or specified separately), and "
-        "the number of directions matches the number of volumes in the images, any "
-        "transformation applied using the -linear option will also be applied to the directions."
+  + "If a DW scheme is contained in the header (or specified separately),"
+    " and the number of directions matches the number of volumes in the images,"
+    " any transformation applied using the -linear option will also be applied to the directions."
 
-      + "When the -template option is used to specify the target image grid, the "
-        "image provided via this option will not influence the axis data strides "
-        "of the output image; these are determined based on the input image, or the "
-        "input to the -strides option.";
+  + "When the -template option is used to specify the target image grid,"
+    " the image provided via this option will not influence"
+    " the axis data strides of the output image;"
+    " these are determined based on the input image,"
+    " or the input to the -strides option.";
 
   REFERENCES
-  +"* If FOD reorientation is being performed:\n"
-   "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
-   "Reorientation of fiber orientation distributions using apodized point spread functions. "
-   "Magnetic Resonance in Medicine, 2012, 67, 844-855"
+  + "* If FOD reorientation is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
+    "Reorientation of fiber orientation distributions using apodized point spread functions. "
+    "Magnetic Resonance in Medicine, 2012, 67, 844-855"
 
-      +
-      "* If FOD modulation is being performed:\n"
-      "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; " // Internal
-      "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
-      "NeuroImage, 2012, 15;59(4), 3976-94";
+  + "* If FOD modulation is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; " // Internal
+    "Apparent Fibre Density:"
+     " a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
+    "NeuroImage, 2012, 15;59(4), 3976-94";
 
   ARGUMENTS
-  +Argument("input", "input image to be transformed.").type_image_in() +
-      Argument("output", "the output image.").type_image_out();
+  + Argument ("input", "input image to be transformed.").type_image_in()
+  + Argument ("output", "the output image.").type_image_out();
 
   OPTIONS
-  +OptionGroup("Affine transformation options")
+    + OptionGroup ("Affine transformation options")
 
-      + Option("linear",
-               "specify a linear transform to apply, in the form of a 3x4 "
-               "or 4x4 ascii file. Note the standard 'reverse' convention "
-               "is used, where the transform maps points in the template image "
-               "to the moving image. Note that the reverse convention is still "
-               "assumed even if no -template image is supplied") +
-      Argument("transform").type_file_in()
+    + Option ("linear",
+        "specify a linear transform to apply,"
+        " in the form of a 3x4 or 4x4 ascii file."
+        " Note the standard 'reverse' convention is used,"
+        " where the transform maps points in the template image to the moving image."
+        " Note that the reverse convention is still assumed even if no -template image is supplied")
+      + Argument ("transform").type_file_in()
 
-      + Option("flip", "flip the specified axes, provided as a comma-separated list of indices (0:x, 1:y, 2:z).") +
-      Argument("axes").type_sequence_int()
+    + Option ("flip",
+        "flip the specified axes,"
+        " provided as a comma-separated list of indices"
+        " (0:x, 1:y, 2:z).")
+      + Argument ("axes").type_sequence_int()
 
-      + Option("inverse", "apply the inverse transformation")
+    + Option ("inverse",
+        "apply the inverse transformation")
 
-      + Option("half",
-               "apply the matrix square root of the transformation. This can be combined with the inverse option.")
+    + Option ("half",
+        "apply the matrix square root of the transformation."
+        " This can be combined with the inverse option.")
 
-      + Option("replace",
-               "replace the linear transform of the original image by that specified, "
-               "rather than applying it to the original image. The specified transform "
-               "can be either a template image, or a 3x4 or 4x4 ascii file.") +
-      Argument("file").type_file_in()
+    + Option ("replace",
+        "replace the linear transform of the original image by that specified,"
+        " rather than applying it to the original image."
+        " The specified transform can be either a template image,"
+        " or a 3x4 or 4x4 ascii file.")
+      + Argument ("file").type_file_in()
 
-      + Option("identity", "set the header transform of the image to the identity matrix")
+    + Option ("identity",
+              "set the header transform of the image to the identity matrix")
 
-      + OptionGroup("Regridding options")
+    + OptionGroup ("Regridding options")
 
-      + Option("template", "reslice the input image to match the specified template image grid.") +
-      Argument("image").type_image_in()
+    + Option ("template",
+        "reslice the input image to match the specified template image grid.")
+      + Argument ("image").type_image_in()
 
-      + Option("midway_space",
-               "reslice the input image to the midway space. Requires either the -template or -warp option. If "
-               "used with -template and -linear option, the input image will be resliced onto the grid halfway between "
-               "the input and template. "
-               "If used with the -warp option, the input will be warped to the midway space defined by the grid of the "
-               "input warp "
-               "(i.e. half way between image1 and image2)")
+    + Option ("midway_space",
+        "reslice the input image to the midway space."
+        " Requires either the -template or -warp option."
+        " If used with -template and -linear option,"
+        " the input image will be resliced onto the grid halfway between the input and template."
+        " If used with the -warp option,"
+        " the input will be warped to the midway space defined by the grid of the input warp"
+        " (i.e. half way between image1 and image2)")
 
-      + Option("interp",
-               "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: "
-               "cubic).") +
-      Argument("method").type_choice(interp_choices)
+    + Option ("interp",
+        "set the interpolation method to use when reslicing"
+        " (choices: nearest, linear, cubic, sinc."
+        " Default: cubic).")
+      + Argument ("method").type_choice(interp_choices)
 
-      + Option(
-            "oversample",
-            "set the amount of over-sampling (in the target space) to perform when regridding. This is particularly "
-            "relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. "
-            "This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling "
-            "factors are desired along the different axes. Default is determined from ratio of voxel dimensions "
-            "(disabled "
-            "for nearest-neighbour interpolation).") +
-      Argument("factor").type_sequence_int()
+    + Option ("oversample",
+        "set the amount of over-sampling (in the target space) to perform when regridding."
+        " This is particularly relevant when downsamping a high-resolution image to a low-resolution image,"
+        " to avoid aliasing artefacts."
+        " This can consist of a single integer,"
+        " or a comma-separated list of 3 integers"
+        " if different oversampling factors are desired along the different axes."
+        " Default is determined from ratio of voxel dimensions"
+        " (disabled for nearest-neighbour interpolation).")
+      + Argument ("factor").type_sequence_int()
 
-      + OptionGroup("Non-linear transformation options")
+    + OptionGroup ("Non-linear transformation options")
 
-      // TODO point users to a documentation page describing the warp field format
-      + Option("warp",
-               "apply a non-linear 4D deformation field to warp the input image. Each voxel in the deformation field "
-               "must define "
-               "the scanner space position that will be used to interpolate the input image during warping (i.e. "
-               "pull-back/reverse warp convention). "
-               "If the -template image is also supplied the deformation field will be resliced first to the template "
-               "image grid. If no -template "
-               "option is supplied then the output image will have the same image grid as the deformation field. This "
-               "option can be used in "
-               "combination with the -affine option, in which case the affine will be applied first)") +
-      Argument("image").type_image_in()
+    // TODO point users to a documentation page describing the warp field format
+      + Option ("warp",
+          "apply a non-linear 4D deformation field to warp the input image."
+          " Each voxel in the deformation field must define the scanner space position"
+          " that will be used to interpolate the input image during warping"
+          " (i.e. pull-back/reverse warp convention)."
+          " If the -template image is also supplied,"
+          " the deformation field will be resliced first to the template image grid."
+          " If no -template option is supplied,"
+          " then the output image will have the same image grid as the deformation field."
+          " This option can be used in combination with the -affine option,"
+          " in which case the affine will be applied first)")
+        + Argument ("image").type_image_in()
 
-      + Option("warp_full",
-               "warp the input image using a 5D warp file output from mrregister. Any linear transforms in the warp "
-               "image header "
-               "will also be applied. The -warp_full option must be used in combination with either the -template "
-               "option or the -midway_space option. "
-               "If a -template image is supplied then the full warp will be used. By default the image1->image2 "
-               "transform will be applied, "
-               "however the -from 2 option can be used to apply the image2->image1 transform. Use the -midway_space "
-               "option to warp the input "
-               "image to the midway space. The -from option can also be used to define which warp to use when "
-               "transforming to midway space") +
-      Argument("image").type_image_in()
+    + Option ("warp_full",
+        "warp the input image using a 5D warp file output from mrregister."
+        " Any linear transforms in the warp image header will also be applied."
+        " The -warp_full option must be used in combination with"
+        " either the -template option or the -midway_space option."
+        " If a -template image is supplied then the full warp will be used."
+        " By default the image1->image2 transform will be applied,"
+        " however the -from 2 option can be used to apply the image2->image1 transform."
+        " Use the -midway_space option to warp the input image to the midway space."
+        " The -from option can also be used to define which warp to use"
+        " when transforming to midway space")
+      + Argument ("image").type_image_in()
 
-      + Option("from",
-               "used to define which space the input image is when using the -warp_mid option. "
-               "Use -from 1 to warp from image1 or -from 2 to warp from image2") +
-      Argument("image").type_integer(1, 2)
+    + Option ("from",
+        "used to define which space the input image is when using the -warp_mid option."
+        " Use -from 1 to warp from image1 or -from 2 to warp from image2")
+      + Argument ("image").type_integer(1, 2)
 
-      + OptionGroup("Fibre orientation distribution handling options")
+    + OptionGroup ("Fibre orientation distribution handling options")
 
-      +
-      Option(
-          "modulate",
-          "Valid choices are: fod and jac. "
-          "fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths "
-          "before and after the transformation; "
-          "jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation "
-          "to preserve the total intensity before and after the transformation.") +
-      Argument("method").type_choice(modulation_choices)
+    + Option ("modulate",
+        "Valid choices are:"
+        " fod:"
+        " modulate FODs during reorientation"
+        " to preserve the apparent fibre density across fibre bundle widths"
+        " before and after the transformation;"
+        " jac:"
+        " modulate the image intensity with the determinant of the Jacobian"
+        " of the warp of linear transformation "
+        " to preserve the total intensity before and after the transformation.")
+      + Argument ("method").type_choice(modulation_choices)
 
-      + Option("directions",
-               "directions defining the number and orientation of the apodised point spread functions used in FOD "
-               "reorientation "
-               "(Default: 300 directions)") +
-      Argument("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
+    + Option ("directions",
+        "directions defining the number and orientation of the apodised point spread functions"
+        " used in FOD reorientation"
+        " (Default: 300 directions)")
+    + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
 
-      + Option("reorient_fod",
-               "specify whether to perform FOD reorientation. This is required if the number "
-               "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-               "antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes).") +
-      Argument("boolean").type_bool()
+    + Option ("reorient_fod",
+        "specify whether to perform FOD reorientation."
+        " This is required if the number of volumes in the 4th dimension"
+        " corresponds to the number of coefficients"
+        " in an antipodally symmetric spherical harmonic series with lmax >= 2"
+        " (i.e. 6, 15, 28, 45, 66 volumes).")
+    + Argument("boolean").type_bool()
 
-      + DWI::GradImportOptions()
+    + DWI::GradImportOptions()
 
-      + DWI::GradExportOptions()
+    + DWI::GradExportOptions()
 
-      + DataType::options()
+    + DataType::options ()
 
-      + Stride::Options
+    + Stride::Options
 
-      + OptionGroup("Additional generic options for mrtransform")
+    + OptionGroup ("Additional generic options for mrtransform")
 
-      + Option("nan", "Use NaN as the out of bounds value (0.0 will be used otherwise)")
+    + Option ("nan", "Use NaN as the out of bounds value"
+                     " (0.0 will be used otherwise)")
 
-      + Option("no_reorientation", "deprecated; use -reorient_fod instead");
+    + Option ("no_reorientation", "deprecated; use -reorient_fod instead");
 }
+// clang-format on
 
 void apply_warp(Image<float> &input,
                 Image<float> &output,

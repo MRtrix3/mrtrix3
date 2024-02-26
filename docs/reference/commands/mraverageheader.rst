@@ -23,7 +23,7 @@ Options
 
 -  **-padding value**  boundary box padding in voxels. Default: 0
 
--  **-resolution type** subsampling of template compared to smallest voxel size in any input image. Valid options are: - 'mean': unbiased but loss of resolution for individual images possible; - 'max': smallest voxel size of any input image defines the resolution. Default: mean
+-  **-resolution type** subsampling of template compared to smallest voxel size in any input image.Valid options are: - 'mean': unbiased but loss of resolution for individual images possible; - 'max': smallest voxel size of any input image defines the resolution. Default: mean
 
 -  **-fill** set the intensity in the first volume of the average space to 1
 

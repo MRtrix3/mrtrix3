@@ -34,42 +34,47 @@ using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 using namespace MR::DWI::Tractography::SIFT;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS =
-      "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals";
+  SYNOPSIS = "Filter a whole-brain fibre-tracking data set"
+             " such that the streamline densities match the FOD lobe integrals";
 
   REFERENCES
-  +"Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-   "NeuroImage, 2013, 67, 298-312";
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312";
 
   ARGUMENTS
-  +Argument("in_tracks", "the input track file").type_tracks_in() +
-      Argument("in_fod", "input image containing the spherical harmonics of the fibre orientation distributions")
-          .type_image_in() +
-      Argument("out_tracks", "the output filtered tracks file").type_tracks_out();
+  + Argument ("in_tracks", "the input track file").type_tracks_in()
+  + Argument ("in_fod", "input image containing the spherical harmonics"
+                        " of the fibre orientation distributions").type_image_in()
+  + Argument ("out_tracks", "the output filtered tracks file").type_tracks_out();
 
   OPTIONS
 
-  +Option("nofilter",
-          "do NOT perform track filtering; just construct the model in order to provide output debugging images")
+  + Option ("nofilter", "do NOT perform track filtering;"
+                        " just construct the model in order to provide output debugging images")
 
-      +
-      Option("output_at_counts",
-             "output filtered track files (and optionally debugging images if -output_debug is specified) at specific "
-             "numbers of remaining streamlines; provide as comma-separated list of integers") +
-      Argument("counts").type_sequence_int()
+  + Option ("output_at_counts", "output filtered track files"
+                                " (and optionally debugging images if -output_debug is specified)"
+                                " at specific numbers of remaining streamlines;"
+                                " provide as comma-separated list of integers")
+    + Argument ("counts").type_sequence_int()
 
-      + SIFTModelProcMaskOption + SIFTModelOption + SIFTOutputOption
+  + SIFTModelProcMaskOption
+  + SIFTModelOption
+  + SIFTOutputOption
 
-      + Option("out_selection", "output a text file containing the binary selection of streamlines") +
-      Argument("path").type_file_out()
+  + Option ("out_selection", "output a text file containing the binary selection of streamlines")
+    + Argument ("path").type_file_out()
 
-      + SIFTTermOption;
+  + SIFTTermOption;
+
 }
+// clang-format on
 
 void run() {
 

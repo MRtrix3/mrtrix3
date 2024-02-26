@@ -28,32 +28,40 @@ using namespace App;
 
 const char *operations[] = {"flirt_import", "itk_import", NULL};
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   SYNOPSIS = "Convert linear transformation matrices";
 
   DESCRIPTION
-  +"This command allows to convert transformation matrices provided by other registration "
-   "softwares to a format usable in MRtrix3. Example usages are provided below.";
+  + "This command allows to convert transformation matrices"
+    " provided by other registration softwares to a format usable in MRtrix3."
+    " Example usages are provided below.";
 
   EXAMPLES
-  +Example("Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix3",
-           "transformconvert transform_flirt.mat flirt_in.nii flirt_ref.nii flirt_import transform_mrtrix.txt",
-           "The two images provided as inputs for this operation must be in the correct order: first the image "
-           "that was provided to flirt via the -in option, second the image that was provided to flirt via the "
-           "-ref option.")
+  + Example ("Convert a transformation matrix produced by FSL's flirt command"
+             " into a format usable by MRtrix3",
+             "transformconvert transform_flirt.mat flirt_in.nii flirt_ref.nii flirt_import transform_mrtrix.txt",
+             "The two images provided as inputs for this operation must be in the correct order:"
+             " first the image that was provided to flirt via the -in option,"
+             " second the image that was provided to flirt via the -ref option.")
 
-      + Example("Convert a plain text transformation matrix file produced by ITK's affine registration "
-                "(e.g. ANTS, Slicer) into a format usable by MRtrix3",
-                "transformconvert transform_itk.txt itk_import transform_mrtrix.txt",
-                "");
+  + Example ("Convert a plain text transformation matrix file produced by ITK's affine registration"
+             " (e.g. ANTS, Slicer)"
+             " into a format usable by MRtrix3",
+             "transformconvert transform_itk.txt itk_import transform_mrtrix.txt",
+             "");
 
   ARGUMENTS
-  +Argument("input", "the input(s) for the specified operation").allow_multiple() +
-      Argument("operation", "the operation to perform; one of: " + join(operations, ", ")).type_choice(operations) +
-      Argument("output", "the output transformation matrix.").type_file_out();
+  + Argument ("input", "the input(s) for the specified operation").allow_multiple()
+  + Argument ("operation", "the operation to perform;"
+                           " one of: " + join(operations, ", ")).type_choice (operations)
+  + Argument ("output", "the output transformation matrix.").type_file_out ();
+
 }
+// clang-format on
 
 transform_type get_flirt_transform(const Header &header) {
   std::vector<size_t> axes;

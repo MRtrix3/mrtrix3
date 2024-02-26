@@ -23,28 +23,34 @@ namespace Editing {
 
 using namespace App;
 
+// clang-format off
 const OptionGroup LengthOption =
     OptionGroup("Streamline length threshold options")
-
-    + Option("maxlength", "set the maximum length of any streamline in mm") + Argument("value").type_float(0.0)
-
-    + Option("minlength", "set the minimum length of any streamline in mm") + Argument("value").type_float(0.0);
+    + Option("maxlength",
+             "set the maximum length of any streamline in mm")
+      + Argument("value").type_float(0.0)
+    + Option("minlength",
+             "set the minimum length of any streamline in mm")
+      + Argument("value").type_float(0.0);
 
 const OptionGroup TruncateOption =
     OptionGroup("Streamline count truncation options")
-
-    + Option("number", "set the desired number of selected streamlines to be propagated to the output file") +
-    Argument("count").type_integer(1)
-
-    + Option("skip", "omit this number of selected streamlines before commencing writing to the output file") +
-    Argument("count").type_integer(1);
+    + Option("number",
+             "set the desired number of selected streamlines to be propagated to the output file")
+      + Argument("count").type_integer(1)
+    + Option("skip",
+             "omit this number of selected streamlines before commencing writing to the output file")
+      + Argument("count").type_integer(1);
 
 const OptionGroup WeightsOption =
     OptionGroup("Thresholds pertaining to per-streamline weighting")
-
-    + Option("maxweight", "set the maximum weight of any streamline") + Argument("value").type_float(0.0)
-
-    + Option("minweight", "set the minimum weight of any streamline") + Argument("value").type_float(0.0);
+    + Option("maxweight",
+             "set the maximum weight of any streamline")
+      + Argument("value").type_float(0.0)
+    + Option("minweight",
+             "set the minimum weight of any streamline")
+      + Argument("value").type_float(0.0);
+// clang-format on
 
 void load_properties(Tractography::Properties &properties) {
 

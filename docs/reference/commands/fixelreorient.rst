@@ -17,7 +17,7 @@ Usage
 
 -  *fixel_in*: the input fixel directory
 -  *warp*: a 4D deformation field used to perform reorientation.
--  *fixel_out*: the output fixel directory. If the the input and output directories are the same, the existing directions file will be replaced (providing the -force option is supplied). If a new directory is supplied then the fixel directions and all other fixel data will be copied to the new directory.
+-  *fixel_out*: the output fixel directory. If the the input and output directories are the same, the existing directions file will be replaced (providing the -force option is supplied). If a new directory is supplied, then the fixel directions and all other fixel data will be copied to the new directory.
 
 Description
 -----------

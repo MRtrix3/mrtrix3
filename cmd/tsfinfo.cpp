@@ -25,22 +25,24 @@ using namespace MR;
 using namespace MR::DWI;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Print out information about a track scalar file";
 
   ARGUMENTS
-  +Argument("tracks", "the input track scalar file.").allow_multiple().type_file_in();
+  + Argument ("tracks", "the input track scalar file.").allow_multiple().type_file_in();
 
   OPTIONS
-  +Option("count", "count number of tracks in file explicitly, ignoring the header")
+  + Option ("count", "count number of tracks in file explicitly, ignoring the header")
 
-      + Option("ascii",
-               "save values of each track scalar file in individual ascii files, with the "
-               "specified prefix.") +
-      Argument("prefix").type_text();
+  + Option ("ascii", "save values of each track scalar file in individual ascii files,"
+                     " with the specified prefix.")
+    + Argument ("prefix").type_text();
 }
+// clang-format on
 
 void run() {
 

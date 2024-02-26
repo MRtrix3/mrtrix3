@@ -42,95 +42,118 @@ const char *const encoding_description[] = {
     "volumes 12-14: W1123, W1223, W1233",
     nullptr};
 
+// clang-format off
 void usage() {
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
   SYNOPSIS = "Diffusion (kurtosis) tensor estimation";
 
   DESCRIPTION
-  +"By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted to "
-   "the log-signal in two steps: firstly, using weighted least-squares (WLS) with "
-   "weights based on the empirical signal intensities; secondly, by further iterated weighted "
-   "least-squares (IWLS) with weights determined by the signal predictions from the "
-   "previous iteration (by default, 2 iterations will be performed). This behaviour can "
-   "be altered in two ways:"
+  + "By default, the diffusion tensor"
+    " (and optionally the kurtosis tensor)"
+    " is fitted to the log-signal in two steps:"
+    " firstly, using weighted least-squares (WLS) with weights based on the empirical signal intensities;"
+    " secondly, by further iterated weighted least-squares (IWLS)"
+    " with weights determined by the signal predictions from the previous iteration"
+    " (by default, 2 iterations will be performed)."
+    " This behaviour can be altered in two ways:"
 
-      + "* The -ols option will cause the first fitting step to be performed using ordinary "
-        "least-squares (OLS); that is, all measurements contribute equally to the fit, instead of "
-        "the default behaviour of weighting based on the empirical signal intensities."
+  + "* The -ols option will cause the first fitting step to be performed using ordinary least-squares (OLS);"
+    " that is, all measurements contribute equally to the fit,"
+    " instead of the default behaviour of weighting based on the empirical signal intensities."
 
-      + "* The -iter option controls the number of iterations of the IWLS prodedure. If this is "
-        "set to zero, then the output model parameters will be those resulting from the first "
-        "fitting step only: either WLS by default, or OLS if the -ols option is used in conjunction "
-        "with -iter 0."
+  + "* The -iter option controls the number of iterations of the IWLS prodedure."
+    " If this is set to zero,"
+    " then the output model parameters will be those resulting from the first fitting step only:"
+    " either WLS by default,"
+    " or OLS if the -ols option is used in conjunction with -iter 0."
 
-      + "By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted using "
-        "unconstrained optimization. This can result in unexpected diffusion parameters, "
-        "e.g. parameters that represent negative apparent diffusivities or negative apparent kurtoses, "
-        "or parameters that correspond to non-monotonic decay of the predicted signal. "
-        "By supplying the -constrain option, constrained optimization is performed instead "
-        "and such physically implausible parameters can be avoided. Depending on the presence "
-        "of the -dkt option, the -constrain option will enforce the following constraints:"
+  + "By default, the diffusion tensor"
+    " (and optionally the kurtosis tensor) is fitted using unconstrained optimization."
+    " This can result in unexpected diffusion parameters,"
+    " e.g. parameters that represent negative apparent diffusivities or negative apparent kurtoses,"
+    " or parameters that correspond to non-monotonic decay of the predicted signal."
+    " By supplying the -constrain option,"
+    " constrained optimization is performed instead and such physically implausible parameters can be avoided."
+    " Depending on the presence of the -dkt option,"
+    " the -constrain option will enforce the following constraints:"
 
-      + "* Non-negative apparent diffusivity (always)."
+  + "* Non-negative apparent diffusivity (always)."
 
-      + "* Non-negative apparent kurtosis (when the -dkt option is provided)."
+  + "* Non-negative apparent kurtosis"
+    " (when the -dkt option is provided)."
 
-      + "* Monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided)."
+  + "* Monotonic signal decay in the b = [0 b_max] range"
+    " (when the -dkt option is provided)."
 
-      + encoding_description;
+  + encoding_description;
 
   ARGUMENTS
-  +Argument("dwi", "the input dwi image.").type_image_in() + Argument("dt", "the output dt image.").type_image_out();
+  + Argument("dwi", "the input dwi image.").type_image_in()
+  + Argument("dt", "the output dt image.").type_image_out();
 
   OPTIONS
-  +Option("ols", "perform initial fit using an ordinary least-squares (OLS) fit (see Description).")
 
-      + Option("iter",
-               "number of iterative reweightings for IWLS algorithm (default: " + str(DEFAULT_NITER) +
-                   ") (see Description).") +
-      Argument("integer").type_integer(0, 10)
+  + Option("ols",
+           "perform initial fit using an ordinary least-squares (OLS) fit"
+           " (see Description).")
 
-      +
-      Option(
-          "constrain",
-          "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
+  + Option("iter",
+           "number of iterative reweightings for IWLS algorithm"
+           " (default: " + str(DEFAULT_NITER) +")"
+           " (see Description).")
+    + Argument("integer").type_integer(0, 10)
 
-      + Option("directions",
-               "specify the directions along which to apply the constraints "
-               "(by default, the built-in 300 direction set is used). These should be "
-               "supplied as a text file containing [ az el ] pairs for the directions.") +
-      Argument("file").type_file_in()
+  + Option("constrain",
+           "constrain fit to non-negative diffusivity and kurtosis"
+           " as well as monotonic signal decay"
+           " (see Description).")
 
-      + Option("mask", "only perform computation within the specified binary brain mask image.") +
-      Argument("image").type_image_in()
+  + Option("directions",
+           "specify the directions along which to apply the constraints"
+            " (by default, the built-in 300 direction set is used)."
+            " These should be supplied as a text file containing [ az el ] pairs for the directions.")
+    + Argument("file").type_file_in()
 
-      + Option("b0", "the output b0 image.") + Argument("image").type_image_out()
+  + Option("mask",
+           "only perform computation within the specified binary brain mask image.")
+    + Argument("image").type_image_in()
 
-      + Option("dkt", "the output dkt image.") + Argument("image").type_image_out()
+  + Option("b0",
+           "the output b0 image.")
+    + Argument("image").type_image_out()
 
-      + Option("predicted_signal", "the predicted dwi image.") + Argument("image").type_image_out()
+  + Option("dkt",
+           "the output dkt image.")
+    + Argument("image").type_image_out()
 
-      + DWI::GradImportOptions();
+  + Option("predicted_signal",
+           "the predicted dwi image.")
+    + Argument("image").type_image_out()
+
+  + DWI::GradImportOptions();
 
   REFERENCES
-  +"References based on fitting algorithm used:"
+  + "References based on fitting algorithm used:"
 
-      + "* OLS, WLS:\n"
-        "Basser, P.J.; Mattiello, J.; LeBihan, D. "
-        "Estimation of the effective self-diffusion tensor from the NMR spin echo. "
-        "J Magn Reson B., 1994, 103, 247–254."
+  + "* OLS, WLS:\n"
+    "Basser, P.J.; Mattiello, J.; LeBihan, D. "
+    "Estimation of the effective self-diffusion tensor from the NMR spin echo. "
+    "J Magn Reson B., 1994, 103, 247–254."
 
-      + "* IWLS:\n"
-        "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
-        "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
-        "NeuroImage, 2013, 81, 335-346"
+  + "* IWLS:\n"
+    "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
+    "Weighted linear least squares estimation of diffusion MRI parameters:"
+    " strengths, limitations, and pitfalls. "
+    "NeuroImage, 2013, 81, 335-346"
 
-      + "* any of above with constraints:\n"
-        "Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. " // Internal
-        "Optimal experimental design and estimation for q-space trajectory imaging. "
-        "Human Brain Mapping, In press";
+  + "* any of above with constraints:\n"
+    "Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. " // Internal
+    "Optimal experimental design and estimation for q-space trajectory imaging. "
+    "Human Brain Mapping, In press";
+
 }
+// clang-format on
 
 template <class MASKType, class B0Type, class DTType, class DKTType, class PredictType> class Processor {
 public:

@@ -30,7 +30,7 @@ Example usages
 
         $ tckconvert input.tck output-[].txt
 
-    By using the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, this example will produce files named: output-0000.txt, output-0001.txt, output-0002.txt, ...
+    By using the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, this example will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...
 
 Options
 -------

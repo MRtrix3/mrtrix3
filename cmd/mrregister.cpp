@@ -48,103 +48,98 @@ const char *transformation_choices[] = {"rigid",
                                         "rigid_affine_nonlinear",
                                         NULL};
 
+// clang-format off
 const OptionGroup multiContrastOptions =
-    OptionGroup("Multi-contrast options") +
-    Option("mc_weights",
-           "relative weight of images used for multi-contrast registration. Default: 1.0 (equal weighting)") +
-    Argument("weights").type_sequence_float();
+  OptionGroup ("Multi-contrast options")
+  + Option ("mc_weights", "relative weight of images used for multi-contrast registration."
+                          " Default: 1.0 (equal weighting)")
+    + Argument ("weights").type_sequence_float ();
+
 
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and "
-           "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  SYNOPSIS = "Register two images together using a symmetric rigid, affine or non-linear transformation model";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+
+  SYNOPSIS = "Register two images together"
+             " using a symmetric rigid, affine or non-linear transformation model";
 
   DESCRIPTION
-  +"By default this application will perform an affine, followed by non-linear registration."
+    + "By default this application will perform an affine, followed by non-linear registration."
 
-      + "FOD registration (with apodised point spread reorientation) will be performed by default if the number of "
-        "volumes "
-        "in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series "
-        "(e.g. 6, 15, 28 etc). "
-        "The -no_reorientation option can be used to force reorientation off if required."
+    + "FOD registration (with apodised point spread reorientation) will be performed by default"
+      " if the number of volumes in the 4th dimension equals the number of coefficients"
+      " in an antipodally symmetric spherical harmonic series"
+      " (e.g. 6, 15, 28 etc)."
+      " The -no_reorientation option can be used to force reorientation off if required."
 
-      // TODO link to 5D warp file format documentation
-      + "Non-linear registration computes warps to map from both image1->image2 and image2->image1. "
-        "Similar to Avants (2008) Med Image Anal. 12(1): 26-41, registration is performed by matching both the image1 "
-        "and image2 in a 'midway space'. "
-        "Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or "
-        "if using -nl_warp_full as a single 5D file "
-        "that stores all 4 warps image1->mid->image2, and image2->mid->image1. The 5D warp format stores x,y,z "
-        "deformations in the 4th dimension, and uses the 5th dimension "
-        "to index the 4 warps. The affine transforms estimated (to midway space) are also stored as comments in the "
-        "image header. The 5D warp file can be used to reinitialise "
-        "subsequent registrations, in addition to transforming images to midway space (e.g. for intra-subject "
-        "alignment in a 2-time-point longitudinal analysis).";
+    // TODO link to 5D warp file format documentation
+    + "Non-linear registration computes warps to map from both image1->image2 and image2->image1."
+      " Similar to Avants (2008) Med Image Anal. 12(1): 26-41,"
+      " registration is performed by matching both the image1 and image2 in a 'midway space'."
+      " Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1,"
+      " or if using -nl_warp_full as a single 5D file that stores all 4 warps image1->mid->image2, and image2->mid->image1."
+      " The 5D warp format stores x,y,z deformations in the 4th dimension,"
+      " and uses the 5th dimension to index the 4 warps."
+      " The affine transforms estimated (to midway space) are also stored as comments in the image header."
+      " The 5D warp file can be used to reinitialise subsequent registrations,"
+      " in addition to transforming images to midway space"
+      " (e.g. for intra-subject alignment in a 2-time-point longitudinal analysis).";
 
   REFERENCES
-  +"* If FOD registration is being performed:\n"
-   "Raffelt, D.; Tournier, J.-D.; Fripp, J; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
-   "Symmetric diffeomorphic registration of fibre orientation distributions. "
-   "NeuroImage, 2011, 56(3), 1171-1180"
+  + "* If FOD registration is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Fripp, J; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
+    "Symmetric diffeomorphic registration of fibre orientation distributions. "
+    "NeuroImage, 2011, 56(3), 1171-1180"
 
-      + "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
-        "Reorientation of fiber orientation distributions using apodized point spread functions. "
-        "Magnetic Resonance in Medicine, 2012, 67, 844-855";
+  + "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
+    "Reorientation of fiber orientation distributions using apodized point spread functions. "
+    "Magnetic Resonance in Medicine, 2012, 67, 844-855";
+
 
   ARGUMENTS
-  +Argument("image1 image2", "input image 1 ('moving') and input image 2 ('template')").type_image_in() +
-      Argument("contrast1 contrast2",
-               "optional list of additional input images used as additional contrasts. "
-               "Can be used multiple times. contrastX and imageX must share the same coordinate system.")
-          .type_image_in()
-          .optional()
-          .allow_multiple();
+    + Argument ("image1 image2", "input image 1 ('moving') and input image 2 ('template')").type_image_in()
+    + Argument ("contrast1 contrast2",
+        "optional list of additional input images used as additional contrasts."
+        " Can be used multiple times."
+        " contrastX and imageX must share the same coordinate system.").type_image_in().optional().allow_multiple();
 
   OPTIONS
-  +Option("type",
-          "the registration type. Valid choices are: "
-          "rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: "
-          "affine_nonlinear)") +
-      Argument("choice").type_choice(transformation_choices)
+  + Option ("type", "the registration type."
+                    " Valid choices are:"
+                    " rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear"
+                    " (Default: affine_nonlinear)")
+    + Argument ("choice").type_choice (transformation_choices)
 
-      + Option("transformed",
-               "image1 after registration transformed and regridded to the space of image2. "
-               "Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.")
-            .allow_multiple() +
-      Argument("image").type_image_out()
+  + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
+                           " Note that -transformed needs to be repeated for each contrast"
+                           " if multi-contrast registration is used.").allow_multiple()
+    + Argument ("image").type_image_out ()
 
-      + Option("transformed_midway",
-               "image1 and image2 after registration transformed and regridded to the midway space. "
-               "Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is "
-               "used.")
-            .allow_multiple() +
-      Argument("image1_transformed").type_image_out() + Argument("image2_transformed").type_image_out()
+  + Option ("transformed_midway", "image1 and image2 after registration transformed and regridded to the midway space."
+                                  " Note that -transformed_midway needs to be repeated for each contrast"
+                                  " if multi-contrast registration is used.").allow_multiple()
+    + Argument ("image1_transformed").type_image_out ()
+    + Argument ("image2_transformed").type_image_out ()
 
-      + Option("mask1", "a mask to define the region of image1 to use for optimisation.") +
-      Argument("filename").type_image_in()
+  + Option ("mask1", "a mask to define the region of image1 to use for optimisation.")
+    + Argument ("filename").type_image_in ()
 
-      + Option("mask2", "a mask to define the region of image2 to use for optimisation.") +
-      Argument("filename").type_image_in()
+  + Option ("mask2", "a mask to define the region of image2 to use for optimisation.")
+    + Argument ("filename").type_image_in ()
 
-      + Option("nan", "use NaN as out of bounds value. (Default: 0.0)")
+  + Option("nan", "use NaN as out of bounds value. (Default: 0.0)")
 
-      + Registration::rigid_options
-
-      + Registration::affine_options
-
-      + Registration::adv_init_options
-
-      + Registration::lin_stage_options
-
-      + Registration::nonlinear_options
-
-      + Registration::fod_options
-
-      + multiContrastOptions
-
-      + DataType::options();
+  + Registration::rigid_options
+  + Registration::affine_options
+  + Registration::adv_init_options
+  + Registration::lin_stage_options
+  + Registration::nonlinear_options
+  + Registration::fod_options
+  + multiContrastOptions
+  + DataType::options();
 }
+// clang-format on
 
 using value_type = double;
 

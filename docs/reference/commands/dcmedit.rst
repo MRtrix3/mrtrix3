@@ -32,7 +32,7 @@ WARNING: there is no guarantee that this command will remove all identiable info
 Options
 -------
 
--  **-anonymise** remove any identifiable information (see Description).
+-  **-anonymise** remove identifiable information (see Description).
 
 -  **-id text** replace all ID tags with string supplied. This consists of tags (0010, 0020) PatientID and (0010, 1000) OtherPatientIDs
 

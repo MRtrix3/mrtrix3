@@ -30,9 +30,9 @@ Example usages
 
 -   *Create three separate NIfTI images, for each of X,Y,Z components*::
 
-        $ warpinit template.mif warp-[].nii
+        $ warpinit template.mif warp-'[]'.nii
 
-    By utilising the MRtrix multi-file numbering syntax, the command can natively produce three separate images, which may be useful to create images suitable for use in some registration software.
+    By utilising the MRtrix multi-file numbering syntax, the command can natively produce three separate images, which may be useful to create images suitable for use in some registration software
 
 Options
 -------

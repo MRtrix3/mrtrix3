@@ -22,14 +22,14 @@ namespace Tractography {
 namespace Algorithms {
 
 using namespace App;
-
+// clang-format off
 const OptionGroup iFOD2Options =
     OptionGroup("Options specific to the iFOD2 tracking algorithm")
-
     + Option("samples",
-             "set the number of FOD samples to take per step (Default: " + str(Tracking::Defaults::ifod2_nsamples) +
-                 ").") +
-    Argument("number").type_integer(2, 100);
+             "set the number of FOD samples to take per step"
+             " (Default: " + str(Tracking::Defaults::ifod2_nsamples) + ").")
+      + Argument("number").type_integer(2, 100);
+// clang-format on
 
 void load_iFOD2_options(Tractography::Properties &properties) {
   auto opt = get_options("samples");
