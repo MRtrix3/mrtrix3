@@ -33,7 +33,7 @@ using namespace App;
 const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", NULL};
 const char *operation_choices[] = {"regrid", "crop", "pad", NULL};
 
-//clang-format off
+// clang-format off
 void usage() {
 
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)"

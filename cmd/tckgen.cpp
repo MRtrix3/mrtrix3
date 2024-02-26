@@ -231,7 +231,7 @@ void usage() {
   + DWI::GradImportOptions();
 
 }
-// clang-format off
+// clang-format on
 
 void run() {
 

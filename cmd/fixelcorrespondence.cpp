@@ -28,7 +28,7 @@ using Fixel::index_type;
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 
-// clang-format on
+// clang-format off
 void usage() {
 
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";

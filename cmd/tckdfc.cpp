@@ -142,7 +142,6 @@ void usage () {
 }
 // clang-format on
 
-
 // This class is similar to Mapping::MapWriter, but doesn't write to a HDD file on close
 // Instead, the one timepoint volume generated during this iteration is written
 //   into the one large buffer that contains the entire TW-dFC time series

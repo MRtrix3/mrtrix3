@@ -34,6 +34,7 @@ void usage() {
   + Option ("keyval", "also test the contents of the key-value entries in the header");
 
 }
+// clang-format on
 
 void run() {
   auto in1 = Header::open(argument[0]);

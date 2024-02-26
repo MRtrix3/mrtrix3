@@ -38,7 +38,7 @@ using namespace App;
 
 using Fixel::index_type;
 
-//clang-format off
+// clang-format off
 const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
 
   + Option ("afd",

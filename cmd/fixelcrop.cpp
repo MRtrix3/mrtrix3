@@ -50,6 +50,7 @@ void usage() {
   + Argument ("output_fixel_directory", "the output directory to store the cropped directions"
                                         " and data files").type_directory_out();
 }
+// clang-format on
 
 void run() {
   const auto in_directory = argument[0];

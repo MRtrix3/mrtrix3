@@ -139,7 +139,7 @@ void usage() {
   + SIFT2AlgorithmOption;
 
 }
-// clang-format off
+// clang-format on
 
 void run() {
 

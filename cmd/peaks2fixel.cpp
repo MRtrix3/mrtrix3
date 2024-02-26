@@ -23,7 +23,7 @@
 using namespace MR;
 using namespace App;
 
-// clang-format on
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -45,7 +45,7 @@ void usage() {
     + Argument ("path").type_text();
 
 }
-// clang-format off
+// clang-format on
 
 std::vector<Eigen::Vector3d> get(Image<float> &data) {
   data.index(3) = 0;

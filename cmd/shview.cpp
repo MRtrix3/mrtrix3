@@ -48,7 +48,7 @@ void usage() {
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 
 }
-
+// clang-format on
 
 void run() {
   GUI::DWI::Window window(get_options("response").size());
