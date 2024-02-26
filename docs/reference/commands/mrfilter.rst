@@ -47,7 +47,7 @@ Options for FFT filter
 Options for gradient filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-stdev sigma** the standard deviation of the Gaussian kernel used to smooth the input image (in mm). The image is smoothed to reduced large spurious gradients caused by noise. Use this option to override the default stdev of 1 voxel. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis).
+-  **-stdev sigma** the standard deviation of the Gaussian kernel used to  smooth the input image (in mm). The image is smoothed to reduced large spurious gradients caused by noise. Use this option to override the default stdev of 1 voxel. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis).
 
 -  **-magnitude** output the gradient magnitude, rather than the default x,y,z components
 
@@ -61,7 +61,7 @@ Options for median filter
 Options for normalisation filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-extent size** specify extent of normalisation filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).
+-  **-extent size** specify extent of normalisation filtering neighbourhood in voxels.This can be specified either as a single value to be used for all 3 axes,or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).
 
 Options for smooth filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^

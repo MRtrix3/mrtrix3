@@ -33,34 +33,39 @@ using namespace MR;
 using namespace App;
 using namespace DWI::Tractography;
 
+// clang-format off
 void usage() {
 
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Resample each streamline in a track file to a new set of vertices";
 
   DESCRIPTION
-  +"It is necessary to specify precisely ONE of the command-line options for "
-   "controlling how this resampling takes place; this may be either increasing "
-   "or decreasing the number of samples along each streamline, or may involve "
-   "changing the positions of the samples according to some specified trajectory."
+  + "It is necessary to specify precisely ONE of the command-line options"
+    " for controlling how this resampling takes place;"
+    " this may be either increasing or decreasing the number of samples along each streamline,"
+    " or may involve changing the positions of the samples according to some specified trajectory."
 
-      + "Note that because the length of a streamline is calculated based on the sums of "
-        "distances between adjacent vertices, resampling a streamline to a new set of "
-        "vertices will typically change the quantified length of that streamline; the "
-        "magnitude of the difference will typically depend on the discrepancy in the "
-        "number of vertices, with less vertices leading to a shorter length (due to "
-        "taking chordal lengths of curved trajectories).";
+  + "Note that because the length of a streamline is calculated"
+    " based on the sums of distances between adjacent vertices,"
+    " resampling a streamline to a new set of vertices will typically"
+    " change the quantified length of that streamline;"
+    " the magnitude of the difference will typically depend on"
+    " the discrepancy in the number of vertices,"
+    " with less vertices leading to a shorter length"
+    " (due to taking chordal lengths of curved trajectories).";
 
   ARGUMENTS
-  +Argument("in_tracks", "the input track file").type_tracks_in() +
-      Argument("out_tracks", "the output resampled tracks").type_tracks_out();
+  + Argument ("in_tracks", "the input track file").type_tracks_in()
+  + Argument ("out_tracks", "the output resampled tracks").type_tracks_out();
 
   OPTIONS
-  +Resampling::ResampleOption;
+    + Resampling::ResampleOption;
 
-  // TODO Resample according to an exemplar streamline
+    // TODO Resample according to an exemplar streamline
 }
+// clang-format on
 
 using value_type = float;
 

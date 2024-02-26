@@ -30,71 +30,84 @@ using namespace MR::DWI::Tractography;
 using namespace MR::Raw;
 using namespace MR::ByteOrder;
 
+// clang-format off
 void usage() {
-  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) and "
-           "J-Donald Tournier (jdtournier@gmail.com) and "
-           "Philip Broser (philip.broser@me.com) and "
-           "Daniel Blezek (daniel.blezek@gmail.com)";
+
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)"
+           " and J-Donald Tournier (jdtournier@gmail.com)"
+           " and Philip Broser (philip.broser@me.com)"
+           " and Daniel Blezek (daniel.blezek@gmail.com)";
 
   SYNOPSIS = "Convert between different track file formats";
 
   DESCRIPTION
-  +"The program currently supports MRtrix .tck files (input/output), "
-   "ascii text files (input/output), VTK polydata files (input/output), "
-   "and RenderMan RIB (export only).";
+    + "The program currently supports"
+      " MRtrix .tck files (input/output),"
+      " ascii text files (input/output),"
+      " VTK polydata files (input/output),"
+      " and RenderMan RIB (export only).";
 
   EXAMPLES
-  +Example("Writing multiple ASCII files, one per streamline",
-           "tckconvert input.tck output-[].txt",
-           "By using the multi-file numbering syntax, "
-           "where square brackets denote the position of the numbering for the files, "
-           "this example will produce files named: "
-           "output-0000.txt, output-0001.txt, output-0002.txt, ...");
+    + Example("Writing multiple ASCII files, one per streamline",
+              "tckconvert input.tck output-[].txt",
+              "By using the multi-file numbering syntax,"
+              " where square brackets denote the position of the numbering for the files,"
+              " this example will produce files named"
+              " output-0000.txt, output-0001.txt, output-0002.txt, ...");
 
   ARGUMENTS
-  +Argument("input", "the input track file.").type_various() +
-      Argument("output", "the output track file.").type_file_out();
+    + Argument ("input", "the input track file.").type_various()
+    + Argument ("output", "the output track file.").type_file_out();
 
   OPTIONS
-  +Option("scanner2voxel",
-          "if specified, the properties of this image will be used to convert "
-          "track point positions from real (scanner) coordinates into voxel coordinates.") +
-      Argument("reference").type_image_in()
+    + Option ("scanner2voxel",
+        "if specified,"
+        " the properties of this image will be used to convert track point positions"
+        " from real (scanner) coordinates into voxel coordinates.")
+      + Argument ("reference").type_image_in()
 
-      + Option("scanner2image",
-               "if specified, the properties of this image will be used to convert "
-               "track point positions from real (scanner) coordinates into image coordinates (in mm).") +
-      Argument("reference").type_image_in()
+    + Option ("scanner2image",
+        "if specified,"
+        " the properties of this image will be used to convert track point positions"
+        " from real (scanner) coordinates into image coordinates (in mm).")
+      + Argument ("reference").type_image_in()
 
-      + Option("voxel2scanner",
-               "if specified, the properties of this image will be used to convert "
-               "track point positions from voxel coordinates into real (scanner) coordinates.") +
-      Argument("reference").type_image_in()
+    + Option ("voxel2scanner",
+        "if specified,"
+        " the properties of this image will be used to convert track point positions"
+        " from voxel coordinates into real (scanner) coordinates.")
+      + Argument ("reference").type_image_in()
 
-      + Option("image2scanner",
-               "if specified, the properties of this image will be used to convert "
-               "track point positions from image coordinates (in mm) into real (scanner) coordinates.") +
-      Argument("reference").type_image_in()
+    + Option ("image2scanner",
+        "if specified,"
+        " the properties of this image will be used to convert track point positions"
+        " from image coordinates (in mm) into real (scanner) coordinates.")
+      + Argument ("reference").type_image_in()
 
-      + OptionGroup("Options specific to PLY writer")
+    + OptionGroup ("Options specific to PLY writer")
 
-      + Option("sides", "number of sides for streamlines") + Argument("sides").type_integer(3, 15)
+    + Option ("sides", "number of sides for streamlines")
+      + Argument("sides").type_integer(3, 15)
 
-      + Option("increment", "generate streamline points at every (increment) points") +
-      Argument("increment").type_integer(1)
+    + Option ("increment", "generate streamline points at every (increment) points")
+      + Argument("increment").type_integer(1)
 
-      + OptionGroup("Options specific to RIB writer")
+    + OptionGroup ("Options specific to RIB writer")
 
-      + Option("dec", "add DEC as a primvar")
+    + Option ("dec", "add DEC as a primvar")
 
-      + OptionGroup("Options for both PLY and RIB writer")
+    + OptionGroup ("Options for both PLY and RIB writer")
 
-      + Option("radius", "radius of the streamlines") + Argument("radius").type_float(0.0f)
+    + Option ("radius", "radius of the streamlines")
+      + Argument("radius").type_float(0.0f)
 
-      + OptionGroup("Options specific to VTK writer")
+    + OptionGroup ("Options specific to VTK writer")
 
-      + Option("ascii", "write an ASCII VTK file (binary by default)");
+    + Option ("ascii", "write an ASCII VTK file"
+                       " (binary by default)");
+
 }
+// clang-format on
 
 class VTKWriter : public WriterInterface<float> {
 public:

@@ -24,36 +24,35 @@ namespace Tractography {
 
 using namespace App;
 
-const OptionGroup ROIOption = OptionGroup("Region Of Interest processing options")
-
-                              + Option("include",
-                                       "specify an inclusion region of interest, as either a binary mask image, "
-                                       "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-                                       "must traverse ALL inclusion regions to be accepted.")
-                                    .allow_multiple() +
-                              Argument("spec").type_various()
-
-                              + Option("include_ordered",
-                                       "specify an inclusion region of interest, as either a binary mask image, "
-                                       "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-                                       "must traverse ALL inclusion_ordered regions in the order they are "
-                                       "specified in order to be accepted.")
-                                    .allow_multiple() +
-                              Argument("image").type_text()
-
-                              + Option("exclude",
-                                       "specify an exclusion region of interest, as either a binary mask image, "
-                                       "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-                                       "that enter ANY exclude region will be discarded.")
-                                    .allow_multiple() +
-                              Argument("spec").type_various()
-
-                              + Option("mask",
-                                       "specify a masking region of interest, as either a binary mask image, "
-                                       "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
-                                       "streamlines exiting the mask will be truncated.")
-                                    .allow_multiple() +
-                              Argument("spec").type_various();
+// clang-format off
+const OptionGroup ROIOption =
+    OptionGroup("Region Of Interest processing options")
+    + Option("include",
+             "specify an inclusion region of interest,"
+             " as either a binary mask image,"
+              " or as a sphere using 4 comma-separared values (x,y,z,radius)."
+              " Streamlines must traverse ALL inclusion regions to be accepted.").allow_multiple()
+      + Argument("spec").type_various()
+    + Option("include_ordered",
+              "specify an inclusion region of interest,"
+              " as either a binary mask image,"
+              " or as a sphere using 4 comma-separared values (x,y,z,radius)."
+              " Streamlines must traverse ALL inclusion_ordered regions"
+              " in the order they are specified in order to be accepted.").allow_multiple()
+      + Argument("image").type_text()
+    + Option("exclude",
+              "specify an exclusion region of interest,"
+              " as either a binary mask image,"
+              " or as a sphere using 4 comma-separared values (x,y,z,radius)."
+              " Streamlines that enter ANY exclude region will be discarded.").allow_multiple()
+      + Argument("spec").type_various()
+    + Option("mask",
+             "specify a masking region of interest,"
+             " as either a binary mask image,"
+             " or as a sphere using 4 comma-separared values (x,y,z,radius)."
+             " If defined, streamlines exiting the mask will be truncated.").allow_multiple()
+      + Argument("spec").type_various();
+// clang-format on
 
 void load_rois(Properties &properties) {
   auto opt = get_options("include");

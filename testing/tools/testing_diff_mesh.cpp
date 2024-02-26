@@ -24,18 +24,23 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two mesh files for differences, within specified tolerance";
 
   DESCRIPTION
-  +"Note that vertex normals are currently not tested.";
+  + "Note that vertex normals are currently not tested.";
 
   ARGUMENTS
-  +Argument("in1", "a mesh file.").type_file_in() + Argument("in2", "another mesh file.").type_file_in() +
-      Argument("tolerance", "the maximum distance to consider acceptable").type_float(0.0);
+  + Argument ("in1", "a mesh file.").type_file_in()
+  + Argument ("in2", "another mesh file.").type_file_in()
+  + Argument ("tolerance", "the maximum distance to consider acceptable").type_float(0.0);
+
 }
+// clang-format on
 
 void run() {
   const default_type dist_sq = Math::pow2(default_type(argument[2]));

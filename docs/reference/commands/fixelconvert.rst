@@ -31,7 +31,7 @@ Example usages
 
         $ fixelconvert old_fixels.msf new_fixels/ -out_size
 
-    This performs a simple conversion from old to new format, and additionally writes the contents of the "size" field within old-format fixel images stored using the "FixelMetric" class (likely all of them) as an additional fixel data file.
+    This performs a simple conversion from old to new format, and additionally writes the contents of the "size" field  within old-format fixel images stored using the "FixelMetric" class (likely all of them) as an additional fixel data file.
 
 -   *Convert multiple files from old to new format, preserving fixel correspondence*::
 

@@ -29,16 +29,15 @@ using namespace MR::Surface;
 
 const char *filters[] = {"smooth", NULL};
 
-const OptionGroup smooth_option =
-    OptionGroup("Options for mesh smoothing filter")
+// clang-format off
+const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
+  + Option ("smooth_spatial", "spatial extent of smoothing"
+                              " (default: " + str(Filter::default_smoothing_spatial_factor, 2) + "mm)")
+    + Argument ("value").type_float (0.0)
+  + Option ("smooth_influence", "influence factor for smoothing"
+                                " (default: " + str(Filter::default_smoothing_influence_factor, 2) + ")")
+    + Argument ("value").type_float (0.0);
 
-    + Option("smooth_spatial",
-             "spatial extent of smoothing (default: " + str(Filter::default_smoothing_spatial_factor, 2) + "mm)") +
-    Argument("value").type_float(0.0)
-
-    + Option("smooth_influence",
-             "influence factor for smoothing (default: " + str(Filter::default_smoothing_influence_factor, 2) + ")") +
-    Argument("value").type_float(0.0);
 
 void usage() {
 
@@ -47,28 +46,29 @@ void usage() {
   SYNOPSIS = "Apply filter operations to meshes";
 
   DESCRIPTION
-  +"While this command has only one filter operation currently available, it "
-   "nevertheless presents with a comparable interface to the MRtrix3 commands "
-   "maskfilter and mrfilter.";
+  + "While this command has only one filter operation currently available,"
+    " it nevertheless presents with a comparable interface"
+    " to the MRtrix3 commands maskfilter and mrfilter";
 
   EXAMPLES
-  +Example("Apply a mesh smoothing filter (currently the only filter available)",
-           "meshfilter input.vtk smooth output.vtk",
-           "The usage of this command may cause confusion due to the generic interface "
-           "despite only one filtering operation being currently available. This simple "
-           "example usage is therefore provided for clarity.");
+  + Example ("Apply a mesh smoothing filter"
+             " (currently the only filter available)",
+             "meshfilter input.vtk smooth output.vtk",
+             "The usage of this command may cause confusion due to the generic interface"
+             " despite only one filtering operation being currently available."
+             " This simple example usage is therefore provided for clarity.");
 
   ARGUMENTS
-  +Argument("input", "the input mesh file").type_file_in() +
-      Argument("filter",
-               "the filter to apply; "
-               "options are: smooth")
-          .type_choice(filters) +
-      Argument("output", "the output mesh file").type_file_out();
+  + Argument ("input",  "the input mesh file").type_file_in()
+  + Argument ("filter", "the filter to apply;"
+                        " options are: smooth").type_choice (filters)
+  + Argument ("output", "the output mesh file").type_file_out();
 
   OPTIONS
-  +smooth_option;
+  + smooth_option;
+
 }
+// clang-format on
 
 void run() {
 

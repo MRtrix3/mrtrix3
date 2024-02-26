@@ -27,22 +27,27 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Reorder a set of directions to ensure near-uniformity upon truncation";
 
   DESCRIPTION
-  +"The intent of this command is to reorder a set of gradient directions such that "
-   "if a scan is terminated prematurely, at any point, the acquired directions will "
-   "still be close to optimally distributed on the half-sphere.";
+  + "The intent of this command is to reorder a set of gradient directions"
+    " such that if a scan is terminated prematurely,"
+    " at any point,"
+    " the acquired directions will still be close to optimally distributed on the half-sphere.";
 
   ARGUMENTS
-  +Argument("input", "the input directions file").type_file_in() +
-      Argument("output", "the output directions file").type_file_out();
+  + Argument ("input", "the input directions file").type_file_in()
+  + Argument ("output", "the output directions file").type_file_out();
 
   OPTIONS
-  +Option("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
+  + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
+                         " instead of [az el].");
+
 }
 
 using value_type = double;

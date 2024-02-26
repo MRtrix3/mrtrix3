@@ -25,68 +25,85 @@ using namespace App;
 
 const char *modes[] = {"2d", "3d", nullptr};
 
+// clang-format off
 void usage() {
-  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be) and "
-           "J-Donald Tournier (jdtournier@gmail.com)";
+
+  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Remove Gibbs Ringing Artifacts";
 
   DESCRIPTION
-  +"This application attempts to remove Gibbs ringing artefacts from MRI images using the method "
-   "of local subvoxel-shifts proposed by Kellner et al. (see reference below for details)."
+    + "This application attempts to remove Gibbs ringing artefacts from MRI images"
+      " using the method of local subvoxel-shifts proposed by Kellner et al."
+      " (see reference below for details)."
 
-      + "By default, the original 2D slice-wise version is used. If the -mode 3d option is provided, "
-        "the program will run the 3D version as proposed by Bautista et al. "
-        "(also in the reference list below)."
+    + "By default, the original 2D slice-wise version is used."
+      " If the -mode 3d option is provided,"
+      " the program will run the 3D version as proposed by Bautista et al."
+      " (also in the reference list below)."
 
-      + "This command is designed to run on data directly after it has been reconstructed by the scanner, "
-        "before any interpolation of any kind has taken place. You should not run this command after any "
-        "form of motion correction (e.g. not after dwifslpreproc). Similarly, if you intend running dwidenoise, "
-        "you should run denoising before this command to not alter the noise structure, "
-        "which would impact on dwidenoise's performance."
+    + "This command is designed to run on data directly after it has been reconstructed by the scanner,"
+      " before any interpolation of any kind has taken place."
+      " You should not run this command after any form of motion correction"
+      " (e.g. not after dwifslpreproc)."
+      " Similarly, if you intend running dwidenoise,"
+      " you should run denoising before this command to not alter the noise structure,"
+      " which would impact on dwidenoise's performance."
 
-      + "Note that this method is designed to work on images acquired with full k-space coverage. "
-        "Running this method on partial Fourier ('half-scan') or filtered data may not remove all ringing "
-        "artefacts. Users are encouraged to acquired full-Fourier data where possible, and disable any "
-        "form of filtering on the scanner.";
+    + "Note that this method is designed to work on images acquired with full k-space coverage."
+      " Running this method on partial Fourier ('half-scan')"
+      " or filtered data may not remove all ringing artefacts."
+      " Users are encouraged to acquired full-Fourier data where possible,"
+      " and disable any form of filtering on the scanner.";
+
 
   ARGUMENTS
-  +Argument("in", "the input image.").type_image_in() + Argument("out", "the output image.").type_image_out();
+  + Argument ("in", "the input image.").type_image_in()
+  + Argument ("out", "the output image.").type_image_out();
+
 
   OPTIONS
-  +Option("mode",
-          "specify the mode of operation. Valid choices are: 2d, 3d (default: "
-          "2d). The 2d mode corresponds to the original stack-of-slices approach as "
-          "propoosed by Kellner et al., appropriate for images acquired using "
-          "2D muli-slice approaches. The 3d mode corresponds to the 3D "
-          "volume-wise extension proposed by Bautista et al., which is "
-          "appropriate for images acquired using 3D Fourier encoding.") +
-      Argument("type").type_choice(modes)
+  + Option ("mode",
+            "specify the mode of operation."
+            " Valid choices are: 2d, 3d (default: 2d)."
+            " The 2d mode corresponds to the original slice-wise approach as propoosed by Kellner et al.,"
+            " appropriate for images acquired using 2D stack-of-slices approaches."
+            " The 3d mode corresponds to the 3D volume-wise extension proposed by Bautista et al.,"
+            " which is appropriate for images acquired using 3D Fourier encoding.")
+    + Argument ("type").type_choice(modes)
 
-      + Option("axes",
-               "select the slice axes (default: 0,1 - i.e. x-y). Select all 3 spatial axes for 3D operation, "
-               "i.e. 0:2 or 0,1,2 (this is equivalent to '-mode 3d').") +
-      Argument("list").type_sequence_int()
+  + Option ("axes",
+            "select the slice axes"
+            " (default: 0,1 - i.e. x-y).")
+    + Argument ("list").type_sequence_int()
 
-      + Option("nshifts", "discretization of subpixel spacing (default: 20).") + Argument("value").type_integer(8, 128)
+  + Option ("nshifts", "discretization of subpixel spacing"
+                       " (default: 20).")
+    + Argument ("value").type_integer(8, 128)
 
-      + Option("minW", "left border of window used for TV computation (default: 1).") +
-      Argument("value").type_integer(0, 10)
+  + Option ("minW", "left border of window used for TV computation"
+                    " (default: 1).")
+    + Argument ("value").type_integer(0, 10)
 
-      + Option("maxW", "right border of window used for TV computation (default: 3).") +
-      Argument("value").type_integer(0, 128)
+  + Option ("maxW", "right border of window used for TV computation"
+                    " (default: 3).")
+    + Argument ("value").type_integer(0, 128)
 
-      + DataType::options();
+  + DataType::options();
+
 
   REFERENCES
-  +"Kellner, E; Dhital, B; Kiselev, V.G & Reisert, M. "
-   "Gibbs-ringing artifact removal based on local subvoxel-shifts. "
-   "Magnetic Resonance in Medicine, 2016, 76, 1574-1581."
+    + "Kellner, E; Dhital, B; Kiselev, V.G & Reisert, M. "
+    "Gibbs-ringing artifact removal based on local subvoxel-shifts. "
+    "Magnetic Resonance in Medicine, 2016, 76, 1574-1581."
 
-      + "Bautista, T; O'Muircheartaigh, J; Hajnal, JV; & Tournier, J-D. "
-        "Removal of Gibbs ringing artefacts for 3D acquisitions using subvoxel shifts. "
-        "Proc. ISMRM, 2021, 29, 3535.";
+    + "Bautista, T; O'Muircheartaigh, J; Hajnal, JV; & Tournier, J-D. "
+    "Removal of Gibbs ringing artefacts for 3D acquisitions using subvoxel shifts. "
+    "Proc. ISMRM, 2021, 29, 3535.";
+
 }
+// clang-format on
 
 void run() {
   const int nshifts = App::get_option_value("nshifts", 20);

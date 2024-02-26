@@ -102,3 +102,9 @@ aad44d847ac48d02bb7f8badf801dbfaa0ccdac0
 #Author: MRtrixBot <gitbot@mrtrix.org>
 #Date:   Thu, 17 Aug 2023 15:36:14 +0100
 #    Apply formatting for C++ using clang-format
+
+0cec87a0e59749d4e14ebf55c288067d29f868f1
+#Author: Robert Smith <robert.smith@florey.edu.au>
+#Date:   Thu Feb 22 01:43:21 2024 +1100
+#    Disable clang-format for CLI-related code
+#    When clang-format, introduced in #2652, applied its changes to MRtrix3 code relating to the command-line interface (particularly the way that options and their arguments are concatenated through the addition operator), the resulting code was often quite ugly. This commit replaces code relating to CLI configuration (both the usage() function in cmd/*.cpp, and in definitions of options and option groups utilised by multiple commands) with manually formatted code, and includes comment fields to disable further manipulation of that code by clang-format.

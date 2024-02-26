@@ -21,18 +21,23 @@
 namespace MR {
 namespace DWI {
 
+// clang-format off
 const App::OptionGroup ShellsOption =
-    App::OptionGroup("DW shell selection options") +
-    App::Option("shells",
-                "specify one or more b-values to use during processing, as a comma-separated list "
-                "of the desired approximate b-values (b-values are clustered to allow for small "
-                "deviations). Note that some commands are incompatible with multiple b-values, "
-                "and will report an error if more than one b-value is provided. \n"
-                "WARNING: note that, even though the b=0 volumes are never referred to as a 'shell' "
-                "in the literature, they still have to be explicitly included in the list of "
-                "b-values as provided to the -shell option! Several algorithms that include the "
-                "b=0 volumes in their computations may otherwise return an undesired result.") +
-    App::Argument("bvalues").type_sequence_float();
+    App::OptionGroup("DW shell selection options")
+    + App::Option("shells",
+                  "specify one or more b-values to use during processing,"
+                  " as a comma-separated list of the desired approximate b-values"
+                  " (b-values are clustered to allow for small deviations)."
+                  " Note that some commands are incompatible with multiple b-values,"
+                  " and will report an error if more than one b-value is provided. \n"
+                  "WARNING: note that,"
+                  " even though the b=0 volumes are never referred to as a 'shell' in the literature,"
+                  " they still have to be explicitly included in the list of b-values"
+                  " as provided to the -shell option!"
+                  " Several algorithms that include the b=0 volumes in their computations"
+                  " may otherwise return an undesired result.")
+      + App::Argument("bvalues").type_sequence_float();
+// clang-format on
 
 FORCE_INLINE default_type bvalue_epsilon() {
   static const default_type value = File::Config::get_float("BValueEpsilon", DWI_SHELLS_EPSILON);

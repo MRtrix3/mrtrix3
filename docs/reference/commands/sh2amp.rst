@@ -24,7 +24,11 @@ Description
 
 The input image should consist of a 4D or 5D image, with SH coefficients along the 4th dimension according to the convention below. If 4D (or size 1 along the 5th dimension), the program expects to be provided with a single shell of directions. If 5D, each set of coefficients along the 5th dimension is understood to correspond to a different shell.
 
-The directions can be provided as one of the following: a 2-column ASCII text file containing azimuth / elevation pairs (eg. as produced by dirgen); a 3-column ASCII text file containing x, y, z Cartesian direction vectors (eg. as produced by dirgen -cart); a 4-column ASCII text file containing the x, y, z, b components of a full DW encoding scheme (in MRtrix format, see main documentation for details); an image file whose header contains a valid DW encoding scheme
+The directions can be provided as: |br|
+- a 2-column ASCII text file containing azimuth / elevation pairs (eg. as produced by dirgen) |br|
+- a 3-column ASCII text file containing x, y, z Cartesian direction vectors (eg. as produced by dirgen -cart) |br|
+- a 4-column ASCII text file containing the x, y, z, b components of a full DW encoding scheme (in MRtrix format, see main documentation for details). |br|
+- an image file whose header contains a valid DW encoding scheme
 
 If a full DW encoding is provided, the number of shells needs to match those found in the input image of coefficients (i.e. its size along the 5th dimension). If needed, the -shell option can be used to pick out the specific shell(s) of interest.
 

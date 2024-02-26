@@ -30,23 +30,26 @@ using namespace App;
 
 const char *field_choices[] = {"mass", "centre", nullptr};
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compute statistics of parcels within a label image";
 
   ARGUMENTS
-  +Argument("input", "the input label image").type_image_in();
+  + Argument ("input", "the input label image").type_image_in();
 
   OPTIONS
-  +Option("output",
-          "output only the field specified; "
-          "options are: " +
-              join(field_choices, ",")) +
-      Argument("choice").type_choice(field_choices)
+  + Option ("output", "output only the field specified;"
+                      " options are: " + join(field_choices, ","))
+    + Argument ("choice").type_choice (field_choices)
 
-      + Option("voxelspace", "report parcel centres of mass in voxel space rather than scanner space");
+  + Option ("voxelspace", "report parcel centres of mass in voxel space"
+                          " rather than scanner space");
+
 }
+// clang-format on
 
 using Connectome::node_t;
 using vector_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;

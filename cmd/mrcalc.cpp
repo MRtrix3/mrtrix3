@@ -331,6 +331,7 @@ static bool transform_mis_match_reported(false);
 
 inline bool is_true(const complex_type &z) { return z.real() || z.imag(); }
 
+// clang-format off
 void usage() {
 
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
@@ -338,73 +339,80 @@ void usage() {
   SYNOPSIS = "Apply generic voxel-wise mathematical operations to images";
 
   DESCRIPTION
-  +"This command will only compute per-voxel operations. "
-   "Use 'mrmath' to compute summary statistics across images or "
-   "along image axes."
+  + "This command will only compute per-voxel operations."
+    " Use 'mrmath' to compute summary statistics across images or along image axes."
 
-      + "This command uses a stack-based syntax, with operators "
-        "(specified using options) operating on the top-most entries "
-        "(i.e. images or values) in the stack. Operands (values or "
-        "images) are pushed onto the stack in the order they appear "
-        "(as arguments) on the command-line, and operators (specified "
-        "as options) operate on and consume the top-most entries in "
-        "the stack, and push their output as a new entry on the stack."
+  + "This command uses a stack-based syntax,"
+    " with operators (specified using options)"
+    " operating on the top-most entries (i.e. images or values) in the stack."
+    " Operands (values or images) are pushed onto the stack"
+    " in the order they appear (as arguments) on the command-line,"
+    " and operators (specified as options)"
+    " operate on and consume the top-most entries in the stack,"
+    " and push their output as a new entry on the stack."
 
-      + "As an additional feature, this command will allow images with different "
-        "dimensions to be processed, provided they satisfy the following "
-        "conditions: for each axis, the dimensions match if they are the same size, "
-        "or one of them has size one. In the latter case, the entire image will be "
-        "replicated along that axis. This allows for example a 4D image of "
-        "size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if it "
-        "consisted of N copies of the 3D image along the 4th axis (the missing "
-        "dimension is assumed to have size 1). Another example would a "
-        "single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of "
-        "size [ X Y Z ], which would allow the creation of a 4D image where each "
-        "volume consists of the 3D image scaled by the corresponding value for "
-        "that volume in the single-voxel image."
+  + "As an additional feature,"
+    " this command will allow images with different dimensions to be processed,"
+    " provided they satisfy the following conditions:"
+    " for each axis,"
+    " the dimensions match if they are the same size,"
+    " or one of them has size one."
+    " In the latter case, the entire image will be replicated along that axis."
+    " This allows for example a 4D image of size [ X Y Z N ]"
+    " to be added to a 3D image of size [ X Y Z ],"
+    " as if it consisted of N copies of the 3D image along the 4th axis"
+    " (the missing dimension is assumed to have size 1)."
+    " Another example would a single-voxel 4D image of size [ 1 1 1 N ],"
+    " multiplied by a 3D image of size [ X Y Z ],"
+    " which would allow the creation of a 4D image"
+    " where each volume consists of the 3D image"
+    " scaled by the corresponding value for that volume in the single-voxel image."
 
-      + "The following special keywords are permitted as operands on the stack: "
-        "'rand' (random number between 0 and 1); "
-        "'randn' (random number from unit std.dev. normal distribution); "
-        "'e' (Euler's number); "
-        "'pi' (ratio of circumference of circle to diameter)";
+  + "The following special keywords are permitted as operands on the stack:"
+    " 'rand' (random number between 0 and 1);"
+    " 'randn' (random number from unit std.dev. normal distribution);"
+    " 'e' (Euler's number);"
+    " 'pi' (ratio of circumference of circle to diameter)";
 
-  EXAMPLES
-  +Example("Double the value stored in every voxel",
-           "mrcalc a.mif 2 -mult r.mif",
-           "This performs the operation:  r = 2*a  for every voxel a,r in "
-           "images a.mif and r.mif respectively.")
+EXAMPLES
+  + Example ("Double the value stored in every voxel",
+             "mrcalc a.mif 2 -mult r.mif",
+             "This performs the operation: "
+             " r = 2*a "
+             " for every voxel a,r in images a.mif and r.mif respectively.")
 
-      + Example("A more complex example",
-                "mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif",
-                "This performs the operation: r = 9.3*exp(-a/b)")
+  + Example ("A more complex example",
+             "mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif",
+             "This performs the operation:"
+             " r = 9.3*exp(-a/b)")
 
-      + Example("Another complex example",
-                "mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif",
-                "This performs: r = (a+b)/(c*d+4.2).")
+  + Example ("Another complex example",
+             "mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif",
+             "This performs:"
+             " r = (a+b)/(c*d+4.2).")
 
-      + Example("Rescale the densities in a SH l=0 image",
-                "mrcalc ODF_CSF.mif 4 pi -mult -sqrt -div ODF_CSF_scaled.mif",
-                "This applies the spherical harmonic basis scaling factor: "
-                "1.0/sqrt(4*pi), such that a single-tissue voxel containing the "
-                "same intensities as the response function of that tissue "
-                "should contain the value 1.0.");
+  + Example ("Rescale the densities in a SH l=0 image",
+             "mrcalc ODF_CSF.mif 4 pi -mult -sqrt -div ODF_CSF_scaled.mif",
+             "This applies the spherical harmonic basis scaling factor:"
+             " 1.0/sqrt(4*pi),"
+             " such that a single-tissue voxel"
+             " containing the same intensities as the response function of that tissue"
+             " should contain the value 1.0.");
 
-  ARGUMENTS
-  +Argument("operand",
-            "an input image, intensity value, or the special keywords "
-            "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-            "std.dev. normal distribution) or the mathematical constants 'e' and 'pi'.")
-       .type_various()
-       .allow_multiple();
+ARGUMENTS
+  + Argument ("operand", "an input image,"
+                         " intensity value,"
+                         " or special keyword"
+                         " (see Description)").type_various().allow_multiple();
 
-  OPTIONS
+OPTIONS
 
 #define SECTION 1
 #include "mrcalc.cpp"
 
-  +DataType::options();
+  + DataType::options();
 }
+// clang-format on
 
 /**********************************************************************
   STACK FRAMEWORK:

@@ -32,9 +32,9 @@ Note that this method is designed to work on images acquired with full k-space c
 Options
 -------
 
--  **-mode type** specify the mode of operation. Valid choices are: 2d, 3d (default: 2d). The 2d mode corresponds to the original stack-of-slices approach as propoosed by Kellner et al., appropriate for images acquired using 2D muli-slice approaches. The 3d mode corresponds to the 3D volume-wise extension proposed by Bautista et al., which is appropriate for images acquired using 3D Fourier encoding.
+-  **-mode type** specify the mode of operation. Valid choices are: 2d, 3d (default: 2d). The 2d mode corresponds to the original slice-wise approach as propoosed by Kellner et al., appropriate for images acquired using 2D stack-of-slices approaches. The 3d mode corresponds to the 3D volume-wise extension proposed by Bautista et al., which is appropriate for images acquired using 3D Fourier encoding.
 
--  **-axes list** select the slice axes (default: 0,1 - i.e. x-y). Select all 3 spatial axes for 3D operation, i.e. 0:2 or 0,1,2 (this is equivalent to '-mode 3d').
+-  **-axes list** select the slice axes (default: 0,1 - i.e. x-y).
 
 -  **-nshifts value** discretization of subpixel spacing (default: 20).
 

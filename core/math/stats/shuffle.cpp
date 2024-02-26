@@ -32,66 +32,65 @@ const char *error_types[] = {"ee", "ise", "both", nullptr};
 App::OptionGroup shuffle_options(const bool include_nonstationarity, const default_type default_skew) {
   using namespace App;
 
+// clang-format off
   OptionGroup result =
       OptionGroup("Options relating to shuffling of data for nonparametric statistical inference")
-
       + Option("notest",
-               "don't perform statistical inference; only output population statistics (effect size, stdev etc)")
-
+               "don't perform statistical inference;"
+               " only output population statistics"
+               " (effect size, stdev etc)")
       + Option("errors",
-               "specify nature of errors for shuffling; options are: " + join(error_types, ",") + " (default: ee)") +
-      Argument("spec").type_choice(error_types)
-
+               "specify nature of errors for shuffling;"
+               " options are: " + join(error_types, ",") +
+               " (default: ee)")
+        + Argument("spec").type_choice(error_types)
       + Option("exchange_within",
-               "specify blocks of observations within each of which data may undergo restricted exchange") +
-      Argument("file").type_file_in()
-
+               "specify blocks of observations within each of which data may undergo restricted exchange")
+        + Argument("file").type_file_in()
       + Option("exchange_whole",
-               "specify blocks of observations that may be exchanged with one another "
-               "(for independent and symmetric errors, sign-flipping will occur block-wise)") +
-      Argument("file").type_file_in()
-
-      + Option("strong", "use strong familywise error control across multiple hypotheses")
-
-      + Option("nshuffles", "the number of shuffles (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")") +
-      Argument("number").type_integer(1)
-
-      +
-      Option("permutations",
-             "manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, "
-             "where each relabelling is defined as a column vector of size m, and the number of columns n defines "
-             "the number of permutations. Can be generated with the palm_quickperms function in PALM "
-             "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). "
-             "Overrides the -nshuffles option.") +
-      Argument("file").type_file_in();
+               "specify blocks of observations that may be exchanged with one another"
+               " (for independent and symmetric errors, sign-flipping will occur block-wise)")
+        + Argument("file").type_file_in()
+      + Option("strong",
+               "use strong familywise error control across multiple hypotheses")
+      + Option("nshuffles",
+               "the number of shuffles"
+               " (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")")
+        + Argument("number").type_integer(1)
+      + Option("permutations",
+               "manually define the permutations (relabelling)."
+               " The input should be a text file defining a m x n matrix,"
+               " where each relabelling is defined as a column vector of size m,"
+               " and the number of columns n defines the number of permutations."
+               " Can be generated with the palm_quickperms function in PALM"
+               " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
+               " Overrides the -nshuffles option.")
+        + Argument("file").type_file_in();
 
   if (include_nonstationarity) {
-
-    result + Option("nonstationarity", "perform non-stationarity correction")
-
-        + Option("skew_nonstationarity",
-                 "specify the skew parameter for empirical statistic calculation (default for this command is " +
-                     str(default_skew) + ")") +
-        Argument("value").type_float(0.0)
-
-        + Option("nshuffles_nonstationarity",
-                 "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity "
-                 "correction (default: " +
-                     str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")") +
-        Argument("number").type_integer(1)
-
-        + Option("permutations_nonstationarity",
-                 "manually define the permutations (relabelling) for computing the emprical statistics for "
-                 "non-stationarity correction. "
-                 "The input should be a text file defining a m x n matrix, where each relabelling is defined as a "
-                 "column vector of size m, "
-                 "and the number of columns n defines the number of permutations. Can be generated with the "
-                 "palm_quickperms function in PALM "
-                 "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) "
-                 "Overrides the -nshuffles_nonstationarity option.") +
-        Argument("file").type_file_in();
+    result + Option("nonstationarity",
+                    "perform non-stationarity correction")
+           + Option("skew_nonstationarity",
+                    "specify the skew parameter for empirical statistic calculation"
+                    " (default for this command is " + str(default_skew) + ")")
+             + Argument("value").type_float(0.0)
+           + Option("nshuffles_nonstationarity",
+                    "the number of shuffles to use when precomputing the empirical statistic image"
+                    " for non-stationarity correction"
+                    " (default: " + str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")")
+             + Argument("number").type_integer(1)
+           + Option("permutations_nonstationarity",
+                    "manually define the permutations (relabelling)"
+                    " for computing the emprical statistics for non-stationarity correction."
+                    " The input should be a text file defining a m x n matrix,"
+                    " where each relabelling is defined as a column vector of size m,"
+                    " and the number of columns n defines the number of permutations."
+                    " Can be generated with the palm_quickperms function in PALM"
+                    " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
+                    " Overrides the -nshuffles_nonstationarity option.")
+             + Argument("file").type_file_in();
   }
-
+// clang-format off
   return result;
 }
 

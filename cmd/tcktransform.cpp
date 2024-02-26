@@ -26,16 +26,20 @@ using namespace MR;
 using namespace MR::DWI;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Apply a spatial transformation to a tracks file";
 
   ARGUMENTS
-  +Argument("tracks", "the input track file.").type_tracks_in() +
-      Argument("transform", "the image containing the transform.").type_image_in() +
-      Argument("output", "the output track file").type_tracks_out();
+  + Argument ("tracks", "the input track file.").type_tracks_in()
+  + Argument ("transform", "the image containing the transform.").type_image_in()
+  + Argument ("output", "the output track file").type_tracks_out();
+
 }
+// clang-format on
 
 using value_type = float;
 using TrackType = Tractography::Streamline<value_type>;

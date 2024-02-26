@@ -62,7 +62,7 @@ Options to control when SIFT terminates filtering
 
 -  **-term_number value** number of streamlines; continue filtering until this number of streamlines remain
 
--  **-term_ratio value** termination ratio; defined as the ratio between reduction in cost function, and reduction in density of streamlines; smaller values result in more streamlines being filtered out
+-  **-term_ratio value** termination ratio; defined as the ratio between reduction in cost function, and reduction in density of streamlines. Smaller values result in more streamlines being filtered out.
 
 -  **-term_mu value** terminate filtering once the SIFT proportionality coefficient reaches a given value
 

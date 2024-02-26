@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-While this command has only one filter operation currently available, it nevertheless presents with a comparable interface to the MRtrix3 commands maskfilter and mrfilter.
+While this command has only one filter operation currently available, it nevertheless presents with a comparable interface to the MRtrix3 commands maskfilter and mrfilter
 
 Example usages
 --------------
