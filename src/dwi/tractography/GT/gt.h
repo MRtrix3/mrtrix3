@@ -31,10 +31,7 @@
 #include "progressbar.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 const double M_4PI = 4.0 * Math::pi;
 const double M_sqrt4PI = std::sqrt(M_4PI);
@@ -231,9 +228,6 @@ protected:
   std::ofstream out;
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT
 
 #endif // __gt_gt_h__

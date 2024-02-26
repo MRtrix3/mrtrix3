@@ -23,10 +23,7 @@
 #include "memory.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class MethodBase {
 
@@ -93,9 +90,6 @@ protected:
   }
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking
 
 #endif

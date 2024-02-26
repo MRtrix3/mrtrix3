@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/GT/gt.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 std::ostream &operator<<(std::ostream &o, Stats const &stats) {
   return o << stats.Tint << ", " << stats.EextTot << ", " << stats.EintTot << ", " << stats.getAcceptanceRate('b')
@@ -27,7 +24,4 @@ std::ostream &operator<<(std::ostream &o, Stats const &stats) {
            << stats.getAcceptanceRate('o') << ", " << stats.getAcceptanceRate('c');
 }
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT

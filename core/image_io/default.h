@@ -21,8 +21,7 @@
 #include "image_io/base.h"
 #include "types.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 class Default : public Base {
 public:
@@ -41,7 +40,6 @@ protected:
   void copy_to_mem(const Header &);
 };
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO
 
 #endif

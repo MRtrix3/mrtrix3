@@ -39,10 +39,7 @@
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 template <class Fixel> class Model : public ModelBase<Fixel> {
 
@@ -355,9 +352,6 @@ template <class Fixel> bool Model<Fixel>::FixelRemapper::operator()(const TrackI
   return true;
 }
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT
 
 #endif

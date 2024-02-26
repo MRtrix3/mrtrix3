@@ -25,10 +25,7 @@
 // raised, but may reduce performance when new IPS are created.
 #define MAX_NO_ALLOWED 32
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 
 /**
  * Sends and receives information from other MRView processes
@@ -58,8 +55,6 @@ private:
   void TryConnectTo(int connectToId); // tries to connect with another interprocesscommunicator
 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync
+
 #endif

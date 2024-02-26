@@ -21,8 +21,7 @@
 #include "image_io/pipe.h"
 #include "signal_handler.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void Pipe::load(const Header &header, size_t) {
   assert(files.size() == 1);
@@ -52,5 +51,4 @@ void Pipe::unload(const Header &) {
 
 bool Pipe::delete_piped_images = true;
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

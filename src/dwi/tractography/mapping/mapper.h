@@ -38,10 +38,7 @@
 // smoothing
 #define CURVATURE_TRACK_SMOOTHING_FWHM 10.0 // In mm
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 class TrackMapperBase {
 
@@ -359,9 +356,6 @@ private:
   }
 };
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping
 
 #endif

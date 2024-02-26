@@ -21,10 +21,7 @@
 #include "dwi/fixel_map.h"
 #include "dwi/tractography/mapping/voxel.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 // Templated Fixel class MUST provide operator+= (const float) for adding streamline density
 
@@ -74,9 +71,6 @@ template <class Fixel> size_t Fixel_TD_map<Fixel>::dixel2fixel(const Dixel &in) 
   return map_voxel.dir2fixel(in.get_dir());
 }
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping
 
 #endif

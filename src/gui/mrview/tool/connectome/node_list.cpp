@@ -21,10 +21,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/connectome/connectome.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Node_list_model::Node_list_model(Connectome *parent)
     : QAbstractItemModel(dynamic_cast<QObject *>(parent)), connectome(*parent) {}
@@ -158,7 +155,4 @@ void Node_list::node_selection_changed_slot(const QItemSelection &, const QItemS
   connectome.node_selection_changed(nodes);
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

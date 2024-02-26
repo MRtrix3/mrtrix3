@@ -25,8 +25,7 @@
 
 #include "connectome/connectome.h"
 
-namespace MR {
-namespace Connectome {
+namespace MR::Connectome {
 
 // Class for storing any useful information regarding a parcellation node that
 //   may be imported from a lookup table
@@ -96,7 +95,6 @@ private:
 //   mapping TO that index is required, the conversion is ill-formed.
 std::vector<node_t> get_lut_mapping(const LUT &, const LUT &);
 
-} // namespace Connectome
-} // namespace MR
+} // namespace MR::Connectome
 
 #endif

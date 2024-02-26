@@ -17,10 +17,7 @@
 #include "dwi/tractography/seeding/list.h"
 #include "dwi/tractography/rng.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 void List::add(Base *const in) {
   if (seeders.size() && !(in->is_finite() == is_finite()))
@@ -72,7 +69,4 @@ bool List::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
   }
 }
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Seeding

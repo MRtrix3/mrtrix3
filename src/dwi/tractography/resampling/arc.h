@@ -19,10 +19,7 @@
 
 #include "dwi/tractography/resampling/resampling.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 // Also handles resampling along a fixed line
 class Arc : public BaseCRTP<Arc> {
@@ -75,9 +72,6 @@ private:
   state_t state(const point_type &) const;
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling
 
 #endif

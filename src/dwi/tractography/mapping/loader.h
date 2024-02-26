@@ -23,10 +23,7 @@
 #include "progressbar.h"
 #include "thread_queue.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 class TrackLoader {
 
@@ -56,9 +53,6 @@ protected:
   std::unique_ptr<ProgressBar> progress;
 };
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping
 
 #endif

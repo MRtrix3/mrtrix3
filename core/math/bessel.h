@@ -21,9 +21,7 @@
 
 #include "math/chebyshev.h"
 
-namespace MR {
-namespace Math {
-namespace Bessel {
+namespace MR::Math::Bessel {
 
 extern const double coef_aI0[];
 extern const double coef_bI0[];
@@ -65,8 +63,6 @@ template <typename T> inline T I1_scaled(const T x) {
   return (x > 0.0 ? b : -b);
 }
 
-} // namespace Bessel
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Bessel
 
 #endif

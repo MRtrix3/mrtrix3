@@ -19,9 +19,7 @@
 
 #include "exception.h"
 
-namespace MR {
-namespace Surface {
-namespace Filter {
+namespace MR::Surface::Filter {
 
 void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
   VertexList vertices, normals;
@@ -102,6 +100,4 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
   out.load(vertices, normals, in.get_triangles(), in.get_quads());
 }
 
-} // namespace Filter
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::Filter

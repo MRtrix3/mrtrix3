@@ -21,9 +21,7 @@
 #include "dwi/tractography/seeding/basic.h"
 #include "image.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 namespace ACT {
 class GMWMI_finder;
@@ -54,8 +52,6 @@ private:
 };
 
 } // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography
 
 #endif

@@ -23,8 +23,7 @@
 #include "math/Sn_scale_estimator.h"
 #include "math/least_squares.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 namespace {
 
@@ -74,7 +73,6 @@ inline void estimate_noise(InputImageType &dwi, OutputImageType &noise, const Ma
   loop.run_outer(functor);
 }
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI
 
 #endif

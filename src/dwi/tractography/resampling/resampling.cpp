@@ -25,10 +25,7 @@
 #include "dwi/tractography/resampling/fixed_step_size.h"
 #include "dwi/tractography/resampling/upsampler.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 using namespace App;
 
@@ -119,7 +116,4 @@ Base *get_resampler() {
   return nullptr;
 }
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling

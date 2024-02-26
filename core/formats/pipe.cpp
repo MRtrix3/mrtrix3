@@ -23,8 +23,7 @@
 #include "image_io/pipe.h"
 #include "signal_handler.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> Pipe::read(Header &H) const {
   if (is_dash(H.name())) {
@@ -70,5 +69,4 @@ std::unique_ptr<ImageIO::Base> Pipe::create(Header &H) const {
   return std::move(io_handler);
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

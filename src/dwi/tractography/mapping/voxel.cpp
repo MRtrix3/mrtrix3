@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/mapping/voxel.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 const Dixel::dir_index_type Dixel::invalid = std::numeric_limits<Dixel::dir_index_type>::max();
 
@@ -48,7 +45,4 @@ std::ostream &operator<<(std::ostream &stream, const VoxelTOD &v) {
   return stream;
 }
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping

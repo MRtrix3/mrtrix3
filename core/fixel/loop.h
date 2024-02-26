@@ -20,8 +20,7 @@
 #include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
 
-namespace MR {
-namespace Fixel {
+namespace MR::Fixel {
 
 namespace {
 struct set_offset {
@@ -68,7 +67,6 @@ template <class IndexType> FORCE_INLINE LoopFixelsInVoxel Loop(IndexType &index)
   index_type offset = index.value();
   return {num_fixels, offset};
 }
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel
 
 #endif

@@ -20,8 +20,7 @@
 #include "header.h"
 #include "image.h"
 
-namespace MR {
-namespace Connectome {
+namespace MR::Connectome {
 
 using namespace App;
 // clang-format off
@@ -64,5 +63,4 @@ void check(const Header &H) {
   }
 }
 
-} // namespace Connectome
-} // namespace MR
+} // namespace MR::Connectome

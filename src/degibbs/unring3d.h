@@ -23,8 +23,7 @@
 #include "image.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace Degibbs {
+namespace MR::Degibbs {
 
 using ImageType = Image<cdouble>;
 
@@ -256,7 +255,6 @@ void unring3D(ImageIn &input, ImageOut &output, const int minW = 1, const int ma
     unring(progress, vol_in, output);
   }
 }
-} // namespace Degibbs
-} // namespace MR
+} // namespace MR::Degibbs
 
 #endif

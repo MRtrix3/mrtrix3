@@ -16,8 +16,7 @@
 
 #include "registration/nonlinear.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 
 using namespace App;
 // clang-format off
@@ -99,5 +98,4 @@ const OptionGroup nonlinear_options =
       + Argument("path");
 // clang-format on
 
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration

@@ -16,8 +16,7 @@
 
 #include "stats/cfe.h"
 
-namespace MR {
-namespace Stats {
+namespace MR::Stats {
 
 CFE::CFE(const Fixel::Matrix::Reader &connectivity_matrix,
          const value_type dh,
@@ -71,5 +70,4 @@ void CFE::operator()(in_column_type stats, out_column_type enhanced_stats) const
   }
 }
 
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats

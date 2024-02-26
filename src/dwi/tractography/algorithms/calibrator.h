@@ -25,10 +25,7 @@
 #define SQRT_3_OVER_2 0.866025403784439
 #define NUM_CALIBRATE 1000
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Algorithms {
+namespace MR::DWI::Tractography::Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
@@ -97,9 +94,6 @@ template <class Method> void calibrate(Method &method) {
        str(method.calibrate_ratio) + " (predicted number of samples per step = " + str(N_min) + ")");
 }
 
-} // namespace Algorithms
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Algorithms
 
 #endif

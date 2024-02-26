@@ -17,16 +17,10 @@
 #ifndef __gui_mrview_tool_tractogram_enums_h__
 #define __gui_mrview_tool_tractogram_enums_h__
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
 enum class TrackGeometryType { Pseudotubes, Lines, Points };
 enum class TrackThresholdType { None, UseColourFile, SeparateFile };
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

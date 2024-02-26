@@ -25,9 +25,7 @@
 #include "raw.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class Sequence {
 public:
@@ -214,8 +212,6 @@ protected:
   static const char *type_as_str[];
 };
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom
 
 #endif

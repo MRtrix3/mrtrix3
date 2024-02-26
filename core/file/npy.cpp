@@ -16,9 +16,7 @@
 
 #include "file/npy.h"
 
-namespace MR {
-namespace File {
-namespace NPY {
+namespace MR::File::NPY {
 
 DataType descr2datatype(const std::string &s) {
   size_t type_offset = 0;
@@ -411,6 +409,4 @@ WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, co
   return info;
 }
 
-} // namespace NPY
-} // namespace File
-} // namespace MR
+} // namespace MR::File::NPY

@@ -22,8 +22,7 @@
 #include "interp/base.h"
 #include "types.h"
 
-namespace MR {
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -127,7 +126,6 @@ inline Nearest<ImageType> make_nearest(const ImageType &parent, Args &&...args) 
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
+} // namespace MR::Interp
 
 #endif

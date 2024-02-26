@@ -17,9 +17,7 @@
 #include "gui/opengl/lighting.h"
 #include "file/config.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 namespace {
 
 constexpr float DefaultAmbient = 0.5f;
@@ -69,6 +67,4 @@ void Lighting::load_defaults() {
   shine = File::Config::get_float("SpecularExponent", DefaultShine);
 }
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::GL

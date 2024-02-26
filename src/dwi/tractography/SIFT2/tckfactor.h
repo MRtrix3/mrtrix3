@@ -43,10 +43,7 @@
 #define SIFT2_MAX_COEFF_STEP_DEFAULT 1.0
 #define SIFT2_MIN_CF_DECREASE_DEFAULT 2.5e-5
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 class TckFactor : public SIFT::Model<Fixel> {
 
@@ -125,9 +122,6 @@ private:
   }
 };
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2
 
 #endif

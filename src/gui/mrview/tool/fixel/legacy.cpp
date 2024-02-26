@@ -16,10 +16,7 @@
 
 #include "gui/mrview/tool/fixel/legacy.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 void Legacy::load_image_buffer() {
   for (size_t axis = 0; axis < 3; ++axis) {
@@ -62,7 +59,4 @@ void Legacy::load_image_buffer() {
     }
   }
 }
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

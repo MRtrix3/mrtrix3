@@ -27,9 +27,7 @@
 #define GMWMI_MAX_ITERS_TO_FIND_BOUNDARY 10
 #define GMWMI_HERMITE_TENSION 0.1
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 namespace Seeding {
 class Dynamic_ACT_additions;
@@ -78,8 +76,6 @@ protected:
 };
 
 } // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography
 
 #endif

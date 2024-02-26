@@ -20,10 +20,7 @@
 #include "gui/mrview/tool/odf/odf.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 ODF_Preview::RenderFrame::RenderFrame(QWidget *parent) : DWI::RenderFrame(parent) { setMinimumSize(300, 300); }
 
@@ -111,7 +108,4 @@ void ODF_Preview::lighting_update_slot() {
   render_frame->set_show_axes(show_axes_box->isChecked());
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

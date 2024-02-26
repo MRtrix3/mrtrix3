@@ -21,8 +21,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 class Projection;
 
 namespace MRView {
@@ -92,7 +91,6 @@ private:
 };
 
 } // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

@@ -22,8 +22,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 class ModelViewProjection;
 
@@ -38,7 +37,6 @@ protected:
   mutable GL::Shader::Program program;
 };
 
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

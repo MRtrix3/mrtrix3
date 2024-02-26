@@ -23,8 +23,7 @@
 
 #define SINC_WINDOW_SIZE 7
 
-namespace MR {
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -158,7 +157,6 @@ template <class ImageType, typename... Args> inline Sinc<ImageType> make_sinc(co
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
+} // namespace MR::Interp
 
 #endif

@@ -21,8 +21,7 @@
 #include "file/mmap.h"
 #include "file/utils.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 inline void copy(const std::string &source, const std::string &destination) {
   {
@@ -35,7 +34,6 @@ inline void copy(const std::string &source, const std::string &destination) {
   check_app_exit_code();
 }
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File
 
 #endif

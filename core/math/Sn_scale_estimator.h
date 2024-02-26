@@ -20,8 +20,7 @@
 #include "math/median.h"
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 // Sn robust estimator of scale to get solid estimate of standard deviation:
 // for details, see: Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. Journal of the American
@@ -44,7 +43,6 @@ protected:
   std::vector<value_type> diff, med_diff;
 };
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

@@ -21,10 +21,7 @@
 
 #include "gui/mrview/tool/connectome/types.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Connectome;
 
@@ -82,9 +79,6 @@ private:
   bool use_alpha;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

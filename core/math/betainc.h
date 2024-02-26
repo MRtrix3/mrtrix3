@@ -24,8 +24,7 @@
 #include "types.h"
 #include <math.h>
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
 
@@ -45,7 +44,6 @@ betaincreg(const Eigen::ArrayBase<ArgADerived> &a,
 
 default_type betaincreg(const default_type a, const default_type b, const default_type x);
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

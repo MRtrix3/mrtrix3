@@ -32,10 +32,7 @@
 
 #include "surface/mesh_multi.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Connectome::Connectome(Dock *parent)
     : Base(parent),
@@ -4091,7 +4088,4 @@ float Connectome::calc_line_width(const float desired_width, const bool is_smoot
   }
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

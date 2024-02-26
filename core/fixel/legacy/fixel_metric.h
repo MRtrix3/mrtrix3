@@ -19,10 +19,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace Fixel {
-
-namespace Legacy {
+namespace MR::Fixel::Legacy {
 
 // A class for storing a single quantitative value per fixel
 // This simple class will form the basis of most fixel-based image outputs and statistical analysis
@@ -39,8 +36,6 @@ public:
   float value;
 };
 
-} // namespace Legacy
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Legacy
 
 #endif

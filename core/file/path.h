@@ -51,8 +51,7 @@
 #define PATH_SEPARATORS "/"
 #endif
 
-namespace MR {
-namespace Path {
+namespace MR::Path {
 
 inline std::string basename(const std::string &name) {
   size_t i = name.find_last_of(PATH_SEPARATORS);
@@ -196,7 +195,6 @@ inline char delimiter(const std::string &filename) {
     return ' ';
 }
 
-} // namespace Path
-} // namespace MR
+} // namespace MR::Path
 
 #endif

@@ -21,8 +21,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace Axes {
+namespace MR::Axes {
 
 //! convert axis directions between formats
 /*! these helper functions convert the definition of
@@ -36,7 +35,6 @@ Eigen::Vector3d id2dir(const std::string &);
 //!   appear approximately axial
 void get_permutation_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip);
 
-} // namespace Axes
-} // namespace MR
+} // namespace MR::Axes
 
 #endif

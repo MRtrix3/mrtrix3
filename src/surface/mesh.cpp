@@ -25,8 +25,7 @@
 #include "surface/freesurfer.h"
 #include "surface/utils.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 Mesh::Mesh(const std::string &path) {
   if (path.substr(path.size() - 4) == ".vtk" || path.substr(path.size() - 4) == ".VTK") {
@@ -809,5 +808,4 @@ void Mesh::verify_data() const {
         throw Exception("Mesh vertex index exceeds number of vertices read");
 }
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface

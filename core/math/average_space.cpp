@@ -16,8 +16,7 @@
 
 #include "math/average_space.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd &mat_avg, bool verbose) {
   const size_t rows = mat_in[0].rows();
   const size_t cols = mat_in[0].cols();
@@ -52,8 +51,7 @@ double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixX
   }
   return mat_s.squaredNorm();
 }
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 namespace MR {
 

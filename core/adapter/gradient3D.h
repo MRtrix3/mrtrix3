@@ -20,8 +20,7 @@
 #include "adapter/gradient1D.h"
 #include "transform.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Gradient3D : public Gradient1D<ImageType> {
 
@@ -47,7 +46,6 @@ protected:
   const bool wrt_scanner;
   Transform transform;
 };
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

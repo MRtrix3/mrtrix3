@@ -23,9 +23,7 @@
 #include "math/rng.h"
 #include "misc/bitset.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 class Properties;
 
 extern const App::OptionGroup ROIOption;
@@ -225,8 +223,6 @@ protected:
   ROIOrderedSet::LoopState state;
 };
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography
 
 #endif

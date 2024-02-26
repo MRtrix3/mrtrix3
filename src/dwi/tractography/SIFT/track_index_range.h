@@ -20,10 +20,7 @@
 #include "dwi/tractography/SIFT/types.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 #define SIFT_TRACK_INDEX_BUFFER_SIZE 10000
 
@@ -47,9 +44,6 @@ private:
   std::unique_ptr<ProgressBar> progress;
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT
 
 #endif
