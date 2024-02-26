@@ -27,7 +27,7 @@
 using namespace MR;
 using namespace App;
 
-//clang-format off
+// clang-format off
 void usage() {
 
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";

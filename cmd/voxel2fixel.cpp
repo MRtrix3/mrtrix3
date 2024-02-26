@@ -28,7 +28,7 @@ using namespace App;
 
 using Fixel::index_type;
 
-// clang-format on
+// clang-format off
 void usage() {
 
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";

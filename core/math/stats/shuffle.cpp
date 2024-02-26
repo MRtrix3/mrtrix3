@@ -32,7 +32,7 @@ const char *error_types[] = {"ee", "ise", "both", nullptr};
 App::OptionGroup shuffle_options(const bool include_nonstationarity, const default_type default_skew) {
   using namespace App;
 
-// clang-format off
+  // clang-format off
   OptionGroup result =
       OptionGroup("Options relating to shuffling of data for nonparametric statistical inference")
       + Option("notest",
@@ -90,7 +90,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
                     " Overrides the -nshuffles_nonstationarity option.")
              + Argument("file").type_file_in();
   }
-// clang-format off
+  // clang-format on
   return result;
 }
 

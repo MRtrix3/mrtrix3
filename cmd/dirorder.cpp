@@ -49,6 +49,7 @@ void usage() {
                          " instead of [az el].");
 
 }
+// clang-format on
 
 using value_type = double;
 

@@ -51,8 +51,7 @@ void usage() {
                       " rather than the default Marching Cubes approach");
 
 }
-// coang-format on
-
+// clang-format on
 
 void run() {
 

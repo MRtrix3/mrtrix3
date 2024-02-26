@@ -46,7 +46,7 @@ const char *const column_ones_description =
 
 App::OptionGroup glm_options(const std::string &element_name) {
   using namespace App;
-// clang-format off
+  // clang-format off
   OptionGroup result =
       OptionGroup("Options related to the General Linear Model (GLM)")
       + Option("variance",
@@ -69,7 +69,7 @@ App::OptionGroup glm_options(const std::string &element_name) {
                " (note that the contrast matrix must include an additional column for each use of this option);"
                " the text file provided via this option should contain a file name for each subject").allow_multiple()
         + Argument("path").type_file_in();
-// clang-format on
+  // clang-format on
   return result;
 }
 

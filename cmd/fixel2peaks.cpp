@@ -42,7 +42,7 @@ void usage() {
     " then the 3-vectors in the output image will be scaled based on the data in that file."
     " If the input is instead the fixel directory,"
     " or the index or directions file,"
-    " then all output 3-vectors will possess unit norm.";
+    " then all output 3-vectors will possess unit norm."
 
   + Fixel::format_description;
 

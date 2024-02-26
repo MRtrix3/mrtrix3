@@ -858,6 +858,7 @@ void Connectome::add_commandline_options(MR::App::OptionList &options) {
         + Argument("image").type_image_in()
       + Option("connectome.load", "Load a matrix file into the connectome tool.").allow_multiple()
         + Argument("path").type_file_in();
+  // clang-format on
 }
 
 bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {

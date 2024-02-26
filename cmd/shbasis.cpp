@@ -73,7 +73,6 @@ void usage() {
 }
 // clang-format on
 
-
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
 std::pair<float, float> get_regression(const std::vector<float> &ratios) {
