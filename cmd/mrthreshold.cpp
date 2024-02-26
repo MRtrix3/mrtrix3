@@ -37,14 +37,11 @@ void usage() {
 
   DESCRIPTION
   +"The threshold value to be applied can be determined in one of a number of ways:"
-
-      + "- If no relevant command-line option is used, the command will automatically "
-        "determine an optimal threshold;"
-
-      + "- The -abs option provides the threshold value explicitly;"
-
-      + "- The -percentile, -top and -bottom options enable more fine-grained control "
-        "over how the threshold value is determined."
+    "If no relevant command-line option is used, the command will automatically "
+    "determine an optimal threshold; "
+    "the -abs option provides the threshold value explicitly; "
+    "the -percentile, -top and -bottom options enable more fine-grained control "
+    "over how the threshold value is determined."
 
       + "The -mask option only influences those image values that contribute "
         "toward the determination of the threshold value; once the threshold is determined, "
@@ -53,8 +50,8 @@ void usage() {
         "the output mask, this can be achieved by providing the -out_masked option."
 
       + "The four operators available through the \"-comparison\" option (\"lt\", \"le\", \"ge\" and \"gt\") "
-        "correspond to \"less-than\" (<), \"less-than-or-equal\" (<=), \"greater-than-or-equal\" (>=) "
-        "and \"greater-than\" (>). This offers fine-grained control over how the thresholding "
+        "correspond to: \"less-than\" (<); \"less-than-or-equal\" (<=); \"greater-than-or-equal\" (>=); "
+        "\"greater-than\" (>). This offers fine-grained control over how the thresholding "
         "operation will behave in the presence of values equivalent to the threshold. "
         "By default, the command will select voxels with values greater than or equal to the "
         "determined threshold (\"ge\"); unless the -bottom option is used, in which case "

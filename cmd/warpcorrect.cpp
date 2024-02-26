@@ -24,7 +24,8 @@ using namespace App;
 const float PRECISION = Eigen::NumTraits<float>::dummy_precision();
 
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (mail@maxpietsch.com)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and "
+           "Max Pietsch (mail@maxpietsch.com)";
 
   SYNOPSIS = "Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan";
 

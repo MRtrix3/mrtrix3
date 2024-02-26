@@ -77,7 +77,7 @@ void usage() {
 
   EXAMPLES
 
-  +Example("Basic usage",
+  +Example("Basic example usage",
            "tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e9 -fod fod.mif -fiso "
            "fiso.mif tracks.tck",
            "dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
@@ -153,7 +153,7 @@ void usage() {
       + OptionGroup("Output options")
 
       + Option("fod",
-               "Predicted fibre orientation distribution function (fODF).\n"
+               "Predicted fibre orientation distribution function (fODF). "
                "This fODF is estimated as part of the global track optimization, "
                "and therefore incorporates the spatial regularization that it "
                "imposes. Internally, the fODF is represented as a discrete "
@@ -179,7 +179,7 @@ void usage() {
 
       + Option("balance",
                "balance internal and external energy. (default = " + str(DEFAULT_BALANCE, 2) +
-                   ")\n"
+                   "). "
                    "Negative values give more weight to the internal energy, positive to the external energy.") +
       Argument("b").type_float(-100.0, 100.0)
 
@@ -197,14 +197,14 @@ void usage() {
 
       + Option("beta",
                "set the width of the Hanning interpolation window. (in [0, 1], default = " + str(DEFAULT_BETA, 2) +
-                   ")\n"
+                   "). "
                    "If used, a mask is required, and this mask must keep at least one voxel distance to the image "
                    "bounding box.") +
       Argument("b").type_float(0.0, 1.0)
 
       + Option("lambda",
                "set the weight of the internal energy directly. (default = " + str(DEFAULT_LAMBDA, 2) +
-                   ")\n"
+                   "). "
                    "If provided, any value of -balance will be ignored.") +
       Argument("lam").type_float(0.0);
 }

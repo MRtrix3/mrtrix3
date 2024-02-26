@@ -75,7 +75,7 @@ const OptionGroup SIFT2AlgorithmOption =
 
     + Option("min_factor",
              "minimum weighting factor for an individual streamline; "
-             "if the factor falls below this number the streamline will be rejected entirely (factor set to zero) "
+             "if the factor falls below this number, the streamline will be rejected entirely (factor set to zero) "
              "(default: " +
                  str(std::exp(SIFT2_MIN_COEFF_DEFAULT), 2) + ")") +
     Argument("factor").type_float(0.0, 1.0)
@@ -84,7 +84,7 @@ const OptionGroup SIFT2AlgorithmOption =
              "minimum weighting coefficient for an individual streamline; "
              "similar to the '-min_factor' option, but using the exponential coefficient basis of the SIFT2 model; "
              "these parameters are related as: factor = e^(coeff). "
-             "Note that the -min_factor and -min_coeff options are mutually exclusive - you can only provide one. "
+             "Note that the -min_factor and -min_coeff options are mutually exclusive; you can only provide one. "
              "(default: " +
                  str(SIFT2_MIN_COEFF_DEFAULT, 2) + ")") +
     Argument("coeff").type_float(-std::numeric_limits<default_type>::infinity(), 0.0)

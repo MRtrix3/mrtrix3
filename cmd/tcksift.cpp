@@ -55,7 +55,7 @@ void usage() {
   OPTIONS
 
   +Option("nofilter",
-          "do NOT perform track filtering - just construct the model in order to provide output debugging images")
+          "do NOT perform track filtering; just construct the model in order to provide output debugging images")
 
       +
       Option("output_at_counts",

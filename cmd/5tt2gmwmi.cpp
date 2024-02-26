@@ -36,7 +36,7 @@ void usage() {
 
   REFERENCES
   +"Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "Anatomically-constrained tractography:"
+   "Anatomically-constrained tractography: "
    "Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
    "NeuroImage, 2012, 62, 1924-1938";
 

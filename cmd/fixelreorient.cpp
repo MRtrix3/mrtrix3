@@ -44,9 +44,7 @@ void usage() {
   ARGUMENTS
   +Argument("fixel_in", "the input fixel directory").type_directory_in() +
       Argument("warp",
-               "a 4D deformation field used to perform reorientation. "
-               "Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, "
-               "then re-normalising the vector representing the fixel direction")
+               "a 4D deformation field used to perform reorientation.")
           .type_image_in() +
       Argument("fixel_out",
                "the output fixel directory. If the the input and output directories are the same, the existing "

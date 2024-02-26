@@ -27,7 +27,7 @@ using namespace App;
 const OptionGroup SeedMechanismOption =
     OptionGroup("Tractography seeding mechanisms; at least one must be provided")
 
-    + Option("seed_image", "seed streamlines entirely at random within a mask image ").allow_multiple() +
+    + Option("seed_image", "seed streamlines entirely at random within a mask image").allow_multiple() +
     Argument("image").type_image_in()
 
     +
@@ -41,7 +41,7 @@ const OptionGroup SeedMechanismOption =
 
     + Option("seed_grid_per_voxel",
              "seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid "
-             "(grid_size argument is per axis; so a grid_size of 3 results in 27 seeds per voxel)")
+             "(grid_size argument is per axis, so a grid_size of 3 results in 27 seeds per voxel)")
           .allow_multiple() +
     Argument("image").type_image_in() + Argument("grid_size").type_integer(1)
 
@@ -69,7 +69,7 @@ const OptionGroup SeedParameterOption =
     + Option("seeds",
              "set the number of seeds that tckgen will attempt to track from. If "
              "this option is NOT provided, the default number of seeds is set to "
-             "1000× the number of selected streamlines. "
+             "1000 x the number of selected streamlines. "
              "If -select is NOT also specified, tckgen will continue tracking until "
              "this number of seeds has been attempted. However, if -select is also "
              "specified, tckgen will stop when the number of seeds attempted "

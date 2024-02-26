@@ -29,7 +29,8 @@ using namespace App;
 using Fixel::index_type;
 
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Rami Tabarra (rami.tabarra@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and "
+           "Rami Tabarra (rami.tabarra@florey.edu.au)";
 
   SYNOPSIS = "Crop/remove fixels from sparse fixel image using a binary fixel mask";
 
@@ -40,7 +41,7 @@ void usage() {
 
   ARGUMENTS
   +Argument("input_fixel_directory",
-            "input fixel directory, all data files and directions "
+            "input fixel directory; all data files and directions "
             "file will be cropped and saved in the output fixel directory")
           .type_directory_in() +
       Argument("input_fixel_mask",

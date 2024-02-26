@@ -27,7 +27,7 @@ By default, the value of the underlying image at each point along the track is w
 Options
 -------
 
--  **-stat_tck statistic** compute some statistic from the values along each streamline (options are: mean,median,min,max)
+-  **-stat_tck statistic** compute some statistic from the values along each streamline; options are: mean,median,min,max
 
 -  **-nointerp** do not use trilinear interpolation when sampling image values
 

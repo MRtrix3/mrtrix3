@@ -44,11 +44,13 @@ void usage() {
   +Option("padding", " boundary box padding in voxels. Default: " + str(PADDING_DEFAULT)) +
       Argument("value").type_float(0.0, std::numeric_limits<default_type>::infinity()) +
       Option("resolution",
-             " subsampling of template compared to smallest voxel size in any input image. "
-             "Valid options are 'mean': unbiased but loss of resolution for individual images possible, "
-             "and 'max': smallest voxel size of any input image defines the resolution. Default: mean") +
+             "subsampling of template compared to smallest voxel size in any input image. "
+             "Valid options are: "
+             "- 'mean': unbiased but loss of resolution for individual images possible; "
+             "- 'max': smallest voxel size of any input image defines the resolution. "
+             "Default: mean") +
       Argument("type").type_choice(resolution_choices) +
-      Option("fill", " set the intensity in the first volume of the average space to 1") + DataType::options();
+      Option("fill", "set the intensity in the first volume of the average space to 1") + DataType::options();
 }
 
 void run() {

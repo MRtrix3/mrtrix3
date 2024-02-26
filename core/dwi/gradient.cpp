@@ -32,7 +32,7 @@ OptionGroup GradImportOptions() {
       Option("grad",
              "Provide the diffusion-weighted gradient scheme used in the acquisition "
              "in a text file. This should be supplied as a 4xN text file with each line "
-             "is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
+             "in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
              "applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion "
              "gradient scheme is present in the input image header, the data provided with "
              "this option will be instead used.") +
@@ -61,7 +61,7 @@ OptionGroup GradExportOptions() {
 Option bvalue_scaling_option = Option("bvalue_scaling",
                                       "enable or disable scaling of diffusion b-values by the square of the "
                                       "corresponding DW gradient norm (see Desciption). "
-                                      "Valid choices are yes/no, true/false, 0/1 (default: automatic).") +
+                                      "Valid choices are: yes/no, true/false, 0/1 (default: automatic).") +
                                Argument("mode").type_bool();
 
 const char *const bvalue_scaling_description("The -bvalue_scaling option controls an aspect of the import of "

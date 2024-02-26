@@ -55,7 +55,7 @@ void usage() {
    "correlation between the fMRI time series at the streamline endpoints."
 
       + "The output image can be generated in one of two ways "
-        "(note that one of these two command-line options MUST be provided): "
+        "(note that one of these two command-line options MUST be provided):"
 
       + "- \"Static\" functional connectivity (-static option): "
         "Each streamline contributes to a static 3D output image based on the "
@@ -107,8 +107,8 @@ void usage() {
 
       + Option("stat_vox",
                "define the statistic for choosing the final voxel intensities for a given contrast "
-               "type given the individual values from the tracks passing through each voxel\n"
-               "Options are: " +
+               "type given the individual values from the tracks passing through each voxel; "
+               "options are: " +
                    join(voxel_statistics, ", ") + " (default: mean)") +
       Argument("type").type_choice(voxel_statistics)
 
@@ -124,7 +124,7 @@ void usage() {
       Argument("factor").type_integer(1);
 
   REFERENCES
-  +"Calamante, F.; Smith, R.E.; Liang, X.; Zalesky, A.; Connelly, A " // Internal
+  +"Calamante, F.; Smith, R.E.; Liang, X.; Zalesky, A.; Connelly, A. " // Internal
    "Track-weighted dynamic functional connectivity (TW-dFC): a new method to study time-resolved functional "
    "connectivity. "
    "Brain Struct Funct, 2017, doi: 10.1007/s00429-017-1431-1";

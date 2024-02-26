@@ -48,7 +48,7 @@ void usage() {
   ARGUMENTS
   +Argument("inputs", "the input(s) for the specified operation").allow_multiple() +
       Argument("operation",
-               "the operation to perform, one of: " + join(operations, ", ") +
+               "the operation to perform; one of: " + join(operations, ", ") +
                    " (see description section for details).")
           .type_choice(operations) +
       Argument("output", "the output transformation matrix.").type_file_out();
@@ -87,7 +87,7 @@ void usage() {
             "shear: list of shear factors for xy, xz, yz axes; "
             "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; "
             "angle_axis: angle in radians and rotation axis; "
-            "translation : translation vector along x, y, z axes in mm; "
+            "translation: translation vector along x, y, z axes in mm; "
             "R: composed roation matrix (R = rot_x * rot_y * rot_z); "
             "S: composed scaling and shear matrix")
 

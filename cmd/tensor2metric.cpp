@@ -113,8 +113,9 @@ void usage() {
                    str(DEFAULT_RK_NDIRS) + " directions are used).") +
       Argument("integer").type_integer(0, 1000);
 
-  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be), Thijs Dhollander (thijs.dhollander@gmail.com) & J-Donald "
-           "Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be) and "
+           "Thijs Dhollander (thijs.dhollander@gmail.com) and "
+           "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Generate maps of tensor-derived parameters";
 
@@ -122,6 +123,7 @@ void usage() {
   +"Basser, P. J.; Mattiello, J. & Lebihan, D. "
    "MR diffusion tensor spectroscopy and imaging. "
    "Biophysical Journal, 1994, 66, 259-267" +
+      "If using -cl, -cp or -cs options: \n"
       "Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. "
       "Geometrical diffusion measures for MRI from tensor basis analysis. "
       "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";

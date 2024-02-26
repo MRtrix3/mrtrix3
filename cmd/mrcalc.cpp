@@ -361,12 +361,18 @@ void usage() {
         "single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of "
         "size [ X Y Z ], which would allow the creation of a 4D image where each "
         "volume consists of the 3D image scaled by the corresponding value for "
-        "that volume in the single-voxel image.";
+        "that volume in the single-voxel image."
+
+      + "The following special keywords are permitted as operands on the stack: "
+        "'rand' (random number between 0 and 1); "
+        "'randn' (random number from unit std.dev. normal distribution); "
+        "'e' (Euler's number); "
+        "'pi' (ratio of circumference of circle to diameter)";
 
   EXAMPLES
   +Example("Double the value stored in every voxel",
            "mrcalc a.mif 2 -mult r.mif",
-           "This performs the operation: r = 2*a  for every voxel a,r in "
+           "This performs the operation:  r = 2*a  for every voxel a,r in "
            "images a.mif and r.mif respectively.")
 
       + Example("A more complex example",

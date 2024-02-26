@@ -186,18 +186,18 @@ const OptionGroup adv_init_options =
     Argument("scale").type_float(0.0001, 1.0) +
     Option("init_rotation.search.directions", "number of rotation axis for local search. (Default: 250)") +
     Argument("num").type_integer(1, 10000) +
-    Option("init_rotation.search.run_global", "perform a global search. (Default: local)") +
+    Option("init_rotation.search.run_global", "perform a global rather than local initial rotation search") +
     Option("init_rotation.search.global.iterations", "number of rotations to investigate (Default: 10000)") +
     Argument("num").type_integer(1, 1e10);
 
 const OptionGroup lin_stage_options =
     OptionGroup("Advanced linear registration stage options") +
     Option("linstage.iterations",
-           "number of iterations for each registration stage, not to be confused with -rigid_niter or -affine_niter. "
+           "number of iterations for each registration stage. Not to be confused with -rigid_niter or -affine_niter. "
            "This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) "
            "or to change the cost function optimiser during registration (without the need to repeatedly resize the "
            "images). (Default: 1 == no repetition)") +
-    Argument("num or comma separated list").type_sequence_int()
+    Argument("value(s)").type_sequence_int()
 
     // TODO linstage.loop_density
 
@@ -207,11 +207,11 @@ const OptionGroup lin_stage_options =
     +
     Option("linstage.optimiser.first",
            "Cost function optimisation algorithm to use at first iteration of all stages. "
-           "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)") +
+           "Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)") +
     Argument("algorithm").type_choice(linear_optimisation_algo_choices) +
     Option("linstage.optimiser.last",
            "Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). "
-           "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)") +
+           "Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)") +
     Argument("algorithm").type_choice(linear_optimisation_algo_choices) +
     Option("linstage.optimiser.default",
            "Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. "
@@ -219,7 +219,7 @@ const OptionGroup lin_stage_options =
     Argument("algorithm").type_choice(linear_optimisation_algo_choices)
 
     + Option("linstage.diagnostics.prefix", "generate diagnostics images after every registration stage") +
-    Argument("file prefix").type_text();
+    Argument("prefix").type_text();
 
 const OptionGroup rigid_options =
     OptionGroup("Rigid registration options")
@@ -238,17 +238,17 @@ const OptionGroup rigid_options =
     Argument("file").type_file_out()
 
     + Option("rigid_init_translation",
-             "initialise the translation and centre of rotation \n"
-             "Valid choices are: \n"
-             "mass (aligns the centers of mass of both images, default), \n"
+             "initialise the translation and centre of rotation; "
+             "Valid choices are: "
+             "mass (aligns the centers of mass of both images, default); "
              "geometric (aligns geometric image centres) and none.") +
     Argument("type").type_choice(initialisation_translation_choices)
 
     + Option("rigid_init_rotation",
-             "initialise the rotation "
-             "Valid choices are: \n"
-             "search (search for the best rotation using mean squared residuals), \n" // TODO CC
-             "moments (rotation based on directions of intensity variance with respect to centre of mass), \n"
+             "initialise the rotation; "
+             "Valid choices are: "
+             "search (search for the best rotation using mean squared residuals); " // TODO CC
+             "moments (rotation based on directions of intensity variance with respect to centre of mass); "
              "none (default).") // TODO  This can be combined with rigid_init_translation.
     + Argument("type").type_choice(initialisation_rotation_choices)
 
@@ -256,13 +256,13 @@ const OptionGroup rigid_options =
     Option("rigid_init_matrix",
            "initialise either the rigid, affine, or syn registration with "
            "the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). "
-           "Note that this overrides rigid_init_translation and rigid_init_rotation initialisation ") // TODO definition
-                                                                                                      // of centre
+           "Note that this overrides rigid_init_translation and rigid_init_rotation initialisation") // TODO definition
+                                                                                                     // of centre
     + Argument("file").type_file_in()
 
     + Option("rigid_scale",
              "use a multi-resolution scheme by defining a scale factor for each level "
-             "using comma separated values (Default: 0.25,0.5,1.0)") +
+             "using comma-separated values (Default: 0.25,0.5,1.0)") +
     Argument("factor").type_sequence_float()
 
     +
@@ -281,9 +281,9 @@ const OptionGroup rigid_options =
 
     + Option("rigid_metric.diff.estimator",
              "Valid choices are: "
-             "l1 (least absolute: |x|), "
-             "l2 (ordinary least squares), "
-             "lp (least powers: |x|^1.2), "
+             "l1 (least absolute: |x|); "
+             "l2 (ordinary least squares); "
+             "lp (least powers: |x|^1.2); "
              "Default: l2") +
     Argument("type").type_choice(linear_robust_estimator_choices)
 
@@ -294,7 +294,7 @@ const OptionGroup rigid_options =
     //   + Argument ("num").type_sequence_int () // TODO
 
     + Option("rigid_lmax",
-             "explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD "
+             "explicitly set the lmax to be used per scale factor in rigid FOD registration. By default, FOD "
              "registration will "
              "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be "
              "performed with lmax = 0.") +
@@ -319,17 +319,17 @@ const OptionGroup affine_options =
     Argument("file").type_file_out()
 
     + Option("affine_init_translation",
-             "initialise the translation and centre of rotation \n"
-             "Valid choices are: \n"
-             "mass (aligns the centers of mass of both images), \n"
+             "initialise the translation and centre of rotation; "
+             "Valid choices are: "
+             "mass (aligns the centers of mass of both images); "
              "geometric (aligns geometric image centres) and none. (Default: mass)") +
     Argument("type").type_choice(initialisation_translation_choices)
 
     + Option("affine_init_rotation",
-             "initialise the rotation "
-             "Valid choices are: \n"
-             "search (search for the best rotation using mean squared residuals), \n"
-             "moments (rotation based on directions of intensity variance with respect to centre of mass), \n"
+             "initialise the rotation; "
+             "Valid choices are: "
+             "search (search for the best rotation using mean squared residuals); "
+             "moments (rotation based on directions of intensity variance with respect to centre of mass); "
              "none (Default: none).") // TODO  This can be combined with affine_init_translation.
     + Argument("type").type_choice(initialisation_rotation_choices)
 
@@ -338,8 +338,8 @@ const OptionGroup affine_options =
         "affine_init_matrix",
         "initialise either the affine, or syn registration with "
         "the supplied affine transformation (as a 4x4 matrix in scanner coordinates). "
-        "Note that this overrides affine_init_translation and affine_init_rotation initialisation ") // TODO definition
-                                                                                                     // of centre
+        "Note that this overrides affine_init_translation and affine_init_rotation initialisation") // TODO definition
+                                                                                                    // of centre
     + Argument("file").type_file_in()
 
     + Option("affine_scale",
@@ -363,9 +363,9 @@ const OptionGroup affine_options =
 
     + Option("affine_metric.diff.estimator",
              "Valid choices are: "
-             "l1 (least absolute: |x|), "
-             "l2 (ordinary least squares), "
-             "lp (least powers: |x|^1.2), "
+             "l1 (least absolute: |x|); "
+             "l2 (ordinary least squares); "
+             "lp (least powers: |x|^1.2); "
              "Default: l2") +
     Argument("type").type_choice(linear_robust_estimator_choices)
 

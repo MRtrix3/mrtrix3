@@ -49,7 +49,7 @@ void usage() {
 
   ARGUMENTS
   +Argument("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in() +
-      Argument("tracks", "the input track file ").type_tracks_in() +
+      Argument("tracks", "the input track file").type_tracks_in() +
       Argument("tsf", "the output track scalar file").type_file_out();
 
   OPTIONS

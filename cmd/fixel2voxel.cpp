@@ -53,7 +53,8 @@ const char *operations[] = {"mean",
                             nullptr};
 
 void usage() {
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and "
+           "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Convert a fixel-based sparse-data image into some form of scalar image";
 

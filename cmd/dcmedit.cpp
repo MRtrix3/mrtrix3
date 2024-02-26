@@ -35,21 +35,22 @@ void usage() {
    "will be truncated if it is too long to fit inside the existing tag."
 
       + "WARNING: this command will modify existing data! It is recommended to run "
-        "this command on a copy of the original data set to avoid loss of data.";
+        "this command on a copy of the original data set to avoid loss of data."
+
+      +"Command-line option -anonymise attempts to remove identifiable information "
+       "by replacing the following tags: \n"
+       "- any tag with Value Representation PN will be replaced with 'anonymous'; \n"
+       "- tag (0010,0030) PatientBirthDate will be replaced with an empty string. \n"
+       "WARNING: there is no guarantee that this command will remove all identiable information, "
+       "since such information may be contained in any number of private vendor-specific tags. "
+       "You will need to double-check the results independently if you need to ensure anonymity.";
 
   ARGUMENTS
   +Argument("file", "the DICOM file to be edited.").type_file_in();
 
   OPTIONS
   +Option("anonymise",
-          "remove any identifiable information, by replacing the following tags:\n"
-          "- any tag with Value Representation PN will be replaced with 'anonymous'\n"
-          "- tag (0010,0030) PatientBirthDate will be replaced with an empty string\n"
-          "WARNING: there is no guarantee that this command will remove all identiable "
-          "information, since such information may be contained in any number "
-          "of private vendor-specific tags. You will need to double-check the "
-          "results independently if you "
-          "need to ensure anonymity.")
+          "remove any identifiable information (see Description).")
 
       + Option("id",
                "replace all ID tags with string supplied. This consists of tags "

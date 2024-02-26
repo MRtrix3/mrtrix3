@@ -48,9 +48,9 @@ void usage() {
   +Option("axis",
           "specify axis along which concatenation should be performed. By default, "
           "the program will use the last non-singleton, non-spatial axis of any of "
-          "the input images - in other words axis 3 or whichever axis (greater than 3) "
+          "the input images; in other words, axis 3, or whichever axis (greater than 3) "
           "of the input images has size greater than one.") +
-      Argument("axis").type_integer(0)
+      Argument("index").type_integer(0)
 
       + DataType::options();
 }

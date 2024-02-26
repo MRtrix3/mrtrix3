@@ -17,7 +17,7 @@ Usage
 
 -  *tracks_in*: the input track file
 -  *nodes_in*: the input node parcellation image
--  *connectome_out*: the output .csv file containing edge weights
+-  *connectome_out*: the output file containing edge weights
 
 Example usages
 --------------

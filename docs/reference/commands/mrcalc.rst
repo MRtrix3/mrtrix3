@@ -26,6 +26,8 @@ This command uses a stack-based syntax, with operators (specified using options)
 
 As an additional feature, this command will allow images with different dimensions to be processed, provided they satisfy the following conditions: for each axis, the dimensions match if they are the same size, or one of them has size one. In the latter case, the entire image will be replicated along that axis. This allows for example a 4D image of size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if it consisted of N copies of the 3D image along the 4th axis (the missing dimension is assumed to have size 1). Another example would a single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of size [ X Y Z ], which would allow the creation of a 4D image where each volume consists of the 3D image scaled by the corresponding value for that volume in the single-voxel image.
 
+The following special keywords are permitted as operands on the stack: 'rand' (random number between 0 and 1); 'randn' (random number from unit std.dev. normal distribution); 'e' (Euler's number); 'pi' (ratio of circumference of circle to diameter)
+
 Example usages
 --------------
 
@@ -33,7 +35,7 @@ Example usages
 
         $ mrcalc a.mif 2 -mult r.mif
 
-    This performs the operation: r = 2*a  for every voxel a,r in images a.mif and r.mif respectively.
+    This performs the operation:  r = 2*a  for every voxel a,r in images a.mif and r.mif respectively.
 
 -   *A more complex example*::
 

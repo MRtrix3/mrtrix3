@@ -102,7 +102,6 @@ void usage() {
   REFERENCES +
       "* If using the NBS algorithm: \n"
       "Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. "
-      "\n"
       "NeuroImage, 2010, 53, 1197-1207"
 
       + "* If using the TFNBS algorithm: \n"
@@ -113,7 +112,7 @@ void usage() {
 
       + "* If using the -nonstationary option: \n"
         "Salimi-Khorshidi, G.; Smith, S.M. & Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based "
-        "and TFCE inference. \n"
+        "and TFCE inference. "
         "Neuroimage, 2011, 54(3), 2006-19";
 }
 

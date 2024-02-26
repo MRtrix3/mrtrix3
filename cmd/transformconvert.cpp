@@ -51,7 +51,7 @@ void usage() {
 
   ARGUMENTS
   +Argument("input", "the input(s) for the specified operation").allow_multiple() +
-      Argument("operation", "the operation to perform, one of:\n" + join(operations, ", ")).type_choice(operations) +
+      Argument("operation", "the operation to perform; one of: " + join(operations, ", ")).type_choice(operations) +
       Argument("output", "the output transformation matrix.").type_file_out();
 }
 

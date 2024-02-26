@@ -36,7 +36,7 @@ const OptionGroup nonlinear_options =
              "The 4th image dimension indexes the x,y,z component of the deformation vector and the 5th dimension "
              "indexes the field in this order: "
              "image1->midway, midway->image1, image2->midway, midway->image2. Where image1->midway defines the field "
-             "that maps image1 onto the midway space using the reverse convention "
+             "that maps image1 onto the midway space using the reverse convention. "
              "When linear registration is performed first, the estimated linear transform will be included in the "
              "comments of the image header, and therefore the entire linear and "
              "non-linear transform can be applied (in either direction) using this output warp file with mrtransform") +
@@ -59,21 +59,21 @@ const OptionGroup nonlinear_options =
     Argument("num").type_sequence_int()
 
     + Option("nl_update_smooth",
-             "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default "
+             "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units; default "
              "2.0)") +
     Argument("stdev").type_float()
 
     +
     Option(
         "nl_disp_smooth",
-        "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0)") +
+        "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units; Default 1.0)") +
     Argument("stdev").type_float()
 
     + Option("nl_grad_step", "the gradient step size for non-linear registration (Default: 0.5)") +
     Argument("num").type_float(0.0001, 1.0)
 
     + Option("nl_lmax",
-             "explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD "
+             "explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default, FOD "
              "registration will "
              "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be "
              "performed with lmax = 0.") +

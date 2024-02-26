@@ -49,7 +49,7 @@ const OptionGroup ConnectOption =
 
     + Option("largest", "only retain the largest connected component")
 
-    + Option("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)")
+    + Option("connectivity", "use 26-voxel-neighbourhood connectivity (Default is 6-voxel-neighbourhood)")
 
     + Option("minsize", "impose minimum size of segmented components (Default: select all components)") +
     Argument("value").type_integer(1, 1e6);
@@ -67,7 +67,7 @@ const OptionGroup FillOption =
              "the first 3 axes are included. The axes should be provided as a comma-separated list of values.") +
     Argument("axes").type_sequence_int()
 
-    + Option("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
+    + Option("connectivity", "use 26-voxel-neighbourhood connectivity (Default is 6-voxel-neighbourhood)");
 
 const OptionGroup MedianOption =
     OptionGroup("Options for median filter")
@@ -79,8 +79,10 @@ const OptionGroup MedianOption =
     Argument("voxels").type_sequence_int();
 
 void usage() {
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au), Thijs "
-           "Dhollander (thijs.dhollander@gmail.com) and J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and "
+           "David Raffelt (david.raffelt@florey.edu.au) and "
+           "Thijs Dhollander (thijs.dhollander@gmail.com) and "
+           "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Perform filtering operations on 3D / 4D mask images";
 
