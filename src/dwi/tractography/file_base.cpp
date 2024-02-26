@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ void __ReaderBase__::open(const std::string &file, const std::string &type, Prop
     const std::string key = lowercase(kv.key());
     if (key == "roi" || key == "prior_roi") {
       try {
-        vector<std::string> V(split(kv.value(), " \t", true, 2));
+        std::vector<std::string> V(split(kv.value(), " \t", true, 2));
         if (V.size() != 2)
           throw 1;
         properties.prior_rois.insert(std::pair<std::string, std::string>(V[0], V[1]));

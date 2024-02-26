@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,12 +61,12 @@ std::string get_file(QWidget *parent, const std::string &caption, const std::str
   return filename;
 }
 
-vector<std::string>
+std::vector<std::string>
 get_files(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
   QStringList qlist = QFileDialog::getOpenFileNames(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
 
-  vector<std::string> list;
+  std::vector<std::string> list;
   if (qlist.size()) {
     for (int n = 0; n < qlist.size(); ++n)
       list.push_back(qlist[n].toUtf8().data());

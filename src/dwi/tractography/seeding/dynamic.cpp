@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -252,7 +252,7 @@ bool Dynamic::operator()(const FMLS::FOD_lobes &in) {
 void Dynamic::write_seed(const Eigen::Vector3f &p) {
   static std::mutex mutex;
   std::lock_guard<std::mutex> lock(mutex);
-  vector<Eigen::Vector3f> tck;
+  std::vector<Eigen::Vector3f> tck;
   tck.push_back(p);
   seed_output(tck);
 }

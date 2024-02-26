@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -421,7 +421,7 @@ template <class Input> void read_other(Header &H, Input &in) {
     const int32_t nentries = fetch<int32_t>(in);
     if (!nentries)
       throw Exception("Error reading colour table from file \"" + H.name() + "\": No entries");
-    vector<std::string> table;
+    std::vector<std::string> table;
     const int32_t filename_length = fetch<int32_t>(in);
     std::string filename(filename_length, '\0');
     in.read(const_cast<char *>(filename.data()), filename_length);
@@ -544,7 +544,7 @@ template <class Output> void write_header(const Header &H, Output &out) {
   if (ndim > 4)
     throw Exception("MGH file format does not support images of more than 4 dimensions");
 
-  vector<size_t> axes;
+  std::vector<size_t> axes;
   auto M = File::NIfTI::adjust_transform(H, axes);
 
   store<int32_t>(1, out);                                // version
@@ -666,7 +666,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
            " volumes, frame data tables has " + str(lines.size()) + " rows); omitting information from output image");
       return;
     }
-    vector<mri_frame> frames(nframes);
+    std::vector<mri_frame> frames(nframes);
     for (size_t frame_index = 0; frame_index != nframes; ++frame_index) {
       const auto entries = split(lines[frame_index], ",", false);
       if (entries.size() != 24 && entries.size() != 45) {
@@ -882,12 +882,12 @@ template <class Output> void write_other(const Header &H, Output &out) {
   float32 ti = 0.0f;         /*!< milliseconds */
   float32 fov = 0.0f;        /*!< IGNORE THIS FIELD (data is inconsistent) */
   Tag transform_tag;
-  vector<Tag> tags; /*!< variable length char strings */
+  std::vector<Tag> tags; /*!< variable length char strings */
   std::unique_ptr<Eigen::Matrix<default_type, 4, 4>> auto_align_matrix;
   std::string pe_dir("UNKNOWN");
   float32 field_strength = NaN;
   std::string mri_frames, colour_table;
-  vector<Tag> cmdline_tags;
+  std::vector<Tag> cmdline_tags;
 
   for (auto entry : H.keyval()) {
     if (entry.first == "command_history") {

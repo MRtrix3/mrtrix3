@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -66,12 +66,12 @@ void match_linear(Image<float> &input,
                   Image<bool> &mask_input,
                   Image<bool> &mask_target,
                   const bool estimate_intercept) {
-  vector<float> input_data, target_data;
+  std::vector<float> input_data, target_data;
   {
     ProgressBar progress("Loading & sorting image data", 4);
 
     auto fill = [](Image<float> &image, Image<bool> &mask) {
-      vector<float> data;
+      std::vector<float> data;
       if (mask.valid()) {
         Adapter::Replicate<Image<bool>> mask_replicate(mask, image);
         for (auto l = Loop(image)(image, mask_replicate); l; ++l) {

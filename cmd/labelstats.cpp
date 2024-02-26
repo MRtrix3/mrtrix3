@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,8 @@
 #include "types.h"
 
 #include "connectome/connectome.h"
+
+#include <iomanip>
 
 using namespace MR;
 using namespace App;
@@ -96,7 +98,7 @@ void run() {
   Eigen::IOFormat fmt(Eigen::StreamPrecision, 0, ", ", "\n", "[ ", " ]", "", "");
   std::stringstream com_stringstream;
   com_stringstream << coms.format(fmt);
-  const vector<std::string> com_strings = split(com_stringstream.str(), "\n");
+  const std::vector<std::string> com_strings = split(com_stringstream.str(), "\n");
   assert(com_strings.size() == size_t(masses.size()));
 
   // Find width of first non-empty string, in order to centralise header label

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ namespace Dicom {
 
 class Study;
 
-class Patient : public vector<std::shared_ptr<Study>> {
+class Patient : public std::vector<std::shared_ptr<Study>> {
 public:
   Patient(const std::string &patient_name, const std::string &patient_ID, const std::string &patient_DOB)
       : name(patient_name), ID(patient_ID), DOB(patient_DOB) {}

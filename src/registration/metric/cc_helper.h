@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ void cc_precompute(Im1ImageType &im1_image,
                    DerivedImageType &C,
                    DerivedImageType &im1_meansubtr,
                    DerivedImageType &im2_meansubtr,
-                   const vector<size_t> &extent) {
+                   const std::vector<size_t> &extent) {
   // TODO check extent
   int nmax = extent[0] * extent[1] * extent[2];
   Eigen::VectorXd n1 = Eigen::VectorXd(nmax);

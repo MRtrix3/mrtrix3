@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ namespace Dicom {
 
 class Series;
 
-std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, vector<std::shared_ptr<Series>> &series);
+std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<std::shared_ptr<Series>> &series);
 
 } // namespace Dicom
 } // namespace File

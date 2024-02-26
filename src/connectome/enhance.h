@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -57,7 +57,7 @@ public:
   void operator()(in_column_type, const value_type, out_column_type) const override;
 
 protected:
-  std::shared_ptr<vector<vector<size_t>>> adjacency;
+  std::shared_ptr<std::vector<std::vector<size_t>>> adjacency;
   value_type threshold;
 
 private:

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -124,7 +124,7 @@ void print_spacing(const Header &header) {
 
 void print_strides(const Header &header) {
   std::string buffer;
-  vector<ssize_t> strides(Stride::get(header));
+  std::vector<ssize_t> strides(Stride::get(header));
   Stride::symbolise(strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
@@ -189,15 +189,15 @@ void print_properties(const Header &header, const std::string &key, const size_t
 void header2json(const Header &header, nlohmann::json &json) {
   // Capture _all_ header fields, not just the optional key-value pairs
   json["name"] = header.name();
-  vector<size_t> size(header.ndim());
-  vector<default_type> spacing(header.ndim());
+  std::vector<size_t> size(header.ndim());
+  std::vector<default_type> spacing(header.ndim());
   for (size_t axis = 0; axis != header.ndim(); ++axis) {
     size[axis] = header.size(axis);
     spacing[axis] = header.spacing(axis);
   }
   json["size"] = size;
   json["spacing"] = spacing;
-  vector<ssize_t> strides(Stride::get(header));
+  std::vector<ssize_t> strides(Stride::get(header));
   Stride::symbolise(strides);
   json["strides"] = strides;
   json["format"] = header.format();

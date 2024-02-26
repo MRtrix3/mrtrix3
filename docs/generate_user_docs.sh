@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2023 the MRtrix3 contributors.
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,18 @@
 # Author: Rami Tabbara
 #
 
+# Parse the build directory from the command line
+args=$(getopt -o '' -l 'build-dir:' -n "$0" -- "$@")
+echo "$args" | grep -q -- '--build-dir' || { echo "Usage: $0 --build-dir <build-dir>"; exit 1; }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --build-dir) build_dir="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "Invalid option!"; exit 1 ;;
+  esac
+done
+
 function prepend {
   echo -e "$1" | cat - "$2" > "$2".tmp && mv "$2".tmp "$2"
 }
@@ -30,7 +42,7 @@ function prepend {
 # Generating documentation for all commands
 
 mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
-export PATH=$mrtrix_root/bin:"$PATH"
+export PATH=$build_dir/bin:${mrtrix_root}/python/bin:"$PATH"
 dirpath=${mrtrix_root}'/docs/reference/commands'
 export LC_ALL=C
 
@@ -70,7 +82,7 @@ cmdlist=""
 for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
-for n in `find "${mrtrix_root}"/bin/ -type f -print0 | xargs -0 grep -l "import mrtrix3"`; do
+for n in `find "${mrtrix_root}"/python/bin/ -type f -print0 | xargs -0 grep -l "import mrtrix3"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,9 +53,9 @@ public:
 
     std::string string() const { return (str); }
 
-    const vector<uint32_t> &sequence() const { return (seq); }
+    const std::vector<uint32_t> &sequence() const { return (seq); }
 
-    vector<uint32_t> &sequence() { return (seq); }
+    std::vector<uint32_t> &sequence() { return (seq); }
 
     bool is_string() const { return (seq_length == 0); }
 
@@ -70,7 +70,7 @@ public:
   protected:
     size_t seq_length;
     std::string str;
-    vector<uint32_t> seq;
+    std::vector<uint32_t> seq;
   };
 
   void parse(const std::string &imagename, size_t max_num_sequences = std::numeric_limits<size_t>::max());
@@ -81,22 +81,22 @@ public:
 
   const Item &operator[](size_t i) const { return (array[i]); }
 
-  const vector<uint32_t> &sequence(size_t index) const { return (array[seq_index[index]].sequence()); }
+  const std::vector<uint32_t> &sequence(size_t index) const { return (array[seq_index[index]].sequence()); }
 
   size_t ndim() const { return (seq_index.size()); }
 
   size_t index_of_sequence(size_t number = 0) const { return (seq_index[number]); }
 
-  bool match(const std::string &file_name, vector<uint32_t> &indices) const;
-  void calculate_padding(const vector<uint32_t> &maxvals);
-  std::string name(const vector<uint32_t> &indices);
-  std::string get_next_match(vector<uint32_t> &indices, bool return_seq_index = false);
+  bool match(const std::string &file_name, std::vector<uint32_t> &indices) const;
+  void calculate_padding(const std::vector<uint32_t> &maxvals);
+  std::string name(const std::vector<uint32_t> &indices);
+  std::string get_next_match(std::vector<uint32_t> &indices, bool return_seq_index = false);
 
   friend std::ostream &operator<<(std::ostream &stream, const NameParser &parser);
 
 private:
-  vector<Item> array;
-  vector<size_t> seq_index;
+  std::vector<Item> array;
+  std::vector<size_t> seq_index;
   std::string folder_name, specification, current_name;
   std::unique_ptr<Path::Dir> folder;
 
@@ -117,17 +117,17 @@ private:
 //! a class to hold a parsed image filename
 class ParsedName {
 public:
-  ParsedName(const std::string &name, const vector<uint32_t> &index) : indices(index), filename(name) {}
+  ParsedName(const std::string &name, const std::vector<uint32_t> &index) : indices(index), filename(name) {}
 
   //! a class to hold a set of parsed image filenames
   class List {
   public:
-    vector<uint32_t> parse_scan_check(const std::string &specifier,
-                                      size_t max_num_sequences = std::numeric_limits<size_t>::max());
+    std::vector<uint32_t> parse_scan_check(const std::string &specifier,
+                                           size_t max_num_sequences = std::numeric_limits<size_t>::max());
 
     void scan(NameParser &parser);
 
-    vector<uint32_t> count() const;
+    std::vector<uint32_t> count() const;
 
     size_t biggest_filename_size() const { return max_name_size; }
 
@@ -138,8 +138,8 @@ public:
     friend std::ostream &operator<<(std::ostream &stream, const List &list);
 
   protected:
-    vector<std::shared_ptr<ParsedName>> list;
-    void count_dim(vector<uint32_t> &dim, size_t &current_entry, size_t current_dim) const;
+    std::vector<std::shared_ptr<ParsedName>> list;
+    void count_dim(std::vector<uint32_t> &dim, size_t &current_entry, size_t current_dim) const;
     size_t max_name_size;
   };
 
@@ -151,7 +151,7 @@ public:
   friend std::ostream &operator<<(std::ostream &stream, const ParsedName &pin);
 
 protected:
-  vector<uint32_t> indices;
+  std::vector<uint32_t> indices;
   std::string filename;
 };
 

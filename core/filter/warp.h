@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,7 +65,7 @@ void warp(ImageTypeSource &source,
           WarpType &warp,
           const typename ImageTypeDestination::value_type value_when_out_of_bounds =
               Interpolator<ImageTypeSource>::default_out_of_bounds_value(),
-          const vector<uint32_t> oversample = Adapter::AutoOverSample,
+          const std::vector<uint32_t> oversample = Adapter::AutoOverSample,
           const bool jacobian_modulate = false) {
 
   // reslice warp onto destination grid

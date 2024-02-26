@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,7 +54,7 @@ public:
     set_message(message);
   }
 
-  void set_axes(const vector<int> &i) {
+  void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());
     if (max_axis >= ndim())
       throw Exception("Requested axis for interior-filling filter (" + str(max_axis) +
@@ -89,7 +89,7 @@ public:
   }
 
 protected:
-  vector<bool> enabled_axes;
+  std::vector<bool> enabled_axes;
   bool do_26_connectivity;
 };
 //! @}

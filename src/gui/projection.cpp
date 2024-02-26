@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ public:
 } // namespace
 
 void Projection::draw_orientation_labels() const {
-  vector<OrientationLabel> labels;
+  std::vector<OrientationLabel> labels;
   labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{-1.0, 0.0, 0.0}), 'L'));
   labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{1.0, 0.0, 0.0}), 'R'));
   labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{0.0, -1.0, 0.0}), 'P'));

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@
 
 namespace MR {
 namespace Math {
-double matrix_average(vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd &mat_avg, bool verbose) {
+double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd &mat_avg, bool verbose) {
   const size_t rows = mat_in[0].rows();
   const size_t cols = mat_in[0].cols();
   const size_t N = mat_in.size();
@@ -164,13 +164,13 @@ void compute_average_voxel2scanner(
     Eigen::Transform<default_type, 3, Eigen::Projective> &average_v2s_trafo,
     Eigen::Vector3d &average_space_extent,
     Eigen::Vector3d &projected_voxel_sizes,
-    const vector<Header> &input_headers,
+    const std::vector<Header> &input_headers,
     const Eigen::Matrix<default_type, 4, 1> &padding,
-    const vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
+    const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
     const avgspace_voxspacing_t voxel_spacing_calculation) {
   const size_t num_images = input_headers.size();
   DEBUG("compute_average_voxel2scanner num_images:" + str(num_images));
-  vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transformation_matrices;
+  std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transformation_matrices;
   Eigen::MatrixXd bounding_box_corners = Eigen::MatrixXd::Zero(8 * num_images, 4);
 
   for (size_t iFile = 0; iFile < num_images; iFile++) {
@@ -269,8 +269,8 @@ void compute_average_voxel2scanner(
 }
 
 Header compute_minimum_average_header(
-    const vector<Header> &input_headers,
-    const vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
+    const std::vector<Header> &input_headers,
+    const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
     const avgspace_voxspacing_t voxel_spacing_calculation,
     Eigen::Matrix<default_type, 4, 1> padding) {
   Eigen::Transform<default_type, 3, Eigen::Projective> average_v2s_trafo;

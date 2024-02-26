@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,8 +54,8 @@ void Image4D::reload_image_buffer() {
   fixel_val_store.clear();
 
   for (size_t axis = 0; axis < 3; ++axis) {
-    std::fill(slice_fixel_indices[axis].begin(), slice_fixel_indices[axis].end(), vector<GLint>());
-    std::fill(slice_fixel_sizes[axis].begin(), slice_fixel_sizes[axis].end(), vector<GLsizei>());
+    std::fill(slice_fixel_indices[axis].begin(), slice_fixel_indices[axis].end(), std::vector<GLint>());
+    std::fill(slice_fixel_sizes[axis].begin(), slice_fixel_sizes[axis].end(), std::vector<GLsizei>());
     std::fill(slice_fixel_counts[axis].begin(), slice_fixel_counts[axis].end(), 0);
   }
 

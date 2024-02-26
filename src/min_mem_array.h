@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,8 +28,8 @@ namespace MR {
 
 // This class allows for construction and management of a c-style array, where the
 //   memory overhead is minimal (a pointer and a size_t)
-// vector<>'s have some amount of overhead, which can add up if many are being stored
-// Typical usage is to gather the required data using a vector<>, and use that vector
+// std::vector<>'s have some amount of overhead, which can add up if many are being stored
+// Typical usage is to gather the required data using a std::vector<>, and use that vector
 //   to construct a Min_mem_array<>
 
 template <class T> class Min_mem_array {
