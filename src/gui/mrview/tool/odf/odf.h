@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -97,7 +97,7 @@ protected:
 
   int lmax;
 
-  void add_images(vector<std::string> &list, const odf_type_t mode);
+  void add_images(std::vector<std::string> &list, const odf_type_t mode);
 
   virtual void closeEvent(QCloseEvent *event) override;
 

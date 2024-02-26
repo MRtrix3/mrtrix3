@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,7 +75,7 @@ void run() {
 
   bool fill = get_options("fill").size();
 
-  vector<Header> headers_in;
+  std::vector<Header> headers_in;
   size_t dim(Header::open(argument[0]).ndim());
   if (dim < 3 or dim > 4)
     throw Exception("Please provide 3D or 4D images");
@@ -91,7 +91,7 @@ void run() {
     }
   }
 
-  vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transform_header_with;
+  std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transform_header_with;
   auto H = compute_minimum_average_header(headers_in, transform_header_with, spacing, padding);
   H.datatype() = DataType::Bit;
   if (fill) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -141,8 +141,9 @@ Image<bool> get_mask(const Image<value_type> &in) {
   return mask;
 }
 
-vector<value_type> get_data(Image<value_type> &in, Image<bool> &mask, const size_t max_axis, const bool ignore_zero) {
-  vector<value_type> data;
+std::vector<value_type>
+get_data(Image<value_type> &in, Image<bool> &mask, const size_t max_axis, const bool ignore_zero) {
+  std::vector<value_type> data;
   data.reserve(voxel_count(in, 0, max_axis));
   if (mask.valid()) {
     Adapter::Replicate<Image<bool>> mask_replicate(mask, in);
@@ -232,7 +233,7 @@ default_type calculate(Image<value_type> &in,
     if (max_axis < in.ndim()) {
 
       // Need to extract just the current 3D volume
-      vector<size_t> in_from(in.ndim()), in_size(in.ndim());
+      std::vector<size_t> in_from(in.ndim()), in_size(in.ndim());
       size_t axis;
       for (axis = 0; axis != 3; ++axis) {
         in_from[axis] = 0;
@@ -244,7 +245,7 @@ default_type calculate(Image<value_type> &in,
       }
       Adapter::Subset<Image<value_type>> in_subset(in, in_from, in_size);
       if (mask.valid()) {
-        vector<size_t> mask_from(mask.ndim()), mask_size(mask.ndim());
+        std::vector<size_t> mask_from(mask.ndim()), mask_size(mask.ndim());
         for (axis = 0; axis != 3; ++axis) {
           mask_from[axis] = 0;
           mask_size[axis] = mask.size(axis);

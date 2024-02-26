@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,7 @@ protected:
   const value_type dh, E, H, C;
   const bool normalise;
 
-  mutable vector<value_type> h_pow_H;
+  mutable std::vector<value_type> h_pow_H;
 
   void operator()(in_column_type, out_column_type) const override;
 };

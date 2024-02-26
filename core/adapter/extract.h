@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ public:
   using base_type::parent;
   using base_type::spacing;
 
-  Extract1D(const ImageType &original, const size_t axis, const vector<uint32_t> &indices)
+  Extract1D(const ImageType &original, const size_t axis, const std::vector<uint32_t> &indices)
       : base_type(original), extract_axis(axis), indices(indices), nsize(indices.size()), trans(original.transform()) {
     reset();
 
@@ -77,7 +77,7 @@ public:
 
 private:
   const size_t extract_axis;
-  vector<uint32_t> indices;
+  std::vector<uint32_t> indices;
   const ssize_t nsize;
   transform_type trans;
   ssize_t current_pos;
@@ -92,7 +92,7 @@ public:
   using base_type::parent;
   using base_type::spacing;
 
-  Extract(const ImageType &original, const vector<vector<uint32_t>> &indices)
+  Extract(const ImageType &original, const std::vector<std::vector<uint32_t>> &indices)
       : base_type(original), current_pos(ndim()), indices(indices), trans(original.transform()) {
     reset();
     trans.translation() =
@@ -125,9 +125,9 @@ public:
   }
 
 private:
-  vector<ssize_t> current_pos;
-  vector<vector<uint32_t>> indices;
-  vector<ssize_t> sizes;
+  std::vector<ssize_t> current_pos;
+  std::vector<std::vector<uint32_t>> indices;
+  std::vector<ssize_t> sizes;
   transform_type trans;
 };
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,6 +39,12 @@ App::App(int &cmdline_argc, char **cmdline_argv) : QApplication(cmdline_argc, cm
 #if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
   styleHints()->setShowShortcutsInContextMenus(true);
 #endif
+}
+
+bool App::event(QEvent *event) {
+  if (this->event_handler && this->event_handler(event))
+    return true;
+  return QApplication::event(event);
 }
 
 } // namespace GUI

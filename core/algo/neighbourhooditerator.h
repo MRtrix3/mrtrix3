@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,7 +39,7 @@ class NeighbourhoodIterator {
 public:
   NeighbourhoodIterator() = delete;
   template <class IteratorType>
-  NeighbourhoodIterator(const IteratorType &iter, const vector<size_t> &extent)
+  NeighbourhoodIterator(const IteratorType &iter, const std::vector<size_t> &extent)
       : dim(iter.ndim()),
         offset(iter.ndim()),
         // pos (iter.ndim()),
@@ -105,7 +105,7 @@ public:
   }
 
 private:
-  vector<ssize_t> dim, offset, pos_orig, ext;
+  std::vector<ssize_t> dim, offset, pos_orig, ext;
   Eigen::Matrix<ssize_t, 1, Eigen::Dynamic> pos;
   bool has_next_;
 

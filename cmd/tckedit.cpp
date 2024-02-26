@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -126,7 +126,7 @@ void run() {
   // Get the consensus streamline properties from among the multiple input files
   Tractography::Properties properties;
   size_t count = 0;
-  vector<std::string> input_file_list;
+  std::vector<std::string> input_file_list;
 
   for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
 

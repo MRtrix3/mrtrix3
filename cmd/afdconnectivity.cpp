@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -215,7 +215,7 @@ value_type AFDConnectivity::get(const std::string &path) {
     if (all_fixels) {
 
       // All fixels contribute to the result
-      for (vector<AFDConnFixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+      for (std::vector<AFDConnFixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
         if (i->is_selected())
           sum_volumes += i->get_FOD();
       }

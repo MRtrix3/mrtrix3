@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -70,7 +70,7 @@ namespace {
 using value_type = float;
 using point_type = Eigen::Vector3f;
 
-point_type get_pos(const vector<default_type> &s) {
+point_type get_pos(const std::vector<default_type> &s) {
   if (s.size() != 3)
     throw Exception("position expected as a comma-seperated list of 3 values");
   return {value_type(s[0]), value_type(s[1]), value_type(s[2])};

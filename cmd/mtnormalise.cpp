@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -473,7 +473,7 @@ void run() {
   size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
   auto opt = get_options("niter");
   if (opt.size()) {
-    vector<size_t> num = parse_ints<size_t>(opt[0][0]);
+    std::vector<size_t> num = parse_ints<size_t>(opt[0][0]);
     if (num.size() < 1 && num.size() > 2)
       throw Exception("unexpected number of entries provided to option \"-niter\"");
     for (auto n : num)

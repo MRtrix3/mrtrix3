@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,7 +81,7 @@ public:
     endRemoveRows();
   }
 
-  void add_items(vector<FileDataVector> &);
+  void add_items(std::vector<FileDataVector> &);
 
   const FileDataVector &get(const size_t index) {
     assert(index < items.size());
@@ -93,7 +93,7 @@ public:
   }
 
 protected:
-  vector<FileDataVector> items;
+  std::vector<FileDataVector> items;
 };
 
 } // namespace Tool

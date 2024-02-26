@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -182,7 +182,7 @@ void run() {
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
-  vector<uint32_t> node_volumes(1, 0);
+  std::vector<uint32_t> node_volumes(1, 0);
   node_t max_node_index = 0;
   for (auto i = Loop(node_image, 0, 3)(node_image); i; ++i) {
     if (node_image.value() > max_node_index) {

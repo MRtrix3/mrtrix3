@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,8 +81,8 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   }
 
   // Split tck into separate tracks based on the mask
-  vector<vector<Eigen::Vector3f>> cropped_tracks;
-  vector<Eigen::Vector3f> temp;
+  std::vector<std::vector<Eigen::Vector3f>> cropped_tracks;
+  std::vector<Eigen::Vector3f> temp;
 
   for (const auto &p : in) {
     const bool contains = properties.mask.contains(p);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ void TrackMapper::set_factor(const Streamline<> &tck, SetVoxelExtras &out) const
 
 void TrackMapper::gaussian_smooth_factors(const Streamline<> &tck) const {
 
-  vector<default_type> unsmoothed(factors);
+  std::vector<default_type> unsmoothed(factors);
 
   for (size_t i = 0; i != unsmoothed.size(); ++i) {
 
