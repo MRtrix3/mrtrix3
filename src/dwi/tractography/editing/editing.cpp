@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/editing/editing.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 using namespace App;
 
@@ -95,7 +92,4 @@ void load_properties(Tractography::Properties &properties) {
     properties["min_weight"] = str(float(opt[0][0]));
 }
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Editing

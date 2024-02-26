@@ -29,10 +29,7 @@
 #include "gui/mrview/tool/odf/preview.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), lighting_dock(nullptr), lmax(0) {
   lighting = new GL::Lighting(this);
@@ -816,7 +813,4 @@ bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
   return false;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

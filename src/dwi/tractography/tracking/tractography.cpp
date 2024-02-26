@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/tracking/tractography.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 using namespace App;
 // clang-format off
@@ -166,7 +163,4 @@ void load_streamline_properties_and_rois(Properties &properties) {
     properties["DW_scheme"] = std::string(opt[0][0]);
 }
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking

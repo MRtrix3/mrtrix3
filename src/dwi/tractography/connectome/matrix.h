@@ -28,10 +28,7 @@
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapped_track.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 enum stat_edge { SUM, MEAN, MIN, MAX };
 extern const char *statistics[];
@@ -97,9 +94,6 @@ private:
 extern template class Matrix<float>;
 extern template class Matrix<double>;
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome
 
 #endif

@@ -16,9 +16,7 @@
 
 #include "math/stats/import.h"
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 vector_type CohortDataImport::operator()(const index_type element) const {
   vector_type result(files.size());
@@ -46,6 +44,4 @@ bool CohortDataImport::allFinite() const {
   */
 }
 
-} // namespace Stats
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Stats

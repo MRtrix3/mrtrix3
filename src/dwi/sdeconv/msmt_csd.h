@@ -33,9 +33,7 @@
 #define DEFAULT_MSMTCSD_NORM_LAMBDA 1.0e-10
 #define DEFAULT_MSMTCSD_NEG_LAMBDA 1.0e-10
 
-namespace MR {
-namespace DWI {
-namespace SDeconv {
+namespace MR::DWI::SDeconv {
 
 extern const App::OptionGroup MSMT_CSD_options;
 
@@ -259,8 +257,6 @@ private:
   Math::ICLS::Solver<double> solver;
 };
 
-} // namespace SDeconv
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::SDeconv
 
 #endif

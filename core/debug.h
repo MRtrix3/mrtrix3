@@ -20,11 +20,9 @@
 #include <cstring>
 #include <iostream>
 
-namespace MR {
-namespace App {
+namespace MR::App {
 extern std::string NAME;
 }
-} // namespace MR
 
 /** \defgroup debug Debugging
  * \brief functions and macros provided to ease debugging. */

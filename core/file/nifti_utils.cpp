@@ -26,9 +26,7 @@
 #include "image_io/gz.h"
 #include "raw.h"
 
-namespace MR {
-namespace File {
-namespace NIfTI {
+namespace MR::File::NIfTI {
 
 namespace {
 template <class NiftiHeader> struct Type {
@@ -775,6 +773,4 @@ std::string get_json_path(const std::string &nifti_path) {
   return json_path + ".json";
 }
 
-} // namespace NIfTI
-} // namespace File
-} // namespace MR
+} // namespace MR::File::NIfTI

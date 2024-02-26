@@ -25,10 +25,7 @@
 
 #include "dwi/tractography/GT/particle.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 /**
  * @brief ParticlePool manages creation and deletion of particles,
@@ -105,9 +102,6 @@ protected:
   Math::RNG rng;
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT
 
 #endif // __gt_particlepool_h__

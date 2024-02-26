@@ -20,10 +20,7 @@
 #include "file/path.h"
 #include "misc/bitset.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 const char *statistics[] = {"sum", "mean", "min", "max", NULL};
 
@@ -276,7 +273,4 @@ template <typename T> void Matrix<T>::inc_count(const size_t node_one, const siz
 template class Matrix<float>;
 template class Matrix<double>;
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome

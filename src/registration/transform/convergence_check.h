@@ -23,8 +23,8 @@
 
 namespace MR {
 using namespace MR::Math;
-namespace Registration {
-namespace Transform {
+
+namespace Registration::Transform {
 // convergence check using linear trend of each parameter during gradient descent
 // we use double exponential smoothing to get rid of small oscillations
 class DoubleExpSmoothSlopeCheck {
@@ -59,6 +59,6 @@ private:
     return (vec.array().abs() < thresh.array()).all();
   }
 };
-} // namespace Transform
-} // namespace Registration
+} // namespace Registration::Transform
+
 } // namespace MR

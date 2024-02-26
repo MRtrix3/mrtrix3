@@ -27,10 +27,7 @@
 #define FILE_DIALOG_OPTIONS QFileDialog::Options()
 #endif
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
-namespace File {
+namespace MR::GUI::Dialog::File {
 
 const std::string image_filter_string = "Medical Images (*" + join(MR::Formats::known_extensions, " *") + ")";
 
@@ -124,7 +121,4 @@ std::string get_save_name(QWidget *parent,
   return filename;
 }
 
-} // namespace File
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog::File

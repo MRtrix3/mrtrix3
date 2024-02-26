@@ -21,10 +21,7 @@
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Algorithms {
+namespace MR::DWI::Tractography::Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
@@ -54,9 +51,6 @@ protected:
   const Shared &S;
 };
 
-} // namespace Algorithms
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Algorithms
 
 #endif

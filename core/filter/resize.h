@@ -27,8 +27,7 @@
 #include "interp/nearest.h"
 #include "interp/sinc.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 /** \addtogroup Filters
 @{ */
 
@@ -170,7 +169,6 @@ protected:
   default_type *out_of_bounds_value;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

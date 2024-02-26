@@ -31,9 +31,7 @@
 #include "timer.h"
 #include <QDebug>
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 using namespace App;
 /*
 #define MODE(classname, specifier, name, description) #specifier ", "
@@ -2068,6 +2066,4 @@ void Window::add_commandline_options(MR::App::OptionList &options) {
   // clang-format on
 }
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView

@@ -36,8 +36,7 @@
 #include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 
 extern const App::OptionGroup nonlinear_options;
 
@@ -556,7 +555,6 @@ protected:
   std::shared_ptr<Image<default_type>> im1_update_new;
   std::shared_ptr<Image<default_type>> im2_update_new;
 };
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration
 
 #endif

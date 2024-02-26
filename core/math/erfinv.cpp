@@ -18,8 +18,7 @@
 
 #include "math/polynomial.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 default_type erfinv(const default_type p) {
   class Shared {
@@ -171,5 +170,4 @@ default_type erfcinv(const default_type q) {
   return (shared.Y(index) * x) + (R * x);
 };
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math

@@ -22,10 +22,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/opengl/transformation.h"
 
-namespace MR {
-namespace GUI {
-
-namespace MRView {
+namespace MR::GUI::MRView {
 class AdjustButton;
 
 namespace Tool {
@@ -142,8 +139,6 @@ private:
 };
 
 } // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView
 
 #endif

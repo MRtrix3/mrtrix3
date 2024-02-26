@@ -28,9 +28,7 @@
 #include "image_io/variable_scaling.h"
 #include "phase_encoding.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<std::shared_ptr<Series>> &series) {
   // ENVVAR name: MRTRIX_PRESERVE_PHILIPS_ISO
@@ -420,6 +418,4 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   return io_handler;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

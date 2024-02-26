@@ -16,9 +16,7 @@
 
 #include "gui/mrview/displayable.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 Displayable::Displayable(const std::string &filename)
     : QAction(nullptr),
@@ -51,6 +49,4 @@ void Displayable::Shader::update(const Displayable &object) {
   colourmap = object.colourmap;
 }
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView

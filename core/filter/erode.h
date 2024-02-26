@@ -25,8 +25,7 @@
 #include "memory.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 /** \addtogroup Filters
   @{ */
@@ -135,7 +134,6 @@ protected:
   unsigned int npass;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

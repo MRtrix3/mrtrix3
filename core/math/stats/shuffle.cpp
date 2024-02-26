@@ -23,9 +23,7 @@
 #include "math/factorial.h"
 #include "math/rng.h"
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 const char *error_types[] = {"ee", "ise", "both", nullptr};
 
@@ -703,6 +701,4 @@ std::vector<std::vector<index_type>> Shuffler::indices2blocks(const index_array_
   return result;
 }
 
-} // namespace Stats
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Stats

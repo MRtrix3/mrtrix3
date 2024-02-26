@@ -21,10 +21,7 @@
 
 #include "dwi/tractography/tracking/types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class GeneratedTrack : public std::vector<Eigen::Vector3f> {
 
@@ -91,9 +88,6 @@ private:
   status_t status;
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking
 
 #endif

@@ -16,10 +16,7 @@
 
 #include "gui/mrview/tool/transform.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Transform::Transform(Dock *parent) : Base(parent) {
   VBoxLayout *main_box = new VBoxLayout(this);
@@ -140,7 +137,4 @@ bool Transform::rotate_event(const ModelViewProjection &projection) {
   return true;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

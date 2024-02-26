@@ -21,8 +21,7 @@
 #include "header.h"
 #include "image_io/ram.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void RAM::load(const Header &header, size_t) {
   DEBUG("allocating RAM buffer for image \"" + header.name() + "\"...");
@@ -38,5 +37,4 @@ void RAM::unload(const Header &header) {
   }
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

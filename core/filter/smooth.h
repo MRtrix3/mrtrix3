@@ -24,8 +24,7 @@
 #include "image.h"
 #include "memory.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 /** \addtogroup Filters
 @{ */
 
@@ -265,7 +264,6 @@ protected:
   };
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

@@ -22,8 +22,7 @@
 #include "filter/base.h"
 #include "image.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 /** \addtogroup Filters
 @{ */
 
@@ -84,7 +83,6 @@ protected:
   std::vector<uint32_t> extent;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

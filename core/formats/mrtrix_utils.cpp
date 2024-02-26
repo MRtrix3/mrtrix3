@@ -16,8 +16,7 @@
 
 #include "formats/mrtrix_utils.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
   std::vector<ssize_t> parsed(ndim);
@@ -140,5 +139,4 @@ void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname
   }
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

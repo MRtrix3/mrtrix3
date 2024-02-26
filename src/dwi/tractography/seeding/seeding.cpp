@@ -17,10 +17,7 @@
 #include "dwi/tractography/seeding/seeding.h"
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 using namespace App;
 
@@ -188,7 +185,4 @@ void load_seed_parameters(Properties &properties) {
     properties["seed_output"] = std::string(opt[0][0]);
 }
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Seeding

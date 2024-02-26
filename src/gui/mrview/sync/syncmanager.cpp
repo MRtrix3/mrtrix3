@@ -17,10 +17,7 @@
 #include "gui/mrview/sync/syncmanager.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 SyncManager::SyncManager() : QObject(0) {
   try {
     ips = new InterprocessCommunicator(); // will throw exception if it fails to set up a server
@@ -143,7 +140,4 @@ Eigen::Vector3f SyncManager::FromQByteArray(QByteArray data, unsigned int offset
   return read;
 }
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync

@@ -20,9 +20,7 @@
 #include "image.h"
 #include <string>
 
-namespace MR {
-namespace Fixel {
-namespace Filter {
+namespace MR::Fixel::Filter {
 
 /*! A base class for defining fixel data filters.
  *
@@ -52,8 +50,6 @@ protected:
 };
 //! @}
 
-} // namespace Filter
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Filter
 
 #endif

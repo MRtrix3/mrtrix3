@@ -19,10 +19,7 @@
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class Image4D : public FixelType<FixelImage4DType> {
 public:
   Image4D(const std::string &filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool), tracking(false) {
@@ -49,9 +46,6 @@ public:
   }
   bool tracking;
 };
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

@@ -18,10 +18,7 @@
 
 #include "header.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 size_t ODF_Model::add_items(const std::vector<std::string> &list,
                             const odf_type_t type,
@@ -66,7 +63,4 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
   return hlist.size();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

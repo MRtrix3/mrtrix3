@@ -21,10 +21,7 @@
 
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 extern const App::OptionGroup ResampleOption;
 
@@ -52,9 +49,6 @@ public:
   virtual Base *clone() const { return new Derived(static_cast<Derived const &>(*this)); }
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling
 
 #endif

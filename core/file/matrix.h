@@ -26,11 +26,7 @@
 #include "file/path.h"
 #include "types.h"
 
-namespace MR {
-
-namespace File {
-
-namespace Matrix {
+namespace MR::File::Matrix {
 
 namespace {
 
@@ -262,8 +258,6 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector(const std::string &filen
   return vec.row(0);
 }
 
-} // namespace Matrix
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Matrix
 
 #endif

@@ -16,9 +16,7 @@
 
 #include "stats/tfce.h"
 
-namespace MR {
-namespace Stats {
-namespace TFCE {
+namespace MR::Stats::TFCE {
 
 using namespace App;
 const OptionGroup Options(const default_type default_dh, const default_type default_e, const default_type default_h) {
@@ -53,6 +51,4 @@ void Wrapper::operator()(in_column_type in, out_column_type out) const {
   }
 }
 
-} // namespace TFCE
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats::TFCE

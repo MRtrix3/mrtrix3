@@ -21,8 +21,7 @@
 #include "adapter/gradient1D.h"
 #include "transform.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class WarpType> class Jacobian : public Base<Jacobian<WarpType>, WarpType> {
 public:
@@ -59,7 +58,6 @@ protected:
   Transform transform;
   const bool wrt_scanner;
 };
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

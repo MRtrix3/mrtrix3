@@ -26,8 +26,7 @@
 
 #include "adapter/replicate.h"
 
-namespace MR {
-namespace Testing {
+namespace MR::Testing {
 
 // clang-format off
 const App::OptionGroup Diff_Image_Options =
@@ -63,7 +62,6 @@ template <class ImageType1, class ImageType2> void diff_images(ImageType1 &in1, 
     check_images_abs(in1, in2, 0.0);
   }
 }
-} // namespace Testing
-} // namespace MR
+} // namespace MR::Testing
 
 #endif

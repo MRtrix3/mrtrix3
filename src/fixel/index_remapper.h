@@ -23,8 +23,7 @@
 #include "image.h"
 #include "types.h"
 
-namespace MR {
-namespace Fixel {
+namespace MR::Fixel {
 
 class IndexRemapper {
 public:
@@ -55,7 +54,6 @@ private:
   std::vector<index_type> internal2external;
 };
 
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel
 
 #endif

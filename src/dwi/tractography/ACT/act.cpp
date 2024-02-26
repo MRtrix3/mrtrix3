@@ -17,10 +17,7 @@
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 
 using namespace App;
 
@@ -63,7 +60,4 @@ void verify_5TT_image(const Header &H) {
                     " is not a valid ACT 5TT image (expecting 4D image with 5 volumes and floating-point datatype)");
 }
 
-} // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::ACT

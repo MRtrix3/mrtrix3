@@ -16,9 +16,7 @@
 
 #include "dwi/sdeconv/msmt_csd.h"
 
-namespace MR {
-namespace DWI {
-namespace SDeconv {
+namespace MR::DWI::SDeconv {
 
 using namespace App;
 // clang-format off
@@ -41,6 +39,4 @@ const OptionGroup MSMT_CSD_options =
       + Argument("image").type_image_out();
 // clang-format on
 
-} // namespace SDeconv
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::SDeconv

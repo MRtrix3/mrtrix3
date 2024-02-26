@@ -17,9 +17,7 @@
 #include "algo/histogram.h"
 #include "file/matrix.h"
 
-namespace MR {
-namespace Algo {
-namespace Histogram {
+namespace MR::Algo::Histogram {
 
 using namespace App;
 
@@ -177,6 +175,4 @@ default_type Matcher::operator()(const default_type in) const {
   return calib_target.get_min() + (output_pos * calib_target.get_bin_width());
 }
 
-} // namespace Histogram
-} // namespace Algo
-} // namespace MR
+} // namespace MR::Algo::Histogram

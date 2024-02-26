@@ -20,9 +20,7 @@
 #include "gui/gui.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 class TreeItem {
 public:
@@ -63,8 +61,6 @@ public:
   TreeItem *rootItem;
 };
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog
 
 #endif

@@ -30,9 +30,7 @@ namespace MR {
 
 class Header;
 
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace GUI::MRView::Tool {
 
 class ODF_Item {
 public:
@@ -76,9 +74,8 @@ public:
   std::unique_ptr<DixelPlugin> dixel;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
+} // namespace GUI::MRView::Tool
+
 } // namespace MR
 
 #endif

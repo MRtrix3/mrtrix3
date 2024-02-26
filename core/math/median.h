@@ -23,8 +23,7 @@
 #include "app.h"
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 namespace {
 template <typename X> inline bool not_a_number(X x) { return false; }
@@ -118,7 +117,6 @@ bool median_weiszfeld(const MatrixType &X,
   // std::cerr << str(dist) << std::endl;
   return convergence;
 }
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

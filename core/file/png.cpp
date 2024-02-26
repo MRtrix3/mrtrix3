@@ -27,9 +27,7 @@
 #include "file/path.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace File {
-namespace PNG {
+namespace MR::File::PNG {
 
 Reader::Reader(const std::string &filename)
     : png_ptr(NULL), info_ptr(NULL), width(0), height(0), bit_depth(0), color_type(0), channels(0) {
@@ -320,8 +318,6 @@ void Writer::error_handler(png_struct_def *data, const char *msg) {
   throw e;
 }
 
-} // namespace PNG
-} // namespace File
-} // namespace MR
+} // namespace MR::File::PNG
 
 #endif

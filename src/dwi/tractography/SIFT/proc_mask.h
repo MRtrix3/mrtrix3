@@ -26,10 +26,7 @@
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 extern const App::OptionGroup SIFTModelProcMaskOption;
 
@@ -56,9 +53,6 @@ private:
   ACT::Tissues ACT2pve(const Iterator &);
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT
 
 #endif

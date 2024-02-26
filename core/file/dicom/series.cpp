@@ -18,9 +18,7 @@
 #include "file/dicom/patient.h"
 #include "file/dicom/study.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 std::vector<int> Series::count() const {
   std::vector<int> dim(3);
@@ -88,6 +86,4 @@ std::ostream &operator<<(std::ostream &stream, const Series &item) {
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

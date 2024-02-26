@@ -17,8 +17,7 @@
 #include "image_io/base.h"
 #include "header.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 Base::Base(const Header &header) : segsize(voxel_count(header)), is_new(false), writable(false) {}
 
@@ -43,5 +42,4 @@ void Base::close(const Header &header) {
   addresses.clear();
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

@@ -22,9 +22,7 @@
 #include "gui/opengl/gl.h"
 #include "math/least_squares.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 class vec4 {
 public:
@@ -218,8 +216,6 @@ inline mat4 scale(float x, float y, float z) {
 
 inline mat4 scale(float s) { return scale(s, s, s); }
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::GL
 
 #endif

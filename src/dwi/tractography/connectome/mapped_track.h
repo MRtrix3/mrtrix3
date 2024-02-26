@@ -19,10 +19,7 @@
 
 #include "dwi/tractography/connectome/connectome.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 class Mapped_track_base {
 
@@ -74,9 +71,6 @@ private:
   std::vector<node_t> nodes;
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome
 
 #endif

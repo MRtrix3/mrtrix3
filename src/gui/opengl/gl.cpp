@@ -17,9 +17,7 @@
 #include "gui/opengl/gl.h"
 #include "file/config.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 Area *glwidget = nullptr;
 
@@ -121,6 +119,4 @@ const char *ErrorString(GLenum errorcode) {
   }
 }
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::GL

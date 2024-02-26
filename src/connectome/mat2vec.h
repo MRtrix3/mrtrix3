@@ -23,8 +23,7 @@
 
 #include "connectome/connectome.h"
 
-namespace MR {
-namespace Connectome {
+namespace MR::Connectome {
 
 class Mat2Vec {
 
@@ -100,7 +99,6 @@ template <class VecType> matrix_type Mat2Vec::V2M(const VecType &v) const {
   return m;
 }
 
-} // namespace Connectome
-} // namespace MR
+} // namespace MR::Connectome
 
 #endif

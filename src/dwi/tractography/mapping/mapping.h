@@ -24,10 +24,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 // Convenience functions to figure out an appropriate upsampling ratio for streamline mapping
 size_t determine_upsample_ratio(const Header &, const float, const float);
@@ -39,9 +36,6 @@ void generate_header(Header &, const std::string &, const std::vector<default_ty
 
 void oversample_header(Header &, const std::vector<default_type> &);
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping
 
 #endif
