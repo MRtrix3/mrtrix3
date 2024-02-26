@@ -31,26 +31,25 @@ using namespace MR::Raw;
 using namespace MR::ByteOrder;
 
 void usage() {
-  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk), "
-           "J-Donald Tournier (jdtournier@gmail.com), "
-           "Philip Broser (philip.broser@me.com), "
-           "Daniel Blezek (daniel.blezek@gmail.com).";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) and "
+           "J-Donald Tournier (jdtournier@gmail.com) and "
+           "Philip Broser (philip.broser@me.com) and "
+           "Daniel Blezek (daniel.blezek@gmail.com)";
 
   SYNOPSIS = "Convert between different track file formats";
 
   DESCRIPTION
   +"The program currently supports MRtrix .tck files (input/output), "
    "ascii text files (input/output), VTK polydata files (input/output), "
-   "and RenderMan RIB (export only)."
+   "and RenderMan RIB (export only).";
 
-      + "Note that ascii files will be stored with one streamline per numbered file. "
-        "To support this, the command will use the multi-file numbering syntax, "
-        "where square brackets denote the position of the numbering for the files, "
-        "for example:"
-
-      + "$ tckconvert input.tck output-'[]'.txt"
-
-      + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
+  EXAMPLES
+  +Example("Writing multiple ASCII files, one per streamline",
+           "tckconvert input.tck output-[].txt",
+           "By using the multi-file numbering syntax, "
+           "where square brackets denote the position of the numbering for the files, "
+           "this example will produce files named: "
+           "output-0000.txt, output-0001.txt, output-0002.txt, ...");
 
   ARGUMENTS
   +Argument("input", "the input track file.").type_various() +

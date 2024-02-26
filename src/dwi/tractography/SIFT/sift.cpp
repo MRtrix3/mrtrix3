@@ -43,7 +43,7 @@ const OptionGroup SIFTModelOption =
     + Option("remove_untracked",
              "remove FOD lobes that do not have any streamline density attributed to them; "
              "this improves filtering slightly, at the expense of longer computation time "
-             "(and you can no longer do quantitative comparisons between reconstructions if this is enabled)")
+             "(and you can no longer trivially do quantitative comparisons between reconstructions if this is enabled)")
 
     +
     Option(
@@ -67,13 +67,13 @@ const OptionGroup SIFTOutputOption =
 const OptionGroup SIFTTermOption =
     OptionGroup("Options to control when SIFT terminates filtering")
 
-    + Option("term_number", "number of streamlines - continue filtering until this number of streamlines remain") +
+    + Option("term_number", "number of streamlines; continue filtering until this number of streamlines remain") +
     Argument("value").type_integer(1)
 
     + Option("term_ratio",
-             "termination ratio - defined as the ratio between reduction in cost function, and reduction in density of "
-             "streamlines.\n"
-             "Smaller values result in more streamlines being filtered out.") +
+             "termination ratio; defined as the ratio between reduction in cost function, and reduction in density of "
+             "streamlines; "
+             "smaller values result in more streamlines being filtered out") +
     Argument("value").type_float(1e-6)
 
     + Option("term_mu", "terminate filtering once the SIFT proportionality coefficient reaches a given value") +

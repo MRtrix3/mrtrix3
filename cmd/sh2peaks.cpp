@@ -36,7 +36,11 @@ void usage() {
 
   DESCRIPTION
   +"Peaks of the spherical harmonic function in each voxel are located by "
-   "commencing a Newton search along each of a set of pre-specified directions";
+   "commencing a Newton search along each of a set of pre-specified directions"
+
+  +"Within the output image, each successive triplet of volumes encodes the x, y & z "
+   "components of a 3-vector; their directions in 3D space encode the orientation of "
+   "the identified peaks, while the norm of each vector encodes the magnitude of the peaks.";
 
   DESCRIPTION
   +Math::SH::encoding_description;
@@ -45,8 +49,7 @@ void usage() {
   +Argument("SH", "the input image of SH coefficients.").type_image_in()
 
       + Argument("output",
-                 "the output image. Each volume corresponds to the x, y & z component "
-                 "of each peak direction vector in turn.")
+                 "the output peaks image")
             .type_image_out();
 
   OPTIONS

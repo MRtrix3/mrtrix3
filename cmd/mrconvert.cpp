@@ -144,7 +144,7 @@ void usage() {
                 "header that provide a linear mapping from raw intensity values stored "
                 "in the image data to some other scale. Where the raw data stored in a "
                 "particular voxel is I, the value within that voxel is interpreted as: "
-                "value = offset + (scale x I).  To adjust this scaling, the relevant "
+                "value = offset + (scale x I). To adjust this scaling, the relevant "
                 "parameters must be provided as a comma-separated 2-vector of "
                 "floating-point values, in the format \"offset,scale\" (no quotation "
                 "marks). This particular example sets the offset to zero and the scale "

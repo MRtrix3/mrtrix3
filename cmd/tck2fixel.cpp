@@ -95,17 +95,17 @@ void usage() {
 
   ARGUMENTS
   +Argument("tracks", "the input tracks.").type_tracks_in() +
-      Argument("fixel_folder_in", "the input fixel folder. Used to define the fixels and their directions")
+      Argument("fixel_folder_in", "the input fixel folder used to define the fixels and their directions")
           .type_directory_in() +
       Argument(
           "fixel_folder_out",
-          "the fixel folder to which the output will be written. This can be the same as the input folder if desired")
+          "the fixel folder to which the output will be written; this can be the same as the input folder if desired")
           .type_text() +
       Argument("fixel_data_out", "the name of the fixel data image.").type_text();
 
   OPTIONS
   +Option("angle",
-          "the max angle threshold for assigning streamline tangents to fixels (Default: " +
+          "the max angle threshold for assigning streamline tangents to fixels (default: " +
               str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)") +
       Argument("value").type_float(0.0, 90.0);
 }

@@ -45,8 +45,8 @@ void usage() {
         "magnitude-reconstructed MRI images. If available, including the MRI phase data can "
         "reduce such non-Gaussian biases, and the command now supports complex input data.";
 
-  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & "
-           "Jelle Veraart (jelle.veraart@nyumc.org) & "
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) and "
+           "Jelle Veraart (jelle.veraart@nyumc.org) and "
            "J-Donald Tournier (jdtournier@gmail.com)";
 
   REFERENCES

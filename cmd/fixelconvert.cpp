@@ -57,7 +57,7 @@ void usage() {
                 "for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
                 "In this example, the for_each script is used to execute the fixelconvert "
                 "command once for each of a series of input files in the old fixel format, "
-                "generating a new output fixel directory for each."
+                "generating a new output fixel directory for each. "
                 "Importantly here though, the -template option is used to ensure that the "
                 "ordering of fixels within these output directories is identical, such that "
                 "fixel data files can be exchanged between them (e.g. accumulating fixel "

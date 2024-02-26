@@ -21,7 +21,7 @@ Usage
 Description
 -----------
 
-If a linear transform is applied without a template image the command will modify the image header transform matrix
+If a linear transform is applied without a template image, the command will modify the image header transform matrix.
 
 FOD reorientation (with apodised point spread functions) can be performed if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). For such data, the -reorient_fod yes/no option must be used to specify if reorientation is required.
 
@@ -54,7 +54,7 @@ Regridding options
 
 -  **-template image** reslice the input image to match the specified template image grid.
 
--  **-midway_space** reslice the input image to the midway space. Requires either the -template or -warp option. If used with -template and -linear option the input image will be resliced onto the grid halfway between the input and template. If used with the -warp option the input will be warped to the midway space defined by the grid of the input warp (i.e. half way between image1 and image2)
+-  **-midway_space** reslice the input image to the midway space. Requires either the -template or -warp option. If used with -template and -linear option, the input image will be resliced onto the grid halfway between the input and template. If used with the -warp option, the input will be warped to the midway space defined by the grid of the input warp (i.e. half way between image1 and image2)
 
 -  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).
 
@@ -72,9 +72,7 @@ Non-linear transformation options
 Fibre orientation distribution handling options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-modulate method** Valid choices are: fod and jac.  |br|
-   fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation.  |br|
-   jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation to preserve the total intensity before and after the transformation.
+-  **-modulate method** Valid choices are: fod and jac. fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation; jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation to preserve the total intensity before and after the transformation.
 
 -  **-directions file** directions defining the number and orientation of the apodised point spread functions used in FOD reorientation (Default: 300 directions)
 
@@ -83,7 +81,7 @@ Fibre orientation distribution handling options
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
@@ -107,9 +105,9 @@ Stride options
 Additional generic options for mrtransform
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-nan** Use NaN as the out of bounds value (Default: 0.0)
+-  **-nan** Use NaN as the out of bounds value (0.0 will be used otherwise)
 
--  **-no_reorientation** deprecated, use -reorient_fod instead
+-  **-no_reorientation** deprecated; use -reorient_fod instead
 
 Standard options
 ^^^^^^^^^^^^^^^^

@@ -70,7 +70,7 @@ void usage() {
         "or parameters that correspond to non-monotonic decay of the predicted signal. "
         "By supplying the -constrain option, constrained optimization is performed instead "
         "and such physically implausible parameters can be avoided. Depending on the presence "
-        " of the -dkt option, the -constrain option will enforce the following constraints:"
+        "of the -dkt option, the -constrain option will enforce the following constraints:"
 
       + "* Non-negative apparent diffusivity (always)."
 

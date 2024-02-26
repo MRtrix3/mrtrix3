@@ -58,9 +58,9 @@ void usage() {
   OPTIONS
 
   +Option("stat_tck",
-          "compute some statistic from the values along each streamline "
-          "(options are: " +
-              join(statistics, ",") + ")") +
+          "compute some statistic from the values along each streamline; "
+          "options are: " +
+              join(statistics, ",")) +
       Argument("statistic").type_choice(statistics)
 
       + Option("nointerp", "do not use trilinear interpolation when sampling image values")

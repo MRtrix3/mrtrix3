@@ -34,9 +34,11 @@ const char *poly_order_choices[] = {"0", "1", "2", "3", nullptr};
 
 void usage() {
   AUTHOR =
-      "Thijs Dhollander (thijs.dhollander@gmail.com), Rami Tabbara (rami.tabbara@florey.edu.au), "
-      "David Raffelt (david.raffelt@florey.edu.au), Jonas Rosnarho-Tornstrand (jonas.rosnarho-tornstrand@kcl.ac.uk) "
-      "and J-Donald Tournier (jdtournier@gmail.com)";
+      "Thijs Dhollander (thijs.dhollander@gmail.com) and "
+      "Rami Tabbara (rami.tabbara@florey.edu.au) and "
+      "David Raffelt (david.raffelt@florey.edu.au) and "
+      "Jonas Rosnarho-Tornstrand (jonas.rosnarho-tornstrand@kcl.ac.uk) and "
+      "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
 
@@ -49,7 +51,7 @@ void usage() {
    "spatial smoothness (polynomial basis of a given order). Different to "
    "the Raffelt et al. 2017 abstract, this algorithm performs this task "
    "in the log-domain instead, with added gradual outlier rejection, different "
-   "handling of the balancing factors between tissue compartments and a "
+   "handling of the balancing factors between tissue compartments, and a "
    "different iteration structure."
 
       + "The -mask option is mandatory and is optimally provided with a brain mask "
@@ -84,7 +86,7 @@ void usage() {
       + Option("niter",
                "set the number of iterations. The first (and potentially only) entry applies to the main loop. "
                "If supplied as a comma-separated list of integers, the second entry applies to the inner loop to "
-               "update the balance factors "
+               "update the balance factors. "
                "(default: " +
                    str(DEFAULT_MAIN_ITER_VALUE) + "," + str(DEFAULT_BALANCE_MAXITER_VALUE) + ").") +
       Argument("number").type_sequence_int()
@@ -96,7 +98,7 @@ void usage() {
       Argument("number").type_float(std::numeric_limits<default_type>::min())
 
       + Option("balanced",
-               "incorporate the per-tissue balancing factors into scaling of the output images "
+               "incorporate the per-tissue balancing factors into scaling of the output images. "
                "(NOTE: use of this option has critical consequences for AFD intensity normalisation; "
                "should not be used unless these consequences are fully understood)")
 

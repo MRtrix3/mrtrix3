@@ -79,8 +79,8 @@ const OptionGroup TWIOption =
     OptionGroup("Options for the TWI image contrast properties")
 
     + Option("contrast",
-             "define the desired form of contrast for the output image\n"
-             "Options are: " +
+             "define the desired form of contrast for the output image; "
+             "options are: " +
                  join(contrasts, ", ") + " (default: tdi)") +
     Argument("type").type_choice(contrasts)
 
@@ -94,15 +94,15 @@ const OptionGroup TWIOption =
 
     + Option("stat_vox",
              "define the statistic for choosing the final voxel intensities for a given contrast "
-             "type given the individual values from the tracks passing through each voxel. \n"
-             "Options are: " +
+             "type given the individual values from the tracks passing through each voxel; "
+             "options are: " +
                  join(voxel_statistics, ", ") + " (default: sum)") +
     Argument("type").type_choice(voxel_statistics)
 
     + Option("stat_tck",
              "define the statistic for choosing the contribution to be made by each streamline as a "
-             "function of the samples taken along their lengths. \n"
-             "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types. \n"
+             "function of the samples taken along their lengths. "
+             "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types. "
              "Options are: " +
                  join(track_statistics, ", ") + " (default: mean)") +
     Argument("type").type_choice(track_statistics)
@@ -125,7 +125,7 @@ const OptionGroup MappingOption =
     OptionGroup("Options for the streamline-to-voxel mapping mechanism")
 
     + Option("upsample",
-             "upsample the tracks by some ratio using Hermite interpolation before mappping\n"
+             "upsample the tracks by some ratio using Hermite interpolation before mappping "
              "(If omitted, an appropriate ratio will be determined automatically)") +
     Argument("factor").type_integer(1)
 
@@ -165,11 +165,10 @@ void usage() {
         "in conjunction with -vox, the image axes and FoV will still match that of the template "
         "image, but the spatial resolution will differ."
 
-      + "Note: if you run into limitations with RAM usage, try writing the output image "
-        "as a .mif file or .mih / .dat file pair to a local hard drive: this will allow "
-        "tckmap to dump the generated image contents directly to disk, rather than allocating "
-        "an additional buffer to store the output image for write-out, thereby potentially "
-        "halving RAM usage.";
+      + "Note: if you run into limitations with RAM usage, "
+        "make sure you output the results to a .mif file or .mih / .dat file pair; "
+        "this will avoid the allocation of an additional buffer to store the output for write-out, "
+        "potentially halving utilised memory.";
 
   REFERENCES
   +"* For TDI or DEC TDI:\n"

@@ -83,7 +83,7 @@ void usage() {
   ARGUMENTS
   +Argument("tracks_in", "the input track file").type_tracks_in() +
       Argument("nodes_in", "the input node parcellation image").type_image_in() +
-      Argument("connectome_out", "the output .csv file containing edge weights").type_file_out();
+      Argument("connectome_out", "the output file containing edge weights").type_file_out();
 
   OPTIONS
   +MR::DWI::Tractography::Connectome::AssignmentOptions + MR::DWI::Tractography::Connectome::MetricOptions +

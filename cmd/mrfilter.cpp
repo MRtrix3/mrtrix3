@@ -57,7 +57,7 @@ const OptionGroup GradientOption = OptionGroup("Options for gradient filter")
                                             "spurious gradients caused by noise. Use this option to override "
                                             "the default stdev of 1 voxel. This can be specified either as a single "
                                             "value to be used for all 3 axes, or as a comma-separated list of "
-                                            "3 values, one for each axis.") +
+                                            "3 values (one for each axis).") +
                                    Argument("sigma").type_sequence_float()
 
                                    + Option("magnitude",
@@ -74,7 +74,7 @@ const OptionGroup MedianOption =
     + Option("extent",
              "specify extent of median filtering neighbourhood in voxels. "
              "This can be specified either as a single value to be used for all 3 axes, "
-             "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).") +
+             "or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).") +
     Argument("size").type_sequence_int();
 
 const OptionGroup NormaliseOption =
@@ -83,7 +83,7 @@ const OptionGroup NormaliseOption =
     + Option("extent",
              "specify extent of normalisation filtering neighbourhood in voxels. "
              "This can be specified either as a single value to be used for all 3 axes, "
-             "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).") +
+             "or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).") +
     Argument("size").type_sequence_int();
 
 const OptionGroup SmoothOption = OptionGroup("Options for smooth filter")
@@ -110,11 +110,11 @@ const OptionGroup SmoothOption = OptionGroup("Options for smooth filter")
                                  Argument("voxels").type_sequence_int();
 
 const OptionGroup ZcleanOption =
-    OptionGroup("Options for zclean filter") + Option("zupper", "define high intensity outliers: default: 2.5") +
+    OptionGroup("Options for zclean filter") + Option("zupper", "define high intensity outliers; default: 2.5") +
     Argument("num").type_float(0.1, std::numeric_limits<float>::infinity()) +
-    Option("zlower", "define low intensity outliers: default: 2.5") +
+    Option("zlower", "define low intensity outliers; default: 2.5") +
     Argument("num").type_float(0.1, std::numeric_limits<float>::infinity()) +
-    Option("bridge", "number of voxels to gap to fill holes in mask: default: 4") + Argument("num").type_integer(0) +
+    Option("bridge", "number of voxels to gap to fill holes in mask; default: 4") + Argument("num").type_integer(0) +
     Option("maskin",
            "initial mask that defines the maximum spatial extent and the region from "
            "which to smaple the intensity range.") +
@@ -123,8 +123,9 @@ const OptionGroup ZcleanOption =
     Argument("image").type_image_out();
 
 void usage() {
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald "
-           "Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and "
+           "David Raffelt (david.raffelt@florey.edu.au) and "
+           "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 

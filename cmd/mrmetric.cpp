@@ -183,11 +183,12 @@ void usage() {
 
   OPTIONS
   +Option("space",
-          "voxel (default): per voxel "
-          "image1: scanner space of image 1 "
-          "image2: scanner space of image 2 "
-          "average: scanner space of the average affine transformation of image 1 and 2 ") +
-      Argument("iteration method").type_choice(space_choices)
+          "Image 'space' in which the metric will be computed. Options are: "
+          "voxel (default): per voxel; "
+          "image1: scanner space of image 1; "
+          "image2: scanner space of image 2; "
+          "average: scanner space of the average affine transformation of image 1 and 2") +
+      Argument("space").type_choice(space_choices)
 
       + Option("interp",
                "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: "
@@ -196,7 +197,7 @@ void usage() {
 
       + Option("metric",
                "define the dissimilarity metric used to calculate the cost. "
-               "Choices: diff (squared differences), cc (non-normalised negative cross correlation aka negative cross "
+               "Choices: diff (squared differences); cc (non-normalised negative cross correlation aka negative cross "
                "covariance). Default: diff). "
                "cc is only implemented for -space average and -interp linear and cubic.") +
       Argument("method").type_choice(metric_choices)

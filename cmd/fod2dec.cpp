@@ -80,13 +80,13 @@ void usage() {
                    " (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).")
 
       + Option("lum_coefs",
-               "The coefficients Cr,Cg,Cb to correct for luminance/perception. \nNote: this implicitly switches on "
+               "The coefficients Cr,Cg,Cb to correct for luminance/perception. Note: this implicitly switches on "
                "luminance/perception correction, using a default gamma = " +
                    str(DEFAULT_LUM_GAMMA, 2) + " unless specified otherwise.") +
       Argument("values").type_sequence_float()
 
       + Option("lum_gamma",
-               "The gamma value to correct for luminance/perception. \nNote: this implicitly switches on "
+               "The gamma value to correct for luminance/perception. Note: this implicitly switches on "
                "luminance/perception correction, using a default Cr,Cg,Cb = " +
                    str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) +
                    " unless specified otherwise.") +

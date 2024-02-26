@@ -16,22 +16,22 @@ Usage
     warpconvert [ options ]  in type out
 
 -  *in*: the input warp image.
--  *type*: the conversion type required. Valid choices are: deformation2displacement, displacement2deformation, warpfull2deformation, warpfull2displacement
+-  *type*: the conversion type required; valid choices are: deformation2displacement, displacement2deformation, warpfull2deformation, warpfull2displacement
 -  *out*: the output warp image.
 
 Description
 -----------
 
-A deformation field is defined as an image where each voxel defines the corresponding position in the other image (in scanner space coordinates). A displacement field stores the displacements (in mm) to the other image from the each voxel's position (in scanner space). The warpfull file is the 5D format output from mrregister -nl_warp_full, which contains linear transforms, warps and their inverses that map each image to a midway space.
+A deformation field is defined as an image where each voxel defines the corresponding position in the other image (in scanner space coordinates). A displacement field stores the displacements (in mm) to the other image from each voxel's position (in scanner space). The warpfull file is the 5D format output from mrregister -nl_warp_full, which contains linear transforms, warps and their inverses that map each image to a midway space.
 
 Options
 -------
 
--  **-template image** define a template image when converting a warpfull file (which is defined on a grid in the midway space between image 1 & 2). For example to generate the deformation field that maps image1 to image2, then supply image2 as the template image
+-  **-template image** define a template image when converting a warpfull file (which is defined on a grid in the midway space between image 1 & 2). For example, to generate the deformation field that maps image1 to image2, supply image2 as the template image
 
 -  **-midway_space** to be used only with warpfull2deformation and warpfull2displacement conversion types. The output will only contain the non-linear warp to map an input image to the midway space (defined by the warpfull grid). If a linear transform exists in the warpfull file header then it will be composed and included in the output.
 
--  **-from image** to be used only with warpfull2deformation and warpfull2displacement conversion types. Used to define the direction of the desired output field.Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in combination with the -midway_space option to produce a field that only maps to midway space.
+-  **-from image** to be used only with warpfull2deformation and warpfull2displacement conversion types. Used to define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in combination with the -midway_space option to produce a field that only maps to midway space.
 
 Standard options
 ^^^^^^^^^^^^^^^^

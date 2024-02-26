@@ -53,8 +53,8 @@ void usage() {
   SYNOPSIS = "Apply spatial transformations to an image";
 
   DESCRIPTION
-  +"If a linear transform is applied without a template image the command "
-   "will modify the image header transform matrix"
+  +"If a linear transform is applied without a template image, the command "
+   "will modify the image header transform matrix."
 
       + "FOD reorientation (with apodised point spread functions) can be performed "
         "if the number of volumes in the 4th dimension equals the number "
@@ -127,9 +127,9 @@ void usage() {
 
       + Option("midway_space",
                "reslice the input image to the midway space. Requires either the -template or -warp option. If "
-               "used with -template and -linear option the input image will be resliced onto the grid halfway between "
+               "used with -template and -linear option, the input image will be resliced onto the grid halfway between "
                "the input and template. "
-               "If used with the -warp option the input will be warped to the midway space defined by the grid of the "
+               "If used with the -warp option, the input will be warped to the midway space defined by the grid of the "
                "input warp "
                "(i.e. half way between image1 and image2)")
 
@@ -186,9 +186,9 @@ void usage() {
       +
       Option(
           "modulate",
-          "Valid choices are: fod and jac. \n"
+          "Valid choices are: fod and jac. "
           "fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths "
-          "before and after the transformation. \n"
+          "before and after the transformation; "
           "jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation "
           "to preserve the total intensity before and after the transformation.") +
       Argument("method").type_choice(modulation_choices)
@@ -215,9 +215,9 @@ void usage() {
 
       + OptionGroup("Additional generic options for mrtransform")
 
-      + Option("nan", "Use NaN as the out of bounds value (Default: 0.0)")
+      + Option("nan", "Use NaN as the out of bounds value (0.0 will be used otherwise)")
 
-      + Option("no_reorientation", "deprecated, use -reorient_fod instead");
+      + Option("no_reorientation", "deprecated; use -reorient_fod instead");
 }
 
 void apply_warp(Image<float> &input,

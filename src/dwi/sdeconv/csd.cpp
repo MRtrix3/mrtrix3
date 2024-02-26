@@ -27,7 +27,7 @@ const OptionGroup CSD_options =
     Option("filter",
            "the linear frequency filtering parameters used for the initial linear "
            "spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be "
-           " supplied as a text file containing the filtering coefficients for each "
+           "supplied as a text file containing the filtering coefficients for each "
            "even harmonic order.") +
     Argument("spec").type_file_in()
 

@@ -79,7 +79,7 @@ void usage() {
 
   ARGUMENTS
   +Argument("input", "the input image(s).").type_image_in().allow_multiple() +
-      Argument("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice(operations) +
+      Argument("operation", "the operation to apply; one of: " + join(operations, ", ") + ".").type_choice(operations) +
       Argument("output", "the output image.").type_image_out();
 
   OPTIONS

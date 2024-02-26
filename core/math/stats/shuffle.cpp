@@ -59,7 +59,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
       +
       Option("permutations",
              "manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, "
-             "where each relabelling is defined as a column vector of size m, and the number of columns, n, defines "
+             "where each relabelling is defined as a column vector of size m, and the number of columns n defines "
              "the number of permutations. Can be generated with the palm_quickperms function in PALM "
              "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). "
              "Overrides the -nshuffles option.") +
@@ -85,7 +85,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
                  "non-stationarity correction. "
                  "The input should be a text file defining a m x n matrix, where each relabelling is defined as a "
                  "column vector of size m, "
-                 "and the number of columns, n, defines the number of permutations. Can be generated with the "
+                 "and the number of columns n defines the number of permutations. Can be generated with the "
                  "palm_quickperms function in PALM "
                  "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) "
                  "Overrides the -nshuffles_nonstationarity option.") +

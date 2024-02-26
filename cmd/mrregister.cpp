@@ -55,7 +55,8 @@ const OptionGroup multiContrastOptions =
     Argument("weights").type_sequence_float();
 
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and "
+           "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   SYNOPSIS = "Register two images together using a symmetric rigid, affine or non-linear transformation model";
 
@@ -70,7 +71,7 @@ void usage() {
 
       // TODO link to 5D warp file format documentation
       + "Non-linear registration computes warps to map from both image1->image2 and image2->image1. "
-        "Similar to Avants (2008) Med Image Anal. 12(1): 26–41, registration is performed by matching both the image1 "
+        "Similar to Avants (2008) Med Image Anal. 12(1): 26-41, registration is performed by matching both the image1 "
         "and image2 in a 'midway space'. "
         "Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or "
         "if using -nl_warp_full as a single 5D file "
@@ -95,7 +96,7 @@ void usage() {
   +Argument("image1 image2", "input image 1 ('moving') and input image 2 ('template')").type_image_in() +
       Argument("contrast1 contrast2",
                "optional list of additional input images used as additional contrasts. "
-               "Can be used multiple times. contrastX and imageX must share the same coordinate system. ")
+               "Can be used multiple times. contrastX and imageX must share the same coordinate system.")
           .type_image_in()
           .optional()
           .allow_multiple();

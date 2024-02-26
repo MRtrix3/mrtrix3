@@ -35,8 +35,9 @@ const OptionGroup fod_options =
 
     +
     Option("directions",
-           "the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)") +
-    Argument("file", "a list of directions [az el] generated using the gendir command.").type_file_in()
+           "the directions used for FOD reorienation using apodised point spread functions "
+           "(Default: built-in 60-direction set)") +
+    Argument("file").type_file_in()
 
     + Option("noreorientation",
              "turn off FOD reorientation. Reorientation is on by default if the number "

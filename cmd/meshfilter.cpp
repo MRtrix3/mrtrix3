@@ -49,10 +49,10 @@ void usage() {
   DESCRIPTION
   +"While this command has only one filter operation currently available, it "
    "nevertheless presents with a comparable interface to the MRtrix3 commands "
-   "maskfilter and mrfilter commands.";
+   "maskfilter and mrfilter.";
 
   EXAMPLES
-  +Example("Apply a mesh smoothing filter (currently the only filter available",
+  +Example("Apply a mesh smoothing filter (currently the only filter available)",
            "meshfilter input.vtk smooth output.vtk",
            "The usage of this command may cause confusion due to the generic interface "
            "despite only one filtering operation being currently available. This simple "
@@ -61,8 +61,8 @@ void usage() {
   ARGUMENTS
   +Argument("input", "the input mesh file").type_file_in() +
       Argument("filter",
-               "the filter to apply."
-               "Options are: smooth")
+               "the filter to apply; "
+               "options are: smooth")
           .type_choice(filters) +
       Argument("output", "the output mesh file").type_file_out();
 

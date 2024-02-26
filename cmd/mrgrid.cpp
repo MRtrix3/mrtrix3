@@ -34,8 +34,9 @@ const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", NULL};
 const char *operation_choices[] = {"regrid", "crop", "pad", NULL};
 
 void usage() {
-  AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk) & David Raffelt (david.raffelt@florey.edu.au) & Robert E. Smith "
-           "(robert.smith@florey.edu.au)";
+  AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk) and "
+           "David Raffelt (david.raffelt@florey.edu.au) and "
+           "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS =
       "Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with "
@@ -47,7 +48,7 @@ void usage() {
    "If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless "
    "nearest neighbour interpolation is selected or oversample is changed explicitly. The resolution can only be "
    "changed for spatial dimensions. " +
-      "- crop: The image extent after cropping, can be specified either manually for each axis dimensions, or via a "
+      "- crop: The image extent after cropping can be specified either manually for each axis dimensions, or via a "
       "mask or reference image. "
       "The image can be cropped to the extent of a mask. "
       "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by "
@@ -82,7 +83,7 @@ void usage() {
 
   ARGUMENTS
   +Argument("input", "input image to be regridded.").type_image_in() +
-      Argument("operation", "the operation to be performed, one of: " + join(operation_choices, ", ") + ".")
+      Argument("operation", "the operation to be performed; one of: " + join(operation_choices, ", ") + ".")
           .type_choice(operation_choices) +
       Argument("output", "the output image.").type_image_out();
 
@@ -112,7 +113,7 @@ void usage() {
       Argument("factor").type_sequence_float()
 
       + Option("interp",
-               "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: "
+               "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc; default: "
                "cubic).") +
       Argument("method").type_choice(interp_choices)
 
