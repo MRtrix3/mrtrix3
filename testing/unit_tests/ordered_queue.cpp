@@ -46,11 +46,13 @@ size_t num_items;
   CONSOLE("allocated a total of " + str(num_items) + " items");                                                        \
   std::cerr << "\n"
 
+// clang-format off
 void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
   SYNOPSIS = "test Thread::run_ordered_queue() functions";
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 struct Item {
   Item() { num_items++; }

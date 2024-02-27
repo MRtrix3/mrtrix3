@@ -31,116 +31,111 @@ using namespace App;
 
 const char *filters[] = {"fft", "gradient", "median", "smooth", "normalise", "zclean", NULL};
 
-const OptionGroup FFTOption = OptionGroup("Options for FFT filter")
+// clang-format off
+const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
+  + Option ("axes", "the axes along which to apply the Fourier Transform."
+                    " By default, the transform is applied along the three spatial axes."
+                    " Provide as a comma-separate list of axis indices.")
+    + Argument ("list").type_sequence_int()
+  + Option ("inverse", "apply the inverse FFT")
+  + Option ("magnitude", "output a magnitude image rather than a complex-valued image")
+  + Option ("rescale", "rescale values so that inverse FFT recovers original values")
+  + Option ("centre_zero", "re-arrange the FFT results so that"
+                           " the zero-frequency component appears in the centre of the image,"
+                           " rather than at the edges");
 
-                              + Option("axes",
-                                       "the axes along which to apply the Fourier Transform. "
-                                       "By default, the transform is applied along the three spatial axes. "
-                                       "Provide as a comma-separate list of axis indices.") +
-                              Argument("list").type_sequence_int()
+const OptionGroup GradientOption = OptionGroup ("Options for gradient filter")
+  + Option ("stdev", "the standard deviation of the Gaussian kernel used to "
+                     " smooth the input image (in mm)."
+                     " The image is smoothed to reduced large spurious gradients caused by noise."
+                     " Use this option to override the default stdev of 1 voxel."
+                     " This can be specified either as a single value to be used for all 3 axes,"
+                     " or as a comma-separated list of 3 values (one for each axis).")
+  + Argument ("sigma").type_sequence_float()
+  + Option ("magnitude", "output the gradient magnitude,"
+                         " rather than the default x,y,z components")
+  + Option ("scanner", "define the gradient with respect to"
+                       " the scanner coordinate frame of reference.");
 
-                              + Option("inverse", "apply the inverse FFT")
+const OptionGroup MedianOption = OptionGroup ("Options for median filter")
+  + Option ("extent", "specify extent of median filtering neighbourhood in voxels."
+                      " This can be specified either as a single value to be used for all 3 axes,"
+                      " or as a comma-separated list of 3 values (one for each axis)"
+                      " (default: 3x3x3).")
+    + Argument ("size").type_sequence_int();
 
-                              + Option("magnitude", "output a magnitude image rather than a complex-valued image")
+const OptionGroup NormaliseOption = OptionGroup ("Options for normalisation filter")
+  + Option ("extent", "specify extent of normalisation filtering neighbourhood in voxels."
+                      "This can be specified either as a single value to be used for all 3 axes,"
+                      "or as a comma-separated list of 3 values (one for each axis)"
+                      " (default: 3x3x3).")
+    + Argument ("size").type_sequence_int();
 
-                              + Option("rescale", "rescale values so that inverse FFT recovers original values")
+const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
+  + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
+                     " The standard deviation is defined in mm (Default 1 voxel)."
+                     " This can be specified either as a single value to be used for all axes,"
+                     " or as a comma-separated list of the stdev for each axis.")
+    + Argument ("mm").type_sequence_float()
+  + Option ("fwhm", "apply Gaussian smoothing with the specified full-width half maximum."
+                    " The FWHM is defined in mm (Default 1 voxel * 2.3548)."
+                    " This can be specified either as a single value to be used for all axes,"
+                    " or as a comma-separated list of the FWHM for each axis.")
+  + Argument ("mm").type_sequence_float()
+  + Option ("extent", "specify the extent (width) of kernel size in voxels."
+                      " This can be specified either as a single value to be used for all axes,"
+                      " or as a comma-separated list of the extent for each axis."
+                      " The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.")
+  + Argument ("voxels").type_sequence_int();
 
-                              + Option("centre_zero",
-                                       "re-arrange the FFT results so that the zero-frequency component "
-                                       "appears in the centre of the image, rather than at the edges");
+const OptionGroup ZcleanOption = OptionGroup ("Options for zclean filter")
+  + Option ("zupper", "define high intensity outliers;"
+                      " default: 2.5")
+    + Argument ("num").type_float(0.1)
+  + Option ("zlower", "define low intensity outliers;"
+                      " default: 2.5")
+    + Argument ("num").type_float(0.1)
+  + Option ("bridge", "number of voxels to gap to fill holes in mask;"
+                      " default: 4")
+    + Argument ("num").type_integer(0)
+  + Option ("maskin", "initial mask that defines the maximum spatial extent"
+                      " and the region from which to smaple the intensity range.")
+    + Argument ("image").type_image_in()
+  + Option ("maskout", "Output a refined mask based on a spatially coherent region"
+                       " with normal intensity range.")
+    + Argument ("image").type_image_out();
 
-const OptionGroup GradientOption = OptionGroup("Options for gradient filter")
-
-                                   + Option("stdev",
-                                            "the standard deviation of the Gaussian kernel used to "
-                                            "smooth the input image (in mm). The image is smoothed to reduced large "
-                                            "spurious gradients caused by noise. Use this option to override "
-                                            "the default stdev of 1 voxel. This can be specified either as a single "
-                                            "value to be used for all 3 axes, or as a comma-separated list of "
-                                            "3 values, one for each axis.") +
-                                   Argument("sigma").type_sequence_float()
-
-                                   + Option("magnitude",
-                                            "output the gradient magnitude, rather "
-                                            "than the default x,y,z components")
-
-                                   + Option("scanner",
-                                            "define the gradient with respect to the scanner coordinate "
-                                            "frame of reference.");
-
-const OptionGroup MedianOption =
-    OptionGroup("Options for median filter")
-
-    + Option("extent",
-             "specify extent of median filtering neighbourhood in voxels. "
-             "This can be specified either as a single value to be used for all 3 axes, "
-             "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).") +
-    Argument("size").type_sequence_int();
-
-const OptionGroup NormaliseOption =
-    OptionGroup("Options for normalisation filter")
-
-    + Option("extent",
-             "specify extent of normalisation filtering neighbourhood in voxels. "
-             "This can be specified either as a single value to be used for all 3 axes, "
-             "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).") +
-    Argument("size").type_sequence_int();
-
-const OptionGroup SmoothOption = OptionGroup("Options for smooth filter")
-
-                                 + Option("stdev",
-                                          "apply Gaussian smoothing with the specified standard deviation. "
-                                          "The standard deviation is defined in mm (Default 1 voxel). "
-                                          "This can be specified either as a single value to be used for all axes, "
-                                          "or as a comma-separated list of the stdev for each axis.") +
-                                 Argument("mm").type_sequence_float()
-
-                                 + Option("fwhm",
-                                          "apply Gaussian smoothing with the specified full-width half maximum. "
-                                          "The FWHM is defined in mm (Default 1 voxel * 2.3548). "
-                                          "This can be specified either as a single value to be used for all axes, "
-                                          "or as a comma-separated list of the FWHM for each axis.") +
-                                 Argument("mm").type_sequence_float()
-
-                                 + Option("extent",
-                                          "specify the extent (width) of kernel size in voxels. "
-                                          "This can be specified either as a single value to be used for all axes, "
-                                          "or as a comma-separated list of the extent for each axis. "
-                                          "The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.") +
-                                 Argument("voxels").type_sequence_int();
-
-const OptionGroup ZcleanOption =
-    OptionGroup("Options for zclean filter") + Option("zupper", "define high intensity outliers: default: 2.5") +
-    Argument("num").type_float(0.1, std::numeric_limits<float>::infinity()) +
-    Option("zlower", "define low intensity outliers: default: 2.5") +
-    Argument("num").type_float(0.1, std::numeric_limits<float>::infinity()) +
-    Option("bridge", "number of voxels to gap to fill holes in mask: default: 4") + Argument("num").type_integer(0) +
-    Option("maskin",
-           "initial mask that defines the maximum spatial extent and the region from "
-           "which to smaple the intensity range.") +
-    Argument("image").type_image_in() +
-    Option("maskout", "Output a refined mask based on a spatially coherent region with normal intensity range.") +
-    Argument("image").type_image_out();
 
 void usage() {
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald "
-           "Tournier (jdtournier@gmail.com)";
+
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
+           " and David Raffelt (david.raffelt@florey.edu.au)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  +"The available filters are: fft, gradient, median, smooth, normalise, zclean." +
-      "Each filter has its own unique set of optional parameters." +
-      "For 4D images, each 3D volume is processed independently.";
+  + "The available filters are:"
+    " fft, gradient, median, smooth, normalise, zclean."
+  + "Each filter has its own unique set of optional parameters."
+  + "For 4D images, each 3D volume is processed independently.";
 
   ARGUMENTS
-  +Argument("input", "the input image.").type_image_in() +
-      Argument("filter", "the type of filter to be applied").type_choice(filters) +
-      Argument("output", "the output image.").type_image_out();
+  + Argument ("input",  "the input image.").type_image_in ()
+  + Argument ("filter", "the type of filter to be applied").type_choice (filters)
+  + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  +FFTOption + GradientOption + MedianOption + NormaliseOption + SmoothOption + ZcleanOption + Stride::Options;
+  + FFTOption
+  + GradientOption
+  + MedianOption
+  + NormaliseOption
+  + SmoothOption
+  + ZcleanOption
+  + Stride::Options;
+
 }
+// clang-format on
 
 void run() {
 

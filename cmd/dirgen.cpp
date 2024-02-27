@@ -29,50 +29,60 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model";
+  SYNOPSIS = "Generate a set of uniformly distributed directions"
+             " using a bipolar electrostatic repulsion model";
 
   DESCRIPTION
-  +"Directions are distributed by analogy to an electrostatic repulsion system, with each direction "
-   "corresponding to a single electrostatic charge (for -unipolar), or a pair of diametrically opposed charges "
-   "(for the default bipolar case). The energy of the system is determined based on the Coulomb repulsion, "
-   "which assumes the form 1/r^power, where r is the distance between any pair of charges, and p is the power "
-   "assumed for the repulsion law (default: 1). The minimum energy state is obtained by gradient descent.";
+    + "Directions are distributed by analogy to an electrostatic repulsion system,"
+      " with each direction corresponding to a single electrostatic charge (for -unipolar),"
+      " or a pair of diametrically opposed charges (for the default bipolar case)."
+      " The energy of the system is determined based on the Coulomb repulsion,"
+      " which assumes the form 1/r^power,"
+      " where r is the distance between any pair of charges,"
+      " and p is the power assumed for the repulsion law (default: 1)."
+      " The minimum energy state is obtained by gradient descent.";
+
 
   REFERENCES
-  +"Jones, D.; Horsfield, M. & Simmons, A. "
-   "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
-   "Magnetic Resonance in Medicine, 1999, 42: 515-525"
+    + "Jones, D.; Horsfield, M. & Simmons, A. "
+      "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
+      "Magnetic Resonance in Medicine, 1999, 42: 515-525"
 
-      + "Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
-        "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
-        "Magnetic Resonance Imaging, 2000, 18: 671-679";
+    + "Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
+      "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
+      "Magnetic Resonance Imaging, 2000, 18: 671-679";
 
   ARGUMENTS
-  +Argument("ndir", "the number of directions to generate.").type_integer(6, std::numeric_limits<int>::max()) +
-      Argument("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
+    + Argument ("ndir", "the number of directions to generate.").type_integer(6, std::numeric_limits<int>::max())
+    + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
 
   OPTIONS
-  +Option("power",
-          "specify exponent to use for repulsion power law (default: " + str(DEFAULT_POWER) +
-              "). This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).") +
-      Argument("exp").type_integer(1, std::numeric_limits<int>::max())
+    + Option ("power", "specify exponent to use for repulsion power law"
+                       " (default: " + str(DEFAULT_POWER) + ")."
+                       " This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).")
+      + Argument ("exp").type_integer(1, std::numeric_limits<int>::max())
 
-      + Option("niter", "specify the maximum number of iterations to perform (default: " + str(DEFAULT_NITER) + ").") +
-      Argument("num").type_integer(1, std::numeric_limits<int>::max())
+    + Option ("niter", "specify the maximum number of iterations to perform"
+                       " (default: " + str(DEFAULT_NITER) + ").")
+      + Argument ("num").type_integer(1, std::numeric_limits<int>::max())
 
-      + Option("restarts", "specify the number of restarts to perform (default: " + str(DEFAULT_RESTARTS) + ").") +
-      Argument("num").type_integer(1, std::numeric_limits<int>::max())
+    + Option ("restarts", "specify the number of restarts to perform"
+                          " (default: " + str(DEFAULT_RESTARTS) + ").")
+      + Argument ("num").type_integer (1, std::numeric_limits<int>::max())
 
-      + Option("unipolar",
-               "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally "
-               "assumed in DWI")
+    + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model"
+                          " rather than the bipolar model normally assumed in DWI")
 
-      + Option("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
+    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
+                           " instead of [az el].");
+
 }
+// clang-format on
 
 // constrain directions to remain unit length:
 class ProjectedUpdate {

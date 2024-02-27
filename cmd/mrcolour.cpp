@@ -32,6 +32,7 @@ using namespace App;
 std::vector<std::string> colourmap_choices_std;
 std::vector<const char *> colourmap_choices_cstr;
 
+// clang-format off
 void usage() {
 
   const ColourMap::Entry *entry = ColourMap::maps;
@@ -39,9 +40,9 @@ void usage() {
     if (strcmp(entry->name, "Complex"))
       colourmap_choices_std.push_back(lowercase(entry->name));
     ++entry;
-  } while (entry->name);
+  } while(entry->name != nullptr);
   colourmap_choices_cstr.reserve(colourmap_choices_std.size() + 1);
-  for (const auto &s : colourmap_choices_std)
+  for (const auto& s : colourmap_choices_std)
     colourmap_choices_cstr.push_back(s.c_str());
   colourmap_choices_cstr.push_back(nullptr);
 
@@ -50,30 +51,38 @@ void usage() {
   SYNOPSIS = "Apply a colour map to an image";
 
   DESCRIPTION
-  +"Under typical usage, this command will receive as input ad 3D greyscale image, and "
-   "output a 4D image with 3 volumes corresponding to red-green-blue components; "
-   "other use cases are possible, and are described in more detail below."
+  + "Under typical usage,"
+    " this command will receive as input ad 3D greyscale image,"
+    " and output a 4D image with 3 volumes corresponding to red-green-blue components;"
+    " other use cases are possible,"
+    " and are described in more detail below."
 
-      + "By default, the command will automatically determine the maximum and minimum "
-        "intensities of the input image, and use that information to set the upper and "
-        "lower bounds of the applied colourmap. This behaviour can be overridden by manually "
-        "specifying these bounds using the -upper and -lower options respectively.";
+  + "By default,"
+    " the command will automatically determine the maximum and minimum"
+    " intensities of the input image,"
+    " and use that information to set the upper and lower bounds of the applied colourmap."
+    " This behaviour can be overridden by manually specifying these bounds"
+    " using the -upper and -lower options respectively.";
 
   ARGUMENTS
-  +Argument("input", "the input image").type_image_in() +
-      Argument("map", "the colourmap to apply; choices are: " + join(colourmap_choices_std, ","))
-          .type_choice(colourmap_choices_cstr.data()) +
-      Argument("output", "the output image").type_image_out();
+  + Argument ("input",  "the input image").type_image_in()
+  + Argument ("map",    "the colourmap to apply;"
+                        " choices are: " + join(colourmap_choices_std, ",")).type_choice (colourmap_choices_cstr.data())
+  + Argument ("output", "the output image").type_image_out();
 
   OPTIONS
-  +Option("upper", "manually set the upper intensity of the colour mapping") + Argument("value").type_float()
+  + Option ("upper", "manually set the upper intensity of the colour mapping")
+    + Argument ("value").type_float()
 
-      + Option("lower", "manually set the lower intensity of the colour mapping") + Argument("value").type_float()
+  + Option ("lower", "manually set the lower intensity of the colour mapping")
+    + Argument ("value").type_float()
 
-      + Option("colour",
-               "set the target colour for use of the 'colour' map (three comma-separated floating-point values)") +
-      Argument("values").type_sequence_float();
+  + Option ("colour", "set the target colour for use of the 'colour' map"
+                      " (three comma-separated floating-point values)")
+    + Argument ("values").type_sequence_float();
+
 }
+// clang-format on
 
 void run() {
   Header H_in = Header::open(argument[0]);

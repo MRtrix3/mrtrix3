@@ -38,67 +38,69 @@ using namespace App;
 
 using Fixel::index_type;
 
-const OptionGroup OutputOptions =
-    OptionGroup("Metric values for fixel-based sparse output images")
+// clang-format off
+const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
 
-    + Option("afd", "output the total Apparent Fibre Density per fixel (integral of FOD lobe)") +
-    Argument("image").type_image_out()
+  + Option ("afd",
+            "output the total Apparent Fibre Density per fixel"
+            " (integral of FOD lobe)")
+    + Argument ("image").type_image_out()
 
-    + Option("peak_amp", "output the amplitude of the FOD at the maximal peak per fixel") +
-    Argument("image").type_image_out()
+  + Option ("peak_amp",
+            "output the amplitude of the FOD at the maximal peak per fixel")
+    + Argument ("image").type_image_out()
 
-    +
-    Option(
-        "disp",
-        "output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude") +
-    Argument("image").type_image_out();
+  + Option ("disp",
+            "output a measure of dispersion per fixel"
+            " as the ratio between FOD lobe integral and maximal peak amplitude")
+    + Argument ("image").type_image_out();
 
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels";
-
-  DESCRIPTION
-  +Fixel::format_description;
+  SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs)"
+             " to produce discrete fixels";
 
   REFERENCES
-  +"* Reference for the FOD segmentation method:\n"
-   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-   "NeuroImage, 2013, 67, 298-312 (Appendix 2)"
+    + "* Reference for the FOD segmentation method:\n"
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312 (Appendix 2)"
 
-      +
-      "* Reference for Apparent Fibre Density (AFD):\n"
-      "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
-      "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
-      "Neuroimage, 2012, 15;59(4), 3976-94";
+    + "* Reference for Apparent Fibre Density (AFD):\n"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
+    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
+    "Neuroimage, 2012, 15;59(4), 3976-94";
 
   ARGUMENTS
-  +Argument("fod", "the input fod image.").type_image_in() +
-      Argument("fixel_directory", "the output fixel directory").type_directory_out();
+  + Argument ("fod", "the input fod image.").type_image_in ()
+  + Argument ("fixel_directory", "the output fixel directory").type_directory_out();
+
 
   OPTIONS
 
-  +OutputOptions
+  + OutputOptions
 
-      + FMLSSegmentOption
+  + FMLSSegmentOption
 
-      + OptionGroup("Other options for fod2fixel")
+  + OptionGroup ("Other options for fod2fixel")
 
-      + Option("mask", "only perform computation within the specified binary brain mask image.") +
-      Argument("image").type_image_in()
+  + Option ("mask", "only perform computation within the specified binary brain mask image.")
+    + Argument ("image").type_image_in()
 
-      + Option("maxnum", "maximum number of fixels to output for any particular voxel (default: no limit)") +
-      Argument("number").type_integer(1)
+  + Option ("maxnum", "maximum number of fixels to output for any particular voxel"
+                      " (default: no limit)")
+    + Argument ("number").type_integer(1)
 
-      + Option("nii", "output the directions and index file in nii format (instead of the default mif)")
+  + Option ("nii", "output the directions and index file in nii format"
+                   " (instead of the default mif)")
 
-      + Option("dirpeak",
-               "define the fixel direction as that of the lobe's maximal peak as opposed to its weighted mean "
-               "direction (the default)");
+  + Option ("dirpeak", "define the fixel direction as that of the lobe's maximal peak"
+                       " as opposed to its weighted mean direction (the default)");
+
 }
-
+// clang-format on
 class Segmented_FOD_receiver {
 
 public:

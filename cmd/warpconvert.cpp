@@ -28,46 +28,55 @@ using namespace App;
 const char *conversion_types[] = {
     "deformation2displacement", "displacement2deformation", "warpfull2deformation", "warpfull2displacement", nullptr};
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Convert between different representations of a non-linear warp";
 
   DESCRIPTION
-  +"A deformation field is defined as an image where each voxel "
-   "defines the corresponding position in the other image (in scanner space coordinates). A displacement field "
-   "stores the displacements (in mm) to the other image from the each voxel's position (in scanner space). The "
-   "warpfull file is the "
-   "5D format output from mrregister -nl_warp_full, which contains linear transforms, warps and their inverses that "
-   "map each image to a midway space."; // TODO at link to warp format documentation
+  + "A deformation field is defined as an image"
+    " where each voxel defines the corresponding position in the other image"
+    " (in scanner space coordinates)."
+    " A displacement field stores the displacements (in mm) to the other image"
+    " from each voxel's position (in scanner space)."
+    " The warpfull file is the 5D format output from mrregister -nl_warp_full,"
+    " which contains linear transforms, warps and their inverses"
+    " that map each image to a midway space.";
+    //TODO at link to warp format documentation
 
   ARGUMENTS
-  +Argument("in", "the input warp image.").type_image_in() +
-      Argument("type", "the conversion type required. Valid choices are: " + join(conversion_types, ", "))
-          .type_choice(conversion_types) +
-      Argument("out", "the output warp image.").type_image_out();
+  + Argument ("in", "the input warp image.").type_image_in()
+  + Argument ("type", "the conversion type required;"
+                      " valid choices are: " + join(conversion_types, ", ")).type_choice(conversion_types)
+  + Argument ("out", "the output warp image.").type_image_out();
 
   OPTIONS
-  +Option("template",
-          "define a template image when converting a warpfull file (which is defined on a grid in the midway space "
-          "between image 1 & 2). For example to "
-          "generate the deformation field that maps image1 to image2, then supply image2 as the template image") +
-      Argument("image").type_image_in()
+  + Option ("template",
+            "define a template image when converting a warpfull file"
+            " (which is defined on a grid in the midway space between image 1 & 2)."
+            " For example, to generate the deformation field that maps image1 to image2,"
+            " then supply image2 as the template image")
+  + Argument ("image").type_image_in()
 
-      + Option("midway_space",
-               "to be used only with warpfull2deformation and warpfull2displacement conversion types. The output will "
-               "only contain the non-linear warp to map an input "
-               "image to the midway space (defined by the warpfull grid). If a linear transform exists in the warpfull "
-               "file header then it will be composed and included in the output.")
+  + Option ("midway_space",
+            "to be used only with warpfull2deformation and warpfull2displacement conversion types."
+            " The output will only contain the non-linear warp to map an input image to the midway space"
+            " (defined by the warpfull grid)."
+            " If a linear transform exists in the warpfull file header"
+            " then it will be composed and included in the output.")
 
-      + Option("from",
-               "to be used only with warpfull2deformation and warpfull2displacement conversion types. Used to define "
-               "the direction of the desired output field."
-               "Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in "
-               "combination with the -midway_space option to "
-               "produce a field that only maps to midway space.") +
-      Argument("image").type_integer(1, 2);
+  + Option ("from",
+      "to be used only with warpfull2deformation and warpfull2displacement conversion types."
+      " Used to define the direction of the desired output field."
+      " Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1."
+      " Can be used in combination with the -midway_space option "
+      " to produce a field that only maps to midway space.")
+  +   Argument ("image").type_integer(1, 2);
+
 }
+// clang-format on
 
 void run() {
   const int type = argument[1];

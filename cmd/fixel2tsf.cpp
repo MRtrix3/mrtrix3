@@ -36,6 +36,7 @@ using Fixel::index_type;
 
 #define DEFAULT_ANGULAR_THRESHOLD 45.0
 
+// clang-format off
 void usage() {
 
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
@@ -43,23 +44,26 @@ void usage() {
   SYNOPSIS = "Map fixel values to a track scalar file based on an input tractogram";
 
   DESCRIPTION
-  +"This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D."
+  + "This command is useful for visualising all brain fixels"
+    " (e.g. the output from fixelcfestats)"
+    " in 3D."
 
-      + Fixel::format_description;
+  + Fixel::format_description;
 
   ARGUMENTS
-  +Argument("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in() +
-      Argument("tracks", "the input track file ").type_tracks_in() +
-      Argument("tsf", "the output track scalar file").type_file_out();
+  + Argument ("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in ()
+  + Argument ("tracks",   "the input track file").type_tracks_in ()
+  + Argument ("tsf",      "the output track scalar file").type_file_out ();
+
 
   OPTIONS
-  +Option("angle",
-          "the max anglular threshold for computing correspondence "
-          "between a fixel direction and track tangent "
-          "(default = " +
-              str(DEFAULT_ANGULAR_THRESHOLD, 2) + " degrees)") +
-      Argument("value").type_float(0.001, 90.0);
+  + Option ("angle", "the max anglular threshold for computing correspondence"
+                     " between a fixel direction and track tangent"
+                     " (default = " + str(DEFAULT_ANGULAR_THRESHOLD, 2) + " degrees)")
+  + Argument ("value").type_float (0.001, 90.0);
+
 }
+// clang-format on
 
 using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 

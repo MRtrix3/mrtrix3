@@ -26,6 +26,7 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -33,16 +34,19 @@ void usage() {
   SYNOPSIS = "Convert a mesh surface to a partial volume estimation image";
 
   REFERENCES
-  +"Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of "
-   "anatomical information. "
-   "NeuroImage, 2012, 62, 1924-1938";
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "Anatomically-constrained tractography:"
+    " Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+    "NeuroImage, 2012, 62, 1924-1938";
 
   ARGUMENTS
-  +Argument("source", "the mesh file; note vertices must be defined in realspace coordinates").type_file_in() +
-      Argument("template", "the template image").type_image_in() +
-      Argument("output", "the output image").type_image_out();
+  + Argument ("source",   "the mesh file;"
+                          " note vertices must be defined in realspace coordinates").type_file_in()
+  + Argument ("template", "the template image").type_image_in()
+  + Argument ("output",   "the output image").type_image_out();
+
 }
+// clang-format on
 
 void run() {
 

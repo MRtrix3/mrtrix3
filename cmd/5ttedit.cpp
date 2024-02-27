@@ -27,35 +27,42 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images";
+  SYNOPSIS = "Manually set the partial volume fractions"
+             " in an ACT five-tissue-type (5TT) image"
+             " using mask images";
 
   ARGUMENTS
-  +Argument("input", "the 5TT image to be modified").type_image_in() +
-      Argument("output", "the output modified 5TT image").type_image_out();
+  + Argument ("input",  "the 5TT image to be modified").type_image_in()
+  + Argument ("output", "the output modified 5TT image").type_image_out();
 
   OPTIONS
-  +Option("cgm", "provide a mask of voxels that should be set to cortical grey matter") +
-      Argument("image").type_image_in()
+  + Option ("cgm", "provide a mask of voxels that should be set to cortical grey matter")
+    + Argument ("image").type_image_in()
 
-      + Option("sgm", "provide a mask of voxels that should be set to sub-cortical grey matter") +
-      Argument("image").type_image_in()
+  + Option ("sgm", "provide a mask of voxels that should be set to sub-cortical grey matter")
+    + Argument ("image").type_image_in()
 
-      + Option("wm", "provide a mask of voxels that should be set to white matter") + Argument("image").type_image_in()
+  + Option ("wm", "provide a mask of voxels that should be set to white matter")
+    + Argument ("image").type_image_in()
 
-      + Option("csf", "provide a mask of voxels that should be set to CSF") + Argument("image").type_image_in()
+  + Option ("csf", "provide a mask of voxels that should be set to CSF")
+    + Argument ("image").type_image_in()
 
-      + Option("path", "provide a mask of voxels that should be set to pathological tissue") +
-      Argument("image").type_image_in()
+  + Option ("path", "provide a mask of voxels that should be set to pathological tissue")
+    + Argument ("image").type_image_in()
 
-      + Option("none",
-               "provide a mask of voxels that should be cleared (i.e. are non-brain); note that this will supersede "
-               "all other provided masks") +
-      Argument("image").type_image_in();
+  + Option ("none", "provide a mask of voxels that should be cleared"
+                    " (i.e. are non-brain);"
+                    " note that this will supersede all other provided masks")
+    + Argument ("image").type_image_in();
+
 }
+// clang-format on
 
 class Modifier {
 public:

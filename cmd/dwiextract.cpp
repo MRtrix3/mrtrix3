@@ -27,35 +27,49 @@ using namespace App;
 
 using value_type = float;
 
+// clang-format off
 void usage() {
 
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com) and Robert "
-           "E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Thijs Dhollander (thijs.dhollander@gmail.com)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset";
+  SYNOPSIS = "Extract diffusion-weighted volumes,"
+             " b=0 volumes,"
+             " or certain shells from a DWI dataset";
 
   EXAMPLES
-  +Example("Calculate the mean b=0 image from a 4D DWI series",
-           "dwiextract dwi.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3",
-           "The dwiextract command extracts all volumes for which the b-value is "
-           "(approximately) zero; the resulting 4D image can then be provided to "
-           "the mrmath command to calculate the mean intensity across volumes "
-           "for each voxel.");
+    + Example ("Calculate the mean b=0 image from a 4D DWI series",
+               "dwiextract dwi.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3",
+               "The dwiextract command extracts all volumes"
+               " for which the b-value is (approximately) zero;"
+               " the resulting 4D image can then be provided to the mrmath command"
+               " to calculate the mean intensity across volumes for each voxel.");
 
   ARGUMENTS
-  +Argument("input", "the input DW image.").type_image_in() +
-      Argument("output", "the output image (diffusion-weighted volumes by default).").type_image_out();
+    + Argument ("input", "the input DW image.").type_image_in ()
+    + Argument ("output", "the output image"
+                          " (diffusion-weighted volumes by default).").type_image_out ();
 
   OPTIONS
-  +Option("bzero",
-          "Output b=0 volumes (instead of the diffusion weighted volumes, if -singleshell is not specified).") +
-      Option("no_bzero", "Output only non b=0 volumes (default, if -singleshell is not specified).") +
-      Option("singleshell",
-             "Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with "
-             "-bzero to enforce presence of b=0 volumes (error if not present) or with -no_bzero to exclude them.") +
-      DWI::GradImportOptions() + DWI::ShellsOption + DWI::GradExportOptions() + PhaseEncoding::ImportOptions +
-      PhaseEncoding::SelectOptions + Stride::Options;
+    + Option ("bzero", "Output b=0 volumes"
+                       " (instead of the diffusion weighted volumes,"
+                       " if -singleshell is not specified).")
+    + Option ("no_bzero", "Output only non b=0 volumes"
+                          " (default, if -singleshell is not specified).")
+    + Option ("singleshell", "Force a single-shell (single non b=0 shell) output."
+                             " This will include b=0 volumes, if present."
+                             " Use with -bzero to enforce presence of b=0 volumes"
+                             " (error if not present)"
+                             " or with -no_bzero to exclude them.")
+    + DWI::GradImportOptions()
+    + DWI::ShellsOption
+    + DWI::GradExportOptions()
+    + PhaseEncoding::ImportOptions
+    + PhaseEncoding::SelectOptions
+    + Stride::Options;
 }
+// clang-format off
 
 void run() {
   auto input_image = Image<float>::open(argument[0]);

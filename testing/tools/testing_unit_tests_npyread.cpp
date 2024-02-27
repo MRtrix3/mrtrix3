@@ -27,14 +27,18 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Test the reading of NPY files";
 
   ARGUMENTS
-  +Argument("in_dir", "Path to input directory in which test data have been generated").type_directory_in();
+  + Argument("in_dir", "Path to input directory in which test data have been generated").type_directory_in();
+
 }
+// clang-format on
 
 const Eigen::Array<default_type, 3, 1> reference_1d{0.0, 1.0, 2.0};
 const Eigen::Array<bool, 3, 1> reference_1d_bool{false, true, true};
