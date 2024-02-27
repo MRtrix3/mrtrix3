@@ -8,24 +8,29 @@ pkgrel=1
 arch=('x86_64')
 pkgdesc="Tools for the analysis of diffusion MRI data (mingw-w64)"
 depends=("python"
-         "${MINGW_PACKAGE_PREFIX}-qt5-svg"
+         "${MINGW_PACKAGE_PREFIX}-qt6-svg"
          "${MINGW_PACKAGE_PREFIX}-fftw"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("git"
              "python"
-             "pkg-config"
-             "${MINGW_PACKAGE_PREFIX}-gcc"
-             "${MINGW_PACKAGE_PREFIX}-qt5-svg"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+	     "${MINGW_PACKAGE_PREFIX}-bc"
+	     "${MINGW_PACKAGE_PREFIX}-cmake"
+	     "${MINGW_PACKAGE_PREFIX}-diffutils"
              "${MINGW_PACKAGE_PREFIX}-eigen3"
+	     "${MINGW_PACKAGE_PREFIX}-ninja"
              "${MINGW_PACKAGE_PREFIX}-fftw"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-libtiff"
+             "${MINGW_PACKAGE_PREFIX}-qt6-svg"
+	     "${MINGW_PACKAGE_PREFIX}-qt6-base"
              "${MINGW_PACKAGE_PREFIX}-zlib")
 
 
 license=("MPL")
 url="http://www.mrtrix.org/"
-source=("${_realname}::git+https://github.com/GIT_USER/${_realname}.git#tag=TAGNAME")
+source=("${_realname}::git+https://github.com/GIT_USER/${_realname}.git#commit=GIT_COMMIT")
 sha512sums=('SKIP')
 
 
@@ -36,13 +41,14 @@ pkgver() {
 
 build() {
   cd "${_realname}"
-  ./configure
-  ./build
+  cmake -B build -G Ninja -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON 
+  cmake --build build
+  cmake --install build --prefix=./install
 }
 
 package() {
 
-  cd "${_realname}"
+  cd "${_realname}/install"
 
   install -d "${pkgdir}${MINGW_PREFIX}/bin/"
   install -D bin/* "${pkgdir}${MINGW_PREFIX}/bin/"
@@ -52,6 +58,6 @@ package() {
   done
 
   mkdir -p "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-${pkgver}"
-  cp LICENCE.txt "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-${pkgver}"
+  cp ../LICENCE.txt "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-${pkgver}"
 }
 
