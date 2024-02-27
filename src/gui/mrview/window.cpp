@@ -159,7 +159,7 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
         e.display();
       }
     }
-    if (list.size())
+    if (!list.empty())
       main->add_images(list);
     event->acceptProposedAction();
   }
@@ -262,7 +262,7 @@ Window::Window()
   Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
   {
     std::string toolbar_pos_spec = lowercase(MR::File::Config::get("InitialToolBarPosition"));
-    if (toolbar_pos_spec.size()) {
+    if (!toolbar_pos_spec.empty()) {
       if (toolbar_pos_spec == "bottom")
         toolbar_position = Qt::BottomToolBarArea;
       else if (toolbar_pos_spec == "left")
@@ -715,11 +715,11 @@ Window::Window()
 }
 
 void Window::parse_arguments() {
-  if (MR::App::get_options("norealign").size())
+  if (!MR::App::get_options("norealign").empty())
     Header::do_realign_transform = false;
 
-  if (MR::App::argument.size()) {
-    if (MR::App::option.size()) {
+  if (!MR::App::argument.empty()) {
+    if (!MR::App::option.empty()) {
       // check that first non-standard option appears after last argument:
       size_t last_arg_pos = 1;
       for (; MR::App::argv[last_arg_pos] != MR::App::argument.back().c_str(); ++last_arg_pos)
@@ -942,7 +942,7 @@ void Window::create_tool(QAction *action, bool show) {
       Tool::Dock *other_tool = dynamic_cast<Tool::__Action__ *>(tool_group->actions()[i])->dock;
       if (other_tool && other_tool != tool) {
         QList<QDockWidget *> list = QMainWindow::tabifiedDockWidgets(other_tool);
-        if (list.size())
+        if (!list.empty())
           QMainWindow::tabifyDockWidget(list.last(), tool);
         else
           QMainWindow::tabifyDockWidget(other_tool, tool);

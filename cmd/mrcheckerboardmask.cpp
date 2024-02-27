@@ -50,12 +50,12 @@ void run() {
 
   size_t ntiles = 5;
   auto opt = get_options("tiles");
-  if (opt.size()) {
+  if (!opt.empty()) {
     ntiles = opt[0][0];
   }
 
-  bool invert = get_options("invert").size();
-  const bool use_NaN = get_options("nan").size();
+  bool invert = !get_options("invert").empty();
+  const bool use_NaN = !get_options("nan").empty();
 
   auto in = Image<float>::open(argument[0]);
   check_3D_nonunity(in);

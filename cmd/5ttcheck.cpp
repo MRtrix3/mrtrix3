@@ -61,7 +61,7 @@ void run() {
     Header H_out(in);
     H_out.ndim() = 3;
     H_out.datatype() = DataType::Bit;
-    if (voxels_prefix.size())
+    if (!voxels_prefix.empty())
       voxels = Image<bool>::scratch(H_out, "Scratch image for " + argument[i]);
 
     try {
@@ -146,7 +146,7 @@ void run() {
   }
 
   const std::string vox_option_suggestion =
-      get_options("masks").size()
+      !get_options("masks").empty()
           ? (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") +
              " -masks option)")
           : " (suggest re-running using the -masks option to see voxels where tissue fractions do not sum to 1.0)";

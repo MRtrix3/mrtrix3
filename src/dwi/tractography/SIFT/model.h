@@ -169,9 +169,9 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::string &pat
 
 template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
-  const bool remove_untracked_fixels = App::get_options("remove_untracked").size();
+  const bool remove_untracked_fixels = !App::get_options("remove_untracked").empty();
   auto opt = App::get_options("fd_thresh");
-  const float min_fibre_density = opt.size() ? float(opt[0][0]) : 0.0;
+  const float min_fibre_density = !opt.empty() ? float(opt[0][0]) : 0.0;
 
   if (!remove_untracked_fixels && !min_fibre_density)
     return;

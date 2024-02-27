@@ -692,9 +692,9 @@ void run() {
     auto write_ascii = get_options("ascii").size();
     writer.reset(new VTKWriter(argument[1], write_ascii));
   } else if (Path::has_suffix(argument[1], ".ply")) {
-    auto increment = get_options("increment").size() ? get_options("increment")[0][0].as_int() : 1;
-    auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
-    auto sides = get_options("sides").size() ? get_options("sides")[0][0].as_int() : 5;
+    auto increment = !get_options("increment").empty() ? get_options("increment")[0][0].as_int() : 1;
+    auto radius = !get_options("radius").empty() ? get_options("radius")[0][0].as_float() : 0.1f;
+    auto sides = !get_options("sides").empty() ? get_options("sides")[0][0].as_int() : 5;
     writer.reset(new PLYWriter(argument[1], increment, radius, sides));
   } else if (Path::has_suffix(argument[1], ".rib")) {
     writer.reset(new RibWriter(argument[1]));
@@ -709,25 +709,25 @@ void run() {
   T.setIdentity();
   size_t nopts = 0;
   auto opt = get_options("scanner2voxel");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).scanner2voxel;
     nopts++;
   }
   opt = get_options("scanner2image");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).scanner2image;
     nopts++;
   }
   opt = get_options("voxel2scanner");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).voxel2scanner;
     nopts++;
   }
   opt = get_options("image2scanner");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).image2scanner;
     nopts++;

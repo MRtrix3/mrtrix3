@@ -209,7 +209,7 @@ void Overlay::dropEvent(QDropEvent *event) {
         e.display();
       }
     }
-    if (list.size())
+    if (!list.empty())
       add_images(list);
     event->acceptProposedAction();
   }
@@ -219,7 +219,7 @@ void Overlay::image_close_slot() {
   QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
   GL::Context::Grab context;
   GL::assert_context_is_current();
-  while (indexes.size()) {
+  while (!indexes.empty()) {
     GL::assert_context_is_current();
     image_list_model->remove_item(indexes.first());
     GL::assert_context_is_current();
@@ -444,7 +444,7 @@ void Overlay::lower_threshold_changed(int) {
     overlay->lessthan = lower_threshold->value();
     overlay->set_use_discard_lower(lower_threshold_check_box->isChecked());
   }
-  lower_threshold->setEnabled(indices.size() && lower_threshold_check_box->isChecked());
+  lower_threshold->setEnabled(!indices.empty() && lower_threshold_check_box->isChecked());
   updateGL();
 }
 
@@ -455,7 +455,7 @@ void Overlay::upper_threshold_changed(int) {
     overlay->greaterthan = upper_threshold->value();
     overlay->set_use_discard_upper(upper_threshold_check_box->isChecked());
   }
-  upper_threshold->setEnabled(indices.size() && upper_threshold_check_box->isChecked());
+  upper_threshold->setEnabled(!indices.empty() && upper_threshold_check_box->isChecked());
   updateGL();
 }
 
@@ -514,17 +514,17 @@ void Overlay::update_selection() {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
   while (volume_index_layout->count())
     delete volume_index_layout->takeAt(volume_index_layout->count() - 1)->widget();
-  colourmap_button->setEnabled(indices.size());
-  max_value->setEnabled(indices.size());
-  min_value->setEnabled(indices.size());
-  lower_threshold_check_box->setEnabled(indices.size());
-  upper_threshold_check_box->setEnabled(indices.size());
-  lower_threshold->setEnabled(indices.size());
-  upper_threshold->setEnabled(indices.size());
-  opacity_slider->setEnabled(indices.size());
-  interpolate_check_box->setEnabled(indices.size());
+  colourmap_button->setEnabled(!indices.empty());
+  max_value->setEnabled(!indices.empty());
+  min_value->setEnabled(!indices.empty());
+  lower_threshold_check_box->setEnabled(!indices.empty());
+  upper_threshold_check_box->setEnabled(!indices.empty());
+  lower_threshold->setEnabled(!indices.empty());
+  upper_threshold->setEnabled(!indices.empty());
+  opacity_slider->setEnabled(!indices.empty());
+  interpolate_check_box->setEnabled(!indices.empty());
 
-  if (!indices.size()) {
+  if (indices.empty()) {
     max_value->setValue(NAN);
     min_value->setValue(NAN);
     lower_threshold->setValue(NAN);

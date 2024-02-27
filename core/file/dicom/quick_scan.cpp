@@ -94,7 +94,7 @@ bool QuickScan::read(
           else if (item.is(0x7FE0U, 0x0010U))
             data = item.offset(item.data);
           else if (item.is(0xFFFEU, 0xE000U)) {
-            if (item.parents.size() && item.parents.back().group == 0x5200U &&
+            if (!item.parents.empty() && item.parents.back().group == 0x5200U &&
                 item.parents.back().element == 0x9230U) { // multi-frame item
               if (in_frames)
                 ++image_type[current_image_type];
@@ -126,7 +126,7 @@ bool QuickScan::read(
                 const auto data = entry.get_string();
                 size_t line_count = 0;
                 for (const auto &entry : data) {
-                  if (entry.size())
+                  if (!entry.empty())
                     line_count += 1;
                   line_count += std::count(entry.begin(), entry.end(), '\n');
                 }
@@ -154,13 +154,13 @@ bool QuickScan::read(
 std::ostream &operator<<(std::ostream &stream, const QuickScan &file) {
   stream << "file: \"" << file.filename << "\" [" << file.modality << "]:\n    patient: " << file.patient << " "
          << format_ID(file.patient_ID) << " - " << format_date(file.patient_DOB)
-         << "\n    study: " << (file.study.size() ? file.study : "[unspecified]") << " " << format_ID(file.study_ID)
+         << "\n    study: " << (!file.study.empty() ? file.study : "[unspecified]") << " " << format_ID(file.study_ID)
          << " - " << format_date(file.study_date) << " " << format_time(file.study_time) << "\n    series: ["
-         << file.series_number << "] " << (file.series.size() ? file.series : "[unspecified]") << " - "
+         << file.series_number << "] " << (!file.series.empty() ? file.series : "[unspecified]") << " - "
          << format_date(file.series_date) << " " << format_time(file.series_time) << "\n";
   for (const auto &type : file.image_type)
     stream << "      image type: " << type.first << " [ " << type.second << " frames ]\n";
-  stream << "    sequence: " << (file.sequence.size() ? file.sequence : "[unspecified]") << "\n";
+  stream << "    sequence: " << (!file.sequence.empty() ? file.sequence : "[unspecified]") << "\n";
 
   return stream;
 }

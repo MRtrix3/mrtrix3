@@ -303,7 +303,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
 void run() {
   conv_t conversion = NONE;
   auto opt = get_options("convert");
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch (int(opt[0][0])) {
     case 0:
       conversion = OLD;

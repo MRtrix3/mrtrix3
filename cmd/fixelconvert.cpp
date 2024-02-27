@@ -109,14 +109,14 @@ void convert_old2new() {
 
   Fixel::Legacy::Image<FixelMetric> input(argument[0]);
 
-  const std::string file_extension = get_options("nii").size() ? ".nii" : ".mif";
+  const std::string file_extension = !get_options("nii").empty() ? ".nii" : ".mif";
 
   std::string value_name("value");
   auto opt = get_options("name");
-  if (opt.size())
+  if (!opt.empty())
     value_name = std::string(opt[0][0]);
 
-  const bool output_size = get_options("out_size").size();
+  const bool output_size = !get_options("out_size").empty();
 
   const std::string output_fixel_directory = argument[1];
   Fixel::check_fixel_directory(output_fixel_directory, true, true);
@@ -154,7 +154,7 @@ void convert_old2new() {
   Image<index_type> template_index_image;
   Image<float> template_directions_image;
   opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     Fixel::check_fixel_directory(opt[0][0]);
     template_index_image = Fixel::find_index_header(opt[0][0]).get_image<index_type>();
     check_dimensions(index_image, template_index_image);
@@ -206,11 +206,11 @@ void convert_old2new() {
 void convert_new2old() {
   const std::string input_fixel_directory = argument[0];
   auto opt = get_options("value");
-  if (!opt.size())
+  if (opt.empty())
     throw Exception("for converting from new to old formats, option -value is compulsory");
   const std::string value_path = get_options("value")[0][0];
   opt = get_options("in_size");
-  const std::string size_path = opt.size() ? std::string(opt[0][0]) : "";
+  const std::string size_path = !opt.empty() ? std::string(opt[0][0]) : "";
 
   Header H_index = Fixel::find_index_header(input_fixel_directory);
   Header H_dirs = Fixel::find_directions_header(input_fixel_directory);

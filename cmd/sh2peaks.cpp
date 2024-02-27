@@ -221,7 +221,7 @@ public:
           }
         }
       }
-    } else if (true_peaks.size()) {
+    } else if (!true_peaks.empty()) {
       for (int i = 0; i < npeaks; i++) {
         value_type mdot = 0.0;
         for (size_t n = 0; n < all_peaks.size(); n++) {
@@ -293,12 +293,12 @@ void run() {
   auto opt = get_options("mask");
 
   Image<bool> mask_data;
-  if (opt.size())
+  if (!opt.empty())
     mask_data = Image<bool>::open(opt[0][0]);
 
   opt = get_options("seeds");
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
-  if (opt.size())
+  if (!opt.empty())
     dirs = File::Matrix::load_matrix<value_type>(opt[0][0]);
   else {
     dirs = Eigen::Map<Eigen::Matrix<value_type, 60, 2>>(default_directions, 60, 2);
@@ -314,7 +314,7 @@ void run() {
     Direction p(Math::pi * to<float>(opt[n][0]) / 180.0, Math::pi * float(opt[n][1]) / 180.0);
     true_peaks.push_back(p);
   }
-  if (true_peaks.size())
+  if (!true_peaks.empty())
     npeaks = true_peaks.size();
 
   value_type threshold = get_option_value("threshold", -INFINITY);
@@ -324,10 +324,10 @@ void run() {
 
   opt = get_options("peaks");
   Image<value_type> ipeaks_data;
-  if (opt.size()) {
-    if (true_peaks.size())
+  if (!opt.empty()) {
+    if (!true_peaks.empty())
       throw Exception("you can't specify both a peaks file and orientations to be estimated at the same time");
-    if (opt.size())
+    if (!opt.empty())
       ipeaks_data = Image<value_type>::open(opt[0][0]);
 
     check_dimensions(SH_data, ipeaks_data, 0, 3);
@@ -344,7 +344,7 @@ void run() {
                       true_peaks,
                       threshold,
                       ipeaks_data,
-                      get_options("fast").size());
+                      !get_options("fast").empty());
 
   Thread::run_queue(loader, Thread::batch(Item()), Thread::multi(processor));
 }

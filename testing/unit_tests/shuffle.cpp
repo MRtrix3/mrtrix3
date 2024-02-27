@@ -296,7 +296,7 @@ void run() {
     }
   }
 
-  if (failed_tests.size()) {
+  if (!failed_tests.empty()) {
     Exception e(str(failed_tests.size()) + " tests of shuffling mechanisms failed:");
     for (auto s : failed_tests)
       e.push_back(s);

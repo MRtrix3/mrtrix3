@@ -53,7 +53,7 @@ void run() {
 
   Header power_header(SH_data);
 
-  bool spectrum = get_options("spectrum").size();
+  bool spectrum = !get_options("spectrum").empty();
 
   int lmax = Math::SH::LforN(SH_data.size(3));
   INFO("calculating spherical harmonic power up to degree " + str(lmax));

@@ -226,7 +226,7 @@ void run() {
 
   auto mask_hdr = Header();
   auto optm = get_options("mask");
-  if (optm.size()) {
+  if (!optm.empty()) {
     mask_hdr = Header::open(optm[0][0]);
     check_dimensions(mask_hdr, fod_hdr, 0, 3);
   }
@@ -238,11 +238,11 @@ void run() {
   value_type gamma = 2.0;
   auto optlc = get_options("lum_coefs");
   auto optlg = get_options("lum_gamma");
-  if (get_options("lum").size() || optlc.size() || optlg.size()) {
+  if (!get_options("lum").empty() || !optlc.empty() || !optlg.empty()) {
     needtolum = true;
     coefs << DEFAULT_LUM_CR, DEFAULT_LUM_CG, DEFAULT_LUM_CB;
     gamma = DEFAULT_LUM_GAMMA;
-    if (optlc.size()) {
+    if (!optlc.empty()) {
       auto lc = parse_floats(optlc[0][0]);
       if (lc.size() != 3)
         throw Exception("expecting exactly 3 coefficients for the lum_coefs option, provided as a comma-separated list "
@@ -252,14 +252,14 @@ void run() {
       coefs(1) = lc[1];
       coefs(2) = lc[2];
     }
-    if (optlg.size())
+    if (!optlg.empty())
       gamma = optlg[0][0];
   }
 
   bool needtoslice = false;
   auto map_hdr = Header();
   auto opto = get_options("contrast");
-  if (opto.size()) {
+  if (!opto.empty()) {
     map_hdr = Header::open(opto[0][0]);
     if (!dimensions_match(map_hdr, fod_hdr, 0, 3) || !spacings_match(map_hdr, fod_hdr, 0, 3) ||
         !map_hdr.transform().isApprox(fod_hdr.transform(), 1e-42))
@@ -287,7 +287,7 @@ void run() {
       if (mask_hdr.valid())
         mask_img = mask_hdr.get_image<bool>();
 
-      if (!get_options("no_weight").size() && !map_hdr) {
+      if (get_options("no_weight").empty() && !map_hdr) {
         auto int_hdr = Header(dec_img);
         int_hdr.size(3) = 1;
         w_img = Image<value_type>::scratch(int_hdr, "FOD integral map");
@@ -312,7 +312,7 @@ void run() {
       copy(dec_img, out_img);
   }
 
-  if (!get_options("no_weight").size() && map_hdr.valid())
+  if (get_options("no_weight").empty() && map_hdr.valid())
     w_img = map_hdr.get_image<value_type>();
 
   if (w_img.valid() || needtolum || needtoslice)

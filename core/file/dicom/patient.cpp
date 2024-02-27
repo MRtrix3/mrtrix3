@@ -32,21 +32,21 @@ std::shared_ptr<Study> Patient::find(const std::string &study_name,
   for (size_t n = 0; n < size(); n++) {
     bool match = true;
     if (study_name == (*this)[n]->name) {
-      if (study_ID.size() && (*this)[n]->ID.size())
+      if (!study_ID.empty() && !(*this)[n]->ID.empty())
         if (study_ID != (*this)[n]->ID)
           match = false;
       if (match) {
-        if (study_date.size() && (*this)[n]->date.size())
+        if (!study_date.empty() && !(*this)[n]->date.empty())
           if (study_date != (*this)[n]->date)
             match = false;
       }
       if (match) {
-        if (study_time.size() && (*this)[n]->time.size())
+        if (!study_time.empty() && !(*this)[n]->time.empty())
           if (study_time != (*this)[n]->time)
             match = false;
       }
       if (!match) {
-        if (study_UID.size() && (*this)[n]->UID.size()) {
+        if (!study_UID.empty() && !(*this)[n]->UID.empty()) {
           if (study_UID == (*this)[n]->UID) {
             if (!mismatched_UID_time_warning_issued) {
               WARN("mismatched study time and UID - this may cause problems with series grouping");

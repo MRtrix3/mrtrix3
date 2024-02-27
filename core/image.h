@@ -330,7 +330,7 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
     : buffer(buffer_p),
       data_pointer(buffer->get_data_pointer()),
       x(ndim(), 0),
-      strides(desired_strides.size() ? desired_strides : Stride::get(*buffer)),
+      strides(!desired_strides.empty() ? desired_strides : Stride::get(*buffer)),
       data_offset(Stride::offset(*this)) {
   assert(buffer);
   assert(data_pointer || buffer->get_io());
@@ -362,7 +362,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
   bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
-  if (with_strides.size()) {
+  if (!with_strides.empty()) {
     auto new_strides = Stride::get_actual(Stride::get_nearest_match(*this, with_strides), *this);
     preload |= (new_strides != Stride::get(*this));
     with_strides = new_strides;

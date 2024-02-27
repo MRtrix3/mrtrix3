@@ -63,7 +63,7 @@ void run() {
 
   Surface::Mesh mesh;
 
-  if (get_options("blocky").size()) {
+  if (!get_options("blocky").empty()) {
 
     auto input = Image<bool>::open(argument[0]);
     Surface::Algo::image2mesh_blocky(input, mesh);

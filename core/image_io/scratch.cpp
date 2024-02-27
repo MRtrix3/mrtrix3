@@ -35,7 +35,7 @@ void Scratch::load(const Header &header, size_t buffer_size) {
 }
 
 void Scratch::unload(const Header &header) {
-  if (addresses.size()) {
+  if (!addresses.empty()) {
     DEBUG("deleting scratch buffer for image \"" + header.name() + "\"...");
     addresses[0].reset();
   }

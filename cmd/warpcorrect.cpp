@@ -102,7 +102,7 @@ void run() {
 
   opt = get_options("tolerance");
   value_type precision = PRECISION;
-  if (opt.size())
+  if (!opt.empty())
     precision = opt[0][0];
 
   size_t count(0);

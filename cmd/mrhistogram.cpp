@@ -92,12 +92,12 @@ void run() {
     throw Exception("histogram generation not supported for complex data types");
   auto data = header.get_image<float>();
 
-  const bool allvolumes = get_options("allvolumes").size();
+  const bool allvolumes = !get_options("allvolumes").empty();
   size_t nbins = get_option_value("bins", 0);
 
   auto opt = get_options("mask");
   Image<bool> mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(mask, header, 0, 3);
   }
@@ -105,9 +105,9 @@ void run() {
   File::OFStream output(argument[1]);
   output << "# " << App::command_history_string << "\n";
 
-  Algo::Histogram::Calibrator calibrator(nbins, get_options("ignorezero").size());
+  Algo::Histogram::Calibrator calibrator(nbins, !get_options("ignorezero").empty());
   opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     calibrator.from_file(opt[0][0]);
   } else {
     for (auto v = Volume_loop(data); v; ++v)
@@ -122,7 +122,7 @@ void run() {
   nbins = calibrator.get_num_bins();
   if (!nbins)
     throw Exception(std::string("No histogram bins constructed") +
-                    ((get_options("ignorezero").size() || get_options("bins").size())
+                    ((!get_options("ignorezero").empty() || !get_options("bins").empty())
                          ? "."
                          : "; you might want to use the -ignorezero or -bins option."));
 

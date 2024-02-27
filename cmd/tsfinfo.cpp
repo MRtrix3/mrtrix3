@@ -47,7 +47,7 @@ void usage() {
 void run() {
 
   auto opt = get_options("ascii");
-  bool actual_count = get_options("count").size();
+  bool actual_count = !get_options("count").empty();
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;
@@ -62,7 +62,7 @@ void run() {
       std::cout << "    " << S << i->second << "\n";
     }
 
-    if (properties.comments.size()) {
+    if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
       for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
@@ -86,7 +86,7 @@ void run() {
       std::cout << "actual count in file: " << count << "\n";
     }
 
-    if (opt.size()) {
+    if (!opt.empty()) {
       ProgressBar progress("writing track scalar data to ascii files");
       DWI::Tractography::TrackScalar<> tck;
       while (file(tck)) {

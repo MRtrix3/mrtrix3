@@ -98,14 +98,14 @@ public:
     }
     smoother.set_stdev(stdev);
     auto smoothed = Image<float>::scratch(smoother);
-    if (message.size())
+    if (!message.empty())
       smoother.set_message("applying smoothing prior to calculating gradient");
     threaded_copy(in, smoothed);
     smoother(smoothed);
 
     const size_t num_volumes = (in.ndim() == 3) ? 1 : in.size(3);
 
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message, 3 * num_volumes) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, 3 * num_volumes) : nullptr);
 
     for (size_t vol = 0; vol < num_volumes; ++vol) {
       if (in.ndim() == 4) {

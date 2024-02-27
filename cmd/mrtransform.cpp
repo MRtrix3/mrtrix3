@@ -287,7 +287,7 @@ void run() {
   transform_type linear_transform = transform_type::Identity();
   bool linear = false;
   auto opt = get_options("linear");
-  if (opt.size()) {
+  if (!opt.empty()) {
     linear = true;
     linear_transform = File::Matrix::load_transform(opt[0][0]);
   }
@@ -295,7 +295,7 @@ void run() {
   // Replace
   bool replace = false;
   opt = get_options("replace");
-  if (opt.size()) {
+  if (!opt.empty()) {
     linear = replace = true;
     try {
       auto template_header = Header::open(opt[0][0]);
@@ -309,7 +309,7 @@ void run() {
     }
   }
 
-  if (get_options("identity").size()) {
+  if (!get_options("identity").empty()) {
     linear = replace = true;
     linear_transform.setIdentity();
   }
@@ -317,7 +317,7 @@ void run() {
   // Template
   opt = get_options("template");
   Header template_header;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (replace)
       throw Exception("you cannot use the -replace option with the -template option");
     if (!linear)
@@ -334,7 +334,7 @@ void run() {
   // TODO add reference to warp format documentation
   opt = get_options("warp_full");
   Image<default_type> warp;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!Path::is_mrtrix_image(opt[0][0]) &&
         !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) && File::Config::get_bool("NIfTIAutoLoadJSON", false) &&
           Path::exists(File::NIfTI::get_json_path(opt[0][0]))))
@@ -350,7 +350,7 @@ void run() {
   // Warp from image1 or image2
   int from = 1;
   opt = get_options("from");
-  if (opt.size()) {
+  if (!opt.empty()) {
     from = opt[0][0];
     if (!warp.valid())
       WARN("-from option ignored since no 5D warp was input");
@@ -358,7 +358,7 @@ void run() {
 
   // Warp deformation field
   opt = get_options("warp");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (warp.valid())
       throw Exception("only one warp field can be input with either -warp or -warp_mid");
     warp = Image<default_type>::open(opt[0][0]).with_direct_io(Stride::contiguous_along_axis(3));
@@ -369,7 +369,7 @@ void run() {
   }
 
   // Inverse
-  const bool inverse = get_options("inverse").size();
+  const bool inverse = !get_options("inverse").empty();
   if (inverse) {
     if (!(linear || warp.valid()))
       throw Exception("no linear or warp transformation provided for option '-inverse'");
@@ -382,7 +382,7 @@ void run() {
   }
 
   // Half
-  const bool half = get_options("half").size();
+  const bool half = !get_options("half").empty();
   if (half) {
     if (!(linear))
       throw Exception("no linear transformation provided for option '-half'");
@@ -397,7 +397,7 @@ void run() {
   // Flip
   opt = get_options("flip");
   std::vector<int32_t> axes;
-  if (opt.size()) {
+  if (!opt.empty()) {
     axes = parse_ints<int32_t>(opt[0][0]);
     transform_type flip;
     flip.setIdentity();
@@ -424,11 +424,11 @@ void run() {
                                input_header.size(3) == (int)Math::SH::NforL(Math::SH::LforN(input_header.size(3)));
 
   // reorientation
-  if (get_options("no_reorientation").size())
+  if (!get_options("no_reorientation").empty())
     throw Exception("The -no_reorientation option is deprecated. Use -reorient_fod no instead.");
   opt = get_options("reorient_fod");
-  bool fod_reorientation = opt.size() && bool(opt[0][0]);
-  if (is_possible_fod_image && !opt.size())
+  bool fod_reorientation = !opt.empty() && bool(opt[0][0]);
+  if (is_possible_fod_image && opt.empty())
     throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with " +
                     str(input_header.size(3)) + " volumes");
   else if (!is_possible_fod_image && fod_reorientation)
@@ -440,7 +440,7 @@ void run() {
 
     Eigen::MatrixXd directions_az_el;
     opt = get_options("directions");
-    if (opt.size())
+    if (!opt.empty())
       directions_az_el = File::Matrix::load_matrix(opt[0][0]);
     else
       directions_az_el = DWI::Directions::electrostatic_repulsion_300();
@@ -452,8 +452,8 @@ void run() {
 
   // Intensity / FOD modulation
   opt = get_options("modulate");
-  bool modulate_fod = opt.size() && (int)opt[0][0] == 0;
-  bool modulate_jac = opt.size() && (int)opt[0][0] == 1;
+  bool modulate_fod = !opt.empty() && (int)opt[0][0] == 0;
+  bool modulate_jac = !opt.empty() && (int)opt[0][0] == 1;
 
   const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)
@@ -566,7 +566,7 @@ void run() {
   // Interpolator
   int interp = 2; // cubic
   opt = get_options("interp");
-  if (opt.size()) {
+  if (!opt.empty()) {
     interp = opt[0][0];
     if (!warp && !template_header)
       WARN("interpolator choice ignored since the input image will not be regridded");
@@ -575,7 +575,7 @@ void run() {
   // over-sampling
   std::vector<uint32_t> oversample = Adapter::AutoOverSample;
   opt = get_options("oversample");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!template_header.valid() && !warp)
       throw Exception(
           "-oversample option applies only to regridding using the template option or to non-linear transformations");
@@ -594,7 +594,7 @@ void run() {
   // Out of bounds value
   float out_of_bounds_value = 0.0;
   opt = get_options("nan");
-  if (opt.size()) {
+  if (!opt.empty()) {
     out_of_bounds_value = NAN;
     if (!warp && !template_header)
       WARN("Out of bounds value ignored since the input image will not be regridded");
@@ -606,7 +606,7 @@ void run() {
   if (template_header.valid() && !warp) {
     INFO("image will be regridded");
 
-    if (get_options("midway_space").size()) {
+    if (!get_options("midway_space").empty()) {
       INFO("regridding to midway space");
       if (!half)
         WARN("regridding to midway_space assumes the linear transformation to be a transformation from input to midway "
@@ -672,7 +672,7 @@ void run() {
       Image<default_type> warp_deform;
 
       // Warp to the midway space defined by the warp grid
-      if (get_options("midway_space").size()) {
+      if (!get_options("midway_space").empty()) {
         warp_deform = Registration::Warp::compute_midway_deformation(warp, from);
         // Use the full transform to warp from the image image to the template
       } else {
@@ -703,9 +703,9 @@ void run() {
     DWI::export_grad_commandline(output);
 
     // No reslicing required, so just modify the header and do a straight copy of the data
-  } else if (linear || replace || axes.size()) {
+  } else if (linear || replace || !axes.empty()) {
 
-    if (get_options("midway").size())
+    if (!get_options("midway").empty())
       throw Exception("midway option given but no template image defined");
 
     INFO("image will not be regridded");

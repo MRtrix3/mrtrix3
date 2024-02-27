@@ -57,7 +57,7 @@ void PNG::load(const Header &header, size_t) {
 }
 
 void PNG::unload(const Header &header) {
-  if (addresses.size()) {
+  if (!addresses.empty()) {
     if (writable) {
       size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) + 7) / 8;
       if (header.ndim() == 4)

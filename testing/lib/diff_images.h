@@ -48,15 +48,15 @@ template <class ImageType1, class ImageType2> void diff_images(ImageType1 &in1, 
   auto image_opt = App::get_options("image");
   auto voxel_opt = App::get_options("voxel");
 
-  if (abs_opt.size()) {
+  if (!abs_opt.empty()) {
     check_images_abs(in1, in2, abs_opt[0][0]);
-  } else if (frac_opt.size()) {
+  } else if (!frac_opt.empty()) {
     check_images_frac(in1, in2, frac_opt[0][0]);
-  } else if (image_opt.size()) {
+  } else if (!image_opt.empty()) {
     auto tolerance = Image<default_type>::open(image_opt[0][0]);
     Adapter::Replicate<decltype(tolerance)> replicate(tolerance, in1);
     check_images_tolimage(in1, in2, replicate);
-  } else if (voxel_opt.size()) {
+  } else if (!voxel_opt.empty()) {
     check_images_voxel(in1, in2, voxel_opt[0][0]);
   } else {
     check_images_abs(in1, in2, 0.0);

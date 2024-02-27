@@ -207,7 +207,7 @@ void run() {
   // Out of bounds value
   default_type out_of_bounds_value = 0.0;
   auto opt = get_options("fill");
-  if (opt.size())
+  if (!opt.empty())
     out_of_bounds_value = opt[0][0];
 
   if (op == 0) { // regrid
@@ -219,20 +219,20 @@ void run() {
 
     int interp = 2; // cubic
     opt = get_options("interp");
-    if (opt.size()) {
+    if (!opt.empty()) {
       interp = opt[0][0];
     }
 
     // over-sampling
     std::vector<uint32_t> oversample = Adapter::AutoOverSample;
     opt = get_options("oversample");
-    if (opt.size()) {
+    if (!opt.empty()) {
       oversample = parse_ints<uint32_t>(opt[0][0]);
     }
 
     Header template_header;
     opt = get_options("template");
-    if (opt.size()) {
+    if (!opt.empty()) {
       template_header = Header::open(opt[0][0]);
       if (template_header.ndim() < 3)
         throw Exception("the template image requires at least 3 spatial dimensions");
@@ -251,7 +251,7 @@ void run() {
 
     std::vector<default_type> scale;
     opt = get_options("scale");
-    if (opt.size()) {
+    if (!opt.empty()) {
       scale = parse_floats(opt[0][0]);
       if (scale.size() == 1)
         scale.resize(3, scale[0]);
@@ -261,7 +261,7 @@ void run() {
 
     std::vector<uint32_t> image_size;
     opt = get_options("size");
-    if (opt.size()) {
+    if (!opt.empty()) {
       image_size = parse_ints<uint32_t>(opt[0][0]);
       regrid_filter.set_size(image_size);
       ++resize_option_count;
@@ -269,7 +269,7 @@ void run() {
 
     std::vector<default_type> voxel_size;
     opt = get_options("voxel");
-    if (opt.size()) {
+    if (!opt.empty()) {
       voxel_size = parse_floats(opt[0][0]);
       if (voxel_size.size() == 1)
         voxel_size.resize(3, voxel_size[0]);
@@ -299,10 +299,10 @@ void run() {
     std::string message = do_crop ? "cropping image" : "padding image";
     INFO("operation: " + str(operation_choices[op]));
 
-    if (get_options("crop_unbound").size() && !do_crop)
+    if (!get_options("crop_unbound").empty() && !do_crop)
       throw Exception("-crop_unbound only applies only to the crop operation");
 
-    const size_t nd = get_options("nd").size() ? input_header.ndim() : 3;
+    const size_t nd = !get_options("nd").empty() ? input_header.ndim() : 3;
 
     std::vector<std::vector<ssize_t>> bounds(input_header.ndim(), std::vector<ssize_t>(2));
     for (size_t axis = 0; axis < input_header.ndim(); axis++) {
@@ -313,7 +313,7 @@ void run() {
     size_t crop_pad_option_count = 0;
 
     opt = get_options("mask");
-    if (opt.size()) {
+    if (!opt.empty()) {
       if (!do_crop)
         throw Exception("padding with -mask option is not supported");
       INFO("cropping to mask");
@@ -353,7 +353,7 @@ void run() {
           INFO("cropping to mask changes axis " + str(axis) + " extent from 0:" + str(input_header.size(axis) - 1) +
                " to " + str(bounds[axis][0]) + ":" + str(bounds[axis][1]));
       }
-      if (!get_options("uniform").size()) {
+      if (get_options("uniform").empty()) {
         INFO("uniformly padding around mask by 1 voxel");
         // margin of 1 voxel around mask
         for (size_t axis = 0; axis != 3; ++axis) {
@@ -364,7 +364,7 @@ void run() {
     }
 
     opt = get_options("as");
-    if (opt.size()) {
+    if (!opt.empty()) {
       if (crop_pad_option_count)
         throw Exception(str(operation_choices[op]) + " can be performed using either a mask or a template image");
       ++crop_pad_option_count;
@@ -385,7 +385,7 @@ void run() {
     }
 
     opt = get_options("uniform");
-    if (opt.size()) {
+    if (!opt.empty()) {
       ++crop_pad_option_count;
       ssize_t val = opt[0][0];
       INFO("uniformly " + str(do_crop ? "cropping" : "padding") + " by " + str(val) + " voxels");
@@ -395,7 +395,7 @@ void run() {
       }
     }
 
-    if (do_crop && !get_options("crop_unbound").size()) {
+    if (do_crop && get_options("crop_unbound").empty()) {
       opt = get_options("axis");
       std::set<size_t> ignore;
       for (size_t i = 0; i != opt.size(); ++i)
@@ -440,7 +440,7 @@ void run() {
           throw Exception(E, "-axis " + str(axis) + ": can't parse integer sequence specifier \"" + spec + "\"");
         }
         token = strip(spec.substr(end + 1));
-        if (lowercase(token) == "end" || token.size() == 0)
+        if (lowercase(token) == "end" || token.empty())
           bounds[axis][1] = input_header.size(axis) - 1;
         else {
           try {

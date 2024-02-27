@@ -210,9 +210,9 @@ void run() {
   const value_type cfe_h = get_option_value("cfe_h", DEFAULT_CFE_H);
   const value_type cfe_e = get_option_value("cfe_e", DEFAULT_CFE_E);
   const value_type cfe_c = get_option_value("cfe_c", DEFAULT_CFE_C);
-  const bool cfe_legacy = get_options("cfe_legacy").size();
+  const bool cfe_legacy = !get_options("cfe_legacy").empty();
 
-  const bool do_nonstationarity_adjustment = get_options("nonstationarity").size();
+  const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
   const default_type empirical_skew = get_option_value("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   const std::string input_fixel_directory = argument[0];
@@ -225,7 +225,7 @@ void run() {
   Image<bool> mask;
   auto opt = get_options("mask");
   Fixel::index_type mask_fixels = 0;
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     Fixel::check_data_file(mask);
     if (!Fixel::fixels_match(index_header, mask))
@@ -287,13 +287,13 @@ void run() {
   }
   const Math::Stats::index_type num_factors = design.cols() + extra_columns.size();
   CONSOLE("Number of factors: " + str(num_factors));
-  if (extra_columns.size()) {
+  if (!extra_columns.empty()) {
     CONSOLE("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       CONSOLE("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from "
               "fixel-wise design matrices accordingly");
   }
-  Math::Stats::GLM::check_design(design, extra_columns.size());
+  Math::Stats::GLM::check_design(design, !extra_columns.empty());
 
   // Load variance groups
   auto variance_groups = Math::Stats::GLM::load_variance_groups(design.rows());
@@ -307,7 +307,7 @@ void run() {
   if (hypotheses[0].cols() != num_factors)
     throw Exception(
         "The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")" +
-        (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "") +
+        (!extra_columns.empty() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "") +
         " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
@@ -366,7 +366,7 @@ void run() {
   }
   if (nans_in_data) {
     CONSOLE("Non-finite values present in data; rows will be removed from fixel-wise design matrices accordingly");
-    if (!extra_columns.size()) {
+    if (extra_columns.empty()) {
       CONSOLE("(Note that this will result in slower execution than if such values were not present)");
     }
   }
@@ -387,7 +387,8 @@ void run() {
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
-                         num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
+                         num_factors + (2 * num_hypotheses) + num_vgs +
+                             (nans_in_data || !extra_columns.empty() ? 1 : 0));
 
     for (Math::Stats::index_type i = 0; i != num_factors; ++i) {
       write_fixel_output(
@@ -411,7 +412,7 @@ void run() {
       }
       ++progress;
     }
-    if (nans_in_data || extra_columns.size()) {
+    if (nans_in_data || !extra_columns.empty()) {
       write_fixel_output(Path::join(output_fixel_directory, "cond.mif"), cond, mask, output_header);
       ++progress;
     }
@@ -428,7 +429,7 @@ void run() {
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<Math::Stats::GLM::TestBase> glm_test;
-  if (extra_columns.size() || nans_in_data) {
+  if (!extra_columns.empty() || nans_in_data) {
     if (variance_groups.size())
       glm_test.reset(new Math::Stats::GLM::TestVariableHeteroscedastic(
           extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
@@ -477,9 +478,9 @@ void run() {
   }
 
   // Perform permutation testing
-  if (!get_options("notest").size()) {
+  if (get_options("notest").empty()) {
 
-    const bool fwe_strong = get_options("strong").size();
+    const bool fwe_strong = !get_options("strong").empty();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }

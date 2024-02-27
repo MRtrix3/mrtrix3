@@ -73,7 +73,7 @@ List &sanitise(List &current, const List &desired, const std::vector<ssize_t> &d
 List __from_command_line(const List &current) {
   List strides;
   auto opt = App::get_options("strides");
-  if (!opt.size())
+  if (opt.empty())
     return strides;
 
   try {

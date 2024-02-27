@@ -390,7 +390,7 @@ void run() {
 
   auto mask_img = Image<bool>();
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask_img = Image<bool>::open(opt[0][0]);
     check_dimensions(dt_img, mask_img, 0, 3);
   }
@@ -400,7 +400,7 @@ void run() {
 
   auto adc_img = Image<value_type>();
   opt = get_options("adc");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     adc_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -408,7 +408,7 @@ void run() {
 
   auto fa_img = Image<value_type>();
   opt = get_options("fa");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     fa_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -416,7 +416,7 @@ void run() {
 
   auto ad_img = Image<value_type>();
   opt = get_options("ad");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     ad_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -424,7 +424,7 @@ void run() {
 
   auto rd_img = Image<value_type>();
   opt = get_options("rd");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     rd_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -432,7 +432,7 @@ void run() {
 
   auto cl_img = Image<value_type>();
   opt = get_options("cl");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     cl_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -440,7 +440,7 @@ void run() {
 
   auto cp_img = Image<value_type>();
   opt = get_options("cp");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     cp_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -448,7 +448,7 @@ void run() {
 
   auto cs_img = Image<value_type>();
   opt = get_options("cs");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     cs_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -456,7 +456,7 @@ void run() {
 
   std::vector<uint32_t> vals = {1};
   opt = get_options("num");
-  if (opt.size()) {
+  if (!opt.empty()) {
     vals = parse_ints<uint32_t>(opt[0][0]);
     if (vals.empty())
       throw Exception("invalid eigenvalue/eigenvector number specifier");
@@ -469,7 +469,7 @@ void run() {
 
   auto value_img = Image<value_type>();
   opt = get_options("value");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     if (vals.size() > 1) {
       header.ndim() = 4;
@@ -481,7 +481,7 @@ void run() {
 
   auto vector_img = Image<value_type>();
   opt = get_options("vector");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 4;
     header.size(3) = vals.size() * 3;
     vector_img = Image<value_type>::create(opt[0][0], header);
@@ -490,14 +490,14 @@ void run() {
 
   auto dkt_img = Image<value_type>();
   opt = get_options("dkt");
-  if (opt.size()) {
+  if (!opt.empty()) {
     dkt_img = Image<value_type>::open(opt[0][0]);
     check_dimensions(dt_img, dkt_img, 0, 3);
   }
 
   auto mk_img = Image<value_type>();
   opt = get_options("mk");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     mk_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -506,7 +506,7 @@ void run() {
 
   auto ak_img = Image<value_type>();
   opt = get_options("ak");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     ak_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -515,7 +515,7 @@ void run() {
 
   auto rk_img = Image<value_type>();
   opt = get_options("rk");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     rk_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -524,8 +524,8 @@ void run() {
 
   opt = get_options("mk_dirs");
   const Eigen::MatrixXd mk_dirs =
-      opt.size() ? File::Matrix::load_matrix(opt[0][0])
-                 : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+      !opt.empty() ? File::Matrix::load_matrix(opt[0][0])
+                   : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
 
   auto rk_ndirs = get_option_value("rk_ndirs", DEFAULT_RK_NDIRS);
 

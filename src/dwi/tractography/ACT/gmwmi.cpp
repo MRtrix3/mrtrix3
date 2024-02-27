@@ -153,7 +153,7 @@ Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &
 Eigen::Vector3f
 GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool end, Interp &interp) const {
 
-  if (tck.size() == 0)
+  if (tck.empty())
     return {NaN, NaN, NaN};
 
   if (tck.size() == 1)

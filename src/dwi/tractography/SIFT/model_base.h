@@ -155,15 +155,15 @@ template <class Fixel> void ModelBase<Fixel>::perform_FOD_segmentation(Image<flo
   Math::SH::check(data);
   DWI::FMLS::FODQueueWriter writer(data, proc_mask);
   DWI::FMLS::Segmenter fmls(dirs, Math::SH::LforN(data.size(3)));
-  fmls.set_dilate_lookup_table(!App::get_options("no_dilate_lut").size());
-  fmls.set_create_null_lobe(App::get_options("make_null_lobes").size());
+  fmls.set_dilate_lookup_table(App::get_options("no_dilate_lut").empty());
+  fmls.set_create_null_lobe(!App::get_options("make_null_lobes").empty());
   Thread::run_queue(
       writer, Thread::batch(FMLS::SH_coefs()), Thread::multi(fmls), Thread::batch(FMLS::FOD_lobes()), *this);
   have_null_lobes = fmls.get_create_null_lobe();
 }
 
 template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
-  if (!App::get_options("fd_scale_gm").size())
+  if (App::get_options("fd_scale_gm").empty())
     return;
   if (!act_5tt.valid()) {
     INFO("Cannot scale fibre densities according to GM fraction; no ACT image data provided");
