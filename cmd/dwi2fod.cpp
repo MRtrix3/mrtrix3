@@ -32,7 +32,7 @@ using namespace App;
 const char *const algorithms[] = {"csd", "msmt_csd", NULL};
 
 // clang-format off
-OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
+const OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
 
   + Option ("directions",
             "specify the directions over which to apply the non-negativity constraint"

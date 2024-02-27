@@ -40,7 +40,7 @@ void usage() {
     if (strcmp(entry->name, "Complex"))
       colourmap_choices_std.push_back(lowercase(entry->name));
     ++entry;
-  } while(entry->name);
+  } while(entry->name != nullptr);
   colourmap_choices_cstr.reserve(colourmap_choices_std.size() + 1);
   for (const auto& s : colourmap_choices_std)
     colourmap_choices_cstr.push_back(s.c_str());

@@ -99,7 +99,7 @@ void usage() {
     + OptionGroup ("Options for both PLY and RIB writer")
 
     + Option ("radius", "radius of the streamlines")
-      + Argument("radius").type_float(0.0f)
+      + Argument("radius").type_float(0.0)
 
     + OptionGroup ("Options specific to VTK writer")
 
