@@ -26,7 +26,7 @@ The voxel spacings of the calculated average header can be determined from the s
 Options
 -------
 
--  **-padding value**  boundary box padding in voxels. Default: 0
+-  **-padding value** boundary box padding in voxels. Default: 0
 
 -  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description).Valid options are: min_projection,mean_projection,min_nearest,mean_nearest; default = mean_nearest
 

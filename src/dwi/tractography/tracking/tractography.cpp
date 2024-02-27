@@ -22,84 +22,83 @@ namespace Tractography {
 namespace Tracking {
 
 using namespace App;
-
+// clang-format off
 const OptionGroup TrackOption =
     OptionGroup("Streamlines tractography options")
 
     + Option("select",
-             "set the desired number of streamlines to be selected by "
-             "tckgen, after all selection criteria have been applied "
-             "(i.e. inclusion/exclusion ROIs, min/max length, etc). "
-             "tckgen will keep seeding streamlines until this number of "
-             "streamlines have been selected, or the maximum allowed "
-             "number of seeds has been exceeded (see -seeds option). "
-             "By default, " +
-                 str(Defaults::num_selected_tracks) +
-                 " "
-                 "streamlines are to be selected. "
-                 "Set to zero to disable, which will result in streamlines "
-                 "being seeded until the number specified by -seeds has been "
-                 "reached.") +
-    Argument("number").type_integer(0)
+             "set the desired number of streamlines to be selected by tckgen,"
+             " after all selection criteria have been applied"
+             " (i.e. inclusion/exclusion ROIs, min/max length, etc)."
+             " tckgen will keep seeding streamlines until this number of streamlines have been selected,"
+             " or the maximum allowed number of seeds has been exceeded"
+             " (see -seeds option)."
+             " By default, " + str(Defaults::num_selected_tracks) + " streamlines are to be selected."
+             " Set to zero to disable,"
+             " which will result in streamlines being seeded"
+             " until the number specified by -seeds has been reached.")
+      + Argument("number").type_integer(0)
 
     + Option("step",
-             "set the step size of the algorithm in mm (defaults: "
-             "for first-order algorithms, " +
-                 str(Defaults::stepsize_voxels_firstorder, 2) + " x voxelsize; " + "if using RK4, " +
-                 str(Defaults::stepsize_voxels_rk4, 2) +
-                 " x voxelsize; "
-                 "for iFOD2: " +
-                 str(Defaults::stepsize_voxels_ifod2, 2) + " x voxelsize).") +
-    Argument("size").type_float(0.0)
+             "set the step size of the algorithm in mm"
+             " (defaults:"
+             " for first-order algorithms, " + str(Defaults::stepsize_voxels_firstorder, 2) + " x voxelsize;"
+             " if using RK4, " + str(Defaults::stepsize_voxels_rk4, 2) + " x voxelsize;"
+             " for iFOD2: " + str(Defaults::stepsize_voxels_ifod2, 2) + " x voxelsize).")
+      + Argument("size").type_float(0.0)
 
     + Option("angle",
-             "set the maximum angle in degrees between successive steps (defaults: " +
-                 str(Defaults::angle_deterministic) + " for deterministic algorithms; " + str(Defaults::angle_ifod1) +
-                 " for iFOD1 / nulldist1; " + str(Defaults::angle_ifod2) + " for iFOD2 / nulldist2)") +
-    Argument("theta").type_float(0.0)
+             "set the maximum angle in degrees between successive steps"
+             " (defaults:"
+             " " + str(Defaults::angle_deterministic) + " for deterministic algorithms;"
+             " " + str(Defaults::angle_ifod1) + " for iFOD1 / nulldist1;"
+             " " + str(Defaults::angle_ifod2) + " for iFOD2 / nulldist2)")
+      + Argument("theta").type_float(0.0)
 
     + Option("minlength",
-             "set the minimum length of any track in mm (defaults: "
-             "without ACT, " +
-                 str(Defaults::minlength_voxels_noact) + " x voxelsize; " + "with ACT, " +
-                 str(Defaults::minlength_voxels_withact) + " x voxelsize).") +
-    Argument("value").type_float(0.0)
+             "set the minimum length of any track in mm"
+             " (defaults:"
+             " without ACT, " + str(Defaults::minlength_voxels_noact) + " x voxelsize;"
+             " with ACT, " + str(Defaults::minlength_voxels_withact) + " x voxelsize).")
+      + Argument("value").type_float(0.0)
 
     + Option("maxlength",
-             "set the maximum length of any track in mm "
-             "(default: " +
-                 str(Defaults::maxlength_voxels) + " x voxelsize).") +
-    Argument("value").type_float(0.0)
+             "set the maximum length of any track in mm"
+             " (default: " + str(Defaults::maxlength_voxels) + " x voxelsize).")
+      + Argument("value").type_float(0.0)
 
     + Option("cutoff",
-             "set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks "
-             "(defaults: " +
-                 str(Defaults::cutoff_fod, 2) + " for FOD-based algorithms; " + str(Defaults::cutoff_fixel, 2) +
-                 " for fixel-based algorithms; " + str(Defaults::cutoff_fa, 2) + " for tensor-based algorithms; " +
-                 "threshold multiplied by " + str(Defaults::cutoff_act_multiplier) + " when using ACT).") +
-    Argument("value").type_float(0.0)
+             "set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks"
+             " (defaults:"
+             " " + str(Defaults::cutoff_fod, 2) + " for FOD-based algorithms;"
+             " " + str(Defaults::cutoff_fixel, 2) +" for fixel-based algorithms;"
+             " " + str(Defaults::cutoff_fa, 2) + " for tensor-based algorithms;"
+             " threshold multiplied by " + str(Defaults::cutoff_act_multiplier) + " when using ACT).")
+      + Argument("value").type_float(0.0)
 
     + Option("trials",
-             "set the maximum number of sampling trials at each point "
-             "(only used for iFOD1 / iFOD2) "
-             "(default: " +
-                 str(Defaults::max_trials_per_step) + ").") +
-    Argument("number").type_integer(1)
+             "set the maximum number of sampling trials at each point"
+             " (only used for iFOD1 / iFOD2)"
+             " (default: " + str(Defaults::max_trials_per_step) + ").")
+      + Argument("number").type_integer(1)
 
     + Option("noprecomputed",
-             "do NOT pre-compute legendre polynomial values. Warning: "
-             "this will slow down the algorithm by a factor of approximately 4.")
+             "do NOT pre-compute legendre polynomial values."
+             " Warning: this will slow down the algorithm by a factor of approximately 4.")
 
     + Option("rk4",
-             "use 4th-order Runge-Kutta integration "
-             "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)")
+             "use 4th-order Runge-Kutta integration"
+             " (slower, but eliminates curvature overshoot in 1st-order deterministic methods)")
 
-    + Option("stop", "stop propagating a streamline once it has traversed all include regions")
+    + Option("stop",
+             "stop propagating a streamline once it has traversed all include regions")
 
     + Option("downsample",
-             "downsample the generated streamlines to reduce output file size "
-             "(default is (samples-1) for iFOD2, no downsampling for all other algorithms)") +
-    Argument("factor").type_integer(1);
+             "downsample the generated streamlines to reduce output file size"
+             " (default is (samples-1) for iFOD2,"
+             " no downsampling for all other algorithms)")
+      + Argument("factor").type_integer(1);
+// clang-format on
 
 /**
 Loads properties related to streamlines AND loads include etc ROIs.

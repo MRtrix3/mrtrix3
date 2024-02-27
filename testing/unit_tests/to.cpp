@@ -23,13 +23,13 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
-
   SYNOPSIS = "Test the to<>(std::string) function";
-
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 std::vector<std::string> failures;
 

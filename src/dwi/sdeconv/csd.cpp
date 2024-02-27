@@ -21,40 +21,42 @@ namespace DWI {
 namespace SDeconv {
 
 using namespace App;
-
+// clang-format off
 const OptionGroup CSD_options =
-    OptionGroup("Options for the Constrained Spherical Deconvolution algorithm") +
-    Option("filter",
-           "the linear frequency filtering parameters used for the initial linear "
-           "spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be "
-           " supplied as a text file containing the filtering coefficients for each "
-           "even harmonic order.") +
-    Argument("spec").type_file_in()
+    OptionGroup("Options for the Constrained Spherical Deconvolution algorithm")
+    + Option("filter",
+             "the linear frequency filtering parameters used"
+             " for the initial linear spherical deconvolution step"
+             " (default = [ 1 1 1 0 0 ])."
+             " These should be supplied as a text file containing the filtering coefficients"
+             " for each even harmonic order.")
+      + Argument("spec").type_file_in()
 
     + Option("neg_lambda",
-             "the regularisation parameter lambda that controls the strength of the "
-             "non-negativity constraint (default = " +
-                 str(DEFAULT_CSD_NEG_LAMBDA, 2) + ").") +
-    Argument("value").type_float(0.0)
+             "the regularisation parameter lambda that controls the strength"
+             " of the non-negativity constraint"
+             " (default = " + str(DEFAULT_CSD_NEG_LAMBDA, 2) + ").")
+      + Argument("value").type_float(0.0)
 
     + Option("norm_lambda",
-             "the regularisation parameter lambda that controls the strength of the "
-             "constraint on the norm of the solution (default = " +
-                 str(DEFAULT_CSD_NORM_LAMBDA, 2) + ").") +
-    Argument("value").type_float(0.0)
+             "the regularisation parameter lambda that controls the strength "
+             "of the constraint on the norm of the solution"
+             " (default = " + str(DEFAULT_CSD_NORM_LAMBDA, 2) + ").")
+      + Argument("value").type_float(0.0)
 
     + Option("threshold",
-             "the threshold below which the amplitude of the FOD is assumed to be zero, "
-             "expressed as an absolute amplitude (default = " +
-                 str(DEFAULT_CSD_THRESHOLD, 2) + ").") +
-    Argument("value").type_float(-1.0, 10.0)
+             "the threshold below which the amplitude of the FOD is assumed to be zero,"
+             " expressed as an absolute amplitude"
+             " (default = " + str(DEFAULT_CSD_THRESHOLD, 2) + ").")
+      + Argument("value").type_float(-1.0, 10.0)
 
     + Option("niter",
-             "the maximum number of iterations to perform for each voxel (default = " + str(DEFAULT_CSD_NITER) +
-                 "). "
-                 // TODO Explicit SD algorithm?
-                 "Use '-niter 0' for a linear unconstrained spherical deconvolution.") +
-    Argument("number").type_integer(0, 1000);
+             "the maximum number of iterations to perform for each voxel"
+             " (default = " + str(DEFAULT_CSD_NITER) + ")."
+             // TODO Explicit SD algorithm?
+             " Use '-niter 0' for a linear unconstrained spherical deconvolution.")
+      + Argument("number").type_integer(0, 1000);
+// clang-format on
 
 } // namespace SDeconv
 } // namespace DWI

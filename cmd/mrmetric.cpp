@@ -169,46 +169,59 @@ void evaluate_voxelwise_msq(InType1 &in1,
 enum MetricType { MeanSquared, CrossCorrelation };
 const char *metric_choices[] = {"diff", "cc", NULL};
 
+// clang-format off
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   SYNOPSIS = "Computes a dissimilarity metric between two images";
 
   DESCRIPTION
-  +"Currently only the mean squared difference is fully implemented.";
+  + "Currently only the mean squared difference is fully implemented.";
 
   ARGUMENTS
-  +Argument("image1", "the first input image.").type_image_in() +
-      Argument("image2", "the second input image.").type_image_in();
+  + Argument ("image1", "the first input image.").type_image_in ()
+  + Argument ("image2", "the second input image.").type_image_in ();
 
   OPTIONS
-  +Option("space",
-          "voxel (default): per voxel "
-          "image1: scanner space of image 1 "
-          "image2: scanner space of image 2 "
-          "average: scanner space of the average affine transformation of image 1 and 2 ") +
-      Argument("iteration method").type_choice(space_choices)
+  + Option ("space", "Image \"space\" in which the metric will be computed."
+                     " Options are:"
+                     " voxel (default): per voxel;"
+                     " image1: scanner space of image 1;"
+                     " image2: scanner space of image 2;"
+                     " average: scanner space of the average affine transformation"
+                     " of image 1 and 2")
+    +   Argument ("iteration method").type_choice (space_choices)
 
-      + Option("interp",
-               "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: "
-               "linear).") +
-      Argument("method").type_choice(interp_choices)
+    + Option ("interp",
+        "set the interpolation method to use when reslicing"
+        " (choices: nearest, linear, cubic, sinc."
+        " Default: linear).")
+    + Argument ("method").type_choice (interp_choices)
 
-      + Option("metric",
-               "define the dissimilarity metric used to calculate the cost. "
-               "Choices: diff (squared differences), cc (non-normalised negative cross correlation aka negative cross "
-               "covariance). Default: diff). "
-               "cc is only implemented for -space average and -interp linear and cubic.") +
-      Argument("method").type_choice(metric_choices)
+    + Option ("metric",
+        "define the dissimilarity metric used to calculate the cost."
+        " Choices:"
+        " diff (squared differences);"
+        " cc (non-normalised negative cross correlation aka negative cross covariance)."
+        " Default: diff)."
+        " cc is only implemented for -space average and -interp linear and cubic.")
+    + Argument ("method").type_choice (metric_choices)
 
-      + Option("mask1", "mask for image 1") + Argument("image").type_image_in()
+    + Option ("mask1", "mask for image 1")
+    + Argument ("image").type_image_in ()
 
-      + Option("mask2", "mask for image 2") + Argument("image").type_image_in()
+    + Option ("mask2", "mask for image 2")
+    + Argument ("image").type_image_in ()
 
-      + Option("nonormalisation", "do not normalise the dissimilarity metric to the number of voxels.")
+    + Option ("nonormalisation", "do not normalise the dissimilarity metric"
+                                 " to the number of voxels.")
 
-      + Option("overlap", "output number of voxels that were used.");
+    + Option ("overlap", "output number of voxels that were used.");
+
 }
+// clang-format on
 
 using value_type = double;
 using MaskType = Image<bool>;

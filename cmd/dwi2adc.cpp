@@ -25,17 +25,22 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Convert mean dwi (trace-weighted) images to mean ADC maps";
 
   ARGUMENTS
-  +Argument("input", "the input image.").type_image_in() + Argument("output", "the output image.").type_image_out();
+    + Argument ("input", "the input image.").type_image_in ()
+    + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  +DWI::GradImportOptions();
+    + DWI::GradImportOptions();
+
 }
+// clang-format on
 
 using value_type = float;
 

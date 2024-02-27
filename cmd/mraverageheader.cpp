@@ -30,7 +30,9 @@ default_type PADDING_DEFAULT = 0.0;
 avgspace_voxspacing_t SPACING_DEFAULT_VALUE = avgspace_voxspacing_t::MEAN_NEAREST;
 const std::string spacing_default_string = "mean_nearest";
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Maximilian Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   SYNOPSIS = "Calculate the average (unbiased) coordinate space of all input images";
@@ -46,20 +48,26 @@ void usage() {
    "spatial resolution versus the mean across images to produce an unbiased average.";
 
   ARGUMENTS
-  +Argument("input", "the input image(s).").type_image_in().allow_multiple() +
-      Argument("output", "the output image").type_image_out();
+  + Argument ("input", "the input image(s).").type_image_in().allow_multiple()
+  + Argument ("output", "the output image").type_image_out();
 
   OPTIONS
-  +Option("padding", " boundary box padding in voxels. Default: " + str(PADDING_DEFAULT)) +
-      Argument("value").type_float(0.0, std::numeric_limits<default_type>::infinity()) +
-      Option("spacing",
-             "Method for determination of voxel spacings based on the set of input images and the average header axes "
-             "(see Description)."
-             "Valid options are: " +
-                 join(avgspace_voxspacing_choices, ",") + "; default = " + spacing_default_string) +
-      Argument("type").type_choice(avgspace_voxspacing_choices) +
-      Option("fill", "set the intensity in the first volume of the average space to 1") + DataType::options();
+  + Option ("padding",
+            "boundary box padding in voxels."
+            " Default: " + str(PADDING_DEFAULT))
+    + Argument ("value").type_float(0.0)
+  + Option ("spacing",
+            "Method for determination of voxel spacings based on"
+            " the set of input images and the average header axes"
+            " (see Description)."
+            " Valid options are: " + join(avgspace_voxspacing_choices, ",") + ";"
+            " default = " + spacing_default_string)
+    + Argument("type").type_choice(avgspace_voxspacing_choices)
+  + Option ("fill", "set the intensity in the first volume of the average space to 1")
+  + DataType::options();
+
 }
+// clang-format on
 
 void run() {
 

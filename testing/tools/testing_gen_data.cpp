@@ -25,18 +25,23 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Generate a test image of random numbers";
 
   ARGUMENTS
-  +Argument("size", "the dimensions of the test data.").type_sequence_int() +
-      Argument("data", "the output image.").type_image_out();
+  + Argument ("size", "the dimensions of the test data.").type_sequence_int()
+  + Argument ("data", "the output image.").type_image_out();
 
   OPTIONS
-  +Stride::Options + DataType::options();
+  + Stride::Options
+  + DataType::options();
+
 }
+// clang-format on
 
 void run() {
   std::vector<int> dim = argument[0];

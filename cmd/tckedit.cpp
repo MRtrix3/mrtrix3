@@ -38,6 +38,7 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Editing;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -45,68 +46,77 @@ void usage() {
   SYNOPSIS = "Perform various editing operations on track files";
 
   DESCRIPTION
-  +"This command can be used to perform various types of manipulations "
-   "on track data. A range of such manipulations are demonstrated in the "
-   "examples provided below.";
+  + "This command can be used to perform various types of manipulations on track data."
+    " A range of such manipulations are demonstrated in the examples provided below.";
 
   EXAMPLES
-  +Example("Concatenate data from multiple track files into one",
-           "tckedit *.tck all_tracks.tck",
-           "Here the wildcard operator is used to select all files in the "
-           "current working directory that have the .tck filetype suffix; but "
-           "input files can equivalently be specified one at a time explicitly.")
+  + Example ("Concatenate data from multiple track files into one",
+             "tckedit *.tck all_tracks.tck",
+             "Here the wildcard operator is used to select all files"
+             " in the current working directory that have the .tck filetype suffix;"
+             " but input files can equivalently be specified one at a time explicitly.")
 
-      + Example("Extract a reduced number of streamlines",
-                "tckedit in_many.tck out_few.tck -number 1k -skip 500",
-                "The number of streamlines requested would typically be less "
-                "than the number of streamlines in the input track file(s); if it "
-                "is instead greater, then the command will issue a warning upon "
-                "completion. By default the streamlines for the output file are "
-                "extracted from the start of the input file(s); in this example the "
-                "command is instead instructed to skip the first 500 streamlines, and "
-                "write to the output file streamlines 501-1500.")
+  + Example ("Extract a reduced number of streamlines",
+             "tckedit in_many.tck out_few.tck -number 1k -skip 500",
+             "The number of streamlines requested would typically be less "
+             "than the number of streamlines in the input track file(s);"
+             " if it is instead greater,"
+             " then the command will issue a warning upon completion."
+             " By default the streamlines for the output file are extracted"
+             " from the start of the input file(s);"
+             " in this example the command is instead instructed to skip the first 500 streamlines,"
+             " and write to the output file streamlines 501-1500.")
 
-      + Example("Extract streamlines based on selection criteria",
-                "tckedit in.tck out.tck -include ROI1.mif -include ROI2.mif -minlength 25",
-                "Multiple criteria can be added in a single invocation of tckedit, "
-                "and a streamline must satisfy all criteria imposed in order to be "
-                "written to the output file. Note that both -include and -exclude "
-                "options can be specified multiple times to provide multiple "
-                "waypoints / exclusion masks.")
+  + Example ("Extract streamlines based on selection criteria",
+             "tckedit in.tck out.tck -include ROI1.mif -include ROI2.mif -minlength 25",
+             "Multiple criteria can be added in a single invocation of tckedit,"
+             " and a streamline must satisfy all criteria imposed"
+             " in order to be written to the output file."
+             " Note that both -include and -exclude options can be specified multiple times"
+             " to provide multiple waypoints / exclusion masks.")
 
-      + Example("Select only those streamline vertices within a mask",
-                "tckedit in.tck cropped.tck -mask mask.mif",
-                "The -mask option is applied to each streamline vertex independently, "
-                "rather than to each streamline, retaining only those streamline vertices "
-                "within the mask. As such, use of this option may result in a greater "
-                "number of output streamlines than input streamlines, as a single input "
-                "streamline may have the vertices at either endpoint retained but some "
-                "vertices at its midpoint removed, effectively cutting one long streamline "
-                "into multiple shorter streamlines.");
+  + Example ("Select only those streamline vertices within a mask",
+             "tckedit in.tck cropped.tck -mask mask.mif",
+             "The -mask option is applied to each streamline vertex independently,"
+             " rather than to each streamline,"
+             " retaining only those streamline vertices within the mask."
+             " As such, use of this option may result in a greater number"
+             " of output streamlines than input streamlines,"
+             " as a single input streamline may have the vertices at either endpoint retained"
+             " but some vertices at its midpoint removed,"
+             " effectively cutting one long streamline into multiple shorter streamlines.");
+
+
 
   ARGUMENTS
-  +Argument("tracks_in", "the input track file(s)").type_tracks_in().allow_multiple() +
-      Argument("tracks_out", "the output track file").type_tracks_out();
+  + Argument ("tracks_in",  "the input track file(s)").type_tracks_in().allow_multiple()
+  + Argument ("tracks_out", "the output track file").type_tracks_out();
 
   OPTIONS
-  +ROIOption + LengthOption + TruncateOption + WeightsOption
+  + ROIOption
+  + LengthOption
+  + TruncateOption
+  + WeightsOption
 
-      + OptionGroup("Other options specific to tckedit") +
-      Option("inverse",
-             "output the inverse selection of streamlines based on the criteria provided; "
-             "i.e. only those streamlines that fail at least one selection criterion, "
-             "and/or vertices that are outside masks if provided, will be written to file")
+  + OptionGroup ("Other options specific to tckedit")
+  + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided;"
+                       " i.e. only those streamlines that fail at least one selection criterion,"
+                       " and/or vertices that are outside masks if provided,"
+                       " will be written to file")
 
-      + Option("ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
+  + Option ("ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
 
-      // TODO Input weights with multiple input files currently not supported
-      + OptionGroup("Options for handling streamline weights") + Tractography::TrackWeightsInOption +
-      Tractography::TrackWeightsOutOption;
+  // TODO Input weights with multiple input files currently not supported
+  + OptionGroup ("Options for handling streamline weights")
+  + Tractography::TrackWeightsInOption
+  + Tractography::TrackWeightsOutOption;
 
   // TODO Additional options?
   // - Peak curvature threshold
   // - Mean curvature threshold
+
 }
+// clang-format on
 
 void erase_if_present(Tractography::Properties &p, const std::string s) {
   auto i = p.find(s);

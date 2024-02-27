@@ -24,22 +24,27 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   SYNOPSIS = "Create bitwise checkerboard image";
 
   ARGUMENTS
-  +Argument("input", "the input image to be used as a template.").type_image_in() +
-      Argument("output", "the output binary image mask.").type_image_out();
+  + Argument ("input", "the input image to be used as a template.").type_image_in ()
+  + Argument ("output", "the output binary image mask.").type_image_out ();
 
   OPTIONS
-  +Option("tiles", "specify the number of tiles in any direction") + Argument("value").type_integer()
+  + Option ("tiles", "specify the number of tiles in any direction")
+    + Argument ("value").type_integer()
 
-      + Option("invert", "invert output binary mask.")
+  + Option ("invert", "invert output binary mask.")
 
-      + Option("nan", "use NaN as the output zero value.");
+  + Option ("nan", "use NaN as the output zero value.");
+
 }
+// clang-format on
 
 void run() {
 

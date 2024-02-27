@@ -22,18 +22,22 @@ namespace TFCE {
 
 using namespace App;
 const OptionGroup Options(const default_type default_dh, const default_type default_e, const default_type default_h) {
+  // clang-format off
   OptionGroup result =
       OptionGroup("Options for controlling TFCE behaviour")
 
-      + Option("tfce_dh", "the height increment used in the tfce integration (default: " + str(default_dh, 2) + ")") +
-      Argument("value").type_float(1e-6)
+      + Option("tfce_dh", "the height increment used in the tfce integration"
+                          " (default: " + str(default_dh, 2) + ")")
+        + Argument("value").type_float(1e-6)
 
-      + Option("tfce_e", "tfce extent exponent (default: " + str(default_e, 2) + ")") +
-      Argument("value").type_float(0.0)
+      + Option("tfce_e", "tfce extent exponent"
+                         " (default: " + str(default_e, 2) + ")")
+        + Argument("value").type_float(0.0)
 
-      + Option("tfce_h", "tfce height exponent (default: " + str(default_h, 2) + ")") +
-      Argument("value").type_float(0.0);
-
+      + Option("tfce_h", "tfce height exponent"
+                         " (default: " + str(default_h, 2) + ")")
+        + Argument("value").type_float(0.0);
+  // clang-format on
   return result;
 }
 

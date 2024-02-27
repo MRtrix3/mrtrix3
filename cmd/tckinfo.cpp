@@ -24,17 +24,21 @@ using namespace MR;
 using namespace MR::DWI;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Print out information about a track file";
 
   ARGUMENTS
-  +Argument("tracks", "the input track file.").type_tracks_in().allow_multiple();
+  + Argument ("tracks", "the input track file.").type_tracks_in().allow_multiple();
 
   OPTIONS
-  +Option("count", "count number of tracks in file explicitly, ignoring the header");
+  + Option ("count", "count number of tracks in file explicitly, ignoring the header");
+
 }
+// clang-format on
 
 void run() {
   bool actual_count = get_options("count").size();
