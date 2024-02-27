@@ -30,6 +30,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Connectome;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -37,19 +38,21 @@ void usage() {
   SYNOPSIS = "Convert a parcellated image (where values are node indices) into a colour image";
 
   DESCRIPTION
-  +"Many software packages handle this colouring internally within their viewer program; this binary "
-   "explicitly converts a parcellation image into a colour image that should be viewable in any software.";
+  + "Many software packages handle this colouring internally within their viewer program;"
+    " this binary explicitly converts a parcellation image into a colour image"
+    " that should be viewable in any software.";
 
   ARGUMENTS
-  +Argument("nodes_in", "the input node parcellation image").type_image_in() +
-      Argument("colour_out", "the output colour image").type_image_out();
+  + Argument ("nodes_in",   "the input node parcellation image").type_image_in()
+  + Argument ("colour_out", "the output colour image").type_image_out();
 
   OPTIONS
-  +Option("lut",
-          "Provide the relevant colour lookup table "
-          "(if not provided, nodes will be coloured randomly)") +
-      Argument("file").type_file_in();
+  + Option ("lut", "Provide the relevant colour lookup table"
+                   " (if not provided, nodes will be coloured randomly)")
+    + Argument ("file").type_file_in();
+
 }
+// clang-format on
 
 void run() {
 

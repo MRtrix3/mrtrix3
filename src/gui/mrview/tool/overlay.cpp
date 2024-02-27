@@ -627,36 +627,47 @@ void Overlay::update_selection() {
 
 void Overlay::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("Overlay tool options")
 
-      + Option("overlay.load", "Loads the specified image on the overlay tool.").allow_multiple() +
-      Argument("image").type_image_in()
+      + Option("overlay.load",
+               "Loads the specified image on the overlay tool.").allow_multiple()
+        + Argument("image").type_image_in()
 
-      + Option("overlay.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple() +
-      Argument("value").type_float(0.0, 1.0)
+      + Option("overlay.opacity",
+               "Sets the overlay opacity to floating value [0-1].").allow_multiple()
+        + Argument("value").type_float(0.0, 1.0)
 
-      + Option("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
-            .allow_multiple() +
-      Argument("index").type_integer()
+      + Option("overlay.colourmap",
+               "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.").allow_multiple()
+        + Argument("index").type_integer()
 
-      + Option("overlay.colour", "Specify a manual colour for the overlay, as three comma-separated values")
-            .allow_multiple() +
-      Argument("R,G,B").type_sequence_float()
+      + Option("overlay.colour",
+               "Specify a manual colour for the overlay,"
+               " as three comma-separated values").allow_multiple()
+        + Argument("R,G,B").type_sequence_float()
 
-      + Option("overlay.intensity", "Set the intensity windowing of the overlay").allow_multiple() +
-      Argument("Min,Max").type_sequence_float()
+      + Option("overlay.intensity",
+               "Set the intensity windowing of the overlay").allow_multiple()
+        + Argument("Min,Max").type_sequence_float()
 
-      + Option("overlay.threshold_min", "Set the lower threshold value of the overlay").allow_multiple() +
-      Argument("value").type_float()
+      + Option("overlay.threshold_min",
+               "Set the lower threshold value of the overlay").allow_multiple()
+        + Argument("value").type_float()
 
-      + Option("overlay.threshold_max", "Set the upper threshold value of the overlay").allow_multiple() +
-      Argument("value").type_float()
+      + Option("overlay.threshold_max",
+               "Set the upper threshold value of the overlay").allow_multiple()
+        + Argument("value").type_float()
 
-      + Option("overlay.no_threshold_min", "Disable the lower threshold for the overlay").allow_multiple() +
-      Option("overlay.no_threshold_max", "Disable the upper threshold for the overlay").allow_multiple()
+      + Option("overlay.no_threshold_min",
+               "Disable the lower threshold for the overlay").allow_multiple()
+      + Option("overlay.no_threshold_max",
+               "Disable the upper threshold for the overlay").allow_multiple()
 
-      + Option("overlay.interpolation", "Enable or disable overlay image interpolation.").allow_multiple() +
-      Argument("value").type_bool();
+      + Option("overlay.interpolation",
+               "Enable or disable overlay image interpolation.").allow_multiple()
+        + Argument("value").type_bool();
+  // clang-format on
 }
 
 bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {

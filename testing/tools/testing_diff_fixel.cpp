@@ -25,18 +25,23 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two fixel images for differences, within specified tolerance";
 
   ARGUMENTS
-  +Argument("fixel1", "fixel directory.").type_directory_in() +
-      Argument("fixel2", "another fixel directory.").type_directory_in();
+  + Argument ("fixel1", "fixel directory.").type_directory_in()
+  + Argument ("fixel2", "another fixel directory.").type_directory_in();
 
   OPTIONS
-  +Testing::Diff_Image_Options;
+  + Testing::Diff_Image_Options;
+
 }
+// clang-format on
 
 void run() {
   std::string fixel_directory1 = argument[0];

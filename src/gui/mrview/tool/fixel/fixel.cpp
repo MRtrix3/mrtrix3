@@ -737,13 +737,15 @@ void Fixel::threshold_upper_value_changed() {
 
 void Fixel::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("Fixel plot tool options")
-
       + Option("fixel.load",
-               "Load a fixel file (any file inside a fixel directory, or an old .msf / .msh legacy format file) into "
-               "the fixel tool.")
-            .allow_multiple() +
-      Argument("image").type_image_in();
+               "Load a fixel file"
+               " (any file inside a fixel directory,"
+               " or an old .msf / .msh legacy format file)"
+               " into the fixel tool.").allow_multiple()
+        + Argument("image").type_image_in();
+  // clang-format on
 }
 
 bool Fixel::process_commandline_option(const MR::App::ParsedOption &opt) {

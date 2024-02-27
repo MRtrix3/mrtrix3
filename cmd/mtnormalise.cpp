@@ -32,97 +32,103 @@ using namespace App;
 
 const char *poly_order_choices[] = {"0", "1", "2", "3", nullptr};
 
+// clang-format off
 void usage() {
-  AUTHOR =
-      "Thijs Dhollander (thijs.dhollander@gmail.com), Rami Tabbara (rami.tabbara@florey.edu.au), "
-      "David Raffelt (david.raffelt@florey.edu.au), Jonas Rosnarho-Tornstrand (jonas.rosnarho-tornstrand@kcl.ac.uk) "
-      "and J-Donald Tournier (jdtournier@gmail.com)";
+
+  AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com)"
+           " and Rami Tabbara (rami.tabbara@florey.edu.au)"
+           " and David Raffelt (david.raffelt@florey.edu.au)"
+           " and Jonas Rosnarho-Tornstrand (jonas.rosnarho-tornstrand@kcl.ac.uk)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
 
   DESCRIPTION
-  +"This command takes as input any number of tissue components (e.g. from "
-   "multi-tissue CSD) and outputs corresponding normalised tissue components "
-   "corrected for the effects of (residual) intensity inhomogeneities. "
-   "Intensity normalisation is performed by optimising the voxel-wise sum of "
-   "all tissue compartments towards a constant value, under constraints of "
-   "spatial smoothness (polynomial basis of a given order). Different to "
-   "the Raffelt et al. 2017 abstract, this algorithm performs this task "
-   "in the log-domain instead, with added gradual outlier rejection, different "
-   "handling of the balancing factors between tissue compartments and a "
-   "different iteration structure."
+  + "This command takes as input any number of tissue components"
+    " (e.g. from multi-tissue CSD)"
+    " and outputs corresponding normalised tissue components"
+    " corrected for the effects of (residual) intensity inhomogeneities."
+    " Intensity normalisation is performed by optimising the voxel-wise sum"
+    " of all tissue compartments towards a constant value,"
+    " under constraints of spatial smoothness"
+    " (polynomial basis of a given order)."
+    " Different to the Raffelt et al. 2017 abstract,"
+    " this algorithm performs this task in the log-domain instead,"
+    " with added gradual outlier rejection,"
+    " different handling of the balancing factors between tissue compartments,"
+    " and a different iteration structure."
 
-      + "The -mask option is mandatory and is optimally provided with a brain mask "
-        "(such as the one obtained from dwi2mask earlier in the processing pipeline). "
-        "Outlier areas with exceptionally low or high combined tissue contributions are "
-        "accounted for and reoptimised as the intensity inhomogeneity estimation becomes "
-        "more accurate.";
+  + "The -mask option is mandatory and is optimally provided with a brain mask"
+    " (such as the one obtained from dwi2mask earlier in the processing pipeline)."
+    " Outlier areas with exceptionally low or high combined tissue contributions"
+    " are accounted for and reoptimised"
+    " as the intensity inhomogeneity estimation becomes more accurate.";
 
   EXAMPLES
-  +Example("Default usage (for 3-tissue CSD compartments)",
-           "mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif",
-           "Note how for each tissue compartment, the input and output images are provided as "
-           "a consecutive pair.");
+  + Example("Default usage (for 3-tissue CSD compartments)",
+            "mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif",
+            "Note how for each tissue compartment,"
+            " the input and output images are provided as a consecutive pair.");
 
   ARGUMENTS
-  +Argument("input output", "list of all input and output tissue compartment files (see example usage).")
-       .type_various()
-       .allow_multiple();
+  + Argument("input output", "list of all input and output tissue compartment files"
+                             " (see example usage).").type_various().allow_multiple();
 
   OPTIONS
-  +Option("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.")
-          .required() +
-      Argument("image").type_image_in()
+  + Option("mask", "the mask defines the data used to compute the intensity normalisation."
+                   " This option is mandatory.").required()
+    + Argument("image").type_image_in()
 
-      + Option("order",
-               "the maximum order of the polynomial basis used to fit the normalisation field in the log-domain. "
-               "An order of 0 is equivalent to not allowing spatial variance of the intensity normalisation factor. "
-               "(default: " +
-                   str(DEFAULT_POLY_ORDER) + ")") +
-      Argument("number").type_choice(poly_order_choices)
+  + Option("order", "the maximum order of the polynomial basis"
+                    " used to fit the normalisation field in the log-domain."
+                    " An order of 0 is equivalent to not allowing spatial variance"
+                    " of the intensity normalisation factor."
+                    " (default: " + str(DEFAULT_POLY_ORDER) + ")")
+    + Argument("number").type_choice(poly_order_choices)
 
-      + Option("niter",
-               "set the number of iterations. The first (and potentially only) entry applies to the main loop. "
-               "If supplied as a comma-separated list of integers, the second entry applies to the inner loop to "
-               "update the balance factors "
-               "(default: " +
-                   str(DEFAULT_MAIN_ITER_VALUE) + "," + str(DEFAULT_BALANCE_MAXITER_VALUE) + ").") +
-      Argument("number").type_sequence_int()
+  + Option("niter", "set the number of iterations."
+                    " The first (and potentially only) entry applies to the main loop."
+                    " If supplied as a comma-separated list of integers,"
+                    " the second entry applies to the inner loop to update the balance factors."
+                    " (default: " + str(DEFAULT_MAIN_ITER_VALUE) + "," + str(DEFAULT_BALANCE_MAXITER_VALUE) + ").")
+    + Argument("number").type_sequence_int()
 
-      + Option("reference",
-               "specify the (positive) reference value to which the summed tissue compartments will be normalised. "
-               "(default: " +
-                   str(DEFAULT_REFERENCE_VALUE, 6) + ", SH DC term for unit angular integral)") +
-      Argument("number").type_float(std::numeric_limits<default_type>::min())
+  + Option("reference", "specify the (positive) reference value"
+                        " to which the summed tissue compartments will be normalised."
+                        " (default: " +str(DEFAULT_REFERENCE_VALUE, 6) + ","
+                        " SH DC term for unit angular integral)")
+    + Argument("number").type_float(std::numeric_limits<default_type>::min())
 
-      + Option("balanced",
-               "incorporate the per-tissue balancing factors into scaling of the output images "
-               "(NOTE: use of this option has critical consequences for AFD intensity normalisation; "
-               "should not be used unless these consequences are fully understood)")
+  + Option("balanced", "incorporate the per-tissue balancing factors"
+                       " into scaling of the output images."
+                       " (NOTE: use of this option has critical consequences"
+                       " for AFD intensity normalisation;"
+                       " should not be used unless these consequences are fully understood)")
 
-      + OptionGroup("Debugging options")
+  + OptionGroup("Debugging options")
 
-      + Option("check_norm",
-               "output the final estimated spatially varying intensity level that is used for normalisation.") +
-      Argument("image").type_image_out()
+    + Option("check_norm", "output the final estimated spatially varying intensity level"
+                           " that is used for normalisation.")
+      + Argument("image").type_image_out()
 
-      + Option("check_mask",
-               "output the final mask used to compute the normalisation. "
-               "This mask excludes regions identified as outliers by the optimisation process.") +
-      Argument("image").type_image_out()
+    + Option("check_mask", "output the final mask used to compute the normalisation."
+                           " This mask excludes regions identified as outliers"
+                           " by the optimisation process.")
+      + Argument("image").type_image_out()
 
-      + Option("check_factors", "output the tissue balance factors computed during normalisation.") +
-      Argument("file").type_file_out();
+    + Option("check_factors", "output the tissue balance factors computed during normalisation.")
+      + Argument("file").type_file_out();
 
   REFERENCES
-  +"Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
-   "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
-   "In Proc. ISMRM, 2017, 26, 3541" +
-      "Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. " // Internal
-      "Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. "
-      "In Proc. ISMRM, 2021, 29, 2472";
-  ;
+  + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
+    "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
+    "In Proc. ISMRM, 2017, 26, 3541"
+  + "Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. " // Internal
+    "Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. "
+    "In Proc. ISMRM, 2021, 29, 2472";
+
 }
+// clang-format on
 
 using ValueType = float;
 using ImageType = Image<ValueType>;

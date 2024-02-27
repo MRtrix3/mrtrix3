@@ -35,34 +35,35 @@ using namespace MR::Math::Stats::GLM;
 
 using MR::Math::Stats::index_type;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Statistical testing of vector data using non-parametric permutation testing";
 
   DESCRIPTION
-  +"This command can be used to perform permutation testing of any form of data. "
-   "The data for each input subject must be stored in a text file, with one value per row. "
-   "The data for each row across subjects will be tested independently, i.e. there is no "
-   "statistical enhancement that occurs between the data; however family-wise error control "
-   "will be used."
+  + "This command can be used to perform permutation testing of any form of data."
+    " The data for each input subject must be stored in a text file,"
+    " with one value per row."
+    " The data for each row across subjects will be tested independently,"
+    " i.e. there is no statistical enhancement that occurs between the data;"
+    " however family-wise error control will be used."
 
-      + Math::Stats::GLM::column_ones_description;
+  + Math::Stats::GLM::column_ones_description;
 
   ARGUMENTS
-  +Argument("input", "a text file listing the file names of the input subject data").type_file_in()
-
-      + Argument("design", "the design matrix").type_file_in()
-
-      + Argument("contrast", "the contrast matrix").type_file_in()
-
-      + Argument("output", "the filename prefix for all output").type_text();
+  + Argument ("input", "a text file listing the file names of the input subject data").type_file_in()
+  + Argument ("design", "the design matrix").type_file_in()
+  + Argument ("contrast", "the contrast matrix").type_file_in()
+  + Argument ("output", "the filename prefix for all output").type_text();
 
   OPTIONS
-  +Math::Stats::shuffle_options(false)
+  + Math::Stats::shuffle_options(false)
+  + Math::Stats::GLM::glm_options("element");
 
-      + Math::Stats::GLM::glm_options("element");
 }
+// clang-format on
 
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;

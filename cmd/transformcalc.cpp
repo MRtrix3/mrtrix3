@@ -40,65 +40,80 @@ const char *operations[] = {"invert",
                             "align_vertices_rigid_scale",
                             NULL};
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  +Argument("inputs", "the input(s) for the specified operation").allow_multiple() +
-      Argument("operation",
-               "the operation to perform, one of: " + join(operations, ", ") +
-                   " (see description section for details).")
-          .type_choice(operations) +
-      Argument("output", "the output transformation matrix.").type_file_out();
+  + Argument ("inputs", "the input(s) for the specified operation").allow_multiple()
+  + Argument ("operation", "the operation to perform;"
+                           " one of: " + join(operations, ", ") +
+                           " (see description section for details).").type_choice (operations)
+  + Argument ("output", "the output transformation matrix.").type_file_out ();
 
   EXAMPLES
-  +Example("Invert a transformation", "transformcalc matrix_in.txt invert matrix_out.txt", "")
+  + Example ("Invert a transformation",
+             "transformcalc matrix_in.txt invert matrix_out.txt",
+             "")
 
-      + Example("Calculate the matrix square root of the input transformation (halfway transformation)",
-                "transformcalc matrix_in.txt half matrix_out.txt",
-                "")
+  + Example ("Calculate the matrix square root of the input transformation"
+             " (halfway transformation)",
+             "transformcalc matrix_in.txt half matrix_out.txt",
+             "")
 
-      + Example("Calculate the rigid component of an affine input transformation",
-                "transformcalc affine_in.txt rigid rigid_out.txt",
-                "")
+  + Example ("Calculate the rigid component of an affine input transformation",
+             "transformcalc affine_in.txt rigid rigid_out.txt",
+             "")
 
-      + Example("Calculate the transformation matrix from an original image and an image with modified header",
-                "transformcalc mov mapmovhdr header output",
-                "")
+  + Example ("Calculate the transformation matrix from an original image"
+             " and an image with modified header",
+             "transformcalc mov mapmovhdr header output",
+             "")
 
-      + Example("Calculate the average affine matrix of a set of input matrices",
-                "transformcalc input1.txt ... inputN.txt average matrix_out.txt",
-                "")
+  + Example ("Calculate the average affine matrix of a set of input matrices",
+             "transformcalc input1.txt ... inputN.txt average matrix_out.txt",
+             "")
 
-      + Example("Create interpolated transformation matrix between two inputs",
-                "transformcalc input1.txt input2.txt interpolate matrix_out.txt",
-                "Based on matrix decomposition with linear interpolation of "
-                "translation, rotation and stretch described in: "
-                "Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
-                "Matrix, 92, 258-264. doi:10.1.1.56.1336")
+  + Example ("Create interpolated transformation matrix between two inputs",
+             "transformcalc input1.txt input2.txt interpolate matrix_out.txt",
+             "Based on matrix decomposition"
+             " with linear interpolation of translation, rotation and stretch"
+             " described in: "
+             "Shoemake, K., Hill, M., & Duff, T. (1992). "
+             "Matrix Animation and Polar Decomposition. "
+             "Matrix, 92, 258-264. doi:10.1.1.56.1336")
 
-      + Example(
-            "Decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S)",
-            "transformcalc matrix_in.txt decompose matrixes_out.txt",
-            "The output is a key-value text file containing: "
-            "scaling: vector of 3 scaling factors in x, y, z direction; "
-            "shear: list of shear factors for xy, xz, yz axes; "
-            "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; "
-            "angle_axis: angle in radians and rotation axis; "
-            "translation : translation vector along x, y, z axes in mm; "
-            "R: composed roation matrix (R = rot_x * rot_y * rot_z); "
-            "S: composed scaling and shear matrix")
+  + Example ("Decompose transformation matrix M"
+             " into translation, rotation and stretch and shear"
+             " (M = T * R * S)",
+             "transformcalc matrix_in.txt decompose matrixes_out.txt",
+             "The output is a key-value text file containing:"
+             " scaling: vector of 3 scaling factors in x, y, z direction;"
+             " shear: list of shear factors for xy, xz, yz axes;"
+             " angles: list of Euler angles about static x, y, z axes in radians"
+             " in the range [0:pi]x[-pi:pi]x[-pi:pi];"
+             " angle_axis: angle in radians and rotation axis;"
+             " translation: translation vector along x, y, z axes in mm;"
+             " R: composed roation matrix (R = rot_x * rot_y * rot_z);"
+             " S: composed scaling and shear matrix")
 
-      + Example("Calculate transformation that aligns two images based on sets of corresponding landmarks",
-                "transformcalc input moving.txt fixed.txt align_vertices_rigid rigid.txt",
-                "Similary, 'align_vertices_rigid_scale' produces an affine matrix (rigid and global scale). "
-                "Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row "
-                "of moving.txt and fixed.txt. Requires 3 or more vertices in each file. "
-                "Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' "
-                "DOI:10.1107/S0567739476001873");
+  + Example ("Calculate transformation that aligns two images"
+             " based on sets of corresponding landmarks",
+             "transformcalc input moving.txt fixed.txt align_vertices_rigid rigid.txt",
+             "Similary, 'align_vertices_rigid_scale' produces an affine matrix (rigid and global scale)."
+             " Vertex coordinates are in scanner space,"
+             " corresponding vertices must be stored in the same row of moving.txt and fixed.txt."
+             " Requires 3 or more vertices in each file."
+             " Algorithm: "
+             "Kabsch "
+             "'A solution for the best rotation to relate two sets of vectors' "
+             "DOI:10.1107/S0567739476001873");
+
 }
+// clang-format on
 
 template <typename T> int sgn(T val) { return (T(0) < val) - (val < T(0)); }
 
