@@ -16,9 +16,7 @@
 
 #include "dwi/fmls.h"
 
-namespace MR {
-namespace DWI {
-namespace FMLS {
+namespace MR::DWI::FMLS {
 
 // clang-format off
 const App::OptionGroup FMLSSegmentOption =
@@ -422,6 +420,4 @@ void Segmenter::optimise_mean_dir(FOD_lobe &lobe) const {
 }
 #endif
 
-} // namespace FMLS
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::FMLS

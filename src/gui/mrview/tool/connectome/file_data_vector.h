@@ -21,10 +21,7 @@
 
 #include "gui/gui.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 // Vector that stores the name of the file imported, so it can be displayed in the GUI
 class FileDataVector : public Eigen::VectorXf {
@@ -56,9 +53,6 @@ private:
   float min, mean, max;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

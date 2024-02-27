@@ -22,9 +22,7 @@
 #include "colourmap.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 class ColourMapButton;
 
@@ -81,8 +79,6 @@ private slots:
   void reset_intensity_slot();
 };
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView
 
 #endif // __gui_mrview_colourmap_button_h__

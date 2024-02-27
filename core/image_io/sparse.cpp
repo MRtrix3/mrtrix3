@@ -17,8 +17,7 @@
 #include "image_io/sparse.h"
 #include "header.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void SparseLegacy::load(const Header &header, size_t) {
 
@@ -153,5 +152,4 @@ uint64_t SparseLegacy::set_numel(const uint64_t old_offset, const uint32_t numel
   return ret;
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

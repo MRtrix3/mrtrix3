@@ -26,9 +26,7 @@
 #include "gui/dialog/progress.h"
 #include "gui/dialog/report_exception.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 void init() {
   ::MR::ProgressBar::display_func = ::MR::GUI::Dialog::ProgressBar::display;
@@ -39,6 +37,4 @@ void init() {
   ::MR::App::check_overwrite_files_func = ::MR::GUI::Dialog::File::check_overwrite_files_func;
 }
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog

@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/editing/receiver.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 bool Receiver::operator()(const Streamline<> &in) {
   auto display_func = [&]() {
@@ -72,7 +69,4 @@ bool Receiver::operator()(const Streamline<> &in) {
   return (!(number && (count == number)));
 }
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Editing

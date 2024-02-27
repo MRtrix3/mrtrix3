@@ -23,10 +23,7 @@
 #include "gui/mrview/tool/odf/odf.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class ODF_Preview : public QWidget {
   Q_OBJECT
@@ -64,9 +61,6 @@ protected:
   friend class ODF;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

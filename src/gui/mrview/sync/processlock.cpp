@@ -17,10 +17,7 @@
 #include "gui/mrview/sync/processlock.h"
 #include <QCryptographicHash>
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 
 QString GenerateKeyHash(const QString &key, const QString &salt) {
   QByteArray data;
@@ -82,7 +79,4 @@ void ProcessLock::Release() {
     sharedMem.detach();
   memLock.release();
 }
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync

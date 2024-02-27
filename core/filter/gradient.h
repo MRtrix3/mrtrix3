@@ -26,8 +26,7 @@
 #include "memory.h"
 #include "transform.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 /** \addtogroup Filters
 @{ */
 
@@ -145,7 +144,6 @@ protected:
   std::vector<default_type> stdev;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

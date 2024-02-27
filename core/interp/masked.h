@@ -21,8 +21,7 @@
 #include "datatype.h"
 #include "interp/base.h"
 
-namespace MR {
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -83,7 +82,6 @@ public:
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
+} // namespace MR::Interp
 
 #endif

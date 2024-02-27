@@ -18,8 +18,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 // clang-format off
 const App::OptionGroup ShellsOption =
@@ -391,5 +390,4 @@ void Shells::regionQuery(const BValueList &bvals, const default_type b, std::vec
   }
 }
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI

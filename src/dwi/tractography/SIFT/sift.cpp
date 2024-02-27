@@ -17,10 +17,7 @@
 #include "dwi/tractography/SIFT/sift.h"
 #include "math/math.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 using namespace App;
 
@@ -84,7 +81,4 @@ const OptionGroup SIFTTermOption =
       + Argument("value").type_float(0.0);
 // clang-format on
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT

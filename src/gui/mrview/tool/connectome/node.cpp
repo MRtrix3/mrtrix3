@@ -21,10 +21,7 @@
 #include "gui/mrview/window.h"
 #include "types.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Node::Node(const Eigen::Vector3f &com, const size_t vol, const size_t pixheight, const MR::Image<bool> &image)
     : centre_of_mass(com),
@@ -132,7 +129,4 @@ void Node::Mesh::render() const {
   GL::assert_context_is_current();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

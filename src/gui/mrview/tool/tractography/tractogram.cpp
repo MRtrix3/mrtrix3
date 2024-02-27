@@ -27,10 +27,7 @@
 
 const size_t MAX_BUFFER_SIZE = 2796200; // number of points to fill 32MB
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 const int Tractogram::track_padding;
 TrackGeometryType Tractogram::default_tract_geom(TrackGeometryType::Pseudotubes);
 
@@ -951,7 +948,4 @@ void Tractogram::load_threshold_scalars_onto_GPU(std::vector<float> &buffer, siz
   GL::assert_context_is_current();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

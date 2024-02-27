@@ -18,8 +18,7 @@
 
 #include "file/name_parser.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 namespace {
 
@@ -295,5 +294,4 @@ std::ostream &operator<<(std::ostream &stream, const ParsedName &pin) {
   return (stream);
 }
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File

@@ -19,8 +19,7 @@
 
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 class Cursor {
 public:
   Cursor();
@@ -35,7 +34,6 @@ public:
   static QCursor erase;
 };
 
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

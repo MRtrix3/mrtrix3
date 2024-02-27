@@ -23,9 +23,7 @@
 #include "image_helpers.h"
 #include "registration/multi_contrast.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 
 template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType> class Demons4D {
 public:
@@ -168,7 +166,6 @@ protected:
   Eigen::Vector3d total_update;
   Eigen::Matrix<default_type, 3, 1> grad;
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Metric
+
 #endif

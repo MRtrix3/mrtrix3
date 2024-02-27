@@ -27,8 +27,7 @@
 #include "file/ofstream.h"
 #include "header.h"
 
-namespace MR {
-namespace PhaseEncoding {
+namespace MR::PhaseEncoding {
 
 extern const App::OptionGroup ImportOptions;
 extern const App::OptionGroup SelectOptions;
@@ -280,7 +279,6 @@ Eigen::MatrixXd load_eddy(const std::string &config_path, const std::string &ind
   return transform_for_image_load(PE, header);
 }
 
-} // namespace PhaseEncoding
-} // namespace MR
+} // namespace MR::PhaseEncoding
 
 #endif

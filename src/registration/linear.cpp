@@ -16,8 +16,7 @@
 
 #include "registration/linear.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 
 using namespace App;
 
@@ -441,5 +440,4 @@ const OptionGroup fod_options =
              " (i.e. 6, 15, 28, 45, 66 etc)");
 // clang-format on
 
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration

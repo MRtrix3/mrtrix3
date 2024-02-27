@@ -20,9 +20,7 @@
 #include "file/mmap.h"
 #include "image_io/base.h"
 
-namespace MR {
-
-namespace ImageIO {
+namespace MR::ImageIO {
 
 class GZ : public Base {
 public:
@@ -47,7 +45,6 @@ protected:
   virtual void unload(const Header &);
 };
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO
 
 #endif

@@ -23,10 +23,7 @@
 
 #include "dwi/directions/set.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 // Helper functions; note that int[3] rather than Voxel is always used during the mapping itself
 template <typename T> inline Eigen::Vector3i round(const Eigen::Matrix<T, 3, 1> &p) {
@@ -361,9 +358,6 @@ public:
   }
 };
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping
 
 #endif

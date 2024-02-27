@@ -25,9 +25,7 @@
 #include <QAbstractItemModel>
 #include <QTableView>
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 class Window;
 
@@ -113,8 +111,6 @@ private:
 };
 
 } // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView
 
 #endif

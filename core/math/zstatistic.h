@@ -22,8 +22,7 @@
 
 #include "math/stats/typedefs.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 default_type t2z(const default_type stat, const default_type dof);
 default_type F2z(const default_type stat, const size_t rank, const default_type dof);
@@ -93,7 +92,6 @@ protected:
   std::mutex mutex;
 };
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

@@ -20,10 +20,7 @@
 #include "algo/threaded_loop.h"
 #include "transform.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 // clang-format off
 const App::OptionGroup SIFTModelProcMaskOption =
@@ -176,7 +173,4 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
   }
 }
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT

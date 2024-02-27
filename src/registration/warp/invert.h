@@ -23,9 +23,7 @@
 #include "registration/warp/convert.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-namespace Warp {
+namespace MR::Registration::Warp {
 
 namespace {
 
@@ -157,8 +155,6 @@ FORCE_INLINE void invert_displacement(Image<default_type> &disp_field,
 }
 
 //! @}
-} // namespace Warp
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Warp
 
 #endif

@@ -42,9 +42,7 @@
   "MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. "             \
   "NeuroImage, 2019, 202, 116137"
 
-namespace MR {
-
-namespace App {
+namespace MR::App {
 
 Description DESCRIPTION;
 ExampleList EXAMPLES;
@@ -1276,5 +1274,4 @@ default_type App::ParsedArgument::as_float() const {
   return retval;
 }
 
-} // namespace App
-} // namespace MR
+} // namespace MR::App

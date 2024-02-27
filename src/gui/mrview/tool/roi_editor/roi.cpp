@@ -23,10 +23,7 @@
 #include "gui/projection.h"
 #include "header.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
 
@@ -745,7 +742,4 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
   return false;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

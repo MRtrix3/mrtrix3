@@ -21,8 +21,7 @@
 #include "image_io/variable_scaling.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void VariableScaling::load(const Header &header, size_t) {
   if (files.empty())
@@ -59,5 +58,4 @@ void VariableScaling::load(const Header &header, size_t) {
 
 void VariableScaling::unload(const Header &header) {}
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

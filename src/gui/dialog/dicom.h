@@ -20,16 +20,12 @@
 #include "file/dicom/tree.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 using namespace MR::File::Dicom;
 
 std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree);
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog
 
 #endif

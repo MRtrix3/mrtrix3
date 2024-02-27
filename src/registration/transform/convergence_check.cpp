@@ -19,8 +19,8 @@
 
 namespace MR {
 using namespace MR::Math;
-namespace Registration {
-namespace Transform {
+
+namespace Registration::Transform {
 bool DoubleExpSmoothSlopeCheck::go_on(const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &element) {
   assert(is_initialised);
   ++iter_count;
@@ -109,6 +109,6 @@ void DoubleExpSmoothSlopeCheck::debug(const Eigen::Matrix<default_type, Eigen::D
   DEBUG("bmax : " + str(db.back().array().abs().maxCoeff()));
 }
 //! @}
-} // namespace Transform
-} // namespace Registration
+} // namespace Registration::Transform
+
 } // namespace MR

@@ -17,10 +17,7 @@
 #include "gui/mrview/sync/localsocketreader.h"
 #include "exception.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 LocalSocketReader::LocalSocketReader(QLocalSocket *mySocket) : QObject(0) {
   socket = mySocket;
   QObject::connect(socket, SIGNAL(readyRead()), this, SLOT(OnDataReceived()));
@@ -75,7 +72,4 @@ void LocalSocketReader::OnDataReceived() {
   emit DataReceived(messagesReceived);
 }
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync

@@ -22,10 +22,7 @@
 #include "gui/color_button.h"
 #include "gui/mrview/adjust_button.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class NodeSelectionSettings : public QObject {
 
@@ -197,9 +194,6 @@ public:
   NodeSelectionSettingsFrame *frame;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

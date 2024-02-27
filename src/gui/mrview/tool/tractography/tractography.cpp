@@ -24,10 +24,7 @@
 #include "gui/opengl/lighting.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 const char *tractogram_geometry_types[] = {"pseudotubes", "lines", "points", nullptr};
 
 TrackGeometryType geometry_index2type(const int idx) {
@@ -1057,7 +1054,4 @@ bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOp
   }
   return false;
 }
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

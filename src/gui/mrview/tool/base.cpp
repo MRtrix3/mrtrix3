@@ -17,10 +17,7 @@
 #include "gui/mrview/tool/base.h"
 #include "app.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 void Dock::closeEvent(QCloseEvent *) {
   assert(tool);
@@ -61,7 +58,4 @@ bool CameraInteractor::pan_event(const ModelViewProjection &) { return false; }
 bool CameraInteractor::panthrough_event(const ModelViewProjection &) { return false; }
 bool CameraInteractor::tilt_event(const ModelViewProjection &) { return false; }
 bool CameraInteractor::rotate_event(const ModelViewProjection &) { return false; }
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

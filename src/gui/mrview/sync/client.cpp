@@ -18,10 +18,7 @@
 #include "gui/mrview/sync/client.h"
 #include <iostream>
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 Client::Client() {
   socket = new QLocalSocket();
   SetServerName("mrview_syncer");
@@ -68,7 +65,4 @@ void Client::SendData(QByteArray dat) {
   socket->write(prefixedData.data(), prefixedData.size());
 }
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync

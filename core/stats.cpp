@@ -16,9 +16,7 @@
 
 #include "stats.h"
 
-namespace MR {
-
-namespace Stats {
+namespace MR::Stats {
 
 using namespace App;
 
@@ -79,6 +77,4 @@ void print_header(bool is_complex) {
             << "\n";
 }
 
-} // namespace Stats
-
-} // namespace MR
+} // namespace MR::Stats

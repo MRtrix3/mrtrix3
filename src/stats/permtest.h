@@ -35,9 +35,7 @@
 #define DEFAULT_NUMBER_PERMUTATIONS 5000
 #define DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY 5000
 
-namespace MR {
-namespace Stats {
-namespace PermTest {
+namespace MR::Stats::PermTest {
 
 using value_type = Math::Stats::value_type;
 using vector_type = Math::Stats::vector_type;
@@ -127,8 +125,6 @@ void run_permutations(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_ca
 
 //! @}
 
-} // namespace PermTest
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats::PermTest
 
 #endif

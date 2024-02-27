@@ -16,9 +16,7 @@
 
 #include "adapter/reslice.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 const transform_type NoTransform = transform_type::Identity();
 const std::vector<uint32_t> AutoOverSample;
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter

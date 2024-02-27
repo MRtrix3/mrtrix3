@@ -16,8 +16,7 @@
 
 #include "phase_encoding.h"
 
-namespace MR {
-namespace PhaseEncoding {
+namespace MR::PhaseEncoding {
 
 // clang-format off
 using namespace App;
@@ -148,5 +147,4 @@ void export_commandline(const Header &header) {
     save_eddy(check(scheme), header, opt[0][0], opt[0][1]);
 }
 
-} // namespace PhaseEncoding
-} // namespace MR
+} // namespace MR::PhaseEncoding

@@ -22,10 +22,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 /**
  * @brief SpatialLock manages a mutex lock on n positions in 3D space.
@@ -100,9 +97,6 @@ protected:
   void unlock(const size_t idx) { lockcentres[idx].second = false; }
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT
 
 #endif // __gt_spatiallock_h__

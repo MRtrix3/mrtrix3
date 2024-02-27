@@ -17,9 +17,7 @@
 #include "gui/dialog/report_exception.h"
 #include "gui/gui.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 namespace {
 
@@ -46,6 +44,4 @@ void display_exception(const Exception &E, int log_level) {
     report(E);
 }
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog

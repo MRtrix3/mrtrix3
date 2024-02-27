@@ -17,9 +17,7 @@
 #include "stride.h"
 #include "header.h"
 
-namespace MR {
-
-namespace Stride {
+namespace MR::Stride {
 
 using namespace App;
 
@@ -146,5 +144,4 @@ List __from_command_line(const List &current) {
   return strides;
 }
 
-} // namespace Stride
-} // namespace MR
+} // namespace MR::Stride

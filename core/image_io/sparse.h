@@ -29,8 +29,7 @@
 #include "image_io/default.h"
 #include "memory.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 // A quick description of how the sparse image data are currently stored:
 // * The data are either after the image data within the same file if extension is .msf, or
@@ -105,7 +104,6 @@ protected:
   }
 };
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO
 
 #endif

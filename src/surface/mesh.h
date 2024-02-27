@@ -29,8 +29,7 @@
 
 #include "surface/types.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 namespace Filter {
 class Smooth;
@@ -188,7 +187,6 @@ private:
   template <class ImageType> void mesh2image(const ImageType &, Mesh &, const default_type);
 };
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface
 
 #endif

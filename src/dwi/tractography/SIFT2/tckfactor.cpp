@@ -32,10 +32,7 @@
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambda_tv) {
   assert(num_tracks());
@@ -446,7 +443,4 @@ void TckFactor::output_all_debug_images(const std::string &dirpath, const std::s
   }
 }
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2

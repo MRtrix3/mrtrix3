@@ -28,10 +28,7 @@
 
 // #define GLM_ALL_STATS_DEBUG
 
-namespace MR {
-namespace Math {
-namespace Stats {
-namespace GLM {
+namespace MR::Math::Stats::GLM {
 
 const char *const column_ones_description =
     "In some software packages, a column of ones is automatically added to the "
@@ -1137,7 +1134,4 @@ void TestVariableHeteroscedastic::apply_mask_VG(const BitSet &mask,
   assert(out_index == index_type(VG_masked.size()));
 }
 
-} // namespace GLM
-} // namespace Stats
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Stats::GLM

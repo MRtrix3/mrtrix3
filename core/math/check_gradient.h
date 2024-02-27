@@ -20,8 +20,7 @@
 #include "datatype.h"
 #include "debug.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <class Function>
 Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, Eigen::Dynamic>
@@ -103,7 +102,6 @@ check_function_gradient(Function &function,
   }
   return hessian;
 }
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

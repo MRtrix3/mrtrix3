@@ -24,10 +24,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 class Selector {
 public:
@@ -100,9 +97,6 @@ private:
   Tractography::Streamline<> empty_tck;
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome
 
 #endif

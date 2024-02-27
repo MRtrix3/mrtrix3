@@ -22,9 +22,7 @@
 #include "raw.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class CSAEntry {
 public:
@@ -162,8 +160,6 @@ protected:
   uint32_t nitems, num, cnum;
 };
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom
 
 #endif

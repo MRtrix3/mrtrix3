@@ -20,10 +20,7 @@
 #include "dwi/tractography/GT/gt.h"
 #include "dwi/tractography/GT/particle.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 class EnergyComputer {
 public:
@@ -95,9 +92,6 @@ protected:
   double l1, l2;
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT
 
 #endif // __gt_energy_h__

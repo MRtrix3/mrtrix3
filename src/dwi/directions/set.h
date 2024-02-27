@@ -25,9 +25,7 @@
 #include "progressbar.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 using index_type = unsigned int;
 
@@ -168,8 +166,6 @@ private:
   void test_lookup() const;
 };
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Directions
 
 #endif

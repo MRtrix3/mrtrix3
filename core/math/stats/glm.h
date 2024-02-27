@@ -28,10 +28,7 @@
 
 #include "misc/bitset.h"
 
-namespace MR {
-namespace Math {
-namespace Stats {
-namespace GLM {
+namespace MR::Math::Stats::GLM {
 
 extern const char *const column_ones_description;
 
@@ -419,9 +416,6 @@ protected:
   void apply_mask_VG(const BitSet &mask, index_array_type &VG_masked, index_array_type &VG_counts) const;
 };
 
-} // namespace GLM
-} // namespace Stats
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Stats::GLM
 
 #endif

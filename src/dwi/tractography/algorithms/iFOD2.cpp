@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/algorithms/iFOD2.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Algorithms {
+namespace MR::DWI::Tractography::Algorithms {
 
 using namespace App;
 // clang-format off
@@ -37,7 +34,4 @@ void load_iFOD2_options(Tractography::Properties &properties) {
     properties["samples_per_step"] = str<unsigned int>(opt[0][0]);
 }
 
-} // namespace Algorithms
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Algorithms
