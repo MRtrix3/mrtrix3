@@ -91,16 +91,16 @@ Eigen::MatrixXd get_scheme(const Header &header) {
 
   try {
     const auto opt_table = get_options("import_pe_table");
-    if (opt_table.size())
+    if (!opt_table.empty())
       result = load(opt_table[0][0], header);
     const auto opt_eddy = get_options("import_pe_eddy");
-    if (opt_eddy.size()) {
-      if (opt_table.size())
+    if (!opt_eddy.empty()) {
+      if (!opt_table.empty())
         throw Exception("Phase encoding table can be provided using either -import_pe_table or -import_pe_eddy option, "
                         "but NOT both");
       result = load_eddy(opt_eddy[0][0], opt_eddy[0][1], header);
     }
-    if (!opt_table.size() && !opt_eddy.size())
+    if (opt_table.empty() && opt_eddy.empty())
       result = parse_scheme(header);
   } catch (Exception &e) {
     throw Exception(e, "error importing phase encoding table for image \"" + header.name() + "\"");
@@ -139,11 +139,11 @@ void export_commandline(const Header &header) {
   auto scheme = parse_scheme(header);
 
   auto opt = get_options("export_pe_table");
-  if (opt.size())
+  if (!opt.empty())
     save(check(scheme), header, opt[0][0]);
 
   opt = get_options("export_pe_eddy");
-  if (opt.size())
+  if (!opt.empty())
     save_eddy(check(scheme), header, opt[0][0], opt[0][1]);
 }
 

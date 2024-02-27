@@ -36,7 +36,7 @@ std::shared_ptr<Series> Study::find(const std::string &series_name,
     bool match = true;
     if (series_name == (*this)[n]->name) {
       match = (series_number == (*this)[n]->number);
-      if (!match && series_ref_UID.size() && (*this)[n]->series_ref_UID.size()) {
+      if (!match && !series_ref_UID.empty() && !(*this)[n]->series_ref_UID.empty()) {
         if (series_ref_UID == (*this)[n]->series_ref_UID) {
           if (!series_number_UID_mismatch_warning_issued) {
             series_number_UID_mismatch_warning_issued = true;
@@ -49,11 +49,11 @@ std::shared_ptr<Series> Study::find(const std::string &series_name,
       if (match) {
         if (image_type != (*this)[n]->image_type)
           match = false;
-        if (series_modality.size() && (*this)[n]->modality.size())
+        if (!series_modality.empty() && !(*this)[n]->modality.empty())
           if (series_modality != (*this)[n]->modality)
             match = false;
         if (match) {
-          if (series_date.size() && (*this)[n]->date.size())
+          if (!series_date.empty() && !(*this)[n]->date.empty())
             if (series_date != (*this)[n]->date)
               match = false;
         }

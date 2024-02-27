@@ -218,7 +218,7 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
   bool lmax_set_from_commandline = false;
   if (lmax_from_command_line) {
     auto opt = App::get_options("lmax");
-    if (opt.size()) {
+    if (!opt.empty()) {
       lmax_set_from_commandline = true;
       lmax = to<int>(opt[0][0]);
       if (lmax % 2)

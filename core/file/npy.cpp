@@ -206,7 +206,7 @@ KeyValues parse_dict(std::string s) {
       }
       continue;
     }
-    if (openers.size()) {
+    if (!openers.empty()) {
       if (c == pairs.find(openers.back())->second)
         openers.pop_back();
       // If final opener is a string quote, and it's now being closed,
@@ -219,7 +219,7 @@ KeyValues parse_dict(std::string s) {
         continue;
       }
     } else if (c == ':') {
-      if (key.size())
+      if (!key.empty())
         throw Exception("Error parsing NumPy header: non-isolated colon separator");
       if ((current.front() == '\"' && current.back() == '\"') || (current.front() == '\'' && current.back() == '\''))
         key = current.substr(1, current.size() - 2);
@@ -243,12 +243,12 @@ KeyValues parse_dict(std::string s) {
       openers.push_back(c);
     current.push_back(c);
   }
-  if (openers.size())
+  if (!openers.empty())
     throw Exception("Error parsing NumPy header: unpaired bracket or quotation symbol(s) at EOF");
-  if (key.size())
+  if (!key.empty())
     throw Exception("Error parsing NumPy header: key without associated value at EOF");
   current = strip(current, " ,");
-  if (current.size())
+  if (!current.empty())
     throw Exception("Error parsing NumPy header: non-empty content at EOF");
 
   // std::cerr << "Final keyvalues: {";

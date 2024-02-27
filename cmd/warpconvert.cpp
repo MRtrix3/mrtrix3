@@ -80,25 +80,25 @@ void usage() {
 
 void run() {
   const int type = argument[1];
-  bool midway_space = get_options("midway_space").size() ? true : false;
+  bool midway_space = !get_options("midway_space").empty() ? true : false;
 
   std::string template_filename;
   auto opt = get_options("template");
-  if (opt.size())
+  if (!opt.empty())
     template_filename = str(opt[0][0]);
 
   int from = 1;
   opt = get_options("from");
-  if (opt.size())
+  if (!opt.empty())
     from = opt[0][0];
 
   // deformation2displacement
   if (type == 0) {
     if (midway_space)
       WARN("-midway_space option ignored with deformation2displacement conversion type");
-    if (get_options("template").size())
+    if (!get_options("template").empty())
       WARN("-template option ignored with deformation2displacement conversion type");
-    if (get_options("from").size())
+    if (!get_options("from").empty())
       WARN("-from option ignored with deformation2displacement conversion type");
 
     auto deformation = Image<default_type>::open(argument[0]).with_direct_io(3);
@@ -116,9 +116,9 @@ void run() {
 
     if (midway_space)
       WARN("-midway_space option ignored with displacement2deformation conversion type");
-    if (get_options("template").size())
+    if (!get_options("template").empty())
       WARN("-template option ignored with displacement2deformation conversion type");
-    if (get_options("from").size())
+    if (!get_options("from").empty())
       WARN("-from option ignored with displacement2deformation conversion type");
 
     Header header(displacement);
@@ -140,7 +140,7 @@ void run() {
     if (midway_space) {
       warp_output = Registration::Warp::compute_midway_deformation(warp, from);
     } else {
-      if (!get_options("template").size())
+      if (get_options("template").empty())
         throw Exception("-template option required with warpfull2deformation or warpfull2displacement conversion type");
       auto template_header = Header::open(template_filename);
       warp_output = Registration::Warp::compute_full_deformation(warp, template_header, from);

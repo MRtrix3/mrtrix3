@@ -174,8 +174,8 @@ void run() {
   const value_type tfce_H = get_option_value("tfce_h", DEFAULT_TFCE_H);
   const value_type tfce_E = get_option_value("tfce_e", DEFAULT_TFCE_E);
   const bool use_tfce = !std::isfinite(cluster_forming_threshold);
-  const bool do_26_connectivity = get_options("connectivity").size();
-  const bool do_nonstationarity_adjustment = get_options("nonstationarity").size();
+  const bool do_26_connectivity = !get_options("connectivity").empty();
+  const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
   const default_type empirical_skew = get_option_value("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   // Load analysis mask and compute adjacency
@@ -217,13 +217,13 @@ void run() {
   }
   const index_type num_factors = design.cols() + extra_columns.size();
   CONSOLE("Number of factors: " + str(num_factors));
-  if (extra_columns.size()) {
+  if (!extra_columns.empty()) {
     CONSOLE("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       CONSOLE("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from "
               "voxel-wise design matrices accordingly");
   }
-  check_design(design, extra_columns.size());
+  check_design(design, !extra_columns.empty());
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups(design.rows());
@@ -238,7 +238,7 @@ void run() {
     throw Exception(
         "The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")" +
         " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")" +
-        (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
+        (!extra_columns.empty() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
   matrix_type data(importer.size(), num_voxels);
@@ -253,7 +253,7 @@ void run() {
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
     INFO("Non-finite values present in data; rows will be removed from voxel-wise design matrices accordingly");
-    if (!extra_columns.size()) {
+    if (extra_columns.empty()) {
       INFO("(Note that this will result in slower execution than if such values were not present)");
     }
   }
@@ -287,7 +287,8 @@ void run() {
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
-                         num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
+                         num_factors + (2 * num_hypotheses) + num_vgs +
+                             (nans_in_data || !extra_columns.empty() ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
       write_output(betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
@@ -303,7 +304,7 @@ void run() {
       }
       ++progress;
     }
-    if (nans_in_data || extra_columns.size()) {
+    if (nans_in_data || !extra_columns.empty()) {
       write_output(cond, *v2v, prefix + "cond.mif", output_header);
       ++progress;
     }
@@ -319,7 +320,7 @@ void run() {
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
-  if (extra_columns.size() || nans_in_data) {
+  if (!extra_columns.empty() || nans_in_data) {
     if (variance_groups.size())
       glm_test.reset(new GLM::TestVariableHeteroscedastic(
           extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
@@ -368,9 +369,9 @@ void run() {
                  output_header);
   }
 
-  if (!get_options("notest").size()) {
+  if (get_options("notest").empty()) {
 
-    const bool fwe_strong = get_options("strong").size();
+    const bool fwe_strong = !get_options("strong").empty();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }

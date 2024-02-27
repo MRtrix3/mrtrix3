@@ -243,7 +243,7 @@ void run() {
 
   int algorithm = 2; // default = ifod2
   auto opt = get_options("algorithm");
-  if (opt.size())
+  if (!opt.empty())
     algorithm = opt[0][0];
 
   ACT::load_act_properties(properties);
@@ -265,12 +265,12 @@ void run() {
   // By over-riding the values in properties, the progress bar should still be valid
   if (properties.seeds.is_finite()) {
 
-    if (properties["max_num_tracks"].size())
+    if (!properties["max_num_tracks"].empty())
       WARN("Overriding -select option (desired number of successful streamline selections), as seeds can only provide "
            "a finite number");
     properties["max_num_tracks"] = str(properties.seeds.get_total_count());
 
-    if (properties["max_num_seeds"].size())
+    if (!properties["max_num_seeds"].empty())
       WARN("Overriding -seeds option (maximum number of seeds that will be attempted to track from), as seeds can only "
            "provide a finite number");
     properties["max_num_seeds"] = str(properties.seeds.get_total_count());

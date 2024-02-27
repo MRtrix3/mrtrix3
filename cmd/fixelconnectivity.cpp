@@ -88,10 +88,10 @@ using Fixel::index_type;
 
 template <class WriterType> void set_optional_outputs(WriterType &writer) {
   auto opt = get_options("count");
-  if (opt.size())
+  if (!opt.empty())
     writer.set_count_path(opt[0][0]);
   opt = get_options("extent");
-  if (opt.size())
+  if (!opt.empty())
     writer.set_extent_path(opt[0][0]);
 }
 
@@ -109,7 +109,7 @@ void run() {
   //   these will appear empty in the output matrix
   auto opt = get_options("mask");
   Image<bool> fixel_mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     fixel_mask = Image<bool>::open(opt[0][0]);
     Fixel::check_data_file(fixel_mask);
     if (!Fixel::fixels_match(index_header, fixel_mask))
@@ -122,7 +122,7 @@ void run() {
       fixel_mask.value() = true;
   }
 
-  if (get_options("tck_weights_in").size()) {
+  if (!get_options("tck_weights_in").empty()) {
 
     auto connectivity_matrix =
         Fixel::Matrix::generate_weighted(argument[1], index_image, fixel_mask, angular_threshold);

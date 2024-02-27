@@ -181,7 +181,7 @@ void run() {
     value_type fraction_diff = std::numeric_limits<value_type>::max();
     for (n = 0; n < bvalue.size(); ++n) {
       value_type f_diff = float(num_for_b(n)) / float(merged.size()) - fraction[n];
-      if (f_diff < fraction_diff && dirs[n][nPE].size()) {
+      if (f_diff < fraction_diff && !dirs[n][nPE].empty()) {
         fraction_diff = f_diff;
         b = n;
       }
@@ -189,7 +189,7 @@ void run() {
 
     // find most distant direction for that shell & in the current PE direction:
     n = find_lowest_energy_direction(b, nPE);
-    if (dirs[b][nPE].size())
+    if (!dirs[b][nPE].empty())
       push(b, nPE, n);
     else
       WARN("no directions remaining in b=" + str(bvalue[b]) + " shell for PE direction " + str(n) +

@@ -53,16 +53,16 @@ public:
     void parse_cmdline_options() {
       using namespace App;
       auto opt = get_options("lmax");
-      if (opt.size())
+      if (!opt.empty())
         lmax = parse_ints<uint32_t>(opt[0][0]);
       opt = get_options("directions");
-      if (opt.size())
+      if (!opt.empty())
         HR_dirs = File::Matrix::load_matrix(opt[0][0]);
       opt = get_options("norm_lambda");
-      if (opt.size())
+      if (!opt.empty())
         solution_min_norm_regularisation = opt[0][0];
       opt = get_options("neg_lambda");
-      if (opt.size())
+      if (!opt.empty())
         constraint_min_norm_regularisation = opt[0][0];
     }
 

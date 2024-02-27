@@ -68,7 +68,7 @@ public:
     if (output.ndim() > 3)
       throw Exception("3D output expected");
 
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
     Image<bool> int_roi = Image<bool>::scratch(Header(spatial_prior), "temporary initial mask");
     INFO("creating intensity mask from input mask");

@@ -99,7 +99,7 @@ void check_design(const matrix_type &design, const bool extra_factors) {
 
 index_array_type load_variance_groups(const index_type num_inputs) {
   auto opt = App::get_options("variance");
-  if (!opt.size())
+  if (opt.empty())
     return index_array_type();
   try {
     auto data = File::Matrix::load_vector<index_type>(opt[0][0]);
@@ -135,7 +135,7 @@ std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
   for (index_type row = 0; row != index_type(contrast_matrix.rows()); ++row)
     hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), row));
   auto opt = App::get_options("ftests");
-  if (opt.size()) {
+  if (!opt.empty()) {
     const matrix_type ftest_matrix = File::Matrix::load_matrix(opt[0][0]);
     if (ftest_matrix.cols() != contrast_matrix.rows())
       throw Exception("Number of columns in F-test matrix (" + str(ftest_matrix.cols()) +
@@ -153,13 +153,13 @@ std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
       }
       hypotheses.emplace_back(Hypothesis(this_f_matrix, ftest_index));
     }
-    if (App::get_options("fonly").size()) {
+    if (!App::get_options("fonly").empty()) {
       std::vector<Hypothesis> new_hypotheses;
       for (index_type index = contrast_matrix.rows(); index != hypotheses.size(); ++index)
         new_hypotheses.push_back(std::move(hypotheses[index]));
       std::swap(hypotheses, new_hypotheses);
     }
-  } else if (App::get_options("fonly").size()) {
+  } else if (!App::get_options("fonly").empty()) {
     throw Exception(
         "Cannot perform F-tests exclusively (-fonly option): No F-test matrix was provided (-ftests option)");
   }

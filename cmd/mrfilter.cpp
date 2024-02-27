@@ -151,15 +151,15 @@ void run() {
 
     std::vector<size_t> axes = {0, 1, 2};
     auto opt = get_options("axes");
-    if (opt.size()) {
+    if (!opt.empty()) {
       axes = parse_ints<size_t>(opt[0][0]);
       for (const auto axis : axes)
         if (axis >= input.ndim())
           throw Exception("axis provided with -axes option is out of range");
     }
-    const int direction = get_options("inverse").size() ? FFTW_BACKWARD : FFTW_FORWARD;
-    const bool centre_FFT = get_options("centre_zero").size();
-    const bool magnitude = get_options("magnitude").size();
+    const int direction = !get_options("inverse").empty() ? FFTW_BACKWARD : FFTW_FORWARD;
+    const bool centre_FFT = !get_options("centre_zero").empty();
+    const bool magnitude = !get_options("magnitude").empty();
 
     Header header = input;
     Stride::set_from_command_line(header);
@@ -186,7 +186,7 @@ void run() {
       ThreadedLoop(out).run(
           [](decltype(out) &a, decltype(output) &b) { a.value() = abs(cdouble(b.value())); }, output, out);
     }
-    if (get_options("rescale").size()) {
+    if (!get_options("rescale").empty()) {
       scale = std::sqrt(scale);
       ThreadedLoop(out).run([&scale](decltype(out) &a) { a.value() /= scale; }, output);
     }
@@ -197,11 +197,11 @@ void run() {
   // Gradient
   case 1: {
     auto input = Image<float>::open(argument[0]);
-    Filter::Gradient filter(input, get_options("magnitude").size());
+    Filter::Gradient filter(input, !get_options("magnitude").empty());
 
     std::vector<default_type> stdev;
     auto opt = get_options("stdev");
-    if (opt.size()) {
+    if (!opt.empty()) {
       stdev = parse_floats(opt[0][0]);
       for (size_t i = 0; i < stdev.size(); ++i)
         if (stdev[i] < 0.0)
@@ -213,7 +213,7 @@ void run() {
       for (size_t dim = 0; dim != 3; ++dim)
         stdev[dim] = filter.spacing(dim);
     }
-    filter.compute_wrt_scanner(get_options("scanner").size() ? true : false);
+    filter.compute_wrt_scanner(!get_options("scanner").empty() ? true : false);
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
                        std::string(argument[0]));
     Stride::set_from_command_line(filter);
@@ -229,7 +229,7 @@ void run() {
     Filter::Median filter(input);
 
     auto opt = get_options("extent");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
                        std::string(argument[0]));
@@ -246,11 +246,11 @@ void run() {
     Filter::Smooth filter(input);
 
     auto opt = get_options("stdev");
-    const bool stdev_supplied = opt.size();
+    const bool stdev_supplied = !opt.empty();
     if (stdev_supplied)
       filter.set_stdev(parse_floats(opt[0][0]));
     opt = get_options("fwhm");
-    if (opt.size()) {
+    if (!opt.empty()) {
       if (stdev_supplied)
         throw Exception("the stdev and FWHM options are mutually exclusive.");
       std::vector<default_type> stdevs = parse_floats((opt[0][0]));
@@ -259,7 +259,7 @@ void run() {
       filter.set_stdev(stdevs);
     }
     opt = get_options("extent");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
                        std::string(argument[0]));
@@ -277,7 +277,7 @@ void run() {
     Filter::Normalise filter(input);
 
     auto opt = get_options("extent");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
                        std::string(argument[0]) + "...");
@@ -294,7 +294,7 @@ void run() {
     Filter::ZClean filter(input);
 
     auto opt = get_options("maskin");
-    if (!opt.size())
+    if (opt.empty())
       throw Exception(std::string(argument[1]) + " filter requires initial mask");
     Image<float> maskin = Image<float>::open(opt[0][0]);
     check_dimensions(maskin, input, 0, 3);
@@ -312,7 +312,7 @@ void run() {
     filter(input, maskin, output);
 
     opt = get_options("maskout");
-    if (opt.size()) {
+    if (!opt.empty()) {
       auto maskout = Image<bool>::create(opt[0][0], filter.mask);
       threaded_copy(filter.mask, maskout);
     }

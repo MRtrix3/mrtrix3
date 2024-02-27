@@ -47,7 +47,7 @@ public:
   }
 
   value_type value() {
-    if (!kernel.size())
+    if (kernel.empty())
       return base_type::value();
 
     const ssize_t pos = index(axis);

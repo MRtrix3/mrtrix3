@@ -229,17 +229,17 @@ using MaskType = Image<bool>;
 void run() {
   int space = 0; // voxel
   auto opt = get_options("space");
-  if (opt.size())
+  if (!opt.empty())
     space = opt[0][0];
 
   int interp = 1; // linear
   opt = get_options("interp");
-  if (opt.size())
+  if (!opt.empty())
     interp = opt[0][0];
 
   MetricType metric_type = MetricType::MeanSquared;
   opt = get_options("metric");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (int(opt[0][0]) == 1) { // CC
       if (space != 3)
         throw Exception("CC metric only implemented for use in average space");
@@ -288,7 +288,7 @@ void run() {
   }
 
   bool nonormalisation = false;
-  if (get_options("nonormalisation").size())
+  if (!get_options("nonormalisation").empty())
     nonormalisation = true;
   ssize_t n_voxels = input1.size(0) * input1.size(1) * input1.size(2);
 
@@ -492,7 +492,7 @@ void run() {
     sos.array() /= static_cast<value_type>(n_voxels);
   std::cout << str(sos.transpose());
 
-  if (get_options("overlap").size())
+  if (!get_options("overlap").empty())
     std::cout << " " << str(n_voxels);
   std::cout << std::endl;
 }

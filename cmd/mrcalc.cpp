@@ -688,13 +688,13 @@ public:
   Operation op;
 
   virtual Chunk &evaluate(Chunk &a, Chunk &b) const {
-    Chunk &out(a.size() ? a : b);
+    Chunk &out(!a.empty() ? a : b);
     if (operands[0].is_complex() || operands[1].is_complex()) {
       for (size_t n = 0; n < out.size(); ++n)
-        out[n] = op.Z(a.size() ? a[n] : a.value, b.size() ? b[n] : b.value);
+        out[n] = op.Z(!a.empty() ? a[n] : a.value, !b.empty() ? b[n] : b.value);
     } else {
       for (size_t n = 0; n < out.size(); ++n)
-        out[n] = op.R(a.size() ? a[n].real() : a.value.real(), b.size() ? b[n].real() : b.value.real());
+        out[n] = op.R(!a.empty() ? a[n].real() : a.value.real(), !b.empty() ? b[n].real() : b.value.real());
     }
     return out;
   }
@@ -716,15 +716,15 @@ public:
   Operation op;
 
   virtual Chunk &evaluate(Chunk &a, Chunk &b, Chunk &c) const {
-    Chunk &out(a.size() ? a : (b.size() ? b : c));
+    Chunk &out(!a.empty() ? a : (!b.empty() ? b : c));
     if (operands[0].is_complex() || operands[1].is_complex() || operands[2].is_complex()) {
       for (size_t n = 0; n < out.size(); ++n)
-        out[n] = op.Z(a.size() ? a[n] : a.value, b.size() ? b[n] : b.value, c.size() ? c[n] : c.value);
+        out[n] = op.Z(!a.empty() ? a[n] : a.value, !b.empty() ? b[n] : b.value, !c.empty() ? c[n] : c.value);
     } else {
       for (size_t n = 0; n < out.size(); ++n)
-        out[n] = op.R(a.size() ? a[n].real() : a.value.real(),
-                      b.size() ? b[n].real() : b.value.real(),
-                      c.size() ? c[n].real() : c.value.real());
+        out[n] = op.R(!a.empty() ? a[n].real() : a.value.real(),
+                      !b.empty() ? b[n].real() : b.value.real(),
+                      !c.empty() ? c[n].real() : c.value.real());
     }
     return out;
   }

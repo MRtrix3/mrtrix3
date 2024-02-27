@@ -223,11 +223,11 @@ private:
 };
 
 void run() {
-  bool is_static = get_options("static").size();
+  bool is_static = !get_options("static").empty();
   std::vector<float> window;
 
   auto opt = get_options("dynamic");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (is_static)
       throw Exception("Do not specify both -static and -dynamic options");
 
@@ -295,7 +295,7 @@ void run() {
 
   std::vector<default_type> voxel_size;
   opt = get_options("vox");
-  if (opt.size())
+  if (!opt.empty())
     voxel_size = parse_floats(opt[0][0]);
 
   if (voxel_size.size() == 1)
@@ -310,7 +310,7 @@ void run() {
 
   Header header;
   opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header = Header::open(opt[0][0]);
     if (!voxel_size.empty())
       Mapping::oversample_header(header, voxel_size);
@@ -333,7 +333,7 @@ void run() {
 
   size_t upsample_ratio;
   opt = get_options("upsample");
-  if (opt.size()) {
+  if (!opt.empty()) {
     upsample_ratio = opt[0][0];
     INFO("track interpolation factor manually set to " + str(upsample_ratio));
   } else {
@@ -348,7 +348,7 @@ void run() {
   }
 
   opt = get_options("stat_vox");
-  const vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_MEAN;
+  const vox_stat_t stat_vox = !opt.empty() ? vox_stat_t(int(opt[0][0])) : V_MEAN;
 
   Header H_3D(header);
   H_3D.ndim() = 3;

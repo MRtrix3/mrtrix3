@@ -478,9 +478,9 @@ void run() {
   size_t max_iter = DEFAULT_MAIN_ITER_VALUE;
   size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
   auto opt = get_options("niter");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::vector<size_t> num = parse_ints<size_t>(opt[0][0]);
-    if (num.size() < 1 && num.size() > 2)
+    if (num.empty() && num.size() > 2)
       throw Exception("unexpected number of entries provided to option \"-niter\"");
     for (auto n : num)
       if (!n)
@@ -557,24 +557,24 @@ void run() {
   auto full_field = compute_full_field(order, field_coeffs, index);
 
   opt = get_options("check_norm");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto out = ImageType::create(opt[0][0], full_field);
     threaded_copy(full_field, out);
   }
 
   opt = get_options("check_mask");
-  if (opt.size())
+  if (!opt.empty())
     write_weights(weights, index, opt[0][0]);
 
   opt = get_options("check_factors");
-  if (opt.size()) {
+  if (!opt.empty()) {
     File::OFStream factors_output(opt[0][0]);
     factors_output << balance_factors.transpose() << "\n";
   }
 
   double lognorm_scale = std::exp((field.array().log() * weights.array()).sum() / weights.sum());
 
-  const bool output_balanced = get_options("balanced").size();
+  const bool output_balanced = !get_options("balanced").empty();
   for (size_t n = 0; n < n_tissue_types; ++n)
     write_output(argument[2 * n], argument[2 * n + 1], output_balanced, balance_factors[n], full_field, lognorm_scale);
 }

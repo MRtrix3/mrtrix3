@@ -94,7 +94,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
   BitSet to_retain(count(), false);
 
   auto opt = App::get_options("shells");
-  if (opt.size()) {
+  if (!opt.empty()) {
 
     std::vector<default_type> desired_bvalues = opt[0][0];
     bool bzero_selected = false;
@@ -204,7 +204,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
             if (ambiguous) {
               std::string bvalues;
               for (size_t s = 0; s != count(); ++s) {
-                if (bvalues.size())
+                if (!bvalues.empty())
                   bvalues += ", ";
                 bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
               }
@@ -308,10 +308,10 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
 
     if (shellIdx) {
       shells.push_back(Shell(grad, volumes));
-    } else if (volumes.size()) {
+    } else if (!volumes.empty()) {
       std::string unassigned;
       for (size_t i = 0; i != volumes.size(); ++i) {
-        if (unassigned.size())
+        if (!unassigned.empty())
           unassigned += ", ";
         unassigned += str(volumes[i]) + " (" + str(bvals[volumes[i]]) + ")";
       }

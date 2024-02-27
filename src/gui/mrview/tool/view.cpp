@@ -777,7 +777,7 @@ void View::clip_planes_invert_slot() {
 
 void View::clip_planes_remove_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  while (indices.size()) {
+  while (!indices.empty()) {
     clip_planes_model->remove(indices.first());
     indices = clip_planes_list_view->selectionModel()->selectedIndexes();
   }
@@ -822,7 +822,7 @@ bool View::get_cliphighlightstate() const { return clip_highlight_check_box->isC
 bool View::get_clipintersectionmodestate() const { return clip_intersectionmode_check_box->isChecked(); }
 
 void View::clip_planes_selection_changed_slot() {
-  bool selected = clip_planes_list_view->selectionModel()->selectedIndexes().size();
+  bool selected = !clip_planes_list_view->selectionModel()->selectedIndexes().empty();
   clip_planes_reset_submenu->setEnabled(selected);
   clip_planes_invert_action->setEnabled(selected);
   clip_planes_remove_action->setEnabled(selected);
@@ -957,7 +957,7 @@ void View::deactivate() { clip_planes_list_view->selectionModel()->clear(); }
 
 bool View::slice_move_event(const ModelViewProjection &projection, float x) {
   std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
-  if (!clip.size())
+  if (clip.empty())
     return false;
   const auto &header = window().image()->header();
   float increment = x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0f / 3.0f);
@@ -967,7 +967,7 @@ bool View::slice_move_event(const ModelViewProjection &projection, float x) {
 
 bool View::pan_event(const ModelViewProjection &projection) {
   std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
-  if (!clip.size())
+  if (clip.empty())
     return false;
   Eigen::Vector3f move = projection.screen_to_model_direction(window().mouse_displacement(), window().target());
   for (size_t n = 0; n < clip.size(); ++n) {
@@ -980,7 +980,7 @@ bool View::pan_event(const ModelViewProjection &projection) {
 
 bool View::panthrough_event(const ModelViewProjection &projection) {
   std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
-  if (!clip.size())
+  if (clip.empty())
     return false;
   move_clip_planes_in_out(
       projection, clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * window().FOV());
@@ -989,7 +989,7 @@ bool View::panthrough_event(const ModelViewProjection &projection) {
 
 bool View::tilt_event(const ModelViewProjection &projection) {
   std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
-  if (!clip.size())
+  if (clip.empty())
     return false;
   const Eigen::Quaternionf rot = window().get_current_mode()->get_tilt_rotation(projection);
   if (!rot.coeffs().allFinite())
@@ -1000,7 +1000,7 @@ bool View::tilt_event(const ModelViewProjection &projection) {
 
 bool View::rotate_event(const ModelViewProjection &projection) {
   std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
-  if (!clip.size())
+  if (clip.empty())
     return false;
   const Eigen::Quaternionf rot = window().get_current_mode()->get_rotate_rotation(projection);
   if (rot.coeffs().allFinite())

@@ -201,7 +201,7 @@ FORCE_INLINE void ProgressBar::set_text(const std::string &new_text) {
   if (!show)
     return;
   _text_has_been_modified = true;
-  if (new_text.size()) {
+  if (!new_text.empty()) {
 #ifdef MRTRIX_WINDOWS
     size_t old_size = _text.size();
 #endif

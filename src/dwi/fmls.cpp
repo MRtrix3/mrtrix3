@@ -53,14 +53,14 @@ void load_fmls_thresholds(Segmenter &segmenter) {
   using namespace App;
 
   auto opt = get_options("fmls_no_thresholds");
-  const bool no_thresholds = opt.size();
+  const bool no_thresholds = !opt.empty();
   if (no_thresholds) {
     segmenter.set_integral_threshold(0.0);
     segmenter.set_peak_value_threshold(0.0);
   }
 
   opt = get_options("fmls_integral");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (no_thresholds) {
       WARN("Option -fmls_integral ignored: -fmls_no_thresholds overrides this");
     } else {
@@ -69,7 +69,7 @@ void load_fmls_thresholds(Segmenter &segmenter) {
   }
 
   opt = get_options("fmls_peak_value");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (no_thresholds) {
       WARN("Option -fmls_peak_value ignored: -fmls_no_thresholds overrides this");
     } else {
@@ -78,7 +78,7 @@ void load_fmls_thresholds(Segmenter &segmenter) {
   }
 
   opt = get_options("fmls_merge_ratio");
-  if (opt.size())
+  if (!opt.empty())
     segmenter.set_lobe_merge_ratio(default_type(opt[0][0]));
 }
 
@@ -290,7 +290,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
       }
     }
 
-    if (dilate_lookup_table && out.size()) {
+    if (dilate_lookup_table && !out.empty()) {
 
       DWI::Directions::Mask processed(dirs);
       for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)

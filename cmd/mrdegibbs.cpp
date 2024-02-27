@@ -124,8 +124,8 @@ void run() {
 
   std::vector<size_t> slice_axes = {0, 1};
   auto opt = get_options("axes");
-  const bool axes_set_manually = opt.size();
-  if (opt.size()) {
+  const bool axes_set_manually = !opt.empty();
+  if (!opt.empty()) {
     std::vector<uint32_t> axes = parse_ints<uint32_t>(opt[0][0]);
     if (axes == std::vector<uint32_t>({0, 1, 2})) {
       mode = 1;

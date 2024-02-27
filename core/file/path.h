@@ -156,7 +156,7 @@ inline std::string home() {
 
 class Dir {
 public:
-  Dir(const std::string &name) : p(opendir(name.size() ? name.c_str() : ".")) {
+  Dir(const std::string &name) : p(opendir(!name.empty() ? name.c_str() : ".")) {
     if (!p)
       throw Exception("error opening folder " + name + ": " + strerror(errno));
   }

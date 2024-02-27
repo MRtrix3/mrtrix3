@@ -279,7 +279,7 @@ void run() {
   test<float>(data, float_tests);
   test<std::complex<float>>(data, complex_tests);
 
-  if (failures.size()) {
+  if (!failures.empty()) {
     Exception e(str(failures.size()) + " of " + str(4 * data.size()) + " tests failed:");
     for (const auto &s : failures)
       e.push_back(s);

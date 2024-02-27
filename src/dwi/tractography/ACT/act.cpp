@@ -35,21 +35,21 @@ const OptionGroup ACTOption =
 
 void load_act_properties(Properties &properties) {
   auto opt = App::get_options("act");
-  if (opt.size()) {
+  if (!opt.empty()) {
 
     properties["act"] = std::string(opt[0][0]);
     opt = get_options("backtrack");
-    if (opt.size())
+    if (!opt.empty())
       properties["backtrack"] = "1";
     opt = get_options("crop_at_gmwmi");
-    if (opt.size())
+    if (!opt.empty())
       properties["crop_at_gmwmi"] = "1";
 
   } else {
 
-    if (get_options("backtrack").size())
+    if (!get_options("backtrack").empty())
       WARN("ignoring -backtrack option - only valid if using ACT");
-    if (get_options("crop_at_gmwmi").size())
+    if (!get_options("crop_at_gmwmi").empty())
       WARN("ignoring -crop_at_gmwmi option - only valid if using ACT");
   }
 }

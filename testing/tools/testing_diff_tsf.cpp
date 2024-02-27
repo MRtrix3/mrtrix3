@@ -55,7 +55,7 @@ void run() {
   DWI::Tractography::TrackScalar<value_type> tck_scalar2;
 
   auto opt = get_options("frac");
-  if (opt.size()) {
+  if (!opt.empty()) {
 
     const double tol = opt[0][0];
 
@@ -77,7 +77,7 @@ void run() {
 
     double tol = 0.0;
     opt = get_options("abs");
-    if (opt.size())
+    if (!opt.empty())
       tol = opt[0][0];
 
     while (reader1(tck_scalar1)) {

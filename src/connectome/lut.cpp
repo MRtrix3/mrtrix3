@@ -144,13 +144,13 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
         }
       }
       for (decltype(entries)::iterator i = entries.begin(); i != entries.end();) {
-        if (!i->size() || (i->size() == 1 && std::isspace((*i)[0])))
+        if (i->empty() || (i->size() == 1 && std::isspace((*i)[0])))
           i = entries.erase(i);
         else
           ++i;
       }
-      if (entries.size()) {
-        if (columns.size() && entries.size() != columns.size()) {
+      if (!entries.empty()) {
+        if (!columns.empty() && entries.size() != columns.size()) {
           Exception E("Inconsistent number of columns in LUT file \"" + Path::basename(path) + "\"");
           E.push_back("Initial file contents contain " + str(columns.size()) + " columns, but line " +
                       str(line_counter) + " contains " + str(entries.size()) + " entries:");
