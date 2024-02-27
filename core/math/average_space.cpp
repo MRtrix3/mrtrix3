@@ -232,7 +232,7 @@ void compute_average_voxel2scanner(
   }
 
   projected_voxel_sizes = (voxel_spacing_calculation == avgspace_voxspacing_t::MIN_PROJECTION ||
-                           voxel_spacing_calculation == avgspace_voxspacing_t::MIN_PROJECTION)
+                           voxel_spacing_calculation == avgspace_voxspacing_t::MIN_NEAREST)
                               ? Eigen::Vector3d(rot_vox_size.rowwise().minCoeff())
                               : Eigen::Vector3d(rot_vox_size.rowwise().mean());
 
