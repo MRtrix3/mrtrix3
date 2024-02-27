@@ -26,9 +26,9 @@ using namespace MR;
 using namespace App;
 using namespace Registration;
 
-default_type PADDING_DEFAULT = 0.0;
-avgspace_voxspacing_t SPACING_DEFAULT_VALUE = avgspace_voxspacing_t::MEAN_NEAREST;
-const std::string spacing_default_string = "mean_nearest";
+const default_type PADDING_DEFAULT = 0.0;
+const avgspace_voxspacing_t SPACING_DEFAULT_VALUE = avgspace_voxspacing_t::MEAN_NEAREST;
+const std::string SPACING_DEFAULT_STRING = "mean_nearest";
 
 // clang-format off
 void usage() {
@@ -61,7 +61,7 @@ void usage() {
             " the set of input images and the average header axes"
             " (see Description)."
             " Valid options are: " + join(avgspace_voxspacing_choices, ",") + ";"
-            " default = " + spacing_default_string)
+            " default = " + SPACING_DEFAULT_STRING)
     + Argument("type").type_choice(avgspace_voxspacing_choices)
   + Option ("fill", "set the intensity in the first volume of the average space to 1")
   + DataType::options();
@@ -73,13 +73,12 @@ void run() {
 
   const size_t num_inputs = argument.size() - 1;
 
-  auto opt = get_options("padding");
-  const default_type p = opt.size() ? default_type(opt[0][0]) : PADDING_DEFAULT;
+  const default_type p = get_option_value("padding", PADDING_DEFAULT);
   auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
   INFO("padding in template voxels: " + str(padding.transpose().head<3>()));
 
-  opt = get_options("spacing");
-  const avgspace_voxspacing_t spacing = opt.size() ? avgspace_voxspacing_t(int(opt[0][0])) : SPACING_DEFAULT_VALUE;
+  auto opt = get_options("spacing");
+  const avgspace_voxspacing_t spacing = opt.empty() ? SPACING_DEFAULT_VALUE : avgspace_voxspacing_t(int(opt[0][0]));
 
   bool fill = get_options("fill").size();
 

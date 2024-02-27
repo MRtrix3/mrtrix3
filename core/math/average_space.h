@@ -42,7 +42,7 @@ get_bounding_box(const Header &header, const Eigen::Transform<default_type, 3, E
 Header compute_minimum_average_header(
     const std::vector<Header> &input_headers,
     const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
-    const avgspace_voxspacing_t voxel_spacing_calculation = avgspace_voxspacing_t::MEAN_NEAREST,
+    avgspace_voxspacing_t voxel_spacing_calculation = avgspace_voxspacing_t::MEAN_NEAREST,
     Eigen::Matrix<default_type, 4, 1> padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0));
 
 template <class ImageType1, class ImageType2>

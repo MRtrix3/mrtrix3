@@ -79,15 +79,16 @@ void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &p
 }
 
 std::array<size_t, 3> closest(const Eigen::Matrix3d &M) {
-  std::array<size_t, 3> result;
+  std::array<size_t, 3> result{3, 3, 3};
   // Find which row of the transform is closest to each scanner axis
-  Eigen::Matrix3d::Index index;
+  Eigen::Matrix3d::Index index(0);
   M.row(0).cwiseAbs().maxCoeff(&index);
   result[0] = index;
   M.row(1).cwiseAbs().maxCoeff(&index);
   result[1] = index;
   M.row(2).cwiseAbs().maxCoeff(&index);
   result[2] = index;
+  assert(result[0]<3 && result[1]<3 && result[2]<3);
 
   // Disambiguate permutations
   auto not_any_of = [](size_t a, size_t b) -> size_t {
