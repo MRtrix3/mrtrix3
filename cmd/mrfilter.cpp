@@ -91,10 +91,10 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 const OptionGroup ZcleanOption = OptionGroup ("Options for zclean filter")
   + Option ("zupper", "define high intensity outliers;"
                       " default: 2.5")
-    + Argument ("num").type_float(0.1, std::numeric_limits<float>::infinity())
+    + Argument ("num").type_float(0.1)
   + Option ("zlower", "define low intensity outliers;"
                       " default: 2.5")
-    + Argument ("num").type_float(0.1, std::numeric_limits<float>::infinity())
+    + Argument ("num").type_float(0.1)
   + Option ("bridge", "number of voxels to gap to fill holes in mask;"
                       " default: 4")
     + Argument ("num").type_integer(0)
