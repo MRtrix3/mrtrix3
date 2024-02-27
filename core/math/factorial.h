@@ -20,8 +20,7 @@
 #include <functional>
 #include <limits>
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <typename T> T factorial(const T i) {
   if (i < 2) {
@@ -38,7 +37,6 @@ template <typename T> T factorial(const T i) {
   }
 };
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

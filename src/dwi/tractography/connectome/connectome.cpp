@@ -18,10 +18,7 @@
 #include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 using namespace App;
 
@@ -134,7 +131,4 @@ void setup_metric(Metric &metric, Image<node_t> &nodes_data) {
   }
 }
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome

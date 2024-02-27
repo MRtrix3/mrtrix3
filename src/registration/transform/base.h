@@ -25,9 +25,7 @@
 #include <Eigen/SVD>
 #include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()
 
-namespace MR {
-namespace Registration {
-namespace Transform {
+namespace MR::Registration::Transform {
 template <class ValueType>
 inline void param_mat2vec(const Eigen::Matrix<ValueType, 3, 4, Eigen::RowMajor> &transformation_matrix,
                           Eigen::Matrix<ValueType, Eigen::Dynamic, 1> &param_vector) {
@@ -256,8 +254,6 @@ protected:
   bool nonsymmetric;
 };
 //! @}
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Transform
 
 #endif

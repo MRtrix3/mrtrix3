@@ -29,8 +29,7 @@ namespace App {
 class OptionGroup;
 }
 
-namespace DWI {
-namespace Tractography {
+namespace DWI::Tractography {
 
 class Properties;
 
@@ -42,8 +41,8 @@ void load_seed_mechanisms(Properties &);
 void load_seed_parameters(Properties &);
 
 } // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
+} // namespace DWI::Tractography
+
 } // namespace MR
 
 #endif

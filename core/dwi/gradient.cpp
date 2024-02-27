@@ -19,8 +19,7 @@
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 using namespace App;
 using namespace Eigen;
@@ -304,5 +303,4 @@ void export_grad_commandline(const Header &header) {
     save_bvecs_bvals(check(header), opt[0][0], opt[0][1]);
 }
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI

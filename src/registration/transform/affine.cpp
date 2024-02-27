@@ -22,8 +22,8 @@
 
 namespace MR {
 using namespace MR::Math;
-namespace Registration {
-namespace Transform {
+
+namespace Registration::Transform {
 bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &newx,
                               const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &x,
                               const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &g,
@@ -318,6 +318,6 @@ bool Affine::robust_estimate(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &gra
 }
 
 //! @}
-} // namespace Transform
-} // namespace Registration
+} // namespace Registration::Transform
+
 } // namespace MR

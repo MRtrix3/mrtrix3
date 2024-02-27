@@ -38,10 +38,7 @@
 
 #define TRACKING_BATCH_SIZE 10
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 // TODO Try having ACT as a template boolean; allow compiler to optimise out branch statements
 
@@ -542,9 +539,6 @@ private:
   }
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking
 
 #endif

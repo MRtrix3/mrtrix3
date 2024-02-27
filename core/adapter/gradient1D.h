@@ -19,8 +19,7 @@
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Gradient1D : public Base<Gradient1D<ImageType>, ImageType> {
 public:
@@ -82,7 +81,6 @@ protected:
   std::vector<value_type> derivative_weights;
   std::vector<value_type> half_derivative_weights;
 };
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

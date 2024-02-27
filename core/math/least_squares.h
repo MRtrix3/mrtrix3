@@ -21,8 +21,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 /** @addtogroup linalg
   @{ */
@@ -47,7 +46,6 @@ template <class MatrixType> inline size_t rank(const MatrixType &M) {
 /** @} */
 /** @} */
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

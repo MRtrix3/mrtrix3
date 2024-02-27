@@ -16,10 +16,7 @@
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 BaseFixel::BaseFixel(const std::string &filename, Fixel &fixel_tool)
     : Displayable(filename),
       header(MR::Header::open(filename)),
@@ -542,7 +539,4 @@ void BaseFixel::reload_threshold_buffer() {
 
   GL::assert_context_is_current();
 }
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

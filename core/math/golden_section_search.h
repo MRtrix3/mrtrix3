@@ -22,8 +22,7 @@
 #include "memory.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 /** \addtogroup Optimisation
 @{ */
 
@@ -86,7 +85,6 @@ ValueType golden_section_search(FunctionType &function,
   }
   return f1 < f2 ? x1 : x2;
 }
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

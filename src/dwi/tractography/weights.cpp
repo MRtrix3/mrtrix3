@@ -16,9 +16,7 @@
 
 #include "dwi/tractography/weights.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 using namespace App;
 
@@ -34,6 +32,4 @@ const Option TrackWeightsOutOption =
       + Argument("path").type_file_out();
 // clang-format on
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography

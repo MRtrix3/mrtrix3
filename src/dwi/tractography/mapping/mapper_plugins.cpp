@@ -19,10 +19,7 @@
 #include "algo/threaded_loop.h"
 #include "image_helpers.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 void TWIImagePluginBase::set_backtrack() {
   backtrack = true;
@@ -250,7 +247,4 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
     factors[0] = corr / std::sqrt(start_variance * end_variance);
 }
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping

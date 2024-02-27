@@ -25,8 +25,7 @@
 #define MRTRIX_SYS_CONFIG_FILE "/etc/" MRTRIX_CONFIG_FILE
 #define MRTRIX_USER_CONFIG_FILE "." MRTRIX_CONFIG_FILE
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 KeyValues Config::config;
 
@@ -136,5 +135,4 @@ void Config::get_RGB(const std::string &key, float *ret, float default_R, float 
   }
 }
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File

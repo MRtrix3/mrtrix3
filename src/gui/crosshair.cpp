@@ -18,8 +18,7 @@
 
 #include "gui/projection.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP) const {
   if (!VB || !VAO) {
@@ -69,5 +68,4 @@ void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &
   program.stop();
 }
 
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI

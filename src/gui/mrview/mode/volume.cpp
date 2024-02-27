@@ -21,10 +21,7 @@
 #include "gui/mrview/tool/view.h"
 #include "gui/opengl/lighting.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 std::string Volume::Shader::vertex_shader_source(const Displayable &) {
   std::string source = "layout(location=0) in vec3 vertpos;\n"
@@ -511,7 +508,4 @@ inline bool Volume::get_clipintersectionmodestate() const {
   return view ? view->get_clipintersectionmodestate() : false;
 }
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode

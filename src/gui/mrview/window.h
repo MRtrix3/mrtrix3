@@ -26,8 +26,7 @@
 #include "image.h"
 #include "memory.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 namespace GL {
 class Lighting;
 }
@@ -329,7 +328,6 @@ private:
 };
 
 } // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

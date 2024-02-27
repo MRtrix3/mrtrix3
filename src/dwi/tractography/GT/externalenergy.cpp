@@ -22,10 +22,7 @@
 #include "math/SH.h"
 #include "math/ZSH.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, const Image<float> &dwimage, const Properties &props)
     : EnergyComputer(stat),
@@ -230,7 +227,4 @@ double ExternalEnergyComputer::calcEnergy() {
   return y.squaredNorm() / nrows + mu * t[0]; // MSE + L1 regularizer
 }
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT

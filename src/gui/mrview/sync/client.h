@@ -21,10 +21,7 @@
 
 class QLocalSocket;
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 /**
 Sends data to another process
 */
@@ -43,8 +40,6 @@ private:
   QLocalSocket *socket;
 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync
+
 #endif

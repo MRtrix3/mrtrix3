@@ -27,9 +27,7 @@
 #include "file/path.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 //! \cond skip
 class __ReaderBase__ {
@@ -132,8 +130,6 @@ protected:
 
 //! \endcond
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography
 
 #endif

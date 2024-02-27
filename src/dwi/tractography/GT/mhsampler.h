@@ -28,10 +28,7 @@
 #include "dwi/tractography/GT/particlegrid.h"
 #include "dwi/tractography/GT/spatiallock.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 /**
  * @brief The MHSampler class
@@ -117,9 +114,6 @@ protected:
   }
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT
 
 #endif // __gt_mhsampler_h__

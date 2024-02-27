@@ -19,9 +19,7 @@
 
 #include "gui/opengl/shader.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 class Font {
 public:
@@ -64,8 +62,6 @@ protected:
   float font_tex_pos[256], font_tex_width[256];
 };
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::GL
 
 #endif

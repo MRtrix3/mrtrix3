@@ -46,10 +46,7 @@
 // #define SIFT_MODEL_OUTPUT_SH_IMAGES
 #define SIFT_MODEL_OUTPUT_FIXEL_IMAGES
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 class FixelBase {
 
@@ -320,9 +317,6 @@ void ModelBase<Fixel>::output_all_debug_images(const std::string &dirpath, const
   output_scatterplot(Path::join(dirpath, prefix + "_scatterplot.csv"));
 }
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT
 
 #endif

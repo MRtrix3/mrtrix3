@@ -16,9 +16,7 @@
 
 #include "dwi/directions/predefined.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 const default_type electrostatic_repulsion_60_data[] = {
     2.101909835,   0.5787523099,  1.329393935,   0.9997406558,  -0.9818393321, 1.566527183,    -0.008572418695,
@@ -2596,6 +2594,4 @@ const default_type tesselation_1281_data[] = {
     -1.69378, 0.34339, -1.57080, 0.41257, -1.44781, 0.34339,
 };
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Directions

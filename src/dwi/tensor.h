@@ -21,8 +21,7 @@
 
 #include "dwi/shells.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 template <typename T, class MatrixType>
 inline Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> grad2bmatrix(const MatrixType &grad, bool dki = false) {
@@ -117,7 +116,6 @@ template <class VectorType> inline typename VectorType::Scalar tensor2RA(const V
                : T(0.0);
 }
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI
 
 #endif

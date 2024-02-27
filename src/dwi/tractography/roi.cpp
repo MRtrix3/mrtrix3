@@ -18,9 +18,7 @@
 #include "adapter/subset.h"
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 using namespace App;
 
@@ -119,6 +117,4 @@ Image<bool> Mask::__get_mask(const std::string &name) {
   return mask;
 }
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography

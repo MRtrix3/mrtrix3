@@ -22,8 +22,7 @@
 #include "interp/cubic.h"
 #include "transform.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 //! \addtogroup interp
 // @{
@@ -124,7 +123,6 @@ private:
 
 //! @}
 
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

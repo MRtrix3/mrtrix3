@@ -33,9 +33,7 @@ class OptionList;
 class Options;
 } // namespace App
 
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace GUI::MRView::Tool {
 class Base;
 
 class CameraInteractor {
@@ -198,9 +196,8 @@ public:
   }
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
+} // namespace GUI::MRView::Tool
+
 } // namespace MR
 
 #endif

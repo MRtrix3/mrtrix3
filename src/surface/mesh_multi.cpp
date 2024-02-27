@@ -19,8 +19,7 @@
 #include <ios>
 #include <iostream>
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 void MeshMulti::load(const std::string &path) {
 
@@ -165,5 +164,4 @@ void MeshMulti::save(const std::string &path) const {
   }
 }
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface

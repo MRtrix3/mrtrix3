@@ -24,10 +24,7 @@
 #include "gui/opengl/transformation.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Capture::Capture(Dock *parent)
     : Base(parent), rotation_type(RotationType::World), translation_type(TranslationType::Voxel), is_playing(false) {
@@ -463,7 +460,4 @@ bool Capture::process_commandline_option(const MR::App::ParsedOption &opt) {
   return false;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

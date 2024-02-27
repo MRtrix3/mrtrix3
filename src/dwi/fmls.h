@@ -39,9 +39,7 @@
 //   Uncomment this line to activate the optimal mean direction calculation (about a 20% performance penalty).
 // #define FMLS_OPTIMISE_MEAN_DIR
 
-namespace MR {
-namespace DWI {
-namespace FMLS {
+namespace MR::DWI::FMLS {
 
 using DWI::Directions::index_type;
 using DWI::Directions::Mask;
@@ -273,8 +271,6 @@ private:
 #endif
 };
 
-} // namespace FMLS
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::FMLS
 
 #endif

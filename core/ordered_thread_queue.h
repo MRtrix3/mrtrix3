@@ -20,8 +20,7 @@
 #include "thread_queue.h"
 #include <set>
 
-namespace MR {
-namespace Thread {
+namespace MR::Thread {
 
 namespace {
 
@@ -324,7 +323,6 @@ inline void run_ordered_queue(Source &&source,
             capacity);
 }
 
-} // namespace Thread
-} // namespace MR
+} // namespace MR::Thread
 
 #endif

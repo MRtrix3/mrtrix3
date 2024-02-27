@@ -23,10 +23,7 @@
 #include "gui/mrview/sync/interprocesscommunicator.h"
 #include "gui/mrview/sync/processlock.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
 
   //***Set up a socket which listens for incoming messages***
@@ -244,7 +241,4 @@ int InterprocessCommunicator::CharTo32bitNum(char a[]) {
   return n;
 }
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync

@@ -26,8 +26,7 @@
 #include "file/path.h"
 #include "file/utils.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 // Read generic image header information - common between conventional, compressed and sparse formats
 template <class SourceType> void read_mrtrix_header(Header &, SourceType &);
@@ -161,7 +160,6 @@ template <class StreamType> void write_mrtrix_header(const Header &H, StreamType
   out << "\n";
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats
 
 #endif

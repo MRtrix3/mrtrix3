@@ -19,9 +19,7 @@
 #include "gui/dialog/list.h"
 #include "gui/gui.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 namespace {
 
@@ -204,6 +202,4 @@ std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree) {
   return ret;
 }
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog

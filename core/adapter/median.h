@@ -20,8 +20,7 @@
 #include "adapter/base.h"
 #include "math/median.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Median : public Base<Median<ImageType>, ImageType> {
 public:
@@ -82,7 +81,6 @@ protected:
   std::vector<value_type> values;
 };
 
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

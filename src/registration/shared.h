@@ -19,8 +19,7 @@
 
 #include "app.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 using namespace MR;
 using namespace App;
 // clang-format off
@@ -43,7 +42,6 @@ const OptionGroup fod_options =
              " corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series"
              " (i.e. 6, 15, 28, 45, 66 etc.)");
 // clang-format on
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration
 
 #endif

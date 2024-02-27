@@ -32,8 +32,7 @@
 #include "image_helpers.h"
 #include "image_io/default.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 typedef struct {
   int sl, ec, dyn, ph, ty, seq, ang, pos, b, grad, asl, ri, rs, ss, pix, size, vox, thick, gap;
@@ -284,5 +283,4 @@ std::unique_ptr<ImageIO::Base> PAR::create(Header &H) const {
   return std::unique_ptr<ImageIO::Base>();
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

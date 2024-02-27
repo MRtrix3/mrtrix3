@@ -25,8 +25,7 @@
 #include "mrtrix.h"
 #include "types.h"
 
-namespace MR {
-namespace Connectome {
+namespace MR::Connectome {
 
 using node_t = uint32_t;
 
@@ -99,7 +98,6 @@ template <class MatrixType> void to_upper(MatrixType &in) {
 
 void check(const Header &);
 
-} // namespace Connectome
-} // namespace MR
+} // namespace MR::Connectome
 
 #endif

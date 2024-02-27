@@ -19,8 +19,7 @@
 #include "exception.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace Axes {
+namespace MR::Axes {
 
 std::string dir2id(const Eigen::Vector3d &axis) {
   if (axis[0] == -1) {
@@ -104,5 +103,4 @@ void get_permutation_to_make_axial(const transform_type &T, std::array<size_t, 3
   flip[perm[2]] = T(2, perm[2]) < 0.0;
 }
 
-} // namespace Axes
-} // namespace MR
+} // namespace MR::Axes

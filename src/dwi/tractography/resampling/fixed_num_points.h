@@ -19,10 +19,7 @@
 
 #include "dwi/tractography/resampling/resampling.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 class FixedNumPoints : public BaseCRTP<FixedNumPoints> {
 
@@ -41,9 +38,6 @@ private:
   size_t num_points;
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling
 
 #endif

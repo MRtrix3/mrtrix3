@@ -20,10 +20,7 @@
 #include "algo/loop.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-
-namespace Warp {
+namespace MR::Registration::Warp {
 
 template <class ImageType> void displacement2deformation(ImageType &input, ImageType &output) {
   MR::Transform transform(input);
@@ -43,8 +40,6 @@ template <class ImageType> void deformation2displacement(ImageType &input, Image
   };
   ThreadedLoop(input, 0, 3).run(kernel, input, output);
 }
-} // namespace Warp
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Warp
 
 #endif

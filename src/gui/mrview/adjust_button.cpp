@@ -17,9 +17,7 @@
 #include "gui/mrview/adjust_button.h"
 #include "math/math.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 AdjustButton::AdjustButton(QWidget *parent, float change_rate)
     : QLineEdit(parent),
@@ -99,6 +97,4 @@ bool AdjustButton::eventFilter(QObject *obj, QEvent *event) {
   return QObject::eventFilter(obj, event);
 }
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView

@@ -20,10 +20,7 @@
 #include "connectome/connectome.h"
 #include "connectome/lut.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 using MR::Connectome::LUT;
 using MR::Connectome::LUT_node;
@@ -41,9 +38,6 @@ enum class edge_colour_t { FIXED, DIRECTION, CONNECTOME, MATRIX_FILE };
 enum class edge_size_t { FIXED, CONNECTOME, MATRIX_FILE };
 enum class edge_alpha_t { FIXED, CONNECTOME, MATRIX_FILE };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

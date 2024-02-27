@@ -16,9 +16,7 @@
 
 #include "dwi/sdeconv/csd.h"
 
-namespace MR {
-namespace DWI {
-namespace SDeconv {
+namespace MR::DWI::SDeconv {
 
 using namespace App;
 // clang-format off
@@ -58,6 +56,4 @@ const OptionGroup CSD_options =
       + Argument("number").type_integer(0, 1000);
 // clang-format on
 
-} // namespace SDeconv
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::SDeconv

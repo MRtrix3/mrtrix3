@@ -22,10 +22,7 @@
 #include "registration/transform/initialiser_helpers.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-namespace Transform {
-namespace Init {
+namespace MR::Registration::Transform::Init {
 enum InitType { set_centre_mass, set_centre_geometric, mass, geometric, moments, rot_search, none };
 struct LinearInitialisationParams {
   struct TranslationInit {
@@ -115,9 +112,6 @@ extern void initialise_using_image_mass(Image<default_type> &im1,
                                         Registration::Transform::Base &transform,
                                         Registration::Transform::Init::LinearInitialisationParams &init,
                                         const std::vector<MultiContrastSetting> &contrast_settings);
-} // namespace Init
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Transform::Init
 
 #endif
