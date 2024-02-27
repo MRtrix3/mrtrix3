@@ -178,8 +178,8 @@ def execute(): #pylint: disable=unused-variable
       run.command('mrcalc ' + str(index) + 'in.mif ' + str(scaling_factor) + ' -mult ' + filename)
       rescaled_filelist.append(filename)
 
-    else:
-      rescaled_filelist = [str(index) + 'in.mif' for index in range(0, len(app.ARGS.inputs))]
+  else:
+    rescaled_filelist = [str(index) + 'in.mif' for index in range(0, len(app.ARGS.inputs))]
 
   if voxel_grid_matching == 'equal':
     transformed_filelist = rescaled_filelist
