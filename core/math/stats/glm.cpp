@@ -46,30 +46,30 @@ const char *const column_ones_description =
 
 App::OptionGroup glm_options(const std::string &element_name) {
   using namespace App;
+  // clang-format off
   OptionGroup result =
       OptionGroup("Options related to the General Linear Model (GLM)")
-
       + Option("variance",
-               "define variance groups for the G-statistic; "
-               "measurements for which the expected variance is equivalent should contain the same index") +
-      Argument("file").type_file_in()
-
+               "define variance groups for the G-statistic;"
+               " measurements for which the expected variance is equivalent"
+               " should contain the same index")
+        + Argument("file").type_file_in()
       + Option("ftests",
-               "perform F-tests; input text file should contain, for each F-test, a row containing "
-               "ones and zeros, where ones indicate the rows of the contrast matrix to be included "
-               "in the F-test.") +
-      Argument("path").type_file_in()
-
-      + Option("fonly", "only assess F-tests; do not perform statistical inference on entries in the contrast matrix")
-
+               "perform F-tests;"
+               " input text file should contain, for each F-test,"
+               " a row containing ones and zeros,"
+               " where ones indicate the rows of the contrast matrix to be included in the F-test.")
+        + Argument("path").type_file_in()
+      + Option("fonly",
+               "only assess F-tests;"
+               " do not perform statistical inference on entries in the contrast matrix")
       + Option("column",
-               "add a column to the design matrix corresponding to subject " + element_name +
-                   "-wise values "
-                   "(note that the contrast matrix must include an additional column for each use of this option); "
-                   "the text file provided via this option should contain a file name for each subject")
-            .allow_multiple() +
-      Argument("path").type_file_in();
-
+               "add a column to the design matrix"
+               " corresponding to subject " + element_name + "-wise values"
+               " (note that the contrast matrix must include an additional column for each use of this option);"
+               " the text file provided via this option should contain a file name for each subject").allow_multiple()
+        + Argument("path").type_file_in();
+  // clang-format on
   return result;
 }
 

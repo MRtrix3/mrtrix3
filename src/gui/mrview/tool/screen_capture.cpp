@@ -421,15 +421,20 @@ void Capture::on_output_update() { start_index->setValue(0); }
 
 void Capture::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("Screen Capture tool options")
 
-      + Option("capture.folder", "Set the output folder for the screen capture tool.").allow_multiple() +
-      Argument("path").type_text()
+      + Option("capture.folder",
+               "Set the output folder for the screen capture tool.").allow_multiple()
+        + Argument("path").type_text()
 
-      + Option("capture.prefix", "Set the output file prefix for the screen capture tool.").allow_multiple() +
-      Argument("string").type_text()
+      + Option("capture.prefix",
+               "Set the output file prefix for the screen capture tool.").allow_multiple()
+        + Argument("string").type_text()
 
-      + Option("capture.grab", "Start the screen capture process.").allow_multiple();
+      + Option("capture.grab",
+               "Start the screen capture process.").allow_multiple();
+  // clang-format on
 }
 
 bool Capture::process_commandline_option(const MR::App::ParsedOption &opt) {

@@ -21,19 +21,26 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  SYNOPSIS = "Compare two track scalar files for differences, optionally with a specified tolerance";
+  SYNOPSIS = "Compare two track scalar files for differences,"
+             " optionally with a specified tolerance";
 
   ARGUMENTS
-  +Argument("tsf1", "a track scalar file.").type_file_in() +
-      Argument("tsf2", "another track scalar file.").type_file_in();
+  + Argument ("tsf1", "a track scalar file.").type_file_in()
+  + Argument ("tsf2", "another track scalar file.").type_file_in();
 
   OPTIONS
-  +Option("abs", "specify an absolute tolerance") + Argument("tolerance").type_float(0.0) +
-      Option("frac", "specify a fractional tolerance") + Argument("tolerance").type_float(0.0);
+  + Option ("abs", "specify an absolute tolerance")
+    + Argument ("tolerance").type_float(0.0)
+  + Option ("frac", "specify a fractional tolerance")
+    + Argument ("tolerance").type_float(0.0);
+
 }
+// clang-format on
 
 using value_type = float;
 

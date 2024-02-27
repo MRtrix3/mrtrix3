@@ -22,12 +22,14 @@ namespace Tractography {
 namespace Algorithms {
 
 using namespace App;
-
+// clang-format off
 const OptionGroup iFODOptions =
     OptionGroup("Options specific to the iFOD tracking algorithms")
-
-    + Option("power", "raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2).") +
-    Argument("value").type_float(0.0);
+    + Option("power",
+             "raise the FOD to the power specified"
+             " (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2).")
+      + Argument("value").type_float(0.0);
+// clang-format on
 
 void load_iFOD_options(Tractography::Properties &properties) {
   auto opt = get_options("power");

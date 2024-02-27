@@ -1933,109 +1933,139 @@ void Window::process_commandline_option() {
 }
 
 void Window::add_commandline_options(MR::App::OptionList &options) {
+  // clang-format off
   options + OptionGroup("View options")
 
-      + Option("mode", "Switch to view mode specified by the integer index, as per the view menu.").allow_multiple() +
-      Argument("index").type_integer()
+      + Option("mode",
+               "Switch to view mode specified by the integer index,"
+               " as per the view menu.").allow_multiple()
+        + Argument("index").type_integer()
 
-      + Option("load", "Load image specified and make it current.").allow_multiple() + Argument("image").type_image_in()
+      + Option("load",
+               "Load image specified and make it current.").allow_multiple()
+        + Argument("image").type_image_in()
 
-      + Option("reset", "Reset the view according to current image. This resets the FOV, projection and focus.")
-            .allow_multiple()
+      + Option("reset",
+               "Reset the view according to current image."
+               " This resets the FOV, projection and focus.").allow_multiple()
 
-      + Option("fov", "Set the field of view, in mm.").allow_multiple() + Argument("value").type_float()
+      + Option("fov", "Set the field of view, in mm.").allow_multiple()
+        + Argument("value").type_float()
 
       + Option("focus",
-               "Either set the position of the crosshairs in scanner coordinates, "
-               "with the new position supplied as a comma-separated list of floating-point values or "
-               "show or hide the focus cross hair using a boolean value as argument.")
-            .allow_multiple() +
-      Argument("x,y,z or boolean").type_various()
+               "Either set the position of the crosshairs in scanner coordinates,"
+               " with the new position supplied as a comma-separated list of floating-point values,"
+               " or show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
+        + Argument("spec").type_various()
 
       + Option("target",
-               "Set the target location for the viewing window (the scanner coordinate "
-               "that will appear at the centre of the viewing window")
-            .allow_multiple() +
-      Argument("x,y,z").type_sequence_float()
+               "Set the target location for the viewing window"
+               " (the scanner coordinate that will appear at the centre of the viewing window)").allow_multiple()
+        + Argument("x,y,z").type_sequence_float()
 
       + Option("orientation",
-               "Set the orientation of the camera for the viewing window, in the form of a quaternion representing the "
-               "rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point "
-               "values (this will be automatically normalised).") +
-      Argument("w,x,y,z").type_sequence_float()
+               "Set the orientation of the camera for the viewing window,"
+               " in the form of a quaternion representing the rotation away from the z-axis."
+               " This should be provided as a list of 4 comma-separated floating point values"
+               " (this will be automatically normalised).")
+        + Argument("w,x,y,z").type_sequence_float()
 
       + Option("voxel",
-               "Set the position of the crosshairs in voxel coordinates, "
-               "relative the image currently displayed. The new position should be supplied "
-               "as a comma-separated list of floating-point values.")
-            .allow_multiple() +
-      Argument("x,y,z").type_sequence_float()
+               "Set the position of the crosshairs in voxel coordinates,"
+               " relative the image currently displayed."
+               " The new position should be supplied as a comma-separated list of floating-point values.").allow_multiple()
+        + Argument("x,y,z").type_sequence_float()
 
       + Option("volume",
-               "Set the volume index for the image displayed, "
-               "as a comma-separated list of integers.")
-            .allow_multiple() +
-      Argument("idx").type_sequence_int()
+               "Set the volume index for the image displayed,"
+               " as a comma-separated list of integers.").allow_multiple()
+        + Argument("idx").type_sequence_int()
 
-      + Option("plane", "Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.")
-            .allow_multiple() +
-      Argument("index").type_integer(0, 2)
+      + Option("plane",
+               "Set the viewing plane,"
+               " according to the mappping:"
+               " 0: sagittal;"
+               " 1: coronal;"
+               " 2: axial.").allow_multiple()
+        + Argument("index").type_integer(0, 2)
 
-      + Option("lock", "Set whether view is locked to image axes (0: no, 1: yes).").allow_multiple() +
-      Argument("yesno").type_bool()
+      + Option("lock",
+               "Set whether view is locked to image axes"
+               " (0: no, 1: yes).").allow_multiple()
+        + Argument("yesno").type_bool()
 
-      +
-      Option("select_image", "Switch to image number specified, with reference to the list of currently loaded images.")
-          .allow_multiple() +
-      Argument("index").type_integer(0)
+      + Option("select_image",
+               "Switch to image number specified,"
+               " with reference to the list of currently loaded images.").allow_multiple()
+        + Argument("index").type_integer(0)
 
-      + Option("autoscale", "Reset the image scaling to automatically determined range.").allow_multiple()
+      + Option("autoscale",
+               "Reset the image scaling to automatically determined range.").allow_multiple()
 
-      + Option("interpolation", "Enable or disable image interpolation in main image.").allow_multiple() +
-      Argument("boolean").type_bool()
+      + Option("interpolation",
+               "Enable or disable image interpolation in main image.").allow_multiple()
+        + Argument("boolean").type_bool()
 
-      +
-      Option("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.").allow_multiple() +
-      Argument("index").type_integer(0)
+      + Option("colourmap",
+               "Switch the image colourmap to that specified,"
+               " as per the colourmap menu.").allow_multiple()
+        + Argument("index").type_integer(0)
 
-      + Option("noannotations", "Hide all image annotation overlays").allow_multiple()
+      + Option("noannotations",
+               "Hide all image annotation overlays").allow_multiple()
 
-      + Option("comments", "Show or hide image comments overlay.").allow_multiple() + Argument("boolean").type_bool()
+      + Option("comments",
+               "Show or hide image comments overlay.").allow_multiple()
+        + Argument("boolean").type_bool()
 
-      + Option("voxelinfo", "Show or hide voxel information overlay.").allow_multiple() +
-      Argument("boolean").type_bool()
+      + Option("voxelinfo",
+               "Show or hide voxel information overlay.").allow_multiple()
+        + Argument("boolean").type_bool()
 
-      + Option("orientlabel", "Show or hide orientation label overlay.").allow_multiple() +
-      Argument("boolean").type_bool()
+      + Option("orientlabel",
+               "Show or hide orientation label overlay.").allow_multiple()
+        + Argument("boolean").type_bool()
 
-      + Option("colourbar", "Show or hide colourbar overlay.").allow_multiple() + Argument("boolean").type_bool()
+      + Option("colourbar",
+               "Show or hide colourbar overlay.").allow_multiple()
+        + Argument("boolean").type_bool()
 
-      + Option("imagevisible", "Show or hide the main image.").allow_multiple() + Argument("boolean").type_bool()
+      + Option("imagevisible",
+               "Show or hide the main image.").allow_multiple()
+        + Argument("boolean").type_bool()
 
-      + Option("intensity_range", "Set the image intensity range to that specified.").allow_multiple() +
-      Argument("min,max").type_sequence_float()
+      + Option("intensity_range",
+               "Set the image intensity range to that specified.").allow_multiple()
+        + Argument("min,max").type_sequence_float()
 
       + OptionGroup("Window management options")
 
-      + Option("size", "Set the size of the view area, in pixel units.").allow_multiple() +
-      Argument("width,height").type_sequence_int()
+      + Option("size",
+               "Set the size of the view area, in pixel units.").allow_multiple()
+        + Argument("width,height").type_sequence_int()
 
-      + Option("position", "Set the position of the main window, in pixel units.").allow_multiple() +
-      Argument("x,y").type_sequence_int()
+      + Option("position",
+               "Set the position of the main window, in pixel units.").allow_multiple()
+        + Argument("x,y").type_sequence_int()
 
-      + Option("fullscreen", "Start fullscreen.")
+      + Option("fullscreen",
+               "Start fullscreen.")
 
-      + Option("exit", "Quit MRView.")
+      + Option("exit",
+               "Quit MRView.")
 
       + OptionGroup("Sync Options")
 
-      + Option("sync.focus", "Sync the focus with other MRView windows that also have this turned on.")
+      + Option("sync.focus",
+               "Sync the focus with other MRView windows that also have this turned on.")
 
       + OptionGroup("Debugging options")
 
       + Option("fps",
-               "Display frames per second, averaged over the last 10 frames. "
-               "The maximum over the last 3 seconds is also displayed.");
+               "Display frames per second,"
+               " averaged over the last 10 frames."
+               " The maximum over the last 3 seconds is also displayed.");
+  // clang-format on
 }
 
 } // namespace MRView

@@ -20,36 +20,36 @@ namespace MR {
 namespace DWI {
 namespace FMLS {
 
+// clang-format off
 const App::OptionGroup FMLSSegmentOption =
     App::OptionGroup("FOD FMLS segmenter options")
-
     + App::Option("fmls_integral",
-                  "threshold absolute numerical integral of positive FOD lobes. "
-                  "Any lobe for which the integral is smaller than this threshold will be discarded. "
-                  "Default: " +
-                      str(FMLS_INTEGRAL_THRESHOLD_DEFAULT, 2) + ".") +
-    App::Argument("value").type_float(0.0)
+                  "threshold absolute numerical integral of positive FOD lobes."
+                  " Any lobe for which the integral is smaller than this threshold will be discarded."
+                  " Default: " + str(FMLS_INTEGRAL_THRESHOLD_DEFAULT, 2) + ".")
+      + App::Argument("value").type_float(0.0)
 
     + App::Option("fmls_peak_value",
-                  "threshold peak amplitude of positive FOD lobes. "
-                  "Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded. "
-                  "Default: " +
-                      str(FMLS_PEAK_VALUE_THRESHOLD_DEFAULT, 2) + ".") +
-    App::Argument("value").type_float(0.0)
+                  "threshold peak amplitude of positive FOD lobes."
+                  " Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded."
+                  " Default: " + str(FMLS_PEAK_VALUE_THRESHOLD_DEFAULT, 2) + ".")
+      + App::Argument("value").type_float(0.0)
 
     + App::Option("fmls_no_thresholds",
-                  "disable all FOD lobe thresholding; every lobe where the FOD is positive will be retained.")
+                  "disable all FOD lobe thresholding;"
+                  " every lobe where the FOD is positive will be retained.")
 
     + App::Option("fmls_lobe_merge_ratio",
-                  "Specify the ratio between a given FOD amplitude sample between two lobes, and the smallest peak "
-                  "amplitude of the adjacent lobes, above which those lobes will be merged. "
-                  "This is the amplitude of the FOD at the 'bridge' point between the two lobes, divided by the peak "
-                  "amplitude of the smaller of the two adjoining lobes. "
-                  "A value of 1.0 will never merge two lobes into one; a value of 0.0 will always merge lobes unless "
-                  "they are bisected by a zero-valued crossing. "
-                  "Default: " +
-                      str(FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT, 2) + ".") +
-    App::Argument("value").type_float(0.0, 1.0);
+                  "Specify the ratio between a given FOD amplitude sample between two lobes,"
+                  " and the smallest peak amplitude of the adjacent lobes,"
+                  " above which those lobes will be merged."
+                  " This is the amplitude of the FOD at the 'bridge' point between the two lobes,"
+                  " divided by the peak amplitude of the smaller of the two adjoining lobes."
+                  " A value of 1.0 will never merge two lobes into one;"
+                  " a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing."
+                  " Default: " + str(FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT, 2) + ".")
+      + App::Argument("value").type_float(0.0, 1.0);
+// clang-format on
 
 void load_fmls_thresholds(Segmenter &segmenter) {
   using namespace App;

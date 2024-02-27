@@ -37,6 +37,7 @@ using namespace MR::DWI::Tractography;
 
 const char *field_choices[] = {"mean", "median", "std", "min", "max", "count", NULL};
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -44,25 +45,28 @@ void usage() {
   SYNOPSIS = "Calculate statistics on streamlines lengths";
 
   ARGUMENTS
-  +Argument("tracks_in", "the input track file").type_tracks_in();
+  + Argument ("tracks_in", "the input track file").type_tracks_in();
 
   OPTIONS
 
-  +Option("output",
-          "output only the field specified. Multiple such options can be supplied if required. "
-          "Choices are: " +
-              join(field_choices, ", ") + ". Useful for use in scripts.")
-          .allow_multiple() +
-      Argument("field").type_choice(field_choices)
+  + Option ("output", "output only the field specified."
+                      " Multiple such options can be supplied if required."
+                      " Choices are: " + join (field_choices, ", ") + "."
+                      " Useful for use in scripts.").allow_multiple()
+    + Argument ("field").type_choice(field_choices)
 
-      + Option("histogram", "output a histogram of streamline lengths") + Argument("path").type_file_out()
+  + Option ("histogram", "output a histogram of streamline lengths")
+    + Argument ("path").type_file_out()
 
-      + Option("dump", "dump the streamlines lengths to a text file") + Argument("path").type_file_out()
+  + Option ("dump", "dump the streamlines lengths to a text file")
+    + Argument ("path").type_file_out()
 
-      + Option("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
+  + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
 
-      + Tractography::TrackWeightsInOption;
+  + Tractography::TrackWeightsInOption;
+
 }
+// clang-format off
 
 // Store length and weight of each streamline
 class LW {

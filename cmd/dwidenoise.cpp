@@ -27,75 +27,92 @@ const char *const dtypes[] = {"float32", "float64", NULL};
 
 const char *const estimators[] = {"exp1", "exp2", NULL};
 
+// clang-format off
 void usage() {
+
   SYNOPSIS = "dMRI noise level estimation and denoising using Marchenko-Pastur PCA";
 
   DESCRIPTION
-  +"DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain "
-   "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
-   "the universal Marchenko-Pastur (MP) distribution. Fitting the MP distribution to the spectrum "
-   "of patch-wise signal matrices hence provides an estimator of the noise level 'sigma', as was "
-   "first shown in Veraart et al. (2016) and later improved in Cordero-Grande et al. (2019). This "
-   "noise level estimate then determines the optimal cut-off for PCA denoising."
+  + "DWI data denoising and noise map estimation"
+    " by exploiting data redundancy in the PCA domain"
+    " using the prior knowledge that the eigenspectrum of random covariance matrices"
+    " is described by the universal Marchenko-Pastur (MP) distribution."
+    " Fitting the MP distribution to the spectrum of patch-wise signal matrices"
+    " hence provides an estimator of the noise level 'sigma',"
+    " as was first shown in Veraart et al. (2016)"
+    " and later improved in Cordero-Grande et al. (2019)."
+    " This noise level estimate then determines the optimal cut-off for PCA denoising."
 
-      + "Important note: image denoising must be performed as the first step of the image processing pipeline. "
-        "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
+  + "Important note:"
+    " image denoising must be performed as the first step of the image processing pipeline."
+    " The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
 
-      + "Note that this function does not correct for non-Gaussian noise biases present in "
-        "magnitude-reconstructed MRI images. If available, including the MRI phase data can "
-        "reduce such non-Gaussian biases, and the command now supports complex input data.";
+  + "Note that this function does not correct for non-Gaussian noise biases"
+    " present in magnitude-reconstructed MRI images."
+    " If available, including the MRI phase data can reduce such non-Gaussian biases,"
+    " and the command now supports complex input data.";
 
-  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & "
-           "Jelle Veraart (jelle.veraart@nyumc.org) & "
-           "J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)"
+           " and Jelle Veraart (jelle.veraart@nyumc.org)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   REFERENCES
-  +"Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
-   "Denoising of diffusion MRI using random matrix theory. "
-   "NeuroImage, 2016, 142, 394-406, doi: 10.1016/j.neuroimage.2016.08.016"
+  + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
+    "Denoising of diffusion MRI using random matrix theory. "
+    "NeuroImage, 2016, 142, 394-406, doi: 10.1016/j.neuroimage.2016.08.016"
 
-      + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
-        "Diffusion MRI noise mapping using random matrix theory. "
-        "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059"
+  + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
+    "Diffusion MRI noise mapping using random matrix theory. "
+    "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059"
 
-      + "Cordero-Grande, L.; Christiaens, D.; Hutter, J.; Price, A.N.; Hajnal, J.V. " // Internal
-        "Complex diffusion-weighted image estimation via matrix recovery under general noise models. "
-        "NeuroImage, 2019, 200, 391-404, doi: 10.1016/j.neuroimage.2019.06.039";
+  + "Cordero-Grande, L.; Christiaens, D.; Hutter, J.; Price, A.N.; Hajnal, J.V. " // Internal
+    "Complex diffusion-weighted image estimation via matrix recovery under general noise models. "
+    "NeuroImage, 2019, 200, 391-404, doi: 10.1016/j.neuroimage.2019.06.039";
 
   ARGUMENTS
-  +Argument("dwi", "the input diffusion-weighted image.").type_image_in()
-
-      + Argument("out", "the output denoised DWI image.").type_image_out();
+  + Argument("dwi", "the input diffusion-weighted image.").type_image_in()
+  + Argument("out", "the output denoised DWI image.").type_image_out();
 
   OPTIONS
-  +Option("mask", "Only process voxels within the specified binary brain mask image.") +
-      Argument("image").type_image_in()
+  + Option("mask",
+           "Only process voxels within the specified binary brain mask image.")
+    + Argument("image").type_image_in()
 
-      + Option("extent",
-               "Set the patch size of the denoising filter. "
-               "By default, the command will select the smallest isotropic patch size "
-               "that exceeds the number of DW images in the input data, e.g., 5x5x5 for "
-               "data with <= 125 DWI volumes, 7x7x7 for data with <= 343 DWI volumes, etc.") +
-      Argument("window").type_sequence_int()
+  + Option("extent",
+           "Set the patch size of the denoising filter."
+           " By default, the command will select the smallest isotropic patch size"
+           " that exceeds the number of DW images in the input data,"
+           " e.g., 5x5x5 for data with <= 125 DWI volumes,"
+           " 7x7x7 for data with <= 343 DWI volumes,"
+           " etc.")
+    + Argument("window").type_sequence_int()
 
-      + Option("noise",
-               "The output noise map, i.e., the estimated noise level 'sigma' in the data. "
-               "Note that on complex input data, this will be the total noise level across "
-               "real and imaginary channels, so a scale factor sqrt(2) applies.") +
-      Argument("level").type_image_out()
+  + Option("noise",
+           "The output noise map,"
+           " i.e., the estimated noise level 'sigma' in the data."
+           "Note that on complex input data,"
+           " this will be the total noise level across real and imaginary channels,"
+           " so a scale factor sqrt(2) applies.")
+    + Argument("level").type_image_out()
 
-      + Option("rank", "The selected signal rank of the output denoised image.") + Argument("cutoff").type_image_out()
+  + Option("rank",
+           "The selected signal rank of the output denoised image.")
+    + Argument("cutoff").type_image_out()
 
-      + Option("datatype",
-               "Datatype for the eigenvalue decomposition (single or double precision). "
-               "For complex input data, this will select complex float32 or complex float64 datatypes.") +
-      Argument("float32/float64").type_choice(dtypes)
+  + Option("datatype",
+           "Datatype for the eigenvalue decomposition"
+           " (single or double precision). "
+           "For complex input data,"
+           " this will select complex float32 or complex float64 datatypes.")
+    + Argument("float32/float64").type_choice(dtypes)
 
-      + Option("estimator",
-               "Select the noise level estimator (default = Exp2), either: \n"
-               "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
-               "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).") +
-      Argument("Exp1/Exp2").type_choice(estimators);
+  + Option("estimator",
+           "Select the noise level estimator"
+           " (default = Exp2),"
+           " either: \n"
+           "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
+           "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
+    + Argument("Exp1/Exp2").type_choice(estimators);
 
   COPYRIGHT =
       "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
@@ -124,6 +141,7 @@ void usage() {
       "\t 5. The Software may only be used for non-commercial research and may not be used for clinical care. \n \n"
       "\t 6. Any publication by Recipient of research involving the Software shall cite the references listed below.";
 }
+// clang-format on
 
 using real_type = float;
 

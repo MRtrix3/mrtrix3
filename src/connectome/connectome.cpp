@@ -24,9 +24,12 @@ namespace MR {
 namespace Connectome {
 
 using namespace App;
-const OptionGroup MatrixOutputOptions = OptionGroup("Options for outputting connectome matrices") +
-                                        Option("symmetric", "Make matrices symmetric on output") +
-                                        Option("zero_diagonal", "Set matrix diagonal to zero on output");
+// clang-format off
+const OptionGroup MatrixOutputOptions =
+    OptionGroup("Options for outputting connectome matrices")
+    + Option("symmetric", "Make matrices symmetric on output")
+    + Option("zero_diagonal", "Set matrix diagonal to zero on output");
+// clang-format on
 
 void check(const Header &H) {
   if (!(H.ndim() == 3 || (H.ndim() == 4 && H.size(3) == 1)))

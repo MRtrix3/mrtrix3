@@ -26,6 +26,7 @@ using namespace MR::Surface;
 
 const char *transform_choices[] = {"first2real", "real2first", "voxel2real", "real2voxel", "fs2real", nullptr};
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -33,17 +34,20 @@ void usage() {
   SYNOPSIS = "Convert meshes between different formats, and apply transformations";
 
   ARGUMENTS
-  +Argument("input", "the input mesh file").type_file_in() + Argument("output", "the output mesh file").type_file_out();
+  + Argument ("input",  "the input mesh file").type_file_in()
+  + Argument ("output", "the output mesh file").type_file_out();
 
   OPTIONS
-  +Option("binary", "write the output mesh file in binary format (if supported)")
+  + Option ("binary", "write the output mesh file in binary format (if supported)")
 
-      + Option("transform",
-               "transform vertices from one coordinate space to another, based on a template image; "
-               "options are: " +
-                   join(transform_choices, ", ")) +
-      Argument("mode").type_choice(transform_choices) + Argument("image").type_image_in();
+  + Option ("transform", "transform vertices from one coordinate space to another,"
+                         " based on a template image;"
+                         " options are: " + join(transform_choices, ", "))
+    + Argument ("mode").type_choice (transform_choices)
+    + Argument ("image").type_image_in();
+
 }
+// clang-format on
 
 void run() {
 
