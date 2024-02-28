@@ -35,7 +35,7 @@ namespace MR {
 extern const char *const avgspace_voxspacing_choices[];
 enum class avgspace_voxspacing_t { MIN_PROJECTION, MEAN_PROJECTION, MIN_NEAREST, MEAN_NEAREST };
 
-Eigen::Matrix<default_type, 8, 4> get_cuboid_corners(const Eigen::Matrix<default_type, 4, 1> &xzx1);
+Eigen::Matrix<default_type, 8, 4> get_cuboid_corners(const Eigen::Matrix<default_type, 4, 1> &xyz_sizes);
 Eigen::Matrix<default_type, 8, 4>
 get_bounding_box(const Header &header, const Eigen::Transform<default_type, 3, Eigen::Projective> &voxel2scanner);
 

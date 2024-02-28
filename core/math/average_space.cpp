@@ -61,13 +61,21 @@ namespace MR {
 const char *const avgspace_voxspacing_choices[]{
     "min_projection", "mean_projection", "min_nearest", "mean_nearest", nullptr};
 
-FORCE_INLINE Eigen::Matrix<default_type, 8, 4> get_cuboid_corners(const Eigen::Matrix<default_type, 4, 1> &xyz1) {
+FORCE_INLINE Eigen::Matrix<default_type, 8, 4> get_cuboid_corners(const Eigen::Matrix<default_type, 4, 1> &xyz_sizes) {
   Eigen::Matrix<default_type, 8, 4> corners;
   // MatrixType faces = MatrixType(8,4);
   // faces << 1, 2, 3, 4,   2, 6, 7, 3,   4, 3, 7, 8,   1, 5, 8, 4,   1, 2, 6, 5,   5, 6, 7, 8;
-  corners << 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
-      1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0;
-  corners *= xyz1.asDiagonal();
+  // clang-format off
+  corners << 0.0, 0.0, 0.0, 1.0,
+             0.0, 1.0, 0.0, 1.0,
+             1.0, 1.0, 0.0, 1.0,
+             1.0, 0.0, 0.0, 1.0,
+             0.0, 0.0, 1.0, 1.0,
+             0.0, 1.0, 1.0, 1.0,
+             1.0, 1.0, 1.0, 1.0,
+             1.0, 0.0, 1.0, 1.0;
+  // clang-format on
+  corners *= xyz_sizes.asDiagonal();
   return corners;
 }
 
@@ -207,7 +215,8 @@ void compute_average_voxel2scanner(
     // internally the coefficients are stored in the following order: [x, y, z, w]
     quaternions.col(itrafo) = quat.coeffs();
   }
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(quaternions * quaternions.transpose(), Eigen::ComputeEigenvectors);
+  const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(quaternions * quaternions.transpose(),
+                                                          Eigen::ComputeEigenvectors);
   Eigen::Quaterniond average_quat;
   average_quat.coeffs() = es.eigenvectors().col(3).transpose();
   average_quat.normalize();
