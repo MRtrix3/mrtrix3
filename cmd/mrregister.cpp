@@ -475,7 +475,7 @@ void run() {
       rigid_estimator = Registration::None;
       break;
     default:
-      assert (false);
+      assert(false);
     }
   }
 
@@ -622,7 +622,7 @@ void run() {
       affine_estimator = Registration::None;
       break;
     default:
-      assert (false);
+      assert(false);
     }
   }
 

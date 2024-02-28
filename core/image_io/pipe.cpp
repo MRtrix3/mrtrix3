@@ -49,19 +49,19 @@ void Pipe::unload(const Header &) {
   }
 }
 
-//ENVVAR name: MRTRIX_PRESERVE_TMPFILE
-//ENVVAR This variable decides whether the temporary piped image
-//ENVVAR should be preserved rather than the usual behaviour of
-//ENVVAR deletion at command completion.
-//ENVVAR For example, in case of piped commands from Python API,
-//ENVVAR it is necessary to retain the temp files until all
-//ENVVAR the piped commands are executed.
+// ENVVAR name: MRTRIX_PRESERVE_TMPFILE
+// ENVVAR This variable decides whether the temporary piped image
+// ENVVAR should be preserved rather than the usual behaviour of
+// ENVVAR deletion at command completion.
+// ENVVAR For example, in case of piped commands from Python API,
+// ENVVAR it is necessary to retain the temp files until all
+// ENVVAR the piped commands are executed.
 namespace {
-  bool preserve_tmpfile() {
-    const char* const MRTRIX_PRESERVE_TMPFILE = getenv("MRTRIX_PRESERVE_TMPFILE");
-    return (MRTRIX_PRESERVE_TMPFILE && to<bool>(std::string(MRTRIX_PRESERVE_TMPFILE)));
-  }
+bool preserve_tmpfile() {
+  const char *const MRTRIX_PRESERVE_TMPFILE = getenv("MRTRIX_PRESERVE_TMPFILE");
+  return (MRTRIX_PRESERVE_TMPFILE != nullptr && to<bool>(std::string(MRTRIX_PRESERVE_TMPFILE)));
 }
+} // namespace
 bool Pipe::delete_piped_images = !preserve_tmpfile();
 
 } // namespace MR::ImageIO
