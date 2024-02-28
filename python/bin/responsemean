@@ -22,16 +22,16 @@ import math, sys
 
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) '
-                     'and David Raffelt (david.raffelt@florey.edu.au)')
+  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)'
+                     ' and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.set_synopsis('Calculate the mean response function from a set of text files')
-  cmdline.add_description('All response function files provided must contain the same number of unique b-values (lines), '
-                          'as well as the same number of coefficients per line.')
-  cmdline.add_description('As long as the number of unique b-values is identical across all input files, '
-                          'the coefficients will be averaged. '
-                          'This is performed on the assumption that the actual acquired b-values are identical. '
-                          'This is however impossible for the responsemean command to determine based on the data provided; '
-                          'it is therefore up to the user to ensure that this requirement is satisfied.')
+  cmdline.add_description('All response function files provided must contain the same number of unique b-values (lines),'
+                          ' as well as the same number of coefficients per line.')
+  cmdline.add_description('As long as the number of unique b-values is identical across all input files,'
+                          ' the response functions will be averaged.'
+                          ' This is performed on the assumption that the actual acquired b-values are identical.'
+                          ' This is however impossible for the responsemean command to determine based on the data provided;'
+                          ' it is therefore up to the user to ensure that this requirement is satisfied.')
   cmdline.add_example_usage('Usage where all response functions are in the same directory:',
                             'responsemean input_response1.txt input_response2.txt input_response3.txt output_average_response.txt')
   cmdline.add_example_usage('Usage selecting response functions within a directory using a wildcard:',
@@ -47,9 +47,9 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='The output mean response function file')
   cmdline.add_argument('-legacy',
                        action='store_true',
-                       help='Use the legacy behaviour of former command "average_response": '
-                            'average response function coefficients directly, '
-                            'without compensating for global magnitude differences between input files')
+                       help='Use the legacy behaviour of former command "average_response":'
+                            ' average response function coefficients directly,'
+                            ' without compensating for global magnitude differences between input files')
 
 
 

@@ -21,16 +21,29 @@ Usage
 Description
 -----------
 
-Example usage: responsemean input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt
-
 All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.
 
-As long as the number of unique b-values is identical across all input files, the coefficients will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the responsemean command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.
+As long as the number of unique b-values is identical across all input files, the response functions will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the responsemean command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.
+
+Example usages
+--------------
+
+-   *Usage where all response functions are in the same directory:*::
+
+        $ responsemean input_response1.txt input_response2.txt input_response3.txt output_average_response.txt
+
+-   *Usage selecting response functions within a directory using a wildcard:*::
+
+        $ responsemean input_response*.txt output_average_response.txt
+
+-   *Usage where data for each participant reside in a participant-specific directory:*::
+
+        $ responsemean subject-*/response.txt output_average_response.txt
 
 Options
 -------
 
-- **-legacy** Use the legacy behaviour of former command 'average_response': average response function coefficients directly, without compensating for global magnitude differences between input files
+- **-legacy** Use the legacy behaviour of former command "average_response": average response function coefficients directly, without compensating for global magnitude differences between input files
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

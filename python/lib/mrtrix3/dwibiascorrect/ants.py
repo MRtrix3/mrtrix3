@@ -21,7 +21,8 @@ from mrtrix3 import app, run
 
 OPT_N4_BIAS_FIELD_CORRECTION = {
     's': ('4','shrink-factor applied to spatial dimensions'),
-    'b': ('[100,3]','[initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.'),
+    'b': ('[100,3]','[initial mesh resolution in mm, spline order]'
+                    ' This value is optimised for human adult data and needs to be adjusted for rodent data.'),
     'c': ('[1000,0.0]', '[numberOfIterations,convergenceThreshold]')}
 
 

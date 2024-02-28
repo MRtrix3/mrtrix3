@@ -26,8 +26,8 @@ LMAXES_SINGLE = [4, 0]
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('mtnorm', parents=[base_parser])
-  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) '
-                    'and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
+  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)'
+                    ' and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
   parser.set_synopsis('Normalise a DWI series to the estimated b=0 CSF intensity')
   parser.add_description('This algorithm determines an appropriate global scaling factor to apply to a DWI series '
                          'such that after the scaling is applied, '

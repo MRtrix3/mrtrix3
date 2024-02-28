@@ -24,9 +24,11 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
   cmdline.add_description('Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.')
-  cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
-                          'derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. '
-                          'More information on mask derivation from DWI data can be found at the following link: \n'
+  cmdline.add_description('Note that if the -mask command-line option is not specified,'
+                          ' the MRtrix3 command dwi2mask will automatically be called'
+                          ' to derive a binary mask image to be used for streamline seeding'
+                          ' and to constrain streamline propagation.'
+                          ' More information on mask derivation from DWI data can be found at the following link: \n'
                           f'https://mrtrix.readthedocs.io/en/{_version.__tag__}/dwi_preprocessing/masking.html')
   cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. '
                        'Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. '

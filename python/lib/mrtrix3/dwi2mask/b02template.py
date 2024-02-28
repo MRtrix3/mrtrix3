@@ -54,16 +54,19 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('b02template', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask')
-  parser.add_description('This script currently assumes that the template image provided via the first input to the -template option is T2-weighted, '
+  parser.add_description('This script currently assumes that the template image '
+                         'provided via the first input to the -template option is T2-weighted, '
                          'and can therefore be trivially registered to a mean b=0 image.')
-  parser.add_description('Command-line option -ants_options can be used with either the "antsquick" or "antsfull" software options. '
+  parser.add_description('Command-line option -ants_options can be used '
+                         'with either the "antsquick" or "antsfull" software options. '
                          'In both cases, image dimensionality is assumed to be 3, '
                          'and so this should be omitted from the user-specified options.'
                          'The input can be either a string '
                          '(encased in double-quotes if more than one option is specified), '
                          'or a path to a text file containing the requested options. '
                          'In the case of the "antsfull" software option, '
-                         'one will require the names of the fixed and moving images that are provided to the antsRegistration command: '
+                         'one will require the names of the fixed and moving images '
+                         'that are provided to the antsRegistration command: '
                          'these are "template_image.nii" and "bzero.nii" respectively.')
   parser.add_citation('M. Jenkinson, C.F. Beckmann, T.E. Behrens, M.W. Woolrich, S.M. Smith. '
                       'FSL. '

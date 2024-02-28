@@ -20,7 +20,7 @@ Usage
 Description
 -----------
 
-This script serves as an interface for many different algorithms that generate a binary mask from DWI data in different ways. Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the 'fslbet' algorithm, type 'dwi2mask fslbet'.
+This script serves as an interface for many different algorithms that generate a binary mask from DWI data in different ways. Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the "fslbet" algorithm, type "dwi2mask fslbet".
 
 More information on mask derivation from DWI data can be found at the following link: 
 https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
@@ -112,16 +112,16 @@ Usage
 Options
 -------
 
-Options specific to the 'afni_3dautomask' algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options specific to the "3dautomask" algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-clfrac** Set the 'clip level fraction', must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.
+- **-clfrac** Set the "clip level fraction"; must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.
 
-- **-nograd** The program uses a 'gradual' clip level by default. Add this option to use a fixed clip level.
+- **-nograd** The program uses a "gradual" clip level by default. Add this option to use a fixed clip level.
 
 - **-peels** Peel (erode) the mask n times, then unpeel (dilate).
 
-- **-nbhrs** Define the number of neighbors needed for a voxel NOT to be eroded.  It should be between 6 and 26.
+- **-nbhrs** Define the number of neighbors needed for a voxel NOT to be eroded. It should be between 6 and 26.
 
 - **-eclip** After creating the mask, remove exterior voxels below the clip threshold.
 
@@ -523,7 +523,7 @@ Usage
 Options
 -------
 
-Options specific to the 'fslbet' algorithm
+Options specific to the "fslbet" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-bet_f** Fractional intensity threshold (0->1); smaller values give larger brain outline estimates
@@ -622,7 +622,7 @@ Usage
 Options
 -------
 
-Options specific to the 'hdbet' algorithm
+Options specific to the "hdbet" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nogpu** Do not attempt to run on the GPU
@@ -799,7 +799,7 @@ Usage
 Options
 -------
 
-Options specific to the 'mean' algorithm
+Options specific to the "mean" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shells bvalues** Comma separated list of shells to be included in the volume averaging
@@ -904,7 +904,7 @@ Options specific to the "mtnorm" algorithm
 
 - **-init_mask image** Provide an initial brain mask, which will constrain the response function estimation (if omitted, the default dwi2mask algorithm will be used)
 
-- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data
 
 - **-threshold value** the threshold on the total tissue density sum image used to derive the brain mask; default is 0.5
 
@@ -1102,14 +1102,14 @@ Usage
 Options
 -------
 
-Options for turning 'dwi2mask trace' into an iterative algorithm
+Options for turning "dwi2mask trace" into an iterative algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-iterative** (EXPERIMENTAL) Iteratively refine the weights for combination of per-shell trace-weighted images prior to thresholding
 
 - **-max_iters** Set the maximum number of iterations for the algorithm (default: 10)
 
-Options specific to the 'trace' algorithm
+Options specific to the "trace" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shells bvalues** Comma-separated list of shells used to generate trace-weighted images for masking

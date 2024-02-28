@@ -24,7 +24,8 @@ SUPPORTS_MASK = True # pylint: disable=unused-variable
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tax', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
-  parser.set_synopsis('Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation')
+  parser.set_synopsis('Use the Tax et al. (2014) recursive calibration algorithm'
+                      ' for single-fibre voxel selection and response function estimation')
   parser.add_citation('Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. '
                       'Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. '
                       'NeuroImage, 2014, 86, 67-80')

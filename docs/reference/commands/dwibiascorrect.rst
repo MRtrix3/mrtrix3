@@ -204,7 +204,7 @@ dwibiascorrect fsl
 Synopsis
 --------
 
-Perform DWI bias field correction using the 'fast' command as provided in FSL
+Perform DWI bias field correction using the "fast" command as provided in FSL
 
 Usage
 -----
@@ -219,7 +219,7 @@ Usage
 Description
 -----------
 
-The FSL 'fast' command only estimates the bias field within a brain mask, and cannot extrapolate this smoothly-varying field beyond the defined mask. As such, this algorithm by necessity introduces a hard masking of the input DWI. Since this attribute may interfere with the purpose of using the command (e.g. correction of a bias field is commonly used to improve brain mask estimation), use of this particular algorithm is generally not recommended.
+The FSL "fast" command only estimates the bias field within a brain mask, and cannot extrapolate this smoothly-varying field beyond the defined mask. As such, this algorithm by necessity introduces a hard masking of the input DWI. Since this attribute may interfere with the purpose of using the command (e.g. correction of a bias field is commonly used to improve brain mask estimation), use of this particular algorithm is generally not recommended.
 
 Options
 -------

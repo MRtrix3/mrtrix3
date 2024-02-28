@@ -20,14 +20,15 @@ Usage
 Description
 -----------
 
-dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after 'dwi2response'. The subsequent arguments and options depend on the particular algorithm being invoked.
+dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after "dwi2response". The subsequent arguments and options depend on the particular algorithm being invoked.
 
-Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the 'fa' algorithm, type 'dwi2response fa'.
+Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the "fa" algorithm, type "dwi2response fa".
 
 More information on response function estimation for spherical deconvolution can be found at the following link: 
 https://mrtrix.readthedocs.io/en/3.0.4/constrained_spherical_deconvolution/response_function_estimation.html
 
-Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive an initial voxel exclusion mask. More information on mask derivation from DWI data can be found at: https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
+Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive an initial voxel exclusion mask. More information on mask derivation from DWI data can be found at: 
+https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
 
 Options
 -------
@@ -134,7 +135,7 @@ This is an improved version of the Dhollander et al. (2016) algorithm for unsupe
 Options
 -------
 
-Options for the 'dhollander' algorithm
+Options for the "dhollander" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-erode passes** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
@@ -248,7 +249,7 @@ Usage
 Options
 -------
 
-Options specific to the 'fa' algorithm
+Options specific to the "fa" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-erode passes** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)
@@ -355,7 +356,7 @@ Usage
 Options
 -------
 
-Options specific to the 'manual' algorithm
+Options specific to the "manual" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
@@ -458,7 +459,7 @@ Usage
 Options
 -------
 
-Options specific to the 'msmt_5tt' algorithm
+Options specific to the "msmt_5tt" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
@@ -568,7 +569,7 @@ Usage
 Options
 -------
 
-Options specific to the 'tax' algorithm
+Options specific to the "tax" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-peak_ratio value** Second-to-first-peak amplitude ratio threshold
@@ -674,7 +675,7 @@ Usage
 Options
 -------
 
-Options specific to the 'tournier' algorithm
+Options specific to the "tournier" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-number voxels** Number of single-fibre voxels to use when calculating response function

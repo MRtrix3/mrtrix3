@@ -20,9 +20,9 @@ Usage
 Description
 -----------
 
-5ttgen acts as a 'master' script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after '5ttgen'. The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.
+5ttgen acts as a "master" script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after "5ttgen". The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.
 
-Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the 'fsl' algorithm, type '5ttgen fsl'.
+Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the "fsl" algorithm, type "5ttgen fsl".
 
 Options
 -------
@@ -107,13 +107,13 @@ Usage
 
     5ttgen freesurfer input output [ options ]
 
--  *input*: The input FreeSurfer parcellation image (any image containing 'aseg' in its name)
+-  *input*: The input FreeSurfer parcellation image (any image containing "aseg" in its name)
 -  *output*: The output 5TT image
 
 Options
 -------
 
-Options specific to the 'freesurfer' algorithm
+Options specific to the "freesurfer" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-lut file** Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)
@@ -204,7 +204,7 @@ Usage
 Options
 -------
 
-Options specific to the 'fsl' algorithm
+Options specific to the "fsl" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-t2 image** Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
