@@ -42,6 +42,8 @@ REGISTRATION_MODES = ['rigid',
                       'affine_nonlinear',
                       'rigid_affine_nonlinear']
 
+LINEAR_ESTIMATORS = ['l1', 'l2', 'lp', 'none']
+
 AGGREGATION_MODES = ['mean', 'median']
 
 LINEAR_ESTIMATORS = ['l1', 'l2', 'lp', 'none']
@@ -1154,9 +1156,11 @@ def execute(): #pylint: disable=unused-variable
   app.console('Generating initial template')
   input_filenames = [inp.get_ims_path(False)[0] for inp in ins]
   if voxel_size is None:
-    run.command(['mraverageheader', input_filenames, 'average_header.mif', '-fill'])
+    run.command(['mraverageheader', input_filenames, 'average_header.mif',
+                 '-fill',
+                 '-spacing', 'mean_nearest'])
   else:
-    run.command(['mraverageheader', '-fill', input_filenames, '-', '|',
+    run.command(['mraverageheader', input_filenames, '-fill', '-', '|',
                  'mrgrid', '-', 'regrid', '-voxel', ','.join(map(str, voxel_size)), 'average_header.mif'])
 
   # crop average space to extent defined by original masks
@@ -1286,7 +1290,14 @@ def execute(): #pylint: disable=unused-variable
                     f'{inp.msk_transformed}_translated.mif {datatype_option}')
       progress.increment()
     # update average space of first contrast to new extent, delete other average space images
+<<<<<<< HEAD
     run.command(['mraverageheader', [f'{inp.ims_transformed[cid]}_translated.mif' for inp in ins], 'average_header_tight.mif'])
+=======
+    run.command(['mraverageheader',
+                 [inp.ims_transformed[cid] + '_translated.mif' for inp in ins],
+                 'average_header_tight.mif',
+                 '-spacing', 'mean_nearest'])
+>>>>>>> origin/dev
     progress.done()
 
     if voxel_size is None:
@@ -1383,9 +1394,15 @@ def execute(): #pylint: disable=unused-variable
 
           initialise_option = f' -rigid_init_matrix {init_transform_path}'
           if do_fod_registration:
+<<<<<<< HEAD
             lmax_option = f' -rigid_lmax {lmax}'
           if linear_estimator is not None:
             metric_option = f' -rigid_metric.diff.estimator {linear_estimator}'
+=======
+            lmax_option = ' -rigid_lmax ' + str(lmax)
+          if linear_estimator is not None:
+            metric_option = ' -rigid_metric.diff.estimator ' + linear_estimator
+>>>>>>> origin/dev
           if app.VERBOSITY >= 2:
             mrregister_log_option = f' -info -rigid_log {linear_log_path}'
         else:
@@ -1396,9 +1413,15 @@ def execute(): #pylint: disable=unused-variable
           contrast_weight_option = cns.affine_weight_option
           initialise_option = ' -affine_init_matrix {init_transform_path}'
           if do_fod_registration:
+<<<<<<< HEAD
             lmax_option = f' -affine_lmax {lmax}'
           if linear_estimator is not None:
             metric_option = f' -affine_metric.diff.estimator {linear_estimator}'
+=======
+            lmax_option = ' -affine_lmax ' + str(lmax)
+          if linear_estimator is not None:
+            metric_option = ' -affine_metric.diff.estimator ' + linear_estimator
+>>>>>>> origin/dev
           if write_log:
             mrregister_log_option = f' -info -affine_log {linear_log_path}'
 
