@@ -22,8 +22,8 @@ LMAXES_SINGLE = [4, 0]
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('mtnorm', parents=[base_parser])
-  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) '
-                    'and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
+  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)'
+                    ' and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
   parser.set_synopsis('Perform DWI bias field correction using the "mtnormalise" command')
   parser.add_description('This algorithm bases its operation almost entirely on the utilisation of multi-tissue '
                          'decomposition information to estimate an underlying B1 receive field, '

@@ -17,16 +17,18 @@
 
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-  cmdline.set_author('Remika Mito (remika.mito@florey.edu.au) '
-                     'and Robert E. Smith (robert.smith@florey.edu.au)')
+  cmdline.set_author('Remika Mito (remika.mito@florey.edu.au)'
+                     ' and Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Create a glass brain from mask input')
-  cmdline.add_description('The output of this command is a glass brain image, '
-                          'which can be viewed using the volume render option in mrview, '
-                          'and used for visualisation purposes to view results in 3D.')
-  cmdline.add_description('While the name of this script indicates that a binary mask image is required as input, '
-                          'it can also operate on a floating-point image. '
-                          'One way in which this can be exploited is to compute the mean of all subject masks within template space, '
-                          'in which case this script will produce a smoother result than if a binary template mask were to be used as input.')
+  cmdline.add_description('The output of this command is a glass brain image,'
+                          ' which can be viewed using the volume render option in mrview,'
+                          ' and used for visualisation purposes to view results in 3D.')
+  cmdline.add_description('While the name of this script indicates that a binary mask image is required as input,'
+                          ' it can also operate on a floating-point image.'
+                          ' One way in which this can be exploited'
+                          ' is to compute the mean of all subject masks within template space,'
+                          ' in which case this script will produce a smoother result'
+                          ' than if a binary template mask were to be used as input.')
   cmdline.add_argument('input',
                        type=app.Parser.ImageIn(),
                        help='The input mask image')
@@ -36,15 +38,18 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-dilate',
                        type=app.Parser.Int(0),
                        default=2,
-                       help='Provide number of passes for dilation step; default = 2')
+                       help='Provide number of passes for dilation step;'
+                            ' default = 2')
   cmdline.add_argument('-scale',
                        type=app.Parser.Float(0.0),
                        default=2.0,
-                       help='Provide resolution upscaling value; default = 2.0')
+                       help='Provide resolution upscaling value;'
+                            ' default = 2.0')
   cmdline.add_argument('-smooth',
                        type=app.Parser.Float(0.0),
                        default=1.0,
-                       help='Provide standard deviation of smoothing (in mm); default = 1.0')
+                       help='Provide standard deviation of smoothing (in mm);'
+                            ' default = 1.0')
 
 
 def execute(): #pylint: disable=unused-variable

@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-The output of this command is a 4D image, where each volume corresponds to a b-value shell (in order of increasing b-value), and the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.
+The output of this command is a 4D image, where each volume corresponds to a b-value shell (in order of increasing b-value), an the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.
 
 Example usages
 --------------

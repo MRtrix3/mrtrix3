@@ -38,9 +38,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                          'and subsequent mask image cleaning operations are performed.')
   parser.add_description('The operation of this script is a subset of that performed by the script "dwibiasnormmask". '
                          'Many users may find that comprehensive solution preferable; '
-                         'this dwi2mask algorithm is nevertheless provided to demonstrate specifically the mask estimation portion of that command.')
-  parser.add_description('The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic '
-                         'degree than what would be advised for analysis. '
+                         'this dwi2mask algorithm is nevertheless provided '
+                         'to demonstrate specifically the mask estimation portion of that command.')
+  parser.add_description('The ODFs estimated within this optimisation procedure are by default '
+                         'of lower maximal spherical harmonic degree than what would be advised for analysis. '
                          'This is done for computational efficiency. '
                          'This behaviour can be modified through the -lmax command-line option.')
   parser.add_citation('Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. '

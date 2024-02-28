@@ -31,10 +31,13 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_author('Thijs Dhollander (thijs.dhollander@gmail.com)')
   parser.set_synopsis('Unsupervised estimation of WM, GM and CSF response functions '
                       'that does not require a T1 image (or segmentation thereof)')
-  parser.add_description('This is an improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions, '
-                         'which includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation '
-                         '(prior to this update, '
-                         'the "dwi2response tournier" algorithm had been utilised specifically for the single-fibre WM response function estimation step).')
+  parser.add_description('This is an improved version of the Dhollander et al. (2016) algorithm'
+                         ' for unsupervised estimation of WM, GM and CSF response functions,'
+                         ' which includes the Dhollander et al. (2019) improvements'
+                         ' for single-fibre WM response function estimation'
+                         ' (prior to this update,'
+                         ' the "dwi2response tournier" algorithm had been utilised'
+                         ' specifically for the single-fibre WM response function estimation step).')
   parser.add_citation('Dhollander, T.; Raffelt, D. & Connelly, A. '
                       'Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. '
                       'ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5')

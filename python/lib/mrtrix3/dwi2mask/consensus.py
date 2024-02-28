@@ -33,7 +33,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-algorithms',
                        type=str,
                        nargs='+',
-                       help='Provide a (space- or comma-separated) list of dwi2mask algorithms that are to be utilised')
+                       help='Provide a (space- or comma-separated) list '
+                            'of dwi2mask algorithms that are to be utilised')
   options.add_argument('-masks',
                        type=app.Parser.ImageOut(),
                        metavar='image',
@@ -46,7 +47,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-threshold',
                        type=app.Parser.Float(0.0, 1.0),
                        default=DEFAULT_THRESHOLD,
-                       help='The fraction of algorithms that must include a voxel for that voxel to be present in the final mask '
+                       help='The fraction of algorithms that must include a voxel '
+                            'for that voxel to be present in the final mask '
                             f'(default: {DEFAULT_THRESHOLD})')
 
 

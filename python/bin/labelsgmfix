@@ -32,8 +32,8 @@ import math, os
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
-  cmdline.set_synopsis('In a FreeSurfer parcellation image, '
-                       'replace the sub-cortical grey matter structure delineations using FSL FIRST')
+  cmdline.set_synopsis('In a FreeSurfer parcellation image,'
+                       ' replace the sub-cortical grey matter structure delineations using FSL FIRST')
   cmdline.add_citation('Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. '
                        'A Bayesian model of shape and appearance for subcortical brain segmentation. '
                        'NeuroImage, 2011, 56, 907-922',
@@ -64,8 +64,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-sgm_amyg_hipp',
                        action='store_true',
                        default=False,
-                       help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, '
-                            'and also replace their estimates with those from FIRST')
+                       help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures,'
+                            ' and also replace their estimates with those from FIRST')
 
 
 

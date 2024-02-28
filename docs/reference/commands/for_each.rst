@@ -48,13 +48,13 @@ Example usages
 
         $ for_each folder/*.mif : mrinfo IN
 
-    This will run the "mrinfo" command for every .mif file present in "folder/". Note that the compulsory colon symbol is used to separate the list of items on which for_each is being instructed to operate, from the command that is intended to be run for each input.
+    This will run the "mrinfo" command for every .mif file present in "folder/". Note that the compulsory colon symbol is used to separate the list of items on which for_each is being instructed to operate from the command that is intended to be run for each input.
 
 -   *Multi-threaded use of for_each*::
 
         $ for_each -nthreads 4 freesurfer/subjects/* : recon-all -subjid NAME -all
 
-    In this example, for_each is instructed to run the FreeSurfer command 'recon-all' for all subjects within the 'subjects' directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 commands), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.
+    In this example, for_each is instructed to run the FreeSurfer command "recon-all" for all subjects within the "subjects" directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 commands), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.
 
 -   *Excluding specific inputs from execution*::
 

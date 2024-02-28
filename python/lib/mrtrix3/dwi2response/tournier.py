@@ -24,7 +24,8 @@ SUPPORTS_MASK = True # pylint: disable=unused-variable
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tournier', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
-  parser.set_synopsis('Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
+  parser.set_synopsis('Use the Tournier et al. (2013) iterative algorithm'
+                      ' for single-fibre voxel selection and response function estimation')
   parser.add_citation('Tournier, J.-D.; Calamante, F. & Connelly, A. '
                       'Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. '
                       'NMR Biomedicine, 2013, 26, 1775-1786')
