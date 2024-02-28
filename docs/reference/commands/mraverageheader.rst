@@ -28,7 +28,7 @@ Options
 
 -  **-padding value** boundary box padding in voxels. Default: 0
 
--  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description).Valid options are: min_projection,mean_projection,min_nearest,mean_nearest; default = mean_nearest
+-  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description). Valid options are: min_projection,mean_projection,min_nearest,mean_nearest; default = mean_projection
 
 -  **-fill** set the intensity in the first volume of the average space to 1
 
