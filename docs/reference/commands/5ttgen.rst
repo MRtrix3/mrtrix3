@@ -395,9 +395,9 @@ Options
 
 - **-template image** Provide an image that will form the template for the generated 5TT image
 
-- **-hippocampi** Select method to be used for hippocampi (& amygdalae) segmentation; options are: subfields,first,aseg
+- **-hippocampi choice** Select method to be used for hippocampi (& amygdalae) segmentation; options are: subfields,first,aseg
 
-- **-thalami** Select method to be used for thalamic segmentation; options are: nuclei,first,aseg
+- **-thalami choice** Select method to be used for thalamic segmentation; options are: nuclei,first,aseg
 
 - **-white_stem** Classify the brainstem as white matter
 

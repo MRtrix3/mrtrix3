@@ -115,21 +115,21 @@ Options
 Options specific to the "3dautomask" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-clfrac** Set the "clip level fraction"; must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.
+- **-clfrac value** Set the "clip level fraction"; must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.
 
 - **-nograd** The program uses a "gradual" clip level by default. Add this option to use a fixed clip level.
 
-- **-peels** Peel (erode) the mask n times, then unpeel (dilate).
+- **-peels iterations** Peel (erode) the mask n times, then unpeel (dilate).
 
-- **-nbhrs** Define the number of neighbors needed for a voxel NOT to be eroded. It should be between 6 and 26.
+- **-nbhrs count** Define the number of neighbors needed for a voxel NOT to be eroded. It should be between 6 and 26.
 
 - **-eclip** After creating the mask, remove exterior voxels below the clip threshold.
 
-- **-SI** After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains).
+- **-SI value** After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains).
 
-- **-dilate** Dilate the mask outwards n times
+- **-dilate iterations** Dilate the mask outwards n times
 
-- **-erode** Erode the mask outwards n times
+- **-erode iterations** Erode the mask outwards n times
 
 - **-NN1** Erode and dilate based on mask faces
 
@@ -336,7 +336,7 @@ Options applicable when using the ANTs software for registration
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-software** The software to use for template registration; options are: antsfull,antsquick,fsl; default is antsquick
+- **-software choice** The software to use for template registration; options are: antsfull,antsquick,fsl; default is antsquick
 
 - **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
 
@@ -437,7 +437,7 @@ Options specific to the "consensus" algorithm
 
 - **-template TemplateImage MaskImage** Provide a template image and corresponding mask for those algorithms requiring such
 
-- **-threshold** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501)
+- **-threshold value** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -526,13 +526,13 @@ Options
 Options specific to the "fslbet" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-bet_f** Fractional intensity threshold (0->1); smaller values give larger brain outline estimates
+- **-bet_f value** Fractional intensity threshold (0->1); smaller values give larger brain outline estimates
 
-- **-bet_g** Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top
+- **-bet_g value** Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top
 
 - **-bet_c i,j,k** Centre-of-gravity (voxels not mm) of initial mesh surface
 
-- **-bet_r** Head radius (mm not voxels); initial surface sphere is set to half of this
+- **-bet_r value** Head radius (mm not voxels); initial surface sphere is set to half of this
 
 - **-rescale** Rescale voxel size provided to BET to 1mm isotropic; can improve results for rodent data
 
@@ -713,7 +713,7 @@ Usage
 Options
 -------
 
-- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -804,7 +804,7 @@ Options specific to the "mean" algorithm
 
 - **-shells bvalues** Comma separated list of shells to be included in the volume averaging
 
-- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1006,7 +1006,7 @@ Options
 Options specific to the 'Synthstrip' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-stripped** The output stripped image
+- **-stripped image** The output stripped image
 
 - **-gpu** Use the GPU
 
@@ -1014,7 +1014,7 @@ Options specific to the 'Synthstrip' algorithm
 
 - **-nocsf** Compute the immediate boundary of brain matter excluding surrounding CSF
 
-- **-border** Control the boundary distance from the brain
+- **-border value** Control the boundary distance from the brain
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1107,14 +1107,14 @@ Options for turning "dwi2mask trace" into an iterative algorithm
 
 - **-iterative** (EXPERIMENTAL) Iteratively refine the weights for combination of per-shell trace-weighted images prior to thresholding
 
-- **-max_iters** Set the maximum number of iterations for the algorithm (default: 10)
+- **-max_iters iterations** Set the maximum number of iterations for the algorithm (default: 10)
 
 Options specific to the "trace" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shells bvalues** Comma-separated list of shells used to generate trace-weighted images for masking
 
-- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

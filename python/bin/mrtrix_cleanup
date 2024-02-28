@@ -51,7 +51,6 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' but not attempt to delete them')
   cmdline.add_argument('-failed',
                        type=app.Parser.FileOut(),
-                       metavar='file',
                        help='Write list of items that the script failed to delete to a text file')
   cmdline.flag_mutually_exclusive_options([ 'test', 'failed' ])
 

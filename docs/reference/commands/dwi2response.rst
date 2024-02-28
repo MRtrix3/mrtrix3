@@ -138,7 +138,7 @@ Options
 Options for the "dhollander" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode passes** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
+- **-erode iterations** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
 
 - **-fa threshold** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
 
@@ -252,7 +252,7 @@ Options
 Options specific to the "fa" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode passes** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)
+- **-erode iterations** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)
 
 - **-number voxels** The number of highest-FA voxels to use
 
@@ -682,7 +682,7 @@ Options specific to the "tournier" algorithm
 
 - **-iter_voxels voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)
 
-- **-dilate passes** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
+- **-dilate iterations** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
 
 - **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence)
 

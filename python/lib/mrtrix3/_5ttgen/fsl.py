@@ -48,12 +48,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "fsl" algorithm')
   options.add_argument('-t2',
                        type=app.Parser.ImageIn(),
-                       metavar='image',
                        help='Provide a T2-weighted image in addition to the default T1-weighted image; '
                             'this will be used as a second input to FSL FAST')
   options.add_argument('-mask',
                        type=app.Parser.ImageIn(),
-                       metavar='image',
                        help='Manually provide a brain mask, '
                             'rather than deriving one in the script')
   options.add_argument('-premasked',

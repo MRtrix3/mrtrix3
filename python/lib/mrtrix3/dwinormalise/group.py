@@ -54,7 +54,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('-fa_threshold',
                       type=app.Parser.Float(0.0, 1.0),
                       default=FA_THRESHOLD_DEFAULT,
-                      metavar='value',
                       help='The threshold applied to the Fractional Anisotropy group template '
                            'used to derive an approximate white matter mask '
                            f'(default: {FA_THRESHOLD_DEFAULT})')

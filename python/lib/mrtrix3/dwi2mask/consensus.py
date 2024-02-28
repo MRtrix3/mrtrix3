@@ -37,7 +37,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                             'of dwi2mask algorithms that are to be utilised')
   options.add_argument('-masks',
                        type=app.Parser.ImageOut(),
-                       metavar='image',
                        help='Export a 4D image containing the individual algorithm masks')
   options.add_argument('-template',
                        type=app.Parser.ImageIn(),

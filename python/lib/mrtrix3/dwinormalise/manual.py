@@ -37,13 +37,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       help='The output intensity-normalised DWI series')
   parser.add_argument('-intensity',
                       type=app.Parser.Float(0.0),
-                      metavar='value',
                       default=DEFAULT_TARGET_INTENSITY,
                       help='Normalise the b=0 signal to a specified value '
                            f'(Default: {DEFAULT_TARGET_INTENSITY})')
   parser.add_argument('-percentile',
                       type=app.Parser.Float(0.0, 100.0),
-                      metavar='value',
                       help='Define the percentile of the b=0 image intensties within the mask used for normalisation; '
                            'if this option is not supplied then the median value (50th percentile) '
                            'will be normalised to the desired intensity value')

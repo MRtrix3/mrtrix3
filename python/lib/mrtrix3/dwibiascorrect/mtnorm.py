@@ -57,7 +57,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
   options.add_argument('-lmax',
                        type=app.Parser.SequenceInt(),
-                       metavar='values',
                        help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
                             f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
                             f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)')

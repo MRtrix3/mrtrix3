@@ -79,25 +79,21 @@ def usage(cmdline): #pylint: disable=unused-variable
   options = cmdline.add_argument_group('Multi-contrast options')
   options.add_argument('-mc_weight_initial_alignment',
                        type=app.Parser.SequenceFloat(),
-                       metavar='values',
                        help='Weight contribution of each contrast to the initial alignment.'
                             ' Comma separated,'
                             ' default: 1.0 for each contrast (ie. equal weighting).')
   options.add_argument('-mc_weight_rigid',
                        type=app.Parser.SequenceFloat(),
-                       metavar='values',
                        help='Weight contribution of each contrast to the objective of rigid registration.'
                             ' Comma separated,'
                             ' default: 1.0 for each contrast (ie. equal weighting)')
   options.add_argument('-mc_weight_affine',
                        type=app.Parser.SequenceFloat(),
-                       metavar='values',
                        help='Weight contribution of each contrast to the objective of affine registration.'
                             ' Comma separated,'
                             ' default: 1.0 for each contrast (ie. equal weighting)')
   options.add_argument('-mc_weight_nl',
                        type=app.Parser.SequenceFloat(),
-                       metavar='values',
                        help='Weight contribution of each contrast to the objective of nonlinear registration.'
                             ' Comma separated,'
                             ' default: 1.0 for each contrast (ie. equal weighting)')

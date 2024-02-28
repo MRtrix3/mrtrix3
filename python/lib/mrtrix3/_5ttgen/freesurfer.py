@@ -33,7 +33,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "freesurfer" algorithm')
   options.add_argument('-lut',
                        type=app.Parser.FileIn(),
-                       metavar='file',
                        help='Manually provide path to the lookup table on which the input parcellation image is based '
                             '(e.g. FreeSurferColorLUT.txt)')
 

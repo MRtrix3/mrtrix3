@@ -42,7 +42,6 @@ def usage(cmdline): #pylint: disable=unused-variable
                        type=app.Parser.ImageOut(),
                        help='The output image series (all DWIs concatenated)')
   cmdline.add_argument('-mask',
-                       metavar='image',
                        type=app.Parser.ImageIn(),
                        help='Provide a binary mask within which image intensities will be matched')
 

@@ -60,7 +60,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options for the "dhollander" algorithm')
   options.add_argument('-erode',
                        type=app.Parser.Int(0),
-                       metavar='passes',
+                       metavar='iterations',
                        default=3,
                        help='Number of erosion passes to apply to initial (whole brain) mask. '
                             'Set to 0 to not erode the brain mask. '

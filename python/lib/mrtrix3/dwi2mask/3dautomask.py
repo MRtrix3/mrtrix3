@@ -48,10 +48,12 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                        'Add this option to use a fixed clip level.')
   options.add_argument('-peels',
                        type=app.Parser.Int(0),
+                       metavar='iterations',
                        help='Peel (erode) the mask n times, '
                             'then unpeel (dilate).')
   options.add_argument('-nbhrs',
                        type=app.Parser.Int(6, 26),
+                       metavar='count',
                        help='Define the number of neighbors needed for a voxel NOT to be eroded. '
                             'It should be between 6 and 26.')
   options.add_argument('-eclip',
@@ -66,9 +68,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                             '130 seems to be decent (i.e., for Homo Sapiens brains).')
   options.add_argument('-dilate',
                        type=app.Parser.Int(0),
+                       metavar='iterations',
                        help='Dilate the mask outwards n times')
   options.add_argument('-erode',
                        type=app.Parser.Int(0),
+                       metavar='iterations',
                        help='Erode the mask outwards n times')
 
   options.add_argument('-NN1',

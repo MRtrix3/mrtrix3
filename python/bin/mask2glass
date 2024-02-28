@@ -37,8 +37,9 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='The output glass brain image')
   cmdline.add_argument('-dilate',
                        type=app.Parser.Int(0),
+                       metavar='iterations',
                        default=2,
-                       help='Provide number of passes for dilation step;'
+                       help='Provide number of iterations for dilation step;'
                             ' default = 2')
   cmdline.add_argument('-scale',
                        type=app.Parser.Float(0.0),

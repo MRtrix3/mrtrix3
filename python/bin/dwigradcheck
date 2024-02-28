@@ -38,10 +38,10 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='The input DWI series to be checked')
   cmdline.add_argument('-mask',
                        type=app.Parser.ImageIn(),
-                       metavar='image',
                        help='Provide a mask image within which to seed & constrain tracking')
   cmdline.add_argument('-number',
                        type=app.Parser.Int(1),
+                       metavar='count',
                        default=10000,
                        help='Set the number of tracks to generate for each test')
 
