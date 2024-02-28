@@ -103,7 +103,7 @@ def execute(): #pylint: disable=unused-variable
     check_header(this_header)
     if max(abs(a-b) for a, b in zip(this_header.spacing()[0:3], first_header.spacing()[0:3])) > 1e-5 or this_header.size()[0:3] != first_header.size()[0:3]:
       voxel_grid_matching = 'inequal'
-    elif voxel_grid_matching == 'equal' and not image.match(this_header, first_header):
+    elif voxel_grid_matching == 'equal' and not image.match(this_header, first_header, up_to_dim=3):
       voxel_grid_matching = 'rigidbody'
     for field_name in BZERO_CONTRAST_FIELDS:
       first_value = first_header.keyval().get(field_name)
@@ -112,17 +112,17 @@ def execute(): #pylint: disable=unused-variable
         bzero_contrast_mismatch = True
   if voxel_grid_matching == 'rigidbody':
     app.console('Rigid-body difference in header transforms found between input series;')
-    app.console('series will need to be rigid-body transformed to average header space')
+    app.console('  series will need to be rigid-body transformed to average header space')
   elif voxel_grid_matching == 'inequal':
     app.console('Incompatible voxel grids between input series;')
-    app.console('data will be resampled onto a new average header space')
+    app.console('  data will be resampled onto a new average header space')
   else:
     assert voxel_grid_matching == 'equal'
     app.console('Input images are already on the same voxel grid;')
-    app.console('series will be concatenated with no transformation applied')
+    app.console('  series will be concatenated with no transformation applied')
   if bzero_contrast_mismatch:
     app.warn('Mismatched protocol acquisition parameters detected between input images;')
-    app.warn('since b=0 images may have different intensities / contrasts, intensity matching across series will not be performed')
+    app.warn('  since b=0 images may have different intensities / contrasts, intensity matching across series will not be performed')
     do_intensity_matching = False
   if app.ARGS.mask:
     if voxel_grid_matching != 'equal':
