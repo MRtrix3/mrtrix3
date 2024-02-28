@@ -65,7 +65,6 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  # TODO Update to use F-strings after merge
   from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
@@ -166,7 +165,7 @@ def execute(): #pylint: disable=unused-variable
       else:
         run.function(shutil.copyfile, infile, outfile)
 
-    mask_option = ' -mask_input mask.mif -mask_target mask.mif' if app.ARGS.mask else ''
+    mask_option = ['-mask_input', 'mask.mif', '-mask_target', 'mask.mif'] if app.ARGS.mask else []
 
     # for all but the first image series:
     #   - find multiplicative factor to match b=0 images to those of the first image
@@ -180,7 +179,8 @@ def execute(): #pylint: disable=unused-variable
     #         based on the resulting matrix of optimal scaling factors
     rescaled_filelist = [ '0in.mif' ]
     for index in range(1, num_inputs):
-      stderr_text = run.command('mrhistmatch scale ' + str(index) + 'b0.mif 0b0.mif ' + str(index) + 'rescaledb0.mif' + mask_option).stderr
+      stderr_text = run.command(['mrhistmatch', 'scale', f'{index}b0.mif', '0b0.mif', f'{index}rescaledb0.mif']
+                                + mask_option).stderr
       scaling_factor = None
       for line in stderr_text.splitlines():
         if 'Estimated scale factor is' in line:
@@ -191,11 +191,11 @@ def execute(): #pylint: disable=unused-variable
           break
       if scaling_factor is None:
         raise MRtrixError('Unable to extract scaling factor from mrhistmatch output')
-      filename = str(index) + 'rescaled.mif'
-      run.command('mrcalc ' + str(index) + 'in.mif ' + str(scaling_factor) + ' -mult ' + filename)
+      filename = f'{index}rescaled.mif'
+      run.command(f'mrcalc {index}in.mif {scaling_factor} -mult {filename}')
       rescaled_filelist.append(filename)
   else:
-    rescaled_filelist = [str(index) + 'in.mif' for index in range(0, len(app.ARGS.inputs))]
+    rescaled_filelist = [f'{index}in.mif' for index in range(0, len(app.ARGS.inputs))]
 
   if voxel_grid_matching == 'equal':
     transformed_filelist = rescaled_filelist
@@ -204,13 +204,13 @@ def execute(): #pylint: disable=unused-variable
                  '-spacing', ('mean_nearest' if voxel_grid_matching == 'rigidbody' else 'min_nearest')])
     transformed_filelist = []
     for item in rescaled_filelist:
-      transformname = os.path.splitext(item)[0] + '_to_avgheader.txt'
-      imagename = os.path.splitext(item)[0] + '_transformed.mif'
+      transformname = f'{os.path.splitext(item)[0]}_to_avgheader.txt'
+      imagename = f'{os.path.splitext(item)[0]}_transformed.mif'
       run.command(['transformcalc', item, 'average_header.mif', 'header', transformname])
       # Ensure that no non-rigid distortions of image data are applied
       #   in the process of moving it toward the average header
       if voxel_grid_matching == 'inequal':
-        newtransformname = os.path.splitext(transformname)[0] + '_rigid.txt'
+        newtransformname = f'{os.path.splitext(transformname)[0]}_rigid.txt'
         run.command(['transformcalc', transformname, 'rigid', newtransformname])
         transformname = newtransformname
       run.command(['mrtransform', item, imagename] \
