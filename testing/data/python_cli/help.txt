@@ -1,0 +1,177 @@
+Version 3.0.4-762-gd1588917-dirty tteessttiinngg__ppyytthhoonn__ccllii
+using MRtrix3 3.0.4-605-g24f1c322-dirty
+
+     tteessttiinngg__ppyytthhoonn__ccllii: external MRtrix3 project
+
+SSYYNNOOPPSSIISS
+
+     Test operation of the Python command-line interface
+
+UUSSAAGGEE
+
+     _t_e_s_t_i_n_g___p_y_t_h_o_n___c_l_i [ options ]
+
+CCuussttoomm  ttyyppeess
+
+  _-_b_o_o_l value
+     A boolean input
+
+  _-_i_n_t___u_n_b_o_u_n_d value
+     An integer; unbounded
+
+  _-_i_n_t___n_o_n_n_e_g_a_t_i_v_e value
+     An integer; non-negative
+
+  _-_i_n_t___b_o_u_n_d_e_d value
+     An integer; bound range
+
+  _-_f_l_o_a_t___u_n_b_o_u_n_d value
+     A floating-point; unbounded
+
+  _-_f_l_o_a_t___n_o_n_n_e_g value
+     A floating-point; non-negative
+
+  _-_f_l_o_a_t___b_o_u_n_d_e_d value
+     A floating-point; bound range
+
+  _-_i_n_t___s_e_q values
+     A comma-separated list of integers
+
+  _-_f_l_o_a_t___s_e_q values
+     A comma-separated list of floating-points
+
+  _-_d_i_r___i_n directory
+     An input directory
+
+  _-_d_i_r___o_u_t directory
+     An output directory
+
+  _-_f_i_l_e___i_n file
+     An input file
+
+  _-_f_i_l_e___o_u_t file
+     An output file
+
+  _-_i_m_a_g_e___i_n image
+     An input image
+
+  _-_i_m_a_g_e___o_u_t image
+     An output image
+
+  _-_t_r_a_c_k_s___i_n trackfile
+     An input tractogram
+
+  _-_t_r_a_c_k_s___o_u_t trackfile
+     An output tractogram
+
+CCoommpplleexx  iinntteerrffaacceess;;  nnaarrggss,,  mmeettaavvaarr,,  eettcc..
+
+  _-_n_a_r_g_s___p_l_u_s string <space-separated list of additional strings>
+     A command-line option with nargs="+", no metavar
+
+  _-_n_a_r_g_s___a_s_t_e_r_i_s_k <space-separated list of strings>
+     A command-line option with nargs="*", no metavar
+
+  _-_n_a_r_g_s___q_u_e_s_t_i_o_n <optional string>
+     A command-line option with nargs="?", no metavar
+
+  _-_n_a_r_g_s___t_w_o string string
+     A command-line option with nargs=2, no metavar
+
+  _-_m_e_t_a_v_a_r___o_n_e metavar
+     A command-line option with nargs=1 and metavar="metavar"
+
+  _-_m_e_t_a_v_a_r___t_w_o metavar metavar
+     A command-line option with nargs=2 and metavar="metavar"
+
+  _-_m_e_t_a_v_a_r___t_u_p_l_e metavar_one metavar_two
+     A command-line option with nargs=2 and metavar=("metavar_one",
+     "metavar_two")
+
+  _-_a_p_p_e_n_d string  (multiple uses permitted)
+     A command-line option with "append" action (can be specified multiple
+     times)
+
+BBuuiilltt--iinn  ttyyppeess
+
+  _-_f_l_a_g
+     A binary flag
+
+  _-_s_t_r_i_n_g___i_m_p_l_i_c_i_t string
+     A built-in string (implicit)
+
+  _-_s_t_r_i_n_g___e_x_p_l_i_c_i_t str
+     A built-in string (explicit)
+
+  _-_c_h_o_i_c_e choice
+     A selection of choices; one of: One, Two, Three
+
+  _-_i_n_t___b_u_i_l_t_i_n int
+     An integer; built-in type
+
+  _-_f_l_o_a_t___b_u_i_l_t_i_n float
+     A floating-point; built-in type
+
+AAddddiittiioonnaall  ssttaannddaarrdd  ooppttiioonnss  ffoorr  PPyytthhoonn  ssccrriippttss
+
+  _-_n_o_c_l_e_a_n_u_p
+     do not delete intermediate files during script execution, and do not delete
+     scratch directory at script completion.
+
+  _-_s_c_r_a_t_c_h /path/to/scratch/
+     manually specify the path in which to generate the scratch directory.
+
+  _-_c_o_n_t_i_n_u_e ScratchDir LastFile
+     continue the script from a previous execution; must provide the scratch
+     directory path, and the name of the last successfully-generated file.
+
+SSttaannddaarrdd  ooppttiioonnss
+
+  _-_i_n_f_o
+     display information messages.
+
+  _-_q_u_i_e_t
+     do not display information messages or progress status. Alternatively, this
+     can be achieved by setting the MRTRIX_QUIET environment variable to a non-
+     empty string.
+
+  _-_d_e_b_u_g
+     display debugging messages.
+
+  _-_f_o_r_c_e
+     force overwrite of output files.
+
+  _-_n_t_h_r_e_a_d_s number
+     use this number of threads in multi-threaded applications (set to 0 to
+     disable multi-threading).
+
+  _-_c_o_n_f_i_g key value  (multiple uses permitted)
+     temporarily set the value of an MRtrix config file entry.
+
+  _-_h_e_l_p
+     display this information page and exit.
+
+  _-_v_e_r_s_i_o_n
+     display version information and exit.
+
+AAUUTTHHOORR
+     Robert E. Smith (robert.smith@florey.edu.au)
+
+CCOOPPYYRRIIGGHHTT
+     Copyright (c) 2008-2024 the MRtrix3 contributors.  This Source Code Form is
+     subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+     the MPL was not distributed with this file, You can obtain one at
+     http://mozilla.org/MPL/2.0/.  Covered Software is provided under this
+     License on an "as is" basis, without warranty of any kind, either
+     expressed, implied, or statutory, including, without limitation, warranties
+     that the Covered Software is free of defects, merchantable, fit for a
+     particular purpose or non-infringing. See the Mozilla Public License v. 2.0
+     for more details.  For more details, see http://www.mrtrix.org/.
+
+RREEFFEERREENNCCEESS
+
+     Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.;
+     Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A.
+     MRtrix3: A fast, flexible and open software framework for medical image
+     processing and visualisation. NeuroImage, 2019, 202, 116137
+
