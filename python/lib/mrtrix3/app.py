@@ -762,7 +762,6 @@ class Parser(argparse.ArgumentParser):
 
 
   class DirectoryOut(CustomTypeBase):
-
     def __call__(self, input_value):
       abspath = _UserDirOutPath(input_value)
       return abspath
@@ -1069,19 +1068,21 @@ class Parser(argparse.ArgumentParser):
       return ' choice'
     elif isinstance(option.type, Parser.CustomTypeBase):
       text = option.type._metavar()
-    elif isinstance(option.type, str):
-      text = 'string'
-    elif isinstance(option.type, (int, float)):
-      text = 'value'
-    else:
+    elif option.type is not None:
+      text = option.type.__name__.lower()
+    elif option.nargs == 0:
       return ''
+    else:
+      text = 'string'
     if option.nargs:
-      if isinstance(option.nargs, int):
+      if isinstance(option.nargs, int) and option.nargs > 1:
         text = ((f' {text}') * option.nargs).lstrip()
-      elif option.nargs in ('+', '*'):
+      elif option.nargs == '*':
         text = f'<space-separated list of {text}s>'
+      elif option.nargs == '+':
+        text = f'{text} <space-separated list of additional {text}s>'
       elif option.nargs == '?':
-        text = '<optional {text}>'
+        text = f'<optional {text}>'
     return f' {text}'
 
   def format_usage(self):
@@ -1283,13 +1284,15 @@ class Parser(argparse.ArgumentParser):
       for option in group._group_actions:
         sys.stdout.write(f'OPTION {"/".join(option.option_strings)} {"0" if option.required else "1"} {allow_multiple(option.nargs)}\n')
         sys.stdout.write(f'{option.help}\n')
+        if option.nargs == 0:
+          continue
         if option.metavar and isinstance(option.metavar, tuple):
           assert len(option.metavar) == option.nargs
           for arg in option.metavar:
             sys.stdout.write(f'ARGUMENT {arg} 0 0 {arg2str(option)}\n')
         else:
           multiple = allow_multiple(option.nargs)
-          nargs = 1 if multiple == '1' else (option.nargs if option.nargs is not None else 1)
+          nargs = 1 if multiple == '1' else (option.nargs if isinstance(option.nargs, int) else 1)
           for _ in range(0, nargs):
             metavar_string = option.metavar if option.metavar else '/'.join(opt.lstrip('-') for opt in option.option_strings)
             sys.stdout.write(f'ARGUMENT {metavar_string} 0 {multiple} {arg2str(option)}\n')
@@ -1339,7 +1342,7 @@ class Parser(argparse.ArgumentParser):
       group_text = ''
       for option in group._group_actions:
         option_text = '/'.join(option.option_strings)
-        optiontext += Parser._option2metavar(option)
+        option_text += Parser._option2metavar(option)
         group_text += f'+ **-{option_text}**'
         if isinstance(option, argparse._AppendAction):
           group_text += '  *(multiple uses permitted)*'

@@ -431,7 +431,7 @@ Options
 Options specific to the "consensus" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-algorithms** Provide a (space- or comma-separated) list of dwi2mask algorithms that are to be utilised
+- **-algorithms str <space-separated list of additional strs>** Provide a (space- or comma-separated) list of dwi2mask algorithms that are to be utilised
 
 - **-masks image** Export a 4D image containing the individual algorithm masks
 
