@@ -118,6 +118,8 @@ def execute(): #pylint: disable=unused-variable
     app.console('data will be resampled onto a new average header space')
   else:
     assert voxel_grid_matching == 'equal'
+    app.console('Input images are already on the same voxel grid;')
+    app.console('series will be concatenated with no transformation applied')
   if bzero_contrast_mismatch:
     app.warn('Mismatched protocol acquisition parameters detected between input images;')
     app.warn('since b=0 images may have different intensities / contrasts, intensity matching across series will not be performed')
