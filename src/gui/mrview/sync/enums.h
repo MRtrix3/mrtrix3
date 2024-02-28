@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,30 +17,19 @@
 #ifndef __sync_enums_h__
 #define __sync_enums_h__
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Sync
-      {
-        /**
-        * The type of message being sent between processes
-        */
-        enum class MessageKey {
-          ConnectedID = 1,
-          SyncData = 2 //Data to be synced
-        };
-        /**
-        * For MessageKey::SyncData. This is type of data being sent for syncronising
-        */
-        enum class DataKey {
-          WindowFocus = 1
-        };
+namespace MR::GUI::MRView::Sync {
+/**
+ * The type of message being sent between processes
+ */
+enum class MessageKey {
+  ConnectedID = 1,
+  SyncData = 2 // Data to be synced
+};
+/**
+ * For MessageKey::SyncData. This is type of data being sent for syncronising
+ */
+enum class DataKey { WindowFocus = 1 };
 
-      }
-    }
-  }
-}
+} // namespace MR::GUI::MRView::Sync
+
 #endif

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,30 +20,23 @@
 #include <functional>
 #include <limits>
 
-namespace MR
-{
-  namespace Math
-  {
+namespace MR::Math {
 
-
-    template <typename T>
-    T factorial (const T i) {
-      if (i < 2) {
-        return T(1);
-      } else if (i == std::numeric_limits<T>::max()) {
-        return i;
-      } else {
-        const T multiplier = factorial<T>(i-1);
-        const T result = i * multiplier;
-        if (result / multiplier == i)
-          return result;
-        else
-          return std::numeric_limits<T>::max();
-      }
-    };
-
-
+template <typename T> T factorial(const T i) {
+  if (i < 2) {
+    return T(1);
+  } else if (i == std::numeric_limits<T>::max()) {
+    return i;
+  } else {
+    const T multiplier = factorial<T>(i - 1);
+    const T result = i * multiplier;
+    if (result / multiplier == i)
+      return result;
+    else
+      return std::numeric_limits<T>::max();
   }
-}
+};
+
+} // namespace MR::Math
 
 #endif

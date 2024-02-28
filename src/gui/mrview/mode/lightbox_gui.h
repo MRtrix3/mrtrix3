@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,39 +19,21 @@
 
 #include "gui/mrview/spin_box.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Mode
-      {
-        namespace LightBoxViewControls
-        {
-          class LightBoxEditButton : public SpinBox
-          { 
-            public:
-              LightBoxEditButton(QWidget* parent, const QString &suffix)
-                : LightBoxEditButton(parent, 1, 100, 1, suffix) {}
+namespace MR::GUI::MRView::Mode::LightBoxViewControls {
+class LightBoxEditButton : public SpinBox {
+public:
+  LightBoxEditButton(QWidget *parent, const QString &suffix) : LightBoxEditButton(parent, 1, 100, 1, suffix) {}
 
-              LightBoxEditButton(QWidget* parent,
-                  int min = 1, int max = 100, int change_rate = 1,
-                  const QString& suffix = nullptr) :
-                SpinBox(parent) {
-                setMinimum(min);
-                setMaximum(max);
-                setSingleStep(change_rate);
-                setSuffix(suffix);
-                setMaximumWidth(80);
-              }
-          };
-
-        }
-      }
-    }
+  LightBoxEditButton(QWidget *parent, int min = 1, int max = 100, int change_rate = 1, const QString &suffix = nullptr)
+      : SpinBox(parent) {
+    setMinimum(min);
+    setMaximum(max);
+    setSingleStep(change_rate);
+    setSuffix(suffix);
+    setMaximumWidth(80);
   }
-}
+};
 
+} // namespace MR::GUI::MRView::Mode::LightBoxViewControls
 
 #endif

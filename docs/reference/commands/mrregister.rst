@@ -16,7 +16,7 @@ Usage
     mrregister [ options ]  image1 image2[ contrast1 contrast2 ... ]
 
 -  *image1 image2*: input image 1 ('moving') and input image 2 ('template')
--  *contrast1 contrast2*: optional list of additional input images used as additional contrasts. Can be used multiple times. contrastX and imageX must share the same coordinate system. 
+-  *contrast1 contrast2*: optional list of additional input images used as additional contrasts. Can be used multiple times. contrastX and imageX must share the same coordinate system.
 
 Description
 -----------
@@ -25,7 +25,7 @@ By default this application will perform an affine, followed by non-linear regis
 
 FOD registration (with apodised point spread reorientation) will be performed by default if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). The -no_reorientation option can be used to force reorientation off if required.
 
-Non-linear registration computes warps to map from both image1->image2 and image2->image1. Similar to Avants (2008) Med Image Anal. 12(1): 26–41, registration is performed by matching both the image1 and image2 in a 'midway space'. Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or if using -nl_warp_full as a single 5D file that stores all 4 warps image1->mid->image2, and image2->mid->image1. The 5D warp format stores x,y,z deformations in the 4th dimension, and uses the 5th dimension to index the 4 warps. The affine transforms estimated (to midway space) are also stored as comments in the image header. The 5D warp file can be used to reinitialise subsequent registrations, in addition to transforming images to midway space (e.g. for intra-subject alignment in a 2-time-point longitudinal analysis).
+Non-linear registration computes warps to map from both image1->image2 and image2->image1. Similar to Avants (2008) Med Image Anal. 12(1): 26-41, registration is performed by matching both the image1 and image2 in a 'midway space'. Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or if using -nl_warp_full as a single 5D file that stores all 4 warps image1->mid->image2, and image2->mid->image1. The 5D warp format stores x,y,z deformations in the 4th dimension, and uses the 5th dimension to index the 4 warps. The affine transforms estimated (to midway space) are also stored as comments in the image header. The 5D warp file can be used to reinitialise subsequent registrations, in addition to transforming images to midway space (e.g. for intra-subject alignment in a 2-time-point longitudinal analysis).
 
 Options
 -------
@@ -51,27 +51,21 @@ Rigid registration options
 
 -  **-rigid_2tomidway file** the output text file containing the rigid transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
 
--  **-rigid_init_translation type** initialise the translation and centre of rotation  |br|
-   Valid choices are:  |br|
-   mass (aligns the centers of mass of both images, default),  |br|
-   geometric (aligns geometric image centres) and none.
+-  **-rigid_init_translation type** initialise the translation and centre of rotation; Valid choices are: mass (aligns the centers of mass of both images, default); geometric (aligns geometric image centres); none.
 
--  **-rigid_init_rotation type** initialise the rotation Valid choices are:  |br|
-   search (search for the best rotation using mean squared residuals),  |br|
-   moments (rotation based on directions of intensity variance with respect to centre of mass),  |br|
-   none (default).
+-  **-rigid_init_rotation type** Method to use to initialise the rotation. Valid choices are: search (search for the best rotation using mean squared residuals); moments (rotation based on directions of intensity variance with respect to centre of mass); none (default).
 
--  **-rigid_init_matrix file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides rigid_init_translation and rigid_init_rotation initialisation 
+-  **-rigid_init_matrix file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix in scanner coordinates).Note that this overrides rigid_init_translation and rigid_init_rotation initialisation
 
--  **-rigid_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
+-  **-rigid_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma-separated values (Default: 0.25,0.5,1.0)
 
 -  **-rigid_niter num** the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
 
--  **-rigid_metric type** valid choices are: diff (intensity differences), Default: diff
+-  **-rigid_metric type** valid choices are: diff (intensity differences); Default: diff
 
--  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator). Default: l2
+-  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|); l2 (ordinary least squares); lp (least powers: \|x\|^1.2); none. Default: l2
 
--  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+-  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
 -  **-rigid_log file** write gradient descent parameter evolution to log file
 
@@ -84,25 +78,19 @@ Affine registration options
 
 -  **-affine_2tomidway file** the output text file containing the affine transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
 
--  **-affine_init_translation type** initialise the translation and centre of rotation  |br|
-   Valid choices are:  |br|
-   mass (aligns the centers of mass of both images),  |br|
-   geometric (aligns geometric image centres) and none. (Default: mass)
+-  **-affine_init_translation type** initialise the translation and centre of rotation. Valid choices are:  mass (aligns the centers of mass of both images); geometric (aligns geometric image centres); none. (Default: mass)
 
--  **-affine_init_rotation type** initialise the rotation Valid choices are:  |br|
-   search (search for the best rotation using mean squared residuals),  |br|
-   moments (rotation based on directions of intensity variance with respect to centre of mass),  |br|
-   none (Default: none).
+-  **-affine_init_rotation type** initialise the rotation. Valid choices are: search (search for the best rotation using mean squared residuals); moments (rotation based on directions of intensity variance with respect to centre of mass); none (Default: none).
 
--  **-affine_init_matrix file** initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides affine_init_translation and affine_init_rotation initialisation 
+-  **-affine_init_matrix file** initialise either the affine or syn registration with the supplied affine transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides affine_init_translation and affine_init_rotation initialisation
 
 -  **-affine_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
 
 -  **-affine_niter num** the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
 
--  **-affine_metric type** valid choices are: diff (intensity differences), Default: diff
+-  **-affine_metric type** valid choices are: diff (intensity differences); Default: diff
 
--  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
+-  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|); l2 (ordinary least squares); lp (least powers: \|x\|^1.2); none. Default: l2
 
 -  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
@@ -125,29 +113,29 @@ Advanced linear transformation initialisation options
 
 -  **-init_rotation.search.directions num** number of rotation axis for local search. (Default: 250)
 
--  **-init_rotation.search.run_global** perform a global search. (Default: local)
+-  **-init_rotation.search.run_global** perform a global rather than local initial rotation search.
 
 -  **-init_rotation.search.global.iterations num** number of rotations to investigate (Default: 10000)
 
 Advanced linear registration stage options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-linstage.iterations num or comma separated list** number of iterations for each registration stage, not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
+-  **-linstage.iterations value(s)** number of iterations for each registration stage. Not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
 
--  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
 
--  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
 
--  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
 
--  **-linstage.diagnostics.prefix file prefix** generate diagnostics images after every registration stage
+-  **-linstage.diagnostics.prefix prefix** generate diagnostics images after every registration stage
 
 Non-linear registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-nl_warp warp1 warp2** the non-linear warp output defined as two deformation fields, where warp1 can be used to transform image1->image2 and warp2 to transform image2->image1. The deformation fields also encapsulate any linear transformation estimated prior to non-linear registration.
 
--  **-nl_warp_full image** output all warps used during registration. This saves four different warps that map each image to a midway space and their inverses in a single 5D image file. The 4th image dimension indexes the x,y,z component of the deformation vector and the 5th dimension indexes the field in this order: image1->midway, midway->image1, image2->midway, midway->image2. Where image1->midway defines the field that maps image1 onto the midway space using the reverse convention When linear registration is performed first, the estimated linear transform will be included in the comments of the image header, and therefore the entire linear and non-linear transform can be applied (in either direction) using this output warp file with mrtransform
+-  **-nl_warp_full image** output all warps used during registration. This saves four different warps that map each image to a midway space and their inverses in a single 5D image file. The 4th image dimension indexes the x,y,z component of the deformation vector and the 5th dimension indexes the field in this order: image1->midway, midway->image1, image2->midway, midway->image2. Where image1->midway defines the field that maps image1 onto the midway space using the reverse convention. When linear registration is performed first, the estimated linear transform will be included in the comments of the image header, and therefore the entire linear and non-linear transform can be applied (in either direction) using this output warp file with mrtransform
 
 -  **-nl_init image** initialise the non-linear registration with the supplied warp image. The supplied warp must be in the same format as output using the -nl_warp_full option (i.e. have 4 deformation fields with the linear transforms in the image header)
 
@@ -155,20 +143,20 @@ Non-linear registration options
 
 -  **-nl_niter num** the maximum number of iterations. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 50)
 
--  **-nl_update_smooth stdev** regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0)
+-  **-nl_update_smooth stdev** regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units; Default 2.0)
 
--  **-nl_disp_smooth stdev** regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0)
+-  **-nl_disp_smooth stdev** regularise the displacement field with Gaussian smoothing (standard deviation in voxel units; Default 1.0)
 
 -  **-nl_grad_step num** the gradient step size for non-linear registration (Default: 0.5)
 
--  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+-  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
 -  **-diagnostics_image path** write intermediate images for diagnostics purposes
 
 FOD registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-directions file** the directions used for FOD reorientation using apodised point spread functions (Default: 60 directions)
+-  **-directions file** file containing the directions used for FOD reorientation using apodised point spread functions (Default: built-in 60-direction set)
 
 -  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
 
@@ -215,9 +203,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

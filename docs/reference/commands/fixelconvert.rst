@@ -31,13 +31,13 @@ Example usages
 
         $ fixelconvert old_fixels.msf new_fixels/ -out_size
 
-    This performs a simple conversion from old to new format, and additionally writes the contents of the "size" field within old-format fixel images stored using the "FixelMetric" class (likely all of them) as an additional fixel data file.
+    This performs a simple conversion from old to new format, and additionally writes the contents of the "size" field  within old-format fixel images stored using the "FixelMetric" class (likely all of them) as an additional fixel data file.
 
 -   *Convert multiple files from old to new format, preserving fixel correspondence*::
 
         $ for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/
 
-    In this example, the for_each script is used to execute the fixelconvert command once for each of a series of input files in the old fixel format, generating a new output fixel directory for each.Importantly here though, the -template option is used to ensure that the ordering of fixels within these output directories is identical, such that fixel data files can be exchanged between them (e.g. accumulating fixel data files across subjects into a single template fixel directory
+    In this example, the for_each script is used to execute the fixelconvert command once for each of a series of input files in the old fixel format, generating a new output fixel directory for each. Importantly here though, the -template option is used to ensure that the ordering of fixels within these output directories is identical, such that fixel data files can be exchanged between them (e.g. accumulating fixel data files across subjects into a single template fixel directory
 
 -   *Convert from the new directory format to the old file format*::
 
@@ -96,7 +96,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

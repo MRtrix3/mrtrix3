@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,25 +16,20 @@
 
 #include "dwi/tractography/weights.h"
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
+namespace MR::DWI::Tractography {
 
-      using namespace App;
+using namespace App;
 
-      const Option TrackWeightsInOption
-      = Option ("tck_weights_in", "specify a text scalar file containing the streamline weights")
-          + Argument ("path").type_file_in();
+// clang-format off
+const Option TrackWeightsInOption =
+    Option("tck_weights_in",
+           "specify a text scalar file containing the streamline weights")
+      + Argument("path").type_file_in();
 
-      const Option TrackWeightsOutOption
-      = Option ("tck_weights_out", "specify the path for an output text scalar file containing streamline weights")
-          + Argument ("path").type_file_out();
+const Option TrackWeightsOutOption =
+    Option("tck_weights_out",
+           "specify the path for an output text scalar file containing streamline weights")
+      + Argument("path").type_file_out();
+// clang-format on
 
-    }
-  }
-}
-
-
+} // namespace MR::DWI::Tractography

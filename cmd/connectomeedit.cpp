@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,27 +15,19 @@
  */
 
 #include "command.h"
-#include "file/matrix.h"
 #include "connectome/enhance.h"
+#include "file/matrix.h"
 
 using namespace MR;
 using namespace MR::Connectome;
 using namespace MR::Math;
 using namespace App;
 
+const char *operations[] = {"to_symmetric", "upper_triangular", "lower_triangular", "transpose", "zero_diagonal", NULL};
 
-const char* operations[] = {
-  "to_symmetric",
-  "upper_triangular",
-  "lower_triangular",
-  "transpose",
-  "zero_diagonal",
-  NULL
-};
+// clang-format off
+void usage() {
 
-
-void usage ()
-{
   AUTHOR = "Matteo Frigo (matteo.frigo@inria.fr)";
 
   SYNOPSIS = "Perform basic operations on a connectome";
@@ -43,30 +35,42 @@ void usage ()
   ARGUMENTS
   + Argument ("input", "the input connectome.").type_text ()
 
-  + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice (operations)
+  + Argument ("operation", "the operation to apply,"
+                           " one of: " + join(operations, ", ") + ".").type_choice (operations)
 
   + Argument ("output", "the output connectome.").type_text();
+
 }
+// clang-format on
 
-
-
-void run ()
-{
-  MR::Connectome::matrix_type connectome = File::Matrix::load_matrix (argument[0]);
+void run() {
+  MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
   MR::Connectome::check(connectome);
   const int op = argument[1];
-  const std::string& output_path = argument[2];
+  const std::string &output_path = argument[2];
 
   INFO("Applying \'" + str(operations[op]) + "\' transformation to the input connectome.");
 
   switch (op) {
-      case 0: MR::Connectome::to_symmetric (connectome); break;
-      case 1: MR::Connectome::to_upper (connectome); break;
-      case 2: MR::Connectome::to_upper (connectome); connectome.transposeInPlace(); break;
-      case 3: connectome.transposeInPlace(); break;
-      case 4: connectome.matrix().diagonal().setZero(); break;
-      default: assert (0);
-    }
+  case 0:
+    MR::Connectome::to_symmetric(connectome);
+    break;
+  case 1:
+    MR::Connectome::to_upper(connectome);
+    break;
+  case 2:
+    MR::Connectome::to_upper(connectome);
+    connectome.transposeInPlace();
+    break;
+  case 3:
+    connectome.transposeInPlace();
+    break;
+  case 4:
+    connectome.matrix().diagonal().setZero();
+    break;
+  default:
+    assert(0);
+  }
 
   File::Matrix::save_matrix(connectome, output_path);
 }

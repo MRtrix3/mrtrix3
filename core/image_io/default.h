@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,39 +17,29 @@
 #ifndef __image_handler_default_h__
 #define __image_handler_default_h__
 
-#include "types.h"
-#include "image_io/base.h"
 #include "file/mmap.h"
+#include "image_io/base.h"
+#include "types.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR::ImageIO {
 
-    class Default : public Base
-    { 
-      public:
-        Default (const Header& header) :
-          Base (header),
-          bytes_per_segment (0) { }
-        Default (Default&&) noexcept = default;
-        Default& operator=(Default&&) = delete;
+class Default : public Base {
+public:
+  Default(const Header &header) : Base(header), bytes_per_segment(0) {}
+  Default(Default &&) noexcept = default;
+  Default &operator=(Default &&) = delete;
 
-      protected:
-        vector<std::shared_ptr<File::MMap> > mmaps;
-        int64_t bytes_per_segment;
+protected:
+  std::vector<std::shared_ptr<File::MMap>> mmaps;
+  int64_t bytes_per_segment;
 
-        virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
+  virtual void load(const Header &, size_t);
+  virtual void unload(const Header &);
 
-        void map_files (const Header&);
-        void copy_to_mem (const Header&);
+  void map_files(const Header &);
+  void copy_to_mem(const Header &);
+};
 
-    };
-
-  }
-}
+} // namespace MR::ImageIO
 
 #endif
-
-

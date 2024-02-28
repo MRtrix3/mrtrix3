@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,28 +19,21 @@
 
 #include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    class Cursor
-    { 
-      public:
-        Cursor ();
+namespace MR::GUI {
+class Cursor {
+public:
+  Cursor();
 
-        static QCursor pan_crosshair;
-        static QCursor forward_backward;
-        static QCursor window;
-        static QCursor crosshair;
-        static QCursor inplane_rotate;
-        static QCursor throughplane_rotate;
-        static QCursor draw;
-        static QCursor erase;
+  static QCursor pan_crosshair;
+  static QCursor forward_backward;
+  static QCursor window;
+  static QCursor crosshair;
+  static QCursor inplane_rotate;
+  static QCursor throughplane_rotate;
+  static QCursor draw;
+  static QCursor erase;
+};
 
-    };
-
-  }
-}
+} // namespace MR::GUI
 
 #endif
-
