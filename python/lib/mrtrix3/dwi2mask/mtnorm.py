@@ -59,25 +59,21 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
   options.add_argument('-init_mask',
                        type=app.Parser.ImageIn(),
-                       metavar='image',
                        help='Provide an initial brain mask, '
                             'which will constrain the response function estimation '
                             '(if omitted, the default dwi2mask algorithm will be used)')
   options.add_argument('-lmax',
                        type=app.Parser.SequenceInt(),
-                       metavar='values',
                        help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
                             f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
                             f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data')
   options.add_argument('-threshold',
                        type=app.Parser.Float(0.0, 1.0),
-                       metavar='value',
                        default=THRESHOLD_DEFAULT,
                        help='the threshold on the total tissue density sum image used to derive the brain mask; '
                             f'default is {THRESHOLD_DEFAULT}')
   options.add_argument('-tissuesum',
                        type=app.Parser.ImageOut(),
-                       metavar='image',
                        help='Export the tissue sum image that was used to generate the mask')
 
 

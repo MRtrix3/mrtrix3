@@ -29,11 +29,9 @@ def usage(cmdline): #pylint: disable=unused-variable
   common_options = cmdline.add_argument_group('Options common to all dwibiascorrect algorithms')
   common_options.add_argument('-mask',
                               type=app.Parser.ImageIn(),
-                              metavar='image',
                               help='Manually provide an input mask image for bias field estimation')
   common_options.add_argument('-bias',
                               type=app.Parser.ImageOut(),
-                              metavar='image',
                               help='Output an image containing the estimated bias field')
   app.add_dwgrad_import_options(cmdline)
 

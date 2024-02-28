@@ -116,19 +116,15 @@ def usage(cmdline): #pylint: disable=unused-variable
   output_options = cmdline.add_argument_group('Options that modulate the outputs of the script')
   output_options.add_argument('-output_bias',
                               type=app.Parser.ImageOut(),
-                              metavar='image',
                               help='Export the final estimated bias field to an image')
   output_options.add_argument('-output_scale',
                               type=app.Parser.FileOut(),
-                              metavar='file',
                               help='Write the scaling factor applied to the DWI series to a text file')
   output_options.add_argument('-output_tissuesum',
                               type=app.Parser.ImageOut(),
-                              metavar='image',
                               help='Export the tissue sum image that was used to generate the final mask')
   output_options.add_argument('-reference',
                               type=app.Parser.Float(0.0),
-                              metavar='value',
                               default=REFERENCE_INTENSITY,
                               help='Set the target CSF b=0 intensity in the output DWI series'
                                    f' (default: {REFERENCE_INTENSITY})')
@@ -136,13 +132,11 @@ def usage(cmdline): #pylint: disable=unused-variable
   internal_options.add_argument('-dice',
                                 type=app.Parser.Float(0.0, 1.0),
                                 default=DICE_COEFF_DEFAULT,
-                                metavar='value',
                                 help='Set the Dice coefficient threshold for similarity of masks between sequential iterations'
                                      ' that will result in termination due to convergence;'
                                      f' default = {DICE_COEFF_DEFAULT}')
   internal_options.add_argument('-init_mask',
                                 type=app.Parser.ImageIn(),
-                                metavar='image',
                                 help='Provide an initial mask for the first iteration of the algorithm'
                                      ' (if not provided, the default dwi2mask algorithm will be used)')
   internal_options.add_argument('-max_iters',
@@ -159,7 +153,6 @@ def usage(cmdline): #pylint: disable=unused-variable
                                      ' potentially based on the ODF sum image (see Description);'
                                      f' default: {MASK_ALGO_DEFAULT}')
   internal_options.add_argument('-lmax',
-                                metavar='values',
                                 type=app.Parser.SequenceInt(),
                                 help='The maximum spherical harmonic degree for the estimated FODs (see Description);'
                                      f' defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '

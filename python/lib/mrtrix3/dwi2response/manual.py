@@ -38,7 +38,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "manual" algorithm')
   options.add_argument('-dirs',
                        type=app.Parser.ImageIn(),
-                       metavar='image',
                        help='Provide an input image that contains a pre-estimated fibre direction in each voxel '
                             '(a tensor fit will be used otherwise)')
 

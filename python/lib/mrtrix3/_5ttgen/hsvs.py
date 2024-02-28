@@ -43,7 +43,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       help='The output 5TT image')
   parser.add_argument('-template',
                       type=app.Parser.ImageIn(),
-                      metavar='image',
                       help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi',
                       choices=HIPPOCAMPI_CHOICES,

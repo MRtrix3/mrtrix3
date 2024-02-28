@@ -49,7 +49,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                             '(default = 10 x value given in -number)')
   options.add_argument('-dilate',
                        type=app.Parser.Int(1),
-                       metavar='passes',
+                       metavar='iterations',
                        default=1,
                        help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
   options.add_argument('-max_iters',

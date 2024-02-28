@@ -648,7 +648,10 @@ class Parser(argparse.ArgumentParser):
   # Various callable types for use as argparse argument types
   class CustomTypeBase:
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
+      assert False
+    @staticmethod
+    def _metavar():
       assert False
 
   class Bool(CustomTypeBase):
@@ -664,8 +667,11 @@ class Parser(argparse.ArgumentParser):
         raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as boolean value"') from exc
       return bool(processed_value)
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'BOOL'
+    @staticmethod
+    def _metavar():
+      return 'value'
 
   def Int(min_value=None, max_value=None): # pylint: disable=invalid-name,no-self-argument
     assert min_value is None or isinstance(min_value, int)
@@ -683,8 +689,11 @@ class Parser(argparse.ArgumentParser):
           raise argparse.ArgumentTypeError(f'Input value "{input_value}" greater than maximum permissible value {max_value}')
         return value
       @staticmethod
-      def _typestring():
+      def _legacytypestring():
         return f'INT {-sys.maxsize - 1 if min_value is None else min_value} {sys.maxsize if max_value is None else max_value}'
+      @staticmethod
+      def _metavar():
+        return 'value'
     return IntBounded()
 
   def Float(min_value=None, max_value=None): # pylint: disable=invalid-name,no-self-argument
@@ -703,8 +712,11 @@ class Parser(argparse.ArgumentParser):
           raise argparse.ArgumentTypeError(f'Input value "{input_value}" greater than maximum permissible value {max_value}')
         return value
       @staticmethod
-      def _typestring():
+      def _legacytypestring():
         return f'FLOAT {"-inf" if min_value is None else str(min_value)} {"inf" if max_value is None else str(max_value)}'
+      @staticmethod
+      def _metavar():
+        return 'value'
     return FloatBounded()
 
   class SequenceInt(CustomTypeBase):
@@ -714,8 +726,11 @@ class Parser(argparse.ArgumentParser):
       except ValueError as exc:
         raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as integer sequence') from exc
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'ISEQ'
+    @staticmethod
+    def _metavar():
+      return 'values'
 
   class SequenceFloat(CustomTypeBase):
     def __call__(self, input_value):
@@ -724,8 +739,11 @@ class Parser(argparse.ArgumentParser):
       except ValueError as exc:
         raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as floating-point sequence') from exc
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'FSEQ'
+    @staticmethod
+    def _metavar():
+      return 'values'
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
@@ -736,8 +754,11 @@ class Parser(argparse.ArgumentParser):
         raise argparse.ArgumentTypeError(f'Input path "{input_value}" is not a directory')
       return abspath
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'DIRIN'
+    @staticmethod
+    def _metavar():
+      return 'directory'
 
 
   class DirectoryOut(CustomTypeBase):
@@ -746,8 +767,11 @@ class Parser(argparse.ArgumentParser):
       abspath = _UserDirOutPath(input_value)
       return abspath
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'DIROUT'
+    @staticmethod
+    def _metavar():
+      return 'directory'
 
   class FileIn(CustomTypeBase):
     def __call__(self, input_value):
@@ -758,16 +782,22 @@ class Parser(argparse.ArgumentParser):
         raise argparse.ArgumentTypeError(f'Input path "{input_value}" is not a file')
       return abspath
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'FILEIN'
+    @staticmethod
+    def _metavar():
+      return 'file'
 
   class FileOut(CustomTypeBase):
     def __call__(self, input_value):
       abspath = _UserFileOutPath(input_value)
       return abspath
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'FILEOUT'
+    @staticmethod
+    def _metavar():
+      return 'file'
 
   class ImageIn(CustomTypeBase):
     def __call__(self, input_value):
@@ -777,8 +807,11 @@ class Parser(argparse.ArgumentParser):
       abspath = UserPath(input_value)
       return abspath
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'IMAGEIN'
+    @staticmethod
+    def _metavar():
+      return 'image'
 
   class ImageOut(CustomTypeBase):
     def __call__(self, input_value):
@@ -790,8 +823,11 @@ class Parser(argparse.ArgumentParser):
       abspath = _UserFileOutPath(input_value)
       return abspath
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'IMAGEOUT'
+    @staticmethod
+    def _metavar():
+      return 'image'
 
   class TracksIn(CustomTypeBase):
     def __call__(self, input_value):
@@ -800,8 +836,11 @@ class Parser(argparse.ArgumentParser):
         raise argparse.ArgumentTypeError(f'Input tractogram file "{filepath}" is not a valid track file')
       return filepath
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'TRACKSIN'
+    @staticmethod
+    def _metavar():
+      return 'trackfile'
 
   class TracksOut(CustomTypeBase):
     def __call__(self, input_value):
@@ -810,15 +849,21 @@ class Parser(argparse.ArgumentParser):
         raise argparse.ArgumentTypeError(f'Output tractogram path "{filepath}" does not use the requisite ".tck" suffix')
       return filepath
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'TRACKSOUT'
+    @staticmethod
+    def _metavar():
+      return 'trackfile'
 
   class Various(CustomTypeBase):
     def __call__(self, input_value):
       return input_value
     @staticmethod
-    def _typestring():
+    def _legacytypestring():
       return 'VARIOUS'
+    @staticmethod
+    def _metavar():
+      return 'spec'
 
 
 
@@ -1014,11 +1059,30 @@ class Parser(argparse.ArgumentParser):
         sys.stderr.flush()
         sys.exit(1)
 
-
-
-
-
-
+  @staticmethod
+  def _option2metavar(option):
+    if option.metavar is not None:
+      if isinstance(option.metavar, tuple):
+        return f' {" ".join(option.metavar)}'
+      text = option.metavar
+    elif option.choices is not None:
+      return ' choice'
+    elif isinstance(option.type, Parser.CustomTypeBase):
+      text = option.type._metavar()
+    elif isinstance(option.type, str):
+      text = 'string'
+    elif isinstance(option.type, (int, float)):
+      text = 'value'
+    else:
+      return ''
+    if option.nargs:
+      if isinstance(option.nargs, int):
+        text = ((f' {text}') * option.nargs).lstrip()
+      elif option.nargs in ('+', '*'):
+        text = f'<space-separated list of {text}s>'
+      elif option.nargs == '?':
+        text = '<optional {text}>'
+    return f' {text}'
 
   def format_usage(self):
     argument_list = [ ]
@@ -1119,26 +1183,7 @@ class Parser(argparse.ArgumentParser):
       group_text = ''
       for option in group._group_actions:
         group_text += '  ' + underline('/'.join(option.option_strings))
-        if option.metavar:
-          group_text += ' '
-          if isinstance(option.metavar, tuple):
-            group_text += ' '.join(option.metavar)
-          else:
-            group_text += option.metavar
-        elif option.nargs:
-          if isinstance(option.nargs, int):
-            group_text += (f' {option.dest.upper()}')*option.nargs
-          elif option.nargs in ('+', '*'):
-            group_text += ' <space-separated list>'
-          elif option.nargs == '?':
-            group_text += ' <optional value>'
-        elif option.type is not None:
-          if hasattr(option.type, '__class__'):
-            group_text += f' {option.type.__class__.__name__.upper()}'
-          else:
-            group_text += f' {option.type.__name__.upper()}'
-        elif option.default is None:
-          group_text += f' {option.dest.upper()}'
+        group_text += Parser._option2metavar(option)
         # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
         #   therefore there's nothing to be appended to the option instruction
         if isinstance(option, argparse._AppendAction):
@@ -1221,8 +1266,8 @@ class Parser(argparse.ArgumentParser):
       if isinstance(arg.type, str) or arg.type is str or arg.type is None:
         return 'TEXT'
       if isinstance(arg.type, Parser.CustomTypeBase):
-        return type(arg.type)._typestring()
-      return arg.type._typestring()
+        return type(arg.type)._legacytypestring()
+      return arg.type._legacytypestring()
 
     def allow_multiple(nargs):
       return '1' if nargs in ('*', '+') else '0'
@@ -1294,12 +1339,7 @@ class Parser(argparse.ArgumentParser):
       group_text = ''
       for option in group._group_actions:
         option_text = '/'.join(option.option_strings)
-        if option.metavar:
-          option_text += ' '
-          if isinstance(option.metavar, tuple):
-            option_text += ' '.join(option.metavar)
-          else:
-            option_text += option.metavar
+        optiontext += Parser._option2metavar(option)
         group_text += f'+ **-{option_text}**'
         if isinstance(option, argparse._AppendAction):
           group_text += '  *(multiple uses permitted)*'
@@ -1381,12 +1421,7 @@ class Parser(argparse.ArgumentParser):
       group_text = ''
       for option in group._group_actions:
         option_text = '/'.join(option.option_strings)
-        if option.metavar:
-          option_text += ' '
-          if isinstance(option.metavar, tuple):
-            option_text += ' '.join(option.metavar)
-          else:
-            option_text += option.metavar
+        option_text += Parser._option2metavar(option)
         group_text += '\n'
         group_text += f'- **{option_text}**'
         if isinstance(option, argparse._AppendAction):

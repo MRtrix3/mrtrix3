@@ -51,6 +51,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                                  'prior to thresholding')
   iter_options.add_argument('-max_iters',
                             type=app.Parser.Int(1),
+                            metavar='iterations',
                             default=DEFAULT_MAX_ITERS,
                             help='Set the maximum number of iterations for the algorithm '
                                  f'(default: {DEFAULT_MAX_ITERS})')

@@ -50,7 +50,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                        help='Use the GPU')
   options.add_argument('-model',
                        type=app.Parser.FileIn(),
-                       metavar='file',
                        help='Alternative model weights')
   options.add_argument('-nocsf',
                        action='store_true',

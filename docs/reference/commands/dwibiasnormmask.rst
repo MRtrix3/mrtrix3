@@ -47,9 +47,9 @@ Options for importing the diffusion gradient table
 Options relevant to the internal optimisation procedure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-dice value** Set the Dice coefficient threshold for similarity of masks between sequential iterations  that will result in termination due to convergence; default = 0.999
+- **-dice value** Set the Dice coefficient threshold for similarity of masks between sequential iterations that will result in termination due to convergence; default = 0.999
 
-- **-init_mask** Provide an initial mask for the first iteration of the algorithm (if not provided, the default dwi2mask algorithm will be used)
+- **-init_mask image** Provide an initial mask for the first iteration of the algorithm (if not provided, the default dwi2mask algorithm will be used)
 
 - **-max_iters count** The maximum number of iterations (see Description); default is 2; set to 0 to proceed until convergence
 
@@ -60,11 +60,11 @@ Options relevant to the internal optimisation procedure
 Options that modulate the outputs of the script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-output_bias** Export the final estimated bias field to an image
+- **-output_bias image** Export the final estimated bias field to an image
 
-- **-output_scale** Write the scaling factor applied to the DWI series to a text file
+- **-output_scale file** Write the scaling factor applied to the DWI series to a text file
 
-- **-output_tissuesum** Export the tissue sum image that was used to generate the final mask
+- **-output_tissuesum image** Export the tissue sum image that was used to generate the final mask
 
 - **-reference value** Set the target CSF b=0 intensity in the output DWI series (default: 1000.0)
 

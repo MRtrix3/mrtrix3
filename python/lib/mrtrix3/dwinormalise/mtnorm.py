@@ -62,24 +62,20 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
   options.add_argument('-lmax',
                        type=app.Parser.SequenceInt(),
-                       metavar='values',
                        help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
                             f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
                             f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)')
   options.add_argument('-mask',
                        type=app.Parser.ImageIn(),
-                       metavar='image',
                        help='Provide a mask image for relevant calculations '
                             '(if not provided, the default dwi2mask algorithm will be used)')
   options.add_argument('-reference',
                        type=app.Parser.Float(0.0),
-                       metavar='value',
                        default=REFERENCE_INTENSITY,
                        help='Set the target CSF b=0 intensity in the output DWI series '
                             f'(default: {REFERENCE_INTENSITY})')
   options.add_argument('-scale',
                        type=app.Parser.FileOut(),
-                       metavar='file',
                        help='Write the scaling factor applied to the DWI series to a text file')
   app.add_dwgrad_import_options(parser)
 

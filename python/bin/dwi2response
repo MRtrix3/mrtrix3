@@ -43,11 +43,9 @@ def usage(cmdline): #pylint: disable=unused-variable
   common_options = cmdline.add_argument_group('General dwi2response options')
   common_options.add_argument('-mask',
                               type=app.Parser.ImageIn(),
-                              metavar='image',
                               help='Provide an initial mask for response voxel selection')
   common_options.add_argument('-voxels',
                               type=app.Parser.ImageOut(),
-                              metavar='image',
                               help='Output an image showing the final voxel selection(s)')
   common_options.add_argument('-shells',
                               type=app.Parser.SequenceFloat(),
@@ -57,7 +55,6 @@ def usage(cmdline): #pylint: disable=unused-variable
                                    'b=0 must be included explicitly if desired)')
   common_options.add_argument('-lmax',
                               type=app.Parser.SequenceInt(),
-                              metavar='values',
                               help='The maximum harmonic degree(s) for response function estimation '
                                    '(comma-separated list in case of multiple b-values)')
   app.add_dwgrad_import_options(cmdline)

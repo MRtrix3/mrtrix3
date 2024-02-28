@@ -38,7 +38,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "tax" algorithm')
   options.add_argument('-peak_ratio',
                        type=app.Parser.Float(0.0, 1.0),
-                       metavar='value',
                        default=0.1,
                        help='Second-to-first-peak amplitude ratio threshold')
   options.add_argument('-max_iters',
