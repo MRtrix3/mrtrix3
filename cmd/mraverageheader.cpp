@@ -27,8 +27,8 @@ using namespace App;
 using namespace Registration;
 
 const default_type PADDING_DEFAULT = 0.0;
-const avgspace_voxspacing_t SPACING_DEFAULT_VALUE = avgspace_voxspacing_t::MEAN_NEAREST;
-const std::string SPACING_DEFAULT_STRING = "mean_nearest";
+const avgspace_voxspacing_t SPACING_DEFAULT_VALUE = avgspace_voxspacing_t::MEAN_PROJECTION;
+const std::string SPACING_DEFAULT_STRING = "mean_projection";
 
 // clang-format off
 void usage() {

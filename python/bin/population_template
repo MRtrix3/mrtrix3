@@ -947,9 +947,11 @@ def execute(): #pylint: disable=unused-variable
   app.console('Generating initial template')
   input_filenames = [inp.get_ims_path(False)[0] for inp in ins]
   if voxel_size is None:
-    run.command(['mraverageheader', input_filenames, 'average_header.mif', '-fill'])
+    run.command(['mraverageheader', input_filenames, 'average_header.mif',
+                 '-fill',
+                 '-spacing', 'mean_nearest'])
   else:
-    run.command(['mraverageheader', '-fill', input_filenames, '-', '|',
+    run.command(['mraverageheader', input_filenames, '-fill', '-', '|',
                  'mrgrid', '-', 'regrid', '-voxel', ','.join(map(str, voxel_size)), 'average_header.mif'])
 
   # crop average space to extent defined by original masks
@@ -1081,7 +1083,10 @@ def execute(): #pylint: disable=unused-variable
                     datatype_option)
       progress.increment()
     # update average space of first contrast to new extent, delete other average space images
-    run.command(['mraverageheader', [inp.ims_transformed[cid] + '_translated.mif' for inp in ins], 'average_header_tight.mif'])
+    run.command(['mraverageheader',
+                 [inp.ims_transformed[cid] + '_translated.mif' for inp in ins],
+                 'average_header_tight.mif',
+                 '-spacing', 'mean_nearest'])
     progress.done()
 
     if voxel_size is None:
