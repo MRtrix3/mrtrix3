@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,40 +23,26 @@
 
 class QLocalSocket;
 
+namespace MR::GUI::MRView::Sync {
+/**
+ * Auto reads data from its local socket when data arrives, and fires an event with that data attached
+ */
+class LocalSocketReader : public QObject {
+  Q_OBJECT
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Sync
-      {
-        /**
-        * Auto reads data from its local socket when data arrives, and fires an event with that data attached
-        */
-        class LocalSocketReader : public QObject
-        { 
-          Q_OBJECT
+public:
+  LocalSocketReader(QLocalSocket *mySocket);
 
-        public:
-          LocalSocketReader(QLocalSocket* mySocket);
+signals:
+  void DataReceived(std::vector<std::shared_ptr<QByteArray>> dat); // emits every message currently available
 
+private slots:
+  void OnDataReceived();
 
-        signals:
-          void DataReceived(vector<std::shared_ptr<QByteArray>> dat);//emits every message currently available
+private:
+  QLocalSocket *socket;
+};
 
+} // namespace MR::GUI::MRView::Sync
 
-        private slots:
-          void OnDataReceived();
-
-
-        private:
-          QLocalSocket * socket;
-        };
-
-      }
-    }
-  }
-}
 #endif

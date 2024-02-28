@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,22 +19,11 @@
 
 #include <string>
 
-namespace MR
-{
-  namespace Fixel
-  {
-    namespace Legacy
-    {
+namespace MR::Fixel::Legacy {
 
-      // These are the keys that must be present in an image header to successfully read or write sparse image data
-      const std::string name_key ("sparse_data_name");
-      const std::string size_key ("sparse_data_size");
-    }
-  }
-}
+// These are the keys that must be present in an image header to successfully read or write sparse image data
+const std::string name_key("sparse_data_name");
+const std::string size_key("sparse_data_size");
+} // namespace MR::Fixel::Legacy
 
 #endif
-
-
-
-

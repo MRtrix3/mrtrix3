@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,23 +20,11 @@
 #include "gui/opengl/gl.h"
 #include "progressbar.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
-      namespace ProgressBar
-      {
+namespace MR::GUI::Dialog::ProgressBar {
 
-        void display (const ::MR::ProgressBar& p);
-        void done (const ::MR::ProgressBar& p);
+void display(const ::MR::ProgressBar &p);
+void done(const ::MR::ProgressBar &p);
 
-
-      }
-    }
-  }
-}
+} // namespace MR::GUI::Dialog::ProgressBar
 
 #endif
-

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,23 +16,8 @@
 
 #include "dwi/tractography/mapping/writer.h"
 
+namespace MR::DWI::Tractography::Mapping {
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
-
-
-
-const char* writer_dims[] = { "undefined", "greyscale", "DEC", "dixel", "TOD", NULL };
-
-
+const char *writer_dims[] = {"undefined", "greyscale", "DEC", "dixel", "TOD", NULL};
 
 }
-}
-}
-}
-
-
-
-

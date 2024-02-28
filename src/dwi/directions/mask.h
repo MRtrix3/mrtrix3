@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,49 +17,33 @@
 #ifndef __dwi_directions_mask_h__
 #define __dwi_directions_mask_h__
 
-
 #include <fstream>
 
 #include "misc/bitset.h"
 
 #include "dwi/directions/set.h"
 
+namespace MR::DWI::Directions {
 
+class Mask : public BitSet {
 
-namespace MR {
-  namespace DWI {
-    namespace Directions {
+public:
+  Mask(const Set &master, const bool allocator = false) : BitSet(master.size(), allocator), dirs(&master) {}
 
+  Mask(const Mask &that) : BitSet(that), dirs(that.dirs) {}
 
+  const Set &get_dirs() const { return *dirs; }
 
-      class Mask : public BitSet { 
+  void erode(const size_t iterations = 1);
+  void dilate(const size_t iterations = 1);
 
-        public:
-          Mask (const Set& master, const bool allocator = false) :
-              BitSet (master.size(), allocator),
-              dirs (&master) { }
+  bool is_adjacent(const size_t) const;
+  size_t get_min_linkage(const Mask &);
 
-          Mask (const Mask& that) :
-              BitSet (that),
-              dirs (that.dirs) { }
+private:
+  const Set *dirs;
+};
 
-          const Set& get_dirs() const { return *dirs; }
-
-          void erode  (const size_t iterations = 1);
-          void dilate (const size_t iterations = 1);
-
-          bool is_adjacent (const size_t) const;
-          size_t get_min_linkage (const Mask&);
-
-        private:
-          const Set* dirs;
-
-      };
-
-
-
-    }
-  }
-}
+} // namespace MR::DWI::Directions
 
 #endif

@@ -23,9 +23,9 @@ Options
 
 -  **-padding value**  boundary box padding in voxels. Default: 0
 
--  **-resolution type**  subsampling of template compared to smallest voxel size in any input image. Valid options are 'mean': unbiased but loss of resolution for individual images possible, and 'max': smallest voxel size of any input image defines the resolution. Default: mean
+-  **-resolution type** subsampling of template compared to smallest voxel size in any input image.Valid options are: - 'mean': unbiased but loss of resolution for individual images possible; - 'max': smallest voxel size of any input image defines the resolution. Default: mean
 
--  **-fill**  set the intensity in the first volume of the average space to 1
+-  **-fill** set the intensity in the first volume of the average space to 1
 
 Data type options
 ^^^^^^^^^^^^^^^^^
@@ -62,7 +62,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Maximilian Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

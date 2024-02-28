@@ -22,13 +22,7 @@ Description
 
 Any images listed as arguments will be loaded and available through the image menu, with the first listed displayed initially. Any subsequent command-line options will be processed as if the corresponding action had been performed through the GUI.
 
-Note that because images loaded as arguments (i.e. simply listed on the command-line) are opened before the GUI is shown, subsequent actions to be performed via the various command-line options must appear after the last argument. This is to avoid confusion about which option will apply to which image. If you need fine control over this, please use the -load or -select_image options. For example:
-
-$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0
-
-or
-
-$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0
+Note that because images loaded as arguments (i.e. simply listed on the command-line) are opened before the GUI is shown, subsequent actions to be performed via the various command-line options must appear after the last argument. This is to avoid confusion about which option will apply to which image. If you need fine control over this, please use the -load or -select_image options. For example:"mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0" or "mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0"
 
 Options
 -------
@@ -44,9 +38,9 @@ View options
 
 -  **-fov value** *(multiple uses permitted)* Set the field of view, in mm.
 
--  **-focus x,y,z or boolean** *(multiple uses permitted)* Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values or show or hide the focus cross hair using a boolean value as argument.
+-  **-focus spec** *(multiple uses permitted)* Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values, or show or hide the focus cross hair using a boolean value as argument.
 
--  **-target x,y,z** *(multiple uses permitted)* Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
+-  **-target x,y,z** *(multiple uses permitted)* Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window)
 
 -  **-orientation w,x,y,z** Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).
 
@@ -54,7 +48,7 @@ View options
 
 -  **-volume idx** *(multiple uses permitted)* Set the volume index for the image displayed, as a comma-separated list of integers.
 
--  **-plane index** *(multiple uses permitted)* Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.
+-  **-plane index** *(multiple uses permitted)* Set the viewing plane, according to the mappping: 0: sagittal; 1: coronal; 2: axial.
 
 -  **-lock yesno** *(multiple uses permitted)* Set whether view is locked to image axes (0: no, 1: yes).
 
@@ -138,11 +132,11 @@ Tractography tool options
 
 -  **-tractography.load tracks** *(multiple uses permitted)* Load the specified tracks file into the tractography tool.
 
--  **-tractography.thickness value** *(multiple uses permitted)* Line thickness of tractography display, [-1.0, 1.0], default is 0.0.
+-  **-tractography.thickness value** *(multiple uses permitted)* Line thickness of tractography display, [-1.0, 1.0]; default is 0.0.
 
 -  **-tractography.geometry value** *(multiple uses permitted)* The geometry type to use when rendering tractograms (options are: pseudotubes, lines, points)
 
--  **-tractography.opacity value** *(multiple uses permitted)* Opacity of tractography display, [0.0, 1.0], default is 1.0.
+-  **-tractography.opacity value** *(multiple uses permitted)* Opacity of tractography display, [0.0, 1.0]; default is 1.0.
 
 -  **-tractography.slab value** *(multiple uses permitted)* Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
 
@@ -218,9 +212,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com), Dave Raffelt (david.raffelt@florey.edu.au), Robert E. Smith (robert.smith@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk), Thijs Dhollander (thijs.dhollander@gmail.com)
+**Author:** J-Donald Tournier (jdtournier@gmail.com) and Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au) and Rami Tabbara (rami.tabbara@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

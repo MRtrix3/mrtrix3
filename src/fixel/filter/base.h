@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,54 +14,42 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __fixel_filter_base_h__
 #define __fixel_filter_base_h__
 
-namespace MR
-{
-  namespace Fixel
-  {
-    namespace Filter
-    {
+#include "image.h"
+#include <string>
 
-      /*! A base class for defining fixel data filters.
-       *
-       * The Fixel::Filter::Base class defines the basic
-       * interface for defining filters that operate upon fixel
-       * data. It allows these filters to be initialised,
-       * set up and run using base class pointers, and defines a
-       * standardised functor interface that fixel data filter
-       * classes should ideally conform to.
-       *
-       */
-      class Base
-      { 
-        public:
-          Base (const std::string& s) :
-              message (s) { }
-          Base () { }
+namespace MR::Fixel::Filter {
 
-          virtual ~Base() { }
+/*! A base class for defining fixel data filters.
+ *
+ * The Fixel::Filter::Base class defines the basic
+ * interface for defining filters that operate upon fixel
+ * data. It allows these filters to be initialised,
+ * set up and run using base class pointers, and defines a
+ * standardised functor interface that fixel data filter
+ * classes should ideally conform to.
+ *
+ */
+class Base {
+public:
+  Base(const std::string &s) : message(s) {}
+  Base() {}
 
-          void set_message (const std::string& s) { message = s; }
+  virtual ~Base() {}
 
-          virtual void operator() (Image<float>&, Image<float>&) const
-          {
-            throw Exception ("Running empty function Fixel::Filter::Base::operator()");
-          }
+  void set_message(const std::string &s) { message = s; }
 
-        protected:
-          std::string message;
-
-      };
-      //! @}
-
-
-
-    }
+  virtual void operator()(Image<float> &, Image<float> &) const {
+    throw Exception("Running empty function Fixel::Filter::Base::operator()");
   }
-}
 
+protected:
+  std::string message;
+};
+//! @}
+
+} // namespace MR::Fixel::Filter
 
 #endif

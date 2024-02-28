@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,18 +17,16 @@
 #ifndef __mrtrix_half_h__
 #define __mrtrix_half_h__
 
-namespace half_float
-{
-  class half;
+namespace half_float {
+class half;
 }
 
-namespace std
-{
-  template <> struct is_fundamental<half_float::half> : std::true_type { };
-  template <> struct is_floating_point<half_float::half> : std::true_type { };
-  template <> struct is_arithmetic<half_float::half> : std::true_type { };
-  template <> struct is_integral<half_float::half> : std::false_type { };
-}
+namespace std {
+template <> struct is_fundamental<half_float::half> : std::true_type {};
+template <> struct is_floating_point<half_float::half> : std::true_type {};
+template <> struct is_arithmetic<half_float::half> : std::true_type {};
+template <> struct is_integral<half_float::half> : std::false_type {};
+} // namespace std
 
 #include "half.hpp"
 

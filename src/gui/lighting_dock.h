@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,39 +19,33 @@
 
 #include "gui/opengl/lighting.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    class LightingSettings : public QFrame
-    { 
-      Q_OBJECT
+namespace MR::GUI {
+class LightingSettings : public QFrame {
+  Q_OBJECT
 
-      public:
-        LightingSettings (QWidget* parent, GL::Lighting& lighting);
-        ~LightingSettings () { }
+public:
+  LightingSettings(QWidget *parent, GL::Lighting &lighting);
+  ~LightingSettings() {}
 
-      protected:
-        GL::Lighting&  info;
-        QSlider* elevation_slider, *azimuth_slider;
+protected:
+  GL::Lighting &info;
+  QSlider *elevation_slider, *azimuth_slider;
 
-      protected slots:
-        void ambient_intensity_slot (int value);
-        void diffuse_intensity_slot (int value);
-        void specular_intensity_slot (int value);
-        void shine_slot (int value);
-        void light_position_slot ();
-    };
+protected slots:
+  void ambient_intensity_slot(int value);
+  void diffuse_intensity_slot(int value);
+  void specular_intensity_slot(int value);
+  void shine_slot(int value);
+  void light_position_slot();
+};
 
-    class LightingDock : public QDockWidget
-    { 
-      public:
-        LightingDock (const std::string& title, GL::Lighting& lighting);
-      private:
-        LightingSettings* settings;
-    };
-  }
-}
+class LightingDock : public QDockWidget {
+public:
+  LightingDock(const std::string &title, GL::Lighting &lighting);
+
+private:
+  LightingSettings *settings;
+};
+} // namespace MR::GUI
 
 #endif
-

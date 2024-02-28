@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,44 +19,26 @@
 
 #include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace GL
-    {
+namespace MR::GUI::GL {
 
-      class Lighting : public QObject
-      { 
-        Q_OBJECT
+class Lighting : public QObject {
+  Q_OBJECT
 
-        public:
+public:
+  Lighting(QObject *parent) : QObject(parent), set_background(false) { load_defaults(); }
 
-          Lighting (QObject* parent) :
-            QObject (parent), 
-            set_background (false) {
-              load_defaults();
-            }
+  float ambient, diffuse, specular, shine;
+  float light_color[3], lightpos[3], background_color[3];
+  bool set_background;
 
-          float ambient, diffuse, specular, shine;
-          float light_color[3], lightpos[3], background_color[3];
-          bool set_background;
+  void set() const;
+  void load_defaults();
+  void update() { emit changed(); }
 
-          void  set () const;
-          void  load_defaults ();
-          void  update () {
-            emit changed();
-          }
+signals:
+  void changed();
+};
 
-        signals:
-          void changed ();
-      };
-
-    }
-  }
-}
+} // namespace MR::GUI::GL
 
 #endif
-
-
-

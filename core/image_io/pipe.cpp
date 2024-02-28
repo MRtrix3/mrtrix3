@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,60 +17,51 @@
 #include <limits>
 #include <unistd.h>
 
-#include "signal_handler.h"
 #include "header.h"
 #include "image_io/pipe.h"
+#include "signal_handler.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR::ImageIO {
 
-    void Pipe::load (const Header& header, size_t)
-    {
-      assert (files.size() == 1);
-      DEBUG ("mapping piped image \"" + files[0].name + "\"...");
+void Pipe::load(const Header &header, size_t) {
+  assert(files.size() == 1);
+  DEBUG("mapping piped image \"" + files[0].name + "\"...");
 
-      segsize /= files.size();
-      int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
+  segsize /= files.size();
+  int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
 
-      if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
-        throw Exception ("image \"" + header.name() + "\" is larger than maximum accessible memory");
+  if (double(bytes_per_segment) >= double(std::numeric_limits<size_t>::max()))
+    throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
 
-      mmap.reset (new File::MMap (files[0], writable, !is_new, bytes_per_segment));
-      addresses.resize (1);
-      addresses[0].reset (mmap->address());
+  mmap.reset(new File::MMap(files[0], writable, !is_new, bytes_per_segment));
+  addresses.resize(1);
+  addresses[0].reset(mmap->address());
+}
+
+void Pipe::unload(const Header &) {
+  if (mmap) {
+    mmap.reset();
+    if (is_new) {
+      std::cout << files[0].name << "\n";
+      SignalHandler::unmark_file_for_deletion(files[0].name);
     }
-
-
-    void Pipe::unload (const Header&)
-    {
-      if (mmap) {
-        mmap.reset();
-        if (is_new) {
-          std::cout << files[0].name << "\n";
-          SignalHandler::unmark_file_for_deletion (files[0].name);
-        }
-        addresses[0].release();
-      }
-    }
-
-    //ENVVAR name: MRTRIX_PRESERVE_TMPFILE
-    //ENVVAR This variable decides whether the temporary piped image
-    //ENVVAR should be preserved rather than the usual behaviour of
-    //ENVVAR deletion at command completion.
-    //ENVVAR For example, in case of piped commands from Python API,
-    //ENVVAR it is necessary to retain the temp files until all
-    //ENVVAR the piped commands are executed.
-    namespace {
-      bool preserve_tmpfile() {
-        const char* const MRTRIX_PRESERVE_TMPFILE = getenv("MRTRIX_PRESERVE_TMPFILE");
-        return (MRTRIX_PRESERVE_TMPFILE && to<bool>(std::string(MRTRIX_PRESERVE_TMPFILE)));
-      }
-    }
-    bool Pipe::delete_piped_images = !preserve_tmpfile();
-
+    addresses[0].release();
   }
 }
 
+//ENVVAR name: MRTRIX_PRESERVE_TMPFILE
+//ENVVAR This variable decides whether the temporary piped image
+//ENVVAR should be preserved rather than the usual behaviour of
+//ENVVAR deletion at command completion.
+//ENVVAR For example, in case of piped commands from Python API,
+//ENVVAR it is necessary to retain the temp files until all
+//ENVVAR the piped commands are executed.
+namespace {
+  bool preserve_tmpfile() {
+    const char* const MRTRIX_PRESERVE_TMPFILE = getenv("MRTRIX_PRESERVE_TMPFILE");
+    return (MRTRIX_PRESERVE_TMPFILE && to<bool>(std::string(MRTRIX_PRESERVE_TMPFILE)));
+  }
+}
+bool Pipe::delete_piped_images = !preserve_tmpfile();
 
+} // namespace MR::ImageIO

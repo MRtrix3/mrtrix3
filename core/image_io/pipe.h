@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,33 +17,25 @@
 #ifndef __image_io_pipe_h__
 #define __image_io_pipe_h__
 
-#include "memory.h"
-#include "image_io/base.h"
 #include "file/mmap.h"
+#include "image_io/base.h"
+#include "memory.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR::ImageIO {
 
-    class Pipe : public Base
-    { 
-      public:
-        Pipe (Base&& io_handler) : Base (std::move (io_handler)) { }
+class Pipe : public Base {
+public:
+  Pipe(Base &&io_handler) : Base(std::move(io_handler)) {}
 
-        static bool delete_piped_images;
+  static bool delete_piped_images;
 
-      protected:
-        std::unique_ptr<File::MMap> mmap;
+protected:
+  std::unique_ptr<File::MMap> mmap;
 
-        virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
+  virtual void load(const Header &, size_t);
+  virtual void unload(const Header &);
+};
 
-    };
-
-  }
-}
+} // namespace MR::ImageIO
 
 #endif
-
-

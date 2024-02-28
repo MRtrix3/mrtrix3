@@ -31,7 +31,7 @@ Example usages
 Options
 -------
 
--  **-axis axis** specify axis along which concatenation should be performed. By default, the program will use the last non-singleton, non-spatial axis of any of the input images - in other words axis 3 or whichever axis (greater than 3) of the input images has size greater than one.
+-  **-axis index** specify axis along which concatenation should be performed. By default, the program will use the last non-singleton, non-spatial axis of any of the input images; in other words, axis 3, or whichever axis (greater than 3) of the input images has size greater than one.
 
 Data type options
 ^^^^^^^^^^^^^^^^^
@@ -68,7 +68,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
