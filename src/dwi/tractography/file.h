@@ -30,9 +30,7 @@
 #include "memory.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 template <class ValueType> class ReaderInterface {
 public:
@@ -381,8 +379,6 @@ protected:
   }
 };
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography
 
 #endif

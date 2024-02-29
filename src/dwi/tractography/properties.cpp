@@ -16,9 +16,7 @@
 
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 void check_timestamps(const Properties &a, const Properties &b, const std::string &type) {
   Properties::const_iterator stamp_a = a.find("timestamp");
@@ -120,6 +118,4 @@ std::ostream &operator<<(std::ostream &stream, const Properties &P) {
   return (stream);
 }
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography

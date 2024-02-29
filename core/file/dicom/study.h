@@ -20,9 +20,7 @@
 #include "file/dicom/series.h"
 #include "memory.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class Patient;
 class Series;
@@ -63,8 +61,6 @@ public:
 
 std::ostream &operator<<(std::ostream &stream, const Study &item);
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom
 
 #endif

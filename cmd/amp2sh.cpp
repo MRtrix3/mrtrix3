@@ -27,51 +27,62 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Convert a set of amplitudes (defined along a set of corresponding directions) "
-             "to their spherical harmonic representation";
+  SYNOPSIS = "Convert a set of amplitudes"
+             " (defined along a set of corresponding directions)"
+             " to their spherical harmonic representation";
 
   DESCRIPTION
-  +"The spherical harmonic decomposition is calculated by least-squares linear fitting "
-   "to the amplitude data."
+  + "The spherical harmonic decomposition is calculated by least-squares linear fitting "
+    "to the amplitude data."
 
-      + "The directions can be defined either as a DW gradient scheme (for example to compute "
-        "the SH representation of the DW signal), a set of [az el] pairs as output by the dirgen "
-        "command, or a set of [ x y z ] directions in Cartesian coordinates. The DW "
-        "gradient scheme or direction set can be supplied within the input image "
-        "header or using the -gradient or -directions option. Note that if a "
-        "direction set and DW gradient scheme can be found, the direction set "
-        "will be used by default."
+  + "The directions can be defined either as a DW gradient scheme"
+    " (for example to compute the SH representation of the DW signal),"
+    " a set of [az el] pairs as output by the dirgen command,"
+    " or a set of [ x y z ] directions in Cartesian coordinates."
+    " The DW gradient scheme or direction set can be supplied within the input image header"
+    " or using the -gradient or -directions option."
+    " Note that if a direction set and DW gradient scheme can be found,"
+    " the direction set will be used by default."
 
-      + Math::SH::encoding_description;
+  + Math::SH::encoding_description;
 
   ARGUMENTS
-  +Argument("amp", "the input amplitude image.").type_image_in() +
-      Argument("SH", "the output spherical harmonics coefficients image.").type_image_out();
+  + Argument ("amp", "the input amplitude image.").type_image_in ()
+  + Argument ("SH", "the output spherical harmonics coefficients image.").type_image_out ();
+
 
   OPTIONS
-  +Option("lmax",
-          "set the maximum harmonic order for the output series. By default, the "
-          "program will use the highest possible lmax given the number of "
-          "diffusion-weighted images, up to a maximum of 8.") +
-      Argument("order").type_integer(0, 30)
+  + Option ("lmax",
+            "set the maximum harmonic order for the output series."
+            " By default, the program will use the highest possible lmax"
+            " given the number of diffusion-weighted images,"
+            " up to a maximum of 8.")
+  +   Argument ("order").type_integer (0, 30)
 
-      + Option("normalise", "normalise the DW signal to the b=0 image")
+  + Option ("normalise", "normalise the DW signal to the b=0 image")
 
-      + Option("directions",
-               "the directions corresponding to the input amplitude image used to sample AFD. "
-               "By default this option is not required providing the direction set is supplied "
-               "in the amplitude image. This should be supplied as a list of directions [az el], "
-               "as generated using the dirgen command, or as a list of [ x y z ] Cartesian coordinates.") +
-      Argument("file").type_file_in()
+  + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD."
+                          " By default this option is not required"
+                          " providing the direction set is supplied in the amplitude image."
+                          " This should be supplied as a list of directions [az el],"
+                          " as generated using the dirgen command,"
+                          " or as a list of [ x y z ] Cartesian coordinates.")
+  +   Argument ("file").type_file_in()
 
-      + Option("rician", "correct for Rician noise induced bias, using noise map supplied") +
-      Argument("noise").type_image_in()
+  + Option ("rician", "correct for Rician noise induced bias,"
+                      " using noise map supplied")
+  +   Argument ("noise").type_image_in()
 
-      + DWI::GradImportOptions() + DWI::ShellsOption + Stride::Options;
+  + DWI::GradImportOptions()
+  + DWI::ShellsOption
+  + Stride::Options;
 }
+// clang-format on
 
 #define RICIAN_POWER 2.25
 

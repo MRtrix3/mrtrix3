@@ -21,10 +21,7 @@
 
 #include "dwi/tractography/SIFT/track_contribution.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 FixelUpdater::FixelUpdater(TckFactor &tckfactor)
     : master(tckfactor),
@@ -56,7 +53,4 @@ bool FixelUpdater::operator()(const SIFT::TrackIndexRange &range) {
   return true;
 }
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2

@@ -53,8 +53,7 @@
  * \sa Thread::run_queue()
  */
 
-namespace MR {
-namespace Thread {
+namespace MR::Thread {
 
 class __Backend {
 public:
@@ -366,7 +365,6 @@ inline typename __run<Functor>::type run(Functor &&functor, const std::string &n
 
 /** @} */
 /** @} */
-} // namespace Thread
-} // namespace MR
+} // namespace MR::Thread
 
 #endif

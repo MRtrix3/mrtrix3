@@ -20,8 +20,7 @@
 #include "types.h"
 #include <functional>
 
-namespace MR {
-namespace ColourMap {
+namespace MR::ColourMap {
 
 class Entry {
 public:
@@ -87,7 +86,6 @@ inline size_t num_special() {
   return n;
 }
 
-} // namespace ColourMap
-} // namespace MR
+} // namespace MR::ColourMap
 
 #endif

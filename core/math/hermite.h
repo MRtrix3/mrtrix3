@@ -21,8 +21,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <typename T> class Hermite {
 public:
@@ -52,7 +51,6 @@ private:
   value_type t;
 };
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

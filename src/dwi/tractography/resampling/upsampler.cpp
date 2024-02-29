@@ -18,10 +18,7 @@
 
 #include "math/hermite.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 bool Upsampler::operator()(const Streamline<> &in, Streamline<> &out) const {
   if (get_ratio() == 1 || in.size() == 1) {
@@ -87,7 +84,4 @@ void Upsampler::increment(const point_type &a) const {
   }
 }
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling

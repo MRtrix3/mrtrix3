@@ -34,10 +34,7 @@
 // to different termination mechanisms throughout the brain
 // #define DEBUG_TERMINATIONS
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class SharedBase {
 
@@ -96,9 +93,6 @@ private:
 #endif
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking
 
 #endif

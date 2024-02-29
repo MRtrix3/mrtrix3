@@ -18,9 +18,7 @@
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 namespace {
 bool series_time_mismatch_warning_issued = false;
@@ -100,6 +98,4 @@ std::ostream &operator<<(std::ostream &stream, const Study &item) {
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

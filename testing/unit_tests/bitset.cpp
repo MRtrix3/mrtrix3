@@ -22,11 +22,13 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
   SYNOPSIS = "Verify correct operation of the BitSet class";
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 void run() {
   std::vector<std::string> failed_tests;

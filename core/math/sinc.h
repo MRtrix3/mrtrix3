@@ -19,8 +19,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <typename T = float> class Sinc {
 public:
@@ -116,7 +115,6 @@ private:
   value_type current_pos;
 };
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

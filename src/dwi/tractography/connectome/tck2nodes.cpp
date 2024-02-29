@@ -19,10 +19,7 @@
 
 #include "dwi/tractography/connectome/tck2nodes.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 node_t
 Tck2nodes_end_voxels::select_node(const Tractography::Streamline<> &tck, Image<node_t> &v, const bool end) const {
@@ -214,7 +211,4 @@ void Tck2nodes_all_voxels::select_nodes(const Streamline<> &tck, Image<node_t> &
     out.push_back(*n);
 }
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome

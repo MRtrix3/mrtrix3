@@ -23,8 +23,7 @@
 #include "memory.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 //! a class to interpret numbered filenames
 class NameParser {
@@ -155,7 +154,6 @@ protected:
   std::string filename;
 };
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File
 
 #endif

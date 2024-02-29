@@ -16,8 +16,7 @@
 
 #include "gui/cursor.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 QCursor Cursor::pan_crosshair;
 QCursor Cursor::forward_backward;
@@ -39,5 +38,4 @@ Cursor::Cursor() {
   erase = QCursor(QPixmap(":/cursor_erase.svg"), 8, 8);
 }
 
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI

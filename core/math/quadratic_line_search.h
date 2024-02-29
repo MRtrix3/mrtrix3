@@ -19,8 +19,7 @@
 
 #include "progressbar.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 /** \addtogroup Optimisation
 @{ */
 
@@ -289,7 +288,6 @@ private:
   mutable return_t status;
 };
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

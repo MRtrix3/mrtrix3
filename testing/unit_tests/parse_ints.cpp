@@ -23,13 +23,13 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
-
   SYNOPSIS = "Test the parse_ints (std::string) function";
-
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 std::vector<std::string> failures;
 

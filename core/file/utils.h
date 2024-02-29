@@ -29,8 +29,7 @@
 #include "mrtrix.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 namespace {
 inline char random_char() {
@@ -230,7 +229,6 @@ inline void rmdir(const std::string &folder, bool recursive = false) {
     throw Exception("error deleting folder \"" + folder + "\": " + strerror(errno));
 }
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File
 
 #endif

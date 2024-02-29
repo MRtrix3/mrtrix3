@@ -28,8 +28,7 @@
 #include "header.h"
 #include "image_io/default.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 // extensions are:
 // mih: MRtrix Image Header
@@ -102,5 +101,4 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
   return io_handler;
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

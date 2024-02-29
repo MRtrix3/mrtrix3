@@ -39,43 +39,43 @@ const char *statistics[] = {"mean", "median", "min", "max", nullptr};
 
 enum interp_type { NEAREST, LINEAR, PRECISE };
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Sample values of an associated image along tracks";
 
   DESCRIPTION
-  +"By default, the value of the underlying image at each point along the track "
-   "is written to either an ASCII file (with all values for each track on the same "
-   "line), or a track scalar file (.tsf). Alternatively, some statistic can be "
-   "taken from the values along each streamline and written to a vector file.";
+  + "By default,"
+    " the value of the underlying image at each point along the track"
+    " is written to either an ASCII file"
+    " (with all values for each track on the same line),"
+    " or a track scalar file (.tsf)."
+    " Alternatively, some statistic can be taken from the values along each streamline"
+    " and written to a vector file.";
 
   ARGUMENTS
-  +Argument("tracks", "the input track file").type_tracks_in() +
-      Argument("image", "the image to be sampled").type_image_in() +
-      Argument("values", "the output sampled values").type_file_out();
+  + Argument ("tracks", "the input track file").type_tracks_in()
+  + Argument ("image", "the image to be sampled").type_image_in()
+  + Argument ("values", "the output sampled values").type_file_out();
 
   OPTIONS
+  + Option ("stat_tck", "compute some statistic from the values along each streamline;"
+                        " (options are: " + join(statistics, ",") + ")")
+    + Argument ("statistic").type_choice (statistics)
 
-  +Option("stat_tck",
-          "compute some statistic from the values along each streamline "
-          "(options are: " +
-              join(statistics, ",") + ")") +
-      Argument("statistic").type_choice(statistics)
+  + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
 
-      + Option("nointerp", "do not use trilinear interpolation when sampling image values")
+  + Option ("precise", "use the precise mechanism for mapping streamlines to voxels"
+                       " (obviates the need for trilinear interpolation) "
+                       " (only applicable if some per-streamline statistic is requested)")
 
-      + Option("precise",
-               "use the precise mechanism for mapping streamlines to voxels "
-               "(obviates the need for trilinear interpolation) "
-               "(only applicable if some per-streamline statistic is requested)")
-
-      + Option("use_tdi_fraction",
-               "each streamline is assigned a fraction of the image intensity "
-               "in each voxel based on the fraction of the track density "
-               "contributed by that streamline (this is only appropriate for "
-               "processing a whole-brain tractogram, and images for which the "
-               "quantiative parameter is additive)");
+  + Option ("use_tdi_fraction",
+            "each streamline is assigned a fraction of the image intensity in each voxel"
+            " based on the fraction of the track density contributed by that streamline"
+            " (this is only appropriate for processing a whole-brain tractogram,"
+            " and images for which the quantiative parameter is additive)");
 
   // TODO add support for SH amplitude along tangent
   // TODO add support for reading from fixel image
@@ -83,11 +83,13 @@ void usage() {
   //   (wait until fixel_twi is merged; should simplify)
 
   REFERENCES
-  +"* If using -precise option: " // Internal
-   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-   "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-   "NeuroImage, 2013, 67, 298-312";
+    + "* If using -precise option: " // Internal
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312";
+
 }
+// clang-format on
 
 using value_type = float;
 using vector_type = Eigen::VectorXf;

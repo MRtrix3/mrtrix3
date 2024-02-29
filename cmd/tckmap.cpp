@@ -44,176 +44,185 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 
-const OptionGroup OutputHeaderOption =
-    OptionGroup("Options for the header of the output image")
+// clang-format off
+const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of the output image")
+  + Option ("template", "an image file to be used as a template for the output"
+                        " (the output image will have the same transform and field of view).")
+    + Argument ("image").type_image_in()
+  + Option ("vox", "provide either an isotropic voxel size (in mm),"
+                   " or comma-separated list of 3 voxel dimensions.")
+    + Argument ("size").type_sequence_float()
+  + Option ("datatype", "specify output image data type.")
+    + Argument ("spec").type_choice(DataType::identifiers);
 
-    + Option("template",
-             "an image file to be used as a template for the output (the output image "
-             "will have the same transform and field of view).") +
-    Argument("image").type_image_in()
+const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality of the output image")
+  + Option ("dec",
+      "perform track mapping in directionally-encoded colour (DEC) space")
+  + Option ("dixel",
+      "map streamlines to dixels within each voxel;"
+      " requires either a number of dixels "
+      "(references an internal direction set),"
+      " or a path to a text file containing a set of directions"
+      " stored as azimuth/elevation pairs")
+    + Argument ("path").type_various()
+  + Option ("tod",
+      "generate a Track Orientation Distribution (TOD) in each voxel;"
+      " need to specify the maximum spherical harmonic degree lmax to use"
+      " when generating Apodised Point Spread Functions")
+    + Argument ("lmax").type_integer (2, 20);
 
-    + Option("vox",
-             "provide either an isotropic voxel size (in mm), or comma-separated list "
-             "of 3 voxel dimensions.") +
-    Argument("size").type_sequence_float()
+const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast properties")
+  + Option ("contrast",
+      "define the desired form of contrast for the output image;"
+      " options are: " + join(contrasts, ", ") +
+      " (default: tdi)")
+    + Argument ("type").type_choice(contrasts)
+  + Option ("image",
+      "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast,"
+      " or the spherical harmonics image for 'fod_amp' contrast")
+    + Argument ("image").type_image_in()
+  + Option ("vector_file",
+      "provide the vector data file for generating images with 'vector_file' contrast")
+    + Argument ("path").type_file_in()
+  + Option ("stat_vox",
+      "define the statistic for choosing the final voxel intensities for a given contrast type"
+      " given the individual values from the tracks passing through each voxel."
+      " Options are: " + join(voxel_statistics, ", ") +
+      " (default: sum)")
+    + Argument ("type").type_choice(voxel_statistics)
+  + Option ("stat_tck",
+      "define the statistic for choosing the contribution to be made by each streamline"
+      " as a function of the samples taken along their lengths."
+      " Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types."
+      " Options are: " + join(track_statistics, ", ") +
+      " (default: mean)")
+    + Argument ("type").type_choice(track_statistics)
+  + Option ("fwhm_tck",
+      "when using gaussian-smoothed per-track statistic,"
+      " specify the desired full-width half-maximum of the Gaussian smoothing kernel"
+      " (in mm)")
+    + Argument ("value").type_float(1e-6)
+  + Option ("map_zero",
+      "if a streamline has zero contribution based on the contrast & statistic,"
+      " typically it is not mapped;"
+      " use this option to still contribute to the map even if this is the case"
+      " (these non-contributing voxels can then influence the mean value"
+      " in each voxel of the map)")
+  + Option ("backtrack",
+      "when using -stat_tck ends_*,"
+      " if the streamline endpoint is outside the FoV,"
+      " backtrack along the streamline trajectory until an appropriate point is found");
 
-    + Option("datatype", "specify output image data type.") + Argument("spec").type_choice(DataType::identifiers);
+const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-voxel mapping mechanism")
+  + Option ("upsample",
+      "upsample the tracks by some ratio using Hermite interpolation before mappping"
+      " (if omitted, an appropriate ratio will be determined automatically)")
+    + Argument ("factor").type_integer(1)
+  + Option ("precise",
+      "use a more precise streamline mapping strategy,"
+      " that accurately quantifies the length through each voxel"
+      " (these lengths are then taken into account during TWI calculation)")
+  + Option ("ends_only",
+      "only map the streamline endpoints to the image");
 
-const OptionGroup OutputDimOption =
-    OptionGroup("Options for the dimensionality of the output image")
+void usage () {
 
-    + Option("dec", "perform track mapping in directionally-encoded colour (DEC) space")
-
-    + Option("dixel",
-             "map streamlines to dixels within each voxel; requires either a number of dixels "
-             "(references an internal direction set), or a path to a text file containing a "
-             "set of directions stored as azimuth/elevation pairs") +
-    Argument("path").type_various()
-
-    + Option("tod",
-             "generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum "
-             "spherical harmonic degree lmax to use when generating Apodised Point Spread Functions") +
-    Argument("lmax").type_integer(2, 20);
-
-const OptionGroup TWIOption =
-    OptionGroup("Options for the TWI image contrast properties")
-
-    + Option("contrast",
-             "define the desired form of contrast for the output image\n"
-             "Options are: " +
-                 join(contrasts, ", ") + " (default: tdi)") +
-    Argument("type").type_choice(contrasts)
-
-    + Option("image",
-             "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast, or "
-             "the spherical harmonics image for 'fod_amp' contrast") +
-    Argument("image").type_image_in()
-
-    + Option("vector_file", "provide the vector data file for generating images with 'vector_file' contrast") +
-    Argument("path").type_file_in()
-
-    + Option("stat_vox",
-             "define the statistic for choosing the final voxel intensities for a given contrast "
-             "type given the individual values from the tracks passing through each voxel. \n"
-             "Options are: " +
-                 join(voxel_statistics, ", ") + " (default: sum)") +
-    Argument("type").type_choice(voxel_statistics)
-
-    + Option("stat_tck",
-             "define the statistic for choosing the contribution to be made by each streamline as a "
-             "function of the samples taken along their lengths. \n"
-             "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types. \n"
-             "Options are: " +
-                 join(track_statistics, ", ") + " (default: mean)") +
-    Argument("type").type_choice(track_statistics)
-
-    + Option("fwhm_tck",
-             "when using gaussian-smoothed per-track statistic, specify the "
-             "desired full-width half-maximum of the Gaussian smoothing kernel (in mm)") +
-    Argument("value").type_float(1e-6)
-
-    + Option("map_zero",
-             "if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; "
-             "use this option to still contribute to the map even if this is the case "
-             "(these non-contributing voxels can then influence the mean value in each voxel of the map)")
-
-    + Option("backtrack",
-             "when using -stat_tck ends_*, if the streamline endpoint is outside the FoV, backtrack along "
-             "the streamline trajectory until an appropriate point is found");
-
-const OptionGroup MappingOption =
-    OptionGroup("Options for the streamline-to-voxel mapping mechanism")
-
-    + Option("upsample",
-             "upsample the tracks by some ratio using Hermite interpolation before mappping\n"
-             "(If omitted, an appropriate ratio will be determined automatically)") +
-    Argument("factor").type_integer(1)
-
-    + Option("precise",
-             "use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel "
-             "(these lengths are then taken into account during TWI calculation)")
-
-    + Option("ends_only", "only map the streamline endpoints to the image");
-
-void usage() {
-
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Map streamlines to an image, with various options for generating image contrast";
 
   DESCRIPTION
+  + "The -contrast option controls how a value is derived for each streamline"
+    " that is subsequently contributed to the image elements intersected by that streamline,"
+    " and therefore strongly influences the contrast of that image."
+    " The permissible values are briefly summarised as follows: "
 
-  +"The -contrast option controls how a value is derived for each streamline that is "
-   "subsequently contributed to the image elements intersected by that streamline, and "
-   "therefore strongly influences the contrast of that image. The permissible values "
-   "are briefly summarised as follows: " +
-      "- tdi: Each streamline effectively contributes a value of unity to the final map "
-      "(equivalent to the original Track Density Imaging (TDI) method)" +
-      "- length: The length of the streamline in mm" + "- invlength: The reciprocal of streamline length" +
-      "- scalar_map: Values are sampled from a scalar image (which must be provided via -image)" +
-      "- scalar_map_count: If a non-zero value is sampled from a scalar image (as provided "
-      "via -image), the streamline contributes a value of 1, otherwise it contributes 0, such "
-      "that an image can be produced reflecting the density of streamlines that intersect such "
-      "an image" +
-      "- fod_amp: The amplitudes of a Fibre Orientation Distribution (FOD) image" +
-      "- curvature: The curvature of the streamline" +
-      "- vector_file: A value for each streamline has been pre-calculated, and these are "
-      "provided in a text file via the -vector_file option"
+  + "- tdi: Each streamline effectively contributes a value of unity to the final map"
+    " (equivalent to the original Track Density Imaging (TDI) method)"
 
-      + "A \"super-resolution\" output image can be generated using the -vox option, whether "
-        "or not a template image is provided using the -template option. If -template is used "
-        "in conjunction with -vox, the image axes and FoV will still match that of the template "
-        "image, but the spatial resolution will differ."
+  + "- length: The length of the streamline in mm"
 
-      + "Note: if you run into limitations with RAM usage, try writing the output image "
-        "as a .mif file or .mih / .dat file pair to a local hard drive: this will allow "
-        "tckmap to dump the generated image contents directly to disk, rather than allocating "
-        "an additional buffer to store the output image for write-out, thereby potentially "
-        "halving RAM usage.";
+  + "- invlength: The reciprocal of streamline length"
+
+  + "- scalar_map: Values are sampled from a scalar image"
+    " (which must be provided via -image)"
+
+  + "- scalar_map_count: If a non-zero value is sampled from a scalar image"
+    " (as provided via -image),"
+    " the streamline contributes a value of 1,"
+    " otherwise it contributes 0,"
+    " such that an image can be produced reflecting the density of streamlines that intersect such an image"
+
+  + "- fod_amp: The amplitudes of a Fibre Orientation Distribution (FOD) image"
+
+  + "- curvature: The curvature of the streamline"
+
+  + "- vector_file: A value for each streamline has been pre-calculated,"
+    " and these are provided in a text file via the -vector_file option"
+
+  + "A \"super-resolution\" output image can be generated using the -vox option,"
+    " whether or not a template image is provided using the -template option."
+    " If -template is used in conjunction with -vox,"
+    " the image axes and FoV will still match that of the template image,"
+    " but the spatial resolution will differ."
+
+  + "Note: if you run into limitations with RAM usage,"
+    " make sure you output the results to a .mif file or .mih / .dat file pair;"
+    " this will avoid the allocation of an additional buffer to store the output for write-out.";
 
   REFERENCES
-  +"* For TDI or DEC TDI:\n"
-   "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. " // Internal
-   "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
-   "NeuroImage, 2010, 53, 1233-1243"
+  + "* For TDI or DEC TDI:\n"
+    "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. " // Internal
+    "Track-density imaging (TDI):"
+    " Super-resolution white matter imaging using whole-brain track-density mapping. "
+    "NeuroImage, 2010, 53, 1233-1243"
 
-      + "* If using -contrast length and -stat_vox mean:\n"
-        "Pannek, K.; Mathias, J. L.; Bigler, E. D.; Brown, G.; Taylor, J. D. & Rose, S. E. "
-        "The average pathlength map: A diffusion MRI tractography-derived index for studying brain pathology. "
-        "NeuroImage, 2011, 55, 133-141"
+  + "* If using -contrast length and -stat_vox mean:\n"
+    "Pannek, K.; Mathias, J. L.; Bigler, E. D.; Brown, G.; Taylor, J. D. & Rose, S. E. "
+    "The average pathlength map:"
+    " A diffusion MRI tractography-derived index for studying brain pathology. "
+    "NeuroImage, 2011, 55, 133-141"
 
-      + "* If using -dixel option with TDI contrast only:\n"
-        "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. " // Internal
-        "A novel paradigm for automated segmentation of very large whole-brain probabilistic tractography data sets. "
-        "In proc. ISMRM, 2011, 19, 673"
+  + "* If using -dixel option with TDI contrast only:\n"
+    "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. " // Internal
+    "A novel paradigm for automated segmentation of very large whole-brain probabilistic tractography data sets. "
+    "In proc. ISMRM, 2011, 19, 673"
 
-      + "* If using -dixel option with any other contrast:\n"
-        "Pannek, K., Raffelt, D., Salvado, O., Rose, S. " // Internal
-        "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
-        "In Proc. ISMRM, 2012, 20, 1912"
+  + "* If using -dixel option with any other contrast:\n"
+    "Pannek, K., Raffelt, D., Salvado, O., Rose, S. " // Internal
+    "Incorporating directional information in diffusion tractography derived maps:"
+    " angular track imaging (ATI). "
+    "In Proc. ISMRM, 2012, 20, 1912"
 
-      + "* If using -tod option:\n"
-        "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. " // Internal
-        "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
-        "NeuroImage, 2014, 94, 312-336"
+  + "* If using -tod option:\n"
+    "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. " // Internal
+    "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
+    "NeuroImage, 2014, 94, 312-336"
 
-      + "* If using other contrasts / statistics:\n"
-        "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. " // Internal
-        "A generalised framework for super-resolution track-weighted imaging. "
-        "NeuroImage, 2012, 59, 2494-2503"
+  + "* If using other contrasts / statistics:\n"
+    "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. " // Internal
+    "A generalised framework for super-resolution track-weighted imaging. "
+    "NeuroImage, 2012, 59, 2494-2503"
 
-      + "* If using -precise mapping option:\n"
-        "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-        "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-        "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
+  + "* If using -precise mapping option:\n"
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
   ARGUMENTS
-  +Argument("tracks", "the input track file.").type_file_in() +
-      Argument("output", "the output track-weighted image").type_image_out();
+  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("output", "the output track-weighted image").type_image_out();
 
   OPTIONS
-  +OutputHeaderOption + OutputDimOption + TWIOption + MappingOption + Tractography::TrackWeightsInOption;
+  + OutputHeaderOption
+  + OutputDimOption
+  + TWIOption
+  + MappingOption
+  + Tractography::TrackWeightsInOption;
+
 }
+// clang-format on
 
 MapWriterBase *make_writer(Header &H, const std::string &name, const vox_stat_t stat_vox, const writer_dim dim) {
   MapWriterBase *writer = nullptr;

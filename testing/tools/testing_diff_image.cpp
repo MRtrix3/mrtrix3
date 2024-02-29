@@ -24,18 +24,24 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Robert E. "
-           "Smith (robert.smith@florey.edu.au)";
+
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)"
+           " and David Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two images for differences, optionally with a specified tolerance";
 
   ARGUMENTS
-  +Argument("data1", "an image.").type_image_in() + Argument("data2", "another image.").type_image_in();
+  + Argument ("data1", "an image.").type_image_in()
+  + Argument ("data2", "another image.").type_image_in();
 
   OPTIONS
-  +Testing::Diff_Image_Options;
+  + Testing::Diff_Image_Options;
+
 }
+// clang-format on
 
 void run() {
   auto in1 = Image<cdouble>::open(argument[0]);

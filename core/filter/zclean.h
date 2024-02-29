@@ -28,8 +28,7 @@
 #include "memory.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 class ZClean : public Base {
 
@@ -303,7 +302,6 @@ protected:
   }
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

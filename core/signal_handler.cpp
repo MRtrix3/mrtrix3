@@ -29,8 +29,7 @@
 #define STDERR_FILENO 2
 #endif
 
-namespace MR {
-namespace SignalHandler {
+namespace MR::SignalHandler {
 
 namespace {
 std::vector<cleanup_function_type> cleanup_operations;
@@ -138,5 +137,4 @@ void unmark_file_for_deletion(const std::string &filename) {
   flag.clear();
 }
 
-} // namespace SignalHandler
-} // namespace MR
+} // namespace MR::SignalHandler

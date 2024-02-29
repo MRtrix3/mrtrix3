@@ -22,8 +22,7 @@
 #include "image_io/base.h"
 #include "types.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 class PNG : public Base {
 public:
@@ -34,8 +33,7 @@ protected:
   virtual void unload(const Header &);
 };
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO
 
 #endif
 #endif

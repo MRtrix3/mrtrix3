@@ -23,10 +23,7 @@
 #include "dwi/tractography/connectome/streamline.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 class Exemplar : private Tractography::Streamline<float> {
 public:
@@ -81,9 +78,6 @@ private:
   void add(const Tractography::Streamline<float> &, const bool is_reversed);
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome
 
 #endif

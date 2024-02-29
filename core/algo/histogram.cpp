@@ -17,24 +17,21 @@
 #include "algo/histogram.h"
 #include "file/matrix.h"
 
-namespace MR {
-namespace Algo {
-namespace Histogram {
+namespace MR::Algo::Histogram {
 
 using namespace App;
 
+// clang-format off
 const OptionGroup Options =
     OptionGroup("Histogram generation options")
-
-    + Option("bins", "Manually set the number of bins to use to generate the histogram.") +
-    Argument("num").type_integer(2)
-
-    + Option("template", "Use an existing histogram file as the template for histogram formation") +
-    Argument("file").type_file_in()
-
-    + Option("mask", "Calculate the histogram only within a mask image.") + Argument("image").type_image_in()
-
+    + Option("bins", "Manually set the number of bins to use to generate the histogram.")
+      + Argument("num").type_integer(2)
+    + Option("template", "Use an existing histogram file as the template for histogram formation")
+      + Argument("file").type_file_in()
+    + Option("mask", "Calculate the histogram only within a mask image.")
+      + Argument("image").type_image_in()
     + Option("ignorezero", "ignore zero-valued data during histogram construction.");
+// clang-format on
 
 void Calibrator::from_file(const std::string &path) {
   Eigen::MatrixXd M;
@@ -178,6 +175,4 @@ default_type Matcher::operator()(const default_type in) const {
   return calib_target.get_min() + (output_pos * calib_target.get_bin_width());
 }
 
-} // namespace Histogram
-} // namespace Algo
-} // namespace MR
+} // namespace MR::Algo::Histogram

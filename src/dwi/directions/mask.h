@@ -23,9 +23,7 @@
 
 #include "dwi/directions/set.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 class Mask : public BitSet {
 
@@ -46,8 +44,6 @@ private:
   const Set *dirs;
 };
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Directions
 
 #endif

@@ -21,10 +21,7 @@
 #include "dwi/tractography/properties.h"
 #include "memory.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 
 class ACT_Shared_additions {
 
@@ -54,9 +51,6 @@ protected:
   friend class ACT_Method_additions;
 };
 
-} // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::ACT
 
 #endif

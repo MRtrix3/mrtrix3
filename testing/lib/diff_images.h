@@ -26,16 +26,20 @@
 
 #include "adapter/replicate.h"
 
-namespace MR {
-namespace Testing {
+namespace MR::Testing {
 
+// clang-format off
 const App::OptionGroup Diff_Image_Options =
-    App::OptionGroup("Testing image options") + App::Option("abs", "specify an absolute tolerance") +
-    App::Argument("tolerance").type_float(0.0) + App::Option("frac", "specify a fractional tolerance") +
-    App::Argument("tolerance").type_float(0.0) + App::Option("image", "specify an image containing the tolerances") +
-    App::Argument("path").type_image_in() +
-    App::Option("voxel", "specify a fractional tolerance relative to the maximum value in the voxel") +
-    App::Argument("tolerance").type_float(0.0);
+    App::OptionGroup ("Testing image options")
+    + App::Option ("abs", "specify an absolute tolerance")
+      + App::Argument ("tolerance").type_float(0.0)
+    + App::Option ("frac", "specify a fractional tolerance")
+      + App::Argument ("tolerance").type_float(0.0)
+    + App::Option ("image", "specify an image containing the tolerances")
+      + App::Argument ("path").type_image_in()
+    + App::Option ("voxel", "specify a fractional tolerance relative to the maximum value in the voxel")
+      + App::Argument ("tolerance").type_float(0.0);
+// clang-format on
 
 template <class ImageType1, class ImageType2> void diff_images(ImageType1 &in1, ImageType2 &in2) {
 
@@ -58,7 +62,6 @@ template <class ImageType1, class ImageType2> void diff_images(ImageType1 &in1, 
     check_images_abs(in1, in2, 0.0);
   }
 }
-} // namespace Testing
-} // namespace MR
+} // namespace MR::Testing
 
 #endif

@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/tracking/shared.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
     : source(Image<float>::open(diff_path).with_direct_io(3)),
@@ -365,7 +362,4 @@ void SharedBase::add_termination(const term_t i, const Eigen::Vector3f &p) const
 }
 #endif
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking

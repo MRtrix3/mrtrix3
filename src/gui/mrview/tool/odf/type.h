@@ -23,16 +23,13 @@ namespace MR {
 
 class Header;
 
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace GUI::MRView::Tool {
 
 // TODO Remove
 using odf_type_t = GUI::DWI::Renderer::mode_t;
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
+} // namespace GUI::MRView::Tool
+
 } // namespace MR
 
 #endif

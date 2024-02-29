@@ -16,11 +16,7 @@
 
 #include "dwi/tractography/mapping/gaussian/mapper.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
-namespace Gaussian {
+namespace MR::DWI::Tractography::Mapping::Gaussian {
 
 void TrackMapper::set_factor(const Streamline<> &tck, SetVoxelExtras &out) const {
   factors.clear();
@@ -69,8 +65,4 @@ void TrackMapper::gaussian_smooth_factors(const Streamline<> &tck) const {
   }
 }
 
-} // namespace Gaussian
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping::Gaussian

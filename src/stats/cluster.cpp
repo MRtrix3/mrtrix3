@@ -16,9 +16,7 @@
 
 #include "stats/cluster.h"
 
-namespace MR {
-namespace Stats {
-namespace Cluster {
+namespace MR::Stats::Cluster {
 
 void ClusterSize::operator()(in_column_type input, const value_type T, out_column_type output) const {
   std::vector<Filter::Connector::Cluster> clusters;
@@ -29,6 +27,4 @@ void ClusterSize::operator()(in_column_type input, const value_type T, out_colum
     output[i] = labels[i] ? clusters[labels[i] - 1].size : 0.0;
 }
 
-} // namespace Cluster
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats::Cluster

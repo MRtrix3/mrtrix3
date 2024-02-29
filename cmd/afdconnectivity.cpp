@@ -29,65 +29,80 @@ using namespace MR;
 using namespace MR::DWI;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
+
+  SYNOPSIS = "Obtain an estimate of fibre connectivity between two regions"
+             " using AFD and streamlines tractography";
 
   DESCRIPTION
-  +"This estimate is obtained by determining a fibre volume (AFD) occupied by the pathway "
-   "of interest, and dividing by the streamline length."
+  + "This estimate is obtained by determining a fibre volume (AFD)"
+    " occupied by the pathway of interest,"
+    " and dividing by the streamline length."
 
-      + "If only the streamlines belonging to the pathway of interest are provided, then "
-        "ALL of the fibre volume within each fixel selected will contribute to the result. "
-        "If the -wbft option is used to provide whole-brain fibre-tracking (of which the pathway of "
-        "interest should contain a subset), only the fraction of the fibre volume in each fixel "
-        "estimated to belong to the pathway of interest will contribute to the result."
+  + "If only the streamlines belonging to the pathway of interest are provided,"
+    " then ALL of the fibre volume within each fixel selected will contribute to the result."
+    " If the -wbft option is used to provide whole-brain fibre-tracking"
+    " (of which the pathway of interest should contain a subset),"
+    " only the fraction of the fibre volume in each fixel"
+    " estimated to belong to the pathway of interest"
+    " will contribute to the result."
 
-      + "Use -quiet to suppress progress messages and output fibre connectivity value only."
+  + "Use -quiet to suppress progress messages and output fibre connectivity value only."
 
-      + "For valid comparisons of AFD connectivity across scans, images MUST be intensity "
-        "normalised and bias field corrected, and a common response function for all subjects "
-        "must be used."
+  + "For valid comparisons of AFD connectivity across scans,"
+    " images MUST be intensity normalised and bias field corrected,"
+    " and a common response function for all subjects must be used."
 
-      + "Note that the sum of the AFD is normalised by streamline length to "
-        "account for subject differences in fibre bundle length. This normalisation results in a measure "
-        "that is more related to the cross-sectional volume of the tract (and therefore 'connectivity'). "
-        "Note that SIFT-ed tract count is a superior measure because it is unaffected by tangential yet unrelated "
-        "fibres. However, AFD connectivity may be used as a substitute when Anatomically Constrained Tractography "
-        "is not possible due to uncorrectable EPI distortions, and SIFT may therefore not be as effective."
+  + "Note that the sum of the AFD is normalised by streamline length"
+    " to account for subject differences in fibre bundle length."
+    " This normalisation results in a measure that is more related to"
+    " the cross-sectional volume of the tract"
+    " (and therefore 'connectivity')."
+    " Note that SIFT-ed tract count is a superior measure"
+    " because it is unaffected by tangential yet unrelated fibres."
+    " However, AFD connectivity may be used as a substitute"
+    " when Anatomically Constrained Tractography is not possible due to uncorrectable EPI distortions,"
+    " and SIFT may therefore not be as effective."
 
-      + "Longer discussion regarding this command can additionally be found at: "
-        "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/afd_connectivity.html "
-        "(as well as in the relevant reference).";
+  + "Longer discussion regarding this command can additionally be found at: "
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/afd_connectivity.html "
+    "(as well as in the relevant reference).";
+
 
   REFERENCES
-  +"Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. " // Internal
-   "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
-   "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+  + "Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. " // Internal
+    "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
+    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+
 
   ARGUMENTS
-  +Argument("image", "the input FOD image.").type_image_in()
+  + Argument ("image", "the input FOD image.").type_image_in()
 
-      + Argument("tracks", "the input track file defining the bundle of interest.").type_tracks_in();
+  + Argument ("tracks", "the input track file defining the bundle of interest.").type_tracks_in();
 
   OPTIONS
-  +Option("wbft",
-          "provide a whole-brain fibre-tracking data set (of which the input track file "
-          "should be a subset), to improve the estimate of fibre bundle volume in the "
-          "presence of partial volume") +
-      Argument("tracks").type_tracks_in()
+  + Option ("wbft", "provide a whole-brain fibre-tracking data set"
+                    " (of which the input track file should be a subset)"
+                    ", to improve the estimate of fibre bundle volume in the presence of partial volume")
+    + Argument ("tracks").type_tracks_in()
 
-      + Option("afd_map", "output a 3D image containing the AFD estimated for each voxel.") +
-      Argument("image").type_image_out()
+  + Option ("afd_map", "output a 3D image containing the AFD estimated for each voxel.")
+    + Argument ("image").type_image_out()
 
-      + Option("all_fixels",
-               "if whole-brain fibre-tracking is NOT provided, then if multiple fixels within "
-               "a voxel are traversed by the pathway of interest, by default the fixel with the "
-               "greatest streamlines density is selected to contribute to the AFD in that voxel. "
-               "If this option is provided, then ALL fixels with non-zero streamlines density "
-               "will contribute to the result, even if multiple fixels per voxel are selected.");
+  + Option ("all_fixels", "if whole-brain fibre-tracking is NOT provided,"
+                          " then if multiple fixels within a voxel are traversed by the pathway of interest,"
+                          " by default the fixel with the greatest streamlines density"
+                          " is selected to contribute to the AFD in that voxel."
+                          " If this option is provided,"
+                          " then ALL fixels with non-zero streamlines density will contribute to the result,"
+                          " even if multiple fixels per voxel are selected.");
+
 }
+// clang-format on
 
 using value_type = float;
 using DWI::Tractography::Mapping::SetDixel;

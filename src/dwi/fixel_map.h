@@ -23,8 +23,7 @@
 #include "header.h"
 #include "image.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 template <class Fixel> class Fixel_map {
 
@@ -164,7 +163,6 @@ template <class Fixel> bool Fixel_map<Fixel>::operator()(const FMLS::FOD_lobes &
   return true;
 }
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI
 
 #endif

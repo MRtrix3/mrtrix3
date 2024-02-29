@@ -23,9 +23,7 @@
 #include "file/dicom/study.h"
 #include "file/path.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 std::shared_ptr<Patient>
 Tree::find(const std::string &patient_name, const std::string &patient_ID, const std::string &patient_DOB) {
@@ -128,6 +126,4 @@ std::ostream &operator<<(std::ostream &stream, const Tree &item) {
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

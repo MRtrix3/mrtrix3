@@ -18,10 +18,7 @@
 
 #include "misc/bitset.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 bool Selector::operator()(const node_t node) const {
   for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
@@ -274,7 +271,4 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) con
   return true;
 }
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome

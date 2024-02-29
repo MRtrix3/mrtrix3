@@ -26,10 +26,7 @@
 
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 // Provides a common interface for assigning a streamline to the relevant parcellation node pair
 // Note that this class is NOT copy-constructed, so derivative classes must be thread-safe
@@ -184,9 +181,6 @@ private:
   void select_nodes(const Streamline<> &, Image<node_t> &, std::vector<node_t> &) const override;
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome
 
 #endif

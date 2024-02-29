@@ -22,19 +22,23 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Print out the locations of all non-zero voxels in a mask image";
 
   DESCRIPTION
-  +"If no destination file is specified, the voxel locations will be "
-   "printed to stdout.";
+  + "If no destination file is specified,"
+    " the voxel locations will be printed to stdout.";
 
   ARGUMENTS
-  +Argument("input", "the input image.").type_image_in() +
-      Argument("output", "the (optional) output text file.").type_file_out().optional();
+  + Argument ("input",  "the input image.").type_image_in()
+  + Argument ("output", "the (optional) output text file.").type_file_out().optional();
+
 }
+// clang-format on
 
 void run() {
   auto H = Header::open(argument[0]);

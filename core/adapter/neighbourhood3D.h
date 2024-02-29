@@ -20,8 +20,7 @@
 #include "adapter/base.h"
 #include "image.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class NeighbourhoodCoord : public Base<NeighbourhoodCoord<ImageType>, ImageType> {
 public:
@@ -72,7 +71,6 @@ protected:
   transform_type transform_;
 };
 
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

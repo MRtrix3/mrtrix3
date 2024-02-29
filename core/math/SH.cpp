@@ -17,9 +17,7 @@
 #include "math/SH.h"
 #include "version.h"
 
-namespace MR {
-namespace Math {
-namespace SH {
+namespace MR::Math::SH {
 
 const char *encoding_description =
     "The spherical harmonic coefficients are stored according to the conventions "
@@ -27,5 +25,3 @@ const char *encoding_description =
     "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/spherical_harmonics.html";
 
 }
-} // namespace Math
-} // namespace MR

@@ -68,9 +68,7 @@
     std::cerr << "\n";                                                                                                 \
   }
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 using Area = QOpenGLWidget;
 using Format = QSurfaceFormat;
@@ -398,8 +396,6 @@ protected:
   GLuint id;
 };
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::GL
 
 #endif

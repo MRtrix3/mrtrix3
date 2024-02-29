@@ -23,8 +23,7 @@
 namespace MR {
 class Header;
 
-namespace GUI {
-namespace Dialog {
+namespace GUI::Dialog {
 class TreeModel;
 
 class ImageProperties : public QDialog {
@@ -44,8 +43,8 @@ private:
   Eigen::MatrixXd save_data;
 };
 
-} // namespace Dialog
-} // namespace GUI
+} // namespace GUI::Dialog
+
 } // namespace MR
 
 #endif

@@ -16,8 +16,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 //! Compute the inverse of the error function
 /**  Implementation based on Boost Math (https://github.com/boostorg/math)
@@ -40,5 +39,4 @@ default_type erfinv(const default_type);
 //*  Implementation based on Boost Math (https://github.com/boostorg/math) */
 default_type erfcinv(const default_type);
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math

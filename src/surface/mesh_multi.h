@@ -21,8 +21,7 @@
 
 #include "surface/mesh.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 // Class to handle multiple meshes per file
 // For now, this will only be supported using the .obj file type
@@ -38,7 +37,6 @@ public:
   void save(const std::string &) const;
 };
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface
 
 #endif

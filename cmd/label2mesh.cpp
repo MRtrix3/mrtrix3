@@ -35,6 +35,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -42,14 +43,15 @@ void usage() {
   SYNOPSIS = "Generate meshes from a label image";
 
   ARGUMENTS
-  +Argument("nodes_in", "the input node parcellation image").type_image_in() +
-      Argument("mesh_out", "the output mesh file").type_file_out();
+  + Argument ("nodes_in", "the input node parcellation image").type_image_in()
+  + Argument ("mesh_out", "the output mesh file").type_file_out();
 
   OPTIONS
-  +Option("blocky",
-          "generate 'blocky' meshes with precise delineation of voxel edges, "
-          "rather than the default Marching Cubes approach");
+  + Option ("blocky", "generate 'blocky' meshes with precise delineation of voxel edges,"
+                      " rather than the default Marching Cubes approach");
+
 }
+// clang-format on
 
 void run() {
 

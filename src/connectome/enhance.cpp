@@ -21,9 +21,7 @@
 
 #include "misc/bitset.h"
 
-namespace MR {
-namespace Connectome {
-namespace Enhance {
+namespace MR::Connectome::Enhance {
 
 void PassThrough::operator()(in_column_type in, out_column_type out) const { out = in; }
 
@@ -84,6 +82,4 @@ void NBS::initialise(const node_t num_nodes) {
   }
 }
 
-} // namespace Enhance
-} // namespace Connectome
-} // namespace MR
+} // namespace MR::Connectome::Enhance

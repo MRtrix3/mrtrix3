@@ -20,10 +20,7 @@
 #include "file/path.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
-namespace File {
+namespace MR::GUI::Dialog::File {
 
 extern const std::string image_filter_string;
 void check_overwrite_files_func(const std::string &name);
@@ -58,9 +55,6 @@ inline std::string get_save_image_name(QWidget *parent,
   return get_save_name(parent, caption, suggested_name, image_filter_string, folder);
 }
 
-} // namespace File
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog::File
 
 #endif

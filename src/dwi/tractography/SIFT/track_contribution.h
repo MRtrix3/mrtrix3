@@ -24,10 +24,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 class Track_fixel_contribution {
 public:
@@ -121,9 +118,6 @@ private:
   const float total_contribution, total_length;
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT
 
 #endif

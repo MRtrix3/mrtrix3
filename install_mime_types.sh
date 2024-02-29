@@ -16,11 +16,11 @@
 # For more details, see http://www.mrtrix.org/.
 
 for s in 16 32 48 64 128; do
-  xdg-icon-resource install --context apps --size $s icons/desktop/${s}x${s}/mrtrix.png application-x-mrtrix
-  xdg-icon-resource install --context mimetypes --size $s icons/desktop/${s}x${s}/mrtrix.png x-mrtrix
+  xdg-icon-resource install --context apps --size $s share/icons/hicolor/${s}x${s}/apps/application-x-mrtrix.png application-x-mrtrix
+  xdg-icon-resource install --context mimetypes --size $s share/icons/hicolor/${s}x${s}/apps/application-x-mrtrix.png x-mrtrix
 done
 
-xdg-mime install mrtrix-mime.xml
-sed s^Exec=mrview^Exec=$(pwd)/bin/mrview^ < mrview.desktop > mrtrix-mrview.desktop
+xdg-mime install share/mime/mrtrix-mime.xml
+sed s^Exec=mrview^Exec=$(pwd)/bin/mrview^ < 'share/applications/mrview.desktop' > mrtrix-mrview.desktop
 xdg-desktop-menu install mrtrix-mrview.desktop
 

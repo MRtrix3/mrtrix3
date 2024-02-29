@@ -30,9 +30,7 @@
 #include "raw.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace NPY {
+namespace MR::File::NPY {
 
 constexpr unsigned char magic_string[] = "\x93NUMPY";
 constexpr size_t alignment = 16;
@@ -121,8 +119,6 @@ template <class ContType> void save_matrix(const ContType &data, const std::stri
     }
 }
 
-} // namespace NPY
-} // namespace File
-} // namespace MR
+} // namespace MR::File::NPY
 
 #endif

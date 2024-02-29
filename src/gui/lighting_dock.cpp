@@ -20,8 +20,7 @@
 #include "gui/gui.h"
 #include "math/math.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 LightingSettings::LightingSettings(QWidget *parent, GL::Lighting &lighting) : QFrame(parent), info(lighting) {
   QVBoxLayout *main_box = new QVBoxLayout;
   setLayout(main_box);
@@ -118,5 +117,4 @@ LightingDock::LightingDock(const std::string &title, GL::Lighting &lighting)
     : QDockWidget(qstr(title)), settings(new LightingSettings(this, lighting)) {
   setWidget(settings);
 }
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI

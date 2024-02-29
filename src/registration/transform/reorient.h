@@ -23,9 +23,7 @@
 #include "math/least_squares.h"
 #include "registration/multi_contrast.h"
 
-namespace MR {
-namespace Registration {
-namespace Transform {
+namespace MR::Registration::Transform {
 
 FORCE_INLINE Eigen::MatrixXd aPSF_weights_to_FOD_transform(const int num_SH, const Eigen::MatrixXd &directions) {
   const size_t lmax = Math::SH::LforN(num_SH);
@@ -386,8 +384,6 @@ void reorient_warp(FODImageType &fod_image,
   }
 }
 
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Transform
 
 #endif

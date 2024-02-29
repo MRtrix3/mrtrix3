@@ -19,8 +19,7 @@
 
 #include "math/stats/typedefs.h"
 
-namespace MR {
-namespace Stats {
+namespace MR::Stats {
 
 // This class defines the standardised interface by which statistical enhancement
 //   is performed.
@@ -43,7 +42,6 @@ protected:
   virtual void operator()(in_column_type, out_column_type) const = 0;
 };
 
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats
 
 #endif

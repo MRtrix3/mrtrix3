@@ -26,9 +26,7 @@
 #define ROTATION_INC 0.002
 #define MOVE_IN_OUT_FOV_MULTIPLIER 1.0e-3f
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 namespace Tool {
 class Dock;
@@ -226,8 +224,6 @@ public:
 
 } // namespace Mode
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView
 
 #endif

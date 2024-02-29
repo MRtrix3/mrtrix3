@@ -23,9 +23,7 @@
 
 #include "stats/enhance.h"
 
-namespace MR {
-namespace Stats {
-namespace TFCE {
+namespace MR::Stats::TFCE {
 
 const App::OptionGroup Options(const default_type, const default_type, const default_type);
 
@@ -72,8 +70,6 @@ private:
   void operator()(in_column_type, out_column_type) const override;
 };
 
-} // namespace TFCE
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats::TFCE
 
 #endif

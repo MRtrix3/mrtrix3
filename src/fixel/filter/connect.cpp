@@ -23,9 +23,7 @@
 #include "misc/bitset.h"
 #include "types.h"
 
-namespace MR {
-namespace Fixel {
-namespace Filter {
+namespace MR::Fixel::Filter {
 
 void Connect::operator()(Image<float> &input, Image<float> &output) const {
   Fixel::check_data_file(input);
@@ -99,6 +97,4 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
     output.value() = index_remapper[output.value()];
 }
 
-} // namespace Filter
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Filter

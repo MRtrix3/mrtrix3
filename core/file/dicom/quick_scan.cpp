@@ -20,9 +20,7 @@
 #include "file/dicom/definitions.h"
 #include "file/dicom/element.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 bool QuickScan::read(
     const std::string &file_name, bool print_DICOM_fields, bool print_CSA_fields, bool print_Phoenix, bool force_read) {
@@ -167,6 +165,4 @@ std::ostream &operator<<(std::ostream &stream, const QuickScan &file) {
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

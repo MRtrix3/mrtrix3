@@ -59,9 +59,7 @@
 #define ELEMENT_SEQUENCE_DELIMITATION_ITEM 0xE0DDU
 #define ELEMENT_DATA 0x0010U
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 inline std::string format_date(const std::string &date) {
   if (date.empty() || date.size() < 8)
@@ -81,8 +79,6 @@ inline std::string format_ID(const std::string &ID) {
   return "(" + ID + ")";
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom
 
 #endif

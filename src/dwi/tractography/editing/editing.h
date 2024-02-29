@@ -21,10 +21,7 @@
 
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 extern const App::OptionGroup LengthOption;
 extern const App::OptionGroup TruncateOption;
@@ -32,9 +29,6 @@ extern const App::OptionGroup WeightsOption;
 
 void load_properties(Tractography::Properties &);
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Editing
 
 #endif

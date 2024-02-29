@@ -20,10 +20,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 NodeOverlay::NodeOverlay(MR::Header &&H)
     : MR::GUI::MRView::ImageBase(std::move(H)),
@@ -124,7 +121,4 @@ std::string NodeOverlay::Shader::fragment_shader_source(const Displayable &objec
   return source;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

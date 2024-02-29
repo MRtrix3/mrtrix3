@@ -26,9 +26,7 @@
 #include "stats/enhance.h"
 #include "stats/tfce.h"
 
-namespace MR {
-namespace Connectome {
-namespace Enhance {
+namespace MR::Connectome::Enhance {
 
 using value_type = Math::Stats::value_type;
 
@@ -64,8 +62,6 @@ private:
   void initialise(const node_t);
 };
 
-} // namespace Enhance
-} // namespace Connectome
-} // namespace MR
+} // namespace MR::Connectome::Enhance
 
 #endif

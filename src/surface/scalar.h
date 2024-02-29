@@ -19,8 +19,7 @@
 
 #include "surface/mesh.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 class Scalar : public Eigen::Array<default_type, Eigen::Dynamic, 1> {
 
@@ -64,7 +63,6 @@ private:
   void load_fs_curv(const std::string &, const Mesh &);
 };
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface
 
 #endif

@@ -25,8 +25,7 @@
 #include "math/golden_section_search.h"
 #include "memory.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 //! \cond skip
 namespace {
@@ -242,7 +241,6 @@ public:
   }
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

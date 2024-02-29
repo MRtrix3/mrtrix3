@@ -21,9 +21,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 // Base class for storing an index alongside either streamline vertex or track scalar data
 //
@@ -118,8 +116,6 @@ template <typename PointType> typename PointType::Scalar length(const std::vecto
   return value;
 }
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography
 
 #endif

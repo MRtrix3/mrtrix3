@@ -18,9 +18,7 @@
 #include "debug.h"
 #include "math/math.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 namespace {
 
@@ -230,6 +228,4 @@ void Font::render(const std::string &text, int x, int y) const {
   GL_CHECK_ERROR;
 }
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::GL

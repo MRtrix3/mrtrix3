@@ -20,10 +20,7 @@
 #include "gui/mrview/tool/roi_editor/undoentry.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 std::unique_ptr<ROI_UndoEntry::Shared> ROI_UndoEntry::shared;
 
@@ -508,7 +505,4 @@ void ROI_UndoEntry::copy(ROI_Item &roi, ROI_UndoEntry &source) {
   GL::assert_context_is_current();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

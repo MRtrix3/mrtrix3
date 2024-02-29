@@ -25,8 +25,7 @@
 #include "transform.h"
 #include "types.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 namespace {
 // Partial specialisation for boolean value_type in order to avoid compiler
@@ -218,7 +217,6 @@ private:
 
 //! @}
 
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

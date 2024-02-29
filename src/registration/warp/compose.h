@@ -25,9 +25,7 @@
 #include "registration/warp/helpers.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-namespace Warp {
+namespace MR::Registration::Warp {
 
 class ComposeLinearDeformKernel {
 public:
@@ -295,8 +293,6 @@ FORCE_INLINE WarpType compute_full_deformation(WarpType &warp, TemplateType &tem
   return deform;
 }
 
-} // namespace Warp
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Warp
 
 #endif

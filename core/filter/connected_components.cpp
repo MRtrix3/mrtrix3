@@ -16,8 +16,7 @@
 
 #include "filter/connected_components.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &v2v) {
   data.clear();
@@ -131,5 +130,4 @@ void Connector::depth_first_search(const uint32_t root, Cluster &cluster, std::v
   }
 }
 
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter

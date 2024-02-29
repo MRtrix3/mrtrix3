@@ -20,9 +20,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 
-namespace MR {
-namespace GUI {
-namespace Shapes {
+namespace MR::GUI::Shapes {
 
 class Cylinder {
 public:
@@ -35,8 +33,6 @@ public:
   GL::IndexBuffer index_buffer;
 };
 
-} // namespace Shapes
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Shapes
 
 #endif

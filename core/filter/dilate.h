@@ -23,8 +23,7 @@
 #include "image.h"
 #include "memory.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 /** \addtogroup Filters
   @{ */
@@ -125,7 +124,6 @@ protected:
   unsigned int npass;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

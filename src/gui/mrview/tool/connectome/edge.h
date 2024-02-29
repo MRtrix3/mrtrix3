@@ -24,10 +24,7 @@
 #include "gui/opengl/gl.h"
 #include "math/math.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Connectome;
 
@@ -250,9 +247,6 @@ private:
   std::unique_ptr<Streamtube> streamtube;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

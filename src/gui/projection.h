@@ -23,8 +23,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/transformation.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 const int TopEdge = 0x00000001;
 const int BottomEdge = 0x00000002;
@@ -262,7 +261,6 @@ protected:
   std::shared_ptr<Crosshair> crosshair;
 };
 
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

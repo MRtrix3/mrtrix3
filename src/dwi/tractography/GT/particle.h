@@ -19,10 +19,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 using Point_t = Eigen::Vector3f;
 
@@ -171,9 +168,6 @@ struct ParticleEnd {
   double p_suc = 1.0;
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT
 
 #endif // __gt_particle_h__

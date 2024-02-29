@@ -32,36 +32,46 @@ using namespace App;
 #define VALUE_DEFAULT_CSF 0.15
 #define VALUE_DEFAULT_PATH 2.0
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Generate an image for visualisation purposes from an ACT 5TT segmented anatomical image";
+  SYNOPSIS = "Generate an image for visualisation purposes"
+             " from an ACT 5TT segmented anatomical image";
 
   ARGUMENTS
-  +Argument("input", "the input 4D tissue-segmented image").type_image_in() +
-      Argument("output", "the output 3D image for visualisation").type_image_out();
+  + Argument ("input",  "the input 4D tissue-segmented image").type_image_in()
+  + Argument ("output", "the output 3D image for visualisation").type_image_out();
 
   OPTIONS
 
-  +Option("bg", "image intensity of background (default: " + str(VALUE_DEFAULT_BG, 2) + ")") +
-      Argument("value").type_float(0.0, 1.0)
+  + Option ("bg", "image intensity of background"
+                  " (default: " + str(VALUE_DEFAULT_BG, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-      + Option("cgm", "image intensity of cortical grey matter (default: " + str(VALUE_DEFAULT_CGM, 2) + ")") +
-      Argument("value").type_float(0.0, 1.0)
+  + Option ("cgm", "image intensity of cortical grey matter"
+                   " (default: " + str(VALUE_DEFAULT_CGM, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-      + Option("sgm", "image intensity of sub-cortical grey matter (default: " + str(VALUE_DEFAULT_SGM, 2) + ")") +
-      Argument("value").type_float(0.0, 1.0)
+  + Option ("sgm", "image intensity of sub-cortical grey matter"
+                   " (default: " + str(VALUE_DEFAULT_SGM, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-      + Option("wm", "image intensity of white matter (default: " + str(VALUE_DEFAULT_WM, 2) + ")") +
-      Argument("value").type_float(0.0, 1.0)
+  + Option ("wm", "image intensity of white matter"
+                  " (default: " + str(VALUE_DEFAULT_WM, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-      + Option("csf", "image intensity of CSF (default: " + str(VALUE_DEFAULT_CSF, 2) + ")") +
-      Argument("value").type_float(0.0, 1.0)
+  + Option ("csf", "image intensity of CSF"
+                   " (default: " + str(VALUE_DEFAULT_CSF, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-      + Option("path", "image intensity of pathological tissue (default: " + str(VALUE_DEFAULT_PATH, 2) + ")") +
-      Argument("value").type_float(0.0, 10.0);
+  + Option ("path", "image intensity of pathological tissue"
+                    " (default: " + str(VALUE_DEFAULT_PATH, 2) + ")")
+    + Argument ("value").type_float (0.0, 10.0);
+
 }
+// clang-format on
 
 void run() {
 

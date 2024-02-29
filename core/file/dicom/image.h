@@ -23,9 +23,7 @@
 #include "file/dicom/element.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class Series;
 class Element;
@@ -158,8 +156,6 @@ public:
   friend std::ostream &operator<<(std::ostream &stream, const Image &item);
 };
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom
 
 #endif

@@ -72,9 +72,7 @@ static GLuint initial_indices[NUM_INDICES][3] = {
 
 } // namespace
 
-namespace MR {
-namespace GUI {
-namespace Shapes {
+namespace MR::GUI::Shapes {
 
 namespace {
 
@@ -182,6 +180,4 @@ void Sphere::LOD(const size_t level_of_detail) {
   gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(Triangle), &indices[0], gl::STATIC_DRAW);
 }
 
-} // namespace Shapes
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Shapes

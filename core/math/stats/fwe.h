@@ -19,14 +19,10 @@
 
 #include "math/stats/typedefs.h"
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 matrix_type fwe_pvalue(const matrix_type &null_dist, const matrix_type &stats);
 
 }
-} // namespace Math
-} // namespace MR
 
 #endif

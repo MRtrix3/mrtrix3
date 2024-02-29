@@ -21,12 +21,18 @@ Usage
 Description
 -----------
 
-This script concatenates two or more 4D DWI series, accounting for the fact that there may be differences in intensity scaling between those series. This intensity scaling is corrected by determining scaling factors that will make the overall image intensities in the b=0 volumes of each series approximately equivalent.
+This script concatenates two or more 4D DWI series, accounting for various detrimental confounds that may affect such an operation. Each of those confounds are described in separate paragraphs below.
+
+There may be differences in intensity scaling between the input series. This intensity scaling is corrected by determining scaling factors that will make the overall image intensities in the b=0 volumes of each series approximately equivalent. This operation is only appropriate if the sequence parameters that influence the contrast of the b=0 image volumes are identical.
+
+Concatenation of DWI series defined on different voxel grids. If the voxel grids of the input DWI series are not precisely identical, then it may not be possible to do a simple concatenation operation. In this scenario the script will determine the appropriate way to combine the input series, ideally only manipulating header transformations and avoiding image interpolation if possible.
 
 Options
 -------
 
 - **-mask image** Provide a binary mask within which image intensities will be matched
+
+- **-nointensity** Do not perform intensity matching based on b=0 volumes
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -20,9 +20,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace GUI {
-namespace Shapes {
+namespace MR::GUI::Shapes {
 
 void Cylinder::LOD(const size_t level_of_detail) {
 
@@ -95,6 +93,4 @@ void Cylinder::LOD(const size_t level_of_detail) {
   gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(Eigen::Array3i), &indices[0], gl::STATIC_DRAW);
 }
 
-} // namespace Shapes
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Shapes

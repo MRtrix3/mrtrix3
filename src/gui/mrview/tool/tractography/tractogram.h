@@ -21,9 +21,7 @@
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 
-namespace MR {
-
-namespace GUI {
+namespace MR::GUI {
 class Projection;
 
 namespace MRView {
@@ -168,7 +166,6 @@ private slots:
 };
 } // namespace Tool
 } // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

@@ -21,9 +21,7 @@
 #include "header.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 ImageBase::ImageBase(MR::Header &&H) : Volume(std::move(H)), tex_positions(header().ndim(), 0) {
   tex_positions[0] = tex_positions[1] = tex_positions[2] = -1;
@@ -609,6 +607,4 @@ inline bool Image::format_unchanged() {
   return true;
 }
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView

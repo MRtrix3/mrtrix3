@@ -18,10 +18,7 @@
 #include "adapter/subset.h"
 #include "dwi/tractography/rng.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 bool Sphere::get_seed(Eigen::Vector3f &p) const {
   std::uniform_real_distribution<float> uniform;
@@ -207,7 +204,4 @@ bool Rejection::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Seeding

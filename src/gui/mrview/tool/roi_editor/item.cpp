@@ -26,10 +26,7 @@
 #include "gui/dialog/file.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 // CONF option: NumberOfUndos
 // CONF default: 16
@@ -128,7 +125,4 @@ void ROI_Item::redo() {
   }
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

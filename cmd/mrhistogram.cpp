@@ -22,21 +22,26 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Generate a histogram of image intensities";
 
   ARGUMENTS
-  +Argument("image", "the input image from which the histogram will be computed").type_image_in() +
-      Argument("hist", "the output histogram file").type_file_out();
+  + Argument ("image", "the input image from which the histogram will be computed").type_image_in()
+  + Argument ("hist", "the output histogram file").type_file_out();
 
   OPTIONS
-  +Algo::Histogram::Options
+  + Algo::Histogram::Options
 
-      + OptionGroup("Additional options for mrhistogram") +
-      Option("allvolumes", "generate one histogram across all image volumes, rather than one per image volume");
+  + OptionGroup ("Additional options for mrhistogram")
+  + Option ("allvolumes", "generate one histogram across all image volumes,"
+                          " rather than one per image volume");
+
 }
+// clang-format on
 
 class Volume_loop {
 public:

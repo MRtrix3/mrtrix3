@@ -19,8 +19,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <class VarArrayType, class CountArrayType>
 default_type welch_satterthwaite(const VarArrayType &variances, const CountArrayType &counts) {
@@ -34,7 +33,6 @@ default_type welch_satterthwaite(const VarArrayType &variances, const CountArray
   return Math::pow2(numerator) / denominator;
 }
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math
 
 #endif

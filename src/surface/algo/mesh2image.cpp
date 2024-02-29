@@ -27,9 +27,7 @@
 #include "surface/types.h"
 #include "surface/utils.h"
 
-namespace MR {
-namespace Surface {
-namespace Algo {
+namespace MR::Surface::Algo {
 
 constexpr size_t pve_os_ratio = 10;
 constexpr size_t pve_nsamples = Math::pow3(pve_os_ratio);
@@ -537,6 +535,4 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
   Thread::run_queue(source, std::pair<Vox, std::vector<size_t>>(), Thread::multi(pipe), std::pair<Vox, float>(), sink);
 }
 
-} // namespace Algo
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::Algo

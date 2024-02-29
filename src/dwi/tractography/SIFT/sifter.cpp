@@ -37,10 +37,7 @@
 
 #include "fixel/legacy/image.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 void SIFTer::perform_filtering() {
 
@@ -464,7 +461,4 @@ bool SIFTer::TrackGradientCalculator::operator()(const TrackIndexRange &in) cons
   return true;
 }
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT

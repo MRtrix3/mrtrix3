@@ -28,9 +28,7 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace Fixel {
-namespace Matrix {
+namespace MR::Fixel::Matrix {
 
 template <class ElementType> void InitFixelBase<ElementType>::add(const MappedTrack &mapped_track) {
   ssize_t self_index = 0, in_index = 0;
@@ -444,6 +442,4 @@ size_t Reader::size(const size_t fixel) const {
   return index.value();
 }
 
-} // namespace Matrix
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Matrix

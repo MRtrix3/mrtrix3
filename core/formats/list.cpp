@@ -18,8 +18,7 @@
 
 #include "formats/list.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 RAM RAM_handler;
 Pipe pipe_handler;
 MRtrix mrtrix_handler;
@@ -81,5 +80,4 @@ const char *known_extensions[] = {".mih",
 #endif
                                   nullptr};
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

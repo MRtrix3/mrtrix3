@@ -19,9 +19,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 extern const default_type electrostatic_repulsion_60_data[];
 extern const default_type electrostatic_repulsion_300_data[];
@@ -62,8 +60,6 @@ inline Eigen::MatrixXd tesselation_513() { return copy(tesselation_513_data, 513
 //! 4th-order tessellation of an icosahedron
 inline Eigen::MatrixXd tesselation_1281() { return copy(tesselation_1281_data, 1281); }
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Directions
 
 #endif

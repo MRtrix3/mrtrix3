@@ -36,61 +36,71 @@ using namespace App;
 using Fixel::index_type;
 using Fixel::Legacy::FixelMetric;
 
+// clang-format off
 void usage() {
 
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format";
+  SYNOPSIS = "Convert between the old format fixel image (.msf / .msh)"
+             " and the new fixel directory format";
 
   DESCRIPTION
-  +Fixel::format_description;
+  + Fixel::format_description;
 
   EXAMPLES
-  +Example("Convert from the old file format to the new directory format",
-           "fixelconvert old_fixels.msf new_fixels/ -out_size",
-           "This performs a simple conversion from old to new format, and "
-           "additionally writes the contents of the \"size\" field within "
-           "old-format fixel images stored using the \"FixelMetric\" class "
-           "(likely all of them) as an additional fixel data file.")
+  + Example ("Convert from the old file format to the new directory format",
+             "fixelconvert old_fixels.msf new_fixels/ -out_size",
+             "This performs a simple conversion from old to new format,"
+             " and additionally writes the contents of the \"size\" field "
+             " within old-format fixel images stored using the \"FixelMetric\" class"
+             " (likely all of them)"
+             " as an additional fixel data file.")
 
-      + Example("Convert multiple files from old to new format, preserving fixel correspondence",
-                "for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
-                "In this example, the for_each script is used to execute the fixelconvert "
-                "command once for each of a series of input files in the old fixel format, "
-                "generating a new output fixel directory for each."
-                "Importantly here though, the -template option is used to ensure that the "
-                "ordering of fixels within these output directories is identical, such that "
-                "fixel data files can be exchanged between them (e.g. accumulating fixel "
-                "data files across subjects into a single template fixel directory")
+  + Example ("Convert multiple files from old to new format, preserving fixel correspondence",
+             "for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
+             "In this example,"
+             " the for_each script is used to execute the fixelconvert command"
+             " once for each of a series of input files in the old fixel format,"
+             " generating a new output fixel directory for each."
+             " Importantly here though,"
+             " the -template option is used to ensure that the ordering of fixels"
+             " within these output directories is identical,"
+             " such that fixel data files can be exchanged between them"
+             " (e.g. accumulating fixel data files across subjects into a single template fixel directory")
 
-      + Example("Convert from the new directory format to the old file format",
-                "fixelconvert new_fixels/ old_fixels.msf -value parameter.mif -in_size new_fixels/afd.mif",
-                "Conversion from the new directory format will contain the value 1.0 "
-                "for all output fixels in both the \"size\" and \"value\" fields of the "
-                "\"FixelMetric\" class, unless the -in_size and/or -value options are "
-                "used respectively to indicate which fixel data files should be used as "
-                "the source(s) of this information.");
+  + Example ("Convert from the new directory format to the old file format",
+             "fixelconvert new_fixels/ old_fixels.msf -value parameter.mif -in_size new_fixels/afd.mif",
+             "Conversion from the new directory format"
+             " will contain the value 1.0 for all output fixels"
+             " in both the \"size\" and \"value\" fields of the \"FixelMetric\" class,"
+             " unless the -in_size and/or -value options are used respectively"
+             " to indicate which fixel data files should be used as the source(s) of this information.");
 
   ARGUMENTS
-  +Argument("fixel_in", "the input fixel file / directory.").type_various() +
-      Argument("fixel_out", "the output fixel file / directory.").type_various();
+  + Argument ("fixel_in",  "the input fixel file / directory.").type_various()
+  + Argument ("fixel_out", "the output fixel file / directory.").type_various();
 
   OPTIONS
-  +OptionGroup("Options for converting from old to new format") +
-      Option("name",
-             "assign a different name to the value field output (Default: value). Do not include the file extension.") +
-      Argument("string").type_text() +
-      Option("nii", "output the index, directions and data file in NIfTI format instead of .mif") +
-      Option("out_size", "also output the 'size' field from the old format") +
-      Option("template",
-             "specify an existing fixel directory (in the new format) to which the new output should conform") +
-      Argument("path").type_directory_in()
+  + OptionGroup ("Options for converting from old to new format")
+    + Option ("name", "assign a different name to the value field output"
+                      " (Default: value)."
+                      " Do not include the file extension.")
+      + Argument ("string").type_text()
+    + Option ("nii", "output the index, directions and data file in NIfTI format instead of .mif")
+    + Option ("out_size", "also output the 'size' field from the old format")
+    + Option ("template", "specify an existing fixel directory (in the new format)"
+                          " to which the new output should conform")
+      + Argument ("path").type_directory_in()
 
-      + OptionGroup("Options for converting from new to old format") +
-      Option("value", "nominate the data file to import to the 'value' field in the old format") +
-      Argument("path").type_file_in() + Option("in_size", "import data for the 'size' field in the old format") +
-      Argument("path").type_file_in();
+  + OptionGroup ("Options for converting from new to old format")
+    + Option ("value", "nominate the data file to import to the 'value' field in the old format")
+      + Argument ("path").type_file_in()
+    + Option ("in_size", "import data for the 'size' field in the old format")
+      + Argument ("path").type_file_in();
+
 }
+// clang-format on
 
 void convert_old2new() {
   Header header(Header::open(argument[0]));

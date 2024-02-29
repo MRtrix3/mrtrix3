@@ -24,8 +24,7 @@
 #include "header.h"
 #include "image_io/base.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> DICOM::read(Header &H) const {
   if (Path::is_dir(H.name())) {
@@ -53,5 +52,4 @@ std::unique_ptr<ImageIO::Base> DICOM::create(Header &H) const {
   return std::unique_ptr<ImageIO::Base>();
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

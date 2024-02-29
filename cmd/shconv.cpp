@@ -26,33 +26,39 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
+
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Perform spherical convolution";
 
   DESCRIPTION
-  +"Provided with matching pairs of response function and ODF images "
-   "(containing SH coefficients), perform spherical convolution to provide the "
-   "corresponding SH coefficients of the signal." +
-      "If multiple pairs of inputs are provided, their contributions will be "
-      "summed into a single output." +
-      "If the responses are multi-shell (with one line of coefficients per "
-      "shell), the output will be a 5-dimensional image, with the SH "
-      "coefficients of the signal in each shell stored at different indices "
-      "along the 5th dimension." +
-      Math::SH::encoding_description;
+    + "Provided with matching pairs of response function and ODF images"
+      " (containing SH coefficients),"
+      " perform spherical convolution to provide the corresponding SH coefficients of the signal."
+    + "If multiple pairs of inputs are provided,"
+      " their contributions will be summed into a single output."
+    + "If the responses are multi-shell"
+      " (with one line of coefficients per shell),"
+      " the output will be a 5-dimensional image,"
+      " with the SH coefficients of the signal in each shell stored"
+      " at different indices along the 5th dimension."
+    + Math::SH::encoding_description;
 
   DESCRIPTION
-  +Math::SH::encoding_description;
+  + Math::SH::encoding_description;
 
   ARGUMENTS
-  +Argument("odf response", "pairs of input ODF image and corresponding responses").allow_multiple() +
-      Argument("SH_out", "the output spherical harmonics coefficients image.").type_image_out();
+    + Argument ("odf response", "pairs of input ODF image and corresponding responses").allow_multiple()
+    + Argument ("SH_out", "the output spherical harmonics coefficients image.").type_image_out();
 
   OPTIONS
-  +DataType::options() + Stride::Options;
+    + DataType::options()
+    + Stride::Options;
 }
+// clang-format on
 
 using value_type = float;
 

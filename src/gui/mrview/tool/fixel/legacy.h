@@ -19,10 +19,7 @@
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class Legacy : public FixelType<FixelLegacyType> {
 public:
   Legacy(const std::string &filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool) {
@@ -38,9 +35,6 @@ public:
 
   void load_image_buffer() override;
 };
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

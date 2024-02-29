@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/mapping/twi_stats.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 const char *contrasts[] = {
     "tdi", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", "vector_file", 0};
@@ -38,7 +35,4 @@ const char *track_statistics[] = {"sum",
                                   "ends_prod",
                                   0};
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping

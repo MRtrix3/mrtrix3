@@ -45,10 +45,7 @@
 //   be made to find an appropriate tracking direction from every seed point provided
 #define MAX_TRACKING_SEED_ATTEMPTS_FIXED 1000
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 template <class ImageType> uint32_t get_count(ImageType &data) {
   std::atomic<uint32_t> count(0);
@@ -115,9 +112,6 @@ private:
                              // provided seed point
 };
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Seeding
 
 #endif

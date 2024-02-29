@@ -18,10 +18,7 @@
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 void NodeColourObserver::selected_colourmap(size_t index, const ColourMapButton &) {
   master.node_colourmap_index = index;
@@ -77,7 +74,4 @@ void EdgeColourObserver::reset_colourmap(const ColourMapButton &) {
   master.window().updateGL();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

@@ -20,8 +20,7 @@
 
 #include "mrtrix.h" // For strip()
 
-namespace MR {
-namespace Connectome {
+namespace MR::Connectome {
 
 LUT::LUT(const std::string &path) : exclusive(true) { load(path); }
 
@@ -290,5 +289,4 @@ std::vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
   return map;
 }
 
-} // namespace Connectome
-} // namespace MR
+} // namespace MR::Connectome

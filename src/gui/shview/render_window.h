@@ -20,8 +20,7 @@
 #include "gui/dwi/render_frame.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 class LightingDock;
 
 namespace DWI {
@@ -81,7 +80,6 @@ protected:
 };
 
 } // namespace DWI
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

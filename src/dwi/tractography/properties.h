@@ -26,9 +26,7 @@
 
 #define TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION 20
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 void check_timestamps(const Properties &, const Properties &, const std::string &);
 void check_counts(const Properties &, const Properties &, const std::string &, bool abort_on_fail);
@@ -65,8 +63,6 @@ public:
   friend std::ostream &operator<<(std::ostream &stream, const Properties &P);
 };
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography
 
 #endif

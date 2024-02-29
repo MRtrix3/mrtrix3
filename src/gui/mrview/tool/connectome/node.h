@@ -22,10 +22,7 @@
 #include "gui/opengl/gl.h"
 #include "surface/mesh.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 // Stores all information relating to the drawing of individual nodes, both fixed and variable
 class Node {
@@ -100,9 +97,6 @@ private:
   std::unique_ptr<Mesh> mesh;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

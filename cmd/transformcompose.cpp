@@ -58,35 +58,48 @@ public:
   const transform_type transform;
 };
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Compose any number of linear transformations and/or warps into a single transformation";
 
   DESCRIPTION
-  +"Any linear transforms must be supplied as a 4x4 matrix in a text file (e.g. as per the output of mrregister). "
-   "Any warp fields must be supplied as a 4D image representing a deformation field (e.g. as output from mrrregister "
-   "-nl_warp)."
+  + "Any linear transforms must be supplied as a 4x4 matrix in a text file"
+    " (e.g. as per the output of mrregister)."
+    " Any warp fields must be supplied as a 4D image representing a deformation field"
+    " (e.g. as output from mrrregister -nl_warp)."
 
-      + "Input transformations should be provided to the command in the order in which they would be applied "
-        "to an image if they were to be applied individually."
+  + "Input transformations should be provided to the command"
+    " in the order in which they would be applied to an image"
+    " if they were to be applied individually."
 
-      + "If all input transformations are linear, and the -template option is not provided, then the file output by "
-        "the command will also be a linear transformation saved as a 4x4 matrix in a text file. If a template image is "
-        "supplied, then the output will always be a deformation field. If at least one of the inputs is a warp field, "
-        "then the output will be a deformation field, which will be defined on the grid of the last input warp image "
-        "supplied if the -template option is not used.";
+  + "If all input transformations are linear,"
+    " and the -template option is not provided,"
+    " then the file output by the command will also be a linear transformation"
+    " saved as a 4x4 matrix in a text file."
+    " If a template image is supplied,"
+    " then the output will always be a deformation field."
+    " If at least one of the inputs is a warp field,"
+    " then the output will be a deformation field,"
+    " which will be defined on the grid of the last input warp image supplied"
+    " if the -template option is not used.";
 
   ARGUMENTS
-  +Argument("input", "the input transforms (either linear or non-linear warps).").type_file_in().allow_multiple() +
-      Argument("output",
-               "the output file (may be a linear transformation text file, or a deformation warp field image, "
-               "depending on usage)")
-          .type_various();
+  + Argument ("input", "the input transforms"
+                       " (either linear or non-linear warps).").type_file_in().allow_multiple()
+  + Argument ("output", "the output file"
+                        " (may be a linear transformation text file,"
+                        " or a deformation warp field image,"
+                        " depending on usage)").type_various();
 
   OPTIONS
-  +Option("template", "define the output grid defined by a template image") + Argument("image").type_image_in();
+  + Option ("template", "define the output grid defined by a template image")
+    + Argument ("image").type_image_in();
+
 }
+// clang-format on
 
 using value_type = float;
 

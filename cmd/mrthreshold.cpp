@@ -30,98 +30,117 @@ using namespace App;
 enum class operator_type { LT, LE, GE, GT, UNDEFINED };
 const char *const operator_list[] = {"lt", "le", "ge", "gt", nullptr};
 
+// clang-format off
 void usage() {
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
+
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Create bitwise image by thresholding image intensity";
 
   DESCRIPTION
-  +"The threshold value to be applied can be determined in one of a number of ways:"
+  + "The threshold value to be applied can be determined in one of a number of ways:"
+    " if no relevant command-line option is used,"
+    " the command will automatically determine an optimal threshold;"
+    " the -abs option provides the threshold value explicitly;"
+    " the -percentile, -top and -bottom options enable more fine-grained control"
+    " over how the threshold value is determined."
 
-      + "- If no relevant command-line option is used, the command will automatically "
-        "determine an optimal threshold;"
+  + "The -mask option only influences those image values that contribute "
+    "toward the determination of the threshold value;"
+    " once the threshold is determined,"
+    " it is applied to the entire image,"
+    " irrespective of use of the -mask option."
+    " If you wish for the voxels outside of the specified mask"
+    " to additionally be excluded from the output mask,"
+    " this can be achieved by providing the -out_masked option."
 
-      + "- The -abs option provides the threshold value explicitly;"
+  + "The four operators available through the \"-comparison\" option"
+    " (\"lt\", \"le\", \"ge\" and \"gt\")"
+    " correspond to:"
+    " \"less-than\" (<),"
+    " \"less-than-or-equal\" (<=),"
+    " \"greater-than-or-equal\" (>=),"
+    " and \"greater-than\" (>)."
+    " This offers fine-grained control over how the thresholding operation will behave"
+    " in the presence of values equivalent to the threshold."
+    " By default, "
+    " the command will select voxels with values"
+    " greater than or equal to the determined threshold (\"ge\");"
+    " unless the -bottom option is used,"
+    " in which case after a threshold is determined from the relevant lowest-valued image voxels,"
+    " those voxels with values less than or equal to that threshold (\"le\") are selected."
+    " This provides more fine-grained control than the -invert option;"
+    " the latter is provided for backwards compatibility,"
+    " but is equivalent to selection of the opposite comparison within this selection."
 
-      + "- The -percentile, -top and -bottom options enable more fine-grained control "
-        "over how the threshold value is determined."
-
-      + "The -mask option only influences those image values that contribute "
-        "toward the determination of the threshold value; once the threshold is determined, "
-        "it is applied to the entire image, irrespective of use of the -mask option. If you "
-        "wish for the voxels outside of the specified mask to additionally be excluded from "
-        "the output mask, this can be achieved by providing the -out_masked option."
-
-      + "The four operators available through the \"-comparison\" option (\"lt\", \"le\", \"ge\" and \"gt\") "
-        "correspond to \"less-than\" (<), \"less-than-or-equal\" (<=), \"greater-than-or-equal\" (>=) "
-        "and \"greater-than\" (>). This offers fine-grained control over how the thresholding "
-        "operation will behave in the presence of values equivalent to the threshold. "
-        "By default, the command will select voxels with values greater than or equal to the "
-        "determined threshold (\"ge\"); unless the -bottom option is used, in which case "
-        "after a threshold is determined from the relevant lowest-valued image voxels, those "
-        "voxels with values less than or equal to that threshold (\"le\") are selected. "
-        "This provides more fine-grained control than the -invert option; the latter "
-        "is provided for backwards compatibility, but is equivalent to selection of the "
-        "opposite comparison within this selection."
-
-      + "If no output image path is specified, the command will instead write to "
-        "standard output the determined threshold value.";
+  + "If no output image path is specified,"
+    " the command will instead write to standard output the determined threshold value.";
 
   REFERENCES
-  +"* If not using any explicit thresholding mechanism: \n"
-   "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
-   "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
-   "NeuroImage, 2009, 44, 99-111";
+    + "* If not using any explicit thresholding mechanism: \n"
+    "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
+    "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
+    "NeuroImage, 2009, 44, 99-111";
 
   ARGUMENTS
-  +Argument("input", "the input image to be thresholded").type_image_in() +
-      Argument("output", "the (optional) output binary image mask").optional().type_image_out();
+  + Argument ("input", "the input image to be thresholded").type_image_in()
+  + Argument ("output", "the (optional) output binary image mask").optional().type_image_out();
+
 
   OPTIONS
 
-  +OptionGroup("Threshold determination mechanisms")
+  + OptionGroup ("Threshold determination mechanisms")
 
-      + Option("abs", "specify threshold value as absolute intensity") + Argument("value").type_float()
+  + Option ("abs", "specify threshold value as absolute intensity")
+    + Argument ("value").type_float()
 
-      + Option("percentile", "determine threshold based on some percentile of the image intensity distribution") +
-      Argument("value").type_float(0.0, 100.0)
+  + Option ("percentile", "determine threshold based on some percentile"
+                          " of the image intensity distribution")
+    + Argument ("value").type_float (0.0, 100.0)
 
-      + Option("top", "determine threshold that will result in selection of some number of top-valued voxels") +
-      Argument("count").type_integer(1)
+  + Option ("top", "determine threshold that will result in"
+                   " selection of some number of top-valued voxels")
+    + Argument ("count").type_integer (1)
 
-      + Option("bottom",
-               "determine & apply threshold resulting in selection of some number of bottom-valued voxels "
-               "(note: implies threshold application operator of \"le\" unless otherwise specified)") +
-      Argument("count").type_integer(1)
+  + Option ("bottom", "determine & apply threshold resulting in selection"
+                      " of some number of bottom-valued voxels"
+                      " (note: implies threshold application operator of \"le\""
+                      " unless otherwise specified)")
+    + Argument ("count").type_integer (1)
 
-      + OptionGroup("Threshold determination modifiers")
 
-      + Option("allvolumes",
-               "compute a single threshold for all image volumes, rather than an individual threshold per volume")
 
-      + Option("ignorezero", "ignore zero-valued input values during threshold determination")
+  + OptionGroup ("Threshold determination modifiers")
 
-      + Option("mask", "compute the threshold based only on values within an input mask image") +
-      Argument("image").type_image_in()
+  + Option ("allvolumes", "compute a single threshold for all image volumes,"
+                          " rather than an individual threshold per volume")
 
-      + OptionGroup("Threshold application modifiers")
+  + Option ("ignorezero", "ignore zero-valued input values during threshold determination")
 
-      + Option("comparison",
-               "comparison operator to use when applying the threshold; "
-               "options are: " +
-                   join(operator_list, ",") + " (default = \"le\" for -bottom; \"ge\" otherwise)") +
-      Argument("choice").type_choice(operator_list)
+  + Option ("mask", "compute the threshold based only on values within an input mask image")
+    + Argument ("image").type_image_in ()
 
-      + Option("invert",
-               "invert the output binary mask "
-               "(equivalent to flipping the operator; provided for backwards compatibility)")
 
-      + Option("out_masked", "mask the output image based on the provided input mask image")
 
-      + Option("nan",
-               "set voxels that fail the threshold to NaN rather than zero "
-               "(output image will be floating-point rather than binary)");
+  + OptionGroup ("Threshold application modifiers")
+
+  + Option ("comparison", "comparison operator to use when applying the threshold; "
+                          "options are: " + join(operator_list, ",")
+                          + " (default = \"le\" for -bottom; \"ge\" otherwise)")
+    + Argument ("choice").type_choice (operator_list)
+
+  + Option ("invert", "invert the output binary mask "
+                      "(equivalent to flipping the operator;"
+                      " provided for backwards compatibility)")
+
+  + Option ("out_masked", "mask the output image based on the provided input mask image")
+
+  + Option ("nan", "set voxels that fail the threshold to NaN rather than zero"
+                   " (output image will be floating-point rather than binary)");
+
 }
+// clang-format on
 
 using value_type = float;
 

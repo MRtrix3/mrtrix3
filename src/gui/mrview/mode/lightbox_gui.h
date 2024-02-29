@@ -19,11 +19,7 @@
 
 #include "gui/mrview/spin_box.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
-namespace LightBoxViewControls {
+namespace MR::GUI::MRView::Mode::LightBoxViewControls {
 class LightBoxEditButton : public SpinBox {
 public:
   LightBoxEditButton(QWidget *parent, const QString &suffix) : LightBoxEditButton(parent, 1, 100, 1, suffix) {}
@@ -38,10 +34,6 @@ public:
   }
 };
 
-} // namespace LightBoxViewControls
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode::LightBoxViewControls
 
 #endif

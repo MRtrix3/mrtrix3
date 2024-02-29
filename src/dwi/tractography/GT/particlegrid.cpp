@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/GT/particlegrid.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 void ParticleGrid::add(const Point_t &pos, const Point_t &dir) {
   Particle *p = pool.create(pos, dir);
@@ -104,7 +101,4 @@ void ParticleGrid::exportTracks(Tractography::Writer<float> &writer) {
   }
 }
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT

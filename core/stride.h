@@ -23,8 +23,6 @@
 #include "math/math.h"
 #include "types.h"
 
-namespace MR {
-
 //! Functions to handle the memory layout of images
 /*! Strides are typically supplied as a symbolic list of increments,
  * representing the layout of the data in memory. In this symbolic
@@ -56,7 +54,7 @@ namespace MR {
  *
  * The functions defined in this namespace provide an interface to
  * manipulate the strides and convert symbolic into actual strides. */
-namespace Stride {
+namespace MR::Stride {
 
 using List = std::vector<ssize_t>;
 
@@ -348,7 +346,6 @@ inline void set_from_command_line(HeaderType &header, const List &default_stride
     set(header, default_strides);
 }
 
-} // namespace Stride
-} // namespace MR
+} // namespace MR::Stride
 
 #endif

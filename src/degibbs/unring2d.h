@@ -23,8 +23,7 @@
 #include "image.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace Degibbs {
+namespace MR::Degibbs {
 
 typedef cdouble value_type;
 
@@ -144,7 +143,6 @@ protected:
   Unring2D unring2d;
 };
 
-} // namespace Degibbs
-} // namespace MR
+} // namespace MR::Degibbs
 
 #endif

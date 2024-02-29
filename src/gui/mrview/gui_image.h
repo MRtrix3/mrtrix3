@@ -25,8 +25,7 @@
 #include "types.h"
 #include <unordered_map>
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 class Projection;
 
@@ -101,7 +100,6 @@ private:
 };
 
 } // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

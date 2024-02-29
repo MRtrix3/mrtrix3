@@ -22,8 +22,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 //! open output files for writing, checking for pre-existing file if necessary
 /*! This class is intended to be used as a substitute for std::ofstream.
@@ -41,7 +40,6 @@ public:
   void open(const std::string &path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
 };
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File
 
 #endif

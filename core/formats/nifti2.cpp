@@ -17,8 +17,7 @@
 #include "file/nifti_utils.h"
 #include "formats/list.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> NIfTI2::read(Header &H) const { return File::NIfTI::read<2>(H); }
 
@@ -26,5 +25,4 @@ bool NIfTI2::check(Header &H, size_t num_axes) const { return File::NIfTI::check
 
 std::unique_ptr<ImageIO::Base> NIfTI2::create(Header &H) const { return File::NIfTI::create<2>(H); }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

@@ -18,10 +18,7 @@
 #include "file/config.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 Base::Base(int flags)
     : projection(window().glarea, window().font), features(flags), update_overlays(false), visible(true) {}
@@ -389,9 +386,6 @@ GL::mat4 Base::adjust_projection_matrix(const GL::mat4 &Q, int proj) const {
   return M;
 }
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode
 
 #undef MODE

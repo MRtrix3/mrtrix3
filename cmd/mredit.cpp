@@ -31,37 +31,48 @@ using namespace App;
 // * Operate on mask images rather than arbitrary images?
 // * Remove capability to edit in-place - just deal with image swapping in the script?
 // * Tests
+// clang-format off
 
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Directly edit the intensities within an image from the command-line";
 
   DESCRIPTION
-  +"A range of options are provided to enable direct editing of "
-   "voxel intensities based on voxel / real-space coordinates. "
-
-   "If only one image path is provided, the image will be edited in-place "
-   "(use at own risk); if input and output image paths are provided, the "
-   "output will contain the edited image, and the original image will not "
-   "be modified in any way.";
+  + "A range of options are provided to enable direct editing of"
+    " voxel intensities based on voxel / real-space coordinates."
+    " If only one image path is provided,"
+    " the image will be edited in-place "
+    "(use at own risk);"
+    " if input and output image paths are provided,"
+    " the output will contain the edited image,"
+    " and the original image will not be modified in any way.";
 
   ARGUMENTS
-  +Argument("input", "the input image").type_image_in() +
-      Argument("output", "the (optional) output image").type_image_out().optional();
+  + Argument ("input", "the input image").type_image_in()
+  + Argument ("output", "the (optional) output image").type_image_out().optional();
 
   OPTIONS
-  +Option("plane", "fill one or more planes on a particular image axis").allow_multiple() +
-      Argument("axis").type_integer(0, 2) + Argument("coord").type_sequence_int() + Argument("value").type_float()
+  + Option ("plane", "fill one or more planes on a particular image axis").allow_multiple()
+    + Argument ("axis").type_integer (0, 2)
+    + Argument ("coord").type_sequence_int()
+    + Argument ("value").type_float()
 
-      + Option("sphere", "draw a sphere with radius in mm").allow_multiple() +
-      Argument("position").type_sequence_float() + Argument("radius").type_float() + Argument("value").type_float()
+  + Option ("sphere", "draw a sphere with radius in mm").allow_multiple()
+    + Argument ("position").type_sequence_float()
+    + Argument ("radius").type_float()
+    + Argument ("value").type_float()
 
-      + Option("voxel", "change the image value within a single voxel").allow_multiple() +
-      Argument("position").type_sequence_float() + Argument("value").type_float()
+  + Option ("voxel", "change the image value within a single voxel").allow_multiple()
+    + Argument ("position").type_sequence_float()
+    + Argument ("value").type_float()
 
-      + Option("scanner", "indicate that coordinates are specified in scanner space, rather than as voxel coordinates");
+  + Option ("scanner", "indicate that coordinates are specified in scanner space,"
+                       " rather than as voxel coordinates");
+
 }
+// clang-format on
 
 class Vox : public Eigen::Array3i {
 public:

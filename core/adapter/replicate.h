@@ -21,8 +21,7 @@
 #include "header.h"
 #include "image_helpers.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Replicate : public Base<Replicate<ImageType>, ImageType> {
 public:
@@ -62,7 +61,6 @@ protected:
   std::vector<ssize_t> pos_;
 };
 
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

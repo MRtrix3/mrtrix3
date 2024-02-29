@@ -24,9 +24,7 @@
 #define DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD 0.5
 #define DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD 0.1
 
-namespace MR {
-namespace Fixel {
-namespace Filter {
+namespace MR::Fixel::Filter {
 
 /** \addtogroup Filters
 @{ */
@@ -62,8 +60,6 @@ protected:
 };
 //! @}
 
-} // namespace Filter
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Filter
 
 #endif

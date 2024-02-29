@@ -28,9 +28,7 @@
 #define DEFAULT_NUMBER_SHUFFLES 5000
 #define DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY 5000
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 // Generic command-line options:
 // - Set nature of errors
@@ -129,8 +127,6 @@ private:
   std::vector<std::vector<index_type>> indices2blocks(const index_array_type &) const;
 };
 
-} // namespace Stats
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Stats
 
 #endif

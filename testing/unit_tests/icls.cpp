@@ -22,17 +22,16 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
-
   SYNOPSIS = "Test the constrained least-squares solver";
-
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 using matrix_type = Eigen::MatrixXd;
 using vector_type = Eigen::VectorXd;
-;
 
 const size_t num_sig = 100;
 const size_t num_coef = 50;

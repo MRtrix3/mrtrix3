@@ -21,9 +21,7 @@
 
 #include <iomanip>
 
-namespace MR {
-
-namespace Stats {
+namespace MR::Stats {
 
 extern const char *field_choices[];
 extern const App::OptionGroup Options;
@@ -121,8 +119,6 @@ private:
 
 void print_header(bool is_complex);
 
-} // namespace Stats
-
-} // namespace MR
+} // namespace MR::Stats
 
 #endif

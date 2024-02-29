@@ -31,82 +31,97 @@ using namespace App;
 
 const char *const algorithms[] = {"csd", "msmt_csd", NULL};
 
-OptionGroup CommonOptions = OptionGroup("Options common to more than one algorithm")
+// clang-format off
+const OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
 
-                            + Option("directions",
-                                     "specify the directions over which to apply the non-negativity constraint "
-                                     "(by default, the built-in 300 direction set is used). These should be "
-                                     "supplied as a text file containing [ az el ] pairs for the directions.") +
-                            Argument("file").type_file_in()
+  + Option ("directions",
+            "specify the directions over which to apply the non-negativity constraint"
+            " (by default, the built-in 300 direction set is used)."
+            " These should be supplied as a text file"
+            " containing [ az el ] pairs for the directions.")
+      + Argument ("file").type_file_in()
 
-                            + Option("lmax",
-                                     "the maximum spherical harmonic order for the output FOD(s)."
-                                     "For algorithms with multiple outputs, this should be "
-                                     "provided as a comma-separated list of integers, one for "
-                                     "each output image; for single-output algorithms, only "
-                                     "a single integer should be provided. If omitted, the "
-                                     "command will use the lmax of the corresponding response "
-                                     "function (i.e based on its number of coefficients), "
-                                     "up to a maximum of 8.") +
-                            Argument("order").type_sequence_int()
+  + Option ("lmax",
+            "the maximum spherical harmonic order for the output FOD(s)."
+            "For algorithms with multiple outputs,"
+            " this should be provided as a comma-separated list of integers,"
+            " one for each output image;"
+            " for single-output algorithms,"
+            " only a single integer should be provided."
+            " If omitted, the command will use the lmax of the corresponding response function"
+            " (i.e based on its number of coefficients),"
+            " up to a maximum of 8.")
+      + Argument ("order").type_sequence_int()
 
-                            + Option("mask", "only perform computation within the specified binary brain mask image.") +
-                            Argument("image").type_image_in();
+    + Option ("mask",
+              "only perform computation within the specified binary brain mask image.")
+      + Argument ("image").type_image_in();
 
 void usage() {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
-  SYNOPSIS = "Estimate fibre orientation distributions from diffusion data using spherical deconvolution";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)"
+           " and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
+
+  SYNOPSIS = "Estimate fibre orientation distributions from diffusion data"
+             " using spherical deconvolution";
 
   DESCRIPTION
-  +Math::SH::encoding_description;
+    + Math::SH::encoding_description;
 
   EXAMPLES
-  +Example("Perform single-shell single-tissue CSD",
-           "dwi2fod csd dwi.mif response_wm.txt wmfod.mif",
-           "This algorithm is designed for single-shell data and only uses a single "
-           "b-value. The response function text file provided should only contain a "
-           "a single row, corresponding to the b-value used for CSD.")
+    + Example ("Perform single-shell single-tissue CSD",
+               "dwi2fod csd dwi.mif response_wm.txt wmfod.mif",
+               "This algorithm is designed for single-shell data"
+               " and only uses a single b-value."
+               " The response function text file provided should only contain a a single row,"
+               " corresponding to the b-value used for CSD.")
 
-      + Example("Perform multi-shell multi-tissue CSD",
-                "dwi2fod msmt_csd dwi.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif",
-                "This example is the most common use case of multi-tissue CSD, estimating "
-                "a white matter FOD, and grey matter and CSF compartments. This algorithm "
-                "requires at least three unique b-values to estimate three tissue compartments. "
-                "Each response function text file should have a number of rows equal to the "
-                "number of b-values used. If only two unique b-values are available, it's also "
-                "possible to estimate only two tissue compartments, e.g., white matter and CSF.");
+    + Example ("Perform multi-shell multi-tissue CSD",
+               "dwi2fod msmt_csd dwi.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif",
+               "This example is the most common use case of multi-tissue CSD,"
+               " estimating a white matter FOD,"
+               " and grey matter and CSF compartments."
+               " This algorithm requires at least three unique b-values"
+               " to estimate three tissue compartments."
+               " Each response function text file should have a number of rows"
+               " equal to the number of b-values used."
+               " If only two unique b-values are available,"
+               " it's also possible to estimate only two tissue compartments,"
+               " e.g., white matter and CSF.");
 
   REFERENCES
-  +"* If using csd algorithm:\n"
-   "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "Robust determination of the fibre orientation distribution in diffusion MRI: "
-   "Non-negativity constrained super-resolved spherical deconvolution. "
-   "NeuroImage, 2007, 35, 1459-1472"
+    + "* If using csd algorithm:\n"
+    "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "Robust determination of the fibre orientation distribution in diffusion MRI: "
+    "Non-negativity constrained super-resolved spherical deconvolution. "
+    "NeuroImage, 2007, 35, 1459-1472"
 
-      + "* If using msmt_csd algorithm:\n"
-        "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. " // Internal
-        "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. "
-        "NeuroImage, 2014, 103, 411-426"
+    + "* If using msmt_csd algorithm:\n"
+    "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. " // Internal
+    "Multi-tissue constrained spherical deconvolution"
+    " for improved analysis of multi-shell diffusion MRI data. "
+    "NeuroImage, 2014, 103, 411-426"
 
-      + "Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. " // Internal
-        "Direct estimation of the fiber orientation density function from "
-        "diffusion-weighted MRI data using spherical deconvolution. "
-        "NeuroImage, 2004, 23, 1176-1185";
+    + "Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. " // Internal
+    "Direct estimation of the fiber orientation density function from "
+    "diffusion-weighted MRI data using spherical deconvolution. "
+    "NeuroImage, 2004, 23, 1176-1185";
 
   ARGUMENTS
-  +Argument("algorithm",
-            "the algorithm to use for FOD estimation. "
-            "(options are: " +
-                join(algorithms, ",") + ")")
-          .type_choice(algorithms) +
-      Argument("dwi", "the input diffusion-weighted image").type_image_in() +
-      Argument("response odf", "pairs of input tissue response and output ODF images").allow_multiple();
+    + Argument ("algorithm", "the algorithm to use for FOD estimation. "
+                             "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
+    + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
+    + Argument ("response odf", "pairs of input tissue response and output ODF images").allow_multiple();
 
   OPTIONS
-  +DWI::GradImportOptions() + DWI::ShellsOption + CommonOptions + DWI::SDeconv::CSD_options +
-      DWI::SDeconv::MSMT_CSD_options + Stride::Options;
+    + DWI::GradImportOptions()
+    + DWI::ShellsOption
+    + CommonOptions
+    + DWI::SDeconv::CSD_options
+    + DWI::SDeconv::MSMT_CSD_options
+    + Stride::Options;
 }
+// clang-format on
 
 class CSD_Processor {
 public:

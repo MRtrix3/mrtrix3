@@ -25,18 +25,23 @@ using namespace App;
 
 const char *operations[] = {"to_symmetric", "upper_triangular", "lower_triangular", "transpose", "zero_diagonal", NULL};
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Matteo Frigo (matteo.frigo@inria.fr)";
 
   SYNOPSIS = "Perform basic operations on a connectome";
 
   ARGUMENTS
-  +Argument("input", "the input connectome.").type_text()
+  + Argument ("input", "the input connectome.").type_text ()
 
-      + Argument("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice(operations)
+  + Argument ("operation", "the operation to apply,"
+                           " one of: " + join(operations, ", ") + ".").type_choice (operations)
 
-      + Argument("output", "the output connectome.").type_text();
+  + Argument ("output", "the output connectome.").type_text();
+
 }
+// clang-format on
 
 void run() {
   MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);

@@ -24,36 +24,41 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
+
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Concatenate several images into one";
 
   ARGUMENTS
-  +Argument("image1", "the first input image.").type_image_in()
-
-      + Argument("image2", "additional input image(s).").type_image_in().allow_multiple()
-
-      + Argument("output", "the output image.").type_image_out();
+    + Argument ("image1", "the first input image.").type_image_in()
+    + Argument ("image2", "additional input image(s).").type_image_in().allow_multiple()
+    + Argument ("output", "the output image.").type_image_out ();
 
   EXAMPLES
-  +Example("Concatenate individual 3D volumes into a single 4D image series",
-           "mrcat volume*.mif series.mif",
-           "The wildcard characters will find all images in the current working directory with names that "
-           "begin with \"volume\" and end with \".mif\"; the mrcat command will receive these as a list of "
-           "input file names, from which it will produce a 4D image where the input volumes have been "
-           "concatenated along axis 3 (the fourth axis; the spatial axes are 0, 1 & 2).");
+  + Example ("Concatenate individual 3D volumes into a single 4D image series",
+             "mrcat volume*.mif series.mif",
+             "The wildcard characters will find all images in the current working directory"
+             " with names that begin with \"volume\" and end with \".mif\";"
+             " the mrcat command will receive these as a list of input file names,"
+             " from which it will produce a 4D image"
+             " where the input volumes have been concatenated along axis 3"
+             " (the fourth axis; the spatial axes are 0, 1 & 2).");
 
   OPTIONS
-  +Option("axis",
-          "specify axis along which concatenation should be performed. By default, "
-          "the program will use the last non-singleton, non-spatial axis of any of "
-          "the input images - in other words axis 3 or whichever axis (greater than 3) "
-          "of the input images has size greater than one.") +
-      Argument("axis").type_integer(0)
+  + Option ("axis",
+            "specify axis along which concatenation should be performed."
+            " By default, the program will use the last non-singleton, non-spatial axis"
+            " of any of the input images;"
+            " in other words, axis 3,"
+            " or whichever axis (greater than 3) of the input images has size greater than one.")
+    + Argument ("index").type_integer (0)
 
-      + DataType::options();
+  + DataType::options();
 }
+// clang-format on
 
 template <typename value_type> void write(std::vector<Header> &in, const size_t axis, Header &header_out) {
   auto image_out = Image<value_type>::create(header_out.name(), header_out);

@@ -30,10 +30,7 @@
 
 #include <typeinfo>
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 enum writer_dim { UNDEFINED, GREYSCALE, DEC, DIXEL, TOD };
 extern const char *writer_dims[];
@@ -477,9 +474,6 @@ template <typename value_type> void MapWriter<value_type>::set_tod(const VoxelTO
     buffer.value() = sh_coefs[buffer.index(3)];
 }
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping
 
 #endif

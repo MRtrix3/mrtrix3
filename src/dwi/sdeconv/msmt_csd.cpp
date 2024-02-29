@@ -16,28 +16,27 @@
 
 #include "dwi/sdeconv/msmt_csd.h"
 
-namespace MR {
-namespace DWI {
-namespace SDeconv {
+namespace MR::DWI::SDeconv {
 
 using namespace App;
-
+// clang-format off
 const OptionGroup MSMT_CSD_options =
-    OptionGroup("Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution algorithm") +
-    Option("norm_lambda",
-           "the regularisation parameter lambda that controls the strength of the "
-           "constraint on the norm of the solution (default = " +
-               str(DEFAULT_MSMTCSD_NORM_LAMBDA, 2) + ").") +
-    Argument("value").type_float(0.0)
+    OptionGroup("Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution algorithm")
+    + Option("norm_lambda",
+             "the regularisation parameter lambda that controls the strength "
+             "of the constraint on the norm of the solution"
+             " (default = " + str(DEFAULT_MSMTCSD_NORM_LAMBDA, 2) + ").")
+      + Argument("value").type_float(0.0)
 
     + Option("neg_lambda",
-             "the regularisation parameter lambda that controls the strength of the "
-             "non-negativity constraint (default = " +
-                 str(DEFAULT_MSMTCSD_NEG_LAMBDA, 2) + ").") +
-    Argument("value").type_float(0.0)
+             "the regularisation parameter lambda that controls the strength "
+             "of the non-negativity constraint"
+             " (default = " + str(DEFAULT_MSMTCSD_NEG_LAMBDA, 2) + ").")
+      + Argument("value").type_float(0.0)
 
-    + Option("predicted_signal", "output the predicted dwi image.") + Argument("image").type_image_out();
+    + Option("predicted_signal",
+             "output the predicted dwi image.")
+      + Argument("image").type_image_out();
+// clang-format on
 
-} // namespace SDeconv
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::SDeconv

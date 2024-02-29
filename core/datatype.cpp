@@ -379,14 +379,15 @@ DataType DataType::from_command_line(DataType default_datatype) {
   return default_datatype;
 }
 
+// clang-format off
 App::OptionGroup DataType::options() {
   using namespace App;
-  return OptionGroup("Data type options") +
-         Option("datatype",
-                "specify output image data type. "
-                "Valid choices are: " +
-                    join(identifiers, ", ") + ".") +
-         Argument("spec").type_choice(identifiers);
+  return OptionGroup("Data type options")
+         + Option("datatype", "specify output image data type."
+                              " Valid choices are: "
+                              + join(identifiers, ", ") + ".")
+          + Argument("spec").type_choice(identifiers);
 }
+// clang-format on
 
 } // namespace MR

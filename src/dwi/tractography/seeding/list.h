@@ -21,10 +21,7 @@
 
 #include "dwi/tractography/seeding/base.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 class List {
 
@@ -58,9 +55,6 @@ private:
   uint32_t total_count;
 };
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Seeding
 
 #endif

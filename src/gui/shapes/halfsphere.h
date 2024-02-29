@@ -22,9 +22,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 
-namespace MR {
-namespace GUI {
-namespace Shapes {
+namespace MR::GUI::Shapes {
 
 class HalfSphere {
 public:
@@ -64,8 +62,6 @@ public:
   std::vector<Vertex> vertices;
 };
 
-} // namespace Shapes
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Shapes
 
 #endif

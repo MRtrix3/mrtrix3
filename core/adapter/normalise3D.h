@@ -19,8 +19,7 @@
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Normalise3D : public Base<Normalise3D<ImageType>, ImageType> {
 public:
@@ -89,7 +88,6 @@ protected:
   size_t nelements;
 };
 
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

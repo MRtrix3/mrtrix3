@@ -22,8 +22,7 @@
 #include "filter/smooth.h"
 #include "registration/multi_contrast.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 
 template <class ImageType>
 FORCE_INLINE ImageType multi_resolution_lmax(ImageType &input,
@@ -86,6 +85,6 @@ FORCE_INLINE ImageType multi_resolution_lmax(ImageType &input,
   smooth_filter(smoothed);
   return smoothed;
 }
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration
+
 #endif

@@ -27,9 +27,7 @@
 #include "file/ofstream.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 //! convenience function to verify that tck/tsf files match
 /*! in order to be interpreted correctly, track scalar files must match some
@@ -224,8 +222,6 @@ protected:
   ScalarWriter(const ScalarWriter &) = delete;
 };
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography
 
 #endif

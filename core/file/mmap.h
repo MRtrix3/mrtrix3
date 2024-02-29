@@ -24,8 +24,7 @@
 #include "file/entry.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 class MMap : protected Entry {
 public:
@@ -83,7 +82,6 @@ private:
   }
 };
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File
 
 #endif

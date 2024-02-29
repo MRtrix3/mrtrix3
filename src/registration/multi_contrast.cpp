@@ -16,8 +16,7 @@
 
 #include "registration/multi_contrast.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 
 class CopyFunctor4D {
 public:
@@ -103,5 +102,4 @@ void preload_data(std::vector<Header> &input,
   }
 }
 
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration

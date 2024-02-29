@@ -21,8 +21,7 @@
 #include "image_io/mosaic.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void Mosaic::load(const Header &header, size_t) {
   if (files.empty())
@@ -68,5 +67,4 @@ void Mosaic::load(const Header &header, size_t) {
 
 void Mosaic::unload(const Header &header) {}
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

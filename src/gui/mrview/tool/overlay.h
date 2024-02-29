@@ -23,10 +23,7 @@
 #include "gui/mrview/spin_box.h"
 #include "gui/mrview/tool/base.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Overlay : public Base, public ColourMapButtonObserver, public DisplayableVisitor {
   Q_OBJECT
@@ -103,9 +100,6 @@ protected:
   void dropEvent(QDropEvent *event) override;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

@@ -22,8 +22,7 @@
 #include "header.h"
 #include "image_io/gz.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
   if (!Path::has_suffix(H.name(), ".mif.gz"))
@@ -92,5 +91,4 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::create(Header &H) const {
   return std::move(io_handler);
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

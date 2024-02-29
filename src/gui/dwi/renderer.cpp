@@ -22,9 +22,7 @@
 #include "gui/projection.h"
 #include "math/legendre.h"
 
-namespace MR {
-namespace GUI {
-namespace DWI {
+namespace MR::GUI::DWI {
 
 Renderer::Renderer(QOpenGLWidget *widget)
     : mode(mode_t::SH), reverse_ID(0), origin_ID(0), sh(*this), tensor(*this), dixel(*this), context_(widget) {
@@ -571,6 +569,4 @@ void Renderer::Dixel::update_dixels(const MR::DWI::Directions::Set &dirs) {
   index_count = 3 * indices_data.size();
 }
 
-} // namespace DWI
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::DWI

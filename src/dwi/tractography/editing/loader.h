@@ -26,10 +26,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 class Loader {
 
@@ -62,9 +59,6 @@ bool Loader::operator()(Streamline<> &out) {
   return false;
 }
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Editing
 
 #endif

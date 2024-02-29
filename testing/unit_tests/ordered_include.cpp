@@ -20,13 +20,13 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "Lee Reid (lee.reid@csiro.au)";
-
   SYNOPSIS = "Runs units tests for tractography-related classes";
-
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 void run() {
 

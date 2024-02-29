@@ -16,14 +16,8 @@
 
 #include "dwi/tractography/mapping/writer.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 const char *writer_dims[] = {"undefined", "greyscale", "DEC", "dixel", "TOD", NULL};
 
 }
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR

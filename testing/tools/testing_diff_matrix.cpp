@@ -24,18 +24,25 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two matrices for differences, optionally with a specified tolerance";
 
   ARGUMENTS
-  +Argument("matrix1", "a matrix file.").type_file_in() + Argument("matrix2", "another matrix file.").type_file_in();
+  + Argument ("matrix1", "a matrix file.").type_file_in()
+  + Argument ("matrix2", "another matrix file.").type_file_in();
 
   OPTIONS
-  +Option("abs", "specify an absolute tolerance") + Argument("tolerance").type_float(0.0) +
-      Option("frac", "specify a fractional tolerance") + Argument("tolerance").type_float(0.0);
+  + Option ("abs", "specify an absolute tolerance")
+    + Argument ("tolerance").type_float(0.0)
+  + Option ("frac", "specify a fractional tolerance")
+    + Argument ("tolerance").type_float(0.0);
+
 }
+// clang-format on
 
 void run() {
 

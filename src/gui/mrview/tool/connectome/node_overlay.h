@@ -23,10 +23,7 @@
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/gui_image.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 // Class to handle the node image overlay
 class NodeOverlay : public MR::GUI::MRView::ImageBase {
@@ -49,9 +46,6 @@ public:
   } slice_shader;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

@@ -21,9 +21,7 @@
 
 #include "thread_queue.h"
 
-namespace MR {
-namespace Surface {
-namespace Filter {
+namespace MR::Surface::Filter {
 
 void Base::operator()(const MeshMulti &in, MeshMulti &out) const {
   std::unique_ptr<ProgressBar> progress;
@@ -48,6 +46,4 @@ void Base::operator()(const MeshMulti &in, MeshMulti &out) const {
   Thread::run_queue(loader, size_t(), Thread::multi(worker));
 }
 
-} // namespace Filter
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::Filter

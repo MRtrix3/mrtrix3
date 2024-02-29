@@ -19,9 +19,7 @@
 
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 class Lighting : public QObject {
   Q_OBJECT
@@ -41,8 +39,6 @@ signals:
   void changed();
 };
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::GL
 
 #endif

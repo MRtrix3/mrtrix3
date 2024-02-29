@@ -20,9 +20,7 @@
 #include "surface/filter/base.h"
 #include "surface/mesh.h"
 
-namespace MR {
-namespace Surface {
-namespace Filter {
+namespace MR::Surface::Filter {
 
 constexpr default_type default_smoothing_spatial_factor = 10.0;
 constexpr default_type default_smoothing_influence_factor = 10.0;
@@ -46,8 +44,6 @@ private:
   default_type spatial, influence;
 };
 
-} // namespace Filter
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::Filter
 
 #endif

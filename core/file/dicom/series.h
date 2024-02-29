@@ -21,9 +21,7 @@
 #include "memory.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class Study;
 class Image;
@@ -76,8 +74,6 @@ public:
   friend std::ostream &operator<<(std::ostream &stream, const Series &item);
 };
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom
 
 #endif

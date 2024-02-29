@@ -23,8 +23,7 @@
 
 #include "debug.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 namespace {
 default_type F2z_upper(const default_type F, const size_t rank, const default_type dof) {
@@ -272,5 +271,4 @@ default_type Zstatistic::Lookup_F2z::operator()(const default_type F) const {
     return interp(1.0 / F, offset_lower, scale_lower, data_lower, func_lower);
 }
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math

@@ -54,6 +54,7 @@ using namespace App;
 #define DEFAULT_BETA 0.0
 #define DEFAULT_LAMBDA 1.0
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)";
@@ -67,147 +68,150 @@ void usage() {
   SYNOPSIS = "Multi-Shell Multi-Tissue Global Tractography";
 
   DESCRIPTION
-  +"This command will reconstruct the global white matter fibre tractogram that best "
-   "explains the input DWI data, using a multi-tissue spherical convolution model."
+  + "This command will reconstruct the global white matter fibre tractogram"
+    " that best explains the input DWI data,"
+    " using a multi-tissue spherical convolution model."
 
-      + "A more thorough description of the operation of global tractography in MRtrix3 "
-        "can be found in the online documentation: \n"
-        "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION
-        "/quantitative_structural_connectivity/global_tractography.html";
+  + "A more thorough description of the operation of global tractography in MRtrix3"
+    " can be found in the online documentation: \n"
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/quantitative_structural_connectivity/global_tractography.html";
 
   EXAMPLES
-
-  +Example("Basic usage",
-           "tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e9 -fod fod.mif -fiso "
-           "fiso.mif tracks.tck",
-           "dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
-           "and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is "
-           "saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and "
-           "isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization "
-           "and thus affected by spatial regularization.");
+  + Example("Basic example usage",
+            "tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif"
+            " -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck",
+            "dwi.mif is the input image,"
+            " wmr.txt is an anisotropic1, multi-shell response function for WM, "
+            "and csfr.txt and gmr.txt are isotropic response functions for CSF and GM."
+            " The output tractogram is saved to tracks.tck."
+            " Optional output images fod.mif and fiso.mif contain the predicted WM fODF"
+            " and isotropic tissue fractions of CSF and GM respectively,"
+            " estimated as part of the global optimization"
+            " and thus affected by spatial regularization.");
 
   REFERENCES
-  +"Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. " // Internal
-   "Global tractography of multi-shell diffusion-weighted imaging data using a multi-tissue model. "
-   "NeuroImage, 2015, 123, 89-101";
+  + "Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. " // Internal
+    "Global tractography of multi-shell diffusion-weighted imaging data using a multi-tissue model. "
+    "NeuroImage, 2015, 123, 89-101";
 
   ARGUMENTS
-  +Argument("source", "the image containing the raw DWI data.").type_image_in()
-
-      + Argument("response", "the response of a track segment on the DWI signal.").type_file_in()
-
-      + Argument("tracks", "the output file containing the tracks generated.").type_tracks_out();
+  + Argument ("source", "the image containing the raw DWI data.").type_image_in()
+  + Argument ("response", "the response of a track segment on the DWI signal.").type_file_in()
+  + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out();
 
   OPTIONS
-  +OptionGroup("Input options")
+  + OptionGroup("Input options")
 
-      + Option("grad", "specify the diffusion encoding scheme (required if not supplied in the header).") +
-      Argument("scheme").type_file_in()
+  + Option ("grad", "specify the diffusion encoding scheme"
+                    " (required if not supplied in the header).")
+    + Argument ("scheme").type_file_in()
 
-      + Option("mask", "only reconstruct the tractogram within the specified brain mask image.") +
-      Argument("image").type_image_in()
+  + Option ("mask", "only reconstruct the tractogram within the specified brain mask image.")
+    + Argument ("image").type_image_in()
 
-      + Option("riso", "set one or more isotropic response functions. (multiple allowed)").allow_multiple() +
-      Argument("response").type_file_in()
+  + Option ("riso", "set one or more isotropic response functions."
+                    " (multiple allowed)").allow_multiple()
+    + Argument ("response").type_file_in()
 
-      + OptionGroup("Parameters")
+  + OptionGroup("Parameters")
 
-      + Option("lmax", "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")") +
-      Argument("order").type_integer(2, 30)
+  + Option ("lmax", "set the maximum harmonic order for the output series."
+                    " (default = " + str(DEFAULT_LMAX) + ")")
+    + Argument ("order").type_integer(2, 30)
 
-      + Option("length",
-               "set the length of the particles (fibre segments). (default = " + str(DEFAULT_LENGTH, 2) + "mm)") +
-      Argument("size").type_float(1e-6)
+  + Option ("length", "set the length of the particles (fibre segments)."
+                      " (default = " + str(DEFAULT_LENGTH, 2) + "mm)")
+    + Argument ("size").type_float(1e-6)
 
-      +
-      Option("weight",
-             "set the weight by which particles contribute to the model. (default = " + str(DEFAULT_WEIGHT, 2) + ")") +
-      Argument("w").type_float(1e-6, 1.0)
+  + Option ("weight", "set the weight by which particles contribute to the model."
+                      " (default = " + str(DEFAULT_WEIGHT, 2) + ")")
+    + Argument ("w").type_float(1e-6, 1.0)
 
-      + Option("ppot",
-               "set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. "
-               "(default = " +
-                   str(DEFAULT_PPOT, 2) + ")") +
-      Argument("u").type_float(0.0, 1.0)
+  + Option ("ppot", "set the particle potential,"
+                    " i.e., the cost of adding one segment,"
+                    " relative to the particle weight."
+                    " (default = " + str(DEFAULT_PPOT, 2) + ")")
+    + Argument ("u").type_float(0.0, 1.0)
 
-      + Option("cpot",
-               "set the connection potential, i.e., the energy term that drives two segments together. (default = " +
-                   str(DEFAULT_CPOT, 2) + ")") +
-      Argument("v").type_float(0.0)
+  + Option ("cpot", "set the connection potential,"
+                    " i.e., the energy term that drives two segments together."
+                    " (default = " + str(DEFAULT_CPOT, 2) + ")")
+    + Argument ("v").type_float(0.0)
 
-      + Option("t0",
-               "set the initial temperature of the metropolis hastings optimizer. (default = " + str(DEFAULT_T0, 2) +
-                   ")") +
-      Argument("start").type_float(1e-6, 1e6)
+  + Option ("t0", "set the initial temperature of the metropolis hastings optimizer."
+                  " (default = " + str(DEFAULT_T0, 2) + ")")
+    + Argument ("start").type_float(1e-6, 1e6)
 
-      +
-      Option("t1",
-             "set the final temperature of the metropolis hastings optimizer. (default = " + str(DEFAULT_T1, 2) + ")") +
-      Argument("end").type_float(1e-6, 1e6)
+  + Option ("t1", "set the final temperature of the metropolis hastings optimizer."
+                  " (default = " + str(DEFAULT_T1, 2) + ")")
+    + Argument ("end").type_float(1e-6, 1e6)
 
-      + Option("niter",
-               "set the number of iterations of the metropolis hastings optimizer. (default = " +
-                   str(DEFAULT_NITER / 1000000) + "M)") +
-      Argument("n").type_integer(0)
+  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer."
+                     " (default = " + str(DEFAULT_NITER/1000000) + "M)")
+    + Argument ("n").type_integer(0)
 
-      + OptionGroup("Output options")
 
-      + Option("fod",
-               "Predicted fibre orientation distribution function (fODF).\n"
-               "This fODF is estimated as part of the global track optimization, "
-               "and therefore incorporates the spatial regularization that it "
-               "imposes. Internally, the fODF is represented as a discrete "
-               "sum of apodized point spread functions (aPSF) oriented along the "
-               "directions of all particles in the voxel, used to predict the DWI "
-               "signal from the particle configuration.") +
-      Argument("odf").type_image_out() +
-      Option("noapo",
-             "disable spherical convolution of fODF with apodized PSF, "
-             "to output a sum of delta functions rather than a sum of aPSFs.")
+  + OptionGroup("Output options")
 
-      + Option("fiso",
-               "Predicted isotropic fractions of the tissues for which response "
-               "functions were provided with -riso. Typically, these are CSF and GM.") +
-      Argument("iso").type_image_out()
+  + Option ("fod", "Predicted fibre orientation distribution function (fODF)."
+            " This fODF is estimated as part of the global track optimization,"
+            " and therefore incorporates the spatial regularization that it imposes."
+            " Internally, the fODF is represented as a discrete sum"
+            " of apodized point spread functions (aPSF)"
+            " oriented along the directions of all particles in the voxel,"
+            " used to predict the DWI signal from the particle configuration.")
+    + Argument ("odf").type_image_out()
 
-      + Option("eext", "Residual external energy in every voxel.") + Argument("eext").type_image_out()
+  + Option ("noapo", "disable spherical convolution of fODF with apodized PSF,"
+                     " to output a sum of delta functions rather than a sum of aPSFs.")
 
-      + Option("etrend", "internal and external energy trend and cooling statistics.") +
-      Argument("stats").type_file_out()
+  + Option ("fiso", "Predicted isotropic fractions of the tissues"
+                    " for which response functions were provided with -riso."
+                    " Typically, these are CSF and GM.")
+    + Argument ("iso").type_image_out()
 
-      + OptionGroup("Advanced parameters, if you really know what you're doing")
+  + Option ("eext", "Residual external energy in every voxel.")
+    + Argument ("eext").type_image_out()
 
-      + Option("balance",
-               "balance internal and external energy. (default = " + str(DEFAULT_BALANCE, 2) +
-                   ")\n"
-                   "Negative values give more weight to the internal energy, positive to the external energy.") +
-      Argument("b").type_float(-100.0, 100.0)
+  + Option ("etrend", "internal and external energy trend and cooling statistics.")
+    + Argument ("stats").type_file_out()
 
-      + Option("density",
-               "set the desired density of the free Poisson process. (default = " + str(DEFAULT_DENSITY, 2) + ")") +
-      Argument("lambda").type_float(0.0)
 
-      +
-      Option("prob",
-             "set the probabilities of generating birth, death, randshift, optshift "
-             "and connect proposals respectively. (default = " +
-                 str(DEFAULT_PROB_BIRTH, 2) + "," + str(DEFAULT_PROB_DEATH, 2) + "," + str(DEFAULT_PROB_RANDSHIFT, 2) +
-                 "," + str(DEFAULT_PROB_OPTSHIFT, 2) + "," + str(DEFAULT_PROB_CONNECT, 2) + ")") +
-      Argument("prob").type_sequence_float()
+  + OptionGroup("Advanced parameters, if you really know what you're doing")
 
-      + Option("beta",
-               "set the width of the Hanning interpolation window. (in [0, 1], default = " + str(DEFAULT_BETA, 2) +
-                   ")\n"
-                   "If used, a mask is required, and this mask must keep at least one voxel distance to the image "
-                   "bounding box.") +
-      Argument("b").type_float(0.0, 1.0)
+  + Option ("balance", "balance internal and external energy."
+                       " (default = " + str(DEFAULT_BALANCE, 2) + ")."
+                       " Negative values give more weight to the internal energy;"
+                       " positive to the external energy.")
+    + Argument ("b").type_float(-100.0, 100.0)
 
-      + Option("lambda",
-               "set the weight of the internal energy directly. (default = " + str(DEFAULT_LAMBDA, 2) +
-                   ")\n"
-                   "If provided, any value of -balance will be ignored.") +
-      Argument("lam").type_float(0.0);
+  + Option ("density", "set the desired density of the free Poisson process."
+                       " (default = " + str(DEFAULT_DENSITY, 2) + ")")
+    + Argument ("lambda").type_float(0.0)
+
+  + Option ("prob", "set the probabilities of generating"
+                    " birth, death, randshift, optshift and connect proposals respectively."
+                    " (default = "
+                    + str(DEFAULT_PROB_BIRTH, 2) + ","
+                    + str(DEFAULT_PROB_DEATH, 2) + ","
+                    + str(DEFAULT_PROB_RANDSHIFT, 2) + ","
+                    + str(DEFAULT_PROB_OPTSHIFT, 2) + ","
+                    + str(DEFAULT_PROB_CONNECT, 2) + ")")
+    + Argument ("prob").type_sequence_float()
+
+  + Option ("beta", "set the width of the Hanning interpolation window."
+                    " (in [0, 1], default = " + str(DEFAULT_BETA, 2) + "). "
+                    " If used, a mask is required,"
+                    " and this mask must keep at least one voxel distance to the image bounding box.")
+    + Argument ("b").type_float(0.0, 1.0)
+
+  + Option ("lambda", "set the weight of the internal energy directly."
+                      " (default = " + str(DEFAULT_LAMBDA, 2) + ")."
+                      " If provided, any value of -balance will be ignored.")
+    + Argument ("lam").type_float(0.0);
+
 }
+// clang-format on
 
 template <typename T> class __copy_fod {
 public:

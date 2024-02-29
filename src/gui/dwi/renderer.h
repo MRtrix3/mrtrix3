@@ -27,8 +27,7 @@
 #include "gui/shapes/halfsphere.h"
 #include "math/SH.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 class Projection;
 
@@ -232,7 +231,6 @@ private:
 };
 
 } // namespace DWI
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

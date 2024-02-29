@@ -23,10 +23,7 @@
 #include "dwi/tractography/streamline.h"
 #include "gui/mrview/tool/connectome/connectome.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Edge::Edge(const node_t one, const node_t two, const Eigen::Vector3f &c_one, const Eigen::Vector3f &c_two)
     : node_indices{one, two},
@@ -341,7 +338,4 @@ void Edge::Streamtube::Shared::clear() {
   }
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

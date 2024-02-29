@@ -25,9 +25,7 @@
 #include "math/SH.h"
 #include "math/math.h"
 
-namespace MR {
-namespace GUI {
-namespace DWI {
+namespace MR::GUI::DWI {
 
 Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), is_response(is_response_coefs) {
   GUI::Dialog::init();
@@ -381,6 +379,4 @@ void Window::advanced_lighting_slot() {
   lighting_dialog->show();
 }
 
-} // namespace DWI
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::DWI

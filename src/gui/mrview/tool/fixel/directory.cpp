@@ -16,10 +16,7 @@
 
 #include "gui/mrview/tool/fixel/directory.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 void Directory::load_image_buffer() {
   for (size_t axis = 0; axis < 3; ++axis) {
     slice_fixel_indices[axis].resize(fixel_data->size(axis));
@@ -129,7 +126,4 @@ FixelValue &Directory::get_fixel_value(const std::string &key) const {
   return fixel_val;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

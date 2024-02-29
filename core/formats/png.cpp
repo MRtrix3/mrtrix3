@@ -25,8 +25,7 @@
 #include "image_io/base.h"
 #include "image_io/png.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
   if (!(Path::has_suffix(H.name(), ".png") || Path::has_suffix(H.name(), ".PNG")))
@@ -230,7 +229,6 @@ std::unique_ptr<ImageIO::Base> PNG::create(Header &H) const {
   return io_handler;
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats
 
 #endif

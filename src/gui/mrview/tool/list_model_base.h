@@ -19,10 +19,7 @@
 
 #include "gui/mrview/displayable.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class ListModelBase : public QAbstractItemModel {
 public:
@@ -146,9 +143,6 @@ private:
   std::pair<int, int> swapped_rows;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

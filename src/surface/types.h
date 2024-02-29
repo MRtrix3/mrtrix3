@@ -20,8 +20,7 @@
 #include "connectome/connectome.h"
 #include "surface/polygon.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 using Vertex = Eigen::Vector3d;
 using VertexList = std::vector<Vertex>;
@@ -43,7 +42,6 @@ public:
 
 using label_vector_type = Eigen::Array<Connectome::node_t, Eigen::Dynamic, 1>;
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface
 
 #endif

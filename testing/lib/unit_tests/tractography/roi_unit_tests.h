@@ -23,10 +23,8 @@ using namespace MR::DWI::Tractography;
 using namespace Eigen;
 
 using namespace MR::Testing::UnitTests;
-namespace MR {
-namespace Testing {
-namespace UnitTests {
-namespace Tractography {
+
+namespace MR::Testing::UnitTests::Tractography {
 /**
 Runs unit tests for classes closely related with ROIs
 */
@@ -419,9 +417,6 @@ private:
   ROIUnorderedSet unordered;
   ROIOrderedSet ordered;
 };
-} // namespace Tractography
-} // namespace UnitTests
-} // namespace Testing
-} // namespace MR
+} // namespace MR::Testing::UnitTests::Tractography
 
 #endif

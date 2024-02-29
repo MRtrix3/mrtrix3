@@ -23,19 +23,24 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Determine the centre of mass / centre of gravity of an image";
 
   ARGUMENTS
-  +Argument("input", "the input image").type_image_in();
+  + Argument ("input", "the input image").type_image_in();
 
   OPTIONS
-  +Option("mask", "only include voxels within a mask in the calculation") + Argument("image").type_image_in()
+  + Option ("mask", "only include voxels within a mask in the calculation")
+    + Argument ("image").type_image_in()
 
-      + Option("voxelspace", "report image centre of mass in voxel space rather than scanner space");
+  + Option ("voxelspace", "report image centre of mass in voxel space rather than scanner space");
+
 }
+// clang-format on
 
 typedef float value_type;
 

@@ -27,10 +27,7 @@
 #include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 class DixelMappingPlugin {
 public:
@@ -166,9 +163,6 @@ protected:
   const ssize_t kernel_centre, sample_centre;
 };
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping
 
 #endif

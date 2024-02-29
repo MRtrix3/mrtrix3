@@ -91,9 +91,7 @@ static const GLuint polygons[NUM_POLYGONS][3] = {
 
 } // namespace
 
-namespace MR {
-namespace GUI {
-namespace Shapes {
+namespace MR::GUI::Shapes {
 
 void Cube::generate() {
   vertex_buffer.gen();
@@ -110,6 +108,4 @@ void Cube::generate() {
   gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, num_indices, &polygons[0], gl::STATIC_DRAW);
 }
 
-} // namespace Shapes
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Shapes

@@ -20,11 +20,7 @@
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Transform : public Base, public Tool::CameraInteractor {
   Q_OBJECT
@@ -49,9 +45,6 @@ protected slots:
   void onActivate(bool);
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

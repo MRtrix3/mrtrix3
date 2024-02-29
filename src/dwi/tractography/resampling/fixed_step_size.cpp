@@ -18,10 +18,7 @@
 
 #include "math/hermite.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const {
   out.clear();
@@ -88,7 +85,4 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
   return true;
 }
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling

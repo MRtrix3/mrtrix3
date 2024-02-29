@@ -64,8 +64,7 @@
 namespace MR {
 class Header;
 
-namespace File {
-namespace MGH {
+namespace File::MGH {
 
 int32_t string_to_tag_ID(const std::string &key);
 std::string tag_ID_to_string(const int32_t tag);
@@ -1000,8 +999,8 @@ template <class Output> void write_other(const Header &H, Output &out) {
   }
 }
 
-} // namespace MGH
-} // namespace File
+} // namespace File::MGH
+
 } // namespace MR
 
 #endif

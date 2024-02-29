@@ -24,9 +24,7 @@
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 
-namespace MR {
-namespace Surface {
-namespace Filter {
+namespace MR::Surface::Filter {
 
 class VertexTransform : public Base {
 public:
@@ -52,8 +50,6 @@ private:
   transform_t mode;
 };
 
-} // namespace Filter
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::Filter
 
 #endif

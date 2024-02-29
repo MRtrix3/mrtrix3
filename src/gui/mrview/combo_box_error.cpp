@@ -17,9 +17,7 @@
 #include "gui/mrview/combo_box_error.h"
 #include "math/math.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 ComboBoxWithErrorMsg::ComboBoxWithErrorMsg(QWidget *parent, const QString &msg)
     : QComboBox(parent), error_message(msg), error_index(-1) {
@@ -47,6 +45,4 @@ void ComboBoxWithErrorMsg::clearError(int new_index) {
 
 void ComboBoxWithErrorMsg::onSetIndex(int new_index) { clearError(new_index); }
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView

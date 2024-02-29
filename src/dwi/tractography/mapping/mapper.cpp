@@ -18,10 +18,7 @@
 
 #include "file/matrix.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 void TrackMapperBase::voxelise(const Streamline<> &tck, SetVoxel &voxels) const {
   Eigen::Vector3i vox;
@@ -351,7 +348,4 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   }
 }
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping

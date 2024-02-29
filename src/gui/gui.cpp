@@ -19,8 +19,7 @@
 #include <clocale>
 #include <locale>
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 QWidget *App::main_window = nullptr;
 App *App::application = nullptr;
@@ -47,5 +46,4 @@ bool App::event(QEvent *event) {
   return QApplication::event(event);
 }
 
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI

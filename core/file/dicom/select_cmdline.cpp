@@ -20,9 +20,7 @@
 #include "file/dicom/study.h"
 #include "file/dicom/tree.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
   std::vector<std::shared_ptr<Series>> series;
@@ -209,6 +207,4 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
 
 std::vector<std::shared_ptr<Series>> (*select_func)(const Tree &tree) = select_cmdline;
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

@@ -31,8 +31,7 @@
 #include "mrtrix.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 class GZ {
 public:
@@ -161,7 +160,6 @@ protected:
   }
 };
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File
 
 #endif

@@ -22,9 +22,7 @@
 #include "header.h"
 #include "stride.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
     : QDialog(parent), H(header), save_data(0, 0) {
@@ -155,6 +153,4 @@ void ImageProperties::write_to_file() {
     MR::File::Matrix::save_matrix(save_data, name);
 }
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog

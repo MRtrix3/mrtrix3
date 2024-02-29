@@ -27,9 +27,7 @@
 #include "surface/mesh.h"
 #include "surface/types.h"
 
-namespace MR {
-namespace Surface {
-namespace Algo {
+namespace MR::Surface::Algo {
 
 // Function to convert a binary image into a mesh
 // Note that this produces a mesh that follows the voxel boundaries exactly;
@@ -504,8 +502,6 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
   out.load(vertices, triangles);
 }
 
-} // namespace Algo
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::Algo
 
 #endif

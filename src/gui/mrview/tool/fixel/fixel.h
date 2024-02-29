@@ -23,10 +23,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class Fixel : public Base, public ColourMapButtonObserver, public DisplayableVisitor {
   Q_OBJECT
 
@@ -110,9 +107,6 @@ private:
   void update_gui_threshold_controls(bool reload_threshold_types = true);
   void update_gui_tracking_controls();
 };
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

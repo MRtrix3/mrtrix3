@@ -24,9 +24,7 @@
 #include "image_helpers.h"
 #include "types.h"
 
-namespace MR {
-namespace Algo {
-namespace Histogram {
+namespace MR::Algo::Histogram {
 
 extern const App::OptionGroup Options;
 
@@ -194,8 +192,6 @@ private:
   vector_type mapping;
 };
 
-} // namespace Histogram
-} // namespace Algo
-} // namespace MR
+} // namespace MR::Algo::Histogram
 
 #endif

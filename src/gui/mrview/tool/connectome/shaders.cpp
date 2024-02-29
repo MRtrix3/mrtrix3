@@ -19,10 +19,7 @@
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 void ShaderBase::recompile(const Connectome &parent) {
   GL::assert_context_is_current();
@@ -534,7 +531,4 @@ void EdgeShader::update(const Connectome &parent) {
   fragment_shader_source += "}\n";
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

@@ -26,11 +26,7 @@ namespace App {
 class OptionGroup;
 }
 
-namespace DWI {
-
-namespace Tractography {
-
-namespace Tracking {
+namespace DWI::Tractography::Tracking {
 
 namespace Defaults {
 constexpr size_t num_selected_tracks = 5000;
@@ -63,9 +59,8 @@ extern const App::OptionGroup TrackOption;
 
 void load_streamline_properties_and_rois(Properties &);
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
+} // namespace DWI::Tractography::Tracking
+
 } // namespace MR
 
 #endif

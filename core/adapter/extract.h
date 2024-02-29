@@ -19,8 +19,7 @@
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Extract1D : public Base<Extract1D<ImageType>, ImageType> {
 public:
@@ -131,7 +130,6 @@ private:
   transform_type trans;
 };
 
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

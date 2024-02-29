@@ -16,9 +16,7 @@
 
 #include "dwi/directions/mask.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 void Mask::erode(const size_t iterations) {
   for (size_t iter = 0; iter != iterations; ++iter) {
@@ -64,6 +62,4 @@ bool Mask::is_adjacent(const size_t d) const {
   return false;
 }
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Directions

@@ -22,19 +22,22 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Extract amplitudes from a peak directions image";
 
   ARGUMENTS
-  +Argument("directions",
-            "the input directions image. Each volume corresponds to the x, y & z "
-            "component of each direction vector in turn.")
-          .type_image_in()
+  + Argument ("directions", "the input directions image."
+                            " Each volume corresponds to the x, y & z"
+                            " component of each direction vector in turn.").type_image_in()
 
-      + Argument("amplitudes", "the output amplitudes image.").type_image_out();
+  + Argument ("amplitudes", "the output amplitudes image.").type_image_out();
+
 }
+// clang-format on
 
 void run() {
   Header H_in = Header::open(argument[0]);

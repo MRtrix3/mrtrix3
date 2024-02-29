@@ -19,10 +19,7 @@
 
 #include "gui/mrview/mode/slice.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 class LightBox : public Slice {
   Q_OBJECT
   using proj_focusdelta = std::pair<Projection, float>;
@@ -91,9 +88,6 @@ signals:
   void slice_increment_reset();
 };
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode
 
 #endif

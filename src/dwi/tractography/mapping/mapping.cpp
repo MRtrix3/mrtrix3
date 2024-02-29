@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/mapping/mapping.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 size_t determine_upsample_ratio(const Header &header, const float step_size, const float ratio) {
   size_t upsample_ratio = 1;
@@ -98,7 +95,4 @@ void oversample_header(Header &header, const std::vector<default_type> &voxel_si
   }
 }
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping

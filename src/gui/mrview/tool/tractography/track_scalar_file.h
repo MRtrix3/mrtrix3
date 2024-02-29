@@ -23,11 +23,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/tractography/tractogram_enums.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class Tractogram;
 class Tractography;
 
@@ -84,9 +80,6 @@ private:
   Window &window() const { return *Window::main; }
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

@@ -22,13 +22,13 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
-
   SYNOPSIS = "Test the accuracy of the spherical harmonic precomputer";
-
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 using value_type = float;
 using coefs_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;

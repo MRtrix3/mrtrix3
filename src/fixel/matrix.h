@@ -22,9 +22,7 @@
 #include "image.h"
 #include "types.h"
 
-namespace MR {
-namespace Fixel {
-namespace Matrix {
+namespace MR::Fixel::Matrix {
 
 using index_image_type = uint64_t;
 using fixel_index_type = MR::Fixel::index_type;
@@ -249,8 +247,6 @@ protected:
   Image<bool> mask_image;
 };
 
-} // namespace Matrix
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Matrix
 
 #endif

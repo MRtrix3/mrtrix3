@@ -21,10 +21,7 @@
 
 #include "dwi/tractography/SIFT/model_base.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 class Fixel : public FixelBase {
 
@@ -61,9 +58,6 @@ private:
   }
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT
 
 #endif

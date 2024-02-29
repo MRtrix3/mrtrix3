@@ -33,145 +33,171 @@ using namespace App;
 const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", NULL};
 const char *operation_choices[] = {"regrid", "crop", "pad", NULL};
 
+// clang-format off
 void usage() {
-  AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk) & David Raffelt (david.raffelt@florey.edu.au) & Robert E. Smith "
-           "(robert.smith@florey.edu.au)";
 
-  SYNOPSIS =
-      "Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with "
-      "modified orientation, location and or resolution. The image content remains in place in real world coordinates.";
+  AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)"
+           " and David Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
+
+  SYNOPSIS = "Modify the grid of an image without interpolation (cropping or padding)"
+             " or by regridding to an image grid with modified orientation, location and or resolution."
+             " The image content remains in place in real world coordinates.";
 
   DESCRIPTION
-  +"- regrid: This operation performs changes of the voxel grid that require interpolation of the image such as "
-   "changing the resolution or location and orientation of the voxel grid. "
-   "If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless "
-   "nearest neighbour interpolation is selected or oversample is changed explicitly. The resolution can only be "
-   "changed for spatial dimensions. " +
-      "- crop: The image extent after cropping, can be specified either manually for each axis dimensions, or via a "
-      "mask or reference image. "
-      "The image can be cropped to the extent of a mask. "
-      "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by "
-      "removing the empty space on either side of the brain. Note that cropping does not extend the image beyond the "
-      "original FOV unless explicitly specified (via -crop_unbound or negative -axis extent)." +
-      "- pad: Analogously to cropping, padding increases the FOV of an image without image interpolation. Pad and crop "
-      "can be performed simultaneously by specifying signed specifier argument values to the -axis option." +
-      "This command encapsulates and extends the functionality of the superseded commands 'mrpad', 'mrcrop' and "
-      "'mrresize'. Note the difference in -axis convention used for 'mrcrop' and 'mrpad' (see -axis option "
-      "description).";
+  + "- regrid:"
+    " This operation performs changes of the voxel grid that require interpolation of the image"
+    " such as changing the resolution or location and orientation of the voxel grid."
+    " If the image is down-sampled,"
+    " the appropriate smoothing is automatically applied using Gaussian smoothing"
+    " unless nearest neighbour interpolation is selected or oversample is changed explicitly."
+    " The resolution can only be changed for spatial dimensions. "
+  + "- crop:"
+    " The image extent after cropping can be specified"
+    " either manually for each axis dimensions,"
+    " or via a mask or reference image."
+    " The image can be cropped to the extent of a mask."
+    " This is useful for axially-acquired brain images,"
+    " where the image size can be reduced by a factor of 2"
+    " by removing the empty space on either side of the brain."
+    " Note that cropping does not extend the image beyond the original FOV"
+    " unless explicitly specified"
+    " (via -crop_unbound or negative -axis extent)."
+  + "- pad:"
+    " Analogously to cropping,"
+    " padding increases the FOV of an image without image interpolation."
+    " Pad and crop can be performed simultaneously"
+    " by specifying signed specifier argument values to the -axis option."
+  + "This command encapsulates and extends the functionality"
+    " of the superseded commands 'mrpad', 'mrcrop' and 'mrresize'."
+    " Note the difference in -axis convention used for 'mrcrop' and 'mrpad'"
+    " (see -axis option description).";
 
   EXAMPLES
-  +Example("Crop and pad the first axis",
-           "mrgrid in.mif crop -axis 0 10,-5 out.mif",
-           "This removes 10 voxels on the lower and pads with 5 on the upper bound, which is equivalent to "
-           "padding with the negated specifier (mrgrid in.mif pad -axis 0 -10,5 out.mif).")
+  + Example ("Crop and pad the first axis",
+             "mrgrid in.mif crop -axis 0 10,-5 out.mif",
+             "This removes 10 voxels on the lower and pads with 5 on the upper bound,"
+             " which is equivalent to padding with the negated specifier"
+             " (mrgrid in.mif pad -axis 0 -10,5 out.mif).")
 
-      + Example("Right-pad the image to the number of voxels of a reference image",
-                "mrgrid in.mif pad -as ref.mif -all_axes -axis 3 0,0 out.mif -fill nan",
-                "This pads the image on the upper bound of all axes except for the volume dimension. "
-                "The headers of in.mif and ref.mif are ignored and the output image uses NAN values to fill in voxels "
-                "outside the original range of in.mif.")
+  + Example ("Right-pad the image to the number of voxels of a reference image",
+             "mrgrid in.mif pad -as ref.mif -all_axes -axis 3 0,0 out.mif -fill nan",
+             "This pads the image on the upper bound of all axes except for the volume dimension."
+             " The headers of in.mif and ref.mif are ignored"
+             " and the output image uses NAN values to fill in"
+             " voxels outside the original range of in.mif.")
 
-      +
-      Example(
-          "Regrid and interpolate to match the voxel grid of a reference image",
-          "mrgrid in.mif regrid -template ref.mif -scale 1,1,0.5 out.mif -fill nan",
-          "The -template instructs to regrid in.mif to match the voxel grid of ref.mif (voxel size, grid orientation "
-          "and voxel centres). "
-          "The -scale option overwrites the voxel scaling factor yielding voxel sizes in the third dimension that are "
-          "twice as coarse as those of the template image.");
+  + Example ("Regrid and interpolate to match the voxel grid of a reference image",
+             "mrgrid in.mif regrid -template ref.mif -scale 1,1,0.5 out.mif -fill nan",
+             "The -template instructs to regrid in.mif to match the voxel grid of ref.mif"
+             " (voxel size, grid orientation and voxel centres)."
+             " The -scale option overwrites the voxel scaling factor"
+             " yielding voxel sizes in the third dimension that are"
+             " twice as coarse as those of the template image.");
+
 
   ARGUMENTS
-  +Argument("input", "input image to be regridded.").type_image_in() +
-      Argument("operation", "the operation to be performed, one of: " + join(operation_choices, ", ") + ".")
-          .type_choice(operation_choices) +
-      Argument("output", "the output image.").type_image_out();
+  + Argument ("input", "input image to be regridded.").type_image_in ()
+  + Argument ("operation", "the operation to be performed;"
+                           " one of: " + join(operation_choices, ", ") + ".").type_choice (operation_choices)
+  + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  +OptionGroup("Regridding options (involves image interpolation, applied to spatial axes only)") +
-      Option(
-          "template",
-          "match the input image grid (voxel spacing, image size, header transformation) to that of a reference image. "
-          "The image resolution relative to the template image can be changed with one of -size, -voxel, -scale.") +
-      Argument("image").type_image_in()
+  + OptionGroup ("Regridding options"
+                 " (involves image interpolation, applied to spatial axes only)")
+    + Option   ("template", "match the input image grid"
+                            " (voxel spacing, image size, header transformation)"
+                            " to that of a reference image. "
+                 "The image resolution relative to the template image can be changed"
+                 " with one of -size, -voxel, -scale." )
+    + Argument ("image").type_image_in ()
 
-      + Option("size",
-               "define the size (number of voxels) in each spatial dimension for the output image. "
-               "This should be specified as a comma-separated list.") +
-      Argument("dims").type_sequence_int()
+    + Option   ("size", "define the size (number of voxels) in each spatial dimension for the output image."
+                        " This should be specified as a comma-separated list.")
+    + Argument ("dims").type_sequence_int()
 
-      + Option("voxel",
-               "define the new voxel size for the output image. "
-               "This can be specified either as a single value to be used for all spatial dimensions, "
-               "or as a comma-separated list of the size for each voxel dimension.") +
-      Argument("size").type_sequence_float()
+    + Option   ("voxel", "define the new voxel size for the output image."
+                         " This can be specified either as a single value to be used for all spatial dimensions,"
+                         " or as a comma-separated list of the size for each voxel dimension.")
+    + Argument ("size").type_sequence_float()
 
-      + Option("scale",
-               "scale the image resolution by the supplied factor. "
-               "This can be specified either as a single value to be used for all dimensions, "
-               "or as a comma-separated list of scale factors for each dimension.") +
-      Argument("factor").type_sequence_float()
+    + Option   ("scale", "scale the image resolution by the supplied factor."
+                         " This can be specified either as a single value to be used for all dimensions,"
+                         " or as a comma-separated list of scale factors for each dimension.")
+    + Argument ("factor").type_sequence_float()
 
-      + Option("interp",
-               "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: "
-               "cubic).") +
-      Argument("method").type_choice(interp_choices)
+    + Option ("interp", "set the interpolation method to use when reslicing"
+                        " (choices: nearest, linear, cubic, sinc;"
+                        " default: cubic).")
+    + Argument ("method").type_choice (interp_choices)
 
-      + Option(
-            "oversample",
-            "set the amount of over-sampling (in the target space) to perform when regridding. This is particularly "
-            "relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. "
-            "This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling "
-            "factors are desired along the different axes. Default is determined from ratio of voxel dimensions "
-            "(disabled "
-            "for nearest-neighbour interpolation).") +
-      Argument("factor").type_sequence_int()
+    + Option ("oversample",
+        "set the amount of over-sampling (in the target space) to perform when regridding."
+        " This is particularly relevant when downsamping a high-resolution image to a low-resolution image,"
+        " to avoid aliasing artefacts."
+        " This can consist of a single integer,"
+        " or a comma-separated list of 3 integers"
+        " if different oversampling factors are desired along the different axes."
+        " Default is determined from ratio of voxel dimensions"
+        " (disabled for nearest-neighbour interpolation).")
+    + Argument ("factor").type_sequence_int()
 
-      + OptionGroup("Pad and crop options (no image interpolation is performed, header transformation is adjusted)") +
-      Option("as",
-             "pad or crop the input image on the upper bound to match the specified reference image grid. "
-             "This operation ignores differences in image transformation between input and reference image.") +
-      Argument("reference image").type_image_in()
+  + OptionGroup ("Pad and crop options"
+                 " (no image interpolation is performed,"
+                 " header transformation is adjusted)")
+    + Option ("as", "pad or crop the input image on the upper bound"
+                    " to match the specified reference image grid."
+                    " This operation ignores differences in image transformation"
+                    " between input and reference image.")
+      + Argument ("reference image").type_image_in()
 
-      + Option("uniform", "pad or crop the input image by a uniform number of voxels on all sides") +
-      Argument("number").type_integer()
+    + Option ("uniform", "pad or crop the input image"
+                         " by a uniform number of voxels on all sides")
+      + Argument ("number").type_integer()
 
-      +
-      Option(
-          "mask",
-          "crop the input image according to the spatial extent of a mask image. "
-          "The mask must share a common voxel grid with the input image but differences in image transformations are "
-          "ignored. Note that even though only 3 dimensions are cropped when using a mask, the bounds are computed by "
-          "checking the extent for all dimensions. "
-          "Note that by default a gap of 1 voxel is left at all edges of the image to allow valid trilinear "
-          "interpolation. "
-          "This gap can be modified with the -uniform option but by default it does not extend beyond the FOV unless "
-          "-crop_unbound is used.") +
-      Argument("image", "the mask image. ").type_image_in()
+    + Option ("mask",
+        "crop the input image according to the spatial extent of a mask image."
+        " The mask must share a common voxel grid with the input image"
+        " but differences in image transformations are ignored."
+        " Note that even though only 3 dimensions are cropped when using a mask,"
+        " the bounds are computed by checking the extent for all dimensions."
+        " Note that by default a gap of 1 voxel is left at all edges of the image"
+        " to allow valid trilinear interpolation."
+        " This gap can be modified with the -uniform option"
+        " but by default it does not extend beyond the FOV unless -crop_unbound is used.")
+      + Argument ("image", "the mask image. ").type_image_in()
 
-      + Option("crop_unbound", "Allow padding beyond the original FOV when cropping.")
+    + Option ("crop_unbound", "Allow padding beyond the original FOV when cropping.")
 
-      + Option("axis",
-               "pad or crop the input image along the provided axis (defined by index). The specifier argument "
-               "defines the number of voxels added or removed on the lower or upper end of the axis (-axis index "
-               "delta_lower,delta_upper) "
-               "or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the "
-               "input image "
-               "(overriding all other extent-specifying options). Negative delta specifier values trigger the inverse "
-               "operation "
-               "(pad instead of crop and vice versa) and negative range specifier trigger padding. "
-               "Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, "
-               "respectively.")
-            .allow_multiple() +
-      Argument("index").type_integer(0) + Argument("spec").type_text()
+    + Option ("axis",
+        "pad or crop the input image along the provided axis (defined by index)."
+        " The specifier argument defines the number of voxels added or removed on the lower or upper end of the axis"
+        " (-axis index delta_lower,delta_upper)"
+        "or acts as a voxel selection range"
+        " (-axis index start:stop)."
+        " In both modes, values are relative to the input image "
+        " (overriding all other extent-specifying options)."
+        " Negative delta specifier values trigger the inverse operation"
+        " (pad instead of crop and vice versa)"
+        " and negative range specifier trigger padding."
+        " Note that the deprecated commands 'mrcrop' and 'mrpad'"
+        " used range-based and delta-based -axis indices, respectively.").allow_multiple()
+      + Argument ("index").type_integer(0)
+      + Argument ("spec").type_text()
 
-      + Option("all_axes", "Crop or pad all, not just spatial axes.")
+    + Option ("all_axes", "Crop or pad all, not just spatial axes.")
 
-      + OptionGroup("General options") +
-      Option("fill", "Use number as the out of bounds value. nan, inf and -inf are valid arguments. (Default: 0.0)") +
-      Argument("number").type_float()
+  + OptionGroup ("General options")
+    + Option ("fill", "Use number as the out of bounds value."
+                      " nan, inf and -inf are valid arguments."
+                      " (Default: 0.0)")
+    + Argument ("number").type_float()
 
-      + Stride::Options + DataType::options();
+  + Stride::Options
+  + DataType::options();
+
 }
+// clang-format on
 
 void run() {
   auto input_header = Header::open(argument[0]);

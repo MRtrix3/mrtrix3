@@ -23,9 +23,7 @@
 #include "stats/enhance.h"
 #include "stats/tfce.h"
 
-namespace MR {
-namespace Stats {
-namespace Cluster {
+namespace MR::Stats::Cluster {
 
 using value_type = Math::Stats::value_type;
 using vector_type = Math::Stats::vector_type;
@@ -49,8 +47,6 @@ protected:
 };
 //! @}
 
-} // namespace Cluster
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats::Cluster
 
 #endif

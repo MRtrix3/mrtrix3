@@ -27,10 +27,7 @@
 #include "dwi/tractography/GT/particle.h"
 #include "dwi/tractography/GT/particlepool.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 /**
  * @brief The ParticleGrid class
@@ -105,9 +102,6 @@ protected:
   }
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::GT
 
 #endif // __gt_particlegrid_h__

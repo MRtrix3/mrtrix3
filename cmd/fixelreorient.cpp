@@ -29,33 +29,33 @@ using namespace App;
 
 using Fixel::index_type;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Reorient fixel directions";
 
   DESCRIPTION
-  +"Reorientation is performed by transforming the vector representing "
-   "the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, "
-   "then re-normalising the vector."
+  + "Reorientation is performed by transforming the vector representing the fixel direction"
+    " with the Jacobian (local affine transform)"
+    " computed at each voxel in the warp,"
+    " then re-normalising the vector."
 
-      + Fixel::format_description;
+  + Fixel::format_description;
 
   ARGUMENTS
-  +Argument("fixel_in", "the input fixel directory").type_directory_in() +
-      Argument("warp",
-               "a 4D deformation field used to perform reorientation. "
-               "Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, "
-               "then re-normalising the vector representing the fixel direction")
-          .type_image_in() +
-      Argument("fixel_out",
-               "the output fixel directory. If the the input and output directories are the same, the existing "
-               "directions file will "
-               "be replaced (providing the -force option is supplied). If a new directory is supplied then the fixel "
-               "directions and all "
-               "other fixel data will be copied to the new directory.")
-          .type_directory_out();
+  + Argument ("fixel_in", "the input fixel directory").type_directory_in()
+  + Argument ("warp", "a 4D deformation field used to perform reorientation.").type_image_in ()
+  + Argument ("fixel_out", "the output fixel directory."
+                           " If the the input and output directories are the same,"
+                           " the existing directions file will be replaced"
+                           " (providing the -force option is supplied)."
+                           " If a new directory is supplied,"
+                           " then the fixel directions and all other fixel data"
+                           " will be copied to the new directory.").type_directory_out();
 }
+// clang-format on
 
 void run() {
   std::string input_fixel_directory = argument[0];

@@ -22,8 +22,7 @@
 #include "thread.h"
 #include "thread_queue.h"
 
-namespace MR {
-namespace Thread {
+namespace MR::Thread {
 
 namespace {
 
@@ -113,5 +112,4 @@ void __Backend::thread_report_to_user_func(const std::string &msg, int type) {
 __Backend *__Backend::backend = nullptr;
 std::mutex __Backend::mutex;
 
-} // namespace Thread
-} // namespace MR
+} // namespace MR::Thread

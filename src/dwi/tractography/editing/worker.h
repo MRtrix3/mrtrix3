@@ -25,10 +25,7 @@
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 class Worker {
 
@@ -68,9 +65,6 @@ private:
   mutable IncludeROIVisitation include_visitation;
 };
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Editing
 
 #endif

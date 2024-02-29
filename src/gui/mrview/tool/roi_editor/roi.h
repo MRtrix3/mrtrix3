@@ -35,9 +35,7 @@ namespace MR {
 
 class Header;
 
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace GUI::MRView::Tool {
 
 class ROI : public Base {
   Q_OBJECT
@@ -106,9 +104,8 @@ protected:
   void dropEvent(QDropEvent *event) override;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
+} // namespace GUI::MRView::Tool
+
 } // namespace MR
 
 #endif

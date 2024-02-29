@@ -19,10 +19,7 @@
 
 #include "dwi/tractography/resampling/resampling.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 class Endpoints : public BaseCRTP<Endpoints> {
 
@@ -33,9 +30,6 @@ public:
   bool valid() const override { return true; }
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling
 
 #endif

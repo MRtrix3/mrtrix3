@@ -22,9 +22,7 @@
 #include "math/rng.h"
 #include "misc/bitset.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 index_type Set::get_min_linkage(const index_type one, const index_type two) const {
   assert(one < size());
@@ -501,6 +499,4 @@ void FastLookupSet::test_lookup() const {
   VAR(error_rate);
 }
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Directions

@@ -23,9 +23,7 @@
 
 using namespace MR::Math;
 
-namespace MR {
-namespace Registration {
-namespace Transform {
+namespace MR::Registration::Transform {
 
 class RigidLinearNonSymmetricUpdate {
 public:
@@ -112,8 +110,6 @@ protected:
   RobustEstimatorType robust_estimator;
 };
 //! @}
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Transform
 
 #endif

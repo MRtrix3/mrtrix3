@@ -39,10 +39,7 @@ inline float get_slider_value_from_alpha(float alpha) { return std::log(alpha / 
 
 } // namespace
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class View::ClipPlaneModel : public QAbstractItemModel {
 public:
@@ -1011,7 +1008,4 @@ bool View::rotate_event(const ModelViewProjection &projection) {
   return true;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

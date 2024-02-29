@@ -21,10 +21,7 @@
 
 #include "dwi/tractography/SIFT/track_contribution.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 RegularisationCalculator::RegularisationCalculator(TckFactor &tckfactor, double &cf_reg_tik, double &cf_reg_tv)
     : master(tckfactor), cf_reg_tik(cf_reg_tik), cf_reg_tv(cf_reg_tv), tikhonov_sum(0.0), tv_sum(0.0) {}
@@ -53,7 +50,4 @@ bool RegularisationCalculator::operator()(const SIFT::TrackIndexRange &range) {
   return true;
 }
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2

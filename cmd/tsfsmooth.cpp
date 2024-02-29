@@ -25,22 +25,25 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Gaussian filter a track scalar file";
 
   ARGUMENTS
-  +Argument("input", "the input track scalar file.").type_file_in() +
-      Argument("output", "the output track scalar file").type_file_out();
+  + Argument ("input", "the input track scalar file.").type_file_in()
+  + Argument ("output", "the output track scalar file").type_file_out();
 
   OPTIONS
-  +Option("stdev",
-          "apply Gaussian smoothing with the specified standard deviation. "
-          "The standard deviation is defined in units of track points (default: " +
-              str(DEFAULT_SMOOTHING, 2) + ")") +
-      Argument("sigma").type_float(1e-6);
+  + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
+                     " The standard deviation is defined in units of track points"
+                     " (default: " + str(DEFAULT_SMOOTHING, 2) + ")")
+    + Argument ("sigma").type_float(1e-6);
+
 }
+// clang-format on
 
 using value_type = float;
 

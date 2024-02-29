@@ -24,8 +24,7 @@
 
 #include "mrtrix.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 template <uint32_t vertices = 3> class Polygon {
 
@@ -69,7 +68,6 @@ private:
 
 template <> bool Polygon<3>::shares_edge(const Polygon<3> &) const;
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface
 
 #endif

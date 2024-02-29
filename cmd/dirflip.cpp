@@ -27,26 +27,34 @@ constexpr size_t default_permutations = 1e8;
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Invert the polarity of individual directions so as to optimise a unipolar electrostatic repulsion model";
+  SYNOPSIS = "Invert the polarity of individual directions"
+             " so as to optimise a unipolar electrostatic repulsion model";
 
   DESCRIPTION
-  +"The orientations themselves are not affected, only their "
-   "polarity; this is necessary to ensure near-optimal distribution of DW "
-   "directions for eddy-current correction.";
+  + "The orientations themselves are not affected,"
+    " only their polarity;"
+    " this is necessary to ensure near-optimal distribution of DW directions"
+    " for eddy-current correction.";
 
   ARGUMENTS
-  +Argument("in", "the input files for the directions.").type_file_in() +
-      Argument("out", "the output files for the directions.").type_file_out();
+    + Argument ("in", "the input files for the directions.").type_file_in()
+    + Argument ("out", "the output files for the directions.").type_file_out();
+
 
   OPTIONS
-  +Option("permutations", "number of permutations to try (default: " + str(default_permutations) + ")") +
-      Argument("num").type_integer(1)
+    + Option ("permutations", "number of permutations to try"
+                              " (default: " + str(default_permutations) + ")")
+    +   Argument ("num").type_integer (1)
 
-      + Option("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
+    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
+                           " instead of [az el].");
 }
+// clang-format on
 
 using value_type = double;
 using vector3_type = Eigen::Vector3d;

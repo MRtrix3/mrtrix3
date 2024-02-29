@@ -23,25 +23,29 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Convert peak directions image to a fixel directory";
 
   DESCRIPTION
-  +Fixel::format_description;
+  + Fixel::format_description;
 
   ARGUMENTS
-  +Argument("directions",
-            "the input directions image; each volume corresponds to the x, y & z "
-            "component of each direction vector in turn.")
-          .type_image_in()
+  + Argument ("directions", "the input directions image;"
+                            " each volume corresponds to the x, y & z"
+                            " component of each direction vector in turn.").type_image_in()
 
-      + Argument("fixels", "the output fixel directory.").type_directory_out();
+  + Argument ("fixels", "the output fixel directory.").type_directory_out();
 
   OPTIONS
-  +Option("dataname", "the name of the output fixel data file encoding peak amplitudes") + Argument("path").type_text();
+  + Option ("dataname", "the name of the output fixel data file encoding peak amplitudes")
+    + Argument ("path").type_text();
+
 }
+// clang-format on
 
 std::vector<Eigen::Vector3d> get(Image<float> &data) {
   data.index(3) = 0;
