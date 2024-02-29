@@ -566,7 +566,6 @@ class ProgressBar: #pylint: disable=unused-variable
 
 class _FilesystemPath(pathlib.Path):
   def __new__(cls, *args, **kwargs):
-    # TODO Can we use positional arguments rather than kwargs?
     root_dir = kwargs.pop('root_dir', None)
     assert root_dir is not None
     return super().__new__(_WindowsPath if os.name == 'nt' else _PosixPath,
@@ -618,7 +617,7 @@ class _UserDirOutPath(UserPath):
                           '(use -force to overwrite)')
   # Force parents=True for user-specified path
   # Force exist_ok=False for user-specified path
-  def mkdir(self, mode=0o777):
+  def mkdir(self, mode=0o777): # pylint: disable=arguments-differ
     while True:
       if FORCE_OVERWRITE:
         try:
