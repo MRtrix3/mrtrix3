@@ -940,3 +940,5 @@ def execute(): #pylint: disable=unused-variable
   run.command(['mrconvert', 'result.mif', app.ARGS.output],
               mrconvert_keyval=os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'),
               force=app.FORCE_OVERWRITE)
+
+  return 'result.mif'

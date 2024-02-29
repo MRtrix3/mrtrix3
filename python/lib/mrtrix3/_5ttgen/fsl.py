@@ -275,3 +275,5 @@ def execute(): #pylint: disable=unused-variable
               mrconvert_keyval=app.ARGS.input,
               force=app.FORCE_OVERWRITE,
               preserve_pipes=True)
+
+  return 'result.mif'
