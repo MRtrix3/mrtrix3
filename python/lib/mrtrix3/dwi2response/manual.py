@@ -44,7 +44,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  # TODO Can usage() wipe this from the CLI?
   if os.path.exists('mask.mif'):
     app.warn('-mask option is ignored by algorithm "manual"')
     os.remove('mask.mif')
