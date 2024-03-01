@@ -562,63 +562,11 @@ class ProgressBar: #pylint: disable=unused-variable
 
 
 
-# Function that will create a new class,
-#   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
-#   and a desired augmentation that provides additional functions
-def _make_userpath_object(base_class, *args, **kwargs):
-  normpath = os.path.normpath(os.path.join(WORKING_DIR, *args))
-  new_class = type(f'{base_class.__name__.lstrip("_").rstrip("Extras")}',
-                   (pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath,
-                    base_class),
-                   {})
-  instance = new_class.__new__(new_class, normpath, **kwargs)
-  return instance
 
 
 
-class _UserPathExtras:
-  def __format__(self, _):
-    return shlex.quote(str(self))
 
-class _UserOutPathExtras(_UserPathExtras):
-  def __init__(self, *args, **kwargs):
-    super().__init__(self, *args, **kwargs)
-  def check_output(self, item_type='path'):
-    if self.exists():
-      if FORCE_OVERWRITE:
-        warn(f'Output file {item_type} "{str(self)}" already exists; '
-              'will be overwritten at script completion')
-      else:
-        raise MRtrixError(f'Output {item_type} "{str(self)}" already exists '
-                          '(use -force to override)')
 
-class _UserFileOutPathExtras(_UserOutPathExtras):
-  def __init__(self, *args, **kwargs):
-    super().__init__(self, *args, **kwargs)
-  def check_output(self):
-    return super().check_output('file')
-
-class _UserDirOutPathExtras(_UserOutPathExtras):
-  def __init__(self, *args, **kwargs):
-    super().__init__(self, *args, **kwargs)
-  def check_output(self):
-    return super().check_output('directory')
-  # Force parents=True for user-specified path
-  # Force exist_ok=False for user-specified path
-  def mkdir(self, mode=0o777): # pylint: disable=arguments-differ
-    while True:
-      if FORCE_OVERWRITE:
-        try:
-          shutil.rmtree(self)
-        except OSError:
-          pass
-      try:
-        super().mkdir(mode, parents=True, exist_ok=False)
-        return
-      except FileExistsError:
-        if not FORCE_OVERWRITE:
-          raise MRtrixError(f'Output directory "{str(self)}" already exists ' # pylint: disable=raise-missing-from
-                            '(use -force to override)')
 
 
 
@@ -629,6 +577,60 @@ class _UserDirOutPathExtras(_UserOutPathExtras):
 #   automated self-documentation.
 
 class Parser(argparse.ArgumentParser):
+
+  # Function that will create a new class,
+  #   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
+  #   and a desired augmentation that provides additional functions
+  def make_userpath_object(base_class, *args, **kwargs):
+    normpath = os.path.normpath(os.path.join(WORKING_DIR, *args))
+    new_class = type(f'{base_class.__name__.lstrip("_").rstrip("Extras")}',
+                    (pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath,
+                      base_class),
+                    {})
+    instance = new_class.__new__(new_class, normpath, **kwargs)
+    return instance
+
+  # Classes that extend the functionality of pathlib.Path
+  class _UserPathExtras:
+    def __format__(self, _):
+      return shlex.quote(str(self))
+  class _UserOutPathExtras(_UserPathExtras):
+    def __init__(self, *args, **kwargs):
+      super().__init__(self, *args, **kwargs)
+    def check_output(self, item_type='path'):
+      if self.exists():
+        if FORCE_OVERWRITE:
+          warn(f'Output file {item_type} "{str(self)}" already exists; '
+                'will be overwritten at script completion')
+        else:
+          raise MRtrixError(f'Output {item_type} "{str(self)}" already exists '
+                            '(use -force to override)')
+  class _UserFileOutPathExtras(_UserOutPathExtras):
+    def __init__(self, *args, **kwargs):
+      super().__init__(self, *args, **kwargs)
+    def check_output(self):
+      return super().check_output('file')
+  class _UserDirOutPathExtras(_UserOutPathExtras):
+    def __init__(self, *args, **kwargs):
+      super().__init__(self, *args, **kwargs)
+    def check_output(self):
+      return super().check_output('directory')
+    # Force parents=True for user-specified path
+    # Force exist_ok=False for user-specified path
+    def mkdir(self, mode=0o777): # pylint: disable=arguments-differ
+      while True:
+        if FORCE_OVERWRITE:
+          try:
+            shutil.rmtree(self)
+          except OSError:
+            pass
+        try:
+          super().mkdir(mode, parents=True, exist_ok=False)
+          return
+        except FileExistsError:
+          if not FORCE_OVERWRITE:
+            raise MRtrixError(f'Output directory "{str(self)}" already exists ' # pylint: disable=raise-missing-from
+                              '(use -force to override)')
 
   # Various callable types for use as argparse argument types
   class CustomTypeBase:
@@ -732,7 +734,7 @@ class Parser(argparse.ArgumentParser):
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = _make_userpath_object(_UserPathExtras, input_value)
+      abspath = Parser.make_userpath_object(Parser._UserPathExtras, input_value)
       if not abspath.exists():
         raise argparse.ArgumentTypeError(f'Input directory "{input_value}" does not exist')
       if not abspath.is_dir():
@@ -747,7 +749,7 @@ class Parser(argparse.ArgumentParser):
 
   class DirectoryOut(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = _make_userpath_object(_UserDirOutPathExtras, input_value)
+      abspath = Parser.make_userpath_object(Parser._UserDirOutPathExtras, input_value)
       return abspath
     @staticmethod
     def _legacytypestring():
@@ -758,7 +760,7 @@ class Parser(argparse.ArgumentParser):
 
   class FileIn(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = _make_userpath_object(_UserPathExtras, input_value)
+      abspath = Parser.make_userpath_object(Parser._UserPathExtras, input_value)
       if not abspath.exists():
         raise argparse.ArgumentTypeError(f'Input file "{input_value}" does not exist')
       if not abspath.is_file():
@@ -773,7 +775,7 @@ class Parser(argparse.ArgumentParser):
 
   class FileOut(CustomTypeBase):
     def __call__(self, input_value):
-      return _make_userpath_object(_UserFileOutPathExtras, input_value)
+      return Parser.make_userpath_object(Parser._UserFileOutPathExtras, input_value)
     @staticmethod
     def _legacytypestring():
       return 'FILEOUT'
@@ -788,7 +790,7 @@ class Parser(argparse.ArgumentParser):
         abspath = pathlib.Path(input_value)
         _STDIN_IMAGES.append(abspath)
         return abspath
-      return _make_userpath_object(_UserPathExtras, input_value)
+      return Parser.make_userpath_object(Parser._UserPathExtras, input_value)
     @staticmethod
     def _legacytypestring():
       return 'IMAGEIN'
@@ -805,7 +807,7 @@ class Parser(argparse.ArgumentParser):
         return abspath
       # Not guaranteed to catch all cases of output images trying to overwrite existing files;
       #   but will at least catch some of them
-      return _make_userpath_object(_UserFileOutPathExtras, input_value)
+      return Parser.make_userpath_object(Parser._UserFileOutPathExtras, input_value)
     @staticmethod
     def _legacytypestring():
       return 'IMAGEOUT'
