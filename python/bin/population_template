@@ -195,6 +195,16 @@ def usage(cmdline): #pylint: disable=unused-variable
                          help='The gradient step size for non-linear registration'
                               f' (Default: {DEFAULT_NL_GRAD_STEP})')
 
+  class SequenceDirectoryOut(app.Parser.CustomTypeBase):
+    def __call__(self, input_value):
+      return [app._make_userpath_object(app._UserDirOutPathExtras, item) for item in input_value.split(',')]
+    @staticmethod
+    def _legacytypestring():
+      return 'SEQDIROUT'
+    @staticmethod
+    def _metavar():
+      return 'directory_list'
+
   options = cmdline.add_argument_group('Input, output and general options')
   registration_modes_string = ', '.join(f'"{x}"' for x in REGISTRATION_MODES if '_' in x)
   options.add_argument('-type',
@@ -205,7 +215,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' which might be useful for intra-subject registration in longitudinal analysis);'
                             ' "affine" (perform affine registration);'
                             ' "nonlinear";'
-                            f' as well as cominations of registration types: {registration_modes_string}.'
+                            f' as well as combinations of registration types: {registration_modes_string}.'
                             ' Default: rigid_affine_nonlinear',
                             default='rigid_affine_nonlinear')
   options.add_argument('-voxel_size',
@@ -235,14 +245,12 @@ def usage(cmdline): #pylint: disable=unused-variable
                        type=app.Parser.DirectoryOut(),
                        help='Output a directory containing warps from each input to the template.'
                             ' If the folder does not exist it will be created')
-  # TODO Would prefer for this to be exclusively a directory;
-  #   but to do so will need to provide some form of disambiguation of multi-contrast files
   options.add_argument('-transformed_dir',
-                       type=app.Parser.DirectoryOut(),
+                       type=SequenceDirectoryOut(),
                        help='Output a directory containing the input images transformed to the template.'
                             ' If the folder does not exist it will be created.'
                             ' For multi-contrast registration,'
-                            ' this path will contain a sub-directory for the images per contrast.')
+                            ' provide a comma-separated list of directories.')
   options.add_argument('-linear_transformations_dir',
                        type=app.Parser.DirectoryOut(),
                        help='Output a directory containing the linear transformations'
@@ -809,26 +817,27 @@ def execute(): #pylint: disable=unused-variable
   assert (dorigid + doaffine + dononlinear >= 1), 'FIXME: registration type not valid'
 
 
+  # Reorder arguments for multi-contrast registration as after command line parsing app.ARGS.input_dir holds all but one argument
+  # Also cast user-speficied options to the correct types
   input_output = app.ARGS.input_dir + [app.ARGS.template]
   n_contrasts = len(input_output) // 2
   if len(input_output) != 2 * n_contrasts:
-    raise MRtrixError(f'Expected two arguments per contrast, received {len(input_output)}: {", ".join(input_output)}')
-  if n_contrasts > 1:
-    app.console('Generating population template using multi-contrast registration')
-
-  # reorder arguments for multi-contrast registration as after command line parsing app.ARGS.input_dir holds all but one argument
-  # TODO Write these to new variables rather than overwring app.ARGS?
-  # Or maybe better, invoke the appropriate typed arguments for each
+    raise MRtrixError('Expected two arguments per contrast;'
+                      f' received {len(input_output)}:'
+                      f' {", ".join(input_output)}')
   app.ARGS.input_dir = []
   app.ARGS.template = []
   for i_contrast in range(n_contrasts):
     inargs = (input_output[i_contrast*2], input_output[i_contrast*2+1])
-    app.ARGS.input_dir.append(app.Parser.DirectoryIn(inargs[0]))
-    app.ARGS.template.append(app.Parser.ImageOut(inargs[1]))
+    app.ARGS.input_dir.append(app._make_userpath_object(app._UserPathExtras, inargs[0]))
+    app.ARGS.template.append(app._make_userpath_object(app._UserOutPathExtras, inargs[1]))
   # Perform checks that otherwise would have been done immediately after command-line parsing
   #   were it not for the inability to represent input-output pairs in the command-line interface representation
   for output_path in app.ARGS.template:
     output_path.check_output()
+
+  if n_contrasts > 1:
+    app.console('Generating population template using multi-contrast registration')
 
   cns = Contrasts()
   app.debug(str(cns))
@@ -931,9 +940,9 @@ def execute(): #pylint: disable=unused-variable
     app.ARGS.warp_dir = relpath(app.ARGS.warp_dir)
 
   if app.ARGS.transformed_dir:
-    app.ARGS.transformed_dir = [app.Parser.DirectoryOut(d) for d in app.ARGS.transformed_dir.split(',')]
     if len(app.ARGS.transformed_dir) != n_contrasts:
-      raise MRtrixError('require multiple comma separated transformed directories if multi-contrast registration is used')
+      raise MRtrixError(f'number of output directories specified for transformed images ({len(app.ARGS.transformed_dir)})'
+                        f' does not match number of contrasts ({n_contrasts})')
     for tdir in app.ARGS.transformed_dir:
       tdir.check_output()
 

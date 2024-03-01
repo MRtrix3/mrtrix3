@@ -1,4 +1,4 @@
-mkdir -p tmp-newdirin/ && touch tmp-filein.txt && touch tmp-tracksin.tck && testing_python_cli -string_implicit my_implicit_string -string_explicit my_explicit_string -choice One -bool false -int_builtin 0 -float_builtin 0.0 -int_unbound 0 -int_nonneg 1 -int_bound 50 -float_unbound 0.0 -float_nonneg 1.0 -float_bound 0.5 -intseq 1,2,3 -floatseq 0.1,0.2,0.3 -dirin tmp-dirin/ -dirout tmp-dirout/ -filein tmp-filein.txt -fileout tmp-fileout.txt -tracksin tmp-tracksin.tck -tracksout tmp-tracksout.tck -various my_various
+mkdir -p tmp-dirin/ && touch tmp-filein.txt && touch tmp-tracksin.tck && testing_python_cli -string_implicit my_implicit_string -string_explicit my_explicit_string -choice One -bool false -int_builtin 0 -float_builtin 0.0 -int_unbound 0 -int_nonneg 1 -int_bound 50 -float_unbound 0.0 -float_nonneg 1.0 -float_bound 0.5 -int_seq 1,2,3 -float_seq 0.1,0.2,0.3 -dir_in tmp-dirin/ -dir_out tmp-dirout/ -file_in tmp-filein.txt -file_out tmp-fileout.txt -tracks_in tmp-tracksin.tck -tracks_out tmp-tracksout.tck -various my_various
 testing_python_cli -help > tmp.txt && diff -q tmp.txt data/python_cli/help.txt
 testing_python_cli __print_full_usage__ > tmp.txt && diff -q tmp.txt data/python_cli/full_usage.txt
 testing_python_cli __print_usage_markdown__ > tmp.md && diff -q tmp.md data/python_cli/markdown.md
@@ -23,17 +23,16 @@ testing_python_cli -float_builtin NotAFloat && false || true
 testing_python_cli -float_unbound NotAFloat && false || true
 testing_python_cli -float_nonneg -0.1 && false || true
 testing_python_cli -float_bound 1.1 && false || true
-testing_python_cli -intseq 0.1,0.2,0.3 && false || true
-testing_python_cli -intseq Not,An,Int,Seq && false || true
-testing_python_cli -floatseq Not,A,Float,Seq && false || true
-testing_python_cli -dirin does/not/exist/ && false || true
-mkdir -p tmp-dirout/ && testing_python_cli -dirout tmp-dirout/ && false || true
-testing_python_cli -dirout tmp-dirout/ -force
-testing_python_cli -filein does/not/exist.txt && false || true
-touch tmp-fileout.txt && testing_python_cli -fileout tmp-fileout.txt && false || true
-touch tmp-fileout.txt && testing_python_cli -fileout tmp-fileout.txt -force
-testing_python_cli -tracksin does/not/exist.txt && false || true
-testing_python_cli -tracksin tmp-filein.txt && false || true
-touch tmp-tracksout.tck && testing_python_cli -tracksout tmp-tracksout.tck && false || true
-testing_python_cli -tracksout tmp-tracksout.tck -force
-testing_python_cli -tracksout tmp-tracksout.txt && false || true
+testing_python_cli -int_seq 0.1,0.2,0.3 && false || true
+testing_python_cli -int_seq Not,An,Int,Seq && false || true
+testing_python_cli -float_seq Not,A,Float,Seq && false || true
+rm -rf tmp-dirin/ && testing_python_cli -dir_in tmp-dirin/ && false || true
+mkdir -p tmp-dirout/ && testing_python_cli -dir_out tmp-dirout/ 2>&1 && grep "use -force to override"
+mkdir -p tmp-dirout/ && testing_python_cli -dir_out tmp-dirout/ -force
+rm -f tmp-filein.txt && testing_python_cli -file_in tmp-filein.txt && false || true
+touch tmp-fileout.txt && testing_python_cli -file_out tmp-fileout.txt 2>&1 && grep "use -force to override"
+touch tmp-fileout.txt && testing_python_cli -file_out tmp-fileout.txt -force
+rm -f tmp-tracksin.tck && testing_python_cli -tracks_in tmp-tracksin.tck && false || true
+touch tmp-filein.txt && testing_python_cli -tracks_in tmp-filein.txt && false || true
+touch tmp-tracksout.tck && testing_python_cli -tracks_out tmp-tracksout.tck 2>&1 && grep "use -force to override"
+touch tmp-tracksout.tck && testing_python_cli -tracks_out tmp-tracksout.tck -force

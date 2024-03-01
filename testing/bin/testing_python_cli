@@ -122,14 +122,17 @@ def usage(cmdline): #pylint: disable=unused-variable
   custom.add_argument('-tracks_out',
                       type=app.Parser.TracksOut(),
                       help='An output tractogram')
+  custom.add_argument('-various',
+                      type=app.Parser.Various(),
+                      help='An option that accepts various types of content')
 
 
 
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
 
-  for key, value in app.ARGS.iteritems():
-    app.console(f'{key}: {value}')
+  for key in vars(app.ARGS):
+    app.console(f'{key}: {repr(getattr(app.ARGS, key))}')
 
 
 
