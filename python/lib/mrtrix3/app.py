@@ -186,7 +186,7 @@ def _execute(module): #pylint: disable=unused-variable
   # Now that FORCE_OVERWRITE has been set,
   #   check any user-specified output paths
   for arg in vars(ARGS):
-    if isinstance(arg, _UserOutPathExtras):
+    if isinstance(arg, Parser._UserOutPathExtras): # pylint: disable=protected-access
       arg.check_output()
 
   # ANSI settings may have been altered at the command-line
@@ -296,9 +296,9 @@ def _execute(module): #pylint: disable=unused-variable
       debug(f'Erasing {len(_STDIN_IMAGES)} piped input images')
       for item in _STDIN_IMAGES:
         try:
-          os.remove(item)
+          item.unlink()
           debug(f'Successfully erased "{item}"')
-        except OSError as exc:
+        except FileNotFoundError as exc:
           debug(f'Unable to erase "{item}": {exc}')
     if SCRATCH_DIR:
       if DO_CLEANUP:
@@ -313,7 +313,7 @@ def _execute(module): #pylint: disable=unused-variable
         console(f'Scratch directory retained; location: {SCRATCH_DIR}')
     if _STDOUT_IMAGES:
       debug(f'Emitting {len(_STDOUT_IMAGES)} output piped images to stdout')
-      sys.stdout.write('\n'.join(_STDOUT_IMAGES))
+      sys.stdout.write('\n'.join(map(str, _STDOUT_IMAGES)))
   sys.exit(return_code)
 
 
@@ -337,16 +337,15 @@ def activate_scratch_dir(): #pylint: disable=unused-variable
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
     SCRATCH_DIR = os.path.join(dir_path, f'{prefix}{random_string}') + os.sep
   os.makedirs(SCRATCH_DIR)
-  console(f'Generated scratch directory: {SCRATCH_DIR}')
-  with open(os.path.join(SCRATCH_DIR, 'cwd.txt'), 'w', encoding='utf-8') as outfile:
-    outfile.write(f'{WORKING_DIR}\n')
-  with open(os.path.join(SCRATCH_DIR, 'command.txt'), 'w', encoding='utf-8') as outfile:
-    outfile.write(f'{" ".join(sys.argv)}\n')
-  with open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w', encoding='utf-8'):
-    pass
-  if VERBOSITY:
-    console(f'Changing to scratch directory ({SCRATCH_DIR})')
   os.chdir(SCRATCH_DIR)
+  if VERBOSITY:
+    console(f'Activated scratch directory: {SCRATCH_DIR}')
+  with open('cwd.txt', 'w', encoding='utf-8') as outfile:
+    outfile.write(f'{WORKING_DIR}\n')
+  with open('command.txt', 'w', encoding='utf-8') as outfile:
+    outfile.write(f'{" ".join(sys.argv)}\n')
+  with open('log.txt', 'w', encoding='utf-8'):
+    pass
   # Also use this scratch directory for any piped images within run.command() calls,
   #   and for keeping a log of executed commands / functions
   run.shared.set_scratch_dir(SCRATCH_DIR)
@@ -581,13 +580,14 @@ class Parser(argparse.ArgumentParser):
   # Function that will create a new class,
   #   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
   #   and a desired augmentation that provides additional functions
+  @staticmethod
   def make_userpath_object(base_class, *args, **kwargs):
-    normpath = os.path.normpath(os.path.join(WORKING_DIR, *args))
+    abspath = os.path.normpath(os.path.join(WORKING_DIR, *args))
     new_class = type(f'{base_class.__name__.lstrip("_").rstrip("Extras")}',
-                    (pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath,
-                      base_class),
+                    (base_class,
+                     pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath),
                     {})
-    instance = new_class.__new__(new_class, normpath, **kwargs)
+    instance = new_class.__new__(new_class, abspath, **kwargs)
     return instance
 
   # Classes that extend the functionality of pathlib.Path
@@ -600,7 +600,7 @@ class Parser(argparse.ArgumentParser):
     def check_output(self, item_type='path'):
       if self.exists():
         if FORCE_OVERWRITE:
-          warn(f'Output file {item_type} "{str(self)}" already exists; '
+          warn(f'Output {item_type} "{str(self)}" already exists; '
                 'will be overwritten at script completion')
         else:
           raise MRtrixError(f'Output {item_type} "{str(self)}" already exists '
@@ -622,7 +622,7 @@ class Parser(argparse.ArgumentParser):
         if FORCE_OVERWRITE:
           try:
             shutil.rmtree(self)
-          except OSError:
+          except FileNotFoundError:
             pass
         try:
           super().mkdir(mode, parents=True, exist_ok=False)
@@ -1563,7 +1563,7 @@ def handler(signum, _frame):
       sys.stderr.write(f'{EXEC_NAME}: {ANSI.console}Scratch directory retained; location: {SCRATCH_DIR}{ANSI.clear}\n')
   for item in _STDIN_IMAGES:
     try:
-      os.remove(item)
-    except OSError:
+      item.unlink()
+    except FileNotFoundError:
       pass
   os._exit(signum) # pylint: disable=protected-access
