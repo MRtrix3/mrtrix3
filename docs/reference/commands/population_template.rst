@@ -38,7 +38,7 @@ Options
 Input, output and general options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-type choice** Specify the types of registration stages to perform. Options are: "rigid" (perform rigid registration only, which might be useful for intra-subject registration in longitudinal analysis); "affine" (perform affine registration); "nonlinear"; as well as cominations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
+- **-type choice** Specify the types of registration stages to perform. Options are: "rigid" (perform rigid registration only, which might be useful for intra-subject registration in longitudinal analysis); "affine" (perform affine registration); "nonlinear"; as well as combinations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
 
 - **-voxel_size values** Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma-separated values.
 
@@ -48,7 +48,7 @@ Input, output and general options
 
 - **-warp_dir directory** Output a directory containing warps from each input to the template. If the folder does not exist it will be created
 
-- **-transformed_dir directory** Output a directory containing the input images transformed to the template. If the folder does not exist it will be created. For multi-contrast registration, this path will contain a sub-directory for the images per contrast.
+- **-transformed_dir directory_list** Output a directory containing the input images transformed to the template. If the folder does not exist it will be created. For multi-contrast registration, provide a comma-separated list of directories.
 
 - **-linear_transformations_dir directory** Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created
 

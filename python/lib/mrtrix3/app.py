@@ -186,7 +186,7 @@ def _execute(module): #pylint: disable=unused-variable
   # Now that FORCE_OVERWRITE has been set,
   #   check any user-specified output paths
   for arg in vars(ARGS):
-    if isinstance(arg, UserPath):
+    if isinstance(arg, _UserOutPathExtras):
       arg.check_output()
 
   # ANSI settings may have been altered at the command-line
@@ -562,59 +562,47 @@ class ProgressBar: #pylint: disable=unused-variable
 
 
 
+# Function that will create a new class,
+#   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
+#   and a desired augmentation that provides additional functions
+def _make_userpath_object(base_class, *args, **kwargs):
+  normpath = os.path.normpath(os.path.join(WORKING_DIR, *args))
+  new_class = type(f'{base_class.__name__.lstrip("_").rstrip("Extras")}',
+                   (pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath,
+                    base_class),
+                   {})
+  instance = new_class.__new__(new_class, normpath, **kwargs)
+  return instance
 
 
-class _FilesystemPath(pathlib.Path):
-  def __new__(cls, *args, **kwargs):
-    root_dir = kwargs.pop('root_dir', None)
-    assert root_dir is not None
-    return super().__new__(_WindowsPath if os.name == 'nt' else _PosixPath,
-                           os.path.normpath(os.path.join(root_dir, *args)),
-                           **kwargs)
+
+class _UserPathExtras:
   def __format__(self, _):
     return shlex.quote(str(self))
 
-class _WindowsPath(pathlib.PureWindowsPath, _FilesystemPath):
-  _flavour = pathlib._windows_flavour # pylint: disable=protected-access
-class _PosixPath(pathlib.PurePosixPath, _FilesystemPath):
-  _flavour = pathlib._posix_flavour # pylint: disable=protected-access
-
-class UserPath(_FilesystemPath):
-  def __new__(cls, *args, **kwargs):
-    kwargs.update({'root_dir': WORKING_DIR})
-    return super().__new__(cls, *args, **kwargs)
-  def check_output(self):
-    pass
-
-class ScratchPath(_FilesystemPath): # pylint: disable=unused-variable
-  def __new__(cls, *args, **kwargs):
-    assert SCRATCH_DIR is not None
-    kwargs.update({'root_dir': SCRATCH_DIR})
-    return super().__new__(cls, *args, **kwargs)
-
-class _UserFileOutPath(UserPath):
+class _UserOutPathExtras(_UserPathExtras):
   def __init__(self, *args, **kwargs):
     super().__init__(self, *args, **kwargs)
-  def check_output(self):
+  def check_output(self, item_type='path'):
     if self.exists():
       if FORCE_OVERWRITE:
-        warn(f'Output file path "{str(self)}" already exists; '
+        warn(f'Output file {item_type} "{str(self)}" already exists; '
               'will be overwritten at script completion')
       else:
-        raise MRtrixError(f'Output file "{str(self)}" already exists '
+        raise MRtrixError(f'Output {item_type} "{str(self)}" already exists '
                           '(use -force to override)')
 
-class _UserDirOutPath(UserPath):
+class _UserFileOutPathExtras(_UserOutPathExtras):
   def __init__(self, *args, **kwargs):
     super().__init__(self, *args, **kwargs)
   def check_output(self):
-    if self.exists():
-      if FORCE_OVERWRITE:
-        warn(f'Output directory path "{str(self)}" already exists; '
-              'will be overwritten at script completion')
-      else:
-        raise MRtrixError(f'Output directory "{str(self)}" already exists '
-                          '(use -force to overwrite)')
+    return super().check_output('file')
+
+class _UserDirOutPathExtras(_UserOutPathExtras):
+  def __init__(self, *args, **kwargs):
+    super().__init__(self, *args, **kwargs)
+  def check_output(self):
+    return super().check_output('directory')
   # Force parents=True for user-specified path
   # Force exist_ok=False for user-specified path
   def mkdir(self, mode=0o777): # pylint: disable=arguments-differ
@@ -641,8 +629,6 @@ class _UserDirOutPath(UserPath):
 #   automated self-documentation.
 
 class Parser(argparse.ArgumentParser):
-
-
 
   # Various callable types for use as argparse argument types
   class CustomTypeBase:
@@ -746,7 +732,7 @@ class Parser(argparse.ArgumentParser):
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = UserPath(input_value)
+      abspath = _make_userpath_object(_UserPathExtras, input_value)
       if not abspath.exists():
         raise argparse.ArgumentTypeError(f'Input directory "{input_value}" does not exist')
       if not abspath.is_dir():
@@ -759,10 +745,9 @@ class Parser(argparse.ArgumentParser):
     def _metavar():
       return 'directory'
 
-
   class DirectoryOut(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = _UserDirOutPath(input_value)
+      abspath = _make_userpath_object(_UserDirOutPathExtras, input_value)
       return abspath
     @staticmethod
     def _legacytypestring():
@@ -773,7 +758,7 @@ class Parser(argparse.ArgumentParser):
 
   class FileIn(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = UserPath(input_value)
+      abspath = _make_userpath_object(_UserPathExtras, input_value)
       if not abspath.exists():
         raise argparse.ArgumentTypeError(f'Input file "{input_value}" does not exist')
       if not abspath.is_file():
@@ -788,8 +773,7 @@ class Parser(argparse.ArgumentParser):
 
   class FileOut(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = _UserFileOutPath(input_value)
-      return abspath
+      return _make_userpath_object(_UserFileOutPathExtras, input_value)
     @staticmethod
     def _legacytypestring():
       return 'FILEOUT'
@@ -801,9 +785,10 @@ class Parser(argparse.ArgumentParser):
     def __call__(self, input_value):
       if input_value == '-':
         input_value = sys.stdin.readline().strip()
-        _STDIN_IMAGES.append(input_value)
-      abspath = UserPath(input_value)
-      return abspath
+        abspath = pathlib.Path(input_value)
+        _STDIN_IMAGES.append(abspath)
+        return abspath
+      return _make_userpath_object(_UserPathExtras, input_value)
     @staticmethod
     def _legacytypestring():
       return 'IMAGEIN'
@@ -815,11 +800,12 @@ class Parser(argparse.ArgumentParser):
     def __call__(self, input_value):
       if input_value == '-':
         input_value = utils.name_temporary('mif')
-        _STDOUT_IMAGES.append(input_value)
+        abspath = pathlib.Path(input_value)
+        _STDOUT_IMAGES.append(abspath)
+        return abspath
       # Not guaranteed to catch all cases of output images trying to overwrite existing files;
       #   but will at least catch some of them
-      abspath = _UserFileOutPath(input_value)
-      return abspath
+      return _make_userpath_object(_UserFileOutPathExtras, input_value)
     @staticmethod
     def _legacytypestring():
       return 'IMAGEOUT'
