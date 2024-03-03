@@ -1,0 +1,197 @@
+#!/bin/bash -ex
+
+TAGNAME="$1"
+
+CMAKE=$(which cmake)
+ORIG_PATH=${PATH}
+PATH=$(getconf PATH)
+export PATH
+
+EIGEN_VERSION=3.4.0
+FFTW_VERSION=3.3.10
+QT_VERSION=6.6.1
+
+if [ "$(uname)" = "Linux" ]; then
+  OS=linux
+fi
+if [ "$(uname)" = "Darwin" ]; then
+  OS=macos
+fi
+
+HOST_ARCH=$(arch)
+
+ARCHS="x86_64"
+if [ "${OS}" = "macos" ]; then
+  ARCHS="x86_64 arm64"
+  CMAKE_ARCHS="x86_64;arm64"
+  MACOSX_DEPLOYMENT_TARGET=11.0
+  export MACOSX_DEPLOYMENT_TARGET
+  MACOSX_VERSION_MIN="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+fi
+
+PLD=$(pwd)
+PREFIX=${PLD}/mrtrix3
+if [ -f "${PREFIX}-${OS}-build-deps.tar.gz" ]; then
+  DEPCACHE=1
+  echo "Reusing previously built dependencies"
+  tar xfz ${PREFIX}-${OS}-build-deps.tar.gz
+else
+  echo "Using fftw ${FFTW_VERSION}"
+  echo "Using eigen ${EIGEN_VERSION}"
+  echo "Using qt ${QT_VERSION}"
+
+  # FFTW
+  SECONDS=0
+  DNAME=fftw-${FFTW_VERSION}
+  FNAME=${DNAME}.tar.gz
+  curl -s -O http://www.fftw.org/${FNAME}
+  for ARCH in ${ARCHS}; do
+    echo "building FFTW for ${ARCH}"
+    SIMD=""
+    if [ "${ARCH}" = "x86_64" ]; then
+      SIMD="--enable-sse2 --enable-avx --enable-avx2"
+    fi
+    if [ "${OS}" = "macos" ]; then
+      MACOS_ARCH="-arch ${ARCH}"
+    fi
+    tar xf ${FNAME}
+    cd ${DNAME}
+    # In order to cross-compile for arm64 on a x86 host, we need to explicitly set the host
+    if [ "${ARCH}" = "arm64" ] && [ "${HOST_ARCH}" = "i386" ]; then
+      CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD} --host=i386-apple-darwin
+    else
+      CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
+    fi
+    make install > /dev/null
+    cd ..
+    rm -r ${DNAME}
+    mv ${PREFIX} ${PREFIX}-${ARCH}
+  done
+  mkdir -p ${PREFIX}/{include,lib}
+  cp ${PREFIX}-x86_64/include/fftw3.h ${PREFIX}/include/fftw3.h
+  if [ "${OS}" = "macos" ]; then
+    libtool -static ${PREFIX}-*/lib/libfftw3.a -o ${PREFIX}/lib/libfftw3.a
+  else
+    cp -a ${PREFIX}-x86_64/lib/libfftw3.a ${PREFIX}/lib/libfftw3.a
+  fi
+  cp -r ${PREFIX}-x86_64/lib/pkgconfig ${PREFIX}/lib/
+  rm -r ${PREFIX}-*/
+  rm ${FNAME}
+  FFTW_SECONDS=${SECONDS}
+
+  # EIGEN
+  SECONDS=0
+  DNAME=eigen-${EIGEN_VERSION}
+  FNAME=${DNAME}.tar.bz2
+  curl -s -O -L https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VERSION}/${FNAME}
+  tar xf ${FNAME}
+  cd ${DNAME}
+  ${CMAKE} -B build -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH=/opt/homebrew
+  ${CMAKE} --build build
+  ${CMAKE} --install build
+  cd ..
+  rm -r ${FNAME} ${DNAME}
+  EIGEN_SECONDS=${SECONDS}
+
+  # 7Z
+  if [ "${OS}" = "linux" ]; then
+    FNAME=7z2301-linux-x64.tar.xz
+  fi
+  if [ "${OS}" = "macos" ]; then
+    FNAME=7z2301-mac.tar.xz
+  fi
+  curl -s -O https://www.7-zip.org/a/${FNAME}
+  tar xf ${FNAME} 7zz
+  mkdir -p ${PREFIX}/bin
+  mv 7zz ${PREFIX}/bin/
+  rm ${FNAME}
+
+  # QT6
+  SECONDS=0
+  QT_MIRROR=https://ftp1.nluug.nl/languages/qt
+
+  if [ "${OS}" = "linux" ]; then
+    QT_URL=${QT_MIRROR}/online/qtsdkrepository/linux_x64/desktop/qt6_${QT_VERSION//./}/qt.qt6.${QT_VERSION//./}.gcc_64/
+    QT_COMPONENTS="qtbase qtsvg icu wayland"
+  fi
+  if [ "${OS}" = "macos" ]; then
+    QT_URL=${QT_MIRROR}/online/qtsdkrepository/mac_x64/desktop/qt6_${QT_VERSION//./}/qt.qt6.${QT_VERSION//./}.clang_64/
+    QT_COMPONENTS="qtbase qtsvg"
+  fi
+  for QT_COMPONENT in ${QT_COMPONENTS}; do
+    FNAME=$(curl -s -L ${QT_URL} | grep -o -E "[[:alnum:]_.\-]*7z" | grep ${QT_COMPONENT} | tail -1)
+    curl -s -O ${QT_URL}/${FNAME}
+    ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
+    rm ${FNAME}
+  done
+  ls ${QT_VERSION}
+  cp -a ${QT_VERSION}/*/* ${PREFIX}/
+  rm -r ${QT_VERSION}
+  QT_SECONDS=${SECONDS}
+
+  tar cpfz ${PREFIX}-${OS}-build-deps.tar.gz mrtrix3
+fi
+
+PATH=${ORIG_PATH}
+export PATH
+# MRTRIX3
+SECONDS=0
+git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
+cd ${PREFIX}-src
+sed -i.bak -e '90,101d' cmake/FindFFTW.cmake
+MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
+cmake -B build -G Ninja -DMRTRIX_USE_QT6=ON -DCMAKE_PREFIX_PATH=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/X11;/usr/X11R6" -DFFTW_USE_STATIC_LIBS=ON -DCMAKE_OSX_ARCHITECTURES=${CMAKE_ARCHS} -DPNG_PNG_INCLUDE_DIR=${PREFIX}/include/QtPng -DPNG_LIBRARY=${PREFIX}/lib/libQt6BundledLibpng.a -DCMAKE_INSTALL_PREFIX=${PREFIX}
+cmake --build build
+cd ..
+MRTRIX_SECONDS=${SECONDS}
+
+
+mv ${PREFIX} ${PREFIX}_dep
+mkdir -p ${PREFIX}
+cmake --install ${PREFIX}-src/build
+cp -R ${PREFIX}-src/matlab ${PREFIX}
+rm -rf ${PREFIX}-src
+
+if [ "${OS}" = "linux" ]; then
+  cp -a ${PREFIX}_dep/lib/libicu* ${PREFIX}/lib
+  cp -a ${PREFIX}_dep/lib/libQt6{Core,DBus,Gui,Network,OpenGL,Svg,Wayland,Widgets,XcbQpa}* ${PREFIX}/lib
+  mkdir -p ${PREFIX}/plugins
+  cp -a ${PREFIX}_dep/plugins/{imageformats,platforms,wayland-decoration-client,wayland-graphics-integration-client,wayland-shell-integration,xcbglintegrations}  ${PREFIX}/plugins
+fi
+if [ "${OS}" = "macos" ]; then
+  cp -a ${PREFIX}_dep/lib/Qt{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets,OpenGLWidgets,DBus}.framework ${PREFIX}/lib
+  find ${PREFIX}/lib -name Headers -print0 | xargs -0 rm -rf
+  find ${PREFIX}/lib -name Current -print0 | xargs -0 rm -rf
+  rm -r ${PREFIX}/lib/*.framework/Qt*
+  rm -r ${PREFIX}/lib/*.framework/Resources
+  mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats,styles}
+  cp -a ${PREFIX}_dep/plugins/platforms/libq{cocoa,offscreen}.dylib  ${PREFIX}/bin/plugins/platforms
+  cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg.dylib ${PREFIX}/bin/plugins/imageformats
+  cp -a ${PREFIX}_dep/plugins/styles/libqmacstyle.dylib ${PREFIX}/bin/plugins/styles
+fi
+rm -rf ${PREFIX}_dep
+
+if [ "${OS}" = "macos" ]; then
+  cp -R ${PLD}/MRView.app ${PREFIX}/bin
+  mkdir -p ${PREFIX}/bin/MRView.app/Contents/MacOS/
+  mv ${PREFIX}/bin/mrview ${PREFIX}/bin/MRView.app/Contents/MacOS/
+  cp ${PLD}/mrview ${PREFIX}/bin
+
+  cp -R ${PLD}/SHView.app ${PREFIX}/bin
+  mkdir -p ${PREFIX}/bin/SHView.app/Contents/MacOS/
+  mv ${PREFIX}/bin/shview ${PREFIX}/bin/SHView.app/Contents/MacOS/
+  cp ${PLD}/shview ${PREFIX}/bin
+fi
+
+cd ${PREFIX}/..
+tar cfJ mrtrix3-${OS}-${TAGNAME}.tar.xz mrtrix3
+rm -rf ${PREFIX}
+
+TOTAL_SECONDS=$((FFTW_SECONDS + EIGEN_SECONDS + QT_SECONDS + MRTRIX_SECONDS))
+if [[ ! -n "$DEPCACHE" ]]; then
+  echo "fftw ${FFTW_VERSION}: ${FFTW_SECONDS} s"
+  echo "eigen ${EIGEN_VERSION}: ${EIGEN_SECONDS} s"
+  echo "qt ${QT_VERSION}: ${QT_SECONDS} s"
+fi
+echo "mrtrix ${MRTRIX_VERSION}: ${MRTRIX_SECONDS} s"
+echo "total : ${TOTAL_SECONDS} s"
