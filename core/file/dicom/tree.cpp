@@ -30,14 +30,10 @@ Tree::find(const std::string &patient_name, const std::string &patient_ID, const
   for (size_t n = 0; n < size(); n++) {
     bool match = true;
     if (patient_name == (*this)[n]->name) {
-      if (!patient_ID.empty() && !(*this)[n]->ID.empty())
-        if (patient_ID != (*this)[n]->ID)
-          match = false;
-      if (match) {
-        if (!patient_DOB.empty() && !(*this)[n]->DOB.empty())
-          if (patient_DOB != (*this)[n]->DOB)
-            match = false;
-      }
+      if (!patient_ID.empty() && !(*this)[n]->ID.empty() && patient_ID != (*this)[n]->ID)
+        match = false;
+      if (match && !patient_DOB.empty() && !(*this)[n]->DOB.empty() && patient_DOB != (*this)[n]->DOB)
+        match = false;
       if (match)
         return (*this)[n];
     }

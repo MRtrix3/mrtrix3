@@ -41,7 +41,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  bool actual_count = !get_options("count").empty();
+  const bool actual_count = !get_options("count").empty();
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;

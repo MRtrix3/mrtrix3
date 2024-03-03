@@ -151,15 +151,15 @@ private:
 };
 
 bool Segmented_FOD_receiver::operator()(const FOD_lobes &in) {
-  if (!in.empty()) {
-    lobes.emplace_back(in, max_per_voxel, dir_from_peak);
-    fixel_count += lobes.back().size();
-  }
+  if (in.empty())
+    return true;
+  lobes.emplace_back(in, max_per_voxel, dir_from_peak);
+  fixel_count += lobes.back().size();
   return true;
 }
 
 void Segmented_FOD_receiver::commit() {
-  if (lobes.empty() || !fixel_count)
+  if (lobes.empty() || fixel_count == 0)
     return;
 
   using DataImage = Image<float>;

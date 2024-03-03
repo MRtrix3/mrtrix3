@@ -259,8 +259,8 @@ void run() {
   if (export_pe && argument.size() > 1)
     throw Exception("can only export phase encoding table to file if a single input image is provided");
 
-  std::unique_ptr<nlohmann::json> json_keyval(!get_options("json_keyval").empty() ? new nlohmann::json : nullptr);
-  std::unique_ptr<nlohmann::json> json_all(!get_options("json_all").empty() ? new nlohmann::json : nullptr);
+  std::unique_ptr<nlohmann::json> json_keyval(get_options("json_keyval").empty() ? nullptr : new nlohmann::json);
+  std::unique_ptr<nlohmann::json> json_all(get_options("json_all").empty() ? nullptr : new nlohmann::json);
 
   if (json_all && argument.size() > 1)
     throw Exception("Cannot use -json_all option with multiple input images");

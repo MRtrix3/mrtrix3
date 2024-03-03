@@ -155,7 +155,7 @@ protected:
     }
 
     for (ssize_t n = 0; n < a.size(); n++) {
-      amp.index(3) = !C.dwis.empty() ? C.dwis[n] : n;
+      amp.index(3) = C.dwis.empty() ? n : C.dwis[n];
       a[n] = amp.value() * norm;
     }
   }
@@ -223,7 +223,7 @@ void run() {
 
   auto sh2amp = DWI::compute_SH2amp_mapping(dirs, true, 8);
 
-  bool normalise = !get_options("normalise").empty();
+  const bool normalise = !get_options("normalise").empty();
   if (normalise && bzeros.empty())
     throw Exception("the normalise option is only available if the input data contains b=0 images.");
 

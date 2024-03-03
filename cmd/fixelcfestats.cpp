@@ -287,13 +287,14 @@ void run() {
   }
   const Math::Stats::index_type num_factors = design.cols() + extra_columns.size();
   CONSOLE("Number of factors: " + str(num_factors));
-  if (!extra_columns.empty()) {
+  const bool have_extra_columns = !extra_columns.empty();
+  if (have_extra_columns) {
     CONSOLE("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
-      CONSOLE("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from "
-              "fixel-wise design matrices accordingly");
+      CONSOLE("Non-finite values detected in element-wise design matrix columns; "
+              "individual rows will be removed from fixel-wise design matrices accordingly");
   }
-  Math::Stats::GLM::check_design(design, !extra_columns.empty());
+  Math::Stats::GLM::check_design(design, have_extra_columns);
 
   // Load variance groups
   auto variance_groups = Math::Stats::GLM::load_variance_groups(design.rows());
@@ -307,7 +308,7 @@ void run() {
   if (hypotheses[0].cols() != num_factors)
     throw Exception(
         "The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")" +
-        (!extra_columns.empty() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "") +
+        (have_extra_columns ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "") +
         " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
@@ -366,10 +367,11 @@ void run() {
   }
   if (nans_in_data) {
     CONSOLE("Non-finite values present in data; rows will be removed from fixel-wise design matrices accordingly");
-    if (extra_columns.empty()) {
+    if (!have_extra_columns) {
       CONSOLE("(Note that this will result in slower execution than if such values were not present)");
     }
   }
+  const bool variable_design_matrix = nans_in_data || have_extra_columns;
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&](const Math::Stats::index_type i) -> std::string {
@@ -388,7 +390,7 @@ void run() {
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
                          num_factors + (2 * num_hypotheses) + num_vgs +
-                             (nans_in_data || !extra_columns.empty() ? 1 : 0));
+                             (variable_design_matrix ? 1 : 0));
 
     for (Math::Stats::index_type i = 0; i != num_factors; ++i) {
       write_fixel_output(
@@ -412,7 +414,7 @@ void run() {
       }
       ++progress;
     }
-    if (nans_in_data || !extra_columns.empty()) {
+    if (variable_design_matrix) {
       write_fixel_output(Path::join(output_fixel_directory, "cond.mif"), cond, mask, output_header);
       ++progress;
     }
@@ -429,7 +431,7 @@ void run() {
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<Math::Stats::GLM::TestBase> glm_test;
-  if (!extra_columns.empty() || nans_in_data) {
+  if (variable_design_matrix) {
     if (variance_groups.size())
       glm_test.reset(new Math::Stats::GLM::TestVariableHeteroscedastic(
           extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));

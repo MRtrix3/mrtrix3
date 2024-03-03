@@ -213,7 +213,8 @@ Eigen::MatrixXd get_raw_DW_scheme(const Header &header) {
   const auto opt_fsl = get_options("fslgrad");
   if (!opt_fsl.empty()) {
     if (!opt_mrtrix.empty())
-      throw Exception("Diffusion gradient table can be provided using either -grad or -fslgrad option, but NOT both");
+      throw Exception("Diffusion gradient table can be provided using either -grad or -fslgrad option,"
+                      " but NOT both");
     grad = load_bvecs_bvals(header, opt_fsl[0][0], opt_fsl[0][1]);
   }
 
@@ -275,9 +276,12 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     // - vector normalisation effect is large, regardless of whether or not b-value scaling was applied
     // - gradient information was pulled from file
     // - explicit b-value scaling is requested
-    if (exceeds_single_precision || !get_options("grad").empty() || !get_options("fslgrad").empty() ||
-        bvalue_scaling != BValueScalingBehaviour::Auto)
+    if (exceeds_single_precision ||
+        !get_options("grad").empty() ||
+        !get_options("fslgrad").empty() ||
+        bvalue_scaling != BValueScalingBehaviour::Auto) {
       set_DW_scheme(const_cast<Header &>(header), grad);
+    }
 
     INFO("found " + str(grad.rows()) + "x" + str(grad.cols()) + " diffusion gradient table");
     return grad;

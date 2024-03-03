@@ -287,7 +287,7 @@ void run() {
     check_dimensions(dwi, mask, 0, 3);
   }
 
-  bool ols = !get_options("ols").empty();
+  const bool ols = !get_options("ols").empty();
 
   // depending on whether first (initialisation) loop should be considered an iteration
   auto iter = get_option_value("iter", DEFAULT_NITER);
@@ -315,8 +315,7 @@ void run() {
 
   Image<value_type> dkt;
   opt = get_options("dkt");
-  bool dki = !opt.empty();
-
+  const bool dki = !opt.empty();
   if (dki) {
     header.ndim() = 4;
     header.size(3) = 15;
@@ -325,8 +324,7 @@ void run() {
 
   Eigen::MatrixXd A = -DWI::grad2bmatrix<double>(grad, dki);
 
-  bool constrain = !get_options("constrain").empty();
-
+  const bool constrain = !get_options("constrain").empty();
   Eigen::MatrixXd Aneq;
   if (constrain) {
     opt = get_options("directions");

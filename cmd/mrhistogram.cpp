@@ -93,7 +93,8 @@ void run() {
   auto data = header.get_image<float>();
 
   const bool allvolumes = !get_options("allvolumes").empty();
-  size_t nbins = get_option_value("bins", 0);
+  const size_t nbins_user = get_option_value("bins", 0);
+  const bool ignorezero = !get_options("ignorezero").empty();
 
   auto opt = get_options("mask");
   Image<bool> mask;
@@ -105,7 +106,7 @@ void run() {
   File::OFStream output(argument[1]);
   output << "# " << App::command_history_string << "\n";
 
-  Algo::Histogram::Calibrator calibrator(nbins, !get_options("ignorezero").empty());
+  Algo::Histogram::Calibrator calibrator(nbins_user, ignorezero);
   opt = get_options("template");
   if (!opt.empty()) {
     calibrator.from_file(opt[0][0]);
@@ -119,14 +120,14 @@ void run() {
                         header.datatype().is_integer() && header.intensity_offset() == 0.0 &&
                             header.intensity_scale() == 1.0);
   }
-  nbins = calibrator.get_num_bins();
-  if (!nbins)
+  const size_t nbins_data = calibrator.get_num_bins();
+  if (!nbins_data)
     throw Exception(std::string("No histogram bins constructed") +
-                    ((!get_options("ignorezero").empty() || !get_options("bins").empty())
+                    ((ignorezero || nbins_user)
                          ? "."
                          : "; you might want to use the -ignorezero or -bins option."));
 
-  for (size_t i = 0; i != nbins; ++i)
+  for (size_t i = 0; i != nbins_data; ++i)
     output << (calibrator.get_min() + ((i + 0.5) * calibrator.get_bin_width())) << ",";
   output << "\n";
 
@@ -135,7 +136,7 @@ void run() {
     Algo::Histogram::Data histogram(calibrator);
     for (auto v = Volume_loop(data); v; ++v)
       run_volume(histogram, data, mask);
-    for (size_t i = 0; i != nbins; ++i)
+    for (size_t i = 0; i != nbins_data; ++i)
       output << histogram[i] << ",";
     output << "\n";
 
@@ -144,7 +145,7 @@ void run() {
     for (auto v = Volume_loop(data); v; ++v) {
       Algo::Histogram::Data histogram(calibrator);
       run_volume(histogram, data, mask);
-      for (size_t i = 0; i != nbins; ++i)
+      for (size_t i = 0; i != nbins_data; ++i)
         output << histogram[i] << ",";
       output << "\n";
     }

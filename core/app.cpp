@@ -852,10 +852,8 @@ void sort_arguments(int argc, const char *const *argv) {
 }
 
 void parse_standard_options() {
-  if (!get_options("info").empty()) {
-    if (log_level < 2)
-      log_level = 2;
-  }
+  if (!get_options("info").empty())
+    log_level = std::max(log_level, 2);
   if (!get_options("debug").empty())
     log_level = 3;
   if (!get_options("quiet").empty())

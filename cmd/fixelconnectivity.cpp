@@ -122,7 +122,16 @@ void run() {
       fixel_mask.value() = true;
   }
 
-  if (!get_options("tck_weights_in").empty()) {
+  if (get_options("tck_weights_in").empty()) {
+
+    auto connectivity_matrix =
+        Fixel::Matrix::generate_unweighted(argument[1], index_image, fixel_mask, angular_threshold);
+
+    Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixUnweighted> writer(connectivity_matrix, connectivity_threshold);
+    set_optional_outputs(writer);
+    writer.save(argument[2]);
+
+  } else {
 
     auto connectivity_matrix =
         Fixel::Matrix::generate_weighted(argument[1], index_image, fixel_mask, angular_threshold);
@@ -131,13 +140,5 @@ void run() {
     set_optional_outputs(writer);
     writer.save(argument[2]);
 
-  } else {
-
-    auto connectivity_matrix =
-        Fixel::Matrix::generate_unweighted(argument[1], index_image, fixel_mask, angular_threshold);
-
-    Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixUnweighted> writer(connectivity_matrix, connectivity_threshold);
-    set_optional_outputs(writer);
-    writer.save(argument[2]);
   }
 }

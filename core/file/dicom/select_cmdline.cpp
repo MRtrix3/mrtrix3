@@ -26,7 +26,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
   std::vector<std::shared_ptr<Series>> series;
 
   if (tree.empty())
-    throw Exception("DICOM tree its empty");
+    throw Exception("DICOM tree is empty");
 
   // ENVVAR name: DICOM_PATIENT
   // ENVVAR when reading DICOM data, match the PatientName entry against

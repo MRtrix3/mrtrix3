@@ -80,24 +80,24 @@ void run() {
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
   std::vector<uint32_t> volumes;
-  bool bzero = !get_options("bzero").empty();
-  if (!get_options("shells").empty() || !get_options("singleshell").empty()) {
+  bool bzero_only = !get_options("bzero").empty();
+  const bool singleshell = !get_options("singleshell").empty();
+  if (!get_options("shells").empty() || singleshell) {
     DWI::Shells shells(grad);
-    shells.select_shells(
-        !get_options("singleshell").empty(), !get_options("bzero").empty(), !get_options("no_bzero").empty());
+    shells.select_shells(singleshell, bzero_only, !get_options("no_bzero").empty());
     for (size_t s = 0; s != shells.count(); ++s) {
       DEBUG("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
       for (const auto v : shells[s].get_volumes())
         volumes.push_back(v);
     }
-    bzero = (shells.count() == 1 && shells.has_bzero());
+    bzero_only = (shells.count() == 1 && shells.has_bzero());
     // If no command-line options specified, then just grab all non-b=0 volumes
     // If however we are selecting volumes according to phase-encoding, and
     //   shells have not been explicitly selected, do NOT filter by b-value here
   } else if (get_options("pe").empty()) {
     const float bzero_threshold = File::Config::get_float("BZeroThreshold", 10.0);
     for (ssize_t row = 0; row != grad.rows(); ++row) {
-      if ((bzero && (grad(row, 3) < bzero_threshold)) || (!bzero && (grad(row, 3) > bzero_threshold)))
+      if ((bzero_only && (grad(row, 3) < bzero_threshold)) || (!bzero_only && (grad(row, 3) > bzero_threshold)))
         volumes.push_back(row);
     }
   } else {
@@ -135,7 +135,7 @@ void run() {
   }
 
   if (volumes.empty()) {
-    auto type = (bzero) ? "b=0" : "dwi";
+    auto type = (bzero_only) ? "b=0" : "dwi";
     throw Exception("No " + str(type) + " volumes present");
   }
 

@@ -208,9 +208,8 @@ void convert_new2old() {
   auto opt = get_options("value");
   if (opt.empty())
     throw Exception("for converting from new to old formats, option -value is compulsory");
-  const std::string value_path = get_options("value")[0][0];
-  opt = get_options("in_size");
-  const std::string size_path = !opt.empty() ? std::string(opt[0][0]) : "";
+  const std::string value_path = opt[0][0];
+  const std::string size_path = get_option_value<std::string>("in_size", "");
 
   Header H_index = Fixel::find_index_header(input_fixel_directory);
   Header H_dirs = Fixel::find_directions_header(input_fixel_directory);

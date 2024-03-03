@@ -157,7 +157,8 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::string &pat
         ++num_tracks;
         max_index = std::max(max_index, i);
       }
-      WARN("Only " + str(num_tracks) + " tracks read from input track file; expected " + str(contributions.size()));
+      WARN("Only " + str(num_tracks) + " tracks read from input track file;"
+           " expected " + str(contributions.size()));
       contributions.resize(max_index + 1);
     }
   }
@@ -170,9 +171,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::string &pat
 template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
   const bool remove_untracked_fixels = !App::get_options("remove_untracked").empty();
-  auto opt = App::get_options("fd_thresh");
-  const float min_fibre_density = !opt.empty() ? float(opt[0][0]) : 0.0;
-
+  const float min_fibre_density = App::get_option_value<float>("fd_thresh", 0.0F);
   if (!remove_untracked_fixels && !min_fibre_density)
     return;
 

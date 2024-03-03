@@ -146,10 +146,11 @@ void run() {
   }
 
   const std::string vox_option_suggestion =
-      !get_options("masks").empty()
-          ? (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") +
-             " -masks option)")
-          : " (suggest re-running using the -masks option to see voxels where tissue fractions do not sum to 1.0)";
+      get_options("masks").empty()
+          ? " (suggest re-running using the -masks option to see voxels where tissue fractions do not sum to 1.0)"
+          : (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") +
+             " -masks option)");
+
 
   if (major_error_count) {
     if (argument.size() > 1)

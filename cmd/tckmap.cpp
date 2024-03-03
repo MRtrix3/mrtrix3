@@ -473,8 +473,8 @@ void run() {
   opt = get_options("datatype");
   if (!opt.empty()) {
     if (writer_type == DEC || writer_type == TOD) {
-      WARN("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) +
-           " processing - overriding to Float32");
+      WARN("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) + " processing;"
+           " overriding to Float32");
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
     }
@@ -482,7 +482,8 @@ void run() {
 
   const bool have_weights = !get_options("tck_weights_in").empty();
   if (have_weights && header.datatype().is_integer()) {
-    WARN("Can't use an integer type if streamline weights are provided; overriding to Float32");
+    WARN("Can't use an integer type if streamline weights are provided;"
+         " overriding to Float32");
     header.datatype() = DataType::Float32;
   }
 

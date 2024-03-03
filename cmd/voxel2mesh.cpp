@@ -63,15 +63,14 @@ void run() {
 
   Surface::Mesh mesh;
 
-  if (!get_options("blocky").empty()) {
-
+  if (get_options("blocky").empty()) {
+    auto input = Image<float>::open(argument[0]);
+    auto opt = get_options("template");
+    const float threshold = opt.empty() ? Filter::estimate_optimal_threshold(input) : float(opt[0][0]);
+    Surface::Algo::image2mesh_mc(input, mesh, threshold);
+  } else {
     auto input = Image<bool>::open(argument[0]);
     Surface::Algo::image2mesh_blocky(input, mesh);
-
-  } else {
-    auto input = Image<float>::open(argument[0]);
-    const default_type threshold = get_option_value("threshold", Filter::estimate_optimal_threshold(input));
-    Surface::Algo::image2mesh_mc(input, mesh, threshold);
   }
 
   mesh.save(argument[1]);

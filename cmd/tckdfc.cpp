@@ -223,7 +223,7 @@ private:
 };
 
 void run() {
-  bool is_static = !get_options("static").empty();
+  const bool is_static = !get_options("static").empty();
   std::vector<float> window;
 
   auto opt = get_options("dynamic");

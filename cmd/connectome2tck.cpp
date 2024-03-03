@@ -198,6 +198,7 @@ void run() {
       ++progress;
     }
   }
+  INFO("Maximum node index in assignments file is " + str(max_node_index));
 
   const size_t count = to<size_t>(properties["count"]);
   if (assignments_lists.size() != count)
@@ -218,17 +219,13 @@ void run() {
   }
 
   const std::string prefix(argument[2]);
-  auto opt = get_options("prefix_tck_weights_out");
-  const std::string weights_prefix = !opt.empty() ? std::string(opt[0][0]) : "";
-
-  INFO("Maximum node index in assignments file is " + str(max_node_index));
-
-  const node_t first_node = !get_options("keep_unassigned").empty() ? 0 : 1;
+  const std::string weights_prefix = get_option_value<std::string>("prefix_tck_weights_out", "");
+  const node_t first_node = get_options("keep_unassigned").empty() ? 1 : 0;
   const bool keep_self = !get_options("keep_self").empty();
 
   // Get the list of nodes of interest
   std::vector<node_t> nodes;
-  opt = get_options("nodes");
+  auto opt = get_options("nodes");
   bool manual_node_list = false;
   if (!opt.empty()) {
     manual_node_list = true;
@@ -255,8 +252,7 @@ void run() {
   if (exclusive && !manual_node_list)
     WARN("List of nodes of interest not provided; -exclusive option will have no effect");
 
-  opt = get_options("files");
-  const int file_format = !opt.empty() ? opt[0][0] : 0;
+  const int file_format = get_option_value("files", 0);
 
   opt = get_options("exemplars");
   if (!opt.empty()) {
@@ -426,17 +422,17 @@ void run() {
     }
 
     ProgressBar progress("Extracting tracks from connectome", count);
-    if (!assignments_pairs.empty()) {
-      Tractography::Connectome::Streamline_nodepair tck;
+    if (assignments_pairs.empty()) {
+      Tractography::Connectome::Streamline_nodelist tck;
       while (reader(tck)) {
-        tck.set_nodes(assignments_pairs[tck.get_index()]);
+        tck.set_nodes(assignments_lists[tck.get_index()]);
         writer(tck);
         ++progress;
       }
     } else {
-      Tractography::Connectome::Streamline_nodelist tck;
+      Tractography::Connectome::Streamline_nodepair tck;
       while (reader(tck)) {
-        tck.set_nodes(assignments_lists[tck.get_index()]);
+        tck.set_nodes(assignments_pairs[tck.get_index()]);
         writer(tck);
         ++progress;
       }

@@ -150,6 +150,5 @@ void run() {
     if (signs[n] < 0)
       directions.row(n) *= -1.0;
 
-  bool cartesian = !get_options("cartesian").empty();
-  DWI::Directions::save(directions, argument[1], cartesian);
+  DWI::Directions::save(directions, argument[1], !get_options("cartesian").empty());
 }

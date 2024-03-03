@@ -524,8 +524,9 @@ void run() {
 
   opt = get_options("mk_dirs");
   const Eigen::MatrixXd mk_dirs =
-      !opt.empty() ? File::Matrix::load_matrix(opt[0][0])
-                   : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+      opt.empty()
+      ? Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300())
+      : File::Matrix::load_matrix(opt[0][0]);
 
   auto rk_ndirs = get_option_value("rk_ndirs", DEFAULT_RK_NDIRS);
 
