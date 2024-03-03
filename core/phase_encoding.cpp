@@ -32,7 +32,8 @@ const OptionGroup SelectOptions =
     OptionGroup("Options for selecting volumes based on phase-encoding")
     + Option("pe",
              "select volumes with a particular phase encoding;"
-             " this can be three comma-separated values (for i,j,k components of vector direction)"
+             " this can be three comma-separated values"
+             " (for i,j,k components of vector direction)"
              " or four (direction & total readout time)")
       + Argument("desc").type_sequence_float();
 
@@ -66,8 +67,8 @@ Eigen::MatrixXd parse_scheme(const Header &header) {
       throw Exception(e, "malformed PE scheme in image \"" + header.name() + "\"");
     }
     if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
-      throw Exception("malformed PE scheme in image \"" + header.name() +
-                      "\" - number of rows does not equal number of volumes");
+      throw Exception("malformed PE scheme in image \"" + header.name() + "\":"
+                      " number of rows does not equal number of volumes");
   } else {
     const auto it_dir = header.keyval().find("PhaseEncodingDirection");
     if (it_dir != header.keyval().end()) {
@@ -96,8 +97,9 @@ Eigen::MatrixXd get_scheme(const Header &header) {
     const auto opt_eddy = get_options("import_pe_eddy");
     if (!opt_eddy.empty()) {
       if (!opt_table.empty())
-        throw Exception("Phase encoding table can be provided using either -import_pe_table or -import_pe_eddy option, "
-                        "but NOT both");
+        throw Exception("Phase encoding table can be provided"
+                        " using either -import_pe_table or -import_pe_eddy option,"
+                        " but NOT both");
       result = load_eddy(opt_eddy[0][0], opt_eddy[0][1], header);
     }
     if (opt_table.empty() && opt_eddy.empty())

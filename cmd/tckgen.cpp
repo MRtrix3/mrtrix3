@@ -42,6 +42,7 @@ using namespace App;
 
 const char *algorithms[] = {
     "fact", "ifod1", "ifod2", "nulldist1", "nulldist2", "sd_stream", "seedtest", "tensor_det", "tensor_prob", nullptr};
+#define DEFAULT_ALGORITHM 2 // ifod2
 
 // clang-format off
 void usage() {
@@ -241,10 +242,7 @@ void run() {
 
   Properties properties;
 
-  int algorithm = 2; // default = ifod2
-  auto opt = get_options("algorithm");
-  if (!opt.empty())
-    algorithm = opt[0][0];
+  const int algorithm = get_option_value("algorithm", DEFAULT_ALGORITHM);
 
   ACT::load_act_properties(properties);
 

@@ -118,7 +118,7 @@ void run() {
   out_header.name() = std::string(argument[1]);
   Image<float> out_image(Image<float>::create(argument[1], out_header));
 
-  const float fill = !get_options("nan").empty() ? NaN : 0.0f;
+  const float fill = !get_options("nan").empty() ? NaN : 0.0F;
 
   if (data_image.valid()) {
     for (auto l = Loop("converting fixel data file to peaks image", index_image, 0, 3)(index_image, out_image); l;

@@ -822,7 +822,7 @@ bool View::get_cliphighlightstate() const { return clip_highlight_check_box->isC
 bool View::get_clipintersectionmodestate() const { return clip_intersectionmode_check_box->isChecked(); }
 
 void View::clip_planes_selection_changed_slot() {
-  bool selected = !clip_planes_list_view->selectionModel()->selectedIndexes().empty();
+  const bool selected = !clip_planes_list_view->selectionModel()->selectedIndexes().empty();
   clip_planes_reset_submenu->setEnabled(selected);
   clip_planes_invert_action->setEnabled(selected);
   clip_planes_remove_action->setEnabled(selected);

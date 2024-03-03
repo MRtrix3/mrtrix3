@@ -100,10 +100,7 @@ void run() {
       throw Exception("location option requires either single value or list of 3 values");
   }
 
-  opt = get_options("tolerance");
-  value_type precision = PRECISION;
-  if (!opt.empty())
-    precision = opt[0][0];
+  const value_type precision = get_option_value("tolerance", PRECISION);
 
   size_t count(0);
   auto func = BoundsCheck(precision, oob_vector, count);
@@ -111,7 +108,6 @@ void run() {
   ThreadedLoop("correcting warp", input, 0, 3).run(func, input, output);
 
   if (count == 0)
-    WARN("no out of bounds voxels found with value (" + str(oob_vector[0]) + "," + str(oob_vector[1]) + "," +
-         str(oob_vector[2]) + ")");
+    WARN("no out of bounds voxels found with value " + str(oob_vector.transpose()));
   INFO("converted " + str(count) + " out of bounds values");
 }

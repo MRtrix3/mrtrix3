@@ -46,7 +46,6 @@ void usage() {
 
 void run() {
 
-  auto opt = get_options("ascii");
   bool actual_count = !get_options("count").empty();
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -86,6 +85,7 @@ void run() {
       std::cout << "actual count in file: " << count << "\n";
     }
 
+    auto opt = get_options("ascii");
     if (!opt.empty()) {
       ProgressBar progress("writing track scalar data to ascii files");
       DWI::Tractography::TrackScalar<> tck;

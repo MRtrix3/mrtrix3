@@ -152,8 +152,8 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       if (!entries.empty()) {
         if (!columns.empty() && entries.size() != columns.size()) {
           Exception E("Inconsistent number of columns in LUT file \"" + Path::basename(path) + "\"");
-          E.push_back("Initial file contents contain " + str(columns.size()) + " columns, but line " +
-                      str(line_counter) + " contains " + str(entries.size()) + " entries:");
+          E.push_back("Initial file contents contain " + str(columns.size()) + " columns,"
+                      " but line " + str(line_counter) + " contains " + str(entries.size()) + " entries:");
           E.push_back("\"" + line + "\"");
           throw E;
         }
@@ -167,33 +167,38 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
 
   // Make an assessment of the LUT format
   if (columns.size() == 2 && columns[0].is_integer() && !columns[1].is_numeric()) {
-    DEBUG("LUT file \"" + Path::basename(path) + "\" contains 1 integer, 1 string per line: Basic format");
+    DEBUG("LUT file \"" + Path::basename(path) + "\" contains 1 integer, 1 string per line:"
+          " Basic format");
     return LUT_BASIC;
   }
   if (columns.size() == 6 && columns[0].is_integer() && !columns[1].is_numeric() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_8bit() && columns[5].is_8bit()) {
     DEBUG("LUT file \"" + Path::basename(path) +
-          "\" contains 1 integer, 1 string, then 4 8-bit integers per line: Freesurfer format");
+          "\" contains 1 integer, 1 string, then 4 8-bit integers per line:"
+          " Freesurfer format");
     return LUT_FREESURFER;
   }
   if (columns.size() == 3 && !columns[0].is_numeric() && !columns[1].is_numeric() &&
       columns[0].mean_length() < columns[1].mean_length() && columns[2].is_integer()) {
     DEBUG("LUT file \"" + Path::basename(path) +
-          "\" contains 2 strings (shorter first), then an integer per line: AAL format");
+          "\" contains 2 strings (shorter first), then an integer per line:"
+          " AAL format");
     return LUT_AAL;
   }
   if (columns.size() == 8 && columns[0].is_integer() && columns[1].is_8bit() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_unary_range_float() && columns[5].is_integer() && columns[6].is_integer() &&
       !columns[7].is_numeric()) {
     DEBUG("LUT file \"" + Path::basename(path) +
-          "\" contains an integer, 3 8-bit integers, a float, two integers, and a string per line: ITKSNAP format");
+          "\" contains an integer, 3 8-bit integers, a float, two integers, and a string per line:"
+          " ITKSNAP format");
     return LUT_ITKSNAP;
   }
   if (columns.size() == 7 && columns[0].is_integer() && !columns[1].is_numeric() && !columns[2].is_numeric() &&
       columns[1].mean_length() < columns[2].mean_length() && columns[3].is_8bit() && columns[4].is_8bit() &&
       columns[5].is_8bit() && columns[6].is_8bit()) {
     DEBUG("LUT file \"" + Path::basename(path) +
-          "\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per line: MRtrix format");
+          "\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per line:"
+          " MRtrix format");
     return LUT_MRTRIX;
   }
   std::string format_string;

@@ -157,7 +157,7 @@ void run() {
         if (axis >= input.ndim())
           throw Exception("axis provided with -axes option is out of range");
     }
-    const int direction = !get_options("inverse").empty() ? FFTW_BACKWARD : FFTW_FORWARD;
+    const int direction = get_options("inverse").empty() ? FFTW_FORWARD : FFTW_BACKWARD;
     const bool centre_FFT = !get_options("centre_zero").empty();
     const bool magnitude = !get_options("magnitude").empty();
 
@@ -213,9 +213,9 @@ void run() {
       for (size_t dim = 0; dim != 3; ++dim)
         stdev[dim] = filter.spacing(dim);
     }
-    filter.compute_wrt_scanner(!get_options("scanner").empty() ? true : false);
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
-                       std::string(argument[0]));
+    filter.compute_wrt_scanner(!get_options("scanner").empty());
+    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" +
+                       " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
     filter.set_stdev(stdev);
     auto output = Image<float>::create(argument[2], filter);

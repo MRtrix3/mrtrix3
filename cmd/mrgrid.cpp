@@ -31,6 +31,7 @@ using namespace MR;
 using namespace App;
 
 const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", NULL};
+#define DEFAULT_INTERP 2 // cubic
 const char *operation_choices[] = {"regrid", "crop", "pad", NULL};
 
 // clang-format off
@@ -126,9 +127,9 @@ void usage() {
                          " or as a comma-separated list of scale factors for each dimension.")
     + Argument ("factor").type_sequence_float()
 
-    + Option ("interp", "set the interpolation method to use when reslicing"
+    + Option ("interp", std::string("set the interpolation method to use when reslicing") +
                         " (choices: nearest, linear, cubic, sinc;"
-                        " default: cubic).")
+                        " default: " + interp_choices[DEFAULT_INTERP] + ").")
     + Argument ("method").type_choice (interp_choices)
 
     + Option ("oversample",
@@ -205,10 +206,7 @@ void run() {
   const int op = argument[1];
 
   // Out of bounds value
-  default_type out_of_bounds_value = 0.0;
-  auto opt = get_options("fill");
-  if (!opt.empty())
-    out_of_bounds_value = opt[0][0];
+  const default_type out_of_bounds_value = get_option_value("fill", 0.0);
 
   if (op == 0) { // regrid
     INFO("operation: " + str(operation_choices[op]));
@@ -216,19 +214,13 @@ void run() {
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
     size_t template_option_count = 0;
-
-    int interp = 2; // cubic
-    opt = get_options("interp");
-    if (!opt.empty()) {
-      interp = opt[0][0];
-    }
+    const int interp = get_option_value("interp", DEFAULT_INTERP);
 
     // over-sampling
     std::vector<uint32_t> oversample = Adapter::AutoOverSample;
-    opt = get_options("oversample");
-    if (!opt.empty()) {
+    auto opt = get_options("oversample");
+    if (!opt.empty())
       oversample = parse_ints<uint32_t>(opt[0][0]);
-    }
 
     Header template_header;
     opt = get_options("template");
@@ -298,11 +290,11 @@ void run() {
     const bool do_crop = op == 1;
     std::string message = do_crop ? "cropping image" : "padding image";
     INFO("operation: " + str(operation_choices[op]));
-
-    if (!get_options("crop_unbound").empty() && !do_crop)
+    const bool crop_unbound = !get_options("crop_unbound").empty();
+    if (crop_unbound && !do_crop)
       throw Exception("-crop_unbound only applies only to the crop operation");
 
-    const size_t nd = !get_options("nd").empty() ? input_header.ndim() : 3;
+    const size_t nd = !get_options("nd").empty() ? input_header.ndim() : size_t(3);
 
     std::vector<std::vector<ssize_t>> bounds(input_header.ndim(), std::vector<ssize_t>(2));
     for (size_t axis = 0; axis < input_header.ndim(); axis++) {
@@ -312,7 +304,7 @@ void run() {
 
     size_t crop_pad_option_count = 0;
 
-    opt = get_options("mask");
+    auto opt = get_options("mask");
     if (!opt.empty()) {
       if (!do_crop)
         throw Exception("padding with -mask option is not supported");
@@ -395,7 +387,7 @@ void run() {
       }
     }
 
-    if (do_crop && get_options("crop_unbound").empty()) {
+    if (do_crop && !crop_unbound) {
       opt = get_options("axis");
       std::set<size_t> ignore;
       for (size_t i = 0; i != opt.size(); ++i)

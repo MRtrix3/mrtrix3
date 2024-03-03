@@ -132,8 +132,9 @@ DataType descr2datatype(const std::string &s) {
   if (bytes > 1) {
     data_type = data_type() | (is_little_endian ? DataType::LittleEndian : DataType::BigEndian);
     if (issue_endianness_warning) {
-      WARN(std::string("NumPy file does not indicate data endianness; assuming ") +
-           (MRTRIX_IS_BIG_ENDIAN ? "big" : "little") + "-endian (same as system)");
+      WARN(std::string("NumPy file does not indicate data endianness;") +
+           " assuming " + (MRTRIX_IS_BIG_ENDIAN ? "big" : "little") + "-endian"
+           " (same as system)");
     }
   }
   return data_type;
@@ -171,7 +172,8 @@ std::string datatype2descr(const DataType data_type) {
 size_t float_max_save_precision() {
   static size_t result = to<size_t>(File::Config::get("NPYFloatMaxSavePrecision", "64"));
   if (!(result == 16 || result == 32 || result == 64))
-    throw Exception("Invalid value for config file entry \"NPYFloatMaxSavePrecision\" (must be 16, 32 or 64)");
+    throw Exception("Invalid value for config file entry \"NPYFloatMaxSavePrecision\""
+                    " (must be 16, 32 or 64)");
   return result;
 }
 
@@ -220,18 +222,21 @@ KeyValues parse_dict(std::string s) {
       }
     } else if (c == ':') {
       if (!key.empty())
-        throw Exception("Error parsing NumPy header: non-isolated colon separator");
+        throw Exception("Error parsing NumPy header:"
+                        " non-isolated colon separator");
       if ((current.front() == '\"' && current.back() == '\"') || (current.front() == '\'' && current.back() == '\''))
         key = current.substr(1, current.size() - 2);
       else
         key = current;
       if (keyval.find(key) != keyval.end())
-        throw Exception("Error parsing NumPy header: duplicate key");
+        throw Exception("Error parsing NumPy header:"
+                        " duplicate key");
       current.clear();
       continue;
     } else if (c == ',') {
       if (key.empty())
-        throw Exception("Error parsing NumPy header: colon separator with no colon-separated key beforehand");
+        throw Exception("Error parsing NumPy header:"
+                        " colon separator with no colon-separated key beforehand");
       if ((current.front() == '\"' && current.back() == '\"') || (current.front() == '\'' && current.back() == '\''))
         current = current.substr(1, current.size() - 2);
       keyval[key] = current;
@@ -243,13 +248,19 @@ KeyValues parse_dict(std::string s) {
       openers.push_back(c);
     current.push_back(c);
   }
-  if (!openers.empty())
-    throw Exception("Error parsing NumPy header: unpaired bracket or quotation symbol(s) at EOF");
-  if (!key.empty())
-    throw Exception("Error parsing NumPy header: key without associated value at EOF");
+  if (!openers.empty()) {
+    throw Exception("Error parsing NumPy header:"
+                    " unpaired bracket or quotation symbol(s) at EOF");
+  }
+  if (!key.empty()) {
+    throw Exception("Error parsing NumPy header:"
+                    " key without associated value at EOF");
+  }
   current = strip(current, " ,");
-  if (!current.empty())
-    throw Exception("Error parsing NumPy header: non-empty content at EOF");
+  if (!current.empty()) {
+    throw Exception("Error parsing NumPy header:"
+                    " non-empty content at EOF");
+  }
 
   // std::cerr << "Final keyvalues: {";
   // for (const auto& kv : keyval)

@@ -270,6 +270,7 @@ void run() {
     }
   }
   const bool nans_in_data = !data.allFinite();
+  const bool variable_design_matrix = nans_in_data || !extra_columns.empty();
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&](const index_type i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
@@ -284,9 +285,10 @@ void run() {
     Math::Stats::GLM::all_stats(
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
 
+
     ProgressBar progress("outputting beta coefficients, effect size and standard deviation",
                          num_factors + (2 * num_hypotheses) + num_vgs +
-                             (nans_in_data || !extra_columns.empty() ? 1 : 0));
+                             (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
       File::Matrix::save_matrix(mat2vec.V2M(betas.row(i)), output_prefix + "beta_" + str(i) + ".csv");
       ++progress;
@@ -304,7 +306,7 @@ void run() {
       }
       ++progress;
     }
-    if (nans_in_data || !extra_columns.empty()) {
+    if (variable_design_matrix) {
       File::Matrix::save_matrix(mat2vec.V2M(cond), output_prefix + "cond.csv");
       ++progress;
     }
@@ -320,7 +322,7 @@ void run() {
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
-  if (!extra_columns.empty() || nans_in_data) {
+  if (variable_design_matrix) {
     if (variance_groups.size())
       glm_test.reset(new GLM::TestVariableHeteroscedastic(
           extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));

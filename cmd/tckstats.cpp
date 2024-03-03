@@ -237,7 +237,7 @@ void run() {
     File::OFStream out(opt[0][0], std::ios_base::out | std::ios_base::trunc);
     out << "# " << App::command_history_string << "\n";
     if (!std::isfinite(step_size))
-      step_size = 1.0f;
+      step_size = 1.0F;
     if (weights_provided) {
       out << "Length,Sum_weights\n";
       for (size_t i = 0; i != histogram.size(); ++i)

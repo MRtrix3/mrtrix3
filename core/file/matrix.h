@@ -189,8 +189,8 @@ template <class VectorType> inline transform_type load_transform(const std::stri
           centre[1] = to<default_type>(elements[1]);
           centre[2] = to<default_type>(elements[2]);
         } catch (...) {
-          throw Exception("File \"" + filename +
-                          "\" contains non-numerical data in centre: " + strip(line.substr(key.size())));
+          throw Exception("File \"" + filename + "\" contains non-numerical data in centre: " +
+                          strip(line.substr(key.size())));
         }
         break;
       }

@@ -64,16 +64,14 @@ void run() {
 
   const size_t num_inputs = argument.size() - 1;
 
-  auto opt = get_options("padding");
-  const default_type p = !opt.empty() ? default_type(opt[0][0]) : PADDING_DEFAULT;
+  const default_type p = get_option_value("padding", PADDING_DEFAULT);
   auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
   INFO("padding in template voxels: " + str(padding.transpose().head<3>()));
 
-  opt = get_options("resolution");
-  const int resolution = !opt.empty() ? int(opt[0][0]) : 1;
+  const int resolution = get_option_value("resolution", 1);
   INFO("template voxel subsampling: " + str(resolution));
 
-  bool fill = !get_options("fill").empty();
+  const bool fill = !get_options("fill").empty();
 
   std::vector<Header> headers_in;
   size_t dim(Header::open(argument[0]).ndim());

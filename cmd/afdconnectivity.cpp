@@ -287,8 +287,7 @@ void AFDConnectivity::save(const std::string &path) {
 }
 
 void run() {
-  auto opt = get_options("wbft");
-  const std::string wbft_path = !opt.empty() ? str(opt[0][0]) : "";
+  const std::string wbft_path = get_option_value<std::string>("wbft", "");
 
   DWI::Directions::FastLookupSet dirs(1281);
   auto fod = Image<value_type>::open(argument[0]);
@@ -296,7 +295,7 @@ void run() {
   check_3D_nonunity(fod);
   AFDConnectivity model(fod, dirs, argument[1], wbft_path);
 
-  opt = get_options("all_fixels");
+  auto opt = get_options("all_fixels");
   model.set_all_fixels(!opt.empty());
 
   const value_type connectivity_value = model.get(argument[1]);

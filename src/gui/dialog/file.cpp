@@ -101,12 +101,10 @@ std::string get_save_name(QWidget *parent,
 
   QString selection;
   if (folder) {
-    if (!suggested_name.empty())
-      selection = qstr(MR::Path::join(*folder, suggested_name));
-    else
-      selection = qstr(*folder);
-  } else if (!suggested_name.empty())
+    selection = suggested_name.empty() ? qstr(*folder) : qstr(MR::Path::join(*folder, suggested_name));
+  } else if (!suggested_name.empty()) {
     selection = qstr(suggested_name);
+  }
 
   QString qstring = QFileDialog::getSaveFileName(
       parent, qstr(caption), selection, qstr(filter), 0, FILE_DIALOG_OPTIONS | QFileDialog::DontConfirmOverwrite);

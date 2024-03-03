@@ -232,8 +232,9 @@ public:
           }
         }
       }
-    } else
+    } else {
       std::partial_sort_copy(all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
+    }
 
     int actual_npeaks = std::min(npeaks, (int)all_peaks.size());
     dirs_vox.index(3) = 0;
@@ -291,7 +292,6 @@ void run() {
   Math::SH::check(SH_data);
 
   auto opt = get_options("mask");
-
   Image<bool> mask_data;
   if (!opt.empty())
     mask_data = Image<bool>::open(opt[0][0]);
@@ -300,9 +300,8 @@ void run() {
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
   if (!opt.empty())
     dirs = File::Matrix::load_matrix<value_type>(opt[0][0]);
-  else {
+  else
     dirs = Eigen::Map<Eigen::Matrix<value_type, 60, 2>>(default_directions, 60, 2);
-  }
   if (dirs.cols() != 2)
     throw Exception("expecting 2 columns for search directions matrix");
 

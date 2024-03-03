@@ -52,17 +52,17 @@ const App::OptionGroup FMLSSegmentOption =
 void load_fmls_thresholds(Segmenter &segmenter) {
   using namespace App;
 
-  auto opt = get_options("fmls_no_thresholds");
-  const bool no_thresholds = !opt.empty();
+  const bool no_thresholds = !get_options("fmls_no_thresholds").empty();
   if (no_thresholds) {
     segmenter.set_integral_threshold(0.0);
     segmenter.set_peak_value_threshold(0.0);
   }
 
-  opt = get_options("fmls_integral");
+  auto opt = get_options("fmls_integral");
   if (!opt.empty()) {
     if (no_thresholds) {
-      WARN("Option -fmls_integral ignored: -fmls_no_thresholds overrides this");
+      WARN("Option -fmls_integral ignored:"
+           " -fmls_no_thresholds overrides this");
     } else {
       segmenter.set_integral_threshold(default_type(opt[0][0]));
     }
@@ -71,7 +71,8 @@ void load_fmls_thresholds(Segmenter &segmenter) {
   opt = get_options("fmls_peak_value");
   if (!opt.empty()) {
     if (no_thresholds) {
-      WARN("Option -fmls_peak_value ignored: -fmls_no_thresholds overrides this");
+      WARN("Option -fmls_peak_value ignored:"
+           " -fmls_no_thresholds overrides this");
     } else {
       segmenter.set_peak_value_threshold(default_type(opt[0][0]));
     }

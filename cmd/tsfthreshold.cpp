@@ -43,7 +43,7 @@ void usage() {
 using value_type = float;
 
 void run() {
-  bool invert = !get_options("invert").empty() ? true : false;
+  bool invert = !get_options("invert").empty();
   float threshold = argument[1];
 
   DWI::Tractography::Properties properties;

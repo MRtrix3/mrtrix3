@@ -189,11 +189,12 @@ void run() {
 
     // find most distant direction for that shell & in the current PE direction:
     n = find_lowest_energy_direction(b, nPE);
-    if (!dirs[b][nPE].empty())
-      push(b, nPE, n);
-    else
+    if (dirs[b][nPE].empty()) {
       WARN("no directions remaining in b=" + str(bvalue[b]) + " shell for PE direction " + str(n) +
-           " - PE directions will not cycle through perfectly");
+           "; PE directions will not cycle through perfectly");
+    } else {
+      push(b, nPE, n);
+    }
 
     // update PE direction
     ++nPE;

@@ -117,19 +117,20 @@ void run() {
   if (App::log_level && fields.empty())
     Stats::print_header(is_complex);
 
-  if (!get_options("allvolumes").empty()) {
-
-    Stats::Stats stats(is_complex, ignorezero);
-    for (auto i = Volume_loop(data); i; ++i)
-      run_volume(stats, data, mask);
-    stats.print(data, fields);
-
-  } else {
+  if (get_options("allvolumes").empty()) {
 
     for (auto i = Volume_loop(data); i; ++i) {
       Stats::Stats stats(is_complex, ignorezero);
       run_volume(stats, data, mask);
       stats.print(data, fields);
     }
+
+  } else {
+
+    Stats::Stats stats(is_complex, ignorezero);
+    for (auto i = Volume_loop(data); i; ++i)
+      run_volume(stats, data, mask);
+    stats.print(data, fields);
+
   }
 }

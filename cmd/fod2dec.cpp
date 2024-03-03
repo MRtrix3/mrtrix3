@@ -268,6 +268,7 @@ void run() {
 
   auto out_img = Image<value_type>();
   auto w_img = Image<value_type>();
+  const bool do_weighting = get_options("no_weight").empty();
 
   {
     auto dec_img = Image<value_type>();
@@ -287,7 +288,7 @@ void run() {
       if (mask_hdr.valid())
         mask_img = mask_hdr.get_image<bool>();
 
-      if (get_options("no_weight").empty() && !map_hdr) {
+      if (do_weighting && !map_hdr) {
         auto int_hdr = Header(dec_img);
         int_hdr.size(3) = 1;
         w_img = Image<value_type>::scratch(int_hdr, "FOD integral map");
@@ -312,7 +313,7 @@ void run() {
       copy(dec_img, out_img);
   }
 
-  if (get_options("no_weight").empty() && map_hdr.valid())
+  if (do_weighting && map_hdr.valid())
     w_img = map_hdr.get_image<value_type>();
 
   if (w_img.valid() || needtolum || needtoslice)

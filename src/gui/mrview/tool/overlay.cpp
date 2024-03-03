@@ -514,15 +514,16 @@ void Overlay::update_selection() {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
   while (volume_index_layout->count())
     delete volume_index_layout->takeAt(volume_index_layout->count() - 1)->widget();
-  colourmap_button->setEnabled(!indices.empty());
-  max_value->setEnabled(!indices.empty());
-  min_value->setEnabled(!indices.empty());
-  lower_threshold_check_box->setEnabled(!indices.empty());
-  upper_threshold_check_box->setEnabled(!indices.empty());
-  lower_threshold->setEnabled(!indices.empty());
-  upper_threshold->setEnabled(!indices.empty());
-  opacity_slider->setEnabled(!indices.empty());
-  interpolate_check_box->setEnabled(!indices.empty());
+  const bool enable_controls = !indices.empty();
+  colourmap_button->setEnabled(enable_controls);
+  max_value->setEnabled(enable_controls);
+  min_value->setEnabled(enable_controls);
+  lower_threshold_check_box->setEnabled(enable_controls);
+  upper_threshold_check_box->setEnabled(enable_controls);
+  lower_threshold->setEnabled(enable_controls);
+  upper_threshold->setEnabled(enable_controls);
+  opacity_slider->setEnabled(enable_controls);
+  interpolate_check_box->setEnabled(enable_controls);
 
   if (indices.empty()) {
     max_value->setValue(NAN);
