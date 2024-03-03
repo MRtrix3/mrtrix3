@@ -132,6 +132,7 @@ add_custom_target(Github SOURCES
     .github/ISSUE_TEMPLATE/custom.md
     .github/ISSUE_TEMPLATE/feature_request.md
     .github/workflows/checks.yml
+    .github/workflows/package-linux-tarball.yml
     .github/workflows/package-linux-anaconda.yml
     .github/workflows/package-macos-anaconda.yml
     .github/workflows/package-macos-native.yml

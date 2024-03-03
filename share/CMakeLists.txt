@@ -7,3 +7,15 @@ add_custom_target(copy-share-data ALL
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mrtrix3/
     DESTINATION ${CMAKE_INSTALL_DATADIR}/mrtrix3
 )
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/icons/hicolor
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons
+)
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/applications/mrview.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mime/mrtrix-mime.xml
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/mime
+)
