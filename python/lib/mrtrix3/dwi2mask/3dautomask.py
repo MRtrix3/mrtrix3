@@ -44,6 +44,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                             'which will tend to make the mask larger.')
   options.add_argument('-nograd',
                        action='store_true',
+                       default=None,
                        help='The program uses a "gradual" clip level by default. '
                        'Add this option to use a fixed clip level.')
   options.add_argument('-peels',
@@ -58,6 +59,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                             'It should be between 6 and 26.')
   options.add_argument('-eclip',
                        action='store_true',
+                       default=None,
                        help='After creating the mask, '
                             'remove exterior voxels below the clip threshold.')
   options.add_argument('-SI',
@@ -77,12 +79,15 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
   options.add_argument('-NN1',
                        action='store_true',
+                       default=None,
                        help='Erode and dilate based on mask faces')
   options.add_argument('-NN2',
                        action='store_true',
+                       default=None,
                        help='Erode and dilate based on mask edges')
   options.add_argument('-NN3',
                        action='store_true',
+                       default=None,
                        help='Erode and dilate based on mask corners')
 
 

@@ -60,6 +60,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='Provide a binary mask within which image intensities will be matched')
   cmdline.add_argument('-nointensity',
                        action='store_true',
+                       default=None,
                        help='Do not perform intensity matching based on b=0 volumes')
 
 

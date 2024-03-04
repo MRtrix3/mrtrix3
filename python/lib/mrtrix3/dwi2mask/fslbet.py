@@ -54,6 +54,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                             'initial surface sphere is set to half of this')
   options.add_argument('-rescale',
                        action='store_true',
+                       default=None,
                        help='Rescale voxel size provided to BET to 1mm isotropic; '
                             'can improve results for rodent data')
 

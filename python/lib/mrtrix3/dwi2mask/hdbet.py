@@ -39,6 +39,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "hdbet" algorithm')
   options.add_argument('-nogpu',
                        action='store_true',
+                       default=None,
                        help='Do not attempt to run on the GPU')
 
 

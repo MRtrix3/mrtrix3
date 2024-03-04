@@ -46,6 +46,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='Directory from which to commence filesystem search')
   cmdline.add_argument('-test',
                        action='store_true',
+                       default=None,
                        help='Run script in test mode:'
                             ' will list identified files / directories,'
                             ' but not attempt to delete them')
