@@ -672,14 +672,16 @@ class Parser(argparse.ArgumentParser):
         if alg == subparser:
           self._subparsers._group_actions[0].choices[alg].print_citation_warning()
           return
-    if self._citation_list:
-      console('')
-      citation_warning = 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
-      if self._external_citations:
-        citation_warning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
-      citation_warning += '. Please consult the help page (-help option) for more information.'
-      console(citation_warning)
-      console('')
+    if not self._external_citations:
+      return
+    console('')
+    console('Note that this script may make use of commands / algorithms'
+            ' from neuroimaging software other than MRtrix3.')
+    console('PLEASE ENSURE that any non-MRtrix3 software,'
+            ' as well as any research methods they provide,'
+            ' are recognised and cited appropriately.')
+    console('Consult the help page (-help option) for more information.')
+    console('')
 
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
   def error(self, message):
