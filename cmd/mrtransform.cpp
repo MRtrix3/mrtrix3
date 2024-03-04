@@ -536,8 +536,9 @@ void run() {
           const auto v = parse_floats(lines[l]);
           if (!result.cols()) {
             if (!(v.size() == 2 || v.size() == 3))
-              throw Exception("Malformed \"directions\" field" + //
-                              " (expected matrix with 2 or 3 columns; data has " + str(v.size()) + " columns)");
+              throw Exception(std::string("Malformed \"directions\" field") + //
+                              " (expected matrix with 2 or 3 columns;" +      //
+                              " data has " + str(v.size()) + " columns)");
             result.resize(lines.size(), v.size());
           } else if (v.size() != size_t(result.cols())) {
             throw Exception("Inconsistent number of columns in \"directions\" field");

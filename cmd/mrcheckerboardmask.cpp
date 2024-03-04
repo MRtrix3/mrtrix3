@@ -57,9 +57,9 @@ void run() {
   auto in = Image<float>::open(argument[0]);
   check_3D_nonunity(in);
 
-  const size_t patchwidth_x = ceil((float)in.size(0) / ntiles);
-  const size_t patchwidth_y = ceil((float)in.size(1) / ntiles);
-  const size_t patchwidth_z = ceil((float)in.size(2) / ntiles);
+  const size_t patchwidth_x = std::ceil((float)in.size(0) / (float)ntiles);
+  const size_t patchwidth_y = std::ceil((float)in.size(1) / (float)ntiles);
+  const size_t patchwidth_z = std::ceil((float)in.size(2) / (float)ntiles);
 
   Header header_out(in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;

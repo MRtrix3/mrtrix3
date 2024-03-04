@@ -729,13 +729,11 @@ void run() {
       throw Exception("the number of non-linear iterations have been input"
                       " when no non-linear registration is requested");
     std::vector<uint32_t> iterations_per_level = parse_ints<uint32_t>(opt[0][0]);
-    if (nonlinear_init && iterations_per_level.size() > 1) {
+    if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception("when initialising the non-linear registration"
                       " the max number of iterations can only be defined"
                       " for a single level");
-    } else {
-      nl_registration.set_max_iter(iterations_per_level);
-    }
+    nl_registration.set_max_iter(iterations_per_level);
   }
 
   opt = get_options("nl_update_smooth");
