@@ -10,12 +10,13 @@ set(CPP_TOOLS_SRCS
     testing_diff_tck.cpp
     testing_diff_tsf.cpp
     testing_gen_data.cpp
-    testing_unit_tests_npyread.cpp
-    testing_unit_tests_npywrite.cpp
+    testing_npyread.cpp
+    testing_npywrite.cpp
 )
 
 set(PYTHON_TOOLS_SRCS
     testing_check_npy
+    testing_gen_npy
 )
 
 function(add_testing_cmd CMD_SRC)
