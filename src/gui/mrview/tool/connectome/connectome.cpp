@@ -32,10 +32,7 @@
 
 #include "surface/mesh_multi.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Connectome::Connectome(Dock *parent)
     : Base(parent),
@@ -852,13 +849,13 @@ size_t Connectome::visible_number_colourbars() {
 
 void Connectome::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("Connectome tool options")
-
-      + Option("connectome.init", "Initialise the connectome tool using a parcellation image.") +
-      Argument("image").type_image_in()
-
-      + Option("connectome.load", "Load a matrix file into the connectome tool.").allow_multiple() +
-      Argument("path").type_file_in();
+      + Option("connectome.init", "Initialise the connectome tool using a parcellation image.")
+        + Argument("image").type_image_in()
+      + Option("connectome.load", "Load a matrix file into the connectome tool.").allow_multiple()
+        + Argument("path").type_file_in();
+  // clang-format on
 }
 
 bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
@@ -4091,7 +4088,4 @@ float Connectome::calc_line_width(const float desired_width, const bool is_smoot
   }
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

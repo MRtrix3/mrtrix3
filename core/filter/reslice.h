@@ -21,8 +21,7 @@
 #include "algo/threaded_copy.h"
 #include "datatype.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 //! convenience function to regrid one Image onto another
 /*! This function resamples (regrids) the Image \a source onto the
@@ -55,7 +54,6 @@ void reslice(ImageTypeSource &source,
 }
 
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

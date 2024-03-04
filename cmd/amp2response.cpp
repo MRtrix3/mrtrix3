@@ -33,49 +33,54 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
 
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Estimate response function coefficients based on the DWI signal in single-fibre voxels";
+  SYNOPSIS = "Estimate response function coefficients"
+             " based on the DWI signal in single-fibre voxels";
 
   DESCRIPTION
-  +"This command uses the image data from all selected single-fibre voxels concurrently, "
-   "rather than simply averaging their individual spherical harmonic coefficients. It also "
-   "ensures that the response function is non-negative, and monotonic (i.e. its amplitude "
-   "must increase from the fibre direction out to the orthogonal plane)."
+   + "This command uses the image data from all selected single-fibre voxels concurrently, "
+     "rather than simply averaging their individual spherical harmonic coefficients."
+     " It also ensures that the response function is non-negative,"
+     " and monotonic"
+     " (i.e. its amplitude must increase from the fibre direction out to the orthogonal plane)."
 
-      + "If multi-shell data are provided, and one or more b-value shells are not explicitly "
-        "requested, the command will generate a response function for every b-value shell "
-        "(including b=0 if present).";
+   + "If multi-shell data are provided,"
+     " and one or more b-value shells are not explicitly requested,"
+     " the command will generate a response function for every b-value shell"
+     " (including b=0 if present).";
 
   ARGUMENTS
-  +Argument("amps", "the amplitudes image").type_image_in() +
-      Argument("mask", "the mask containing the voxels from which to estimate the response function").type_image_in() +
-      Argument("directions", "a 4D image containing the estimated fibre directions").type_image_in() +
-      Argument("response", "the output zonal spherical harmonic coefficients").type_file_out();
+    + Argument ("amps", "the amplitudes image").type_image_in()
+    + Argument ("mask", "the mask containing the voxels from which to estimate the response function").type_image_in()
+    + Argument ("directions", "a 4D image containing the estimated fibre directions").type_image_in()
+    + Argument ("response", "the output zonal spherical harmonic coefficients").type_file_out();
 
   OPTIONS
-  +Option("isotropic", "estimate an isotropic response function (lmax=0 for all shells)")
+    + Option ("isotropic", "estimate an isotropic response function (lmax=0 for all shells)")
 
-      + Option("noconstraint", "disable the non-negativity and monotonicity constraints")
+    + Option ("noconstraint", "disable the non-negativity and monotonicity constraints")
 
-      + Option("directions",
-               "provide an external text file containing the directions along which the amplitudes are sampled") +
-      Argument("path").type_file_in()
+    + Option ("directions", "provide an external text file"
+                            " containing the directions along which the amplitudes are sampled")
+      + Argument("path").type_file_in()
 
-      + DWI::ShellsOption
+    + DWI::ShellsOption
 
-      + Option("lmax",
-               "specify the maximum harmonic degree of the response function to estimate "
-               "(can be a comma-separated list for multi-shell data)") +
-      Argument("values").type_sequence_int();
+    + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate"
+                      " (can be a comma-separated list for multi-shell data)")
+      + Argument ("values").type_sequence_int();
 
   REFERENCES
-  +"Smith, R. E.; Dhollander, T. & Connelly, A. " // Internal
-   "Constrained linear least squares estimation of anisotropic response function for spherical deconvolution. "
-   "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 23.";
+    + "Smith, R. E.; Dhollander, T. & Connelly, A. " // Internal
+      "Constrained linear least squares estimation of anisotropic response function for spherical deconvolution. "
+      "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 23.";
 }
+// clang-format on
 
 Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix(const Eigen::Vector3d &dir) {
   static Math::RNG::Normal<default_type> rng;

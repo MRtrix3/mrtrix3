@@ -18,10 +18,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
   out.clear();
@@ -152,7 +149,4 @@ Arc::state_t Arc::state(const point_type &p) const {
   return state_t::AFTER_END;
 }
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling

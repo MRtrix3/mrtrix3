@@ -42,9 +42,7 @@
   "MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. "             \
   "NeuroImage, 2019, 202, 116137"
 
-namespace MR {
-
-namespace App {
+namespace MR::App {
 
 Description DESCRIPTION;
 ExampleList EXAMPLES;
@@ -53,23 +51,28 @@ OptionList OPTIONS;
 Description REFERENCES;
 bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
+// clang-format off
 OptionGroup __standard_options =
-    OptionGroup("Standard options") + Option("info", "display information messages.") +
-    Option(
-        "quiet",
-        "do not display information messages or progress status; "
-        "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.") +
-    Option("debug", "display debugging messages.") +
-    Option("force",
-           "force overwrite of output files "
-           "(caution: using the same file as input and output might cause unexpected behaviour).") +
-    Option("nthreads",
-           "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).") +
-    Argument("number").type_integer(0) +
-    Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple() +
-    Argument("key").type_text() + Argument("value").type_text() +
-    Option("help", "display this information page and exit.") +
-    Option("version", "display version information and exit.");
+    OptionGroup("Standard options")
+    + Option("info", "display information messages.")
+    + Option("quiet",
+             "do not display information messages or progress status; "
+             "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
+             " to a non-empty string.")
+    + Option("debug", "display debugging messages.")
+    + Option("force",
+             "force overwrite of output files"
+             " (caution: using the same file as input and output might cause unexpected behaviour).")
+    + Option("nthreads",
+             "use this number of threads in multi-threaded applications"
+             " (set to 0 to disable multi-threading).")
+      + Argument("number").type_integer(0)
+    + Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
+      + Argument("key").type_text()
+      + Argument("value").type_text()
+    + Option("help", "display this information page and exit.")
+    + Option("version", "display version information and exit.");
+// clang-format on
 
 const char *AUTHOR = nullptr;
 const char *COPYRIGHT = "Copyright (c) 2008-2024 the MRtrix3 contributors.\n"
@@ -1271,5 +1274,4 @@ default_type App::ParsedArgument::as_float() const {
   return retval;
 }
 
-} // namespace App
-} // namespace MR
+} // namespace MR::App

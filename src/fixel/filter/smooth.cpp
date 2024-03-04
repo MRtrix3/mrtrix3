@@ -21,9 +21,7 @@
 #include "thread_queue.h"
 #include "transform.h"
 
-namespace MR {
-namespace Fixel {
-namespace Filter {
+namespace MR::Fixel::Filter {
 
 Smooth::Smooth(Image<index_type> index_image,
                const Matrix::Reader &matrix,
@@ -152,6 +150,4 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
   Thread::run_queue(Source(input.size(0)), Thread::batch(size_t()), Thread::multi(Worker(*this, input, output)));
 }
 
-} // namespace Filter
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Filter

@@ -29,10 +29,7 @@
 #include "gui/mrview/tool/odf/preview.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), lighting_dock(nullptr), lmax(0) {
   lighting = new GL::Lighting(this);
@@ -766,16 +763,20 @@ void ODF::selection_changed_slot(const QItemSelection &, const QItemSelection &)
 
 void ODF::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("ODF tool options")
 
-      + Option("odf.load_sh", "Loads the specified SH-based ODF image on the ODF tool.").allow_multiple() +
-      Argument("image").type_image_in()
+      + Option("odf.load_sh",
+               "Loads the specified SH-based ODF image on the ODF tool.").allow_multiple()
+        + Argument("image").type_image_in()
 
-      + Option("odf.load_tensor", "Loads the specified tensor image on the ODF tool.").allow_multiple() +
-      Argument("image").type_image_in()
+      + Option("odf.load_tensor",
+               "Loads the specified tensor image on the ODF tool.").allow_multiple()
+        + Argument("image").type_image_in()
 
-      + Option("odf.load_dixel", "Loads the specified dixel-based image on the ODF tool.").allow_multiple() +
-      Argument("image").type_image_in();
+      + Option("odf.load_dixel", "Loads the specified dixel-based image on the ODF tool.").allow_multiple()
+        + Argument("image").type_image_in();
+  // clang-format on
 }
 
 bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
@@ -812,7 +813,4 @@ bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
   return false;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

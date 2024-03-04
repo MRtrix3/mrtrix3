@@ -18,10 +18,7 @@
 #include "dwi/tractography/SIFT2/regularisation.h"
 #include "dwi/tractography/SIFT2/tckfactor.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 LineSearchFunctor::LineSearchFunctor(const SIFT::track_t index, const TckFactor &tckfactor)
     : track_index(index),
@@ -100,7 +97,4 @@ LineSearchFunctor::Fixel::Fixel(const SIFT::Track_fixel_contribution &in,
       expmeanFs(std::exp(fixel_coeff_mean)),
       FOD(tckfactor.fixels[index].get_FOD()) {}
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2

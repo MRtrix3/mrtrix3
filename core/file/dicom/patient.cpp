@@ -18,9 +18,7 @@
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 namespace {
 bool mismatched_UID_time_warning_issued = false;
@@ -77,6 +75,4 @@ std::ostream &operator<<(std::ostream &stream, const Patient &item) {
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

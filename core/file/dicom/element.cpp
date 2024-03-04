@@ -18,9 +18,9 @@
 #include "debug.h"
 #include "file/path.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+#include <iomanip>
+
+namespace MR::File::Dicom {
 
 std::ostream &operator<<(std::ostream &stream, const Date &item) {
   stream << item.year << "/" << std::setfill('0') << std::setw(2) << item.month << "/" << std::setfill('0')
@@ -452,6 +452,4 @@ std::ostream &operator<<(std::ostream &stream, const Element &item) {
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

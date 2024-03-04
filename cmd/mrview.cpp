@@ -30,53 +30,58 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com), "
-           "Dave Raffelt (david.raffelt@florey.edu.au), "
-           "Robert E. Smith (robert.smith@florey.edu.au), "
-           "Rami Tabbara (rami.tabbara@florey.edu.au), "
-           "Max Pietsch (maximilian.pietsch@kcl.ac.uk), "
-           "Thijs Dhollander (thijs.dhollander@gmail.com)";
+
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)"
+           " and Dave Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)"
+           " and Rami Tabbara (rami.tabbara@florey.edu.au)"
+           " and Max Pietsch (maximilian.pietsch@kcl.ac.uk)"
+           " and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
   SYNOPSIS = "The MRtrix image viewer";
 
   DESCRIPTION
-  +"Any images listed as arguments will be loaded and available through the "
-   "image menu, with the first listed displayed initially. Any subsequent "
-   "command-line options will be processed as if the corresponding action had "
-   "been performed through the GUI."
+  + "Any images listed as arguments will be loaded and available through the image menu,"
+    " with the first listed displayed initially."
+    " Any subsequent command-line options will be processed"
+    " as if the corresponding action had been performed through the GUI."
 
-      + "Note that because images loaded as arguments (i.e. simply listed on the "
-        "command-line) are opened before the GUI is shown, subsequent actions to be "
-        "performed via the various command-line options must appear after the last "
-        "argument. This is to avoid confusion about which option will apply to which "
-        "image. If you need fine control over this, please use the -load or -select_image "
-        "options. For example:"
-
-      + "$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0"
-
-      + "or"
-
-      + "$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0";
+  + "Note that because images loaded as arguments"
+    " (i.e. simply listed on the command-line)"
+    " are opened before the GUI is shown,"
+    " subsequent actions to be performed via the various command-line options"
+    " must appear after the last argument."
+    " This is to avoid confusion about which option will apply to which image."
+    " If you need fine control over this,"
+    " please use the -load or -select_image options."
+    " For example:"
+    "\"mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0\""
+    " or "
+    "\"mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0\"";
 
   REFERENCES
-  +"Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "MRtrix: Diffusion tractography in crossing fiber regions. "
-   "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
+    + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "MRtrix: Diffusion tractography in crossing fiber regions. "
+    "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
 
   ARGUMENTS
-  +Argument("image", "An image to be loaded.").optional().allow_multiple().type_image_in();
+    + Argument ("image", "An image to be loaded.").optional().allow_multiple().type_image_in();
 
-  GUI::MRView::Window::add_commandline_options(OPTIONS);
+    GUI::MRView::Window::add_commandline_options(OPTIONS);
 
-#define TOOL(classname, name, description) MR::GUI::MRView::Tool::classname::add_commandline_options(OPTIONS);
+#define TOOL(classname, name, description) \
+  MR::GUI::MRView::Tool::classname::add_commandline_options(OPTIONS);
   {
     using namespace MR::GUI::MRView::Tool;
 #include "gui/mrview/tool/list.h"
   }
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
+
 }
+// clang-format on
 
 void run() {
   GUI::App::setEventHandler([](QEvent *event) {

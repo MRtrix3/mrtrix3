@@ -20,7 +20,7 @@ Usage
 Options
 -------
 
--  **-response** assume SH coefficients file only contains m=0 terms (zonal harmonics). Used to display the response function as produced by estimate_response
+-  **-response** assume SH coefficients file only contains m=0 terms (zonal harmonics). Used to display the response function as produced by eg. amp2response
 
 Standard options
 ^^^^^^^^^^^^^^^^

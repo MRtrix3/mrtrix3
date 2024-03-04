@@ -20,10 +20,7 @@
 
 #include "thread_queue.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 MT_gradient_vector_sorter::MT_gradient_vector_sorter(MT_gradient_vector_sorter::VecType &in, const track_t block_size)
     : end(in.end()) {
@@ -60,7 +57,4 @@ bool MT_gradient_vector_sorter::Sorter::operator()(const TrackIndexRange &in, Ve
   return true;
 }
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT

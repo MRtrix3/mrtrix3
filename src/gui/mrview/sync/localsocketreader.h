@@ -23,10 +23,7 @@
 
 class QLocalSocket;
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 /**
  * Auto reads data from its local socket when data arrives, and fires an event with that data attached
  */
@@ -46,8 +43,6 @@ private:
   QLocalSocket *socket;
 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync
+
 #endif

@@ -20,10 +20,7 @@
 #include "dwi/tractography/resampling/resampling.h"
 #include "dwi/tractography/tracking/generated_track.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 class Downsampler : public BaseCRTP<Downsampler> {
 
@@ -45,9 +42,6 @@ private:
   size_t ratio;
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling
 
 #endif

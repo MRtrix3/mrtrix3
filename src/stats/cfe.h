@@ -23,8 +23,7 @@
 
 #include "fixel/matrix.h"
 
-namespace MR {
-namespace Stats {
+namespace MR::Stats {
 
 using value_type = Math::Stats::value_type;
 using direction_type = Eigen::Matrix<value_type, 3, 1>;
@@ -49,7 +48,6 @@ protected:
   void operator()(in_column_type, out_column_type) const override;
 };
 
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats
 
 #endif

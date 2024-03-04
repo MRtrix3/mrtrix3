@@ -27,8 +27,7 @@
 #include <iostream>
 #include <stack>
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 class Connector {
 
@@ -280,7 +279,6 @@ protected:
   uint32_t minsize;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

@@ -21,9 +21,7 @@
 #include "app.h"
 #include "gui/dwi/render_frame.h"
 
-namespace MR {
-namespace GUI {
-namespace DWI {
+namespace MR::GUI::DWI {
 
 namespace {
 
@@ -386,6 +384,4 @@ void RenderFrame::snapshot() {
   update();
 }
 
-} // namespace DWI
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::DWI

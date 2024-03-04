@@ -55,97 +55,107 @@ using Stats::PermTest::count_matrix_type;
 #define DEFAULT_CFE_C 0.5
 #define DEFAULT_EMPIRICAL_SKEW 1.0 // TODO Update from experience
 
+// clang-format off
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
+
+  SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement"
+             " and non-parametric permutation testing";
 
   DESCRIPTION
-  +"Unlike previous versions of this command, where a whole-brain tractogram file would be provided as input "
-   "in order to generate the fixel-fixel connectivity matrix and smooth fixel data, this version expects to be "
-   "provided with the directory path to a pre-calculated fixel-fixel connectivity matrix (likely generated using "
-   "the MRtrix3 command fixelconnectivity), and for the input fixel data to have already been smoothed (likely "
-   "using the MRtrix3 command fixelfilter)."
+  + "Unlike previous versions of this command,"
+    " where a whole-brain tractogram file would be provided as input"
+    " in order to generate the fixel-fixel connectivity matrix and smooth fixel data,"
+    " this version expects to be provided with the directory path"
+    " to a pre-calculated fixel-fixel connectivity matrix"
+    " (likely generated using the MRtrix3 command fixelconnectivity),"
+    " and for the input fixel data to have already been smoothed"
+    " (likely using the MRtrix3 command fixelfilter)."
 
-      + "Note that if the -mask option is used, the output fixel directory will still contain the same set of fixels "
-        "as that "
-        "present in the input fixel template, in order to retain fixel correspondence. However a consequence of this "
-        "is that "
-        "all fixels in the template will be initialy visible when the output fixel directory is loaded in mrview. "
-        "Those fixels "
-        "outside the processing mask will immediately disappear from view as soon as any data-file-based fixel "
-        "colouring or "
-        "thresholding is applied."
+  + "Note that if the -mask option is used,"
+    " the output fixel directory will still contain the same set of fixels"
+    " as that present in the input fixel template,"
+    " in order to retain fixel correspondence."
+    " However a consequence of this is that all fixels in the template will be initialy visible"
+    " when the output fixel directory is loaded in mrview."
+    " Those fixels outside the processing mask will immediately disappear from view"
+    " as soon as any data-file-based fixel colouring or thresholding is applied."
 
-      + Math::Stats::GLM::column_ones_description
+  + Math::Stats::GLM::column_ones_description
 
-      + Fixel::format_description;
+  + Fixel::format_description;
 
   REFERENCES
-  +"Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A. " // Internal
-   "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence "
-   "of crossing fibres."
-   "Neuroimage, 2015, 15(117):40-55"
+  + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A. " // Internal
+    "Connectivity-based fixel enhancement:"
+    " Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres."
+    "Neuroimage, 2015, 15(117):40-55"
 
-      + "* If not using the -cfe_legacy option: \n"
-        "Smith, RE.; Dimond, D; Vaughan, D.; Parker, D.; Dhollander, T.; Jackson, G.; Connelly, A. "
-        "Intrinsic non-stationarity correction for Fixel-Based Analysis. "
-        "In Proc OHBM 2019 M789"
+  + "* If not using the -cfe_legacy option: \n"
+    "Smith, RE.; Dimond, D; Vaughan, D.; Parker, D.; Dhollander, T.; Jackson, G.; Connelly, A. "
+    "Intrinsic non-stationarity correction for Fixel-Based Analysis. "
+    "In Proc OHBM 2019 M789"
 
-      + "* If using the -nonstationary option: \n"
-        "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. "
-        "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. "
-        "NeuroImage, 2011, 54(3), 2006-19";
+  + "* If using the -nonstationary option: \n"
+    "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. "
+    "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. "
+    "NeuroImage, 2011, 54(3), 2006-19";
 
   ARGUMENTS
-  +Argument("in_fixel_directory",
-            "the fixel directory containing the data files for each subject (after obtaining fixel correspondence")
-          .type_directory_in()
+  + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject"
+                                    " (after obtaining fixel correspondence").type_directory_in()
 
-      +
-      Argument("subjects",
-               "a text file listing the subject identifiers (one per line). This should correspond with the filenames "
-               "in the fixel directory (including the file extension), and be listed in the same order as the rows of "
-               "the design matrix.")
-          .type_image_in()
+  + Argument ("subjects", "a text file listing the subject identifiers (one per line)."
+                          " This should correspond with the filenames in the fixel directory"
+                          " (including the file extension),"
+                          " and be listed in the same order as the rows of the design matrix.").type_image_in ()
 
-      + Argument("design", "the design matrix").type_file_in()
+  + Argument ("design", "the design matrix").type_file_in ()
 
-      + Argument("contrast", "the contrast matrix, specified as rows of weights").type_file_in()
+  + Argument ("contrast", "the contrast matrix,"
+                          " specified as rows of weights").type_file_in ()
 
-      // .type_various() rather than .type_directory_in() to catch people trying to
-      //   pass a track file, and give a more informative error message
-      + Argument("connectivity", "the fixel-fixel connectivity matrix").type_various()
+  // .type_various() rather than .type_directory_in() to catch people trying to
+  //   pass a track file, and give a more informative error message
+  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_various ()
 
-      + Argument("out_fixel_directory",
-                 "the output directory where results will be saved. Will be created if it does not exist")
-            .type_text();
+  + Argument ("out_fixel_directory", "the output directory where results will be saved."
+                                     " Will be created if it does not exist").type_text();
+
 
   OPTIONS
 
-  +Option("mask", "provide a fixel data file containing a mask of those fixels to be used during processing") +
-      Argument("file").type_image_in()
+  + Option ("mask", "provide a fixel data file containing a mask of those fixels to be used during processing")
+    + Argument ("file").type_image_in()
 
-      + Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
+  + Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
 
-      + OptionGroup("Parameters for the Connectivity-based Fixel Enhancement algorithm")
+  + OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement algorithm")
 
-      + Option("cfe_dh", "the height increment used in the cfe integration (default: " + str(DEFAULT_CFE_DH, 2) + ")") +
-      Argument("value").type_float(0.001, 1.0)
+  + Option ("cfe_dh", "the height increment used in the cfe integration"
+                      " (default: " + str(DEFAULT_CFE_DH, 2) + ")")
+    + Argument ("value").type_float (0.001, 1.0)
 
-      + Option("cfe_e", "cfe extent exponent (default: " + str(DEFAULT_CFE_E, 2) + ")") +
-      Argument("value").type_float(0.0, 100.0)
+  + Option ("cfe_e", "cfe extent exponent"
+                     " (default: " + str(DEFAULT_CFE_E, 2) + ")")
+    + Argument ("value").type_float(0.0, 100.0)
 
-      + Option("cfe_h", "cfe height exponent (default: " + str(DEFAULT_CFE_H, 2) + ")") +
-      Argument("value").type_float(0.0, 100.0)
+  + Option ("cfe_h", "cfe height exponent"
+                     " (default: " + str(DEFAULT_CFE_H, 2) + ")")
+    + Argument ("value").type_float(0.0, 100.0)
 
-      + Option("cfe_c", "cfe connectivity exponent (default: " + str(DEFAULT_CFE_C, 2) + ")") +
-      Argument("value").type_float(0.0, 100.0)
+  + Option ("cfe_c", "cfe connectivity exponent"
+                     " (default: " + str(DEFAULT_CFE_C, 2) + ")")
+    + Argument ("value").type_float(0.0, 100.0)
 
-      + Option("cfe_legacy", "use the legacy (non-normalised) form of the cfe equation")
+  + Option ("cfe_legacy", "use the legacy (non-normalised) form of the cfe equation")
 
-      + Math::Stats::GLM::glm_options("fixel");
+  + Math::Stats::GLM::glm_options ("fixel");
+
 }
+// clang-format on
 
 template <class VectorType>
 void write_fixel_output(const std::string &filename, const VectorType &data, Image<bool> &mask, const Header &header) {

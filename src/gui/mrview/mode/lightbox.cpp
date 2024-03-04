@@ -16,10 +16,7 @@
 
 #include "gui/mrview/mode/lightbox.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 bool LightBox::show_grid_lines = true;
 bool LightBox::show_volumes = false;
@@ -348,7 +345,4 @@ void LightBox::image_changed_event() {
     prev_image_name.clear();
 }
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode

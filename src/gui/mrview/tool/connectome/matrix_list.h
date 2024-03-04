@@ -24,9 +24,7 @@
 #include "gui/mrview/tool/connectome/file_data_vector.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 class Window;
 
@@ -97,8 +95,6 @@ protected:
 };
 
 } // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView
 
 #endif

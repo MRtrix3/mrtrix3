@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/resampling/endpoints.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 bool Endpoints::operator()(const Streamline<> &in, Streamline<> &out) const {
   out.clear();
@@ -33,7 +30,4 @@ bool Endpoints::operator()(const Streamline<> &in, Streamline<> &out) const {
   return true;
 }
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling

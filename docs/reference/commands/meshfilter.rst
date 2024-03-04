@@ -16,18 +16,18 @@ Usage
     meshfilter [ options ]  input filter output
 
 -  *input*: the input mesh file
--  *filter*: the filter to apply.Options are: smooth
+-  *filter*: the filter to apply; options are: smooth
 -  *output*: the output mesh file
 
 Description
 -----------
 
-While this command has only one filter operation currently available, it nevertheless presents with a comparable interface to the MRtrix3 commands maskfilter and mrfilter commands.
+While this command has only one filter operation currently available, it nevertheless presents with a comparable interface to the MRtrix3 commands maskfilter and mrfilter
 
 Example usages
 --------------
 
--   *Apply a mesh smoothing filter (currently the only filter available*::
+-   *Apply a mesh smoothing filter (currently the only filter available)*::
 
         $ meshfilter input.vtk smooth output.vtk
 

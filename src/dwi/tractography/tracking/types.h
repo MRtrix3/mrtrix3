@@ -21,10 +21,7 @@
 #include "interp/linear.h"
 #include "interp/masked.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 enum term_t {
   CONTINUE,
@@ -64,9 +61,6 @@ public:
   using type = Interp::Masked<Interp::Linear<ImageType>>;
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking
 
 #endif

@@ -19,10 +19,7 @@
 #include "gui/cursor.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 bool Ortho::show_as_row = false;
 
@@ -186,7 +183,4 @@ void Ortho::set_show_as_row_slot(bool state) {
   updateGL();
 }
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode

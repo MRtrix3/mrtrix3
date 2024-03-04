@@ -24,9 +24,7 @@
 #define DEFAULT_FIXEL_SMOOTHING_FWHM 10.0
 #define DEFAULT_FIXEL_SMOOTHING_MINWEIGHT 0.01
 
-namespace MR {
-namespace Fixel {
-namespace Filter {
+namespace MR::Fixel::Filter {
 
 /** \addtogroup Filters
 @{ */
@@ -72,8 +70,6 @@ protected:
 };
 //! @}
 
-} // namespace Filter
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Filter
 
 #endif

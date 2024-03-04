@@ -23,11 +23,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/twi_stats.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
-namespace Gaussian {
+namespace MR::DWI::Tractography::Mapping::Gaussian {
 
 class TrackMapper : public Mapping::TrackMapperTWI {
 
@@ -267,10 +263,6 @@ inline default_type TrackMapper::tck_index_to_factor(const size_t i) const {
   return ((mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]));
 }
 
-} // namespace Gaussian
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping::Gaussian
 
 #endif

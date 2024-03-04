@@ -22,16 +22,19 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Divide corresponding values in track scalar files";
 
   ARGUMENTS
-  +Argument("input1", "the first input track scalar file.").type_file_in() +
-      Argument("input2", "the second input track scalar file.").type_file_in() +
-      Argument("output", "the output track scalar file").type_file_out();
+  + Argument ("input1", "the first input track scalar file.").type_file_in()
+  + Argument ("input2", "the second input track scalar file.").type_file_in()
+  + Argument ("output", "the output track scalar file").type_file_out();
 }
+// clang-format on
 
 using value_type = float;
 

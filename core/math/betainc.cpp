@@ -16,8 +16,7 @@
 
 #include "math/betainc.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 /*
  * zlib License
@@ -102,5 +101,4 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
   return NaN; // Needed more loops, did not converge
 }
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math

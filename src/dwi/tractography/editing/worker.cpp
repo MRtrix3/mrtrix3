@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/editing/worker.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
 
@@ -165,7 +162,4 @@ bool Worker::Thresholds::operator()(const Streamline<> &in) const {
   return ((length <= max_length) && (length >= min_length) && (in.weight <= max_weight) && (in.weight >= min_weight));
 }
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Editing

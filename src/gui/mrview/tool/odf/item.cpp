@@ -20,10 +20,7 @@
 #include "header.h"
 #include "math/SH.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 ODF_Item::ODF_Item(
     MR::Header &&H, const odf_type_t type, const float scale, const bool hide_negative, const bool color_by_direction)
@@ -157,7 +154,4 @@ size_t ODF_Item::DixelPlugin::num_DW_shells() const {
   return shells->count();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

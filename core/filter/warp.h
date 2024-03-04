@@ -25,8 +25,7 @@
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 // TODO if there is a use for this elsewhere then we should have threaded_copy4D convenience functions
 class CopyKernel4D {
@@ -120,7 +119,6 @@ void warp(ImageTypeSource &source,
 }
 
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

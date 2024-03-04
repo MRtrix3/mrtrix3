@@ -19,8 +19,7 @@
 
 #include "math/fft.h"
 
-namespace MR {
-namespace Degibbs {
+namespace MR::Degibbs {
 
 class Unring1D {
 public:
@@ -134,7 +133,6 @@ private:
   std::vector<int> shifts;
 };
 
-} // namespace Degibbs
-} // namespace MR
+} // namespace MR::Degibbs
 
 #endif

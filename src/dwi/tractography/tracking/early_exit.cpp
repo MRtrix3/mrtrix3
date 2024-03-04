@@ -18,10 +18,7 @@
 
 #include "file/config.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
   if (++counter != next_test)
@@ -86,7 +83,4 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
 #endif
 }
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking

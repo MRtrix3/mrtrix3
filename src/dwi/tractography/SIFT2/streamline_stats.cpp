@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/SIFT2/streamline_stats.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 StreamlineStats::StreamlineStats()
     : min(std::numeric_limits<double>::infinity()),
@@ -69,7 +66,4 @@ void StreamlineStats::normalise() {
   var /= double(count - 1);
 }
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2

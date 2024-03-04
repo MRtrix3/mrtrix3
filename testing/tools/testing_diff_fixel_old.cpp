@@ -31,15 +31,21 @@ using MR::Fixel::Legacy::FixelMetric;
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+          " and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two fixel images for differences, within specified tolerance";
 
   ARGUMENTS
-  +Argument("data1", "a fixel image.").type_image_in() + Argument("data2", "another fixel image.").type_image_in() +
-      Argument("tolerance", "the amount of signal difference to consider acceptable").type_float(0.0);
+  + Argument ("data1", "a fixel image.").type_image_in()
+  + Argument ("data2", "another fixel image.").type_image_in()
+  + Argument ("tolerance", "the amount of signal difference to consider acceptable").type_float(0.0);
+
 }
+// clang-format on
 
 void run() {
   Fixel::Legacy::Image<FixelMetric> buffer1(argument[0]);

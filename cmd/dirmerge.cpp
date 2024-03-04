@@ -27,26 +27,30 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Splice / merge multiple sets of directions in such a way as to maintain near-optimality upon truncation";
+  SYNOPSIS = "Splice / merge multiple sets of directions"
+             " in such a way as to maintain near-optimality upon truncation";
 
   ARGUMENTS
-  +Argument("subsets", "the number of subsets (eg. phase encoding directions) per b-value").type_integer(1, 10000) +
-      Argument("bvalue files", "the b-value and sets of corresponding files, in order").type_text().allow_multiple() +
-      Argument("out",
-               "the output directions file, with each row listing "
-               "the X Y Z gradient directions, the b-value, and an index representing "
-               "the phase encode direction")
-          .type_file_out();
+  + Argument ("subsets", "the number of subsets (eg. phase encoding directions) per b-value").type_integer(1,10000)
+  + Argument ("bvalue files", "the b-value and sets of corresponding files, in order").type_text().allow_multiple()
+  + Argument ("out", "the output directions file,"
+                     " with each row listing the X Y Z gradient directions,"
+                     " the b-value,"
+                     " and an index representing the phase encode direction").type_file_out();
 
-  OPTIONS
-  +Option("unipolar_weight",
-          "set the weight given to the unipolar electrostatic repulsion model compared to the "
-          "bipolar model (default: 0.2).") +
-      Argument("value").type_float(0.0, 1.0);
+OPTIONS
+  + Option ("unipolar_weight", "set the weight given to the unipolar electrostatic repulsion model"
+                               " compared to the bipolar model"
+                               " (default: 0.2).")
+    + Argument ("value").type_float(0.0, 1.0);
+
 }
+// clang-format on
 
 using value_type = double;
 using Direction = Eigen::Matrix<value_type, 3, 1>;

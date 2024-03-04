@@ -18,9 +18,7 @@
 #include "gui/gui.h"
 #include "math/rng.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 ColourMapButton::ColourMapButton(QWidget *parent,
                                  ColourMapButtonObserver &obs,
@@ -198,6 +196,4 @@ void ColourMapButton::invert_colourmap_slot(bool inverted) { observer.toggle_inv
 
 void ColourMapButton::reset_intensity_slot() { observer.reset_colourmap(*this); }
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView

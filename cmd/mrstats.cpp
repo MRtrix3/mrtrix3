@@ -31,21 +31,24 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Compute images statistics";
 
   ARGUMENTS
-  +Argument("image", "the input image from which statistics will be computed.").type_image_in();
+  + Argument ("image", "the input image from which statistics will be computed.").type_image_in ();
 
   OPTIONS
-  +Stats::Options
+  + Stats::Options
+  + OptionGroup ("Additional options for mrstats")
+    + Option ("allvolumes", "generate statistics across all image volumes,"
+                            " rather than one set of statistics per image volume");
 
-      + OptionGroup("Additional options for mrstats") +
-      Option("allvolumes",
-             "generate statistics across all image volumes, rather than one set of statistics per image volume");
 }
+// clang-format on
 
 using value_type = Stats::value_type;
 using complex_type = Stats::complex_type;

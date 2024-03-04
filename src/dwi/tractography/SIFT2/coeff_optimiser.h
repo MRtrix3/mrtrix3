@@ -28,10 +28,7 @@
 
 // #define SIFT2_COEFF_OPTIMISER_DEBUG
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 class TckFactor;
 
@@ -116,9 +113,6 @@ private:
 #endif
 };
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2
 
 #endif

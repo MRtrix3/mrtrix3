@@ -43,8 +43,7 @@
 #include "registration/multi_contrast.h"
 #include "registration/multi_resolution_lmax.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 
 extern const App::OptionGroup adv_init_options;
 extern const App::OptionGroup lin_stage_options;
@@ -592,7 +591,6 @@ protected:
 void set_init_translation_model_from_option(Registration::Linear &registration, const int &option);
 void set_init_rotation_model_from_option(Registration::Linear &registration, const int &option);
 void parse_general_options(Registration::Linear &registration);
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration
 
 #endif

@@ -22,11 +22,13 @@ using namespace App;
 
 // #define ERFINV_PRINT_ALL
 
+// clang-format off
 void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
   SYNOPSIS = "Verify correct operation of the Math::erfinv() function";
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 void run() {
 #ifndef ERFINV_PRINT_ALL

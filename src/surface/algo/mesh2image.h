@@ -21,14 +21,10 @@
 #include "surface/mesh.h"
 #include "types.h"
 
-namespace MR {
-namespace Surface {
-namespace Algo {
+namespace MR::Surface::Algo {
 
 void mesh2image(const Mesh &, Image<float> &);
 
 }
-} // namespace Surface
-} // namespace MR
 
 #endif

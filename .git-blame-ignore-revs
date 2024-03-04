@@ -102,3 +102,15 @@ aad44d847ac48d02bb7f8badf801dbfaa0ccdac0
 #Author: MRtrixBot <gitbot@mrtrix.org>
 #Date:   Thu, 17 Aug 2023 15:36:14 +0100
 #    Apply formatting for C++ using clang-format
+
+de4de955cd82065135d15383a639dd7f7373d834
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Mon Feb 26 13:38:02 2024 +1100
+#    Disable clang-format for CLI-related code
+#    When clang-format, introduced in #2652, applied its changes to MRtrix3 code relating to the command-line interface (particularly the way that options and their arguments are concatenated through the addition operator), the resulting code was often quite ugly. This commit replaces code relating to CLI configuration (both the usage() function in cmd/*.cpp, and in definitions of options and option groups utilised by multiple commands) with manually formatted code, and includes comment fields to disable further manipulation of that code by clang-format.
+#    This commit is a refactor of 0cec87a0e59749d4e14ebf55c288067d29f868f1 generated as part of #2815, with the changes being to omit other modifications to the command documentation that are not directly related to clang-format (those changes are in the parent commit to this commit: 15e253cf6a0af83a9a0f4f9369a256d01cf90ad8), and to change authorship of the commit.
+
+dd90cc2185d39111840ba90a0ee9f777a7183271
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Mon, 26 Feb 2024 17:33:13 +0000
+#    Concatenate nested namespaces

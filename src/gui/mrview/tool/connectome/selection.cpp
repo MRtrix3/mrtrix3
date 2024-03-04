@@ -18,10 +18,7 @@
 
 #include "gui/mrview/tool/base.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 NodeSelectionSettings::NodeSelectionSettings()
     : node_selected_visibility_override(true),
@@ -648,7 +645,4 @@ NodeSelectionSettingsDialog::NodeSelectionSettingsDialog(QWidget *,
   setLayout(main_layout);
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
