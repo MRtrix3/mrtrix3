@@ -1,7 +1,7 @@
-.. _labelsgmfix:
+.. _labelsgmfirst:
 
-labelsgmfix
-===========
+labelsgmfirst
+=============
 
 Synopsis
 --------
@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    labelsgmfix parc t1 lut output [ options ]
+    labelsgmfirst parc t1 lut output [ options ]
 
 -  *parc*: The input FreeSurfer parcellation image
 -  *t1*: The T1 image to be provided to FIRST
