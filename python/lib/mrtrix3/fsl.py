@@ -43,7 +43,7 @@ def check_first(prefix, structures): #pylint: disable=unused-variable
       app.DO_CLEANUP = False
       raise MRtrixError('FSL FIRST has failed; '
                         f'{"only " if existing_file_count else ""}{existing_file_count} of {len(vtk_files)} structures were segmented successfully '
-                        f'(check {app.ScratchPath("first.logs")})')
+                        f'(check {os.path.join(app.SCRATCH_DIR, "first.logs")})')
 
 
 
