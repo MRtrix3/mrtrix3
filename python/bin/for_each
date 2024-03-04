@@ -140,7 +140,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             '(see Example Usage)')
   cmdline.add_argument('-test',
                        action='store_true',
-                       default=False,
+                       default=None,
                        help='Test the operation of the for_each script,'
                             ' by printing the command strings following string substitution but not actually executing them')
 

@@ -47,6 +47,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='The output mean response function file')
   cmdline.add_argument('-legacy',
                        action='store_true',
+                       default=None,
                        help='Use the legacy behaviour of former command "average_response":'
                             ' average response function coefficients directly,'
                             ' without compensating for global magnitude differences between input files')

@@ -54,6 +54,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                            f'options are: {",".join(THALAMI_CHOICES)}')
   parser.add_argument('-white_stem',
                       action='store_true',
+                      default=None,
                       help='Classify the brainstem as white matter')
   parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. '
                       'Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. '

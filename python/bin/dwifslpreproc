@@ -201,6 +201,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                                      ' (i.e. it will not form part of the output image series)')
   distcorr_options.add_argument('-align_seepi',
                                 action='store_true',
+                                default=None,
                                 help='Achieve alignment between the SE-EPI images used for inhomogeneity field estimation and the DWIs'
                                      ' (more information in Description section)')
   distcorr_options.add_argument('-topup_options',
@@ -245,19 +246,23 @@ def usage(cmdline): #pylint: disable=unused-variable
                                            ' note that one of the -rpe_* options MUST be provided')
   rpe_options.add_argument('-rpe_none',
                            action='store_true',
+                           default=None,
                            help='Specify that no reversed phase-encoding image data is being provided;'
                                 ' eddy will perform eddy current and motion correction only')
   rpe_options.add_argument('-rpe_pair',
                            action='store_true',
+                           default=None,
                            help='Specify that a set of images'
                                 ' (typically b=0 volumes)'
                                 ' will be provided for use in inhomogeneity field estimation only'
                                 ' (using the -se_epi option)')
   rpe_options.add_argument('-rpe_all',
                            action='store_true',
+                           default=None,
                            help='Specify that ALL DWIs have been acquired with opposing phase-encoding')
   rpe_options.add_argument('-rpe_header',
                            action='store_true',
+                           default=None,
                            help='Specify that the phase-encoding information can be found in the image header(s),'
                                 ' and that this is the information that the script should use')
   cmdline.flag_mutually_exclusive_options( [ 'rpe_none', 'rpe_pair', 'rpe_all', 'rpe_header' ], True )

@@ -100,9 +100,11 @@ def usage(cmdline): #pylint: disable=unused-variable
   linoptions = cmdline.add_argument_group('Options for the linear registration')
   linoptions.add_argument('-linear_no_pause',
                           action='store_true',
+                          default=None,
                           help='Do not pause the script if a linear registration seems implausible')
   linoptions.add_argument('-linear_no_drift_correction',
                           action='store_true',
+                          default=None,
                           help='Deactivate correction of template appearance (scale and shear) over iterations')
   linoptions.add_argument('-linear_estimator',
                           choices=LINEAR_ESTIMATORS,
@@ -262,6 +264,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' of all subject masks in template space.')
   options.add_argument('-noreorientation',
                        action='store_true',
+                       default=None,
                        help='Turn off FOD reorientation in mrregister.'
                             ' Reorientation is on by default if the number of volumes in the 4th dimension'
                             ' corresponds to the number of coefficients'
@@ -285,14 +288,17 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' Note that this weighs intensity values not transformations (shape).')
   options.add_argument('-nanmask',
                        action='store_true',
+                       default=None,
                        help='Optionally apply masks to (transformed) input images using NaN values'
                             ' to specify include areas for registration and aggregation.'
                             ' Only works if -mask_dir has been input.')
   options.add_argument('-copy_input',
                        action='store_true',
+                       default=None,
                        help='Copy input images and masks into local scratch directory.')
   options.add_argument('-delete_temporary_files',
                        action='store_true',
+                       default=None,
                        help='Delete temporary files from scratch directory during template creation.')
 
 # ENH: add option to initialise warps / transformations

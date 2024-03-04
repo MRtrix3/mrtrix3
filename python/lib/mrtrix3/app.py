@@ -875,17 +875,21 @@ class Parser(argparse.ArgumentParser):
       standard_options = self.add_argument_group('Standard options')
       standard_options.add_argument('-info',
                                     action='store_true',
+                                    default=None,
                                     help='display information messages.')
       standard_options.add_argument('-quiet',
                                     action='store_true',
+                                    default=None,
                                     help='do not display information messages or progress status. '
                                          'Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.')
       standard_options.add_argument('-debug',
                                     action='store_true',
+                                    default=None,
                                     help='display debugging messages.')
       self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
       standard_options.add_argument('-force',
                                     action='store_true',
+                                    default=None,
                                     help='force overwrite of output files.')
       standard_options.add_argument('-nthreads',
                                     metavar='number',
@@ -900,13 +904,16 @@ class Parser(argparse.ArgumentParser):
                                     help='temporarily set the value of an MRtrix config file entry.')
       standard_options.add_argument('-help',
                                     action='store_true',
+                                    default=None,
                                     help='display this information page and exit.')
       standard_options.add_argument('-version',
                                     action='store_true',
+                                    default=None,
                                     help='display version information and exit.')
       script_options = self.add_argument_group('Additional standard options for Python scripts')
       script_options.add_argument('-nocleanup',
                                   action='store_true',
+                                  default=None,
                                   help='do not delete intermediate files during script execution, '
                                        'and do not delete scratch directory at script completion.')
       script_options.add_argument('-scratch',

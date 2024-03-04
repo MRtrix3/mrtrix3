@@ -26,6 +26,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   builtins = cmdline.add_argument_group('Built-in types')
   builtins.add_argument('-flag',
                         action='store_true',
+                        default=None,
                         help='A binary flag')
   builtins.add_argument('-string_implicit',
                         help='A built-in string (implicit)')
@@ -132,7 +133,9 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
 
   for key in vars(app.ARGS):
-    app.console(f'{key}: {repr(getattr(app.ARGS, key))}')
+    value = getattr(app.ARGS, key)
+    if value is not None:
+      app.console(f'{key}: {repr(value)}')
 
 
 

@@ -46,14 +46,14 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                        help='The output stripped image')
   options.add_argument('-gpu',
                        action='store_true',
-                       default=False,
+                       default=None,
                        help='Use the GPU')
   options.add_argument('-model',
                        type=app.Parser.FileIn(),
                        help='Alternative model weights')
   options.add_argument('-nocsf',
                        action='store_true',
-                       default=False,
+                       default=None,
                        help='Compute the immediate boundary of brain matter excluding surrounding CSF')
   options.add_argument('-border',
                        type=app.Parser.Int(),

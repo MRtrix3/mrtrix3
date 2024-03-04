@@ -59,11 +59,11 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='The output parcellation image')
   cmdline.add_argument('-premasked',
                        action='store_true',
-                       default=False,
+                       default=None,
                        help='Indicate that brain masking has been applied to the T1 input image')
   cmdline.add_argument('-sgm_amyg_hipp',
                        action='store_true',
-                       default=False,
+                       default=None,
                        help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures,'
                             ' and also replace their estimates with those from FIRST')
 

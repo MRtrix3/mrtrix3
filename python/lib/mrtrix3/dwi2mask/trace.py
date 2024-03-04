@@ -46,6 +46,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   iter_options = parser.add_argument_group('Options for turning "dwi2mask trace" into an iterative algorithm')
   iter_options.add_argument('-iterative',
                             action='store_true',
+                            default=None,
                             help='(EXPERIMENTAL) '
                                  'Iteratively refine the weights for combination of per-shell trace-weighted images '
                                  'prior to thresholding')
