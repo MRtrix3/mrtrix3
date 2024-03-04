@@ -28,8 +28,7 @@
 
 #include <functional>
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 inline QString qstr(const std::string &s) { return QString::fromUtf8(s.c_str()); }
 
@@ -55,7 +54,6 @@ private:
   std::function<bool(QEvent *)> event_handler;
 };
 
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI
 
 #endif

@@ -20,10 +20,7 @@
 #include "app.h"
 #include "gui/mrview/mode/slice.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 class Ortho : public Slice {
   Q_OBJECT
@@ -51,9 +48,6 @@ protected:
   GL::Shader::Program frame_program;
 };
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode
 
 #endif

@@ -23,8 +23,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/odf/type.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 namespace DWI {
 class Renderer;
 class RenderFrame;
@@ -32,8 +31,7 @@ class RenderFrame;
 
 class LightingDock;
 
-namespace MRView {
-namespace Tool {
+namespace MRView::Tool {
 
 class ODF_Item;
 class ODF_Model;
@@ -108,9 +106,8 @@ protected:
   friend class ODF_Preview;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MRView::Tool
+
+} // namespace MR::GUI
 
 #endif

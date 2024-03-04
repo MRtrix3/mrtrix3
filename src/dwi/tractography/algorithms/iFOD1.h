@@ -24,10 +24,7 @@
 #include "dwi/tractography/tracking/types.h"
 #include "math/SH.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Algorithms {
+namespace MR::DWI::Tractography::Algorithms {
 
 extern const App::OptionGroup iFODOptions;
 void load_iFOD_options(Tractography::Properties &);
@@ -241,9 +238,6 @@ protected:
   friend void calibrate<iFOD1>(iFOD1 &method);
 };
 
-} // namespace Algorithms
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Algorithms
 
 #endif

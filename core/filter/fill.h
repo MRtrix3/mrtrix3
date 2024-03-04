@@ -22,8 +22,7 @@
 #include "filter/connected_components.h"
 #include "image.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 /** \addtogroup Filters
   @{ */
@@ -93,7 +92,6 @@ protected:
   bool do_26_connectivity;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

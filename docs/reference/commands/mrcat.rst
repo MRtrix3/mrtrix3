@@ -13,9 +13,9 @@ Usage
 
 ::
 
-    mrcat [ options ]  input [ input ... ] output
+    mrcat [ options ]  inputs [ inputs ... ] output
 
--  *input*: the input images.
+-  *inputs*: the input images.
 -  *output*: the output image.
 
 Example usages
@@ -30,7 +30,7 @@ Example usages
 Options
 -------
 
--  **-axis axis** specify axis along which concatenation should be performed. By default, the program will use the last non-singleton, non-spatial axis of any of the input images - in other words axis 3 or whichever axis (greater than 3) of the input images has size greater than one.
+-  **-axis index** specify axis along which concatenation should be performed. By default, the program will use the last non-singleton, non-spatial axis of any of the input images; in other words, axis 3, or whichever axis (greater than 3) of the input images has size greater than one.
 
 Data type options
 ^^^^^^^^^^^^^^^^^

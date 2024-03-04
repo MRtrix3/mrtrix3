@@ -28,10 +28,8 @@
     virtual std::unique_ptr<ImageIO::Base> create(Header &H) const;                                                    \
   }
 
-namespace MR {
-
 //! Classes responsible for handling of specific image formats
-namespace Formats {
+namespace MR::Formats {
 
 //! the interface for classes that support the various image formats.
 /*! All image formats supported by %MRtrix are handled by a class derived
@@ -112,7 +110,6 @@ extern const Base *handlers[];
 extern MRtrix mrtrix_handler;
 //! \endcond
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats
 
 #endif

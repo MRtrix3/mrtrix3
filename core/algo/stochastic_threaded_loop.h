@@ -22,6 +22,7 @@
 #include "debug.h"
 #include "math/rng.h"
 #include "thread.h"
+#include <tuple>
 
 namespace MR {
 
@@ -51,13 +52,13 @@ template <int N, class Functor, class... ImageType> struct StochasticThreadedLoo
 
   void operator()(const Iterator &pos) {
     assign_pos_of(pos, outer_axes).to(vox);
-    for (auto i = unpack(loop, vox); i; ++i) {
+    for (auto i = std::apply(loop, vox); i; ++i) {
       if (rng() >= density) {
         // DEBUG (str(pos) + " ...skipped inner");
         continue;
       }
       // DEBUG (str(pos) + " ...used inner");
-      unpack(func, vox);
+      std::apply(func, vox);
     }
   }
 };

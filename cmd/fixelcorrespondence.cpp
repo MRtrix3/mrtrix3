@@ -28,32 +28,35 @@ using Fixel::index_type;
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  SYNOPSIS = "Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask";
+  SYNOPSIS = "Obtain fixel-fixel correpondence"
+             " between a subject fixel image and a template fixel mask";
 
   DESCRIPTION
-  +"It is assumed that the subject image has already been spatially normalised and is aligned with the template. "
-   "The output fixel image will have the same fixels (and directions) of the template."
+  + "It is assumed that the subject image has already been spatially normalised"
+    " and is aligned with the template."
+    " The output fixel image will have the same fixels (and directions) of the template."
 
-      + Fixel::format_description;
+  + Fixel::format_description;
 
   ARGUMENTS
-  +Argument("subject_data", "the input subject fixel data file. This should be a file inside the fixel directory")
-          .type_image_in() +
-      Argument("template_directory", "the input template fixel directory.").type_directory_in() +
-      Argument("output_directory", "the fixel directory where the output file will be written.").type_text() +
-      Argument("output_data",
-               "the name of the output fixel data file. This will be placed in the output fixel directory")
-          .type_text();
+  + Argument ("subject_data", "the input subject fixel data file."
+                              " This should be a file inside the fixel directory").type_image_in ()
+  + Argument ("template_directory", "the input template fixel directory.").type_directory_in()
+  + Argument ("output_directory", "the fixel directory where the output file will be written.").type_text()
+  + Argument ("output_data", "the name of the output fixel data file."
+                             " This will be placed in the output fixel directory").type_text();
 
   OPTIONS
-  +Option("angle",
-          "the max angle threshold for computing inter-subject fixel correspondence (Default: " +
-              str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)") +
-      Argument("value").type_float(0.0, 90.0);
+  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence"
+                     " (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
+  + Argument ("value").type_float (0.0, 90.0);
 }
+// clang-format on
 
 void run() {
   const float angular_threshold = get_option_value("angle", DEFAULT_ANGLE_THRESHOLD);
@@ -61,7 +64,8 @@ void run() {
 
   const std::string input_file(argument[0]);
   if (Path::is_dir(input_file))
-    throw Exception("please input the specific fixel data file to be converted (not the fixel directory)");
+    throw Exception("please input the specific fixel data file to be converted"
+                    " (not the fixel directory)");
 
   auto subject_index = Fixel::find_index_header(Fixel::get_fixel_directory(input_file)).get_image<index_type>();
   auto subject_directions =

@@ -33,8 +33,7 @@
 extern void usage();
 extern void run();
 
-namespace MR {
-namespace App {
+namespace MR::App {
 
 extern const char *mrtrix_version;
 extern const char *build_date;
@@ -451,9 +450,8 @@ inline std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument 
   return stream;
 }
 
-} // namespace App
+} // namespace MR::App
 
 //! @}
-} // namespace MR
 
 #endif

@@ -18,9 +18,7 @@
 #include "gui/dialog/list.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
   TreeModel *model = new TreeModel(this);
@@ -82,6 +80,4 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
   adjustSize();
 }
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog

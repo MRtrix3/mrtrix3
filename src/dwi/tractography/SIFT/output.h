@@ -33,10 +33,7 @@
 #include "fixel/legacy/image.h"
 #include "fixel/legacy/keys.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 // Output functions - non-essential, mostly debugging outputs
 template <class Fixel> void ModelBase<Fixel>::output_target_voxel(const std::string &path) const {
@@ -231,9 +228,6 @@ template <class Fixel> void ModelBase<Fixel>::output_fixel_count_image(const std
   }
 }
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT
 
 #endif

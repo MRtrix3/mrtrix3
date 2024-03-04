@@ -32,10 +32,7 @@
 
 #define TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE 0.20
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class EarlyExit {
 public:
@@ -52,9 +49,6 @@ private:
   size_t counter, next_test;
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking
 
 #endif

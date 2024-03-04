@@ -16,8 +16,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 //! Evaluate a polynomial expansion for a scalar term
 template <class Cont> default_type polynomial(Cont &coeffs, const default_type x) {
@@ -31,5 +30,4 @@ template <class Cont> default_type polynomial(Cont &coeffs, const default_type x
   return result;
 }
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math

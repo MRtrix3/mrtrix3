@@ -27,64 +27,77 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Report statistics on a direction set";
 
   DESCRIPTION
-  +"This command will accept as inputs:" +
-      "- directions file in spherical coordinates (ASCII text, [ az el ] space-separated values, one per line);" +
-      "- directions file in Cartesian coordinates (ASCII text, [ x y z ] space-separated values, one per line);" +
-      "- DW gradient files (MRtrix format: ASCII text, [ x y z b ] space-separated values, one per line);" +
-      "- image files, using the DW gradient scheme found in the header (or provided using the appropriate command line "
-      "options below)."
+    + "This command will accept as inputs:"
+    + "- directions file in spherical coordinates"
+         " (ASCII text, [ az el ] space-separated values, one per line);"
+    + "- directions file in Cartesian coordinates"
+         " (ASCII text, [ x y z ] space-separated values, one per line);"
+    + "- DW gradient files"
+         " (MRtrix format: ASCII text, [ x y z b ] space-separated values, one per line);"
+    + "- image files, using the DW gradient scheme found in the header"
+         " (or provided using the appropriate command line options below)."
 
-      + "By default, this produces all relevant metrics for the direction set "
-        "provided. If the direction set contains multiple shells, metrics are "
-        "provided for each shell separately."
+    + "By default, this produces all relevant metrics for the direction set provided."
+      " If the direction set contains multiple shells,"
+      " metrics are provided for each shell separately."
 
-      + "Metrics are produced assuming a unipolar or bipolar electrostatic "
-        "repulsion model, producing the potential energy (total, mean, min & max), "
-        "and the nearest-neighbour angles (mean, min & max). The condition "
-        "number is also produced for the spherical harmonic fits up to the highest "
-        "harmonic order supported by the number of volumes. Finally, the norm of the "
-        "mean direction vector is provided as a measure of the overall symmetry of "
-        "the direction set (important with respect to eddy-current resilience)."
+    + "Metrics are produced assuming a unipolar or bipolar electrostatic repulsion model,"
+      " producing the potential energy"
+      " (total, mean, min & max),"
+      " and the nearest-neighbour angles"
+      " (mean, min & max)."
+      " The condition number is also produced for the spherical harmonic fits"
+      " up to the highest harmonic order supported by the number of volumes."
+      " Finally, the norm of the mean direction vector is provided"
+      " as a measure of the overall symmetry of the direction set"
+      " (important with respect to eddy-current resilience)."
 
-      + "Specific metrics can also be queried independently via the \"-output\" "
-        "option, using these shorthands: \n"
-        "U/B for unipolar/bipolar model, \n"
-        "E/N for energy and nearest-neighbour respectively, \n"
-        "t/-/+ for total/min/max respectively (mean implied otherwise); \n"
-        "SHn for condition number of SH fit at order n (with n an even integer); \n"
-        "ASYM for asymmetry index (norm of mean direction vector); \n"
-        "N for the number of directions.";
+    + "Specific metrics can also be queried independently via the \"-output\" option,"
+      " using these shorthands: \n"
+      "U/B for unipolar/bipolar model, \n"
+      "E/N for energy and nearest-neighbour respectively, \n"
+      "t/-/+ for total/min/max respectively (mean implied otherwise); \n"
+      "SHn for condition number of SH fit at order n (with n an even integer); \n"
+      "ASYM for asymmetry index (norm of mean direction vector); \n"
+      "N for the number of directions.";
 
   EXAMPLES
-  +Example("Default usage", "dirstat directions.txt", "This provides a pretty-printed list of all metrics available.")
+    + Example ("Default usage",
+               "dirstat directions.txt",
+               "This provides a pretty-printed list of all metrics available.")
 
-      + Example("Write a single metric of interest to standard output",
-                "dirstat grad.b -shell 3000 -output SH8",
-                "requests the condition number of SH fit of b=3000 shell "
-                "directions at SH order 8")
+    + Example ("Write a single metric of interest to standard output",
+               "dirstat grad.b -shell 3000 -output SH8",
+               "requests the condition number of SH fit"
+               " of b=3000 shell directions at SH order 8")
 
-      + Example("Write multiple metrics of interest to standard output",
-                "dirstat dwi.mif -output BN,BN-,BN+",
-                "requests the mean, min and max nearest-neighour "
-                "angles assuming a bipolar model.");
+    + Example ("Write multiple metrics of interest to standard output",
+               "dirstat dwi.mif -output BN,BN-,BN+",
+               "requests the mean, min and max nearest-neighour angles"
+               " assuming a bipolar model.");
 
   ARGUMENTS
-  +Argument("dirs", "the text file or image containing the directions.").type_file_in();
+    + Argument ("dirs", "the text file or image containing the directions.").type_file_in();
 
   OPTIONS
-  +Option("output",
-          "output selected metrics as a space-delimited list, "
-          "suitable for use in scripts. This will produce one line of values per "
-          "selected shell. Valid metrics are as specified in the description "
-          "above.") +
-      Argument("list") + DWI::ShellsOption + DWI::GradImportOptions();
+    + Option ("output", "output selected metrics as a space-delimited list,"
+                        "suitable for use in scripts."
+                        " This will produce one line of values per selected shell."
+                        " Valid metrics are as specified in the description above.")
+      + Argument ("list")
+    + DWI::ShellsOption
+    + DWI::GradImportOptions();
+
 }
+// clang-format on
 
 int precision = 6;
 

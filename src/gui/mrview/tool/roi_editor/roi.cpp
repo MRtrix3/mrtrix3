@@ -23,10 +23,7 @@
 #include "gui/projection.h"
 #include "header.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
 
@@ -691,16 +688,15 @@ QCursor *ROI::get_cursor() {
 
 void ROI::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("ROI editor tool options")
-
-      + Option("roi.load", "Loads the specified image on the ROI editor tool.").allow_multiple() +
-      Argument("image").type_image_in()
-
-      + Option("roi.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple() +
-      Argument("value").type_float(0.0, 1.0)
-
-      + Option("roi.colour", "Sets the colour of the ROI overlay").allow_multiple() +
-      Argument("R,G,B").type_sequence_float();
+      + Option("roi.load", "Loads the specified image on the ROI editor tool.").allow_multiple()
+        + Argument("image").type_image_in()
+      + Option("roi.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
+        + Argument("value").type_float(0.0, 1.0)
+      + Option("roi.colour", "Sets the colour of the ROI overlay").allow_multiple()
+        + Argument("R,G,B").type_sequence_float();
+  // clang-format on
 }
 
 bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
@@ -746,7 +742,4 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
   return false;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

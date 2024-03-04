@@ -22,10 +22,7 @@
 
 #include "connectome/connectome.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 #define TCK2NODES_RADIAL_DEFAULT_DIST 4.0
 #define TCK2NODES_REVSEARCH_DEFAULT_DIST                                                                               \
@@ -45,9 +42,6 @@ Tck2nodes_base *load_assignment_mode(Image<node_t> &);
 extern const App::OptionGroup MetricOptions;
 void setup_metric(Metric &, Image<node_t> &);
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome
 
 #endif

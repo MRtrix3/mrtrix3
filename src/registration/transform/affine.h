@@ -24,9 +24,7 @@
 
 using namespace MR::Math;
 
-namespace MR {
-namespace Registration {
-namespace Transform {
+namespace MR::Registration::Transform {
 enum TransformProjectionType { rigid_nonsym, affine, affine_nonsym, none };
 
 class AffineUpdate {
@@ -125,8 +123,6 @@ protected:
   RobustEstimatorType robust_estimator;
 };
 //! @}
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Transform
 
 #endif

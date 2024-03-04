@@ -20,9 +20,7 @@
 
 #include "surface/utils.h"
 
-namespace MR {
-namespace Surface {
-namespace Filter {
+namespace MR::Surface::Filter {
 
 void Smooth::operator()(const Mesh &in, Mesh &out) const {
   std::unique_ptr<ProgressBar> progress;
@@ -193,6 +191,4 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
     out.calculate_normals();
 }
 
-} // namespace Filter
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::Filter

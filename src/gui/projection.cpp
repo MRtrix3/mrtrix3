@@ -16,8 +16,7 @@
 
 #include "gui/projection.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 namespace {
 class OrientationLabel {
@@ -51,5 +50,4 @@ void Projection::draw_orientation_labels() const {
   done_render_text();
 }
 
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI

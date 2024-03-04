@@ -17,9 +17,7 @@
 #include "dwi/tractography/file_base.h"
 #include "file/path.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 void __ReaderBase__::open(const std::string &file, const std::string &type, Properties &properties) {
   properties.clear();
@@ -84,6 +82,4 @@ void __ReaderBase__::open(const std::string &file, const std::string &type, Prop
   in.seekg(offset);
 }
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography

@@ -41,7 +41,7 @@ The -contrast option controls how a value is derived for each streamline that is
 
 A "super-resolution" output image can be generated using the -vox option, whether or not a template image is provided using the -template option. If -template is used in conjunction with -vox, the image axes and FoV will still match that of the template image, but the spatial resolution will differ.
 
-Note: if you run into limitations with RAM usage, try writing the output image as a .mif file or .mih / .dat file pair to a local hard drive: this will allow tckmap to dump the generated image contents directly to disk, rather than allocating an additional buffer to store the output image for write-out, thereby potentially halving RAM usage.
+Note: if you run into limitations with RAM usage, make sure you output the results to a .mif file or .mih / .dat file pair; this will avoid the allocation of an additional buffer to store the output for write-out.
 
 Options
 -------
@@ -67,19 +67,15 @@ Options for the dimensionality of the output image
 Options for the TWI image contrast properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-contrast type** define the desired form of contrast for the output image |br|
-   Options are: tdi, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature, vector_file (default: tdi)
+-  **-contrast type** define the desired form of contrast for the output image; options are: tdi, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature, vector_file (default: tdi)
 
 -  **-image image** provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast, or the spherical harmonics image for 'fod_amp' contrast
 
 -  **-vector_file path** provide the vector data file for generating images with 'vector_file' contrast
 
--  **-stat_vox type** define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxel.  |br|
-   Options are: sum, min, mean, max (default: sum)
+-  **-stat_vox type** define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxel. Options are: sum, min, mean, max (default: sum)
 
--  **-stat_tck type** define the statistic for choosing the contribution to be made by each streamline as a function of the samples taken along their lengths.  |br|
-   Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types.  |br|
-   Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod (default: mean)
+-  **-stat_tck type** define the statistic for choosing the contribution to be made by each streamline as a function of the samples taken along their lengths. Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types. Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod (default: mean)
 
 -  **-fwhm_tck value** when using gaussian-smoothed per-track statistic, specify the desired full-width half-maximum of the Gaussian smoothing kernel (in mm)
 
@@ -90,8 +86,7 @@ Options for the TWI image contrast properties
 Options for the streamline-to-voxel mapping mechanism
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-upsample factor** upsample the tracks by some ratio using Hermite interpolation before mappping |br|
-   (If omitted, an appropriate ratio will be determined automatically)
+-  **-upsample factor** upsample the tracks by some ratio using Hermite interpolation before mappping (if omitted, an appropriate ratio will be determined automatically)
 
 -  **-precise** use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel (these lengths are then taken into account during TWI calculation)
 

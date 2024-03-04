@@ -19,10 +19,7 @@
 
 #include "dwi/tractography/SIFT2/line_search.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 template <typename value_type> inline value_type tvreg(const value_type coeff, const value_type base) {
   return ((coeff <= base) ? (Math::pow2(coeff - base)) : (Math::pow2(std::exp(coeff) - std::exp(base))));
@@ -60,9 +57,6 @@ inline void dxtvreg_dcoeffx(LineSearchFunctor::Result &result,
   }
 }
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2
 
 #endif

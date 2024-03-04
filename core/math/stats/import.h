@@ -27,9 +27,7 @@
 
 #include "math/stats/typedefs.h"
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 /** \addtogroup Statistics
 @{ */
@@ -173,8 +171,6 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
   }
 }
 
-} // namespace Stats
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Stats
 
 #endif

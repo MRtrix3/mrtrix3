@@ -22,9 +22,7 @@
 #include "file/dicom/study.h"
 #include "file/path.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 void Image::parse_item(Element &item, const std::string &dirname) {
   if (item.ignore_when_parsing())
@@ -615,6 +613,4 @@ Eigen::MatrixXd Frame::get_PE_scheme(const std::vector<Frame *> &frames, const s
   return pe_scheme.leftCols(3);
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

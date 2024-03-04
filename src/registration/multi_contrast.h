@@ -30,8 +30,7 @@
 #include "math/SH.h"
 #include "types.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 
 FORCE_INLINE void check_image_output(const std::string &image_name, const Header &reference) {
   std::vector<std::string> V;
@@ -110,6 +109,6 @@ void preload_data(std::vector<Header> &input,
                   Image<default_type> &images,
                   const std::vector<MultiContrastSetting> &mc_params);
 
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration
+
 #endif

@@ -20,10 +20,7 @@
 #include "dwi/tractography/SIFT2/line_search.h"
 #include "dwi/tractography/SIFT2/tckfactor.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 CoefficientOptimiserBase::CoefficientOptimiserBase(TckFactor &tckfactor,
                                                    StreamlineStats &step_stats,
@@ -370,7 +367,4 @@ double CoefficientOptimiserIterative::get_coeff_change(const SIFT::track_t track
   return dFs;
 }
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT2

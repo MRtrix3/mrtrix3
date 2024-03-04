@@ -17,10 +17,7 @@
 #include "dwi/tractography/seeding/gmwmi.h"
 #include "dwi/tractography/rng.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 GMWMI::GMWMI(const std::string &in, const std::string &anat_path)
     : Base(in, "GM-WM interface", MAX_TRACKING_SEED_ATTEMPTS_GMWMI),
@@ -57,7 +54,4 @@ bool GMWMI::perturb(Eigen::Vector3f &p, Interp &interp) const {
   return find_interface(p, interp);
 }
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Seeding

@@ -16,28 +16,34 @@
 
 #include "phase_encoding.h"
 
-namespace MR {
-namespace PhaseEncoding {
+namespace MR::PhaseEncoding {
 
+// clang-format off
 using namespace App;
 const OptionGroup ImportOptions =
-    OptionGroup("Options for importing phase-encode tables") +
-    Option("import_pe_table", "import a phase-encoding table from file") + Argument("file").type_file_in() +
-    Option("import_pe_eddy", "import phase-encoding information from an EDDY-style config / index file pair") +
-    Argument("config").type_file_in() + Argument("indices").type_file_in();
+    OptionGroup("Options for importing phase-encode tables")
+    + Option("import_pe_table", "import a phase-encoding table from file")
+      + Argument("file").type_file_in()
+    + Option("import_pe_eddy", "import phase-encoding information from an EDDY-style config / index file pair")
+      + Argument("config").type_file_in()
+      + Argument("indices").type_file_in();
 
-const OptionGroup SelectOptions = OptionGroup("Options for selecting volumes based on phase-encoding") +
-                                  Option("pe",
-                                         "select volumes with a particular phase encoding; "
-                                         "this can be three comma-separated values (for i,j,k components of vector "
-                                         "direction) or four (direction & total readout time)") +
-                                  Argument("desc").type_sequence_float();
+const OptionGroup SelectOptions =
+    OptionGroup("Options for selecting volumes based on phase-encoding")
+    + Option("pe",
+             "select volumes with a particular phase encoding;"
+             " this can be three comma-separated values (for i,j,k components of vector direction)"
+             " or four (direction & total readout time)")
+      + Argument("desc").type_sequence_float();
 
 const OptionGroup ExportOptions =
-    OptionGroup("Options for exporting phase-encode tables") +
-    Option("export_pe_table", "export phase-encoding table to file") + Argument("file").type_file_out() +
-    Option("export_pe_eddy", "export phase-encoding information to an EDDY-style config / index file pair") +
-    Argument("config").type_file_out() + Argument("indices").type_file_out();
+    OptionGroup("Options for exporting phase-encode tables")
+    + Option("export_pe_table", "export phase-encoding table to file")
+      + Argument("file").type_file_out()
+    + Option("export_pe_eddy", "export phase-encoding information to an EDDY-style config / index file pair")
+      + Argument("config").type_file_out()
+      + Argument("indices").type_file_out();
+// clang-format on
 
 void clear_scheme(Header &header) {
   auto erase = [&](const std::string &s) {
@@ -141,5 +147,4 @@ void export_commandline(const Header &header) {
     save_eddy(check(scheme), header, opt[0][0], opt[0][1]);
 }
 
-} // namespace PhaseEncoding
-} // namespace MR
+} // namespace MR::PhaseEncoding

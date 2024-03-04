@@ -27,10 +27,7 @@
 #include "debug.h"
 // #define DEBUG_INIT
 
-namespace MR {
-namespace Registration {
-namespace Transform {
-namespace Init {
+namespace MR::Registration::Transform::Init {
 bool get_sorted_eigen_vecs_vals(const Eigen::Matrix<default_type, 3, 3> &mat,
                                 Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> &eigenvectors,
                                 Eigen::Matrix<default_type, Eigen::Dynamic, 1> &eigenvals) {
@@ -598,7 +595,4 @@ void FODInitialiser::run() {
 #endif
 }
 
-} // namespace Init
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Transform::Init

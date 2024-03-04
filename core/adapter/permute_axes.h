@@ -19,8 +19,7 @@
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class PermuteAxes : public Base<PermuteAxes<ImageType>, ImageType> {
 public:
@@ -79,7 +78,6 @@ private:
   std::vector<size_t> non_existent_axes;
 };
 
-} // namespace Adapter
-} // namespace MR
+} // namespace MR::Adapter
 
 #endif

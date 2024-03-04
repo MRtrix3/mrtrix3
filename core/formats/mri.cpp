@@ -45,8 +45,7 @@ contents:              unspecified  ('size' bytes)
 #define MRI_TRANSFORM 0x06
 #define MRI_DWSCHEME 0x07
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 namespace {
 
@@ -322,5 +321,4 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   return io_handler;
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

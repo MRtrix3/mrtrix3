@@ -19,10 +19,7 @@
 #include "gui/mrview/sync/enums.h"
 #include "gui/mrview/sync/interprocesscommunicator.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 /**
  * Syncs values from mrview's window, using the interprocess syncer. In a diagram:
  * _____________Process 1______________    _______________Process 2_____________
@@ -50,8 +47,6 @@ private:
   bool SendData(DataKey code, QByteArray data);                        // sends data to other processes via the ips
 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync
+
 #endif

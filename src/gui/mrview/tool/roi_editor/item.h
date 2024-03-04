@@ -25,10 +25,7 @@
 #include "header.h"
 #include "types.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 namespace {
 constexpr std::array<std::array<GLubyte, 3>, 6> preset_colours = {
@@ -72,9 +69,6 @@ template <class ImageType> void ROI_Item::save(ImageType &&out, GLubyte *data) {
   filename = out.name();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
 
 #endif

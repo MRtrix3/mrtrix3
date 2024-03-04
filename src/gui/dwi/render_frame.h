@@ -29,9 +29,7 @@
 
 #define MAX_LOD 8
 
-namespace MR {
-namespace GUI {
-namespace DWI {
+namespace MR::GUI::DWI {
 
 class RenderFrame : public GL::Area {
   Q_OBJECT
@@ -165,8 +163,6 @@ protected:
   void snapshot();
 };
 
-} // namespace DWI
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::DWI
 
 #endif

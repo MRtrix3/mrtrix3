@@ -24,8 +24,7 @@
 #include "interp/base.h"
 #include "types.h"
 
-namespace MR {
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -561,7 +560,6 @@ inline Linear<ImageType> make_linear(const ImageType &parent, Args &&...args) {
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
+} // namespace MR::Interp
 
 #endif

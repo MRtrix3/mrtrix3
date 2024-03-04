@@ -20,10 +20,7 @@
 // TODO Make this a fraction of length, rather than fraction of points?
 #define EXEMPLAR_ENDPOINT_CONVERGE_FRACTION 0.25
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 Exemplar &Exemplar::operator=(const Exemplar &that) {
   Tractography::Streamline<float>(*this) = that;
@@ -176,7 +173,4 @@ void Exemplar::finalize(const float step_size) {
   is_finalized = true;
 }
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome

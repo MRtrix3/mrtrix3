@@ -16,10 +16,7 @@
 
 #include "gui/opengl/shader.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
-namespace Shader {
+namespace MR::GUI::GL::Shader {
 
 void print_log(bool is_program, const std::string &type_name, GLuint index) {
   int length = 0;
@@ -45,7 +42,4 @@ void print_log(bool is_program, const std::string &type_name, GLuint index) {
   }
 }
 
-} // namespace Shader
-} // namespace GL
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::GL::Shader

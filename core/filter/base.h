@@ -20,8 +20,7 @@
 #include "header.h"
 #include "progressbar.h" // May be needed for any derived classes that make use of the message string
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 /** \addtogroup Filters
 @{ */
 
@@ -57,7 +56,6 @@ protected:
   std::string message;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
+} // namespace MR::Filter
 
 #endif

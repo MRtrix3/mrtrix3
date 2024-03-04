@@ -31,29 +31,34 @@ using namespace App;
 
 using Fixel::index_type;
 
+// clang-format off
 void usage() {
 
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
+           " and David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Convert a fixel-based sparse-data image into an spherical harmonic image";
 
   DESCRIPTION
-  +"This command generates spherical harmonic data from fixels "
-   "that can be visualised using the ODF tool in MRview. The output ODF lobes "
-   "are scaled according to the values in the input fixel image."
+  + "This command generates spherical harmonic data from fixels"
+    " that can be visualised using the ODF tool in MRview."
+    " The output ODF lobes are scaled according to the values in the input fixel image."
 
-      + Math::SH::encoding_description
+  + Math::SH::encoding_description
 
-      + Fixel::format_description;
+  + Fixel::format_description;
 
   ARGUMENTS
-  +Argument("fixel_in", "the input fixel data file.").type_image_in() +
-      Argument("sh_out", "the output sh image.").type_image_out();
+  + Argument ("fixel_in", "the input fixel data file.").type_image_in ()
+  + Argument ("sh_out", "the output sh image.").type_image_out ();
 
   OPTIONS
-  +Option("lmax", "set the maximum harmonic order for the output series (Default: 8)") +
-      Argument("order").type_integer(0, 30);
+  + Option ("lmax", "set the maximum harmonic order for the output series"
+                    " (Default: 8)")
+  +   Argument ("order").type_integer (0, 30);
+
 }
+// clang-format on
 
 void run() {
   auto in_data_image = Fixel::open_fixel_data_file<float>(argument[0]);
