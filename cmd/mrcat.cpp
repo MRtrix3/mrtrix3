@@ -78,9 +78,11 @@ template <typename value_type> void write(std::vector<Header> &in, const size_t 
 }
 
 void run() {
-  size_t num_images = argument.size() - 1;
-  if (num_images == 1)
-    throw Exception("More than one input image is required for concatenation operation");
+  const size_t num_images = argument.size() - 1;
+  if (num_images == 1) {
+    CONSOLE("Only one input image provided; no concatenation to occur");
+    CONSOLE("(output image will be identical to input image)");
+  }
   std::vector<Header> headers;
   ssize_t max_axis_nonunity = 0;
   for (size_t i = 0; i != num_images; ++i) {
