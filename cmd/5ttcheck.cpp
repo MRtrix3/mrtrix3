@@ -151,7 +151,6 @@ void run() {
           : (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") +
              " -masks option)");
 
-
   if (major_error_count) {
     if (argument.size() > 1)
       throw Exception(str(major_error_count) + " input image" + (major_error_count > 1 ? "s do" : " does") +

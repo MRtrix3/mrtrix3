@@ -161,16 +161,18 @@ bool Element::read() {
 
   if (size == LENGTH_UNDEFINED) {
     if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM))
-      INFO("undefined length used"
-           " for DICOM tag " + (!tag_name().empty() ? tag_name().substr(2) : "") +
-           MR::printf("(%04X, %04X) in file \"", group, element) + fmap->name() + "\"");
+      INFO("undefined length used for DICOM tag " +            //
+           (!tag_name().empty() ? tag_name().substr(2) : "") + //
+           MR::printf("(%04X, %04X)", group, element) +        //
+           " in file \"" + fmap->name() + "\"");
   } else if (next + size > fmap->address() + fmap->size())
     throw Exception("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
   else {
     if (size % 2)
-      DEBUG("WARNING: odd length (" + str(size) + ") used"
-            " for DICOM tag " + (!tag_name().empty() ? tag_name().substr(2) : "") +
-            " (" + str(group) + ", " + str(element) + ")"
+      DEBUG("WARNING: odd length (" + str(size) + ")" +         //
+            " used for DICOM tag " +                            //
+            (!tag_name().empty() ? tag_name().substr(2) : "") + //
+            " (" + str(group) + ", " + str(element) + ")" +     //
             " in file \"" + fmap->name() + "");
     if (VR != VR_SQ) {
       if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM) {
@@ -404,15 +406,17 @@ template <class T> inline void print_vec(const std::vector<T> &V) {
 
 void Element::error_in_get(size_t idx) const {
   const std::string &name(tag_name());
-  DEBUG("value not found for DICOM tag " + printf("%04X %04X ", group, element) +
-        (!name.empty() ? name.substr(2) : "unknown") + " (at index " + str(idx) + ")");
+  DEBUG("value not found for DICOM tag " +             //
+        printf("%04X %04X ", group, element) +         //
+        (!name.empty() ? name.substr(2) : "unknown") + //
+        " (at index " + str(idx) + ")");
 }
 
 void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
   const std::string &name(tag_name());
-  throw Exception("not enough items in for DICOM tag " +
-                  printf("%04X %04X ", group, element) +
-                  (!name.empty() ? name.substr(2) : "unknown") +
+  throw Exception("not enough items in for DICOM tag " +         //
+                  printf("%04X %04X ", group, element) +         //
+                  (!name.empty() ? name.substr(2) : "unknown") + //
                   " (expected " + str(min_size) + ", got " + str(actual_size) + ")");
 }
 

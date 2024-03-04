@@ -81,7 +81,7 @@ void run() {
   INFO("Number of fixels in input peaks image: " + str(nfixels));
   if (all_unit_norm) {
     if (!dataname.empty()) {
-      WARN("Input peaks image appears to not include amplitude information; "
+      WARN("Input peaks image appears to not include amplitude information; " + //
            "requested data file \"" + dataname + "\" will likely contain only ones");
     } else {
       INFO("All peaks have unit norm;"
@@ -89,7 +89,7 @@ void run() {
     }
   } else if (dataname.empty()) {
     dataname = "amplitudes.mif";
-    INFO("Peaks have variable amplitudes;"
+    INFO("Peaks have variable amplitudes;" + //
          " will create additional fixel data file \"" + dataname + "\"");
   }
 

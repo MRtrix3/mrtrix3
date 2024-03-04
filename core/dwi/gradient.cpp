@@ -276,9 +276,9 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     // - vector normalisation effect is large, regardless of whether or not b-value scaling was applied
     // - gradient information was pulled from file
     // - explicit b-value scaling is requested
-    if (exceeds_single_precision ||
-        !get_options("grad").empty() ||
-        !get_options("fslgrad").empty() ||
+    if (exceeds_single_precision ||        //
+        !get_options("grad").empty() ||    //
+        !get_options("fslgrad").empty() || //
         bvalue_scaling != BValueScalingBehaviour::Auto) {
       set_DW_scheme(const_cast<Header &>(header), grad);
     }

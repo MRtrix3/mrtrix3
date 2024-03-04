@@ -336,10 +336,10 @@ void run() {
   opt = get_options("warp_full");
   Image<default_type> warp;
   if (!opt.empty()) {
-    if (!Path::is_mrtrix_image(opt[0][0]) &&
-        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&
-        File::Config::get_bool("NIfTIAutoLoadJSON", false) &&
-        Path::exists(File::NIfTI::get_json_path(opt[0][0])))) {
+    if (!Path::is_mrtrix_image(opt[0][0]) &&                    //
+        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&   //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
+          Path::exists(File::NIfTI::get_json_path(opt[0][0])))) {
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
            "Converting to other file formats may remove linear transformations stored in the image header.");
     }
@@ -424,8 +424,8 @@ void run() {
 
   // Detect FOD image
   const bool is_possible_fod_image =
-      input_header.ndim() == 4 &&
-      input_header.size(3) >= 6 &&
+      input_header.ndim() == 4 &&  //
+      input_header.size(3) >= 6 && //
       input_header.size(3) == (int)Math::SH::NforL(Math::SH::LforN(input_header.size(3)));
 
   // reorientation
@@ -434,8 +434,8 @@ void run() {
   opt = get_options("reorient_fod");
   const bool fod_reorientation = !opt.empty() && bool(opt[0][0]);
   if (is_possible_fod_image && opt.empty())
-    throw Exception("-reorient_fod yes/no needs to be explicitly specified"
-                    " for images with " + str(input_header.size(3)) + " volumes");
+    throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with " +
+                    str(input_header.size(3)) + " volumes");
   else if (!is_possible_fod_image && fod_reorientation)
     throw Exception("Apodised PSF reorientation requires SH series images");
 
@@ -445,9 +445,8 @@ void run() {
 
     Eigen::MatrixXd directions_az_el;
     opt = get_options("directions");
-    directions_az_el = opt.empty()
-        ? DWI::Directions::electrostatic_repulsion_300()
-        : File::Matrix::load_matrix(opt[0][0]);
+    directions_az_el =
+        opt.empty() ? DWI::Directions::electrostatic_repulsion_300() : File::Matrix::load_matrix(opt[0][0]);
     Math::Sphere::spherical2cartesian(directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
@@ -495,11 +494,12 @@ void run() {
     Eigen::MatrixXd grad;
     try {
       grad = DWI::get_DW_scheme(input_header);
-    } catch (Exception &) { }
+    } catch (Exception &) {
+    }
     if (grad.rows()) {
       try {
         if (input_header.size(3) != (ssize_t)grad.rows()) {
-          throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")"
+          throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
                           " to number of image volumes (" + str(input_header.size(3)) + ")");
         }
         INFO("DW gradients detected and will be reoriented");
@@ -529,19 +529,18 @@ void run() {
       try {
         const auto lines = split_lines(hit->second);
         if (lines.size() != size_t(input_header.size(3)))
-          throw Exception("Number of lines in header entry \"directions\" (" + str(lines.size()) + ")"
+          throw Exception("Number of lines in header entry \"directions\" (" + str(lines.size()) + ")" +
                           " does not match number of volumes in image (" + str(input_header.size(3)) + ")");
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
         for (size_t l = 0; l != lines.size(); ++l) {
           const auto v = parse_floats(lines[l]);
           if (!result.cols()) {
             if (!(v.size() == 2 || v.size() == 3))
-              throw Exception("Malformed \"directions\" field"
-                              " (expected matrix with 2 or 3 columns;"
-                              " data has " + str(v.size()) + " columns)");
+              throw Exception("Malformed \"directions\" field" + //
+                              " (expected matrix with 2 or 3 columns; data has " + str(v.size()) + " columns)");
             result.resize(lines.size(), v.size());
           } else if (v.size() != size_t(result.cols())) {
-              throw Exception("Inconsistent number of columns in \"directions\" field");
+            throw Exception("Inconsistent number of columns in \"directions\" field");
           }
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel(v.data());

@@ -67,7 +67,7 @@ Eigen::MatrixXd parse_scheme(const Header &header) {
       throw Exception(e, "malformed PE scheme in image \"" + header.name() + "\"");
     }
     if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
-      throw Exception("malformed PE scheme in image \"" + header.name() + "\":"
+      throw Exception("malformed PE scheme in image \"" + header.name() + "\":" + //
                       " number of rows does not equal number of volumes");
   } else {
     const auto it_dir = header.keyval().find("PhaseEncodingDirection");
@@ -125,7 +125,8 @@ Eigen::MatrixXd eddy2scheme(const Eigen::MatrixXd &config, const Eigen::Array<in
   Eigen::MatrixXd result(indices.size(), 4);
   for (ssize_t row = 0; row != indices.size(); ++row) {
     if (indices[row] > config.rows())
-      throw Exception("Malformed EDDY-style phase-encoding information: Index exceeds number of config entries");
+      throw Exception("Malformed EDDY-style phase-encoding information:"
+                      " index exceeds number of config entries");
     result.row(row) = config.row(indices[row] - 1);
   }
   return result;

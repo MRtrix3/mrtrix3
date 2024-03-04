@@ -58,10 +58,8 @@ std::shared_ptr<Study> Patient::find(const std::string &study_name,
 }
 
 std::ostream &operator<<(std::ostream &stream, const Patient &item) {
-  stream << MR::printf("  %-30s %-16s %10s\n",
-                       item.name.c_str(),
-                       format_ID(item.ID).c_str(),
-                       format_date(item.DOB).c_str());
+  stream << MR::printf(
+      "  %-30s %-16s %10s\n", item.name.c_str(), format_ID(item.ID).c_str(), format_date(item.DOB).c_str());
 
   for (size_t n = 0; n < item.size(); n++)
     stream << *item[n];
