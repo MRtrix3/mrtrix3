@@ -85,13 +85,13 @@ void check_design(const matrix_type &design, const bool extra_factors) {
     const default_type cond = Math::condition_number(design);
     if (cond > 100.0) {
       if (extra_factors) {
-        CONSOLE("Design matrix conditioning is poor" +        //
-                " (condition number: " + str(cond, 6) + ")" + //
-                " before the addition of element-wise columns");
+        CONSOLE(std::string("Design matrix conditioning is poor") + //
+                " (condition number: " + str(cond, 6) + ")" +       //
+                " before the addition of element-wise columns");    //
       } else {
-        WARN("Design matrix conditioning is poor" +         //
-             " (condition number: " + str(cond, 6) + ");" + //
-             " model fitting may be highly influenced by noise");
+        WARN(std::string("Design matrix conditioning is poor") +  //
+             " (condition number: " + str(cond, 6) + ");" +       //
+             " model fitting may be highly influenced by noise"); //
       }
     } else {
       CONSOLE(std::string("Design matrix condition number") +                //
@@ -145,10 +145,10 @@ std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
   if (!opt.empty()) {
     const matrix_type ftest_matrix = File::Matrix::load_matrix(opt[0][0]);
     if (ftest_matrix.cols() != contrast_matrix.rows())
-      throw Exception("Number of columns in F-test matrix" +                //
+      throw Exception(std::string("Number of columns in F-test matrix") +   //
                       " (" + str(ftest_matrix.cols()) + ")" +               //
                       " does not match number of rows in contrast matrix" + //
-                      " (" + str(contrast_matrix.rows()) + ")");
+                      " (" + str(contrast_matrix.rows()) + ")");            //
     if (!((ftest_matrix.array() == 0.0) + (ftest_matrix.array() == 1.0)).all())
       throw Exception("F-test array must contain ones and zeros only");
     for (index_type ftest_index = 0; ftest_index != index_type(ftest_matrix.rows()); ++ftest_index) {

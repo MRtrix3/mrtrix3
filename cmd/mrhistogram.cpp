@@ -121,9 +121,10 @@ void run() {
                             header.intensity_scale() == 1.0);
   }
   const size_t nbins_data = calibrator.get_num_bins();
-  if (!nbins_data)
-    throw Exception(std::string("No histogram bins constructed") +
-                    ((ignorezero || nbins_user) ? "." : "; you might want to use the -ignorezero or -bins option."));
+  if (nbins_data == 0)
+    throw Exception(
+        std::string("No histogram bins constructed") +
+        ((ignorezero || nbins_user > 1) ? "." : "; you might want to use the -ignorezero or -bins option."));
 
   for (size_t i = 0; i != nbins_data; ++i)
     output << (calibrator.get_min() + ((i + 0.5) * calibrator.get_bin_width())) << ",";

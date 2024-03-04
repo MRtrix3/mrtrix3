@@ -135,7 +135,7 @@ void run() {
   }
 
   if (volumes.empty()) {
-    auto type = (bzero_only) ? "b=0" : "dwi";
+    const std::string type = bzero_only ? "b=0" : "dwi";
     throw Exception("No " + str(type) + " volumes present");
   }
 
