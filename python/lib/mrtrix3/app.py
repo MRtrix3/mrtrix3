@@ -598,7 +598,7 @@ class Parser(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
     def check_output(self, item_type='path'):
-      if self.exists():
+      if self.exists(): # pylint: disable=no-member
         if FORCE_OVERWRITE:
           warn(f'Output {item_type} "{str(self)}" already exists; '
                 'will be overwritten at script completion')
@@ -608,12 +608,12 @@ class Parser(argparse.ArgumentParser):
   class _UserFileOutPathExtras(_UserOutPathExtras):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
-    def check_output(self):
+    def check_output(self): # pylint: disable=arguments-differ
       return super().check_output('file')
   class _UserDirOutPathExtras(_UserOutPathExtras):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
-    def check_output(self):
+    def check_output(self): # pylint: disable=arguments-differ
       return super().check_output('directory')
     # Force parents=True for user-specified path
     # Force exist_ok=False for user-specified path
@@ -625,7 +625,7 @@ class Parser(argparse.ArgumentParser):
           except FileNotFoundError:
             pass
         try:
-          super().mkdir(mode, parents=True, exist_ok=False)
+          super().mkdir(mode, parents=True, exist_ok=False) # pylint: disable=no-member
           return
         except FileExistsError:
           if not FORCE_OVERWRITE:

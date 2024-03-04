@@ -61,21 +61,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
-def get_inputs(): #pylint: disable=unused-variable
-  image.check_3d_nonunity(app.ARGS.input)
-  run.command(['mrconvert', app.ARGS.input, app.ScratchPath('input.mif')],
-              preserve_pipes=True)
-  if app.ARGS.mask:
-    run.command(['mrconvert', app.ARGS.mask, app.ScratchPath('mask.mif'), '-datatype', 'bit', '-strides', '-1,+2,+3'],
-                preserve_pipes=True)
-  if app.ARGS.t2:
-    if not image.match(app.ARGS.input, app.ARGS.t2):
-      raise MRtrixError('Provided T2w image does not match input T1w image')
-    run.command(['mrconvert', app.ARGS.t2, app.ScratchPath('T2.nii'), '-strides', '-1,+2,+3'],
-                preserve_pipes=True)
-
-
-
 def execute(): #pylint: disable=unused-variable
   if utils.is_windows():
     raise MRtrixError('"fsl" algorithm of 5ttgen script cannot be run on Windows: '
