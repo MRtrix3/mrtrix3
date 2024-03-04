@@ -289,8 +289,7 @@ void run() {
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
-                         num_factors + (2 * num_hypotheses) + num_vgs +
-                             (variable_design_matrix ? 1 : 0));
+                         num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
       write_output(betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;

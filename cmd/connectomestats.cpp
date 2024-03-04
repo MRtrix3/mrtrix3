@@ -285,10 +285,8 @@ void run() {
     Math::Stats::GLM::all_stats(
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
 
-
     ProgressBar progress("outputting beta coefficients, effect size and standard deviation",
-                         num_factors + (2 * num_hypotheses) + num_vgs +
-                             (variable_design_matrix ? 1 : 0));
+                         num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
       File::Matrix::save_matrix(mat2vec.V2M(betas.row(i)), output_prefix + "beta_" + str(i) + ".csv");
       ++progress;

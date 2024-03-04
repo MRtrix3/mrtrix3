@@ -719,9 +719,7 @@ public:
     Chunk &out(a.empty() ? (b.empty() ? c : b) : a);
     if (operands[0].is_complex() || operands[1].is_complex() || operands[2].is_complex()) {
       for (size_t n = 0; n < out.size(); ++n)
-        out[n] = op.Z(a.empty() ? a.value : a[n],
-                      b.empty() ? b.value : b[n],
-                      c.empty() ? c.value : c[n]);
+        out[n] = op.Z(a.empty() ? a.value : a[n], b.empty() ? b.value : b[n], c.empty() ? c.value : c[n]);
     } else {
       for (size_t n = 0; n < out.size(); ++n)
         out[n] = op.R(a.empty() ? a.value.real() : a[n].real(),

@@ -157,7 +157,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::string &pat
         ++num_tracks;
         max_index = std::max(max_index, i);
       }
-      WARN("Only " + str(num_tracks) + " tracks read from input track file;"
+      WARN("Only " + str(num_tracks) + " tracks read from input track file;" + //
            " expected " + str(contributions.size()));
       contributions.resize(max_index + 1);
     }

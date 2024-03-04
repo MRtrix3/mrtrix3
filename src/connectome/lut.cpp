@@ -129,9 +129,10 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       //   encased within quotation marks
       auto split_by_quotes = split(line, "\"\'", false);
       if (!(split_by_quotes.size() % 2))
-        throw Exception("Line " + str(line_counter) + " of LUT file \"" + Path::basename(path) +
-                        "\" contains an odd number of quotation marks, and hence cannot be properly split up according "
-                        "to quotation marks");
+        throw Exception("Line " + str(line_counter) +                     //
+                        " of LUT file \"" + Path::basename(path) + "\"" + //
+                        " contains an odd number of quotation marks," +   //
+                        " and hence cannot be properly split up according to quotation marks");
       decltype(split_by_quotes) entries;
       for (size_t i = 0; i != split_by_quotes.size(); ++i) {
         // Every second line must be encased in quotation marks, and is
@@ -152,7 +153,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       if (!entries.empty()) {
         if (!columns.empty() && entries.size() != columns.size()) {
           Exception E("Inconsistent number of columns in LUT file \"" + Path::basename(path) + "\"");
-          E.push_back("Initial file contents contain " + str(columns.size()) + " columns,"
+          E.push_back("Initial file contents contain " + str(columns.size()) + " columns," + //
                       " but line " + str(line_counter) + " contains " + str(entries.size()) + " entries:");
           E.push_back("\"" + line + "\"");
           throw E;
@@ -167,7 +168,8 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
 
   // Make an assessment of the LUT format
   if (columns.size() == 2 && columns[0].is_integer() && !columns[1].is_numeric()) {
-    DEBUG("LUT file \"" + Path::basename(path) + "\" contains 1 integer, 1 string per line:"
+    DEBUG("LUT file \"" + Path::basename(path) +
+          "\" contains 1 integer, 1 string per line:"
           " Basic format");
     return LUT_BASIC;
   }

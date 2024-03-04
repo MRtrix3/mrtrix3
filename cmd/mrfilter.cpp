@@ -214,7 +214,7 @@ void run() {
         stdev[dim] = filter.spacing(dim);
     }
     filter.compute_wrt_scanner(!get_options("scanner").empty());
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" +
+    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
     filter.set_stdev(stdev);
@@ -231,8 +231,8 @@ void run() {
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
-                       std::string(argument[0]));
+    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+                       " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(argument[2], filter);
@@ -261,8 +261,8 @@ void run() {
     opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
-                       std::string(argument[0]));
+    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+                       " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(argument[2], filter);
@@ -279,8 +279,8 @@ void run() {
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
-                       std::string(argument[0]) + "...");
+    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+                       " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(argument[2], filter);
@@ -299,8 +299,8 @@ void run() {
     Image<float> maskin = Image<float>::open(opt[0][0]);
     check_dimensions(maskin, input, 0, 3);
 
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter to image " +
-                       std::string(argument[0]) + "...");
+    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+                       " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
     filter.set_voxels_to_bridge(get_option_value("bridge", 4));

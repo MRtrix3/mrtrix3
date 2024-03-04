@@ -127,13 +127,13 @@ DataType descr2datatype(const std::string &s) {
     throw Exception(std::string("Unsupported data type indicator \'") + s[type_offset] + "\'");
   }
   if (data_type.bytes() != 1 && expect_one_byte_width)
-    throw Exception("Inconsistency in byte width specification (expected one byte; got " + str(data_type.bytes()) +
-                    ')');
+    throw Exception("Inconsistency in byte width specification" + //
+                    " (expected one byte; got " + str(data_type.bytes()) + ")");
   if (bytes > 1) {
     data_type = data_type() | (is_little_endian ? DataType::LittleEndian : DataType::BigEndian);
     if (issue_endianness_warning) {
-      WARN(std::string("NumPy file does not indicate data endianness;") +
-           " assuming " + (MRTRIX_IS_BIG_ENDIAN ? "big" : "little") + "-endian"
+      WARN(std::string("NumPy file does not indicate data endianness;") +         //
+           " assuming " + (MRTRIX_IS_BIG_ENDIAN ? "big" : "little") + "-endian" + //
            " (same as system)");
     }
   }

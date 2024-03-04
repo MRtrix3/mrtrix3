@@ -473,7 +473,7 @@ void run() {
   opt = get_options("datatype");
   if (!opt.empty()) {
     if (writer_type == DEC || writer_type == TOD) {
-      WARN("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) + " processing;"
+      WARN("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) + " processing;" + //
            " overriding to Float32");
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
