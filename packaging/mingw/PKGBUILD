@@ -41,7 +41,7 @@ pkgver() {
 
 build() {
   cd "${_realname}"
-  cmake -B build -G Ninja -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON 
+  cmake -B build -G Ninja
   cmake --build build
   cmake --install build --prefix=./install
 }
