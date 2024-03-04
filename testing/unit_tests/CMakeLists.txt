@@ -1,4 +1,4 @@
-set(UNIT_TESTS_CPP_SRCS 
+set(UNIT_TESTS_CPP_SRCS
     bitset.cpp
     erfinv.cpp
     icls.cpp
@@ -10,8 +10,9 @@ set(UNIT_TESTS_CPP_SRCS
     to.cpp
 )
 
-set(UNIT_TESTS_PYTHON_SRCS
-    npy
+set(UNIT_TESTS_BASH_SRCS
+    npyread
+    npywrite
 )
 
 find_program(BASH bash)
@@ -24,7 +25,7 @@ function(add_cpp_unit_test FILE_SRC)
         mrtrix::exec-version-lib
         mrtrix::tests-lib
     )
-    set_target_properties(${NAME} PROPERTIES 
+    set_target_properties(${NAME} PROPERTIES
         LINK_DEPENDS_NO_SHARED true
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
@@ -34,7 +35,7 @@ function(add_cpp_unit_test FILE_SRC)
     )
 endfunction()
 
-function (add_python_unit_test FILE_SRC)
+function (add_bash_unit_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
     set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
     list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
@@ -52,6 +53,6 @@ foreach(UNIT_TEST ${UNIT_TESTS_CPP_SRCS})
     add_cpp_unit_test(${UNIT_TEST})
 endforeach()
 
-foreach(UNIT_TEST ${UNIT_TESTS_PYTHON_SRCS})
-    add_python_unit_test(${UNIT_TEST})
+foreach(UNIT_TEST ${UNIT_TESTS_BASH_SRCS})
+    add_bash_unit_test(${UNIT_TEST})
 endforeach()
