@@ -1,0 +1,150 @@
+name: Weekly Releases
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+env:
+  RELEASE_ID: 143178005
+  UPLOAD_URL: https://uploads.github.com/repos/daljit46/mrtrix3-ci-test/releases/143178005/assets{?name,label}
+
+jobs:
+  linux-weekly-release:
+    runs-on: ubuntu-20.04
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_SIZE: "2G"
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        ref: dev
+
+    - name: Install Qt 6
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.6.2'
+        set-env: true
+    
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.4
+
+    - name: Run build script
+      run: |
+        ./packaging/package-linux-tarball.sh .
+        mv mrtrix.tar.gz mrtrix3-linux-tar.gz
+    
+    - name: Upload Linux release
+      uses: WebFreak001/deploy-nightly@v3.1.0
+      with: 
+        upload_url: ${{ env.UPLOAD_URL }} 
+        release_id: ${{ env.RELEASE_ID }} 
+        asset_path: ./mrtrix3-linux-tar.gz
+        asset_name: mrtrix3-linux-weekly-$$.tar.gz
+        asset_content_type: application/gzip
+        max_releases: 1
+
+  macos-weekly-release:
+    runs-on: macos-latest
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_MULTIARCH: "true"
+      SCCACHE_SIZE: "2G"
+      PACKAGES: "qt eigen pkg-config fftw libpng ninja cmake"
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: dev
+
+      - name: install dependencies
+        run: |
+          brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
+          brew install $PACKAGES || brew install $PACKAGES
+          brew link --force qt
+
+      - name: Run sccache
+        uses: mozilla-actions/sccache-action@v0.0.4
+
+      - name: Run build script
+        run: |
+          cd packaging/macos
+          ./build dev
+          mv ./mrtrix3-macos-dev.tar.xz ../../mrtrix3-macos-tar.xz
+
+      - name: Upload macOS release
+        uses: WebFreak001/deploy-nightly@v3.1.0
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          release_id: ${{ env.RELEASE_ID }} 
+          asset_path: ./mrtrix3-macos-tar.xz
+          asset_name: mrtrix3-macos-weekly-$$.tar.xz
+          asset_content_type: application/x-xz
+          max_releases: 1
+
+  windows-weekly-release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      CHERE_INVOKING: enabled_from_arguments
+      MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 0
+          ref: dev
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          release: false
+          install: |
+            git
+            python
+            ${{env.MINGW_PACKAGE_PREFIX}}-bc
+            ${{env.MINGW_PACKAGE_PREFIX}}-cmake
+            ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
+            ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
+            ${{env.MINGW_PACKAGE_PREFIX}}-fftw
+            ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
+            ${{env.MINGW_PACKAGE_PREFIX}}-ninja
+            ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt6-base
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt6-svg
+            ${{env.MINGW_PACKAGE_PREFIX}}-zlib
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.4
+
+      - name: export sccache to msys2 shell
+        run: |
+          export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
+
+      - name: Run build script
+        run: |
+          commit_sha=$(git rev-parse HEAD)
+          cd packaging/mingw
+          ./run.sh $commit_sha ${{ github.repository_owner }}
+          mv mingw*.tar.zst ../../mrtrix3-windows.tar.zst
+
+      - name: Upload Windows release
+        uses: WebFreak001/deploy-nightly@v3.1.0
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          release_id: ${{ env.RELEASE_ID }}
+          asset_path: ./mrtrix3-windows.tar.zst
+          asset_name: mrtrix3-windows-weekly-$$.tar.zst
+          asset_content_type: application/x-zstd
