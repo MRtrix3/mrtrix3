@@ -1,0 +1,41 @@
+#!/bin/bash -e
+if [ "$1" != "-f" ]; then
+  echo "This uninstaller will remove MRtrix3 from /usr/local/mrtrix3."
+  echo "In addition it will:"
+  echo "* remove symbolic links in /usr/local/bin to the binaries that used to be in /usr/local/mrtrix3/bin"
+  echo "* remove symbolic links in /Applications to the app bundles that used to be in /usr/local/mrtrix3/bin"
+fi
+
+if [ $EUID != 0 ]; then
+  echo "ERROR: This script requires root privileges, please run as: sudo "$0" "$@""
+  exit
+fi
+
+if [ ! -d "/usr/local/mrtrix3" ] ; then
+  echo "ERROR: Could not find an existing installation."
+  exit
+fi
+
+if [ "$1" != "-f" ]; then
+  while true; do
+    read -p "Are you sure you want to continue? [y/n] " yn
+    case $yn in
+      [Yy]* ) break;;
+      [Nn]* ) exit;;
+    esac
+  done
+fi
+
+if [ -f /usr/local/mrtrix3/symlinks ]; then
+  echo "Removing symbolic links ..."
+  for l in $(cat /usr/local/mrtrix3/symlinks); do
+    if [ -L "${l}" ]; then
+      unlink $l
+    fi
+  done
+fi
+
+echo "Removing installation in /usr/local/mrtrix3 ..."
+rm -rf "/usr/local/mrtrix3"
+
+echo "Uninstallation complete!"
