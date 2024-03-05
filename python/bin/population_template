@@ -1484,22 +1484,22 @@ def execute(): #pylint: disable=unused-variable
         if initial_alignment == 'none' and level == 0:
           app.console('Calculating average transform from first iteration for linear drift correction')
           run.command(['transformcalc',
-                       [os.path.join('linear_transforms_{level:%02i}', f'{inp.uid}.txt') for inp in ins],
+                       [os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt') for inp in ins],
                        'average',
-                       'linear_transform_average_{level:%02i}.txt',
+                       f'linear_transform_average_{level:02d}.txt',
                        '-quiet'])
-          transform_average_driftref = matrix.load_transform('linear_transform_average_{level:%02i}.txt')
+          transform_average_driftref = matrix.load_transform(f'linear_transform_average_{level:%02i}.txt')
         else:
           run.command(['transformcalc',
-                       [os.path.join('linear_transforms_{level:%02i}', f'{inp.uid}.txt') for inp in ins],
+                       [os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt') for inp in ins],
                        'average',
-                       'linear_transform_average_{level:%02i}_uncorrected.txt',
+                       f'linear_transform_average_{level:02d}_uncorrected.txt',
                        '-quiet'],
                       force=True)
           run.command(['transformcalc',
-                       'linear_transform_average_{level:%02i}_uncorrected.txt',
+                       f'linear_transform_average_{level:02d}_uncorrected.txt',
                        'invert',
-                       'linear_transform_average_{level:%02i}_uncorrected_inv.txt',
+                       f'linear_transform_average_{level:02d}_uncorrected_inv.txt',
                        '-quiet'],
                       force=True)
           transform_average_current_inv = matrix.load_transform(f'linear_transform_average_{level:02d}_uncorrected_inv.txt')
