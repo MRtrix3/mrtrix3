@@ -17,6 +17,7 @@ set(CPP_TOOLS_SRCS
 set(PYTHON_TOOLS_SRCS
     testing_check_npy
     testing_gen_npy
+    testing_python_cli
 )
 
 function(add_testing_cmd CMD_SRC)

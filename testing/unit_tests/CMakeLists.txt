@@ -13,7 +13,11 @@ set(UNIT_TESTS_CPP_SRCS
 set(UNIT_TESTS_BASH_SRCS
     npyread
     npywrite
+    python_cli
 )
+
+get_filename_component(SOURCE_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
+set(DATA_DIR ${SOURCE_PARENT_DIR}/data)
 
 find_program(BASH bash)
 
@@ -44,7 +48,7 @@ function (add_bash_unit_test FILE_SRC)
     add_bash_tests(
         FILE_PATH "${FILE_SRC}"
         PREFIX "unittest"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
     )
 endfunction()

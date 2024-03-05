@@ -44,6 +44,8 @@ Test operation of the Python command-line interface
 
 + **--tracks_out trackfile**<br>An output tractogram
 
++ **--various spec**<br>An option that accepts various types of content
+
 #### Complex interfaces; nargs, metavar, etc.
 
 + **--nargs_plus string <space-separated list of additional strings>**<br>A command-line option with nargs="+", no metavar
