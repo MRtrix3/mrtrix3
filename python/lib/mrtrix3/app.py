@@ -1340,6 +1340,7 @@ class Parser(argparse.ArgumentParser):
       for option in group._group_actions:
         option_text = '/'.join(option.option_strings)
         option_text += Parser._option2metavar(option)
+        option_text = option_text.replace("<", "\\<").replace(">", "\\>")
         group_text += f'+ **-{option_text}**'
         if isinstance(option, argparse._AppendAction):
           group_text += '  *(multiple uses permitted)*'
