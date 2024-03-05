@@ -50,6 +50,7 @@ function (add_bash_unit_test FILE_SRC)
         PREFIX "unittest"
         WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
+        ENVIRONMENT "PYTHONPATH=${PROJECT_BINARY_DIR}/lib"
     )
 endfunction()
 
