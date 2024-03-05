@@ -56,6 +56,8 @@ Custom types
 
 - **-tracks_out trackfile** An output tractogram
 
+- **-various spec** An option that accepts various types of content
+
 Complex interfaces; nargs, metavar, etc.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

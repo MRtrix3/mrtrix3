@@ -185,9 +185,10 @@ def _execute(module): #pylint: disable=unused-variable
 
   # Now that FORCE_OVERWRITE has been set,
   #   check any user-specified output paths
-  for arg in vars(ARGS):
-    if isinstance(arg, Parser._UserOutPathExtras): # pylint: disable=protected-access
-      arg.check_output()
+  for key in vars(ARGS):
+    value = getattr(ARGS, key)
+    if isinstance(value, Parser._UserOutPathExtras): # pylint: disable=protected-access
+      value.check_output()
 
   # ANSI settings may have been altered at the command-line
   setup_ansi()
