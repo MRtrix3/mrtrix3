@@ -15,6 +15,9 @@ function(add_bash_tests)
     set(working_directory ${ARG_WORKING_DIRECTORY})
     set(exec_directories ${ARG_EXEC_DIRECTORIES})
 
+    # Regenerate tests when the test script changes
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${file_path})
+
     # In MINGW, we need to replace paths starting with drive:/ with /drive/
     # when invoking a bash command (e.g. using bash -c "command")
     if(MINGW AND WIN32)

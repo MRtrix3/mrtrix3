@@ -13,10 +13,9 @@ Usage
 
 ::
 
-    mrcat [ options ]  image1 image2 [ image2 ... ] output
+    mrcat [ options ]  inputs [ inputs ... ] output
 
--  *image1*: the first input image.
--  *image2*: additional input image(s).
+-  *inputs*: the input images.
 -  *output*: the output image.
 
 Example usages

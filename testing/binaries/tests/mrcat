@@ -1,4 +1,5 @@
 mrconvert dwi.mif tmp-[].mif && testing_diff_image tmp-[].mif dwi.mif
+mrcat dwi.mif - | testing_diff_image - dwi.mif
 mrcat tmp-??.mif - | testing_diff_image - dwi.mif
 mrcat tmp-[0:4].mif tmp-[5:20].mif tmp-[21:67] - | testing_diff_image - dwi.mif
 mrcat tmp-[0:4].mif tmp-[5:20].mif tmp-21.mif tmp-[22:67] - | testing_diff_image - dwi.mif
