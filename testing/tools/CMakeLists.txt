@@ -1,4 +1,23 @@
-file(GLOB TESTING_CMD_SRCS *.cpp)
+set(CPP_TOOLS_SRCS
+    testing_diff_dir.cpp
+    testing_diff_fixel.cpp
+    testing_diff_fixel_old.cpp
+    testing_diff_header.cpp
+    testing_diff_image.cpp
+    testing_diff_matrix.cpp
+    testing_diff_mesh.cpp
+    testing_diff_peaks.cpp
+    testing_diff_tck.cpp
+    testing_diff_tsf.cpp
+    testing_gen_data.cpp
+    testing_npyread.cpp
+    testing_npywrite.cpp
+)
+
+set(PYTHON_TOOLS_SRCS
+    testing_check_npy
+    testing_gen_npy
+)
 
 function(add_testing_cmd CMD_SRC)
     # Extract the filename without an extension (NAME_WE)
@@ -13,6 +32,10 @@ function(add_testing_cmd CMD_SRC)
 endfunction()
 
 
-foreach(CMD ${TESTING_CMD_SRCS})
+foreach(CMD ${CPP_TOOLS_SRCS})
     add_testing_cmd(${CMD})
+endforeach(CMD)
+
+foreach(CMD ${PYTHON_TOOLS_SRCS})
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${CMD} ${CMAKE_CURRENT_BINARY_DIR}/${CMD} COPYONLY)
 endforeach(CMD)

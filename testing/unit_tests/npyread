@@ -1,0 +1,1 @@
+rm -rf tmp-npyread/ && testing_gen_npy tmp-npyread/ && testing_npyread tmp-npyread/ && rm -rf tmp-npyread/
