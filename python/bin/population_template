@@ -1156,6 +1156,20 @@ def execute(): #pylint: disable=unused-variable
   else:
     level = 0
     regtype = linear_type[0]
+
+    # Preparation for drift correction;
+    #   note that if initial alignment is none,
+    #   calculation of the average linear transform across inputs is deferred until after the first iteration,
+    #   and only then will drift correction kick in
+    if not app.ARGS.linear_no_drift_correction and initial_alignment != 'none':
+      app.console('Calculating average initial transform for linear drift correction')
+      run.command(['transformcalc',
+                   [os.path.join('linear_transforms_initial', inp.uid + '.txt') for inp in ins],
+                   'average',
+                   'linear_transform_average_init.txt',
+                   '-quiet'])
+      transform_average_driftref = matrix.load_transform('linear_transform_average_init.txt')
+
     def linear_msg():
       return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level + 1, len(linear_scales), regtype)
     progress = app.ProgressBar(linear_msg, len(linear_scales) * len(ins) * (1 + n_contrasts + int(use_masks)))
@@ -1168,6 +1182,9 @@ def execute(): #pylint: disable=unused-variable
           mask_option = ''
         lmax_option = ' -noreorientation'
         metric_option = ''
+        init_transform_path = None if initial_alignment == 'none' else \
+                              os.path.join(f'linear_transforms_{level-1:02d}' if level > 0 else 'linear_transforms_initial',
+                                           f'{inp.uid}.txt')
         mrregister_log_option = ''
         if regtype == 'rigid':
           scale_option = ' -rigid_scale ' + str(scale)
@@ -1175,8 +1192,7 @@ def execute(): #pylint: disable=unused-variable
           regtype_option = ' -type rigid'
           output_option = ' -rigid ' + os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')
           contrast_weight_option = cns.rigid_weight_option
-          initialise_option = (' -rigid_init_matrix ' +
-                               os.path.join('linear_transforms_%02i' % (level - 1) if level > 0 else 'linear_transforms_initial', inp.uid + '.txt'))
+          initialise_option = (' -rigid_init_matrix ' + init_transform_path) if init_transform_path else ''
           if do_fod_registration:
             lmax_option = ' -rigid_lmax ' + str(lmax)
           if linear_estimator is not None:
@@ -1189,8 +1205,7 @@ def execute(): #pylint: disable=unused-variable
           regtype_option = ' -type affine'
           output_option = ' -affine ' + os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')
           contrast_weight_option = cns.affine_weight_option
-          initialise_option = (' -affine_init_matrix ' +
-                               os.path.join('linear_transforms_%02i' % (level - 1) if level > 0 else 'linear_transforms_initial', inp.uid + '.txt'))
+          initialise_option = (' -affine_init_matrix ' + init_transform_path) if init_transform_path else ''
           if do_fod_registration:
             lmax_option = ' -affine_lmax ' + str(lmax)
           if linear_estimator is not None:
@@ -1245,32 +1260,40 @@ def execute(): #pylint: disable=unused-variable
       #   - If one subject's registration fails, this will affect the average and therefore the template which could result in instable behaviour.
       #   - The template appearance changes slightly over levels, but the template and trafos are affected in the same way so should not affect template convergence.
       if not app.ARGS.linear_no_drift_correction:
-        run.command(['transformcalc', [os.path.join('linear_transforms_initial', inp.uid + '.txt') for _inp in ins],
-                    'average', 'linear_transform_average_init.txt', '-quiet'], force=True)
-        run.command(['transformcalc', [os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') for _inp in ins],
-                    'average', 'linear_transform_average_%02i_uncorrected.txt' % level, '-quiet'], force=True)
-        run.command(['transformcalc', 'linear_transform_average_%02i_uncorrected.txt' % level,
-                    'invert', 'linear_transform_average_%02i_uncorrected_inv.txt' % level, '-quiet'], force=True)
+        # Where no initial alignment was performed, we instead grab the transforms from the first linear iteration
+        #   and use those to form the reference for drift correction
+        if initial_alignment == 'none' and level == 0:
+          app.console('Calculating average transform from first iteration for linear drift correction')
+          run.command(['transformcalc',
+                       [os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') for inp in ins],
+                       'average',
+                       'linear_transform_average_%02i.txt' % level,
+                       '-quiet'])
+          transform_average_driftref = matrix.load_transform('linear_transform_average_%02i.txt' % level)
+        else:
+          run.command(['transformcalc', [os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') for inp in ins],
+                      'average', 'linear_transform_average_%02i_uncorrected.txt' % level, '-quiet'], force=True)
+          run.command(['transformcalc', 'linear_transform_average_%02i_uncorrected.txt' % level,
+                      'invert', 'linear_transform_average_%02i_uncorrected_inv.txt' % level, '-quiet'], force=True)
+          transform_average_current_inv = matrix.load_transform('linear_transform_average_%02i_uncorrected_inv.txt' % level)
 
-        transform_average_init = matrix.load_transform('linear_transform_average_init.txt')
-        transform_average_current_inv = matrix.load_transform('linear_transform_average_%02i_uncorrected_inv.txt' % level)
+          transform_update = matrix.dot(transform_average_driftref, transform_average_current_inv)
+          matrix.save_transform(os.path.join('linear_transforms_%02i_drift_correction.txt' %  level), transform_update, force=True)
+          if regtype == 'rigid':
+            run.command('transformcalc ' + os.path.join('linear_transforms_%02i_drift_correction.txt' %  level) +
+                        ' rigid ' + os.path.join('linear_transforms_%02i_drift_correction.txt' %  level) + ' -quiet', force=True)
+            transform_update = matrix.load_transform(os.path.join('linear_transforms_%02i_drift_correction.txt' %  level))
 
-        transform_update = matrix.dot(transform_average_init, transform_average_current_inv)
-        matrix.save_transform(os.path.join('linear_transforms_%02i_drift_correction.txt' %  level), transform_update, force=True)
-        if regtype == 'rigid':
-          run.command('transformcalc ' + os.path.join('linear_transforms_%02i_drift_correction.txt' %  level) +
-                      ' rigid ' + os.path.join('linear_transforms_%02i_drift_correction.txt' %  level) + ' -quiet', force=True)
-          transform_update = matrix.load_transform(os.path.join('linear_transforms_%02i_drift_correction.txt' %  level))
+          for inp in ins:
+            transform = matrix.load_transform('linear_transforms_%02i/' % level + inp.uid + '.txt')
+            transform_updated = matrix.dot(transform, transform_update)
+            run.function(copy, 'linear_transforms_%02i/' % level + inp.uid + '.txt', 'linear_transforms_%02i/' % level + inp.uid + '.precorrection')
+            matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform_updated, force=True)
 
-        for inp in ins:
-          transform = matrix.load_transform('linear_transforms_%02i/' % level + inp.uid + '.txt')
-          transform_updated = matrix.dot(transform, transform_update)
-          run.function(copy, 'linear_transforms_%02i/' % level + inp.uid + '.txt', 'linear_transforms_%02i/' % level + inp.uid + '.precorrection')
-          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform_updated, force=True)
+          # compute average trafos and its properties for easier debugging
+          run.command(['transformcalc', [os.path.join('linear_transforms_%02i' % level, _inp.uid + '.txt') for _inp in ins],
+                      'average', 'linear_transform_average_%02i.txt' % level, '-quiet'], force=True)
 
-        # compute average trafos and its properties for easier debugging
-        run.command(['transformcalc', [os.path.join('linear_transforms_%02i' % level, _inp.uid + '.txt') for _inp in ins],
-                    'average', 'linear_transform_average_%02i.txt' % level, '-quiet'], force=True)
         run.command('transformcalc linear_transform_average_%02i.txt decompose linear_transform_average_%02i.dec' % (level, level), force=True)
 
 

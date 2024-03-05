@@ -61,7 +61,7 @@ List of MRtrix3 commands
     commands/label2colour
     commands/label2mesh
     commands/labelconvert
-    commands/labelsgmfix
+    commands/labelsgmfirst
     commands/labelstats
     commands/mask2glass
     commands/maskdump
@@ -193,7 +193,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     |cpp.png|, :ref:`label2mesh`, "Generate meshes from a label image"
     |cpp.png|, :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
-    |python.png|, :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
+    |python.png|, :ref:`labelsgmfirst`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
     |cpp.png|, :ref:`labelstats`, "Compute statistics of parcels within a label image"
     |python.png|, :ref:`mask2glass`, "Create a glass brain from mask input"
     |cpp.png|, :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"

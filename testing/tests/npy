@@ -1,2 +1,0 @@
-rm -rf tmp-npyread/ && testing_gen_npy tmp-npyread/ && testing_unit_tests_npyread tmp-npyread/ && rm -rf tmp-npyread/
-rm -rf tmp-npywrite/ && testing_unit_tests_npywrite tmp-npywrite/ && testing_check_npy tmp-npywrite/ && rm -rf tmp-npywrite/

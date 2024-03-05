@@ -312,11 +312,13 @@ const OptionGroup rigid_options =
       + Argument("type").type_choice(linear_metric_choices)
 
     + Option("rigid_metric.diff.estimator",
-             "Valid choices are:"
+             "Robust estimator to use during rigid-body registration."
+             " Valid choices are:"
              " l1 (least absolute: |x|);"
              " l2 (ordinary least squares);"
              " lp (least powers: |x|^1.2);"
-             " Default: l2")
+             " none."
+             " Default: none.")
       + Argument("type").type_choice(linear_robust_estimator_choices)
 
     // + Option ("rigid_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
@@ -401,11 +403,13 @@ const OptionGroup affine_options =
       + Argument("type").type_choice(linear_metric_choices)
 
     + Option("affine_metric.diff.estimator",
-             "Valid choices are:"
+             "Robust estimator to use durring affine registration."
+             " Valid choices are:"
              " l1 (least absolute: |x|);"
              " l2 (ordinary least squares);"
              " lp (least powers: |x|^1.2);"
-             " Default: l2")
+             " none."
+             " Default: none.")
       + Argument("type").type_choice(linear_robust_estimator_choices)
 
     // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
