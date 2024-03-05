@@ -1,6 +1,6 @@
 # A function that adds a bash test for each line in a given file
 function(add_bash_tests)
-    set(singleValueArgs FILE_PATH PREFIX WORKING_DIRECTORY)
+    set(singleValueArgs FILE_PATH PREFIX WORKING_DIRECTORY ENVIRONMENT)
     set(multiValueArgs EXEC_DIRECTORIES)
     cmake_parse_arguments(
         ARG
@@ -14,6 +14,7 @@ function(add_bash_tests)
     set(prefix ${ARG_PREFIX})
     set(working_directory ${ARG_WORKING_DIRECTORY})
     set(exec_directories ${ARG_EXEC_DIRECTORIES})
+    set(environment ${ARG_ENVIRONMENT})
 
     # Regenerate tests when the test script changes
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${file_path})
@@ -67,8 +68,9 @@ function(add_bash_tests)
             COMMAND ${BASH} -c "export PATH=${EXEC_DIR_PATHS}:$PATH;${line}"
             WORKING_DIRECTORY ${working_directory}
         )
-        set_tests_properties(${prefix}_${test_name} 
-            PROPERTIES FIXTURES_REQUIRED ${file_name}_cleanup
+        set_tests_properties(${prefix}_${test_name} PROPERTIES 
+            ENVIRONMENT "${environment}"
+            FIXTURES_REQUIRED ${file_name}_cleanup
         )
         message(VERBOSE "Add bash tests commands for ${file_name}: ${line}")
     endforeach()
