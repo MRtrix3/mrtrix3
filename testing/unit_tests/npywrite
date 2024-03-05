@@ -1,0 +1,1 @@
+rm -rf tmp-npywrite/ && testing_npywrite tmp-npywrite/ && testing_check_npy tmp-npywrite/ && rm -rf tmp-npywrite/
