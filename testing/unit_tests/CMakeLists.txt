@@ -44,7 +44,7 @@ function (add_bash_unit_test FILE_SRC)
     add_bash_tests(
         FILE_PATH "${FILE_SRC}"
         PREFIX "unittest"
-        WORKING_DIRECTORY ${DATA_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
     )
 endfunction()
