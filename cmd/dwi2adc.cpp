@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -87,11 +87,11 @@ public:
     binv = Math::pinv(b);
     if (ivim) {
       // select volumes with b-value > cutoff
-      for (size_t j = 0; j < bvals.size(); j++) {
+      for (ssize_t j = 0; j < bvals.size(); j++) {
         if (bvals[j] > cutoff)
           idx.push_back(j);
       }
-      Eigen::MatrixXd bsub = b(idx, Eigen::all);
+      const Eigen::MatrixXd bsub = b(idx, Eigen::all);
       bsubinv = Math::pinv(bsub);
     }
   }
@@ -115,16 +115,16 @@ public:
     adc_image.value() = adc[1];
 
     if (ivim) {
-      double A = std::exp(adc[0]);
-      double D = adc[1];
+      const double A = std::exp(adc[0]);
+      const double D = adc[1];
       Eigen::VectorXd logS = adc[0] - D * bvals.array();
       Eigen::VectorXd logdiff = (dwi.array() > logS.array()).select(dwi, logS);
       logdiff.array() += Eigen::log(1 - Eigen::exp(-(dwi - logS).array().abs()));
       adc = binv * logdiff;
-      double C = std::exp(adc[0]);
-      double Dstar = adc[1];
-      double S0 = A + C;
-      double f = C / S0;
+      const double C = std::exp(adc[0]);
+      const double Dstar = adc[1];
+      const double S0 = A + C;
+      const double f = C / S0;
       adc_image.index(3) = 0;
       adc_image.value() = S0;
       adc_image.index(3) = 2;
@@ -134,7 +134,7 @@ public:
     }
   }
 
-protected:
+private:
   Eigen::VectorXd bvals, dwi, dwisub, adc;
   Eigen::MatrixXd binv, bsubinv;
   std::vector<size_t> idx;
