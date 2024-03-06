@@ -15,7 +15,7 @@ Usage
 
     mrcalc [ options ]  operand [ operand ... ]
 
--  *operand*: an input image, intensity value, or the special keywords 'rand' (random number between 0 and 1) or 'randn' (random number from unit std.dev. normal distribution) or the mathematical constants 'e' and 'pi'.
+-  *operand*: an input image, intensity value, or special keyword (see Description)
 
 Description
 -----------
@@ -26,6 +26,8 @@ This command uses a stack-based syntax, with operators (specified using options)
 
 As an additional feature, this command will allow images with different dimensions to be processed, provided they satisfy the following conditions: for each axis, the dimensions match if they are the same size, or one of them has size one. In the latter case, the entire image will be replicated along that axis. This allows for example a 4D image of size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if it consisted of N copies of the 3D image along the 4th axis (the missing dimension is assumed to have size 1). Another example would a single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of size [ X Y Z ], which would allow the creation of a 4D image where each volume consists of the 3D image scaled by the corresponding value for that volume in the single-voxel image.
 
+The following special keywords are permitted as operands on the stack: 'rand' (random number between 0 and 1); 'randn' (random number from unit std.dev. normal distribution); 'e' (Euler's number); 'pi' (ratio of circumference of circle to diameter)
+
 Example usages
 --------------
 
@@ -33,7 +35,7 @@ Example usages
 
         $ mrcalc a.mif 2 -mult r.mif
 
-    This performs the operation: r = 2*a  for every voxel a,r in images a.mif and r.mif respectively.
+    This performs the operation:  r = 2*a  for every voxel a,r in images a.mif and r.mif respectively.
 
 -   *A more complex example*::
 
@@ -194,7 +196,7 @@ hyperbolic functions
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices are: float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -226,7 +228,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

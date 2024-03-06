@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,30 +20,19 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Shapes
-    {
+namespace MR::GUI::Shapes {
 
-    class Cube
-    { 
-      public:
-        Cube () : num_indices (0) { }
+class Cube {
+public:
+  Cube() : num_indices(0) {}
 
-        void generate();
+  void generate();
 
-        GL::VertexBuffer vertex_buffer, normals_buffer;
-        GL::IndexBuffer index_buffer;
-        size_t num_indices;
+  GL::VertexBuffer vertex_buffer, normals_buffer;
+  GL::IndexBuffer index_buffer;
+  size_t num_indices;
+};
 
-    };
-
-
-    }
-  }
-}
+} // namespace MR::GUI::Shapes
 
 #endif
-

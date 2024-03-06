@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,50 +21,46 @@
 #include <complex>
 #include <cstddef>
 #include <deque>
+#include <iostream>
 #include <map>
 #include <memory>
-#include <iostream>
 #include <vector>
 
-
 #ifdef _WIN32
-#  ifdef _WIN64
-#    define PRI_SIZET PRIu64
-#  else
-#    define PRI_SIZET PRIu32
-#  endif
+#ifdef _WIN64
+#define PRI_SIZET PRIu64
 #else
-#  define PRI_SIZET "zu"
+#define PRI_SIZET PRIu32
 #endif
-
+#else
+#define PRI_SIZET "zu"
+#endif
 
 namespace MR {
 
 #ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
-# ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
-  // needed for clang 3.4:
-  using __max_align_t = struct {
-    long long __clang_max_align_nonce1
-        __attribute__((__aligned__(__alignof__(long long))));
-    long double __clang_max_align_nonce2
-        __attribute__((__aligned__(__alignof__(long double))));
-  };
-  constexpr size_t malloc_align = alignof (__max_align_t);
-# else
-  constexpr size_t malloc_align = alignof (std::max_align_t);
-# endif
+#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
+// needed for clang 3.4:
+using __max_align_t = struct {
+  long long __clang_max_align_nonce1 __attribute__((__aligned__(__alignof__(long long))));
+  long double __clang_max_align_nonce2 __attribute__((__aligned__(__alignof__(long double))));
+};
+constexpr size_t malloc_align = alignof(__max_align_t);
 #else
-  constexpr size_t malloc_align = alignof (::max_align_t);
+constexpr size_t malloc_align = alignof(std::max_align_t);
+#endif
+#else
+constexpr size_t malloc_align = alignof(::max_align_t);
 #endif
 
-  namespace Helper {
-    template <class ImageType> class ConstRow;
-    template <class ImageType> class Row;
-  }
-}
+namespace Helper {
+template <class ImageType> class ConstRow;
+template <class ImageType> class Row;
+} // namespace Helper
+} // namespace MR
 
 #ifdef EIGEN_HAS_OPENMP
-# undef EIGEN_HAS_OPENMP
+#undef EIGEN_HAS_OPENMP
 #endif
 
 #define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"
@@ -106,17 +102,15 @@ namespace MR {
  * \sa VLA
  */
 
-
 #ifdef MRTRIX_NO_VLA
-# define VLA(name, type, num) \
-  vector<type> __vla__ ## name(num); \
-  type* name = &__vla__ ## name[0]
-# define VLA_MAX(name, type, num, max) type name[max]
+#define VLA(name, type, num)                                                                                           \
+  std::vector<type> __vla__##name(num);                                                                                \
+  type *name = &__vla__##name[0]
+#define VLA_MAX(name, type, num, max) type name[max]
 #else
-# define VLA(name, type, num) type name[num]
-# define VLA_MAX(name, type, num, max) type name[num]
+#define VLA(name, type, num) type name[num]
+#define VLA_MAX(name, type, num, max) type name[num]
 #endif
-
 
 /*! \def NON_POD_VLA
  * define a variable-length array of non-POD data if supported by the compiler,
@@ -135,146 +129,88 @@ namespace MR {
  * \sa VLA
  */
 
-
 #ifdef MRTRIX_NO_NON_POD_VLA
-# define NON_POD_VLA(name, type, num) \
-  vector<type> __vla__ ## name(num); \
-  type* name = &__vla__ ## name[0]
-# define NON_POD_VLA_MAX(name, type, num, max) type name[max]
+#define NON_POD_VLA(name, type, num)                                                                                   \
+  std::vector<type> __vla__##name(num);                                                                                \
+  type *name = &__vla__##name[0]
+#define NON_POD_VLA_MAX(name, type, num, max) type name[max]
 #else
-# define NON_POD_VLA(name, type, num) type name[num]
-# define NON_POD_VLA_MAX(name, type, num, max) type name[num]
+#define NON_POD_VLA(name, type, num) type name[num]
+#define NON_POD_VLA_MAX(name, type, num, max) type name[num]
 #endif
 
 //! \}
 
 #ifdef NDEBUG
-# define FORCE_INLINE inline __attribute__((always_inline))
+#define FORCE_INLINE inline __attribute__((always_inline))
 #else // don't force inlining in debug mode, so we can get more informative backtraces
-# define FORCE_INLINE inline
+#define FORCE_INLINE inline
 #endif
 
+namespace MR {
 
+using float32 = float;
+using float64 = double;
+using cdouble = std::complex<double>;
+using cfloat = std::complex<float>;
 
+template <typename T> struct container_cast : public T {
+  template <typename U> container_cast(const U &x) : T(x.begin(), x.end()) {}
+};
 
+//! the default type used throughout MRtrix
+using default_type = double;
 
+constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
+constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
 
-namespace MR
-{
+//! the type for the affine transform of an image:
+using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
 
-  using float32 = float;
-  using float64 = double;
-  using cdouble = std::complex<double>;
-  using cfloat  = std::complex<float>;
+//! used in various places for storing key-value pairs
+using KeyValues = std::map<std::string, std::string>;
 
-  template <typename T>
-    struct container_cast : public T {
-      template <typename U>
-        container_cast (const U& x) :
-        T (x.begin(), x.end()) { }
-    };
+//! check whether type is complex:
+template <class ValueType> struct is_complex : std::false_type {};
+template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type {};
 
-  //! the default type used throughout MRtrix
-  using default_type = double;
+//! check whether type is compatible with MRtrix3's file IO backend:
+template <class ValueType>
+struct is_data_type
+    : std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {};
 
-  constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
-  constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
+// required to allow use of abs() call on unsigned integers in template
+// functions, etc, since the standard labels such calls ill-formed:
+// http://en.cppreference.com/w/cpp/numeric/math/abs
+template <typename X>
+inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is_unsigned<X>::value, X>::type abs(X x) {
+  return x;
+}
+template <typename X>
+inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value, X>::type
+abs(X x) {
+  return std::abs(x);
+}
+} // namespace MR
 
-  //! the type for the affine transform of an image:
-  using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
+namespace std {
 
-
-  //! used in various places for storing key-value pairs
-  using KeyValues = std::map<std::string, std::string>;
-
-
-  //! check whether type is complex:
-  template <class ValueType> struct is_complex : std::false_type {  };
-  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type {  };
-
-
-  //! check whether type is compatible with MRtrix3's file IO backend:
-  template <class ValueType>
-    struct is_data_type :
-      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {  };
-
-
-  template <typename X, int N=(alignof(X)>::MR::malloc_align)>
-    class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> {
-      public:
-        using ::std::vector<X,Eigen::aligned_allocator<X>>::vector;
-        vector() { }
-    };
-
-  template <typename X>
-    class vector<X,0> : public ::std::vector<X> {
-      public:
-        using ::std::vector<X>::vector;
-        vector() { }
-    };
-
-
-  template <typename X, int N=(alignof(X)>::MR::malloc_align)>
-    class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> {
-      public:
-        using ::std::deque<X,Eigen::aligned_allocator<X>>::deque;
-        deque() { }
-    };
-
-  template <typename X>
-    class deque<X,0> : public ::std::deque<X> {
-      public:
-        using ::std::deque<X>::deque;
-        deque() { }
-    };
-
-
-  template <typename X, typename... Args>
-    inline std::shared_ptr<X> make_shared (Args&&... args) {
-      return std::shared_ptr<X> (new X (std::forward<Args> (args)...));
-    }
-
-  template <typename X, typename... Args>
-    inline std::unique_ptr<X> make_unique (Args&&... args) {
-      return std::unique_ptr<X> (new X (std::forward<Args> (args)...));
-    }
-
-
-  // required to allow use of abs() call on unsigned integers in template
-  // functions, etc, since the standard labels such calls ill-formed:
-  // http://en.cppreference.com/w/cpp/numeric/math/abs
-  template <typename X>
-    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is_unsigned<X>::value,X>::type abs (X x) { return x; }
-  template <typename X>
-    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value,X>::type abs (X x) { return std::abs(x); }
+template <class T> inline ostream &operator<<(ostream &stream, const std::vector<T> &V) {
+  stream << "[ ";
+  for (size_t n = 0; n < V.size(); n++)
+    stream << V[n] << " ";
+  stream << "]";
+  return stream;
 }
 
-namespace std
-{
-
-  template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
-  {
-    stream << "[ ";
-    for (size_t n = 0; n < V.size(); n++)
-      stream << V[n] << " ";
-    stream << "]";
-    return stream;
-  }
-
-  template <class T, std::size_t N> inline ostream& operator<< (ostream& stream, const array<T,N>& V)
-  {
-    stream << "[ ";
-    for (size_t n = 0; n < N; n++)
-      stream << V[n] << " ";
-    stream << "]";
-    return stream;
-  }
-
+template <class T, std::size_t N> inline ostream &operator<<(ostream &stream, const array<T, N> &V) {
+  stream << "[ ";
+  for (size_t n = 0; n < N; n++)
+    stream << V[n] << " ";
+  stream << "]";
+  return stream;
 }
+
+} // namespace std
 
 #endif
-
-
-
-
-

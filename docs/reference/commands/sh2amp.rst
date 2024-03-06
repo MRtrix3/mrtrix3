@@ -15,9 +15,9 @@ Usage
 
     sh2amp [ options ]  input directions output
 
--  *input*: the input image consisting of spherical harmonic (SH) coefficients.
--  *directions*: the list of directions along which the SH functions will be sampled, generated using the dirgen command
--  *output*: the output image consisting of the amplitude of the SH functions along the specified directions.
+-  *input*: the input spherical harmonic (SH) coefficients image
+-  *directions*: the set of directions along which the SH functions will be sampled
+-  *output*: the output amplitudes image
 
 Description
 -----------
@@ -25,8 +25,8 @@ Description
 The input image should consist of a 4D or 5D image, with SH coefficients along the 4th dimension according to the convention below. If 4D (or size 1 along the 5th dimension), the program expects to be provided with a single shell of directions. If 5D, each set of coefficients along the 5th dimension is understood to correspond to a different shell.
 
 The directions can be provided as: |br|
-- a 2-column ASCII text file contained azimuth / elevation pairs (as produced by dirgen) |br|
-- a 3-column ASCII text file containing x, y, z Cartesian direction vectors (as produced by dirgen -cart) |br|
+- a 2-column ASCII text file containing azimuth / elevation pairs (eg. as produced by dirgen) |br|
+- a 3-column ASCII text file containing x, y, z Cartesian direction vectors (eg. as produced by dirgen -cart) |br|
 - a 4-column ASCII text file containing the x, y, z, b components of a full DW encoding scheme (in MRtrix format, see main documentation for details). |br|
 - an image file whose header contains a valid DW encoding scheme
 
@@ -45,7 +45,7 @@ Options
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
@@ -57,7 +57,7 @@ Stride options
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices are: float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -89,7 +89,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

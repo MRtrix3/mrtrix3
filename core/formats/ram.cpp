@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,65 +14,49 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "file/path.h"
-#include "header.h"
 #include "image_io/ram.h"
+#include "file/path.h"
 #include "formats/list.h"
+#include "header.h"
 
-namespace MR
-{
-  namespace Formats
-  {
+namespace MR::Formats {
 
-    std::unique_ptr<ImageIO::Base> RAM::read (Header& H) const
-    {
+std::unique_ptr<ImageIO::Base> RAM::read(Header &H) const {
 #ifdef MRTRIX_AS_R_LIBRARY
-      if (!Path::has_suffix (H.name(), ".R"))
-        return std::unique_ptr<ImageIO::Base>();
+  if (!Path::has_suffix(H.name(), ".R"))
+    return std::unique_ptr<ImageIO::Base>();
 
-      Header* R_header = (Header*) to<size_t> (H.name().substr (0, H.name().size()-2));
-      H = *R_header;
-      return R_header->__get_handler();
+  Header *R_header = (Header *)to<size_t>(H.name().substr(0, H.name().size() - 2));
+  H = *R_header;
+  return R_header->__get_handler();
 #else
-      return { };
+  return {};
 #endif
-    }
-
-
-
-
-
-    bool RAM::check (Header& H, size_t num_axes) const
-    {
-      return H.name() == "NULL"
-#ifdef MRTRIX_AS_R_LIBRARY
-      || Path::has_suffix (H.name(), ".R")
-#endif
-      ;
-    }
-
-
-
-
-    std::unique_ptr<ImageIO::Base> RAM::create (Header& H) const
-    {
-      if (H.name() == "NULL") {
-        std::unique_ptr<ImageIO::RAM> io_handler (new ImageIO::RAM (H));
-        return std::move (io_handler);
-      }
-
-#ifdef MRTRIX_AS_R_LIBRARY
-      Header* R_header = (Header*) to<size_t> (H.name().substr (0, H.name().size()-2));
-      *R_header = H;
-      std::unique_ptr<ImageIO::RAM> io_handler (new ImageIO::RAM (H));
-      R_header->__set_handler (io_handler);
-      return io_handler;
-#else
-      return { };
-#endif
-    }
-
-
-  }
 }
 
+bool RAM::check(Header &H, size_t num_axes) const {
+  return H.name() == "NULL"
+#ifdef MRTRIX_AS_R_LIBRARY
+         || Path::has_suffix(H.name(), ".R")
+#endif
+      ;
+}
+
+std::unique_ptr<ImageIO::Base> RAM::create(Header &H) const {
+  if (H.name() == "NULL") {
+    std::unique_ptr<ImageIO::RAM> io_handler(new ImageIO::RAM(H));
+    return std::move(io_handler);
+  }
+
+#ifdef MRTRIX_AS_R_LIBRARY
+  Header *R_header = (Header *)to<size_t>(H.name().substr(0, H.name().size() - 2));
+  *R_header = H;
+  std::unique_ptr<ImageIO::RAM> io_handler(new ImageIO::RAM(H));
+  R_header->__set_handler(io_handler);
+  return io_handler;
+#else
+  return {};
+#endif
+}
+
+} // namespace MR::Formats

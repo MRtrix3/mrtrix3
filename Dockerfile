@@ -21,7 +21,6 @@ RUN apt-get -qq update \
         libpng-dev \
         libqt5opengl5-dev \
         libqt5svg5-dev \
-        libtiff5-dev \
         qt5-default \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -77,7 +76,6 @@ RUN apt-get -qq update \
         libqt5svg5 \
         libqt5widgets5 \
         libquadmath0 \
-        libtiff5 \
         python3-distutils \
     && rm -rf /var/lib/apt/lists/*
 

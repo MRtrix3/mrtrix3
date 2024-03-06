@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,41 +17,29 @@
 #ifndef __gui_mrview_combo_box_error_h__
 #define __gui_mrview_combo_box_error_h__
 
-#include "mrtrix.h"
 #include "gui/opengl/gl.h"
+#include "mrtrix.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
+namespace MR::GUI::MRView {
 
-      class ComboBoxWithErrorMsg : public QComboBox
-      { 
-        Q_OBJECT
+class ComboBoxWithErrorMsg : public QComboBox {
+  Q_OBJECT
 
-        public:
-          ComboBoxWithErrorMsg (QWidget* parent, const QString& msg);
+public:
+  ComboBoxWithErrorMsg(QWidget *parent, const QString &msg);
 
-          void setError ();
-          void clearError (int);
-          void clearError() { clearError (-1); } // Guaranteed to clear the error entry
+  void setError();
+  void clearError(int);
+  void clearError() { clearError(-1); } // Guaranteed to clear the error entry
 
-        protected slots:
-          void onSetIndex (int);
+protected slots:
+  void onSetIndex(int);
 
+protected:
+  const QString error_message;
+  int error_index;
+};
 
-        protected:
-          const QString error_message;
-          int error_index;
-
-      };
-
-
-    }
-  }
-}
+} // namespace MR::GUI::MRView
 
 #endif
-

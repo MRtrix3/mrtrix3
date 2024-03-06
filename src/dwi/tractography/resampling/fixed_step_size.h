@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,46 +17,27 @@
 #ifndef __dwi_tractography_resampling_fixed_step_size_h__
 #define __dwi_tractography_resampling_fixed_step_size_h__
 
-
 #include "dwi/tractography/resampling/resampling.h"
 
+namespace MR::DWI::Tractography::Resampling {
 
-namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+class FixedStepSize : public BaseCRTP<FixedStepSize> {
 
+public:
+  FixedStepSize() : step_size(value_type(0)) {}
 
+  FixedStepSize(const float ss) : step_size(ss) {}
 
-        class FixedStepSize : public BaseCRTP<FixedStepSize>
-        { 
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return step_size; }
 
-          public:
-            FixedStepSize () :
-              step_size (value_type(0)) { }
+  void set_step_size(const value_type ss) { step_size = ss; }
+  float get_step_size() const { return step_size; }
 
-            FixedStepSize (const float ss) :
-              step_size (ss) { }
+private:
+  value_type step_size;
+};
 
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return step_size; }
-
-            void set_step_size (const value_type ss) { step_size = ss; }
-            float get_step_size() const { return step_size; }
-
-          private:
-            value_type step_size;
-
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace MR::DWI::Tractography::Resampling
 
 #endif
-
-
-

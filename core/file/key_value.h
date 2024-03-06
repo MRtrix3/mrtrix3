@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,63 +17,40 @@
 #ifndef __file_key_value_h__
 #define __file_key_value_h__
 
-#include <fstream>
 #include "mrtrix.h"
 #include "types.h"
+#include <fstream>
 
-namespace MR
-{
-  namespace File
-  {
+namespace MR::File {
 
-    class OFStream;
+class OFStream;
 
-    namespace KeyValue
-    {
+namespace KeyValue {
 
+class Reader {
+public:
+  Reader() {}
+  Reader(const std::string &file, const char *first_line = nullptr) { open(file, first_line); }
 
+  void open(const std::string &file, const char *first_line = nullptr);
+  bool next();
+  void close() { in.close(); }
 
-      class Reader { 
-        public:
-          Reader () { }
-          Reader (const std::string& file, const char* first_line = nullptr) {
-            open (file, first_line);
-          }
+  const std::string &key() const throw() { return (K); }
+  const std::string &value() const throw() { return (V); }
+  const std::string &name() const throw() { return (filename); }
 
-          void open (const std::string& file, const char* first_line = nullptr);
-          bool next ();
-          void close () {
-            in.close();
-          }
+protected:
+  std::string K, V, filename;
+  std::ifstream in;
+};
 
-          const std::string& key () const throw ()   {
-            return (K);
-          }
-          const std::string& value () const throw () {
-            return (V);
-          }
-          const std::string& name () const throw ()  {
-            return (filename);
-          }
+void write(File::OFStream &out,
+           const KeyValues &keyvals,
+           const std::string &prefix,
+           const bool add_to_command_history = true);
 
-        protected:
-          std::string K, V, filename;
-          std::ifstream in;
-      };
-
-
-
-
-      void write (File::OFStream& out,
-                  const KeyValues& keyvals,
-                  const std::string& prefix,
-                  const bool add_to_command_history = true);
-
-
-
-    }
-  }
-}
+} // namespace KeyValue
+} // namespace MR::File
 
 #endif
-

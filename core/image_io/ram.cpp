@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include <limits>
 #include <unistd.h>
 
@@ -22,30 +21,20 @@
 #include "header.h"
 #include "image_io/ram.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR::ImageIO {
 
+void RAM::load(const Header &header, size_t) {
+  DEBUG("allocating RAM buffer for image \"" + header.name() + "\"...");
+  int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
+  addresses.resize(1);
+  addresses[0].reset(new uint8_t[bytes_per_segment]);
+}
 
-    void RAM::load (const Header& header, size_t)
-    {
-      DEBUG ("allocating RAM buffer for image \"" + header.name() + "\"...");
-      int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
-      addresses.resize(1);
-      addresses[0].reset (new uint8_t [bytes_per_segment]);
-    }
-
-
-    void RAM::unload (const Header& header)
-    {
-      if (addresses.size()) {
-        DEBUG ("deleting RAM buffer for image \"" + header.name() + "\"...");
-        addresses[0].reset();
-      }
-    }
-
+void RAM::unload(const Header &header) {
+  if (addresses.size()) {
+    DEBUG("deleting RAM buffer for image \"" + header.name() + "\"...");
+    addresses[0].reset();
   }
 }
 
-
+} // namespace MR::ImageIO

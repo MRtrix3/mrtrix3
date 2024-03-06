@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,36 +26,34 @@
 #include "file/config.h"
 #include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
+#include <functional>
 
-    inline QString qstr (const std::string& s) { return QString::fromUtf8 (s.c_str()); }
+namespace MR::GUI {
 
+inline QString qstr(const std::string &s) { return QString::fromUtf8(s.c_str()); }
 
-    class App : public QApplication { 
+class App : public QApplication {
 
-      public:
-        App (int& cmdline_argc, char** cmdline_argv);
+public:
+  App(int &cmdline_argc, char **cmdline_argv);
 
-        // this needs to be defined on a per-application basis:
-        virtual bool event (QEvent *event) override;
+  // this needs to be defined on a per-application basis:
+  virtual bool event(QEvent *event) override;
 
-
-        static void set_main_window (QWidget* window, GL::Area* glarea) {
-          main_window = window;
-          GL::glwidget = glarea;
-        }
-
-        static QWidget* main_window;
-        static App* application;
-    };
-
-
-
+  static void set_main_window(QWidget *window, GL::Area *glarea) {
+    main_window = window;
+    GL::glwidget = glarea;
   }
-}
+
+  static QWidget *main_window;
+  static App *application;
+
+  static void setEventHandler(std::function<bool(QEvent *)> handler) { App::application->event_handler = handler; }
+
+private:
+  std::function<bool(QEvent *)> event_handler;
+};
+
+} // namespace MR::GUI
 
 #endif
-

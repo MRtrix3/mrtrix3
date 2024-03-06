@@ -14,19 +14,18 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "algo/threaded_copy.h"
 #include "command.h"
+#include "dwi/gradient.h"
 #include "image.h"
+#include "math/least_squares.h"
 #include "phase_encoding.h"
 #include "progressbar.h"
-#include "algo/threaded_copy.h"
-#include "math/least_squares.h"
-#include "dwi/gradient.h"
-
 
 using namespace MR;
 using namespace App;
 
-
+// clang-format off
 void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Daan Christiaens (daan.christiaens@kuleuven.be)";
@@ -72,111 +71,99 @@ void usage ()
     "diffusion coefficient (D) and perfusion fraction (f). "
     "Magn Reson Mater Phy, 2018, 31, 715–723.";
 }
-
-
+// clang-format on
 
 using value_type = float;
 
-
-
-class DWI2ADC { 
-  public:
-    DWI2ADC (const Eigen::VectorXd& bvals, size_t dwi_axis, bool ivim, int cutoff) :
-      bvals (bvals),
-      dwi (bvals.size()),
-      adc (2),
-      dwi_axis (dwi_axis),
-      ivim (ivim),
-      cutoff (cutoff)
-    {
-      Eigen::MatrixXd b (bvals.size(), 2);
-      for (ssize_t i = 0; i < b.rows(); ++i) {
-        b(i,0) = 1.0;
-        b(i,1) = -bvals(i);
+class DWI2ADC {
+public:
+  DWI2ADC(const Eigen::VectorXd &bvals, size_t dwi_axis, bool ivim, int cutoff)
+      : bvals(bvals), dwi(bvals.size()), adc(2), dwi_axis(dwi_axis), ivim(ivim), cutoff(cutoff) {
+    Eigen::MatrixXd b(bvals.size(), 2);
+    for (ssize_t i = 0; i < b.rows(); ++i) {
+      b(i, 0) = 1.0;
+      b(i, 1) = -bvals(i);
+    }
+    binv = Math::pinv(b);
+    if (ivim) {
+      // select volumes with b-value > cutoff
+      for (size_t j = 0; j < bvals.size(); j++) {
+        if (bvals[j] > cutoff)
+          idx.push_back(j);
       }
-      binv = Math::pinv(b);
-      if (ivim) {
-        // select volumes with b-value > cutoff
-        for (size_t j = 0; j < bvals.size(); j++) {
-          if (bvals[j] > cutoff)
-            idx.push_back(j);
-        }
-        Eigen::MatrixXd bsub = b(idx, Eigen::all);
-        bsubinv = Math::pinv(bsub);
-      }
+      Eigen::MatrixXd bsub = b(idx, Eigen::all);
+      bsubinv = Math::pinv(bsub);
+    }
+  }
+
+  template <class DWIType, class ADCType> void operator()(DWIType &dwi_image, ADCType &adc_image) {
+    for (auto l = Loop(dwi_axis)(dwi_image); l; ++l) {
+      value_type val = dwi_image.value();
+      dwi[dwi_image.index(dwi_axis)] = val > 1.0e-12 ? std::log(val) : 1.0e-12;
     }
 
-    template <class DWIType, class ADCType>
-      void operator() (DWIType& dwi_image, ADCType& adc_image) {
-        for (auto l = Loop (dwi_axis) (dwi_image); l; ++l) {
-          value_type val = dwi_image.value();
-          dwi[dwi_image.index (dwi_axis)] = val > 1.0e-12 ? std::log (val) : 1.0e-12;
-        }
+    if (ivim) {
+      dwisub = dwi(idx);
+      adc = bsubinv * dwisub;
+    } else {
+      adc = binv * dwi;
+    }
 
-        if (ivim) {
-          dwisub = dwi(idx);
-          adc = bsubinv * dwisub;
-        }
-        else {
-          adc = binv * dwi;
-        }
+    adc_image.index(3) = 0;
+    adc_image.value() = std::exp(adc[0]);
+    adc_image.index(3) = 1;
+    adc_image.value() = adc[1];
 
-        adc_image.index(3) = 0; adc_image.value() = std::exp (adc[0]);
-        adc_image.index(3) = 1; adc_image.value() = adc[1];
+    if (ivim) {
+      double A = std::exp(adc[0]);
+      double D = adc[1];
+      Eigen::VectorXd logS = adc[0] - D * bvals.array();
+      Eigen::VectorXd logdiff = (dwi.array() > logS.array()).select(dwi, logS);
+      logdiff.array() += Eigen::log(1 - Eigen::exp(-(dwi - logS).array().abs()));
+      adc = binv * logdiff;
+      double C = std::exp(adc[0]);
+      double Dstar = adc[1];
+      double S0 = A + C;
+      double f = C / S0;
+      adc_image.index(3) = 0;
+      adc_image.value() = S0;
+      adc_image.index(3) = 2;
+      adc_image.value() = f;
+      adc_image.index(3) = 3;
+      adc_image.value() = Dstar;
+    }
+  }
 
-        if (ivim) {
-          double A = std::exp (adc[0]);
-          double D = adc[1];
-          Eigen::VectorXd logS = adc[0] - D * bvals.array();
-          Eigen::VectorXd logdiff = (dwi.array() > logS.array()).select(dwi, logS);
-          logdiff.array() += Eigen::log(1 - Eigen::exp(-(dwi-logS).array().abs()));
-          adc = binv * logdiff;
-          double C = std::exp (adc[0]);
-          double Dstar = adc[1];
-          double S0 = A + C;
-          double f = C / S0;
-          adc_image.index(3) = 0; adc_image.value() = S0;
-          adc_image.index(3) = 2; adc_image.value() = f;
-          adc_image.index(3) = 3; adc_image.value() = Dstar;
-        }
-      }
-
-  protected:
-    Eigen::VectorXd bvals, dwi, dwisub, adc;
-    Eigen::MatrixXd binv, bsubinv;
-    vector<size_t> idx;
-    const size_t dwi_axis;
-    const bool ivim;
-    const int cutoff;
+protected:
+  Eigen::VectorXd bvals, dwi, dwisub, adc;
+  Eigen::MatrixXd binv, bsubinv;
+  std::vector<size_t> idx;
+  const size_t dwi_axis;
+  const bool ivim;
+  const int cutoff;
 };
 
-
-
-
-void run () {
-  auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_DW_scheme (dwi);
+void run() {
+  auto dwi = Header::open(argument[0]).get_image<value_type>();
+  auto grad = DWI::get_DW_scheme(dwi);
 
   size_t dwi_axis = 3;
-  while (dwi.size (dwi_axis) < 2)
+  while (dwi.size(dwi_axis) < 2)
     ++dwi_axis;
-  INFO ("assuming DW images are stored along axis " + str (dwi_axis));
+  INFO("assuming DW images are stored along axis " + str(dwi_axis));
 
-  auto opt = get_options ("ivim");
+  auto opt = get_options("ivim");
   bool ivim = opt.size();
   int bmin = get_option_value("cutoff", 120);
 
-  Header header (dwi);
+  Header header(dwi);
   header.datatype() = DataType::Float32;
-  DWI::stash_DW_scheme (header, grad);
-  PhaseEncoding::clear_scheme (header);
+  DWI::stash_DW_scheme(header, grad);
+  PhaseEncoding::clear_scheme(header);
   header.ndim() = 4;
   header.size(3) = ivim ? 4 : 2;
 
-  auto adc = Image<value_type>::create (argument[1], header);
+  auto adc = Image<value_type>::create(argument[1], header);
 
-  ThreadedLoop ("computing ADC values", dwi, 0, 3)
-    .run (DWI2ADC (grad.col(3), dwi_axis, ivim, bmin), dwi, adc);
+  ThreadedLoop("computing ADC values", dwi, 0, 3).run(DWI2ADC(grad.col(3), dwi_axis, ivim, bmin), dwi, adc);
 }
-
-

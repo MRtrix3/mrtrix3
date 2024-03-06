@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,209 +22,178 @@
 #include "gui/color_button.h"
 #include "gui/mrview/adjust_button.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
+namespace MR::GUI::MRView::Tool {
 
+class NodeSelectionSettings : public QObject {
 
+  Q_OBJECT
 
-      class NodeSelectionSettings : public QObject
-      { 
+public:
+  NodeSelectionSettings();
 
-          Q_OBJECT
+  bool get_node_selected_visibility_override() const { return node_selected_visibility_override; }
+  float get_node_selected_colour_fade() const { return node_selected_colour_fade; }
+  const Eigen::Array3f &get_node_selected_colour() const { return node_selected_colour; }
+  float get_node_selected_size_multiplier() const { return node_selected_size_multiplier; }
+  float get_node_selected_alpha_multiplier() const { return node_selected_alpha_multiplier; }
 
-        public:
-          NodeSelectionSettings();
+  bool get_edge_selected_visibility_override() const { return edge_selected_visibility_override; }
+  float get_edge_selected_colour_fade() const { return edge_selected_colour_fade; }
+  const Eigen::Array3f &get_edge_selected_colour() const { return edge_selected_colour; }
+  float get_edge_selected_size_multiplier() const { return edge_selected_size_multiplier; }
+  float get_edge_selected_alpha_multiplier() const { return edge_selected_alpha_multiplier; }
 
-          bool  get_node_selected_visibility_override()    const { return node_selected_visibility_override; }
-          float get_node_selected_colour_fade()            const { return node_selected_colour_fade; }
-          const Eigen::Array3f& get_node_selected_colour() const { return node_selected_colour; }
-          float get_node_selected_size_multiplier()        const { return node_selected_size_multiplier; }
-          float get_node_selected_alpha_multiplier()       const { return node_selected_alpha_multiplier; }
+  float get_node_associated_colour_fade() const { return node_associated_colour_fade; }
+  const Eigen::Array3f &get_node_associated_colour() const { return node_associated_colour; }
+  float get_node_associated_size_multiplier() const { return node_associated_size_multiplier; }
+  float get_node_associated_alpha_multiplier() const { return node_associated_alpha_multiplier; }
 
-          bool  get_edge_selected_visibility_override()    const { return edge_selected_visibility_override; }
-          float get_edge_selected_colour_fade()            const { return edge_selected_colour_fade; }
-          const Eigen::Array3f& get_edge_selected_colour() const { return edge_selected_colour; }
-          float get_edge_selected_size_multiplier()        const { return edge_selected_size_multiplier; }
-          float get_edge_selected_alpha_multiplier()       const { return edge_selected_alpha_multiplier; }
+  float get_edge_associated_colour_fade() const { return edge_associated_colour_fade; }
+  const Eigen::Array3f &get_edge_associated_colour() const { return edge_associated_colour; }
+  float get_edge_associated_size_multiplier() const { return edge_associated_size_multiplier; }
+  float get_edge_associated_alpha_multiplier() const { return edge_associated_alpha_multiplier; }
 
-          float get_node_associated_colour_fade()            const { return node_associated_colour_fade; }
-          const Eigen::Array3f& get_node_associated_colour() const { return node_associated_colour; }
-          float get_node_associated_size_multiplier()        const { return node_associated_size_multiplier; }
-          float get_node_associated_alpha_multiplier()       const { return node_associated_alpha_multiplier; }
+  bool get_node_other_visibility_override() const { return node_other_visibility_override; }
+  float get_node_other_colour_fade() const { return node_other_colour_fade; }
+  const Eigen::Array3f &get_node_other_colour() const { return node_other_colour; }
+  float get_node_other_size_multiplier() const { return node_other_size_multiplier; }
+  float get_node_other_alpha_multiplier() const { return node_other_alpha_multiplier; }
 
-          float get_edge_associated_colour_fade()            const { return edge_associated_colour_fade; }
-          const Eigen::Array3f& get_edge_associated_colour() const { return edge_associated_colour; }
-          float get_edge_associated_size_multiplier()        const { return edge_associated_size_multiplier; }
-          float get_edge_associated_alpha_multiplier()       const { return edge_associated_alpha_multiplier; }
+  bool get_edge_other_visibility_override() const { return edge_other_visibility_override; }
+  float get_edge_other_colour_fade() const { return edge_other_colour_fade; }
+  const Eigen::Array3f &get_edge_other_colour() const { return edge_other_colour; }
+  float get_edge_other_size_multiplier() const { return edge_other_size_multiplier; }
+  float get_edge_other_alpha_multiplier() const { return edge_other_alpha_multiplier; }
 
-          bool  get_node_other_visibility_override()    const { return node_other_visibility_override; }
-          float get_node_other_colour_fade()            const { return node_other_colour_fade; }
-          const Eigen::Array3f& get_node_other_colour() const { return node_other_colour; }
-          float get_node_other_size_multiplier()        const { return node_other_size_multiplier; }
-          float get_node_other_alpha_multiplier()       const { return node_other_alpha_multiplier; }
+signals:
+  void dataChanged();
 
-          bool  get_edge_other_visibility_override()    const { return edge_other_visibility_override; }
-          float get_edge_other_colour_fade()            const { return edge_other_colour_fade; }
-          const Eigen::Array3f& get_edge_other_colour() const { return edge_other_colour; }
-          float get_edge_other_size_multiplier()        const { return edge_other_size_multiplier; }
-          float get_edge_other_alpha_multiplier()       const { return edge_other_alpha_multiplier; }
+private:
+  bool node_selected_visibility_override;
+  float node_selected_colour_fade;
+  Eigen::Array3f node_selected_colour;
+  float node_selected_size_multiplier;
+  float node_selected_alpha_multiplier;
 
+  bool edge_selected_visibility_override;
+  float edge_selected_colour_fade;
+  Eigen::Array3f edge_selected_colour;
+  float edge_selected_size_multiplier;
+  float edge_selected_alpha_multiplier;
 
-        signals:
-          void dataChanged();
+  float node_associated_colour_fade;
+  Eigen::Array3f node_associated_colour;
+  float node_associated_size_multiplier;
+  float node_associated_alpha_multiplier;
 
+  float edge_associated_colour_fade;
+  Eigen::Array3f edge_associated_colour;
+  float edge_associated_size_multiplier;
+  float edge_associated_alpha_multiplier;
 
-        private:
-          bool node_selected_visibility_override;
-          float node_selected_colour_fade;
-          Eigen::Array3f node_selected_colour;
-          float node_selected_size_multiplier;
-          float node_selected_alpha_multiplier;
+  bool node_other_visibility_override;
+  float node_other_colour_fade;
+  Eigen::Array3f node_other_colour;
+  float node_other_size_multiplier;
+  float node_other_alpha_multiplier;
 
-          bool edge_selected_visibility_override;
-          float edge_selected_colour_fade;
-          Eigen::Array3f edge_selected_colour;
-          float edge_selected_size_multiplier;
-          float edge_selected_alpha_multiplier;
+  bool edge_other_visibility_override;
+  float edge_other_colour_fade;
+  Eigen::Array3f edge_other_colour;
+  float edge_other_size_multiplier;
+  float edge_other_alpha_multiplier;
 
-          float node_associated_colour_fade;
-          Eigen::Array3f node_associated_colour;
-          float node_associated_size_multiplier;
-          float node_associated_alpha_multiplier;
+  friend class NodeSelectionSettingsFrame;
+};
 
-          float edge_associated_colour_fade;
-          Eigen::Array3f edge_associated_colour;
-          float edge_associated_size_multiplier;
-          float edge_associated_alpha_multiplier;
+class NodeSelectionSettingsFrame : public QFrame {
+  Q_OBJECT
 
-          bool node_other_visibility_override;
-          float node_other_colour_fade;
-          Eigen::Array3f node_other_colour;
-          float node_other_size_multiplier;
-          float node_other_alpha_multiplier;
+public:
+  NodeSelectionSettingsFrame(QWidget *, NodeSelectionSettings &);
+  ~NodeSelectionSettingsFrame() {}
 
-          bool edge_other_visibility_override;
-          float edge_other_colour_fade;
-          Eigen::Array3f edge_other_colour;
-          float edge_other_size_multiplier;
-          float edge_other_alpha_multiplier;
+protected:
+  NodeSelectionSettings &data;
 
-          friend class NodeSelectionSettingsFrame;
+protected slots:
+  void node_selected_visibility_slot();
+  void node_selected_colour_fade_slot();
+  void node_selected_colour_slot();
+  void node_selected_size_slot();
+  void node_selected_alpha_slot();
 
-      };
+  void edge_selected_visibility_slot();
+  void edge_selected_colour_fade_slot();
+  void edge_selected_colour_slot();
+  void edge_selected_size_slot();
+  void edge_selected_alpha_slot();
 
+  void node_associated_colour_fade_slot();
+  void node_associated_colour_slot();
+  void node_associated_size_slot();
+  void node_associated_alpha_slot();
 
+  void edge_associated_colour_fade_slot();
+  void edge_associated_colour_slot();
+  void edge_associated_size_slot();
+  void edge_associated_alpha_slot();
 
-      class NodeSelectionSettingsFrame : public QFrame
-      { 
-          Q_OBJECT
+  void node_other_visibility_slot();
+  void node_other_colour_fade_slot();
+  void node_other_colour_slot();
+  void node_other_size_slot();
+  void node_other_alpha_slot();
 
-        public:
+  void edge_other_visibility_slot();
+  void edge_other_colour_fade_slot();
+  void edge_other_colour_slot();
+  void edge_other_size_slot();
+  void edge_other_alpha_slot();
 
-          NodeSelectionSettingsFrame (QWidget*, NodeSelectionSettings&);
-          ~NodeSelectionSettingsFrame () { }
+private:
+  QCheckBox *node_selected_visibility_checkbox;
+  QSlider *node_selected_colour_slider;
+  QColorButton *node_selected_colour_button;
+  AdjustButton *node_selected_size_button;
+  AdjustButton *node_selected_alpha_button;
 
-        protected:
-          NodeSelectionSettings& data;
+  QCheckBox *edge_selected_visibility_checkbox;
+  QSlider *edge_selected_colour_slider;
+  QColorButton *edge_selected_colour_button;
+  AdjustButton *edge_selected_size_button;
+  AdjustButton *edge_selected_alpha_button;
 
-        protected slots:
-          void node_selected_visibility_slot();
-          void node_selected_colour_fade_slot();
-          void node_selected_colour_slot();
-          void node_selected_size_slot();
-          void node_selected_alpha_slot();
+  QSlider *node_associated_colour_slider;
+  QColorButton *node_associated_colour_button;
+  AdjustButton *node_associated_size_button;
+  AdjustButton *node_associated_alpha_button;
 
-          void edge_selected_visibility_slot();
-          void edge_selected_colour_fade_slot();
-          void edge_selected_colour_slot();
-          void edge_selected_size_slot();
-          void edge_selected_alpha_slot();
+  QSlider *edge_associated_colour_slider;
+  QColorButton *edge_associated_colour_button;
+  AdjustButton *edge_associated_size_button;
+  AdjustButton *edge_associated_alpha_button;
 
-          void node_associated_colour_fade_slot();
-          void node_associated_colour_slot();
-          void node_associated_size_slot();
-          void node_associated_alpha_slot();
+  QCheckBox *node_other_visibility_checkbox;
+  QSlider *node_other_colour_slider;
+  QColorButton *node_other_colour_button;
+  AdjustButton *node_other_size_button;
+  AdjustButton *node_other_alpha_button;
 
-          void edge_associated_colour_fade_slot();
-          void edge_associated_colour_slot();
-          void edge_associated_size_slot();
-          void edge_associated_alpha_slot();
+  QCheckBox *edge_other_visibility_checkbox;
+  QSlider *edge_other_colour_slider;
+  QColorButton *edge_other_colour_button;
+  AdjustButton *edge_other_size_button;
+  AdjustButton *edge_other_alpha_button;
+};
 
-          void node_other_visibility_slot();
-          void node_other_colour_fade_slot();
-          void node_other_colour_slot();
-          void node_other_size_slot();
-          void node_other_alpha_slot();
+class NodeSelectionSettingsDialog : public QDialog {
+public:
+  NodeSelectionSettingsDialog(QWidget *parent, const std::string &message, NodeSelectionSettings &settings);
 
-          void edge_other_visibility_slot();
-          void edge_other_colour_fade_slot();
-          void edge_other_colour_slot();
-          void edge_other_size_slot();
-          void edge_other_alpha_slot();
+  NodeSelectionSettingsFrame *frame;
+};
 
-        private:
-          QCheckBox *node_selected_visibility_checkbox;
-          QSlider *node_selected_colour_slider;
-          QColorButton *node_selected_colour_button;
-          AdjustButton *node_selected_size_button;
-          AdjustButton *node_selected_alpha_button;
-
-          QCheckBox *edge_selected_visibility_checkbox;
-          QSlider *edge_selected_colour_slider;
-          QColorButton *edge_selected_colour_button;
-          AdjustButton *edge_selected_size_button;
-          AdjustButton *edge_selected_alpha_button;
-
-          QSlider *node_associated_colour_slider;
-          QColorButton *node_associated_colour_button;
-          AdjustButton *node_associated_size_button;
-          AdjustButton *node_associated_alpha_button;
-
-          QSlider *edge_associated_colour_slider;
-          QColorButton *edge_associated_colour_button;
-          AdjustButton *edge_associated_size_button;
-          AdjustButton *edge_associated_alpha_button;
-
-          QCheckBox *node_other_visibility_checkbox;
-          QSlider *node_other_colour_slider;
-          QColorButton *node_other_colour_button;
-          AdjustButton *node_other_size_button;
-          AdjustButton *node_other_alpha_button;
-
-          QCheckBox *edge_other_visibility_checkbox;
-          QSlider *edge_other_colour_slider;
-          QColorButton *edge_other_colour_button;
-          AdjustButton *edge_other_size_button;
-          AdjustButton *edge_other_alpha_button;
-
-      };
-
-
-
-
-
-
-      class NodeSelectionSettingsDialog : public QDialog
-      { 
-        public:
-          NodeSelectionSettingsDialog (QWidget* parent, const std::string& message, NodeSelectionSettings& settings);
-
-          NodeSelectionSettingsFrame* frame;
-      };
-
-
-
-
-      }
-    }
-  }
-}
+} // namespace MR::GUI::MRView::Tool
 
 #endif
-

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,38 +17,29 @@
 #ifndef __gui_spin_box_h__
 #define __gui_spin_box_h__
 
-#include "mrtrix.h"
 #include "gui/opengl/gl.h"
+#include "mrtrix.h"
 
-namespace MR
-{
-  namespace GUI
-  {
+namespace MR::GUI {
 
-    class SpinBox : public QSpinBox
-    { 
-        Q_OBJECT
+class SpinBox : public QSpinBox {
+  Q_OBJECT
 
-      public:
-        using QSpinBox::QSpinBox;
+public:
+  using QSpinBox::QSpinBox;
 
-      private:
-        void timerEvent (QTimerEvent* event)
-        {
-          // Process all events, which may include a mouse release event
-          // Only allow the timer to trigger additional value changes if the user
-          //   has in fact held the mouse button, rather than the timer expiry
-          //   simply appearing before the mouse release in the event queue
-          qApp->processEvents();
-          if (QApplication::mouseButtons() & Qt::LeftButton)
-            QSpinBox::timerEvent (event);
-        }
-
-    };
-
-
+private:
+  void timerEvent(QTimerEvent *event) {
+    // Process all events, which may include a mouse release event
+    // Only allow the timer to trigger additional value changes if the user
+    //   has in fact held the mouse button, rather than the timer expiry
+    //   simply appearing before the mouse release in the event queue
+    qApp->processEvents();
+    if (QApplication::mouseButtons() & Qt::LeftButton)
+      QSpinBox::timerEvent(event);
   }
-}
+};
+
+} // namespace MR::GUI
 
 #endif
-

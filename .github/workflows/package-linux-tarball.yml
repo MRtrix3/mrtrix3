@@ -1,0 +1,31 @@
+name: package-linux-tarball
+
+on:
+  release:
+    types: [created]
+      
+jobs:
+  package:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+
+    - name: Install Qt 6
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.6.1'
+        set-env: true
+                
+    - name: Run tarball script
+      run: |
+        ./packaging/package-linux-tarball.sh .
+        mv mrtrix.tar.gz mrtrix-$(git describe --tags --abbrev=0)-linux.tar.gz
+
+    - name: Upload package to GitHub Release
+      uses: AButler/upload-release-assets@v2.0
+      with:
+        files: '*.tar.gz'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}

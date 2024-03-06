@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,25 +21,14 @@
 
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
-
-
+namespace MR::DWI::Tractography::Editing {
 
 extern const App::OptionGroup LengthOption;
 extern const App::OptionGroup TruncateOption;
 extern const App::OptionGroup WeightsOption;
 
+void load_properties(Tractography::Properties &);
 
-void load_properties (Tractography::Properties&);
-
-
-
-}
-}
-}
-}
+} // namespace MR::DWI::Tractography::Editing
 
 #endif

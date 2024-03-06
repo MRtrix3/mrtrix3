@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,13 +16,7 @@
 
 #include "math/betainc.h"
 
-
-namespace MR
-{
-  namespace Math
-  {
-
-
+namespace MR::Math {
 
 /*
  * zlib License
@@ -58,57 +52,53 @@ namespace MR
 #define BETAINCREG_STOP 1.0e-8
 #define BETAINCREG_TINY 1.0e-30
 
-    default_type betaincreg (const default_type a, const default_type b, const default_type x)
-    {
-      if (x < 0.0 || x > 1.0)
-        return NaN;
+default_type betaincreg(const default_type a, const default_type b, const default_type x) {
+  if (x < 0.0 || x > 1.0)
+    return NaN;
 
-      // The continued fraction converges nicely for x < (a+1)/(a+b+2)
-      if (x > (a+1.0)/(a+b+2.0)) {
-        return (1.0 - betaincreg (b, a, 1.0-x)); // Use the fact that beta is symmetrical
-      }
+  // The continued fraction converges nicely for x < (a+1)/(a+b+2)
+  if (x > (a + 1.0) / (a + b + 2.0)) {
+    return (1.0 - betaincreg(b, a, 1.0 - x)); // Use the fact that beta is symmetrical
+  }
 
-      // Find the first part before the continued fraction
-      const default_type lbeta_ab = std::lgamma (a) + std::lgamma (b) - std::lgamma (a+b);
-      const default_type front = std::exp (std::log(x)*a + std::log(1.0-x)*b - lbeta_ab) / a;
+  // Find the first part before the continued fraction
+  const default_type lbeta_ab = std::lgamma(a) + std::lgamma(b) - std::lgamma(a + b);
+  const default_type front = std::exp(std::log(x) * a + std::log(1.0 - x) * b - lbeta_ab) / a;
 
-      // Use Lentz's algorithm to evaluate the continued fraction
-      default_type f = 1.0, c = 1.0, d = 0.0;
+  // Use Lentz's algorithm to evaluate the continued fraction
+  default_type f = 1.0, c = 1.0, d = 0.0;
 
-      for (size_t i = 0; i <= 200; ++i) {
-        const size_t m = i/2;
+  for (size_t i = 0; i <= 200; ++i) {
+    const size_t m = i / 2;
 
-        default_type numerator;
-        if (!i) {
-          numerator = 1.0; // First numerator is 1.0
-        } else if (i % 2) {
-          numerator = -((a+m) * (a+b+m) * x) / ((a + 2.0*m) * (a + 2.0*m + 1)); // Odd term
-        } else {
-          numerator = (m * (b-m) * x) / ((a + 2.0*m - 1.0) * (a + 2.0*m)); // Even term
-        }
-
-        // Do an iteration of Lentz's algorithm
-        d = 1.0 + numerator * d;
-        if (abs (d) < BETAINCREG_TINY)
-          d = BETAINCREG_TINY;
-        d = 1.0 / d;
-
-        c = 1.0 + numerator / c;
-        if (abs (c) < BETAINCREG_TINY)
-          c = BETAINCREG_TINY;
-
-        const default_type cd = c*d;
-        f *= cd;
-
-        // Check for stop
-        if (abs (1.0 - cd) < BETAINCREG_STOP)
-          return front * (f-1.0);
-      }
-
-      return NaN; // Needed more loops, did not converge
+    default_type numerator;
+    if (!i) {
+      numerator = 1.0; // First numerator is 1.0
+    } else if (i % 2) {
+      numerator = -((a + m) * (a + b + m) * x) / ((a + 2.0 * m) * (a + 2.0 * m + 1)); // Odd term
+    } else {
+      numerator = (m * (b - m) * x) / ((a + 2.0 * m - 1.0) * (a + 2.0 * m)); // Even term
     }
 
+    // Do an iteration of Lentz's algorithm
+    d = 1.0 + numerator * d;
+    if (abs(d) < BETAINCREG_TINY)
+      d = BETAINCREG_TINY;
+    d = 1.0 / d;
 
+    c = 1.0 + numerator / c;
+    if (abs(c) < BETAINCREG_TINY)
+      c = BETAINCREG_TINY;
 
+    const default_type cd = c * d;
+    f *= cd;
+
+    // Check for stop
+    if (abs(1.0 - cd) < BETAINCREG_STOP)
+      return front * (f - 1.0);
   }
+
+  return NaN; // Needed more loops, did not converge
 }
+
+} // namespace MR::Math
