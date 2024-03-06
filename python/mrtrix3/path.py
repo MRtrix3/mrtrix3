@@ -17,7 +17,7 @@
 
 
 
-import ctypes, errno, inspect, os, random, shlex, shutil, string, subprocess, time
+import ctypes, errno, os, random, shlex, shutil, string, subprocess, time
 from mrtrix3 import CONFIG
 
 

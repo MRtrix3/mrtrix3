@@ -16,7 +16,10 @@
 import glob, os, re, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run
-
+from . import ATTEMPT_PC
+from . import ASEG_STRUCTURES, AMYG_ASEG, HIPP_ASEG, THAL_ASEG, OTHER_SGM_ASEG
+from . import BRAIN_STEM_ASEG, CEREBELLUM_ASEG, CORPUS_CALLOSUM_ASEG, VENTRICLE_CP_ASEG
+from . import SGM_FIRST_MAP
 
 
 def check_file(filepath):
@@ -167,10 +170,10 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('FREESURFER_HOME environment variable not set; required for use of hippocampal subfields module')
     freesurfer_lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
     check_file(freesurfer_lut_file)
-    hipp_lut_file = os.path.join(path.shared_data_path(), path.script_subdir_name(), 'hsvs', 'HippSubfields.txt')
+    hipp_lut_file = os.path.join(path.shared_data_path(), '5ttgen', 'hsvs', 'HippSubfields.txt')
     check_file(hipp_lut_file)
     if hipp_subfield_has_amyg:
-      amyg_lut_file = os.path.join(path.shared_data_path(), path.script_subdir_name(), 'hsvs', 'AmygSubfields.txt')
+      amyg_lut_file = os.path.join(path.shared_data_path(), '5ttgen', 'hsvs', 'AmygSubfields.txt')
       check_file(amyg_lut_file)
 
   if app.ARGS.sgm_amyg_hipp:

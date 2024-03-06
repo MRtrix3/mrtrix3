@@ -15,8 +15,8 @@
 
 
 import math, os, re, shutil
-from mrtrix3 import CONFIG #pylint: disable=no-name-in-module
-from mrtrix3 import app #pylint: disable=no-name-in-module
+from mrtrix3 import CONFIG
+from mrtrix3 import app
 
 POSTFIXES = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB' ]
 

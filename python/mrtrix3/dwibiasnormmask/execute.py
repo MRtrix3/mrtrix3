@@ -14,8 +14,8 @@
 # For more details, see http://www.mrtrix.org/.
 
 import math, os, shutil
-from mrtrix3 import CONFIG, MRtrixError  #pylint: disable=no-name-in-module
-from mrtrix3 import app, fsl, image, matrix, path, run #pylint: disable=no-name-in-module
+from mrtrix3 import CONFIG, MRtrixError
+from mrtrix3 import app, fsl, image, matrix, path, run
 from . import LMAXES_MULTI, LMAXES_SINGLE, MASK_ALGO_DEFAULT, MASK_ALGOS
 
 def execute(): #pylint: disable=unused-variable

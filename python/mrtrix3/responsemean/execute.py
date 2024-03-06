@@ -14,8 +14,8 @@
 # For more details, see http://www.mrtrix.org/.
 
 import math, sys
-from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
-from mrtrix3 import app, matrix #pylint: disable=no-name-in-module
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, matrix
 
 def execute(): #pylint: disable=unused-variable
 

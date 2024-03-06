@@ -13,6 +13,8 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+from . import HIPPOCAMPI_CHOICES, THALAMI_CHOICES
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('hsvs', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')

@@ -31,7 +31,7 @@ def execute(): #pylint: disable=unused-variable
     lut_output_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
   else:
     lut_output_file_name = 'FreeSurfer2ACT.txt'
-  lut_output_path = os.path.join(path.shared_data_path(), path.script_subdir_name(), lut_output_file_name)
+  lut_output_path = os.path.join(path.shared_data_path(), '5ttgen', lut_output_file_name)
   if not os.path.isfile(lut_output_path):
     raise MRtrixError('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
 

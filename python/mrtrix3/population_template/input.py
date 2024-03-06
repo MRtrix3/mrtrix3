@@ -16,7 +16,7 @@
 import os
 from .utils import abspath
 
-class Input:
+class Input: # pylint: disable=unused-variable
   """
       Class that holds input information specific to a single image (multiple contrasts)
 

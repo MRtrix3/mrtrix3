@@ -13,6 +13,8 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# pylint: disable=unused-variable
+
 # Since we're going to capture everything after the colon character and "hide" it from argparse,
 #   we need to store the contents from there in a global so as for it to be accessible from execute()
 CMDSPLIT = [ ]

@@ -15,9 +15,9 @@
 
 import os
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, path # pylint: disable=no-name-in-module, import-outside-toplevel
+from mrtrix3 import app, path
 
-class Contrasts:
+class Contrasts: # pylint: disable=unused-variable
   """
       Class that parses arguments and holds information specific to each image contrast
 

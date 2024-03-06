@@ -15,7 +15,7 @@
 
 import threading
 
-class Shared:
+class Shared: # pylint: disable=unused-variable
   def __init__(self):
     self._job_index = 0
     self.lock = threading.Lock()

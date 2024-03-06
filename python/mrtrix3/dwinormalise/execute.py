@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module
+from mrtrix3 import algorithm, app
 
 def execute(): #pylint: disable=unused-variable
 

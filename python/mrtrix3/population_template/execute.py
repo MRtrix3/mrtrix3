@@ -15,12 +15,12 @@
 
 import json, os, shlex, shutil
 from mrtrix3 import EXE_LIST, MRtrixError
-from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module
+from mrtrix3 import app, image, matrix, path, run
 from . import AGGREGATION_MODES, REGISTRATION_MODES
 from . import DEFAULT_AFFINE_LMAX, DEFAULT_AFFINE_SCALES
 from . import DEFAULT_RIGID_LMAX, DEFAULT_RIGID_SCALES
 from . import DEFAULT_NL_LMAX, DEFAULT_NL_NITER, DEFAULT_NL_SCALES
-from . import Contrasts
+from .contrasts import Contrasts
 from .utils import aggregate, calculate_isfinite, check_linear_transformation, copy, inplace_nan_mask, parse_input_files, relpath
 
 def execute(): #pylint: disable=unused-variable
@@ -87,16 +87,16 @@ def execute(): #pylint: disable=unused-variable
   agg_measure = 'mean'
   if app.ARGS.aggregate is not None:
     if not app.ARGS.aggregate in AGGREGATION_MODES:
-      app.error("aggregation type must be one of %s. provided: %s" % (str(AGGREGATION_MODES), app.ARGS.aggregate))
+      raise MRtrixError("aggregation type must be one of %s. provided: %s" % (str(AGGREGATION_MODES), app.ARGS.aggregate))
     agg_measure = app.ARGS.aggregate
 
   agg_weights = app.ARGS.aggregation_weights
   if agg_weights is not None:
     agg_measure = "weighted_" + agg_measure
     if agg_measure != 'weighted_mean':
-      app.error("aggregation weights require '-aggregate mean' option. provided: %s" % (app.ARGS.aggregate))
-      if not os.path.isfile(app.ARGS.aggregation_weights):
-        app.error("aggregation weights file not found: %s" % app.ARGS.aggregation_weights)
+      raise MRtrixError ("aggregation weights require '-aggregate mean' option. provided: %s" % (app.ARGS.aggregate))
+    if not os.path.isfile(app.ARGS.aggregation_weights):
+      raise MRtrixError("aggregation weights file not found: %s" % app.ARGS.aggregation_weights)
 
   initial_alignment = app.ARGS.initial_alignment
   if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:

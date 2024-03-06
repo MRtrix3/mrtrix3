@@ -14,8 +14,8 @@
 # For more details, see http://www.mrtrix.org/.
 
 import glob, itertools, json, math, os, shutil, sys, shlex
-from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module
-from mrtrix3 import app, fsl, image, matrix, path, phaseencoding, run, utils #pylint: disable=no-name-in-module
+from mrtrix3 import CONFIG, MRtrixError
+from mrtrix3 import app, fsl, image, matrix, path, phaseencoding, run, utils
 
 def execute(): #pylint: disable=unused-variable
 

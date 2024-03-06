@@ -13,4 +13,5 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# pylint: disable=unused-variable
 SUPPORTED_OPS = ['mean', 'median', 'sum', 'product', 'rms', 'norm', 'var', 'std', 'min', 'max', 'absmax', 'magmax']

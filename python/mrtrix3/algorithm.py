@@ -19,6 +19,7 @@
 
 
 import importlib, inspect, pkgutil, sys
+from mrtrix3 import app
 
 
 
@@ -26,7 +27,6 @@ import importlib, inspect, pkgutil, sys
 #   options common to all algorithms of a particular script to be applicable once any particular sub-parser
 #   is invoked. Therefore this function must be called _after_ all such options are set up.
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   module_name = inspect.currentframe().f_back.f_globals["__name__"]
   submodules = [submodule_info.name for submodule_info in pkgutil.walk_packages(sys.modules[module_name].__spec__.submodule_search_locations)]
   base_parser = app.Parser(description='Base parser for construction of subparsers', parents=[cmdline])
@@ -37,7 +37,6 @@ def usage(cmdline): #pylint: disable=unused-variable
   for submodule in submodules:
     module = importlib.import_module(module_name + '.' + submodule)
     module.usage(base_parser, subparsers)
-  return
 
 
 

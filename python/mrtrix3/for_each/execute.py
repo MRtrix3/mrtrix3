@@ -14,10 +14,11 @@
 # For more details, see http://www.mrtrix.org/.
 
 import os, re, sys, threading
-from mrtrix3 import ANSI, MRtrixError #pylint: disable=no-name-in-module
-from mrtrix3 import app, run #pylint: disable=no-name-in-module
+from mrtrix3 import ANSI, MRtrixError
+from mrtrix3 import app, run
 from . import CMDSPLIT, KEYLIST
-from . import Entry, Shared
+from .entry import Entry
+from .shared import Shared
 
 def execute(): #pylint: disable=unused-variable
 

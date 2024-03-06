@@ -13,8 +13,8 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
-from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run
 
 def execute(): #pylint: disable=unused-variable
   # check inputs and outputs

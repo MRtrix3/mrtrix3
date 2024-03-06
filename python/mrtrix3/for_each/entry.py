@@ -18,7 +18,7 @@ import os
 from mrtrix3 import app
 from . import CMDSPLIT
 
-class Entry:
+class Entry: # pylint: disable=unused-variable
   def __init__(self, input_text, common_prefix, common_suffix):
     self.input_text = input_text
     self.sub_in = input_text

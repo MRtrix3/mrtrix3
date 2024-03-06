@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import inspect, os, shlex, sys
+import os, shlex, sys
 from collections import namedtuple
 from mrtrix3._version import __version__
 

@@ -14,8 +14,8 @@
 # For more details, see http://www.mrtrix.org/.
 
 import math, os
-from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
-from mrtrix3 import app, fsl, image, path, run, utils #pylint: disable=no-name-in-module
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, fsl, image, path, run, utils
 
 def execute(): #pylint: disable=unused-variable
 
@@ -80,7 +80,7 @@ def execute(): #pylint: disable=unused-variable
   # This will map a structure name to an index
   sgm_lut = {}
   sgm_lut_file_name = 'FreeSurferSGM.txt'
-  sgm_lut_file_path = os.path.join(path.shared_data_path(), path.script_subdir_name(), sgm_lut_file_name)
+  sgm_lut_file_path = os.path.join(path.shared_data_path(), 'labelsgmfix', sgm_lut_file_name)
   with open(sgm_lut_file_path, encoding='utf-8') as sgm_lut_file:
     for line in sgm_lut_file:
       line = line.rstrip()

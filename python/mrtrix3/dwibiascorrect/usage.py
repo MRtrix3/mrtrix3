@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm, app, _version #pylint: disable=no-name-in-module
+from mrtrix3 import algorithm, app, _version
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')

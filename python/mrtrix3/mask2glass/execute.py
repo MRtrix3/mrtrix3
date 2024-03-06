@@ -13,8 +13,9 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+from mrtrix3 import app, image, path, run
+
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   app.check_output_path(app.ARGS.output)
 

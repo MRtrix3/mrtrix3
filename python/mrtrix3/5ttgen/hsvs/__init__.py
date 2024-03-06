@@ -13,9 +13,6 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os
-from mrtrix3 import MRtrixError
-
 HIPPOCAMPI_CHOICES = [ 'subfields', 'first', 'aseg' ]
 THALAMI_CHOICES = [ 'nuclei', 'first', 'aseg' ]
 

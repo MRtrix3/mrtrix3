@@ -13,6 +13,11 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+from . import AGGREGATION_MODES, REGISTRATION_MODES
+from . import DEFAULT_RIGID_LMAX, DEFAULT_RIGID_SCALES
+from . import DEFAULT_AFFINE_LMAX, DEFAULT_AFFINE_SCALES
+from . import DEFAULT_NL_LMAX, DEFAULT_NL_NITER, DEFAULT_NL_SCALES
+
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)')
 

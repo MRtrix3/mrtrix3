@@ -13,6 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# pylint: disable=unused-variable
 DWIBIASCORRECT_MAX_ITERS = 2
 LMAXES_MULTI = [4,0,0]
 LMAXES_SINGLE = [4,0]

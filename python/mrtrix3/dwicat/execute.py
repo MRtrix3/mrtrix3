@@ -14,8 +14,8 @@
 # For more details, see http://www.mrtrix.org/.
 
 import json, shutil
-from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module
-from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module
+from mrtrix3 import CONFIG, MRtrixError
+from mrtrix3 import app, image, path, run
 
 def execute(): #pylint: disable=unused-variable
 

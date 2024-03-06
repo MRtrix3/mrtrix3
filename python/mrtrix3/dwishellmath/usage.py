@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+from mrtrix3 import app
 from . import SUPPORTED_OPS
 
 def usage(cmdline): #pylint: disable=unused-variable

@@ -14,19 +14,20 @@
 # For more details, see http://www.mrtrix.org/.
 
 import math, os, re, shutil, sys
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run, utils
 from . import IMAGEEXT
-from . import Input
+from .input import Input
 
-def abspath(arg, *args):
+def abspath(arg, *args): # pylint: disable=unused-variable
   return os.path.abspath(os.path.join(arg, *args))
 
 
-def relpath(arg, *args):
-  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+def relpath(arg, *args): # pylint: disable=unused-variable
   return os.path.relpath(os.path.join(arg, *args), app.WORKING_DIR)
 
 
-def copy(src, dst, follow_symlinks=True):
+def copy(src, dst, follow_symlinks=True): # pylint: disable=unused-variable
   """Copy data but do not set mode bits. Return the file's destination.
 
   mimics shutil.copy but without setting mode bits as shutil.copymode can fail on exotic mounts
@@ -41,8 +42,7 @@ def copy(src, dst, follow_symlinks=True):
   return dst
 
 
-def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
-  from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
+def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True): # pylint: disable=unused-variable
   if max_rot is None:
     max_rot = 2 * math.pi
 
@@ -106,8 +106,7 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
   return good
 
 
-def aggregate(inputs, output, contrast_idx, mode, force=True):
-  from mrtrix3 import MRtrixError, run  # pylint: disable=no-name-in-module, import-outside-toplevel
+def aggregate(inputs, output, contrast_idx, mode, force=True): # pylint: disable=unused-variable
 
   images = [inp.ims_transformed[contrast_idx] for inp in inputs]
   if mode == 'mean':
@@ -121,27 +120,25 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
     cmd = ['mrcalc']
     if wsum <= 0:
       raise MRtrixError("the sum of aggregetion weights has to be positive")
-    for weight, image in zip(weights, images):
+    for weight, imagepath in zip(weights, images):
       if float(weight) != 0:
-        cmd += [image, weight, '-mult'] + (['-add'] if len(cmd) > 1 else [])
+        cmd += [imagepath, weight, '-mult'] + (['-add'] if len(cmd) > 1 else [])
     cmd += ['%.16f' % wsum, '-div', output]
     run.command(cmd, force=force)
   else:
     raise MRtrixError("aggregation mode %s not understood" % mode)
 
 
-def inplace_nan_mask(images, masks):
-  from mrtrix3 import run  # pylint: disable=no-name-in-module, import-outside-toplevel
+def inplace_nan_mask(images, masks): # pylint: disable=unused-variable
   assert len(images) == len(masks), (len(images), len(masks))
-  for image, mask in zip(images, masks):
+  for imagepath, mask in zip(images, masks):
     target_dir = os.path.split(image)[0]
-    masked = os.path.join(target_dir, '__' + os.path.split(image)[1])
-    run.command("mrcalc " + mask + " " + image + " nan -if " + masked, force=True)
-    run.function(shutil.move, masked, image)
+    masked = os.path.join(target_dir, '__' + os.path.split(imagepath)[1])
+    run.command("mrcalc " + mask + " " + imagepath + " nan -if " + masked, force=True)
+    run.function(shutil.move, masked, imagepath)
 
 
-def calculate_isfinite(inputs, contrasts):
-  from mrtrix3 import run, path  # pylint: disable=no-name-in-module, import-outside-toplevel
+def calculate_isfinite(inputs, contrasts): # pylint: disable=unused-variable
   agg_weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
   for cid in range(contrasts.n_contrasts):
     for inp in inputs:
@@ -161,16 +158,16 @@ def calculate_isfinite(inputs, contrasts):
     run.command(cmd + [contrasts.isfinite_count[cid]], force=True)
 
 
-def get_common_postfix(file_list):
+def get_common_postfix(file_list): # pylint: disable=unused-variable
   return os.path.commonprefix([i[::-1] for i in file_list])[::-1]
 
 
-def get_common_prefix(file_list):
+def get_common_prefix(file_list): # pylint: disable=unused-variable
   return os.path.commonprefix(file_list)
 
 
 
-def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whitespace_repl='_'):
+def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whitespace_repl='_'): # pylint: disable=unused-variable
   """
     matches input images across contrasts and pair them with masks.
     extracts unique identifiers from mask and image filenames by stripping common pre and postfix (per contrast and for masks)
@@ -188,24 +185,23 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
     TODO check if no common grid & trafo across contrasts (only relevant for robust init?)
 
   """
-  from mrtrix3 import MRtrixError, app, path, image  # pylint: disable=no-name-in-module, import-outside-toplevel
   contrasts = contrasts.suff
   inputs = []
   def paths_to_file_uids(paths, prefix, postfix):
     """ strip pre and postfix from filename, replace whitespace characters """
     uid_path = {}
     uids = []
-    for path in paths:
+    for filepath in paths:
       uid = re.sub(re.escape(postfix)+'$', '', re.sub('^'+re.escape(prefix), '', os.path.split(path)[1]))
       uid = re.sub(r'\s+', whitespace_repl, uid)
       if not uid:
         raise MRtrixError('No uniquely identifiable part of filename "' + path + '" '
                           'after prefix and postfix substitution '
                           'with prefix "' + prefix + '" and postfix "' + postfix + '"')
-      app.debug('UID mapping: "' + path + '" --> "' + uid + '"')
+      app.debug('UID mapping: "' + filepath + '" --> "' + uid + '"')
       if uid in uid_path:
         raise MRtrixError('unique file identifier is not unique: "' + uid + '" mapped to "' + path + '" and "' + uid_path[uid] +'"')
-      uid_path[uid] = path
+      uid_path[uid] = filepath
       uids.append(uid)
     return uids
 

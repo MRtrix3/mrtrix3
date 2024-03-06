@@ -13,6 +13,8 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# pylint: disable=unused-variable
+
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
 DEFAULT_AFFINE_SCALES = [0.3,0.4,0.6,0.8,1.0,1.0]
