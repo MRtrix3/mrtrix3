@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,68 +17,52 @@
 #ifndef __dwi_tractography_properties_h__
 #define __dwi_tractography_properties_h__
 
-#include <map>
 #include "app.h"
-#include "timer.h"
-#include "types.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
-
+#include "timer.h"
+#include "types.h"
+#include <map>
 
 #define TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION 20
 
+namespace MR::DWI::Tractography {
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
+void check_timestamps(const Properties &, const Properties &, const std::string &);
+void check_counts(const Properties &, const Properties &, const std::string &, bool abort_on_fail);
 
+class Properties : public KeyValues {
+public:
+  Properties() { set_timestamp(); }
 
+  void set_timestamp();
+  void set_version_info();
+  void update_command_history();
+  void clear();
 
-      void check_timestamps (const Properties&, const Properties&, const std::string&);
-      void check_counts (const Properties&, const Properties&, const std::string&, bool abort_on_fail);
-
-
-
-      class Properties : public KeyValues { 
-        public:
-
-          Properties () {
-            set_timestamp();
-          }
-
-          void set_timestamp();
-          void set_version_info();
-          void update_command_history();
-          void clear();
-
-          template <typename T> void set (T& variable, const std::string& name) {
-            if ((*this)[name].empty()) (*this)[name] = str (variable);
-            else variable = to<T> ((*this)[name]);
-          }
-
-          float get_stepsize() const;
-          void compare_stepsize_rois() const;
-
-          // In use at time of execution
-          ROIUnorderedSet include, exclude, mask;
-          ROIOrderedSet ordered_include;
-          Seeding::List seeds;
-
-          // As stored within the header of an existing .tck file
-          std::multimap<std::string, std::string> prior_rois;
-
-          vector<std::string> comments;
-
-          friend std::ostream& operator<< (std::ostream& stream, const Properties& P);
-      };
-
-
-
-    }
+  template <typename T> void set(T &variable, const std::string &name) {
+    if ((*this)[name].empty())
+      (*this)[name] = str(variable);
+    else
+      variable = to<T>((*this)[name]);
   }
-}
+
+  float get_stepsize() const;
+  void compare_stepsize_rois() const;
+
+  // In use at time of execution
+  ROIUnorderedSet include, exclude, mask;
+  ROIOrderedSet ordered_include;
+  Seeding::List seeds;
+
+  // As stored within the header of an existing .tck file
+  std::multimap<std::string, std::string> prior_rois;
+
+  std::vector<std::string> comments;
+
+  friend std::ostream &operator<<(std::ostream &stream, const Properties &P);
+};
+
+} // namespace MR::DWI::Tractography
 
 #endif

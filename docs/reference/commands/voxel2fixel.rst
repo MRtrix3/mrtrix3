@@ -16,8 +16,8 @@ Usage
     voxel2fixel [ options ]  image_in fixel_directory_in fixel_directory_out fixel_data_out
 
 -  *image_in*: the input image.
--  *fixel_directory_in*: the input fixel directory. Used to define the fixels and their directions
--  *fixel_directory_out*: the fixel directory where the output will be written. This can be the same as the input directory if desired
+-  *fixel_directory_in*: the input fixel directory; used to define the fixels and their directions
+-  *fixel_directory_out*: the fixel directory where the output will be written; this can be the same as the input directory if desired
 -  *fixel_data_out*: the name of the fixel data image.
 
 Description
@@ -61,7 +61,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

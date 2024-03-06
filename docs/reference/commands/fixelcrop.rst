@@ -15,7 +15,7 @@ Usage
 
     fixelcrop [ options ]  input_fixel_directory input_fixel_mask output_fixel_directory
 
--  *input_fixel_directory*: input fixel directory, all data files and directions file will be cropped and saved in the output fixel directory
+-  *input_fixel_directory*: input fixel directory; all data files and directions file will be cropped and saved in the output fixel directory
 -  *input_fixel_mask*: the input fixel data file defining which fixels to crop. Fixels with zero values will be removed
 -  *output_fixel_directory*: the output directory to store the cropped directions and data files
 
@@ -58,9 +58,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au) & Rami Tabarra (rami.tabarra@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Rami Tabarra (rami.tabarra@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

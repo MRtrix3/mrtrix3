@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,52 +26,33 @@
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
+namespace MR::DWI::Tractography::SIFT {
 
+extern const App::OptionGroup SIFTModelProcMaskOption;
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
-      namespace SIFT
-      {
+void initialise_processing_mask(Image<float> &, Image<float> &, Image<float> &);
 
+// Private functor for performing ACT image regridding
+class ResampleFunctor {
 
-        extern const App::OptionGroup SIFTModelProcMaskOption;
+  using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
 
+public:
+  ResampleFunctor(Image<float> &, Image<float> &, Image<float> &);
+  ResampleFunctor(const ResampleFunctor &);
 
-        void initialise_processing_mask (Image<float>&, Image<float>&, Image<float>&);
+  void operator()(const Iterator &);
 
+private:
+  Image<float> dwi;
+  std::shared_ptr<transform_type> voxel2scanner;
+  Interp::Linear<Image<float>> interp_anat;
+  Image<float> out;
 
-        // Private functor for performing ACT image regridding
-        class ResampleFunctor
-        { 
+  // Helper function for doing the regridding
+  ACT::Tissues ACT2pve(const Iterator &);
+};
 
-            using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
-
-          public:
-            ResampleFunctor (Image<float>&, Image<float>&, Image<float>&);
-            ResampleFunctor (const ResampleFunctor&);
-
-            void operator() (const Iterator&);
-
-          private:
-            Image<float> dwi;
-            std::shared_ptr<transform_type> voxel2scanner;
-            Interp::Linear<Image<float>> interp_anat;
-            Image<float> out;
-
-            // Helper function for doing the regridding
-            ACT::Tissues ACT2pve (const Iterator&);
-        };
-
-
-
-      }
-    }
-  }
-}
-
+} // namespace MR::DWI::Tractography::SIFT
 
 #endif

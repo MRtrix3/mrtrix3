@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,20 +19,11 @@
 
 #include "cmdline_option.h"
 
-namespace MR
-{
-  namespace DWI
-  {
+namespace MR::DWI::Tractography {
 
-    namespace Tractography
-    {
+extern const App::Option TrackWeightsInOption;
+extern const App::Option TrackWeightsOutOption;
 
-      extern const App::Option TrackWeightsInOption;
-      extern const App::Option TrackWeightsOutOption;
-
-    }
-  }
-}
+} // namespace MR::DWI::Tractography
 
 #endif
-

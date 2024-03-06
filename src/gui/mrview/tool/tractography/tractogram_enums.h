@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,22 +17,10 @@
 #ifndef __gui_mrview_tool_tractogram_enums_h__
 #define __gui_mrview_tool_tractogram_enums_h__
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
-        enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
-        enum class TrackGeometryType { Pseudotubes, Lines , Points };
-        enum class TrackThresholdType { None, UseColourFile, SeparateFile };
-      }
-    }
-  }
-}
-
+namespace MR::GUI::MRView::Tool {
+enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
+enum class TrackGeometryType { Pseudotubes, Lines, Points };
+enum class TrackThresholdType { None, UseColourFile, SeparateFile };
+} // namespace MR::GUI::MRView::Tool
 
 #endif
-
