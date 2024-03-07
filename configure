@@ -73,6 +73,9 @@ OPTIONS
     -conda       prevent stripping anaconda/miniconda from the PATH (only use if
                  you intend building with the conda toolchain - not recommended)
 
+    -fsl         prevent stripping FSL from the PATH (only use if you intend
+                 building with the FSL toolchain - not recommended)
+
 
 ENVIRONMENT VARIABLES
 
@@ -194,6 +197,7 @@ R_module = False
 openmp = False
 dev = False
 conda = False
+fsl = False
 
 optimlevel = 3
 
@@ -227,6 +231,8 @@ for arg in sys.argv[1:]:
     openmp = True
   elif '-conda'.startswith (arg):
     conda = True
+  elif '-fsl'.startswith (arg):
+    fsl = True
   else:
     sys.stdout.write (usage_string)
     sys.exit (1)
@@ -292,7 +298,7 @@ if conda:
 else:
   path = []
   for entry in os.environ['PATH'].split(os.pathsep):
-    if 'conda' in entry:
+    if 'conda' in entry.lower():
       report ('WARNING: anaconda/miniconda detected in PATH ("' + entry + '") - removed to avoid conflicts\n')
       issue_conda_warning = True
     else:
@@ -300,7 +306,22 @@ else:
   path = os.pathsep.join(path)
   os.environ['PATH'] = path
 
-log ('PATH set to: ' + path)
+# if not using FSL, remove any mention of FSL from PATH:
+issue_fsl_warning = False
+if fsl:
+  path = os.environ['PATH']
+else:
+  path = []
+  for entry in os.environ['PATH'].split(os.pathsep):
+    if 'fsl' in entry.lower():
+      report ('WARNING: FSL detected in PATH ("' + entry + '") - removed to avoid conflicts\n')
+      issue_fsl_warning = True
+    else:
+      path += [ entry ]
+  path = os.pathsep.join(path)
+  os.environ['PATH'] = path
+
+log ('\nPATH set to: ' + path)
 
 
 
@@ -741,7 +762,10 @@ if 'LINKLIB_ARGS' in os.environ.keys():
 
 
 if issue_conda_warning:
-  report ('\nNOTE: if you intend to build with anaconda/miniconda (not recommended), pass the -conda flag to ./configure\n\n')
+  report ('NOTE: if you intend to build with anaconda/miniconda (not recommended), pass the -conda flag to ./configure\n')
+if issue_fsl_warning:
+  report ('NOTE: if you intend to build with the FSL toolchain (not recommended), pass the -fsl flag to ./configure\n')
+report ('\n')
 
 
 
