@@ -14,7 +14,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import os
-from .utils import abspath
 
 class Input: # pylint: disable=unused-variable
   """
@@ -121,7 +120,9 @@ class Input: # pylint: disable=unused-variable
 
   def get_ims_path(self, quoted=True):
     """ return path to input images """
-    from mrtrix3 import path  # pylint: disable=no-name-in-module, import-outside-toplevel
+    from mrtrix3 import path # pylint: disable=no-name-in-module, import-outside-toplevel
+    # Have to import locally to avoid circular dependency
+    from .utils import abspath # pylint: disable=import-outside-toplevel
     if self._local_ims:
       return self._local_ims
     return [path.from_user(abspath(d, f), quoted) for d, f in zip(self._im_directories, self.ims_filenames)]
@@ -129,7 +130,7 @@ class Input: # pylint: disable=unused-variable
 
   def get_msk_path(self, quoted=True):
     """ return path to input mask """
-    from mrtrix3 import path  # pylint: disable=no-name-in-module, import-outside-toplevel
+    from mrtrix3 import path # pylint: disable=no-name-in-module, import-outside-toplevel
     if self._local_msk:
       return self._local_msk
     return path.from_user(os.path.join(self._msk_directory, self.msk_filename), quoted) if self.msk_filename else None

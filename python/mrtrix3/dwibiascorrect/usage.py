@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm, app, _version
+from mrtrix3 import app, _version
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -26,6 +26,4 @@ def usage(cmdline): #pylint: disable=unused-variable
   common_options.add_argument('-mask', metavar='image', help='Manually provide a mask image for bias field estimation')
   common_options.add_argument('-bias', metavar='image', help='Output the estimated bias field')
   app.add_dwgrad_import_options(cmdline)
-
-  # Import the command-line settings for all algorithms found in the relevant directory
-  algorithm.usage(cmdline)
+  cmdline.add_subparsers()

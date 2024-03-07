@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm, app, _version
+from mrtrix3 import app, _version
 
 def usage(cmdline): #pylint: disable=unused-variable
 
@@ -36,5 +36,4 @@ def usage(cmdline): #pylint: disable=unused-variable
   common_options.add_argument('-lmax', help='The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)')
   app.add_dwgrad_import_options(cmdline)
 
-  # Import the command-line settings for all algorithms found in the relevant directory
-  algorithm.usage(cmdline)
+  cmdline.add_subparsers()

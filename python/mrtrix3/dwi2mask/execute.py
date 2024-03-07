@@ -13,13 +13,15 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+import importlib, sys
 from mrtrix3 import MRtrixError
-from mrtrix3 import algorithm, app, image, path, run
+from mrtrix3 import app, image, path, run
 
 def execute(): #pylint: disable=unused-variable
 
   # Find out which algorithm the user has requested
-  alg = algorithm.get(app.ARGS.algorithm)
+  algorithm_module_name = 'mrtrix3.dwi2mask.' + app.ARGS.algorithm
+  alg = sys.modules[algorithm_module_name]
 
   app.check_output_path(app.ARGS.output)
 
@@ -35,12 +37,13 @@ def execute(): #pylint: disable=unused-variable
   # Get input data into the scratch directory
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif')
               + ' -strides 0,0,0,1' + grad_import_option)
-  alg.get_inputs()
+  importlib.import_module('.get_inputs', algorithm_module_name)
+  alg.get_inputs.get_inputs()
 
   app.goto_scratch_dir()
 
   # Generate a mean b=0 image (common task in many algorithms)
-  if alg.needs_mean_bzero():
+  if alg.NEEDS_MEAN_BZERO:
     run.command('dwiextract input.mif -bzero - | '
                 'mrmath - mean - -axis 3 | '
                 'mrconvert - bzero.nii -strides +1,+2,+3')
@@ -60,7 +63,8 @@ def execute(): #pylint: disable=unused-variable
   # From here, the script splits depending on what algorithm is being used
   # The return value of the execute() function should be the name of the
   #   image in the scratch directory that is to be exported
-  mask_path = alg.execute()
+  importlib.import_module('.execute', algorithm_module_name)
+  mask_path = alg.execute.execute()
 
   # Before exporting the mask image, get a mask of voxels for which
   #   the DWI data are valid

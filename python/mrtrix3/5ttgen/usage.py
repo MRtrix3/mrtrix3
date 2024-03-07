@@ -13,8 +13,6 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm
-
 def usage(cmdline): #pylint: disable=unused-variable
 
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -27,5 +25,4 @@ def usage(cmdline): #pylint: disable=unused-variable
   common_options.add_argument('-nocrop', action='store_true', default=False, help='Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)')
   common_options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
 
-  # Import the command-line settings for all algorithms found in the relevant directory
-  algorithm.usage(cmdline)
+  cmdline.add_subparsers()

@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import argparse, importlib, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
 from ._version import __version__
@@ -105,6 +105,8 @@ else:
 def _execute(module): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY
+  usage_module = importlib.import_module('.usage', module.__name__)
+  execute_module = importlib.import_module('.execute', module.__name__)
 
   # Set up signal handlers
   for sig in _SIGNALS:
@@ -115,7 +117,7 @@ def _execute(module): #pylint: disable=unused-variable
 
   CMDLINE = Parser()
   try:
-    module.usage(CMDLINE)
+    usage_module.usage(CMDLINE)
   except AttributeError:
     CMDLINE = None
     raise
@@ -204,7 +206,7 @@ def _execute(module): #pylint: disable=unused-variable
     sys.exit(return_code)
 
   try:
-    module.execute()
+    execute_module.execute()
   except (run.MRtrixCmdError, run.MRtrixFnError) as exception:
     is_cmd = isinstance(exception, run.MRtrixCmdError)
     return_code = exception.returncode if is_cmd else 1
@@ -604,7 +606,7 @@ class Parser(argparse.ArgumentParser):
       script_options.add_argument('-nocleanup', action='store_true', help='do not delete intermediate files during script execution, and do not delete scratch directory at script completion.')
       script_options.add_argument('-scratch', metavar='/path/to/scratch/', help='manually specify the path in which to generate the scratch directory.')
       script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<ScratchDir>', '<LastFile>'), help='continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.')
-    module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
+    module_file = os.path.realpath(inspect.getsourcefile(inspect.stack()[-1][0]))
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
       with subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
@@ -643,6 +645,22 @@ class Parser(argparse.ArgumentParser):
     if not isinstance(options, list) or not isinstance(options[0], str):
       raise Exception('Parser.flagMutuallyExclusiveOptions() only accepts a list of strings')
     self._mutually_exclusive_option_groups.append( (options, required) )
+
+  def add_subparsers(self): # pylint: disable=arguments-differ
+    # Import the command-line settings for all algorithms in the relevant sub-directories
+    # This is expected to be being called from the 'usage' module of the relevant command
+    module_name = os.path.dirname(inspect.getouterframes(inspect.currentframe())[1].filename).split(os.sep)[-1]
+    module = sys.modules['mrtrix3.' + module_name]
+    base_parser = Parser(description='Base parser for construction of subparsers', parents=[self])
+    subparsers = super().add_subparsers(title='Algorithm choices',
+                                        help='Select the algorithm to be used; '
+                                             'additional details and options become available once an algorithm is nominated. '
+                                             'Options are: ' + ', '.join(module.ALGORITHMS),
+                                        dest='algorithm')
+    for algorithm in module.ALGORITHMS:
+      algorithm_usage_module = importlib.import_module('.' + algorithm + '.usage', 'mrtrix3.' + module_name)
+      algorithm_usage_module.usage(base_parser, subparsers)
+
 
   def parse_args(self, args=None, namespace=None):
     if not self._author:

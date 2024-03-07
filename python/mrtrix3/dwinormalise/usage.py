@@ -13,14 +13,10 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm
-
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Perform various forms of intensity normalisation of DWIs')
   cmdline.add_description('This script provides access to different techniques for globally scaling the intensity of diffusion-weighted images. '
                           'The different algorithms have different purposes, and different requirements with respect to the data with which they must be provided & will produce as output. '
                           'Further information on the individual algorithms available can be accessed via their individual help pages; eg. "dwinormalise group -help".')
-
-  # Import the command-line settings for all algorithms found in the relevant directory
-  algorithm.usage(cmdline)
+  cmdline.add_subparsers()

@@ -15,10 +15,6 @@ file(GLOB_RECURSE PYTHON_SRC_PATHS
     ${CMAKE_CURRENT_SOURCE_DIR}/*/*
 )
 
-message(STATUS "PYTHON_LIB_FILES=${PYTHON_LIB_FILES}")
-message(STATUS "PYTHON_SRC_PATHS=${PYTHON_SRC_PATHS}")
-
-# TODO Test to see if this can be done with glob exclusion
 set(PYTHON_COMMAND_LIST "")
 foreach(PYTHON_PATH ${PYTHON_ROOT_ENTRIES})
     if(IS_DIRECTORY ${PYTHON_PATH})
@@ -26,8 +22,6 @@ foreach(PYTHON_PATH ${PYTHON_ROOT_ENTRIES})
         list(APPEND PYTHON_COMMAND_LIST ${CMDNAME})
     endif()
 endforeach()
-
-message(STATUS "PYTHON_COMMAND_LIST=${PYTHON_COMMAND_LIST}")
 
 # We generate the version file at configure time,
 # so tools like Pylint can run without building the project
@@ -77,8 +71,6 @@ foreach(PYTHON_SRC_PATH ${PYTHON_SRC_PATHS})
     endif()
 endforeach()
 
-message(STATUS "PYTHON_DST_SUBDIRS=${PYTHON_DST_SUBDIRS}")
-
 foreach(PYTHON_DST_SUBDIR ${PYTHON_DST_SUBDIRS})
     add_custom_command(
         TARGET LinkPythonFiles
@@ -105,38 +97,24 @@ endforeach()
 
 set(PYTHON_BIN_FILES "")
 foreach(CMDNAME ${PYTHON_COMMAND_LIST})
-    # Strip .py extension
-    get_filename_component(BINNAME ${CMDNAME} NAME_WE)
-    set(MODULENAME ${BINNAME})
+    set(MODULENAME ${CMDNAME})
     if(MODULENAME MATCHES "^[0-9].*$")
         set(MODULENAME _${MODULENAME})
     endif()
-    set(SPECPATH "'${MODULENAME}', '__init__.py'")
-    set(BINPATH "${PROJECT_BINARY_DIR}/temporary/python/${BINNAME}")
+    set(BINPATH "${PROJECT_BINARY_DIR}/temporary/python/${CMDNAME}")
     file(WRITE ${BINPATH} "#!${Python3_EXECUTABLE}\n")
     file(APPEND ${BINPATH} "# -*- coding: utf-8 -*-\n")
-    file(APPEND ${BINPATH} "import importlib.util\n")
     file(APPEND ${BINPATH} "import os\n")
     file(APPEND ${BINPATH} "import sys\n")
     file(APPEND ${BINPATH} "\n")
-    file(APPEND ${BINPATH} "api_location = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'lib', 'mrtrix3', '__init__.py'))\n")
-    file(APPEND ${BINPATH} "api_spec = importlib.util.spec_from_file_location('mrtrix3', api_location)\n")
-    file(APPEND ${BINPATH} "api_module = importlib.util.module_from_spec(api_spec)\n")
-    file(APPEND ${BINPATH} "sys.modules['mrtrix3'] = api_module\n")
-    file(APPEND ${BINPATH} "api_spec.loader.exec_module(api_module)\n")
-    file(APPEND ${BINPATH} "\n")
-    file(APPEND ${BINPATH} "src_spec = importlib.util.spec_from_file_location('${MODULENAME}',\n")
-    file(APPEND ${BINPATH} "    os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'lib', 'mrtrix3', ${SPECPATH})))\n")
-    file(APPEND ${BINPATH} "src_module = importlib.util.module_from_spec(src_spec)\n")
-    file(APPEND ${BINPATH} "sys.modules[src_spec.name] = src_module\n")
-    file(APPEND ${BINPATH} "src_spec.loader.exec_module(src_module)\n")
+    file(APPEND ${BINPATH} "sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, 'lib')))\n")
     file(APPEND ${BINPATH} "\n")
     file(APPEND ${BINPATH} "from mrtrix3.app import _execute\n")
-    file(APPEND ${BINPATH} "import ${MODULENAME}\n")
+    file(APPEND ${BINPATH} "from mrtrix3 import ${MODULENAME}\n")
     file(APPEND ${BINPATH} "_execute(${MODULENAME})\n")
     file(COPY ${BINPATH} DESTINATION ${PROJECT_BINARY_DIR}/bin
         FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_WRITE GROUP_READ WORLD_EXECUTE WORLD_READ)
-    list(APPEND PYTHON_BIN_FILES ${PROJECT_BINARY_DIR}/bin/${BINNAME})
+    list(APPEND PYTHON_BIN_FILES ${PROJECT_BINARY_DIR}/bin/${CMDNAME})
 endforeach()
 
 set_target_properties(LinkPythonFiles

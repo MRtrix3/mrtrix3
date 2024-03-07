@@ -13,20 +13,25 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm, app, run
+import importlib, sys
+from mrtrix3 import app, run
 
 def execute(): #pylint: disable=unused-variable
 
   # Find out which algorithm the user has requested
-  alg = algorithm.get(app.ARGS.algorithm)
+  algorithm_module_name = 'mrtrix3._5ttgen.' + app.ARGS.algorithm
+  alg = sys.modules[algorithm_module_name]
 
-  alg.check_output_paths()
+  importlib.import_module('.check_output_paths', algorithm_module_name)
+  alg.check_output_paths.check_output_paths()
 
   app.make_scratch_dir()
-  alg.get_inputs()
+  importlib.import_module('.get_inputs', algorithm_module_name)
+  alg.get_inputs.get_inputs()
   app.goto_scratch_dir()
 
-  alg.execute()
+  importlib.import_module('.execute', algorithm_module_name)
+  alg.execute.execute()
 
   stderr = run.command('5ttcheck result.mif').stderr
   if '[WARNING]' in stderr:

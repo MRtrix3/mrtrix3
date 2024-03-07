@@ -13,17 +13,20 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+import importlib, sys
 from mrtrix3 import CONFIG, MRtrixError
-from mrtrix3 import algorithm, app, image, path, run
+from mrtrix3 import app, image, path, run
 
 def execute(): #pylint: disable=unused-variable
 
   # Find out which algorithm the user has requested
-  alg = algorithm.get(app.ARGS.algorithm)
+  algorithm_module_name = 'mrtrix3.dwibiascorrect.' + app.ARGS.algorithm
+  alg = sys.modules[algorithm_module_name]
 
   app.check_output_path(app.ARGS.output)
   app.check_output_path(app.ARGS.bias)
-  alg.check_output_paths()
+  importlib.import_module('.check_output_paths', algorithm_module_name)
+  alg.check_output_paths.check_output_paths()
 
   app.make_scratch_dir()
 
@@ -32,7 +35,8 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.mask:
     run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
 
-  alg.get_inputs()
+  importlib.import_module('.get_inputs', algorithm_module_name)
+  alg.get_inputs.get_inputs()
 
   app.goto_scratch_dir()
 
@@ -53,4 +57,5 @@ def execute(): #pylint: disable=unused-variable
     run.command('dwi2mask ' + CONFIG['Dwi2maskAlgorithm'] + ' in.mif mask.mif')
 
   # From here, the script splits depending on what estimation algorithm is being used
-  alg.execute()
+  importlib.import_module('.execute', algorithm_module_name)
+  alg.execute.execute()

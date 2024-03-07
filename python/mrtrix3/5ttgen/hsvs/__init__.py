@@ -13,6 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+
 HIPPOCAMPI_CHOICES = [ 'subfields', 'first', 'aseg' ]
 THALAMI_CHOICES = [ 'nuclei', 'first', 'aseg' ]
 

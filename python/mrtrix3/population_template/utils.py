@@ -192,15 +192,15 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
     uid_path = {}
     uids = []
     for filepath in paths:
-      uid = re.sub(re.escape(postfix)+'$', '', re.sub('^'+re.escape(prefix), '', os.path.split(path)[1]))
+      uid = re.sub(re.escape(postfix)+'$', '', re.sub('^'+re.escape(prefix), '', os.path.split(filepath)[1]))
       uid = re.sub(r'\s+', whitespace_repl, uid)
       if not uid:
-        raise MRtrixError('No uniquely identifiable part of filename "' + path + '" '
+        raise MRtrixError('No uniquely identifiable part of filename "' + filepath + '" '
                           'after prefix and postfix substitution '
                           'with prefix "' + prefix + '" and postfix "' + postfix + '"')
       app.debug('UID mapping: "' + filepath + '" --> "' + uid + '"')
       if uid in uid_path:
-        raise MRtrixError('unique file identifier is not unique: "' + uid + '" mapped to "' + path + '" and "' + uid_path[uid] +'"')
+        raise MRtrixError('unique file identifier is not unique: "' + uid + '" mapped to "' + filepath + '" and "' + uid_path[uid] +'"')
       uid_path[uid] = filepath
       uids.append(uid)
     return uids

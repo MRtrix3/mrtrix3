@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm, app, _version
+from mrtrix3 import app, _version
 
 def usage(cmdline): #pylint: disable=unused-variable
 
@@ -28,5 +28,4 @@ def usage(cmdline): #pylint: disable=unused-variable
   #common_options = cmdline.add_argument_group('General dwi2mask options')
   app.add_dwgrad_import_options(cmdline)
 
-  # Import the command-line settings for all algorithms found in the relevant directory
-  algorithm.usage(cmdline)
+  cmdline.add_subparsers()

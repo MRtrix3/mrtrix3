@@ -13,18 +13,21 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+import importlib, sys
 from mrtrix3 import CONFIG, MRtrixError
-from mrtrix3 import algorithm, app, image, path, run
+from mrtrix3 import app, image, path, run
 
 def execute(): #pylint: disable=unused-variable
 
   # Find out which algorithm the user has requested
-  alg = algorithm.get(app.ARGS.algorithm)
+  algorithm_module_name = 'mrtrix3.dwi2response.' + app.ARGS.algorithm
+  alg = sys.modules[algorithm_module_name]
 
   # Check for prior existence of output files, and grab any input files, used by the particular algorithm
   if app.ARGS.voxels:
     app.check_output_path(app.ARGS.voxels)
-  alg.check_output_paths()
+  importlib.import_module('.check_output_paths', algorithm_module_name)
+  alg.check_output_paths.check_output_paths()
 
   # Sanitise some inputs, and get ready for data import
   if app.ARGS.lmax:
@@ -66,7 +69,8 @@ def execute(): #pylint: disable=unused-variable
     app.console('Importing mask (' + path.from_user(app.ARGS.mask) + ')...')
     run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit', show=False)
 
-  alg.get_inputs()
+  importlib.import_module('.get_inputs', algorithm_module_name)
+  alg.get_inputs.get_inputs()
 
   app.goto_scratch_dir()
 
@@ -86,4 +90,5 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')
 
   # From here, the script splits depending on what estimation algorithm is being used
-  alg.execute()
+  importlib.import_module('.execute', algorithm_module_name)
+  alg.execute.execute()

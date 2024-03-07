@@ -14,7 +14,7 @@
 # For more details, see http://www.mrtrix.org/.
 
 from . import DEFAULT_SOFTWARE
-from . import SOFTWARE
+from . import SOFTWARES
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('b02template', parents=[base_parser])

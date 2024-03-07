@@ -13,6 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# pylint: disable=unused-variable
 NEEDS_MEAN_BZERO = False
 
 DEFAULT_CLEAN_SCALE = 2

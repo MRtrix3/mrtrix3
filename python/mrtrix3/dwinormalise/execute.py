@@ -13,13 +13,17 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import algorithm, app
+import importlib, sys
+from mrtrix3 import app
 
 def execute(): #pylint: disable=unused-variable
 
   # Find out which algorithm the user has requested
-  alg = algorithm.get(app.ARGS.algorithm)
-  alg.check_output_paths()
+  algorithm_module_name = 'mrtrix3.dwinormalise.' + app.ARGS.algorithm
+  alg = sys.modules[algorithm_module_name]
+  importlib.import_module('.check_output_paths', algorithm_module_name)
+  alg.check_output_paths.check_output_paths()
 
   # From here, the script splits depending on what algorithm is being used
-  alg.execute()
+  importlib.import_module('.execute', algorithm_module_name)
+  alg.execute.execute()
