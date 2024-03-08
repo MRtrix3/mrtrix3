@@ -1,4 +1,5 @@
 set(PYTHON_VERSION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/_version.py)
+set(PYTHON_CMDLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/_commands.py)
 
 find_package(Git QUIET)
 
@@ -33,6 +34,16 @@ execute_process(
     -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/_version.py.in
     -P ${PROJECT_SOURCE_DIR}/cmake/FindVersion.cmake
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# TODO We need to generate a list of MRtrix3 commands;
+#   function run.command() does different things if it is executing an MRtrix3 command vs. an external command
+execute_process(
+    COMMAND ${CMAKE_COMMAND}
+    -D DST=${PYTHON_CMDLIST_FILE}
+    -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/_commands.py.in
+    -P ${PROJECT_SOURCE_DIR}/cmake/FindCommands.cmake
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )
 
 add_custom_target(LinkPythonFiles ALL)

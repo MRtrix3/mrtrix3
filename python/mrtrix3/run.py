@@ -14,7 +14,8 @@
 # For more details, see http://www.mrtrix.org/.
 
 import collections, itertools, os, shlex, shutil, signal, string, subprocess, sys, tempfile, threading
-from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
+from mrtrix3 import ANSI, COMMAND_HISTORY_STRING, MRtrixBaseError, MRtrixError
+from mrtrix3._commands import COMMAND_PATH, COMMAND_LIST
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
@@ -338,7 +339,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdstack[-1].extend([ '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
 
     for line in cmdstack:
-      is_mrtrix_exe = line[0] in EXE_LIST
+      is_mrtrix_exe = line[0] in COMMAND_LIST
       if is_mrtrix_exe:
         line[0] = version_match(line[0])
         if shared.get_num_threads() is not None:
@@ -526,9 +527,9 @@ def exe_name(item):
     path = item
   elif item.endswith('.exe'):
     path = item
-  elif os.path.isfile(os.path.join(BIN_PATH, item)):
+  elif os.path.isfile(os.path.join(COMMAND_PATH, item)):
     path = item
-  elif os.path.isfile(os.path.join(BIN_PATH, item + '.exe')):
+  elif os.path.isfile(os.path.join(COMMAND_PATH, item + '.exe')):
     path = item + '.exe'
   elif shutil.which(item) is not None:
     path = item
@@ -549,10 +550,10 @@ def exe_name(item):
 #   which checks system32\ before PATH)
 def version_match(item):
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  if not item in EXE_LIST:
-    app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
+  if not item in COMMAND_LIST:
+    app.debug('Command ' + item + ' not a part of MRtrix3')
     return item
-  exe_path_manual = os.path.join(BIN_PATH, exe_name(item))
+  exe_path_manual = os.path.join(COMMAND_PATH, exe_name(item))
   if os.path.isfile(exe_path_manual):
     app.debug('Version-matched executable for ' + item + ': ' + exe_path_manual)
     return exe_path_manual

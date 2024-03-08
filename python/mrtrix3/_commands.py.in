@@ -1,0 +1,3 @@
+#pylint: disable=unused-variable
+COMMAND_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, 'bin'))
+COMMAND_LIST = [@MRTRIX_COMMAND_LIST@]

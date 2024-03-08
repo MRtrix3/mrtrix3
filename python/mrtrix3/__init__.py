@@ -36,11 +36,6 @@ if sys.argv:
   COMMAND_HISTORY_STRING += '  (version=' + __version__ + ')'
 
 
-# Location of binaries that belong to the same MRtrix3 installation as the Python library being invoked
-BIN_PATH = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.abspath(__file__))), os.pardir, os.pardir, 'bin'))
-# Must remove the '.exe' from Windows binary executables
-EXE_LIST = [ os.path.splitext(name)[0] for name in os.listdir(BIN_PATH) ] #pylint: disable=unused-variable
-
 
 # 'CONFIG' is a dictionary containing those entries present in the MRtrix config files
 # Can add default values here that would otherwise appear in multiple locations
