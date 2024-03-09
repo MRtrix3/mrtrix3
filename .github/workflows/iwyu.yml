@@ -1,0 +1,43 @@
+name: include-what-you-use
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      CFLAGS: -Werror
+      QT_SELECT: qt5
+      
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      # Note that we need to install clang-13, since iwyu on latest Ubuntu is built with clang-13.
+      run: |
+        sudo apt-get update
+        sudo apt install -y bear iwyu clang-13 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+
+    - name: configure
+      run: |
+        export CXX_COMPILER_LAUNCHER="bear --append --"
+        export CXX="clang++-13"
+        ./configure || { cat configure.log; false; }
+
+    - name: build
+      run: ./build -nowarnings -nopaginate || { cat build.log; false; }
+    
+    - name: list files in workspace
+      run: ls ${{ github.workspace }}
+
+    - name: cat compile_commands.json
+      run: cat ${{ github.workspace }}/compile_commands.json
+      
+    - name: Download IWYU script
+      run: |
+        wget https://raw.githubusercontent.com/include-what-you-use/include-what-you-use/clang_13/iwyu_tool.py
+        chmod +x iwyu_tool.py
+
+    - name: Run IWYU script
+      run: |
+        ./iwyu_tool.py -p ${{ github.workspace }} -- -Xiwyu --mapping_file=${{ github.workspace }}/iwyu/mapping.imp
