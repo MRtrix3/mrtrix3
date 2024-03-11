@@ -20,6 +20,7 @@
 #include "algo/iterator.h"
 #include "algo/loop.h"
 #include "debug.h"
+#include "mutexprotected.h"
 #include "thread.h"
 #include <tuple>
 
@@ -316,15 +317,17 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
       return;
     }
 
-    std::mutex mutex;
     ProgressBar::SwitchToMultiThreaded progress_functions;
 
     struct Shared {
+      Shared(const Shared &) = delete;
+      Shared(Shared &&) = delete;
+      Shared &operator=(const Shared &) = delete;
+      Shared &operator=(Shared &&) = delete;
+      ~Shared() = default;
       Iterator &iterator;
       decltype(outer_loop(iterator)) loop;
-      std::mutex &mutex;
       FORCE_INLINE bool next(Iterator &pos) {
-        std::lock_guard<std::mutex> lock(mutex);
         if (loop) {
           assign_pos_of(iterator, loop.axes).to(pos);
           ++loop;
@@ -332,21 +335,29 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
         } else
           return false;
       }
-    } shared = {iterator, outer_loop(iterator), mutex};
+    };
+
+    MutexProtected<Shared> shared = {iterator, outer_loop(iterator)};
 
     struct PerThread {
-      Shared &shared;
+      MutexProtected<Shared> &shared;
+      PerThread(const PerThread &) = default;
+      PerThread(PerThread &&) noexcept = default;
+      PerThread &operator=(const PerThread &) = delete;
+      PerThread &operator=(PerThread &&) = delete;
+      ~PerThread() = default;
       typename std::remove_reference<Functor>::type func;
       void execute() {
-        Iterator pos = shared.iterator;
-        while (shared.next(pos))
+        auto pos = shared.lock()->iterator;
+        while (shared.lock()->next(pos))
           func(pos);
       }
     } loop_thread = {shared, functor};
 
     auto threads = Thread::run(Thread::multi(loop_thread), "loop threads");
 
-    __manage_progress(&shared.loop, &threads);
+    auto *loop = &(shared.lock()->loop);
+    __manage_progress(loop, &threads);
     threads.wait();
   }
 
