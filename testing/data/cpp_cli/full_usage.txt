@@ -1,0 +1,83 @@
+Verify operation of the C++ command-line interface & parser
+OPTION flag 1 0
+An option flag that takes no arguments
+OPTION text 1 0
+a text input
+ARGUMENT spec 0 0 TEXT
+OPTION bool 1 0
+a boolean input
+ARGUMENT value 0 0 
+OPTION int_unbound 1 0
+an integer input (unbounded)
+ARGUMENT value 0 0 INT -9223372036854775808 9223372036854775807
+OPTION int_nonneg 1 0
+a non-negative integer
+ARGUMENT value 0 0 INT 0 9223372036854775807
+OPTION int_bound 1 0
+a bound integer
+ARGUMENT value 0 0 INT 0 100
+OPTION float_unbound 1 0
+a floating-point number (unbounded)
+ARGUMENT value 0 0 FLOAT -inf inf
+OPTION float_nonneg 1 0
+a non-negative floating-point number
+ARGUMENT value 0 0 FLOAT 0 inf
+OPTION float_bound 1 0
+a bound floating-point number
+ARGUMENT value 0 0 FLOAT 0 1
+OPTION int_seq 1 0
+a comma-separated sequence of integers
+ARGUMENT values 0 0 ISEQ
+OPTION float_seq 1 0
+a comma-separated sequence of floating-point numbers
+ARGUMENT values 0 0 FSEQ
+OPTION choice 1 0
+a choice from a set of options
+ARGUMENT item 0 0 CHOICE One Two Three
+OPTION file_in 1 0
+an input file
+ARGUMENT input 0 0 FILEIN
+OPTION file_out 1 0
+an output file
+ARGUMENT output 0 0 FILEOUT
+OPTION dir_in 1 0
+an input directory
+ARGUMENT input 0 0 DIRIN
+OPTION dir_out 1 0
+an output directory
+ARGUMENT output 0 0 DIROUT
+OPTION tracks_in 1 0
+an input tractogram
+ARGUMENT input 0 0 TRACKSIN
+OPTION tracks_out 1 0
+an output tractogram
+ARGUMENT output 0 0 TRACKSOUT
+OPTION various 1 0
+an argument that could accept one of various forms
+ARGUMENT spec 0 0 VARIOUS
+OPTION nargs_two 1 0
+A command-line option that accepts two arguments
+ARGUMENT first 0 0 TEXT
+ARGUMENT second 0 0 TEXT
+OPTION multiple 1 1
+A command-line option that can be specified multiple times
+ARGUMENT spec 0 0 TEXT
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages.
+OPTION force 1 0
+force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+OPTION nthreads 1 0
+use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+ARGUMENT number 0 0 INT 0 9223372036854775807
+OPTION config 1 1
+temporarily set the value of an MRtrix config file entry.
+ARGUMENT key 0 0 TEXT
+ARGUMENT value 0 0 TEXT
+OPTION help 1 0
+display this information page and exit.
+OPTION version 1 0
+display version information and exit.
