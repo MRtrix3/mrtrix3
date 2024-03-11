@@ -651,10 +651,8 @@ std::string markdown_usage() {
     s += std::string(REFERENCES[i]) + "\n\n";
   s += std::string(MRTRIX_CORE_REFERENCE) + "\n\n";
 
-  s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date +
-       "\n\n"
-       "\n\n**Author:** " +
-       AUTHOR + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
+  s += std::string("**Author:** ") + AUTHOR + "\n\n";
+  s += std::string("**Copyright:** ") + COPYRIGHT + "\n\n";
 
   return s;
 }
