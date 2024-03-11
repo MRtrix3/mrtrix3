@@ -216,7 +216,7 @@ inline void rmdir(const std::string &folder, bool recursive = false) {
   if (recursive) {
     Path::Dir dir(folder);
     std::string entry;
-    while ((entry = dir.read_name()).size()) {
+    while (!(entry = dir.read_name()).empty()) {
       std::string path = Path::join(folder, entry);
       if (Path::is_dir(path))
         rmdir(path, true);

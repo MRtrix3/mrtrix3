@@ -149,7 +149,7 @@ bool issue_degeneracy_warning = false;
 Image<bool> get_mask(const Image<value_type> &in) {
   Image<bool> mask;
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(in, mask, 0, 3);
     for (size_t axis = 3; axis != mask.ndim(); ++axis) {
@@ -190,7 +190,7 @@ get_data(Image<value_type> &in, Image<bool> &mask, const size_t max_axis, const 
       }
     }
   }
-  if (!data.size())
+  if (data.empty())
     throw Exception("No valid input data found; unable to determine threshold");
   return data;
 }
@@ -413,16 +413,16 @@ void run() {
 
   const bool to_cout = argument.size() == 1;
   const std::string output_path = to_cout ? std::string("") : argument[1];
-  const bool all_volumes = get_options("allvolumes").size();
-  const bool ignore_zero = get_options("ignorezero").size();
-  const bool use_nan = get_options("nan").size();
-  const bool invert = get_options("invert").size();
+  const bool all_volumes = !get_options("allvolumes").empty();
+  const bool ignore_zero = !get_options("ignorezero").empty();
+  const bool use_nan = !get_options("nan").empty();
+  const bool invert = !get_options("invert").empty();
 
-  bool mask_out = get_options("out_masked").size();
+  bool mask_out = !get_options("out_masked").empty();
 
   auto opt = get_options("comparison");
   operator_type comp =
-      opt.size() ? operator_type(int(opt[0][0])) : (bottom >= 0 ? operator_type::LE : operator_type::GE);
+      !opt.empty() ? operator_type(int(opt[0][0])) : (bottom >= 0 ? operator_type::LE : operator_type::GE);
   if (invert) {
     switch (comp) {
     case operator_type::LT:
@@ -446,7 +446,7 @@ void run() {
     if (use_nan) {
       WARN("Option -nan ignored: has no influence when no output image is specified");
     }
-    if (opt.size()) {
+    if (!opt.empty()) {
       WARN("Option -comparison ignored: has no influence when no output image is specified");
       comp = operator_type::UNDEFINED;
     }
@@ -463,7 +463,7 @@ void run() {
     if (ignore_zero) {
       WARN("-ignorezero option has no effect if combined with -abs option");
     }
-    if (get_options("mask").size() && !mask_out) {
+    if (!get_options("mask").empty() && !mask_out) {
       WARN("-mask option has no effect if combined with -abs option and -out_masked is not used");
     }
   } else {

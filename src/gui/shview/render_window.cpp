@@ -241,7 +241,7 @@ Window::~Window() {
 
 void Window::open_slot() {
   std::string coef_file = Dialog::File::get_file(this, "Select SH coefficients file");
-  if (coef_file.size())
+  if (!coef_file.empty())
     set_values(coef_file);
 }
 

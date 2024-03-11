@@ -83,14 +83,14 @@ void run() {
 
   MeshMulti meshes(lower_corners.size(), MR::Surface::Mesh());
   meshes[0].set_name("none");
-  const bool blocky = get_options("blocky").size();
+  const bool blocky = !get_options("blocky").empty();
 
   std::vector<uint32_t> missing_nodes;
   for (uint32_t i = 1; i != upper_corners.size(); ++i) {
     if (upper_corners[i][0] < 0)
       missing_nodes.push_back(i);
   }
-  if (missing_nodes.size()) {
+  if (!missing_nodes.empty()) {
     WARN("The following labels are absent from the parcellation image "
          "and so will have an empty mesh in the output file: " +
          join(missing_nodes, ", "));

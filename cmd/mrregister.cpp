@@ -46,7 +46,8 @@ const char *transformation_choices[] = {"rigid",
                                         "rigid_nonlinear",
                                         "affine_nonlinear",
                                         "rigid_affine_nonlinear",
-                                        NULL};
+                                        nullptr};
+#define DEFAULT_TRANSFORMATION_TYPE 5 // affine_nonlinear
 
 // clang-format off
 const OptionGroup multiContrastOptions =
@@ -105,10 +106,10 @@ void usage() {
         " contrastX and imageX must share the same coordinate system.").type_image_in().optional().allow_multiple();
 
   OPTIONS
-  + Option ("type", "the registration type."
+  + Option ("type", std::string("the registration type.") +
                     " Valid choices are:"
                     " rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear"
-                    " (Default: affine_nonlinear)")
+                    " (Default: " + transformation_choices[DEFAULT_TRANSFORMATION_TYPE] + ")")
     + Argument ("choice").type_choice (transformation_choices)
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
@@ -176,13 +177,10 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
-  auto opt = get_options("type");
+  const int registration_type = get_option_value("type", DEFAULT_TRANSFORMATION_TYPE);
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;
-  int registration_type = 5;
-  if (opt.size())
-    registration_type = opt[0][0];
   switch (registration_type) {
   case 0:
     do_rigid = true;
@@ -215,14 +213,14 @@ void run() {
   }
 
   // reorientation_forbidden required for output of transformed images because do_reorientation might change
-  const bool reorientation_forbidden(get_options("noreorientation").size());
+  const bool reorientation_forbidden(!get_options("noreorientation").empty());
   // do_reorientation == false --> registration without reorientation.
   // will be set to false if registration of all input SH images has lmax==0
   bool do_reorientation = !reorientation_forbidden;
 
   Eigen::MatrixXd directions_cartesian;
-  opt = get_options("directions");
-  if (opt.size())
+  auto opt = get_options("directions");
+  if (!opt.empty())
     directions_cartesian = Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(opt[0][0])).transpose();
 
   // check header transformations for equality
@@ -305,7 +303,7 @@ void run() {
 
   opt = get_options("transformed");
   std::vector<std::string> im1_transformed_paths;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (opt.size() > n_images)
       throw Exception("number of -transformed images exceeds number of contrasts");
     if (opt.size() != n_images)
@@ -320,7 +318,7 @@ void run() {
   std::vector<std::string> input1_midway_transformed_paths;
   std::vector<std::string> input2_midway_transformed_paths;
   opt = get_options("transformed_midway");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (opt.size() > n_images)
       throw Exception("number of -transformed_midway images exceeds number of contrasts");
     if (opt.size() != n_images)
@@ -339,14 +337,14 @@ void run() {
 
   opt = get_options("mask1");
   Image<value_type> im1_mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     im1_mask = Image<value_type>::open(opt[0][0]);
     check_dimensions(input1[0], im1_mask, 0, 3);
   }
 
   opt = get_options("mask2");
   Image<value_type> im2_mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     im2_mask = Image<value_type>::open(opt[0][0]);
     check_dimensions(input2[0], im2_mask, 0, 3);
   }
@@ -354,45 +352,30 @@ void run() {
   // Out of bounds value
   value_type out_of_bounds_value = 0.0;
   opt = get_options("nan");
-  if (opt.size())
+  if (!opt.empty())
     out_of_bounds_value = NAN;
 
   // ****** RIGID REGISTRATION OPTIONS *******
   Registration::Linear rigid_registration;
-  opt = get_options("rigid");
-  bool output_rigid = false;
-  std::string rigid_filename;
-  if (opt.size()) {
-    if (!do_rigid)
-      throw Exception("rigid transformation output requested when no rigid registration is requested");
-    output_rigid = true;
-    rigid_filename = std::string(opt[0][0]);
-  }
+  const std::string rigid_filename = get_option_value<std::string>("rigid", "");
+  const bool output_rigid = !rigid_filename.empty();
+  if (output_rigid && !do_rigid)
+    throw Exception("rigid transformation output requested when no rigid registration is requested");
 
-  opt = get_options("rigid_1tomidway");
-  bool output_rigid_1tomid = false;
-  std::string rigid_1tomid_filename;
-  if (opt.size()) {
-    if (!do_rigid)
-      throw Exception("midway rigid transformation output requested when no rigid registration is requested");
-    output_rigid_1tomid = true;
-    rigid_1tomid_filename = std::string(opt[0][0]);
-  }
+  const std::string rigid_1tomid_filename = get_option_value<std::string>("rigid_1tomidway", "");
+  const bool output_rigid_1tomid = !rigid_1tomid_filename.empty();
+  if (output_rigid_1tomid && !do_rigid)
+    throw Exception("midway rigid transformation output requested when no rigid registration is requested");
 
-  opt = get_options("rigid_2tomidway");
-  bool output_rigid_2tomid = false;
-  std::string rigid_2tomid_filename;
-  if (opt.size()) {
-    if (!do_rigid)
-      throw Exception("midway rigid transformation output requested when no rigid registration is requested");
-    output_rigid_2tomid = true;
-    rigid_2tomid_filename = std::string(opt[0][0]);
-  }
+  const std::string rigid_2tomid_filename = get_option_value<std::string>("rigid_2tomidway", "");
+  const bool output_rigid_2tomid = !rigid_2tomid_filename.empty();
+  if (output_rigid_2tomid && !do_rigid)
+    throw Exception("midway rigid transformation output requested when no rigid registration is requested");
 
   Registration::Transform::Rigid rigid;
   opt = get_options("rigid_init_matrix");
   bool init_rigid_matrix_set = false;
-  if (opt.size()) {
+  if (!opt.empty()) {
     init_rigid_matrix_set = true;
     Eigen::Vector3d centre;
     transform_type rigid_transform = File::Matrix::load_transform(opt[0][0], centre);
@@ -406,33 +389,32 @@ void run() {
   }
 
   opt = get_options("rigid_init_translation");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (init_rigid_matrix_set)
       throw Exception("options -rigid_init_matrix and -rigid_init_translation are mutually exclusive");
     Registration::set_init_translation_model_from_option(rigid_registration, (int)opt[0][0]);
   }
 
   opt = get_options("rigid_init_rotation");
-  if (opt.size()) {
+  if (!opt.empty())
     Registration::set_init_rotation_model_from_option(rigid_registration, (int)opt[0][0]);
-  }
 
   opt = get_options("rigid_scale");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the rigid multi-resolution scale factors were input when no rigid registration is requested");
     rigid_registration.set_scale_factor(parse_floats(opt[0][0]));
   }
 
   opt = get_options("rigid_loop_density");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the rigid sparsity factor was input when no rigid registration is requested");
     rigid_registration.set_loop_density(parse_floats(opt[0][0]));
   }
 
   opt = get_options("rigid_niter");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the number of rigid iterations have been input when no rigid registration is requested");
     rigid_registration.set_max_iter(parse_ints<uint32_t>(opt[0][0]));
@@ -440,7 +422,7 @@ void run() {
 
   opt = get_options("rigid_metric");
   Registration::LinearMetricType rigid_metric = Registration::Diff;
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch ((int)opt[0][0]) {
     case 0:
       rigid_metric = Registration::Diff;
@@ -458,7 +440,7 @@ void run() {
 
   opt = get_options("rigid_metric.diff.estimator");
   Registration::LinearRobustMetricEstimatorType rigid_estimator = Registration::None;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (rigid_metric != Registration::Diff)
       throw Exception("rigid_metric.diff.estimator set but cost function is not diff.");
     switch ((int)opt[0][0]) {
@@ -480,7 +462,7 @@ void run() {
 
   opt = get_options("rigid_lmax");
   std::vector<uint32_t> rigid_lmax;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the -rigid_lmax option has been set when no rigid registration is requested");
     if (max_mc_image_lmax == 0)
@@ -496,7 +478,7 @@ void run() {
 
   std::ofstream linear_logstream;
   opt = get_options("rigid_log");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the -rigid_log option has been set when no rigid registration is requested");
     linear_logstream.open(opt[0][0]);
@@ -505,40 +487,25 @@ void run() {
 
   // ****** AFFINE REGISTRATION OPTIONS *******
   Registration::Linear affine_registration;
-  opt = get_options("affine");
-  bool output_affine = false;
-  std::string affine_filename;
-  if (opt.size()) {
-    if (!do_affine)
-      throw Exception("affine transformation output requested when no affine registration is requested");
-    output_affine = true;
-    affine_filename = std::string(opt[0][0]);
-  }
+  const std::string affine_filename = get_option_value<std::string>("affine", "");
+  const bool output_affine = !affine_filename.empty();
+  if (output_affine && !do_affine)
+    throw Exception("affine transformation output requested when no affine registration is requested");
 
-  opt = get_options("affine_1tomidway");
-  bool output_affine_1tomid = false;
-  std::string affine_1tomid_filename;
-  if (opt.size()) {
-    if (!do_affine)
-      throw Exception("midway affine transformation output requested when no affine registration is requested");
-    output_affine_1tomid = true;
-    affine_1tomid_filename = std::string(opt[0][0]);
-  }
+  const std::string affine_1tomid_filename = get_option_value<std::string>("affine_1tomidway", "");
+  const bool output_affine_1tomid = !affine_1tomid_filename.empty();
+  if (output_affine_1tomid && !do_affine)
+    throw Exception("midway affine transformation output requested when no affine registration is requested");
 
-  opt = get_options("affine_2tomidway");
-  bool output_affine_2tomid = false;
-  std::string affine_2tomid_filename;
-  if (opt.size()) {
-    if (!do_affine)
-      throw Exception("midway affine transformation output requested when no affine registration is requested");
-    output_affine_2tomid = true;
-    affine_2tomid_filename = std::string(opt[0][0]);
-  }
+  const std::string affine_2tomid_filename = get_option_value<std::string>("affine_2tomidway", "");
+  const bool output_affine_2tomid = !affine_2tomid_filename.empty();
+  if (output_affine_2tomid && !do_affine)
+    throw Exception("midway affine transformation output requested when no affine registration is requested");
 
   Registration::Transform::Affine affine;
   opt = get_options("affine_init_matrix");
   bool init_affine_matrix_set = false;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (init_rigid_matrix_set)
       throw Exception("you cannot initialise registrations with both rigid and affine transformations");
     if (do_rigid)
@@ -557,28 +524,28 @@ void run() {
   }
 
   opt = get_options("affine_init_translation");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_translation are mutually exclusive");
     Registration::set_init_translation_model_from_option(affine_registration, (int)opt[0][0]);
   }
 
   opt = get_options("affine_init_rotation");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_rotation are mutually exclusive");
     Registration::set_init_rotation_model_from_option(affine_registration, (int)opt[0][0]);
   }
 
   opt = get_options("affine_scale");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the affine multi-resolution scale factors were input when no affine registration is requested");
     affine_registration.set_scale_factor(parse_floats(opt[0][0]));
   }
 
   opt = get_options("affine_loop_density");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the affine sparsity factor was input when no affine registration is requested");
     affine_registration.set_loop_density(parse_floats(opt[0][0]));
@@ -586,7 +553,7 @@ void run() {
 
   opt = get_options("affine_metric");
   Registration::LinearMetricType affine_metric = Registration::Diff;
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch ((int)opt[0][0]) {
     case 0:
       affine_metric = Registration::Diff;
@@ -604,7 +571,7 @@ void run() {
 
   opt = get_options("affine_metric.diff.estimator");
   Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::None;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (affine_metric != Registration::Diff)
       throw Exception("affine_metric.diff.estimator set but cost function is not diff.");
     switch ((int)opt[0][0]) {
@@ -623,7 +590,7 @@ void run() {
   }
 
   opt = get_options("affine_niter");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the number of affine iterations have been input when no affine registration is requested");
     affine_registration.set_max_iter(parse_ints<uint32_t>(opt[0][0]));
@@ -631,7 +598,7 @@ void run() {
 
   opt = get_options("affine_lmax");
   std::vector<uint32_t> affine_lmax;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the -affine_lmax option has been set when no affine registration is requested");
     if (max_mc_image_lmax == 0)
@@ -647,7 +614,7 @@ void run() {
   }
 
   opt = get_options("affine_log");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the -affine_log option has been set when no rigid registration is requested");
     linear_logstream.open(opt[0][0]);
@@ -657,14 +624,14 @@ void run() {
   // ****** LINEAR INITIALISATION AND STAGE OPTIONS *******
   if (!do_rigid and !do_affine) {
     for (auto &s : Registration::adv_init_options) {
-      if (get_options(s.id).size()) {
+      if (!get_options(s.id).empty()) {
         std::stringstream msg;
         msg << "cannot use option -" << s.id << " when no linear registration is requested";
         throw Exception(msg.str());
       }
     }
     for (auto &s : Registration::lin_stage_options) {
-      if (get_options(s.id).size()) {
+      if (!get_options(s.id).empty()) {
         std::stringstream msg;
         msg << "cannot use option -" << s.id << " when no linear registration is requested";
         throw Exception(msg.str());
@@ -682,7 +649,7 @@ void run() {
   opt = get_options("nl_warp");
   std::string warp1_filename;
   std::string warp2_filename;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
     warp1_filename = std::string(opt[0][0]);
@@ -691,107 +658,111 @@ void run() {
 
   opt = get_options("nl_warp_full");
   std::string warp_full_filename;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
     warp_full_filename = std::string(opt[0][0]);
-    if (!Path::is_mrtrix_image(warp_full_filename) && !(Path::has_suffix(warp_full_filename, {".nii", ".nii.gz"}) &&
-                                                        File::Config::get_bool("NIfTIAutoSaveJSON", false)))
-      throw Exception(
-          "nl_warp_full output requires .mif/.mih or NIfTI file format with NIfTIAutoSaveJSON config option set.");
+    if (!Path::is_mrtrix_image(warp_full_filename) && //
+        !(Path::has_suffix(warp_full_filename, {".nii", ".nii.gz"}) &&
+          File::Config::get_bool("NIfTIAutoSaveJSON", false))) {
+      throw Exception("nl_warp_full output requires .mif/.mih or NIfTI file format"
+                      " with NIfTIAutoSaveJSON config option set.");
+    }
   }
 
-  opt = get_options("nl_init");
-  bool nonlinear_init = false;
-  if (opt.size()) {
-    nonlinear_init = true;
+  const bool nonlinear_init = !get_options("nl_init").empty();
+  if (nonlinear_init) {
 
     if (!do_nonlinear)
       throw Exception(
           "the non linear initialisation option -nl_init cannot be used when no non linear registration is requested");
 
-    if (!Path::is_mrtrix_image(opt[0][0]) &&
-        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) && File::Config::get_bool("NIfTIAutoLoadJSON", false) &&
-          Path::exists(File::NIfTI::get_json_path(opt[0][0]))))
-      WARN("nl_init input requires warp_full in original .mif/.mih file format or in NIfTI file format with associated "
-           "JSON. "
-           "Converting to other file formats may remove linear transformations stored in the image header.");
+    if (!Path::is_mrtrix_image(opt[0][0]) &&                    //
+        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&   //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
+          Path::exists(File::NIfTI::get_json_path(opt[0][0])))) {
+      WARN("nl_init input requires warp_full in original .mif/.mih file format"
+           " or in NIfTI file format with associated JSON."
+           " Converting to other file formats may remove linear transformations stored in the image header.");
+    }
 
     Image<default_type> input_warps = Image<default_type>::open(opt[0][0]);
     if (input_warps.ndim() != 5)
-      throw Exception("non-linear initialisation input is not 5D. Input must be from previous non-linear output");
+      throw Exception("non-linear initialisation input is not 5D."
+                      " Input must be from previous non-linear output");
 
     nl_registration.initialise(input_warps);
 
     if (do_affine) {
-      WARN("no affine registration will be performed when initialising with non-linear non-linear warps");
+      WARN("no affine registration will be performed when initialising with non-linear warps");
       do_affine = false;
     }
     if (do_rigid) {
-      WARN("no rigid registration will be performed when initialising with non-linear non-linear warps");
+      WARN("no rigid registration will be performed when initialising with non-linear warps");
       do_rigid = false;
     }
     if (init_affine_matrix_set)
-      WARN("-affine_init has no effect since the non-linear init warp also contains the linear transform in the image "
-           "header");
+      WARN("-affine_init has no effect since the non-linear init warp"
+           " also contains the linear transform in the image header");
     if (init_rigid_matrix_set)
-      WARN("-rigid_init has no effect since the non-linear init warp also contains the linear transform in the image "
-           "header");
+      WARN("-rigid_init has no effect since the non-linear init warp"
+           " also contains the linear transform in the image header");
   }
 
   opt = get_options("nl_scale");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_nonlinear)
-      throw Exception(
-          "the non-linear multi-resolution scale factors were input when no non-linear registration is requested");
+      throw Exception("the non-linear multi-resolution scale factors were input"
+                      " when no non-linear registration is requested");
     std::vector<default_type> scale_factors = parse_floats(opt[0][0]);
     if (nonlinear_init) {
-      WARN("-nl_scale option ignored since only the full resolution will be performed when initialising with "
-           "non-linear warp");
+      WARN("-nl_scale option ignored since only the full resolution"
+           " will be performed when initialising with non-linear warp");
     } else {
       nl_registration.set_scale_factor(scale_factors);
     }
   }
 
   opt = get_options("nl_niter");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_nonlinear)
-      throw Exception(
-          "the number of non-linear iterations have been input when no non-linear registration is requested");
+      throw Exception("the number of non-linear iterations have been input"
+                      " when no non-linear registration is requested");
     std::vector<uint32_t> iterations_per_level = parse_ints<uint32_t>(opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
-      throw Exception("when initialising the non-linear registration the max number of iterations can only be defined "
-                      "for a single level");
-    else
-      nl_registration.set_max_iter(iterations_per_level);
+      throw Exception("when initialising the non-linear registration"
+                      " the max number of iterations can only be defined"
+                      " for a single level");
+    nl_registration.set_max_iter(iterations_per_level);
   }
 
   opt = get_options("nl_update_smooth");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_nonlinear)
-      throw Exception(
-          "the warp update field smoothing parameter was input when no non-linear registration is requested");
+      throw Exception("the warp update field smoothing parameter was input"
+                      " when no non-linear registration is requested");
     nl_registration.set_update_smoothing(opt[0][0]);
   }
 
   opt = get_options("nl_disp_smooth");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_nonlinear)
-      throw Exception(
-          "the displacement field smoothing parameter was input when no non-linear registration is requested");
+      throw Exception("the displacement field smoothing parameter was input"
+                      " when no non-linear registration is requested");
     nl_registration.set_disp_smoothing(opt[0][0]);
   }
 
   opt = get_options("nl_grad_step");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_nonlinear)
-      throw Exception("the initial gradient step size was input when no non-linear registration is requested");
+      throw Exception("the initial gradient step size was input"
+                      " when no non-linear registration is requested");
     nl_registration.set_init_grad_step(opt[0][0]);
   }
 
   opt = get_options("nl_lmax");
   std::vector<uint32_t> nl_lmax;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("the -nl_lmax option has been set when no non-linear registration is requested");
     if (max_mc_image_lmax == 0)
@@ -807,7 +778,7 @@ void run() {
   // TODO: set tissue specific lmax?
 
   opt = get_options("mc_weights");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::vector<default_type> mc_weights = parse_floats(opt[0][0]);
     if (mc_weights.size() == 1)
       mc_weights.resize(n_images, mc_weights[0]);
@@ -821,8 +792,8 @@ void run() {
       default_type sm = 0.0;
       std::for_each(mc_weights.begin(), mc_weights.end(), [&](default_type n) { sm += n; });
       if (MR::abs(sm - n_images) > 1.e-6)
-        WARN("mc_weights do not sum to the number of contrasts. This changes the regularisation of the nonlinear "
-             "registration.");
+        WARN("mc_weights do not sum to the number of contrasts;"
+             " this changes the regularisation of the nonlinear registration.");
     }
 
     for (size_t idx = 0; idx < n_images; idx++)
@@ -1036,7 +1007,7 @@ void run() {
       Registration::Transform::Affine identity_transform;
       nl_registration.run(identity_transform, images1, images2, im1_mask, im2_mask);
     }
-    if (warp_full_filename.size()) {
+    if (!warp_full_filename.empty()) {
       // TODO add affine parameters to comments too?
       Header output_header = nl_registration.get_output_warps_header();
       nl_registration.write_params_to_header(output_header);
@@ -1046,7 +1017,7 @@ void run() {
       nl_registration.get_output_warps(output_warps);
     }
 
-    if (warp1_filename.size()) {
+    if (!warp1_filename.empty()) {
       Header output_header(images2);
       output_header.ndim() = 4;
       output_header.size(3) = 3;
@@ -1060,7 +1031,7 @@ void run() {
                                                    warp1);
     }
 
-    if (warp2_filename.size()) {
+    if (!warp2_filename.empty()) {
       Header output_header(images1);
       output_header.ndim() = 4;
       output_header.size(3) = 3;
@@ -1075,7 +1046,7 @@ void run() {
     }
   }
 
-  if (im1_transformed_paths.size()) {
+  if (!im1_transformed_paths.empty()) {
     CONSOLE("Writing input images1 transformed to space of images2...");
 
     Image<default_type> deform_field;
@@ -1137,7 +1108,7 @@ void run() {
     }
   }
 
-  if (input1_midway_transformed_paths.size() and input2_midway_transformed_paths.size()) {
+  if (!input1_midway_transformed_paths.empty() and !input2_midway_transformed_paths.empty()) {
     Header midway_header;
     Image<default_type> im1_deform_field, im2_deform_field;
 
@@ -1262,6 +1233,6 @@ void run() {
     }
   }
 
-  if (get_options("affine_log").size() or get_options("rigid_log").size())
+  if (!get_options("affine_log").empty() or !get_options("rigid_log").empty())
     linear_logstream.close();
 }

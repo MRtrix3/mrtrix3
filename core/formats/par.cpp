@@ -255,7 +255,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
     H.transform() = M;
   }
 
-  if (G.size()) {
+  if (!G.empty()) {
     if (G.size() != size_t(nvols))
       throw Exception("mismatch between number of volumes and number of b-values in PAR/REC file \"" + H.name() + "\"");
 

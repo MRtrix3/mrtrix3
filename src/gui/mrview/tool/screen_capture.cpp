@@ -250,7 +250,7 @@ void Capture::cache_capture_state() {
 }
 
 void Capture::on_restore_capture_state() {
-  if (!window().image() || !cached_state.size())
+  if (!window().image() || cached_state.empty())
     return;
 
   const CaptureState &state = cached_state.back();
@@ -407,7 +407,7 @@ void Capture::run(bool with_capture) {
 
 void Capture::select_output_folder_slot() {
   const std::string path = Dialog::File::get_folder(this, "Directory", &current_folder);
-  if (!path.size())
+  if (path.empty())
     return;
   folder_button->setText(qstr(shorten(current_folder, 20, 0)));
   folder_button->setToolTip(qstr(current_folder));

@@ -55,7 +55,7 @@ public:
     std::shared_ptr<Image<bool>> in(new Image<bool>(Image<bool>::scratch(input)));
     copy(input, *in);
     std::shared_ptr<Image<bool>> out;
-    std::shared_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message, npass + 1) : nullptr);
+    std::shared_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, npass + 1) : nullptr);
 
     for (unsigned int pass = 0; pass < npass; pass++) {
       out = std::make_shared<Image<bool>>(Image<bool>::scratch(input));

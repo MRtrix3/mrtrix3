@@ -23,7 +23,7 @@ namespace MR::File {
 namespace {
 
 inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
-  if (seq.size() == 0)
+  if (seq.empty())
     return true;
   for (size_t i = 0; i < seq.size(); i++)
     if (seq[i] == val)
@@ -63,7 +63,7 @@ void NameParser::parse(const std::string &imagename, size_t max_num_sequences) {
 
     for (size_t i = 0; i < array.size(); i++)
       if (array[i].is_sequence())
-        if (array[i].sequence().size())
+        if (!array[i].sequence().empty())
           for (size_t n = 0; n < array[i].sequence().size() - 1; n++)
             for (size_t m = n + 1; m < array[i].sequence().size(); m++)
               if (array[i].sequence()[n] == array[i].sequence()[m])
@@ -80,7 +80,7 @@ std::ostream &operator<<(std::ostream &stream, const NameParser::Item &item) {
   if (item.is_string())
     stream << "\"" << item.string() << "\"";
   else {
-    if (item.sequence().size())
+    if (!item.sequence().empty())
       stream << item.sequence();
     else
       stream << "[ any ]";
@@ -129,7 +129,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
   for (size_t n = 0; n < seq_index.size(); n++) {
     size_t m = seq_index.size() - 1 - n;
     Item &item(array[seq_index[n]]);
-    if (item.sequence().size()) {
+    if (!item.sequence().empty()) {
       if (maxvals[m])
         if (item.sequence().size() != (size_t)maxvals[m])
           throw Exception("dimensions requested in image specifier \"" + specification +
@@ -157,7 +157,7 @@ void NameParser::Item::calc_padding(size_t maxval) {
 }
 
 std::string NameParser::name(const std::vector<uint32_t> &indices) {
-  if (!seq_index.size())
+  if (seq_index.empty())
     return Path::join(folder_name, array[0].string());
 
   assert(indices.size() == seq_index.size());
@@ -181,11 +181,11 @@ std::string NameParser::get_next_match(std::vector<uint32_t> &indices, bool retu
     folder.reset(new Path::Dir(folder_name));
 
   std::string fname;
-  while ((fname = folder->read_name()).size()) {
+  while (!(fname = folder->read_name()).empty()) {
     if (match(fname, indices)) {
       if (return_seq_index) {
         for (size_t i = 0; i < ndim(); i++) {
-          if (sequence(i).size()) {
+          if (!sequence(i).empty()) {
             uint32_t n = 0;
             while (indices[i] != sequence(i)[n])
               n++;
@@ -216,7 +216,7 @@ std::vector<uint32_t> ParsedName::List::parse_scan_check(const std::string &spec
   std::vector<uint32_t> dim = count();
 
   for (size_t n = 0; n < dim.size(); n++)
-    if (parser.sequence(n).size())
+    if (!parser.sequence(n).empty())
       if (dim[n] != parser.sequence(n).size())
         throw Exception("number of files found does not match specification \"" + specifier + "\"");
 
@@ -232,7 +232,7 @@ void ParsedName::List::scan(NameParser &parser) {
 
   std::string entry;
 
-  while ((entry = parser.get_next_match(index, true)).size())
+  while (!(entry = parser.get_next_match(index, true)).empty())
     list.push_back(std::shared_ptr<ParsedName>(new ParsedName(entry, index)));
 
   if (!size())

@@ -382,7 +382,7 @@ void Tractography::dropEvent(QDropEvent *event) {
 void Tractography::tractogram_close_slot() {
   GL::Context::Grab context;
   QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
-  while (indexes.size()) {
+  while (!indexes.empty()) {
     tractogram_list_model->remove_item(indexes.first());
     indexes = tractogram_list_view->selectionModel()->selectedIndexes();
   }
@@ -656,7 +656,7 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
   update_geometry_type_gui();
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  if (!indices.size()) {
+  if (indices.empty()) {
     colour_combobox->setEnabled(false);
     colour_button->setEnabled(false);
     return;
@@ -746,7 +746,7 @@ void Tractography::update_geometry_type_gui() {
   geom_type_combobox->setEnabled(false);
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  if (!indices.size())
+  if (indices.empty())
     return;
 
   geom_type_combobox->setEnabled(true);
@@ -969,7 +969,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
     try {
       const TrackGeometryType geom_type = geometry_index2type(geometry_string2index(opt[0]));
       QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-      if (indices.size()) {
+      if (!indices.empty()) {
         for (int i = 0; i < indices.size(); ++i)
           tractogram_list_model->get_tractogram(indices[i])->set_geometry_type(geom_type);
       } else {

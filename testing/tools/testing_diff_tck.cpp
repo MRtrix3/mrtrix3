@@ -108,7 +108,7 @@ void run() {
   DWI::Tractography::Reader<> reader1(argument[0], properties1);
   DWI::Tractography::Reader<> reader2(argument[1], properties2);
 
-  if (get_options("unordered").size()) {
+  if (!get_options("unordered").empty()) {
 
     std::vector<DWI::Tractography::Streamline<>> ref_list;
     DWI::Tractography::Streamline<> tck;

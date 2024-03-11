@@ -190,12 +190,12 @@ void run() {
 
   Image<bool> mask_input, mask_target;
   auto opt = get_options("mask_input");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask_input = Image<bool>::open(opt[0][0]);
     check_dimensions(input, mask_input, 0, 3);
   }
   opt = get_options("mask_target");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask_target = Image<bool>::open(opt[0][0]);
     check_dimensions(target, mask_target, 0, 3);
   }

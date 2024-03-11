@@ -108,7 +108,7 @@ public:
     std::shared_ptr<Image<ValueType>> out;
 
     std::unique_ptr<ProgressBar> progress;
-    if (message.size()) {
+    if (!message.empty()) {
       size_t axes_to_smooth = 0;
       for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
@@ -133,7 +133,7 @@ public:
   //! Smooth the image in place
   template <class ImageType> void operator()(ImageType &in_and_output) {
     std::unique_ptr<ProgressBar> progress;
-    if (message.size()) {
+    if (!message.empty()) {
       size_t axes_to_smooth = 0;
       for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)

@@ -308,7 +308,7 @@ template <class ImageType> inline std::vector<int> set_header(Header &header, co
 
   auto opt = get_options("axes");
   std::vector<int32_t> axes;
-  if (opt.size()) {
+  if (!opt.empty()) {
     axes = parse_ints<int32_t>(opt[0][0]);
     header.ndim() = axes.size();
     for (size_t i = 0; i < axes.size(); ++i) {
@@ -330,7 +330,7 @@ template <class ImageType> inline std::vector<int> set_header(Header &header, co
   }
 
   opt = get_options("vox");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::vector<default_type> vox = parse_floats(opt[0][0]);
     if (vox.size() > header.ndim())
       throw Exception("too many axes supplied to -vox option");
@@ -377,7 +377,7 @@ void run() {
   try {
     dw_scheme = DWI::get_DW_scheme(header_in, DWI::get_cmdline_bvalue_scaling_behaviour());
   } catch (Exception &e) {
-    if (get_options("grad").size() || get_options("fslgrad").size() || get_options("bvalue_scaling").size())
+    if (!get_options("grad").empty() || !get_options("fslgrad").empty() || !get_options("bvalue_scaling").empty())
       throw;
     e.display(2);
   }
@@ -388,15 +388,15 @@ void run() {
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
-  if (get_options("import_pe_table").size() || get_options("import_pe_eddy").size())
+  if (!get_options("import_pe_table").empty() || !get_options("import_pe_eddy").empty())
     PhaseEncoding::set_scheme(header_out, PhaseEncoding::get_scheme(header_in));
 
   auto opt = get_options("json_import");
-  if (opt.size())
+  if (!opt.empty())
     File::JSON::load(header_out, opt[0][0]);
 
   opt = get_options("copy_properties");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header_out.keyval().clear();
     if (str(opt[0][0]) != "NULL") {
       try {
@@ -442,13 +442,13 @@ void run() {
 
   opt = get_options("coord");
   std::vector<std::vector<uint32_t>> pos;
-  if (opt.size()) {
+  if (!opt.empty()) {
     pos.assign(header_in.ndim(), std::vector<uint32_t>());
     for (size_t n = 0; n < opt.size(); n++) {
       size_t axis = opt[n][0];
       if (axis >= header_in.ndim())
         throw Exception("axis " + str(axis) + " provided with -coord option is out of range of input image");
-      if (pos[axis].size())
+      if (!pos[axis].empty())
         throw Exception("\"coord\" option specified twice for axis " + str(axis));
       pos[axis] = parse_ints<uint32_t>(opt[n][1], header_in.size(axis) - 1);
 
@@ -503,7 +503,7 @@ void run() {
   }
 
   opt = get_options("scaling");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (header_out.datatype().is_integer()) {
       std::vector<default_type> scaling = opt[0][0];
       if (scaling.size() != 2)
@@ -544,6 +544,6 @@ void run() {
   }
 
   opt = get_options("json_export");
-  if (opt.size())
+  if (!opt.empty())
     File::JSON::save(header_out, opt[0][0], argument[1]);
 }

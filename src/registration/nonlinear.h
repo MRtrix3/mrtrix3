@@ -132,7 +132,7 @@ public:
 
       // define or adjust tissue contrast lmax, nvols for this stage
       stage_contrasts = contrasts;
-      if (stage_contrasts.size()) {
+      if (!stage_contrasts.empty()) {
         for (auto &mc : stage_contrasts)
           mc.lower_lmax(fod_lmax[level]);
       } else {
@@ -337,7 +337,7 @@ public:
           converged = true;
 
         // write debug image
-        if (converged && diagnostics_image_prefix.size()) {
+        if (converged && !diagnostics_image_prefix.empty()) {
           std::ostringstream oss;
           oss << diagnostics_image_prefix << "_stage-" << level + 1 << ".mif";
           // if (Path::exists(oss.str()) && !App::overwrite_files)

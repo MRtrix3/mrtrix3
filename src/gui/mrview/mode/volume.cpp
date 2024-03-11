@@ -51,7 +51,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
   const bool AND = mode.get_clipintersectionmodestate();
   std::string clip_color_spec = File::Config::get("MRViewClipPlaneColour");
   std::vector<float> clip_color = {1.0, 0.0, 0.0, 0.1};
-  if (clip_color_spec.size()) {
+  if (!clip_color_spec.empty()) {
     auto colour = parse_floats(clip_color_spec);
     if (colour.size() != 4)
       WARN("malformed config file entry for \"MRViewClipPlaneColour\" - expected 4 comma-separated values");
@@ -109,7 +109,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n";
 
-  if (clip.size()) {
+  if (!clip.empty()) {
     source += std::string("    bool show = ") + (AND ? "false" : "true") + ";\n";
     for (size_t n = 0; n < clip.size(); ++n)
       source +=
@@ -147,7 +147,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
             "        final_color.a += color.a;\n"
             "      }\n";
 
-  if (clip.size())
+  if (!clip.empty())
     source += "    }\n";
 
   // OVERLAYS:
@@ -201,7 +201,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
               "    }\n";
   }
 
-  if (clip.size() && mode.get_cliphighlightstate()) {
+  if (!clip.empty() && mode.get_cliphighlightstate()) {
     source += "    float highlight = 0.0;\n";
     for (size_t n = 0; n < clip.size(); ++n)
       source += "    if (clip" + str(n) +

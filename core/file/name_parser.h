@@ -39,7 +39,7 @@ public:
 
     void set_seq(const std::string &s) {
       clear();
-      if (s.size())
+      if (!s.empty())
         seq = parse_ints<uint32_t>(s);
       seq_length = 1;
     }

@@ -251,7 +251,7 @@ void run() {
 
   auto mask = Image<bool>();
   opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(dwi, mask, 0, 3);
   }
@@ -274,7 +274,7 @@ void run() {
   properties.beta = get_option_value("beta", DEFAULT_BETA);
 
   opt = get_options("balance");
-  if (opt.size()) {
+  if (!opt.empty()) {
     double lam = opt[0][0];
     double b = 1.0 / (1.0 + exp(-lam));
     properties.lam_ext = 2 * b;
@@ -282,7 +282,7 @@ void run() {
   }
 
   opt = get_options("prob");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto prob = opt[0][0].as_sequence_float();
     if (prob.size() == 5) {
       properties.p_birth = prob[0];
@@ -303,7 +303,7 @@ void run() {
   properties.ppot = mu * wmscale2 * properties.weight;
 
   opt = get_options("lambda");
-  if (opt.size()) {
+  if (!opt.empty()) {
     properties.lam_ext = 1.0;
     properties.lam_int = opt[0][0];
   }
@@ -314,7 +314,7 @@ void run() {
 
   Stats stats(t0, t1, niter);
   opt = get_options("etrend");
-  if (opt.size())
+  if (!opt.empty())
     stats.open_stream(opt[0][0]);
 
   ParticleGrid pgrid(dwi);
@@ -366,17 +366,17 @@ void run() {
   header.datatype() = DataType::Float32;
 
   opt = get_options("fod");
-  if (opt.size()) {
+  if (!opt.empty()) {
     INFO("Saving fODF image to file");
     header.size(3) = Math::SH::NforL(properties.Lmax);
     auto fODF = Image<float>::create(opt[0][0], header);
-    auto f = __copy_fod<float>(properties.Lmax, properties.weight, !get_options("noapo").size());
+    auto f = __copy_fod<float>(properties.Lmax, properties.weight, get_options("noapo").empty());
     ThreadedLoop(Eext->getTOD(), 0, 3).run(f, Eext->getTOD(), fODF);
   }
 
   opt = get_options("fiso");
-  if (opt.size()) {
-    if (properties.resp_ISO.size() > 0) {
+  if (!opt.empty()) {
+    if (!properties.resp_ISO.empty()) {
       INFO("Saving isotropic fractions to file");
       header.size(3) = properties.resp_ISO.size();
       auto Fiso = Image<float>::create(opt[0][0], header);
@@ -387,7 +387,7 @@ void run() {
   }
 
   opt = get_options("eext");
-  if (opt.size()) {
+  if (!opt.empty()) {
     INFO("Saving external energy to file");
     header.ndim() = 3;
     auto EextI = Image<float>::create(opt[0][0], header);

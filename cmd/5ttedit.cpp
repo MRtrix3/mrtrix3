@@ -136,22 +136,22 @@ void run() {
   Modifier modifier(in, out);
 
   auto opt = get_options("cgm");
-  if (opt.size())
+  if (!opt.empty())
     modifier.set_cgm_mask(opt[0][0]);
   opt = get_options("sgm");
-  if (opt.size())
+  if (!opt.empty())
     modifier.set_sgm_mask(opt[0][0]);
   opt = get_options("wm");
-  if (opt.size())
+  if (!opt.empty())
     modifier.set_wm_mask(opt[0][0]);
   opt = get_options("csf");
-  if (opt.size())
+  if (!opt.empty())
     modifier.set_csf_mask(opt[0][0]);
   opt = get_options("path");
-  if (opt.size())
+  if (!opt.empty())
     modifier.set_path_mask(opt[0][0]);
   opt = get_options("none");
-  if (opt.size())
+  if (!opt.empty())
     modifier.set_none_mask(opt[0][0]);
 
   ThreadedLoop("Modifying ACT 5TT image", in, 0, 3, 2).run(modifier);

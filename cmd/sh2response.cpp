@@ -77,7 +77,7 @@ void run() {
 
   File::OFStream dump_stream;
   auto opt = get_options("dump");
-  if (opt.size())
+  if (!opt.empty())
     dump_stream.open(opt[0][0]);
 
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);

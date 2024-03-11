@@ -79,7 +79,7 @@ void run() {
   Image<value_type> fc_output_data;
 
   auto opt = get_options("fc");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::string template_fixel_directory(opt[0][0]);
     fixel_template_index = Fixel::find_index_header(template_fixel_directory).get_image<uint32_t>();
     fixel_template_directions =
@@ -96,14 +96,14 @@ void run() {
   }
 
   opt = get_options("jmat");
-  if (opt.size()) {
+  if (!opt.empty()) {
     Header output_header(input);
     output_header.size(3) = 9;
     jmatrix_output = Image<value_type>::create(opt[0][0], output_header);
   }
 
   opt = get_options("jdet");
-  if (opt.size()) {
+  if (!opt.empty()) {
     Header output_header(input);
     output_header.ndim() = 3;
     jdeterminant_output = Image<value_type>::create(opt[0][0], output_header);

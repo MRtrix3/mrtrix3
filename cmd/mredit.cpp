@@ -102,14 +102,14 @@ void run() {
   }
 
   Transform transform(H);
-  const bool scanner = get_options("scanner").size();
+  const bool scanner = !get_options("scanner").empty();
   if (scanner && H.ndim() < 3)
     throw Exception("Cannot specify scanner-space coordinates if image has less than 3 dimensions");
 
   size_t operation_count = 0;
 
   auto opt = get_options("plane");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (H.ndim() != 3)
       throw Exception("-plane option only works for 3D images");
     if (scanner)
@@ -131,7 +131,7 @@ void run() {
   }
 
   opt = get_options("sphere");
-  if (opt.size() && H.ndim() != 3)
+  if (!opt.empty() && H.ndim() != 3)
     throw Exception("-sphere option only works for 3D images");
   operation_count += opt.size();
   for (auto s : opt) {
@@ -151,7 +151,7 @@ void run() {
     const Vox seed_voxel(centre_voxelspace);
     processed.insert(seed_voxel);
     to_expand.push_back(seed_voxel);
-    while (to_expand.size()) {
+    while (!to_expand.empty()) {
       const Vox v(to_expand.back());
       to_expand.pop_back();
       const Eigen::Vector3d v_scanner = transform.voxel2scanner * v.matrix().cast<default_type>();

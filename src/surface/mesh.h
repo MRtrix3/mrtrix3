@@ -132,7 +132,7 @@ public:
   size_t num_quads() const { return quads.size(); }
   size_t num_polygons() const { return triangles.size() + quads.size(); }
 
-  bool have_normals() const { return normals.size(); }
+  bool have_normals() const { return !normals.empty(); }
   void calculate_normals();
 
   const std::string &get_name() const { return name; }
