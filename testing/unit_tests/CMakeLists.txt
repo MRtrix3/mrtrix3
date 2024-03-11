@@ -11,6 +11,7 @@ set(UNIT_TESTS_CPP_SRCS
 )
 
 set(UNIT_TESTS_BASH_SRCS
+    cpp_cli
     npyread
     npywrite
     python_cli

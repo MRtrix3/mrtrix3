@@ -1,0 +1,128 @@
+     tteessttiinngg__ccpppp__ccllii: part of the MRtrix3 package
+
+SSYYNNOOPPSSIISS
+
+     Verify operation of the C++ command-line interface & parser
+
+UUSSAAGGEE
+
+     _t_e_s_t_i_n_g___c_p_p___c_l_i [ options ]
+
+
+OOPPTTIIOONNSS
+
+  _-_f_l_a_g
+     An option flag that takes no arguments
+
+  _-_t_e_x_t spec
+     a text input
+
+  _-_b_o_o_l value
+     a boolean input
+
+  _-_i_n_t___u_n_b_o_u_n_d value
+     an integer input (unbounded)
+
+  _-_i_n_t___n_o_n_n_e_g value
+     a non-negative integer
+
+  _-_i_n_t___b_o_u_n_d value
+     a bound integer
+
+  _-_f_l_o_a_t___u_n_b_o_u_n_d value
+     a floating-point number (unbounded)
+
+  _-_f_l_o_a_t___n_o_n_n_e_g value
+     a non-negative floating-point number
+
+  _-_f_l_o_a_t___b_o_u_n_d value
+     a bound floating-point number
+
+  _-_i_n_t___s_e_q values
+     a comma-separated sequence of integers
+
+  _-_f_l_o_a_t___s_e_q values
+     a comma-separated sequence of floating-point numbers
+
+  _-_c_h_o_i_c_e item
+     a choice from a set of options
+
+  _-_f_i_l_e___i_n input
+     an input file
+
+  _-_f_i_l_e___o_u_t output
+     an output file
+
+  _-_d_i_r___i_n input
+     an input directory
+
+  _-_d_i_r___o_u_t output
+     an output directory
+
+  _-_t_r_a_c_k_s___i_n input
+     an input tractogram
+
+  _-_t_r_a_c_k_s___o_u_t output
+     an output tractogram
+
+  _-_v_a_r_i_o_u_s spec
+     an argument that could accept one of various forms
+
+  _-_n_a_r_g_s___t_w_o first second
+     A command-line option that accepts two arguments
+
+  _-_m_u_l_t_i_p_l_e spec  (multiple uses permitted)
+     A command-line option that can be specified multiple times
+
+SSttaannddaarrdd  ooppttiioonnss
+
+  _-_i_n_f_o
+     display information messages.
+
+  _-_q_u_i_e_t
+     do not display information messages or progress status; alternatively,
+     this can be achieved by setting the MRTRIX_QUIET environment variable to a
+     non-empty string.
+
+  _-_d_e_b_u_g
+     display debugging messages.
+
+  _-_f_o_r_c_e
+     force overwrite of output files (caution: using the same file as input and
+     output might cause unexpected behaviour).
+
+  _-_n_t_h_r_e_a_d_s number
+     use this number of threads in multi-threaded applications (set to 0 to
+     disable multi-threading).
+
+  _-_c_o_n_f_i_g key value  (multiple uses permitted)
+     temporarily set the value of an MRtrix config file entry.
+
+  _-_h_e_l_p
+     display this information page and exit.
+
+  _-_v_e_r_s_i_o_n
+     display version information and exit.
+
+AAUUTTHHOORR
+     Robert E. Smith (robert.smith@florey.edu.au)
+
+CCOOPPYYRRIIGGHHTT
+     Copyright (c) 2008-2024 the MRtrix3 contributors.
+     This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this
+     file, You can obtain one at http://mozilla.org/MPL/2.0/.
+     Covered Software is provided under this License on an "as is"
+     basis, without warranty of any kind, either expressed, implied, or
+     statutory, including, without limitation, warranties that the
+     Covered Software is free of defects, merchantable, fit for a
+     particular purpose or non-infringing.
+     See the Mozilla Public License v. 2.0 for more details.
+     For more details, see http://www.mrtrix.org/.
+
+RREEFFEERREENNCCEESS
+     Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.;
+     Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A.
+     MRtrix3: A fast, flexible and open software framework for medical image
+     processing and visualisation. NeuroImage, 2019, 202, 116137
+
