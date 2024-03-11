@@ -1,8 +1,8 @@
 mkdir -p tmp-dirin/ && touch tmp-filein.txt && touch tmp-tracksin.tck && testing_python_cli -string_implicit my_implicit_string -string_explicit my_explicit_string -choice One -bool false -int_builtin 0 -float_builtin 0.0 -int_unbound 0 -int_nonneg 1 -int_bound 50 -float_unbound 0.0 -float_nonneg 1.0 -float_bound 0.5 -int_seq 1,2,3 -float_seq 0.1,0.2,0.3 -dir_in tmp-dirin/ -dir_out tmp-dirout/ -file_in tmp-filein.txt -file_out tmp-fileout.txt -tracks_in tmp-tracksin.tck -tracks_out tmp-tracksout.tck -various my_various && rm -rf tmp-dirin/ && rm -f tmp-filein.txt && rm -f tmp-tracksin.tck
-testing_python_cli -help | tail -n +3 > tmp.txt && diff tmp.txt python_cli/help.txt && rm -f tmp.txt
-testing_python_cli __print_full_usage__ > tmp.txt && diff tmp.txt python_cli/full_usage.txt && rm -f tmp.txt
-testing_python_cli __print_usage_markdown__ > tmp.md && diff tmp.md python_cli/markdown.md && rm -f tmp.md
-testing_python_cli __print_usage_rst__ > tmp.rst && diff tmp.rst python_cli/restructured_text.rst && rm -f tmp.rst
+testing_python_cli -help | tail -n +3 > tmp.txt && diff -a --strip-trailing-cr tmp.txt python_cli/help.txt && rm -f tmp.txt
+testing_python_cli __print_full_usage__ > tmp.txt && diff -a --strip-trailing-cr tmp.txt python_cli/full_usage.txt && rm -f tmp.txt
+testing_python_cli __print_usage_markdown__ > tmp.md && diff -a --strip-trailing-cr tmp.md python_cli/markdown.md && rm -f tmp.md
+testing_python_cli __print_usage_rst__ > tmp.rst && diff -a --strip-trailing-cr tmp.rst python_cli/restructured_text.rst && rm -f tmp.rst
 testing_python_cli -bool false
 testing_python_cli -bool False
 testing_python_cli -bool FALSE
