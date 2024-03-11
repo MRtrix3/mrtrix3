@@ -605,7 +605,7 @@ class Parser(argparse.ArgumentParser):
                 'will be overwritten at script completion')
         else:
           raise MRtrixError(f'Output {item_type} "{str(self)}" already exists '
-                            '(use -force to override)')
+                            '(use -force option to force overwrite)')
   class _UserFileOutPathExtras(_UserOutPathExtras):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
@@ -631,7 +631,7 @@ class Parser(argparse.ArgumentParser):
         except FileExistsError:
           if not FORCE_OVERWRITE:
             raise MRtrixError(f'Output directory "{str(self)}" already exists ' # pylint: disable=raise-missing-from
-                              '(use -force to override)')
+                              '(use -force option to force overwrite)')
 
   # Various callable types for use as argparse argument types
   class CustomTypeBase:

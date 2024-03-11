@@ -1,0 +1,38 @@
+mkdir -p tmp-dirin/ && touch tmp-filein.txt && touch tmp-tracksin.tck && testing_cpp_cli -flag -text my_text -choice One -bool false -int_unbound 0 -int_nonneg 1 -int_bound 50 -float_unbound 0.0 -float_nonneg 1.0 -float_bound 0.5 -int_seq 1,2,3 -float_seq 0.1,0.2,0.3 -dir_in tmp-dirin/ -dir_out tmp-dirout/ -file_in tmp-filein.txt -file_out tmp-fileout.txt -tracks_in tmp-tracksin.tck -tracks_out tmp-tracksout.tck -various my_various && rm -rf tmp-dirin/ && rm -f tmp-filein.txt && rm -f tmp-tracksin.tck
+testing_cpp_cli -help > tmp.txt && sed -i '1,2d' tmp.txt && diff tmp.txt cpp_cli/help.txt && rm -f tmp.txt
+testing_cpp_cli __print_full_usage__ > tmp.txt && diff tmp.txt cpp_cli/full_usage.txt && rm -f tmp.txt
+testing_cpp_cli __print_usage_markdown__ > tmp.md && diff tmp.md cpp_cli/markdown.md && rm -f tmp.md
+testing_cpp_cli __print_usage_rst__ > tmp.rst && diff tmp.rst cpp_cli/restructured_text.rst && rm -f tmp.rst
+testing_cpp_cli -bool false
+testing_cpp_cli -bool False
+testing_cpp_cli -bool FALSE
+testing_cpp_cli -bool true
+testing_cpp_cli -bool True
+testing_cpp_cli -bool TRUE
+testing_cpp_cli -bool 0
+testing_cpp_cli -bool 1
+testing_cpp_cli -bool 2
+testing_cpp_cli -bool NotABool && false || true
+testing_cpp_cli -int_builtin 0.1 && false || true
+testing_cpp_cli -int_builtin NotAnInt && false || true
+testing_cpp_cli -int_unbound 0.1 && false || true
+testing_cpp_cli -int_unbound NotAnInt && false || true
+testing_cpp_cli -int_nonneg -1 && false || true
+testing_cpp_cli -int_bound 101 && false || true
+testing_cpp_cli -float_builtin NotAFloat && false || true
+testing_cpp_cli -float_unbound NotAFloat && false || true
+testing_cpp_cli -float_nonneg -0.1 && false || true
+testing_cpp_cli -float_bound 1.1 && false || true
+testing_cpp_cli -int_seq 0.1,0.2,0.3 && false || true
+testing_cpp_cli -int_seq Not,An,Int,Seq && false || true
+testing_cpp_cli -float_seq Not,A,Float,Seq && false || true
+rm -rf tmp-dirin/ && testing_cpp_cli -dir_in tmp-dirin/ && false || true
+trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && testing_cpp_cli -dir_out tmp-dirout/ 2>&1 | grep -q "use -force option to force overwrite"
+trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && testing_cpp_cli -dir_out tmp-dirout/ -force
+rm -f tmp-filein.txt && testing_cpp_cli -file_in tmp-filein.txt && false || true
+trap "rm -f tmp-fileout.txt" EXIT; touch tmp-fileout.txt && testing_cpp_cli -file_out tmp-fileout.txt 2>&1 | grep -q "use -force option to force overwrite"
+trap "rm -f tmp-fileout.txt" EXIT; touch tmp-fileout.txt && testing_cpp_cli -file_out tmp-fileout.txt -force
+rm -f tmp-tracksin.tck && testing_cpp_cli -tracks_in tmp-tracksin.tck && false || true
+trap "rm -f tmp-filein.txt" EXIT; touch tmp-filein.txt && testing_cpp_cli -tracks_in tmp-filein.txt && false || true
+trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && testing_cpp_cli -tracks_out tmp-tracksout.tck 2>&1 | grep -q "use -force option to force overwrite"
+trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && testing_cpp_cli -tracks_out tmp-tracksout.tck -force
