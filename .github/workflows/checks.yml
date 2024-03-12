@@ -25,7 +25,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
@@ -76,7 +76,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
@@ -113,7 +113,7 @@ jobs:
     runs-on: macos-latest
 
     env:
-      PACKAGES: "qt eigen pkg-config fftw libpng ninja cmake"
+      PACKAGES: "qt pkg-config fftw libpng ninja cmake"
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
 
@@ -191,7 +191,6 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-bc
             ${{env.MINGW_PACKAGE_PREFIX}}-cmake
             ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
-            ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
             ${{env.MINGW_PACKAGE_PREFIX}}-fftw
             ${{env.MINGW_PACKAGE_PREFIX}}-gcc
             ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
@@ -264,4 +263,4 @@ jobs:
         extensions: 'h,cpp'
         clangFormatVersion: 16
         # Ignore third party headers
-        exclude: './core/file/json.h ./core/file/nifti1.h ./core/file/nifti2.h'
+        exclude: './thirdparty/nifti/nifti1.h ./thirdparty/nifti/nifti2.h'
