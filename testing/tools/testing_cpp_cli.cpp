@@ -22,7 +22,7 @@
 using namespace MR;
 using namespace App;
 
-const char* const choices[] = { "One", "Two", "Three", nullptr };
+const char *const choices[] = {"One", "Two", "Three", nullptr};
 
 // clang-format off
 void usage() {
@@ -167,8 +167,7 @@ void run() {
   if (!opt.empty()) {
     std::vector<std::string> specs;
     for (size_t i = 0; i != opt.size(); ++i)
-      specs.push_back (std::string("\"") + str(opt[i][0]) + "\"");
+      specs.push_back(std::string("\"") + str(opt[i][0]) + "\"");
     CONSOLE("-multiple: [" + join(specs, " ") + "]");
   }
-
 }
