@@ -2,7 +2,7 @@ include(CheckSymbolExists)
 
 file(GLOB_RECURSE CORE_SRCS *.cpp *.h)
 
-find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(Eigen3 REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(FFTW REQUIRED)
 find_package(Git QUIET)
@@ -90,6 +90,8 @@ target_link_libraries(mrtrix-core PUBLIC
     mrtrix::common
     Threads::Threads
     ${FFTW_LIBRARIES}
+    nlohmann_json::nlohmann_json
+    nifti::nifti
 )
 
 target_include_directories(mrtrix-core PUBLIC
