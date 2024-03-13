@@ -17,8 +17,8 @@
 #ifndef __file_json_utils_h__
 #define __file_json_utils_h__
 
-#include "file/json.h"
 #include "file/key_value.h"
+#include <nlohmann/json.hpp>
 
 namespace MR {
 class Header;
