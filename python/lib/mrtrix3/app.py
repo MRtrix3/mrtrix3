@@ -13,9 +13,18 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
+import typing as ty
+from keyword import kwlist as PYTHON_KEYWORDS
+try:
+  import black.parsing
+except ImportError:
+  HAVE_BLACK = False
+else:
+  HAVE_BLACK = True
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
+
 from ._version import __version__
 
 
@@ -143,6 +152,9 @@ def _execute(module): #pylint: disable=unused-variable
     sys.exit(0)
   elif sys.argv[-1] == '__print_usage_rst__':
     CMDLINE.print_usage_rst()
+    sys.exit(0)
+  elif sys.argv[-1] == '__print_usage_pydra__':
+    CMDLINE.print_usage_pydra()
     sys.exit(0)
 
   # Do the main command-line input parsing
@@ -1094,6 +1106,188 @@ class Parser(argparse.ArgumentParser):
     if self._subparsers:
       for alg in self._subparsers._group_actions[0].choices:
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_rst__' ])
+
+
+  def print_usage_pydra(self):
+
+    if self._subparsers:
+
+      if len(sys.argv) == 3:
+        for alg in self._subparsers._group_actions[0].choices:
+          if alg == sys.argv[-2]:
+            self._subparsers._group_actions[0].choices[alg].print_usage_pydra()
+            return
+        self.error('Invalid subparser nominated: ' + sys.argv[-2])
+      assert len(sys.argv) == 2
+      sys.stdout.write(",".join(self._subparsers._group_actions[0].choices))
+      sys.stdout.flush()
+      return
+
+    def get_arg_metadata(arg):
+      metadata = {
+        "help_string": arg.help,
+      }
+      if arg.choices:
+        metadata["allowed_values"] = list(arg.choices)
+      if arg.required:
+        metadata["mandatory"] = True
+      return metadata
+
+    def parse_type(type_):
+      if type_:
+        return f"#{type_.__name__}#"
+      return ty.Any
+
+    def escape_id(id_: str) -> str:
+      if id_ == "input":
+        escaped = "in_file"
+      elif id_ == "output":
+        escaped = "out_file"
+      elif id_ in list(PYTHON_KEYWORDS) + ["container", "image", "container_xargs"]:
+        escaped = id_ + "_"
+      else:
+        escaped = id_
+      escaped = escaped.replace(".", '_')
+      return escaped
+
+    inputs = []
+    input_names = [a.dest for a in self._positionals._group_actions]
+    output_names = []
+    for pos, arg in enumerate(self._positionals._group_actions):
+      metadata = get_arg_metadata(arg)
+      metadata["position"] = pos
+      metadata["argstr"] = ""
+      arg_id = escape_id(arg.dest)
+      if arg.type:
+        type_ = parse_type(arg.type)
+      elif arg_id == "input":
+        type_ = "#FsObject#"
+      elif arg_id == "output":
+        type_ = "#Path#"
+        output_names.append(arg_id)
+      else:
+        type_ = ty.Any
+      if arg_id == "output" and "input" in input_names:
+        metadata["output_file_template"] = "output_{input}"
+        metadata.pop("mandatory", None)
+      inputs.append(
+        (
+          arg_id,
+          type_,
+          metadata,
+        )
+      )
+    for group in reversed(self._action_groups):
+      for option in group._group_actions:
+        if option.dest in input_names:
+          continue
+        if isinstance(option, argparse._StoreTrueAction):
+          type_ = "#bool#"
+        else:
+          type_ = parse_type(option.type)
+        if isinstance(option, argparse._AppendAction):
+          type_ = f"#specs.MultiInputObj[{type_}]#"
+        metadata = get_arg_metadata(option)
+        metadata["argstr"] = "-" + option.dest
+        inputs.append(
+          (
+            escape_id(option.dest),
+            type_,
+            metadata,
+          )
+        )
+    # Replace # escapes
+    inputs_str = re.sub(r"'#([a-zA-Z0-9\._\[\]]+)#'", r"\1", str(inputs))
+
+    outputs = []
+    for arg in self._positionals._group_actions:
+      arg_id = escape_id(arg.dest)
+      if arg_id in output_names:
+        metadata = get_arg_metadata(arg)
+        if arg.type:
+          type_ = arg.type
+        else:
+          type_ = "#FsObject#"
+        outputs.append((
+            (
+              arg_id,
+              type_,
+              metadata,
+            )
+          )
+        )
+    outputs_str = re.sub(r"'#([a-zA-Z0-9_\[\]]+)#'", r"\1", str(outputs))
+
+    def cmd_to_task_name(cmd_name: str) -> str:
+      """Get Task class name from cmd name"""
+      if cmd_name == "population_template":
+        return "PopulationTemplate"
+      task_name = cmd_name.replace(" ", "_")
+      if task_name[0] == "5":
+        task_name = "five" + task_name[1:]
+      cmd_prefixes = [
+        "fivett", "afd", "amp", "connectome", "dcm", "dir", "dwi",
+        "fixel", "fod", "label", "mask", "mesh", "mr", "mt",
+        "peaks", "response", "sh", "tck", "transform", "tsf", "voxel", "vector"
+      ]
+      # convert to PascalCase
+      task_name = "".join(
+        g.capitalize()
+        for g in re.match(rf"({'|'.join(cmd_prefixes)})(2?)([^_]+)(_?)(.*)", task_name).groups()
+      )
+      return task_name
+
+    task_name = cmd_to_task_name(self.prog)
+
+    text = (
+        "# Auto-generated by mrtrix3/app.py:print_usage_pydra()\n\n"
+        "import typing\n"
+        "from pathlib import Path  # noqa: F401\n"
+        "from fileformats.generic import FsObject, File, Directory  # noqa: F401\n"
+        "from fileformats.medimage_mrtrix3 import Tracks, ImageIn, ImageOut  # noqa: F401\n"
+        "from pydra.engine.task import ShellCommandTask \n"
+        "from pydra.engine import specs\n"
+    )
+
+    text += f"input_fields = {inputs_str}\n"
+    text += f"{task_name}InputSpec = specs.SpecInfo(name='{task_name}Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n"
+    text += f"output_fields = {outputs_str}\n"
+    text += f"{task_name}OutputSpec = specs.SpecInfo(name='{task_name}Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n"
+    text += f"class {task_name}(ShellCommandTask):\n"
+    indent = "    "
+    text += indent + "\"\"\"\n"
+    text += indent + (self.description if self.description else "")
+    text += indent + "References\n"
+    text += indent + "----------\n\n"
+    for ref in self._citation_list:
+      ref_text = indent + "* "
+      if ref[0]:
+        ref_text += ref[0] + ': '
+      ref_text += ref[1]
+      text += ref_text + '\n\n'
+    text += indent + _MRTRIX3_CORE_REFERENCE + '\n\n'
+    text += indent + '--------------\n\n\n\n'
+    text += indent + '**Author:** ' + self._author + '\n\n'
+    text += indent + '**Copyright:** ' + self._copyright + '\n\n'
+    text += indent + "\"\"\"\n"
+    text += f"    input_spec = {task_name}InputSpec\n"
+    text += f"    output_spec = {task_name}OutputSpec\n"
+    if " " in self.prog:
+      executable = tuple(self.prog.split(" "))
+    else:
+      executable = self.prog
+    text += f"    executable={executable!r}\n\n"
+
+    if HAVE_BLACK:
+      try:
+        text = black.format_file_contents(
+            text, fast=False, mode=black.FileMode()
+        )
+      except black.parsing.InvalidInput:
+        pass
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
 
   def print_version(self):
     text = '== ' + self.prog + ' ' + (self._git_version if self._is_project else __version__) + ' ==\n'
