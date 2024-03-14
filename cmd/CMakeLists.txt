@@ -14,11 +14,30 @@ function(add_cmd CMD_SRC IS_GUI)
         $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::headless>
         mrtrix::exec-version-lib
     )
-    set_target_properties(${CMD_NAME} PROPERTIES 
+    if (IS_GUI AND (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
+        set(mrtrix_icon_macos "${CMAKE_SOURCE_DIR}/icons/macos/${CMD_NAME}.icns")
+        set_source_files_properties(${mrtrix_icon_macos} PROPERTIES 
+            MACOSX_PACKAGE_LOCATION "Resources"
+        )
+        target_sources(${CMD_NAME} PRIVATE ${mrtrix_icon_macos})
+        if (${CMD_NAME} STREQUAL mrview)
+            set(mrtrix_icon_macos "${CMAKE_SOURCE_DIR}/icons/macos/${CMD_NAME}_doc.icns")
+            set_source_files_properties(${mrtrix_icon_macos} PROPERTIES
+                MACOSX_PACKAGE_LOCATION "Resources"
+            )
+            target_sources(${CMD_NAME} PRIVATE ${mrtrix_icon_macos})
+        endif ()
+    endif ()
+    set_target_properties(${CMD_NAME} PROPERTIES
+        MACOSX_BUNDLE ${IS_GUI}
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/bundle/${CMD_NAME}.plist.in
         LINK_DEPENDS_NO_SHARED true
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
-    install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS ${CMD_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 endfunction()
 
 
