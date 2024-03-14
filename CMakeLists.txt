@@ -116,6 +116,7 @@ if(COMPILER_PATH MATCHES "fsl/bin" OR LINKER_PATH MATCHES "fsl/bin")
     )
 endif()
 
+add_subdirectory(thirdparty)
 add_subdirectory(cmd)
 add_subdirectory(core)
 add_subdirectory(python)
