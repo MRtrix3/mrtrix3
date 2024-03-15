@@ -19,7 +19,7 @@
 #   in Python.
 
 
-import json, math, os, subprocess
+import json, math, os, pathlib, subprocess
 from collections import namedtuple
 from mrtrix3 import MRtrixError
 
@@ -28,15 +28,16 @@ from mrtrix3 import MRtrixError
 # Class for importing header information from an image file for reading
 class Header:
   def __init__(self, image_path):
-    from mrtrix3 import app, path, run #pylint: disable=import-outside-toplevel
-    filename = path.name_temporary('json')
-    command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename ]
+    from mrtrix3 import app, run, utils #pylint: disable=import-outside-toplevel
+    image_path_str = str(image_path) if isinstance(image_path, pathlib.Path) else image_path
+    filename = utils.name_temporary('json')
+    command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename, '-nodelete' ]
     if app.VERBOSITY > 1:
-      app.console('Loading header for image file \'' + image_path + '\'')
+      app.console(f'Loading header for image file "{image_path_str}"')
     app.debug(str(command))
     result = subprocess.call(command, stdout=None, stderr=None)
     if result:
-      raise MRtrixError('Could not access header information for image \'' + image_path + '\'')
+      raise MRtrixError(f'Could not access header information for image "{image_path_str}"')
     try:
       with open(filename, 'r', encoding='utf-8') as json_file:
         data = json.load(json_file)
@@ -63,7 +64,7 @@ class Header:
       else:
         self._keyval = data['keyval']
     except Exception as exception:
-      raise MRtrixError('Error in reading header information from file \'' + image_path + '\'') from exception
+      raise MRtrixError(f'Error in reading header information from file "{image_path}"') from exception
     app.debug(str(vars(self)))
 
   def name(self):
@@ -116,8 +117,8 @@ def axis2dir(string): #pylint: disable=unused-variable
   elif string == 'k-':
     direction = [0,0,-1]
   else:
-    raise MRtrixError('Unrecognized NIfTI axis & direction specifier: ' + string)
-  app.debug(string + ' -> ' + str(direction))
+    raise MRtrixError(f'Unrecognized NIfTI axis & direction specifier: {string}')
+  app.debug(f'{string} -> {direction}')
   return direction
 
 
@@ -128,14 +129,17 @@ def axis2dir(string): #pylint: disable=unused-variable
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not isinstance(image_in, Header):
-    if not isinstance(image_in, str):
-      raise MRtrixError('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
+    if not isinstance(image_in, str) and not isinstance(image_in, pathlib.Path):
+      raise MRtrixError(f'Error trying to test "{image_in}": '
+                        'Not an image header or file path')
     image_in = Header(image_in)
   if len(image_in.size()) < 3:
-    raise MRtrixError('Image \'' + image_in.name() + '\' does not contain 3 spatial dimensions')
+    raise MRtrixError(f'Image "{image_in.name()}" does not contain 3 spatial dimensions')
   if min(image_in.size()[:3]) == 1:
-    raise MRtrixError('Image \'' + image_in.name() + '\' does not contain 3D spatial information (has axis with size 1)')
-  app.debug('Image \'' + image_in.name() + '\' is >= 3D, and does not contain a unity spatial dimension')
+    raise MRtrixError(f'Image "{image_in.name()}" does not contain 3D spatial information '
+                      '(has axis with size 1)')
+  app.debug(f'Image "{image_in.name()}" is >= 3D, '
+            'and does not contain a unity spatial dimension')
 
 
 
@@ -146,14 +150,15 @@ def check_3d_nonunity(image_in): #pylint: disable=unused-variable
 #   form is not performed by this function.
 def mrinfo(image_path, field): #pylint: disable=unused-variable
   from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
-  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
+  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field, '-nodelete' ]
   if app.VERBOSITY > 1:
-    app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+    app.console(f'Command: "{" ".join(command)}" '
+                '(piping data to local storage)')
   with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None) as proc:
     result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if app.VERBOSITY > 1:
-    app.console('Result: ' + result)
+    app.console(f'Result: {result}')
   # Don't exit on error; let the calling function determine whether or not
   #   the absence of the key is an issue
   return result
@@ -167,48 +172,56 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
   up_to_dim = kwargs.pop('up_to_dim', 0)
   check_transform = kwargs.pop('check_transform', True)
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to image.match(): ' + str(kwargs))
+    raise TypeError('Unsupported keyword arguments passed to image.match(): '
+                    + str(kwargs))
   if not isinstance(image_one, Header):
     if not isinstance(image_one, str):
-      raise MRtrixError('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
+      raise MRtrixError(f'Error trying to test "{image_one}": '
+                        'Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
     if not isinstance(image_two, str):
-      raise MRtrixError('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
+      raise MRtrixError(f'Error trying to test "{image_two}": '
+                        'Not an image header or file path')
     image_two = Header(image_two)
-  debug_prefix = '\'' + image_one.name() + '\' \'' + image_two.name() + '\''
+  debug_prefix = f'"{image_one.name()}" "{image_two.name()}"'
   # Handle possibility of only checking up to a certain axis
   if up_to_dim:
     if up_to_dim > min(len(image_one.size()), len(image_two.size())):
-      app.debug(debug_prefix + ' dimensionality less than specified maximum (' + str(up_to_dim) + ')')
+      app.debug(f'{debug_prefix} dimensionality less than specified maximum ({up_to_dim})')
       return False
   else:
     if len(image_one.size()) != len(image_two.size()):
-      app.debug(debug_prefix + ' dimensionality mismatch (' + str(len(image_one.size())) + ' vs. ' + str(len(image_two.size())) + ')')
+      app.debug(f'{debug_prefix} dimensionality mismatch '
+                f'({len(image_one.size())}) vs. {len(image_two.size())})')
       return False
     up_to_dim = len(image_one.size())
   # Image dimensions
   if not image_one.size()[:up_to_dim] == image_two.size()[:up_to_dim]:
-    app.debug(debug_prefix + ' axis size mismatch (' + str(image_one.size()) + ' ' + str(image_two.size()) + ')')
+    app.debug(f'{debug_prefix} axis size mismatch '
+              f'({image_one.size()} {image_two.size()})')
     return False
   # Voxel size
   for one, two in zip(image_one.spacing()[:up_to_dim], image_two.spacing()[:up_to_dim]):
     if one and two and not math.isnan(one) and not math.isnan(two):
       if (abs(two-one) / (0.5*(one+two))) > 1e-04:
-        app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing()) + ' ' + str(image_two.spacing()) + ')')
+        app.debug(f'{debug_prefix} voxel size mismatch '
+                  f'({image_one.spacing()} {image_two.spacing()})')
         return False
   # Image transform
   if check_transform:
     for line_one, line_two in zip(image_one.transform(), image_two.transform()):
       for one, two in zip(line_one[:3], line_two[:3]):
         if abs(one-two) > 1e-4:
-          app.debug(debug_prefix + ' transform (rotation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+          app.debug(f'{debug_prefix} transform (rotation) mismatch '
+                    f'({image_one.transform()} {image_two.transform()})')
           return False
       if abs(line_one[3]-line_two[3]) > 1e-2:
-        app.debug(debug_prefix + ' transform (translation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+        app.debug(f'{debug_prefix} transform (translation) mismatch '
+                  f'({image_one.transform()} {image_two.transform()})')
         return False
   # Everything matches!
-  app.debug(debug_prefix + ' image match')
+  app.debug(f'{debug_prefix} image match')
   return True
 
 
@@ -225,7 +238,8 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   allvolumes = kwargs.pop('allvolumes', False)
   ignorezero = kwargs.pop('ignorezero', False)
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to image.statistics(): ' + str(kwargs))
+    raise TypeError('Unsupported keyword arguments passed to image.statistics(): '
+                    + str(kwargs))
 
   command = [ run.exe_name(run.version_match('mrstats')), image_path ]
   for stat in IMAGE_STATISTICS:
@@ -237,7 +251,8 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   if ignorezero:
     command.append('-ignorezero')
   if app.VERBOSITY > 1:
-    app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+    app.console(f'Command: "{" ".join(command)}" '
+                '(piping data to local storage)')
 
   try:
     from subprocess import DEVNULL #pylint: disable=import-outside-toplevel
@@ -250,7 +265,7 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
     except AttributeError:
       pass
     if proc.returncode:
-      raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')
+      raise MRtrixError(f'Error trying to calculate statistics from image "{image_path}"')
 
   stdout_lines = [ line.strip() for line in stdout.decode('cp437').splitlines() ]
   result = [ ]
@@ -261,5 +276,5 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   if len(result) == 1:
     result = result[0]
   if app.VERBOSITY > 1:
-    app.console('Result: ' + str(result))
+    app.console(f'Result: {result}')
   return result

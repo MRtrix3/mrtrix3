@@ -34,12 +34,16 @@ def check_first(prefix, structures): #pylint: disable=unused-variable
   existing_file_count = sum(os.path.exists(filename) for filename in vtk_files)
   if existing_file_count != len(vtk_files):
     if 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
-      app.console('FSL FIRST job may have been run via SGE; awaiting completion')
-      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
+      app.console('FSL FIRST job may have been run via SGE; '
+                  'awaiting completion')
+      app.console('(note however that FIRST may fail silently, '
+                  'and hence this script may hang indefinitely)')
       path.wait_for(vtk_files)
     else:
       app.DO_CLEANUP = False
-      raise MRtrixError('FSL FIRST has failed; ' + ('only ' if existing_file_count else '') + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.to_scratch('first.logs', False) + ')')
+      raise MRtrixError('FSL FIRST has failed; '
+                        f'{"only " if existing_file_count else ""}{existing_file_count} of {len(vtk_files)} structures were segmented successfully '
+                        f'(check {os.path.join(app.SCRATCH_DIR, "first.logs")})')
 
 
 
@@ -51,7 +55,7 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if cuda:
     if shutil.which('eddy_cuda'):
-      app.debug('Selected soft-linked CUDA version (\'eddy_cuda\')')
+      app.debug('Selected soft-linked CUDA version ("eddy_cuda")')
       return 'eddy_cuda'
     # Cuda versions are now provided with a CUDA trailing version number
     # Users may not necessarily create a softlink to one of these and
@@ -75,7 +79,7 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
       except ValueError:
         pass
     if exe_path:
-      app.debug('CUDA version ' + str(max_version) + ': ' + exe_path)
+      app.debug(f'CUDA version {max_version}: {exe_path}')
       return exe_path
     app.debug('No CUDA version of eddy found')
     return ''
@@ -96,11 +100,13 @@ def exe_name(name): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if shutil.which(name):
     output = name
-  elif shutil.which('fsl5.0-' + name):
-    output = 'fsl5.0-' + name
-    app.warn('Using FSL binary \"' + output + '\" rather than \"' + name + '\"; suggest checking FSL installation')
+  elif shutil.which(f'fsl5.0-{name}'):
+    output = f'fsl5.0-{name}'
+    app.warn(f'Using FSL binary "{output}" rather than "{name}"; '
+             'suggest checking FSL installation')
   else:
-    raise MRtrixError('Could not find FSL program \"' + name + '\"; please verify FSL install')
+    raise MRtrixError(f'Could not find FSL program "{name}"; '
+                      'please verify FSL install')
   app.debug(output)
   return output
 
@@ -114,13 +120,14 @@ def find_image(name): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
   if os.path.isfile(prefix + suffix()):
-    app.debug('Image at expected location: \"' + prefix + suffix() + '\"')
-    return prefix + suffix()
+    app.debug(f'Image at expected location: "{prefix}{suffix()}"')
+    return f'{prefix}{suffix()}'
   for suf in ['.nii', '.nii.gz', '.img']:
-    if os.path.isfile(prefix + suf):
-      app.debug('Expected image at \"' + prefix + suffix() + '\", but found at \"' + prefix + suf + '\"')
-      return prefix + suf
-  raise MRtrixError('Unable to find FSL output file for path \"' + name + '\"')
+    if os.path.isfile(f'{prefix}{suf}'):
+      app.debug(f'Expected image at "{prefix}{suffix()}", '
+                f'but found at "{prefix}{suf}"')
+      return f'{prefix}{suf}'
+  raise MRtrixError(f'Unable to find FSL output file for path "{name}"')
 
 
 
@@ -144,11 +151,16 @@ def suffix(): #pylint: disable=unused-variable
     app.debug('NIFTI_PAIR -> .img')
     _SUFFIX = '.img'
   elif fsl_output_type == 'NIFTI_PAIR_GZ':
-    raise MRtrixError('MRtrix3 does not support compressed NIFTI pairs; please change FSLOUTPUTTYPE environment variable')
+    raise MRtrixError('MRtrix3 does not support compressed NIFTI pairs; '
+                      'please change FSLOUTPUTTYPE environment variable')
   elif fsl_output_type:
-    app.warn('Unrecognised value for environment variable FSLOUTPUTTYPE (\"' + fsl_output_type + '\"): Expecting compressed NIfTIs, but FSL commands may fail')
+    app.warn('Unrecognised value for environment variable FSLOUTPUTTYPE '
+             f'("{fsl_output_type}"): '
+             'Expecting compressed NIfTIs, but FSL commands may fail')
     _SUFFIX = '.nii.gz'
   else:
-    app.warn('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail, or script may fail to locate FSL command outputs')
+    app.warn('Environment variable FSLOUTPUTTYPE not set; '
+             'FSL commands may fail, '
+             'or script may fail to locate FSL command outputs')
     _SUFFIX = '.nii.gz'
   return _SUFFIX

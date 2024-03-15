@@ -29,20 +29,21 @@ _TRANSFORM_LAST_ROW = [ 0.0, 0.0, 0.0, 1.0 ]
 def dot(input_a, input_b): #pylint: disable=unused-variable
   if not input_a:
     if input_b:
-      raise MRtrixError('Dimension mismatch (0 vs. ' + str(len(input_b)) + ')')
+      raise MRtrixError('Dimension mismatch '
+                        f'(0 vs. {len(input_b)})')
     return [ ]
   if is_2d_matrix(input_a):
     if not is_2d_matrix(input_b):
       raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
     if len(input_a[0]) != len(input_b):
-      raise MRtrixError('Invalid dimensions for matrix dot product(' + \
-                            str(len(input_a)) + 'x' + str(len(input_a[0])) + ' vs. ' + \
-                            str(len(input_b)) + 'x' + str(len(input_b[0])) + ')')
+      raise MRtrixError('Invalid dimensions for matrix dot product '
+                        f'({len(input_a)}x{len(input_a[0])} vs. {len(input_b)}x{len(input_b[0])})')
     return [[sum(x*y for x,y in zip(a_row,b_col)) for b_col in zip(*input_b)] for a_row in input_a]
   if is_2d_matrix(input_b):
     raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
   if len(input_a) != len(input_b):
-    raise MRtrixError('Dimension mismatch (' + str(len(input_a)) + ' vs. ' + str(len(input_b)) + ')')
+    raise MRtrixError('Dimension mismatch '
+                      f'({len(input_a)} vs. {len(input_b)})')
   return sum(x*y for x,y in zip(input_a, input_b))
 
 
@@ -88,7 +89,8 @@ def load_numeric(filename, **kwargs):
   encoding = kwargs.pop('encoding', 'latin1')
   errors = kwargs.pop('errors', 'ignore')
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to matrix.load_numeric(): ' + str(kwargs))
+    raise TypeError('Unsupported keyword arguments passed to matrix.load_numeric(): '
+                    + str(kwargs))
 
   def decode(line):
     if isinstance(line, bytes):
@@ -124,7 +126,7 @@ def load_matrix(filename, **kwargs): #pylint: disable=unused-variable
   columns = len(data[0])
   for line in data[1:]:
     if len(line) != columns:
-      raise MRtrixError('Inconsistent number of columns in matrix text file "' + filename + '"')
+      raise MRtrixError(f'Inconsistent number of columns in matrix text file "{filename}"')
   return data
 
 
@@ -134,13 +136,16 @@ def load_transform(filename, **kwargs): #pylint: disable=unused-variable
   data = load_matrix(filename, **kwargs)
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
-      raise MRtrixError('File "' + filename + '" does not contain a valid transform (fourth line contains values other than "0,0,0,1")')
+      raise MRtrixError(f'File "{filename}" does not contain a valid transform '
+                        '(fourth line contains values other than "0,0,0,1")')
   elif len(data) == 3:
     data.append(_TRANSFORM_LAST_ROW)
   else:
-    raise MRtrixError('File "' + filename + '" does not contain a valid transform (must contain 3 or 4 lines)')
+    raise MRtrixError(f'File "{filename}" does not contain a valid transform '
+                      '(must contain 3 or 4 lines)')
   if len(data[0]) != 4:
-    raise MRtrixError('File "' + filename + '" does not contain a valid transform (must contain 4 columns)')
+    raise MRtrixError(f'File "{filename}" does not contain a valid transform '
+                      '(must contain 4 columns)')
   return data
 
 
@@ -152,7 +157,8 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
     return data[0]
   for line in data:
     if len(line) != 1:
-      raise MRtrixError('File "' + filename + '" does not contain vector data (multiple columns detected)')
+      raise MRtrixError(f'File "{filename}" does not contain vector data '
+                        '(multiple columns detected)')
   return [ line[0] for line in data ]
 
 
@@ -169,10 +175,12 @@ def save_numeric(filename, data, **kwargs):
   encoding = kwargs.pop('encoding', None)
   force = kwargs.pop('force', False)
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to matrix.save_numeric(): ' + str(kwargs))
+    raise TypeError('Unsupported keyword arguments passed to matrix.save_numeric(): '
+                    + str(kwargs))
 
   if not force and os.path.exists(filename):
-    raise MRtrixError('output file "' + filename + '" already exists (use -force option to force overwrite)')
+    raise MRtrixError(f'output file "{filename}" already exists '
+                      '(use -force option to force overwrite)')
 
   encode_args = {'errors': 'ignore'}
   if encoding:
@@ -192,7 +200,7 @@ def save_numeric(filename, data, **kwargs):
 
   if add_to_command_history and COMMAND_HISTORY_STRING:
     if 'command_history' in header:
-      header['command_history'] += '\n' + COMMAND_HISTORY_STRING
+      header['command_history'] += f'\n{COMMAND_HISTORY_STRING}'
     else:
       header['command_history'] = COMMAND_HISTORY_STRING
 
@@ -217,7 +225,7 @@ def save_numeric(filename, data, **kwargs):
   with io.open(file_descriptor, 'wb') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
-        outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
+        outfile.write(f'{comments}{key}: {line}{newline}'.encode(**encode_args))
 
     if data:
       if isinstance(data[0], list):
@@ -233,7 +241,7 @@ def save_numeric(filename, data, **kwargs):
 
     for key, value in sorted(footer.items()):
       for line in value.splitlines():
-        outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
+        outfile.write(f'{comments}{key}: {line}{newline}'.encode(**encode_args))
 
 
 
@@ -259,7 +267,8 @@ def save_transform(filename, data, **kwargs): #pylint: disable=unused-variable
       raise TypeError('Input to matrix.save_transform() must be a 3x4 or 4x4 matrix')
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
-      raise TypeError('Input to matrix.save_transform() is not a valid affine matrix (fourth line contains values other than "0,0,0,1")')
+      raise TypeError('Input to matrix.save_transform() is not a valid affine matrix '
+                      '(fourth line contains values other than "0,0,0,1")')
     save_matrix(filename, data, **kwargs)
   elif len(data) == 3:
     padded_data = data[:]

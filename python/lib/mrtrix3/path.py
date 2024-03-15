@@ -17,8 +17,7 @@
 
 
 
-import ctypes, errno, inspect, os, random, shlex, shutil, string, subprocess, time
-from mrtrix3 import CONFIG
+import ctypes, inspect, os, shutil, subprocess, time
 
 
 
@@ -28,11 +27,12 @@ def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
   dir_path = kwargs.pop('dir_path', True)
   ignore_hidden_files = kwargs.pop('ignore_hidden_files', True)
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to path.all_in_dir(): ' + str(kwargs))
+    raise TypeError('Unsupported keyword arguments passed to path.all_in_dir(): '
+                    + str(kwargs))
   def is_hidden(directory, filename):
     if utils.is_windows():
       try:
-        attrs = ctypes.windll.kernel32.GetFileAttributesW("%s" % str(os.path.join(directory, filename)))
+        attrs = ctypes.windll.kernel32.GetFileAttributesW(str(os.path.join(directory, filename)))
         assert attrs != -1
         return bool(attrs & 2)
       except (AttributeError, AssertionError):
@@ -42,77 +42,6 @@ def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
   if dir_path:
     return [ os.path.join(directory, filename) for filename in flist ]
   return flist
-
-
-
-# Get the full absolute path to a user-specified location.
-# This function serves two purposes:
-# - To get the intended user-specified path when a script is operating inside a scratch directory, rather than
-#     the directory that was current when the user specified the path;
-# - To add quotation marks where the output path is being interpreted as part of a full command string
-#     (e.g. to be passed to run.command()); without these quotation marks, paths that include spaces would be
-#     erroneously split, subsequently confusing whatever command is being invoked.
-#   If the filesystem path provided by the script is to be interpreted in isolation, rather than as one part
-#     of a command string, then parameter 'escape' should be set to False in order to not add quotation marks
-def from_user(filename, escape=True): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  fullpath = os.path.abspath(os.path.join(app.WORKING_DIR, filename))
-  if escape:
-    fullpath = shlex.quote(fullpath)
-  app.debug(filename + ' -> ' + fullpath)
-  return fullpath
-
-
-
-# Make a directory if it doesn't exist; don't do anything if it does already exist
-def make_dir(path): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  try:
-    os.makedirs(path)
-    app.debug('Created directory ' + path)
-  except OSError as exception:
-    if exception.errno != errno.EEXIST:
-      raise
-    app.debug('Directory \'' + path + '\' already exists')
-
-
-
-# Make a temporary empty file / directory with a unique name
-# If the filesystem path separator is provided as the 'suffix' input, then the function will generate a new
-#   directory rather than a file.
-def make_temporary(suffix): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  is_directory = suffix in '\\/' and len(suffix) == 1
-  while True:
-    temp_path = name_temporary(suffix)
-    try:
-      if is_directory:
-        os.makedirs(temp_path)
-      else:
-        with open(temp_path, 'a', encoding='utf-8'):
-          pass
-      app.debug(temp_path)
-      return temp_path
-    except OSError as exception:
-      if exception.errno != errno.EEXIST:
-        raise
-
-
-
-# Get an appropriate location and name for a new temporary file / directory
-# Note: Doesn't actually create anything; just gives a unique name that won't over-write anything.
-# If you want to create a temporary file / directory, use the make_temporary() function above.
-def name_temporary(suffix): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  dir_path = CONFIG['TmpFileDir'] if 'TmpFileDir' in CONFIG else (app.SCRATCH_DIR if app.SCRATCH_DIR else os.getcwd())
-  prefix = CONFIG['TmpFilePrefix'] if 'TmpFilePrefix' in CONFIG else 'mrtrix-tmp-'
-  full_path = dir_path
-  suffix = suffix.lstrip('.')
-  while os.path.exists(full_path):
-    random_string = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(6))
-    full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
-  app.debug(full_path)
-  return full_path
 
 
 
@@ -146,20 +75,6 @@ def shared_data_path(): #pylint: disable=unused-variable
   result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
   app.debug(result)
   return result
-
-
-
-# Get the full absolute path to a location in the script's scratch directory
-# Also deals with the potential for special characters in a path (e.g. spaces) by wrapping in quotes,
-#   as long as parameter 'escape' is true (if the path yielded by this function is to be interpreted in
-#   isolation rather than as one part of a command string, parameter 'escape' should be set to False)
-def to_scratch(filename, escape=True): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  fullpath = os.path.abspath(os.path.join(app.SCRATCH_DIR, filename))
-  if escape:
-    fullpath = shlex.quote(fullpath)
-  app.debug(filename + ' -> ' + fullpath)
-  return fullpath
 
 
 
@@ -235,7 +150,8 @@ def wait_for(paths): #pylint: disable=unused-variable
   # Wait until all files exist
   num_exist = num_exit(paths)
   if num_exist != len(paths):
-    progress = app.ProgressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new items')), len(paths))
+    item_message = f'new item "{paths[0]}"' if len(paths) == 1 else f'{len(paths)} new items'
+    progress = app.ProgressBar(f'Waiting for creation of {item_message}', len(paths))
     for _ in range(num_exist):
       progress.increment()
     delay = 1.0/1024.0
@@ -251,7 +167,7 @@ def wait_for(paths): #pylint: disable=unused-variable
         delay = 1.0/1024.0
     progress.done()
   else:
-    app.debug('Item' + ('s' if len(paths) > 1 else '') + ' existed immediately')
+    app.debug(f'{"Items" if len(paths) > 1 else "Item"} existed immediately')
 
   # Check to see if active use of the file(s) needs to be tested
   at_least_one_file = False
@@ -260,7 +176,8 @@ def wait_for(paths): #pylint: disable=unused-variable
       at_least_one_file = True
       break
   if not at_least_one_file:
-    app.debug('No target files, directories only; not testing for finalization')
+    app.debug('No target files, directories only; '
+              'not testing for finalization')
     return
 
   # Can we query the in-use status of any of these paths
@@ -271,10 +188,11 @@ def wait_for(paths): #pylint: disable=unused-variable
 
   # Wait until all files are not in use
   if not num_in_use:
-    app.debug('Item' + ('s' if len(paths) > 1 else '') + ' immediately ready')
+    app.debug(f'{"Items" if len(paths) > 1 else "Item"} immediately ready')
     return
 
-  progress = app.ProgressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new files')))
+  item_message = f'new file "{paths[0]}"' if len(paths) == 1 else f'{len(paths)} new files'
+  progress = app.ProgressBar('Waiting for finalization of {item_message}')
   for _ in range(len(paths) - num_in_use):
     progress.increment()
   delay = 1.0/1024.0

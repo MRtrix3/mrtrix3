@@ -16,45 +16,54 @@
 import math, os
 from mrtrix3 import app, image, run
 
+NEEDS_MEAN_BZERO = False # pylint: disable=unused-variable
 DEFAULT_CLEAN_SCALE = 2
 DEFAULT_MAX_ITERS = 10
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('trace', parents=[base_parser])
-  parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) '
+                    'and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('A method to generate a brain mask from trace images of b-value shells')
-  parser.add_argument('input',  help='The input DWI series')
-  parser.add_argument('output', help='The output mask image')
-  options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
-  options.add_argument('-shells', help='Comma separated list of shells used to generate trace-weighted images for masking')
+  parser.add_argument('input',
+                      type=app.Parser.ImageIn(),
+                      help='The input DWI series')
+  parser.add_argument('output',
+                      type=app.Parser.ImageOut(),
+                      help='The output mask image')
+  options = parser.add_argument_group('Options specific to the "trace" algorithm')
+  options.add_argument('-shells',
+                       type=app.Parser.SequenceFloat(),
+                       metavar='bvalues',
+                       help='Comma-separated list of shells used to generate trace-weighted images for masking')
   options.add_argument('-clean_scale',
-                       type=int,
+                       type=app.Parser.Int(0),
                        default=DEFAULT_CLEAN_SCALE,
-                       help='the maximum scale used to cut bridges. A certain maximum scale cuts '
-                            'bridges up to a width (in voxels) of 2x the provided scale. Setting '
-                            'this to 0 disables the mask cleaning step. (Default: ' + str(DEFAULT_CLEAN_SCALE) + ')')
-  iter_options = parser.add_argument_group('Options for turning \'dwi2mask trace\' into an iterative algorithm')
+                       help='the maximum scale used to cut bridges. '
+                            'A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. '
+                            'Setting this to 0 disables the mask cleaning step. '
+                            f'(Default: {DEFAULT_CLEAN_SCALE})')
+  iter_options = parser.add_argument_group('Options for turning "dwi2mask trace" into an iterative algorithm')
   iter_options.add_argument('-iterative',
                             action='store_true',
-                            help='(EXPERIMENTAL) Iteratively refine the weights for combination of per-shell trace-weighted images prior to thresholding')
-  iter_options.add_argument('-max_iters', type=int, default=DEFAULT_MAX_ITERS, help='Set the maximum number of iterations for the algorithm (default: ' + str(DEFAULT_MAX_ITERS) + ')')
-
-
-
-def get_inputs(): #pylint: disable=unused-variable
-  pass
-
-
-
-def needs_mean_bzero(): #pylint: disable=unused-variable
-  return False
+                            default=None,
+                            help='(EXPERIMENTAL) '
+                                 'Iteratively refine the weights for combination of per-shell trace-weighted images '
+                                 'prior to thresholding')
+  iter_options.add_argument('-max_iters',
+                            type=app.Parser.Int(1),
+                            metavar='iterations',
+                            default=DEFAULT_MAX_ITERS,
+                            help='Set the maximum number of iterations for the algorithm '
+                                 f'(default: {DEFAULT_MAX_ITERS})')
 
 
 
 def execute(): #pylint: disable=unused-variable
 
   if app.ARGS.shells:
-    run.command('dwiextract input.mif input_shells.mif -shells ' + app.ARGS.shells)
+    run.command('dwiextract input.mif input_shells.mif '
+                f'-shells {",".join(map(str, app.ARGS.shells))}')
     run.command('dwishellmath input_shells.mif mean shell_traces.mif')
   else:
     run.command('dwishellmath input.mif mean shell_traces.mif')
@@ -66,9 +75,9 @@ def execute(): #pylint: disable=unused-variable
   shell_count = image.Header('shell_traces.mif').size()[-1]
   progress = app.ProgressBar('Performing per-shell histogram matching', shell_count-1)
   for index in range(1, shell_count):
-    filename = 'shell-{:02d}.mif'.format(index)
-    run.command('mrconvert shell_traces.mif -coord 3 ' + str(index) + ' -axes 0,1,2 - | '
-                'mrhistmatch scale - shell-00.mif ' + filename)
+    filename = f'shell-{index:02d}.mif'
+    run.command(f'mrconvert shell_traces.mif -coord 3 {index} -axes 0,1,2 - | '
+                f'mrhistmatch scale - shell-00.mif {filename}')
     files.append(filename)
     progress.increment()
   progress.done()
@@ -96,29 +105,29 @@ def execute(): #pylint: disable=unused-variable
   current_mask = 'init_mask.mif'
   iteration = 0
   while True:
-    current_mask_inv = os.path.splitext(current_mask)[0] + '_inv.mif'
-    run.command('mrcalc 1 ' + current_mask + ' -sub ' + current_mask_inv + ' -datatype bit')
+    current_mask_inv = f'{os.path.splitext(current_mask)[0]}_inv.mif'
+    run.command(f'mrcalc 1 {current_mask} -sub {current_mask_inv} -datatype bit')
     shell_weights = []
     iteration += 1
     for index in range(0, shell_count):
-      stats_inside = image.statistics('shell-{:02d}.mif'.format(index), mask=current_mask)
-      stats_outside = image.statistics('shell-{:02d}.mif'.format(index), mask=current_mask_inv)
+      stats_inside = image.statistics(f'shell-{index:02d}.mif', mask=current_mask)
+      stats_outside = image.statistics(f'shell-{index:02d}.mif', mask=current_mask_inv)
       variance = (((stats_inside.count - 1) * stats_inside.std * stats_inside.std) \
                + ((stats_outside.count - 1) * stats_outside.std * stats_outside.std)) \
                / (stats_inside.count + stats_outside.count - 2)
       cohen_d = (stats_inside.mean - stats_outside.mean) / math.sqrt(variance)
       shell_weights.append(cohen_d)
-    mask_path = 'mask-{:02d}.mif'.format(iteration)
-    run.command('mrcalc shell-00.mif ' + str(shell_weights[0]) + ' -mult '
-                + ' -add '.join(filepath + ' ' + str(weight) + ' -mult' for filepath, weight in zip(files[1:], shell_weights[1:]))
-                + ' -add - |'
-                + ' mrthreshold - - |'
-                + ' maskfilter - connect -largest - |'
-                + ' maskfilter - fill - |'
-                + ' maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' - |'
-                + ' mrcalc input_pos_mask.mif - -mult ' + mask_path + ' -datatype bit')
-    mask_mismatch_path = 'mask_mismatch-{:02d}.mif'.format(iteration)
-    run.command('mrcalc ' + current_mask + ' ' + mask_path + ' -sub -abs ' + mask_mismatch_path)
+    mask_path = f'mask-{iteration:02d}.mif'
+    run.command(f'mrcalc shell-00.mif {shell_weights[0]} -mult ' +
+                ' -add '.join(filepath + ' ' + str(weight) + ' -mult' for filepath, weight in zip(files[1:], shell_weights[1:])) +
+                ' -add - |'
+                ' mrthreshold - - |'
+                ' maskfilter - connect -largest - |'
+                ' maskfilter - fill - |'
+                f' maskfilter - clean -scale {app.ARGS.clean_scale} - |'
+                f' mrcalc input_pos_mask.mif - -mult {mask_path} -datatype bit')
+    mask_mismatch_path = f'mask_mismatch-{iteration:02d}.mif'
+    run.command(f'mrcalc {current_mask} {mask_path} -sub -abs {mask_mismatch_path}')
     if not image.statistics(mask_mismatch_path).mean:
       app.console('Terminating optimisation due to convergence of masks between iterations')
       return mask_path
