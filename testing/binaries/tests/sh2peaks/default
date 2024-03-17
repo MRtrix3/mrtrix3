@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic evaluation of default operation of command
+# Outcome is compared to that generated using a prior software version
+sh2peaks fod.mif - | \
+testing_diff_peaks - peaks.mif 1e-6

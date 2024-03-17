@@ -1,0 +1,20 @@
+#!/bin/bash
+# Verify execution of "dwi2mask template" command when:
+# - -software command-line option selects choice "antsfull",
+#   which internally invokes ANTs command "antsRegistration"
+# - The set of command-line options to provide to "antsRegistration"
+#   is provided within a text file
+# Two different tests are run to ensure
+#   that the reading of command-line options from a text file
+#   is robust to different formats in which the information in that text file may be specified
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsfull \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-ants_options dwi2mask/config_antsfull_1.txt
+
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsfull \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-ants_options dwi2mask/config_antsfull_2.txt

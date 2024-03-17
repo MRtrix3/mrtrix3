@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify the estimated noise map when a restricted sliding window extent is used
+# The estimated noise level is compared to that generated using a prior software version
+# The tolerance used when comparing the noise maps is modulated
+#   based on the mean DWI intensity
+dwidenoise dwi.mif -extent 3 -noise - tmp-denoised.mif | \
+testing_diff_image - dwidenoise/noise3.mif \
+-image $(mrcalc dwi_mean.mif -abs 1e-4 -mult - | mrfilter - smooth -)

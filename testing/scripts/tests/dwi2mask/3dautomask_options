@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that command "dwi2mask 3dautomask" executes to completion
+#   when a wide range of command-line modifiers are specified
+# No reference output exists to which to compare the result;
+#   just make sure that the command executes to completion
+dwi2mask 3dautomask BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS?sub-01/dwi/sub-01_dwi.bval \
+-clfrac 0.5 -nograd -peels 1 -nbhrs 17 -eclip -SI 130 -dilate 0 -erode 0 -NN1 -NN2 -NN3

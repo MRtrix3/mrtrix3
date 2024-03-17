@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify estimation of scalar parameters following a diffusion kurtosis tensor (DKT) fit
+# Results are compared to those generated using a prior software version
+tensor2metric dwi2tensor/ms_dt_constrain.mif \
+-dkt dwi2tensor/ms_dkt_constrain.mif \
+-fa tmp_ms_fa.mif \
+-adc tmp_ms_adc.mif \
+-mk tmp_ms_mk.mif \
+-ak tmp_ms_ak.mif \
+-rk tmp_ms_rk.mif
+
+testing_diff_image tmp_ms_fa.mif tensor2metric/ms_fa.mif -frac 1e-4
+testing_diff_image tmp_ms_adc.mif tensor2metric/ms_adc.mif -frac 1e-4
+testing_diff_image tmp_ms_mk.mif tensor2metric/ms_mk.mif -frac 1e-4
+testing_diff_image tmp_ms_ak.mif tensor2metric/ms_ak.mif -frac 1e-4
+testing_diff_image tmp_ms_rk.mif tensor2metric/ms_rk.mif -frac 1e-4

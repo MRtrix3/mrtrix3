@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation of command when a triplet of sliding window sizes is provided to the -extent option
+# Ensure that output matches that generated using a prior software version
+dwidenoise dwi.mif -extent 5,3,1 - | \
+testing_diff_image - dwidenoise/extent531.mif -voxel 1e-4

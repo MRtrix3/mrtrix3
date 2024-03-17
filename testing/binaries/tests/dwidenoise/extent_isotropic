@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify operation of command when a single extent value is specified;
+#   it is inferred that the sliding window will then possess this extent along all three spatial axes
+# Ensure that output matches that generated using a prior osftware version
+dwidenoise dwi.mif -extent 3 - | \
+testing_diff_image - dwidenoise/extent3.mif -voxel 1e-4

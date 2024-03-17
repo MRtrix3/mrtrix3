@@ -1,0 +1,5 @@
+#!/bin/bash
+# Evaluation of the "smooth" filter when the strength of smoothing is modified with the -fwhm option
+# Outcome is compared against that generated using a prior software version
+mrfilter dwi.mif smooth -fwhm 3,3,3 - | \
+testing_diff_image - mrfilter/out4.mif -frac 1e-5

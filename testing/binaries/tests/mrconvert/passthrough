@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify that a no-operation "passthrough" using the mrconvert command
+#   produces an image identical to the input
+mrconvert mrconvert/in.mif - | \
+testing_diff_image - mrconvert/in.mif

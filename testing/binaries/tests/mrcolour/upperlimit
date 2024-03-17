@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify that manually setting the upper limit for intensity scaling
+#   matches a result generated and verified by a prior software version
+mrcolour dwi_mean.mif gray -upper 80 - | \
+testing_diff_image - mrcolour/upper.mif
