@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify operation of the -seed_grid_per_voxel command
+# This seed mechanism is entirely deterministic,
+#   even placements within a voxel;
+#   however the existing test only verifies that the appropriate number of seeds are placed in this voxel
+tckgen SIFT_phantom/dwi.mif -algo seedtest tmp.tck -force \
+-seed_grid_per_voxel SIFT_phantom/mask.mif 3
+
+tckmap tmp.tck -template SIFT_phantom/dwi.mif -ends_only - | \
+testing_diff_image - tckgen/SIFT_phantom_seeds.mif

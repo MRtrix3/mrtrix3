@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify operation of the command when provided with multi-shell input
+#   and performing a _constrained_ Diffusion Kurtosis Tensor (DKT) fit
+# Ensure that outputs match those generated using a prior software version
+# For validation of kurtosis tensor coefficients,
+#   modulate the tolerance of the image comparison test
+#   based on the ADC of the resulting tensor fit
+dwi2tensor dwi_ms.mif tmp_ms_dt_constrain.mif -constrain
+-b0 tmp_ms_b0_constrain.mif \
+-dkt tmp_ms_dkt_constrain.mif
+
+testing_diff_image tmp_ms_b0_constrain.mif dwi2tensor/ms_b0_constrain.mif -abs 1e-5
+testing_diff_image tmp_ms_dt_constrain.mif dwi2tensor/ms_dt_constrain.mif -abs 1e-5
+tensor2metric tmp_ms_dt_constrain.mif -adc - | \
+mrcalc - 1e5 -mult -2 -pow - | \
+testing_diff_image tmp_ms_dkt_constrain.mif dwi2tensor/ms_dkt_constrain.mif -image -

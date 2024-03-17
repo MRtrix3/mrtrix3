@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify command oeration when the "-bins" command-line option is used,
+#   which allocates a user-specified number of histogram bins between the intensity maxima and minima
+#   (normally the number of bins is automatically calculated based on the number of voxels)
+# Compare the outcome against that pre-calculated using a prior software version
+mrhistogram dwi.mif tmp.txt -bins 100 -force
+testing_diff_matrix tmp.txt mrhistogram/bins.txt 0.5

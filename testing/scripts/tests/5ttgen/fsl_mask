@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify "5ttgen fsl" operation when a brain mask is provided by the user
+# Because an input mask is provided,
+#   FSL bet (preceded by FSL standard_space_roi) does not need to be run;
+#   as such, the slight change in outcomes of the standard_space_roi command
+#   between FSL versions does not affect the outcome of the 5ttgen fsl command.
+#   As such, the outcome can be directly compared to that computed using a prior MRtrix3 version
+5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz tmp.mif -mask BIDS/sub-01/anat/sub-01_brainmask.nii.gz -force
+testing_diff_header tmp.mif 5ttgen/fsl/masked.mif.gz

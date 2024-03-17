@@ -1,0 +1,5 @@
+#!/bin/bash
+# Validate defulat operation with the "inferno" colourmap
+#   against a result generated with a prior software version
+mrcolour dwi_mean.mif inferno - | \
+testing_diff_image - mrcolour/inferno.mif

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify oepration when only a single affine transformation is specified,
+#   but the -template option is specified such that the output must be a non-linear warp
+#   calculated on that voxel grid
+# Outcome is compared to that generated using a prior software version
+transformcompose rotatez.txt -template fod.mif - | \
+testing_diff_image - transformcompose/out3.mif -frac 0.001

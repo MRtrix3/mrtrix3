@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify "crop" operation,
+#   where the _number of voxel indices to remove per axis_ is specified
+#   using a pair of integers per axis
+#   (the number of slices to omit from the lower and upper end of the FoV in that axis respectively) 
+mrgrid noise.mif crop -axis 2 1,5 -axis 0 3,0 - | \
+testing_diff_image - mrcrop/out2.mif

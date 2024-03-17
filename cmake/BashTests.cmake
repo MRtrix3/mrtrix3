@@ -56,7 +56,7 @@ function(add_bash_tests)
     foreach(line_num RANGE ${MAX_LINE_NUM})
         list(GET FILE_CONTENTS ${line_num} line)
 
-        set(test_name ${file_name}) 
+        set(test_name ${file_name})
         if(${FILE_CONTENTS_LENGTH} GREATER 1)
             math(EXPR suffix "${line_num} + 1")
             set(test_name "${file_name}_${suffix}")
@@ -67,7 +67,7 @@ function(add_bash_tests)
             COMMAND ${BASH} -c "export PATH=${EXEC_DIR_PATHS}:$PATH;${line}"
             WORKING_DIRECTORY ${working_directory}
         )
-        set_tests_properties(${prefix}_${test_name} 
+        set_tests_properties(${prefix}_${test_name}
             PROPERTIES FIXTURES_REQUIRED ${file_name}_cleanup
         )
         message(VERBOSE "Add bash tests commands for ${file_name}: ${line}")

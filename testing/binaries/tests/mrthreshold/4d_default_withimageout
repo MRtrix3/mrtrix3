@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify default command operation when the input image is 4D,
+#   and an output image path is specified;
+#   for each volume of the input image,
+#   a tailored binarisation threshold is determined,
+#   and that threshold is applied to produce the corresponding volume of the output image
+mrthreshold dwi.mif - | \
+testing_diff_image - mrthreshold/4d_default.mif

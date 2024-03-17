@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify "5ttgen fsl" operation when the input image has already bee multiplied by a brain mask
+# The test performs this pre-masking using the source T1w and brain mask images,
+#   and ensures that the result is the same as that obtained
+#   when the brain mask is provided separately using the -mask option
+mrcalc BIDS/sub-01/anat/sub-01_T1w.nii.gz BIDS/sub-01/anat/sub-01_brainmask.nii.gz -mult tmp1.mif -force
+5ttgen fsl tmp1.mif tmp2.mif -premasked -force
+testing_diff_header tmp2.mif 5ttgen/fsl/masked.mif.gz
