@@ -34,17 +34,18 @@ function(add_bash_tests)
     endif()
 
     get_filename_component(file_name ${file_path} NAME_WE)
-
+    set(test_name ${prefix}_${file_name})
+    
     # Add a custom target for IDEs to pickup the test script
     add_custom_target(test_${prefix}_${file_name} SOURCES ${file_path})
 
     # Add test that cleans up temporary files
     add_test(
-        NAME ${prefix}_${file_name}_cleanup
+        NAME ${test_name}_cleanup
         COMMAND ${BASH} -c "rm -rf ${working_directory}/tmp* ${working_directory}/*-tmp-*"
         WORKING_DIRECTORY ${working_directory}
     )
-    set_tests_properties(${prefix}_${file_name}_cleanup PROPERTIES FIXTURES_SETUP ${file_name}_cleanup)
+    set_tests_properties(${test_name}_cleanup PROPERTIES FIXTURES_SETUP ${test_name}_cleanup)
 
     file(STRINGS ${file_path} FILE_CONTENTS)
     list(LENGTH FILE_CONTENTS FILE_CONTENTS_LENGTH)
@@ -54,20 +55,21 @@ function(add_bash_tests)
     set(EXEC_DIR_PATHS "${exec_directories}")
     string(REPLACE ";" ":" EXEC_DIR_PATHS "${EXEC_DIR_PATHS}")
 
-    set(test_name ${file_name})
     add_test(
-	NAME ${prefix}_${test_name}
+	NAME ${test_name}
 	COMMAND ${BASH} "${file_path}"
         WORKING_DIRECTORY ${working_directory}
     )
-    set_tests_properties(${prefix}_${test_name}
+    set_tests_properties(${test_name}
         PROPERTIES 
 	    ENVIRONMENT "PATH=${EXEC_DIR_PATHS}:$ENV{PATH}"
-	    FIXTURES_REQUIRED ${file_name}_cleanup
+	    FIXTURES_REQUIRED ${test_name}_cleanup
     )
     if(labels)
-	set_tests_properties(${prefix}_${test_name} PROPERTIES LABELS "${labels}")
+	message(STATUS "Setting labels for ${prefix}_${test_name}: ${labels}")
+	set_tests_properties(${test_name} PROPERTIES LABELS "${labels}")
+	set_tests_properties(${test_name}_cleanup PROPERTIES LABELS "${labels}")
     endif()
 
-    message(VERBOSE "Add bash tests commands for ${file_name}: ${line}")
+    message(VERBOSE "Add bash tests commands for ${test_name}: ${line}")
 endfunction()
