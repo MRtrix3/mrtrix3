@@ -1,0 +1,3 @@
+#!/bin/bash
+# Ensure that streamlines can be written to VTK format using binary storage
+tckconvert tracks.tck tmp.vtk -force -quiet && diff tmp.vtk tckconvert/tracks-binary.vtk

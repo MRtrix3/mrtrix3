@@ -1,0 +1,4 @@
+#!/bin/bash
+# Test replacement of the image header transformation with the identity matrix
+mrtransform dwi.mif -identity - | \
+testing_diff_image - mrtransform/out6.mif

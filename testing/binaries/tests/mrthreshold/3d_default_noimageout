@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify default operation of the command when no output image path is specified,
+#   resulting in the automatically determined threshold being written to stdout
+mrthreshold dwi_mean.mif > tmp.txt
+testing_diff_matrix tmp.txt mrthreshold/3d_default.txt

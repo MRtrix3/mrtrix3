@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic operation of command
+# Outcome is compared to that generated using a prior software version
+voxel2fixel dwi_mean.mif fixel_image tmp dwi_mean.mif -force
+testing_diff_fixel voxel2fixel tmp -frac 1e-4

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify ability to read streamlines data from text files,
+#   including from a subset of multiple numbered files
+tckconvert tckconvert/out2-[2:9].txt tmp.tck -force
+testing_diff_tck tmp.tck tckconvert/out3.tck

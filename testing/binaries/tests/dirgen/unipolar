@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify operation of command with the -unipolar flag set
+# Cannot directly compare outcome of command to a pre-generated output;
+#   instead compute some statistical properties of the generated set,
+#   and ensure that they are comparable to those of a pre-geneated set
+
+dirgen 45 tmp.txt -unipolar -force
+
+dirstat tmp.txt | \
+grep 'nearest-neighbour angles:' | \
+tail -n 1 | \
+awk '{ print $5$8 "," $10 }' | \
+tr ',' ' ' > tmp_stats.txt
+
+testing_diff_matrix tmp_stats.txt dirgen/stats_45_uni.txt -abs 1.0

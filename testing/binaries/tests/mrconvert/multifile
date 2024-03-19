@@ -1,0 +1,39 @@
+#!/bin/bash
+# These tests ensures correct operation of the numbered multi-file image support
+rm -f tmp-*.mif
+mrconvert dwi.mif tmp-[].mif
+
+# Importing files using square bracket notation
+testing_diff_image tmp-[].mif dwi.mif
+
+# Importing files using questionmark notation
+mrcat tmp-??.mif - | \
+testing_diff_image - dwi.mif
+
+# Selecting specific subsets of consecutively numbered files
+mrcat tmp-[0:4].mif tmp-[5:20].mif tmp-[21:67] - | \
+testing_diff_image - dwi.mif
+
+mrcat tmp-[0:4].mif tmp-[5:20].mif tmp-21.mif tmp-[22:67] - | \
+testing_diff_image - dwi.mif
+
+# When a non-unity step is included in that specification
+mrcat tmp-00.mif tmp-02.mif tmp-04.mif - -axis 3 | \
+testing_diff_image - tmp-[0:2:4].mif
+
+# Correct operation of the "end" keyword
+mrcat tmp-00.mif tmp-02.mif tmp-04.mif tmp-06.mif tmp-08.mif tmp-10.mif \
+tmp-12.mif tmp-14.mif tmp-16.mif tmp-18.mif tmp-20.mif \
+tmp-22.mif tmp-24.mif tmp-26.mif tmp-28.mif tmp-30.mif \
+tmp-32.mif tmp-34.mif tmp-36.mif tmp-38.mif tmp-40.mif \
+tmp-42.mif tmp-44.mif tmp-46.mif tmp-48.mif tmp-50.mif \
+tmp-52.mif tmp-54.mif tmp-56.mif tmp-58.mif tmp-60.mif \
+tmp-62.mif tmp-64.mif tmp-66.mif \
+tmp1.mif -axis 3 -force
+mrconvert dwi.mif tmp2.mif -coord 3 0:2:end -force
+testing_diff_header -keyval tmp1.mif tmp2.mif
+testing_diff_image tmp1.mif tmp2.mif
+
+# Ability to split image across files along multiple axes
+mrconvert dwi.mif tmp-[]-[].mif -force
+testing_diff_image dwi.mif tmp-[]-[].mif

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Test a commonly-used feature of flipping the image in the image axis closest to left-right
+mrtransform dwi_mean.mif -flip 0 - | \
+testing_diff_image - mrtransform/out5.mif

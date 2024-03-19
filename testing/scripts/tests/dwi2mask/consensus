@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify execution of "dwi2mask consensus" algorithm
+# Template image and corresponding mask are provided
+#   to maximise the cardinality of applicable algorithms;
+#   there is however no verification that all underlying invoked algorithms
+#   proceed to completion and contribute to the consensus
+dwi2mask consensus BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp1.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-masks tmp2.mif \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz

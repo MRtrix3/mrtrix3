@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify command operation when:
+# - Data across all volumes of a 4D input are utilised in conjunction for determination of a single threshold
+# - The threshold is calculated as the median of all input intensities
+mrthreshold dwi.mif - -percentile 50 -allvolumes | \
+testing_diff_image - mrthreshold/4d_median_allvolumes.mif

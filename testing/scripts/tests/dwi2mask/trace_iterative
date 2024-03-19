@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify result of "dwi2mask trace" algorithm,
+#   when the iterative optimisation algorithm is engaged
+dwi2mask trace BIDS?sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-iterative
+
+testing_diff_image tmp.mif dwi2mask/trace_iterative.mif.gz

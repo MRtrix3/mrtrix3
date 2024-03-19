@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify "5ttgen hsvs" operation when the segmentation of hippocampi and thalami
+#   are explicitly requested to be performed using FSL FIRST
+5ttgen hsvs freesurfer/sub-01 tmp.mif -hippocampi first -thalami first -force
+testing_diff_header tmp.mif  5ttgen/hsvs/first.mif.gz

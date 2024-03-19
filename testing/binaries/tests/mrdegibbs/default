@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic test of the default operation of the command,
+#   ensuring that the output matches that generated using a prior software version
+mrdegibbs b0.nii.gz - | \
+testing_diff_image - mrdegibbs/b0_unring.nii.gz -abs 0.2

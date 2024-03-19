@@ -1,0 +1,14 @@
+#!/bin/bash
+# Test utilisation of the -reference command-line option
+# By requesting a reference intensity of 1.0
+#   (rather than the default of 1000.0),
+#   the resulting output DWI series should be a factor of 1000
+#   lower in intensity than the output of "dwinormalise mtnorm"
+#   calculated using a prior software version using the default reference intensity
+dwinormalise mtnorm BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-reference 1.0 \
+-scale tmpscale.txt
+
+mrcalc tmpout.mif 1000.0 -mult - | \
+testing_diff_image - dwinormalise/mtnorm/default_out.mif.gz -frac 1e-5

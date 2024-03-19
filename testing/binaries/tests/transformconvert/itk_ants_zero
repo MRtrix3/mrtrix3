@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify conversion of an ITK format affine transformation
+#   where the "FixedParaeters" field has been explicitly zeroed
+# Outcome is compared to that generated using a prior software version
+transformconvert transformconvert/affine_ants_zero.txt itk_import tmp.txt -force
+testing_diff_matrix tmp.txt transformconvert/affine_mrtrix_zero.txt -abs 1e-3

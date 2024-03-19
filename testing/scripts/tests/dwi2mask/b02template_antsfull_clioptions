@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify execution of "dwi2mask b02template" command,
+#   particularly when a string corresponding to command-line options
+#   is fed down to the "antsRegistration" command
+#   when using the "antsfull" software choice
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsfull \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-ants_options "--use-histogram-matching 1 --initial-moving-transform [template_image.nii,bzero.nii,1] --transform Rigid[0.1] --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25] --convergence 1000x500x250x100 --smoothing-sigmas 3x2x1x0 --shrink-factors 8x4x2x1"

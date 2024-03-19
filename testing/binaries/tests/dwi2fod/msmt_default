@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify operation of "msmt_csd" algorithm, 
+#   under default operation,
+#   with conventional three macroscopic tissue responses
+# Compare outputs to those generated using a prior software version
+dwi2fod msmt_csd dwi2fod/msmt/dwi.mif \
+dwi2fod/msmt/wm.txt tmp_wm.mif \
+dwi2fod/msmt/gm.txt tmp_gm.mif \
+dwi2fod/msmt/csf.txt tmp_csf.mif
+
+testing_diff_image tmp_wm.mif dwi2fod/msmt/wm.mif -abs 1e-5
+testing_diff_image tmp_gm.mif dwi2fod/msmt/gm.mif -abs 1e-5
+testing_diff_image tmp_csf.mif dwi2fod/msmt/csf.mif -abs 1e-5

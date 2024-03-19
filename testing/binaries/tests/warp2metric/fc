@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test calculation of the fixel-wise metric Fixel (change in) Cross-section (FC)
+# Outcome is compared to that calculated using a prior software version
+warp2metric fod_warp.mif -fc fixel_image tmp fc.mif -force
+testing_diff_fixel tmp warp2metric/fc -frac 0.001

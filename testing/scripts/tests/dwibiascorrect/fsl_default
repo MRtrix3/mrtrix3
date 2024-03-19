@@ -1,0 +1,28 @@
+#!/bin/bash
+# Verify execution of the "dwibiascorrect fsl" algorithm,
+#   which utilises the FSL command "fast" to estimate the bias field,
+#   where the diffusion gradient table is specified using one of:
+#   - The image hedaer
+#   - The -fslgrad option
+#   - The -grad option
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp-sub-01_dwi.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-export_grad_mrtrix tmp-sub-01_dwi.b \
+-strides 0,0,0,1
+
+dwibiascorrect fsl tmp-sub-01_dwi.mif tmpout.mif -force \
+-bias tmpbias.mif
+testing_diff_header tmpout.mif dwibiascorrect/fsl/default_out.mif.gz
+testing_diff_header tmpbias.mif dwibiascorrect/fsl/default_bias.mif.gz
+
+dwibiascorrect fsl BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-bias tmpbias.mif
+testing_diff_header tmpout.mif dwibiascorrect/fsl/default_out.mif.gz
+testing_diff_header tmpbias.mif dwibiascorrect/fsl/default_bias.mif.gz
+
+dwibiascorrect fsl BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-grad tmp-sub-01_dwi.b \
+-bias tmpbias.mif
+testing_diff_header tmpout.mif dwibiascorrect/fsl/default_out.mif.gz
+testing_diff_header tmpbias.mif dwibiascorrect/fsl/default_bias.mif.gz

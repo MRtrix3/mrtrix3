@@ -1,0 +1,7 @@
+#!/bin/bash
+# Test execution of the command when the -legacy command-line flag is specified;
+#   this calculates the mean response function using the same mechanism as that of the older "average_response" command,
+#   where zonal spherical harmonics coefficients are directly averaged;
+#   the reference data to which the command output is compared was generated using that obsolete command
+responsemean BIDS/sub-02/dwi/sub-02_tissue-WM_response.txt BIDS/sub-03/dwi/sub-03_tissue-WM_response.txt tmp.txt -legacy -force
+testing_diff_matrix tmp.txt responsemean/legacy.txt -abs 0.001

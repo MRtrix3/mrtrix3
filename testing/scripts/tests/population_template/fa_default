@@ -1,0 +1,21 @@
+#!/bin/bash
+# Evaluate population template construction for:
+# - 3D input images (Fractional Anisotropy (FA) maps)
+# - No mask images
+# - Default registration type (rigid, then affine, then non-linear)
+
+rm -rf tmp-fa
+mkdir tmp-fa
+
+dwi2tensor BIDS/sub-02/dwi/sub-02_dwi.nii.gz - \
+-fslgrad BIDS/sub-02/dwi/sub-02_dwi.bvec BIDS/sub-02/dwi/sub-02_dwi.bval \
+-mask BIDS/sub-02/dwi/sub-02_brainmask.nii.gz | \
+tensor2metric - -fa tmp-fa/sub-02.mif
+dwi2tensor BIDS/sub-03/dwi/sub-03_dwi.nii.gz - \
+-fslgrad BIDS/sub-03/dwi/sub-03_dwi.bvec BIDS/sub-03/dwi/sub-03_dwi.bval \
+-mask BIDS/sub-03/dwi/sub-03_brainmask.nii.gz | \
+tensor2metric - -fa tmp-fa/sub-03.mif
+
+population_template tmp-fa/ tmp-template.mif -warp_dir tmp-warpdir/ -transformed_dir tmp-transformeddir/ -linear_transformations_dir tmp-lineartransformsdir/ -force
+
+testing_diff_image tmp-template.mif population_template/fa_default_template.mif.gz -abs 0.01

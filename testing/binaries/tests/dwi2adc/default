@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic test of default operation of dwi2adc command
+# COmpares output to that generated from a prior software version
+dwi2adc dwi2adc/in.mif - | \
+testing_diff_image - dwi2adc/out.mif -frac 1e-5

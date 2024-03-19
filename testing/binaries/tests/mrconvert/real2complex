@@ -1,0 +1,7 @@
+#!/bin/bash
+# This test converts a real input image to a complex output image,
+#   and then ensures that when the resulting image is then compared to the original input image,
+#   no difference is detected
+#   (since the imaginary component of both images should be zero)
+mrconvert mrconvert/in.mif -datatype cfloat32 - | \
+testing_diff_image - mrconvert/in.mif

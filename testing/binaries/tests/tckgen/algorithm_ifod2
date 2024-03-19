@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify that the iFOD2 algorithm executes successfully
+#   (no verification of the resulting output data is performed)
+tckgen SIFT_phantom/fods.mif -algo ifod2 \
+-seed_image SIFT_phantom/mask.mif -mask SIFT_phantom/mask.mif -minlength 4 -select 100 tmp.tck -force

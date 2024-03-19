@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify correct operation of the "RGB" colour map
+# The purpose of this operation is merely to take an image that is already a 4D series with 3 volumes
+#   (and can therefore be interpreted as an RGB image),
+#   and apply the requisite min-max scaling to put the intensities in the [0.0, 1.0] range
+#   and therefore be compatible with writing to a format such as PNG.
+# The same set of operations is achieved using other MRtrix3 commands,
+#   and the test ensures that the two outcomes are identical.
+mrcolour unit_warp.mif rgb tmp-mrcolour.mif -force
+
+MAX=$(mrstats unit_warp.mif -output max -allvolumes)
+mrcalc unit_warp.mif $MAX -div tmp-manual.mif -force
+
+testing_diff_image tmp-mrcolour.mif tmp-manual.mif -frac 1e-6

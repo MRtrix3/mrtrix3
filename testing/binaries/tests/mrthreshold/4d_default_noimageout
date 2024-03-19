@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify default behaviour of command where the input image is 4D,
+#   but no output path is specified,
+#   such that the thresholds determined for each volume individually are written to stdout.
+mrthreshold dwi.mif > tmp.txt
+testing_diff_matrix tmp.txt mrthreshold/4d_default.txt

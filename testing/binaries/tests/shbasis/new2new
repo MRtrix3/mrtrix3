@@ -1,0 +1,7 @@
+#!/bin/bash
+# Ensure that when an SH image known to be stored using the _new_ SH convention
+#   is explicitly converted into the _new_ convention,
+#   no change is applied to the image data
+mrconvert dwi2fod/out.mif tmp.mif -force
+shbasis tmp.mif -convert new
+testing_diff_image tmp.mif dwi2fod/out.mif

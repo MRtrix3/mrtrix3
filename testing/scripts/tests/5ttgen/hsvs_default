@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify "5ttgen hsvs" algorithm under default usage
+5ttgen hsvs freesurfer/sub-01 tmp.mif -force
+testing_diff_header tmp.mif 5ttgen/hsvs/default.mif.gz

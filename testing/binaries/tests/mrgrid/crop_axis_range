@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify "crop" operation,
+#   when the (range of voxel indices to be included_ along each axis
+#   are specified using colon notation
+mrgrid noise.mif crop -axis 2 1:3 -axis 0 3:5 - | \
+testing_diff_image - mrcrop/out2.mif

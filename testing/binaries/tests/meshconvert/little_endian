@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify read of a VTK file where the binary data type has been manually inspected to be little-endian
+#   (even though this violates the VTK file format convention)
+# Ensure that output matches the same data stored in ASCII VTK
+meshconvert meshconvert/in_le.vtk tmp.vtk -force
+testing_diff_mesh tmp.vtk meshconvert/in_ascii.vtk 0.001

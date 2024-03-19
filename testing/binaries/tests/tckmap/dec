@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify operation when "-dec" command-line option is specified,
+#   resulting in a directionally-encoded colour output image
+# Output is compared to that generated using a prior software version;
+#   a tolerance of up to 1 streamline difference is permitted
+#   in case of differences in rounding between platforms
+tckmap tracks.tck -template dwi.mif -dec - | \
+testing_diff_image - tckmap/tdi_color.mif.gz -abs 1.5
