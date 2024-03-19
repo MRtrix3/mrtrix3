@@ -4,17 +4,22 @@ set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
 
 include(BashTests)
-function(add_bash_binary_tests file_path)
+function(add_bash_binary_tests folder_path)
+    get_filename_component(folder_name ${folder_path} NAME)
+    file(GLOB_RECURSE files ${folder_path}/*)
+
     set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
     list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
     list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
 
-    add_bash_tests(
-        FILE_PATH "${file_path}"
-        PREFIX "bin"
-        WORKING_DIRECTORY ${DATA_DIR}
-        EXEC_DIRECTORIES "${EXEC_DIRS}"
-    )
+    foreach(file ${files})
+	add_bash_tests(
+	    FILE_PATH "${file}"
+	    PREFIX "bin_${folder_name}"
+	    WORKING_DIRECTORY ${DATA_DIR}
+	    EXEC_DIRECTORIES "${EXEC_DIRS}"
+	)
+    endforeach()
 endfunction()
 
 add_bash_binary_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests/5tt2gmwmi)
