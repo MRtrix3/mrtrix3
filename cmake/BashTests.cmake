@@ -1,7 +1,7 @@
 # A function that adds a bash test for each line in a given file
 function(add_bash_tests)
     set(singleValueArgs FILE_PATH PREFIX WORKING_DIRECTORY)
-    set(multiValueArgs EXEC_DIRECTORIES)
+    set(multiValueArgs EXEC_DIRECTORIES LABELS)
     cmake_parse_arguments(
         ARG
         ""
@@ -14,6 +14,7 @@ function(add_bash_tests)
     set(prefix ${ARG_PREFIX})
     set(working_directory ${ARG_WORKING_DIRECTORY})
     set(exec_directories ${ARG_EXEC_DIRECTORIES})
+    set(labels ${ARG_LABELS})
 
     # Regenerate tests when the test script changes
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${file_path})
@@ -35,7 +36,7 @@ function(add_bash_tests)
     get_filename_component(file_name ${file_path} NAME_WE)
 
     # Add a custom target for IDEs to pickup the test script
-    add_custom_target(test_${file_name} SOURCES ${file_path})
+    add_custom_target(test_${prefix}_${file_name} SOURCES ${file_path})
 
     # Add test that cleans up temporary files
     add_test(
@@ -53,23 +54,20 @@ function(add_bash_tests)
     set(EXEC_DIR_PATHS "${exec_directories}")
     string(REPLACE ";" ":" EXEC_DIR_PATHS "${EXEC_DIR_PATHS}")
 
-    foreach(line_num RANGE ${MAX_LINE_NUM})
-        list(GET FILE_CONTENTS ${line_num} line)
+    set(test_name ${file_name})
+    add_test(
+	NAME ${prefix}_${test_name}
+	COMMAND ${BASH} "${file_path}"
+        WORKING_DIRECTORY ${working_directory}
+    )
+    set_tests_properties(${prefix}_${test_name}
+        PROPERTIES 
+	    ENVIRONMENT "PATH=${EXEC_DIR_PATHS}:$ENV{PATH}"
+	    FIXTURES_REQUIRED ${file_name}_cleanup
+    )
+    if(labels)
+	set_tests_properties(${prefix}_${test_name} PROPERTIES LABELS "${labels}")
+    endif()
 
-        set(test_name ${file_name})
-        if(${FILE_CONTENTS_LENGTH} GREATER 1)
-            math(EXPR suffix "${line_num} + 1")
-            set(test_name "${file_name}_${suffix}")
-        endif()
-
-        add_test(
-            NAME ${prefix}_${test_name}
-            COMMAND ${BASH} -c "export PATH=${EXEC_DIR_PATHS}:$PATH;${line}"
-            WORKING_DIRECTORY ${working_directory}
-        )
-        set_tests_properties(${prefix}_${test_name}
-            PROPERTIES FIXTURES_REQUIRED ${file_name}_cleanup
-        )
-        message(VERBOSE "Add bash tests commands for ${file_name}: ${line}")
-    endforeach()
+    message(VERBOSE "Add bash tests commands for ${file_name}: ${line}")
 endfunction()
