@@ -22,7 +22,6 @@
 #endif
 
 #include "types.h"
-#include <math.h>
 
 namespace MR::Math {
 
