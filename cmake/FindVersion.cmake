@@ -34,7 +34,6 @@ if(NOT MRTRIX_VERSION)
     message(STATUS "Failed to determine version from Git, using default base version: ${MRTRIX_BASE_VERSION}")
 endif()
 
-
 configure_file(
     ${SRC}
     ${DST}

@@ -21,7 +21,7 @@ echo logging to \""$LOGFILE"\"
 # generate list of tests to run:
 tests="update_copyright"
 if [ $# == 0 ]; then
-  for lib_path in python/lib/mrtrix3/*; do
+  for lib_path in python/mrtrix3/*; do
     if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
       for src_file in ${lib_path}/*.py; do
         if [[ -f ${src_file} ]]; then
