@@ -48,7 +48,7 @@ betaincreg(const Eigen::ArrayBase<ArgADerived> &a,
 default_type betaincreg(const default_type a, const default_type b, const default_type x);
 
 #ifndef MRTRIX_HAVE_LGAMMA_R
-static std::mutex mutex_lgamma;
+extern std::mutex mutex_lgamma;
 #endif
 
 } // namespace MR::Math

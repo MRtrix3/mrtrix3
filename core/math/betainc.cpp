@@ -79,7 +79,7 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
 #else
   default_type lbeta_ab = 0.0;
   {
-    std::lock_guard<std::mutex> lock (mutex_lgamma);
+    std::lock_guard<std::mutex> lock(mutex_lgamma);
     lbeta_ab = std::lgamma(a) + std::lgamma(b) - std::lgamma(a + b);
   }
 #endif
@@ -120,5 +120,9 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
 
   return NaN; // Needed more loops, did not converge
 }
+
+#ifndef MRTRIX_HAVE_LGAMMA_R
+std::mutex mutex_lgamma;
+#endif
 
 } // namespace MR::Math
