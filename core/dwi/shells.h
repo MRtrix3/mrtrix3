@@ -71,6 +71,7 @@ public:
 
   const std::vector<size_t> &get_volumes() const { return volumes; }
   size_t count() const { return volumes.size(); }
+  size_t size() const { return volumes.size(); }
 
   default_type get_mean() const { return mean; }
   default_type get_stdev() const { return stdev; }
@@ -100,6 +101,7 @@ public:
   const Shell &smallest() const { return shells.front(); }
   const Shell &largest() const { return shells.back(); }
   size_t count() const { return shells.size(); }
+  size_t size() const { return shells.size(); }
   size_t volumecount() const {
     size_t count = 0;
     for (const auto &it : shells)
