@@ -1,3 +1,5 @@
+include(CheckCXXSourceCompiles)
+
 file(GLOB_RECURSE CORE_SRCS *.cpp *.h)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
@@ -21,6 +23,19 @@ endif()
 add_library(mrtrix-core SHARED ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
 
+# Check to see if we can use lgamma_r() function in custom Math::betaincreg()
+check_cxx_source_compiles("
+  extern \"C\" double lgamma_r(double, int *);
+  int main() { int sign; lgamma_r(1.0, &sign); }"
+  MRTRIX_HAVE_LGAMMA_R
+)
+
+if(MRTRIX_HAVE_LGAMMA_R)
+    message(STATUS "Found lgamma_r() function")
+else()
+    message(STATUS "No lgamma_r() function found; statistical inference may have poorer multi-threading performance")
+endif()
+
 # On Windows, the library need to be in the same directory as the executables
 if(WIN32)
     set_target_properties(mrtrix-core PROPERTIES
@@ -31,7 +46,7 @@ endif()
 set(CORE_VERSION_CPP ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 add_custom_target(core-version-target ALL
-    COMMAND ${CMAKE_COMMAND} 
+    COMMAND ${CMAKE_COMMAND}
         -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
         -D DST=${CMAKE_CURRENT_BINARY_DIR}/version.cpp
@@ -47,12 +62,13 @@ add_library(mrtrix-core-version-lib STATIC ${CORE_VERSION_CPP})
 add_library(mrtrix::core-version-lib ALIAS mrtrix-core-version-lib)
 add_dependencies(mrtrix-core-version-lib core-version-target)
 
-target_include_directories(mrtrix-core-version-lib PRIVATE 
+target_include_directories(mrtrix-core-version-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_compile_definitions(mrtrix-core PUBLIC 
+target_compile_definitions(mrtrix-core PUBLIC
     MRTRIX_BASE_VERSION="${MRTRIX_BASE_VERSION}"
+    MRTRIX_HAVE_LGAMMA_R=$<BOOL:${MRTRIX_HAVE_LGAMMA_R}>
 )
 
 if(PNG_FOUND)
@@ -78,11 +94,11 @@ target_link_libraries(mrtrix-core PUBLIC
     ${FFTW_LIBRARIES}
 )
 
-target_include_directories(mrtrix-core PUBLIC 
+target_include_directories(mrtrix-core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR} ${FFTW_INCLUDES}
 )
 
-install(TARGETS mrtrix-core 
+install(TARGETS mrtrix-core
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
