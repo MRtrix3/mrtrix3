@@ -51,14 +51,17 @@ namespace MR::Math {
 //   following (inconsequential) ways:
 // - Changed function and constants names
 // - Check that inputs a and b are both positive
-// - Use std::lgamma_r() rather than std::lgamma() for thread-safety
+// - Use lgamma_r() rather than std::lgamma() for thread-safety if available;
+//   if not available, lock across threads just for execution of std::lgamma()
 // - Changed double to default_type
 // - Changed formatting to match MRtrix3 convention
 
 #define BETAINCREG_STOP 1.0e-8
 #define BETAINCREG_TINY 1.0e-30
 
+#ifdef MRTRIX_HAVE_LGAMMA_R
 extern "C" double lgamma_r(double, int *);
+#endif
 
 default_type betaincreg(const default_type a, const default_type b, const default_type x) {
   if (a <= 0.0 || b <= 0.0 || x < 0.0 || x > 1.0)
@@ -70,8 +73,16 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
   }
 
   // Find the first part before the continued fraction
-  int dummy_sign;
+#ifdef MRTRIX_HAVE_LGAMMA_R
+  int dummy_sign = 0;
   const default_type lbeta_ab = lgamma_r(a, &dummy_sign) + lgamma_r(b, &dummy_sign) - lgamma_r(a + b, &dummy_sign);
+#else
+  default_type lbeta_ab = 0.0;
+  {
+    std::lock_guard<std::mutex> lock (mutex_lgamma);
+    lbeta_ab = std::lgamma(a) + std::lgamma(b) - std::lgamma(a + b);
+  }
+#endif
   const default_type front = std::exp(std::log(x) * a + std::log(1.0 - x) * b - lbeta_ab) / a;
 
   // Use Lentz's algorithm to evaluate the continued fraction
