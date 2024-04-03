@@ -149,7 +149,7 @@ std::vector<int> get_vol2shell(const DWI::Shells &shells, const size_t volume_co
       vol2shell[volume_index] = shell_index;
     }
   }
-  assert (std::min(vol2shell.begin(), vol2shell.end()) == 0);
+  assert (*std::min_element(vol2shell.begin(), vol2shell.end()) == 0);
   return vol2shell;
 }
 
@@ -225,7 +225,7 @@ void run_combine_pairs(Image<float> &dwi_in,
       throw Exception ("Unable to find corresponding reversed phase encoding volumes for:" //
                        " [" + str(pe_first.transpose()) + "]");
   }
-  assert(std::min(peindex2paired.begin(), peindex2paired.end()) == 0);
+  assert(*std::min_element(peindex2paired.begin(), peindex2paired.end()) == 0);
 
   DWI::Shells shells(grad_in);
   const std::vector<int> vol2shell = get_vol2shell(shells, grad_in.rows());
@@ -662,9 +662,13 @@ void run() {
 
   switch(int(argument[1])) {
 
-   case 0: // combine_pairs
+   case 0:
     run_combine_pairs(dwi_in, grad_in, pe_in, header_out);
     PhaseEncoding::clear_scheme(header_out);
+    break;
+
+   case 1:
+    run_combine_predicted(dwi_in, grad_in, pe_in, header_out);
     break;
 
    default: // no others yet implemented
@@ -672,10 +676,6 @@ void run() {
 
   }
 
-  // Only do this for some operations
-  //PhaseEncoding::clear_scheme(header);
   DWI::export_grad_commandline(header_out);
-
-
 
 }
