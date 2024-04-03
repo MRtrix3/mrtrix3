@@ -79,8 +79,10 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
 #else
   default_type lbeta_ab = 0.0;
   {
-    std::lock_guard<std::mutex> lock(mutex_lgamma);
+    const std::lock_guard<std::mutex> lock(mutex_lgamma);
+    // NOLINTBEGIN(concurrency-mt-unsafe)
     lbeta_ab = std::lgamma(a) + std::lgamma(b) - std::lgamma(a + b);
+    // NOLINTEND(concurrency-mt-unsafe)
   }
 #endif
   const default_type front = std::exp(std::log(x) * a + std::log(1.0 - x) * b - lbeta_ab) / a;
