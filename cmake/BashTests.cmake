@@ -45,7 +45,7 @@ function(add_bash_tests)
         COMMAND ${BASH} -c "rm -rf ${working_directory}/tmp* ${working_directory}/*-tmp-*"
         WORKING_DIRECTORY ${working_directory}
     )
-    set_tests_properties(${test_name}_cleanup PROPERTIES FIXTURES_SETUP ${test_name}_cleanup)
+    set_tests_properties(${test_name}_cleanup PROPERTIES FIXTURES_CLEANUP ${test_name}_cleanup)
 
     file(STRINGS ${file_path} FILE_CONTENTS)
     list(LENGTH FILE_CONTENTS FILE_CONTENTS_LENGTH)
@@ -57,7 +57,7 @@ function(add_bash_tests)
 
     add_test(
 	NAME ${test_name}
-	COMMAND ${BASH} "${file_path}"
+        COMMAND ${BASH} "${file_path}"
         WORKING_DIRECTORY ${working_directory}
     )
     set_tests_properties(${test_name}
