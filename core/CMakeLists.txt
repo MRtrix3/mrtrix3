@@ -1,4 +1,4 @@
-include(CheckCXXSourceCompiles)
+include(CheckSymbolExists)
 
 file(GLOB_RECURSE CORE_SRCS *.cpp *.h)
 
@@ -24,11 +24,10 @@ add_library(mrtrix-core SHARED ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
 
 # Check to see if we can use lgamma_r() function in custom Math::betaincreg()
-check_cxx_source_compiles("
-  extern \"C\" double lgamma_r(double, int *);
-  int main() { int sign; lgamma_r(1.0, &sign); }"
-  MRTRIX_HAVE_LGAMMA_R
-)
+# The function is defined under _REENTRANT on some systems (e.g. MacOS)
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_REENTRANT)
+check_symbol_exists(lgamma_r "math.h" MRTRIX_HAVE_LGAMMA_R)
+list(REMOVE_AT CMAKE_REQUIRED_DEFINITIONS -1)
 
 if(MRTRIX_HAVE_LGAMMA_R)
     message(STATUS "Found lgamma_r() function")
@@ -68,8 +67,12 @@ target_include_directories(mrtrix-core-version-lib PRIVATE
 
 target_compile_definitions(mrtrix-core PUBLIC
     MRTRIX_BASE_VERSION="${MRTRIX_BASE_VERSION}"
-    MRTRIX_HAVE_LGAMMA_R=$<BOOL:${MRTRIX_HAVE_LGAMMA_R}>
+    $<$<BOOL:${MRTRIX_HAVE_LGAMMA_R}>:MRTRIX_HAVE_LGAMMA_R>
 )
+
+if(APPLE AND MRTRIX_HAVE_LGAMMA_R)
+    target_compile_definitions(mrtrix-core PRIVATE _REENTRANT)
+endif()
 
 if(PNG_FOUND)
     target_compile_definitions(mrtrix-core PUBLIC MRTRIX_PNG_SUPPORT)
