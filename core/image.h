@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define IMAGE_H
+
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -476,4 +478,3 @@ template <class ImageType> typename enable_if_image_type<ImageType, void>::type 
 }
 
 } // namespace MR
-
