@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_file_base_h__
-#define __dwi_tractography_file_base_h__
+#pragma once
 
 #include <iomanip>
 #include <map>
@@ -131,5 +130,3 @@ protected:
 //! \endcond
 
 } // namespace MR::DWI::Tractography
-
-#endif

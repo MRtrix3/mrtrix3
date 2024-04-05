@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_nifti_utils_h__
-#define __file_nifti_utils_h__
+#pragma once
 
 #include <array>
 // nifti1_io.h and nifti2_io.h headers must be included after dirent.h (transitively included by header.h)
@@ -52,5 +51,3 @@ std::string get_json_path(const std::string &nifti_path);
 } // namespace File::NIfTI
 
 } // namespace MR
-
-#endif

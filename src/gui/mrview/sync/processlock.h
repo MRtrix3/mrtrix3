@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __sync_processlock_h__
-#define __sync_processlock_h__
+#pragma once
 
 #include <QSharedMemory>
 #include <QSystemSemaphore>
@@ -50,5 +49,3 @@ private:
 };
 
 } // namespace MR::GUI::MRView::Sync
-
-#endif // __sync_processlock_h__

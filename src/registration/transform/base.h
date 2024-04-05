@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_base_h__
-#define __registration_transform_base_h__
+#pragma once
 
 #include "datatype.h" // debug
 #include "file/config.h"
@@ -255,5 +254,3 @@ protected:
 };
 //! @}
 } // namespace MR::Registration::Transform
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_types_h__
-#define __surface_types_h__
+#pragma once
 
 #include "connectome/connectome.h"
 #include "surface/polygon.h"
@@ -43,5 +42,3 @@ public:
 using label_vector_type = Eigen::Array<Connectome::node_t, Eigen::Dynamic, 1>;
 
 } // namespace MR::Surface
-
-#endif

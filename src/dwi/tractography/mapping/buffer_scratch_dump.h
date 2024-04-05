@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_buffer_scratch_dump_h__
-#define __dwi_tractography_mapping_buffer_scratch_dump_h__
+#pragma once
 
 #include <map>
 
@@ -141,5 +140,3 @@ void BufferScratchDump<value_type>::dump_to_file(const std::string &path, const 
 } // namespace Tractography
 } // namespace DWI
 } // namespace MR
-
-#endif

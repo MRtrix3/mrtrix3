@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_csa_entry_h__
-#define __file_dicom_csa_entry_h__
+#pragma once
 
 #include "datatype.h"
 #include "file/dicom/element.h"
@@ -161,5 +160,3 @@ protected:
 };
 
 } // namespace MR::File::Dicom
-
-#endif

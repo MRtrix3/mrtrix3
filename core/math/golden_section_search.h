@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_golden_section_search_h__
-#define __math_golden_section_search_h__
+#pragma once
 
 #include <cmath>
 
@@ -86,5 +85,3 @@ ValueType golden_section_search(FunctionType &function,
   return f1 < f2 ? x1 : x2;
 }
 } // namespace MR::Math
-
-#endif

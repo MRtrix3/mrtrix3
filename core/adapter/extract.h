@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_extract_h__
-#define __adapter_extract_h__
+#pragma once
 
 #include "adapter/base.h"
 
@@ -131,5 +130,3 @@ private:
 };
 
 } // namespace MR::Adapter
-
-#endif

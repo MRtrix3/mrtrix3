@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_legacy_image_h__
-#define __fixel_legacy_image_h__
+#pragma once
 
 #include <typeinfo>
 
@@ -131,4 +130,3 @@ protected:
 } // namespace Fixel
 } // namespace MR
 
-#endif

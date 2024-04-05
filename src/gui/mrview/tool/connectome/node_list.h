@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_node_list_h__
-#define __gui_mrview_tool_connectome_node_list_h__
+#pragma once
 
 #include <memory>
 
@@ -112,5 +111,3 @@ private:
 
 } // namespace Tool
 } // namespace MR::GUI::MRView
-
-#endif

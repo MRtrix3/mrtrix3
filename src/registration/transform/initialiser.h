@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_initialiser_h__
-#define __registration_transform_initialiser_h__
+#pragma once
 
 #include "image.h"
 #include "registration/transform/base.h"
@@ -113,5 +112,3 @@ extern void initialise_using_image_mass(Image<default_type> &im1,
                                         Registration::Transform::Init::LinearInitialisationParams &init,
                                         const std::vector<MultiContrastSetting> &contrast_settings);
 } // namespace MR::Registration::Transform::Init
-
-#endif

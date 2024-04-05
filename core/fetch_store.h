@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fetch_store_h__
-#define __fetch_store_h__
+#pragma once
 
 #include "datatype.h"
 #include "raw.h"
@@ -49,5 +48,3 @@ typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_
     const DataType datatype);
 
 } // namespace MR
-
-#endif

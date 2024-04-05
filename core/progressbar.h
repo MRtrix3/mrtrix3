@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __progressbar_h__
-#define __progressbar_h__
+#pragma once
 
 #include <chrono>
 #include <condition_variable>
@@ -280,5 +279,3 @@ template <class ThreadType> inline void ProgressBar::run_update_thread(const Thr
 }
 
 } // namespace MR
-
-#endif

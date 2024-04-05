@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_dict_h__
-#define __file_dicom_dict_h__
+#pragma once
 
 #include <string>
 
@@ -80,5 +79,3 @@ inline std::string format_ID(const std::string &ID) {
 }
 
 } // namespace MR::File::Dicom
-
-#endif

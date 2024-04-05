@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_mode_lightbox_gui_h__
-#define __gui_mrview_mode_lightbox_gui_h__
+#pragma once
 
 #include "gui/mrview/spin_box.h"
 
@@ -35,5 +34,3 @@ public:
 };
 
 } // namespace MR::GUI::MRView::Mode::LightBoxViewControls
-
-#endif

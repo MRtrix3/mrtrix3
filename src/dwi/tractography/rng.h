@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_rng_h__
-#define __dwi_tractography_rng_h__
+#pragma once
 
 #include "math/rng.h"
 
@@ -25,5 +24,3 @@ namespace MR::DWI::Tractography {
 extern thread_local Math::RNG rng;
 
 } // namespace MR::DWI::Tractography
-
-#endif

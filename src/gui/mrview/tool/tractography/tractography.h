@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_tractography_h__
-#define __gui_mrview_tool_tractography_h__
+#pragma once
 
 #include "gui/color_button.h"
 #include "gui/mrview/adjust_button.h"
@@ -119,5 +118,3 @@ protected:
 } // namespace MRView::Tool
 
 } // namespace MR::GUI
-
-#endif

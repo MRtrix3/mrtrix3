@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_gradient_descent_bb_h__
-#define __math_gradient_descent_bb_h__
+#pragma once
 
 #include "math/check_gradient.h"
 #include <deque>
@@ -242,5 +241,3 @@ protected:
 };
 //! @}
 } // namespace MR::Math
-
-#endif

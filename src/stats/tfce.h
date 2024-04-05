@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_tfce_h__
-#define __stats_tfce_h__
+#pragma once
 
 #include "filter/connected_components.h"
 #include "math/stats/typedefs.h"
@@ -71,5 +70,3 @@ private:
 };
 
 } // namespace MR::Stats::TFCE
-
-#endif

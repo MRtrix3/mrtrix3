@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_image_h__
-#define __gui_mrview_image_h__
+#pragma once
 
 #include "gui/mrview/volume.h"
 #include "gui/opengl/gl.h"
@@ -101,5 +100,3 @@ private:
 
 } // namespace MRView
 } // namespace MR::GUI
-
-#endif

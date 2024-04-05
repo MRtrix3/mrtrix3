@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_roi_editor_undoentry_h__
-#define __gui_mrview_tool_roi_editor_undoentry_h__
+#pragma once
 
 #include <array>
 #include <atomic>
@@ -70,5 +69,3 @@ struct ROI_UndoEntry {
 };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

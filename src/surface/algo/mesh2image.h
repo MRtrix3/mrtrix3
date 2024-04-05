@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_algo_mesh2image_h__
-#define __surface_algo_mesh2image_h__
+#pragma once
 
 #include "image.h"
 #include "surface/mesh.h"
@@ -26,5 +25,3 @@ namespace MR::Surface::Algo {
 void mesh2image(const Mesh &, Image<float> &);
 
 }
-
-#endif

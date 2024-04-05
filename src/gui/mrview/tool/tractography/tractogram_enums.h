@@ -14,13 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_tractogram_enums_h__
-#define __gui_mrview_tool_tractogram_enums_h__
+#pragma once
 
 namespace MR::GUI::MRView::Tool {
 enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
 enum class TrackGeometryType { Pseudotubes, Lines, Points };
 enum class TrackThresholdType { None, UseColourFile, SeparateFile };
 } // namespace MR::GUI::MRView::Tool
-
-#endif

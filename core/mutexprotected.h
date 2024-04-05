@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef MUTEXPROTECTED_H
-#define MUTEXPROTECTED_H
+#pragma once
 
 #include <mutex>
 
@@ -65,4 +64,3 @@ private:
   std::mutex m_mutex;
   Object m_object;
 };
-#endif // MUTEXPROTECTED_H

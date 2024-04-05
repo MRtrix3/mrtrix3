@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_SH_h__
-#define __math_SH_h__
+#pragma once
 
 #include "exception.h"
 #include "math/least_squares.h"
@@ -657,5 +656,3 @@ template <class ImageType> void check(const ImageType &H) {
 /** @} */
 
 } // namespace MR::Math::SH
-
-#endif

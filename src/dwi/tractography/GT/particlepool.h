@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_particlepool_h__
-#define __gt_particlepool_h__
+#pragma once
 
 #include <deque>
 #include <mutex>
@@ -103,5 +102,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::GT
-
-#endif // __gt_particlepool_h__

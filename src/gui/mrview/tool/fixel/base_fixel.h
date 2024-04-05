@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_fixel_fixelimage_h__
-#define __gui_mrview_tool_fixel_fixelimage_h__
+#pragma once
 
 #include <unordered_map>
 
@@ -285,5 +284,3 @@ using FixelLegacyType = MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric>
 using FixelImage4DType = MR::Image<float>;
 using FixelIndexImageType = MR::Image<uint32_t>;
 } // namespace MR::GUI::MRView::Tool
-
-#endif

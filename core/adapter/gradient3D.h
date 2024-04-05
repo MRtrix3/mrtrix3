@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_gradient3D_h__
-#define __image_adapter_gradient3D_h__
+#pragma once
 
 #include "adapter/gradient1D.h"
 #include "transform.h"
@@ -47,5 +46,3 @@ protected:
   Transform transform;
 };
 } // namespace MR::Adapter
-
-#endif

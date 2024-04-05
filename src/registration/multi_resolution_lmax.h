@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_multi_resolution_lmax_h__
-#define __registration_multi_resolution_lmax_h__
+#pragma once
 
 #include "adapter/extract.h"
 #include "adapter/subset.h"
@@ -86,5 +85,3 @@ FORCE_INLINE ImageType multi_resolution_lmax(ImageType &input,
   return smoothed;
 }
 } // namespace MR::Registration
-
-#endif

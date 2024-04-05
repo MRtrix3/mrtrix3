@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_shared_h__
-#define __registration_shared_h__
+#pragma once
 
 #include "app.h"
 
@@ -43,5 +42,3 @@ const OptionGroup fod_options =
              " (i.e. 6, 15, 28, 45, 66 etc.)");
 // clang-format on
 } // namespace MR::Registration
-
-#endif

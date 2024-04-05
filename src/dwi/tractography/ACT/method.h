@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_act_method_h__
-#define __dwi_tractography_act_method_h__
+#pragma once
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
@@ -137,5 +136,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::ACT
-
-#endif

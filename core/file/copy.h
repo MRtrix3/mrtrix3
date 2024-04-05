@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_copy_h__
-#define __file_copy_h__
+#pragma once
 
 #include "exception.h"
 #include "file/mmap.h"
@@ -35,5 +34,3 @@ inline void copy(const std::string &source, const std::string &destination) {
 }
 
 } // namespace MR::File
-
-#endif

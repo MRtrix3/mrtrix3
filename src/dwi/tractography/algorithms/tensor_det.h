@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_algorithms_tensor_det_h__
-#define __dwi_tractography_algorithms_tensor_det_h__
+#pragma once
 
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
@@ -149,5 +148,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::Algorithms
-
-#endif

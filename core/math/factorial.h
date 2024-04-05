@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_factorial_h__
-#define __math_factorial_h__
+#pragma once
 
 #include <functional>
 #include <limits>
@@ -38,5 +37,3 @@ template <typename T> T factorial(const T i) {
 };
 
 } // namespace MR::Math
-
-#endif

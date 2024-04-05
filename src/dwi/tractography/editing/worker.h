@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_editing_worker_h__
-#define __dwi_tractography_editing_worker_h__
+#pragma once
 
 #include <string>
 
@@ -66,5 +65,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::Editing
-
-#endif
