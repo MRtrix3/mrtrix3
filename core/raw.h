@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __raw_h__
-#define __raw_h__
+#pragma once
 
 /** \defgroup Binary Binary access functions
  * \brief functions to provide easy access to binary data. */
@@ -215,5 +214,3 @@ template <> inline void store<bool>(const bool value, void *data, size_t i, bool
 /** @} */
 
 } // namespace MR
-
-#endif

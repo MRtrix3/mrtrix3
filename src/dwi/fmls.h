@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_fmls_h__
-#define __dwi_fmls_h__
+#pragma once
 
 #include <map> // Used for sorting FOD samples
 
@@ -272,5 +271,3 @@ private:
 };
 
 } // namespace MR::DWI::FMLS
-
-#endif

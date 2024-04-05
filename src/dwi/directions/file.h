@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_load_h__
-#define __dwi_directions_load_h__
+#pragma once
 
 #include "file/matrix.h"
 #include "math/sphere.h"
@@ -48,5 +47,3 @@ inline void save(const MatrixType &directions, const std::string &filename, bool
 }
 
 } // namespace MR::DWI::Directions
-
-#endif

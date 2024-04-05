@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_writer_h__
-#define __dwi_tractography_mapping_writer_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "file/path.h"
@@ -475,5 +474,3 @@ template <typename value_type> void MapWriter<value_type>::set_tod(const VoxelTO
 }
 
 } // namespace MR::DWI::Tractography::Mapping
-
-#endif

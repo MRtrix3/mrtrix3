@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_window_h__
-#define __gui_mrview_window_h__
+#pragma once
 
 #include "gui/cursor.h"
 #include "gui/gui.h"
@@ -329,5 +328,3 @@ private:
 
 } // namespace MRView
 } // namespace MR::GUI
-
-#endif

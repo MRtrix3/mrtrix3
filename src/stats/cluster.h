@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_cluster_h__
-#define __stats_cluster_h__
+#pragma once
 
 #include "filter/connected_components.h"
 #include "math/stats/typedefs.h"
@@ -48,5 +47,3 @@ protected:
 //! @}
 
 } // namespace MR::Stats::Cluster
-
-#endif

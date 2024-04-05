@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_tracking_method_h__
-#define __dwi_tractography_tracking_method_h__
+#pragma once
 
 #include "dwi/tractography/ACT/method.h"
 #include "dwi/tractography/rng.h"
@@ -91,5 +90,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::Tracking
-
-#endif

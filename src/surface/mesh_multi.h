@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_mesh_multi_h__
-#define __surface_mesh_multi_h__
+#pragma once
 
 #include "types.h"
 
@@ -38,5 +37,3 @@ public:
 };
 
 } // namespace MR::Surface
-
-#endif

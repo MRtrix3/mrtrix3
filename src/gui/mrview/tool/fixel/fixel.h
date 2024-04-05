@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_fixel_h__
-#define __gui_mrview_tool_fixel_h__
+#pragma once
 
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
@@ -108,5 +107,3 @@ private:
   void update_gui_tracking_controls();
 };
 } // namespace MR::GUI::MRView::Tool
-
-#endif

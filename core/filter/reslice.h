@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_reslice_h__
-#define __filter_reslice_h__
+#pragma once
 
 #include "adapter/reslice.h"
 #include "algo/threaded_copy.h"
@@ -55,5 +54,3 @@ void reslice(ImageTypeSource &source,
 
 //! @}
 } // namespace MR::Filter
-
-#endif

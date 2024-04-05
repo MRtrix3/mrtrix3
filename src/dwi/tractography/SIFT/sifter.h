@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_sifter_h__
-#define __dwi_tractography_sift_sifter_h__
+#pragma once
 
 #include "image.h"
 #include "types.h"
@@ -104,5 +103,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::SIFT
-
-#endif

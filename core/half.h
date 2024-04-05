@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_half_h__
-#define __mrtrix_half_h__
+#pragma once
 
 namespace half_float {
 class half;
@@ -29,5 +28,3 @@ template <> struct is_integral<half_float::half> : std::false_type {};
 } // namespace std
 
 #include "half.hpp"
-
-#endif

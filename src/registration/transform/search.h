@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_search_h__
-#define __registration_transform_search_h__
+#pragma once
 
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
@@ -343,5 +342,3 @@ private:
   std::vector<transform_type> trafo_it;
 };
 } // namespace MR::Registration::RotationSearch
-
-#endif

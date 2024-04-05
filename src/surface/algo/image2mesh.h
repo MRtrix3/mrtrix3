@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_algo_image2mesh_h__
-#define __surface_algo_image2mesh_h__
+#pragma once
 
 #include <array>
 #include <map>
@@ -503,5 +502,3 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
 }
 
 } // namespace MR::Surface::Algo
-
-#endif

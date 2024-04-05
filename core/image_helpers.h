@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_helpers_h__
-#define __image_helpers_h__
+#pragma once
 
 #include "apply.h"
 #include "datatype.h"
@@ -627,5 +626,3 @@ public:
 };
 
 } // namespace MR
-
-#endif

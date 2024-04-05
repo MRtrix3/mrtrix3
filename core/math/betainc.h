@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_betainc_h__
-#define __math_betainc_h__
+#pragma once
 
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
 #include <unsupported/Eigen/SpecialFunctions>
@@ -45,5 +44,3 @@ betaincreg(const Eigen::ArrayBase<ArgADerived> &a,
 default_type betaincreg(const default_type a, const default_type b, const default_type x);
 
 } // namespace MR::Math
-
-#endif

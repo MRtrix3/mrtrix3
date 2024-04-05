@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_mapper_plugins_h__
-#define __dwi_tractography_mapping_mapper_plugins_h__
+#pragma once
 
 #include "image.h"
 #include "interp/linear.h"
@@ -164,5 +163,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::Mapping
-
-#endif

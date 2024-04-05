@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_gradient1D_h__
-#define __image_adapter_gradient1D_h__
+#pragma once
 
 #include "adapter/base.h"
 
@@ -82,5 +81,3 @@ protected:
   std::vector<value_type> half_derivative_weights;
 };
 } // namespace MR::Adapter
-
-#endif

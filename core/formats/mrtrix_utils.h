@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __formats_mrtrix_utils_h__
-#define __formats_mrtrix_utils_h__
+#pragma once
 
 #include "header.h"
 #include "types.h"
@@ -161,5 +160,3 @@ template <class StreamType> void write_mrtrix_header(const Header &H, StreamType
 }
 
 } // namespace MR::Formats
-
-#endif

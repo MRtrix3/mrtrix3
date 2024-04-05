@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_scalar_h__
-#define __surface_scalar_h__
+#pragma once
 
 #include "surface/mesh.h"
 
@@ -64,5 +63,3 @@ private:
 };
 
 } // namespace MR::Surface
-
-#endif

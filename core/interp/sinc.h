@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __interp_sinc_h__
-#define __interp_sinc_h__
+#pragma once
 
 #include "interp/base.h"
 #include "math/sinc.h"
@@ -158,5 +157,3 @@ template <class ImageType, typename... Args> inline Sinc<ImageType> make_sinc(co
 //! @}
 
 } // namespace MR::Interp
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_warp_utils_h__
-#define __registration_warp_utils_h__
+#pragma once
 
 namespace MR {
 namespace Registration {
@@ -62,5 +61,3 @@ template <class InputWarpType> transform_type parse_linear_transform(InputWarpTy
 } // namespace Warp
 } // namespace Registration
 } // namespace MR
-
-#endif

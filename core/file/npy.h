@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_npy_h__
-#define __file_npy_h__
+#pragma once
 
 #include <array>
 #include <sstream>
@@ -120,5 +119,3 @@ template <class ContType> void save_matrix(const ContType &data, const std::stri
 }
 
 } // namespace MR::File::NPY
-
-#endif

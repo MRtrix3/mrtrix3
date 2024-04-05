@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_rng_h__
-#define __math_rng_h__
+#pragma once
 
 #include <random>
 #ifdef MRTRIX_WINDOWS
@@ -107,5 +106,3 @@ public:
 };
 
 } // namespace MR::Math
-
-#endif

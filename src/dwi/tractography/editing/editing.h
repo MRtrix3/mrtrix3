@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_editing_editing_h__
-#define __dwi_tractography_editing_editing_h__
+#pragma once
 
 #include "app.h"
 
@@ -30,5 +29,3 @@ extern const App::OptionGroup WeightsOption;
 void load_properties(Tractography::Properties &);
 
 } // namespace MR::DWI::Tractography::Editing
-
-#endif

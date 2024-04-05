@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __sync_interprocesscommunicator_h__
-#define __sync_interprocesscommunicator_h__
+#pragma once
 
 #include <qlocalsocket.h>
 
@@ -56,5 +55,3 @@ private:
 };
 
 } // namespace MR::GUI::MRView::Sync
-
-#endif

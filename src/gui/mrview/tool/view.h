@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_view_h__
-#define __gui_mrview_tool_view_h__
+#pragma once
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/spin_box.h"
@@ -140,5 +139,3 @@ private:
 
 } // namespace Tool
 } // namespace MR::GUI::MRView
-
-#endif

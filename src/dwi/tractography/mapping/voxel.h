@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_voxel_h__
-#define __dwi_tractography_mapping_voxel_h__
+#pragma once
 
 #include <set>
 
@@ -359,5 +358,3 @@ public:
 };
 
 } // namespace MR::DWI::Tractography::Mapping
-
-#endif

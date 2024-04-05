@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_extract_h__
-#define __dwi_tractography_connectome_extract_h__
+#pragma once
 
 #include "file/ofstream.h"
 
@@ -98,5 +97,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::Connectome
-
-#endif

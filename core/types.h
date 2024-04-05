@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_types_h__
-#define __mrtrix_types_h__
+#pragma once
 
 #include <cinttypes>
 #include <complex>
@@ -212,5 +211,3 @@ template <class T, std::size_t N> inline ostream &operator<<(ostream &stream, co
 }
 
 } // namespace std
-
-#endif
