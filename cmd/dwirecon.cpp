@@ -27,6 +27,7 @@
 #include "adapter/gradient1D.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "filter/smooth.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 
@@ -95,6 +96,12 @@ void usage() {
 
     + Option("lmax", "set the maximal spherical harmonic degrees to use (one for each b-value) during signal reconstruction")
       + Argument("value").type_sequence_int()
+
+    // TODO Give capability to provide this information from the command-line,
+    //   rather than relying on internal heuristics to achieve the pairing;
+    //   calculations made prior to motion correction may be more robust
+    + Option("volume_pairs", "provide a text file specifying the volume indices that are paired and should therefore be combined")
+      + Argument("file").type_file_in()
 
     // TODO Appropriate to have other command-line options to specify the phase encoding design?
     + PhaseEncoding::ImportOptions
@@ -200,6 +207,9 @@ void run_combine_pairs(Image<float> &dwi_in,
   // The FSL topup / eddy format indexes from one;
   //   change to starting from zero for internal array indexing
   pe_indices -= 1;
+  DEBUG("pe_in:\n" + str(pe_in));
+  DEBUG("pe_indices:\n" + str(pe_indices.transpose()));
+  DEBUG("pe_config:\n" + str(pe_config));
 
   // Ensure that for each line in pe_config,
   //   there is a corresponding line with the same total readout time
@@ -229,6 +239,11 @@ void run_combine_pairs(Image<float> &dwi_in,
 
   DWI::Shells shells(grad_in);
   const std::vector<int> vol2shell = get_vol2shell(shells, grad_in.rows());
+  DEBUG("grad_in:\n" + str(grad_in));
+  std::stringstream ss_vol2shell;
+  for (const auto si : vol2shell)
+    ss_vol2shell << str(si) << " ";
+  DEBUG("Shell indices: " + ss_vol2shell.str());
 
   // Figure out for each volume in the output image
   //   which volumes in the input image will be contributing to its generation
@@ -295,19 +310,29 @@ void run_combine_pairs(Image<float> &dwi_in,
       if (average_dir.squaredNorm() > 0.0)
         average_dir.normalize();
       const default_type average_bvalue = 0.5 * (grad_in(first_volume, 3) + grad_in(second_volume, 3));
-      grad_out.block(out_volume, 0, 1, 3) = average_dir;
+      grad_out.block(out_volume, 0, 1, 3) = average_dir.transpose();
       grad_out(out_volume, 3) = average_bvalue;
       volume_pairs.push_back(std::make_pair(first_volume, second_volume));
       in2outindex[first_volume] = in2outindex[second_volume] = out_volume;
       ++out_volume;
+      break;
     }
     if (second_volume == grad_in.rows())
       throw Exception("Unable to establish paired DWI volume with reversed phase encoding:"
                       " index " + str(first_volume) + ";"
-                      " grad " + str(grad_in.row(first_volume).transpose()) + ";"
-                      " phase encoding " + str(pe_config.row(pe_first_index).transpose()));
+                      " grad " + str(grad_in.row(first_volume)) + ";"
+                      " phase encoding " + str(pe_config.row(pe_first_index)));
   }
-  assert (grad_out.allFinite());
+  assert(grad_out.allFinite());
+  assert(*std::min_element(in2outindex.begin(), in2outindex.end()) == 0);
+  std::stringstream ss_volpairs;
+  for (const auto p : volume_pairs)
+    ss_volpairs << "[" << str(p.first) << "," << str(p.second) << "] ";
+  DEBUG("Volume pairs:\n" + ss_volpairs.str());
+  std::stringstream ss_in2out;
+  for (const auto i : in2outindex)
+    ss_in2out << str(i) << " ";
+  DEBUG("Input to output index:\n" + ss_in2out.str());
 
   header_out.size(3) = dwi_in.size(3) / 2;
   DWI::set_DW_scheme(header_out, grad_out);
@@ -325,8 +350,16 @@ void run_combine_pairs(Image<float> &dwi_in,
       // Need to calculate the "weight" to be applied to each phase encoding group during volume recombination
       // This is based on the Jacobian of the field along the phase encoding direction,
       //   scaled by the total readout time
-      Adapter::Gradient1D<Image<float>> gradient(field_image);
-      ProgressBar progress("Computing phase encoding group weighting images", pe_config.rows());
+      ProgressBar progress("Computing phase encoding group weighting images", pe_config.rows() + 1);
+      // Apply a little smoothing to the field image before computing Jacobians;
+      //   this is to be consistent with prior dwifslpreproc code,
+      //   which directly invoked "mrfilter gradient"
+      // Allow smoothing filter to use internal default
+      Filter::Smooth smoothing_filter(field_image);
+      Image<float> smoothed_field = Image<float>::scratch(field_image, "Smoothed field offset image");
+      smoothing_filter(field_image, smoothed_field);
+      ++progress;
+      Adapter::Gradient1D<Image<float>> gradient(smoothed_field);
       for (size_t pe_index = 0; pe_index != pe_config.rows(); ++pe_index) {
         Image<float> jacobian_image = Image<float>::scratch(field_image, "Scratch Jacobian image for PE index " + str(pe_index));
         Image<float> weight_image = Image<float>::scratch(field_image, "Scratch weight image for PE index " + str(pe_index));
@@ -349,8 +382,8 @@ void run_combine_pairs(Image<float> &dwi_in,
       Image<float> first_volume(dwi_in), second_volume(dwi_in);
       first_volume.index(3) = volume_pairs[out_volume].first;
       second_volume.index(3) = volume_pairs[out_volume].second;
-      Image<float> first_weight(weight_images[volume_pairs[out_volume].first]);
-      Image<float> second_weight(weight_images[volume_pairs[out_volume].second]);
+      Image<float> first_weight(weight_images[pe_indices[volume_pairs[out_volume].first]]);
+      Image<float> second_weight(weight_images[pe_indices[volume_pairs[out_volume].second]]);
       for (auto l = Loop(dwi_out, 0, 3)(dwi_out, first_volume, second_volume, first_weight, second_weight); l; ++l) {
         dwi_out.value() = ((first_volume.value() * first_weight.value()) + (second_volume.value() * second_weight.value())) / //
                           (first_weight.value() + second_weight.value());
