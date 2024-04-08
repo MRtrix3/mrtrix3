@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_multi_contrast_h__
-#define __registration_multi_contrast_h__
+#pragma once
 
 #include <vector>
 
@@ -110,5 +109,3 @@ void preload_data(std::vector<Header> &input,
                   const std::vector<MultiContrastSetting> &mc_params);
 
 } // namespace MR::Registration
-
-#endif

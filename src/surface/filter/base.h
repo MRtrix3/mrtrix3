@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_filter_base_h__
-#define __surface_filter_base_h__
+#pragma once
 
 #include "progressbar.h" // May be needed for any derived classes that make use of the message string
 
@@ -55,5 +54,3 @@ protected:
 //! @}
 
 } // namespace MR::Surface::Filter
-
-#endif

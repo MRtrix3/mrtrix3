@@ -14,8 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_h__
-#define __image_h__
+#pragma once
+
+#define IMAGE_H
 
 #include <functional>
 #include <tuple>
@@ -477,5 +478,3 @@ template <class ImageType> typename enable_if_image_type<ImageType, void>::type 
 }
 
 } // namespace MR
-
-#endif

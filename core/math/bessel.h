@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_bessel_h__
-#define __math_bessel_h__
+#pragma once
 
 #include <limits>
 
@@ -64,5 +63,3 @@ template <typename T> inline T I1_scaled(const T x) {
 }
 
 } // namespace MR::Math::Bessel
-
-#endif

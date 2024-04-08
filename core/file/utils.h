@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_utils_h__
-#define __file_utils_h__
+#pragma once
 
 #include <cstdint>
 #include <fcntl.h>
@@ -230,5 +229,3 @@ inline void rmdir(const std::string &folder, bool recursive = false) {
 }
 
 } // namespace MR::File
-
-#endif

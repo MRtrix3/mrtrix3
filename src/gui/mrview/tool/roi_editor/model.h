@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_roi_editor_model_h__
-#define __gui_mrview_tool_roi_editor_model_h__
+#pragma once
 
 #include "gui/mrview/tool/list_model_base.h"
 #include "gui/mrview/tool/roi_editor/item.h"
@@ -35,5 +34,3 @@ public:
 };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift2_tckfactor_h__
-#define __dwi_tractography_sift2_tckfactor_h__
+#pragma once
 
 #include <fstream>
 #include <limits>
@@ -123,5 +122,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::SIFT2
-
-#endif

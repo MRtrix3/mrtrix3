@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_cfe_h__
-#define __stats_cfe_h__
+#pragma once
 
 #include "math/stats/typedefs.h"
 #include "stats/enhance.h"
@@ -49,5 +48,3 @@ protected:
 };
 
 } // namespace MR::Stats
-
-#endif

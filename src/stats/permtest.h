@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_permtest_h__
-#define __stats_permtest_h__
+#pragma once
 
 #include <memory>
 #include <mutex>
@@ -126,5 +125,3 @@ void run_permutations(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_ca
 //! @}
 
 } // namespace MR::Stats::PermTest
-
-#endif

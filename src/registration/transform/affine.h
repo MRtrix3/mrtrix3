@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_affine_h__
-#define __registration_transform_affine_h__
+#pragma once
 
 #include "file/config.h"
 #include "math/math.h"
@@ -124,5 +123,3 @@ protected:
 };
 //! @}
 } // namespace MR::Registration::Transform
-
-#endif

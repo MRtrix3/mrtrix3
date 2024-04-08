@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_roi_editor_item_h__
-#define __gui_mrview_tool_roi_editor_item_h__
+#pragma once
 
 #include <array>
 
@@ -70,5 +69,3 @@ template <class ImageType> void ROI_Item::save(ImageType &&out, GLubyte *data) {
 }
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

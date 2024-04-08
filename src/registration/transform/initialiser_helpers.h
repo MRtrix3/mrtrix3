@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_initialiser_helpers_h__
-#define __registration_transform_initialiser_helpers_h__
+#pragma once
 
 #include "image.h"
 #include "math/SH.h"
@@ -120,5 +119,3 @@ private:
 };
 
 } // namespace MR::Registration::Transform::Init
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_twi_stat_h__
-#define __dwi_tractography_mapping_twi_stat_h__
+#pragma once
 
 namespace MR::DWI::Tractography::Mapping {
 
@@ -42,5 +41,3 @@ extern const char *voxel_statistics[];
 extern const char *track_statistics[];
 
 } // namespace MR::DWI::Tractography::Mapping
-
-#endif

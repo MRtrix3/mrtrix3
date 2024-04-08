@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_projection_h__
-#define __gui_projection_h__
+#pragma once
 
 #include "gui/crosshair.h"
 #include "gui/gui.h"
@@ -262,5 +261,3 @@ protected:
 };
 
 } // namespace MR::GUI
-
-#endif

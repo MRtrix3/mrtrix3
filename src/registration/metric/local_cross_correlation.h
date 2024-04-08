@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_registration_metric_local_cross_correlation_h__
-#define __image_registration_metric_local_cross_correlation_h__
+#pragma once
 
 #include "adapter/reslice.h"
 #include "algo/loop.h"
@@ -297,4 +296,3 @@ public:
 } // namespace Metric
 } // namespace Registration
 } // namespace MR
-#endif

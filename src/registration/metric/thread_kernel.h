@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_threadkernel_h__
-#define __registration_metric_threadkernel_h__
+#pragma once
 
 #include "algo/iterator.h"
 #include "algo/random_loop.h"
@@ -375,5 +374,3 @@ protected:
 } // namespace Metric
 } // namespace Registration
 } // namespace MR
-
-#endif

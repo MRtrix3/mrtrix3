@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_algorithms_iFOD2_h__
-#define __dwi_tractography_algorithms_iFOD2_h__
+#pragma once
 
 #include <algorithm>
 
@@ -432,5 +431,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::Algorithms
-
-#endif

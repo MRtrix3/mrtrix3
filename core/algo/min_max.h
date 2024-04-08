@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_min_max_h__
-#define __image_min_max_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 
@@ -95,5 +94,3 @@ inline void min_max(ImageType &in,
 }
 
 } // namespace MR
-
-#endif

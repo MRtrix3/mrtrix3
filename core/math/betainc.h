@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_betainc_h__
-#define __math_betainc_h__
+#pragma once
 
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
 #include <unsupported/Eigen/SpecialFunctions>
@@ -52,5 +51,3 @@ extern std::mutex mutex_lgamma;
 #endif
 
 } // namespace MR::Math
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_weights_h__
-#define __dwi_tractography_weights_h__
+#pragma once
 
 #include "cmdline_option.h"
 
@@ -25,5 +24,3 @@ extern const App::Option TrackWeightsInOption;
 extern const App::Option TrackWeightsOutOption;
 
 } // namespace MR::DWI::Tractography
-
-#endif

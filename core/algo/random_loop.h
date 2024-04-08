@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_random_loop_h__
-#define __algo_random_loop_h__
+#pragma once
 
 #include "apply.h"
 #include "image_helpers.h"
@@ -184,5 +183,3 @@ private:
 
 //! @}
 } // namespace MR
-
-#endif

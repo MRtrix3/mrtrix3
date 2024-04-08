@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_filter_vertex_transform_h__
-#define __surface_filter_vertex_transform_h__
+#pragma once
 
 #include "header.h"
 #include "transform.h"
@@ -51,5 +50,3 @@ private:
 };
 
 } // namespace MR::Surface::Filter
-
-#endif

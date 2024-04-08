@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_particle_h__
-#define __gt_particle_h__
+#pragma once
 
 #include "types.h"
 
@@ -169,5 +168,3 @@ struct ParticleEnd {
 };
 
 } // namespace MR::DWI::Tractography::GT
-
-#endif // __gt_particle_h__

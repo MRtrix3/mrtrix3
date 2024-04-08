@@ -20,8 +20,7 @@
 /// \file
 /// Main header file for half-precision functionality.
 
-#ifndef HALF_HALF_HPP
-#define HALF_HALF_HPP
+#pragma once
 
 #define HALF_GCC_VERSION (__GNUC__ * 100 + __GNUC_MINOR__)
 
@@ -4865,4 +4864,3 @@ inline void fethrowexcept(int excepts, const char *msg = "") {
 #undef HALF_POP_WARNINGS
 #endif
 
-#endif

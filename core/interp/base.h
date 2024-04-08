@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __interp_base_h__
-#define __interp_base_h__
+#pragma once
 
 #include "image_helpers.h"
 #include "transform.h"
@@ -203,5 +202,3 @@ protected:
 
 } // namespace Interp
 } // namespace MR
-
-#endif

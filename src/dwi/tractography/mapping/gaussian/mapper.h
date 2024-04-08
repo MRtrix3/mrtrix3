@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_gaussian_mapper_h__
-#define __dwi_tractography_mapping_gaussian_mapper_h__
+#pragma once
 
 #include "image.h"
 
@@ -264,5 +263,3 @@ inline default_type TrackMapper::tck_index_to_factor(const size_t i) const {
 }
 
 } // namespace MR::DWI::Tractography::Mapping::Gaussian
-
-#endif

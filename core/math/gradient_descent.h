@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_gradient_descent_h__
-#define __math_gradient_descent_h__
+#pragma once
 
 #include <limits>
 
@@ -253,5 +252,3 @@ protected:
 //! @}
 } // namespace Math
 } // namespace MR
-
-#endif

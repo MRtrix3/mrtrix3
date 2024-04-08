@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_matrix_h__
-#define __fixel_matrix_h__
+#pragma once
 
 #include "file/ofstream.h"
 #include "fixel/fixel.h"
@@ -248,5 +247,3 @@ protected:
 };
 
 } // namespace MR::Fixel::Matrix
-
-#endif

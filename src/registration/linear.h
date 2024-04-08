@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_linear_h__
-#define __registration_linear_h__
+#pragma once
 
 #include <iostream>
 
@@ -592,5 +591,3 @@ void set_init_translation_model_from_option(Registration::Linear &registration, 
 void set_init_rotation_model_from_option(Registration::Linear &registration, const int &option);
 void parse_general_options(Registration::Linear &registration);
 } // namespace MR::Registration
-
-#endif

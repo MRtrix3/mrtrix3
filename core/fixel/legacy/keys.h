@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_legacy_keys_h__
-#define __fixel_legacy_keys_h__
+#pragma once
 
 #include <string>
 
@@ -25,5 +24,3 @@ namespace MR::Fixel::Legacy {
 const std::string name_key("sparse_data_name");
 const std::string size_key("sparse_data_size");
 } // namespace MR::Fixel::Legacy
-
-#endif

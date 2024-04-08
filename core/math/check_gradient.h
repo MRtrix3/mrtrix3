@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_check_gradient_h__
-#define __math_check_gradient_h__
+#pragma once
 
 #include "datatype.h"
 #include "debug.h"
@@ -103,5 +102,3 @@ check_function_gradient(Function &function,
   return hessian;
 }
 } // namespace MR::Math
-
-#endif
