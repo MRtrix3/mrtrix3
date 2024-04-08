@@ -29,9 +29,7 @@ list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_REENTRANT)
 check_symbol_exists(lgamma_r "math.h" MRTRIX_HAVE_LGAMMA_R)
 list(REMOVE_AT CMAKE_REQUIRED_DEFINITIONS -1)
 
-if(MRTRIX_HAVE_LGAMMA_R)
-    message(STATUS "Found lgamma_r() function")
-else()
+if(NOT MRTRIX_HAVE_LGAMMA_R)
     message(STATUS "No lgamma_r() function found; statistical inference may have poorer multi-threading performance")
 endif()
 
