@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __sync_enums_h__
-#define __sync_enums_h__
+#pragma once
 
 namespace MR::GUI::MRView::Sync {
 /**
@@ -31,5 +30,3 @@ enum class MessageKey {
 enum class DataKey { WindowFocus = 1 };
 
 } // namespace MR::GUI::MRView::Sync
-
-#endif

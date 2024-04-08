@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_transform_h__
-#define __image_transform_h__
+#pragma once
 
 #include "types.h"
 
@@ -50,5 +49,3 @@ public:
 };
 
 } // namespace MR
-
-#endif

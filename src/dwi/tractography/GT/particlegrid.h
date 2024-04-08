@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_particlegrid_h__
-#define __gt_particlegrid_h__
+#pragma once
 
 #include <mutex>
 
@@ -103,5 +102,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::GT
-
-#endif // __gt_particlegrid_h__

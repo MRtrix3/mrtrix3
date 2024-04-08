@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_bootstrap_h__
-#define __dwi_bootstrap_h__
+#pragma once
 
 #include "adapter/base.h"
 
@@ -111,5 +110,3 @@ protected:
 
 } // namespace DWI
 } // namespace MR
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_quick_scan_h__
-#define __file_dicom_quick_scan_h__
+#pragma once
 
 #include "mrtrix.h"
 #include <map>
@@ -43,5 +42,3 @@ public:
 std::ostream &operator<<(std::ostream &stream, const QuickScan &file);
 
 } // namespace MR::File::Dicom
-
-#endif

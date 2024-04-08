@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_fixel_td_map_h__
-#define __dwi_tractography_mapping_fixel_td_map_h__
+#pragma once
 
 #include "dwi/directions/set.h"
 #include "dwi/fixel_map.h"
@@ -72,5 +71,3 @@ template <class Fixel> size_t Fixel_TD_map<Fixel>::dixel2fixel(const Dixel &in) 
 }
 
 } // namespace MR::DWI::Tractography::Mapping
-
-#endif

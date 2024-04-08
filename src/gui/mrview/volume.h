@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_volume_h__
-#define __gui_mrview_volume_h__
+#pragma once
 
 #include "header.h"
 #include "transform.h"
@@ -178,5 +177,3 @@ protected:
 
 } // namespace MRView
 } // namespace MR::GUI
-
-#endif

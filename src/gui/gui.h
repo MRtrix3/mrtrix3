@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_app_h__
-#define __gui_app_h__
+#pragma once
 
 #include <QApplication>
 #if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
@@ -55,5 +54,3 @@ private:
 };
 
 } // namespace MR::GUI
-
-#endif

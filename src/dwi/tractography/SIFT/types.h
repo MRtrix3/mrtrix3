@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_types_h__
-#define __dwi_tractography_sift_types_h__
+#pragma once
 
 #include "thread_queue.h"
 
@@ -25,5 +24,3 @@ using track_t = unsigned int;
 using voxel_t = unsigned int;
 
 } // namespace MR::DWI::Tractography::SIFT
-
-#endif

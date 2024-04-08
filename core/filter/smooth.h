@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_filter_gaussian_h__
-#define __image_filter_gaussian_h__
+#pragma once
 
 #include "adapter/gaussian1D.h"
 #include "algo/copy.h"
@@ -265,5 +264,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

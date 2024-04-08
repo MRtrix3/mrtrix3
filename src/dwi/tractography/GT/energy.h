@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_energy_h__
-#define __gt_energy_h__
+#pragma once
 
 #include "dwi/tractography/GT/gt.h"
 #include "dwi/tractography/GT/particle.h"
@@ -93,5 +92,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::GT
-
-#endif // __gt_energy_h__

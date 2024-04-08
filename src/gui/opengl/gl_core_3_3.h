@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef OPENGL_NOLOAD_STYLE_HPP
-#define OPENGL_NOLOAD_STYLE_HPP
+#pragma once
 /*
 #if defined(__glew_h__) || defined(__GLEW_H__)
 #error Attempt to include auto-generated header after including glew.h
@@ -1529,4 +1528,3 @@ void CheckExtensions();
 }
 
 } // namespace gl
-#endif // OPENGL_NOLOAD_STYLE_HPP

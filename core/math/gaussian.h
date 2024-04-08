@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_gaussian_h__
-#define __math_gaussian_h__
+#pragma once
 
 #include "math/math.h"
 #include "math/vector.h"
@@ -106,5 +105,3 @@ inline T lnP(const std::vector<T> &measured,
 } // namespace Gaussian
 } // namespace Math
 } // namespace MR
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_legendre_h__
-#define __math_legendre_h__
+#pragma once
 
 #include "math/math.h"
 
@@ -135,5 +134,3 @@ inline void Plm_sph_deriv(VectorType &array, const int lmax, const int m, const 
 }
 
 } // namespace MR::Math::Legendre
-
-#endif

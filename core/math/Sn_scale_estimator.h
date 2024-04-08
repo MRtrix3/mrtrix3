@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_Sn_scale_estimator_h__
-#define __math_Sn_scale_estimator_h__
+#pragma once
 
 #include "math/median.h"
 #include "types.h"
@@ -44,5 +43,3 @@ protected:
 };
 
 } // namespace MR::Math
-
-#endif

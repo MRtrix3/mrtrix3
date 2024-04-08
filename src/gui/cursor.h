@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __cursor_h__
-#define __cursor_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 
@@ -35,5 +34,3 @@ public:
 };
 
 } // namespace MR::GUI
-
-#endif

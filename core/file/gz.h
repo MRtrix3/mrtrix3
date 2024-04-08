@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_gz_h__
-#define __file_gz_h__
+#pragma once
 
 #include <cassert>
 #include <cstdio>
@@ -161,5 +160,3 @@ protected:
 };
 
 } // namespace MR::File
-
-#endif

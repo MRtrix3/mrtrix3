@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_tractogram_h__
-#define __gui_mrview_tool_tractogram_h__
+#pragma once
 
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/displayable.h"
@@ -167,5 +166,3 @@ private slots:
 } // namespace Tool
 } // namespace MRView
 } // namespace MR::GUI
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __interp_cubic_h__
-#define __interp_cubic_h__
+#pragma once
 
 #include "interp/base.h"
 #include "math/cubic_spline.h"
@@ -516,5 +515,3 @@ inline Cubic<ImageType> make_cubic(const ImageType &parent, Args &&...args) {
 
 } // namespace Interp
 } // namespace MR
-
-#endif

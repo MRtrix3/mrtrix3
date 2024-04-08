@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_stats_fwe_h__
-#define __math_stats_fwe_h__
+#pragma once
 
 #include "math/stats/typedefs.h"
 
@@ -24,5 +23,3 @@ namespace MR::Math::Stats {
 matrix_type fwe_pvalue(const matrix_type &null_dist, const matrix_type &stats);
 
 }
-
-#endif

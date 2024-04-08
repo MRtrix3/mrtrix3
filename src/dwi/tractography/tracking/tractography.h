@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_tracking_tractography_h__
-#define __dwi_tractography_tracking_tractography_h__
+#pragma once
 
 #include "app.h"
 #include "dwi/tractography/properties.h"
@@ -62,5 +61,3 @@ void load_streamline_properties_and_rois(Properties &);
 } // namespace DWI::Tractography::Tracking
 
 } // namespace MR
-
-#endif

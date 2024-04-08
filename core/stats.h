@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_h_
-#define __stats_h_
+#pragma once
 
 #include "math/median.h"
 
@@ -120,5 +119,3 @@ private:
 void print_header(bool is_complex);
 
 } // namespace MR::Stats
-
-#endif

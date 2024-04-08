@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_mmap_h__
-#define __file_mmap_h__
+#pragma once
 
 #include <cassert>
 #include <cstdint>
@@ -83,5 +82,3 @@ private:
 };
 
 } // namespace MR::File
-
-#endif

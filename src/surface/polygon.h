@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_polygon_h__
-#define __surface_polygon_h__
+#pragma once
 
 #include <assert.h>
 #include <initializer_list>
@@ -69,5 +68,3 @@ private:
 template <> bool Polygon<3>::shares_edge(const Polygon<3> &) const;
 
 } // namespace MR::Surface
-
-#endif

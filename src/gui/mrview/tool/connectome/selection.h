@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_selection_h__
-#define __gui_mrview_tool_connectome_selection_h__
+#pragma once
 
 #include "mrtrix.h"
 
@@ -195,5 +194,3 @@ public:
 };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

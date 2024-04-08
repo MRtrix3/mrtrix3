@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_histogram_h__
-#define __algo_histogram_h__
+#pragma once
 
 #include <cmath>
 
@@ -193,5 +192,3 @@ private:
 };
 
 } // namespace MR::Algo::Histogram
-
-#endif

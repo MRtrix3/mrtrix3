@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_stats_shuffle_h__
-#define __math_stats_shuffle_h__
+#pragma once
 
 #include "app.h"
 #include "progressbar.h"
@@ -128,5 +127,3 @@ private:
 };
 
 } // namespace MR::Math::Stats
-
-#endif

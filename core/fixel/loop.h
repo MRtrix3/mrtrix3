@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_loop_h__
-#define __fixel_loop_h__
+#pragma once
 
 #include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
@@ -68,5 +67,3 @@ template <class IndexType> FORCE_INLINE LoopFixelsInVoxel Loop(IndexType &index)
   return {num_fixels, offset};
 }
 } // namespace MR::Fixel
-
-#endif

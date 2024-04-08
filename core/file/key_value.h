@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_key_value_h__
-#define __file_key_value_h__
+#pragma once
 
 #include "mrtrix.h"
 #include "types.h"
@@ -52,5 +51,3 @@ void write(File::OFStream &out,
 
 } // namespace KeyValue
 } // namespace MR::File
-
-#endif

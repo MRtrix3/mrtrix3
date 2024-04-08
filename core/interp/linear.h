@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __interp_linear_h__
-#define __interp_linear_h__
+#pragma once
 
 #include <complex>
 #include <type_traits>
@@ -561,5 +560,3 @@ inline Linear<ImageType> make_linear(const ImageType &parent, Args &&...args) {
 //! @}
 
 } // namespace MR::Interp
-
-#endif

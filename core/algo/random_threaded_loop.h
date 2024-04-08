@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_random_threaded_loop_h__
-#define __algo_random_threaded_loop_h__
+#pragma once
 
 #include "algo/iterator.h"
 #include "algo/loop.h"
@@ -249,5 +248,3 @@ RandomThreadedLoop(const std::string &progress_message,
 /*! \} */
 
 } // namespace MR
-
-#endif

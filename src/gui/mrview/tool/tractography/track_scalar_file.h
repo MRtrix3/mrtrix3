@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrtrix_tools_tractography_scalar_file_options_h__
-#define __gui_mrtrix_tools_tractography_scalar_file_options_h__
+#pragma once
 
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
@@ -81,5 +80,3 @@ private:
 };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

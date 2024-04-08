@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_optimal_threshold_h__
-#define __filter_optimal_threshold_h__
+#pragma once
 
 #include "adapter/replicate.h"
 #include "algo/min_max.h"
@@ -242,5 +241,3 @@ public:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

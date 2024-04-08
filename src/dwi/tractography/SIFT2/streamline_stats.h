@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift2_streamline_stats_h__
-#define __dwi_tractography_sift2_streamline_stats_h__
+#pragma once
 
 #include <cassert>
 #include <limits>
@@ -51,5 +50,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::SIFT2
-
-#endif
