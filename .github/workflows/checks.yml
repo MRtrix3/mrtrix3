@@ -76,7 +76,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install g++ qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
