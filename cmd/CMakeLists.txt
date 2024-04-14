@@ -26,6 +26,14 @@ foreach(CMD ${HEADLESS_CMD_SRCS})
     add_cmd(${CMD} FALSE)
 endforeach(CMD)
 
+# mrregister and mrtransform are the commands that take the longest to compile
+# so we try to start their compilation as soon as possible by adding them as dependencies
+# of a generated dummy file (which Ninja prioritises during compilation).
+# This is hacky, but it increases build parallelism.
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp "int main(){}")
+add_executable(0_dummy ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
+add_dependencies(0_dummy mrregister mrtransform)
+
 if(MRTRIX_BUILD_GUI)
     foreach(CMD ${GUI_CMD_SRCS})
         add_cmd(${CMD} TRUE)
