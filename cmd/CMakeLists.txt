@@ -5,6 +5,22 @@ foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
 
+if(MRTRIX_USE_PCH)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp "int main(){}")
+    add_executable(pch_cmd ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp)
+    target_include_directories(pch_cmd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../core)
+    find_package(Eigen3 REQUIRED)
+    target_link_libraries(pch_cmd PRIVATE Eigen3::Eigen)
+    target_precompile_headers(pch_cmd PRIVATE
+        [["app.h"]]
+	[["image.h"]]
+	<complex>
+	<string>
+	<vector>
+    )
+endif()
+
+set(HEAVY_CMDS mrregister mrtransform)
 
 function(add_cmd CMD_SRC IS_GUI)
     # Extract the filename without an extension (NAME_WE)
@@ -18,6 +34,9 @@ function(add_cmd CMD_SRC IS_GUI)
         LINK_DEPENDS_NO_SHARED true
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
+    if(MRTRIX_USE_PCH AND NOT ${IS_GUI})
+	target_precompile_headers(${CMD_NAME} REUSE_FROM pch_cmd)
+    endif()
     install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endfunction()
 
@@ -32,7 +51,7 @@ endforeach(CMD)
 # This is hacky, but it increases build parallelism.
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp "int main(){}")
 add_executable(0_dummy ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
-add_dependencies(0_dummy mrregister mrtransform)
+add_dependencies(0_dummy ${HEAVY_CMDS})
 
 if(MRTRIX_BUILD_GUI)
     foreach(CMD ${GUI_CMD_SRCS})
