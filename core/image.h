@@ -371,7 +371,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
     with_strides = Stride::get(*this);
 
   if (!preload)
-    return std::move(*this);
+    return *this;
 
   // do the preload:
 
