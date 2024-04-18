@@ -45,7 +45,7 @@ bool RAM::check(Header &H, size_t num_axes) const {
 std::unique_ptr<ImageIO::Base> RAM::create(Header &H) const {
   if (H.name() == "NULL") {
     std::unique_ptr<ImageIO::RAM> io_handler(new ImageIO::RAM(H));
-    return std::move(io_handler);
+    return io_handler;
   }
 
 #ifdef MRTRIX_AS_R_LIBRARY
