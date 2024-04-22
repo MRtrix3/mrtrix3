@@ -165,11 +165,11 @@ Alternative: Using the Overlay tool
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As demonstrated above,
-evaluating the relative alignment of two images by switching between them is prone to being mislead.
+evaluating the relative alignment of two images by switching between them is prone to being misled.
 An arguably more robust technique for performing such evaluation is to make use of ``mrview``'s Overlay Tool.
 In the example below,
-The T1-weighted image has been preseved as the ``mrview`` main image,
-but had its colour map sswitched from "gray" to "cool".
+The T1-weighted image has been preserved as the ``mrview`` main image,
+but had its colour map switched from "gray" to "cool".
 The mean *b* = 0 image has then been loaded into the Overlay tool,
 had the "hot" colour map applied,
 and its opacity set to approximately 50%.
