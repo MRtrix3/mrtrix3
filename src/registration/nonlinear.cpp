@@ -98,4 +98,8 @@ const OptionGroup nonlinear_options =
       + Argument("path");
 // clang-format on
 
+template void NonLinear::run<Transform::Affine, Image<double>>(
+    Transform::Affine, Image<double> &, Image<double> &, Image<double> &, Image<double> &);
+template void NonLinear::run<Transform::Rigid, Image<double>>(
+    Transform::Rigid, Image<double> &, Image<double> &, Image<double> &, Image<double> &);
 } // namespace MR::Registration

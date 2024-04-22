@@ -13,28 +13,21 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
-#pragma once
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <Eigen/SVD>
-#pragma GCC diagnostic pop
-
-#include "types.h"
+#include "image.h"
 
 namespace MR {
-namespace Math {
-
-template <class M> default_type condition_number(const M &data) {
-  assert(data.rows() && data.cols());
-  auto v = Eigen::JacobiSVD<M>(data).singularValues();
-  return v[0] / v[v.size() - 1];
-}
-
-// Explicit instantiation in core/math/condition_number.cpp
-extern template default_type
-condition_number<Eigen::Matrix<default_type, -1, -1>>(const Eigen::Matrix<default_type, -1, -1> &data);
-
-} // namespace Math
+template Image<bool>::~Image();
+template Image<int8_t>::~Image();
+template Image<uint8_t>::~Image();
+template Image<int16_t>::~Image();
+template Image<uint16_t>::~Image();
+template Image<int32_t>::~Image();
+template Image<uint32_t>::~Image();
+template Image<int64_t>::~Image();
+template Image<uint64_t>::~Image();
+template Image<half_float::half>::~Image();
+template Image<float>::~Image();
+template Image<double>::~Image();
+template Image<cfloat>::~Image();
+template Image<cdouble>::~Image();
 } // namespace MR
