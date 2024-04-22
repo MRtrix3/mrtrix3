@@ -24,7 +24,7 @@ find_package(Git QUIET)
 set(EXEC_VERSION_CPP ${CMAKE_CURRENT_BINARY_DIR}/exec_version.cpp)
 
 add_custom_target(exec-version-target ALL
-    COMMAND ${CMAKE_COMMAND} 
+    COMMAND ${CMAKE_COMMAND}
         -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
         -D DST=${EXEC_VERSION_CPP}
@@ -59,10 +59,10 @@ target_include_directories(mrtrix-headless PUBLIC
 )
 
 if(MRTRIX_USE_PCH)
-    target_precompile_headers(mrtrix-headless PRIVATE 
-	[["exception.h"]]
-	<fstream>
-	<complex>
+    target_precompile_headers(mrtrix-headless PRIVATE
+        [["exception.h"]]
+        <fstream>
+        <complex>
     )
 endif()
 

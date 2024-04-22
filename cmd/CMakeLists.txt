@@ -13,10 +13,10 @@ if(MRTRIX_USE_PCH)
     target_link_libraries(pch_cmd PRIVATE Eigen3::Eigen)
     target_precompile_headers(pch_cmd PRIVATE
         [["app.h"]]
-	[["image.h"]]
-	<complex>
-	<string>
-	<vector>
+        [["image.h"]]
+        <complex>
+        <string>
+        <vector>
     )
 endif()
 
@@ -26,11 +26,11 @@ function(add_cmd CMD_SRC IS_GUI)
     # Extract the filename without an extension (NAME_WE)
     get_filename_component(CMD_NAME ${CMD_SRC} NAME_WE)
     add_executable(${CMD_NAME} ${CMD_SRC})
-    target_link_libraries(${CMD_NAME} PRIVATE 
+    target_link_libraries(${CMD_NAME} PRIVATE
         $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::headless>
         mrtrix::exec-version-lib
     )
-    set_target_properties(${CMD_NAME} PROPERTIES 
+    set_target_properties(${CMD_NAME} PROPERTIES
         LINK_DEPENDS_NO_SHARED true
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
@@ -45,8 +45,8 @@ foreach(CMD ${HEADLESS_CMD_SRCS})
     add_cmd(${CMD} FALSE)
 endforeach(CMD)
 
-# mrregister and mrtransform are the commands that take the longest to compile
-# so we try to start their compilation as soon as possible by adding them as dependencies
+# For the set of commands that take the longest to compile,
+# we try to start their compilation as soon as possible by adding them as dependencies
 # of a generated dummy file (which Ninja prioritises during compilation).
 # This is hacky, but it increases build parallelism.
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp "int main(){}")
