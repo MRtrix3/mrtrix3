@@ -58,6 +58,14 @@ target_include_directories(mrtrix-headless PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+if(MRTRIX_USE_PCH)
+    target_precompile_headers(mrtrix-headless PRIVATE 
+	[["exception.h"]]
+	<fstream>
+	<complex>
+    )
+endif()
+
 target_link_libraries(mrtrix-headless PUBLIC
     mrtrix::core
 )
@@ -71,6 +79,10 @@ if(MRTRIX_BUILD_GUI)
         AUTOUIC ON
         LINK_DEPENDS_NO_SHARED ON
     )
+
+    if(MRTRIX_USE_PCH)
+        target_precompile_headers(mrtrix-gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/gui/gui_pch.h)
+    endif()
 
     target_link_libraries(mrtrix-gui PUBLIC
         mrtrix::headless
