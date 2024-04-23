@@ -299,7 +299,7 @@ Description &Description::operator+(const char *text) {
 }
 
 Description &Description::operator+(const char *const text[]) {
-  for (const char *const *p = text; *p; ++p)
+  for (const char *const *p = text; *p != nullptr; ++p)
     push_back(*p);
   return *this;
 }
@@ -1359,7 +1359,7 @@ ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, c
 void ParsedArgument::error(Exception &e) const {
   std::string msg("error parsing token \"");
   msg += p;
-  if (opt)
+  if (opt != nullptr)
     msg += std::string("\" for option \"") + opt->id + "\"";
   else
     msg += std::string("\" for argument \"") + arg->id + "\"";
@@ -1368,7 +1368,7 @@ void ParsedArgument::error(Exception &e) const {
 
 void check_overwrite(const std::string &name) {
   if (Path::exists(name) && !overwrite_files) {
-    if (check_overwrite_files_func)
+    if (check_overwrite_files_func != nullptr)
       check_overwrite_files_func(name);
     else
       throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
@@ -1394,13 +1394,13 @@ ParsedOption::ParsedOption(const Option *option, const char *const *arguments) :
   }
 }
 
-const ParsedArgument ParsedOption::operator[](size_t num) const {
+ParsedArgument ParsedOption::operator[](size_t num) const {
   assert(num < opt->size());
   return ParsedArgument(opt, &(*opt)[num], args[num]);
 }
 
 bool ParsedOption::operator==(const char *match) const {
-  std::string name = lowercase(match);
+  const std::string name = lowercase(match);
   return name == opt->id;
 }
 
