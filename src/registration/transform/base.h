@@ -100,7 +100,7 @@ public:
 
   size_t size() const { return number_of_parameters; }
 
-  Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params(const Eigen::Vector3d &p) const;
+  static Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params(const Eigen::Vector3d &p);
 
   Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform() const;
 
@@ -178,10 +178,10 @@ protected:
   void compute_halfspace_transformations();
 
   size_t number_of_parameters;
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo;
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half;
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
-  Eigen::Vector3d centre;
+  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo{};
+  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half{};
+  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse{};
+  Eigen::Vector3d centre{};
   Eigen::VectorXd optimiser_weights;
   bool nonsymmetric;
 };

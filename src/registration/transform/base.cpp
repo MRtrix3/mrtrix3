@@ -25,14 +25,14 @@ Base::Base(size_t number_of_parameters)
   centre.setZero();
 }
 
-Eigen::Matrix<default_type, 4, 1> Base::get_jacobian_vector_wrt_params(const Eigen::Vector3d &p) const {
+Eigen::Matrix<default_type, 4, 1> Base::get_jacobian_vector_wrt_params(const Eigen::Vector3d &) {
   throw Exception("FIXME: get_jacobian_vector_wrt_params not implemented for this metric");
-  Eigen::Matrix<default_type, 4, 1> jac;
+  Eigen::Matrix<default_type, 4, 1> jac{};
   return jac;
 }
 
 Eigen::Transform<Base::ParameterType, 3, Eigen::AffineCompact> Base::get_transform() const {
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> transform;
+  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> transform{};
   transform.matrix() = trafo.matrix();
   return transform;
 }
@@ -71,7 +71,7 @@ void Base::set_offset(const Eigen::Vector3d &offset_in) {
 }
 
 std::string Base::info() {
-  Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
   INFO("transformation:\n" + str(trafo.matrix().format(fmt)));
   DEBUG("transformation_half:\n" + str(trafo_half.matrix().format(fmt)));
   DEBUG("transformation_half_inverse:\n" + str(trafo_half_inverse.matrix().format(fmt)));
@@ -79,7 +79,7 @@ std::string Base::info() {
 }
 
 std::string Base::debug() {
-  Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
   CONSOLE("trafo:\n" + str(trafo.matrix().format(fmt)));
   CONSOLE("trafo_inverse:\n" + str(trafo.inverse().matrix().format(fmt)));
   CONSOLE("trafo_half:\n" + str(trafo_half.matrix().format(fmt)));
@@ -91,7 +91,7 @@ std::string Base::debug() {
 void Base::compute_offset() { trafo.translation() = (trafo.translation() + centre - trafo.linear() * centre).eval(); }
 
 void Base::compute_halfspace_transformations() {
-  Eigen::Matrix<ParameterType, 4, 4> tmp;
+  Eigen::Matrix<ParameterType, 4, 4> tmp{};
   tmp.setIdentity();
   tmp.template block<3, 4>(0, 0) = trafo.matrix();
   assert((tmp.template block<3, 3>(0, 0).isApprox(trafo.linear())));

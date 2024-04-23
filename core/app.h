@@ -197,7 +197,7 @@ public:
   //! pointer into \c argv corresponding to the option's first argument
   const char *const *args;
 
-  const ParsedArgument operator[](size_t num) const;
+  ParsedArgument operator[](size_t num) const;
 
   //! check whether this option matches the name supplied
   bool operator==(const char *match) const;
