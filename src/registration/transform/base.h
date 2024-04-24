@@ -178,10 +178,10 @@ protected:
   void compute_halfspace_transformations();
 
   size_t number_of_parameters;
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo{};
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half{};
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse{};
-  Eigen::Vector3d centre{};
+  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo;
+  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half;
+  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
+  Eigen::Vector3d centre;
   Eigen::VectorXd optimiser_weights;
   bool nonsymmetric;
 };

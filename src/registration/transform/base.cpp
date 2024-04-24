@@ -18,12 +18,13 @@
 namespace MR::Registration::Transform {
 
 Base::Base(size_t number_of_parameters)
-    : number_of_parameters(number_of_parameters), optimiser_weights(number_of_parameters), nonsymmetric(false) {
-  trafo.matrix().setIdentity();
-  trafo_half.matrix().setIdentity();
-  trafo_half_inverse.matrix().setIdentity();
-  centre.setZero();
-}
+    : number_of_parameters(number_of_parameters),
+      trafo(decltype(trafo)::Identity()),
+      trafo_half(decltype(trafo_half)::Identity()),
+      trafo_half_inverse(decltype(trafo_half_inverse)::Identity()),
+      centre(decltype(centre)::Zero()),
+      optimiser_weights(decltype(optimiser_weights)::Zero(number_of_parameters)),
+      nonsymmetric(false) {}
 
 Eigen::Matrix<default_type, 4, 1> Base::get_jacobian_vector_wrt_params(const Eigen::Vector3d &) {
   throw Exception("FIXME: get_jacobian_vector_wrt_params not implemented for this metric");
