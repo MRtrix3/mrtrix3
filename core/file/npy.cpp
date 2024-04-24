@@ -16,6 +16,8 @@
 
 #include "file/npy.h"
 
+#include <sys/stat.h>
+
 namespace MR::File::NPY {
 
 DataType descr2datatype(const std::string &s) {

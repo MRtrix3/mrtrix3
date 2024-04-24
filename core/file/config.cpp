@@ -79,6 +79,16 @@ void Config::init() {
   Header::do_realign_transform = get_bool("RealignTransform", true);
 }
 
+std::string Config::get(const std::string &key) {
+  const KeyValues::const_iterator i = config.find(key);
+  return (i != config.end() ? i->second : "");
+}
+
+std::string Config::get(const std::string &key, const std::string &default_value) {
+  KeyValues::iterator i = config.find(key);
+  return (i != config.end() ? i->second : default_value);
+}
+
 bool Config::get_bool(const std::string &key, bool default_value) {
   std::string value = get(key);
   if (value.empty())
