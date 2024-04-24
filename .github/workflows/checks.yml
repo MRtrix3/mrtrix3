@@ -146,6 +146,7 @@ jobs:
         -D CMAKE_BUILD_TYPE=Release
         -D MRTRIX_BUILD_TESTS=ON
         -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_USE_PCH=OFF
         -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
