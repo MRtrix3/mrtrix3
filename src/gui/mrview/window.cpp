@@ -154,7 +154,10 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        const auto url = urlList.at(i);
+        const auto filePath =
+            url.isLocalFile() ? url.toLocalFile().toUtf8().constData() : url.toString().toUtf8().constData();
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(filePath)));
       } catch (Exception &e) {
         e.display();
       }
