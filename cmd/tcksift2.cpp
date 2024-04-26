@@ -38,6 +38,19 @@ using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::SIFT2;
 
 // clang-format off
+const OptionGroup SIFT2InitialisationOption =
+    OptionGroup ("Options for initialising / setting the SIFT2 streamline weights")
+  + Option ("init_coeffs", "initialise the set of per-streamline coefficients for commencement of optimisation")
+    + Argument ("file").type_file_in()
+  + Option ("init_factors", "initialise the set of per-streamline weighting factors for commencement of optimisation")
+    + Argument ("file").type_file_in()
+  + Option ("in_coeffs", "provide the set of per-streamline coefficients;"
+                         " do not perform any subsequent optimisation of such")
+    + Argument ("file").type_file_in()
+  + Option ("in_factors", "provide the set of per-streamline weighting factors;"
+                          " do not perform any subsequent optimisation of such")
+    + Argument ("file").type_file_in();
+
 const OptionGroup SIFT2RegularisationOption = OptionGroup ("Regularisation options for SIFT2")
   + Option ("reg_tikhonov", "provide coefficient for regularising streamline weighting coefficients"
                             " (Tikhonov regularisation)"
@@ -135,6 +148,7 @@ void usage() {
   + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")
     + Argument ("path").type_file_out()
 
+  + SIFT2InitialisationOption
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;
 
@@ -147,6 +161,12 @@ void run() {
     throw Exception("Options -min_factor and -min_coeff are mutually exclusive");
   if (get_options("max_factor").size() && get_options("max_coeff").size())
     throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
+  if (get_options ("linear").size()
+      + get_options("init_coeffs").size()
+      + get_options("init_factors").size()
+      + get_options ("in_coeffs").size()
+      + get_options("in_factors").size() > 1)
+    throw Exception ("Options -linear, -init_coeffs, -init_factors, -in_coeffs and -in_factors are mutually exclusive");
 
   if (Path::has_suffix(argument[2], ".tck"))
     throw Exception("Output of tcksift2 command should be a text file, not a tracks file");
@@ -176,13 +196,30 @@ void run() {
     tckfactor.output_all_debug_images(debug_path, "before");
   }
 
+  auto opt = get_options ("out_mu");
+  if (opt.size()) {
+    File::OFStream out_mu (opt[0][0]);
+    out_mu << tckfactor.mu();
+  }
+
   if (get_options("linear").size()) {
 
     tckfactor.calc_afcsa();
 
+  } else if (!get_options("in_coeffs").empty() || !get_options("in_factors").empty()) {
+
+    opt = get_options("in_coeffs");
+    if (opt.size()) {
+      tckfactor.set_coefficients(opt[0][0]);
+    } else {
+      opt = get_options("in_factors");
+      assert (!opt.empty());
+      tckfactor.set_factors(opt[0][0]);
+    }
+
   } else {
 
-    auto opt = get_options("csv");
+    opt = get_options("csv");
     if (opt.size())
       tckfactor.set_csv_path(opt[0][0]);
 
@@ -215,6 +252,13 @@ void run() {
     if (opt.size())
       tckfactor.set_min_cf_decrease(float(opt[0][0]));
 
+    opt = get_options("init_factors");
+    if (!opt.empty())
+      tckfactor.set_factors(opt[0][0]);
+    opt = get_options("init_coeffs");
+    if (!opt.empty())
+      tckfactor.set_coefficients(opt[0][0]);
+
     tckfactor.estimate_factors();
   }
 
@@ -222,16 +266,10 @@ void run() {
 
   tckfactor.output_factors(argument[2]);
 
-  auto opt = get_options("out_coeffs");
+  opt = get_options("out_coeffs");
   if (opt.size())
     tckfactor.output_coefficients(opt[0][0]);
 
   if (debug_path.size())
     tckfactor.output_all_debug_images(debug_path, "after");
-
-  opt = get_options("out_mu");
-  if (opt.size()) {
-    File::OFStream out_mu(opt[0][0]);
-    out_mu << tckfactor.mu();
-  }
 }

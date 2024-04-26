@@ -69,6 +69,10 @@ public:
   void set_max_coeff_step(const double i) { max_coeff_step = i; }
   void set_min_cf_decrease(const double i) { min_cf_decrease_percentage = i; }
 
+  void set_coefficients(const std::string& path);
+  void set_factors(const std::string& path);
+
+
   void set_csv_path(const std::string &i) { csv_path = i; }
 
   void store_orig_TDs();
@@ -114,6 +118,12 @@ private:
 
   // For when multiple threads are trying to write their final information back
   std::mutex mutex;
+
+  void update_fixels();
+
+  // This should only be called if coefficients have been loaded from the command-line;
+  //   these limits should otherwise be being enforced by whatever code is responsible for the optimisation
+  void enforce_coeff_limits();
 
   void indicate_progress() {
     if (App::log_level)

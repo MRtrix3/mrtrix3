@@ -46,6 +46,62 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
   reg_multiplier_tv = lambda_tv * A;
 }
 
+void TckFactor::set_coefficients (const std::string& path)
+{
+  coefficients = File::Matrix::load_vector<default_type>(path);
+  if (coefficients.size() != contributions.size())
+    throw Exception("Number of entries in input weighting coefficients file \"" + path + "\""
+                    + " (" + str(coefficients.size()) + ")"
+                    + " does not match number of streamlines read"
+                    + " (" + str(contributions.size()) + ")");
+  if (!coefficients.allFinite()) {
+    WARN ("Non-finite values present in input weighting coefficients file \"" + path + "\";"
+          " may lead to unexpected behaviour");
+  }
+  enforce_coeff_limits();
+  update_fixels();
+}
+
+
+
+void TckFactor::set_factors(const std::string& path) {
+  const Eigen::Array<default_type, Eigen::Dynamic, 1> factors = File::Matrix::load_vector<default_type>(path);
+  if (factors.size() != contributions.size())
+    throw Exception("Number of entries in input weighting factors file \"" + path + "\""
+                    + " (" + str(coefficients.size()) + ")"
+                    + " does not match number of streamlines read"
+                    + " (" + str(contributions.size()) + ")");
+  coefficients.resize(factors.size());
+  bool issue_nonfinite_warning = false, issue_negative_warning = false, issue_zero_warning = false;
+  for (SIFT::track_t i = 0; i != factors.size(); ++i) {
+    if (!std::isfinite(factors[i])) {
+      coefficients[i] = std::numeric_limits<default_type>::quiet_NaN();
+      issue_nonfinite_warning = true;
+    } else if (factors[i] < default_type(0)) {
+      coefficients[i] = std::numeric_limits<default_type>::quiet_NaN();
+      issue_negative_warning = true;
+    } else if (!factors[i]) {
+      coefficients[i] = -std::numeric_limits<default_type>::infinity();
+      issue_zero_warning = true;
+    } else {
+      coefficients[i] = std::log(factors[i]);
+    }
+  }
+  if (issue_nonfinite_warning || issue_negative_warning) {
+    WARN ("Input weighting factors file \"" + path + "\" contains"
+          + ((issue_nonfinite_warning || issue_negative_warning) ?
+             " both non-finite and negative " :
+             (issue_nonfinite_warning ? " non-finite" : " negative"))
+          + " values; this may lead to unexpected behaviour");
+  }
+  if (issue_zero_warning) {
+    WARN ("Input weighting factors file \"" + path + "\" contains zero values;"
+          " these cannot be re-introduced by SIFT2 and so will remain zero-valued at output");
+  }
+  enforce_coeff_limits();
+  update_fixels();
+}
+
 void TckFactor::store_orig_TDs() {
   for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
     i->store_orig_TD();
@@ -177,10 +233,12 @@ void TckFactor::calc_afcsa() {
 
 void TckFactor::estimate_factors() {
 
-  try {
-    coefficients = decltype(coefficients)::Zero(num_tracks());
-  } catch (...) {
-    throw Exception("Error assigning memory for streamline weights vector");
+  if (!coefficients.size()) {
+    try {
+      coefficients = decltype(coefficients)::Zero(num_tracks());
+    } catch (...) {
+      throw Exception("Error assigning memory for streamline weights vector");
+    }
   }
 
   const double init_cf = calc_cost_function();
@@ -192,7 +250,7 @@ void TckFactor::estimate_factors() {
 
   unsigned int nonzero_streamlines = 0;
   for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-    if (contributions[i] && contributions[i]->dim())
+    if (contributions[i] && contributions[i]->dim() && std::isfinite(coefficients[i]))
       ++nonzero_streamlines;
   }
 
@@ -271,18 +329,7 @@ void TckFactor::estimate_factors() {
     }
 
     // Multi-threaded calculation of updated streamline density, and mean weighting coefficient, in each fixel
-    for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
-      i->clear_TD();
-      i->clear_mean_coeff();
-    }
-    {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
-      FixelUpdater worker(*this);
-      Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
-    }
-    // Scale the fixel mean coefficient terms (each streamline in the fixel is weighted by its length)
-    for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
-      i->normalise_mean_coeff();
+    update_fixels();
     indicate_progress();
 
     cf_data = calc_cost_function();
@@ -442,5 +489,43 @@ void TckFactor::output_all_debug_images(const std::string &dirpath, const std::s
     excluded_image.value() = fixels[index].is_excluded();
   }
 }
+
+void TckFactor::update_fixels() {
+  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
+    i->clear_TD();
+    i->clear_mean_coeff();
+  }
+  {
+    SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    FixelUpdater worker(*this);
+    Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
+  }
+  // Scale the fixel mean coefficient terms (each streamline in the fixel is weighted by its length)
+  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
+    i->normalise_mean_coeff();
+}
+
+void TckFactor::enforce_coeff_limits() {
+  if (min_coeff == -std::numeric_limits<default_type>::infinity()
+      && max_coeff == std::numeric_limits<default_type>::infinity())
+    return;
+  SIFT::track_t removed_count = 0, clamped_count = 0;
+  for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
+    if (coefficients[i] < min_coeff) {
+      coefficients[i] = -std::numeric_limits<default_type>::infinity();
+      ++removed_count;
+    } else if (coefficients[i] > max_coeff) {
+      coefficients[i] = max_coeff;
+      ++clamped_count;
+    }
+  }
+  if (removed_count) {
+    INFO (str(removed_count) + " streamlines were removed due to initial weights being lower than minimum permissible");
+  }
+  if (clamped_count) {
+    INFO (str(clamped_count) + " streamlines had their initial weight reduced due to exceeding the maximum permissible");
+  }
+}
+
 
 } // namespace MR::DWI::Tractography::SIFT2

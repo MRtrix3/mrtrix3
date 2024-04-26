@@ -53,6 +53,17 @@ Options to make SIFT provide additional output files
 
 -  **-out_coeffs path** output text file containing the weighting coefficient for each streamline
 
+Options for initialising / setting the SIFT2 streamline weights
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-init_coeffs file** initialise the set of per-streamline coefficients for commencement of optimisation
+
+-  **-init_factors file** initialise the set of per-streamline weighting factors for commencement of optimisation
+
+-  **-in_coeffs file** provide the set of per-streamline coefficients; do not perform any subsequent optimisation of such
+
+-  **-in_factors file** provide the set of per-streamline weighting factors; do not perform any subsequent optimisation of such
+
 Regularisation options for SIFT2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
