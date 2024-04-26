@@ -40,10 +40,12 @@ You can also choose to rerun tests have failed by specifying the `--rerun-failed
 You don't need to build every command to test one particular command.
 For example, you can do this:
 ```ShellSession
-cmake --build build --target mrconvert 
+cmake --build build --target mrconvert testing_tools
 cd build
 ctest -R bin_mrconvert
 ```
+Note that, in addition to the command you want to test, you also need to build `testing_tools` (an umbrella 
+target that builds the tools needed to run binary tests).
 
 ## Adding tests
  
