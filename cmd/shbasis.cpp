@@ -128,6 +128,7 @@ void check_and_update (Header& H, const conv_t conversion)
       }
     }
   }
+  INFO (str(voxel_count) + " voxels to be included in calculations");
 
   // Get sums independently for each l
 
