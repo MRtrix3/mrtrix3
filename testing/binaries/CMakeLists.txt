@@ -1,8 +1,5 @@
 find_program(BASH bash)
 
-set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
-
-
 include(BashTests)
 function(add_bash_binary_tests file_path)
     set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
@@ -12,7 +9,7 @@ function(add_bash_binary_tests file_path)
     add_bash_tests(
         FILE_PATH "${file_path}"
         PREFIX "bin"
-        WORKING_DIRECTORY ${DATA_DIR}
+        WORKING_DIRECTORY ${BINARY_DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
     )
 endfunction()
