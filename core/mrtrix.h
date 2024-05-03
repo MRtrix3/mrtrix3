@@ -104,13 +104,10 @@ bool match(const std::string &pattern, const std::string &text, bool ignore_case
 size_t char_is_dash(const char *arg);
 
 //! match whole string to a dash or any Unicode character that looks like one
-bool is_dash(const std::string &arg);
+bool is_dash(std::string_view arg);
 
-//! match current character to a dash or any Unicode character that looks like one
-/*! \note If a match is found, this also advances the \a arg pointer to the next
- * character in the string, which could be one or several bytes along depending on
- * the width of the UTF8 character identified. */
-bool consume_dash(const char *&arg);
+//! returns string without leading dashes
+std::string_view without_leading_dash(std::string_view arg);
 
 template <class T> inline std::string str(const T &value, int precision = 0) {
   std::ostringstream stream;
