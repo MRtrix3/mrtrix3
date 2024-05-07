@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response manual"
+#   under default operation,
+#   where the diffusion gradient table is provided via the -grad option
+# Ensure that outputs match those generated
+#   using a prior version of the software
+
+mrinfo BIDS/sub-01/dwi/sub-01_dwi.nii.gz \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-export_grad_mrtrix tmp_grad.b
+
+dwi2response manual BIDS/sub-01/dwi/sub-01_dwi.nii.gz dwi2response/fa/default.mif.gz tmp_out.txt \
+-grad tmp_grad.b
+
+testing_diff_matrix tmp_out.txt dwi2response/manual/default.txt -abs 1e-2
+

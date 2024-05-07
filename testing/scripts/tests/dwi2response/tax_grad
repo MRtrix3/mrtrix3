@@ -1,0 +1,17 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response tax"
+#   under default operation,
+#   where the diffuson gradient table is provided via the -grad option
+# Ensure that outputs match those generated
+#   using a prior version of the software
+
+mrinfo BIDS/sub-01/dwi/sub-01_dwi.nii.gz \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-export_grad_mrtrix tmp_grad.b
+
+dwi2response tax tmp_in.mif tmp_out.txt -voxels tmp_voxels.mif \
+-grad tmp_grad.b
+
+testing_diff_matrix tmp_out.txt dwi2response/tax/default.txt -abs 1e-2
+testing_diff_image tmp_voxels.mif dwi2response/tax/default.mif.gz
+
