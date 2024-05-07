@@ -33,6 +33,7 @@ function(add_cpp_unit_test FILE_SRC)
         NAME unittest_${NAME}
         COMMAND ${BASH} -c "$<TARGET_FILE:${NAME}>"
     )
+    set_tests_properties(unittest_${NAME} PROPERTIES LABELS "unittest")
 endfunction()
 
 function (add_bash_unit_test FILE_SRC)
@@ -46,6 +47,7 @@ function (add_bash_unit_test FILE_SRC)
         PREFIX "unittest"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
+        LABELS "unittest"
     )
 endfunction()
 

@@ -54,10 +54,13 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin --output-on-failure
+      run: cd build && ctest -L binary --output-on-failure
+
+    - name: limited script tests
+      run: cd build && ctest -L pythonci --output-on-failure
 
   linux-gcc-build:
 
@@ -103,10 +106,13 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin --output-on-failure
+      run: cd build && ctest -L binary --output-on-failure
+
+    - name: limited script tests
+      run: cd build && ctest -L pythonci --output-on-failure
 
   macos-build:
 
@@ -154,10 +160,13 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin --output-on-failure
+      run: cd build && ctest -L binary --output-on-failure
+
+    - name: limited script tests
+      run: cd build && ctest -L pythonci --output-on-failure
 
     - name: check command documentation
       run: ./docs/generate_user_docs.sh --build-dir ./build && git diff --exit-code docs/
@@ -224,10 +233,13 @@ jobs:
         run: cmake --build build
       
       - name: unit tests
-        run: cd build && ctest -R unit --output-on-failure
+        run: cd build && ctest -L unittest --output-on-failure
   
       - name: binary tests
-        run: cd build && ctest -R bin --output-on-failure
+        run: cd build && ctest -L binary --output-on-failure
+
+      - name: limited script tests
+        run: cd build && ctest -L pythonci --output-on-failure
 
   secondary-checks:
     runs-on: ubuntu-latest
@@ -265,3 +277,4 @@ jobs:
         clangFormatVersion: 16
         # Ignore third party headers
         exclude: './core/file/json.h ./core/file/nifti1.h ./core/file/nifti2.h'
+

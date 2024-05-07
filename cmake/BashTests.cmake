@@ -56,19 +56,18 @@ function(add_bash_tests)
     string(REPLACE ";" ":" EXEC_DIR_PATHS "${EXEC_DIR_PATHS}")
 
     add_test(
-	NAME ${test_name}
+        NAME ${test_name}
         COMMAND ${BASH} "${file_path}"
         WORKING_DIRECTORY ${working_directory}
     )
     set_tests_properties(${test_name}
-        PROPERTIES 
+      PROPERTIES
 	    ENVIRONMENT "PATH=${EXEC_DIR_PATHS}:$ENV{PATH}"
 	    FIXTURES_REQUIRED ${test_name}_cleanup
     )
     if(labels)
-	message(STATUS "Setting labels for ${test_name}: ${labels}")
-	set_tests_properties(${test_name} PROPERTIES LABELS "${labels}")
-	set_tests_properties(${test_name}_cleanup PROPERTIES LABELS "${labels}")
+        set_tests_properties(${test_name} PROPERTIES LABELS "${labels}")
+        set_tests_properties(${test_name}_cleanup PROPERTIES LABELS "${labels}")
     endif()
 
     message(VERBOSE "Add bash tests commands for ${test_name}: ${line}")
