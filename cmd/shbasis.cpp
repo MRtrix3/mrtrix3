@@ -118,7 +118,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
       }
     }
   }
-  INFO (str(voxel_count) + " voxels to be included in calculations");
+  INFO(str(voxel_count) + " voxels to be included in calculations");
 
   // Get sums independently for each l
 
