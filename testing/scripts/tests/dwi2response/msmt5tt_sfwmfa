@@ -1,0 +1,18 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response msmt_5tt"
+#   where the "FA" single-fibre white matter response function voxel algorithm is utilised
+# Ensure that outputs match those generated
+#   using a prior version of the software
+
+dwi2response msmt_5tt BIDS/sub-01/dwi/sub-01_dwi.nii.gz BIDS/sub-01/anat/sub-01_5TT.nii.gz \
+tmp_wm.txt tmp_gm.txt tmp_csf.txt \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-sfwm_fa_threshold 0.7 \
+-voxels tmp_voxels.mif \
+-pvf 0.9
+
+testing_diff_matrix tmp_wm.txt dwi2response/msmt_5tt/sfwmfa_wm.txt -abs 1e-2
+testing_diff_matrix tmp_gm.txt dwi2response/msmt_5tt/sfwmfa_gm.txt -abs 1e-2
+testing_diff_matrix tmp_csf.txt dwi2response/msmt_5tt/sfwmfa_csf.txt -abs 1e-2
+testing_diff_image tmp_voxels.mif dwi2response/msmt_5tt/sfwmfa.mif.gz
+

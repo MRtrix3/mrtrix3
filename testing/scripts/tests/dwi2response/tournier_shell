@@ -1,0 +1,17 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response tournier"
+#   where the specific b-value shell within a multi-shell dataset
+#   for which the response function voxels are to be selected
+#   and response function calculated is set via the -shell option
+# Ensure that outputs match those generated
+#   using a prior version of the software
+
+dwi2response tournier tmp_in.mif tmp_out.txt -voxels tmp_voxels.mif \
+-number 20 \
+-iter_voxels 200 \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-shell 2000
+
+testing_diff_matrix tmp_out.txt dwi2response/tournier/shell.txt -abs 1e-2
+testing_diff_image tmp_voxels.mif dwi2response/tournier/shell.mif.gz
+
