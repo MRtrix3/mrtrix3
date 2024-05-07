@@ -66,7 +66,7 @@ function(add_bash_tests)
 	    FIXTURES_REQUIRED ${test_name}_cleanup
     )
     if(labels)
-	message(STATUS "Setting labels for ${prefix}_${test_name}: ${labels}")
+	message(STATUS "Setting labels for ${test_name}: ${labels}")
 	set_tests_properties(${test_name} PROPERTIES LABELS "${labels}")
 	set_tests_properties(${test_name}_cleanup PROPERTIES LABELS "${labels}")
     endif()
