@@ -224,8 +224,7 @@ void Segmented_FOD_receiver::commit() {
     Fixel::check_fixel_size(*index_image, *disp_image);
   }
 
-  size_t offset = 0;
-
+  size_t offset (0);
   for (const auto &vox_fixels : lobes) {
     size_t n_vox_fixels = vox_fixels.size();
 
