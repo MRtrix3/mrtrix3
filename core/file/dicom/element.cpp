@@ -179,11 +179,11 @@ bool Element::read() {
     }
   }
 
-  if (parents.size()) {
+  if (!parents.empty()) {
     if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM) {
       parents.pop_back();
     } else { // Undefined length encoding
-      while (parents.size() && parents.back().end && data > parents.back().end)
+      while (!parents.empty() && (parents.back().end != nullptr) && data > parents.back().end)
         parents.pop_back();
     }
   }
