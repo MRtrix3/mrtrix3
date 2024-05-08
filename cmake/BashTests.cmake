@@ -47,12 +47,14 @@ function(add_bash_test)
     set(EXEC_DIR_PATHS "${exec_directories}")
     string(REPLACE ";" ":" EXEC_DIR_PATHS "${EXEC_DIR_PATHS}")
 
+    set(cleanup_cmd "rm -rf ${working_directory}/tmp* ${working_directory}/*-tmp-*")
+
     add_test(
         NAME ${test_name}
         COMMAND
             ${CMAKE_COMMAND}
             -D FILE_PATH=${file_path}
-            -D CLEANUP_CMD="${BASH} -c \"rm -rf ${working_directory}/tmp* ${working_directory}/*-tmp-*\""
+            -D CLEANUP_CMD=${cleanup_cmd}
             -D WORKING_DIRECTORY=${working_directory}
             -P ${PROJECT_SOURCE_DIR}/cmake/RunTest.cmake
     )
