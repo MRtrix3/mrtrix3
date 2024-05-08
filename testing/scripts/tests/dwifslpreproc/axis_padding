@@ -22,7 +22,7 @@ mrconvert BIDS/sub-04/fmap/sub-04_dir-1_epi.nii.gz tmp-sub-04_dir-1_epi.mif -for
 -json_import BIDS/sub-04/fmap/sub-04_dir-1_epi.json
 mrconvert BIDS/sub-04/fmap/sub-04_dir-2_epi.nii.gz tmp-sub-04_dir-2_epi.mif -force \
 -json_import BIDS/sub-04/fmap/sub-04_dir-2_epi.json
-mrcat tmp-sub-04_dir-1_epi.mif tmp-sub-04_dir-2_epi.mif tmp-sub-04_dir-all_epi.mif -axis 3 - | \
+mrcat tmp-sub-04_dir-1_epi.mif tmp-sub-04_dir-2_epi.mif -axis 3 - | \
 mrconvert - tmp-sub-04_dir-all_epi.mif -force \
 -coord 0 0:46 -coord 1 1:47
 

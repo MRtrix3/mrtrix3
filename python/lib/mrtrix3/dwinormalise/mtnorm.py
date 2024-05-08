@@ -172,4 +172,6 @@ def execute(): #pylint: disable=unused-variable
               force=app.FORCE_OVERWRITE)
 
   if app.ARGS.scale:
-    matrix.save_vector(path.from_user(app.ARGS.scale, False), [scale_multiplier])
+    matrix.save_vector(path.from_user(app.ARGS.scale, False),
+                       [scale_multiplier],
+                       force=app.FORCE_OVERWRITE)

@@ -9,7 +9,7 @@ mrconvert BIDS/sub-04/fmap/sub-04_dir-2_epi.nii.gz tmp-sub-04_dir-2_epi.mif -for
 mrcat tmp-sub-04_dir-1_epi.mif tmp-sub-04_dir-2_epi.mif tmp-sub-04_dir-all_epi.mif -axis 3 -force
 
 # -eddyqc_text; no field map
-dwifslpreproc BIDS/sub-04/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -force \
 -fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
 -pe_dir ap -readout_time 0.1 -rpe_none \
 -eddyqc_text tmp/
@@ -21,7 +21,7 @@ dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -force \
 -eddyqc_all tmp/
 
 # -eddyqc_text; with field map
-dwifslpreproc BIDS/sub-04/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -force \
 -fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
 -pe_dir ap -readout_time 0.1 -rpe_pair \
 -se_epi tmp-sub-04_dir-all_epi.mif \

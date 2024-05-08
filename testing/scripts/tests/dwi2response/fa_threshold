@@ -7,8 +7,7 @@
 dwi2response fa BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_out.txt \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
-voxels tmp_voxels.mif \
--number 20 \
+-voxels tmp_voxels.mif \
 -threshold 0.7 \
 -force
 
