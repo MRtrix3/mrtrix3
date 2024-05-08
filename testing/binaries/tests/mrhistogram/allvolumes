@@ -5,4 +5,4 @@
 #   rather than an individual histogram per image volume
 # Outcome is compared to that generated using a prior software version
 mrhistogram dwi.mif tmp.txt -allvolumes -force
-testing_diff_matrix tmp.txt mrhistogram/allvolumes.txt 0.5
+testing_diff_matrix tmp.txt mrhistogram/allvolumes.txt -abs 0.5

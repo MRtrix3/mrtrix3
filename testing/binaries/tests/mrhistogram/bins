@@ -4,4 +4,4 @@
 #   (normally the number of bins is automatically calculated based on the number of voxels)
 # Compare the outcome against that pre-calculated using a prior software version
 mrhistogram dwi.mif tmp.txt -bins 100 -force
-testing_diff_matrix tmp.txt mrhistogram/bins.txt 0.5
+testing_diff_matrix tmp.txt mrhistogram/bins.txt -abs 0.5

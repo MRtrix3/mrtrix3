@@ -9,6 +9,8 @@
 #   the densities of the long and short bundles should be comparable to one another
 #
 # The test is run twice, once using multi-threading and once single-threaded
+rm -rf tmp/
+
 tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp.csv -output_debug tmp/ -csv tmp.csv -force
 tckmap SIFT_phantom/tracks.tck -template SIFT_phantom/mask.mif -precise -tck_weights_in tmp.csv tmp.mif -force
 mrstats tmp.mif -mask SIFT_phantom/upper.mif -output mean > tmp1.txt

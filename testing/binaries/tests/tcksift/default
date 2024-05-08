@@ -6,6 +6,7 @@
 #   and the use of homogeneous seeding in generation of the initial tractogram,
 #   the longer bundle presents a greater seeding volume and therefore contains more streamlines.
 #   After SIFT, the number of streamlines in each bundle should be comparable.
+rm -rf tmp/
 tcksift SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp.tck -output_debug tmp/ -csv tmp.csv -force
 tckmap tmp.tck -template SIFT_phantom/mask.mif -precise tmp.mif -force
 mrstats tmp.mif -mask SIFT_phantom/upper.mif -output mean > tmp1.txt

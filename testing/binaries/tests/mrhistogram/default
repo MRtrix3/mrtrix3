@@ -2,4 +2,4 @@
 # Verify operation of the command under default usage
 # Output is compared to that generated using a prior software version
 mrhistogram dwi.mif tmp.txt -force
-testing_diff_matrix tmp.txt mrhistogram/out.txt 0.5
+testing_diff_matrix tmp.txt mrhistogram/default.txt -abs 0.5
