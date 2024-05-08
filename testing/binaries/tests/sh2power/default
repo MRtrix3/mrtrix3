@@ -1,12 +1,4 @@
 #!/bin/bash
 # Evaluation of the default operation of the sh2power command
-# Rather than comparing the result to that pre-computed from a prior software version,
-#   this test replicates the underlying mathematical operations using separate MRtrix3 commands,
-#   and ensures that both approaches yield approximately the same result.
-dwiextract dwi.mif - | \
-mrcalc - 2 -pow - | \
-mrmath -axis 3 - mean tmp.mif -force 
-
-amp2sh dwi.mif - | \
-sh2power - - | \
-testing_diff_image - tmp.mif -frac 0.1
+sh2power amp2sh/out.mif - | \
+testing_diff_image - sh2power/out.mif -frac 0.1

@@ -42,7 +42,7 @@ function (add_bash_unit_test FILE_SRC)
     list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
     list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
 
-    add_bash_tests(
+    add_bash_test(
         FILE_PATH "${FILE_SRC}"
         PREFIX "unittest"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

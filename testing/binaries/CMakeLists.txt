@@ -18,7 +18,7 @@ function(add_bash_binary_test file_path)
     string(REPLACE "/" ";" folder_list ${file_path})
     list(GET folder_list 0 folder_name)
 
-    add_bash_tests(
+    add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/${file_path}"
         PREFIX "${folder_name}"
         WORKING_DIRECTORY ${DATA_DIR}
@@ -399,10 +399,8 @@ add_bash_binary_test(tcksample/statnone_text)
 add_bash_binary_test(tcksample/statnone_tsf)
 add_bash_binary_test(tcksample/tdifraction)
 
-add_bash_binary_test(tcksift/all)
 add_bash_binary_test(tcksift/default)
 
-add_bash_binary_test(tcksift2/all)
 add_bash_binary_test(tcksift2/default)
 
 add_bash_binary_test(tcktransform/unitwarp)

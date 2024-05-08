@@ -1,5 +1,5 @@
-# A function that adds a bash test for each line in a given file
-function(add_bash_tests)
+# A function that adds a bash test for an input bash script file
+function(add_bash_test)
     set(singleValueArgs FILE_PATH PREFIX WORKING_DIRECTORY)
     set(multiValueArgs EXEC_DIRECTORIES LABELS)
     cmake_parse_arguments(
@@ -35,7 +35,7 @@ function(add_bash_tests)
 
     get_filename_component(file_name ${file_path} NAME_WE)
     set(test_name ${prefix}_${file_name})
-    
+
     # Add a custom target for IDEs to pickup the test script
     add_custom_target(test_${prefix}_${file_name} SOURCES ${file_path})
 

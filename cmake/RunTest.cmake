@@ -4,11 +4,11 @@
 # The CLEANUP_CMD command is run after the test is finished
 
 find_program(BASH bash)
-execute_process(COMMAND ${BASH} ${FILE_PATH}
+execute_process(COMMAND ${BASH} -e ${FILE_PATH}
     RESULT_VARIABLE test_result_${FILE_PATH}
     WORKING_DIRECTORY ${WORKING_DIRECTORY}
 )
-execute_process(COMMAND ${BASH} -c "${CLEANUP_CMD}"
+execute_process(COMMAND ${CLEANUP_CMD}
     WORKING_DIRECTORY ${WORKING_DIRECTORY}
 )
 if(test_result_${FILE_PATH} EQUAL 0)
