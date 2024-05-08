@@ -10,7 +10,7 @@
 mrcolour dwi_mean.mif gray tmp-mrcolour.mif -lower 0.0 -force
 
 MAX=$(mrstats dwi_mean.mif -output max)
-mrcalc dwi_mean $MAX -div tmp-dwimeannorm.mif -force
-mrcat tmp-dwimeannorm.mif tmp-dwimeannorm.mif tmp-dwimeannorm.mif -axis 3 tmp-manual.mif
+mrcalc dwi_mean.mif $MAX -div tmp-dwimeannorm.mif -force
+mrcat tmp-dwimeannorm.mif tmp-dwimeannorm.mif tmp-dwimeannorm.mif -axis 3 tmp-manual.mif -force
 
 testing_diff_image tmp-mrcolour.mif tmp-manual.mif -frac 1e-5

@@ -2,5 +2,5 @@
 # Verify operation of the "-b0" option, 
 #   which exports the estimated b=0 image intensity from the tensor fit
 # Ensure that this output matches that generated from a prior software version
-dwi2tensor dwi.mif -mask mask.mif -b0 - tmp_dt.mif | \
+dwi2tensor dwi.mif -mask mask.mif -b0 - tmp_dt.mif -force | \
 testing_diff_image - dwi2tensor/out_b0.mif -frac 1e-5

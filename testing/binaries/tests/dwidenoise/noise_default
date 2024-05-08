@@ -4,6 +4,6 @@
 #   when command is run using default parameters
 # The tolerance applied to the noise level comparison is modulated
 #   based on the mean DWI intensity
-dwidenoise dwi.mif -noise - tmp-denoised.mif | \
+dwidenoise dwi.mif -noise - tmp-denoised.mif -force | \
 testing_diff_image - dwidenoise/noise.mif \
 -image $(mrcalc dwi_mean.mif -abs 1e-4 -mult - | mrfilter - smooth -)

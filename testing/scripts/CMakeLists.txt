@@ -8,16 +8,16 @@ function(add_bash_script_test file_path)
     foreach(label ${ARGN})
         list(APPEND extra_labels ${label})
     endforeach()
-    
+
     set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
     list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
     list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
-    
+
     # Set folder name
     string(REPLACE "/" ";" folder_list ${file_path})
     list(GET folder_list 0 folder_name)
 
-    add_bash_tests(
+    add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/${file_path}"
         PREFIX "${folder_name}"
         WORKING_DIRECTORY ${DATA_DIR}
