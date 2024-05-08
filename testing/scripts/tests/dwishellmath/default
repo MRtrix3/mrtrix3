@@ -34,9 +34,9 @@ dwishellmath tmp-sub-01_dwi.mif mean tmp.mif -force
 testing_diff_image tmp.mif tmp-target.mif
 
 dwishellmath BIDS/sub-01/dwi/sub-01_dwi.nii.gz mean tmp.mif -force \
--fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
 testing_diff_image tmp.mif tmp-target.mif
 
 dwishellmath BIDS/sub-01/dwi/sub-01_dwi.nii.gz mean tmp.mif -force \
--grad tmp1.b
+-grad tmp-sub-01_dwi.b
 testing_diff_image tmp.mif tmp-target.mif

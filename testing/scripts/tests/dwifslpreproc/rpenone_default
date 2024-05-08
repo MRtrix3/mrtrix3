@@ -8,7 +8,7 @@
 
 mrconvert BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp-sub-04_dwi.mif -force \
 -fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
--json_import BIDS/sub-04/dwi/sub-04_dwi.json tmp-sub-04_dwi.mif \
+-json_import BIDS/sub-04/dwi/sub-04_dwi.json \
 -export_grad_mrtrix tmp-sub-04_dwi.b \
 -strides 0,0,0,1
 
@@ -16,12 +16,12 @@ dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -force \
 -pe_dir ap -readout_time 0.1 -rpe_none
 testing_diff_header tmp.mif dwifslpreproc/rpenone_default.mif.gz
 
-dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -force
+dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -force \
 -fslgrad BIDS/sub-04/dwi/sub-04_dwi/bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
 -pe_dir ap -readout_time 0.1 -rpe_none
 testing_diff_header tmp.mif dwifslpreproc/rpenone_default.mif.gz
 
-dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -force
+dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -force \
 -grad tmp-sub-04_dwi.b \
 -pe_dir ap -readout_time 0.1 -rpe_none
 testing_diff_header tmp.mif dwifslpreproc/rpenone_default.mif.gz

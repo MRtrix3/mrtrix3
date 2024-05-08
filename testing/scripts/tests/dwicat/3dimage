@@ -4,7 +4,7 @@
 #   the command still executes successfully
 
 dwiextract BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_b0_b1000.mif -force \
--fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -shell 0,1000
 
 mrconvert tmp_b0_b1000.mif tmp_b0.mif -coord 3 0 -axes 0,1,2 -force

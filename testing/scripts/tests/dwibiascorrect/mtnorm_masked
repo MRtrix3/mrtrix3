@@ -1,7 +1,7 @@
 #!/bin/bash
 # Verify execution of "dwibiascorrect mtnorm" algorithm
 #   when a user-provided mask is used to constrain the field estimation
-dwibiascorrect mtnorm BIDS/sub-01/dwi/sub-01_dwi.ni.gz tmpout.mif -force \
+dwibiascorrect mtnorm BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
 -bias tmpbias.mif \
