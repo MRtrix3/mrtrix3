@@ -8,9 +8,10 @@ execute_process(COMMAND ${BASH} -e ${FILE_PATH}
     RESULT_VARIABLE test_result_${FILE_PATH}
     WORKING_DIRECTORY ${WORKING_DIRECTORY}
 )
-execute_process(COMMAND ${CLEANUP_CMD}
+execute_process(COMMAND ${BASH} -c ${CLEANUP_CMD}
     WORKING_DIRECTORY ${WORKING_DIRECTORY}
 )
+
 if(test_result_${FILE_PATH} EQUAL 0)
     message(STATUS "Test ${FILE_PATH} passed")
 else()
