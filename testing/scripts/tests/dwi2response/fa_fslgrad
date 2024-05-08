@@ -4,9 +4,11 @@
 # Ensure that outputs match those generated
 #   using a prior version of the software
 
-dwi2response fa BIDS/sub-01/dwi/sub-01_dwi.nii.gz \
+dwi2response fa BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_out.txt \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
- tmp_out.txt -voxels tmp_voxels.mif -number 20
+-voxels tmp_voxels.mif \
+-number 20 \
+-force
 
 testing_diff_matrix tmp_out.txt dwi2response/fa/default.txt -abs 1e-2
 testing_diff_image tmp_voxels.mif dwi2response/fa/default.mif.gz

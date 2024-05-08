@@ -5,11 +5,13 @@
 # Ensure that outputs match those generated
 #   using a prior version of the software
 
-dwi2response fa BIDS/sub-01/dwi/sub-01_dwi.nii.gz \
+dwi2response fa BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_out.txt \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
-tmp_out.txt -voxels tmp_voxels.mif -number 20 \
--lmax 6
+-voxels tmp_voxels.mif \
+-number 20 \
+-lmax 6 \
+-force
 
 testing_diff_matrix tmp_out.txt dwi2response/fa/lmax.txt -abs 1e-2
 testing_diff_image tmp_voxels.mif dwi2response/fa/lmax.mif.gz

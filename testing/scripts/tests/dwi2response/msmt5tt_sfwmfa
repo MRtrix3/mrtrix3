@@ -9,7 +9,8 @@ tmp_wm.txt tmp_gm.txt tmp_csf.txt \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -sfwm_fa_threshold 0.7 \
 -voxels tmp_voxels.mif \
--pvf 0.9
+-pvf 0.9 \
+-force
 
 testing_diff_matrix tmp_wm.txt dwi2response/msmt_5tt/sfwmfa_wm.txt -abs 1e-2
 testing_diff_matrix tmp_gm.txt dwi2response/msmt_5tt/sfwmfa_gm.txt -abs 1e-2
