@@ -8,7 +8,8 @@ dwi2response dhollander BIDS/sub-01/dwi/sub-01_dwi.nii.gz \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bvaltmp-sub-01_dwi.mif \
 tmp_wm.txt tmp_gm.txt tmp_csf.txt \
 -voxels tmp_voxels.mif \
--mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-force
 
 testing_diff_matrix tmp_wm.txt dwi2response/dhollander/masked_wm.txt -abs 1e-2
 testing_diff_matrix tmp_gm.txt dwi2response/dhollander/masked_gm.txt -abs 1e-2

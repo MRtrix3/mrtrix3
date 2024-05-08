@@ -7,11 +7,12 @@
 dwi2tensor BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz | \
-tensor2metric - -vector tmp_dirs.mif
+tensor2metric - -vector tmp_dirs.mif -force
 
 dwi2response manual BIDS/sub-01/dwi/sub-01_dwi.nii.gz dwi2response/fa/default.mif.gz tmp_out.txt \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
--dirs tmp_dirs.mif 
+-dirs tmp_dirs.mif \
+-force
 
 testing_diff_matrix tmp_out.txt dwi2response/manual/dirs.txt -abs 1e-2
 
