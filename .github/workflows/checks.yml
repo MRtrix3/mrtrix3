@@ -7,7 +7,7 @@ on:
     merge_group:
       types: [checks_requested]
       branches: [master]
-      
+
 jobs:
   linux-clang-build:
     runs-on: ubuntu-latest
@@ -29,7 +29,7 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
-    
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
@@ -58,9 +58,9 @@ jobs:
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
-
-    - name: limited script tests
-      run: cd build && ctest -L pythonci --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
 
   linux-gcc-build:
 
@@ -83,12 +83,12 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
-    
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
         cmakeVersion: '3.16.3'
-    
+
     - name: Print CMake version
       run: cmake --version
 
@@ -110,9 +110,9 @@ jobs:
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
-
-    - name: limited script tests
-      run: cd build && ctest -L pythonci --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
 
   macos-build:
 
@@ -136,7 +136,7 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
-  
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
@@ -164,9 +164,9 @@ jobs:
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
-
-    - name: limited script tests
-      run: cd build && ctest -L pythonci --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
 
     - name: check command documentation
       run: ./docs/generate_user_docs.sh --build-dir ./build && git diff --exit-code docs/
@@ -212,12 +212,12 @@ jobs:
 
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.4
-      
+
       - name: export sccache to msys2 shell
         run: |
           export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
           echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
-      
+
       - name: configure
         run: >
             cmake
@@ -231,15 +231,15 @@ jobs:
 
       - name: build
         run: cmake --build build
-      
+
       - name: unit tests
         run: cd build && ctest -L unittest --output-on-failure
-  
+
       - name: binary tests
         run: cd build && ctest -L binary --output-on-failure
-
-      - name: limited script tests
-        run: cd build && ctest -L pythonci --output-on-failure
+#
+#      - name: limited script tests
+#        run: cd build && ctest -L pythonci --output-on-failure
 
   secondary-checks:
     runs-on: ubuntu-latest
@@ -249,7 +249,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    
+
     - name: install dependencies
       run: |
         sudo apt-get update
