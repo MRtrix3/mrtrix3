@@ -14,6 +14,7 @@ option(MRTRIX_WARNINGS_AS_ERRORS "Compiler warnings result in compilation errors
 option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
 option(MRTRIX_STRIP_CONDA "Strip ananconda/mininconda from PATH to avoid conflicts" ON)
+option(MRTRIX_USE_PCH "Use precompiled headers" ON)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)

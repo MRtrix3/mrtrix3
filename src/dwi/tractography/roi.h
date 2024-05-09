@@ -21,6 +21,7 @@
 #include "interp/linear.h"
 #include "math/rng.h"
 #include "misc/bitset.h"
+#include "transform.h"
 
 namespace MR::DWI::Tractography {
 class Properties;
@@ -223,3 +224,6 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography
+
+// Instantiation of Transform::Transform(const Mask &) in roi.cpp to reduce compilation time
+extern template MR::Transform::Transform(const MR::DWI::Tractography::Mask &);

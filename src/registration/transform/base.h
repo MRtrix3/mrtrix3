@@ -81,13 +81,7 @@ inline void param_vec2mat(const Eigen::MatrixBase<Derived> &param_vector,
 class Base {
 public:
   using ParameterType = default_type;
-  Base(size_t number_of_parameters)
-      : number_of_parameters(number_of_parameters), optimiser_weights(number_of_parameters), nonsymmetric(false) {
-    trafo.matrix().setIdentity();
-    trafo_half.matrix().setIdentity();
-    trafo_half_inverse.matrix().setIdentity();
-    centre.setZero();
-  }
+  Base(size_t number_of_parameters);
 
   template <class OutPointType, class InPointType>
   inline void transform(OutPointType &out, const InPointType &in) const {
@@ -106,17 +100,9 @@ public:
 
   size_t size() const { return number_of_parameters; }
 
-  Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params(const Eigen::Vector3d &p) const {
-    throw Exception("FIXME: get_jacobian_vector_wrt_params not implemented for this metric");
-    Eigen::Matrix<default_type, 4, 1> jac;
-    return jac;
-  }
+  static Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params(const Eigen::Vector3d &p);
 
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform() const {
-    Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> transform;
-    transform.matrix() = trafo.matrix();
-    return transform;
-  }
+  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform() const;
 
   Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform_half() const { return trafo_half; }
 
@@ -130,10 +116,7 @@ public:
   }
 
   // set_matrix_const_translation updates the 3x3 matrix without updating the translation
-  void set_matrix_const_translation(const Eigen::Matrix<ParameterType, 3, 3> &mat) {
-    trafo.linear() = mat;
-    compute_halfspace_transformations();
-  }
+  void set_matrix_const_translation(const Eigen::Matrix<ParameterType, 3, 3> &mat);
 
   // set_matrix updates the 3x3 matrix and also updates the translation
   // void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
@@ -150,32 +133,17 @@ public:
 
   const Eigen::Matrix<ParameterType, 3, 3> get_matrix() const { return trafo.linear(); }
 
-  void set_translation(const Eigen::Matrix<ParameterType, 1, 3> &trans) {
-    trafo.translation() = trans;
-    compute_offset();
-    compute_halfspace_transformations();
-  }
+  void set_translation(const Eigen::Matrix<ParameterType, 1, 3> &trans);
 
   const Eigen::Vector3d get_translation() const { return trafo.translation(); }
 
-  void set_centre_without_transform_update(const Eigen::Vector3d &centre_in) {
-    centre = centre_in;
-    DEBUG("centre: " + str(centre.transpose()));
-  }
+  void set_centre_without_transform_update(const Eigen::Vector3d &centre_in);
 
-  void set_centre(const Eigen::Vector3d &centre_in) {
-    centre = centre_in;
-    DEBUG("centre: " + str(centre.transpose()));
-    compute_offset();
-    compute_halfspace_transformations();
-  }
+  void set_centre(const Eigen::Vector3d &centre_in);
 
   const Eigen::Vector3d get_centre() const { return centre; }
 
-  void set_optimiser_weights(Eigen::VectorXd &weights) {
-    assert(size() == (size_t)optimiser_weights.size());
-    optimiser_weights = weights;
-  }
+  void set_optimiser_weights(Eigen::VectorXd &weights);
 
   Eigen::VectorXd get_optimiser_weights() const { return optimiser_weights; }
 
@@ -183,28 +151,11 @@ public:
 
   void use_nonsymmetric(const bool asym) { nonsymmetric = asym; }
 
-  void set_offset(const Eigen::Vector3d &offset_in) {
-    trafo.translation() = offset_in;
-    compute_halfspace_transformations();
-  }
+  void set_offset(const Eigen::Vector3d &offset_in);
 
-  std::string info() {
-    Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
-    INFO("transformation:\n" + str(trafo.matrix().format(fmt)));
-    DEBUG("transformation_half:\n" + str(trafo_half.matrix().format(fmt)));
-    DEBUG("transformation_half_inverse:\n" + str(trafo_half_inverse.matrix().format(fmt)));
-    return "centre: " + str(centre.transpose(), 12);
-  }
+  std::string info();
 
-  std::string debug() {
-    Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
-    CONSOLE("trafo:\n" + str(trafo.matrix().format(fmt)));
-    CONSOLE("trafo_inverse:\n" + str(trafo.inverse().matrix().format(fmt)));
-    CONSOLE("trafo_half:\n" + str(trafo_half.matrix().format(fmt)));
-    CONSOLE("trafo_half_inverse:\n" + str(trafo_half_inverse.matrix().format(fmt)));
-    CONSOLE("centre: " + str(centre.transpose(), 12));
-    return "";
-  }
+  std::string debug();
 
   template <class ParamType, class VectorType>
   bool robust_estimate(VectorType &gradient,
@@ -222,27 +173,9 @@ public:
   }
 
 protected:
-  void compute_offset() { trafo.translation() = (trafo.translation() + centre - trafo.linear() * centre).eval(); }
+  void compute_offset();
 
-  void compute_halfspace_transformations() {
-    Eigen::Matrix<ParameterType, 4, 4> tmp;
-    tmp.setIdentity();
-    tmp.template block<3, 4>(0, 0) = trafo.matrix();
-    assert((tmp.template block<3, 3>(0, 0).isApprox(trafo.linear())));
-    assert(tmp.determinant() > 0);
-    if (nonsymmetric) {
-      trafo_half.matrix() = tmp.template block<3, 4>(0, 0);
-      trafo_half_inverse.setIdentity();
-      assert(trafo.matrix().isApprox(trafo.matrix()));
-    } else {
-      tmp = tmp.sqrt().eval();
-      trafo_half.matrix() = tmp.template block<3, 4>(0, 0);
-      trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
-      assert(trafo.matrix().isApprox((trafo_half * trafo_half).matrix()));
-      assert(trafo.inverse().matrix().isApprox((trafo_half_inverse * trafo_half_inverse).matrix()));
-    }
-    // debug();
-  }
+  void compute_halfspace_transformations();
 
   size_t number_of_parameters;
   Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo;

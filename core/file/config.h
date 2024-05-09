@@ -26,15 +26,8 @@ public:
   static void init();
 
   static void set(const std::string &key, const std::string &value) { config[key] = value; }
-  static std::string get(const std::string &key) {
-    const KeyValues::const_iterator i = config.find(key);
-    return (i != config.end() ? i->second : "");
-  }
-  static std::string get(const std::string &key, const std::string &default_value) {
-    KeyValues::iterator i = config.find(key);
-    return (i != config.end() ? i->second : default_value);
-  }
-
+  static std::string get(const std::string &key);
+  static std::string get(const std::string &key, const std::string &default_value);
   static bool get_bool(const std::string &key, bool default_value);
   static int get_int(const std::string &key, int default_value);
   static float get_float(const std::string &key, float default_value);

@@ -16,6 +16,7 @@
 
 #include "file/ofstream.h"
 
+#include "exception.h"
 #include "file/utils.h"
 
 namespace MR::File {

@@ -293,6 +293,17 @@ std::string usage_syntax(int format) {
   return s + "\n\n";
 }
 
+Description &Description::operator+(const char *text) {
+  push_back(text);
+  return *this;
+}
+
+Description &Description::operator+(const char *const text[]) {
+  for (const char *const *p = text; *p != nullptr; ++p)
+    push_back(*p);
+  return *this;
+}
+
 std::string Description::syntax(int format) const {
   if (!size())
     return std::string();
@@ -304,6 +315,9 @@ std::string Description::syntax(int format) const {
   return s;
 }
 
+Example::Example(const std::string &title, const std::string &code, const std::string &description)
+    : title(title), code(code), description(description) {}
+
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
 
 std::string Example::syntax(int format) const {
@@ -314,6 +328,11 @@ std::string Example::syntax(int format) const {
   if (format)
     s += "\n";
   return s;
+}
+
+ExampleList &ExampleList::operator+(const Example &example) {
+  push_back(example);
+  return *this;
 }
 
 std::string ExampleList::syntax(int format) const {
@@ -332,6 +351,11 @@ std::string Argument::syntax(int format) const {
   if (format)
     retval += "\n";
   return retval;
+}
+
+ArgumentList &ArgumentList::operator+(const Argument &argument) {
+  push_back(argument);
+  return *this;
 }
 
 std::string ArgumentList::syntax(int format) const {
@@ -371,6 +395,27 @@ std::string OptionGroup::contents(int format) const {
 }
 
 std::string OptionGroup::footer(int format) { return format ? "" : "\n"; }
+
+OptionList &OptionList::operator+(const OptionGroup &option_group) {
+  push_back(option_group);
+  return *this;
+}
+
+OptionGroup &OptionList::back() {
+  if (empty())
+    push_back(OptionGroup());
+  return std::vector<OptionGroup>::back();
+}
+
+OptionList &OptionList::operator+(const Option &option) {
+  back() + option;
+  return *this;
+}
+
+OptionList &OptionList::operator+(const Argument &argument) {
+  back() + argument;
+  return *this;
+}
 
 std::string OptionList::syntax(int format) const {
   std::vector<std::string> group_names;
@@ -1271,6 +1316,100 @@ default_type App::ParsedArgument::as_float() const {
   }
 
   return retval;
+}
+
+std::vector<int32_t> ParsedArgument::as_sequence_int() const {
+  assert(arg->type == IntSeq);
+  try {
+    return parse_ints<int32_t>(p);
+  } catch (Exception &e) {
+    error(e);
+  }
+  return std::vector<int32_t>();
+}
+
+std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
+  assert(arg->type == IntSeq);
+  try {
+    return parse_ints<uint32_t>(p);
+  } catch (Exception &e) {
+    error(e);
+  }
+  return std::vector<uint32_t>();
+}
+
+std::vector<default_type> ParsedArgument::as_sequence_float() const {
+  assert(arg->type == FloatSeq);
+  try {
+    return parse_floats(p);
+  } catch (Exception &e) {
+    error(e);
+  }
+  return std::vector<default_type>();
+}
+
+ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, const char *text)
+    : opt(option), arg(argument), p(text) {
+  assert(text);
+}
+
+void ParsedArgument::error(Exception &e) const {
+  std::string msg("error parsing token \"");
+  msg += p;
+  if (opt != nullptr)
+    msg += std::string("\" for option \"") + opt->id + "\"";
+  else
+    msg += std::string("\" for argument \"") + arg->id + "\"";
+  throw Exception(e, msg);
+}
+
+void check_overwrite(const std::string &name) {
+  if (Path::exists(name) && !overwrite_files) {
+    if (check_overwrite_files_func != nullptr)
+      check_overwrite_files_func(name);
+    else
+      throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
+  }
+}
+
+ParsedOption::ParsedOption(const Option *option, const char *const *arguments) : opt(option), args(arguments) {
+  for (size_t i = 0; i != option->size(); ++i) {
+    const char *p = arguments[i];
+    if (!consume_dash(p))
+      continue;
+    if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
+      continue;
+    if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
+        (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+      continue;
+    WARN(std::string("Value \"") + arguments[i] + "\" is being used as " +
+         ((option->size() == 1) ? "the expected argument "
+                                : ("one of the " + str(option->size()) + " expected arguments ")) +
+         "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+         "the requisite input" + ((option->size() == 1) ? " " : "s ") + "to command-line option \"-" + option->id +
+         "\" may have been erroneously omitted, which may cause " + "other command-line parsing errors");
+  }
+}
+
+ParsedArgument ParsedOption::operator[](size_t num) const {
+  assert(num < opt->size());
+  return ParsedArgument(opt, &(*opt)[num], args[num]);
+}
+
+bool ParsedOption::operator==(const char *match) const {
+  const std::string name = lowercase(match);
+  return name == opt->id;
+}
+
+std::string operator+(const char *left, const ParsedArgument &right) {
+  std::string retval(left);
+  retval += std::string(right);
+  return retval;
+}
+
+std::ostream &operator<<(std::ostream &stream, const ParsedArgument &arg) {
+  stream << std::string(arg);
+  return stream;
 }
 
 } // namespace MR::App

@@ -24,7 +24,7 @@ find_package(Git QUIET)
 set(EXEC_VERSION_CPP ${CMAKE_CURRENT_BINARY_DIR}/exec_version.cpp)
 
 add_custom_target(exec-version-target ALL
-    COMMAND ${CMAKE_COMMAND} 
+    COMMAND ${CMAKE_COMMAND}
         -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
         -D DST=${EXEC_VERSION_CPP}
@@ -52,6 +52,14 @@ target_include_directories(mrtrix-headless PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+if(MRTRIX_USE_PCH)
+    target_precompile_headers(mrtrix-headless PRIVATE
+        [["exception.h"]]
+        <fstream>
+        <complex>
+    )
+endif()
+
 target_link_libraries(mrtrix-headless PUBLIC
     mrtrix::core
 )
@@ -65,6 +73,10 @@ if(MRTRIX_BUILD_GUI)
         AUTOUIC ON
         LINK_DEPENDS_NO_SHARED ON
     )
+
+    if(MRTRIX_USE_PCH)
+        target_precompile_headers(mrtrix-gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/gui/gui_pch.h)
+    endif()
 
     target_link_libraries(mrtrix-gui PUBLIC
         mrtrix::headless

@@ -63,6 +63,13 @@ target_include_directories(mrtrix-core-version-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+if(MRTRIX_USE_PCH)
+    target_precompile_headers(mrtrix-core PRIVATE
+        [["exception.h"]]
+        <fstream>
+    )
+endif()
+
 target_compile_definitions(mrtrix-core PUBLIC
     MRTRIX_BASE_VERSION="${MRTRIX_BASE_VERSION}"
     $<$<BOOL:${MRTRIX_HAVE_LGAMMA_R}>:MRTRIX_HAVE_LGAMMA_R>

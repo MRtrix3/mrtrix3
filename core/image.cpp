@@ -13,19 +13,21 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+#include "image.h"
 
-#pragma once
-
-#include <string>
-
-namespace MR::File {
-
-void remove(const std::string &file);
-void create(const std::string &filename, int64_t size = 0);
-void resize(const std::string &filename, int64_t size);
-bool is_tempfile(const std::string &name, const char *suffix = NULL);
-std::string create_tempfile(int64_t size = 0, const char *suffix = NULL);
-void mkdir(const std::string &folder);
-void rmdir(const std::string &folder, bool recursive = false);
-
-} // namespace MR::File
+namespace MR {
+template Image<bool>::~Image();
+template Image<int8_t>::~Image();
+template Image<uint8_t>::~Image();
+template Image<int16_t>::~Image();
+template Image<uint16_t>::~Image();
+template Image<int32_t>::~Image();
+template Image<uint32_t>::~Image();
+template Image<int64_t>::~Image();
+template Image<uint64_t>::~Image();
+template Image<half_float::half>::~Image();
+template Image<float>::~Image();
+template Image<double>::~Image();
+template Image<cfloat>::~Image();
+template Image<cdouble>::~Image();
+} // namespace MR
