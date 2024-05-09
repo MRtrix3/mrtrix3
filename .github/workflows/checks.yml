@@ -25,7 +25,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-distutils
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
@@ -61,6 +61,13 @@ jobs:
 #
 #    - name: limited script tests
 #      run: cd build && ctest -L pythonci --output-on-failure
+
+    - name: check command documentation
+      run: ./docs/generate_user_docs.sh --build-dir build && git diff --exit-code docs/
+
+
+
+
 
   linux-gcc-build:
 
@@ -119,7 +126,6 @@ jobs:
     runs-on: macos-latest
 
     env:
-      PACKAGES: "qt eigen pkg-config fftw libpng ninja cmake"
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
 
@@ -130,8 +136,7 @@ jobs:
 
     - name: install dependencies
       run: |
-         brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
-         brew install $PACKAGES || brew install $PACKAGES
+         brew bundle --file=${{ github.workspace }}/.brewfile
          brew link --force qt
 
     - name: Run sccache-cache
@@ -168,8 +173,9 @@ jobs:
 #    - name: limited script tests
 #      run: cd build && ctest -L pythonci --output-on-failure
 
-    - name: check command documentation
-      run: ./docs/generate_user_docs.sh --build-dir ./build && git diff --exit-code docs/
+
+
+
 
   windows-build:
 

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_quadratic_line_search_h__
-#define __math_quadratic_line_search_h__
+#pragma once
 
 #include "progressbar.h"
 
@@ -289,5 +288,3 @@ private:
 };
 
 } // namespace MR::Math
-
-#endif

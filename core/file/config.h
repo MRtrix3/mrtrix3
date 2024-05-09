@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_config_h__
-#define __file_config_h__
+#pragma once
 
 #include "file/key_value.h"
 #include "types.h"
@@ -45,5 +44,3 @@ private:
   static KeyValues config;
 };
 } // namespace MR::File
-
-#endif

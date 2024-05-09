@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_metric_h__
-#define __dwi_tractography_connectome_metric_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "file/matrix.h"
@@ -119,5 +118,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::Connectome
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_matrix_h__
-#define __file_matrix_h__
+#pragma once
 
 #include <string>
 
@@ -259,5 +258,3 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector(const std::string &filen
 }
 
 } // namespace MR::File::Matrix
-
-#endif

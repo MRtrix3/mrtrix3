@@ -16,5 +16,5 @@ testing_diff_matrix tmpoutstd_dev.csv vectorstats/1/outstd_dev.csv -frac 1e-6
 testing_diff_matrix tmpoutstd_effect_t1.csv vectorstats/1/outstd_effect_t1.csv -frac 1e-6
 testing_diff_matrix tmpoutstd_effect_t2.csv vectorstats/1/outstd_effect_t2.csv -frac 1e-6
 testing_diff_matrix tmpouttvalue_t1.csv vectorstats/1/outtvalue_t1.csv -frac 1e-6
-testing_diff_matrix tmpouttvalue_t2.csv vectorstats/1/outtvalue_t2.csv
+testing_diff_matrix tmpouttvalue_t2.csv vectorstats/1/outtvalue_t2.csv -frac 1e-6
 vectorstats/test1.py

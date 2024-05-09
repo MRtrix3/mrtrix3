@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __colourmap_h__
-#define __colourmap_h__
+#pragma once
 
 #include "types.h"
 #include <functional>
@@ -87,5 +86,3 @@ inline size_t num_special() {
 }
 
 } // namespace MR::ColourMap
-
-#endif

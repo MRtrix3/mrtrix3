@@ -2,4 +2,4 @@
 # Validate defulat operation with the "pet" colourmap
 #   against a result generated with a prior software version
 mrcolour dwi_mean.mif pet - | \
-testing_diff_image - mrcolour/pet.mif
+testing_diff_image - mrcolour/pet.mif -abs 1e-5

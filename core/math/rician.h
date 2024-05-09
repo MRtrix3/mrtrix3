@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_rician_h__
-#define __math_rician_h__
+#pragma once
 
 #include "math/bessel.h"
 #include "math/math.h"
@@ -164,5 +163,3 @@ inline T lnP(const std::vector<T> &measured,
 } // namespace Rician
 } // namespace Math
 } // namespace MR
-
-#endif

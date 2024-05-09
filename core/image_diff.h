@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_check__h__
-#define __image_check__h__
+#pragma once
 
 #include <set>
 
@@ -182,5 +181,3 @@ inline bool images_match_abs(ImageType1 &in1, ImageType2 &in2, const double tol 
 }
 
 } // namespace MR
-
-#endif

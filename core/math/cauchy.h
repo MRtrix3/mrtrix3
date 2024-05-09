@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_cauchy_h__
-#define __math_cauchy_h__
+#pragma once
 
 namespace MR::Math {
 
@@ -25,5 +24,3 @@ inline float cauchy(float x, float s) {
 }
 
 } // namespace MR::Math
-
-#endif

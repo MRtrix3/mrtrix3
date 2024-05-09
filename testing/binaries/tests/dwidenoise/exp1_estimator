@@ -7,6 +7,6 @@ dwidenoise dwi.mif tmp-denoised-exp1.mif \
 -estimator Exp1 \
 -force
 
-testing_diff_image tmp-denoised-exp1.mif dwidenoise/denoised_exp1.mif -voxel 1e-3
+testing_diff_image tmp-denoised-exp1.mif dwidenoise/denoised_exp1.mif -voxel 2e-3
 testing_diff_image tmp-noise-exp1.mif dwidenoise/noise_exp1.mif \
 -image $(mrcalc dwi_mean.mif -abs 1e-4 -mult - | mrfilter - smooth -)

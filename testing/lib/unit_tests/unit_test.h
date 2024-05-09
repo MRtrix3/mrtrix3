@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __testing_unittests_unittest_h__
-#define __testing_unittests_unittest_h__
+#pragma once
 
 using namespace std;
 namespace MR {
@@ -47,5 +46,3 @@ public:
 } // namespace UnitTests
 } // namespace Testing
 } // namespace MR
-
-#endif

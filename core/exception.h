@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_exception_h__
-#define __mrtrix_exception_h__
+#pragma once
 
 #include <cerrno>
 #include <iostream>
@@ -131,5 +130,3 @@ private:
 void check_app_exit_code();
 
 } // namespace MR
-
-#endif

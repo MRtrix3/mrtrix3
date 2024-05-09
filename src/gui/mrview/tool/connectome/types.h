@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_types_h__
-#define __gui_mrview_tool_connectome_types_h__
+#pragma once
 
 #include "connectome/connectome.h"
 #include "connectome/lut.h"
@@ -39,5 +38,3 @@ enum class edge_size_t { FIXED, CONNECTOME, MATRIX_FILE };
 enum class edge_alpha_t { FIXED, CONNECTOME, MATRIX_FILE };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

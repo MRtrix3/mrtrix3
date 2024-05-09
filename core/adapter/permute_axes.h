@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_permute_axes_h__
-#define __adapter_permute_axes_h__
+#pragma once
 
 #include "adapter/base.h"
 
@@ -79,5 +78,3 @@ private:
 };
 
 } // namespace MR::Adapter
-
-#endif

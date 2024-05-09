@@ -648,7 +648,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
     handler->files.push_back(File::Entry(H.name(), (single_file ? data_offset : 0)));
-    return std::move(handler);
+    return handler;
   } catch (Exception &e) {
     e.display();
     return std::unique_ptr<ImageIO::Base>();
@@ -672,7 +672,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     memcpy(io_handler.get()->header(), &NH, sizeof(NH));
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
     io_handler->files.push_back(File::Entry(H.name(), data_offset));
-    return std::move(io_handler);
+    return io_handler;
   } catch (...) {
     return std::unique_ptr<ImageIO::Base>();
   }
@@ -707,7 +707,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
   handler->files.push_back(File::Entry(H.name(), data_offset));
 
-  return std::move(handler);
+  return handler;
 }
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
@@ -726,7 +726,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   File::create(H.name());
   io_handler->files.push_back(File::Entry(H.name(), sizeof(nifti_header) + 4));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
 // force explicit instantiation:

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_odf_type_h__
-#define __gui_mrview_tool_odf_type_h__
+#pragma once
 
 #include "gui/dwi/renderer.h"
 
@@ -31,5 +30,3 @@ using odf_type_t = GUI::DWI::Renderer::mode_t;
 } // namespace GUI::MRView::Tool
 
 } // namespace MR
-
-#endif

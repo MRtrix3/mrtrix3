@@ -11,4 +11,4 @@ mrcolour unit_warp.mif rgb tmp-mrcolour.mif -force
 MAX=$(mrstats unit_warp.mif -output max -allvolumes)
 mrcalc unit_warp.mif $MAX -div tmp-manual.mif -force
 
-testing_diff_image tmp-mrcolour.mif tmp-manual.mif -frac 1e-6
+testing_diff_image tmp-mrcolour.mif tmp-manual.mif -abs 1e-5

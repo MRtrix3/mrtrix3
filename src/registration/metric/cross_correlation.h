@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_cross_correlation_h__
-#define __registration_metric_cross_correlation_h__
+#pragma once
 
 #include "interp/linear.h"
 #include "registration/metric/linear_base.h"
@@ -251,4 +250,3 @@ private:
 } // namespace Metric
 } // namespace Registration
 } // namespace MR
-#endif

@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __sync_syncmanager_h__
-#define __sync_syncmanager_h__
+#pragma once
 
 #include "gui/mrview/sync/enums.h"
 #include "gui/mrview/sync/interprocesscommunicator.h"
@@ -48,5 +47,3 @@ private:
 };
 
 } // namespace MR::GUI::MRView::Sync
-
-#endif

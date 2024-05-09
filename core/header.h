@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __header_h__
-#define __header_h__
+#pragma once
 
 #include <functional>
 #include <map>
@@ -423,5 +422,3 @@ inline ssize_t &Header::stride(size_t axis) { return axes_[axis].stride; }
 
 //! @}
 } // namespace MR
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dialog_progressbar_h__
-#define __gui_dialog_progressbar_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 #include "progressbar.h"
@@ -26,5 +25,3 @@ void display(const ::MR::ProgressBar &p);
 void done(const ::MR::ProgressBar &p);
 
 } // namespace MR::GUI::Dialog::ProgressBar
-
-#endif

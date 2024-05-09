@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_seeding_gmwmi_h__
-#define __dwi_tractography_seeding_gmwmi_h__
+#pragma once
 
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/seeding/basic.h"
@@ -53,5 +52,3 @@ private:
 
 } // namespace Seeding
 } // namespace MR::DWI::Tractography
-
-#endif

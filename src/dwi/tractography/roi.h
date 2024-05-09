@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_roi_h__
-#define __dwi_tractography_roi_h__
+#pragma once
 
 #include "app.h"
 #include "image.h"
@@ -224,5 +223,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography
-
-#endif

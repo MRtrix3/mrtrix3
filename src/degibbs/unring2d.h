@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __degibbs_unring_2d_h__
-#define __degibbs_unring_2d_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 #include "axes.h"
@@ -144,5 +143,3 @@ protected:
 };
 
 } // namespace MR::Degibbs
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __data_type_h__
-#define __data_type_h__
+#pragma once
 
 #include "cmdline_option.h"
 #include "half.h"
@@ -185,5 +184,3 @@ template <> inline DataType DataType::from<cfloat>() { return DataType::native(D
 template <> inline DataType DataType::from<cdouble>() { return DataType::native(DataType::CFloat64); }
 
 } // namespace MR
-
-#endif

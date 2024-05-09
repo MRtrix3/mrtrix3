@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_mesh_h__
-#define __surface_mesh_h__
+#pragma once
 
 #include <cstdint>
 #include <fstream>
@@ -188,5 +187,3 @@ private:
 };
 
 } // namespace MR::Surface
-
-#endif

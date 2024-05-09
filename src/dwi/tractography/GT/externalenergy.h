@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_externalenergy_h__
-#define __gt_externalenergy_h__
+#pragma once
 
 #include "image.h"
 #include "math/constrained_least_squares.h"
@@ -96,5 +95,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::GT
-
-#endif // __gt_externalenergy_h__
