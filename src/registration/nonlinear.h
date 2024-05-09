@@ -30,6 +30,7 @@
 #include "registration/multi_resolution_lmax.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/reorient.h"
+#include "registration/transform/rigid.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/convert.h"
 #include "registration/warp/helpers.h"
@@ -59,6 +60,16 @@ public:
     fod_lmax[0] = 0;
     fod_lmax[1] = 2;
     fod_lmax[2] = 4;
+  }
+
+  template <class TransformType, class ImageType>
+  void run(TransformType linear_trasform,
+           ImageType &im1_image,
+           ImageType &im2_image,
+           ImageType &im1_mask,
+           ImageType &im2_mask) {
+    run<TransformType, ImageType, ImageType, ImageType, ImageType>(
+        linear_trasform, im1_image, im2_image, im1_mask, im2_mask);
   }
 
   template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
@@ -554,4 +565,10 @@ protected:
   std::shared_ptr<Image<default_type>> im1_update_new;
   std::shared_ptr<Image<default_type>> im2_update_new;
 };
+
+extern template void NonLinear::run<Transform::Affine, Image<double>>(
+    Transform::Affine, Image<double> &, Image<double> &, Image<double> &, Image<double> &);
+extern template void NonLinear::run<Transform::Rigid, Image<double>>(
+    Transform::Rigid, Image<double> &, Image<double> &, Image<double> &, Image<double> &);
+
 } // namespace MR::Registration

@@ -27,6 +27,7 @@
 #include "debug.h"
 #include "fetch_store.h"
 #include "formats/mrtrix_utils.h"
+#include "half.h"
 #include "header.h"
 #include "image_helpers.h"
 
@@ -476,5 +477,19 @@ template <class ImageType> typename enable_if_image_type<ImageType, void>::type 
   if (system(("bash -c \"mrview " + filename + "\"").c_str()))
     WARN(std::string("error invoking viewer: ") + strerror(errno));
 }
-
+// Explicit instantiations in image.cpp:
+extern template MR::Image<bool>::~Image();
+extern template MR::Image<int8_t>::~Image();
+extern template MR::Image<uint8_t>::~Image();
+extern template MR::Image<int16_t>::~Image();
+extern template MR::Image<uint16_t>::~Image();
+extern template MR::Image<int32_t>::~Image();
+extern template MR::Image<uint32_t>::~Image();
+extern template MR::Image<int64_t>::~Image();
+extern template MR::Image<uint64_t>::~Image();
+extern template MR::Image<half_float::half>::~Image();
+extern template MR::Image<float>::~Image();
+extern template MR::Image<double>::~Image();
+extern template MR::Image<cfloat>::~Image();
+extern template MR::Image<cdouble>::~Image();
 } // namespace MR

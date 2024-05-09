@@ -383,4 +383,60 @@ void reorient_warp(FODImageType &fod_image,
   }
 }
 
+// Explicit instantiation in registration/transform/reorient.cpp to reduce compile time
+extern template void reorient<Image<double>>(Image<double> &input_fod_image,
+                                             Image<double> &output_fod_image,
+                                             const transform_type &transform,
+                                             const Eigen::MatrixXd &directions,
+                                             bool modulate,
+                                             std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient<Image<float>>(Image<float> &input_fod_image,
+                                            Image<float> &output_fod_image,
+                                            const transform_type &transform,
+                                            const Eigen::MatrixXd &directions,
+                                            bool modulate,
+                                            std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient<Image<double>>(const std::string progress_message,
+                                             Image<double> &input_fod_image,
+                                             Image<double> &output_fod_image,
+                                             const transform_type &transform,
+                                             const Eigen::MatrixXd &directions,
+                                             bool modulate,
+                                             std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient<Image<float>>(const std::string progress_message,
+                                            Image<float> &input_fod_image,
+                                            Image<float> &output_fod_image,
+                                            const transform_type &transform,
+                                            const Eigen::MatrixXd &directions,
+                                            bool modulate,
+                                            std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient_warp<Image<double>>(Image<double> &fod_image,
+                                                  Image<default_type> &warp,
+                                                  const Eigen::MatrixXd &directions,
+                                                  const bool modulate,
+                                                  std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient_warp<Image<float>>(Image<float> &fod_image,
+                                                 Image<default_type> &warp,
+                                                 const Eigen::MatrixXd &directions,
+                                                 const bool modulate,
+                                                 std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient_warp<Image<double>>(const std::string progress_message,
+                                                  Image<double> &fod_image,
+                                                  Image<default_type> &warp,
+                                                  const Eigen::MatrixXd &directions,
+                                                  const bool modulate,
+                                                  std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient_warp<Image<float>>(const std::string progress_message,
+                                                 Image<float> &fod_image,
+                                                 Image<default_type> &warp,
+                                                 const Eigen::MatrixXd &directions,
+                                                 const bool modulate,
+                                                 std::vector<MultiContrastSetting> multi_contrast_settings);
 } // namespace MR::Registration::Transform

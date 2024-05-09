@@ -13,19 +13,12 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+#include "condition_number.h"
+#include "types.h"
 
-#pragma once
+namespace MR::Math {
 
-#include <string>
+template default_type
+condition_number<Eigen::Matrix<default_type, -1, -1>>(const Eigen::Matrix<default_type, -1, -1> &);
 
-namespace MR::File {
-
-void remove(const std::string &file);
-void create(const std::string &filename, int64_t size = 0);
-void resize(const std::string &filename, int64_t size);
-bool is_tempfile(const std::string &name, const char *suffix = NULL);
-std::string create_tempfile(int64_t size = 0, const char *suffix = NULL);
-void mkdir(const std::string &folder);
-void rmdir(const std::string &folder, bool recursive = false);
-
-} // namespace MR::File
+}
