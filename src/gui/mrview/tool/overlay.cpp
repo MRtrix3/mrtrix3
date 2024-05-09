@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -631,7 +631,7 @@ namespace MR
               if (colourmap_index == -2)
                 colourmap_index = overlay->colourmap;
               else
-                colourmap_index = -1;                
+                colourmap_index = -1;
             }
             num_inverted += overlay->scale_inverted();
             rate += overlay->scaling_rate();

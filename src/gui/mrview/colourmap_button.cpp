@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -118,10 +118,10 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts)
 
 void ColourMapButton::init_customise_state_menu_items()
 {
-    auto show_colour_bar = colourmap_menu->addAction(tr("Show colour bar"), this, SLOT(show_colour_bar_slot(bool)));
-    show_colour_bar->setCheckable(true);
-    show_colour_bar->setChecked(true);
-    addAction(show_colour_bar);
+    show_colour_bar_action = colourmap_menu->addAction(tr("Show colour bar"), this, SLOT(show_colour_bar_slot(bool)));
+    show_colour_bar_action->setCheckable(true);
+    show_colour_bar_action->setChecked(true);
+    addAction(show_colour_bar_action);
 
     invert_scale_action = colourmap_menu->addAction(tr("Invert"), this, SLOT(invert_colourmap_slot(bool)));
     invert_scale_action->setCheckable(true);
@@ -163,10 +163,16 @@ void ColourMapButton::set_colourmap_index(size_t index)
     }
 }
 
-void ColourMapButton::set_scale_inverted(bool yesno)
+void ColourMapButton::set_scale_inverted (bool yesno)
 {
     assert (invert_scale_action != nullptr);
     invert_scale_action->setChecked (yesno);
+}
+
+void ColourMapButton::set_show_colourbar (bool yesno)
+{
+    assert (invert_scale_action != nullptr);
+    show_colour_bar_action->setChecked (yesno);
 }
 
 

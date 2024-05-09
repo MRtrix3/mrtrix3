@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -110,14 +110,14 @@ namespace MR
     void Mesh::load_vtk (const std::string& path)
     {
 
-      std::ifstream in (path.c_str(), std::ios_base::in);
+      std::ifstream in (path.c_str(), std::ios_base::binary);
       if (!in)
         throw Exception ("Error opening input file!");
 
       std::string line;
 
       // First line: VTK version ID
-      std::getline (in, line);
+      MR::getline (in, line);
       // Strip the version numbers
       line[23] = line[25] = 'x';
       // Verify that the line is correct
@@ -125,10 +125,10 @@ namespace MR
         throw Exception ("Incorrect first line of .vtk file");
 
       // Second line: identifier
-      std::getline (in, line);
+      MR::getline (in, line);
 
       // Third line: format of data
-      std::getline (in, line);
+      MR::getline (in, line);
       bool is_ascii = false;
       if (line == "ASCII")
         is_ascii = true;
@@ -136,19 +136,12 @@ namespace MR
         throw Exception ("unknown data format in .vtk data");
 
       // Fourth line: Data set type
-      std::getline (in, line);
+      MR::getline (in, line);
       if (line.substr(0, 7) != "DATASET")
         throw Exception ("Error in definition of .vtk dataset");
       line = line.substr (8);
       if (line == "STRUCTURED_POINTS" || line == "STRUCTURED_GRID" || line == "UNSTRUCTURED_GRID" || line == "RECTILINEAR_GRID" || line == "FIELD")
         throw Exception ("Unsupported dataset type (" + line + ") in .vtk file");
-
-      if (!is_ascii) {
-        const std::streampos offset = in.tellg();
-        in.close();
-        in.open (path.c_str(), std::ios_base::in | std::ios_base::binary);
-        in.seekg (offset);
-      }
 
       // Won't know endianness of file when the vertex positions are read,
       //   only when the polygon information is encountered;
@@ -162,7 +155,7 @@ namespace MR
 
         // Need to read line in either ASCII mode or in raw binary
         if (is_ascii) {
-          std::getline (in, line);
+          MR::getline (in, line);
         } else {
           line.clear();
           char c = 0;
@@ -195,7 +188,7 @@ namespace MR
 
             if (is_ascii) {
               for (int i = 0; i != num_vertices; ++i) {
-                std::getline (in, line);
+                MR::getline (in, line);
                 sscanf (line.c_str(), "%lf %lf %lf", &v[0], &v[1], &v[2]);
                 vertices.push_back (v);
               }
@@ -218,7 +211,7 @@ namespace MR
 
               int vertex_count;
               if (is_ascii) {
-                std::getline (in, line);
+                MR::getline (in, line);
                 sscanf (line.c_str(), "%u", &vertex_count);
               } else {
                 in.read (reinterpret_cast<char*>(&vertex_count), sizeof (int));
@@ -263,21 +256,23 @@ namespace MR
         }
       }
 
+      if (!is_ascii) {
 #if MRTRIX_IS_BIG_ENDIAN
-      if (change_endianness) {
-        WARN("File \"" + path + "\" is little-endian, so is not format-compliant (may have been generated using an older MRtrix3 version); "
-             "imported contents will be converted to system big-endian");
-      } else {
-        INFO("File \"" + path + "\" is big-endian; no format conversion required as executing on big-endian system");
-      }
+        if (change_endianness) {
+          WARN("File \"" + path + "\" is little-endian, so is not format-compliant (may have been generated using an older MRtrix3 version); "
+              "imported contents will be converted to system big-endian");
+        } else {
+          INFO("File \"" + path + "\" is big-endian; no format conversion required as executing on big-endian system");
+        }
 #else
-      if (change_endianness) {
-        INFO("Converting imported contents of file \"" + path + "\" to native little-endian");
-      } else {
-        WARN("File \"" + path + "\" already in native little-endian format, so no endianness conversion required; "
-             "but file is therefore not format-compliant (may have been generated using an older MRtrix3 version)");
-      }
+        if (change_endianness) {
+          INFO("Converting imported contents of file \"" + path + "\" to native little-endian");
+        } else {
+          WARN("File \"" + path + "\" already in native little-endian format, so no endianness conversion required; "
+              "but file is therefore not format-compliant (may have been generated using an older MRtrix3 version)");
+        }
 #endif
+      }
 
       if (change_endianness) {
         for (auto& v : vertices) {

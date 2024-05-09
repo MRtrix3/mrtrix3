@@ -1,4 +1,4 @@
-% Copyright (c) 2008-2023 the MRtrix3 contributors.
+% Copyright (c) 2008-2024 the MRtrix3 contributors.
 %
 % This Source Code Form is subject to the terms of the Mozilla Public
 % License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -131,7 +131,8 @@ end
 
 fprintf (fid, '\nfile: ');
 
-if strcmp(filename(end-3:end), '.mif')
+[filepath,basename,ext] = fileparts(filename);
+if strcmp(ext, '.mif')
   dataoffset = ftell (fid) + 18;
   dataoffset = dataoffset + mod((4 - mod(dataoffset, 4)), 4);
   s = sprintf ('. %d\nEND\n              ', dataoffset);
@@ -139,14 +140,14 @@ if strcmp(filename(end-3:end), '.mif')
   fprintf (fid, s);
   fclose (fid);
   fid = fopen (filename, 'a+', byteorder);
-elseif strcmp(filename(end-3:end), '.mih')
-  datafile = [ filename(1:end-4) '.dat' ];
+elseif strcmp(ext, '.mih')
+  datafile = fullfile(filepath, strcat(basename,'.dat'));
   fprintf (fid, '%s 0\nEND\n', datafile);
   fclose(fid);
   fid = fopen (datafile, 'w', byteorder);
 else
   fclose(fid);
-  error('unknown file suffix - aborting');
+  error('unknown file suffix "%s" - aborting', ext);
 end
 
 if isstruct(image)

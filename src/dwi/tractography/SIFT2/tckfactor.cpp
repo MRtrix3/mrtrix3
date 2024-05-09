@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -344,17 +344,20 @@ namespace MR {
       {
         if (size_t(coefficients.size()) != contributions.size())
           throw Exception ("Cannot output weighting factors if they have not first been estimated!");
+        decltype(coefficients) weights;
         try {
-          decltype(coefficients) weights (coefficients.size());
-          for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
-                         0.0 :
-                         std::exp (coefficients[i]);
-          save_vector (weights, path);
+          weights.resize (coefficients.size());
         } catch (...) {
           WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
+          return;
         }
+        for (SIFT::track_t i = 0; i != num_tracks(); ++i)
+          weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
+                        0.0 :
+                        std::exp (coefficients[i]);
+        save_vector (weights, path);
       }
+
 
 
       void TckFactor::output_coefficients (const std::string& path) const
