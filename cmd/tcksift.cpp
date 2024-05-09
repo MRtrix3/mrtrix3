@@ -86,10 +86,10 @@ void run() {
 
   SIFTer sifter(in_dwi, dirs);
 
-  if (debug_path.size()) {
+  if (!debug_path.empty()) {
     sifter.initialise_debug_image_output(debug_path);
     sifter.output_proc_mask(Path::join(debug_path, "proc_mask.mif"));
-    if (get_options("act").size())
+    if (!get_options("act").empty())
       sifter.output_5tt_image(Path::join(debug_path, "5tt.mif"));
   }
 
@@ -98,45 +98,45 @@ void run() {
 
   sifter.map_streamlines(argument[0]);
 
-  if (debug_path.size())
+  if (!debug_path.empty())
     sifter.output_all_debug_images(debug_path, "before");
 
   sifter.remove_excluded_fixels();
 
-  if (!get_options("nofilter").size()) {
+  if (get_options("nofilter").empty()) {
 
     auto opt = get_options("term_number");
-    if (opt.size())
+    if (!opt.empty())
       sifter.set_term_number(int(opt[0][0]));
     opt = get_options("term_ratio");
-    if (opt.size())
+    if (!opt.empty())
       sifter.set_term_ratio(float(opt[0][0]));
     opt = get_options("term_mu");
-    if (opt.size())
+    if (!opt.empty())
       sifter.set_term_mu(float(opt[0][0]));
     opt = get_options("csv");
-    if (opt.size())
+    if (!opt.empty())
       sifter.set_csv_path(opt[0][0]);
     opt = get_options("output_at_counts");
-    if (opt.size()) {
+    if (!opt.empty()) {
       std::vector<uint32_t> counts = parse_ints<uint32_t>(opt[0][0]);
       sifter.set_regular_outputs(counts, debug_path);
     }
 
     sifter.perform_filtering();
 
-    if (debug_path.size())
+    if (!debug_path.empty())
       sifter.output_all_debug_images(debug_path, "after");
 
     sifter.output_filtered_tracks(argument[0], argument[2]);
 
     opt = get_options("out_selection");
-    if (opt.size())
+    if (!opt.empty())
       sifter.output_selection(opt[0][0]);
   }
 
   auto opt = get_options("out_mu");
-  if (opt.size()) {
+  if (!opt.empty()) {
     File::OFStream out_mu(opt[0][0]);
     out_mu << sifter.mu();
   }

@@ -350,7 +350,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
     }
   }
 
-  if (!regular_grid_buffer_pos.size())
+  if (regular_grid_buffer_pos.empty())
     return;
 
   GL::Context::Grab context;

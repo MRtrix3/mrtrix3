@@ -236,7 +236,7 @@ void run() {
 
   auto mask = Image<bool>();
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Header::open(opt[0][0]).get_image<bool>();
     check_dimensions(header_in, mask, 0, 3);
   }
@@ -303,7 +303,7 @@ void run() {
 
     Image<float> dwi_modelled;
     auto opt = get_options("predicted_signal");
-    if (opt.size())
+    if (!opt.empty())
       dwi_modelled = Image<float>::create(opt[0][0], header_in);
 
     MSMT_Processor processor(shared, mask, odfs, dwi_modelled);

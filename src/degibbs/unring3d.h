@@ -247,7 +247,7 @@ void unring3D(ImageIn &input, ImageOut &output, const int minW = 1, const int ma
     std::string vol_idx;
     for (size_t n = 3; n < input.ndim(); ++n)
       vol_idx += str(input.index(n)) + " ";
-    if (vol_idx.size())
+    if (!vol_idx.empty())
       INFO("processing volume [ " + vol_idx + "]");
 
     Volume vol_in(input);

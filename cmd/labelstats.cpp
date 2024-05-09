@@ -79,11 +79,11 @@ void run() {
 
   coms = coms.array().colwise() / masses;
 
-  if (!get_options("voxelspace").size())
+  if (get_options("voxelspace").empty())
     coms = (image.transform() * coms.transpose()).transpose();
 
   auto opt = get_options("output");
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch (int(opt[0][0])) {
     case 0:
       std::cout << masses;
@@ -107,7 +107,7 @@ void run() {
   // Find width of first non-empty string, in order to centralise header label
   size_t com_width = 0;
   for (const auto &i : com_strings) {
-    if (i.size()) {
+    if (!i.empty()) {
       com_width = i.size();
       break;
     }

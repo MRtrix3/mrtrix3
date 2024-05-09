@@ -91,7 +91,7 @@ public:
 
     status = EXECUTING;
 
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
     ValueType l = init_lower, m = init_mid, u = init_upper;
     ValueType fl = functor(l), fm = functor(m), fu = functor(u);

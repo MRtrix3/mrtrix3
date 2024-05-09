@@ -139,18 +139,18 @@ void usage() {
 template <typename T>
 void execute(Image<node_t> &node_image, const node_t max_node_index, const std::set<node_t> &missing_nodes) {
   // Are we generating a matrix or a vector?
-  const bool vector_output = get_options("vector").size();
+  const bool vector_output = !get_options("vector").empty();
 
   // Do we need to keep track of the nodes to which each streamline is
   //   assigned, or would it be a waste of memory?
-  const bool track_assignments = get_options("out_assignments").size();
+  const bool track_assignments = !get_options("out_assignments").empty();
 
   // Get the metric, assignment mechanism & per-edge statistic for connectome construction
   Metric metric;
   Tractography::Connectome::setup_metric(metric, node_image);
   std::unique_ptr<Tck2nodes_base> tck2nodes(load_assignment_mode(node_image));
   auto opt = get_options("stat_edge");
-  const stat_edge statistic = opt.size() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
+  const stat_edge statistic = !opt.empty() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
 
   // Prepare for reading the track data
   Tractography::Properties properties;
@@ -186,7 +186,7 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
                   get_options("zero_diagonal").size());
 
   opt = get_options("out_assignments");
-  if (opt.size())
+  if (!opt.empty())
     connectome.write_assignments(opt[0][0]);
 }
 
@@ -212,7 +212,7 @@ void run() {
     if (!node_volumes[i])
       missing_nodes.insert(i);
   }
-  if (missing_nodes.size()) {
+  if (!missing_nodes.empty()) {
     WARN("The following nodes are missing from the parcellation image:");
     std::set<node_t>::iterator i = missing_nodes.begin();
     std::string list = str(*i);
