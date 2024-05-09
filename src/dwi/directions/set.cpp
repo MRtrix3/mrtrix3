@@ -221,7 +221,7 @@ void Set::initialise_adjacency() {
   size_t assigned_counter = 4;
 #endif
 
-  while (planes.size()) {
+  while (!planes.empty()) {
     Plane current(planes.back());
     index_type max_index = vertices.size();
     default_type max_dist = current.dist;

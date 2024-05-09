@@ -35,29 +35,29 @@ const OptionGroup ACTOption =
 
 void load_act_properties(Properties &properties) {
   auto opt = App::get_options("act");
-  if (opt.size()) {
+  if (!opt.empty()) {
 
     properties["act"] = std::string(opt[0][0]);
     opt = get_options("backtrack");
-    if (opt.size())
+    if (!opt.empty())
       properties["backtrack"] = "1";
     opt = get_options("crop_at_gmwmi");
-    if (opt.size())
+    if (!opt.empty())
       properties["crop_at_gmwmi"] = "1";
 
   } else {
 
-    if (get_options("backtrack").size())
-      WARN("ignoring -backtrack option - only valid if using ACT");
-    if (get_options("crop_at_gmwmi").size())
-      WARN("ignoring -crop_at_gmwmi option - only valid if using ACT");
+    if (!get_options("backtrack").empty())
+      WARN("ignoring -backtrack option: only valid if using ACT");
+    if (!get_options("crop_at_gmwmi").empty())
+      WARN("ignoring -crop_at_gmwmi option: only valid if using ACT");
   }
 }
 
 void verify_5TT_image(const Header &H) {
   if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.size(3) != 5)
-    throw Exception("Image " + H.name() +
-                    " is not a valid ACT 5TT image (expecting 4D image with 5 volumes and floating-point datatype)");
+    throw Exception("Image " + H.name() + " is not a valid ACT 5TT image" +
+                    " (expecting 4D image with 5 volumes and floating-point datatype)");
 }
 
 } // namespace MR::DWI::Tractography::ACT

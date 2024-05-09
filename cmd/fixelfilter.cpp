@@ -142,7 +142,7 @@ void run() {
       const float fwhm = get_option_value("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
       const float threshold = get_option_value("minweight", float(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT));
       opt = get_options("mask");
-      if (opt.size()) {
+      if (!opt.empty()) {
         Image<bool> mask_image = Image<bool>::open(opt[0][0]);
         filter.reset(new Fixel::Filter::Smooth(index_image, matrix, mask_image, fwhm, threshold));
       } else {
@@ -158,7 +158,7 @@ void run() {
   }
 
   for (const auto &i : option_list) {
-    if (get_options(i).size())
+    if (!get_options(i).empty())
       WARN("Option -" + i + " ignored; not relevant to " + filters[int(argument[1])] + " filter");
   }
 

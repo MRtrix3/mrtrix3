@@ -92,7 +92,7 @@ void run() {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))
       throw Exception("For applying a fixed colour, command expects a 3D image as input");
     auto opt = get_options("colour");
-    if (!opt.size())
+    if (opt.empty())
       throw Exception("For \'colour\' colourmap, target colour must be specified using the -colour option");
     const auto values = parse_floats(opt[0][0]);
     if (values.size() != 3)
@@ -103,13 +103,13 @@ void run() {
   } else if (colourmap.is_rgb) {
     if (!(H_in.ndim() == 4 && H_in.size(3) == 3))
       throw Exception("\'rgb\' colourmap only applies to 4D images with 3 volumes");
-    if (get_options("lower").size()) {
+    if (!get_options("lower").empty()) {
       WARN("Option -lower ignored: not compatible with \'rgb\' colourmap (a minimum of 0.0 is assumed)");
     }
   } else {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))
       throw Exception("For standard colour maps, command expects a 3D image as input");
-    if (get_options("colour").size()) {
+    if (!get_options("colour").empty()) {
       WARN("Option -colour ignored: only applies if \'colour\' colourmap is used");
     }
   }

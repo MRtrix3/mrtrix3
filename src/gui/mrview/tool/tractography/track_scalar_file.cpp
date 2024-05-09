@@ -208,7 +208,7 @@ bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot(std::string s
   }
   update_UI();
   window().updateGL();
-  return scalar_file.size();
+  return !scalar_file.empty();
 }
 
 void TrackScalarFileOptions::toggle_show_colour_bar(bool show_colour_bar, const ColourMapButton &) {

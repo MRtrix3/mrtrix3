@@ -30,14 +30,10 @@ Tree::find(const std::string &patient_name, const std::string &patient_ID, const
   for (size_t n = 0; n < size(); n++) {
     bool match = true;
     if (patient_name == (*this)[n]->name) {
-      if (patient_ID.size() && (*this)[n]->ID.size())
-        if (patient_ID != (*this)[n]->ID)
-          match = false;
-      if (match) {
-        if (patient_DOB.size() && (*this)[n]->DOB.size())
-          if (patient_DOB != (*this)[n]->DOB)
-            match = false;
-      }
+      if (!patient_ID.empty() && !(*this)[n]->ID.empty() && patient_ID != (*this)[n]->ID)
+        match = false;
+      if (match && !patient_DOB.empty() && !(*this)[n]->DOB.empty() && patient_DOB != (*this)[n]->DOB)
+        match = false;
       if (match)
         return (*this)[n];
     }
@@ -51,7 +47,7 @@ void Tree::read_dir(const std::string &filename, ProgressBar &progress) {
   try {
     Path::Dir folder(filename);
     std::string entry;
-    while ((entry = folder.read_name()).size()) {
+    while (!(entry = folder.read_name()).empty()) {
       std::string name(Path::join(filename, entry));
       if (Path::is_dir(name))
         read_dir(name, progress);
@@ -115,7 +111,7 @@ void Tree::read(const std::string &filename) {
     }
   }
 
-  if (!size())
+  if (empty())
     throw Exception("no DICOM images found in \"" + filename + "\"");
 }
 

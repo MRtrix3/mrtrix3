@@ -161,7 +161,7 @@ template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missin
     if (!visited[i] && missing_nodes.find(i) == missing_nodes.end())
       empty_nodes.push_back(str(i));
   }
-  if (empty_nodes.size()) {
+  if (!empty_nodes.empty()) {
     WARN("The following nodes do not have any streamlines assigned:");
     WARN(join(empty_nodes, ", "));
     WARN("(This may indicate a poor registration)");

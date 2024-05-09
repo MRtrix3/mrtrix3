@@ -393,7 +393,7 @@ public:
       CONSOLE("linear stage " + str(istage + 1) + "/" + str(stages.size()) + ", " + stage.info(do_reorientation));
       // define or adjust tissue contrast lmax, nvols for this stage
       stage_contrasts = contrasts;
-      if (stage_contrasts.size()) {
+      if (!stage_contrasts.empty()) {
         for (auto &mc : stage_contrasts) {
           mc.lower_lmax(stage.fod_lmax);
         }
@@ -423,7 +423,7 @@ public:
 
       ParamType parameters(transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
       parameters.loop_density = stage.loop_density;
-      if (contrasts.size())
+      if (!contrasts.empty())
         parameters.set_mc_settings(stage_contrasts);
 
       // if (robust_estimate)
@@ -526,7 +526,7 @@ public:
         // auto params = optim.state();
         // VAR(optim.function_evaluations());
         // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
-        if (stage.diagnostics_images.size()) {
+        if (!stage.diagnostics_images.empty()) {
           CONSOLE("    creating diagnostics image: " + stage.diagnostics_images[stage_iter - 1]);
           parameters.make_diagnostics_image(stage.diagnostics_images[stage_iter - 1],
                                             File::Config::get_bool("RegLinregDiagnosticsImageMasked", false));

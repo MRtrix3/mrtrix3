@@ -100,7 +100,7 @@ public:
   Energy(ProgressBar &progress)
       : progress(progress),
         ndirs(to<int>(argument[0])),
-        bipolar(!(get_options("unipolar").size())),
+        bipolar(get_options("unipolar").empty()),
         power(0),
         directions(3 * ndirs) {}
 
@@ -249,5 +249,5 @@ void run() {
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row(n) = Energy::best_directions.segment(3 * n, 3);
 
-  DWI::Directions::save(directions_matrix, argument[1], get_options("cartesian").size());
+  DWI::Directions::save(directions_matrix, argument[1], !get_options("cartesian").empty());
 }

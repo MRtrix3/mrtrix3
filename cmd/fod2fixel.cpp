@@ -151,15 +151,15 @@ private:
 };
 
 bool Segmented_FOD_receiver::operator()(const FOD_lobes &in) {
-  if (in.size()) {
-    lobes.emplace_back(in, max_per_voxel, dir_from_peak);
-    fixel_count += lobes.back().size();
-  }
+  if (in.empty())
+    return true;
+  lobes.emplace_back(in, max_per_voxel, dir_from_peak);
+  fixel_count += lobes.back().size();
   return true;
 }
 
 void Segmented_FOD_receiver::commit() {
-  if (!lobes.size() || !fixel_count)
+  if (lobes.empty() || fixel_count == 0)
     return;
 
   using DataImage = Image<float>;
@@ -190,7 +190,7 @@ void Segmented_FOD_receiver::commit() {
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
 
-  if (dir_path.size()) {
+  if (!dir_path.empty()) {
     auto dir_header(fixel_data_header);
     dir_header.size(1) = 3;
     dir_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, dir_path), dir_header));
@@ -198,7 +198,7 @@ void Segmented_FOD_receiver::commit() {
     Fixel::check_fixel_size(*index_image, *dir_image);
   }
 
-  if (afd_path.size()) {
+  if (!afd_path.empty()) {
     auto afd_header(fixel_data_header);
     afd_header.size(1) = 1;
     afd_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, afd_path), afd_header));
@@ -206,7 +206,7 @@ void Segmented_FOD_receiver::commit() {
     Fixel::check_fixel_size(*index_image, *afd_image);
   }
 
-  if (peak_amp_path.size()) {
+  if (!peak_amp_path.empty()) {
     auto peak_amp_header(fixel_data_header);
     peak_amp_header.size(1) = 1;
     peak_amp_image = std::make_unique<DataImage>(
@@ -215,7 +215,7 @@ void Segmented_FOD_receiver::commit() {
     Fixel::check_fixel_size(*index_image, *peak_amp_image);
   }
 
-  if (disp_path.size()) {
+  if (!disp_path.empty()) {
     auto disp_header(fixel_data_header);
     disp_header.size(1) = 1;
     disp_image =
@@ -275,7 +275,7 @@ void run() {
   Math::SH::check(H);
   auto fod_data = H.get_image<float>();
 
-  const bool dir_as_peak = get_options("dirpeak").size();
+  const bool dir_as_peak = !get_options("dirpeak").empty();
   const index_type maxnum = get_option_value("maxnum", 0);
 
   Segmented_FOD_receiver receiver(H, maxnum, dir_as_peak);
@@ -284,7 +284,7 @@ void run() {
   receiver.set_fixel_directory_output(fixel_directory_path);
 
   std::string file_extension(".mif");
-  if (get_options("nii").size())
+  if (!get_options("nii").empty())
     file_extension = ".nii";
 
   static const std::string default_index_filename("index" + file_extension);
@@ -293,18 +293,18 @@ void run() {
   receiver.set_directions_output(default_directions_filename);
 
   auto opt = get_options("afd");
-  if (opt.size())
+  if (!opt.empty())
     receiver.set_afd_output(opt[0][0]);
   opt = get_options("peak_amp");
-  if (opt.size())
+  if (!opt.empty())
     receiver.set_peak_amp_output(opt[0][0]);
   opt = get_options("disp");
-  if (opt.size())
+  if (!opt.empty())
     receiver.set_disp_output(opt[0][0]);
 
   opt = get_options("mask");
   Image<float> mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<float>::open(std::string(opt[0][0]));
     if (!dimensions_match(fod_data, mask, 0, 3))
       throw Exception("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
