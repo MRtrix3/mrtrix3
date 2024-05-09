@@ -129,13 +129,14 @@ DataType descr2datatype(const std::string &s) {
     throw Exception(std::string("Unsupported data type indicator \'") + s[type_offset] + "\'");
   }
   if (data_type.bytes() != 1 && expect_one_byte_width)
-    throw Exception("Inconsistency in byte width specification (expected one byte; got " + str(data_type.bytes()) +
-                    ')');
+    throw Exception(std::string("Inconsistency in byte width specification") + //
+                    " (expected one byte; got " + str(data_type.bytes()) + ")");
   if (bytes > 1) {
     data_type = data_type() | (is_little_endian ? DataType::LittleEndian : DataType::BigEndian);
     if (issue_endianness_warning) {
-      WARN(std::string("NumPy file does not indicate data endianness; assuming ") +
-           (MRTRIX_IS_BIG_ENDIAN ? "big" : "little") + "-endian (same as system)");
+      WARN(std::string("NumPy file does not indicate data endianness;") +         //
+           " assuming " + (MRTRIX_IS_BIG_ENDIAN ? "big" : "little") + "-endian" + //
+           " (same as system)");
     }
   }
   return data_type;
@@ -173,7 +174,8 @@ std::string datatype2descr(const DataType data_type) {
 size_t float_max_save_precision() {
   static size_t result = to<size_t>(File::Config::get("NPYFloatMaxSavePrecision", "64"));
   if (!(result == 16 || result == 32 || result == 64))
-    throw Exception("Invalid value for config file entry \"NPYFloatMaxSavePrecision\" (must be 16, 32 or 64)");
+    throw Exception("Invalid value for config file entry \"NPYFloatMaxSavePrecision\""
+                    " (must be 16, 32 or 64)");
   return result;
 }
 
@@ -208,7 +210,7 @@ KeyValues parse_dict(std::string s) {
       }
       continue;
     }
-    if (openers.size()) {
+    if (!openers.empty()) {
       if (c == pairs.find(openers.back())->second)
         openers.pop_back();
       // If final opener is a string quote, and it's now being closed,
@@ -221,19 +223,22 @@ KeyValues parse_dict(std::string s) {
         continue;
       }
     } else if (c == ':') {
-      if (key.size())
-        throw Exception("Error parsing NumPy header: non-isolated colon separator");
+      if (!key.empty())
+        throw Exception("Error parsing NumPy header:"
+                        " non-isolated colon separator");
       if ((current.front() == '\"' && current.back() == '\"') || (current.front() == '\'' && current.back() == '\''))
         key = current.substr(1, current.size() - 2);
       else
         key = current;
       if (keyval.find(key) != keyval.end())
-        throw Exception("Error parsing NumPy header: duplicate key");
+        throw Exception("Error parsing NumPy header:"
+                        " duplicate key");
       current.clear();
       continue;
     } else if (c == ',') {
       if (key.empty())
-        throw Exception("Error parsing NumPy header: colon separator with no colon-separated key beforehand");
+        throw Exception("Error parsing NumPy header:"
+                        " colon separator with no colon-separated key beforehand");
       if ((current.front() == '\"' && current.back() == '\"') || (current.front() == '\'' && current.back() == '\''))
         current = current.substr(1, current.size() - 2);
       keyval[key] = current;
@@ -245,13 +250,19 @@ KeyValues parse_dict(std::string s) {
       openers.push_back(c);
     current.push_back(c);
   }
-  if (openers.size())
-    throw Exception("Error parsing NumPy header: unpaired bracket or quotation symbol(s) at EOF");
-  if (key.size())
-    throw Exception("Error parsing NumPy header: key without associated value at EOF");
+  if (!openers.empty()) {
+    throw Exception("Error parsing NumPy header:"
+                    " unpaired bracket or quotation symbol(s) at EOF");
+  }
+  if (!key.empty()) {
+    throw Exception("Error parsing NumPy header:"
+                    " key without associated value at EOF");
+  }
   current = strip(current, " ,");
-  if (current.size())
-    throw Exception("Error parsing NumPy header: non-empty content at EOF");
+  if (!current.empty()) {
+    throw Exception("Error parsing NumPy header:"
+                    " non-empty content at EOF");
+  }
 
   // std::cerr << "Final keyvalues: {";
   // for (const auto& kv : keyval)

@@ -484,7 +484,7 @@ void run() {
 
   FixelDataType in_vol;
   auto opt = get_options("weighted");
-  if (opt.size()) {
+  if (!opt.empty()) {
     in_vol = FixelDataType::open(opt[0][0]);
     check_dimensions(in_data, in_vol);
   }
@@ -496,7 +496,7 @@ void run() {
 
   opt = get_options("fill");
   float fill_value = 0.0;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (op == 12) {
       fill_value = opt[0][0];
     } else {

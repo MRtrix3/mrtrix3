@@ -7,7 +7,7 @@ on:
     merge_group:
       types: [checks_requested]
       branches: [master]
-      
+
 jobs:
   linux-clang-build:
     runs-on: ubuntu-latest
@@ -25,11 +25,11 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-distutils
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
-    
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
@@ -59,6 +59,13 @@ jobs:
     - name: binary tests
       run: cd build && ctest -R bin --output-on-failure
 
+    - name: check command documentation
+      run: ./docs/generate_user_docs.sh --build-dir build && git diff --exit-code docs/
+
+
+
+
+
   linux-gcc-build:
 
     runs-on: ubuntu-latest
@@ -80,12 +87,12 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
-    
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
         cmakeVersion: '3.16.3'
-    
+
     - name: Print CMake version
       run: cmake --version
 
@@ -128,7 +135,7 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
-  
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
@@ -158,8 +165,9 @@ jobs:
     - name: binary tests
       run: cd build && ctest -R bin --output-on-failure
 
-    - name: check command documentation
-      run: ./docs/generate_user_docs.sh --build-dir ./build && git diff --exit-code docs/
+
+
+
 
   windows-build:
 
@@ -202,12 +210,12 @@ jobs:
 
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.4
-      
+
       - name: export sccache to msys2 shell
         run: |
           export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
           echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
-      
+
       - name: configure
         run: >
             cmake
@@ -221,10 +229,10 @@ jobs:
 
       - name: build
         run: cmake --build build
-      
+
       - name: unit tests
         run: cd build && ctest -R unit --output-on-failure
-  
+
       - name: binary tests
         run: cd build && ctest -R bin --output-on-failure
 
@@ -236,7 +244,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    
+
     - name: install dependencies
       run: |
         sudo apt-get update

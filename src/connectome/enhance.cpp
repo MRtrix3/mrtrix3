@@ -37,7 +37,7 @@ void NBS::operator()(in_column_type in, const value_type T, out_column_type out)
       std::vector<size_t> to_expand(1, seed);
       size_t cluster_size = 0;
 
-      while (to_expand.size()) {
+      while (!to_expand.empty()) {
 
         const uint32_t index = to_expand.back();
         to_expand.pop_back();

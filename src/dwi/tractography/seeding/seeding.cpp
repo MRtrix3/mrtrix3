@@ -137,9 +137,9 @@ void load_seed_mechanisms(Properties &properties) {
   }
 
   opt = get_options("seed_gmwmi");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto opt_act = get_options("act");
-    if (!opt_act.size())
+    if (opt_act.empty())
       throw Exception("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
     for (size_t i = 0; i < opt.size(); ++i) {
       GMWMI *seed = new GMWMI(opt[i][0], str(opt_act[0][0]));
@@ -150,7 +150,7 @@ void load_seed_mechanisms(Properties &properties) {
   // Can't instantiate the dynamic seeder here; internal FMLS segmenter has to use the same Directions::Set as
   // TrackMapperDixel
   opt = get_options("seed_dynamic");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (list.num_seeds())
       throw Exception("If performing dynamic streamline seeding, cannot specify any other type of seed!");
     properties["seed_dynamic"] = str(opt[0][0]);
@@ -161,27 +161,27 @@ void load_seed_mechanisms(Properties &properties) {
 
 void load_seed_parameters(Properties &properties) {
   auto opt = get_options("seeds");
-  if (opt.size())
+  if (!opt.empty())
     properties["max_num_seeds"] = str<unsigned int>(opt[0][0]);
 
   opt = get_options("max_attempts_per_seed");
-  if (opt.size())
+  if (!opt.empty())
     properties["max_seed_attempts"] = str<unsigned int>(opt[0][0]);
 
   opt = get_options("seed_cutoff");
-  if (opt.size())
+  if (!opt.empty())
     properties["init_threshold"] = std::string(opt[0][0]);
 
   opt = get_options("seed_unidirectional");
-  if (opt.size())
+  if (!opt.empty())
     properties["unidirectional"] = "1";
 
   opt = get_options("seed_direction");
-  if (opt.size())
+  if (!opt.empty())
     properties["init_direction"] = std::string(opt[0][0]);
 
   opt = get_options("output_seeds");
-  if (opt.size())
+  if (!opt.empty())
     properties["seed_output"] = std::string(opt[0][0]);
 }
 

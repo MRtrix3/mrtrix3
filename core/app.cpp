@@ -323,7 +323,7 @@ Example::operator std::string() const { return title + ": $ " + code + "  " + de
 std::string Example::syntax(int format) const {
   std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", HELP_PURPOSE_INDENT);
   s += std::string(HELP_EXAMPLE_INDENT, ' ') + "$ " + code + "\n";
-  if (description.size())
+  if (!description.empty())
     s += paragraph("", description, HELP_PURPOSE_INDENT);
   if (format)
     s += "\n";
@@ -501,7 +501,7 @@ std::string Argument::usage() const {
     assert(0);
   }
   stream << "\n";
-  if (desc.size())
+  if (!desc.empty())
     stream << desc << "\n";
 
   return stream.str();
@@ -512,7 +512,7 @@ std::string Option::usage() const {
   stream << "OPTION " << id << " " << (flags & Optional ? '1' : '0') << " " << (flags & AllowMultiple ? '1' : '0')
          << "\n";
 
-  if (desc.size())
+  if (!desc.empty())
     stream << desc << "\n";
 
   for (size_t i = 0; i < size(); ++i)
@@ -537,7 +537,7 @@ void print_help() {
   // CONF empty to send directly to the terminal).
   const std::string help_display_command = File::Config::get("HelpCommand", MRTRIX_HELP_COMMAND);
 
-  if (help_display_command.size()) {
+  if (!help_display_command.empty()) {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
@@ -552,7 +552,7 @@ void print_help() {
     INFO("error launching help display command \"" + help_display_command + "\"");
   }
 
-  if (help_display_command.size())
+  if (!help_display_command.empty())
     INFO("displaying help page using fail-safe output:\n");
 
   print(get_help_string(0));
@@ -637,18 +637,18 @@ std::string markdown_usage() {
   for (size_t i = 0; i < ARGUMENTS.size(); ++i)
     s += std::string("- *") + ARGUMENTS[i].id + "*: " + ARGUMENTS[i].desc + "\n";
 
-  if (DESCRIPTION.size()) {
+  if (!DESCRIPTION.empty()) {
     s += "\n## Description\n\n";
     for (size_t i = 0; i < DESCRIPTION.size(); ++i)
       s += std::string(DESCRIPTION[i]) + "\n\n";
   }
 
-  if (EXAMPLES.size()) {
+  if (!EXAMPLES.empty()) {
     s += "\n## Example usages\n\n";
     for (size_t i = 0; i < EXAMPLES.size(); ++i) {
       s += std::string("__") + EXAMPLES[i].title + ":__\n";
       s += std::string("`$ ") + EXAMPLES[i].code + "`\n";
-      if (EXAMPLES[i].description.size())
+      if (!EXAMPLES[i].description.empty())
         s += EXAMPLES[i].description + "\n";
       s += "\n";
     }
@@ -761,7 +761,7 @@ std::string restructured_text_usage() {
   }
   s += "\n";
 
-  if (DESCRIPTION.size()) {
+  if (!DESCRIPTION.empty()) {
     s += "Description\n-----------\n\n";
     for (size_t i = 0; i < DESCRIPTION.size(); ++i) {
       auto desc = split_lines(DESCRIPTION[i], false);
@@ -772,12 +772,12 @@ std::string restructured_text_usage() {
     }
   }
 
-  if (EXAMPLES.size()) {
+  if (!EXAMPLES.empty()) {
     s += "Example usages\n--------------\n\n";
     for (size_t i = 0; i < EXAMPLES.size(); ++i) {
       s += std::string("-   *") + EXAMPLES[i].title + "*::\n\n";
       s += std::string("        $ ") + EXAMPLES[i].code + "\n\n";
-      if (EXAMPLES[i].description.size())
+      if (!EXAMPLES[i].description.empty())
         s += std::string("    ") + EXAMPLES[i].description + "\n\n";
     }
   }
@@ -851,7 +851,7 @@ const Option *match_option(const char *arg) {
     get_matches(candidates, __standard_options, root);
 
     // no matches
-    if (candidates.size() == 0)
+    if (candidates.empty())
       throw Exception(std::string("unknown option \"-") + root + "\"");
 
     // return match if unique:
@@ -897,15 +897,13 @@ void sort_arguments(int argc, const char *const *argv) {
 }
 
 void parse_standard_options() {
-  if (get_options("info").size()) {
-    if (log_level < 2)
-      log_level = 2;
-  }
-  if (get_options("debug").size())
+  if (!get_options("info").empty())
+    log_level = std::max(log_level, 2);
+  if (!get_options("debug").empty())
     log_level = 3;
-  if (get_options("quiet").size())
+  if (!get_options("quiet").empty())
     log_level = 0;
-  if (get_options("force").size()) {
+  if (!get_options("force").empty()) {
     WARN("existing output files will be overwritten");
     overwrite_files = true;
   }
@@ -945,21 +943,20 @@ void parse() {
 
   sort_arguments(argc, argv);
 
-  if (get_options("help").size()) {
+  if (!get_options("help").empty()) {
     print_help();
     throw 0;
   }
-  if (get_options("version").size()) {
+  if (!get_options("version").empty()) {
     print(version_string());
     throw 0;
   }
 
-  size_t num_args_required = 0, num_command_arguments = 0;
+  size_t num_args_required = 0;
   size_t num_optional_arguments = 0;
 
   ArgFlags flags = None;
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    ++num_command_arguments;
     if (ARGUMENTS[i].flags) {
       if (flags && flags != ARGUMENTS[i].flags)
         throw Exception("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in "
@@ -972,7 +969,7 @@ void parse() {
       ++num_args_required;
   }
 
-  if (!option.size() && !argument.size() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
+  if (option.empty() && argument.empty() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
     print_help();
     throw 0;
   }
@@ -1001,7 +998,7 @@ void parse() {
           }
         }
       }
-      if (potential_options.size())
+      if (!potential_options.empty())
         e.push_back("(Did you mean " + join(potential_options, " or ") + "?)");
     }
     throw e;

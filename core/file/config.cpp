@@ -127,7 +127,7 @@ float Config::get_float(const std::string &key, float default_value) {
 
 void Config::get_RGB(const std::string &key, float *ret, float default_R, float default_G, float default_B) {
   std::string value = get(key);
-  if (value.size()) {
+  if (!value.empty()) {
     try {
       std::vector<default_type> V(parse_floats(value));
       if (V.size() < 3)

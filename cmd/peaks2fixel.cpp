@@ -80,16 +80,17 @@ void run() {
   }
   INFO("Number of fixels in input peaks image: " + str(nfixels));
   if (all_unit_norm) {
-    if (dataname.size()) {
-      WARN("Input peaks image appears to not include amplitude information; "
-           "requested data file \"" +
-           dataname + "\" will likely contain only ones");
+    if (!dataname.empty()) {
+      WARN(std::string("Input peaks image appears to not include amplitude information;") + //
+           " requested data file \"" + dataname + "\" will likely contain only ones");
     } else {
-      INFO("All peaks have unit norm; no need to create amplitudes fixel data file");
+      INFO("All peaks have unit norm;"
+           " no need to create amplitudes fixel data file");
     }
-  } else if (!dataname.size()) {
+  } else if (dataname.empty()) {
     dataname = "amplitudes.mif";
-    INFO("Peaks have variable amplitudes; will create additional fixel data file \"" + dataname + "\"");
+    INFO(std::string("Peaks have variable amplitudes;") +                 //
+         " will create additional fixel data file \"" + dataname + "\""); //
   }
 
   Fixel::check_fixel_directory(argument[1], true, true);
@@ -110,7 +111,7 @@ void run() {
   auto directions_image = Image<float>::create(Path::join(argument[1], "directions.mif"), directions_header);
 
   Image<float> amplitudes_image;
-  if (dataname.size()) {
+  if (!dataname.empty()) {
     Header amplitudes_header = Fixel::data_header_from_index(index_header);
     amplitudes_image = Image<float>::create(Path::join(argument[1], dataname), amplitudes_header);
   }
@@ -121,7 +122,7 @@ void run() {
     index_image.index(3) = 0;
     index_image.value() = dirs.size();
     index_image.index(3) = 1;
-    index_image.value() = dirs.size() ? output_index : 0;
+    index_image.value() = dirs.empty() ? 0 : output_index;
     for (auto d : dirs) {
       directions_image.index(0) = output_index;
       if (amplitudes_image.valid()) {

@@ -105,7 +105,7 @@ void run() {
 
   Image<bool> mask;
   auto opt = get_options("mask");
-  if (opt.size())
+  if (!opt.empty())
     mask = Image<bool>::open(opt[0][0]);
 
   if (argument.size() == 2) {
