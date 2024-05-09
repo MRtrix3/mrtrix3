@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_io_mosaic_h__
-#define __image_io_mosaic_h__
+#pragma once
 
 #include "file/mmap.h"
 #include "image_io/base.h"
@@ -44,5 +43,3 @@ protected:
 
 } // namespace ImageIO
 } // namespace MR
-
-#endif

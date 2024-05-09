@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_ordered_thread_queue_h__
-#define __mrtrix_ordered_thread_queue_h__
+#pragma once
 
 #include "thread_queue.h"
 #include <set>
@@ -324,5 +323,3 @@ inline void run_ordered_queue(Source &&source,
 }
 
 } // namespace MR::Thread
-
-#endif

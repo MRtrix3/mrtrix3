@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_fixel_directory_h__
-#define __gui_mrview_tool_fixel_directory_h__
+#pragma once
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
@@ -38,5 +37,3 @@ protected:
   void lazy_load_fixel_value_file(const std::string &key) const;
 };
 } // namespace MR::GUI::MRView::Tool
-
-#endif

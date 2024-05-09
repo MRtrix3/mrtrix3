@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __testing_unittests_tractography_roiunittests_h__
-#define __testing_unittests_tractography_roiunittests_h__
+#pragma once
 
 #include "dwi/tractography/roi.h"
 #include "unit_tests/unit_test.h"
@@ -418,5 +417,3 @@ private:
   ROIOrderedSet ordered;
 };
 } // namespace MR::Testing::UnitTests::Tractography
-
-#endif

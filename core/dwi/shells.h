@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_shells_h__
-#define __dwi_shells_h__
+#pragma once
 
 #include <fstream>
 #include <limits>
@@ -152,5 +151,3 @@ private:
 
 } // namespace DWI
 } // namespace MR
-
-#endif

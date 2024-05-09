@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_filter_normalise3D_h__
-#define __image_filter_normalise3D_h__
+#pragma once
 
 #include "adapter/normalise3D.h"
 #include "algo/threaded_copy.h"
@@ -84,5 +83,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

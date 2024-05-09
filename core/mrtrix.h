@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_h__
-#define __mrtrix_h__
+#pragma once
 
 #include <array>
 #include <cstdio>
@@ -373,5 +372,3 @@ template <typename T> inline std::string join(const std::vector<T> &V, const std
 std::string join(const char *const *null_terminated_array, const std::string &delimiter);
 
 } // namespace MR
-
-#endif

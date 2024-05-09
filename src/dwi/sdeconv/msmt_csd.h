@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_sdeconv_msmt_csd_h__
-#define __dwi_sdeconv_msmt_csd_h__
+#pragma once
 
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
@@ -258,5 +257,3 @@ private:
 };
 
 } // namespace MR::DWI::SDeconv
-
-#endif

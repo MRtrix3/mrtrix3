@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_erode_h__
-#define __filter_erode_h__
+#pragma once
 
 #include "algo/copy.h"
 #include "algo/loop.h"
@@ -135,5 +134,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

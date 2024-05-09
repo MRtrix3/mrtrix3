@@ -14,15 +14,17 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_betainc_h__
-#define __math_betainc_h__
+#pragma once
 
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
 #include <unsupported/Eigen/SpecialFunctions>
 #endif
 
+#ifndef MRTRIX_HAVE_LGAMMA_R
+#include <mutex>
+#endif
+
 #include "types.h"
-#include <math.h>
 
 namespace MR::Math {
 
@@ -44,6 +46,8 @@ betaincreg(const Eigen::ArrayBase<ArgADerived> &a,
 
 default_type betaincreg(const default_type a, const default_type b, const default_type x);
 
-} // namespace MR::Math
-
+#ifndef MRTRIX_HAVE_LGAMMA_R
+extern std::mutex mutex_lgamma;
 #endif
+
+} // namespace MR::Math

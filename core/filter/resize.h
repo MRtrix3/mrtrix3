@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_filter_resize_h__
-#define __image_filter_resize_h__
+#pragma once
 
 #include "algo/copy.h"
 #include "filter/base.h"
@@ -170,5 +169,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

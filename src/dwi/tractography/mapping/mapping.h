@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_mapping_h__
-#define __dwi_tractography_mapping_mapping_h__
+#pragma once
 
 #include "header.h"
 #include "progressbar.h"
@@ -37,5 +36,3 @@ void generate_header(Header &, const std::string &, const std::vector<default_ty
 void oversample_header(Header &, const std::vector<default_type> &);
 
 } // namespace MR::DWI::Tractography::Mapping
-
-#endif

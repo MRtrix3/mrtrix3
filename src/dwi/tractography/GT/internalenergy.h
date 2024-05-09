@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_internalenergy_h__
-#define __gt_internalenergy_h__
+#pragma once
 
 #include "types.h"
 
@@ -108,5 +107,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::GT
-
-#endif // __gt_internalenergy_h__

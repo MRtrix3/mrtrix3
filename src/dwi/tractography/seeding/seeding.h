@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_seeding_seeding_h__
-#define __dwi_tractography_seeding_seeding_h__
+#pragma once
 
 #include "dwi/tractography/seeding/basic.h"
 #include "dwi/tractography/seeding/dynamic.h"
@@ -44,5 +43,3 @@ void load_seed_parameters(Properties &);
 } // namespace DWI::Tractography
 
 } // namespace MR
-
-#endif

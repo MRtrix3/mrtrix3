@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_exemplar_h__
-#define __dwi_tractography_connectome_exemplar_h__
+#pragma once
 
 #include <mutex>
 
@@ -79,5 +78,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::Connectome
-
-#endif

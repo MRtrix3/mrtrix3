@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __debug_h__
-#define __debug_h__
+#pragma once
 
 #include <cstring>
 #include <iostream>
@@ -65,5 +64,3 @@ extern std::string NAME;
   }
 
 /** @} */
-
-#endif

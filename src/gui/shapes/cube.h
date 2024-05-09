@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_shapes_cube_h__
-#define __gui_shapes_cube_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
@@ -34,5 +33,3 @@ public:
 };
 
 } // namespace MR::GUI::Shapes
-
-#endif

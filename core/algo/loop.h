@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_loop_h__
-#define __algo_loop_h__
+#pragma once
 
 #include "apply.h"
 #include "image_helpers.h"
@@ -409,5 +408,3 @@ Loop(const std::string &progress_message,
 
 //! @}
 } // namespace MR
-
-#endif

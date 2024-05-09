@@ -907,12 +907,11 @@ void parse() {
     throw 0;
   }
 
-  size_t num_args_required = 0, num_command_arguments = 0;
+  size_t num_args_required = 0;
   size_t num_optional_arguments = 0;
 
   ArgFlags flags = None;
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    ++num_command_arguments;
     if (ARGUMENTS[i].flags) {
       if (flags && flags != ARGUMENTS[i].flags)
         throw Exception("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in "
@@ -1099,7 +1098,9 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
     Exception E("executable was compiled for a different version of the MRtrix3 library!");
     E.push_back(std::string("  ") + NAME + " version: " + executable_uses_mrtrix_version);
     E.push_back(std::string("  library version: ") + mrtrix_version);
-    E.push_back("Running ./build again may correct error");
+    E.push_back("You may need to erase files left over from prior MRtrix3 versions;");
+    E.push_back("eg. core/version.cpp; src/exec_version.cpp");
+    E.push_back(", and re-configure cmake");
     throw E;
   }
 

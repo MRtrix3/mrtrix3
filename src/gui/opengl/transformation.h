@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_opengl_transformation_h__
-#define __gui_opengl_transformation_h__
+#pragma once
 
 #include <iostream>
 
@@ -217,5 +216,3 @@ inline mat4 scale(float x, float y, float z) {
 inline mat4 scale(float s) { return scale(s, s, s); }
 
 } // namespace MR::GUI::GL
-
-#endif

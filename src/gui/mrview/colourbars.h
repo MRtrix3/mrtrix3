@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_colourbars_h__
-#define __gui_mrview_colourbars_h__
+#pragma once
 
 #include "colourmap.h"
 #include "gui/opengl/gl.h"
@@ -92,5 +91,3 @@ private:
 
 } // namespace MRView
 } // namespace MR::GUI
-
-#endif

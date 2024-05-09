@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_nonlinear_h__
-#define __registration_nonlinear_h__
+#pragma once
 
 #include "image.h"
 #include "types.h"
@@ -556,5 +555,3 @@ protected:
   std::shared_ptr<Image<default_type>> im2_update_new;
 };
 } // namespace MR::Registration
-
-#endif

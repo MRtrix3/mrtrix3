@@ -106,16 +106,19 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
   header_mask.ndim() = 3;
   header_mask.datatype() = DataType::Bit;
   auto mask = Image<bool>::scratch(header_mask);
+  size_t voxel_count = 0;
   {
     for (auto i = Loop("Masking image based on DC term", image, 0, 3)(image, mask); i; ++i) {
       const value_type value = image.value();
       if (value && std::isfinite(value)) {
         mask.value() = true;
+        ++voxel_count;
       } else {
         mask.value() = false;
       }
     }
   }
+  INFO(str(voxel_count) + " voxels to be included in calculations");
 
   // Get sums independently for each l
 

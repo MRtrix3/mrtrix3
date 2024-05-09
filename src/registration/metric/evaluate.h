@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_evaluate_h__
-#define __registration_metric_evaluate_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
@@ -273,5 +272,3 @@ protected:
   ssize_t overlap_count;
 };
 } // namespace MR::Registration::Metric
-
-#endif

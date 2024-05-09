@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_sift_h__
-#define __dwi_tractography_sift_sift_h__
+#pragma once
 
 #include "app.h"
 
@@ -33,5 +32,3 @@ extern const App::OptionGroup SIFTTermOption;
 } // namespace DWI::Tractography::SIFT
 
 } // namespace MR
-
-#endif

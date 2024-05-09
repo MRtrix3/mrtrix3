@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __formats_list_h__
-#define __formats_list_h__
+#pragma once
 
 #include "header.h"
 
@@ -111,5 +110,3 @@ extern MRtrix mrtrix_handler;
 //! \endcond
 
 } // namespace MR::Formats
-
-#endif

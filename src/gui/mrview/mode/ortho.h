@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_mode_ortho_h__
-#define __gui_mrview_mode_ortho_h__
+#pragma once
 
 #include "app.h"
 #include "gui/mrview/mode/slice.h"
@@ -49,5 +48,3 @@ protected:
 };
 
 } // namespace MR::GUI::MRView::Mode
-
-#endif

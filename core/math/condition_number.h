@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_condition_number_h__
-#define __math_condition_number_h__
+#pragma once
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -33,5 +32,3 @@ template <class M> inline default_type condition_number(const M &data) {
 
 } // namespace Math
 } // namespace MR
-
-#endif

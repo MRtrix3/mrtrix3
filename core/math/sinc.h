@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_sinc_h__
-#define __math_sinc_h__
+#pragma once
 
 #include "math/math.h"
 
@@ -116,5 +115,3 @@ private:
 };
 
 } // namespace MR::Math
-
-#endif

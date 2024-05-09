@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_helpers_h__
-#define __fixel_helpers_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "app.h"
@@ -404,5 +403,3 @@ template <class ValueType> Image<ValueType> open_fixel_data_file(const std::stri
 }
 } // namespace Fixel
 } // namespace MR
-
-#endif

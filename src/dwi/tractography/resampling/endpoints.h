@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_resampling_endpoints_h__
-#define __dwi_tractography_resampling_endpoints_h__
+#pragma once
 
 #include "dwi/tractography/resampling/resampling.h"
 
@@ -31,5 +30,3 @@ public:
 };
 
 } // namespace MR::DWI::Tractography::Resampling
-
-#endif

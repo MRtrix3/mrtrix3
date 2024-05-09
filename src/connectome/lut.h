@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __connectome_lut_h__
-#define __connectome_lut_h__
+#pragma once
 
 #include <map>
 #include <string>
@@ -96,5 +95,3 @@ private:
 std::vector<node_t> get_lut_mapping(const LUT &, const LUT &);
 
 } // namespace MR::Connectome
-
-#endif

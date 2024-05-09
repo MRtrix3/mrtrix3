@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __command_h__
-#define __command_h__
+#pragma once
 
 #ifdef FLUSH_TO_ZERO
 #include <xmmintrin.h>
@@ -114,7 +113,5 @@ int main(int cmdline_argc, char **cmdline_argv) {
   }
   return ::MR::App::exit_error_code;
 }
-
-#endif
 
 #endif

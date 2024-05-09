@@ -56,7 +56,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
   memset(io_handler.get()->header() + header.str().size(), 0, write_offset - header.str().size());
   io_handler->files.push_back(File::Entry(H.name(), offset));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
 bool MRtrix_GZ::check(Header &H, size_t num_axes) const {
@@ -88,7 +88,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::create(Header &H) const {
   File::create(H.name());
   io_handler->files.push_back(File::Entry(H.name(), offset));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
 } // namespace MR::Formats

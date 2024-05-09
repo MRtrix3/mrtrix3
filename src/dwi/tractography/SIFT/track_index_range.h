@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_track_index_range_h__
-#define __dwi_tractography_sift_track_index_range_h__
+#pragma once
 
 #include "dwi/tractography/SIFT/types.h"
 #include "progressbar.h"
@@ -45,5 +44,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::SIFT
-
-#endif
