@@ -88,7 +88,7 @@ int main(int cmdline_argc, char **cmdline_argv) {
     usage();
     ::MR::App::verify_usage();
     ::MR::App::parse_special_options();
-#ifdef __gui_app_h__
+#ifdef GUI_APP_H
     ::MR::GUI::App app(cmdline_argc, cmdline_argv);
 #endif
     ::MR::App::parse();
