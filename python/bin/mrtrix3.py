@@ -14,7 +14,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import imp, os, sys
+import os, sys
 
 try:
   # since importlib code below only works on Python 3.5+
