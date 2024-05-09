@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tensor_h__
-#define __dwi_tensor_h__
+#pragma once
 
 #include "types.h"
 
@@ -117,5 +116,3 @@ template <class VectorType> inline typename VectorType::Scalar tensor2RA(const V
 }
 
 } // namespace MR::DWI
-
-#endif

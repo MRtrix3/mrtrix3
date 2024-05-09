@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift2_regularisation_h__
-#define __dwi_tractography_sift2_regularisation_h__
+#pragma once
 
 #include "dwi/tractography/SIFT2/line_search.h"
 
@@ -58,5 +57,3 @@ inline void dxtvreg_dcoeffx(LineSearchFunctor::Result &result,
 }
 
 } // namespace MR::DWI::Tractography::SIFT2
-
-#endif

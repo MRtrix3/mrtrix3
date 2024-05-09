@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_connectome_h__
-#define __dwi_tractography_connectome_connectome_h__
+#pragma once
 
 #include "app.h"
 #include "image.h"
@@ -43,5 +42,3 @@ extern const App::OptionGroup MetricOptions;
 void setup_metric(Metric &, Image<node_t> &);
 
 } // namespace MR::DWI::Tractography::Connectome
-
-#endif

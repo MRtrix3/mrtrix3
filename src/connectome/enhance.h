@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __connectome_enhance_h__
-#define __connectome_enhance_h__
+#pragma once
 
 #include <memory>
 #include <stdint.h>
@@ -63,5 +62,3 @@ private:
 };
 
 } // namespace MR::Connectome::Enhance
-
-#endif

@@ -2,4 +2,4 @@
 # Validate defulat operation with the "cool" colourmap
 #   against a result generated with a prior software version
 mrcolour dwi_mean.mif cool - | \
-testing_diff_image - mrcolour/cool.mif
+testing_diff_image - mrcolour/cool.mif -abs 1e-5

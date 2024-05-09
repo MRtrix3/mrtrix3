@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_ZSH_h__
-#define __math_ZSH_h__
+#pragma once
 
 #include <Eigen/Dense>
 
@@ -227,5 +226,3 @@ inline VectorType &FA2ZSH(VectorType &zsh,
 }
 
 } // namespace MR::Math::ZSH
-
-#endif

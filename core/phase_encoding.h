@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __phaseencoding_h__
-#define __phaseencoding_h__
+#pragma once
 
 #include <Eigen/Dense>
 #include <array>
@@ -280,5 +279,3 @@ Eigen::MatrixXd load_eddy(const std::string &config_path, const std::string &ind
 }
 
 } // namespace MR::PhaseEncoding
-
-#endif

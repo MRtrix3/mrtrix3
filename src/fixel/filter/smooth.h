@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_filter_smooth_h__
-#define __fixel_filter_smooth_h__
+#pragma once
 
 #include "fixel/filter/base.h"
 #include "fixel/fixel.h"
@@ -71,5 +70,3 @@ protected:
 //! @}
 
 } // namespace MR::Fixel::Filter
-
-#endif

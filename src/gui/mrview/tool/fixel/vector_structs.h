@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_fixel_structs_h__
-#define __gui_mrview_tool_fixel_structs_h__
+#pragma once
 
 namespace MR {
 namespace GUI {
@@ -89,5 +88,3 @@ struct FixelValue {
 } // namespace MRView
 } // namespace GUI
 } // namespace MR
-
-#endif

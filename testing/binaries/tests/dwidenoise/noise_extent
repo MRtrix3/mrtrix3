@@ -5,4 +5,4 @@
 #   based on the mean DWI intensity
 dwidenoise dwi.mif -extent 3 -noise - tmp-denoised.mif -force | \
 testing_diff_image - dwidenoise/noise3.mif \
--image $(mrcalc dwi_mean.mif -abs 1e-4 -mult - | mrfilter - smooth -)
+-image $(mrcalc dwi_mean.mif -abs 2e-4 -mult - | mrfilter - smooth -)

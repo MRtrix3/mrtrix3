@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __misc_bitset_h__
-#define __misc_bitset_h__
+#pragma once
 
 #include <atomic>
 #include <stdint.h>
@@ -248,5 +247,3 @@ private:
 };
 
 } // namespace MR
-
-#endif

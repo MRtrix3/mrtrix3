@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __wrap_r_h__
-#define __wrap_r_h__
+#pragma once
 
 #ifdef MRTRIX_AS_R_LIBRARY
 #ifdef WARN
@@ -25,6 +24,4 @@
 #ifdef WARN
 #undef WARN
 #endif
-#endif
-
 #endif

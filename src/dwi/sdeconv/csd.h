@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_sdeconv_csd_h__
-#define __dwi_sdeconv_csd_h__
+#pragma once
 
 #include "app.h"
 #include "dwi/directions/predefined.h"
@@ -254,5 +253,3 @@ protected:
 };
 
 } // namespace MR::DWI::SDeconv
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_name_parser_h__
-#define __file_name_parser_h__
+#pragma once
 
 #include <memory>
 
@@ -155,5 +154,3 @@ protected:
 };
 
 } // namespace MR::File
-
-#endif

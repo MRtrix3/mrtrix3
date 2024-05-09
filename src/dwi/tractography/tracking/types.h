@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_tracking_types_h__
-#define __dwi_tractography_tracking_types_h__
+#pragma once
 
 #include "image.h"
 #include "interp/linear.h"
@@ -62,5 +61,3 @@ public:
 };
 
 } // namespace MR::DWI::Tractography::Tracking
-
-#endif

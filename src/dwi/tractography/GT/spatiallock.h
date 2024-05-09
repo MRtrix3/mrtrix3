@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_spatiallock_h__
-#define __gt_spatiallock_h__
+#pragma once
 
 #include <Eigen/Dense>
 #include <mutex>
@@ -98,5 +97,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::GT
-
-#endif // __gt_spatiallock_h__

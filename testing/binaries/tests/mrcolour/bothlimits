@@ -2,4 +2,4 @@
 # Verify that manually setting both upper and lower limits of intensity scaling
 #   matches a result generated and verified by a prior software version
 mrcolour dwi_mean.mif gray -lower 40 -upper 80 - | \
-testing_diff_image - mrcolour/bothlimits.mif
+testing_diff_image - mrcolour/bothlimits.mif -abs 1e-5

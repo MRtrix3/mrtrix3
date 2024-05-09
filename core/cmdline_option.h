@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __cmdline_option_h__
-#define __cmdline_option_h__
+#pragma once
 
 #include <cassert>
 #include <limits>
@@ -420,5 +419,3 @@ public:
 } // namespace MR::App
 
 //! @}
-
-#endif

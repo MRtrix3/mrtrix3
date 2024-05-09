@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_filter_smooth_h__
-#define __surface_filter_smooth_h__
+#pragma once
 
 #include "surface/filter/base.h"
 #include "surface/mesh.h"
@@ -45,5 +44,3 @@ private:
 };
 
 } // namespace MR::Surface::Filter
-
-#endif

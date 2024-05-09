@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_noise_estimator_h__
-#define __dwi_noise_estimator_h__
+#pragma once
 
 #include "dwi/gradient.h"
 #include "image.h"
@@ -74,5 +73,3 @@ inline void estimate_noise(InputImageType &dwi, OutputImageType &noise, const Ma
 }
 
 } // namespace MR::DWI
-
-#endif

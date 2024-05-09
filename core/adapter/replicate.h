@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_replicate_h__
-#define __adapter_replicate_h__
+#pragma once
 
 #include "adapter/base.h"
 #include "header.h"
@@ -62,5 +61,3 @@ protected:
 };
 
 } // namespace MR::Adapter
-
-#endif

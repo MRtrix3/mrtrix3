@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_tree_h__
-#define __file_dicom_tree_h__
+#pragma once
 
 #include "file/dicom/patient.h"
 #include "memory.h"
@@ -51,5 +50,3 @@ std::ostream &operator<<(std::ostream &stream, const Tree &item);
 extern std::vector<std::shared_ptr<Series>> (*select_func)(const Tree &tree);
 
 } // namespace MR::File::Dicom
-
-#endif

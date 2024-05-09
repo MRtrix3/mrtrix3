@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_connected_h__
-#define __filter_connected_h__
+#pragma once
 
 #include "image.h"
 #include "memory.h"
@@ -280,5 +279,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

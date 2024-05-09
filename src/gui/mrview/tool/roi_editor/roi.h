@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_roi_editor_roi_h__
-#define __gui_mrview_tool_roi_editor_roi_h__
+#pragma once
 
 #include "memory.h"
 #include "transform.h"
@@ -107,5 +106,3 @@ protected:
 } // namespace GUI::MRView::Tool
 
 } // namespace MR
-
-#endif

@@ -14,9 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_shview_icons_h__
-#define __gui_shview_icons_h__
+#pragma once
 
 // RCC: mrtrix.png
-
-#endif
