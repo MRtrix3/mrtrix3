@@ -130,7 +130,7 @@ void run() {
   const std::string output_path = argument[num_inputs];
 
   // Make sure configuration is sensible
-  if (get_options("tck_weights_in").size() && num_inputs > 1)
+  if (!get_options("tck_weights_in").empty() && num_inputs > 1)
     throw Exception("Cannot use per-streamline weighting with multiple input files");
 
   // Get the consensus streamline properties from among the multiple input files
@@ -201,8 +201,8 @@ void run() {
   Editing::load_properties(properties);
 
   // Parameters that the worker threads need to be aware of, but do not appear in Properties
-  const bool inverse = get_options("inverse").size();
-  const bool ends_only = get_options("ends_only").size();
+  const bool inverse = !get_options("inverse").empty();
+  const bool ends_only = !get_options("ends_only").empty();
 
   // Parameters that the output thread needs to be aware of
   const size_t number = get_option_value("number", size_t(0));

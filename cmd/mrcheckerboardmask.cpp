@@ -24,6 +24,8 @@
 using namespace MR;
 using namespace App;
 
+#define DEFAULT_NUM_TILES 5
+
 // clang-format off
 void usage() {
 
@@ -48,21 +50,16 @@ void usage() {
 
 void run() {
 
-  size_t ntiles = 5;
-  auto opt = get_options("tiles");
-  if (opt.size()) {
-    ntiles = opt[0][0];
-  }
-
-  bool invert = get_options("invert").size();
-  const bool use_NaN = get_options("nan").size();
+  const size_t ntiles = get_option_value("tiles", DEFAULT_NUM_TILES);
+  const bool invert = !get_options("invert").empty();
+  const bool use_NaN = !get_options("nan").empty();
 
   auto in = Image<float>::open(argument[0]);
   check_3D_nonunity(in);
 
-  size_t patchwidth_x = ceil((float)in.size(0) / ntiles);
-  size_t patchwidth_y = ceil((float)in.size(1) / ntiles);
-  size_t patchwidth_z = ceil((float)in.size(2) / ntiles);
+  const size_t patchwidth_x = std::ceil((float)in.size(0) / (float)ntiles);
+  const size_t patchwidth_y = std::ceil((float)in.size(1) / (float)ntiles);
+  const size_t patchwidth_z = std::ceil((float)in.size(2) / (float)ntiles);
 
   Header header_out(in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;

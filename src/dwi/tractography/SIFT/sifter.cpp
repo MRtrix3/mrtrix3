@@ -142,7 +142,7 @@ void SIFTer::perform_filtering() {
         if (App::log_level)
           fprintf(stderr, "\n");
         output_filtered_tracks(tck_file_path, prefix + "_tracks.tck");
-        if (debug_dir.size())
+        if (!debug_dir.empty())
           output_all_debug_images(debug_dir, prefix);
         INFO("\nProportionality coefficient at " + str(tracks_remaining) + " streamlines is " + str(mu()));
         output_at_counts.pop_back();

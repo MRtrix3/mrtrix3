@@ -155,7 +155,7 @@ protected:
     }
 
     for (ssize_t n = 0; n < a.size(); n++) {
-      amp.index(3) = C.dwis.size() ? C.dwis[n] : n;
+      amp.index(3) = C.dwis.empty() ? n : C.dwis[n];
       a[n] = amp.value() * norm;
     }
   }
@@ -189,7 +189,7 @@ void run() {
   std::vector<size_t> bzeros, dwis;
   Eigen::MatrixXd dirs;
   auto opt = get_options("directions");
-  if (opt.size()) {
+  if (!opt.empty()) {
     dirs = File::Matrix::load_matrix(opt[0][0]);
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical(dirs);
@@ -223,8 +223,8 @@ void run() {
 
   auto sh2amp = DWI::compute_SH2amp_mapping(dirs, true, 8);
 
-  bool normalise = get_options("normalise").size();
-  if (normalise && !bzeros.size())
+  const bool normalise = !get_options("normalise").empty();
+  if (normalise && bzeros.empty())
     throw Exception("the normalise option is only available if the input data contains b=0 images.");
 
   header.size(3) = sh2amp.cols();
@@ -234,7 +234,7 @@ void run() {
   Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
 
   opt = get_options("rician");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto noise = Image<value_type>::open(opt[0][0]).with_direct_io();
     ThreadedLoop("mapping amplitudes to SH coefficients", amp, 0, 3).run(Amp2SH(common), SH, amp, noise);
   } else {

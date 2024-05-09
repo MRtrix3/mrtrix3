@@ -36,7 +36,7 @@ FORCE_INLINE std::vector<std::vector<ssize_t>>
 multiContrastSetting2start_nvols(const std::vector<MultiContrastSetting> &mcsettings, size_t &max_n_SH) {
   max_n_SH = 0;
   std::vector<std::vector<ssize_t>> start_nvols;
-  if (mcsettings.size() != 0) {
+  if (!mcsettings.empty()) {
     for (const auto &mc : mcsettings) {
       if (mc.do_reorientation && mc.lmax > 0) {
         start_nvols.emplace_back(std::initializer_list<ssize_t>{(ssize_t)mc.start, (ssize_t)mc.nvols});
@@ -149,10 +149,10 @@ void reorient(FODImageType &input_fod_image,
   assert(directions.cols() > directions.rows());
   std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
-  if (multi_contrast_settings.size())
+  if (!multi_contrast_settings.empty())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
 
-  if (start_nvols.size()) {
+  if (!start_nvols.empty()) {
     assert(max_n_SH > 1);
     ThreadedLoop(input_fod_image, 0, 3)
         .run(LinearKernelMultiContrast<FODImageType>(
@@ -182,10 +182,10 @@ void reorient(const std::string progress_message,
   assert(directions.cols() > directions.rows());
   std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
-  if (multi_contrast_settings.size())
+  if (!multi_contrast_settings.empty())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
 
-  if (start_nvols.size()) {
+  if (!start_nvols.empty()) {
     assert(max_n_SH > 1);
     ThreadedLoop(progress_message, input_fod_image, 0, 3)
         .run(LinearKernelMultiContrast<FODImageType>(
@@ -342,9 +342,9 @@ void reorient_warp(const std::string progress_message,
   check_dimensions(fod_image, warp, 0, 3);
   std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
-  if (multi_contrast_settings.size())
+  if (!multi_contrast_settings.empty())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
-  if (start_nvols.size()) {
+  if (!start_nvols.empty()) {
     DEBUG("reorienting warp using MultiContrast NonLinearKernel");
     ThreadedLoop(progress_message, fod_image, 0, 3)
         .run(NonLinearKernelMultiContrast<FODImageType>(
@@ -367,10 +367,10 @@ void reorient_warp(FODImageType &fod_image,
   check_dimensions(fod_image, warp, 0, 3);
   std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
-  if (multi_contrast_settings.size())
+  if (!multi_contrast_settings.empty())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
 
-  if (start_nvols.size()) {
+  if (!start_nvols.empty()) {
     DEBUG("reorienting warp using MultiContrast NonLinearKernel");
     ThreadedLoop(fod_image, 0, 3)
         .run(NonLinearKernelMultiContrast<FODImageType>(
