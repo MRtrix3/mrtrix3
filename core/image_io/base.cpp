@@ -26,7 +26,7 @@ Base::~Base() {}
 bool Base::is_file_backed() const { return true; }
 
 void Base::open(const Header &header, size_t buffer_size) {
-  if (addresses.size())
+  if (!addresses.empty())
     return;
 
   load(header, buffer_size);

@@ -103,51 +103,51 @@ Loads properties related to streamlines AND loads include etc ROIs.
 void load_streamline_properties_and_rois(Properties &properties) {
 
   // Validity check
-  if (get_options("include_ordered").size() && !get_options("seed_unidirectional").size())
+  if (!get_options("include_ordered").empty() && get_options("seed_unidirectional").empty())
     throw Exception("-include_ordered requires that -seed_unidirectional is set, but this is not so");
 
   using namespace MR::App;
 
   auto opt = get_options("select");
-  if (opt.size())
+  if (!opt.empty())
     properties["max_num_tracks"] = str<unsigned int>(opt[0][0]);
 
   opt = get_options("step");
-  if (opt.size())
+  if (!opt.empty())
     properties["step_size"] = std::string(opt[0][0]);
 
   opt = get_options("angle");
-  if (opt.size())
+  if (!opt.empty())
     properties["max_angle"] = std::string(opt[0][0]);
 
   opt = get_options("minlength");
-  if (opt.size())
+  if (!opt.empty())
     properties["min_dist"] = std::string(opt[0][0]);
 
   opt = get_options("maxlength");
-  if (opt.size())
+  if (!opt.empty())
     properties["max_dist"] = std::string(opt[0][0]);
 
   opt = get_options("cutoff");
-  if (opt.size())
+  if (!opt.empty())
     properties["threshold"] = std::string(opt[0][0]);
 
   opt = get_options("trials");
-  if (opt.size())
+  if (!opt.empty())
     properties["max_trials"] = str<unsigned int>(opt[0][0]);
 
   opt = get_options("noprecomputed");
-  if (opt.size())
+  if (!opt.empty())
     properties["sh_precomputed"] = "0";
 
   opt = get_options("rk4");
-  if (opt.size())
+  if (!opt.empty())
     properties["rk4"] = "1";
 
   load_rois(properties); // rois must be loaded before stop parameter in order to check its validity
 
   opt = get_options("stop");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (properties.include.size() || properties.ordered_include.size())
       properties["stop_on_all_include"] = "1";
     else
@@ -155,11 +155,11 @@ void load_streamline_properties_and_rois(Properties &properties) {
   }
 
   opt = get_options("downsample");
-  if (opt.size())
+  if (!opt.empty())
     properties["downsample_factor"] = str<unsigned int>(opt[0][0]);
 
   opt = get_options("grad");
-  if (opt.size())
+  if (!opt.empty())
     properties["DW_scheme"] = std::string(opt[0][0]);
 }
 

@@ -53,7 +53,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   }
   vertex_buffer.gen();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
-  if (vertices.size())
+  if (!vertices.empty())
     gl::BufferData(gl::ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], gl::STATIC_DRAW);
 
   if (!in.have_normals())
@@ -66,7 +66,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   }
   normal_buffer.gen();
   normal_buffer.bind(gl::ARRAY_BUFFER);
-  if (normals.size())
+  if (!normals.empty())
     gl::BufferData(gl::ARRAY_BUFFER, normals.size() * sizeof(float), &normals[0], gl::STATIC_DRAW);
 
   vertex_array_object.gen();
@@ -86,7 +86,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   }
   index_buffer.gen();
   index_buffer.bind();
-  if (indices.size())
+  if (!indices.empty())
     gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], gl::STATIC_DRAW);
   GL::assert_context_is_current();
 }

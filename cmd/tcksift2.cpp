@@ -143,9 +143,9 @@ void usage() {
 
 void run() {
 
-  if (get_options("min_factor").size() && get_options("min_coeff").size())
+  if (!get_options("min_factor").empty() && !get_options("min_coeff").empty())
     throw Exception("Options -min_factor and -min_coeff are mutually exclusive");
-  if (get_options("max_factor").size() && get_options("max_coeff").size())
+  if (!get_options("max_factor").empty() && !get_options("max_coeff").empty())
     throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
 
   if (Path::has_suffix(argument[2], ".tck"))
@@ -161,7 +161,7 @@ void run() {
   tckfactor.scale_FDs_by_GM();
 
   std::string debug_path = get_option_value<std::string>("output_debug", "");
-  if (debug_path.size()) {
+  if (!debug_path.empty()) {
     tckfactor.initialise_debug_image_output(debug_path);
     tckfactor.output_proc_mask(Path::join(debug_path, "proc_mask.mif"));
   }
@@ -171,19 +171,19 @@ void run() {
 
   tckfactor.remove_excluded_fixels(get_option_value("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
 
-  if (debug_path.size()) {
+  if (!debug_path.empty()) {
     tckfactor.output_TD_images(debug_path, "origTD_fixel.mif", "trackcount_fixel.mif");
     tckfactor.output_all_debug_images(debug_path, "before");
   }
 
-  if (get_options("linear").size()) {
+  if (!get_options("linear").empty()) {
 
     tckfactor.calc_afcsa();
 
   } else {
 
     auto opt = get_options("csv");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_csv_path(opt[0][0]);
 
     const float reg_tikhonov = get_option_value("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
@@ -191,28 +191,28 @@ void run() {
     tckfactor.set_reg_lambdas(reg_tikhonov, reg_tv);
 
     opt = get_options("min_iters");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_min_iters(int(opt[0][0]));
     opt = get_options("max_iters");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_max_iters(int(opt[0][0]));
     opt = get_options("min_factor");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_min_factor(float(opt[0][0]));
     opt = get_options("min_coeff");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_min_coeff(float(opt[0][0]));
     opt = get_options("max_factor");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_max_factor(float(opt[0][0]));
     opt = get_options("max_coeff");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_max_coeff(float(opt[0][0]));
     opt = get_options("max_coeff_step");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_max_coeff_step(float(opt[0][0]));
     opt = get_options("min_cf_decrease");
-    if (opt.size())
+    if (!opt.empty())
       tckfactor.set_min_cf_decrease(float(opt[0][0]));
 
     tckfactor.estimate_factors();
@@ -223,14 +223,14 @@ void run() {
   tckfactor.output_factors(argument[2]);
 
   auto opt = get_options("out_coeffs");
-  if (opt.size())
+  if (!opt.empty())
     tckfactor.output_coefficients(opt[0][0]);
 
-  if (debug_path.size())
+  if (!debug_path.empty())
     tckfactor.output_all_debug_images(debug_path, "after");
 
   opt = get_options("out_mu");
-  if (opt.size()) {
+  if (!opt.empty()) {
     File::OFStream out_mu(opt[0][0]);
     out_mu << tckfactor.mu();
   }

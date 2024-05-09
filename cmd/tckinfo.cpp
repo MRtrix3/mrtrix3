@@ -41,7 +41,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  bool actual_count = get_options("count").size();
+  const bool actual_count = !get_options("count").empty();
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;
@@ -59,7 +59,7 @@ void run() {
         std::cout << "                          " << lines[i] << "\n";
     }
 
-    if (properties.comments.size()) {
+    if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
       for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";

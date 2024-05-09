@@ -70,7 +70,7 @@ void run() {
 
   size_t lmax = 8;
   auto opt = get_options("lmax");
-  if (opt.size())
+  if (!opt.empty())
     lmax = opt[0][0];
   const size_t n_sh_coeff = Math::SH::NforL(lmax);
   Math::SH::aPSF<default_type> aPSF(lmax);

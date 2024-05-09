@@ -136,21 +136,21 @@ void run() {
     Filter::ConnectedComponents filter(
         input_image, std::string("applying connected-component filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
-    if (opt.size()) {
+    if (!opt.empty()) {
       const std::vector<int> axes = opt[0][0];
       filter.set_axes(axes);
     }
     bool largest_only = false;
     opt = get_options("largest");
-    if (opt.size()) {
+    if (!opt.empty()) {
       largest_only = true;
       filter.set_largest_only(true);
     }
     opt = get_options("connectivity");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_26_connectivity(true);
     opt = get_options("minsize");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_minsize(opt[0][0]);
 
     Stride::set_from_command_line(filter);
@@ -171,7 +171,7 @@ void run() {
   if (filter_index == 2) { // Dilate
     Filter::Dilate filter(input_image, std::string("applying dilate filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_npass(int(opt[0][0]));
 
     Stride::set_from_command_line(filter);
@@ -185,7 +185,7 @@ void run() {
   if (filter_index == 3) { // Erode
     Filter::Erode filter(input_image, std::string("applying erode filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_npass(int(opt[0][0]));
 
     Stride::set_from_command_line(filter);
@@ -199,12 +199,12 @@ void run() {
   if (filter_index == 4) { // Fill
     Filter::Fill filter(input_image, std::string("filling interior of image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
-    if (opt.size()) {
+    if (!opt.empty()) {
       const std::vector<int> axes = opt[0][0];
       filter.set_axes(axes);
     }
     opt = get_options("connectivity");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_26_connectivity(true);
     Stride::set_from_command_line(filter);
     auto output_image = Image<value_type>::create(argument[2], filter);
@@ -215,7 +215,7 @@ void run() {
   if (filter_index == 5) { // Median
     Filter::Median filter(input_image, std::string("applying median filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("extent");
-    if (opt.size())
+    if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
 
     Stride::set_from_command_line(filter);
