@@ -909,12 +909,11 @@ void parse() {
     throw 0;
   }
 
-  size_t num_args_required = 0, num_command_arguments = 0;
+  size_t num_args_required = 0;
   size_t num_optional_arguments = 0;
 
   ArgFlags flags = None;
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    ++num_command_arguments;
     if (ARGUMENTS[i].flags) {
       if (flags && flags != ARGUMENTS[i].flags)
         throw Exception("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in "
