@@ -37,7 +37,7 @@ const App::OptionGroup SIFTModelProcMaskOption =
 void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Image<float> &out_5tt) {
   // User-specified processing mask
   auto opt = App::get_options("proc_mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto image = Image<float>::open(opt[0][0]);
     if (!dimensions_match(out_mask, image, 0, 3))
       throw Exception(
@@ -46,7 +46,7 @@ void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Im
 
   } else {
     auto opt = App::get_options("act");
-    if (opt.size()) {
+    if (!opt.empty()) {
 
       auto in_5tt = Image<float>::open(opt[0][0]);
       ACT::verify_5TT_image(in_5tt);

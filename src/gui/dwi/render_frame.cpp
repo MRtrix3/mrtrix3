@@ -249,7 +249,7 @@ void RenderFrame::paintGL() {
     gl::Disable(gl::BLEND);
     gl::Disable(gl::LINE_SMOOTH);
 
-    if (text.size()) {
+    if (!text.empty()) {
       projection.setup_render_text(0.0f, 0.0f, 0.0f);
       projection.render_text(10, 10, text);
       projection.done_render_text();

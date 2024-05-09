@@ -143,7 +143,7 @@ Tck2nodes_forwardsearch::select_node(const Tractography::Streamline<> &tck, Imag
   visited.insert(voxel);
   to_test.insert(std::make_pair(default_type(0.0), voxel));
 
-  while (to_test.size()) {
+  while (!to_test.empty()) {
 
     const voxel_type voxel = to_test.begin()->second;
     to_test.erase(to_test.begin());

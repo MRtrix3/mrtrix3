@@ -30,6 +30,10 @@ using namespace MR::DWI::Tractography;
 using namespace MR::Raw;
 using namespace MR::ByteOrder;
 
+#define DEFAULT_PLY_INCREMENT 1
+#define DEFAULT_PLY_RADIUS 0.1F
+#define DEFAULT_PLY_SIDES 5
+
 // clang-format off
 void usage() {
 
@@ -325,7 +329,10 @@ private:
 
 class PLYWriter : public WriterInterface<float> {
 public:
-  PLYWriter(const std::string &file, int increment = 1, float radius = 0.1, int sides = 5)
+  PLYWriter(const std::string &file,
+            int increment = DEFAULT_PLY_INCREMENT,
+            float radius = DEFAULT_PLY_RADIUS,
+            int sides = DEFAULT_PLY_SIDES)
       : out(file), increment(increment), radius(radius), sides(sides) {
     vertexFilename = File::create_tempfile(0, "vertex");
     faceFilename = File::create_tempfile(0, "face");
@@ -692,9 +699,9 @@ void run() {
     auto write_ascii = get_options("ascii").size();
     writer.reset(new VTKWriter(argument[1], write_ascii));
   } else if (Path::has_suffix(argument[1], ".ply")) {
-    auto increment = get_options("increment").size() ? get_options("increment")[0][0].as_int() : 1;
-    auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
-    auto sides = get_options("sides").size() ? get_options("sides")[0][0].as_int() : 5;
+    const int increment = get_option_value("increment", DEFAULT_PLY_INCREMENT);
+    const float radius = get_option_value("radius", DEFAULT_PLY_RADIUS);
+    const int sides = get_option_value("sides", DEFAULT_PLY_SIDES);
     writer.reset(new PLYWriter(argument[1], increment, radius, sides));
   } else if (Path::has_suffix(argument[1], ".rib")) {
     writer.reset(new RibWriter(argument[1]));
@@ -709,25 +716,25 @@ void run() {
   T.setIdentity();
   size_t nopts = 0;
   auto opt = get_options("scanner2voxel");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).scanner2voxel;
     nopts++;
   }
   opt = get_options("scanner2image");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).scanner2image;
     nopts++;
   }
   opt = get_options("voxel2scanner");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).voxel2scanner;
     nopts++;
   }
   opt = get_options("image2scanner");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).image2scanner;
     nopts++;

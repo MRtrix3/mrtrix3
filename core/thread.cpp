@@ -36,7 +36,7 @@ size_t number_of_threads() {
     return __number_of_threads;
 
   auto opt = App::get_options("nthreads");
-  if (opt.size()) {
+  if (!opt.empty()) {
     __number_of_threads = opt[0][0];
     __nthreads_type = nthreads_t::EXPLICIT;
     return __number_of_threads;
@@ -57,7 +57,7 @@ size_t number_of_threads() {
   // CONF option: NumberOfThreads
   // CONF default: number of threads provided by hardware
   // CONF Set the default number of CPU threads to use for multi-threading.
-  if (File::Config::get("NumberOfThreads").size()) {
+  if (!File::Config::get("NumberOfThreads").empty()) {
     const int i = File::Config::get_int("NumberOfThreads", -1);
     if (i >= 0) {
       __number_of_threads = i;

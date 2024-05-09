@@ -131,7 +131,7 @@ public:
                   const std::string &tck_path,
                   const std::string &wbft_path)
       : DWI::Tractography::SIFT::ModelBase<AFDConnFixel>(fod_buffer, dirs),
-        have_wbft(wbft_path.size()),
+        have_wbft(!wbft_path.empty()),
         all_fixels(false),
         mapper(fod_buffer, dirs),
         v_fod(fod_buffer) {
@@ -287,8 +287,7 @@ void AFDConnectivity::save(const std::string &path) {
 }
 
 void run() {
-  auto opt = get_options("wbft");
-  const std::string wbft_path = opt.size() ? str(opt[0][0]) : "";
+  const std::string wbft_path = get_option_value<std::string>("wbft", "");
 
   DWI::Directions::FastLookupSet dirs(1281);
   auto fod = Image<value_type>::open(argument[0]);
@@ -296,8 +295,8 @@ void run() {
   check_3D_nonunity(fod);
   AFDConnectivity model(fod, dirs, argument[1], wbft_path);
 
-  opt = get_options("all_fixels");
-  model.set_all_fixels(opt.size());
+  auto opt = get_options("all_fixels");
+  model.set_all_fixels(!opt.empty());
 
   const value_type connectivity_value = model.get(argument[1]);
 
@@ -305,6 +304,6 @@ void run() {
   std::cout << connectivity_value << std::endl;
 
   opt = get_options("afd_map");
-  if (opt.size())
+  if (!opt.empty())
     model.save(opt[0][0]);
 }

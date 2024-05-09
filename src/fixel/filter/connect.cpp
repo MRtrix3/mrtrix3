@@ -58,7 +58,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
         std::stack<index_type, std::vector<index_type>> to_expand;
         to_expand.push(seed);
         const size_t cluster_index = cluster_sizes.size() + 1;
-        while (to_expand.size()) {
+        while (!to_expand.empty()) {
           const index_type index = to_expand.top();
           to_expand.pop();
           output.index(0) = index;

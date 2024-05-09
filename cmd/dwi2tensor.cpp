@@ -282,12 +282,12 @@ void run() {
 
   Image<bool> mask;
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(dwi, mask, 0, 3);
   }
 
-  bool ols = get_options("ols").size();
+  const bool ols = !get_options("ols").empty();
 
   // depending on whether first (initialisation) loop should be considered an iteration
   auto iter = get_option_value("iter", DEFAULT_NITER);
@@ -300,7 +300,7 @@ void run() {
 
   Image<value_type> predict;
   opt = get_options("predicted_signal");
-  if (opt.size())
+  if (!opt.empty())
     predict = Image<value_type>::create(opt[0][0], header);
 
   header.size(3) = 6;
@@ -308,15 +308,14 @@ void run() {
 
   Image<value_type> b0;
   opt = get_options("b0");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     b0 = Image<value_type>::create(opt[0][0], header);
   }
 
   Image<value_type> dkt;
   opt = get_options("dkt");
-  bool dki = opt.size() > 0;
-
+  const bool dki = !opt.empty();
   if (dki) {
     header.ndim() = 4;
     header.size(3) = 15;
@@ -325,14 +324,13 @@ void run() {
 
   Eigen::MatrixXd A = -DWI::grad2bmatrix<double>(grad, dki);
 
-  bool constrain = get_options("constrain").size();
-
+  const bool constrain = !get_options("constrain").empty();
   Eigen::MatrixXd Aneq;
   if (constrain) {
     opt = get_options("directions");
     const Eigen::MatrixXd constr_dirs =
-        opt.size() ? File::Matrix::load_matrix(opt[0][0])
-                   : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+        !opt.empty() ? File::Matrix::load_matrix(opt[0][0])
+                     : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double>(constr_dirs, dki);
     if (dki) {
       auto maxb = grad.col(3).maxCoeff();

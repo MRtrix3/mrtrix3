@@ -279,7 +279,7 @@ void run() {
 
   Header header;
   auto opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto template_header = Header::open(opt[0][0]);
     header = template_header;
     header.keyval().clear();
@@ -301,17 +301,17 @@ void run() {
   header.keyval()["tck_source"] = std::string(argument[0]);
 
   opt = get_options("contrast");
-  const contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
+  const contrast_t contrast = !opt.empty() ? contrast_t(int(opt[0][0])) : TDI;
 
   opt = get_options("stat_vox");
-  vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_SUM;
+  vox_stat_t stat_vox = !opt.empty() ? vox_stat_t(int(opt[0][0])) : V_SUM;
 
   opt = get_options("stat_tck");
-  tck_stat_t stat_tck = opt.size() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
+  tck_stat_t stat_tck = !opt.empty() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
 
   float gaussian_fwhm_tck = 0.0;
   opt = get_options("fwhm_tck");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (stat_tck != GAUSSIAN) {
       WARN("Overriding per-track statistic to Gaussian as a full-width half-maximum has been provided.");
       stat_tck = GAUSSIAN;
@@ -323,7 +323,7 @@ void run() {
   }
 
   bool backtrack = false;
-  if (get_options("backtrack").size()) {
+  if (!get_options("backtrack").empty()) {
     if (stat_tck == ENDS_CORR || stat_tck == ENDS_MAX || stat_tck == ENDS_MEAN || stat_tck == ENDS_MIN ||
         stat_tck == ENDS_PROD)
       backtrack = true;
@@ -335,7 +335,7 @@ void run() {
   writer_dim writer_type = GREYSCALE;
 
   opt = get_options("dec");
-  if (opt.size()) {
+  if (!opt.empty()) {
     writer_type = DEC;
     header.ndim() = 4;
     header.size(3) = 3;
@@ -345,7 +345,7 @@ void run() {
 
   std::unique_ptr<Directions::FastLookupSet> dirs;
   opt = get_options("dixel");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (writer_type != GREYSCALE)
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = DIXEL;
@@ -369,7 +369,7 @@ void run() {
   }
 
   opt = get_options("tod");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (writer_type != GREYSCALE)
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = TOD;
@@ -433,9 +433,9 @@ void run() {
     header.keyval()["twi_backtrack"] = "1";
 
   // Figure out how the streamlines will be mapped
-  const bool precise = get_options("precise").size();
+  const bool precise = !get_options("precise").empty();
   header.keyval()["precise_mapping"] = precise ? "1" : "0";
-  const bool ends_only = get_options("ends_only").size();
+  const bool ends_only = !get_options("ends_only").empty();
   if (ends_only) {
     if (precise)
       throw Exception("Options -precise and -ends_only are mutually exclusive");
@@ -444,7 +444,7 @@ void run() {
 
   size_t upsample_ratio = 1;
   opt = get_options("upsample");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (ends_only) {
       WARN("cannot use upsampling if only streamline endpoints are to be mapped");
     } else {
@@ -471,18 +471,19 @@ void run() {
     header.datatype() = DataType::Float32;
 
   opt = get_options("datatype");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (writer_type == DEC || writer_type == TOD) {
-      WARN("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) +
-           " processing - overriding to Float32");
+      WARN("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) + " processing;" + //
+           " overriding to Float32");
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
     }
   }
 
-  const bool have_weights = get_options("tck_weights_in").size();
+  const bool have_weights = !get_options("tck_weights_in").empty();
   if (have_weights && header.datatype().is_integer()) {
-    WARN("Can't use an integer type if streamline weights are provided; overriding to Float32");
+    WARN("Can't use an integer type if streamline weights are provided;"
+         " overriding to Float32");
     header.datatype() = DataType::Float32;
   }
 
@@ -495,7 +496,7 @@ void run() {
 
   // Whether or not to still ,ap streamlines even if the factor is zero
   //   (can still affect output image if voxel-wise statistic is mean)
-  const bool map_zero = get_options("map_zero").size();
+  const bool map_zero = !get_options("map_zero").empty();
   if (map_zero)
     header.keyval()["map_zero"] = "1";
 
@@ -611,7 +612,7 @@ void run() {
     mapper->create_tod_plugin(header.size(3));
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
     opt = get_options("image");
-    if (!opt.size()) {
+    if (opt.empty()) {
       if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
         throw Exception("If using 'scalar_map' or 'scalar_map_count' contrast, must provide the relevant scalar image "
                         "using -image option");
@@ -630,7 +631,7 @@ void run() {
     header.keyval()["twi_assoc_image"] = Path::basename(assoc_image);
   } else if (contrast == VECTOR_FILE) {
     opt = get_options("vector_file");
-    if (!opt.size())
+    if (opt.empty())
       throw Exception(
           "If using 'vector_file' contrast, must provide the relevant data file using the -vector_file option");
     const std::string path(opt[0][0]);

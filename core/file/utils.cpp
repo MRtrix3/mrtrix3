@@ -28,7 +28,7 @@ namespace MR::File {
 
 namespace {
 inline char random_char() {
-  char c = rand() % 62;
+  const char c = rand() % 62;
   if (c < 10)
     return c + 48;
   if (c < 36)
@@ -61,7 +61,7 @@ inline char random_char() {
 // ENVVAR modifying the configuration  file.
 const std::string __get_tmpfile_dir() {
   const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR");
-  if (from_env_mrtrix)
+  if (from_env_mrtrix != nullptr)
     return from_env_mrtrix;
 
   const char *default_tmpdir =
@@ -73,7 +73,7 @@ const std::string __get_tmpfile_dir() {
       ;
 
   const char *from_env_general = getenv("TMPDIR");
-  if (from_env_general)
+  if (from_env_general != nullptr)
     default_tmpdir = from_env_general;
 
   return File::Config::get("TmpFileDir", default_tmpdir);
@@ -101,7 +101,7 @@ const std::string &tmpfile_dir() {
 // ENVVAR without modifying the configuration file.
 const std::string __get_tmpfile_prefix() {
   const char *from_env = getenv("MRTRIX_TMPFILE_PREFIX");
-  if (from_env)
+  if (from_env != nullptr)
     return from_env;
   return File::Config::get("TmpFilePrefix", "mrtrix-tmp-");
 }
@@ -114,15 +114,15 @@ const std::string &tmpfile_prefix() {
 } // namespace
 
 void remove(const std::string &file) {
-  if (std::remove(file.c_str()))
+  if (std::remove(file.c_str()) != 0)
     throw Exception("error deleting file \"" + file + "\": " + strerror(errno));
 }
 
 void create(const std::string &filename, int64_t size) {
   DEBUG(std::string("creating ") + (size ? "" : "empty ") + "file \"" + filename + "\"" +
-        (size ? " with size " + str(size) : ""));
+        (size == 0 ? "" : (" with size " + str(size))));
 
-  int fid;
+  int fid(0);
   while ((fid = open(filename.c_str(),
                      O_CREAT | O_RDWR | O_EXCL,
                      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) < 0) {
@@ -140,30 +140,30 @@ void create(const std::string &filename, int64_t size) {
     throw Exception(mesg);
   }
 
-  if (size)
+  if (size != 0)
     size = ftruncate(fid, size);
   close(fid);
 
-  if (size)
+  if (size != 0)
     throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
 }
 
 void resize(const std::string &filename, int64_t size) {
   DEBUG("resizing file \"" + filename + "\" to " + str(size));
 
-  int fd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+  const int fd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   if (fd < 0)
     throw Exception("error opening file \"" + filename + "\" for resizing: " + strerror(errno));
-  int status = ftruncate(fd, size);
+  const int status = ftruncate(fd, size);
   close(fd);
-  if (status)
+  if (status != 0)
     throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
 }
 
 bool is_tempfile(const std::string &name, const char *suffix) {
-  if (Path::basename(name).compare(0, tmpfile_prefix().size(), tmpfile_prefix()))
+  if (Path::basename(name).compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
     return false;
-  if (suffix)
+  if (suffix != nullptr)
     if (!Path::has_suffix(name, suffix))
       return false;
   return true;
@@ -173,11 +173,11 @@ std::string create_tempfile(int64_t size, const char *suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
   std::string filename(Path::join(tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
-  int rand_index = filename.size() - 7;
-  if (suffix)
+  const int rand_index = filename.size() - 7;
+  if (suffix != nullptr)
     filename += suffix;
 
-  int fid;
+  int fid(0);
   do {
     for (int n = 0; n < 6; n++)
       filename[rand_index + n] = random_char();
@@ -188,7 +188,7 @@ std::string create_tempfile(int64_t size, const char *suffix) {
     throw Exception(std::string("error creating temporary file in directory \"" + tmpfile_dir() + "\": ") +
                     strerror(errno));
 
-  int status = size ? ftruncate(fid, size) : 0;
+  const int status = size == 0 ? 0 : ftruncate(fid, size);
   close(fid);
   if (status)
     throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
@@ -202,7 +202,7 @@ void mkdir(const std::string &folder) {
                   ,
               0777
 #endif
-              ))
+              ) != 0)
     throw Exception("error creating folder \"" + folder + "\": " + strerror(errno));
 }
 
@@ -210,7 +210,7 @@ void rmdir(const std::string &folder, bool recursive) {
   if (recursive) {
     Path::Dir dir(folder);
     std::string entry;
-    while ((entry = dir.read_name()).size()) {
+    while (!(entry = dir.read_name()).empty()) {
       std::string path = Path::join(folder, entry);
       if (Path::is_dir(path))
         rmdir(path, true);

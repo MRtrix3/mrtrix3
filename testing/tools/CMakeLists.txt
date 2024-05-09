@@ -19,6 +19,8 @@ set(PYTHON_TOOLS_SRCS
     testing_gen_npy
 )
 
+add_custom_target(testing_tools)
+
 function(add_testing_cmd CMD_SRC)
     # Extract the filename without an extension (NAME_WE)
     get_filename_component(CMD_NAME ${CMD} NAME_WE)
@@ -29,6 +31,7 @@ function(add_testing_cmd CMD_SRC)
         mrtrix::tests-lib
     )
     set_target_properties(${CMD_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
+    add_dependencies(testing_tools ${CMD_NAME})
 endfunction()
 
 
