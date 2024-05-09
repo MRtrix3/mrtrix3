@@ -64,7 +64,7 @@ public:
   template <class InputImageType, class OutputImageType>
   void operator()(InputImageType &input, OutputImageType &output) {
 
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
     if (progress)
       ++(*progress);

@@ -43,6 +43,7 @@ using namespace MR;
 using namespace App;
 
 const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", nullptr};
+#define DEFAULT_INTERP 2 // cubic
 const char *modulation_choices[] = {"fod", "jac", nullptr};
 
 // clang-format off
@@ -148,9 +149,9 @@ void usage() {
         " (i.e. half way between image1 and image2)")
 
     + Option ("interp",
-        "set the interpolation method to use when reslicing"
+        std::string("set the interpolation method to use when reslicing") +
         " (choices: nearest, linear, cubic, sinc."
-        " Default: cubic).")
+        " Default: " + interp_choices[DEFAULT_INTERP] + ").")
       + Argument ("method").type_choice(interp_choices)
 
     + Option ("oversample",
@@ -287,7 +288,7 @@ void run() {
   transform_type linear_transform = transform_type::Identity();
   bool linear = false;
   auto opt = get_options("linear");
-  if (opt.size()) {
+  if (!opt.empty()) {
     linear = true;
     linear_transform = File::Matrix::load_transform(opt[0][0]);
   }
@@ -295,7 +296,7 @@ void run() {
   // Replace
   bool replace = false;
   opt = get_options("replace");
-  if (opt.size()) {
+  if (!opt.empty()) {
     linear = replace = true;
     try {
       auto template_header = Header::open(opt[0][0]);
@@ -309,7 +310,7 @@ void run() {
     }
   }
 
-  if (get_options("identity").size()) {
+  if (!get_options("identity").empty()) {
     linear = replace = true;
     linear_transform.setIdentity();
   }
@@ -317,7 +318,7 @@ void run() {
   // Template
   opt = get_options("template");
   Header template_header;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (replace)
       throw Exception("you cannot use the -replace option with the -template option");
     if (!linear)
@@ -334,23 +335,25 @@ void run() {
   // TODO add reference to warp format documentation
   opt = get_options("warp_full");
   Image<default_type> warp;
-  if (opt.size()) {
-    if (!Path::is_mrtrix_image(opt[0][0]) &&
-        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) && File::Config::get_bool("NIfTIAutoLoadJSON", false) &&
-          Path::exists(File::NIfTI::get_json_path(opt[0][0]))))
+  if (!opt.empty()) {
+    if (!Path::is_mrtrix_image(opt[0][0]) &&                    //
+        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&   //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
+          Path::exists(File::NIfTI::get_json_path(opt[0][0])))) {
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
            "Converting to other file formats may remove linear transformations stored in the image header.");
+    }
     warp = Image<default_type>::open(opt[0][0]).with_direct_io();
     Registration::Warp::check_warp_full(warp);
     if (linear)
-      throw Exception("the -warp_full option cannot be applied in combination with -linear since the "
-                      "linear transform is already included in the warp header");
+      throw Exception("the -warp_full option cannot be applied in combination with -linear"
+                      " since the linear transform is already included in the warp header");
   }
 
   // Warp from image1 or image2
   int from = 1;
   opt = get_options("from");
-  if (opt.size()) {
+  if (!opt.empty()) {
     from = opt[0][0];
     if (!warp.valid())
       WARN("-from option ignored since no 5D warp was input");
@@ -358,7 +361,7 @@ void run() {
 
   // Warp deformation field
   opt = get_options("warp");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (warp.valid())
       throw Exception("only one warp field can be input with either -warp or -warp_mid");
     warp = Image<default_type>::open(opt[0][0]).with_direct_io(Stride::contiguous_along_axis(3));
@@ -369,7 +372,7 @@ void run() {
   }
 
   // Inverse
-  const bool inverse = get_options("inverse").size();
+  const bool inverse = !get_options("inverse").empty();
   if (inverse) {
     if (!(linear || warp.valid()))
       throw Exception("no linear or warp transformation provided for option '-inverse'");
@@ -382,7 +385,7 @@ void run() {
   }
 
   // Half
-  const bool half = get_options("half").size();
+  const bool half = !get_options("half").empty();
   if (half) {
     if (!(linear))
       throw Exception("no linear transformation provided for option '-half'");
@@ -397,7 +400,7 @@ void run() {
   // Flip
   opt = get_options("flip");
   std::vector<int32_t> axes;
-  if (opt.size()) {
+  if (!opt.empty()) {
     axes = parse_ints<int32_t>(opt[0][0]);
     transform_type flip;
     flip.setIdentity();
@@ -420,15 +423,17 @@ void run() {
   Stride::List stride = Stride::get(input_header);
 
   // Detect FOD image
-  bool is_possible_fod_image = input_header.ndim() == 4 && input_header.size(3) >= 6 &&
-                               input_header.size(3) == (int)Math::SH::NforL(Math::SH::LforN(input_header.size(3)));
+  const bool is_possible_fod_image =
+      input_header.ndim() == 4 &&  //
+      input_header.size(3) >= 6 && //
+      input_header.size(3) == (int)Math::SH::NforL(Math::SH::LforN(input_header.size(3)));
 
   // reorientation
-  if (get_options("no_reorientation").size())
+  if (!get_options("no_reorientation").empty())
     throw Exception("The -no_reorientation option is deprecated. Use -reorient_fod no instead.");
   opt = get_options("reorient_fod");
-  bool fod_reorientation = opt.size() && bool(opt[0][0]);
-  if (is_possible_fod_image && !opt.size())
+  const bool fod_reorientation = !opt.empty() && bool(opt[0][0]);
+  if (is_possible_fod_image && opt.empty())
     throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with " +
                     str(input_header.size(3)) + " volumes");
   else if (!is_possible_fod_image && fod_reorientation)
@@ -440,10 +445,8 @@ void run() {
 
     Eigen::MatrixXd directions_az_el;
     opt = get_options("directions");
-    if (opt.size())
-      directions_az_el = File::Matrix::load_matrix(opt[0][0]);
-    else
-      directions_az_el = DWI::Directions::electrostatic_repulsion_300();
+    directions_az_el =
+        opt.empty() ? DWI::Directions::electrostatic_repulsion_300() : File::Matrix::load_matrix(opt[0][0]);
     Math::Sphere::spherical2cartesian(directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
@@ -452,8 +455,8 @@ void run() {
 
   // Intensity / FOD modulation
   opt = get_options("modulate");
-  bool modulate_fod = opt.size() && (int)opt[0][0] == 0;
-  bool modulate_jac = opt.size() && (int)opt[0][0] == 1;
+  const bool modulate_fod = !opt.empty() && (int)opt[0][0] == 0;
+  const bool modulate_jac = !opt.empty() && (int)opt[0][0] == 1;
 
   const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)
@@ -496,13 +499,13 @@ void run() {
     if (grad.rows()) {
       try {
         if (input_header.size(3) != (ssize_t)grad.rows()) {
-          throw Exception("DW gradient table of different length (" + str(grad.rows()) +
-                          ") to number of image volumes (" + str(input_header.size(3)) + ")");
+          throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
+                          " to number of image volumes (" + str(input_header.size(3)) + ")");
         }
         INFO("DW gradients detected and will be reoriented");
         if (!test.isIdentity(0.001)) {
-          WARN("the input linear transform contains shear or anisotropic scaling and "
-               "therefore should not be used to reorient directions / diffusion gradients");
+          WARN("the input linear transform contains shear or anisotropic scaling"
+               " and therefore should not be used to reorient directions / diffusion gradients");
         }
         for (ssize_t n = 0; n < grad.rows(); ++n) {
           Eigen::Vector3d grad_vector = grad.block<1, 3>(n, 0);
@@ -520,25 +523,25 @@ void run() {
     if (hit != input_header.keyval().end()) {
       INFO("Header entry \"directions\" detected and will be reoriented");
       if (!test.isIdentity(0.001)) {
-        WARN("the input linear transform contains shear or anisotropic scaling and "
-             "therefore should not be used to reorient directions / diffusion gradients");
+        WARN("the input linear transform contains shear or anisotropic scaling"
+             " and therefore should not be used to reorient directions / diffusion gradients");
       }
       try {
         const auto lines = split_lines(hit->second);
         if (lines.size() != size_t(input_header.size(3)))
-          throw Exception("Number of lines in header entry \"directions\" (" + str(lines.size()) +
-                          ") does not match number of volumes in image (" + str(input_header.size(3)) + ")");
+          throw Exception("Number of lines in header entry \"directions\" (" + str(lines.size()) + ")" +
+                          " does not match number of volumes in image (" + str(input_header.size(3)) + ")");
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
         for (size_t l = 0; l != lines.size(); ++l) {
           const auto v = parse_floats(lines[l]);
           if (!result.cols()) {
             if (!(v.size() == 2 || v.size() == 3))
-              throw Exception("Malformed \"directions\" field (expected matrix with 2 or 3 columns; data has " +
-                              str(v.size()) + " columns)");
+              throw Exception(std::string("Malformed \"directions\" field") + //
+                              " (expected matrix with 2 or 3 columns;" +      //
+                              " data has " + str(v.size()) + " columns)");
             result.resize(lines.size(), v.size());
-          } else {
-            if (v.size() != size_t(result.cols()))
-              throw Exception("Inconsistent number of columns in \"directions\" field");
+          } else if (v.size() != size_t(result.cols())) {
+            throw Exception("Inconsistent number of columns in \"directions\" field");
           }
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel(v.data());
@@ -564,9 +567,9 @@ void run() {
   }
 
   // Interpolator
-  int interp = 2; // cubic
+  int interp = DEFAULT_INTERP; // cubic
   opt = get_options("interp");
-  if (opt.size()) {
+  if (!opt.empty()) {
     interp = opt[0][0];
     if (!warp && !template_header)
       WARN("interpolator choice ignored since the input image will not be regridded");
@@ -575,27 +578,29 @@ void run() {
   // over-sampling
   std::vector<uint32_t> oversample = Adapter::AutoOverSample;
   opt = get_options("oversample");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!template_header.valid() && !warp)
-      throw Exception(
-          "-oversample option applies only to regridding using the template option or to non-linear transformations");
+      throw Exception("-oversample option applies only to regridding using the template option"
+                      " or to non-linear transformations");
     oversample = parse_ints<uint32_t>(opt[0][0]);
     if (oversample.size() == 1)
       oversample.resize(3, oversample[0]);
     else if (oversample.size() != 3)
-      throw Exception("-oversample option requires either a single integer, or a comma-separated list of 3 integers");
+      throw Exception("-oversample option requires either a single integer,"
+                      " or a comma-separated list of 3 integers");
     for (const auto x : oversample)
       if (x < 1)
         throw Exception("-oversample factors must be positive integers");
-  } else if (interp == 0)
+  } else if (interp == 0) {
     // default for nearest-neighbour is no oversampling
     oversample = {1, 1, 1};
+  }
 
   // Out of bounds value
-  float out_of_bounds_value = 0.0;
+  float out_of_bounds_value = 0.0F;
   opt = get_options("nan");
-  if (opt.size()) {
-    out_of_bounds_value = NAN;
+  if (!opt.empty()) {
+    out_of_bounds_value = std::numeric_limits<float>::quiet_NaN();
     if (!warp && !template_header)
       WARN("Out of bounds value ignored since the input image will not be regridded");
   }
@@ -606,11 +611,12 @@ void run() {
   if (template_header.valid() && !warp) {
     INFO("image will be regridded");
 
-    if (get_options("midway_space").size()) {
+    if (!get_options("midway_space").empty()) {
       INFO("regridding to midway space");
       if (!half)
-        WARN("regridding to midway_space assumes the linear transformation to be a transformation from input to midway "
-             "space. Use -half if the input transformation is a full transformation.");
+        WARN("regridding to midway_space assumes the linear transformation to be"
+             " a transformation from input to midway space."
+             " Use -half if the input transformation is a full transformation.");
       transform_type linear_transform_inverse;
       linear_transform_inverse.matrix() = linear_transform.inverse().matrix();
       auto midway_header =
@@ -622,7 +628,7 @@ void run() {
       output_header.transform() = midway_header.transform();
     }
 
-    if (interp == 0)
+    if (interp == 0) // nearest
       output_header.datatype() = DataType::from_command_line(input_header.datatype());
     auto output = Image<float>::create(argument[1], output_header).with_direct_io();
 
@@ -672,10 +678,10 @@ void run() {
       Image<default_type> warp_deform;
 
       // Warp to the midway space defined by the warp grid
-      if (get_options("midway_space").size()) {
+      if (!get_options("midway_space").empty()) {
         warp_deform = Registration::Warp::compute_midway_deformation(warp, from);
-        // Use the full transform to warp from the image image to the template
       } else {
+        // Use the full transform to warp from the image image to the template
         warp_deform = Registration::Warp::compute_full_deformation(warp, template_header, from);
       }
       apply_warp(input, output, warp_deform, interp, out_of_bounds_value, oversample, modulate_jac);
@@ -703,17 +709,18 @@ void run() {
     DWI::export_grad_commandline(output);
 
     // No reslicing required, so just modify the header and do a straight copy of the data
-  } else if (linear || replace || axes.size()) {
+  } else if (linear || replace || !axes.empty()) {
 
-    if (get_options("midway").size())
+    if (!get_options("midway").empty())
       throw Exception("midway option given but no template image defined");
 
     INFO("image will not be regridded");
     Eigen::MatrixXd rotation = linear_transform.linear();
     Eigen::MatrixXd temp = rotation.transpose() * rotation;
     if (!temp.isIdentity(0.001))
-      WARN("the input linear transform is not orthonormal and therefore applying this without the -template "
-           "option will mean the output header transform will also be not orthonormal");
+      WARN("The input linear transform is not orthonormal and therefore"
+           " applying this without the -template option will mean"
+           " the output header transform will also be not orthonormal");
 
     add_line(output_header.keyval()["comments"], std::string("transform modified"));
     if (replace)

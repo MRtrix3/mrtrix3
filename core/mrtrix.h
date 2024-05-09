@@ -170,7 +170,7 @@ template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
 }
 
 template <> inline cfloat to<cfloat>(const std::string &string) {
-  if (!string.size())
+  if (string.empty())
     throw Exception("cannot convert empty string to complex float");
 
   const std::string stripped = strip(string);
@@ -227,7 +227,7 @@ template <> inline std::string str<cdouble>(const cdouble &value, int precision)
 }
 
 template <> inline cdouble to<cdouble>(const std::string &string) {
-  if (!string.size())
+  if (string.empty())
     throw Exception("cannot convert empty string to complex double");
 
   const std::string stripped = strip(string);
@@ -277,7 +277,7 @@ std::vector<default_type> parse_floats(const std::string &spec);
 template <typename IntType>
 std::vector<IntType> parse_ints(const std::string &spec, const IntType last = std::numeric_limits<IntType>::max()) {
   typedef typename std::make_signed<IntType>::type SignedIntType;
-  if (!spec.size())
+  if (spec.empty())
     throw Exception("integer sequence specifier is empty");
 
   auto to_unsigned = [&](const SignedIntType value) {

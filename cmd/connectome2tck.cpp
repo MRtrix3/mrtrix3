@@ -198,6 +198,7 @@ void run() {
       ++progress;
     }
   }
+  INFO("Maximum node index in assignments file is " + str(max_node_index));
 
   const size_t count = to<size_t>(properties["count"]);
   if (assignments_lists.size() != count)
@@ -218,19 +219,15 @@ void run() {
   }
 
   const std::string prefix(argument[2]);
-  auto opt = get_options("prefix_tck_weights_out");
-  const std::string weights_prefix = opt.size() ? std::string(opt[0][0]) : "";
-
-  INFO("Maximum node index in assignments file is " + str(max_node_index));
-
-  const node_t first_node = get_options("keep_unassigned").size() ? 0 : 1;
-  const bool keep_self = get_options("keep_self").size();
+  const std::string weights_prefix = get_option_value<std::string>("prefix_tck_weights_out", "");
+  const node_t first_node = get_options("keep_unassigned").empty() ? 1 : 0;
+  const bool keep_self = !get_options("keep_self").empty();
 
   // Get the list of nodes of interest
   std::vector<node_t> nodes;
-  opt = get_options("nodes");
+  auto opt = get_options("nodes");
   bool manual_node_list = false;
-  if (opt.size()) {
+  if (!opt.empty()) {
     manual_node_list = true;
     const auto data = parse_ints<node_t>(opt[0][0]);
     bool zero_in_list = false;
@@ -251,15 +248,14 @@ void run() {
       nodes.push_back(i);
   }
 
-  const bool exclusive = get_options("exclusive").size();
+  const bool exclusive = !get_options("exclusive").empty();
   if (exclusive && !manual_node_list)
     WARN("List of nodes of interest not provided; -exclusive option will have no effect");
 
-  opt = get_options("files");
-  const int file_format = opt.size() ? opt[0][0] : 0;
+  const int file_format = get_option_value("files", 0);
 
   opt = get_options("exemplars");
-  if (opt.size()) {
+  if (!opt.empty()) {
 
     if (keep_self)
       WARN("Exemplars cannot be calculated for node self-connections; -keep_self option ignored");
@@ -302,7 +298,7 @@ void run() {
     {
       std::mutex mutex;
       ProgressBar progress("generating exemplars for connectome", count);
-      if (assignments_pairs.size()) {
+      if (!assignments_pairs.empty()) {
         auto loader = [&](Tractography::Connectome::Streamline_nodepair &out) {
           if (!reader(out))
             return false;
@@ -348,7 +344,7 @@ void run() {
             generator.write(one,
                             two,
                             prefix + str(one) + "-" + str(two) + ".tck",
-                            weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
+                            !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
             ++progress;
           }
         }
@@ -360,7 +356,7 @@ void run() {
             generator.write(*n,
                             i,
                             prefix + str(*n) + "-" + str(i) + ".tck",
-                            weights_prefix.size() ? (weights_prefix + str(*n) + "-" + str(i) + ".csv") : "");
+                            !weights_prefix.empty() ? (weights_prefix + str(*n) + "-" + str(i) + ".csv") : "");
             ++progress;
           }
         }
@@ -369,7 +365,7 @@ void run() {
       ProgressBar progress("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
         generator.write(
-            *n, prefix + str(*n) + ".tck", weights_prefix.size() ? (weights_prefix + str(*n) + ".csv") : "");
+            *n, prefix + str(*n) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*n) + ".csv") : "");
         ++progress;
       }
     } else if (file_format == 2) { // Single file
@@ -377,7 +373,7 @@ void run() {
       if (path.rfind(".tck") != path.size() - 4)
         path += ".tck";
       std::string weights_path = weights_prefix;
-      if (weights_prefix.size() && weights_path.rfind(".tck") != weights_path.size() - 4)
+      if (!weights_prefix.empty() && weights_path.rfind(".tck") != weights_path.size() - 4)
         weights_path += ".csv";
       generator.write(path, weights_path);
     }
@@ -396,7 +392,7 @@ void run() {
             writer.add(one,
                        two,
                        prefix + str(one) + "-" + str(two) + ".tck",
-                       weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
+                       !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
           }
         } else {
           // Allow duplication of edges; want to have an exhaustive set of files for each node
@@ -404,14 +400,14 @@ void run() {
             writer.add(one,
                        two,
                        prefix + str(one) + "-" + str(two) + ".tck",
-                       weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
+                       !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
         }
       }
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
       break;
     case 1: // One file per node
       for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(*i, prefix + str(*i) + ".tck", weights_prefix.size() ? (weights_prefix + str(*i) + ".csv") : "");
+        writer.add(*i, prefix + str(*i) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*i) + ".csv") : "");
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;
     case 2: // Single file
@@ -419,24 +415,24 @@ void run() {
       if (path.rfind(".tck") != path.size() - 4)
         path += ".tck";
       std::string weights_path = weights_prefix;
-      if (weights_prefix.size() && weights_path.rfind(".tck") != weights_path.size() - 4)
+      if (!weights_prefix.empty() && weights_path.rfind(".tck") != weights_path.size() - 4)
         weights_path += ".csv";
       writer.add(nodes, path, weights_path);
       break;
     }
 
     ProgressBar progress("Extracting tracks from connectome", count);
-    if (assignments_pairs.size()) {
-      Tractography::Connectome::Streamline_nodepair tck;
+    if (assignments_pairs.empty()) {
+      Tractography::Connectome::Streamline_nodelist tck;
       while (reader(tck)) {
-        tck.set_nodes(assignments_pairs[tck.get_index()]);
+        tck.set_nodes(assignments_lists[tck.get_index()]);
         writer(tck);
         ++progress;
       }
     } else {
-      Tractography::Connectome::Streamline_nodelist tck;
+      Tractography::Connectome::Streamline_nodepair tck;
       while (reader(tck)) {
-        tck.set_nodes(assignments_lists[tck.get_index()]);
+        tck.set_nodes(assignments_pairs[tck.get_index()]);
         writer(tck);
         ++progress;
       }

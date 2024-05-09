@@ -52,7 +52,7 @@ bool Reader::next() {
       return false;
     }
 
-    if (sbuf.size()) {
+    if (!sbuf.empty()) {
       size_t colon = sbuf.find_first_of(':');
       if (colon == std::string::npos) {
         INFO("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");

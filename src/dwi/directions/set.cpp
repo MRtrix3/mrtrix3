@@ -217,9 +217,11 @@ void Set::initialise_adjacency() {
   assigned[base_plane.indices[1]] = true;
   assigned[base_plane.indices[2]] = true;
   assigned[fourth_point] = true;
+#ifndef NDEBUG
   size_t assigned_counter = 4;
+#endif
 
-  while (planes.size()) {
+  while (!planes.empty()) {
     Plane current(planes.back());
     index_type max_index = vertices.size();
     default_type max_dist = current.dist;
@@ -291,9 +293,12 @@ void Set::initialise_adjacency() {
 
       // This point no longer needs to be tested
       assigned[max_index] = true;
+#ifndef NDEBUG
       ++assigned_counter;
+#endif
     }
   }
+  assert(assigned_counter == 2 * size());
 
   for (auto &current : hull) {
     // Each of these three directions is adjacent

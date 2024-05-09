@@ -118,7 +118,7 @@ public:
       }
       string += char(c);
     } while (c != '\n');
-    if (string.size() && (string[string.size() - 1] == 015 || string[string.size() - 1] == '\n'))
+    if (!string.empty() && (string[string.size() - 1] == 015 || string[string.size() - 1] == '\n'))
       string.resize(string.size() - 1);
     return string;
   }

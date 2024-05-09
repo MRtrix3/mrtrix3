@@ -53,7 +53,7 @@ bool Receiver::operator()(const Streamline<> &in) {
     for (const auto &p : in) {
       if (p.allFinite()) {
         temp.push_back(p);
-      } else if (temp.size()) {
+      } else if (!temp.empty()) {
         temp.set_index(in.get_index());
         temp.weight = in.weight;
         writer(temp);

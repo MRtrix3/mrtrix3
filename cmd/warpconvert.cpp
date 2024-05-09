@@ -80,25 +80,17 @@ void usage() {
 
 void run() {
   const int type = argument[1];
-  bool midway_space = get_options("midway_space").size() ? true : false;
-
-  std::string template_filename;
-  auto opt = get_options("template");
-  if (opt.size())
-    template_filename = str(opt[0][0]);
-
-  int from = 1;
-  opt = get_options("from");
-  if (opt.size())
-    from = opt[0][0];
+  const bool midway_space = !get_options("midway_space").empty();
+  const std::string template_filename = get_option_value<std::string>("template", "");
+  const int from = get_option_value("from", 1);
 
   // deformation2displacement
   if (type == 0) {
     if (midway_space)
       WARN("-midway_space option ignored with deformation2displacement conversion type");
-    if (get_options("template").size())
+    if (!get_options("template").empty())
       WARN("-template option ignored with deformation2displacement conversion type");
-    if (get_options("from").size())
+    if (!get_options("from").empty())
       WARN("-from option ignored with deformation2displacement conversion type");
 
     auto deformation = Image<default_type>::open(argument[0]).with_direct_io(3);
@@ -116,9 +108,9 @@ void run() {
 
     if (midway_space)
       WARN("-midway_space option ignored with displacement2deformation conversion type");
-    if (get_options("template").size())
+    if (!get_options("template").empty())
       WARN("-template option ignored with displacement2deformation conversion type");
-    if (get_options("from").size())
+    if (!get_options("from").empty())
       WARN("-from option ignored with displacement2deformation conversion type");
 
     Header header(displacement);
@@ -128,11 +120,13 @@ void run() {
 
     // warpfull2deformation & warpfull2displacement
   } else if (type == 2 || type == 3) {
-    if (!Path::is_mrtrix_image(argument[0]) &&
-        !(Path::has_suffix(argument[0], {".nii", ".nii.gz"}) && File::Config::get_bool("NIfTIAutoLoadJSON", false) &&
-          Path::exists(File::NIfTI::get_json_path(opt[0][0]))))
+    if (!Path::is_mrtrix_image(argument[0]) &&                  //
+        !(Path::has_suffix(argument[0], {".nii", ".nii.gz"}) && //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
+          Path::exists(File::NIfTI::get_json_path(argument[0])))) {
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
            "Converting to other file formats may remove linear transformations stored in the image header.");
+    }
     auto warp = Image<default_type>::open(argument[0]).with_direct_io(3);
     Registration::Warp::check_warp_full(warp);
 
@@ -140,7 +134,7 @@ void run() {
     if (midway_space) {
       warp_output = Registration::Warp::compute_midway_deformation(warp, from);
     } else {
-      if (!get_options("template").size())
+      if (get_options("template").empty())
         throw Exception("-template option required with warpfull2deformation or warpfull2displacement conversion type");
       auto template_header = Header::open(template_filename);
       warp_output = Registration::Warp::compute_full_deformation(warp, template_header, from);

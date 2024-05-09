@@ -350,7 +350,7 @@ void Fixel::dropEvent(QDropEvent *event) {
 
 void Fixel::fixel_close_slot() {
   QModelIndexList indexes = fixel_list_view->selectionModel()->selectedIndexes();
-  while (indexes.size()) {
+  while (!indexes.empty()) {
     fixel_list_model->remove_item(indexes.first());
     indexes = fixel_list_view->selectionModel()->selectedIndexes();
   }

@@ -65,7 +65,7 @@ Dynamic::Dynamic(const std::string &in,
 #endif
       transform(fod_data) {
   auto opt = App::get_options("act");
-  if (opt.size())
+  if (!opt.empty())
     act.reset(new Dynamic_ACT_additions(opt[0][0]));
 
   perform_FOD_segmentation(fod_data);
@@ -343,7 +343,7 @@ bool WriteKernelDynamic::operator()(const Tracking::GeneratedTrack &in, Tractogr
     return true;
   }
   out = in;
-  return out.size(); // New pipe functor interpretation: Don't bother sending empty tracks
+  return !out.empty(); // New pipe functor interpretation: Don't bother sending empty tracks
 }
 
 } // namespace MR::DWI::Tractography::Seeding

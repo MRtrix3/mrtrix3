@@ -144,7 +144,7 @@ void Mesh::load_vtk(const std::string &path) {
       } while (!in.eof() && (isalnum(c) || c == ' '));
     }
 
-    if (line.size()) {
+    if (!line.empty()) {
       if (line.substr(0, 6) == "POINTS") {
 
         line = line.substr(7);
@@ -270,7 +270,7 @@ void Mesh::load_vtk(const std::string &path) {
     }
   }
 
-  if (vertices_float.size()) {
+  if (!vertices_float.empty()) {
     assert(!vertices.size());
     for (const auto &v : vertices_float)
       vertices.emplace_back(Vertex(v.cast<double>()));
@@ -440,7 +440,7 @@ void Mesh::load_obj(const std::string &path) {
   int counter = -1;
   while (std::getline(in, line)) {
     ++counter;
-    if (!line.size())
+    if (line.empty())
       continue;
     if (line[0] == '#')
       continue;
@@ -475,7 +475,7 @@ void Mesh::load_obj(const std::string &path) {
           elements.push_back(data.substr(0, first_space));
           data = data.substr(first_space + 1);
         }
-      } while (data.size());
+      } while (!data.empty());
       if (elements.size() != 3 && elements.size() != 4)
         throw Exception("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " +
                         str(counter) + ")");
@@ -530,14 +530,14 @@ void Mesh::load_obj(const std::string &path) {
       //   throw Exception ("Multiple groups in input OBJ file");
       group = data;
     } else if (prefix == "o") {
-      if (!object.size())
+      if (object.empty())
         object = data;
       else
         throw Exception("Multiple objects in input OBJ file");
     } // Do nothing for all other prefixes
   }
 
-  if (object.size())
+  if (!object.empty())
     name = object;
 
   try {
@@ -720,7 +720,7 @@ void Mesh::save_vtk(const std::string &path, const bool binary) const {
 }
 
 void Mesh::save_stl(const std::string &path, const bool binary) const {
-  if (quads.size())
+  if (!quads.empty())
     throw Exception("STL binary file format does not support quads; only triangles");
 
   ProgressBar progress("writing mesh to file", triangles.size());
