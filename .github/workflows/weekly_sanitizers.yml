@@ -1,4 +1,4 @@
-name: Nightly checks with sanitizers
+name: Sanitizers checks
 
 on:
   workflow_dispatch:
