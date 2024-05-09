@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __testing_diff_images_h__
-#define __testing_diff_images_h__
+#pragma once
 
 #include "datatype.h"
 #include "progressbar.h"
@@ -63,5 +62,3 @@ template <class ImageType1, class ImageType2> void diff_images(ImageType1 &in1, 
   }
 }
 } // namespace MR::Testing
-
-#endif

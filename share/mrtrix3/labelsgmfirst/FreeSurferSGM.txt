@@ -15,7 +15,8 @@
 
 # This file is used to extract sub-cortical structures from FreeSurfer segmentations
 
-# Previously, the labelsgmfix command was compatible with both FreeSurfer LUT files and connectome config files, as the first two columns were identical. Now, this command ideally needs to be compatible with LUT files in any format.
+# Previously, the labelsgmfirst command was compatible with both FreeSurfer LUT files and connectome config files, as the first two columns were identical.
+# Now, this command ideally needs to be compatible with LUT files in any format.
 
 # This is solved in the following way:
 # * Create a new image for sub-cortical structures using the output of FIRST and these indices.

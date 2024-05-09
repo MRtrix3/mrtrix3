@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_gt_h__
-#define __gt_gt_h__
+#pragma once
 
 #define ITER_BIGSTEP 10000
 #define FRAC_BURNIN 10
@@ -229,5 +228,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::GT
-
-#endif // __gt_gt_h__

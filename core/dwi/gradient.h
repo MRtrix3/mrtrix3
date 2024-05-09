@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_gradient_h__
-#define __dwi_gradient_h__
+#pragma once
 
 #include "app.h"
 #include "dwi/shells.h"
@@ -273,5 +272,3 @@ inline size_t lmax_for_directions(const Eigen::MatrixXd &directions,
 
 } // namespace DWI
 } // namespace MR
-
-#endif

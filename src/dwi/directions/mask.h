@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_mask_h__
-#define __dwi_directions_mask_h__
+#pragma once
 
 #include <fstream>
 
@@ -45,5 +44,3 @@ private:
 };
 
 } // namespace MR::DWI::Directions
-
-#endif

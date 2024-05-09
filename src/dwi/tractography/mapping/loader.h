@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_loader_h__
-#define __dwi_tractography_mapping_loader_h__
+#pragma once
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/streamline.h"
@@ -56,5 +55,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::Mapping
-
-#endif

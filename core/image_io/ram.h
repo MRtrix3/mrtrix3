@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_io_ram_h__
-#define __image_io_ram_h__
+#pragma once
 
 #include "image_io/base.h"
 
@@ -31,5 +30,3 @@ protected:
 };
 
 } // namespace MR::ImageIO
-
-#endif

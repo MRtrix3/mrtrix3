@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_thread_queue_h__
-#define __mrtrix_thread_queue_h__
+#pragma once
 
 #include <condition_variable>
 #include <stack>
@@ -1093,5 +1092,3 @@ inline void run_queue(Source &&source,
 /** @} */
 /** @} */
 } // namespace MR::Thread
-
-#endif

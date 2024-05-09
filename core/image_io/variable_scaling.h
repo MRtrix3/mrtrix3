@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_handler_variable_scaling_h__
-#define __image_handler_variable_scaling_h__
+#pragma once
 
 #include "file/mmap.h"
 #include "image_io/base.h"
@@ -43,5 +42,3 @@ protected:
 };
 
 } // namespace MR::ImageIO
-
-#endif

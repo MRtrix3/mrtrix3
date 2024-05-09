@@ -14,8 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_h__
-#define __image_h__
+#pragma once
+
+#define IMAGE_H
 
 #include <functional>
 #include <tuple>
@@ -370,7 +371,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
     with_strides = Stride::get(*this);
 
   if (!preload)
-    return std::move(*this);
+    return *this;
 
   // do the preload:
 
@@ -477,5 +478,3 @@ template <class ImageType> typename enable_if_image_type<ImageType, void>::type 
 }
 
 } // namespace MR
-
-#endif

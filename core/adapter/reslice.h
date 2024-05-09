@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_reslice_h__
-#define __adapter_reslice_h__
+#pragma once
 
 #include <type_traits>
 
@@ -218,5 +217,3 @@ private:
 //! @}
 
 } // namespace MR::Adapter
-
-#endif

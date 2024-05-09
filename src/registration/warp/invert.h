@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_warp_invert_h__
-#define __registration_warp_invert_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 #include "image.h"
@@ -156,5 +155,3 @@ FORCE_INLINE void invert_displacement(Image<default_type> &disp_field,
 
 //! @}
 } // namespace MR::Registration::Warp
-
-#endif

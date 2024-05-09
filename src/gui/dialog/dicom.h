@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dialog_dicom_h__
-#define __dialog_dicom_h__
+#pragma once
 
 #include "file/dicom/tree.h"
 #include "gui/opengl/gl.h"
@@ -27,5 +26,3 @@ using namespace MR::File::Dicom;
 std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree);
 
 } // namespace MR::GUI::Dialog
-
-#endif

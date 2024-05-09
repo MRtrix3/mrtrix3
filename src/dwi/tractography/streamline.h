@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_streamline_h__
-#define __dwi_tractography_streamline_h__
+#pragma once
 
 #include <limits>
 
@@ -117,5 +116,3 @@ template <typename PointType> typename PointType::Scalar length(const std::vecto
 }
 
 } // namespace MR::DWI::Tractography
-
-#endif

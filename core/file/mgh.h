@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_mgh_h__
-#define __file_mgh_h__
+#pragma once
 
 #include <sstream>
 
@@ -1002,5 +1001,3 @@ template <class Output> void write_other(const Header &H, Output &out) {
 } // namespace File::MGH
 
 } // namespace MR
-
-#endif

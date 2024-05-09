@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __math_stats_import_h__
-#define __math_stats_import_h__
+#pragma once
 
 #include <fstream>
 #include <memory>
@@ -172,5 +171,3 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
 }
 
 } // namespace MR::Math::Stats
-
-#endif

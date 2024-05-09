@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dwi_renderer_h__
-#define __gui_dwi_renderer_h__
+#pragma once
 
 #include <Eigen/Eigenvalues>
 #include <QOpenGLWidget>
@@ -232,5 +231,3 @@ private:
 
 } // namespace DWI
 } // namespace MR::GUI
-
-#endif

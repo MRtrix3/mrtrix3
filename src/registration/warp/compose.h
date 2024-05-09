@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_warp_compose_h__
-#define __registration_warp_compose_h__
+#pragma once
 
 #include "adapter/extract.h"
 #include "adapter/jacobian.h" //TODO remove after debug
@@ -294,5 +293,3 @@ FORCE_INLINE WarpType compute_full_deformation(WarpType &warp, TemplateType &tem
 }
 
 } // namespace MR::Registration::Warp
-
-#endif

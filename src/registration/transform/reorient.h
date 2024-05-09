@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_reorient_h__
-#define __registration_transform_reorient_h__
+#pragma once
 
 #include "adapter/jacobian.h"
 #include "algo/threaded_loop.h"
@@ -385,5 +384,3 @@ void reorient_warp(FODImageType &fod_image,
 }
 
 } // namespace MR::Registration::Transform
-
-#endif

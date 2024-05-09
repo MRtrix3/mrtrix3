@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_algorithms_nulldist_h__
-#define __dwi_tractography_algorithms_nulldist_h__
+#pragma once
 
 #include "dwi/tractography/algorithms/iFOD2.h"
 #include "dwi/tractography/tracking/method.h"
@@ -146,5 +145,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::Algorithms
-
-#endif

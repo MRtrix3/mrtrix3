@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dwi_render_window_h__
-#define __gui_dwi_render_window_h__
+#pragma once
 
 #include "gui/dwi/render_frame.h"
 #include "gui/opengl/gl.h"
@@ -81,5 +80,3 @@ protected:
 
 } // namespace DWI
 } // namespace MR::GUI
-
-#endif

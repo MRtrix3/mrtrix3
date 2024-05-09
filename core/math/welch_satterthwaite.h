@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_welch_satterthwaite_h__
-#define __math_welch_satterthwaite_h__
+#pragma once
 
 #include "math/math.h"
 
@@ -34,5 +33,3 @@ default_type welch_satterthwaite(const VarArrayType &variances, const CountArray
 }
 
 } // namespace MR::Math
-
-#endif

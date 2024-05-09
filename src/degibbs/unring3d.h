@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __degibbs_unring_3d_h__
-#define __degibbs_unring_3d_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 #include "axes.h"
@@ -256,5 +255,3 @@ void unring3D(ImageIn &input, ImageOut &output, const int minW = 1, const int ma
   }
 }
 } // namespace MR::Degibbs
-
-#endif

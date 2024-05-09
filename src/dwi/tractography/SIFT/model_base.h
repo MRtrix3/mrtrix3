@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_model_base_h__
-#define __dwi_tractography_sift_model_base_h__
+#pragma once
 
 #include "algo/copy.h"
 #include "app.h"
@@ -318,5 +317,3 @@ void ModelBase<Fixel>::output_all_debug_images(const std::string &dirpath, const
 }
 
 } // namespace MR::DWI::Tractography::SIFT
-
-#endif

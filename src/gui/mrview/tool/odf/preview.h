@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_odf_preview_h__
-#define __gui_mrview_tool_odf_preview_h__
+#pragma once
 
 #include "gui/dwi/render_frame.h"
 
@@ -62,5 +61,3 @@ protected:
 };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

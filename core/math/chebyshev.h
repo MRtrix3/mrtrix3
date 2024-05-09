@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_chebyshev_h__
-#define __math_chebyshev_h__
+#pragma once
 
 #include "math/math.h"
 
@@ -33,5 +32,3 @@ template <typename T> inline T eval(const double *coef, const int order, const T
 }
 
 } // namespace MR::Math::Chebyshev
-
-#endif

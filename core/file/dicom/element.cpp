@@ -184,9 +184,12 @@ bool Element::read() {
   }
 
   if (!parents.empty()) {
-    if ((parents.back().end && data > parents.back().end) ||
-        (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM))
+    if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM) {
       parents.pop_back();
+    } else { // Undefined length encoding
+      while (!parents.empty() && (parents.back().end != nullptr) && data > parents.back().end)
+        parents.pop_back();
+    }
   }
 
   if (is_new_sequence())

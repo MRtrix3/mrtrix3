@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_image_h__
-#define __file_dicom_image_h__
+#pragma once
 
 #include <memory>
 
@@ -157,5 +156,3 @@ public:
 };
 
 } // namespace MR::File::Dicom
-
-#endif

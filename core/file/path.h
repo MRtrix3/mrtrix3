@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_path_h__
-#define __file_path_h__
+#pragma once
 
 #include <algorithm>
 #include <cerrno>
@@ -196,5 +195,3 @@ inline char delimiter(const std::string &filename) {
 }
 
 } // namespace MR::Path
-
-#endif

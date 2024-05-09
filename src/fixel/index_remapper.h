@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_index_remapper_h__
-#define __fixel_index_remapper_h__
+#pragma once
 
 #include <limits>
 
@@ -55,5 +54,3 @@ private:
 };
 
 } // namespace MR::Fixel
-
-#endif

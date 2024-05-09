@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_act_tissues_h__
-#define __dwi_tractography_act_tissues_h__
+#pragma once
 
 // If the sum of tissue probabilities is below this threshold, the image is being exited, so a boolean flag is thrown
 // The values will however still be accessible
@@ -112,5 +111,3 @@ inline std::ostream &operator<<(std::ostream &stream, const Tissues &t) {
 } // namespace Tractography
 } // namespace DWI
 } // namespace MR
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_editing_loader_h__
-#define __dwi_tractography_editing_loader_h__
+#pragma once
 
 #include <string>
 
@@ -60,5 +59,3 @@ bool Loader::operator()(Streamline<> &out) {
 }
 
 } // namespace MR::DWI::Tractography::Editing
-
-#endif

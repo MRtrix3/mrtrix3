@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_track_contribution_h__
-#define __dwi_tractography_sift_track_contribution_h__
+#pragma once
 
 #include <cstdint>
 
@@ -119,5 +118,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::SIFT
-
-#endif

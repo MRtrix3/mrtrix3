@@ -54,6 +54,7 @@ file(RELATIVE_PATH relDir
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
 include(BuildType)
+include(LinkerSetup)
 include(FindFFTW)
 include(CompilerCache)
 include(ECMEnableSanitizers)

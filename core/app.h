@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __app_h__
-#define __app_h__
+#pragma once
 
 #include <cstring>
 #include <limits>
@@ -453,5 +452,3 @@ inline std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument 
 } // namespace MR::App
 
 //! @}
-
-#endif

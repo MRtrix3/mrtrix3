@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_seeding_base_h__
-#define __dwi_tractography_seeding_base_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 #include "file/path.h"
@@ -113,5 +112,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::Seeding
-
-#endif

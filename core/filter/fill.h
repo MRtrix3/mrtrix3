@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_fill_h__
-#define __filter_fill_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "filter/base.h"
@@ -93,5 +92,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

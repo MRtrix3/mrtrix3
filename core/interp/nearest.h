@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __interp_nearest_h__
-#define __interp_nearest_h__
+#pragma once
 
 #include "datatype.h"
 #include "image_helpers.h"
@@ -127,5 +126,3 @@ inline Nearest<ImageType> make_nearest(const ImageType &parent, Args &&...args) 
 //! @}
 
 } // namespace MR::Interp
-
-#endif

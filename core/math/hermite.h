@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_hermite_h__
-#define __math_hermite_h__
+#pragma once
 
 #include <limits>
 
@@ -52,5 +51,3 @@ private:
 };
 
 } // namespace MR::Math
-
-#endif

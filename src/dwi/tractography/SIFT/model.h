@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_model_h__
-#define __dwi_tractography_sift_model_h__
+#pragma once
 
 #include "app.h"
 #include "thread_queue.h"
@@ -352,5 +351,3 @@ template <class Fixel> bool Model<Fixel>::FixelRemapper::operator()(const TrackI
 }
 
 } // namespace MR::DWI::Tractography::SIFT
-
-#endif

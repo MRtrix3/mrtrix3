@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_overlay_h__
-#define __gui_mrview_tool_overlay_h__
+#pragma once
 
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
@@ -101,5 +100,3 @@ protected:
 };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

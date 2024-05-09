@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_freesurfer_h__
-#define __surface_freesurfer_h__
+#pragma once
 
 #include <fstream>
 #include <stdint.h>
@@ -51,5 +50,3 @@ void read_annot(const std::string &, label_vector_type &, Connectome::LUT &);
 void read_label(const std::string &, VertexList &, Scalar &);
 
 } // namespace MR::Surface::FreeSurfer
-
-#endif
