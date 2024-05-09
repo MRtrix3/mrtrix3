@@ -70,10 +70,10 @@ public:
 
   template <class InputImageType, class OutputImageType> void operator()(InputImageType &in, OutputImageType &out) {
     Adapter::Median<InputImageType> median(in, extent);
-    if (message.size())
-      threaded_copy_with_progress_message(message, median, out);
-    else
+    if (message.empty())
       threaded_copy(median, out);
+    else
+      threaded_copy_with_progress_message(message, median, out);
   }
 
 protected:

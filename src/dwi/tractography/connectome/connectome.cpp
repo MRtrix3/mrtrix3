@@ -62,7 +62,7 @@ Tck2nodes_base *load_assignment_mode(Image<node_t> &nodes_data) {
   Tck2nodes_base *tck2nodes = nullptr;
   for (size_t index = 0; modes[index]; ++index) {
     auto opt = get_options(modes[index]);
-    if (opt.size()) {
+    if (!opt.empty()) {
 
       if (tck2nodes) {
         delete tck2nodes;
@@ -109,17 +109,17 @@ const OptionGroup MetricOptions =
     Argument("path").type_image_in();
 
 void setup_metric(Metric &metric, Image<node_t> &nodes_data) {
-  if (get_options("scale_length").size()) {
-    if (get_options("scale_invlength").size())
+  if (!get_options("scale_length").empty()) {
+    if (!get_options("scale_invlength").empty())
       throw Exception("Options -scale_length and -scale_invlength are mutually exclusive");
     metric.set_scale_length();
-  } else if (get_options("scale_invlength").size()) {
+  } else if (!get_options("scale_invlength").empty()) {
     metric.set_scale_invlength();
   }
-  if (get_options("scale_invnodevol").size())
+  if (!get_options("scale_invnodevol").empty())
     metric.set_scale_invnodevol(nodes_data);
   auto opt = get_options("scale_file");
-  if (opt.size()) {
+  if (!opt.empty()) {
     try {
       metric.set_scale_file(opt[0][0]);
     } catch (Exception &e) {

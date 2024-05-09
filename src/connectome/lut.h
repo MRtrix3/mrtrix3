@@ -55,7 +55,7 @@ public:
   void set_alpha(const uint8_t a) { alpha = a; }
 
   const std::string &get_name() const { return name; }
-  const std::string &get_short_name() const { return short_name.size() ? short_name : name; }
+  const std::string &get_short_name() const { return !short_name.empty() ? short_name : name; }
   const RGB &get_colour() const { return colour; }
   uint8_t get_alpha() const { return alpha; }
 

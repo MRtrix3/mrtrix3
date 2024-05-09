@@ -278,7 +278,7 @@ void report(const std::string &title, Eigen::MatrixXd &directions) {
   auto metrics = compute(directions);
 
   auto opt = get_options("output");
-  if (opt.size()) {
+  if (!opt.empty()) {
     output_selected(metrics, opt[0][0]);
     return;
   }

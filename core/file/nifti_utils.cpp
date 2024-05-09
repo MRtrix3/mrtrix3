@@ -371,7 +371,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     const auto hit = H.keyval().find("comments");
     auto comments = split_lines(hit == H.keyval().end() ? std::string() : hit->second);
     strncpy(
-        Type<NiftiHeader>::db_name(NH), comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 17);
+        Type<NiftiHeader>::db_name(NH), !comments.empty() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 17);
     Type<NiftiHeader>::db_name(NH)[17] = '\0';
     Raw::store<int32_t>(16384, Type<NiftiHeader>::extents(NH), is_BE);
     *Type<NiftiHeader>::regular(NH) = 'r';

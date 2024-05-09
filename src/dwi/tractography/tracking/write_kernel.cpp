@@ -21,7 +21,7 @@ namespace MR::DWI::Tractography::Tracking {
 bool WriteKernel::operator()(const GeneratedTrack &tck) {
   if (complete())
     return false;
-  if (tck.size() && output_seeds) {
+  if (!tck.empty() && output_seeds) {
     const auto &p = tck[tck.get_seed_index()];
     (*output_seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1])
                     << "," << str(p[2]) << ",\n";

@@ -206,7 +206,7 @@ void run() {
   std::unique_ptr<DWI::Shells> shells;
 
   auto opt = get_options("directions");
-  if (opt.size()) {
+  if (!opt.empty()) {
     dirs_azel.push_back(File::Matrix::load_matrix(opt[0][0]));
     volumes.push_back(all_volumes(dirs_azel.size()));
   } else {
@@ -238,11 +238,11 @@ void run() {
   std::vector<uint32_t> lmax;
   uint32_t max_lmax = 0;
   opt = get_options("lmax");
-  if (get_options("isotropic").size()) {
+  if (!get_options("isotropic").empty()) {
     for (size_t i = 0; i != dirs_azel.size(); ++i)
       lmax.push_back(0);
     max_lmax = 0;
-  } else if (opt.size()) {
+  } else if (!opt.empty()) {
     lmax = parse_ints<uint32_t>(opt[0][0]);
     if (lmax.size() != dirs_azel.size())
       throw Exception("Number of lmax\'s specified (" + str(lmax.size()) +
@@ -292,7 +292,7 @@ void run() {
   if (!num_voxels)
     throw Exception("input mask does not contain any voxels");
 
-  const bool use_ols = get_options("noconstraint").size();
+  const bool use_ols = !get_options("noconstraint").empty();
 
   CONSOLE(std::string("estimating response function using ") + (use_ols ? "ordinary" : "constrained") +
           " least-squares from " + str(num_voxels) + " voxels");

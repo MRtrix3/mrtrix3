@@ -51,9 +51,9 @@ void usage() {
 // clang-format on
 
 void run() {
-  GUI::DWI::Window window(get_options("response").size());
+  GUI::DWI::Window window(!get_options("response").empty());
 
-  if (argument.size())
+  if (!argument.empty())
     window.set_values(std::string(argument[0]));
 
   window.show();
