@@ -3,7 +3,6 @@
 # The test is run in the WORKING_DIRECTORY directory
 # The CLEANUP_CMD command is run after the test is finished
 
-find_program(BASH bash)
 execute_process(COMMAND ${BASH} -e ${FILE_PATH}
     RESULT_VARIABLE test_result_${FILE_PATH}
     WORKING_DIRECTORY ${WORKING_DIRECTORY}

@@ -1,5 +1,11 @@
 # A function that adds a bash test for an input bash script file
 function(add_bash_test)
+    find_program(BASH bash)
+
+    if(NOT BASH)
+        message(FATAL_ERROR "bash not found")
+    endif()
+
     set(singleValueArgs FILE_PATH PREFIX WORKING_DIRECTORY)
     set(multiValueArgs EXEC_DIRECTORIES LABELS)
     cmake_parse_arguments(
@@ -53,6 +59,7 @@ function(add_bash_test)
         NAME ${test_name}
         COMMAND
             ${CMAKE_COMMAND}
+            -D BASH=${BASH}
             -D FILE_PATH=${file_path}
             -D CLEANUP_CMD=${cleanup_cmd}
             -D WORKING_DIRECTORY=${working_directory}
