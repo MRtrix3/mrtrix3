@@ -21,6 +21,13 @@ find_package(Python3
     COMPONENTS NumPy
 )
 
+include(DirsToUnix)
+set(EXEC_DIRS "$ENV{PATH}")
+list(APPEND EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
+list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
+list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
+dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
+
 function(add_cpp_unit_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
     add_executable(${NAME} ${FILE_SRC})
@@ -42,10 +49,6 @@ endfunction()
 
 function (add_bash_unit_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
-    set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
-    list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
-    list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
-
     add_bash_test(
         FILE_PATH "${FILE_SRC}"
         PREFIX "unittest"
