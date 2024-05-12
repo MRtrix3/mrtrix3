@@ -10,12 +10,16 @@ set(UNIT_TESTS_CPP_SRCS
     to.cpp
 )
 
-set(UNIT_TESTS_BASH_SRCS
+set(UNIT_TESTS_NPY_BASH_SRCS
     npyread
     npywrite
 )
 
 find_program(BASH bash)
+
+find_package(Python3
+    COMPONENTS NumPy
+)
 
 function(add_cpp_unit_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
@@ -55,6 +59,10 @@ foreach(UNIT_TEST ${UNIT_TESTS_CPP_SRCS})
     add_cpp_unit_test(${UNIT_TEST})
 endforeach()
 
-foreach(UNIT_TEST ${UNIT_TESTS_BASH_SRCS})
-    add_bash_unit_test(${UNIT_TEST})
-endforeach()
+if(${Python3_NumPy_FOUND})
+    foreach(UNIT_TEST ${UNIT_TESTS_NPY_BASH_SRCS})
+        add_bash_unit_test(${UNIT_TEST})
+    endforeach()
+else()
+    message(WARNING "Python numpy module not found; omitting .npy format support tests")
+endif()
