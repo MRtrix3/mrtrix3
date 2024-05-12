@@ -1,0 +1,16 @@
+#!/bin/bash
+# vectorstats test 4
+#
+# Prior version where test data were genrated on request:
+# N=16 SNR=5 vectorstats/gen4.py
+# vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -errors ise -force
+# vectorstats/test4.py
+vectorstats vectorstats/4/subjects.txt vectorstats/4/design.csv vectorstats/4/contrast.csv tmpout -errors ise -force
+testing_diff_matrix tmpoutZstat.csv vectorstats/4/outZstat.csv -frac 1e-6
+testing_diff_matrix tmpoutabs_effect.csv vectorstats/4/outabs_effect.csv -frac 1e-6
+testing_diff_matrix tmpoutbetas.csv vectorstats/4/outbetas.csv -frac 1e-6
+testing_diff_matrix tmpoutcond.csv vectorstats/4/outcond.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_dev.csv vectorstats/4/outstd_dev.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_effect.csv vectorstats/4/outstd_effect.csv -frac 1e-6
+testing_diff_matrix tmpouttvalue.csv vectorstats/4/outtvalue.csv -frac 1e-6
+vectorstats/test4.py

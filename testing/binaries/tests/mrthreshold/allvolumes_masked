@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify command operation when:
+# - Input image is 4D
+# - The -allvolumes command-line flag is specified,
+#   such that data across all volumes contribute to determination of a single threshold
+# - Only those voxels within the user-provided -mask image contribute to that determination
+#   (note that the image provided to the -mask option is 3D,
+#   and therefore the values within that set of voxels across all volumes contribute to threshold determination)
+mrthreshold dwi.mif - -mask mask.mif -allvolumes | \
+testing_diff_image - mrthreshold/4d_default_masked_allvolumes.mif

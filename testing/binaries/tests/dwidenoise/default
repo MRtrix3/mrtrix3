@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic test verifying operation of the command under default parameters
+# Ensure that output matches that generated using a prior software version
+dwidenoise dwi.mif - | \
+testing_diff_image - dwidenoise/denoised.mif -voxel 2e-4

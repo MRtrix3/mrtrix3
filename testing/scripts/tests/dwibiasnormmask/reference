@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify operation of dwibiasnormmask command
+#   when the reference CSFD b=0 intensity is modified at the command-line
+# The default value for this intensity is 1000.0;
+#   this is what was used to generate the reference data using a prior software version
+# Therefore, if a different reference intensity is requested,
+#   it should be possible to multiply the result of such by the ratio of those references
+#   and that result should then match the pre-calculated one
+dwibiasnormmask tmp-sub-01_dwi.mif tmpout.mif tmpmask.mif -force \
+-reference 1.0 \
+-output_scale tmpscale.txt
+
+mrcalc tmpout.mif 1000.0 -mult - | \
+testing_diff_image - dwibiasnormmask/default_out.mif.gz -frac 1e-5

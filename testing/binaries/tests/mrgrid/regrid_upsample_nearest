@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify "regrid" operation wheb both upsampling is performed (via -scale option),
+#   and nearest-neighbour interpolation is used.
+# Check output agains that generated using an obsolete command (mrresize)
+#   from an earlier version of the software.
+mrgrid dwi.mif regrid -scale 2 -datatype float32 -interp nearest - | \
+testing_diff_image - mrresize/out5.mif -voxel 1e-5

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation on data where the input parcellation image
+#   already has indices incrementing sequentially from 1
+labelsgmfirst BIDS/sub-01/anat/sub-01_parc-desikan_indices.nii.gz BIDS/sub-01/anat/sub-01_T1w.nii.gz BIDS/parc-desikan_lookup.txt tmp.mif -force
+testing_diff_header tmp.mif labelsgmfirst/default.mif.gz

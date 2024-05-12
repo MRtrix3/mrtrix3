@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that operation operation of FOD reorientation
+#   is close to identical to that generated using a prior software version
+# In this test no explicit resampling to an image grid is performed
+mrtransform fod.mif -linear rotatez.txt -reorient_fod yes - | \
+testing_diff_image - mrtransform/out7.mif.gz -voxel 0.001

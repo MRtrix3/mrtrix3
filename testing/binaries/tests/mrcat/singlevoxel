@@ -1,0 +1,17 @@
+#!/bin/bash
+# These series of tests ensure correct operation of the mrcat command
+#   where input images may have unity size along one or more axes
+#   (this resulted in memory issues in prior software versions)
+mrcat mrcat/voxel*.mih - | \
+testing_diff_header -keyval - mrcat/all_axis3.mif
+
+mrcat mrcat/voxel*.mih - \
+-axis 0 | \
+testing_diff_header -keyval - mrcat/all_axis0.mif
+
+mrcat mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih - | \
+testing_diff_header -keyval - mrcat/one_axis3.mif
+
+mrcat mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih - \
+-axis 0 | \
+testing_diff_header -keyval - mrcat/one_axis0.mif

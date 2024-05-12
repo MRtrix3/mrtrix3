@@ -1,0 +1,9 @@
+#!/bin/bash
+# Evaluate command under default operation, where
+#   voxel grid is determined based on a template image
+# Contrast is simple streamline count
+# Output is compared to that generated using a prior version of the software;
+#   it is permitted for there to be a difference of 1 in some voxels
+#   in case of differences in rounding between platforms
+tckmap tracks.tck -template dwi.mif - | \
+testing_diff_image - tckmap/tdi.mif.gz -abs 1.5

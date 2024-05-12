@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test the "smooth" filter when an anisotropic smoothing kernel is used
+# Outcome is evaluated against that generated using an earlier software version
+mrfilter dwi.mif smooth -stdev 1.5,2.5,3.5 - | \
+testing_diff_image - mrfilter/out13.mif -frac 1e-5

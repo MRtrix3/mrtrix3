@@ -1,0 +1,5 @@
+#!/bin/bash
+# Convert an image from .mif to .mih format,
+#   and ensure that the resulting image is read as being identical to the input
+mrconvert mrconvert/in.mif tmp.mih -force
+testing_diff_image tmp.mih mrconvert/in.mif

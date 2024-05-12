@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify correct operation of the -seed_rejection option
+# Unlike other seed mechanism tests,
+#   here the deterministic FACT algorithm is used;
+#   the values contained within the rejection seeding input image has been constructed in such a way
+#   that the modulation of seeding density according to this image
+#   should result in an approximately equal number of streamlines in each bundle,
+#   and it is this equivalence that is tested
+tckgen SIFT_phantom/peaks.mif -algo fact -select 5000 -minlength 4 -mask SIFT_phantom/mask.mif tmp.tck -force \
+-seed_rejection tckgen/rejection_seed.mif
+
+tckmap tmp.tck -template SIFT_phantom/dwi.mif tmp.mif -force
+mrstats tmp.mif -mask SIFT_phantom/upper.mif -output mean > tmp1.txt
+mrstats tmp.mif -mask SIFT_phantom/lower.mif -output mean > tmp2.txt
+testing_diff_matrix tmp1.txt tmp2.txt -abs 30
