@@ -3,10 +3,10 @@ find_program(BASH bash)
 set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
 include(DirsToUnix)
-set(EXEC_DIRS "$ENV{PATH}")
-list(APPEND EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
+set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
 list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
+list(APPEND EXEC_DIRS "$ENV{PATH}")
 dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 
 include(BashTests)

@@ -22,10 +22,10 @@ find_package(Python3
 )
 
 include(DirsToUnix)
-set(EXEC_DIRS "$ENV{PATH}")
-list(APPEND EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
+set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
 list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
+list(APPEND EXEC_DIRS "$ENV{PATH}")
 dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 
 function(add_cpp_unit_test FILE_SRC)
