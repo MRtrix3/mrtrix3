@@ -25,7 +25,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-distutils
+         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-distutils python3-numpy
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
@@ -86,7 +86,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
@@ -138,6 +138,7 @@ jobs:
       run: |
          brew bundle --file=${{ github.workspace }}/.brewfile
          brew link --force qt
+         brew install numpy
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
