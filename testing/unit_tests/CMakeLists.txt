@@ -10,12 +10,24 @@ set(UNIT_TESTS_CPP_SRCS
     to.cpp
 )
 
-set(UNIT_TESTS_BASH_SRCS
+set(UNIT_TESTS_NPY_BASH_SRCS
     npyread
     npywrite
 )
 
 find_program(BASH bash)
+
+find_package(
+        Python3
+        REQUIRED
+        COMPONENTS Interpreter
+)
+
+execute_process(
+    COMMAND Python3::Interpreter -c "import numpy"
+    RESULT_VARIABLE HAVE_NUMPY_EXITCODE
+    OUTPUT_QUIET
+)
 
 function(add_cpp_unit_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
@@ -55,6 +67,10 @@ foreach(UNIT_TEST ${UNIT_TESTS_CPP_SRCS})
     add_cpp_unit_test(${UNIT_TEST})
 endforeach()
 
-foreach(UNIT_TEST ${UNIT_TESTS_BASH_SRCS})
-    add_bash_unit_test(${UNIT_TEST})
-endforeach()
+if(${HAVE_NUMPY_EXITCODE} EQUAL 0)
+    foreach(UNIT_TEST ${UNIT_TESTS_NPY_BASH_SRCS})
+        add_bash_unit_test(${UNIT_TEST})
+    endforeach()
+else()
+    message(WARNING "Python numpy package not found; omitting .npy format tests\n")
+endif()
