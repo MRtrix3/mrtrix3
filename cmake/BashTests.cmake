@@ -31,25 +31,7 @@ function(add_bash_test)
     # Add a custom target for IDEs to pickup the test script
     add_custom_target(test_${prefix}_${file_name} SOURCES ${file_path})
 
-    # Ensure that "rm" and its dependencies will be included in PATH
-    list(APPEND exec_directories "$ENV{PATH}")
-
-    # In MINGW, we need to replace paths starting with drive:/ with /drive/
-    # when invoking a bash command (e.g. using bash -c "command")
-    if(MINGW AND WIN32)
-        foreach(exec_dir ${EXEC_DIR_PATHS})
-            EXECUTE_PROCESS(
-                COMMAND cygpath -u ${exec_dir}
-                OUTPUT_VARIABLE new_exec_dir
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-            list(APPEND EXEC_DIR_PATHS ${new_exec_dir})
-        endforeach()
-    else()
-        set(EXEC_DIR_PATHS "${exec_directories}")
-    endif()
-
-    string(REPLACE ";" ":" EXEC_DIR_PATHS "${EXEC_DIR_PATHS}")
+    string(REPLACE ";" ":" exec_directories "${exec_directories}")
 
     set(cleanup_cmd "rm -rf ${working_directory}/tmp* ${working_directory}/*-tmp-*")
 
@@ -65,7 +47,7 @@ function(add_bash_test)
     )
     set_tests_properties(${test_name}
         PROPERTIES
-        ENVIRONMENT "PATH=${EXEC_DIR_PATHS}"
+        ENVIRONMENT "PATH=${exec_directories}"
     )
     if(labels)
         set_tests_properties(${test_name} PROPERTIES LABELS "${labels}")

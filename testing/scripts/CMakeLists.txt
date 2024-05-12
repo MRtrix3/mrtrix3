@@ -2,16 +2,19 @@ find_program(BASH bash)
 
 set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
+include(DirsToUnix)
+set(EXEC_DIRS "$ENV{PATH}")
+list(APPEND EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
+list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
+list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
+dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
+
 include(BashTests)
 function(add_bash_script_test file_path)
     set(extra_labels "")
     foreach(label ${ARGN})
         list(APPEND extra_labels ${label})
     endforeach()
-
-    set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
-    list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
-    list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
 
     # Set folder name
     string(REPLACE "/" ";" folder_list ${file_path})
