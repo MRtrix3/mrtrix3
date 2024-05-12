@@ -25,32 +25,30 @@ function(add_bash_test)
     # Regenerate tests when the test script changes
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${file_path})
 
-    # In MINGW, we need to replace paths starting with drive:/ with /drive/
-    # when invoking a bash command (e.g. using bash -c "command")
-    if(MINGW AND WIN32)
-        foreach(exec_dir ${exec_directories})
-            EXECUTE_PROCESS(
-                COMMAND cygpath -u ${exec_dir}
-                OUTPUT_VARIABLE new_exec_dir
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-            list(REMOVE_ITEM exec_directories ${exec_dir})
-            list(APPEND exec_directories ${new_exec_dir})
-        endforeach()
-    endif()
-
     get_filename_component(file_name ${file_path} NAME_WE)
     set(test_name ${prefix}_${file_name})
 
     # Add a custom target for IDEs to pickup the test script
     add_custom_target(test_${prefix}_${file_name} SOURCES ${file_path})
 
-    file(STRINGS ${file_path} FILE_CONTENTS)
-    list(LENGTH FILE_CONTENTS FILE_CONTENTS_LENGTH)
-    math(EXPR MAX_LINE_NUM "${FILE_CONTENTS_LENGTH} - 1")
+    # Ensure that "rm" and its dependencies will be included in PATH
+    list(APPEND exec_directories "$ENV{PATH}")
 
+    # In MINGW, we need to replace paths starting with drive:/ with /drive/
+    # when invoking a bash command (e.g. using bash -c "command")
+    if(MINGW AND WIN32)
+        foreach(exec_dir ${EXEC_DIR_PATHS})
+            EXECUTE_PROCESS(
+                COMMAND cygpath -u ${exec_dir}
+                OUTPUT_VARIABLE new_exec_dir
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            list(APPEND EXEC_DIR_PATHS ${new_exec_dir})
+        endforeach()
+    else()
+        set(EXEC_DIR_PATHS "${exec_directories}")
+    endif()
 
-    set(EXEC_DIR_PATHS "${exec_directories}")
     string(REPLACE ";" ":" EXEC_DIR_PATHS "${EXEC_DIR_PATHS}")
 
     set(cleanup_cmd "rm -rf ${working_directory}/tmp* ${working_directory}/*-tmp-*")
@@ -66,8 +64,8 @@ function(add_bash_test)
             -P ${PROJECT_SOURCE_DIR}/cmake/RunTest.cmake
     )
     set_tests_properties(${test_name}
-      PROPERTIES
-	    ENVIRONMENT "PATH=${EXEC_DIR_PATHS}:$ENV{PATH}"
+        PROPERTIES
+        ENVIRONMENT "PATH=${EXEC_DIR_PATHS}"
     )
     if(labels)
         set_tests_properties(${test_name} PROPERTIES LABELS "${labels}")
