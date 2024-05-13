@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify basic operation of the command
+rm -rf tmp/
+mkdir tmp/
+
+touch tmp/not_a_tempfile.txt
+touch tmp/mrtrix-tmp-ABCDEF.mif
+mkdir tmp/not_a_scratchdir/
+mkdir tmp/command-tmp-ABCDEF/
+
+mrtrix_cleanup tmp/ -test
+ITEMCOUNT=$(ls tmp/ | wc)
+if [ "$ITEMCOUNT" -neq "4" ]; then
+   exit 1
+fi
