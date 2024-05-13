@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dialog_image_properties_h__
-#define __gui_dialog_image_properties_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 #include "header.h"
@@ -46,5 +45,3 @@ private:
 } // namespace GUI::Dialog
 
 } // namespace MR
-
-#endif

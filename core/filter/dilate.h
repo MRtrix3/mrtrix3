@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_dilate_h__
-#define __filter_dilate_h__
+#pragma once
 
 #include "algo/copy.h"
 #include "algo/loop.h"
@@ -55,7 +54,7 @@ public:
     std::shared_ptr<Image<bool>> in(new Image<bool>(Image<bool>::scratch(input)));
     copy(input, *in);
     std::shared_ptr<Image<bool>> out;
-    std::shared_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message, npass + 1) : nullptr);
+    std::shared_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, npass + 1) : nullptr);
 
     for (unsigned int pass = 0; pass < npass; pass++) {
       out = std::make_shared<Image<bool>>(Image<bool>::scratch(input));
@@ -125,5 +124,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

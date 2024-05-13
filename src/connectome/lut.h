@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __connectome_lut_h__
-#define __connectome_lut_h__
+#pragma once
 
 #include <map>
 #include <string>
@@ -56,7 +55,7 @@ public:
   void set_alpha(const uint8_t a) { alpha = a; }
 
   const std::string &get_name() const { return name; }
-  const std::string &get_short_name() const { return short_name.size() ? short_name : name; }
+  const std::string &get_short_name() const { return !short_name.empty() ? short_name : name; }
   const RGB &get_colour() const { return colour; }
   uint8_t get_alpha() const { return alpha; }
 
@@ -96,5 +95,3 @@ private:
 std::vector<node_t> get_lut_mapping(const LUT &, const LUT &);
 
 } // namespace MR::Connectome
-
-#endif

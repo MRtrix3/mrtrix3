@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_jacobian_h__
-#define __image_adapter_jacobian_h__
+#pragma once
 
 #include "adapter/base.h"
 #include "adapter/gradient1D.h"
@@ -59,5 +58,3 @@ protected:
   const bool wrt_scanner;
 };
 } // namespace MR::Adapter
-
-#endif

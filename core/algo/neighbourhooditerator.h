@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_neighbourhooditerator_h__
-#define __algo_neighbourhooditerator_h__
+#pragma once
 
 #include "algo/iterator.h"
 #include "types.h"
@@ -114,5 +113,3 @@ private:
 
 //! @}
 } // namespace MR
-
-#endif

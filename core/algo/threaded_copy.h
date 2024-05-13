@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_threaded_copy_h__
-#define __algo_threaded_copy_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 
@@ -100,5 +99,3 @@ inline void threaded_copy_with_progress(InputImageType &source,
 }
 
 } // namespace MR
-
-#endif

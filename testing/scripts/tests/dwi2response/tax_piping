@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response tax"
+#   where image piping is used
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_in.mif - \
+-strides 0,0,0,1 \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+dwi2response tax - tmp.txt -force \
+-voxels - | \
+testing_diff_image - dwi2response/tax/default.mif.gz
+

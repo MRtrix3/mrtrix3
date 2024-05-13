@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_nonlinear_h__
-#define __registration_nonlinear_h__
+#pragma once
 
 #include "image.h"
 #include "types.h"
@@ -31,6 +30,7 @@
 #include "registration/multi_resolution_lmax.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/reorient.h"
+#include "registration/transform/rigid.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/convert.h"
 #include "registration/warp/helpers.h"
@@ -60,6 +60,16 @@ public:
     fod_lmax[0] = 0;
     fod_lmax[1] = 2;
     fod_lmax[2] = 4;
+  }
+
+  template <class TransformType, class ImageType>
+  void run(TransformType linear_trasform,
+           ImageType &im1_image,
+           ImageType &im2_image,
+           ImageType &im1_mask,
+           ImageType &im2_mask) {
+    run<TransformType, ImageType, ImageType, ImageType, ImageType>(
+        linear_trasform, im1_image, im2_image, im1_mask, im2_mask);
   }
 
   template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
@@ -132,7 +142,7 @@ public:
 
       // define or adjust tissue contrast lmax, nvols for this stage
       stage_contrasts = contrasts;
-      if (stage_contrasts.size()) {
+      if (!stage_contrasts.empty()) {
         for (auto &mc : stage_contrasts)
           mc.lower_lmax(fod_lmax[level]);
       } else {
@@ -337,7 +347,7 @@ public:
           converged = true;
 
         // write debug image
-        if (converged && diagnostics_image_prefix.size()) {
+        if (converged && !diagnostics_image_prefix.empty()) {
           std::ostringstream oss;
           oss << diagnostics_image_prefix << "_stage-" << level + 1 << ".mif";
           // if (Path::exists(oss.str()) && !App::overwrite_files)
@@ -555,6 +565,10 @@ protected:
   std::shared_ptr<Image<default_type>> im1_update_new;
   std::shared_ptr<Image<default_type>> im2_update_new;
 };
-} // namespace MR::Registration
 
-#endif
+extern template void NonLinear::run<Transform::Affine, Image<double>>(
+    Transform::Affine, Image<double> &, Image<double> &, Image<double> &, Image<double> &);
+extern template void NonLinear::run<Transform::Rigid, Image<double>>(
+    Transform::Rigid, Image<double> &, Image<double> &, Image<double> &, Image<double> &);
+
+} // namespace MR::Registration

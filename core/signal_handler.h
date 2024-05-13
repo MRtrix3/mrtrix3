@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __signal_handler_h__
-#define __signal_handler_h__
+#pragma once
 
 #include <string>
 
@@ -33,5 +32,3 @@ void mark_file_for_deletion(const std::string &filename);
 //! unmark the file from deletion
 void unmark_file_for_deletion(const std::string &filename);
 } // namespace MR::SignalHandler
-
-#endif

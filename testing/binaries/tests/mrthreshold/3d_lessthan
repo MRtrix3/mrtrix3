@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify output image from the command when the less-than comparison is used
+# This is proven to yield the same result as the pre-3.0.0 version of the mrthreshold command,
+#   where this outcome was achieved using the now deprecated "-invert" command-line flag
+mrthreshold dwi_mean.mif - -comparison lt | \
+testing_diff_image - mrthreshold/3d_invert.mif

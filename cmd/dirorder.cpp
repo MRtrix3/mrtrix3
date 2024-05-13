@@ -60,7 +60,7 @@ std::vector<size_t> optimise(const Eigen::MatrixXd &directions, const size_t fir
     if (n != indices[0])
       remaining.push_back(n);
 
-  while (remaining.size()) {
+  while (!remaining.empty()) {
     ssize_t best = 0;
     value_type best_E = std::numeric_limits<value_type>::max();
 
@@ -134,5 +134,5 @@ void run() {
   for (ssize_t n = 0; n < directions.rows(); ++n)
     output.row(n) = directions.row(best_order[n]);
 
-  DWI::Directions::save(output, argument[1], get_options("cartesian").size());
+  DWI::Directions::save(output, argument[1], !get_options("cartesian").empty());
 }

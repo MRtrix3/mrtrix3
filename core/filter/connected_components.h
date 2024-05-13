@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_connected_h__
-#define __filter_connected_h__
+#pragma once
 
 #include "image.h"
 #include "memory.h"
@@ -200,7 +199,7 @@ public:
   }
 
   template <class InputVoxelType, class OutputVoxelType> void operator()(InputVoxelType &in, OutputVoxelType &out) {
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message, 5) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, 5) : nullptr);
 
     Voxel2Vector v2v(in, *this);
     if (progress)
@@ -280,5 +279,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

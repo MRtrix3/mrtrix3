@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_algorithms_tensor_prob_h__
-#define __dwi_tractography_algorithms_tensor_prob_h__
+#pragma once
 
 #include "dwi/bootstrap.h"
 #include "dwi/tractography/algorithms/tensor_det.h"
@@ -139,5 +138,3 @@ protected:
 } // namespace Tractography
 } // namespace DWI
 } // namespace MR
-
-#endif

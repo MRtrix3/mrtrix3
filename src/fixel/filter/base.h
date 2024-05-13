@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_filter_base_h__
-#define __fixel_filter_base_h__
+#pragma once
 
 #include "image.h"
 #include <string>
@@ -51,5 +50,3 @@ protected:
 //! @}
 
 } // namespace MR::Fixel::Filter
-
-#endif

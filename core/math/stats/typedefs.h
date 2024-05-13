@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_stats_types_h__
-#define __math_stats_types_h__
+#pragma once
 
 #include "types.h"
 
@@ -30,5 +29,3 @@ using index_type = uint32_t;
 using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
 
 } // namespace MR::Math::Stats
-
-#endif

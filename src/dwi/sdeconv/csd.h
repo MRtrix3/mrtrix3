@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_sdeconv_csd_h__
-#define __dwi_sdeconv_csd_h__
+#pragma once
 
 #include "app.h"
 #include "dwi/directions/predefined.h"
@@ -63,29 +62,29 @@ public:
     void parse_cmdline_options() {
       using namespace App;
       auto opt = get_options("lmax");
-      if (opt.size()) {
+      if (!opt.empty()) {
         auto list = parse_ints<uint32_t>(opt[0][0]);
         if (list.size() != 1)
           throw Exception("CSD algorithm expects a single lmax to be specified");
         lmax_cmdline = list.front();
       }
       opt = get_options("filter");
-      if (opt.size())
+      if (!opt.empty())
         init_filter = File::Matrix::load_vector(opt[0][0]);
       opt = get_options("directions");
-      if (opt.size())
+      if (!opt.empty())
         HR_dirs = File::Matrix::load_matrix(opt[0][0]);
       opt = get_options("neg_lambda");
-      if (opt.size())
+      if (!opt.empty())
         neg_lambda = opt[0][0];
       opt = get_options("norm_lambda");
-      if (opt.size())
+      if (!opt.empty())
         norm_lambda = opt[0][0];
       opt = get_options("threshold");
-      if (opt.size())
+      if (!opt.empty())
         threshold = opt[0][0];
       opt = get_options("niter");
-      if (opt.size())
+      if (!opt.empty())
         niter = opt[0][0];
     }
 
@@ -228,7 +227,7 @@ public:
 
     work.triangularView<Eigen::Lower>() = shared.Mt_M.triangularView<Eigen::Lower>();
 
-    if (neg.size()) {
+    if (!neg.empty()) {
       for (size_t i = 0; i < neg.size(); i++)
         HR_T.row(i) = shared.HR_trans.row(neg[i]);
       auto HR_T_view = HR_T.topRows(neg.size());
@@ -254,5 +253,3 @@ protected:
 };
 
 } // namespace MR::DWI::SDeconv
-
-#endif

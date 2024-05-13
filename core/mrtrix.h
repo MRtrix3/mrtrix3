@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_h__
-#define __mrtrix_h__
+#pragma once
 
 #include <array>
 #include <cstdio>
@@ -171,7 +170,7 @@ template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
 }
 
 template <> inline cfloat to<cfloat>(const std::string &string) {
-  if (!string.size())
+  if (string.empty())
     throw Exception("cannot convert empty string to complex float");
 
   const std::string stripped = strip(string);
@@ -228,7 +227,7 @@ template <> inline std::string str<cdouble>(const cdouble &value, int precision)
 }
 
 template <> inline cdouble to<cdouble>(const std::string &string) {
-  if (!string.size())
+  if (string.empty())
     throw Exception("cannot convert empty string to complex double");
 
   const std::string stripped = strip(string);
@@ -278,7 +277,7 @@ std::vector<default_type> parse_floats(const std::string &spec);
 template <typename IntType>
 std::vector<IntType> parse_ints(const std::string &spec, const IntType last = std::numeric_limits<IntType>::max()) {
   typedef typename std::make_signed<IntType>::type SignedIntType;
-  if (!spec.size())
+  if (spec.empty())
     throw Exception("integer sequence specifier is empty");
 
   auto to_unsigned = [&](const SignedIntType value) {
@@ -373,5 +372,3 @@ template <typename T> inline std::string join(const std::vector<T> &V, const std
 std::string join(const char *const *null_terminated_array, const std::string &delimiter);
 
 } // namespace MR
-
-#endif

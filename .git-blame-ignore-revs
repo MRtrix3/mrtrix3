@@ -114,3 +114,8 @@ dd90cc2185d39111840ba90a0ee9f777a7183271
 #Author: MRtrixBot <gitbot@mrtrix.org>
 #Date:   Mon, 26 Feb 2024 17:33:13 +0000
 #    Concatenate nested namespaces
+
+cd8a6f1c2d0debcf3a6de185f8b92fc0be3e1401
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Fri, 5 Apr 2024 14:06:00 +0100
+#    Replace include guards with #pragma once

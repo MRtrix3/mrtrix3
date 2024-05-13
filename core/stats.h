@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_h_
-#define __stats_h_
+#pragma once
 
 #include "math/median.h"
 
@@ -53,7 +52,7 @@ public:
       std_rv = complex_type(sqrt((m2.real() + m2.imag()) / value_type(count - 1)));
       std::sort(values.begin(), values.end());
     }
-    if (fields.size()) {
+    if (!fields.empty()) {
       if (!count) {
         if (fields.size() == 1 && fields.front() == "count") {
           std::cout << "0\n";
@@ -66,7 +65,7 @@ public:
         if (fields[n] == "mean")
           std::cout << str(mean) << " ";
         else if (fields[n] == "median")
-          std::cout << (values.size() > 0 ? str(Math::median(values)) : "N/A") << " ";
+          std::cout << (!values.empty() ? str(Math::median(values)) : "N/A") << " ";
         else if (fields[n] == "std")
           std::cout << (count > 1 ? str(std) : "N/A") << " ";
         else if (fields[n] == "std_rv")
@@ -120,5 +119,3 @@ private:
 void print_header(bool is_complex);
 
 } // namespace MR::Stats
-
-#endif

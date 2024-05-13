@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic verification of operation of the command with no command-line options
+# Outcome is compared to the output produced using a prior software version
+peaks2amp peaks.mif - | \
+testing_diff_image - peaks2amp/out.mif -frac 1e-5

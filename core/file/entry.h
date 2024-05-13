@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_entry_h__
-#define __file_entry_h__
+#pragma once
 
 #include <string>
 
@@ -44,5 +43,3 @@ inline std::ostream &operator<<(std::ostream &stream, const Entry &e) {
   return stream;
 }
 } // namespace MR::File
-
-#endif

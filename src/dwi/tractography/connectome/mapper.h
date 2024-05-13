@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_mapper_h__
-#define __dwi_tractography_connectome_mapper_h__
+#pragma once
 
 #include "dwi/tractography/connectome/mapped_track.h"
 #include "dwi/tractography/connectome/metric.h"
@@ -57,5 +56,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::Connectome
-
-#endif

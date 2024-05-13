@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __degibbs_unring_1d_h__
-#define __degibbs_unring_1d_h__
+#pragma once
 
 #include "math/fft.h"
 
@@ -134,5 +133,3 @@ private:
 };
 
 } // namespace MR::Degibbs
-
-#endif

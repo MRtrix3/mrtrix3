@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __min_mem_array_h__
-#define __min_mem_array_h__
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -153,5 +152,3 @@ private:
 };
 
 } // namespace MR
-
-#endif

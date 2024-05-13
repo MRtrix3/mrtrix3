@@ -374,7 +374,7 @@ const char *DataType::specifier() const {
 
 DataType DataType::from_command_line(DataType default_datatype) {
   auto opt = App::get_options("datatype");
-  if (opt.size())
+  if (!opt.empty())
     default_datatype = parse(opt[0][0]);
   return default_datatype;
 }

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_robust_estimators_h__
-#define __registration_metric_robust_estimators_h__
+#pragma once
 
 namespace MR {
 namespace Math {
@@ -86,4 +85,3 @@ private:
 } // namespace Metric
 } // namespace Registration
 } // namespace MR
-#endif

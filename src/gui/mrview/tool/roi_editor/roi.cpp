@@ -294,7 +294,7 @@ void ROI::dropEvent(QDropEvent *event) {
         e.display();
       }
     }
-    if (list.size()) {
+    if (!list.empty()) {
       load(list);
       in_insert_mode = false;
     }
@@ -319,7 +319,7 @@ void ROI::save(ROI_Item *roi) {
     header.datatype() = DataType::Bit;
     std::string name = GUI::Dialog::File::get_save_image_name(
         &window(), "Select name of ROI to save", roi->get_filename(), &current_folder);
-    if (name.size()) {
+    if (!name.empty()) {
       auto out = MR::Image<bool>::create(name, header);
       roi->save(out, data.data());
     }
@@ -522,7 +522,7 @@ void ROI::model_rows_changed() { updateGL(); }
 void ROI::update_undo_redo() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
 
-  if (indices.size()) {
+  if (!indices.empty()) {
     ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
     undo_button->defaultAction()->setEnabled(roi->has_undo());
     redo_button->defaultAction()->setEnabled(roi->has_redo());
@@ -540,7 +540,7 @@ void ROI::update_selection() {
     setEnabled(true);
 
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  bool enable = window().image() && indices.size();
+  bool enable = window().image() && !indices.empty();
 
   opacity_slider->setEnabled(enable);
   save_button->setEnabled(enable);
@@ -553,7 +553,7 @@ void ROI::update_selection() {
 
   update_undo_redo();
 
-  if (!indices.size()) {
+  if (indices.empty()) {
     draw_button->defaultAction()->setChecked(false);
     return;
   }
@@ -634,7 +634,7 @@ bool ROI::mouse_move_event() {
     return false;
 
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  if (!indices.size()) {
+  if (indices.empty()) {
     WARN("FIXME: shouldn't be here!");
     return false;
   }

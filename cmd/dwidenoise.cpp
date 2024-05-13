@@ -311,14 +311,14 @@ void run() {
 
   Image<bool> mask;
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(mask, dwi, 0, 3);
   }
 
   opt = get_options("extent");
   std::vector<uint32_t> extent;
-  if (opt.size()) {
+  if (!opt.empty()) {
     extent = parse_ints<uint32_t>(opt[0][0]);
     if (extent.size() == 1)
       extent = {extent[0], extent[0], extent[0]};
@@ -348,7 +348,7 @@ void run() {
 
   Image<real_type> noise;
   opt = get_options("noise");
-  if (opt.size()) {
+  if (!opt.empty()) {
     Header header(dwi);
     header.ndim() = 3;
     header.datatype() = DataType::Float32;
@@ -357,7 +357,7 @@ void run() {
 
   Image<uint16_t> rank;
   opt = get_options("rank");
-  if (opt.size()) {
+  if (!opt.empty()) {
     Header header(dwi);
     header.ndim() = 3;
     header.datatype() = DataType::UInt16;

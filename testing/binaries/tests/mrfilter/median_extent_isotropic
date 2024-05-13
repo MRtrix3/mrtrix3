@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test the "median" filter when a larger than default, but _isotropic_, kernel is specified
+# Outcome is compared against that generated using a prior software version
+mrfilter dwi.mif median -extent 5 - | \
+testing_diff_image - mrfilter/out8.mif -frac 1e-5

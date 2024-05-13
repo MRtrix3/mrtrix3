@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_fixel_h__
-#define __fixel_fixel_h__
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -33,5 +32,3 @@ const std::string n_fixels_key("nfixels");
 const std::initializer_list<const std::string> supported_sparse_formats{".mif", ".nii", ".mif.gz", ".nii.gz"};
 
 } // namespace MR::Fixel
-
-#endif

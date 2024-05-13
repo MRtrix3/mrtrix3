@@ -70,7 +70,7 @@ void GZ::load(const Header &header, size_t) {
 }
 
 void GZ::unload(const Header &header) {
-  if (addresses.size()) {
+  if (!addresses.empty()) {
     assert(addresses[0]);
 
     if (writable) {

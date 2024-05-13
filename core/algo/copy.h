@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_copy_h__
-#define __algo_copy_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "debug.h"
@@ -55,5 +54,3 @@ void copy_with_progress_message(const std::string &message,
 }
 
 } // namespace MR
-
-#endif

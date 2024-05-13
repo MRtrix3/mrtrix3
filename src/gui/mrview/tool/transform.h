@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_transform_h__
-#define __gui_mrview_tool_transform_h__
+#pragma once
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
@@ -46,5 +45,3 @@ protected slots:
 };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

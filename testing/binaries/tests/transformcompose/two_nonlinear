@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation when provided with two input non-linear transformations
+# Outcome is compared to that calculated using a prior software version
+transformcompose rotatez_warp.mif rotatez_warp.mif - | \
+testing_diff_image - transformcompose/out4.mif -frac 0.001

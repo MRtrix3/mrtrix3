@@ -355,7 +355,7 @@ public:
     // Requires preservation of order
     assert(in.get_index() == ReceiverBase::received);
     if (ascii) {
-      if (in.size()) {
+      if (!in.empty()) {
         auto i = in.begin();
         (*ascii) << *i;
         for (++i; i != in.end(); ++i)
@@ -413,9 +413,9 @@ void run() {
   auto image = H.get_image<value_type>();
 
   auto opt = get_options("stat_tck");
-  const stat_tck statistic = opt.size() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
-  const bool nointerp = get_options("nointerp").size();
-  const bool precise = get_options("precise").size();
+  const stat_tck statistic = !opt.empty() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
+  const bool nointerp = !get_options("nointerp").empty();
+  const bool precise = !get_options("precise").empty();
   if (nointerp && precise)
     throw Exception("Option -nointerp and -precise are mutually exclusive");
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
@@ -425,7 +425,7 @@ void run() {
     throw Exception("Precise streamline mapping may only be used with per-streamline statistics");
 
   Image<value_type> tdi;
-  if (get_options("use_tdi_fraction").size()) {
+  if (!get_options("use_tdi_fraction").empty()) {
     if (statistic == stat_tck::NONE)
       throw Exception("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
     DWI::Tractography::Reader<value_type> tdi_reader(argument[0], properties);

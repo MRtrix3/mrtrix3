@@ -30,20 +30,20 @@ const char *const optim_algo_names[] = {"BBGD", "GD", nullptr};
 
 // define parameters of initialisation methods used for both, rigid and affine registration
 void parse_general_options(Registration::Linear &registration) {
-  if (get_options("init_translation.unmasked1").size())
+  if (!get_options("init_translation.unmasked1").empty())
     registration.init.init_translation.unmasked1 = true;
-  if (get_options("init_translation.unmasked2").size())
+  if (!get_options("init_translation.unmasked2").empty())
     registration.init.init_translation.unmasked2 = true;
 
-  if (get_options("init_rotation.unmasked1").size())
+  if (!get_options("init_rotation.unmasked1").empty())
     registration.init.init_rotation.unmasked1 = true;
-  if (get_options("init_rotation.unmasked2").size())
+  if (!get_options("init_rotation.unmasked2").empty())
     registration.init.init_rotation.unmasked2 = true;
 
-  if (get_options("init_rotation.search.run_global").size())
+  if (!get_options("init_rotation.search.run_global").empty())
     registration.init.init_rotation.search.run_global = true;
   auto opt = get_options("init_rotation.search.angles");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::vector<default_type> angles = parse_floats(opt[0][0]);
     for (auto &a : angles) {
       if (a < 0.0 or a > 180.0)
@@ -52,21 +52,21 @@ void parse_general_options(Registration::Linear &registration) {
     registration.init.init_rotation.search.angles.swap(angles);
   }
   opt = get_options("init_rotation.search.directions");
-  if (opt.size()) {
+  if (!opt.empty()) {
     ssize_t dirs(opt[0][0]);
     if (dirs < 1)
       throw Exception("init_rotation.search.directions has to be at least 1");
     registration.init.init_rotation.search.directions = dirs;
   }
   opt = get_options("init_rotation.search.scale");
-  if (opt.size()) {
+  if (!opt.empty()) {
     default_type scale = (opt[0][0]);
     if (scale < 0.0001 or scale > 1.0)
       throw Exception("init_rotation.search.scale has to be between 0.0001 and 1.0");
     registration.init.init_rotation.search.scale = scale;
   }
   opt = get_options("init_rotation.search.global.iterations");
-  if (opt.size()) {
+  if (!opt.empty()) {
     size_t iters(opt[0][0]);
     if (iters == 0)
       throw Exception("init_rotation.search.global.iterations has to be at least 1");
@@ -74,7 +74,7 @@ void parse_general_options(Registration::Linear &registration) {
   }
 
   opt = get_options("linstage.optimiser.default");
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch ((int)opt[0][0]) {
     case 0:
       registration.set_stage_optimiser_default(Registration::OptimiserAlgoType::bbgd);
@@ -89,7 +89,7 @@ void parse_general_options(Registration::Linear &registration) {
   }
 
   opt = get_options("linstage.optimiser.first");
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch ((int)opt[0][0]) {
     case 0:
       registration.set_stage_optimiser_first(Registration::OptimiserAlgoType::bbgd);
@@ -104,7 +104,7 @@ void parse_general_options(Registration::Linear &registration) {
   }
 
   opt = get_options("linstage.optimiser.last");
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch ((int)opt[0][0]) {
     case 0:
       registration.set_stage_optimiser_last(Registration::OptimiserAlgoType::bbgd);
@@ -119,7 +119,7 @@ void parse_general_options(Registration::Linear &registration) {
   }
 
   opt = get_options("linstage.iterations");
-  if (opt.size()) {
+  if (!opt.empty()) {
     const auto iterations = parse_ints<uint32_t>(opt[0][0]);
     registration.set_stage_iterations(iterations);
   } else {
@@ -127,7 +127,7 @@ void parse_general_options(Registration::Linear &registration) {
   }
 
   opt = get_options("linstage.diagnostics.prefix");
-  if (opt.size()) {
+  if (!opt.empty()) {
     registration.set_diagnostics_image_prefix(opt[0][0]);
   }
 }

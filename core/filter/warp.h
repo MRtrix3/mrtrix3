@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_warp_h__
-#define __filter_warp_h__
+#pragma once
 
 #include "adapter/reslice.h"
 #include "adapter/warp.h"
@@ -120,5 +119,3 @@ void warp(ImageTypeSource &source,
 
 //! @}
 } // namespace MR::Filter
-
-#endif

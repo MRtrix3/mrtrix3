@@ -1,0 +1,6 @@
+#!/bin/bash
+# Evaluates the "smooth" filter when a single scalar vaue for stdev is provided
+#   (the same value of standard deviation is applied to all spatial axes)
+# Output is compared against that generated using a prior software version
+mrfilter dwi.mif smooth -stdev 1.4 - | \
+testing_diff_image - mrfilter/out3.mif -frac 1e-5

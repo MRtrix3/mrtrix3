@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_output_h__
-#define __dwi_tractography_sift_output_h__
+#pragma once
 
 #include "header.h"
 #include "image.h"
@@ -229,5 +228,3 @@ template <class Fixel> void ModelBase<Fixel>::output_fixel_count_image(const std
 }
 
 } // namespace MR::DWI::Tractography::SIFT
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_mgh_h__
-#define __file_mgh_h__
+#pragma once
 
 #include <sstream>
 
@@ -404,7 +403,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         throw Exception("Error reading colour table from file \"" + H.name() + "\": Negative structure name length");
       std::string structurename(structurename_length, '\0');
       in.read(const_cast<char *>(structurename.data()), structurename_length);
-      while (structurename.size() && !structurename.back())
+      while (!structurename.empty() && !structurename.back())
         structurename.pop_back();
       const int32_t r = fetch<int32_t>(in);
       const int32_t g = fetch<int32_t>(in);
@@ -430,7 +429,7 @@ template <class Input> void read_other(Header &H, Input &in) {
       if (structure < 0)
         throw Exception("Error reading colour table from file \"" + H.name() + "\": Negative structure index (" +
                         str(structure) + ")");
-      if (size_t(structure) < table.size() && table[structure].size())
+      if (size_t(structure) < table.size() && !table[structure].empty())
         throw Exception("Error reading colour table from file \"" + H.name() + "\": Duplicate structure index (" +
                         str(structure) + ")");
       else if (size_t(structure) >= table.size())
@@ -440,7 +439,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         throw Exception("Error reading colour table from file \"" + H.name() + "\": Negative structure name length");
       std::string structurename(structurename_length, '\0');
       in.read(const_cast<char *>(structurename.data()), structurename_length);
-      while (structurename.size() && !structurename.back())
+      while (!structurename.empty() && !structurename.back())
         structurename.pop_back();
       const int32_t r = fetch<int32_t>(in);
       const int32_t g = fetch<int32_t>(in);
@@ -451,7 +450,7 @@ template <class Input> void read_other(Header &H, Input &in) {
     }
     std::string result;
     for (size_t index = 0; index != table.size(); ++index) {
-      if (table[index].size())
+      if (!table[index].empty())
         add_line(result, str(index) + "," + table[index]);
     }
     return result;
@@ -822,7 +821,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
 
   auto write_colourtable_V1 = [](const std::string &table, Output &out) {
     const auto lines = split_lines(table);
-    if (!lines.size())
+    if (lines.empty())
       return;
     store<int32_t>(MGH_TAG_OLD_COLORTABLE, out);
     store<int32_t>(lines.size(), out);
@@ -975,9 +974,9 @@ template <class Output> void write_other(const Header &H, Output &out) {
     //   forced to big-endian like the rest of the format.
     out.write(reinterpret_cast<char *>(&field_strength), sizeof(float32));
   }
-  if (mri_frames.size())
+  if (!mri_frames.empty())
     write_mri_frames(mri_frames, out);
-  if (colour_table.size()) {
+  if (!colour_table.empty()) {
     const std::string first_line = colour_table.substr(0, colour_table.find_first_of('\n'));
     const auto entries = split(first_line, ",", true);
     switch (entries.size()) {
@@ -1002,5 +1001,3 @@ template <class Output> void write_other(const Header &H, Output &out) {
 } // namespace File::MGH
 
 } // namespace MR
-
-#endif

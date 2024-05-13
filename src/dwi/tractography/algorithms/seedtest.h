@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_algorithms_seedtest_h__
-#define __dwi_tractography_algorithms_seedtest_h__
+#pragma once
 
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -52,5 +51,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::Algorithms
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_mapper_h__
-#define __dwi_tractography_mapping_mapper_h__
+#pragma once
 
 #include "image.h"
 #include "thread_queue.h"
@@ -254,7 +253,7 @@ template <class Cont> void TrackMapperBase::voxelise_precise(const Streamline<> 
 }
 
 template <class Cont> void TrackMapperBase::voxelise_ends(const Streamline<> &tck, Cont &out) const {
-  if (!tck.size())
+  if (tck.empty())
     return;
   if (tck.size() == 1) {
     const auto vox = round(scanner2voxel * tck.front());
@@ -357,5 +356,3 @@ private:
 };
 
 } // namespace MR::DWI::Tractography::Mapping
-
-#endif

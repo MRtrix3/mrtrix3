@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_pyconfig_h__
-#define __file_pyconfig_h__
+#pragma once
 
 /* Config file options listed here so that they can be scraped by
  * generate_user_docs.sh and added to the list of config file options in
@@ -107,5 +106,3 @@
 // CONF script itself will be used, followed by `-tmp-` (six random
 // CONF characters are then appended to produce a unique name in cases
 // CONF where a script may be run multiple times in parallel).
-
-#endif

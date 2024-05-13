@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_zstatistic_h__
-#define __math_zstatistic_h__
+#pragma once
 
 #include <map>
 #include <mutex>
@@ -93,5 +92,3 @@ protected:
 };
 
 } // namespace MR::Math
-
-#endif

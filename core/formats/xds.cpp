@@ -65,7 +65,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
   io_handler->files.push_back(File::Entry(H.name()));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
 bool XDS::check(Header &H, size_t num_axes) const {
@@ -120,7 +120,7 @@ std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
   File::create(H.name(), footprint(H, "11 1"));
   io_handler->files.push_back(File::Entry(H.name()));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
 } // namespace MR::Formats

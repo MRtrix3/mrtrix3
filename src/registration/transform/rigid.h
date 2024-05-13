@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_rigid_h__
-#define __registration_transform_rigid_h__
+#pragma once
 
 #include "math/math.h"
 #include "registration/transform/base.h"
@@ -111,5 +110,3 @@ protected:
 };
 //! @}
 } // namespace MR::Registration::Transform
-
-#endif

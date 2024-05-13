@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __math_stats_import_h__
-#define __math_stats_import_h__
+#pragma once
 
 #include <fstream>
 #include <memory>
@@ -86,7 +85,7 @@ public:
    */
   vector_type operator()(const index_type index) const;
 
-  operator bool() const { return bool(files.size()); }
+  operator bool() const { return bool(!files.empty()); }
   index_type size() const { return files.size(); }
 
   std::shared_ptr<SubjectDataImportBase> operator[](const index_type i) const {
@@ -124,7 +123,7 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
       const size_t p = line.find_last_not_of(" \t");
       if (p != std::string::npos)
         line.erase(p + 1);
-      if (line.size())
+      if (!line.empty())
         lines.push_back(line);
     }
   }
@@ -134,7 +133,7 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
     directories[0] = ".";
   else if (directories[0] != ".")
     directories.push_back(".");
-  if (explicit_from_directory.size())
+  if (!explicit_from_directory.empty())
     directories.insert(directories.begin(), explicit_from_directory);
 
   Exception e_nosuccess("Unable to load all input data from file \"" + listpath + "\"");
@@ -172,5 +171,3 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
 }
 
 } // namespace MR::Math::Stats
-
-#endif

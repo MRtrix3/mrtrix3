@@ -44,7 +44,7 @@ void MeshMulti::load(const std::string &path) {
   while (std::getline(in, line)) {
     // TODO Functionalise most of the below
     ++counter;
-    if (!line.size())
+    if (line.empty())
       continue;
     if (line[0] == '#')
       continue;
@@ -79,7 +79,7 @@ void MeshMulti::load(const std::string &path) {
           elements.push_back(data.substr(0, first_space));
           data = data.substr(first_space + 1);
         }
-      } while (data.size());
+      } while (!data.empty());
       if (elements.size() != 3 && elements.size() != 4)
         throw Exception("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " +
                         str(counter) + ")");
@@ -129,14 +129,14 @@ void MeshMulti::load(const std::string &path) {
         vertex_index_offset += vertices.size();
         Mesh temp;
         temp.load(std::move(vertices), std::move(triangles), std::move(quads));
-        temp.set_name(object.size() ? object : str(index - 1));
+        temp.set_name(!object.empty() ? object : str(index - 1));
         push_back(temp);
       }
       object = data;
     }
   }
 
-  if (vertices.size()) {
+  if (!vertices.empty()) {
     ++index;
     Mesh temp;
     temp.load(vertices, triangles, quads);

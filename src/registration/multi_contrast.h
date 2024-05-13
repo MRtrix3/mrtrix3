@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_multi_contrast_h__
-#define __registration_multi_contrast_h__
+#pragma once
 
 #include <vector>
 
@@ -34,7 +33,7 @@ namespace MR::Registration {
 
 FORCE_INLINE void check_image_output(const std::string &image_name, const Header &reference) {
   std::vector<std::string> V;
-  if (!image_name.size())
+  if (image_name.empty())
     throw Exception("image output path is empty");
   if (Path::exists(image_name) && !App::overwrite_files)
     throw Exception("output image \"" + image_name + "\" already exists (use -force option to force overwrite)");
@@ -110,5 +109,3 @@ void preload_data(std::vector<Header> &input,
                   const std::vector<MultiContrastSetting> &mc_params);
 
 } // namespace MR::Registration
-
-#endif

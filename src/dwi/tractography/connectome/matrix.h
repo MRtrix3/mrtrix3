@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_matrix_h__
-#define __dwi_tractography_connectome_matrix_h__
+#pragma once
 
 #include <set>
 
@@ -95,5 +94,3 @@ extern template class Matrix<float>;
 extern template class Matrix<double>;
 
 } // namespace MR::DWI::Tractography::Connectome
-
-#endif

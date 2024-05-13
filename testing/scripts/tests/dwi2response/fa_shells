@@ -1,0 +1,17 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response fa"
+#   where the response function is estimated only for one specific b-value shell
+# Ensure that outputs match those generated
+#   using a prior version of the software
+
+dwi2response fa BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_out.txt \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-voxels tmp_voxels.mif \
+-number 20 \
+-shells 0,2000 \
+-force
+
+testing_diff_matrix tmp_out.txt dwi2response/fa/shells.txt -abs 1e-2
+testing_diff_image tmp_voxels.mif dwi2response/fa/shells.mif.gz
+
