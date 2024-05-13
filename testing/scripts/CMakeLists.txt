@@ -205,6 +205,7 @@ add_bash_script_test(labelsgmfirst/premasked)
 add_bash_script_test(labelsgmfirst/sgm_amyg_hipp)
 
 add_bash_script_test(mask2glass/default "pythonci")
+add_bash_script_test(mask2glass/no4dseries "pythonci")
 
 add_bash_script_test(mrtrix_cleanup/default "pythonci")
 add_bash_script_test(mrtrix_cleanup/test "pythonci")
