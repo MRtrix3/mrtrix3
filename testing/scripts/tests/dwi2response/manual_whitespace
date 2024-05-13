@@ -1,0 +1,20 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response manual"
+#   when filesystem paths include whitespace characters
+
+dwi2tensor BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz | \
+tensor2metric - -vector "tmp dirs.mif" -force
+
+ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+ln -s dwi2response/fa/default.mif.gz "tmp voxels.mif.gz"
+
+dwi2response manual "tmp in.mif" "tmp voxels.mif.gz" "tmp out.txt" -force \
+-fslgrad "tmp in.bvec" "tmp in.bval" \
+-dirs "tmp dirs.mif"
+
+testing_diff_matrix "tmp out.txt" dwi2response/manual/dirs.txt -abs 1e-2
+

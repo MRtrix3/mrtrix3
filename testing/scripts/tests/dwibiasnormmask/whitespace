@@ -1,0 +1,21 @@
+#!/bin/bash
+# Verify successful execution of command
+#   when filesystem paths include whitespace characters
+rm -f "tmp *.mif"
+
+ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+ln -s BIDS/sub-01/dwi/sub-01_brainmask.nii.gz "tmp mask.nii.gz"
+
+dwibiasnormmask "tmp in.mif" "tmp out.mif" -force \
+-fslgrad "tmp in.bvec" "tmp in.bval" \
+-init_mask "tmp mask.nii.gz" \
+-output_bias "tmp bias.mif" \
+-output_scale "tmp scale.txt" \
+-output_tissuesum "tmp tissuesum.mif"
+
+ls | grep "^tmp out\.mif$"
+ls | grep "^tmp bias\.mif$"
+ls | grep "^tmp scale\.txt$"
+ls | grep "^tmp tissuesum\.mif$"
