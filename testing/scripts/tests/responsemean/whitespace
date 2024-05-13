@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify command operation when filesystem paths include whitespace characters
+ln -s BIDS/sub-02/dwi/sub-02_tissue-WM_response.txt "tmp response2.txt"
+ln -s BIDS/sub-03/dwi/sub-03_tissue-WM_response.txt "tmp response3.txt"
+
+responsemean "tmp response2txt" "tmp response3.txt" "tmp out.txt" -force
+testing_diff_matrix "tmp out.txt" responsemean/out.txt -abs 0.001

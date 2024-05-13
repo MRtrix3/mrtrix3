@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response tax"
+#   where image paths include whitespace characters
+
+ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+
+dwi2response tax "tmp in.mif" "tmp out.txt" -force \
+-fslgrad "tmp in.bvec" "tmp in.bval" \
+-voxels "tmp voxels.mif"
+
+testing_diff_matrix "tmp out.txt" dwi2response/tax/default.txt -abs 1e-2
+testing_diff_image "tmp voxels.mif" dwi2response/tax/default.mif.gz
+

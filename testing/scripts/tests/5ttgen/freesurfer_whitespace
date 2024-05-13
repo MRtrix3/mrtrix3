@@ -1,0 +1,6 @@
+#!/bin/bash
+# Ensure correct operation of the "5ttgen freesurfer" command
+#  where image paths include whitespace
+mrconvert BIDS/sub-01/anat/aparc+aseg.mgz "tmp in.mif" -force
+5ttgen freesurfer "tmp in.mif" "tmp out.mif" -force
+testing_diff_image "tmp out.mif" 5ttgen/freesurfer/default.mif.gz

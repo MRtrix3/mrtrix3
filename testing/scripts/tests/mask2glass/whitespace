@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify operation of the "mask2glass" command
+#   where image paths include whitespace characters
+ln -s BIDS/sub-01/dwi/sub-01_brainmask.nii.gz "tmp in.nii.gz"
+
+mask2glass "tmp in.nii.gz" "tmp out.mif" -force
+
+testing_diff_image "tmp out.mif" mask2glass/out.mif.gz

@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify successful execution of "dwi2mask 3dautomask"
+#   where image paths include whitespace characters
+# Make sure that the output image appears at the expected location
+rm -f "tmp in.mif"
+
+ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+
+dwi2mask 3dautomask "tmp in.mif" "tmp out.mif" -force \
+-fslgrad "tmp in.bvec" "tmp in.bval"
+
+ls | grep "^tmp out\.mif$"

@@ -1,0 +1,18 @@
+#!/bin/bash
+# Verify that command "dwi2mask ants" executes to completion
+#   when utilising image paths that include whitespace characters
+# Make sure that the output image appears at the expected location
+rm -f "tmp out.mif"
+
+ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+
+ln -s dwi2mask/template_image.mif.gz "tmp template.mif.gz"
+ln -s dwi2mask/template_mask.mif.gz "tmp mask.mif.gz"
+
+dwi2mask ants "tmp in.mif" "tmp out.mif" -force \
+-fslgrad "tmp in.bvec" "tmp in.bval" \
+-template "tmp template.mif.gz" "tmp mask.mif.gz"
+
+ls | grep "^tmp out\.mif$"

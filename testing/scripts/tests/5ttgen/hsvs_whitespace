@@ -1,0 +1,6 @@
+#!/bin/bash
+# Ensure correct operation of the "5ttgen hsvs" command
+#   when filesystem paths include whitespace characters
+ln -s "tmp in/" freesurfer/sub-01
+5ttgen hsvs "tmp in/" "tmp out.mif" -force
+testing_diff_header "tmp out.mif" 5ttgen/hsvs/default.mif.gz
