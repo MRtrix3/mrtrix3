@@ -773,6 +773,7 @@ def execute(): #pylint: disable=unused-variable
         raise MRtrixError('DWI header indicates no phase encoding contrast between b=0 images; cannot proceed with volume recombination-based pre-processing')
       app.warn('DWI header indicates no phase encoding contrast between b=0 images; proceeding without inhomogeneity field estimation')
       execute_topup = False
+      execute_applytopup = False
       run.function(os.remove, se_epi_path)
       se_epi_path = None
       se_epi_header = None
