@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __degibbs_unring_3d_h__
-#define __degibbs_unring_3d_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 #include "axes.h"
@@ -248,7 +247,7 @@ void unring3D(ImageIn &input, ImageOut &output, const int minW = 1, const int ma
     std::string vol_idx;
     for (size_t n = 3; n < input.ndim(); ++n)
       vol_idx += str(input.index(n)) + " ";
-    if (vol_idx.size())
+    if (!vol_idx.empty())
       INFO("processing volume [ " + vol_idx + "]");
 
     Volume vol_in(input);
@@ -256,5 +255,3 @@ void unring3D(ImageIn &input, ImageOut &output, const int minW = 1, const int ma
   }
 }
 } // namespace MR::Degibbs
-
-#endif

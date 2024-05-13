@@ -59,7 +59,7 @@ void Properties::set_version_info() {
 void Properties::update_command_history() {
   // Make sure the current command is not concatenated more than once
   const auto command_history = split_lines((*this)["command_history"]);
-  if (!(command_history.size() && command_history.back() == App::command_history_string))
+  if (!(!command_history.empty() && command_history.back() == App::command_history_string))
     add_line((*this)["command_history"], App::command_history_string);
 }
 

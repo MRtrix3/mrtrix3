@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_one_over_cosh_h__
-#define __math_one_over_cosh_h__
+#pragma once
 
 #include "math/math.h"
 #include "math/vector.h"
@@ -166,5 +165,3 @@ inline T lnP(const Math::Vector<T> &measured,
 } // namespace Sech
 } // namespace Math
 } // namespace MR
-
-#endif

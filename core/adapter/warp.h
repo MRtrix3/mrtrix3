@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_warp_h__
-#define __adapter_warp_h__
+#pragma once
 
 #include "adapter/jacobian.h"
 #include "image.h"
@@ -124,5 +123,3 @@ private:
 //! @}
 
 } // namespace MR::Adapter
-
-#endif

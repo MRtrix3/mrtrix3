@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_mask_clean_h__
-#define __filter_mask_clean_h__
+#pragma once
 
 #include "algo/copy.h"
 #include "algo/loop.h"
@@ -65,7 +64,7 @@ public:
   template <class InputImageType, class OutputImageType>
   void operator()(InputImageType &input, OutputImageType &output) {
 
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
     if (progress)
       ++(*progress);
@@ -158,5 +157,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

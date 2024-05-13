@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __connectome_mat2vec_h__
-#define __connectome_mat2vec_h__
+#pragma once
 
 #include <stdint.h>
 
@@ -100,5 +99,3 @@ template <class VecType> matrix_type Mat2Vec::V2M(const VecType &v) const {
 }
 
 } // namespace MR::Connectome
-
-#endif

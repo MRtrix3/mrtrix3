@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_connectome_h__
-#define __gui_mrview_tool_connectome_connectome_h__
+#pragma once
 
 #include <map>
 
@@ -71,7 +70,7 @@ public:
   void draw_colourbars() override;
   size_t visible_number_colourbars() override;
 
-  node_t num_nodes() const { return nodes.size() ? nodes.size() - 1 : 0; }
+  node_t num_nodes() const { return nodes.empty() ? 0 : nodes.size() - 1; }
   size_t num_edges() const { return edges.size(); }
 
   static void add_commandline_options(MR::App::OptionList &options);
@@ -396,5 +395,3 @@ private:
 };
 
 } // namespace MR::GUI::MRView::Tool
-
-#endif

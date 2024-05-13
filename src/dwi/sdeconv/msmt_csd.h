@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_sdeconv_msmt_csd_h__
-#define __dwi_sdeconv_msmt_csd_h__
+#pragma once
 
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
@@ -53,16 +52,16 @@ public:
     void parse_cmdline_options() {
       using namespace App;
       auto opt = get_options("lmax");
-      if (opt.size())
+      if (!opt.empty())
         lmax = parse_ints<uint32_t>(opt[0][0]);
       opt = get_options("directions");
-      if (opt.size())
+      if (!opt.empty())
         HR_dirs = File::Matrix::load_matrix(opt[0][0]);
       opt = get_options("norm_lambda");
-      if (opt.size())
+      if (!opt.empty())
         solution_min_norm_regularisation = opt[0][0];
       opt = get_options("neg_lambda");
-      if (opt.size())
+      if (!opt.empty())
         constraint_min_norm_regularisation = opt[0][0];
     }
 
@@ -258,5 +257,3 @@ private:
 };
 
 } // namespace MR::DWI::SDeconv
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_math_h__
-#define __math_math_h__
+#pragma once
 
 #include <Eigen/Core>
 #include <cmath>
@@ -93,5 +92,3 @@ public:
 };
 
 } // namespace MR
-
-#endif

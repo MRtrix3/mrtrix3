@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_average_space_h__
-#define __math_average_space_h__
+#pragma once
 
 #include "debug.h"
 #include "image.h"
@@ -58,4 +57,3 @@ Header compute_minimum_average_header(
   return compute_minimum_average_header(headers, init_transforms, voxel_spacing_calculation, padding);
 }
 } // namespace MR
-#endif

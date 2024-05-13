@@ -1,0 +1,19 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response dhollander"
+#   when the single-fibre white matter selection algorithm is set to "Tournier"
+# Ensure that outputs match those generated
+#   using a prior version of the software
+
+dwi2response dhollander BIDS/sub-01/dwi/sub-01_dwi.nii.gz \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+tmp_wm.txt tmp_gm.txt tmp_csf.txt \
+-voxels tmp_voxels.mif \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-wm_algo tournier \
+-force
+
+testing_diff_matrix tmp_wm.txt dwi2response/dhollander/tournier_wm.txt -abs 1e-2
+testing_diff_matrix tmp_gm.txt dwi2response/dhollander/tournier_gm.txt -abs 1e-2
+testing_diff_matrix tmp_csf.txt dwi2response/dhollander/tournier_csf.txt -abs 1e-2
+testing_diff_image tmp_voxels.mif dwi2response/dhollander/tournier.mif.gz
+

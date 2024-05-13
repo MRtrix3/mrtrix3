@@ -1,0 +1,12 @@
+#!/bin/bash
+# Before running "dwinormalise mtnorm",
+#   artificially modulate the image intensity well away from the reference intensity;
+#   then ensure that following processing,
+#   that intensity is returned back to the desired reference intensity
+mrcalc BIDS/sub-01/dwi/sub-01_dwi.nii.gz 1000.0 -div tmpscaled.nii -force
+
+dwinormalise mtnorm tmpscaled.nii tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-scale tmpscale.txt
+
+testing_diff_image tmpout.mif dwinormalise/mtnorm/default_out.mif.gz -frac 1e-5

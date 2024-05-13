@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_reslice_h__
-#define __adapter_reslice_h__
+#pragma once
 
 #include <type_traits>
 
@@ -117,7 +116,7 @@ public:
 
     const bool is_nearest = std::is_same<typename Interp::Nearest<ImageType>, decltype(interp)>::value;
 
-    if (oversample.size()) { // oversample explicitly set
+    if (!oversample.empty()) { // oversample explicitly set
       assert(oversample.size() == 3);
       if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
         throw Exception("oversample factors must be greater than zero");
@@ -218,5 +217,3 @@ private:
 //! @}
 
 } // namespace MR::Adapter
-
-#endif

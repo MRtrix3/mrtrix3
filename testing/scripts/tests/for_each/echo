@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify basic operation of the for_each command,
+#   by using it to write a sequence of integers to a file
+rm -f tmp.txt
+for_each 1 2 3 4 : echo IN ">>" tmp.txt
+testing_diff_matrix tmp.txt foreach/out.txt

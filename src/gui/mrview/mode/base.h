@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_mode_base_h__
-#define __gui_mrview_mode_base_h__
+#pragma once
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/window.h"
@@ -225,5 +224,3 @@ public:
 } // namespace Mode
 
 } // namespace MR::GUI::MRView
-
-#endif

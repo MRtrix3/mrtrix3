@@ -14,8 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_legacy_image_h__
-#define __fixel_legacy_image_h__
+#pragma once
+
+#ifndef IMAGE_H
+#error File that #includes "fixel/legacy/image.h" must explicitly #include "image.h" beforehand
+#endif
 
 #include <typeinfo>
 
@@ -24,10 +27,6 @@
 #include "image.h"
 #include "image_io/sparse.h"
 #include "types.h"
-
-#ifndef __image_h__
-#error File that #includes "fixel/legacy/image.h" must explicitly #include "image.h" beforehand
-#endif
 
 namespace MR {
 
@@ -130,5 +129,3 @@ protected:
 } // namespace Legacy
 } // namespace Fixel
 } // namespace MR
-
-#endif

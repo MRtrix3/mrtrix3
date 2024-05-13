@@ -14,11 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __exec_version_h__
-#define __exec_version_h__
+#pragma once
 
 namespace MR::App {
 void set_executable_uses_mrtrix_version();
 }
-
-#endif

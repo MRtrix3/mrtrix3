@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_legacy_metric_h__
-#define __fixel_legacy_metric_h__
+#pragma once
 
 #include "types.h"
 
@@ -37,5 +36,3 @@ public:
 };
 
 } // namespace MR::Fixel::Legacy
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_ofstream_h__
-#define __file_ofstream_h__
+#pragma once
 
 #include <fstream>
 #include <string>
@@ -41,5 +40,3 @@ public:
 };
 
 } // namespace MR::File
-
-#endif

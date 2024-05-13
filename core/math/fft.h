@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __math_fft_h__
-#define __math_fft_h__
+#pragma once
 
 #include "image.h"
 #include <fftw3.h>
@@ -120,5 +119,3 @@ inline void FFT(ImageTypeIn &in, ImageTypeOut &out, size_t axis, int direction, 
 }
 
 } // namespace MR::Math
-
-#endif

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_gaussian1D_h__
-#define __image_adapter_gaussian1D_h__
+#pragma once
 
 #include "adapter/base.h"
 
@@ -47,7 +46,7 @@ public:
   }
 
   value_type value() {
-    if (!kernel.size())
+    if (kernel.empty())
       return base_type::value();
 
     const ssize_t pos = index(axis);
@@ -98,5 +97,3 @@ protected:
   const bool zero_boundary;
 };
 } // namespace MR::Adapter
-
-#endif

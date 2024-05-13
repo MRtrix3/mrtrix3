@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_path_h__
-#define __file_path_h__
+#pragma once
 
 #include <algorithm>
 #include <cerrno>
@@ -156,7 +155,7 @@ inline std::string home() {
 
 class Dir {
 public:
-  Dir(const std::string &name) : p(opendir(name.size() ? name.c_str() : ".")) {
+  Dir(const std::string &name) : p(opendir(!name.empty() ? name.c_str() : ".")) {
     if (!p)
       throw Exception("error opening folder " + name + ": " + strerror(errno));
   }
@@ -196,5 +195,3 @@ inline char delimiter(const std::string &filename) {
 }
 
 } // namespace MR::Path
-
-#endif

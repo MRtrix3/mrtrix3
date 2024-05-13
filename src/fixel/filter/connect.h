@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_filter_connect_h__
-#define __fixel_filter_connect_h__
+#pragma once
 
 #include "fixel/filter/base.h"
 #include "fixel/matrix.h"
@@ -61,5 +60,3 @@ protected:
 //! @}
 
 } // namespace MR::Fixel::Filter
-
-#endif

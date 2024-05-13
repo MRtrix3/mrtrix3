@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify oepration of the "dwinormalise mtnorm" command
+#   when the maximal spherical harmonic degree ("lmax") per macroscopic tissue type
+#   is explicitly specified by the user
+dwinormalise mtnorm BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-lmax 6,0,0 \
+-scale tmpscale.txt
+
+testing_diff_image tmpout.mif dwinormalise/mtnorm/lmax600_out.mif.gz -frac 1e-5
+testing_diff_matrix tmpscale.txt dwinormalise/mtnorm/lmax600_scale.txt -abs 1e-5

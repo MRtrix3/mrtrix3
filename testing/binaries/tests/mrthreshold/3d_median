@@ -1,0 +1,6 @@
+#!/bin/bash
+# Testing command operation when the threshold is determined
+#   from the 50th percentile of the input intensities
+#   (ie. the median)
+mrthreshold dwi_mean.mif - -percentile 50 | \
+testing_diff_image - mrthreshold/3d_perc50.mif

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Basic test of successful completion of running multiple processes in parallel
+for_each -nthreads 2 1 2 3 4 : mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz tmpIN.mif -force

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_sphere_h__
-#define __math_sphere_h__
+#pragma once
 
 #include <cmath>
 #include <sys/types.h>
@@ -102,5 +101,3 @@ template <class MatrixType> inline void normalise_cartesian(MatrixType &cartesia
 }
 
 } // namespace MR::Math::Sphere
-
-#endif

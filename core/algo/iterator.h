@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_iterator_h__
-#define __algo_iterator_h__
+#pragma once
 
 #include "types.h"
 
@@ -55,5 +54,3 @@ private:
 
 //! @}
 } // namespace MR
-
-#endif

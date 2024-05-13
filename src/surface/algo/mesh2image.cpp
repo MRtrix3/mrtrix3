@@ -274,7 +274,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
               }
             }
           }
-        } while (to_expand.size());
+        } while (!to_expand.empty());
         vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
         if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
           fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;

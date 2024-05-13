@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_mapper_h__
-#define __file_dicom_mapper_h__
+#pragma once
 
 #include "memory.h"
 
@@ -35,5 +34,3 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 } // namespace File::Dicom
 
 } // namespace MR
-
-#endif

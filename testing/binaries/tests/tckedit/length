@@ -1,0 +1,9 @@
+#!/bin/bash
+# Validate selection of streamlines based on length
+# Outcomes are compared against those generated using a prior software version
+#   that have been manually verified to conform to these expectations
+tckedit tckedit/in.tck -minlength 10 tmp.tck -force
+testing_diff_tck tmp.tck tckedit/upper.tck
+
+tckedit tckedit/in.tck -maxlength 10 tmp.tck -force
+testing_diff_tck tmp.tck tckedit/lower.tck

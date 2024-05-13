@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift2_line_search_h__
-#define __dwi_tractography_sift2_line_search_h__
+#pragma once
 
 #include "types.h"
 
@@ -80,5 +79,3 @@ protected:
 };
 
 } // namespace MR::DWI::Tractography::SIFT2
-
-#endif

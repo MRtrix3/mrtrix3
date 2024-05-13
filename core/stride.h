@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stride_h__
-#define __stride_h__
+#pragma once
 
 #include "app.h"
 #include "datatype.h"
@@ -342,10 +341,8 @@ inline void set_from_command_line(HeaderType &header, const List &default_stride
   auto cmdline_strides = __from_command_line(get(header));
   if (cmdline_strides.size())
     set(header, cmdline_strides);
-  else if (default_strides.size())
+  else if (!default_strides.empty())
     set(header, default_strides);
 }
 
 } // namespace MR::Stride
-
-#endif

@@ -46,7 +46,7 @@ void Default::load(const Header &header, size_t) {
 }
 
 void Default::unload(const Header &header) {
-  if (mmaps.empty() && addresses.size()) {
+  if (mmaps.empty() && !addresses.empty()) {
     assert(addresses[0].get());
 
     if (writable) {

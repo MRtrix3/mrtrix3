@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dialog_file_h__
-#define __gui_dialog_file_h__
+#pragma once
 
 #include "file/path.h"
 #include "gui/opengl/gl.h"
@@ -56,5 +55,3 @@ inline std::string get_save_image_name(QWidget *parent,
 }
 
 } // namespace MR::GUI::Dialog::File
-
-#endif

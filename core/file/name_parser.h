@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_name_parser_h__
-#define __file_name_parser_h__
+#pragma once
 
 #include <memory>
 
@@ -39,7 +38,7 @@ public:
 
     void set_seq(const std::string &s) {
       clear();
-      if (s.size())
+      if (!s.empty())
         seq = parse_ints<uint32_t>(s);
       seq_length = 1;
     }
@@ -155,5 +154,3 @@ protected:
 };
 
 } // namespace MR::File
-
-#endif

@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __sync_client_h__
-#define __sync_client_h__
+#pragma once
 
 #include "types.h"
 #include <qlocalsocket.h>
@@ -41,5 +40,3 @@ private:
 };
 
 } // namespace MR::GUI::MRView::Sync
-
-#endif

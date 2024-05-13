@@ -376,7 +376,7 @@ void ODF::draw(const Projection &projection, bool is_3D, int, int) {
 
 inline ODF_Item *ODF::get_image() {
   QModelIndexList list = image_list_view->selectionModel()->selectedRows();
-  if (!list.size())
+  if (list.empty())
     return nullptr;
   return image_list_model->get_image(list[0]);
 }
@@ -492,7 +492,7 @@ void ODF::dixel_open_slot() {
 
 void ODF::image_close_slot() {
   QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
-  if (indexes.size())
+  if (!indexes.empty())
     image_list_model->remove_item(indexes.first());
   updateGL();
 }
@@ -606,7 +606,7 @@ void ODF::dirs_slot() {
     case 4: // From file
       const std::string path =
           Dialog::File::get_file(this, "Select directions file", "Text files (*.txt)", &current_folder);
-      if (!path.size()) {
+      if (path.empty()) {
         dirs_selector->setCurrentIndex(settings->dixel->dir_type);
         return;
       }

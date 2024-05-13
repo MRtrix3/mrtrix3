@@ -1,0 +1,8 @@
+#!/bin/bash
+# Test use of the -exclude option
+# The input to the -exclude option is a regex;
+#   in this use case, it should remove input strings "1", "2" and "3" from the set of jobs
+# Ensure that only three processes wrote a line to file
+rm -f tmp.txt
+for_each -exclude "\d" a b c 1 2 3 : echo IN ">>" tmp.txt
+test $(cat tmp.txt | wc -l) -eq 3

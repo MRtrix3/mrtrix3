@@ -1,0 +1,7 @@
+brew "qt"
+brew "eigen"
+brew "pkg-config"
+brew "fftw"
+brew "libpng"
+brew "ninja"
+brew "cmake"

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_predefined_h__
-#define __dwi_directions_predefined_h__
+#pragma once
 
 #include "types.h"
 
@@ -61,5 +60,3 @@ inline Eigen::MatrixXd tesselation_513() { return copy(tesselation_513_data, 513
 inline Eigen::MatrixXd tesselation_1281() { return copy(tesselation_1281_data, 1281); }
 
 } // namespace MR::DWI::Directions
-
-#endif

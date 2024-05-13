@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_displayable_h__
-#define __gui_mrview_displayable_h__
+#pragma once
 
 #include "math/math.h"
 
@@ -305,5 +304,3 @@ protected:
 } // namespace GUI::MRView
 
 } // namespace MR
-
-#endif

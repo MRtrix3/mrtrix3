@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_json_utils_h__
-#define __file_json_utils_h__
+#pragma once
 
 #include "file/json.h"
 #include "file/key_value.h"
@@ -37,5 +36,3 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
 } // namespace File::JSON
 
 } // namespace MR
-
-#endif

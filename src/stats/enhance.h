@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_enhance_h__
-#define __stats_enhance_h__
+#pragma once
 
 #include "math/stats/typedefs.h"
 
@@ -43,5 +42,3 @@ protected:
 };
 
 } // namespace MR::Stats
-
-#endif

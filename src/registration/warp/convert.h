@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_warp_convert_h__
-#define __registration_warp_convert_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "transform.h"
@@ -41,5 +40,3 @@ template <class ImageType> void deformation2displacement(ImageType &input, Image
   ThreadedLoop(input, 0, 3).run(kernel, input, output);
 }
 } // namespace MR::Registration::Warp
-
-#endif

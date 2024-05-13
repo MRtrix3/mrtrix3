@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_filter_resize_h__
-#define __image_filter_resize_h__
+#pragma once
 
 #include "algo/copy.h"
 #include "filter/base.h"
@@ -119,8 +118,8 @@ public:
   void set_oversample(std::vector<uint32_t> oversample) {
     if (oversample.size() == 1)
       oversample.resize(3, oversample[0]);
-    else if (oversample.size() != 3 and oversample.size() != 0)
-      throw Exception("FIXME oversample requires either a vector of a 0 (auto), 1 or 3 integers integer, got " +
+    else if (oversample.size() != 3 and !oversample.empty())
+      throw Exception("FIXME oversample requires either a vector of a 0 (auto), 1 integer, or 3 integers; got " +
                       str(oversample.size()));
     for (auto f : oversample) {
       if (f < 1)
@@ -170,5 +169,3 @@ protected:
 };
 //! @}
 } // namespace MR::Filter
-
-#endif

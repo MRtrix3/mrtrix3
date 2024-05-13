@@ -14,14 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_roi_h__
-#define __dwi_tractography_roi_h__
+#pragma once
 
 #include "app.h"
 #include "image.h"
 #include "interp/linear.h"
 #include "math/rng.h"
 #include "misc/bitset.h"
+#include "transform.h"
 
 namespace MR::DWI::Tractography {
 class Properties;
@@ -225,4 +225,5 @@ protected:
 
 } // namespace MR::DWI::Tractography
 
-#endif
+// Instantiation of Transform::Transform(const Mask &) in roi.cpp to reduce compilation time
+extern template MR::Transform::Transform(const MR::DWI::Tractography::Mask &);

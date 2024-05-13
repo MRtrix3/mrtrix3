@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_utils_h__
-#define __surface_utils_h__
+#pragma once
 
 #include "surface/mesh.h"
 #include "surface/polygon.h"
@@ -55,5 +54,3 @@ inline default_type area(const Mesh &mesh, const Quad &quad) {
 }
 
 } // namespace MR::Surface
-
-#endif

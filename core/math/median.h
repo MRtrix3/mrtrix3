@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_median_h__
-#define __math_median_h__
+#pragma once
 
 #include <algorithm>
 #include <limits>
@@ -118,5 +117,3 @@ bool median_weiszfeld(const MatrixType &X,
   return convergence;
 }
 } // namespace MR::Math
-
-#endif

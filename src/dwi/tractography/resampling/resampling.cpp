@@ -78,35 +78,35 @@ point_type get_pos(const std::vector<default_type> &s) {
 } // namespace
 
 Base *get_resampler() {
-  const size_t count = (get_options("upsample").size() ? 1 : 0) + (get_options("downsample").size() ? 1 : 0) +
-                       (get_options("step_size").size() ? 1 : 0) + (get_options("num_points").size() ? 1 : 0) +
-                       (get_options("endpoints").size() ? 1 : 0) + (get_options("line").size() ? 1 : 0) +
-                       (get_options("arc").size() ? 1 : 0);
+  const size_t count = (!get_options("upsample").empty() ? 1 : 0) + (!get_options("downsample").empty() ? 1 : 0) +
+                       (!get_options("step_size").empty() ? 1 : 0) + (!get_options("num_points").empty() ? 1 : 0) +
+                       (!get_options("endpoints").empty() ? 1 : 0) + (!get_options("line").empty() ? 1 : 0) +
+                       (!get_options("arc").empty() ? 1 : 0);
   if (!count)
     throw Exception("Must specify a mechanism for resampling streamlines");
   if (count > 1)
     throw Exception("Can only use one form of streamline resampling");
 
   auto opt = get_options("upsample");
-  if (opt.size())
+  if (!opt.empty())
     return new Upsampler(opt[0][0]);
   opt = get_options("downsample");
-  if (opt.size())
+  if (!opt.empty())
     return new Downsampler(opt[0][0]);
   opt = get_options("step_size");
-  if (opt.size())
+  if (!opt.empty())
     return new FixedStepSize(opt[0][0]);
   opt = get_options("num_points");
-  if (opt.size())
+  if (!opt.empty())
     return new FixedNumPoints(opt[0][0]);
   opt = get_options("endpoints");
-  if (opt.size())
+  if (!opt.empty())
     return new Endpoints;
   opt = get_options("line");
-  if (opt.size())
+  if (!opt.empty())
     return new Arc(opt[0][0], get_pos(opt[0][1].as_sequence_float()), get_pos(opt[0][2].as_sequence_float()));
   opt = get_options("arc");
-  if (opt.size())
+  if (!opt.empty())
     return new Arc(opt[0][0],
                    get_pos(opt[0][1].as_sequence_float()),
                    get_pos(opt[0][2].as_sequence_float()),

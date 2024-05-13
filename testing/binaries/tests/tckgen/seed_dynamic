@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify operation of the -seed_dynamic option
+# Because of the simplicity of the phantom used in the test,
+#   it is expected that upon completion of tractogram generation,
+#   the number of streamlines should be comparable in the two bundles
+#   despite the difference in their lengths (and hence seeding volume)
+tckgen SIFT_phantom/peaks.mif -algo fact -mask SIFT_phantom/mask.mif -select 10000 -minlength 4 -seed_direction 1,0,0 tmp.tck -nthreads 0 -force \
+-seed_dynamic SIFT_phantom/fods.mif
+
+tckmap tmp.tck -template SIFT_phantom/dwi.mif tmp.mif -force
+mrstats tmp.mif -mask SIFT_phantom/upper.mif -output mean > tmp1.txt
+mrstats tmp.mif -mask SIFT_phantom/lower.mif -output mean > tmp2.txt
+testing_diff_matrix tmp1.txt tmp2.txt -abs 50

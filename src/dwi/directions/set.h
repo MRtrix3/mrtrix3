@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_set_h__
-#define __dwi_directions_set_h__
+#pragma once
 
 #include <cstdint>
 
@@ -167,5 +166,3 @@ private:
 };
 
 } // namespace MR::DWI::Directions
-
-#endif

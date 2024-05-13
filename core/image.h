@@ -14,8 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_h__
-#define __image_h__
+#pragma once
+
+#define IMAGE_H
 
 #include <functional>
 #include <tuple>
@@ -26,6 +27,7 @@
 #include "debug.h"
 #include "fetch_store.h"
 #include "formats/mrtrix_utils.h"
+#include "half.h"
 #include "header.h"
 #include "image_helpers.h"
 
@@ -330,7 +332,7 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
     : buffer(buffer_p),
       data_pointer(buffer->get_data_pointer()),
       x(ndim(), 0),
-      strides(desired_strides.size() ? desired_strides : Stride::get(*buffer)),
+      strides(!desired_strides.empty() ? desired_strides : Stride::get(*buffer)),
       data_offset(Stride::offset(*this)) {
   assert(buffer);
   assert(data_pointer || buffer->get_io());
@@ -362,7 +364,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
   bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
-  if (with_strides.size()) {
+  if (!with_strides.empty()) {
     auto new_strides = Stride::get_actual(Stride::get_nearest_match(*this, with_strides), *this);
     preload |= (new_strides != Stride::get(*this));
     with_strides = new_strides;
@@ -370,7 +372,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
     with_strides = Stride::get(*this);
 
   if (!preload)
-    return std::move(*this);
+    return *this;
 
   // do the preload:
 
@@ -475,7 +477,19 @@ template <class ImageType> typename enable_if_image_type<ImageType, void>::type 
   if (system(("bash -c \"mrview " + filename + "\"").c_str()))
     WARN(std::string("error invoking viewer: ") + strerror(errno));
 }
-
+// Explicit instantiations in image.cpp:
+extern template MR::Image<bool>::~Image();
+extern template MR::Image<int8_t>::~Image();
+extern template MR::Image<uint8_t>::~Image();
+extern template MR::Image<int16_t>::~Image();
+extern template MR::Image<uint16_t>::~Image();
+extern template MR::Image<int32_t>::~Image();
+extern template MR::Image<uint32_t>::~Image();
+extern template MR::Image<int64_t>::~Image();
+extern template MR::Image<uint64_t>::~Image();
+extern template MR::Image<half_float::half>::~Image();
+extern template MR::Image<float>::~Image();
+extern template MR::Image<double>::~Image();
+extern template MR::Image<cfloat>::~Image();
+extern template MR::Image<cdouble>::~Image();
 } // namespace MR
-
-#endif

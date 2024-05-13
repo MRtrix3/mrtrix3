@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_gz_h__
-#define __file_gz_h__
+#pragma once
 
 #include <cassert>
 #include <cstdio>
@@ -119,7 +118,7 @@ public:
       }
       string += char(c);
     } while (c != '\n');
-    if (string.size() && (string[string.size() - 1] == 015 || string[string.size() - 1] == '\n'))
+    if (!string.empty() && (string[string.size() - 1] == 015 || string[string.size() - 1] == '\n'))
       string.resize(string.size() - 1);
     return string;
   }
@@ -161,5 +160,3 @@ protected:
 };
 
 } // namespace MR::File
-
-#endif

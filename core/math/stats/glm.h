@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_stats_glm_h__
-#define __math_stats_glm_h__
+#pragma once
 
 #include "app.h"
 #include "types.h"
@@ -417,5 +416,3 @@ protected:
 };
 
 } // namespace MR::Math::Stats::GLM
-
-#endif
