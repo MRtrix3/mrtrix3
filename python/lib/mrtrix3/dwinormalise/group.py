@@ -115,7 +115,7 @@ def execute(): #pylint: disable=unused-variable
                '-nl_niter', '5,5,5,5,5',
                '-warp_dir', 'warps',
                '-linear_no_pause',
-               '-scratch', 'population_template']
+               '-scratch', app.SCRATCH_DIR]
                + ([] if app.DO_CLEANUP else ['-nocleanup']))
 
   app.console('Generating WM mask in template space')

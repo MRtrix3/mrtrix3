@@ -11,24 +11,25 @@ dwiextract tmp.mif tmp01_b3000.mif -shells 0,3000 -force
 mrcat tmp01_b1000.mif tmp01_b2000.mif tmp01_b3000.mif -axis 3 tmp02.mif -force
 
 # Set of series where intensity between shells is artificially modulated
+mrcalc tmp01_b1000.mif 1.0 -mult tmp03_b1000.mif -force
 mrcalc tmp01_b2000.mif 0.2 -mult tmp03_b2000.mif -force
 mrcalc tmp01_b3000.mif 5.0 -mult tmp03_b3000.mif -force
 mrcat tmp01_b1000.mif tmp03_b2000.mif tmp03_b3000.mif -axis 3 tmp03.mif -force
 
 
 # Provide one of the input images as a pipe
-mrconvert tmp01_b1000.mif - |
+mrconvert tmp03_b1000.mif - | \
 dwicat - tmp03_b2000.mif tmp03_b3000.mif tmp.mif -force \
 -mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz
 testing_diff_image tmp.mif tmp02.mif -frac 1e-6
 
 # Provide the brain mask as a pipe
-mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz - |
+mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz - | \
 dwicat tmp03_b1000.mif tmp03_b2000.mif tmp03_b3000.mif tmp.mif -force \
 -mask -
 testing_diff_image tmp.mif tmp02.mif -frac 1e-6
 
 # Export the output image as a pipe
 dwicat tmp03_b1000.mif tmp03_b2000.mif tmp03_b3000.mif - \
--mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz | \
 testing_diff_image - tmp02.mif -frac 1e-6

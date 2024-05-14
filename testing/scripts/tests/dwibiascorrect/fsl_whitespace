@@ -8,10 +8,10 @@ ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
 
 ln -s BIDS/sub-01/dwi/sub-01_brainmask.nii.gz "tmp mask.nii.gz"
 
-dwibiascorrect fsl "tmp in.mif" "tmp out.mif" \
+dwibiascorrect fsl "tmp in.nii.gz" "tmp out.mif" \
 -fslgrad "tmp in.bvec" "tmp in.bval" \
 -mask "tmp mask.nii.gz" \
 -bias "tmp bias.mif"
 
 testing_diff_header "tmp out.mif" dwibiascorrect/fsl/default_out.mif.gz
-testing_diff_header "tmp bias" dwibiascorrect/fsl/default_bias.mif.gz
+testing_diff_header "tmp bias.mif" dwibiascorrect/fsl/default_bias.mif.gz

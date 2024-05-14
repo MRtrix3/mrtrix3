@@ -604,8 +604,8 @@ class Parser(argparse.ArgumentParser):
           warn(f'Output {item_type} "{str(self)}" already exists; '
                 'will be overwritten at script completion')
         else:
-          raise MRtrixError(f'Output {item_type} "{str(self)}" already exists '
-                            '(use -force option to force overwrite)')
+          raise argparse.ArgumentError(f'Output {item_type} "{str(self)}" already exists '
+                                       '(use -force option to force overwrite)')
   class _UserFileOutPathExtras(_UserOutPathExtras):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
@@ -630,8 +630,8 @@ class Parser(argparse.ArgumentParser):
           return
         except FileExistsError:
           if not FORCE_OVERWRITE:
-            raise MRtrixError(f'Output directory "{str(self)}" already exists ' # pylint: disable=raise-missing-from
-                              '(use -force option to force overwrite)')
+            raise argparse.ArgumentError(f'Output directory "{str(self)}" already exists ' # pylint: disable=raise-missing-from
+                                         '(use -force option to force overwrite)')
 
   # Various callable types for use as argparse argument types
   class CustomTypeBase:
@@ -918,9 +918,9 @@ class Parser(argparse.ArgumentParser):
                                   help='do not delete intermediate files during script execution, '
                                        'and do not delete scratch directory at script completion.')
       script_options.add_argument('-scratch',
-                                  type=Parser.DirectoryOut(),
+                                  type=Parser.DirectoryIn(),
                                   metavar='/path/to/scratch/',
-                                  help='manually specify the path in which to generate the scratch directory.')
+                                  help='manually specify an existing directory in which to generate the scratch directory.')
       script_options.add_argument('-continue',
                                   type=Parser.Various(),
                                   nargs=2,

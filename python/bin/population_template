@@ -1488,7 +1488,7 @@ def execute(): #pylint: disable=unused-variable
                        'average',
                        f'linear_transform_average_{level:02d}.txt',
                        '-quiet'])
-          transform_average_driftref = matrix.load_transform(f'linear_transform_average_{level:%02i}.txt')
+          transform_average_driftref = matrix.load_transform(f'linear_transform_average_{level:02d}.txt')
         else:
           run.command(['transformcalc',
                        [os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt') for inp in ins],
