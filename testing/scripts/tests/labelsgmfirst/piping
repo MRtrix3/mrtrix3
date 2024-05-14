@@ -8,6 +8,6 @@ labelsgmfirst - BIDS/sub-01/anat/sub-01_T1w.nii.gz BIDS/parc-desikan_lookup.txt 
 testing_diff_header - labelsgmfirst/default.mif.gz
 
 # Input T1-weighted image is a pipe
-mrconvert BIDS/sub-01/anat/sub-01_T1w.nii.gz - |
+mrconvert BIDS/sub-01/anat/sub-01_T1w.nii.gz - | \
 labelsgmfirst BIDS/sub-01/anat/sub-01_parc-desikan_indices.nii.gz - BIDS/parc-desikan_lookup.txt tmp.mif -force
-testig_diff_header tmp.mif labelsgmfirst/default.mif.gz
+testing_diff_header tmp.mif labelsgmfirst/default.mif.gz

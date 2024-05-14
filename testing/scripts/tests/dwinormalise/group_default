@@ -10,7 +10,7 @@ mrconvert BIDS/sub-02/dwi/sub-02_brainmask.nii.gz tmp-mask/sub-02.mif
 
 mrconvert BIDS/sub-03/dwi/sub-03_dwi.nii.gz tmp-dwi/sub-03.mif \
 -fslgrad BIDS/sub-03/dwi/sub-03_dwi.bvec BIDS/sub-03/dwi/sub-03_dwi.bval
-mrconvert BIDS/sub-03/dwi/sub-03_brainmask.nii.gz tmp-mask/sub-03.mif 
+mrconvert BIDS/sub-03/dwi/sub-03_brainmask.nii.gz tmp-mask/sub-03.mif
 
 dwinormalise group tmp-dwi/ tmp-mask/ tmp-group/ tmp-fa.mif tmp-mask.mif -force
 

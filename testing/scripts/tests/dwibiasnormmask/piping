@@ -5,7 +5,7 @@
 # Input DWI series, and output DWI series, are pipes
 mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
-dwibiasnormmask - - | \
+dwibiasnormmask - - tmp_mask.mif -force | \
 testing_diff_image - dwibiasnormmask/default_out.mif.gz -frac 1e-5
 
 # Prepare some input data to be subsequently used in multiple tests
@@ -25,9 +25,9 @@ testing_diff_image - dwibiasnormmask/default_mask.mif.gz
 # Output bias field image is a pipe
 dwibiasnormmask tmp_in.mif tmp_out.mif tmp_mask.mif -force \
 -output_bias - | \
-testing_diff_image tmpbias.mif dwibiasnormmask/default_bias.mif.gz -frac 1e-5
+testing_diff_image - dwibiasnormmask/default_bias.mif.gz -frac 1e-5
 
 # Output tissue sum image is a pipe
 dwibiasnormmask tmp_in.mif tmp_out.mif tmp_mask.mif -force \
 -output_tissuesum - | \
-testing_diff_image tmptissuesum.mif dwibiasnormmask/default_tissuesum.mif.gz -abs 1e-5
+testing_diff_image - dwibiasnormmask/default_tissuesum.mif.gz -abs 1e-5

@@ -8,7 +8,7 @@ ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
 
-dwi2mask hdbet "tmp in.mif" "tmp out.mif" -force \
+dwi2mask hdbet "tmp in.nii.gz" "tmp out.mif" -force \
 -fslgrad "tmp in.bvec" "tmp in.bval"
 
 ls | grep "^tmp out\.mif$"

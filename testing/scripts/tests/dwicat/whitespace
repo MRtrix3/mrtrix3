@@ -3,13 +3,12 @@
 #   where image paths include whitespace characters
 rm -f "tmp out.mif"
 
-ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
-ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
-ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.mif" -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+
 ln -s BIDS/sub-01/dwi/sub-01_brainmask.nii.gz "tmp mask.nii.gz"
 
 dwicat "tmp in.mif" "tmp in.mif" "tmp out.mif" -force \
--fslgrad "tmp in.bvec" "tmp in.bval" \
--mask "tmp mask.mif"
+-mask "tmp mask.nii.gz"
 
 ls | grep "tmp out.mif"

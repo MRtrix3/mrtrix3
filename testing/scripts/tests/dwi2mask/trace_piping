@@ -1,7 +1,7 @@
 #!/bin/bash
 # Verify result of "dwi2mask trace" algorithm
 #   when utilising image pipes
-mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - |
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
 dwi2mask trace - - | \
 testing_diff_image - dwi2mask/trace_default.mif.gz

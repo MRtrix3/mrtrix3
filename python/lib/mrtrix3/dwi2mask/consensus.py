@@ -77,7 +77,6 @@ def execute(): #pylint: disable=unused-variable
     algorithm_list = [item for item in algorithm_list if item != 'b02template']
     algorithm_list.append('b02template -software antsfull')
     algorithm_list.append('b02template -software fsl')
-  app.debug(str(algorithm_list))
 
   if any(any(item in alg for item in ('ants', 'b02template')) for alg in algorithm_list):
     if app.ARGS.template:
@@ -90,9 +89,15 @@ def execute(): #pylint: disable=unused-variable
                   '-strides', '+1,+2,+3'])
       run.command(['mrconvert', CONFIG['Dwi2maskTemplateMask'], 'template_mask.nii',
                   '-strides', '+1,+2,+3', '-datatype', 'uint8'])
-    else:
+    elif app.ARGS.algorithms:
       raise MRtrixError('Cannot include within consensus algorithms that necessitate use of a template image '
                       'if no template image is provided via command-line or configuration file')
+    else:
+      app.warn('No template image and mask provided;'
+               ' algorithms based on registration to template will be excluded from consensus')
+      algorithm_list = [item for item in algorithm_list if (item != 'ants' and not item.startswith('b02template'))]
+
+  app.debug(str(algorithm_list))
 
   mask_list = []
   for alg in algorithm_list:
