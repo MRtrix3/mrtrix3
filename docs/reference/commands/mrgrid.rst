@@ -72,7 +72,7 @@ Regridding options (involves image interpolation, applied to spatial axes only)
 Pad and crop options (no image interpolation is performed, header transformation is adjusted)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-as reference image** pad or crop the input image on the upper bound to match the specified reference image grid. This operation ignores differences in image transformation between input and reference image.
+-  **-as reference_image** pad or crop the input image on the upper bound to match the specified reference image grid. This operation ignores differences in image transformation between input and reference image.
 
 -  **-uniform number** pad or crop the input image by a uniform number of voxels on all sides
 
