@@ -673,7 +673,8 @@ void run() {
     }
   }
 
-  const bool nonlinear_init = !get_options("nl_init").empty();
+  opt = get_options("nl_init");
+  const bool nonlinear_init = !opt.empty();
   if (nonlinear_init) {
 
     if (!do_nonlinear)
