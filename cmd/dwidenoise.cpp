@@ -18,7 +18,7 @@
 #include "image.h"
 
 #include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
+#include <Eigen/SVD>
 
 using namespace MR;
 using namespace App;
@@ -164,8 +164,7 @@ public:
         q(std::max(m, n)),
         exp1(exp1),
         X(m, n),
-        XtX(r, r),
-        eig(r),
+        SVD(q, r, Eigen::ComputeThinU | Eigen::ComputeThinV),
         s(r),
         pos{{0, 0, 0}},
         mask(mask),
@@ -183,14 +182,14 @@ public:
     // Load data in local window
     load_data(dwi);
 
-    // Compute Eigendecomposition:
-    if (m <= n)
-      XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
-    else
-      XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    eig.compute(XtX);
-    // eigenvalues sorted in increasing order:
-    s = eig.eigenvalues().template cast<double>();
+    SVD.compute(X);
+
+    if (SVD.info() != Eigen::Success) {
+      WARN("SVD failure encountered - data may contain NaNs or Infs?");
+      return;
+    }
+
+    SValsType s = SVD.singularValues().array().reverse().square().template cast<double>();
 
     // Marchenko-Pastur optimal threshold
     const double lam_r = std::max(s[0], 0.0) / q;
@@ -213,12 +212,9 @@ public:
 
     if (cutoff_p > 0) {
       // recombine data using only eigenvectors above threshold:
-      s.head(cutoff_p).setZero();
-      s.tail(r - cutoff_p).setOnes();
-      if (m <= n)
-        X.col(n / 2) = eig.eigenvectors() * (s.cast<F>().asDiagonal() * (eig.eigenvectors().adjoint() * X.col(n / 2)));
-      else
-        X.col(n / 2) = X * (eig.eigenvectors() * (s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint().col(n / 2)));
+      const size_t n_sv = r - cutoff_p;
+      X.col(n / 2) = SVD.matrixU().leftCols(n_sv) *
+                     (SVD.singularValues().head(n_sv).asDiagonal() * SVD.matrixV().row(n / 2).head(n_sv).adjoint());
     }
 
     // Store output
@@ -242,8 +238,7 @@ private:
   const ssize_t m, n, r, q;
   const bool exp1;
   MatrixType X;
-  MatrixType XtX;
-  Eigen::SelfAdjointEigenSolver<MatrixType> eig;
+  Eigen::BDCSVD<MatrixType> SVD;
   SValsType s;
   std::array<ssize_t, 3> pos;
   double sigma2;
