@@ -294,7 +294,7 @@ def wait_for(paths): #pylint: disable=unused-variable
     new_num_in_use = num_in_use(paths)
     if new_num_in_use == num_currently_in_use:
       delay = max(60.0, delay*2.0)
-    elif new_num_in_use < num_in_use:
+    elif new_num_in_use < num_currently_in_use:
       for _ in range(num_currently_in_use - new_num_in_use):
         progress.increment()
       num_currently_in_use = new_num_in_use
