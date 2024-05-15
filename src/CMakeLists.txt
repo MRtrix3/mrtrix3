@@ -40,7 +40,13 @@ add_library(mrtrix-exec-version-lib STATIC ${EXEC_VERSION_CPP})
 add_library(mrtrix::exec-version-lib ALIAS mrtrix-exec-version-lib)
 add_dependencies(mrtrix-exec-version-lib exec-version-target)
 
-add_library(mrtrix-headless SHARED ${HEADLESS_SOURCES})
+if(MRTRIX_BUILD_STATIC)
+    set(MRTRIX_LIBRARY_TYPE STATIC)
+else()
+    set(MRTRIX_LIBRARY_TYPE SHARED)
+endif()
+
+add_library(mrtrix-headless ${MRTRIX_LIBRARY_TYPE} ${HEADLESS_SOURCES})
 add_library(mrtrix::headless ALIAS mrtrix-headless)
 
 
@@ -65,7 +71,7 @@ target_link_libraries(mrtrix-headless PUBLIC
 )
 
 if(MRTRIX_BUILD_GUI)
-    add_library(mrtrix-gui SHARED ${GUI_SOURCES} ${RCC_SOURCES})
+    add_library(mrtrix-gui ${MRTRIX_LIBRARY_TYPE} ${GUI_SOURCES} ${RCC_SOURCES})
     add_library(mrtrix::gui ALIAS mrtrix-gui)
 
     set_target_properties(mrtrix-gui PROPERTIES
