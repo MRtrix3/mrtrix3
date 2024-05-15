@@ -100,7 +100,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       }
       std::cerr << "? ";
       std::cin >> buf;
-      if (buf[0] == 'q' || buf[0] == 'Q')
+      if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
       if (isdigit(buf[0])) {
         int n = to<int>(buf) - 1;
@@ -138,7 +138,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       }
       std::cerr << "? ";
       std::cin >> buf;
-      if (buf[0] == 'q' || buf[0] == 'Q')
+      if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
       if (isdigit(buf[0])) {
         int n = to<int>(buf) - 1;
@@ -179,7 +179,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       }
       std::cerr << "? ";
       std::cin >> buf;
-      if (buf[0] == 'q' || buf[0] == 'Q')
+      if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
       if (isdigit(buf[0])) {
         std::vector<uint32_t> seq;
