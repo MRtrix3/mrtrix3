@@ -459,7 +459,7 @@ def execute(): #pylint: disable=unused-variable
   bs_fullmask_path = 'brain_stem_init.mif'
   bs_cropmask_path = ''
   progress = app.ProgressBar('Segmenting and cropping brain stem', 5)
-  cmd = ['mrcalc', aparc_image, BRAIN_STEM_ASEG[0][0], '-eq']
+  cmd = ['mrcalc', aparc_image, f'{BRAIN_STEM_ASEG[0][0]}', '-eq']
   for index, name in BRAIN_STEM_ASEG[1:]:
     cmd.extend([aparc_image, f'{index}', '-eq', '-add'])
   cmd.extend([bs_fullmask_path, '-datatype', 'bit'])
@@ -749,7 +749,7 @@ def execute(): #pylint: disable=unused-variable
         smooth_mesh_path = f'{hemi}-Cerebellum-All-Smooth.vtk'
         pvf_image_path = f'{hemi}-Cerebellum-PVF-Template.mif'
         cerebellum_aseg_hemi = [ entry for entry in CEREBELLUM_ASEG if hemi in entry[2] ]
-        cmd = ['mrcalc', aparc_image, cerebellum_aseg_hemi[0][0], '-eq']
+        cmd = ['mrcalc', aparc_image, f'{cerebellum_aseg_hemi[0][0]}', '-eq']
         for index, tissue, name in cerebellum_aseg_hemi[1:]:
           cmd.extend([aparc_image, f'{index}', '-eq', '-add'])
         cmd.extend(['-', '|',
@@ -779,7 +779,7 @@ def execute(): #pylint: disable=unused-variable
 
     else:
       app.console('Preparing images of cerebellum for intensity-based segmentation')
-      cmd = ['mrcalc', aparc_image, CEREBELLUM_ASEG[0][0], '-eq']
+      cmd = ['mrcalc', aparc_image, f'{CEREBELLUM_ASEG[0][0]}', '-eq']
       for index, tissue, name in CEREBELLUM_ASEG[1:]:
         cmd.extend([aparc_image, f'{index}', '-eq', '-add'])
       cmd.append(cerebellum_volume_image)
