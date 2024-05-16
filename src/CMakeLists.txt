@@ -40,7 +40,7 @@ add_library(mrtrix-exec-version-lib STATIC ${EXEC_VERSION_CPP})
 add_library(mrtrix::exec-version-lib ALIAS mrtrix-exec-version-lib)
 add_dependencies(mrtrix-exec-version-lib exec-version-target)
 
-if(MRTRIX_BUILD_STATIC)
+if(MRTRIX_BUILD_NON_CORE_STATIC)
     set(MRTRIX_LIBRARY_TYPE STATIC)
 else()
     set(MRTRIX_LIBRARY_TYPE SHARED)
