@@ -15,7 +15,7 @@ option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
 option(MRTRIX_STRIP_CONDA "Strip ananconda/mininconda from PATH to avoid conflicts" ON)
 option(MRTRIX_USE_PCH "Use precompiled headers" ON)
-option(MRTRIX_BUILD_STATIC "Build MRtrix's non-core code as a static library" OFF)
+option(MRTRIX_BUILD_NON_CORE_STATIC "Build MRtrix's non-core code as a static library" OFF)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)
