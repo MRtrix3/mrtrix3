@@ -149,6 +149,9 @@ add_bash_script_test(dwifslpreproc/rpepair_alignseepi)
 add_bash_script_test(dwifslpreproc/rpepair_default)
 
 add_bash_script_test(dwigradcheck/default)
+add_bash_script_test(dwigradcheck/nobvec)
+add_bash_script_test(dwigradcheck/noshuffle)
+add_bash_script_test(dwigradcheck/notranspose)
 
 add_bash_script_test(dwinormalise/group "pythonci")
 add_bash_script_test(dwinormalise/manual_default "pythonci")
