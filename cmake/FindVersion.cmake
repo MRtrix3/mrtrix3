@@ -1,4 +1,4 @@
-if(GIT_EXECUTABLE)
+if(GIT_EXECUTABLE AND PROJECT_IS_TOP_LEVEL)
     message(VERBOSE "Git found: ${GIT_EXECUTABLE}")
     # Get tag
     execute_process(
