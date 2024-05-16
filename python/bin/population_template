@@ -309,11 +309,6 @@ def abspath(arg, *args):
   return os.path.abspath(os.path.join(arg, *args))
 
 
-def relpath(arg, *args):
-  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-  return os.path.relpath(os.path.join(arg, *args), app.WORKING_DIR)
-
-
 def copy(src, dst, follow_symlinks=True):
   """Copy data but do not set mode bits. Return the file's destination.
 
@@ -934,9 +929,6 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError(f'mismatch between number of output templates ({len(app.ARGS.template)}) '
                       'and number of contrasts ({n_contrasts})')
 
-  if app.ARGS.warp_dir:
-    app.ARGS.warp_dir = relpath(app.ARGS.warp_dir)
-
   if app.ARGS.transformed_dir:
     if len(app.ARGS.transformed_dir) != n_contrasts:
       raise MRtrixError(f'number of output directories specified for transformed images ({len(app.ARGS.transformed_dir)})'
@@ -947,7 +939,6 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.linear_transformations_dir:
     if not dolinear:
       raise MRtrixError("linear option set when no linear registration is performed")
-    app.ARGS.linear_transformations_dir = relpath(app.ARGS.linear_transformations_dir)
 
   # automatically detect SH series in each contrast
   do_fod_registration = False  # in any contrast
@@ -1700,11 +1691,8 @@ def execute(): #pylint: disable=unused-variable
                 force=app.FORCE_OVERWRITE)
 
   if app.ARGS.warp_dir:
-    warp_path = app.ARGS.warp_dir
-    if os.path.exists(warp_path):
-      run.function(shutil.rmtree, warp_path)
-    os.makedirs(warp_path)
-    progress = app.ProgressBar(f'Copying non-linear warps to output directory "{warp_path}"', len(ins))
+    app.ARGS.warp_dir.mkdir()
+    progress = app.ProgressBar(f'Copying non-linear warps to output directory "{app.ARGS.warp_dir}"', len(ins))
     for inp in ins:
       keyval = image.Header(os.path.join('warps', f'{inp.uid}.mif')).keyval()
       keyval = dict((k, keyval[k]) for k in ('linear1', 'linear2'))
@@ -1713,20 +1701,17 @@ def execute(): #pylint: disable=unused-variable
         json.dump(keyval, json_file)
       run.command(['mrconvert',
                    os.path.join('warps', f'{inp.uid}.mif'),
-                   os.path.join(warp_path, f'{xcontrast_xsubject_pre_postfix[0]}{inp.uid}{xcontrast_xsubject_pre_postfix[1]}.mif')],
+                   os.path.join(app.ARGS.warp_dir, f'{xcontrast_xsubject_pre_postfix[0]}{inp.uid}{xcontrast_xsubject_pre_postfix[1]}.mif')],
                   mrconvert_keyval=json_path,
                   force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
 
   if app.ARGS.linear_transformations_dir:
-    linear_transformations_path = app.ARGS.linear_transformations_dir
-    if os.path.exists(linear_transformations_path):
-      run.function(shutil.rmtree, linear_transformations_path)
-    os.makedirs(linear_transformations_path)
+    app.ARGS.linear_transformations_dir.mkdir()
     for inp in ins:
       trafo = matrix.load_transform(os.path.join('linear_transforms', f'{inp.uid}.txt'))
-      matrix.save_transform(os.path.join(linear_transformations_path,
+      matrix.save_transform(os.path.join(app.ARGS.linear_transformations_dir,
                                          f'{xcontrast_xsubject_pre_postfix[0]}{inp.uid}{xcontrast_xsubject_pre_postfix[1]}.txt'),
                             trafo,
                             force=app.FORCE_OVERWRITE)
