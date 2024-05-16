@@ -75,9 +75,10 @@ def execute(): #pylint: disable=unused-variable
   # Don't use "-software antsquick"; we're assuming that "antsfull" is superior
   if 'b02template' in algorithm_list:
     algorithm_list = [item for item in algorithm_list if item != 'b02template']
-    algorithm_list.append('b02template -software antsfull')
-    algorithm_list.append('b02template -software fsl')
+    algorithm_list.append(['b02template', '-software', 'antsfull'])
+    algorithm_list.append(['b02template', '-software', 'fsl'])
 
+  # Are we using at least one algorithm that necessitates a template image & mask?
   if any(any(item in alg for item in ('ants', 'b02template')) for alg in algorithm_list):
     if app.ARGS.template:
       run.command(['mrconvert', app.ARGS.template[0], 'template_image.nii',
@@ -91,31 +92,37 @@ def execute(): #pylint: disable=unused-variable
                   '-strides', '+1,+2,+3', '-datatype', 'uint8'])
     elif app.ARGS.algorithms:
       raise MRtrixError('Cannot include within consensus algorithms that necessitate use of a template image '
-                      'if no template image is provided via command-line or configuration file')
+                        'if no template image is provided via command-line or configuration file')
     else:
       app.warn('No template image and mask provided;'
                ' algorithms based on registration to template will be excluded from consensus')
-      algorithm_list = [item for item in algorithm_list if (item != 'ants' and not item.startswith('b02template'))]
+      algorithm_list = [item for item in algorithm_list if (item != 'ants' and not 'b02template' in item)]
 
   app.debug(str(algorithm_list))
 
   mask_list = []
   for alg in algorithm_list:
-    alg_string = alg.replace(' -software ', '_')
+    cmd = ['dwi2mask']
+    if isinstance(alg, list):
+      cmd.extend(alg)
+      alg_string = f'{alg[0]}_{alg[-1]}'
+    else:
+      cmd.append(alg)
+      alg_string = alg
     mask_path = f'{alg_string}.mif'
-    cmd = f'dwi2mask {alg} input.mif {mask_path}'
+    cmd.extend(['input.mif', mask_path])
     # Ideally this would be determined based on the presence of this option
     #   in the command's help page
     if any(item in alg for item in ['ants', 'b02template']):
-      cmd += ' -template template_image.nii template_mask.nii'
-    cmd += f' -scratch {app.SCRATCH_DIR}'
+      cmd.extend(['-template', 'template_image.nii', 'template_mask.nii'])
+    cmd.extend(['-scratch', app.SCRATCH_DIR])
     if not app.DO_CLEANUP:
-      cmd += ' -nocleanup'
+      cmd.append('-nocleanup')
     try:
       run.command(cmd)
       mask_list.append(mask_path)
     except run.MRtrixCmdError as e_dwi2mask:
-      app.warn('"dwi2mask ' + alg + '" failed; will be omitted from consensus')
+      app.warn('"dwi2mask ' + alg_string + '" failed; will be omitted from consensus')
       app.debug(str(e_dwi2mask))
       with open(f'error_{alg_string}.txt', 'w', encoding='utf-8') as f_error:
         f_error.write(str(e_dwi2mask) + '\n')
