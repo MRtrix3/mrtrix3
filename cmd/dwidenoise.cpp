@@ -149,6 +149,7 @@ template <typename F = float> class DenoisingFunctor {
 
 public:
   using MatrixType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
+  using VectorType = Eigen::Matrix<F, Eigen::Dynamic, 1>;
   using SValsType = Eigen::VectorXd;
 
   DenoisingFunctor(int ndwi,
@@ -164,8 +165,9 @@ public:
         q(std::max(m, n)),
         exp1(exp1),
         X(m, n),
-        SVD(q, r, Eigen::ComputeThinU | Eigen::ComputeThinV),
+        SVD(q, r, Eigen::ComputeThinU),
         s(r),
+        v(r),
         pos{{0, 0, 0}},
         mask(mask),
         noise(noise),
@@ -211,10 +213,11 @@ public:
     }
 
     if (cutoff_p > 0) {
-      // recombine data using only eigenvectors above threshold:
       const size_t n_sv = r - cutoff_p;
-      X.col(n / 2) = SVD.matrixU().leftCols(n_sv) *
-                     (SVD.singularValues().head(n_sv).asDiagonal() * SVD.matrixV().row(n / 2).head(n_sv).adjoint());
+      // calculate central column of S.V'
+      v = SVD.matrixU().adjoint() * X.col(n / 2);
+      // recombine data using only eigenvectors above threshold:
+      X.col(n / 2) = SVD.matrixU().leftCols(n_sv) * v.head(n_sv);
     }
 
     // Store output
@@ -240,6 +243,7 @@ private:
   MatrixType X;
   Eigen::BDCSVD<MatrixType> SVD;
   SValsType s;
+  VectorType v;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
