@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test the "dwinormalise group" algorithm
 #   when filesystem paths include whitespace characters
-rm -rf "tmp dwi" "tmp mask"
+rm -rf "tmp dwi" "tmp mask" "tmp scratch"
 mkdir "tmp dwi"
 mkdir "tmp mask"
 
@@ -13,7 +13,10 @@ mrconvert BIDS/sub-03/dwi/sub-03_dwi.nii.gz "tmp dwi/sub 03.mif" \
 -fslgrad BIDS/sub-03/dwi/sub-03_dwi.bvec BIDS/sub-03/dwi/sub-03_dwi.bval
 mrconvert BIDS/sub-03/dwi/sub-03_brainmask.nii.gz "tmp mask/sub 03.mif"
 
-dwinormalise group "tmp dwi/" "tmp mask/" "tmp group/" "tmp template.mif" "tmp mask.mif" -force
+mkdir "tmp scratch"
+
+dwinormalise group "tmp dwi/" "tmp mask/" "tmp group/" "tmp template.mif" "tmp mask.mif" -force \
+-scratch "tmp scratch"
 
 testing_diff_image "tmp template.mif" dwinormalise/group/fa.mif.gz -abs 1e-3
 testing_diff_image $(mrfilter "tmp mask.mif" smooth -) $(mrfilter dwinormalise/group/mask.mif.gz smooth -) -abs 0.3

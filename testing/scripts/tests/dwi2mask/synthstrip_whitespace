@@ -3,14 +3,18 @@
 #   where image paths include whitespace characters
 # Check that expected output images appear
 rm -f "tmp out.mif" "tmp stripped.mif"
+rm -rf "tmp scratch"
 
 ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
 
+mkdir "tmp scratch"
+
 dwi2mask synthstrip "tmp in.nii.gz" "tmp out.mif" -force \
 -fslgrad "tmp in.bvec" "tmp in.bval" \
--stripped "tmp stripped.mif"
+-stripped "tmp stripped.mif" \
+-scratch "tmp scratch"
 
 ls | grep "^tmp out\.mif"
 ls | grep "^tmp stripped\.mif"

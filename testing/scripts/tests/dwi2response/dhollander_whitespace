@@ -1,14 +1,18 @@
 #!/bin/bash
 # Verify successful execution of "dwi2response dhollander"
 #   when filesystem paths include whitespace characters
+rm -rf "tmp scratch"
 
 ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
 
+mkdir "tmp scratch"
+
 dwi2response dhollander "tmp in.nii.gz" "tmp wm.txt" "tmp gm.txt" "tmp csf.txt" -force \
 -fslgrad "tmp in.bvec" "tmp in.bval" \
--voxels "tmp voxels.mif"
+-voxels "tmp voxels.mif" \
+-scratch "tmp scratch"
 
 testing_diff_matrix "tmp wm.txt" dwi2response/dhollander/default_wm.txt -abs 1e-2
 testing_diff_matrix "tmp gm.txt" dwi2response/dhollander/default_gm.txt -abs 1e-2

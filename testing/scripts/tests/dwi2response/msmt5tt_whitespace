@@ -1,6 +1,7 @@
 #!/bin/bash
 # Verify successful execution of "dwi2response msmt_5tt"
 #   when filesystem paths include whitespace characters
+rm -rf "tmp scratch"
 
 dwi2tensor BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
@@ -12,12 +13,15 @@ ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
 ln -s BIDS/sub-01/anat/sub-01_5TT.nii.gz "tmp 5TT.nii.gz"
 
+mkdir "tmp scratch"
+
 dwi2response msmt_5tt "tmp in.nii.gz" "tmp 5TT.nii.gz" \
 "tmp wm.txt" "tmp gm.txt" "tmp csf.txt" -force \
 -fslgrad "tmp in.bvec" "tmp in.bval" \
 -dirs "tmp dirs.mif" \
 -voxels "tmp voxels.mif" \
--pvf 0.9
+-pvf 0.9 \
+-scratch "tmp scratch"
 
 testing_diff_matrix "tmp wm.txt" dwi2response/msmt_5tt/default_wm.txt -abs 1e-2
 testing_diff_matrix "tmp gm.txt" dwi2response/msmt_5tt/default_gm.txt -abs 1e-2
