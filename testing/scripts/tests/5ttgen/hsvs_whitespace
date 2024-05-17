@@ -1,6 +1,12 @@
 #!/bin/bash
 # Ensure correct operation of the "5ttgen hsvs" command
 #   when filesystem paths include whitespace characters
+rm -rf "tmp scratch"
+
 ln -s freesurfer/sub-01 "tmp in"
-5ttgen hsvs "tmp in" "tmp out.mif" -force
+mkdir "tmp scratch"
+
+5ttgen hsvs "tmp in" "tmp out.mif" -force \
+-scratch "tmp scratch"
+
 testing_diff_header "tmp out.mif" 5ttgen/hsvs/default.mif.gz

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Verify successful execution of "dwi2response manual"
 #   when filesystem paths include whitespace characters
+rm -rf "tmp scratch"
 
 dwi2tensor BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
@@ -12,9 +13,12 @@ ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
 ln -s dwi2response/fa/default.mif.gz "tmp voxels.mif.gz"
 
+mkdir "tmp scratch"
+
 dwi2response manual "tmp in.nii.gz" "tmp voxels.mif.gz" "tmp out.txt" -force \
 -fslgrad "tmp in.bvec" "tmp in.bval" \
--dirs "tmp dirs.mif"
+-dirs "tmp dirs.mif" \
+-scratch "tmp scratch"
 
 testing_diff_matrix "tmp out.txt" dwi2response/manual/dirs.txt -abs 1e-2
 

@@ -18,6 +18,8 @@ dwi2mask legacy BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmpeddymask.mif -force \
 -fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval
 ln -s tmpeddymask.mif "tmp eddymask.mif"
 
+mkdir "tmp scratch"
+
 dwifslpreproc "tmp in.nii.gz" "tmp out.nii" -force \
 -fslgrad "tmp in.bvec" "tmp in.bval" \
 -json_import "tmp in.json" \
@@ -25,7 +27,8 @@ dwifslpreproc "tmp in.nii.gz" "tmp out.nii" -force \
 -se_epi "tmp seepi.mif" \
 -eddy_mask "tmp eddymask.mif" \
 -eddyqc_text "tmp eddyqc" \
--export_grad_fsl "tmp out.bvec" "tmp out.bval"
+-export_grad_fsl "tmp out.bvec" "tmp out.bval" \
+-scratch "tmp scratch"
 
 ls | grep "^tmp out\.nii$"
 ls | grep "^tmp out\.bvec$"

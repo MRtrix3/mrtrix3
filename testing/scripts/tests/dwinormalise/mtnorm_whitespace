@@ -1,14 +1,18 @@
 #!/bin/bash
 # Verify default operation of the "dwinormalise mtnorm" command
 #   where filesystem paths include whitespace characters
+rm -rf "tmp scratch"
 
 ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
 ln -s BIDS/sub-01/dwi/sub-01_brainmask.nii.gz "tmp mask.nii.gz"
 
+mkdir "tmp scratch"
+
 dwinormalise mtnorm "tmp in.nii.gz" "tmp out.mif" -force \
 -fslgrad "tmp in.bvec" "tmp in.bval" \
--mask "tmp mask.nii.gz"
+-mask "tmp mask.nii.gz" \
+-scratch "tmp scratch"
 
 testing_diff_image "tmp out.mif" dwinormalise/mtnorm/masked_out.mif.gz -frac 1e-5

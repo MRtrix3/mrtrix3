@@ -3,6 +3,7 @@
 #   when image paths include whitespace characters
 # Ensure that the output image appears at the expected location
 rm -f "tmp out.mif"
+rm -rf "tmp scratch"
 
 ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
 ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
@@ -11,9 +12,12 @@ ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
 ln -s dwi2mask/template_image.mif.gz "tmp template.mif.gz"
 ln -s dwi2mask/template_mask.mif.gz "tmp mask.mif.gz"
 
+mkdir "tmp scratch"
+
 dwi2mask b02template "tmp in.nii.gz" "tmp out.mif" -force \
 -fslgrad "tmp in.bvec" "tmp in.bval" \
 -software antsquick \
--template "tmp template.mif.gz" "tmp mask.mif.gz"
+-template "tmp template.mif.gz" "tmp mask.mif.gz" \
+-scratch "tmp scratch"
 
 ls | grep "^tmp out\.mif$"

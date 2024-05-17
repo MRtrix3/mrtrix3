@@ -328,7 +328,7 @@ def activate_scratch_dir(): #pylint: disable=unused-variable
   if SCRATCH_DIR:
     raise Exception('Cannot use multiple scratch directories')
   if hasattr(ARGS, 'scratch') and ARGS.scratch:
-    dir_path = os.path.abspath(ARGS.scratch)
+    dir_path = ARGS.scratch
   else:
     # Defaulting to working directory since too many users have encountered storage issues
     dir_path = CONFIG.get('ScriptScratchDir', WORKING_DIR)
