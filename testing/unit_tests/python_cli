@@ -20,33 +20,33 @@ testing_python_cli -bool TRUE
 testing_python_cli -bool 0
 testing_python_cli -bool 1
 testing_python_cli -bool 2
-testing_python_cli -bool NotABool && false || true
-testing_python_cli -int_builtin 0.1 && false || true
-testing_python_cli -int_builtin NotAnInt && false || true
-testing_python_cli -int_unbound 0.1 && false || true
-testing_python_cli -int_unbound NotAnInt && false || true
-testing_python_cli -int_nonneg -1 && false || true
-testing_python_cli -int_bound 101 && false || true
-testing_python_cli -float_builtin NotAFloat && false || true
-testing_python_cli -float_unbound NotAFloat && false || true
-testing_python_cli -float_nonneg -0.1 && false || true
-testing_python_cli -float_bound 1.1 && false || true
-testing_python_cli -int_seq 0.1,0.2,0.3 && false || true
-testing_python_cli -int_seq Not,An,Int,Seq && false || true
-testing_python_cli -float_seq Not,A,Float,Seq && false || true
+! testing_python_cli -bool NotABool
+! testing_python_cli -int_builtin 0.1
+! testing_python_cli -int_builtin NotAnInt
+! testing_python_cli -int_unbound 0.1
+! testing_python_cli -int_unbound NotAnInt
+! testing_python_cli -int_nonneg -1
+! testing_python_cli -int_bound 101
+! testing_python_cli -float_builtin NotAFloat
+! testing_python_cli -float_unbound NotAFloat
+! testing_python_cli -float_nonneg -0.1
+! testing_python_cli -float_bound 1.1
+! testing_python_cli -int_seq 0.1,0.2,0.3
+! testing_python_cli -int_seq Not,An,Int,Seq
+! testing_python_cli -float_seq Not,A,Float,Seq
 
 # Tests relating to filesystem paths:
 # - Ensure that absent inputs result in appropriate error
 # - Ensure that pre-existing output paths are handled accordingly
 #   based on presence or absence of -force option
-rm -rf tmp-dirin/ && testing_python_cli -dir_in tmp-dirin/ && false || true
-trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && testing_python_cli -dir_out tmp-dirout/ 2>&1 | grep -q "use -force option to force overwrite"
+rm -rf tmp-dirin/ && ! testing_python_cli -dir_in tmp-dirin/
+trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && ! testing_python_cli -dir_out tmp-dirout/
 trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && testing_python_cli -dir_out tmp-dirout/ -force
-rm -f tmp-filein.txt && testing_python_cli -file_in tmp-filein.txt && false || true
-trap "rm -f tmp-fileout.txt" EXIT; touch tmp-fileout.txt && testing_python_cli -file_out tmp-fileout.txt 2>&1 | grep -q "use -force option to force overwrite"
+rm -f tmp-filein.txt && ! testing_python_cli -file_in tmp-filein.txt
+trap "rm -f tmp-fileout.txt" EXIT; touch tmp-fileout.txt && ! testing_python_cli -file_out tmp-fileout.txt
 trap "rm -f tmp-fileout.txt" EXIT; touch tmp-fileout.txt && testing_python_cli -file_out tmp-fileout.txt -force
-rm -f tmp-tracksin.tck && testing_python_cli -tracks_in tmp-tracksin.tck && false || true
-trap "rm -f tmp-filein.txt" EXIT; touch tmp-filein.txt && testing_python_cli -tracks_in tmp-filein.txt && false || true
-trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && testing_python_cli -tracks_out tmp-tracksout.tck 2>&1 | grep -q "use -force option to force overwrite"
+rm -f tmp-tracksin.tck && ! testing_python_cli -tracks_in tmp-tracksin.tck
+trap "rm -f tmp-filein.txt" EXIT; touch tmp-filein.txt && ! testing_python_cli -tracks_in tmp-filein.txt
+trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && ! testing_python_cli -tracks_out tmp-tracksout.tck
 trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && testing_python_cli -tracks_out tmp-tracksout.tck -force
 
