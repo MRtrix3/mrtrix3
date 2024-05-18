@@ -44,12 +44,11 @@ function(add_bash_test)
             -D FILE_PATH=${file_path}
             -D CLEANUP_CMD=${cleanup_cmd}
             -D WORKING_DIRECTORY=${working_directory}
-            -D ENVIRONMENT=${environment}
             -P ${PROJECT_SOURCE_DIR}/cmake/RunTest.cmake
     )
     set_tests_properties(${test_name}
         PROPERTIES
-        ENVIRONMENT "PATH=${exec_directories}"
+        ENVIRONMENT "PATH=${exec_directories};${environment}"
     )
     if(labels)
         set_tests_properties(${test_name} PROPERTIES LABELS "${labels}")

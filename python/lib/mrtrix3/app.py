@@ -185,10 +185,16 @@ def _execute(module): #pylint: disable=unused-variable
 
   # Now that FORCE_OVERWRITE has been set,
   #   check any user-specified output paths
-  for key in vars(ARGS):
-    value = getattr(ARGS, key)
-    if isinstance(value, Parser._UserOutPathExtras): # pylint: disable=protected-access
-      value.check_output()
+  try:
+    for key in vars(ARGS):
+      value = getattr(ARGS, key)
+      if isinstance(value, Parser._UserOutPathExtras): # pylint: disable=protected-access
+        value.check_output()
+  except FileExistsError as exception:
+    sys.stderr.write('\n')
+    sys.stderr.write(f'{EXEC_NAME}: {ANSI.error}[ERROR] {exception}{ANSI.clear}\n')
+    sys.stderr.flush()
+    sys.exit(1)
 
   # ANSI settings may have been altered at the command-line
   setup_ansi()
@@ -604,9 +610,8 @@ class Parser(argparse.ArgumentParser):
           warn(f'Output {item_type} "{str(self)}" already exists; '
                 'will be overwritten at script completion')
         else:
-          raise argparse.ArgumentError(CMDLINE,
-                                       f'Output {item_type} "{str(self)}" already exists '
-                                       '(use -force option to force overwrite)')
+          raise FileExistsError(f'Output {item_type} "{str(self)}" already exists '
+                            '(use -force option to force overwrite)')
   class _UserFileOutPathExtras(_UserOutPathExtras):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
@@ -631,9 +636,9 @@ class Parser(argparse.ArgumentParser):
           return
         except FileExistsError:
           if not FORCE_OVERWRITE:
-            raise argparse.ArgumentError(CMDLINE, # pylint: disable=raise-missing-from
-                                         f'Output directory "{str(self)}" already exists '
-                                         '(use -force option to force overwrite)')
+            # pylint: disable=raise-missing-from
+            raise FileExistsError(f'Output directory "{str(self)}" already exists '
+                                  '(use -force option to force overwrite)')
 
   # Various callable types for use as argparse argument types
   class CustomTypeBase:
@@ -654,7 +659,7 @@ class Parser(argparse.ArgumentParser):
       try:
         processed_value = int(processed_value)
       except ValueError as exc:
-        raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as boolean value"') from exc
+        raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as boolean value') from exc
       return bool(processed_value)
     @staticmethod
     def _legacytypestring():

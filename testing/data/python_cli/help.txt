@@ -120,7 +120,8 @@ AAddddiittiioonnaall  ssttaannddaarrdd  ooppttiioonns
      scratch directory at script completion.
 
   _-_s_c_r_a_t_c_h /path/to/scratch/
-     manually specify the path in which to generate the scratch directory.
+     manually specify an existing directory in which to generate the scratch
+     directory.
 
   _-_c_o_n_t_i_n_u_e ScratchDir LastFile
      continue the script from a previous execution; must provide the scratch
