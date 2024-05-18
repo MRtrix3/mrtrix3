@@ -64,10 +64,11 @@ function(add_cpp_unit_test FILE_SRC)
     set_tests_properties(unittest_${NAME} PROPERTIES LABELS "unittest")
 endfunction()
 
+include(BashTests)
 function (add_bash_unit_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
     add_bash_test(
-        FILE_PATH "${FILE_SRC}"
+        FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_SRC}"
         PREFIX "unittest"
         WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
