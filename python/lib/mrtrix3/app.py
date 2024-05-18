@@ -604,7 +604,8 @@ class Parser(argparse.ArgumentParser):
           warn(f'Output {item_type} "{str(self)}" already exists; '
                 'will be overwritten at script completion')
         else:
-          raise argparse.ArgumentError(f'Output {item_type} "{str(self)}" already exists '
+          raise argparse.ArgumentError(CMDLINE,
+                                       f'Output {item_type} "{str(self)}" already exists '
                                        '(use -force option to force overwrite)')
   class _UserFileOutPathExtras(_UserOutPathExtras):
     def __init__(self, *args, **kwargs):
@@ -630,7 +631,8 @@ class Parser(argparse.ArgumentParser):
           return
         except FileExistsError:
           if not FORCE_OVERWRITE:
-            raise argparse.ArgumentError(f'Output directory "{str(self)}" already exists ' # pylint: disable=raise-missing-from
+            raise argparse.ArgumentError(CMDLINE, # pylint: disable=raise-missing-from
+                                         f'Output directory "{str(self)}" already exists '
                                          '(use -force option to force overwrite)')
 
   # Various callable types for use as argparse argument types
