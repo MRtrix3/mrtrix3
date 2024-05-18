@@ -1,8 +1,16 @@
+#!/bin/bash
+# Multiple tests for the C++ binary command-line interface
+
+# Test using all options at once
 mkdir -p tmp-dirin/ && touch tmp-filein.txt && touch tmp-tracksin.tck && testing_cpp_cli -flag -text my_text -choice One -bool false -int_unbound 0 -int_nonneg 1 -int_bound 50 -float_unbound 0.0 -float_nonneg 1.0 -float_bound 0.5 -int_seq 1,2,3 -float_seq 0.1,0.2,0.3 -dir_in tmp-dirin/ -dir_out tmp-dirout/ -file_in tmp-filein.txt -file_out tmp-fileout.txt -tracks_in tmp-tracksin.tck -tracks_out tmp-tracksout.tck -various my_various && rm -rf tmp-dirin/ && rm -f tmp-filein.txt && rm -f tmp-tracksin.tck
+
+# Test export of interface to various file formats
 testing_cpp_cli -help | tail -n +3 > tmp.txt && diff -a --strip-trailing-cr tmp.txt cpp_cli/help.txt && rm -f tmp.txt
 testing_cpp_cli __print_full_usage__ > tmp.txt && diff -a --strip-trailing-cr tmp.txt cpp_cli/full_usage.txt && rm -f tmp.txt
 testing_cpp_cli __print_usage_markdown__ > tmp.md && diff -a --strip-trailing-cr tmp.md cpp_cli/markdown.md && rm -f tmp.md
 testing_cpp_cli __print_usage_rst__ > tmp.rst && diff -a --strip-trailing-cr tmp.rst cpp_cli/restructured_text.rst && rm -f tmp.rst
+
+# Test suitable handling of valid and invalid inputs to various argument types
 testing_cpp_cli -bool false
 testing_cpp_cli -bool False
 testing_cpp_cli -bool FALSE
@@ -26,6 +34,10 @@ testing_cpp_cli -float_bound 1.1 && false || true
 testing_cpp_cli -int_seq 0.1,0.2,0.3 && false || true
 testing_cpp_cli -int_seq Not,An,Int,Seq && false || true
 testing_cpp_cli -float_seq Not,A,Float,Seq && false || true
+
+# Test interfaces relating to filesystem paths:
+# - Make sure that command fails if expected input is not present
+# - Make sure that existing outputs either succeed or fail depending on the presence of the -force option
 rm -rf tmp-dirin/ && testing_cpp_cli -dir_in tmp-dirin/ && false || true
 trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && testing_cpp_cli -dir_out tmp-dirout/ 2>&1 | grep -q "use -force option to force overwrite"
 trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && testing_cpp_cli -dir_out tmp-dirout/ -force
@@ -36,3 +48,4 @@ rm -f tmp-tracksin.tck && testing_cpp_cli -tracks_in tmp-tracksin.tck && false |
 trap "rm -f tmp-filein.txt" EXIT; touch tmp-filein.txt && testing_cpp_cli -tracks_in tmp-filein.txt && false || true
 trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && testing_cpp_cli -tracks_out tmp-tracksout.tck 2>&1 | grep -q "use -force option to force overwrite"
 trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && testing_cpp_cli -tracks_out tmp-tracksout.tck -force
+
