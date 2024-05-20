@@ -911,6 +911,7 @@ void run () {
       else if (opt->is ("nthreads")) ++n;
       else if (opt->is ("force") || opt->is ("info") || opt->is ("debug") || opt->is ("quiet"))
         continue;
+      else if (opt->is ("config")) n+=2;
 
 #define SECTION 3
 #include "mrcalc.cpp"
