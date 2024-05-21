@@ -178,30 +178,20 @@ namespace MR
     {
       const auto grad = parse_DW_scheme (header);
 
-      // rotate vectors from scanner space to image space
-      Eigen::MatrixXd G = grad.leftCols<3>() * header.transform().rotation();
-
-      // deal with FSL requiring gradient directions to coincide with data strides
-      // also transpose matrices in preparation for file output
+      // rotate vectors from scanner space to image space for expected NIfTI export;
+      //   requisite transposition is a natural consequence
       vector<size_t> order;
-      auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
-      Eigen::MatrixXd bvecs (3, grad.rows());
-      Eigen::MatrixXd bvals (1, grad.rows());
-      for (ssize_t n = 0; n < G.rows(); ++n) {
-        bvecs(0,n) = header.stride(order[0]) > 0 ? G(n,order[0]) : -G(n,order[0]);
-        bvecs(1,n) = header.stride(order[1]) > 0 ? G(n,order[1]) : -G(n,order[1]);
-        bvecs(2,n) = header.stride(order[2]) > 0 ? G(n,order[2]) : -G(n,order[2]);
-        bvals(0,n) = grad(n,3);
-      }
+      const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
+      Eigen::MatrixXd bvecs = adjusted_transform.inverse().linear() * grad.leftCols<3>().transpose();
 
       // bvecs format actually assumes a LHS coordinate system even if image is
-      // stored using RHS - x axis is flipped to make linear 3x3 part of
+      // stored using RHS; first axis is flipped to make linear 3x3 part of
       // transform have negative determinant:
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
 
       save_matrix (bvecs, bvecs_path, KeyValues(), false);
-      save_matrix (bvals, bvals_path, KeyValues(), false);
+      save_matrix (grad.col(3).transpose(), bvals_path, KeyValues(), false);
     }
 
 
