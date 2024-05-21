@@ -26,6 +26,7 @@
 
 #include "mrtrix.h"
 #include "types.h"
+#include <variant>
 
 namespace MR::App {
 
@@ -101,13 +102,11 @@ public:
   /*! this is used to construct a command-line argument object, with a name
    * and description. If default arguments are used, the object corresponds
    * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
-  Argument(const char *name = nullptr, std::string description = std::string())
-      : id(name), desc(description), type(Undefined), flags(None) {
-    memset(&limits, 0x00, sizeof(limits));
-  }
+  Argument(std::string name, std::string description = std::string())
+      : id(std::move(name)), desc(std::move(description)), type(Undefined), flags(None) {}
 
   //! the argument name
-  const char *id;
+  std::string id;
   //! the argument description
   std::string desc;
   //! the argument type
@@ -115,16 +114,16 @@ public:
   //! the argument flags (AllowMultiple & Optional)
   ArgFlags flags;
 
+  struct IntRange {
+    int64_t min, max;
+  };
+  struct FloatRange {
+    default_type min, max;
+  };
+
   //! a structure to store the various parameters of the Argument
-  union {
-    const char *const *choices;
-    struct {
-      int64_t min, max;
-    } i;
-    struct {
-      default_type min, max;
-    } f;
-  } limits;
+  using Limits = std::variant<std::vector<std::string>, IntRange, FloatRange>;
+  Limits limits;
 
   operator bool() const { return id; }
 
@@ -178,8 +177,7 @@ public:
                          const int64_t max = std::numeric_limits<int64_t>::max()) {
     assert(type == Undefined);
     type = Integer;
-    limits.i.min = min;
-    limits.i.max = max;
+    limits = IntRange{min, max};
     return *this;
   }
 
@@ -197,8 +195,7 @@ public:
                        const default_type max = std::numeric_limits<default_type>::infinity()) {
     assert(type == Undefined);
     type = Float;
-    limits.f.min = min;
-    limits.f.max = max;
+    limits = FloatRange{min, max};
     return *this;
   }
 
@@ -216,7 +213,7 @@ public:
   Argument &type_choice(const char *const *choices) {
     assert(type == Undefined);
     type = Choice;
-    limits.choices = choices;
+    limits = choices;
     return *this;
   }
 
