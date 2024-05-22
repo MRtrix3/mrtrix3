@@ -14,6 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 #include "gui/opengl/gl_core_3_3.h"
 #include <algorithm>
 #include <cstddef>
