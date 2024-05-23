@@ -14,6 +14,17 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOSERVICE
+#define NOMCX
+#define NOIME
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #include "gui/opengl/gl_core_3_3.h"
 #include <algorithm>
 #include <cstddef>
