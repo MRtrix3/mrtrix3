@@ -30,9 +30,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -99,7 +99,7 @@ Usage
 -  *input_dir*: The input directory containing all DWI images
 -  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
 -  *output_dir*: The output directory containing all of the intensity normalised DWI images
--  *fa_template*: The output population specific FA template, which is threshold to estimate a white matter mask
+-  *fa_template*: The output population-specific FA template, which is thresholded to estimate a white matter mask
 -  *wm_mask*: The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation
 
 Description
@@ -112,16 +112,16 @@ All input DWI files must contain an embedded diffusion gradient table; for this 
 Options
 -------
 
-- **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
+- **-fa_threshold value** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -176,7 +176,7 @@ dwinormalise manual
 Synopsis
 --------
 
-Intensity normalise a DWI series based on the b=0 signal within a manually-supplied supplied mask
+Intensity normalise a DWI series based on the b=0 signal within a supplied mask
 
 Usage
 -----
@@ -192,14 +192,14 @@ Usage
 Options
 -------
 
-- **-intensity** Normalise the b=0 signal to a specified value (Default: 1000)
+- **-intensity value** Normalise the b=0 signal to a specified value (Default: 1000)
 
-- **-percentile** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value
+- **-percentile value** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -208,9 +208,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -292,7 +292,7 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -312,9 +312,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^

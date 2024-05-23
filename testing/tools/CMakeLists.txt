@@ -1,4 +1,5 @@
 set(CPP_TOOLS_SRCS
+    testing_cpp_cli.cpp
     testing_diff_dir.cpp
     testing_diff_fixel.cpp
     testing_diff_fixel_old.cpp
@@ -17,6 +18,7 @@ set(CPP_TOOLS_SRCS
 set(PYTHON_TOOLS_SRCS
     testing_check_npy
     testing_gen_npy
+    testing_python_cli
 )
 
 add_custom_target(testing_tools)

@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import collections, itertools, os, shlex, shutil, signal, string, subprocess, sys, tempfile, threading
+import collections, itertools, os, pathlib, shlex, shutil, signal, string, subprocess, sys, tempfile, threading
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
@@ -230,9 +230,20 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   show = kwargs.pop('show', True)
   mrconvert_keyval = kwargs.pop('mrconvert_keyval', None)
   force = kwargs.pop('force', False)
-  env = kwargs.pop('env', shared.env)
+  if 'env' in kwargs:
+    env = kwargs.pop('env')
+    if kwargs.pop('preserve_pipes', False):
+      env['MRTRIX_PRESERVE_TMPFILE'] = 'True'
+  elif 'preserve_pipes' in kwargs:
+    env = dict(shared.env)
+    kwargs.pop('preserve_pipes')
+    env['MRTRIX_PRESERVE_TMPFILE'] = 'True'
+  else:
+    # Reference rather than copying
+    env = shared.env
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to run.command(): ' + str(kwargs))
+    raise TypeError('Unsupported keyword arguments passed to run.command(): '
+                    + str(kwargs))
 
   if shell and mrconvert_keyval:
     raise TypeError('Cannot use "mrconvert_keyval=" parameter in shell mode')
@@ -246,12 +257,13 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
   if isinstance(cmd, list):
     if shell:
-      raise TypeError('When using run.command() with shell=True, input must be a text string')
+      raise TypeError('When using run.command() with shell=True, '
+                      'input must be a text string')
     cmdstring = ''
     cmdsplit = []
     for entry in cmd:
       if isinstance(entry, str):
-        cmdstring += (' ' if cmdstring else '') + quote_nonpipe(entry)
+        cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry)}'
         cmdsplit.append(entry)
       elif isinstance(entry, list):
         assert all(isinstance(item, str) for item in entry)
@@ -259,14 +271,19 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
           common_prefix = os.path.commonprefix(entry)
           common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
           if common_prefix == entry[0] and common_prefix == common_suffix:
-            cmdstring += (' ' if cmdstring else '') + '[' + entry[0] + ' (x' + str(len(entry)) + ')]'
+            cmdstring += f'{" " if cmdstring else ""}[{entry[0]} (x{len(entry)})]'
           else:
-            cmdstring += (' ' if cmdstring else '') + '[' + common_prefix + '*' + common_suffix + ' (' + str(len(entry)) + ' items)]'
+            cmdstring += f'{" " if cmdstring else ""}[{common_prefix}*{common_suffix} ({len(entry)} items)]'
         else:
-          cmdstring += (' ' if cmdstring else '') + quote_nonpipe(entry[0])
+          cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry[0])}'
         cmdsplit.extend(entry)
+      elif isinstance(entry, pathlib.Path):
+        cmdstring += f'{" " if cmdstring else ""}{shlex.quote(str(entry))}'
+        cmdsplit.append(str(entry))
       else:
-        raise TypeError('When run.command() is provided with a list as input, entries in the list must be either strings or lists of strings')
+        raise TypeError('When run.command() is provided with a list as input, '
+                        'entries in the list must be either strings or lists of strings; '
+                        f'received: {repr(cmd)}')
   elif isinstance(cmd, str):
     cmdstring = cmd
     # Split the command string by spaces, preserving anything encased within quotation marks
@@ -275,16 +292,16 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     else: # Native Windows Python
       cmdsplit = [ entry.strip('\"') for entry in shlex.split(cmd, posix=False) ]
   else:
-    raise TypeError('run.command() function only operates on strings, or lists of strings')
+    raise TypeError('run.command() function only operates on strings or lists of strings')
 
   if shared.get_continue():
     if shared.trigger_continue(cmdsplit):
-      app.debug('Detected last file in command \'' + cmdstring + '\'; this is the last run.command() / run.function() call that will be skipped')
+      app.debug(f'Detected last file in command "{cmdstring}"; '
+                'this is the last run.command() / run.function() call that will be skipped')
     if shared.verbosity:
-      sys.stderr.write(ANSI.execute + 'Skipping command:' + ANSI.clear + ' ' + cmdstring + '\n')
+      sys.stderr.write(f'{ANSI.execute}Skipping command:{ANSI.clear} {cmdstring}\n')
       sys.stderr.flush()
     return CommandReturn('', '')
-
 
   # If operating in shell=True mode, handling of command execution is significantly different:
   #   Unmodified command string is executed using subprocess, with the shell being responsible for its parsing
@@ -296,9 +313,9 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
     cmdstack = [ cmdsplit ]
     with shared.lock:
-      app.debug('To execute: ' + str(cmdsplit))
+      app.debug(f'To execute: {cmdsplit}')
       if (shared.verbosity and show) or shared.verbosity > 1:
-        sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + cmdstring + '\n')
+        sys.stderr.write(f'{ANSI.execute}Command:{ANSI.clear}  {cmdstring}\n')
         sys.stderr.flush()
     # No locking required for actual creation of new process
     this_stdout = shared.make_temporary_file()
@@ -316,7 +333,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         pre_result = command(cmdsplit[:index])
         if operator == '||':
           with shared.lock:
-            app.debug('Due to success of "' + cmdsplit[:index] + '", "' + cmdsplit[index+1:] + '" will not be run')
+            app.debug(f'Due to success of "{cmdsplit[:index]}", "{cmdsplit[index+1:]}" will not be run')
           return pre_result
       except MRtrixCmdError:
         if operator == '&&':
@@ -331,9 +348,13 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
     if mrconvert_keyval:
       if cmdstack[-1][0] != 'mrconvert':
-        raise TypeError('Argument "mrconvert_keyval=" can only be used if the mrconvert command is being invoked')
-      assert not (mrconvert_keyval[0] in [ '\'', '"' ] or mrconvert_keyval[-1] in [ '\'', '"' ])
-      cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval ])
+        raise TypeError('Argument "mrconvert_keyval=" can only be used '
+                        'if the mrconvert command is being invoked')
+      if isinstance(mrconvert_keyval, pathlib.Path):
+        cmdstack[-1].extend([ '-copy_properties', str(mrconvert_keyval) ])
+      else:
+        assert not (mrconvert_keyval[0] in [ '\'', '"' ] or mrconvert_keyval[-1] in [ '\'', '"' ])
+        cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval ])
       if COMMAND_HISTORY_STRING:
         cmdstack[-1].extend([ '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
 
@@ -360,7 +381,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     with shared.lock:
       app.debug('To execute: ' + str(cmdstack))
       if (shared.verbosity and show) or shared.verbosity > 1:
-        sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + cmdstring + '\n')
+        sys.stderr.write(f'{ANSI.execute}Command:{ANSI.clear}  {cmdstring}\n')
         sys.stderr.flush()
 
     this_command_index = shared.get_command_index()
@@ -405,7 +426,8 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       stderrdata = b''
       do_indent = True
       while True:
-        # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
+        # Have to read one character at a time:
+        # Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
         byte = process.stderr.read(1)
         stderrdata += byte
         char = byte.decode('cp1252', errors='ignore')
@@ -482,21 +504,27 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
 
   show = kwargs.pop('show', True)
 
-  fnstring = fn_to_execute.__module__ + '.' + fn_to_execute.__name__ + \
-             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
-             (', ' if (args and kwargs) else '') + \
-             ', '.join([key+'='+str(value) for key, value in kwargs.items()]) + ')'
+  def quoted(text):
+    return f'"{text}"'
+  def format_keyval(key, value):
+    return f'{key}={value}'
+
+  fnstring = f'{fn_to_execute.__module__}.{fn_to_execute.__name__}' \
+             f'({", ".join([quoted(a) if isinstance(a, str) else str(a) for a in args])}' \
+             f'{", " if (args and kwargs) else ""}' \
+             f'{", ".join([format_keyval(key, value) for key, value in kwargs.items()])}'
 
   if shared.get_continue():
     if shared.trigger_continue(args) or shared.trigger_continue(kwargs.values()):
-      app.debug('Detected last file in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
+      app.debug(f'Detected last file in function "{fnstring}"; '
+                'this is the last run.command() / run.function() call that will be skipped')
     if shared.verbosity:
-      sys.stderr.write(ANSI.execute + 'Skipping function:' + ANSI.clear + ' ' + fnstring + '\n')
+      sys.stderr.write(f'{ANSI.execute}Skipping function:{ANSI.clear} {fnstring}\n')
       sys.stderr.flush()
     return None
 
   if (shared.verbosity and show) or shared.verbosity > 1:
-    sys.stderr.write(ANSI.execute + 'Function:' + ANSI.clear + ' ' + fnstring + '\n')
+    sys.stderr.write(f'{ANSI.execute}Function:{ANSI.clear} {fnstring}\n')
     sys.stderr.flush()
 
   # Now we need to actually execute the requested function
@@ -528,16 +556,16 @@ def exe_name(item):
     path = item
   elif os.path.isfile(os.path.join(BIN_PATH, item)):
     path = item
-  elif os.path.isfile(os.path.join(BIN_PATH, item + '.exe')):
+  elif os.path.isfile(os.path.join(BIN_PATH, f'{item}.exe')):
     path = item + '.exe'
   elif shutil.which(item) is not None:
     path = item
-  elif shutil.which(item + '.exe') is not None:
-    path = item + '.exe'
+  elif shutil.which(f'{item}.exe') is not None:
+    path = f'{item}.exe'
   # If it can't be found, return the item as-is
   else:
     path = item
-  app.debug(item + ' -> ' + path)
+  app.debug(f'{item} -> {path}')
   return path
 
 
@@ -550,17 +578,17 @@ def exe_name(item):
 def version_match(item):
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not item in EXE_LIST:
-    app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
+    app.debug(f'Command "{item}" not found in MRtrix3 bin/ directory')
     return item
   exe_path_manual = os.path.join(BIN_PATH, exe_name(item))
   if os.path.isfile(exe_path_manual):
-    app.debug('Version-matched executable for ' + item + ': ' + exe_path_manual)
+    app.debug(f'Version-matched executable for "{item}": {exe_path_manual}')
     return exe_path_manual
   exe_path_sys = shutil.which(exe_name(item))
   if exe_path_sys and os.path.isfile(exe_path_sys):
-    app.debug('Using non-version-matched executable for ' + item + ': ' + exe_path_sys)
+    app.debug(f'Using non-version-matched executable for "{item}": {exe_path_sys}')
     return exe_path_sys
-  raise MRtrixError('Unable to find executable for MRtrix3 command ' + item)
+  raise MRtrixError(f'Unable to find executable for MRtrix3 command "{item}"')
 
 
 
@@ -576,7 +604,7 @@ def _shebang(item):
     if path == item:
       path = shutil.which(exe_name(item))
   if not path:
-    app.debug('File \"' + item + '\": Could not find file to query')
+    app.debug(f'File "{item}": Could not find file to query')
     return []
   # Read the first 1024 bytes of the file
   with open(path, 'rb') as file_in:
@@ -587,7 +615,7 @@ def _shebang(item):
     try:
       line = str(line.decode('utf-8'))
     except UnicodeDecodeError:
-      app.debug('File \"' + item + '\": Not a text file')
+      app.debug(f'File "{item}": Not a text file')
       return []
     line = line.strip()
     if len(line) > 2 and line[0:2] == '#!':
@@ -599,19 +627,21 @@ def _shebang(item):
       #   as long as Python2 is not explicitly requested
       if os.path.basename(shebang[0]) == 'env':
         if len(shebang) < 2:
-          app.warn('Invalid shebang in script file \"' + item + '\" (missing interpreter after \"env\")')
+          app.warn(f'Invalid shebang in script file "{item}" '
+                   '(missing interpreter after "env")')
           return []
         if shebang[1] == 'python' or shebang[1] == 'python3':
           if not sys.executable:
-            app.warn('Unable to self-identify Python interpreter; file \"' + item + '\" not guaranteed to execute on same version')
+            app.warn('Unable to self-identify Python interpreter; '
+                     f'file "{item}" not guaranteed to execute on same version')
             return []
           shebang = [ sys.executable ] + shebang[2:]
-          app.debug('File \"' + item + '\": Using current Python interpreter')
+          app.debug(f'File "{item}": Using current Python interpreter')
         elif utils.is_windows():
           shebang = [ os.path.abspath(shutil.which(exe_name(shebang[1]))) ] + shebang[2:]
       elif utils.is_windows():
         shebang = [ os.path.abspath(shutil.which(exe_name(os.path.basename(shebang[0])))) ] + shebang[1:]
-      app.debug('File \"' + item + '\": string \"' + line + '\": ' + str(shebang))
+      app.debug(f'File "{item}": string "{line}": {shebang}')
       return shebang
-  app.debug('File \"' + item + '\": No shebang found')
+  app.debug(f'File "{item}": No shebang found')
   return []

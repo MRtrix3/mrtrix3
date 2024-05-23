@@ -20,7 +20,7 @@ Usage
 Description
 -----------
 
-This script serves as an interface for many different algorithms that generate a binary mask from DWI data in different ways. Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the 'fslbet' algorithm, type 'dwi2mask fslbet'.
+This script serves as an interface for many different algorithms that generate a binary mask from DWI data in different ways. Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the "fslbet" algorithm, type "dwi2mask fslbet".
 
 More information on mask derivation from DWI data can be found at the following link: 
 https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
@@ -31,7 +31,7 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -40,9 +40,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -112,24 +112,24 @@ Usage
 Options
 -------
 
-Options specific to the 'afni_3dautomask' algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options specific to the "3dautomask" algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-clfrac** Set the 'clip level fraction', must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.
+- **-clfrac value** Set the "clip level fraction"; must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.
 
-- **-nograd** The program uses a 'gradual' clip level by default. Add this option to use a fixed clip level.
+- **-nograd** The program uses a "gradual" clip level by default. Add this option to use a fixed clip level.
 
-- **-peels** Peel (erode) the mask n times, then unpeel (dilate).
+- **-peels iterations** Peel (erode) the mask n times, then unpeel (dilate).
 
-- **-nbhrs** Define the number of neighbors needed for a voxel NOT to be eroded.  It should be between 6 and 26.
+- **-nbhrs count** Define the number of neighbors needed for a voxel NOT to be eroded. It should be between 6 and 26.
 
 - **-eclip** After creating the mask, remove exterior voxels below the clip threshold.
 
-- **-SI** After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains).
+- **-SI value** After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains).
 
-- **-dilate** Dilate the mask outwards n times
+- **-dilate iterations** Dilate the mask outwards n times
 
-- **-erode** Erode the mask outwards n times
+- **-erode iterations** Erode the mask outwards n times
 
 - **-NN1** Erode and dilate based on mask faces
 
@@ -140,7 +140,7 @@ Options specific to the 'afni_3dautomask' algorithm
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -149,9 +149,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -231,7 +231,7 @@ Options specific to the "ants" algorithm
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -240,9 +240,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -314,7 +314,7 @@ Usage
 Description
 -----------
 
-This script currently assumes that the template image provided via the -template option is T2-weighted, and can therefore be trivially registered to a mean b=0 image.
+This script currently assumes that the template image provided via the first input to the -template option is T2-weighted, and can therefore be trivially registered to a mean b=0 image.
 
 Command-line option -ants_options can be used with either the "antsquick" or "antsfull" software options. In both cases, image dimensionality is assumed to be 3, and so this should be omitted from the user-specified options.The input can be either a string (encased in double-quotes if more than one option is specified), or a path to a text file containing the requested options. In the case of the "antsfull" software option, one will require the names of the fixed and moving images that are provided to the antsRegistration command: these are "template_image.nii" and "bzero.nii" respectively.
 
@@ -326,24 +326,24 @@ Options applicable when using the FSL software for registration
 
 - **-flirt_options " FlirtOptions"** Command-line options to pass to the FSL flirt command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to flirt)
 
-- **-fnirt_config FILE** Specify a FNIRT configuration file for registration
+- **-fnirt_config file** Specify a FNIRT configuration file for registration
 
 Options applicable when using the ANTs software for registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-ants_options** Provide options to be passed to the ANTs registration command (see Description)
+- **-ants_options " ANTsOptions"** Provide options to be passed to the ANTs registration command (see Description)
 
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-software** The software to use for template registration; options are: antsfull,antsquick,fsl; default is antsquick
+- **-software choice** The software to use for template registration; options are: antsfull,antsquick,fsl; default is antsquick
 
 - **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -352,9 +352,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -431,18 +431,18 @@ Options
 Options specific to the "consensus" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-algorithms** Provide a list of dwi2mask algorithms that are to be utilised
+- **-algorithms str <space-separated list of additional strs>** Provide a (space- or comma-separated) list of dwi2mask algorithms that are to be utilised
 
-- **-masks** Export a 4D image containing the individual algorithm masks
+- **-masks image** Export a 4D image containing the individual algorithm masks
 
 - **-template TemplateImage MaskImage** Provide a template image and corresponding mask for those algorithms requiring such
 
-- **-threshold** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501)
+- **-threshold value** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -451,9 +451,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -523,23 +523,23 @@ Usage
 Options
 -------
 
-Options specific to the 'fslbet' algorithm
+Options specific to the "fslbet" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-bet_f** Fractional intensity threshold (0->1); smaller values give larger brain outline estimates
+- **-bet_f value** Fractional intensity threshold (0->1); smaller values give larger brain outline estimates
 
-- **-bet_g** Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top
+- **-bet_g value** Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top
 
-- **-bet_c <x y z>** Centre-of-gravity (voxels not mm) of initial mesh surface
+- **-bet_c i,j,k** Centre-of-gravity (voxels not mm) of initial mesh surface
 
-- **-bet_r** Head radius (mm not voxels); initial surface sphere is set to half of this
+- **-bet_r value** Head radius (mm not voxels); initial surface sphere is set to half of this
 
 - **-rescale** Rescale voxel size provided to BET to 1mm isotropic; can improve results for rodent data
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -548,9 +548,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -622,7 +622,7 @@ Usage
 Options
 -------
 
-Options specific to the 'hdbet' algorithm
+Options specific to the "hdbet" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nogpu** Do not attempt to run on the GPU
@@ -630,7 +630,7 @@ Options specific to the 'hdbet' algorithm
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -639,9 +639,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -713,12 +713,12 @@ Usage
 Options
 -------
 
-- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -727,9 +727,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -799,17 +799,17 @@ Usage
 Options
 -------
 
-Options specific to the 'mean' algorithm
+Options specific to the "mean" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** Comma separated list of shells to be included in the volume averaging
+- **-shells bvalues** Comma separated list of shells to be included in the volume averaging
 
-- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -818,9 +818,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -904,7 +904,7 @@ Options specific to the "mtnorm" algorithm
 
 - **-init_mask image** Provide an initial brain mask, which will constrain the response function estimation (if omitted, the default dwi2mask algorithm will be used)
 
-- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data
 
 - **-threshold value** the threshold on the total tissue density sum image used to derive the brain mask; default is 0.5
 
@@ -913,7 +913,7 @@ Options specific to the "mtnorm" algorithm
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -922,9 +922,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -1006,7 +1006,7 @@ Options
 Options specific to the 'Synthstrip' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-stripped** The output stripped image
+- **-stripped image** The output stripped image
 
 - **-gpu** Use the GPU
 
@@ -1014,12 +1014,12 @@ Options specific to the 'Synthstrip' algorithm
 
 - **-nocsf** Compute the immediate boundary of brain matter excluding surrounding CSF
 
-- **-border** Control the boundary distance from the brain
+- **-border value** Control the boundary distance from the brain
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -1028,9 +1028,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -1102,24 +1102,24 @@ Usage
 Options
 -------
 
-Options for turning 'dwi2mask trace' into an iterative algorithm
+Options for turning "dwi2mask trace" into an iterative algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-iterative** (EXPERIMENTAL) Iteratively refine the weights for combination of per-shell trace-weighted images prior to thresholding
 
-- **-max_iters** Set the maximum number of iterations for the algorithm (default: 10)
+- **-max_iters iterations** Set the maximum number of iterations for the algorithm (default: 10)
 
-Options specific to the 'trace' algorithm
+Options specific to the "trace" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** Comma separated list of shells used to generate trace-weighted images for masking
+- **-shells bvalues** Comma-separated list of shells used to generate trace-weighted images for masking
 
-- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -1128,9 +1128,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^

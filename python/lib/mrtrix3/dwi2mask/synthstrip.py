@@ -15,10 +15,10 @@
 
 import shutil
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, path, run
+from mrtrix3 import app, run
 
 
-
+NEEDS_MEAN_BZERO = True # pylint: disable=unused-variable
 SYNTHSTRIP_CMD='mri_synthstrip'
 SYNTHSTRIP_SINGULARITY='sythstrip-singularity'
 
@@ -28,26 +28,36 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_author('Ruobing Chen (chrc@student.unimelb.edu.au)')
   parser.set_synopsis('Use the FreeSurfer Synthstrip method on the mean b=0 image')
   parser.add_description('This algorithm requires that the SynthStrip method be installed and available via PATH; '
-                         'this could be via Freesufer 7.3.0 or later, or the dedicated Singularity container.')
-  parser.add_citation('A. Hoopes, J. S. Mora, A. V. Dalca, B. Fischl, M. Hoffmann. SynthStrip: Skull-Stripping for Any Brain Image. NeuroImage, 2022, 260, 119474', is_external=True)
-  parser.add_argument('input', help='The input DWI series')
-  parser.add_argument('output', help='The output mask image')
+                         'this could be via Freesufer 7.3.0 or later, '
+                         'or the dedicated Singularity container.')
+  parser.add_citation('A. Hoopes, J. S. Mora, A. V. Dalca, B. Fischl, M. Hoffmann. '
+                      'SynthStrip: Skull-Stripping for Any Brain Image. '
+                      'NeuroImage, 2022, 260, 119474',
+                      is_external=True)
+  parser.add_argument('input',
+                      type=app.Parser.ImageIn(),
+                      help='The input DWI series')
+  parser.add_argument('output',
+                      type=app.Parser.ImageOut(),
+                      help='The output mask image')
   options=parser.add_argument_group('Options specific to the \'Synthstrip\' algorithm')
-  options.add_argument('-stripped', help='The output stripped image')
-  options.add_argument('-gpu', action='store_true', default=False, help='Use the GPU')
-  options.add_argument('-model', metavar='file', help='Alternative model weights')
-  options.add_argument('-nocsf', action='store_true', default=False, help='Compute the immediate boundary of brain matter excluding surrounding CSF')
-  options.add_argument('-border', type=int, help='Control the boundary distance from the brain')
-
-
-
-def get_inputs(): #pylint: disable=unused-variable
-  pass
-
-
-
-def needs_mean_bzero(): #pylint: disable=unused-variable
-  return True
+  options.add_argument('-stripped',
+                       type=app.Parser.ImageOut(),
+                       help='The output stripped image')
+  options.add_argument('-gpu',
+                       action='store_true',
+                       default=None,
+                       help='Use the GPU')
+  options.add_argument('-model',
+                       type=app.Parser.FileIn(),
+                       help='Alternative model weights')
+  options.add_argument('-nocsf',
+                       action='store_true',
+                       default=None,
+                       help='Compute the immediate boundary of brain matter excluding surrounding CSF')
+  options.add_argument('-border',
+                       type=app.Parser.Int(),
+                       help='Control the boundary distance from the brain')
 
 
 
@@ -57,29 +67,31 @@ def execute(): #pylint: disable=unused-variable
   if not synthstrip_cmd:
     synthstrip_cmd=shutil.which(SYNTHSTRIP_SINGULARITY)
     if not synthstrip_cmd:
-      raise MRtrixError('Unable to locate "Synthstrip" executable; please check installation')
+      raise MRtrixError('Unable to locate "Synthstrip" executable; '
+                        'please check installation')
 
   output_file = 'synthstrip_mask.nii'
   stripped_file = 'stripped.nii'
-  cmd_string = SYNTHSTRIP_CMD + ' -i bzero.nii -m ' + output_file
+  cmd = [SYNTHSTRIP_CMD, '-i', 'bzero.nii', '-m', output_file]
 
   if app.ARGS.stripped:
-    cmd_string += ' -o ' + stripped_file
+    cmd.extend(['-o', stripped_file])
   if app.ARGS.gpu:
-    cmd_string += ' -g'
+    cmd.append('-g')
 
   if app.ARGS.nocsf:
-    cmd_string += ' --no-csf'
+    cmd.append('--no-csf')
 
   if app.ARGS.border is not None:
-    cmd_string += ' -b' + ' ' + str(app.ARGS.border)
+    cmd.extend(['-b', str(app.ARGS.border)])
 
   if app.ARGS.model:
-    cmd_string += ' --model' + path.from_user(app.ARGS.model)
+    cmd.extend(['--model', app.ARGS.model])
 
-  run.command(cmd_string)
+  run.command(cmd)
   if app.ARGS.stripped:
-    run.command('mrconvert ' + stripped_file + ' ' + path.from_user(app.ARGS.stripped),
-                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+    run.command(['mrconvert', stripped_file, app.ARGS.stripped],
+                mrconvert_keyval=app.ARGS.input,
+                preserve_pipes=True,
                 force=app.FORCE_OVERWRITE)
   return output_file

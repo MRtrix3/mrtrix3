@@ -1,0 +1,18 @@
+#!/bin/bash
+# Ensure correct operation of the "dwi2mask mtnorm" command
+#   when image paths include whitespace characters
+rm -rf "tmp scratch"
+
+ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+
+mkdir "tmp scratch"
+
+dwi2mask mtnorm "tmp in.nii.gz" "tmp out.mif" -force \
+-fslgrad "tmp in.bvec" "tmp in.bval" \
+-tissuesum "tmp tissuesum.mif" \
+-scratch "tmp scratch"
+
+testing_diff_image "tmp out.mif" dwi2mask/mtnorm_default_mask.mif.gz
+testing_diff_image "tmp tissuesum.mif" dwi2mask/mtnorm_default_tissuesum.mif.gz -abs 1e-5

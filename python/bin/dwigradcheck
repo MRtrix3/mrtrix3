@@ -24,14 +24,26 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
   cmdline.add_description('Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.')
-  cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
-                          'derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. '
-                          'More information on mask derivation from DWI data can be found at the following link: \n'
-                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/dwi_preprocessing/masking.html')
-  cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962')
-  cmdline.add_argument('input', help='The input DWI series to be checked')
-  cmdline.add_argument('-mask', metavar='image', help='Provide a mask image within which to seed & constrain tracking')
-  cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
+  cmdline.add_description('Note that if the -mask command-line option is not specified,'
+                          ' the MRtrix3 command dwi2mask will automatically be called'
+                          ' to derive a binary mask image to be used for streamline seeding'
+                          ' and to constrain streamline propagation.'
+                          ' More information on mask derivation from DWI data can be found at the following link: \n'
+                          f'https://mrtrix.readthedocs.io/en/{_version.__tag__}/dwi_preprocessing/masking.html')
+  cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. '
+                       'Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. '
+                       'Medical Image Analysis, 2014, 18(7), 953-962')
+  cmdline.add_argument('input',
+                       type=app.Parser.ImageIn(),
+                       help='The input DWI series to be checked')
+  cmdline.add_argument('-mask',
+                       type=app.Parser.ImageIn(),
+                       help='Provide a mask image within which to seed & constrain tracking')
+  cmdline.add_argument('-number',
+                       type=app.Parser.Int(1),
+                       metavar='count',
+                       default=10000,
+                       help='Set the number of tracks to generate for each test')
 
   app.add_dwgrad_export_options(cmdline)
   app.add_dwgrad_import_options(cmdline)
@@ -41,29 +53,27 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
-  from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, matrix, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
-  image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
+  image_dimensions = image.Header(app.ARGS.input).size()
   if len(image_dimensions) != 4:
     raise MRtrixError('Input image must be a 4D image')
   if min(image_dimensions) == 1:
     raise MRtrixError('Cannot perform tractography on an image with a unity dimension')
   num_volumes = image_dimensions[3]
 
-  app.make_scratch_dir()
-
+  app.activate_scratch_dir()
   # Make sure the image data can be memory-mapped
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('data.mif') + ' -strides 0,0,0,1 -datatype float32')
-
+  run.command(f'mrconvert {app.ARGS.input} data.mif -strides 0,0,0,1 -datatype float32',
+              preserve_pipes=True)
   if app.ARGS.grad:
-    shutil.copy(path.from_user(app.ARGS.grad, False), path.to_scratch('grad.b', False))
+    shutil.copy(app.ARGS.grad, 'grad.b')
   elif app.ARGS.fslgrad:
-    shutil.copy(path.from_user(app.ARGS.fslgrad[0], False), path.to_scratch('bvecs', False))
-    shutil.copy(path.from_user(app.ARGS.fslgrad[1], False), path.to_scratch('bvals', False))
+    shutil.copy(app.ARGS.fslgrad[0], 'bvecs')
+    shutil.copy(app.ARGS.fslgrad[1], 'bvals')
   if app.ARGS.mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
-
-  app.goto_scratch_dir()
+    run.command(['mrconvert', app.ARGS.mask, 'mask.mif', '-datatype', 'bit'],
+                preserve_pipes=True)
 
   # Make sure we have gradient table stored externally to header in both MRtrix and FSL formats
   if not os.path.isfile('grad.b'):
@@ -92,10 +102,10 @@ def execute(): #pylint: disable=unused-variable
   # Note that gradient table must be explicitly loaded, since there may not
   #   be one in the image header (user may be relying on -grad or -fslgrad input options)
   if not os.path.exists('mask.mif'):
-    run.command('dwi2mask ' + CONFIG['Dwi2maskAlgorithm'] + ' data.mif mask.mif -grad grad.b')
+    run.command(['dwi2mask', CONFIG['Dwi2maskAlgorithm'], 'data.mif', 'mask.mif', '-grad', 'grad.b'])
 
   # How many tracks are we going to generate?
-  number_option = ' -select ' + str(app.ARGS.number)
+  number_option = f' -select {app.ARGS.number}'
 
 
   #  What variations of gradient errors can we conceive?
@@ -120,13 +130,14 @@ def execute(): #pylint: disable=unused-variable
   # List where the first element is the mean length
   lengths = [ ]
 
-  progress = app.ProgressBar('Testing gradient table alterations (0 of ' + str(total_tests) + ')', total_tests)
+  progress = app.ProgressBar(f'Testing gradient table alterations (0 of {total_tests})', total_tests)
 
   for flip in axis_flips:
     for permutation in axis_permutations:
       for basis in grad_basis:
 
-        suffix = '_flip' + str(flip) + '_perm' + ''.join(str(item) for item in permutation) + '_' + basis
+        perm = ''.join(map(str, permutation))
+        suffix = f'_flip{flip}_perm{perm}_{basis}'
 
         if basis == 'scanner':
 
@@ -141,12 +152,12 @@ def execute(): #pylint: disable=unused-variable
           grad = [ [ row[permutation[0]], row[permutation[1]], row[permutation[2]], row[3] ] for row in grad ]
 
           # Create the gradient table file
-          grad_path = 'grad' + suffix + '.b'
+          grad_path = f'grad{suffix}.b'
           with open(grad_path, 'w', encoding='utf-8') as grad_file:
             for line in grad:
               grad_file.write (','.join([str(v) for v in line]) + '\n')
 
-          grad_option = ' -grad ' + grad_path
+          grad_option = f' -grad {grad_path}'
 
         elif basis == 'image':
 
@@ -162,19 +173,20 @@ def execute(): #pylint: disable=unused-variable
             for line in grad:
               bvecs_file.write (' '.join([str(v) for v in line]) + '\n')
 
-          grad_option = ' -fslgrad ' + grad_path + ' bvals'
+          grad_option = f' -fslgrad {grad_path} bvals'
 
         # Run the tracking experiment
-        run.command('tckgen -algorithm tensor_det data.mif' + grad_option + ' -seed_image mask.mif -mask mask.mif' + number_option + ' -minlength 0 -downsample 5 tracks' + suffix + '.tck')
+        run.command(f'tckgen -algorithm tensor_det data.mif -seed_image mask.mif -mask mask.mif -minlength 0 -downsample 5 tracks{suffix}.tck '
+                    f'{grad_option} {number_option}')
 
         # Get the mean track length
-        meanlength=float(run.command('tckstats tracks' + suffix + '.tck -output mean -ignorezero').stdout)
+        meanlength=float(run.command(f'tckstats tracks{suffix}.tck -output mean -ignorezero').stdout)
 
         # Add to the database
         lengths.append([meanlength,flip,permutation,basis])
 
         # Increament the progress bar
-        progress.increment('Testing gradient table alterations (' + str(len(lengths)) + ' of ' + str(total_tests) + ')')
+        progress.increment(f'Testing gradient table alterations ({len(lengths)} of {total_tests})')
 
   progress.done()
 
@@ -187,23 +199,30 @@ def execute(): #pylint: disable=unused-variable
   sys.stderr.write('Mean length     Axis flipped    Axis permutations    Axis basis\n')
   for line in lengths:
     if isinstance(line[1], numbers.Number):
-      flip_str = "{:4d}".format(line[1])
+      flip_str = f'{line[1]:4d}'
     else:
       flip_str = line[1]
-    sys.stderr.write("{:5.2f}".format(line[0]) + '         ' + flip_str + '                ' + str(line[2]) + '           ' + line[3] + '\n')
+    length_string = '{line[0]:5.2f}'
+    sys.stderr.write(f'{length_string}         {flip_str}                {line[2]}           {line[3]}\n')
 
 
   # If requested, extract what has been detected as the best gradient table, and
   #   export it in the format requested by the user
-  grad_export_option = app.read_dwgrad_export_options()
+  grad_export_option = app.dwgrad_export_options()
   if grad_export_option:
     best = lengths[0]
-    suffix = '_flip' + str(best[1]) + '_perm' + ''.join(str(item) for item in best[2]) + '_' + best[3]
+    perm = ''.join(map(str, best[2]))
+    suffix = f'_flip{best[1]}_perm{perm}_{best[3]}'
     if best[3] == 'scanner':
-      grad_import_option = ' -grad grad' + suffix + '.b'
+      grad_import_option = ['-grad', f'grad{suffix}.b']
     elif best[3] == 'image':
-      grad_import_option = ' -fslgrad bvecs' + suffix + ' bvals'
-    run.command('mrinfo data.mif' + grad_import_option + grad_export_option, force=app.FORCE_OVERWRITE)
+      grad_import_option = ['-fslgrad', f'bvecs{suffix}', 'bvals']
+    else:
+      assert False
+    run.command(['mrinfo', 'data.mif']
+                + grad_import_option
+                + grad_export_option,
+                force=app.FORCE_OVERWRITE)
 
 
 # Execute the script
