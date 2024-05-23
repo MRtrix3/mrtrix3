@@ -839,6 +839,404 @@ std::string restructured_text_usage() {
   return s;
 }
 
+std::string pydra_usage() {
+
+  std::string CMD_PREFIXES[] = {"Fivett", "Afd",    "Amp",       "Connectome", "Dcm",   "Dir",    "Dwi",   "Fixel",
+                                "Fod",    "Label",  "Mask",      "Mesh",       "Mr",    "Mt",     "Peaks", "Sh",
+                                "Tck",    "Tensor", "Transform", "Tsf",        "Voxel", "Vector", "Warp"};
+
+  auto convert_to_pascal_case = [&](const std::string &input) {
+    std::string result;
+    bool capitalizeNext = true;
+    for (char c : input) {
+      if (!result.size() && c == '5') {
+        result += "Five"; // handle 5tt prefixes so they don't create invalid Python identifiers
+        capitalizeNext = false;
+      } else if (std::isalpha(c) && capitalizeNext) {
+        result += std::toupper(c);
+        capitalizeNext = false;
+      } else {
+        result += c;
+        if (c == '2')
+          capitalizeNext = true;
+        for (const std::string &prefix : CMD_PREFIXES) {
+          if (result == prefix) {
+            capitalizeNext = true;
+            break;
+          }
+        }
+      }
+    }
+    return result;
+  };
+
+  std::string name_string = convert_to_pascal_case(NAME);
+  // Check whether name starts with 5tt and escape the name if so
+
+  if (name_string.length() > 3) {
+    std::string prefix = name_string.substr(0, 3);
+    if (!prefix.compare("5tt")) {
+      name_string = "Fivett" + name_string.substr(3, name_string.length());
+    }
+  }
+
+  std::string base_indent("    ");
+  std::string indent = base_indent + "    ";
+  std::string md_indent = indent + "    ";
+
+  std::string PYTHON_KEYWORDS[] = {
+      "and",    "as",     "assert", "break",   "class",    "continue", "def",       "del",   "elif",
+      "else",   "except", "False",  "finally", "for",      "from",     "global",    "if",    "import",
+      "in",     "is",     "lambda", "None",    "nonlocal", "not",      "or",        "pass",  "raise",
+      "return", "True",   "try",    "while",   "with",     "yield",    "container", "image", "container_xargs"};
+
+  // Add import lines
+  std::string s =
+      std::string("# Auto-generated from MRtrix C++ command with '__print_usage_pydra__' secret option\n\n");
+  s += "import typing as ty \n";
+  s += "from pathlib import Path  # noqa: F401\n";
+  s += "from fileformats.generic import File, Directory  # noqa: F401\n";
+  s += "from fileformats.medimage_mrtrix3 import ImageIn, ImageOut, Tracks  # noqa: F401\n";
+  s += "from pydra.engine import specs, ShellCommandTask\n";
+
+  auto escape_id = [&](const std::string &id) {
+    std::string escaped = id;
+    // Replace any spaces and periods with underscores
+    std::replace(escaped.begin(), escaped.end(), ' ', '_');
+    std::replace(escaped.begin(), escaped.end(), '.', '_');
+    // Append any Python keywords with an underscore
+    bool is_keyword = std::any_of(std::begin(PYTHON_KEYWORDS),
+                                  std::end(PYTHON_KEYWORDS),
+                                  [&id](const std::string &kword) { return kword == id; });
+    if (is_keyword)
+      escaped += "_";
+
+    return escaped;
+  };
+
+  auto format_type = [&](const ArgType &type, bool for_output = false) {
+    switch (type) {
+    case Undefined:
+      return "ty.Any";
+    case Text:
+      return "str";
+    case Boolean:
+      return "bool";
+    case Integer:
+      return "int";
+    case Float:
+      return "float";
+    case ArgFileIn:
+      return "File";
+    case ArgFileOut:
+      if (for_output)
+        return "File";
+      else
+        return "Path";
+    case ArgDirectoryIn:
+      return "Directory";
+    case ArgDirectoryOut:
+      if (for_output)
+        return "Directory";
+      else
+        return "Path";
+    case Choice:
+      return "str";
+    case ImageIn:
+      return "ImageIn";
+    case ImageOut:
+      if (for_output)
+        return "ImageOut";
+      else
+        return "Path";
+    case IntSeq:
+      return "ty.List[int]";
+    case FloatSeq:
+      return "ty.List[float]";
+    case TracksIn:
+      return "Tracks";
+    case TracksOut:
+      return "Tracks";
+    case Various:
+      return "ty.Any";
+    default:
+      assert(0);
+    }
+    return "not-reached";
+  };
+
+  auto format_option_type = [&](const Option &opt, bool for_output = false) {
+    std::string f;
+    bool is_multi = (opt.flags & AllowMultiple) && (!opt.size() || opt[0].type != ArgFileOut);
+    if (is_multi) {
+      f += "specs.MultiInputObj[";
+    }
+    if (!opt.size()) {
+      f += "bool";
+    } else if (opt.size() == 1) {
+      f += format_type(opt[0].type, for_output);
+    } else {
+      f += "ty.Tuple[";
+      for (size_t a = 0; a < opt.size(); ++a) {
+        f += format_type(opt[0].type, for_output);
+        if (a != opt.size() - 1) {
+          f += ", ";
+        }
+      }
+      f += "]";
+    }
+    if (is_multi) {
+      f += "]";
+    }
+    return f;
+  };
+
+  auto format_choices = [&](const Argument &arg) {
+    std::string f = md_indent + "\"allowed_values\": [";
+    const char *const *choices = arg.limits.choices;
+    f += std::string("\"") + choices[0] + "\"";
+    for (int i = 0; choices[i]; ++i) {
+      f += std::string(", \"") + choices[i] + "\"";
+    }
+    f += "],\n";
+    return f;
+  };
+
+  auto format_output_template = [&](const std::string &id, const ArgType &type) {
+    std::string tmpl(id);
+    if (type == ImageOut) {
+      tmpl += ".mif";
+    } else if (type == TracksOut) {
+      tmpl += ".tck";
+    } else if (type == ArgFileOut) {
+      tmpl += ".txt";
+    }
+    // TODO: Add special cases for file-out based on the 'id' where the extension
+    // is something else.
+    return tmpl;
+  };
+
+  auto format_output_templates = [&](const std::string &id, const Option &opt) {
+    if (opt.size() == 1)
+      return "\"" + format_output_template(id, opt[0].type) + "\"";
+    std::string tmpl = "(";
+    for (size_t i = 0; i < opt.size(); ++i)
+      tmpl += "\"" + format_output_template(id + MR::str(i), opt[i].type) + "\",";
+    tmpl += ")";
+    return tmpl;
+  };
+
+  auto format_option = [&](const Option &opt) {
+    std::string f = base_indent + "(\n";
+    // Print name of field
+    f += indent + "\"" + escape_id(opt.id) + "\",\n";
+    bool is_output_file = false;
+    std::string type_string = format_option_type(opt);
+    bool is_multi = type_string.length() > 19 && type_string.substr(0, 19) == "specs.MultiInputObj";
+    if (opt.size() && (opt[0].type == ImageOut || opt[0].type == ArgFileOut || opt[0].type == ArgDirectoryOut)) {
+      is_output_file = true;
+      if (!is_multi)
+        type_string = "ty.Union[" + type_string + ", bool]";
+    }
+    // Print type
+    f += indent + type_string + ",\n";
+    if (is_output_file && !is_multi)
+      f += indent + "False,\n";
+    f += indent + "{\n";
+    // Print metadata fields
+    f += md_indent + "\"argstr\": \"-" + opt.id + "\",\n";
+    if (is_output_file) {
+      f += md_indent + "\"output_file_template\": " + format_output_templates(escape_id(opt.id), opt) + ",\n";
+    }
+    f += md_indent + "\"help_string\": \"\"\"" + opt.desc + "\"\"\",\n";
+    if (!(opt.flags & Optional) && !is_output_file) {
+      f += md_indent + "\"mandatory\": True,\n";
+    }
+    if (opt.size() == 1 && (opt[0].type == IntSeq || opt[0].type == FloatSeq)) {
+      f += md_indent + "\"sep\": \",\",\n";
+    }
+    if (opt.size() == 1 && opt[0].type == Choice) {
+      f += format_choices(opt[0]);
+    }
+    f += indent + "},\n" + base_indent + "),\n";
+    return f;
+  };
+
+  auto format_arg_name = [&](const Argument &arg) {
+    std::string id = arg.id;
+    std::string arg_name;
+    if (id == "input" && (arg.type == ImageIn || arg.type == ArgFileIn))
+      arg_name = "in_file";
+    else if (id == "input" && arg.type == ArgDirectoryIn)
+      arg_name = "in_dir";
+    else if (id == "output" && (arg.type == ImageOut || arg.type == ArgFileOut))
+      arg_name = "out_file";
+    else if (id == "output" && arg.type == ArgDirectoryOut)
+      arg_name = "out_dir";
+    else
+      arg_name = escape_id(arg.id);
+    return arg_name;
+  };
+
+  // Print out input spec
+  s += "\n\ninput_fields = [\n\n" + base_indent + "# Arguments\n";
+  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+
+    bool is_multi = (ARGUMENTS[i].flags & AllowMultiple) && (ARGUMENTS[i].type != ArgFileOut);
+    s += base_indent + "(\n";
+    // Print name of field
+    std::string arg_name = format_arg_name(ARGUMENTS[i]);
+    s += indent + "\"" + arg_name + "\",\n";
+    // Print type
+    s += indent;
+    if (is_multi) {
+      s += "specs.MultiInputObj[";
+    }
+    s += format_type(ARGUMENTS[i].type);
+    if (is_multi) {
+      s += "]";
+    }
+    s += +",\n" + indent + "{\n";
+    // Print metadata fields
+    s += md_indent + "\"argstr\": \"\",\n";
+    s += md_indent + "\"position\": " + std::to_string(i) + ",\n";
+    bool output_type = false;
+    if (ARGUMENTS[i].type == ImageOut || ARGUMENTS[i].type == ArgFileOut || ARGUMENTS[i].type == ArgDirectoryOut) {
+      s += md_indent + "\"output_file_template\": \"" + format_output_template(arg_name, ARGUMENTS[i].type) + "\",\n";
+      output_type = true;
+    }
+    s += md_indent + "\"help_string\": \"\"\"" + ARGUMENTS[i].desc + "\"\"\",\n";
+    if (!(ARGUMENTS[i].flags & Optional) && !output_type) {
+      s += md_indent + "\"mandatory\": True,\n";
+    }
+    if (ARGUMENTS[i].type == Choice) {
+      s += format_choices(ARGUMENTS[i]);
+    }
+    s += indent + "},\n" + base_indent + "),\n";
+  }
+
+  std::vector<std::string> group_names;
+  for (size_t i = 0; i < OPTIONS.size(); ++i) {
+    if (std::find(group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
+      group_names.push_back(OPTIONS[i].name);
+  }
+  for (size_t i = 0; i < group_names.size(); ++i) {
+    size_t n = i;
+    while (OPTIONS[n].name != group_names[i])
+      ++n;
+    if (OPTIONS[n].name != std::string("OPTIONS"))
+      s += std::string("\n") + base_indent + "# " + OPTIONS[n].name + " Option Group\n";
+    while (n < OPTIONS.size()) {
+      if (OPTIONS[n].name == group_names[i]) {
+        for (size_t o = 0; o < OPTIONS[n].size(); ++o) {
+          s += format_option(OPTIONS[n][o]);
+        }
+      }
+      ++n;
+    }
+  }
+
+  s += "\n" + base_indent + "# Standard options\n";
+  for (size_t i = 0; i < __standard_options.size(); ++i)
+    s += format_option(__standard_options[i]);
+
+  s += "]\n\n";
+
+  s += name_string + "InputSpec = specs.SpecInfo(name='" + name_string +
+       "Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n\n";
+
+  s += "output_fields = [\n";
+
+  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+    if (ARGUMENTS[i].type == ImageOut || ARGUMENTS[i].type == ArgFileOut || ARGUMENTS[i].type == ArgDirectoryOut) {
+      bool is_multi = ARGUMENTS[i].flags & AllowMultiple;
+      s += base_indent + "(\n";
+      // Print name of field
+      s += indent + "\"" + format_arg_name(ARGUMENTS[i]) + "\",\n";
+      // Print type
+      std::string type_string;
+      if (is_multi)
+        type_string += "ty.List[";
+      type_string += format_type(ARGUMENTS[i].type, true);
+      if (is_multi)
+        type_string += "]";
+      s += indent + type_string + ",\n";
+      s += indent + "{\n";
+      s += md_indent + "\"help_string\": \"\"\"" + ARGUMENTS[i].desc + "\"\"\",\n";
+      s += indent + "},\n" + base_indent + "),\n";
+    }
+  }
+
+  for (size_t i = 0; i < group_names.size(); ++i) {
+    size_t n = i;
+    while (OPTIONS[n].name != group_names[i])
+      ++n;
+    while (n < OPTIONS.size()) {
+      if (OPTIONS[n].name == group_names[i]) {
+        for (size_t o = 0; o < OPTIONS[n].size(); ++o) {
+          bool is_output_file = false;
+          for (size_t j = 0; j < OPTIONS[n][o].size(); ++j) {
+            if (OPTIONS[n][o][j].type == ImageOut || OPTIONS[n][o][j].type == ArgFileOut ||
+                OPTIONS[n][o][j].type == ArgDirectoryOut) {
+              is_output_file = true;
+              break;
+            }
+          }
+          if (is_output_file) {
+            s += base_indent + "(\n";
+            // Print name of field
+            s += indent + "\"" + OPTIONS[n][o].id + "\",\n";
+            // Print type
+            s += indent + format_option_type(OPTIONS[n][o], true) + ",\n";
+            s += indent + "{\n";
+            s += md_indent + "\"help_string\": \"\"\"" + OPTIONS[n][o].desc + "\"\"\",\n";
+            s += indent + "},\n" + base_indent + "),\n";
+          }
+        }
+      }
+      ++n;
+    }
+  }
+
+  s += "]\n";
+  s += name_string + "OutputSpec = specs.SpecInfo(name='" + name_string +
+       "Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n\n";
+
+  // Create actual class
+  s += "class " + name_string + "(ShellCommandTask):\n";
+  s += "    \"\"\"";
+  // Add description
+  if (DESCRIPTION.size()) {
+    for (size_t i = 0; i < DESCRIPTION.size(); ++i)
+      s += base_indent + std::string(DESCRIPTION[i]) + "\n\n";
+  }
+
+  if (EXAMPLES.size()) {
+    s += "\n" + base_indent + "Example usages\n" + base_indent + "--------------\n\n";
+    for (size_t i = 0; i < EXAMPLES.size(); ++i) {
+      s += "\n" + base_indent + EXAMPLES[i].title + ":\n\n";
+      s += indent + "`$ " + EXAMPLES[i].code + "`\n\n";
+      if (EXAMPLES[i].description.size())
+        s += indent + EXAMPLES[i].description + "\n";
+      s += "\n";
+    }
+  }
+
+  s += "\n" + base_indent + "References\n" + base_indent + "----------\n\n";
+  for (size_t i = 0; i < REFERENCES.size(); ++i)
+    s += indent + REFERENCES[i] + "\n\n";
+  s += indent + MRTRIX_CORE_REFERENCE + "\n\n";
+
+  s += "\n" + base_indent + "MRtrix\n" + base_indent + "------" + "\n\n" + indent + "Version:" + mrtrix_version +
+       ", built " + build_date + "\n\n" + indent + "Author: " + AUTHOR + "\n\n" + indent + "Copyright: " + COPYRIGHT;
+  s += "    \"\"\"\n";
+  s += "    executable = \"" + name_string + "\"\n";
+  s += "    input_spec = " + name_string + "InputSpec\n";
+  s += "    output_spec = " + name_string + "OutputSpec\n\n";
+
+  return s;
+}
+
 const Option *match_option(const char *arg) {
   if (consume_dash(arg) && *arg && !isdigit(*arg) && *arg != '.') {
     while (consume_dash(arg))
@@ -929,6 +1327,10 @@ void parse_special_options() {
   }
   if (strcmp(argv[1], "__print_usage_rst__") == 0) {
     print(restructured_text_usage());
+    throw 0;
+  }
+  if (strcmp(argv[1], "__print_usage_pydra__") == 0) {
+    print(pydra_usage());
     throw 0;
   }
   if (strcmp(argv[1], "__print_synopsis__") == 0) {
