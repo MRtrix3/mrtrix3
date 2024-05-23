@@ -17,7 +17,7 @@ dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -force \
 testing_diff_header tmp.mif dwifslpreproc/rpenone_default.mif.gz
 
 dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -force \
--fslgrad BIDS/sub-04/dwi/sub-04_dwi/bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
+-fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
 -pe_dir ap -readout_time 0.1 -rpe_none
 testing_diff_header tmp.mif dwifslpreproc/rpenone_default.mif.gz
 

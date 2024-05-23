@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify execution of "dwi2mask consensus" algorithm
+#   under default operation
+# Here the -template option is provided,
+#   resulting in a greater number of algorithms utilized
+#   than the default test
+
+dwi2mask consensus BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_out.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-masks tmp_masks.mif \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz

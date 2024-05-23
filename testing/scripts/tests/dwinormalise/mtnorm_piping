@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify default operation of the "dwinormalise mtnorm" command
+#   where image piping is utilised
+
+# Input and output DWIs are piped
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+dwinormalise mtnorm - - | \
+testing_diff_image - dwinormalise/mtnorm/default_out.mif.gz -frac 1e-5
+
+# Input brain mask is piped
+mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz - | \
+dwinormalise mtnorm BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-mask -
+testing_diff_image tmp.mif dwinormalise/mtnorm/masked_out.mif.gz -frac 1e-5
