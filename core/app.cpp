@@ -895,9 +895,10 @@ void sort_arguments(const std::vector<std::string> &arguments) {
       const size_t index = std::distance(arguments.begin(), it);
       std::vector<std::string> option_args;
       std::copy_n(it + 1, opt->size(), std::back_inserter(option_args));
-      std::transform(option_args.begin(), option_args.end(), option_args.begin(), without_leading_dash);
-
-      option.push_back(ParsedOption(opt, option_args));
+      std::transform(option_args.begin(), option_args.end(), option_args.begin(), [](std::string_view arg) {
+        return is_dash(arg) ? arg : without_leading_dash(arg);
+      });
+      option.push_back(ParsedOption(opt, option_args, index));
       it += opt->size();
     } else {
       argument.push_back(ParsedArgument(nullptr, nullptr, *it));
@@ -1203,7 +1204,7 @@ const std::vector<ParsedOption> get_options(const std::string &name) {
   for (size_t i = 0; i < option.size(); ++i) {
     assert(option[i].opt);
     if (option[i].opt->is(name))
-      matches.push_back({option[i].opt, option[i].args});
+      matches.push_back({option[i].opt, option[i].args, option[i].index});
   }
   return matches;
 }
@@ -1381,8 +1382,8 @@ void check_overwrite(const std::string &name) {
   }
 }
 
-
-ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> &arguments) : opt(option), args(arguments) {
+ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> &arguments, size_t i)
+    : opt(option), args(arguments), index(i) {
   for (size_t i = 0; i != option->size(); ++i) {
     const auto &p = arguments[i];
     if (!is_dash(p))
