@@ -189,12 +189,14 @@ private:
  * returned by App::get_options(). */
 class ParsedOption {
 public:
-  ParsedOption(const Option *option, const std::vector<std::string> &arguments);
+  ParsedOption(const Option *option, const std::vector<std::string> &arguments, size_t index);
 
   //! reference to the corresponding Option entry in the OPTIONS section
   const Option *opt;
-  //! pointer into \c argv corresponding to the option's first argument
+  //! list of arguments supplied to the option
   std::vector<std::string> args;
+  //! the index of this option in the raw command-line arguments list
+  size_t index;
 
   ParsedArgument operator[](size_t num) const;
 

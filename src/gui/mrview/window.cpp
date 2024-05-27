@@ -721,22 +721,26 @@ void Window::parse_arguments() {
   if (!MR::App::argument.empty()) {
     if (!MR::App::option.empty()) {
       // check that first non-standard option appears after last argument:
-      size_t last_arg_pos = 1;
-      for (; MR::App::argv[last_arg_pos] != MR::App::argument.back().c_str(); ++last_arg_pos)
-        if (MR::App::argv[last_arg_pos] == nullptr)
-          throw Exception("FIXME: error determining position of last argument!");
+      const auto last_arg = std::find(
+          MR::App::raw_arguments_list.rbegin(), MR::App::raw_arguments_list.rend(), MR::App::argument.back().c_str());
 
-      // identify first non-standard option:
-      size_t first_option = 0;
-      for (; first_option < MR::App::option.size(); ++first_option) {
-        if (size_t(MR::App::option[first_option].opt - &MR::App::__standard_options[0]) >=
-            MR::App::__standard_options.size())
-          break;
+      if (last_arg == MR::App::raw_arguments_list.rend()) {
+        throw Exception("FIXME: error determining position of last argument!");
       }
-      if (MR::App::option.size() > first_option) {
-        first_option = MR::App::option[first_option].args - MR::App::argv;
-        if (first_option < last_arg_pos)
-          throw Exception("options must appear after the last argument - see help page for details");
+
+      const auto last_arg_pos = std::distance(last_arg, MR::App::raw_arguments_list.rend()) - 1;
+
+      const auto is_non_standard_option = [](const MR::App::ParsedOption &option) {
+        return std::none_of(MR::App::__standard_options.begin(),
+                            MR::App::__standard_options.end(),
+                            [&option](const auto &standard_option) { return option.opt == &standard_option; });
+      };
+
+      const auto first_non_standard_option =
+          std::find_if(MR::App::option.begin(), MR::App::option.end(), is_non_standard_option);
+
+      if (first_non_standard_option != MR::App::option.end() && first_non_standard_option->index < last_arg_pos) {
+        throw Exception("options must appear after the last argument - see help page for details");
       }
     }
 
