@@ -22,7 +22,7 @@
 #include "file/matrix.h"
 #include "image.h"
 #include "math/constrained_least_squares.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
 using namespace MR;
@@ -296,7 +296,7 @@ void run() {
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   DWI::stash_DW_scheme(header, grad);
-  PhaseEncoding::clear_scheme(header);
+  Metadata::PhaseEncoding::clear_scheme(header);
 
   Image<value_type> predict;
   opt = get_options("predicted_signal");

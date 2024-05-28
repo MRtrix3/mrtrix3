@@ -24,7 +24,7 @@
 #include "file/ofstream.h"
 #include "header.h"
 #include "image.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "transform.h"
 #include "types.h"
 
@@ -244,8 +244,8 @@ void usage() {
   + DWI::bvalue_scaling_option
   + DWI::GradExportOptions()
 
-  + PhaseEncoding::ImportOptions
-  + PhaseEncoding::ExportOptions;
+  + Metadata::PhaseEncoding::ImportOptions
+  + Metadata::PhaseEncoding::ExportOptions;
 
 }
 // clang-format on
@@ -271,7 +271,7 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
 }
 
 void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
-  auto in = PhaseEncoding::parse_scheme(H);
+  auto in = Metadata::PhaseEncoding::parse_scheme(H);
   if (!in.rows())
     return;
 
@@ -285,26 +285,27 @@ void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
   for (int row = 0; row != in.rows(); ++row)
     out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * permute;
 
-  PhaseEncoding::set_scheme(H, out);
+  Metadata::PhaseEncoding::set_scheme(H, out);
 }
 
 void permute_slice_direction(Header &H, const std::vector<int> &axes) {
+  using Metadata::BIDS::axis_vector_type;
   auto slice_encoding_it = H.keyval().find("SliceEncodingDirection");
   auto slice_timing_it = H.keyval().find("SliceTiming");
   if (slice_encoding_it == H.keyval().end() && slice_timing_it == H.keyval().end())
     return;
   if (slice_encoding_it == H.keyval().end()) {
-    const Axes::dir_type orig_dir({0, 0, 1});
-    const Axes::dir_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
-    slice_encoding_it->second = Axes::dir2id(new_dir);
+    const axis_vector_type orig_dir({0, 0, 1});
+    const axis_vector_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+    slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
     WARN("Header field \"SliceEncodingDirection\" inferred to be \"k\" in input image"
          " and then transformed according to axis permutation"
          " in order to preserve validity of existing header field \"SliceTiming\"");
     return;
   }
-  const Axes::dir_type orig_dir = Axes::id2dir(slice_encoding_it->second);
-  const Axes::dir_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
-  slice_encoding_it->second = Axes::dir2id(new_dir);
+  const axis_vector_type orig_dir = Metadata::BIDS::axisid2vector(slice_encoding_it->second);
+  const axis_vector_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+  slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
 }
 
 template <class ImageType> inline std::vector<int> set_header(Header &header, const ImageType &input) {
@@ -362,7 +363,7 @@ void copy_permute(const InputType &in, Header &header_out, const std::string &ou
   const auto axes = set_header(header_out, in);
   auto out = Image<T>::create(output_filename, header_out, add_to_command_history);
   DWI::export_grad_commandline(out);
-  PhaseEncoding::export_commandline(out);
+  Metadata::PhaseEncoding::export_commandline(out);
   auto perm = Adapter::make<Adapter::PermuteAxes>(in, axes);
   threaded_copy_with_progress(perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 }
@@ -395,7 +396,7 @@ void run() {
   if (!opt.empty())
     File::JSON::load(header_in, opt[0][0]);
   if (!get_options("import_pe_table").empty() || !get_options("import_pe_eddy").empty())
-    PhaseEncoding::set_scheme(header_in, PhaseEncoding::get_scheme(header_in));
+    Metadata::PhaseEncoding::set_scheme(header_in, Metadata::PhaseEncoding::get_scheme(header_in));
 
   Header header_out(header_in);
   header_out.datatype() = DataType::from_command_line(header_out.datatype());
@@ -485,17 +486,17 @@ void run() {
         }
         Eigen::MatrixXd pe_scheme;
         try {
-          pe_scheme = PhaseEncoding::get_scheme(header_in);
+          pe_scheme = Metadata::PhaseEncoding::get_scheme(header_in);
           if (pe_scheme.rows()) {
             Eigen::MatrixXd extract_scheme(pos[3].size(), pe_scheme.cols());
             for (size_t vol = 0; vol != pos[3].size(); ++vol)
               extract_scheme.row(vol) = pe_scheme.row(pos[3][vol]);
-            PhaseEncoding::set_scheme(header_out, extract_scheme);
+            Metadata::PhaseEncoding::set_scheme(header_out, extract_scheme);
           }
         } catch (...) {
           WARN("Phase encoding scheme of input file does not match number of image volumes; omitting information from "
                "output image");
-          PhaseEncoding::set_scheme(header_out, Eigen::MatrixXd());
+          Metadata::PhaseEncoding::set_scheme(header_out, Eigen::MatrixXd());
         }
       }
     }

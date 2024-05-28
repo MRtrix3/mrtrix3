@@ -16,59 +16,9 @@
 
 #include "axes.h"
 
-#include "exception.h"
-#include "mrtrix.h"
-
 namespace MR::Axes {
 
-std::string dir2id(const dir_type &dir) {
-  if (dir[0] == -1) {
-    assert(!dir[1]);
-    assert(!dir[2]);
-    return "i-";
-  } else if (dir[0] == 1) {
-    assert(!dir[1]);
-    assert(!dir[2]);
-    return "i";
-  } else if (dir[1] == -1) {
-    assert(!dir[0]);
-    assert(!dir[2]);
-    return "j-";
-  } else if (dir[1] == 1) {
-    assert(!dir[0]);
-    assert(!dir[2]);
-    return "j";
-  } else if (dir[2] == -1) {
-    assert(!dir[0]);
-    assert(!dir[1]);
-    return "k-";
-  } else if (dir[2] == 1) {
-    assert(!dir[0]);
-    assert(!dir[1]);
-    return "k";
-  } else {
-    throw Exception("Malformed image axis direction: \"" + str(dir.transpose()) + "\"");
-  }
-}
-
-dir_type id2dir(const std::string &id) {
-  if (id == "i-")
-    return {-1, 0, 0};
-  else if (id == "i")
-    return {1, 0, 0};
-  else if (id == "j-")
-    return {0, -1, 0};
-  else if (id == "j")
-    return {0, 1, 0};
-  else if (id == "k-")
-    return {0, 0, -1};
-  else if (id == "k")
-    return {0, 0, 1};
-  else
-    throw Exception("Malformed image axis identifier: \"" + id + "\"");
-}
-
-void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip) {
+void get_shuffle_to_make_RAS(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip) {
   perm = closest(T.matrix().topLeftCorner<3, 3>());
   // Figure out whether any of the rows of the transform point in the
   //   opposite direction to the MRtrix convention

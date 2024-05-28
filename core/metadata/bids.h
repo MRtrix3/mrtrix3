@@ -16,22 +16,18 @@
 
 #pragma once
 
-#include <array>
+#include <string>
+#include <Eigen/Dense>
 
-#include "types.h"
+namespace MR::Metadata::BIDS {
 
-namespace MR::Axes {
+//! convert axis directions between formats
+/*! these helper functions convert the definition of
+ *  phase-encoding direction between a 3-vector (e.g.
+ *  [0 1 0] ) and a BIDS NIfTI axis identifier (e.g. 'i-')
+ */
+using axis_vector_type = Eigen::Matrix<int, 3, 1>;
+std::string vector2axisid(const axis_vector_type &);
+axis_vector_type axisid2vector(const std::string &);
 
-using permutations_type = std::array<size_t, 3>;
-using flips_type = std::array<bool, 3>;
-
-//! determine the axis permutations and flips necessary to make an image
-//!   appear approximately axial
-void get_shuffle_to_make_RAS(const transform_type &T, std::array<size_t, 3> &perm, flips_type &flip);
-
-//! determine which vectors of a 3x3 transform are closest to the three axis indices
-std::array<size_t, 3> closest(const Eigen::Matrix3d &M);
-
-bool is_shuffled(const permutations_type &, const flips_type &);
-
-} // namespace MR::Axes
+} // namespace MR::Metadata::BIDS

@@ -25,8 +25,9 @@
 #include "exception.h"
 #include "file/ofstream.h"
 #include "header.h"
+#include "metadata/bids.h"
+#include "metadata/phase_encoding.h"
 #include "mrtrix.h"
-#include "phase_encoding.h"
 #include "types.h"
 
 namespace MR::File::JSON {
@@ -126,10 +127,10 @@ void read(const nlohmann::json &json, Header &header, const bool realign) {
   if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 && !flip[0] && !flip[1] && !flip[2])
     return;
 
-  auto pe_scheme = PhaseEncoding::get_scheme(header);
+  auto pe_scheme = Metadata::PhaseEncoding::get_scheme(header);
   if (pe_scheme.rows()) {
     if (do_realign) {
-      PhaseEncoding::set_scheme(header, PhaseEncoding::transform_for_image_load(pe_scheme, header));
+      Metadata::PhaseEncoding::set_scheme(header, Metadata::PhaseEncoding::transform_for_image_load(pe_scheme, header));
       INFO("Phase encoding information read from JSON file"
            " modified to conform to prior MRtrix3 internal transform realignment"
            " of image \"" + header.name() + "\"");
@@ -148,14 +149,15 @@ void read(const nlohmann::json &json, Header &header, const bool realign) {
   auto slice_timing_it = header.keyval().find("SliceTiming");
   if (!(slice_encoding_it == header.keyval().end() && slice_timing_it == header.keyval().end())) {
     if (do_realign) {
-      const Axes::dir_type orig_dir(slice_encoding_it == header.keyval().end()  //
-                                    ? Axes::dir_type({0, 0, 1})                 //
-                                    : Axes::id2dir(slice_encoding_it->second)); //
-      Axes::dir_type new_dir;
+      const Metadata::BIDS::axis_vector_type
+          orig_dir(slice_encoding_it == header.keyval().end()                   //
+                   ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
+                   : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
+      Metadata::BIDS::axis_vector_type new_dir;
       for (size_t axis = 0; axis != 3; ++axis)
         new_dir[axis] = flip[perm[axis]] ? -orig_dir[perm[axis]] : orig_dir[perm[axis]];
       if (slice_encoding_it != header.keyval().end()) {
-        slice_encoding_it->second = Axes::dir2id(new_dir);
+        slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
         INFO("Slice encoding direction read from JSON file"
              " modified to conform to prior MRtrix3 internal transform realignment"
              " of image \"" + header.name() + "\"");
@@ -167,7 +169,7 @@ void read(const nlohmann::json &json, Header &header, const bool realign) {
              " reversed to conform to prior MRtrix3 internal transform realignment"
              " of image \"" + header.name() + "\"");
       } else {
-        header.keyval()["SliceEncodingDirection"] = Axes::dir2id(new_dir);
+        header.keyval()["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
         WARN("Slice encoding direction of image \"" + header.name() + "\""
              " inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field"
              " following MRtrix3 internal transform realignment");
@@ -285,25 +287,26 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
     return;
   }
 
-  auto pe_scheme = PhaseEncoding::get_scheme(header);
+  auto pe_scheme = Metadata::PhaseEncoding::get_scheme(header);
   if (pe_scheme.rows()) {
     // Assume that image being written to disk is going to have its transform adjusted,
     //   so modify the phase encoding scheme appropriately before writing to JSON
-    PhaseEncoding::set_scheme(H_adj, PhaseEncoding::transform_for_nifti_write(pe_scheme, header));
+    Metadata::PhaseEncoding::set_scheme(H_adj, Metadata::PhaseEncoding::transform_for_nifti_write(pe_scheme, header));
     INFO("Phase encoding information written to JSON file"
          " modified according to output NIfTI strides");
   }
   auto slice_encoding_it = H_adj.keyval().find("SliceEncodingDirection");
   auto slice_timing_it = H_adj.keyval().find("SliceTiming");
   if (!(slice_encoding_it == H_adj.keyval().end() && slice_timing_it == H_adj.keyval().end())) {
-    const Axes::dir_type orig_dir(slice_encoding_it == H_adj.keyval().end()   //
-                                  ? Axes::dir_type({0, 0, 1})                 //
-                                  : Axes::id2dir(slice_encoding_it->second)); //
-    Axes::dir_type new_dir;
+    const Metadata::BIDS::axis_vector_type
+        orig_dir(slice_encoding_it == H_adj.keyval().end()                    //
+                 ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
+                 : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
+    Metadata::BIDS::axis_vector_type new_dir;
     for (size_t axis = 0; axis != 3; ++axis)
       new_dir[axis] = flip[axis] ? -orig_dir[order[axis]] : orig_dir[order[axis]];
     if (slice_encoding_it != H_adj.keyval().end()) {
-      slice_encoding_it->second = Axes::dir2id(new_dir);
+      slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
       INFO("Slice encoding direction written to JSON file"
            " modified according to output NIfTI strides");
     } else if ((new_dir * -1).dot(orig_dir) == 1) {
@@ -313,7 +316,7 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
       INFO("Slice timing vector written to JSON file"
              " reversed to conform to output NIfTI strides");
     } else {
-      H_adj.keyval()["SliceEncodingDirection"] = Axes::dir2id(new_dir);
+      H_adj.keyval()["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
       WARN("Slice encoding direction added to output JSON file"
            " in order to preserve interpretation of existing \"SliceTiming\" field"
            " following output NIfTI strides");

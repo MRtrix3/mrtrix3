@@ -26,8 +26,8 @@
 #include "formats/list.h"
 #include "image_io/default.h"
 #include "image_io/scratch.h"
+#include "metadata/phase_encoding.h"
 #include "mrtrix.h"
-#include "phase_encoding.h"
 #include "stride.h"
 #include "transform.h"
 
@@ -349,9 +349,9 @@ Header Header::create(const std::string &image_name, const Header &template_head
       DWI::clear_DW_scheme(H);
     }
     try {
-      pe_scheme = PhaseEncoding::parse_scheme(template_header);
+      pe_scheme = Metadata::PhaseEncoding::parse_scheme(template_header);
     } catch (Exception &) {
-      PhaseEncoding::clear_scheme(H);
+      Metadata::PhaseEncoding::clear_scheme(H);
     }
     if (split_4d_schemes) {
       try {
@@ -362,11 +362,11 @@ Header Header::create(const std::string &image_name, const Header &template_head
         DWI::clear_DW_scheme(H);
       }
       try {
-        PhaseEncoding::check(pe_scheme, template_header);
-        PhaseEncoding::set_scheme(H, pe_scheme.row(0));
+        Metadata::PhaseEncoding::check(pe_scheme, template_header);
+        Metadata::PhaseEncoding::set_scheme(H, pe_scheme.row(0));
       } catch (Exception &) {
         pe_scheme.resize(0, 0);
-        PhaseEncoding::clear_scheme(H);
+        Metadata::PhaseEncoding::clear_scheme(H);
       }
     }
 
@@ -400,7 +400,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
         if (dw_scheme.rows())
           DWI::set_DW_scheme(header, dw_scheme.row(counter));
         if (pe_scheme.rows())
-          PhaseEncoding::set_scheme(header, pe_scheme.row(counter));
+          Metadata::PhaseEncoding::set_scheme(header, pe_scheme.row(counter));
       }
       std::shared_ptr<ImageIO::Base> io_handler((*format_handler)->create(header));
       assert(io_handler);
@@ -431,7 +431,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
 
     if (split_4d_schemes) {
       DWI::set_DW_scheme(H, dw_scheme);
-      PhaseEncoding::set_scheme(H, pe_scheme);
+      Metadata::PhaseEncoding::set_scheme(H, pe_scheme);
     }
     H.io->set_image_is_new(true);
     H.io->set_readwrite(true);
@@ -615,7 +615,7 @@ void Header::realign_transform() {
   realignment_.orig_keyval_.clear();
 
   // find which row of the transform is closest to each scanner axis:
-  Axes::get_shuffle_to_make_axial(transform(), realignment_.permutations_, realignment_.flips_);
+  Axes::get_shuffle_to_make_RAS(transform(), realignment_.permutations_, realignment_.flips_);
 
   // check if image is already near-axial, return if true:
   if (!realignment_)
@@ -674,9 +674,9 @@ void Header::realign_transform() {
   // If there's any phase encoding direction information present in the
   //   header, it's necessary here to update it according to the
   //   flips / permutations that have taken place
-  auto pe_scheme = PhaseEncoding::get_scheme(*this);
+  auto pe_scheme = Metadata::PhaseEncoding::get_scheme(*this);
   if (pe_scheme.rows()) {
-    PhaseEncoding::set_scheme(realignment_.orig_keyval_, pe_scheme);
+    Metadata::PhaseEncoding::set_scheme(realignment_.orig_keyval_, pe_scheme);
     for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
       Eigen::VectorXd new_line(pe_scheme.row(row));
       for (ssize_t axis = 0; axis != 3; ++axis) {
@@ -686,7 +686,7 @@ void Header::realign_transform() {
       }
       pe_scheme.row(row) = new_line;
     }
-    PhaseEncoding::set_scheme(*this, pe_scheme);
+    Metadata::PhaseEncoding::set_scheme(*this, pe_scheme);
     INFO("Phase encoding scheme modified to conform to MRtrix3 internal header transform realignment");
   }
 
@@ -695,15 +695,16 @@ void Header::realign_transform() {
   auto slice_encoding_it = keyval().find("SliceEncodingDirection");
   auto slice_timing_it = keyval().find("SliceTiming");
   if (!(slice_encoding_it == keyval().end() && slice_timing_it == keyval().end())) {
-    const Axes::dir_type orig_dir(slice_encoding_it == keyval().end()         //
-                                  ? Axes::dir_type({0, 0, 1})                 //
-                                  : Axes::id2dir(slice_encoding_it->second)); //
-    Axes::dir_type new_dir;
+    const Metadata::BIDS::axis_vector_type
+        orig_dir(slice_encoding_it == keyval().end()                          //
+                 ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
+                 : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
+    Metadata::BIDS::axis_vector_type new_dir;
     for (size_t axis = 0; axis != 3; ++axis)
       new_dir[axis] = orig_dir[realignment_.permutations_[axis]] * (realignment_.flips_[realignment_.permutations_[axis]] ? -1.0 : 1.0);
     if (slice_encoding_it != keyval().end()) {
       realignment_.orig_keyval_.insert(*slice_encoding_it);
-      slice_encoding_it->second = Axes::dir2id(new_dir);
+      slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
       INFO("Slice encoding direction has been modified"
            " to conform to MRtrix3 internal header transform realignment");
     } else if ((new_dir * -1).dot(orig_dir) == 1) {
@@ -713,7 +714,7 @@ void Header::realign_transform() {
       INFO("Slice timing vector reversed to conform to MRtrix3 internal transform realignment"
            " of image \"" + name() + "\"");
     } else {
-      keyval()["SliceEncodingDirection"] = Axes::dir2id(new_dir);
+      keyval()["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
       WARN("Slice encoding direction of image \"" + name() + "\""
            " inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field"
            " during MRtrix3 internal transform realignment");
@@ -789,7 +790,7 @@ Header concatenate(const std::vector<Header> &headers,
     } catch (Exception &) {
     }
     try {
-      pe_scheme = PhaseEncoding::get_scheme(result);
+      pe_scheme = Metadata::PhaseEncoding::get_scheme(result);
     } catch (Exception &) {
     }
   }
@@ -818,7 +819,7 @@ Header concatenate(const std::vector<Header> &headers,
         dw_scheme.resize(0, 0);
       }
       try {
-        const auto extra_pe = PhaseEncoding::get_scheme(H);
+        const auto extra_pe = Metadata::PhaseEncoding::get_scheme(H);
         concat_scheme(pe_scheme, extra_pe);
       } catch (Exception &) {
         pe_scheme.resize(0, 0);
@@ -842,7 +843,7 @@ Header concatenate(const std::vector<Header> &headers,
 
   if (axis_to_concat == 3) {
     DWI::set_DW_scheme(result, dw_scheme);
-    PhaseEncoding::set_scheme(result, pe_scheme);
+    Metadata::PhaseEncoding::set_scheme(result, pe_scheme);
   }
   return result;
 }

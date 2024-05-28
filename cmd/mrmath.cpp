@@ -24,8 +24,8 @@
 #include "math/math.h"
 #include "math/median.h"
 #include "memory.h"
+#include "metadata/phase_encoding.h"
 #include "misc/voxel2vector.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 
 #include <limits>
@@ -359,7 +359,7 @@ void run() {
       } catch (...) {
       }
       DWI::clear_DW_scheme(header_out);
-      PhaseEncoding::clear_scheme(header_out);
+      Metadata::PhaseEncoding::clear_scheme(header_out);
     }
 
     header_out.datatype() = DataType::from_command_line(DataType::Float32);

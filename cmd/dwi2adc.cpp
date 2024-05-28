@@ -19,7 +19,7 @@
 #include "dwi/gradient.h"
 #include "image.h"
 #include "math/least_squares.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
 using namespace MR;
@@ -44,7 +44,7 @@ void usage ()
     "adopts a 2-stage fitting strategy, in which the ADC is first estimated based on "
     "the DWI data with b > cutoff, and the other parameters are estimated subsequently. "
     "The output consists of 4 volumes, respectively S(0), D, f, and D'."
-    
+
   + "Note that this command ignores the gradient orientation entirely. This approach is "
     "therefore only suited for mean DWI (trace-weighted) images or for DWI data collected "
     "with isotropically-distributed gradient directions.";
@@ -60,12 +60,12 @@ void usage ()
     +   Argument ("bval").type_integer (0, 1000)
 
     + DWI::GradImportOptions();
-  
+
   REFERENCES
   + "Le Bihan, D.; Breton, E.; Lallemand, D.; Aubin, M.L.; Vignaud, J.; Laval-Jeantet, M. "
     "Separation of diffusion and perfusion in intravoxel incoherent motion MR imaging. "
     "Radiology, 1988, 168, 497–505."
-    
+
   + "Jalnefjord, O.; Andersson, M.; Montelius; M.; Starck, G.; Elf, A.; Johanson, V.; Svensson, J.; Ljungberg, M. "
     "Comparison of methods for estimation of the intravoxel incoherent motion (IVIM) "
     "diffusion coefficient (D) and perfusion fraction (f). "
@@ -159,7 +159,7 @@ void run() {
   Header header(dwi);
   header.datatype() = DataType::Float32;
   DWI::stash_DW_scheme(header, grad);
-  PhaseEncoding::clear_scheme(header);
+  Metadata::PhaseEncoding::clear_scheme(header);
   header.ndim() = 4;
   header.size(3) = ivim ? 4 : 2;
 

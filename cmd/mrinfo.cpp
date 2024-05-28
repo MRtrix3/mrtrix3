@@ -23,7 +23,7 @@
 #include "file/json_utils.h"
 #include "header.h"
 #include "image_io/pipe.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "types.h"
 
 using namespace MR;
@@ -119,7 +119,7 @@ void usage() {
       + Option ("shell_sizes", "list the number of volumes in each shell")
       + Option ("shell_indices", "list the image volumes attributed to each b-value shell")
 
-    + PhaseEncoding::ExportOptions
+    + Metadata::PhaseEncoding::ExportOptions
       + Option ("petable", "print the phase encoding table")
 
     + OptionGroup ("Handling of piped images")
@@ -252,7 +252,7 @@ void run() {
     ImageIO::Pipe::delete_piped_images = false;
 
   const bool export_grad = check_option_group(GradExportOptions);
-  const bool export_pe = check_option_group(PhaseEncoding::ExportOptions);
+  const bool export_pe = check_option_group(Metadata::PhaseEncoding::ExportOptions);
 
   if (export_grad && argument.size() > 1)
     throw Exception("can only export DW gradient table to file if a single input image is provided");
@@ -310,7 +310,7 @@ void run() {
     if (transform)
       print_transform(header);
     if (petable)
-      std::cout << PhaseEncoding::get_scheme(header) << "\n";
+      std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties(header, properties[n][0]);
@@ -329,7 +329,7 @@ void run() {
     }
 
     DWI::export_grad_commandline(header);
-    PhaseEncoding::export_commandline(header);
+    Metadata::PhaseEncoding::export_commandline(header);
 
     if (json_keyval)
       File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));

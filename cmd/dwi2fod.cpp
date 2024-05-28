@@ -21,7 +21,7 @@
 #include "header.h"
 #include "image.h"
 #include "math/SH.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
@@ -258,7 +258,7 @@ void run() {
     shared.init();
 
     DWI::stash_DW_scheme(header_out, shared.grad);
-    PhaseEncoding::clear_scheme(header_out);
+    Metadata::PhaseEncoding::clear_scheme(header_out);
 
     header_out.size(3) = shared.nSH();
     auto fod = Image<float>::create(argument[3], header_out);

@@ -25,8 +25,9 @@
 #include "file/nifti_utils.h"
 #include "file/ofstream.h"
 #include "header.h"
+#include "metadata/bids.h"
 
-namespace MR::PhaseEncoding {
+namespace MR::Metadata::PhaseEncoding {
 
 extern const App::OptionGroup ImportOptions;
 extern const App::OptionGroup SelectOptions;
@@ -93,8 +94,8 @@ template <class MatrixType> void set_scheme(KeyValues &keyval, const MatrixType 
     erase(keyval, "TotalReadoutTime");
   } else {
     erase(keyval, "pe_scheme");
-    const Axes::dir_type dir{int(PE(0, 0)), int(PE(0, 1)), int(PE(0, 2))};
-    keyval["PhaseEncodingDirection"] = Axes::dir2id(dir);
+    const Metadata::BIDS::axis_vector_type dir{int(PE(0, 0)), int(PE(0, 1)), int(PE(0, 2))};
+    keyval["PhaseEncodingDirection"] = Metadata::BIDS::vector2axisid(dir);
     if (PE.cols() >= 4)
       keyval["TotalReadoutTime"] = str(PE(0, 3), 3);
     else
@@ -175,9 +176,6 @@ Eigen::MatrixXd eddy2scheme(const Eigen::MatrixXd &, const Eigen::Array<int, Eig
 //  and internal header realignment is performed
 template <class MatrixType, class HeaderType>
 Eigen::MatrixXd transform_for_image_load(const MatrixType &pe_scheme, const HeaderType &H) {
-  //std::array<size_t, 3> perm;
-  //std::array<bool, 3> flip;
-  //H.realignment(perm, flip);
   const std::array<size_t, 3> perm = H.realignment().permutations();
   const std::array<bool, 3> flip = H.realignment().flips();
   if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
@@ -289,4 +287,4 @@ Eigen::MatrixXd load_eddy(const std::string &config_path, const std::string &ind
   return transform_for_image_load(PE, header);
 }
 
-} // namespace MR::PhaseEncoding
+} // namespace MR::Metadata::PhaseEncoding

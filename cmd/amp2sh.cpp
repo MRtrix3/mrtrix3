@@ -21,7 +21,7 @@
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
 using namespace MR;
@@ -219,7 +219,7 @@ void run() {
       DWI::stash_DW_scheme(header, grad);
     }
   }
-  PhaseEncoding::clear_scheme(header);
+  Metadata::PhaseEncoding::clear_scheme(header);
 
   auto sh2amp = DWI::compute_SH2amp_mapping(dirs, true, 8);
 
