@@ -27,14 +27,20 @@ namespace MR::Axes {
  *  phase-encoding direction between a 3-vector (e.g.
  *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
  */
-std::string dir2id(const Eigen::Vector3d &);
-Eigen::Vector3d id2dir(const std::string &);
+using dir_type = Eigen::Matrix<int, 3, 1>;
+std::string dir2id(const dir_type &);
+dir_type id2dir(const std::string &);
+
+using permutations_type = std::array<size_t, 3>;
+using flips_type = std::array<bool, 3>;
 
 //! determine the axis permutations and flips necessary to make an image
 //!   appear approximately axial
-void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip);
+void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, flips_type &flip);
 
 //! determine which vectors of a 3x3 transform are closest to the three axis indices
 std::array<size_t, 3> closest(const Eigen::Matrix3d &M);
+
+bool is_shuffled(const permutations_type &, const flips_type &);
 
 } // namespace MR::Axes

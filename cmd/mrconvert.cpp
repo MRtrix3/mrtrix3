@@ -289,12 +289,22 @@ void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
 }
 
 void permute_slice_direction(Header &H, const std::vector<int> &axes) {
-  auto it = H.keyval().find("SliceEncodingDirection");
-  if (it == H.keyval().end())
+  auto slice_encoding_it = H.keyval().find("SliceEncodingDirection");
+  auto slice_timing_it = H.keyval().find("SliceTiming");
+  if (slice_encoding_it == H.keyval().end() && slice_timing_it == H.keyval().end())
     return;
-  const Eigen::Vector3d orig_dir = Axes::id2dir(it->second);
-  const Eigen::Vector3d new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
-  it->second = Axes::dir2id(new_dir);
+  if (slice_encoding_it == H.keyval().end()) {
+    const Axes::dir_type orig_dir({0, 0, 1});
+    const Axes::dir_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+    slice_encoding_it->second = Axes::dir2id(new_dir);
+    WARN("Header field \"SliceEncodingDirection\" inferred to be \"k\" in input image"
+         " and then transformed according to axis permutation"
+         " in order to preserve validity of existing header field \"SliceTiming\"");
+    return;
+  }
+  const Axes::dir_type orig_dir = Axes::id2dir(slice_encoding_it->second);
+  const Axes::dir_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+  slice_encoding_it->second = Axes::dir2id(new_dir);
 }
 
 template <class ImageType> inline std::vector<int> set_header(Header &header, const ImageType &input) {
@@ -381,19 +391,16 @@ void run() {
       throw;
     e.display(2);
   }
+  auto opt = get_options("json_import");
+  if (!opt.empty())
+    File::JSON::load(header_in, opt[0][0]);
+  if (!get_options("import_pe_table").empty() || !get_options("import_pe_eddy").empty())
+    PhaseEncoding::set_scheme(header_in, PhaseEncoding::get_scheme(header_in));
 
   Header header_out(header_in);
   header_out.datatype() = DataType::from_command_line(header_out.datatype());
-
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN("requested datatype is real but input datatype is complex - imaginary component will be ignored");
-
-  if (!get_options("import_pe_table").empty() || !get_options("import_pe_eddy").empty())
-    PhaseEncoding::set_scheme(header_out, PhaseEncoding::get_scheme(header_in));
-
-  auto opt = get_options("json_import");
-  if (!opt.empty())
-    File::JSON::load(header_out, opt[0][0]);
 
   opt = get_options("copy_properties");
   if (!opt.empty()) {

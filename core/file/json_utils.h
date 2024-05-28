@@ -27,7 +27,7 @@ namespace File::JSON {
 void load(Header &H, const std::string &path);
 void save(const Header &H, const std::string &json_path, const std::string &image_path);
 
-KeyValues read(const nlohmann::json &json, const KeyValues &preexisting = KeyValues());
+KeyValues read(const nlohmann::json &json);
 void read(const nlohmann::json &json, Header &header, const bool realign);
 
 void write(const KeyValues &keyval, nlohmann::json &json);

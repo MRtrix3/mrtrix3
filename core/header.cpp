@@ -610,35 +610,53 @@ void Header::sanitise_transform() {
 }
 
 void Header::realign_transform() {
+  realignment_.orig_transform_ = transform();
+  realignment_.applied_transform_ = Realignment::applied_transform_type::Identity();
+  realignment_.orig_keyval_.clear();
+
   // find which row of the transform is closest to each scanner axis:
-  Axes::get_shuffle_to_make_axial(transform(), realign_perm_, realign_flip_);
+  Axes::get_shuffle_to_make_axial(transform(), realignment_.permutations_, realignment_.flips_);
 
   // check if image is already near-axial, return if true:
-  if (realign_perm_[0] == 0 && realign_perm_[1] == 1 && realign_perm_[2] == 2 && !realign_flip_[0] &&
-      !realign_flip_[1] && !realign_flip_[2])
+  if (!realignment_)
     return;
 
   auto M(transform());
   auto translation = M.translation();
 
+  // TODO Compute applied transformation
+  // Could do in one of two ways:
+  // - Build up from underlying permutations / flips / translations
+  // - Compute difference between original and final transforms
+  // Potentially do both to verify correctness
+
   // modify translation vector:
   for (size_t i = 0; i < 3; ++i) {
-    if (realign_flip_[i]) {
+    if (realignment_.flips_[i]) {
       const default_type length = (size(i) - 1) * spacing(i);
       auto axis = M.matrix().col(i);
       for (size_t n = 0; n < 3; ++n) {
         axis[n] = -axis[n];
         translation[n] -= length * axis[n];
       }
+      realignment_.applied_transform_.matrix().col(i) *= -1.0;
+      realignment_.applied_transform_.translation()[i] = (stride(i) > 0 ? 1 : -1) * (size(i)-1);
     }
   }
 
   // switch and/or invert rows if needed:
   for (size_t i = 0; i < 3; ++i) {
-    auto row = M.matrix().row(i).head<3>();
-    row = Eigen::RowVector3d(row[realign_perm_[0]], row[realign_perm_[1]], row[realign_perm_[2]]);
+    auto row_transform = M.matrix().row(i).head<3>();
+    row_transform = Eigen::RowVector3d(row_transform[realignment_.permutations_[0]],
+                                       row_transform[realignment_.permutations_[1]],
+                                       row_transform[realignment_.permutations_[2]]);
 
-    if (realign_flip_[i])
+    auto row_applied = realignment_.applied_transform_.matrix().row(i).head<3>();
+    row_applied = Eigen::RowVector3i(row_applied[realignment_.permutations_[0]],
+                                     row_applied[realignment_.permutations_[1]],
+                                     row_applied[realignment_.permutations_[2]]);
+
+    if (realignment_.flips_[i])
       stride(i) = -stride(i);
   }
 
@@ -646,7 +664,7 @@ void Header::realign_transform() {
   transform() = std::move(M);
 
   // switch axes to match:
-  Axis a[] = {axes_[realign_perm_[0]], axes_[realign_perm_[1]], axes_[realign_perm_[2]]};
+  Axis a[] = {axes_[realignment_.permutations_[0]], axes_[realignment_.permutations_[1]], axes_[realignment_.permutations_[2]]};
   axes_[0] = a[0];
   axes_[1] = a[1];
   axes_[2] = a[2];
@@ -658,11 +676,12 @@ void Header::realign_transform() {
   //   flips / permutations that have taken place
   auto pe_scheme = PhaseEncoding::get_scheme(*this);
   if (pe_scheme.rows()) {
+    PhaseEncoding::set_scheme(realignment_.orig_keyval_, pe_scheme);
     for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
       Eigen::VectorXd new_line(pe_scheme.row(row));
       for (ssize_t axis = 0; axis != 3; ++axis) {
-        new_line[axis] = pe_scheme(row, realign_perm_[axis]);
-        if (new_line[axis] && realign_flip_[realign_perm_[axis]])
+        new_line[axis] = pe_scheme(row, realignment_.permutations_[axis]);
+        if (new_line[axis] && realignment_.flips_[realignment_.permutations_[axis]])
           new_line[axis] = -new_line[axis];
       }
       pe_scheme.row(row) = new_line;
@@ -674,18 +693,37 @@ void Header::realign_transform() {
   // If there's any slice encoding direction information present in the
   //   header, that's also necessary to update here
   auto slice_encoding_it = keyval().find("SliceEncodingDirection");
-  if (slice_encoding_it != keyval().end()) {
-    const Eigen::Vector3d orig_dir(Axes::id2dir(slice_encoding_it->second));
-    Eigen::Vector3d new_dir;
+  auto slice_timing_it = keyval().find("SliceTiming");
+  if (!(slice_encoding_it == keyval().end() && slice_timing_it == keyval().end())) {
+    const Axes::dir_type orig_dir(slice_encoding_it == keyval().end()         //
+                                  ? Axes::dir_type({0, 0, 1})                 //
+                                  : Axes::id2dir(slice_encoding_it->second)); //
+    Axes::dir_type new_dir;
     for (size_t axis = 0; axis != 3; ++axis)
-      new_dir[axis] = orig_dir[realign_perm_[axis]] * (realign_flip_[realign_perm_[axis]] ? -1.0 : 1.0);
-    slice_encoding_it->second = Axes::dir2id(new_dir);
-    INFO("Slice encoding direction has been modified to conform to MRtrix3 internal header transform realignment");
+      new_dir[axis] = orig_dir[realignment_.permutations_[axis]] * (realignment_.flips_[realignment_.permutations_[axis]] ? -1.0 : 1.0);
+    if (slice_encoding_it != keyval().end()) {
+      realignment_.orig_keyval_.insert(*slice_encoding_it);
+      slice_encoding_it->second = Axes::dir2id(new_dir);
+      INFO("Slice encoding direction has been modified"
+           " to conform to MRtrix3 internal header transform realignment");
+    } else if ((new_dir * -1).dot(orig_dir) == 1) {
+      auto slice_timing = parse_floats(slice_timing_it->second);
+      std::reverse(slice_timing.begin(), slice_timing.end());
+      slice_timing_it->second = join(slice_timing, ",");
+      INFO("Slice timing vector reversed to conform to MRtrix3 internal transform realignment"
+           " of image \"" + name() + "\"");
+    } else {
+      keyval()["SliceEncodingDirection"] = Axes::dir2id(new_dir);
+      WARN("Slice encoding direction of image \"" + name() + "\""
+           " inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field"
+           " during MRtrix3 internal transform realignment");
+    }
   }
 }
 
-Header
-concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, const bool permit_datatype_mismatch) {
+Header concatenate(const std::vector<Header> &headers,
+                   const size_t axis_to_concat,
+                   const bool permit_datatype_mismatch) {
   Exception e("Unable to concatenate " + str(headers.size()) + " images along axis " + str(axis_to_concat) + ": ");
 
   auto datatype_test = [&](const bool condition) {
@@ -807,6 +845,19 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     PhaseEncoding::set_scheme(result, pe_scheme);
   }
   return result;
+}
+
+Header::Realignment::Realignment() :
+    permutations_{0, 1, 2},
+    flips_{false, false, false},
+    applied_transform_(applied_transform_type::Identity()),
+    orig_keyval_() {
+  orig_transform_.matrix().fill(std::numeric_limits<default_type>::quiet_NaN());
+}
+
+Header::Realignment::operator bool() const {
+  return (!(permutations_[0] == 0 &&  permutations_[1] == 1 && permutations_[2] == 2 &&
+            !flips_[0] && !flips_[1] && !flips_[2]));
 }
 
 } // namespace MR

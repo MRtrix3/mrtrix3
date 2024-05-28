@@ -66,19 +66,14 @@ template <class MatrixType, class HeaderType> void check(const MatrixType &PE, c
  *    will instead be stored in fields "PhaseEncodingDirection"
  *    and "TotalReadoutTime"
  */
-template <class MatrixType> void set_scheme(Header &header, const MatrixType &PE) {
-  auto erase = [&](const std::string &s) {
-    auto it = header.keyval().find(s);
-    if (it != header.keyval().end())
-      header.keyval().erase(it);
+namespace {
+  void erase(KeyValues &keyval, const std::string &s) {
+    auto it = keyval.find(s);
+    if (it != keyval.end())
+      keyval.erase(it);
   };
-  if (!PE.rows()) {
-    erase("pe_scheme");
-    erase("PhaseEncodingDirection");
-    erase("TotalReadoutTime");
-    return;
-  }
-  check(PE, header);
+}
+template <class MatrixType> void set_scheme(KeyValues &keyval, const MatrixType &PE) {
   std::string pe_scheme;
   std::string first_line;
   bool variation = false;
@@ -93,19 +88,32 @@ template <class MatrixType> void set_scheme(Header &header, const MatrixType &PE
       variation = true;
   }
   if (variation) {
-    header.keyval()["pe_scheme"] = pe_scheme;
-    erase("PhaseEncodingDirection");
-    erase("TotalReadoutTime");
+    keyval["pe_scheme"] = pe_scheme;
+    erase(keyval, "PhaseEncodingDirection");
+    erase(keyval, "TotalReadoutTime");
   } else {
-    erase("pe_scheme");
-    const Eigen::Vector3d dir{PE(0, 0), PE(0, 1), PE(0, 2)};
-    header.keyval()["PhaseEncodingDirection"] = Axes::dir2id(dir);
+    erase(keyval, "pe_scheme");
+    const Axes::dir_type dir{int(PE(0, 0)), int(PE(0, 1)), int(PE(0, 2))};
+    keyval["PhaseEncodingDirection"] = Axes::dir2id(dir);
     if (PE.cols() >= 4)
-      header.keyval()["TotalReadoutTime"] = str(PE(0, 3), 3);
+      keyval["TotalReadoutTime"] = str(PE(0, 3), 3);
     else
-      erase("TotalReadoutTime");
+      erase(keyval, "TotalReadoutTime");
   }
 }
+
+template <class MatrixType> void set_scheme(Header &header, const MatrixType &PE) {
+  if (!PE.rows()) {
+    erase(header.keyval(), "pe_scheme");
+    erase(header.keyval(), "PhaseEncodingDirection");
+    erase(header.keyval(), "TotalReadoutTime");
+    return;
+  }
+  check(PE, header);
+  set_scheme(header.keyval(), PE);
+}
+
+
 
 //! clear the phase encoding matrix from a header
 /*! this will delete any trace of phase encoding information
@@ -164,11 +172,14 @@ void scheme2eddy(const MatrixType &PE, Eigen::MatrixXd &config, Eigen::Array<int
 Eigen::MatrixXd eddy2scheme(const Eigen::MatrixXd &, const Eigen::Array<int, Eigen::Dynamic, 1> &);
 
 //! Modifies a phase encoding scheme if being imported alongside a non-RAS image
+//  and internal header realignment is performed
 template <class MatrixType, class HeaderType>
 Eigen::MatrixXd transform_for_image_load(const MatrixType &pe_scheme, const HeaderType &H) {
-  std::array<size_t, 3> perm;
-  std::array<bool, 3> flip;
-  H.realignment(perm, flip);
+  //std::array<size_t, 3> perm;
+  //std::array<bool, 3> flip;
+  //H.realignment(perm, flip);
+  const std::array<size_t, 3> perm = H.realignment().permutations();
+  const std::array<bool, 3> flip = H.realignment().flips();
   if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
     INFO("No transformation of external phase encoding data required to accompany image \"" + H.name() + "\"");
     return pe_scheme;
@@ -190,8 +201,8 @@ Eigen::MatrixXd transform_for_image_load(const MatrixType &pe_scheme, const Head
 //! Modifies a phase encoding scheme if being exported alongside a NIfTI image
 template <class MatrixType, class HeaderType>
 Eigen::MatrixXd transform_for_nifti_write(const MatrixType &pe_scheme, const HeaderType &H) {
-  std::vector<size_t> order;
-  std::array<bool, 3> flip;
+  Axes::permutations_type order;
+  Axes::flips_type flip;
   File::NIfTI::axes_on_write(H, order, flip);
   if (order[0] == 0 && order[1] == 1 && order[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
     INFO("No transformation of phase encoding data required for export to file");

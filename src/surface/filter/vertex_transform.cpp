@@ -17,6 +17,7 @@
 #include "surface/filter/vertex_transform.h"
 #include "file/nifti_utils.h"
 
+#include "axes.h"
 #include "exception.h"
 
 namespace MR::Surface::Filter {
@@ -82,7 +83,9 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
     break;
 
   case transform_t::FS2REAL:
-    std::vector<size_t> axes(3);
+    Axes::permutations_type axes;
+    // TODO This should be based on internal transform realignment,
+    //   not speculative adjustment on hypothetical write
     auto M = File::NIfTI::adjust_transform(header, axes);
     Eigen::Vector3d cras(3, 1);
     for (size_t i = 0; i < 3; i++) {

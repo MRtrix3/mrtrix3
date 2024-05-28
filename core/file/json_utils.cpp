@@ -121,9 +121,8 @@ void read(const nlohmann::json &json, Header &header, const bool realign) {
   // The corresponding header may have been rotated on image load prior to the JSON
   //   being loaded. If this is the case, any fields that indicate an image axis
   //   number / direction need to be correspondingly modified.
-  std::array<size_t, 3> perm;
-  std::array<bool, 3> flip;
-  header.realignment(perm, flip);
+  const std::array<size_t, 3> perm = header.realignment().permutations();
+  const std::array<bool, 3> flip = header.realignment().flips();
   if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 && !flip[0] && !flip[1] && !flip[2])
     return;
 
@@ -131,24 +130,48 @@ void read(const nlohmann::json &json, Header &header, const bool realign) {
   if (pe_scheme.rows()) {
     if (do_realign) {
       PhaseEncoding::set_scheme(header, PhaseEncoding::transform_for_image_load(pe_scheme, header));
-      INFO("Phase encoding information read from JSON file modified to conform to prior MRtrix3 internal transform "
-           "realignment of image \"" +
-           header.name() + "\"");
+      INFO("Phase encoding information read from JSON file"
+           " modified to conform to prior MRtrix3 internal transform realignment"
+           " of image \"" + header.name() + "\"");
     } else {
       INFO("Phase encoding information read from JSON file not modified");
     }
   }
 
+  // dcm2niix may write SliceTiming but not SliceEncodingDirection;
+  //   in this scenario:
+  //   - If the direction is inverted, reverse the order of SliceTiming,
+  //     so that an assumption of "SliceEncodingDirection": "k" in its absence remains valid
+  //   - If some other direction results,
+  //     need to add SliceEncodingDirection field (+ issue a warning)
   auto slice_encoding_it = header.keyval().find("SliceEncodingDirection");
-  if (slice_encoding_it != header.keyval().end()) {
+  auto slice_timing_it = header.keyval().find("SliceTiming");
+  if (!(slice_encoding_it == header.keyval().end() && slice_timing_it == header.keyval().end())) {
     if (do_realign) {
-      const Eigen::Vector3d orig_dir(Axes::id2dir(slice_encoding_it->second));
-      Eigen::Vector3d new_dir;
+      const Axes::dir_type orig_dir(slice_encoding_it == header.keyval().end()  //
+                                    ? Axes::dir_type({0, 0, 1})                 //
+                                    : Axes::id2dir(slice_encoding_it->second)); //
+      Axes::dir_type new_dir;
       for (size_t axis = 0; axis != 3; ++axis)
         new_dir[axis] = flip[perm[axis]] ? -orig_dir[perm[axis]] : orig_dir[perm[axis]];
-      slice_encoding_it->second = Axes::dir2id(new_dir);
-      INFO("Slice encoding direction read from JSON file modified to conform to prior MRtrix3 internal transform "
-           "realignment of input image");
+      if (slice_encoding_it != header.keyval().end()) {
+        slice_encoding_it->second = Axes::dir2id(new_dir);
+        INFO("Slice encoding direction read from JSON file"
+             " modified to conform to prior MRtrix3 internal transform realignment"
+             " of image \"" + header.name() + "\"");
+      } else if ((new_dir * -1).dot(orig_dir) == 1) {
+        auto slice_timing = parse_floats(slice_timing_it->second);
+        std::reverse(slice_timing.begin(), slice_timing.end());
+        slice_timing_it->second = join(slice_timing, ",");
+        INFO("Slice timing vector read from JSON file"
+             " reversed to conform to prior MRtrix3 internal transform realignment"
+             " of image \"" + header.name() + "\"");
+      } else {
+        header.keyval()["SliceEncodingDirection"] = Axes::dir2id(new_dir);
+        WARN("Slice encoding direction of image \"" + header.name() + "\""
+             " inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field"
+             " following MRtrix3 internal transform realignment");
+      }
     } else {
       INFO("Slice encoding information read from JSON file not modified");
     }
@@ -252,12 +275,12 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
     return;
   }
 
-  std::vector<size_t> order;
-  std::array<bool, 3> flip;
+  Axes::permutations_type order;
+  Axes::flips_type flip;
   File::NIfTI::axes_on_write(header, order, flip);
   if (order[0] == 0 && order[1] == 1 && order[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
-    INFO(
-        "No need to transform orientation-based information written to JSON file to match image: image is already RAS");
+    INFO("No need to transform orientation-based information written to JSON file to match image:"
+         " image is already RAS");
     write(H_adj.keyval(), json);
     return;
   }
@@ -267,18 +290,34 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
     // Assume that image being written to disk is going to have its transform adjusted,
     //   so modify the phase encoding scheme appropriately before writing to JSON
     PhaseEncoding::set_scheme(H_adj, PhaseEncoding::transform_for_nifti_write(pe_scheme, header));
-    INFO("Phase encoding information written to JSON file modified according to expected output NIfTI header transform "
-         "realignment");
+    INFO("Phase encoding information written to JSON file"
+         " modified according to output NIfTI strides");
   }
   auto slice_encoding_it = H_adj.keyval().find("SliceEncodingDirection");
-  if (slice_encoding_it != H_adj.keyval().end()) {
-    const Eigen::Vector3d orig_dir(Axes::id2dir(slice_encoding_it->second));
-    Eigen::Vector3d new_dir;
+  auto slice_timing_it = H_adj.keyval().find("SliceTiming");
+  if (!(slice_encoding_it == H_adj.keyval().end() && slice_timing_it == H_adj.keyval().end())) {
+    const Axes::dir_type orig_dir(slice_encoding_it == H_adj.keyval().end()   //
+                                  ? Axes::dir_type({0, 0, 1})                 //
+                                  : Axes::id2dir(slice_encoding_it->second)); //
+    Axes::dir_type new_dir;
     for (size_t axis = 0; axis != 3; ++axis)
-      new_dir[axis] = flip[axis] ? orig_dir[order[axis]] : -orig_dir[order[axis]];
-    slice_encoding_it->second = Axes::dir2id(new_dir);
-    INFO("Slice encoding direction written to JSON file modified according to expected output NIfTI header transform "
-         "realignment");
+      new_dir[axis] = flip[axis] ? -orig_dir[order[axis]] : orig_dir[order[axis]];
+    if (slice_encoding_it != H_adj.keyval().end()) {
+      slice_encoding_it->second = Axes::dir2id(new_dir);
+      INFO("Slice encoding direction written to JSON file"
+           " modified according to output NIfTI strides");
+    } else if ((new_dir * -1).dot(orig_dir) == 1) {
+      auto slice_timing = parse_floats(slice_timing_it->second);
+      std::reverse(slice_timing.begin(), slice_timing.end());
+      slice_timing_it->second = join(slice_timing, ",");
+      INFO("Slice timing vector written to JSON file"
+             " reversed to conform to output NIfTI strides");
+    } else {
+      H_adj.keyval()["SliceEncodingDirection"] = Axes::dir2id(new_dir);
+      WARN("Slice encoding direction added to output JSON file"
+           " in order to preserve interpretation of existing \"SliceTiming\" field"
+           " following output NIfTI strides");
+    }
   }
 
   write(H_adj.keyval(), json);

@@ -20,6 +20,7 @@
 // nifti1_io.h and nifti2_io.h headers must be included after dirent.h (transitively included by header.h)
 // otherwise we run into definitions conflict on Linux
 // clang-format off
+#include "axes.h"
 #include "header.h"
 #include "file/nifti1.h"
 #include "file/nifti2.h"
@@ -34,8 +35,8 @@ class Header;
 namespace File::NIfTI {
 extern bool right_left_warning_issued;
 
-void axes_on_write(const Header &H, std::vector<size_t> &order, std::array<bool, 3> &flip);
-transform_type adjust_transform(const Header &H, std::vector<size_t> &order);
+void axes_on_write(const Header &H, Axes::permutations_type &order, Axes::flips_type &flip);
+transform_type adjust_transform(const Header &H, Axes::permutations_type &order);
 
 bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std::string> &suffixes);
 

@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "axes.h"
 #include "command.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
@@ -64,7 +65,7 @@ void usage() {
 // clang-format on
 
 transform_type get_flirt_transform(const Header &header) {
-  std::vector<size_t> axes;
+  Axes::permutations_type axes;
   transform_type nifti_transform = File::NIfTI::adjust_transform(header, axes);
   if (nifti_transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
     return nifti_transform;

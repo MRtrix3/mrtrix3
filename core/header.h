@@ -56,9 +56,7 @@ public:
       : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)),
         format_(nullptr),
         offset_(0.0),
-        scale_(1.0),
-        realign_perm_{{0, 1, 2}},
-        realign_flip_{{false, false, false}} {}
+        scale_(1.0) {}
 
   explicit Header(Header &&H) noexcept
       : axes_(std::move(H.axes_)),
@@ -70,8 +68,7 @@ public:
         datatype_(std::move(H.datatype_)),
         offset_(H.offset_),
         scale_(H.scale_),
-        realign_perm_{{0, 1, 2}},
-        realign_flip_{{false, false, false}} {}
+        realignment_(H.realignment_) {}
 
   Header &operator=(Header &&H) noexcept {
     axes_ = std::move(H.axes_);
@@ -83,8 +80,7 @@ public:
     datatype_ = std::move(H.datatype_);
     offset_ = H.offset_;
     scale_ = H.scale_;
-    realign_perm_ = H.realign_perm_;
-    realign_flip_ = H.realign_flip_;
+    realignment_ = H.realignment_;
     return *this;
   }
 
@@ -100,8 +96,7 @@ public:
         datatype_(H.datatype_),
         offset_(datatype().is_integer() ? H.offset_ : 0.0),
         scale_(datatype().is_integer() ? H.scale_ : 1.0),
-        realign_perm_(H.realign_perm_),
-        realign_flip_(H.realign_flip_) {}
+        realignment_(H.realignment_) {}
 
   //! copy constructor from type of class derived from Header
   /*! This invokes the standard Header(const Header&) copy-constructor. */
@@ -120,9 +115,7 @@ public:
         format_(nullptr),
         datatype_(DataType::from<typename HeaderType::value_type>()),
         offset_(0.0),
-        scale_(1.0),
-        realign_perm_{{0, 1, 2}},
-        realign_flip_{{false, false, false}} {
+        scale_(1.0) {
     axes_.resize(original.ndim());
     for (size_t n = 0; n < original.ndim(); ++n) {
       size(n) = original.size(n);
@@ -143,8 +136,7 @@ public:
     datatype_ = H.datatype_;
     offset_ = datatype().is_integer() ? H.offset_ : 0.0;
     scale_ = datatype().is_integer() ? H.scale_ : 1.0;
-    realign_perm_ = H.realign_perm_;
-    realign_flip_ = H.realign_flip_;
+    realignment_ = H.realignment_;
     io.reset();
     return *this;
   }
@@ -175,8 +167,7 @@ public:
     datatype_ = DataType::from<typename HeaderType::value_type>();
     offset_ = 0.0;
     scale_ = 1.0;
-    realign_perm_ = {{0, 1, 2}};
-    realign_flip_ = {{false, false, false}};
+    realignment_ = Realignment();
     io.reset();
     return *this;
   }
@@ -207,11 +198,33 @@ public:
   //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
   transform_type &transform() { return transform_; }
 
+  // Class to store all information relating to internal transform realignment
+  class Realignment {
+  public:
+    // From one image space to another image space;
+    //   linear component is permutations & flips only,
+    //   transformation is in voxel count,
+    //   therefore can store as integer
+    using applied_transform_type = Eigen::Transform<int, 3, Eigen::AffineCompact>;
+    Realignment();
+    Realignment(Header&);
+    operator bool() const;
+    const std::array<size_t, 3> &permutations() const { return permutations_; }
+    const std::array<bool, 3> &flips() const { return flips_; }
+    const transform_type &orig_transform() const { return orig_transform_; }
+    const applied_transform_type &applied_transform() const { return applied_transform_; }
+    KeyValues &orig_keyval() { return orig_keyval_; }
+  private:
+    std::array<size_t, 3> permutations_;
+    std::array<bool, 3> flips_;
+    transform_type orig_transform_;
+    // TODO Store original strides
+    applied_transform_type applied_transform_;
+    KeyValues orig_keyval_;
+    friend class Header;
+  };
   //! get information on how the transform was modified on image load
-  void realignment(std::array<size_t, 3> &perm, std::array<bool, 3> &flip) const {
-    perm = realign_perm_;
-    flip = realign_flip_;
-  }
+  const Realignment& realignment() const { return realignment_; }
 
   class NDimProxy {
   public:
@@ -397,8 +410,7 @@ protected:
   void realign_transform();
   /*! store information about how image was
    * realigned via realign_transform(). */
-  std::array<size_t, 3> realign_perm_;
-  std::array<bool, 3> realign_flip_;
+  Realignment realignment_;
 
   void sanitise_voxel_sizes();
   void sanitise_transform();

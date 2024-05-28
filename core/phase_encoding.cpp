@@ -75,7 +75,7 @@ Eigen::MatrixXd parse_scheme(const Header &header) {
       const auto it_time = header.keyval().find("TotalReadoutTime");
       const size_t cols = it_time == header.keyval().end() ? 3 : 4;
       Eigen::Matrix<default_type, Eigen::Dynamic, 1> row(cols);
-      row.head(3) = Axes::id2dir(it_dir->second);
+      row.head(3) = Axes::id2dir(it_dir->second).cast<default_type>();
       if (it_time != header.keyval().end())
         row[3] = to<default_type>(it_time->second);
       PE.resize((header.ndim() > 3) ? header.size(3) : 1, cols);

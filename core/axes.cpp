@@ -21,37 +21,37 @@
 
 namespace MR::Axes {
 
-std::string dir2id(const Eigen::Vector3d &axis) {
-  if (axis[0] == -1) {
-    assert(!axis[1]);
-    assert(!axis[2]);
+std::string dir2id(const dir_type &dir) {
+  if (dir[0] == -1) {
+    assert(!dir[1]);
+    assert(!dir[2]);
     return "i-";
-  } else if (axis[0] == 1) {
-    assert(!axis[1]);
-    assert(!axis[2]);
+  } else if (dir[0] == 1) {
+    assert(!dir[1]);
+    assert(!dir[2]);
     return "i";
-  } else if (axis[1] == -1) {
-    assert(!axis[0]);
-    assert(!axis[2]);
+  } else if (dir[1] == -1) {
+    assert(!dir[0]);
+    assert(!dir[2]);
     return "j-";
-  } else if (axis[1] == 1) {
-    assert(!axis[0]);
-    assert(!axis[2]);
+  } else if (dir[1] == 1) {
+    assert(!dir[0]);
+    assert(!dir[2]);
     return "j";
-  } else if (axis[2] == -1) {
-    assert(!axis[0]);
-    assert(!axis[1]);
+  } else if (dir[2] == -1) {
+    assert(!dir[0]);
+    assert(!dir[1]);
     return "k-";
-  } else if (axis[2] == 1) {
-    assert(!axis[0]);
-    assert(!axis[1]);
+  } else if (dir[2] == 1) {
+    assert(!dir[0]);
+    assert(!dir[1]);
     return "k";
   } else {
-    throw Exception("Malformed axis direction: \"" + str(axis.transpose()) + "\"");
+    throw Exception("Malformed image axis direction: \"" + str(dir.transpose()) + "\"");
   }
 }
 
-Eigen::Vector3d id2dir(const std::string &id) {
+dir_type id2dir(const std::string &id) {
   if (id == "i-")
     return {-1, 0, 0};
   else if (id == "i")
@@ -108,6 +108,10 @@ std::array<size_t, 3> closest(const Eigen::Matrix3d &M) {
   assert(result[0] != result[1] && result[1] != result[2] && result[2] != result[0]);
 
   return result;
+}
+
+bool is_shuffled(const permutations_type &perms, const flips_type & flips) {
+  return (perms[0] != 0 || perms[1] != 1 || perms[2] != 2 || flips[0] || flips[1] || flips[2]);
 }
 
 } // namespace MR::Axes

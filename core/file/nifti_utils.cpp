@@ -355,7 +355,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
 
   bool is_BE = H.datatype().is_big_endian();
 
-  std::vector<size_t> axes;
+  Axes::permutations_type axes;
   auto M = File::NIfTI::adjust_transform(H, axes);
 
   memset(&NH, 0, sizeof(NH));
@@ -542,18 +542,19 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   }
 }
 
-void axes_on_write(const Header &H, std::vector<size_t> &order, std::array<bool, 3> &flip) {
+void axes_on_write(const Header &H, Axes::permutations_type &perms, Axes::flips_type &flips) {
   Stride::List strides = Stride::get(H);
   strides.resize(3);
-  order = Stride::order(strides);
-  flip = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
+  auto order = Stride::order(strides);
+  perms = {order[0], order[1], order[2]};
+  flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
 }
 
-transform_type adjust_transform(const Header &H, std::vector<size_t> &axes) {
-  std::array<bool, 3> flip;
+transform_type adjust_transform(const Header &H, Axes::permutations_type &axes) {
+  Axes::flips_type flip;
   axes_on_write(H, axes, flip);
 
-  if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 && !flip[0] && !flip[1] && !flip[2])
+  if (!Axes::is_shuffled(axes, flip))
     return H.transform();
 
   const auto &M_in = H.transform().matrix();

@@ -138,28 +138,27 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_
     throw Exception("bvecs and bvals files must have same number of diffusion directions as DW-image (gradients: " +
                     str(bvecs.cols()) + ", image: " + str(num_volumes) + ")");
 
-  // bvecs format actually assumes a LHS coordinate system even if image is
-  // stored using RHS - x axis is flipped to make linear 3x3 part of
-  // transform have negative determinant:
-  std::vector<size_t> order;
-  auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
-  if (adjusted_transform.linear().determinant() > 0.0)
-    bvecs.row(0) = -bvecs.row(0);
-
+  Eigen::MatrixXd G(bvecs.cols(), 3);
   // account for the fact that bvecs are specified wrt original image axes,
   // which may have been re-ordered and/or inverted by MRtrix to match the
   // expected anatomical frame of reference:
-  Eigen::MatrixXd G(bvecs.cols(), 3);
+  const std::array<size_t, 3> permutations = header.realignment().permutations();
+  const std::array<bool, 3> flips = header.realignment().flips();
+  // bvecs format actually assumes a LHS coordinate system even if image is
+  // stored using RHS; first axis is flipped to make linear 3x3 part of
+  // transform have negative determinant:
+  Eigen::MatrixXd modified_bvecs(bvecs);
+  if (header.realignment().orig_transform().linear().determinant() > 0.0)
+    modified_bvecs.row(0) *= -1.0;
   for (ssize_t n = 0; n < G.rows(); ++n) {
-    G(n, order[0]) = header.stride(order[0]) > 0 ? bvecs(0, n) : -bvecs(0, n);
-    G(n, order[1]) = header.stride(order[1]) > 0 ? bvecs(1, n) : -bvecs(1, n);
-    G(n, order[2]) = header.stride(order[2]) > 0 ? bvecs(2, n) : -bvecs(2, n);
+    G(n, permutations[0]) = flips[permutations[0]] ? -modified_bvecs(0, n) : modified_bvecs(0, n);
+    G(n, permutations[1]) = flips[permutations[1]] ? -modified_bvecs(1, n) : modified_bvecs(1, n);
+    G(n, permutations[2]) = flips[permutations[2]] ? -modified_bvecs(2, n) : modified_bvecs(2, n);
   }
 
   // rotate gradients into scanner coordinate system:
   Eigen::MatrixXd grad(G.rows(), 4);
-
-  grad.leftCols<3>().transpose() = header.transform().rotation() * G.transpose();
+  grad.leftCols<3>().transpose() = header.transform().linear() * G.transpose();
   grad.col(3) = bvals.row(0);
 
   return grad;
@@ -167,31 +166,16 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_
 
 void save_bvecs_bvals(const Header &header, const std::string &bvecs_path, const std::string &bvals_path) {
   const auto grad = parse_DW_scheme(header);
-
-  // rotate vectors from scanner space to image space
-  Eigen::MatrixXd G = grad.leftCols<3>() * header.transform().rotation();
-
-  // deal with FSL requiring gradient directions to coincide with data strides
-  // also transpose matrices in preparation for file output
-  std::vector<size_t> order;
-  auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
-  Eigen::MatrixXd bvecs(3, grad.rows());
-  Eigen::MatrixXd bvals(1, grad.rows());
-  for (ssize_t n = 0; n < G.rows(); ++n) {
-    bvecs(0, n) = header.stride(order[0]) > 0 ? G(n, order[0]) : -G(n, order[0]);
-    bvecs(1, n) = header.stride(order[1]) > 0 ? G(n, order[1]) : -G(n, order[1]);
-    bvecs(2, n) = header.stride(order[2]) > 0 ? G(n, order[2]) : -G(n, order[2]);
-    bvals(0, n) = grad(n, 3);
-  }
-
+  Axes::permutations_type order;
+  const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
+  Eigen::MatrixXd bvecs = adjusted_transform.inverse().linear() * grad.leftCols<3>().transpose();
   // bvecs format actually assumes a LHS coordinate system even if image is
-  // stored using RHS - x axis is flipped to make linear 3x3 part of
+  // stored using RHS; first axis is flipped to make linear 3x3 part of
   // transform have negative determinant:
   if (adjusted_transform.linear().determinant() > 0.0)
     bvecs.row(0) = -bvecs.row(0);
-
   File::Matrix::save_matrix(bvecs, bvecs_path, KeyValues(), false);
-  File::Matrix::save_matrix(bvals, bvals_path, KeyValues(), false);
+  File::Matrix::save_matrix(grad.col(3), bvals_path, KeyValues(), false);
 }
 
 void clear_DW_scheme(Header &header) {
