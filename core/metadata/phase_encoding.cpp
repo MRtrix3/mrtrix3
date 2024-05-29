@@ -204,11 +204,7 @@ scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header 
   scheme_type result(pe_scheme.rows(), pe_scheme.cols());
   for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
     Eigen::VectorXd new_line = pe_scheme.row(row);
-    for (ssize_t axis = 0; axis != 3; ++axis) {
-      new_line[axis] = pe_scheme(row, H.realignment().permutation(axis));
-      if (new_line[axis] && H.realignment().flip(H.realignment().permutation(axis)))
-        new_line[axis] = -new_line[axis];
-    }
+    new_line.head<3>() = (H.realignment().applied_transform() * new_line.head<3>().cast<int>()).cast<default_type>();
     result.row(row) = new_line;
   }
   return result;

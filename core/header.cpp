@@ -597,12 +597,6 @@ void Header::realign_transform() {
   auto M(transform());
   auto translation = M.translation();
 
-  // TODO Compute applied transformation
-  // Could do in one of two ways:
-  // - Build up from underlying permutations / flips / translations
-  // - Compute difference between original and final transforms
-  // Potentially do both to verify correctness
-
   // modify translation vector:
   for (size_t i = 0; i < 3; ++i) {
     if (realignment_.flip(i)) {
@@ -612,8 +606,7 @@ void Header::realign_transform() {
         axis[n] = -axis[n];
         translation[n] -= length * axis[n];
       }
-      realignment_.applied_transform_.matrix().col(i) *= -1.0;
-      realignment_.applied_transform_.translation()[i] = (stride(i) > 0 ? 1 : -1) * (size(i)-1);
+      realignment_.applied_transform_.row(i) *= -1.0;
     }
   }
 
@@ -624,10 +617,10 @@ void Header::realign_transform() {
                                        row_transform[realignment_.permutation(1)],
                                        row_transform[realignment_.permutation(2)]);
 
-    auto row_applied = realignment_.applied_transform_.matrix().row(i).head<3>();
-    row_applied = Eigen::RowVector3i(row_applied[realignment_.permutation(0)],
-                                     row_applied[realignment_.permutation(1)],
-                                     row_applied[realignment_.permutation(2)]);
+    auto col_applied = realignment_.applied_transform_.matrix().col(i);
+    col_applied = Eigen::RowVector3i(col_applied[realignment_.permutation(0)],
+                                     col_applied[realignment_.permutation(1)],
+                                     col_applied[realignment_.permutation(2)]);
 
     if (realignment_.flip(i))
       stride(i) = -stride(i);

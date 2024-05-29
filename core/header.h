@@ -206,7 +206,7 @@ public:
     //   linear component is permutations & flips only,
     //   transformation is in voxel count,
     //   therefore can store as integer
-    using applied_transform_type = Eigen::Transform<int, 3, Eigen::AffineCompact>;
+    using applied_transform_type = Eigen::Matrix<int, 3, 3>;
     Realignment();
     Realignment(Header&);
     operator bool() const { return bool(shuffle_); }

@@ -37,10 +37,7 @@ void transform_for_image_load(KeyValues &keyval, const Header& header) {
         orig_dir(slice_encoding_it == keyval.end()                            //
                  ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
                  : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
-    Metadata::BIDS::axis_vector_type new_dir;
-    for (size_t axis = 0; axis != 3; ++axis)
-      new_dir[axis] = orig_dir[header.realignment().permutation(axis)]                                  //
-                    * (header.realignment().flip(header.realignment().permutation(axis)) ? -1.0 : 1.0); //
+    const Metadata::BIDS::axis_vector_type new_dir = header.realignment().applied_transform() * orig_dir;
     if (slice_encoding_it != keyval.end()) {
       slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
       INFO("Slice encoding direction has been modified"
