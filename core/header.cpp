@@ -64,37 +64,6 @@ void Header::check(const Header &H) const {
     throw Exception("scaling coefficients differ between image files for \"" + name() + "\"");
 }
 
-namespace {
-std::string resolve_slice_timing(const std::string &one, const std::string &two) {
-  if (one == "variable" || two == "variable")
-    return "variable";
-  std::vector<std::string> one_split = split(one, ",");
-  std::vector<std::string> two_split = split(two, ",");
-  if (one_split.size() != two_split.size()) {
-    DEBUG("Slice timing vectors of inequal length");
-    return "invalid";
-  }
-  // Siemens CSA reports with 2.5ms precision = 0.0025s
-  // Allow slice times to vary by 1.5x this amount, but no more
-  for (size_t i = 0; i != one_split.size(); ++i) {
-    default_type f_one, f_two;
-    try {
-      f_one = to<default_type>(one_split[i]);
-      f_two = to<default_type>(two_split[i]);
-    } catch (Exception &e) {
-      DEBUG("Error converting slice timing vector to floating-point");
-      return "invalid";
-    }
-    const default_type diff = abs(f_two - f_one);
-    if (diff > 0.00375) {
-      DEBUG("Supra-threshold difference of " + str(diff) + "s in slice times");
-      return "variable";
-    }
-  }
-  return one;
-}
-} // namespace
-
 void Header::merge_keyval(const Header &H) {
   std::map<std::string, std::string> new_keyval;
   std::set<std::string> unique_comments;
@@ -122,8 +91,7 @@ void Header::merge_keyval(const Header &H) {
       if (it == keyval().end() || it->second == item.second)
         new_keyval.insert(item);
       else if (item.first == "SliceTiming")
-        // TODO Move to external metadata source file
-        new_keyval["SliceTiming"] = resolve_slice_timing(item.second, it->second);
+        new_keyval["SliceTiming"] = Metadata::SliceEncoding::resolve_slice_timing(item.second, it->second);
       else
         new_keyval[item.first] = "variable";
     }
@@ -618,7 +586,7 @@ void Header::realign_transform() {
   realignment_.orig_keyval_ = keyval();
 
   // find which row of the transform is closest to each scanner axis:
-  Axes::get_shuffle_to_make_RAS(transform(), realignment_.permutations_, realignment_.flips_);
+  realignment_.shuffle_ = Axes::get_shuffle_to_make_RAS(transform());
 
   // check if image is already near-axial, return if true:
   if (!realignment_)
@@ -635,7 +603,7 @@ void Header::realign_transform() {
 
   // modify translation vector:
   for (size_t i = 0; i < 3; ++i) {
-    if (realignment_.flips_[i]) {
+    if (realignment_.flip(i)) {
       const default_type length = (size(i) - 1) * spacing(i);
       auto axis = M.matrix().col(i);
       for (size_t n = 0; n < 3; ++n) {
@@ -650,16 +618,16 @@ void Header::realign_transform() {
   // switch and/or invert rows if needed:
   for (size_t i = 0; i < 3; ++i) {
     auto row_transform = M.matrix().row(i).head<3>();
-    row_transform = Eigen::RowVector3d(row_transform[realignment_.permutations_[0]],
-                                       row_transform[realignment_.permutations_[1]],
-                                       row_transform[realignment_.permutations_[2]]);
+    row_transform = Eigen::RowVector3d(row_transform[realignment_.permutation(0)],
+                                       row_transform[realignment_.permutation(1)],
+                                       row_transform[realignment_.permutation(2)]);
 
     auto row_applied = realignment_.applied_transform_.matrix().row(i).head<3>();
-    row_applied = Eigen::RowVector3i(row_applied[realignment_.permutations_[0]],
-                                     row_applied[realignment_.permutations_[1]],
-                                     row_applied[realignment_.permutations_[2]]);
+    row_applied = Eigen::RowVector3i(row_applied[realignment_.permutation(0)],
+                                     row_applied[realignment_.permutation(1)],
+                                     row_applied[realignment_.permutation(2)]);
 
-    if (realignment_.flips_[i])
+    if (realignment_.flip(i))
       stride(i) = -stride(i);
   }
 
@@ -667,7 +635,7 @@ void Header::realign_transform() {
   transform() = std::move(M);
 
   // switch axes to match:
-  Axis a[] = {axes_[realignment_.permutations_[0]], axes_[realignment_.permutations_[1]], axes_[realignment_.permutations_[2]]};
+  Axis a[] = {axes_[realignment_.permutation(0)], axes_[realignment_.permutation(1)], axes_[realignment_.permutation(2)]};
   axes_[0] = a[0];
   axes_[1] = a[1];
   axes_[2] = a[2];
@@ -812,17 +780,12 @@ Header concatenate(const std::vector<Header> &headers,
   return result;
 }
 
+
+
 Header::Realignment::Realignment() :
-    permutations_{0, 1, 2},
-    flips_{false, false, false},
     applied_transform_(applied_transform_type::Identity()),
     orig_keyval_() {
   orig_transform_.matrix().fill(std::numeric_limits<default_type>::quiet_NaN());
-}
-
-Header::Realignment::operator bool() const {
-  return (!(permutations_[0] == 0 &&  permutations_[1] == 1 && permutations_[2] == 2 &&
-            !flips_[0] && !flips_[1] && !flips_[2]));
 }
 
 } // namespace MR

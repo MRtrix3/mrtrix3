@@ -176,12 +176,12 @@ Eigen::MatrixXd eddy2scheme(const Eigen::MatrixXd &, const Eigen::Array<int, Eig
 //  and internal header realignment is performed
 template <class MatrixType, class HeaderType>
 Eigen::MatrixXd transform_for_image_load(const MatrixType &pe_scheme, const HeaderType &H) {
-  const std::array<size_t, 3> perm = H.realignment().permutations();
-  const std::array<bool, 3> flip = H.realignment().flips();
-  if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
-    INFO("No transformation of external phase encoding data required to accompany image \"" + H.name() + "\"");
+  if (!H.realignment()) {
+    INFO("No transformation of phase encoding data for image \"" + H.name() + "\" required");
     return pe_scheme;
   }
+  const std::array<size_t, 3> perm = H.realignment().permutations();
+  const std::array<bool, 3> flip = H.realignment().flips();
   Eigen::MatrixXd result(pe_scheme.rows(), pe_scheme.cols());
   for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
     Eigen::VectorXd new_line = pe_scheme.row(row);
@@ -192,17 +192,15 @@ Eigen::MatrixXd transform_for_image_load(const MatrixType &pe_scheme, const Head
     }
     result.row(row) = new_line;
   }
-  INFO("External phase encoding data transformed to match RAS realignment of image \"" + H.name() + "\"");
+  INFO("Phase encoding data transformed to match RAS realignment of image \"" + H.name() + "\"");
   return result;
 }
 
 //! Modifies a phase encoding scheme if being exported alongside a NIfTI image
 template <class MatrixType, class HeaderType>
 Eigen::MatrixXd transform_for_nifti_write(const MatrixType &pe_scheme, const HeaderType &H) {
-  Axes::permutations_type order;
-  Axes::flips_type flip;
-  File::NIfTI::axes_on_write(H, order, flip);
-  if (order[0] == 0 && order[1] == 1 && order[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
+  Axes::Shuffle shuffle = File::NIfTI::axes_on_write(H);
+  if (!shuffle) {
     INFO("No transformation of phase encoding data required for export to file");
     return pe_scheme;
   }
@@ -211,7 +209,9 @@ Eigen::MatrixXd transform_for_nifti_write(const MatrixType &pe_scheme, const Hea
     Eigen::VectorXd new_line = pe_scheme.row(row);
     for (ssize_t axis = 0; axis != 3; ++axis)
       new_line[axis] =
-          pe_scheme(row, order[axis]) && flip[axis] ? -pe_scheme(row, order[axis]) : pe_scheme(row, order[axis]);
+          pe_scheme(row, shuffle.permutations[axis]) && shuffle.flips[axis] //
+          ? -pe_scheme(row, shuffle.permutations[axis]) //
+          : pe_scheme(row, shuffle.permutations[axis]);
     result.row(row) = new_line;
   }
   INFO("Phase encoding data transformed to match NIfTI / MGH image export prior to writing to file");

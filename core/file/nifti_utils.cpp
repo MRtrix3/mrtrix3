@@ -542,19 +542,21 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   }
 }
 
-void axes_on_write(const Header &H, Axes::permutations_type &perms, Axes::flips_type &flips) {
+Axes::Shuffle axes_on_write(const Header &H) {
   Stride::List strides = Stride::get(H);
   strides.resize(3);
   auto order = Stride::order(strides);
-  perms = {order[0], order[1], order[2]};
-  flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
+  Axes::Shuffle result;
+  result.permutations = {order[0], order[1], order[2]};
+  result.flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
+  return result;
 }
 
 transform_type adjust_transform(const Header &H, Axes::permutations_type &axes) {
-  Axes::flips_type flip;
-  axes_on_write(H, axes, flip);
+  const Axes::Shuffle shuffle = axes_on_write(H);
+  axes = shuffle.permutations;
 
-  if (!Axes::is_shuffled(axes, flip))
+  if (!shuffle)
     return H.transform();
 
   const auto &M_in = H.transform().matrix();
@@ -566,7 +568,7 @@ transform_type adjust_transform(const Header &H, Axes::permutations_type &axes) 
 
   auto translation = M_out.col(3);
   for (size_t i = 0; i < 3; ++i) {
-    if (flip[i]) {
+    if (shuffle.flips[i]) {
       auto length = default_type(H.size(axes[i]) - 1) * H.spacing(axes[i]);
       auto axis = M_out.col(i);
       axis = -axis;

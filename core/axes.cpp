@@ -18,17 +18,19 @@
 
 namespace MR::Axes {
 
-void get_shuffle_to_make_RAS(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip) {
-  perm = closest(T.matrix().topLeftCorner<3, 3>());
+Shuffle get_shuffle_to_make_RAS(const transform_type &T) {
+  Shuffle result;
+  result.permutations = closest(T.matrix().topLeftCorner<3, 3>());
   // Figure out whether any of the rows of the transform point in the
   //   opposite direction to the MRtrix convention
-  flip[perm[0]] = T(0, perm[0]) < 0.0;
-  flip[perm[1]] = T(1, perm[1]) < 0.0;
-  flip[perm[2]] = T(2, perm[2]) < 0.0;
+  result.flips[result.permutations[0]] = T(0, result.permutations[0]) < 0.0;
+  result.flips[result.permutations[1]] = T(1, result.permutations[1]) < 0.0;
+  result.flips[result.permutations[2]] = T(2, result.permutations[2]) < 0.0;
+  return result;
 }
 
-std::array<size_t, 3> closest(const Eigen::Matrix3d &M) {
-  std::array<size_t, 3> result{3, 3, 3};
+permutations_type closest(const Eigen::Matrix3d &M) {
+  permutations_type result{3, 3, 3};
   // Find which row of the transform is closest to each scanner axis
   Eigen::Matrix3d::Index index(0);
   M.row(0).cwiseAbs().maxCoeff(&index);
@@ -58,10 +60,6 @@ std::array<size_t, 3> closest(const Eigen::Matrix3d &M) {
   assert(result[0] != result[1] && result[1] != result[2] && result[2] != result[0]);
 
   return result;
-}
-
-bool is_shuffled(const permutations_type &perms, const flips_type & flips) {
-  return (perms[0] != 0 || perms[1] != 1 || perms[2] != 2 || flips[0] || flips[1] || flips[2]);
 }
 
 } // namespace MR::Axes

@@ -20,6 +20,7 @@
 #include <map>
 
 #include "app.h"
+#include "axes.h"
 #include "datatype.h"
 #include "debug.h"
 #include "file/mmap.h"
@@ -208,19 +209,17 @@ public:
     using applied_transform_type = Eigen::Transform<int, 3, Eigen::AffineCompact>;
     Realignment();
     Realignment(Header&);
-    operator bool() const;
-    const std::array<size_t, 3> &permutations() const { return permutations_; }
-    size_t permutation(const size_t axis) const { assert(axis < 3); return permutations_[axis]; }
-    const std::array<bool, 3> &flips() const { return flips_; }
-    bool flip(const size_t axis) const { assert(axis < 3); return flips_[axis]; }
+    operator bool() const { return bool(shuffle_); }
+    const std::array<size_t, 3> &permutations() const { return shuffle_.permutations; }
+    size_t permutation(const size_t axis) const { assert(axis < 3); return shuffle_.permutations[axis]; }
+    const std::array<bool, 3> &flips() const { return shuffle_.flips; }
+    bool flip(const size_t axis) const { assert(axis < 3); return shuffle_.flips[axis]; }
     const transform_type &orig_transform() const { return orig_transform_; }
     const applied_transform_type &applied_transform() const { return applied_transform_; }
     KeyValues &orig_keyval() { return orig_keyval_; }
   private:
-    std::array<size_t, 3> permutations_;
-    std::array<bool, 3> flips_;
+    Axes::Shuffle shuffle_;
     transform_type orig_transform_;
-    // TODO Store original strides
     Stride::List orig_strides_;
     applied_transform_type applied_transform_;
     KeyValues orig_keyval_;

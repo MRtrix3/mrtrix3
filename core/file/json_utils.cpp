@@ -237,10 +237,8 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
     return;
   }
 
-  Axes::permutations_type order;
-  Axes::flips_type flip;
-  File::NIfTI::axes_on_write(header, order, flip);
-  if (order[0] == 0 && order[1] == 1 && order[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
+  const Axes::Shuffle shuffle = File::NIfTI::axes_on_write(header);
+  if (!shuffle) {
     INFO("No need to transform orientation-based information written to JSON file to match image:"
          " image is already RAS");
     write(H_adj.keyval(), json);
@@ -255,33 +253,8 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
     INFO("Phase encoding information written to JSON file"
          " modified according to output NIfTI strides");
   }
-  auto slice_encoding_it = H_adj.keyval().find("SliceEncodingDirection");
-  auto slice_timing_it = H_adj.keyval().find("SliceTiming");
-  if (!(slice_encoding_it == H_adj.keyval().end() && slice_timing_it == H_adj.keyval().end())) {
-    const Metadata::BIDS::axis_vector_type
-        orig_dir(slice_encoding_it == H_adj.keyval().end()                    //
-                 ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
-                 : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
-    Metadata::BIDS::axis_vector_type new_dir;
-    for (size_t axis = 0; axis != 3; ++axis)
-      new_dir[axis] = flip[axis] ? -orig_dir[order[axis]] : orig_dir[order[axis]];
-    if (slice_encoding_it != H_adj.keyval().end()) {
-      slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
-      INFO("Slice encoding direction written to JSON file"
-           " modified according to output NIfTI strides");
-    } else if ((new_dir * -1).dot(orig_dir) == 1) {
-      auto slice_timing = parse_floats(slice_timing_it->second);
-      std::reverse(slice_timing.begin(), slice_timing.end());
-      slice_timing_it->second = join(slice_timing, ",");
-      INFO("Slice timing vector written to JSON file"
-             " reversed to conform to output NIfTI strides");
-    } else {
-      H_adj.keyval()["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
-      WARN("Slice encoding direction added to output JSON file"
-           " in order to preserve interpretation of existing \"SliceTiming\" field"
-           " following output NIfTI strides");
-    }
-  }
+
+  Metadata::SliceEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
 
   write(H_adj.keyval(), json);
 }

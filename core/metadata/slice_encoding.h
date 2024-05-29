@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include <string>
+
+#include "types.h"
+
 namespace MR {
   class Header;
 } // namespace MR
@@ -23,5 +27,9 @@ namespace MR {
 namespace MR::Metadata::SliceEncoding {
 
 void transform_for_image_load(Header &H);
+
+void transform_for_nifti_write(KeyValues& keyval, const Header &H);
+
+std::string resolve_slice_timing(const std::string &one, const std::string &two);
 
 } // namespace MR::Metadata::SliceEncoding
