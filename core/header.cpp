@@ -27,6 +27,7 @@
 #include "image_io/default.h"
 #include "image_io/scratch.h"
 #include "metadata/phase_encoding.h"
+#include "metadata/slice_encoding.h"
 #include "mrtrix.h"
 #include "stride.h"
 #include "transform.h"
@@ -121,6 +122,7 @@ void Header::merge_keyval(const Header &H) {
       if (it == keyval().end() || it->second == item.second)
         new_keyval.insert(item);
       else if (item.first == "SliceTiming")
+        // TODO Move to external metadata source file
         new_keyval["SliceTiming"] = resolve_slice_timing(item.second, it->second);
       else
         new_keyval[item.first] = "variable";
@@ -612,7 +614,8 @@ void Header::sanitise_transform() {
 void Header::realign_transform() {
   realignment_.orig_transform_ = transform();
   realignment_.applied_transform_ = Realignment::applied_transform_type::Identity();
-  realignment_.orig_keyval_.clear();
+  realignment_.orig_strides_ = Stride::get(*this);
+  realignment_.orig_keyval_ = keyval();
 
   // find which row of the transform is closest to each scanner axis:
   Axes::get_shuffle_to_make_RAS(transform(), realignment_.permutations_, realignment_.flips_);
@@ -676,50 +679,11 @@ void Header::realign_transform() {
   //   flips / permutations that have taken place
   auto pe_scheme = Metadata::PhaseEncoding::get_scheme(*this);
   if (pe_scheme.rows()) {
-    Metadata::PhaseEncoding::set_scheme(realignment_.orig_keyval_, pe_scheme);
-    for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-      Eigen::VectorXd new_line(pe_scheme.row(row));
-      for (ssize_t axis = 0; axis != 3; ++axis) {
-        new_line[axis] = pe_scheme(row, realignment_.permutations_[axis]);
-        if (new_line[axis] && realignment_.flips_[realignment_.permutations_[axis]])
-          new_line[axis] = -new_line[axis];
-      }
-      pe_scheme.row(row) = new_line;
-    }
-    Metadata::PhaseEncoding::set_scheme(*this, pe_scheme);
+    Metadata::PhaseEncoding::set_scheme(*this, Metadata::PhaseEncoding::transform_for_image_load(pe_scheme, *this));
     INFO("Phase encoding scheme modified to conform to MRtrix3 internal header transform realignment");
   }
 
-  // If there's any slice encoding direction information present in the
-  //   header, that's also necessary to update here
-  auto slice_encoding_it = keyval().find("SliceEncodingDirection");
-  auto slice_timing_it = keyval().find("SliceTiming");
-  if (!(slice_encoding_it == keyval().end() && slice_timing_it == keyval().end())) {
-    const Metadata::BIDS::axis_vector_type
-        orig_dir(slice_encoding_it == keyval().end()                          //
-                 ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
-                 : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
-    Metadata::BIDS::axis_vector_type new_dir;
-    for (size_t axis = 0; axis != 3; ++axis)
-      new_dir[axis] = orig_dir[realignment_.permutations_[axis]] * (realignment_.flips_[realignment_.permutations_[axis]] ? -1.0 : 1.0);
-    if (slice_encoding_it != keyval().end()) {
-      realignment_.orig_keyval_.insert(*slice_encoding_it);
-      slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
-      INFO("Slice encoding direction has been modified"
-           " to conform to MRtrix3 internal header transform realignment");
-    } else if ((new_dir * -1).dot(orig_dir) == 1) {
-      auto slice_timing = parse_floats(slice_timing_it->second);
-      std::reverse(slice_timing.begin(), slice_timing.end());
-      slice_timing_it->second = join(slice_timing, ",");
-      INFO("Slice timing vector reversed to conform to MRtrix3 internal transform realignment"
-           " of image \"" + name() + "\"");
-    } else {
-      keyval()["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
-      WARN("Slice encoding direction of image \"" + name() + "\""
-           " inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field"
-           " during MRtrix3 internal transform realignment");
-    }
-  }
+  Metadata::SliceEncoding::transform_for_image_load(*this);
 }
 
 Header concatenate(const std::vector<Header> &headers,

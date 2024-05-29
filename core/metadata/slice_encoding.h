@@ -16,23 +16,12 @@
 
 #pragma once
 
-#include "file/json.h"
-#include "file/key_value.h"
-
 namespace MR {
-class Header;
-
-namespace File::JSON {
-
-void load(Header &H, const std::string &path);
-void save(const Header &H, const std::string &json_path, const std::string &image_path);
-
-KeyValues read(const nlohmann::json &json);
-void read(const nlohmann::json &json, Header &header);
-
-void write(const KeyValues &keyval, nlohmann::json &json);
-void write(const Header &header, nlohmann::json &json, const std::string &image_path);
-
-} // namespace File::JSON
-
+  class Header;
 } // namespace MR
+
+namespace MR::Metadata::SliceEncoding {
+
+void transform_for_image_load(Header &H);
+
+} // namespace MR::Metadata::SliceEncoding

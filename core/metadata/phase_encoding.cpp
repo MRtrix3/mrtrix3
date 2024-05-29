@@ -150,4 +150,4 @@ void export_commandline(const Header &header) {
     save_eddy(check(scheme), header, opt[0][0], opt[0][1]);
 }
 
-} // namespace MR::PhaseEncoding
+} // namespace MR::Metadata::PhaseEncoding

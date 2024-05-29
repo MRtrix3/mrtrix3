@@ -210,7 +210,9 @@ public:
     Realignment(Header&);
     operator bool() const;
     const std::array<size_t, 3> &permutations() const { return permutations_; }
+    size_t permutation(const size_t axis) const { assert(axis < 3); return permutations_[axis]; }
     const std::array<bool, 3> &flips() const { return flips_; }
+    bool flip(const size_t axis) const { assert(axis < 3); return flips_[axis]; }
     const transform_type &orig_transform() const { return orig_transform_; }
     const applied_transform_type &applied_transform() const { return applied_transform_; }
     KeyValues &orig_keyval() { return orig_keyval_; }
@@ -219,6 +221,7 @@ public:
     std::array<bool, 3> flips_;
     transform_type orig_transform_;
     // TODO Store original strides
+    Stride::List orig_strides_;
     applied_transform_type applied_transform_;
     KeyValues orig_keyval_;
     friend class Header;

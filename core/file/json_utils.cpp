@@ -27,6 +27,7 @@
 #include "header.h"
 #include "metadata/bids.h"
 #include "metadata/phase_encoding.h"
+#include "metadata/slice_encoding.h"
 #include "mrtrix.h"
 #include "types.h"
 
@@ -42,7 +43,7 @@ void load(Header &H, const std::string &path) {
   } catch (std::logic_error &e) {
     throw Exception("Error parsing JSON file \"" + path + "\": " + e.what());
   }
-  read(json, H, true);
+  read(json, H);
 }
 
 void save(const Header &H, const std::string &json_path, const std::string &image_path) {
@@ -115,69 +116,28 @@ KeyValues read(const nlohmann::json &json, const KeyValues &preexisting) {
   return result;
 }
 
-void read(const nlohmann::json &json, Header &header, const bool realign) {
+void read(const nlohmann::json &json, Header &header) {
   header.keyval() = read(json, header.keyval());
-  const bool do_realign = realign && Header::do_realign_transform;
 
   // The corresponding header may have been rotated on image load prior to the JSON
   //   being loaded. If this is the case, any fields that indicate an image axis
   //   number / direction need to be correspondingly modified.
-  const std::array<size_t, 3> perm = header.realignment().permutations();
-  const std::array<bool, 3> flip = header.realignment().flips();
-  if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 && !flip[0] && !flip[1] && !flip[2])
+  if (!header.realignment()) {
+    INFO("No internal header transform realignment performed for image \"" + header.name() + "\";"
+         " no need to transform metadata loaded from JSON");
     return;
+  }
 
   auto pe_scheme = Metadata::PhaseEncoding::get_scheme(header);
   if (pe_scheme.rows()) {
-    if (do_realign) {
-      Metadata::PhaseEncoding::set_scheme(header, Metadata::PhaseEncoding::transform_for_image_load(pe_scheme, header));
-      INFO("Phase encoding information read from JSON file"
-           " modified to conform to prior MRtrix3 internal transform realignment"
-           " of image \"" + header.name() + "\"");
-    } else {
-      INFO("Phase encoding information read from JSON file not modified");
-    }
+    Metadata::PhaseEncoding::set_scheme(header, Metadata::PhaseEncoding::transform_for_image_load(pe_scheme, header));
+    INFO("Phase encoding information read from JSON file"
+         " modified to conform to prior MRtrix3 internal transform realignment"
+         " of image \"" + header.name() + "\"");
   }
 
-  // dcm2niix may write SliceTiming but not SliceEncodingDirection;
-  //   in this scenario:
-  //   - If the direction is inverted, reverse the order of SliceTiming,
-  //     so that an assumption of "SliceEncodingDirection": "k" in its absence remains valid
-  //   - If some other direction results,
-  //     need to add SliceEncodingDirection field (+ issue a warning)
-  auto slice_encoding_it = header.keyval().find("SliceEncodingDirection");
-  auto slice_timing_it = header.keyval().find("SliceTiming");
-  if (!(slice_encoding_it == header.keyval().end() && slice_timing_it == header.keyval().end())) {
-    if (do_realign) {
-      const Metadata::BIDS::axis_vector_type
-          orig_dir(slice_encoding_it == header.keyval().end()                   //
-                   ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
-                   : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
-      Metadata::BIDS::axis_vector_type new_dir;
-      for (size_t axis = 0; axis != 3; ++axis)
-        new_dir[axis] = flip[perm[axis]] ? -orig_dir[perm[axis]] : orig_dir[perm[axis]];
-      if (slice_encoding_it != header.keyval().end()) {
-        slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
-        INFO("Slice encoding direction read from JSON file"
-             " modified to conform to prior MRtrix3 internal transform realignment"
-             " of image \"" + header.name() + "\"");
-      } else if ((new_dir * -1).dot(orig_dir) == 1) {
-        auto slice_timing = parse_floats(slice_timing_it->second);
-        std::reverse(slice_timing.begin(), slice_timing.end());
-        slice_timing_it->second = join(slice_timing, ",");
-        INFO("Slice timing vector read from JSON file"
-             " reversed to conform to prior MRtrix3 internal transform realignment"
-             " of image \"" + header.name() + "\"");
-      } else {
-        header.keyval()["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
-        WARN("Slice encoding direction of image \"" + header.name() + "\""
-             " inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field"
-             " following MRtrix3 internal transform realignment");
-      }
-    } else {
-      INFO("Slice encoding information read from JSON file not modified");
-    }
-  }
+  Metadata::SliceEncoding::transform_for_image_load(header);
+
 }
 
 namespace {
