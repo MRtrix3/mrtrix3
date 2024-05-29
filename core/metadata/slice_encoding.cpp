@@ -23,21 +23,25 @@
 
 namespace MR::Metadata::SliceEncoding {
 
-void transform_for_image_load(Header& header) {
+void transform_for_image_load(KeyValues &keyval, const Header& header) {
   // If there's any slice encoding direction information present in the
   //   header, that's also necessary to update here
-  auto slice_encoding_it = header.keyval().find("SliceEncodingDirection");
-  auto slice_timing_it = header.keyval().find("SliceTiming");
-  if (!(slice_encoding_it == header.keyval().end() && slice_timing_it == header.keyval().end())) {
+  auto slice_encoding_it = keyval.find("SliceEncodingDirection");
+  auto slice_timing_it = keyval.find("SliceTiming");
+  if (!(slice_encoding_it == keyval.end() && slice_timing_it == keyval.end())) {
+    if (!header.realignment()) {
+      INFO("No transformation of slice encoding direction for load of image \"" + header.name() + "\" required");
+      return;
+    }
     const Metadata::BIDS::axis_vector_type
-        orig_dir(slice_encoding_it == header.keyval().end()                   //
+        orig_dir(slice_encoding_it == keyval.end()                            //
                  ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
                  : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
     Metadata::BIDS::axis_vector_type new_dir;
     for (size_t axis = 0; axis != 3; ++axis)
       new_dir[axis] = orig_dir[header.realignment().permutation(axis)]                                  //
                     * (header.realignment().flip(header.realignment().permutation(axis)) ? -1.0 : 1.0); //
-    if (slice_encoding_it != header.keyval().end()) {
+    if (slice_encoding_it != keyval.end()) {
       slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
       INFO("Slice encoding direction has been modified"
            " to conform to MRtrix3 internal header transform realignment"
@@ -49,10 +53,10 @@ void transform_for_image_load(Header& header) {
       INFO("Slice timing vector reversed to conform to MRtrix3 internal transform realignment"
            " of image \"" + header.name() + "\"");
     } else {
-      header.keyval()["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
+      keyval["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
       WARN("Slice encoding direction of image \"" + header.name() + "\""
            " inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field"
-           " during MRtrix3 internal transform realignment");
+           " after MRtrix3 internal transform realignment");
     }
   }
 }

@@ -271,7 +271,7 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
 }
 
 void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
-  auto in = Metadata::PhaseEncoding::parse_scheme(H);
+  auto in = Metadata::PhaseEncoding::parse_scheme(H.keyval(), H);
   if (!in.rows())
     return;
 
@@ -285,7 +285,7 @@ void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
   for (int row = 0; row != in.rows(); ++row)
     out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * permute;
 
-  Metadata::PhaseEncoding::set_scheme(H, out);
+  Metadata::PhaseEncoding::set_scheme(H.keyval(), out);
 }
 
 void permute_slice_direction(Header &H, const std::vector<int> &axes) {
@@ -396,7 +396,7 @@ void run() {
   if (!opt.empty())
     File::JSON::load(header_in, opt[0][0]);
   if (!get_options("import_pe_table").empty() || !get_options("import_pe_eddy").empty())
-    Metadata::PhaseEncoding::set_scheme(header_in, Metadata::PhaseEncoding::get_scheme(header_in));
+    Metadata::PhaseEncoding::set_scheme(header_in.keyval(), Metadata::PhaseEncoding::get_scheme(header_in));
 
   Header header_out(header_in);
   header_out.datatype() = DataType::from_command_line(header_out.datatype());
@@ -491,12 +491,12 @@ void run() {
             Eigen::MatrixXd extract_scheme(pos[3].size(), pe_scheme.cols());
             for (size_t vol = 0; vol != pos[3].size(); ++vol)
               extract_scheme.row(vol) = pe_scheme.row(pos[3][vol]);
-            Metadata::PhaseEncoding::set_scheme(header_out, extract_scheme);
+            Metadata::PhaseEncoding::set_scheme(header_out.keyval(), extract_scheme);
           }
         } catch (...) {
-          WARN("Phase encoding scheme of input file does not match number of image volumes; omitting information from "
-               "output image");
-          Metadata::PhaseEncoding::set_scheme(header_out, Eigen::MatrixXd());
+          WARN("Phase encoding scheme of input file does not match number of image volumes;"
+               " omitting information from output image");
+          Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
         }
       }
     }

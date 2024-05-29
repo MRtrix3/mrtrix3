@@ -26,12 +26,15 @@
 #include "file/ofstream.h"
 #include "header.h"
 #include "metadata/bids.h"
+#include "types.h"
 
 namespace MR::Metadata::PhaseEncoding {
 
 extern const App::OptionGroup ImportOptions;
 extern const App::OptionGroup SelectOptions;
 extern const App::OptionGroup ExportOptions;
+
+using scheme_type = Eigen::MatrixXd;
 
 //! check that a phase-encoding table is valid
 template <class MatrixType> void check(const MatrixType &PE) {
@@ -75,6 +78,12 @@ namespace {
   };
 }
 template <class MatrixType> void set_scheme(KeyValues &keyval, const MatrixType &PE) {
+  if (!PE.rows()) {
+    erase(keyval, "pe_scheme");
+    erase(keyval, "PhaseEncodingDirection");
+    erase(keyval, "TotalReadoutTime");
+    return;
+  }
   std::string pe_scheme;
   std::string first_line;
   bool variation = false;
@@ -103,120 +112,43 @@ template <class MatrixType> void set_scheme(KeyValues &keyval, const MatrixType 
   }
 }
 
-template <class MatrixType> void set_scheme(Header &header, const MatrixType &PE) {
-  if (!PE.rows()) {
-    erase(header.keyval(), "pe_scheme");
-    erase(header.keyval(), "PhaseEncodingDirection");
-    erase(header.keyval(), "TotalReadoutTime");
-    return;
-  }
-  check(PE, header);
-  set_scheme(header.keyval(), PE);
-}
 
 
-
-//! clear the phase encoding matrix from a header
+//! clear the phase encoding matrix from a key-value dictionary
 /*! this will delete any trace of phase encoding information
- *  from the Header::keyval() structure of \a header.
+ *  from the dictionary.
  */
-void clear_scheme(Header &header);
+void clear_scheme(KeyValues &keyval);
 
-//! parse the phase encoding matrix from a header
-/*! extract the phase encoding matrix stored in the \a header if one
- *  is present. This is expected to be stored in the Header::keyval()
- *  structure, under the key 'pe_scheme'. Alternatively, if the phase
- *  encoding direction and bandwidth is fixed for all volumes in the
- *  series, this information may be stored using the keys
- *  'PhaseEncodingDirection' and 'TotalReadoutTime'.
+//! parse the phase encoding matrix from a key-value dictionary
+/*! extract the phase encoding matrix stored in \a the key-value dictionary
+ *  if one is present. The key-value dictionary is not in all use cases
+ *  the "keyval" member of the Header class.
  */
-Eigen::MatrixXd parse_scheme(const Header &);
+Eigen::MatrixXd parse_scheme(const KeyValues &, const Header &);
 
 //! get a phase encoding matrix
 /*! get a valid phase-encoding matrix, either from files specified at
- *  the command-line, or from the contents of the image header.
+ *  the command-line that exclusively provide phase encoding information
+ *  (ie. NOT from .json; that is handled elsewhere),
+ *  or from the contents of the image header.
  */
 Eigen::MatrixXd get_scheme(const Header &);
 
 //! Convert a phase-encoding scheme into the EDDY config / indices format
-template <class MatrixType>
-void scheme2eddy(const MatrixType &PE, Eigen::MatrixXd &config, Eigen::Array<int, Eigen::Dynamic, 1> &indices) {
-  try {
-    check(PE);
-  } catch (Exception &e) {
-    throw Exception(e, "Cannot convert phase-encoding scheme to eddy format");
-  }
-  if (PE.cols() != 4)
-    throw Exception("Phase-encoding matrix requires 4 columns to convert to eddy format");
-  config.resize(0, 0);
-  indices = Eigen::Array<int, Eigen::Dynamic, 1>::Constant(PE.rows(), PE.rows());
-  for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
-    for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
-      bool dir_match = PE.template block<1, 3>(PE_row, 0).isApprox(config.block<1, 3>(config_row, 0));
-      bool time_match = abs(PE(PE_row, 3) - config(config_row, 3)) < 1e-3;
-      if (dir_match && time_match) {
-        // FSL-style index file indexes from 1
-        indices[PE_row] = config_row + 1;
-        break;
-      }
-    }
-    if (indices[PE_row] == PE.rows()) {
-      // No corresponding match found in config matrix; create a new entry
-      config.conservativeResize(config.rows() + 1, 4);
-      config.row(config.rows() - 1) = PE.row(PE_row);
-      indices[PE_row] = config.rows();
-    }
-  }
-}
+void scheme2eddy(const scheme_type &PE, Eigen::MatrixXd &config, Eigen::Array<int, Eigen::Dynamic, 1> &indices);
 
 //! Convert phase-encoding infor from the EDDY config / indices format into a standard scheme
-Eigen::MatrixXd eddy2scheme(const Eigen::MatrixXd &, const Eigen::Array<int, Eigen::Dynamic, 1> &);
+scheme_type eddy2scheme(const Eigen::MatrixXd &, const Eigen::Array<int, Eigen::Dynamic, 1> &);
 
 //! Modifies a phase encoding scheme if being imported alongside a non-RAS image
 //  and internal header realignment is performed
-template <class MatrixType, class HeaderType>
-Eigen::MatrixXd transform_for_image_load(const MatrixType &pe_scheme, const HeaderType &H) {
-  if (!H.realignment()) {
-    INFO("No transformation of phase encoding data for image \"" + H.name() + "\" required");
-    return pe_scheme;
-  }
-  const std::array<size_t, 3> perm = H.realignment().permutations();
-  const std::array<bool, 3> flip = H.realignment().flips();
-  Eigen::MatrixXd result(pe_scheme.rows(), pe_scheme.cols());
-  for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-    Eigen::VectorXd new_line = pe_scheme.row(row);
-    for (ssize_t axis = 0; axis != 3; ++axis) {
-      new_line[axis] = pe_scheme(row, perm[axis]);
-      if (new_line[axis] && flip[perm[axis]])
-        new_line[axis] = -new_line[axis];
-    }
-    result.row(row) = new_line;
-  }
-  INFO("Phase encoding data transformed to match RAS realignment of image \"" + H.name() + "\"");
-  return result;
-}
+void transform_for_image_load(KeyValues &keyval, const Header &H);
+scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header &H);
 
 //! Modifies a phase encoding scheme if being exported alongside a NIfTI image
-template <class MatrixType, class HeaderType>
-Eigen::MatrixXd transform_for_nifti_write(const MatrixType &pe_scheme, const HeaderType &H) {
-  Axes::Shuffle shuffle = File::NIfTI::axes_on_write(H);
-  if (!shuffle) {
-    INFO("No transformation of phase encoding data required for export to file");
-    return pe_scheme;
-  }
-  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result(pe_scheme.rows(), pe_scheme.cols());
-  for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-    Eigen::VectorXd new_line = pe_scheme.row(row);
-    for (ssize_t axis = 0; axis != 3; ++axis)
-      new_line[axis] =
-          pe_scheme(row, shuffle.permutations[axis]) && shuffle.flips[axis] //
-          ? -pe_scheme(row, shuffle.permutations[axis]) //
-          : pe_scheme(row, shuffle.permutations[axis]);
-    result.row(row) = new_line;
-  }
-  INFO("Phase encoding data transformed to match NIfTI / MGH image export prior to writing to file");
-  return result;
-}
+void transform_for_nifti_write(KeyValues &keyval, const Header &H);
+scheme_type transform_for_nifti_write(const scheme_type &pe_scheme, const Header &H);
 
 namespace {
 template <class MatrixType> void __save(const MatrixType &PE, const std::string &path) {
@@ -251,8 +183,8 @@ void save(const MatrixType &PE, const HeaderType &header, const std::string &pat
 }
 
 //! Save a phase-encoding scheme to EDDY format config / index files
-template <class MatrixType, class HeaderType>
-void save_eddy(const MatrixType &PE,
+template <class HeaderType>
+void save_eddy(const scheme_type &PE,
                const HeaderType &header,
                const std::string &config_path,
                const std::string &index_path) {
@@ -267,22 +199,14 @@ void save_eddy(const MatrixType &PE,
 void export_commandline(const Header &);
 
 //! Load a phase-encoding scheme from a matrix text file
-template <class HeaderType> Eigen::MatrixXd load(const std::string &path, const HeaderType &header) {
-  const Eigen::MatrixXd PE = File::Matrix::load_matrix(path);
-  check(PE, header);
-  // As with JSON import, need to query the header to discover if the
-  //   strides / transform were modified on image load to make the image
-  //   data appear approximately axial, in which case we need to apply the
-  //   same transforms to the phase encoding data on load
-  return transform_for_image_load(PE, header);
-}
+scheme_type load(const std::string &path, const Header &header);
 
 //! Load a phase-encoding scheme from an EDDY-format config / indices file pair
 template <class HeaderType>
-Eigen::MatrixXd load_eddy(const std::string &config_path, const std::string &index_path, const HeaderType &header) {
+scheme_type load_eddy(const std::string &config_path, const std::string &index_path, const HeaderType &header) {
   const Eigen::MatrixXd config = File::Matrix::load_matrix(config_path);
   const Eigen::Array<int, Eigen::Dynamic, 1> indices = File::Matrix::load_vector<int>(index_path);
-  const Eigen::MatrixXd PE = eddy2scheme(config, indices);
+  const scheme_type PE = eddy2scheme(config, indices);
   check(PE, header);
   return transform_for_image_load(PE, header);
 }

@@ -374,8 +374,8 @@ public:
   const KeyValues &keyval() const { return keyval_; }
   //! get/set generic key/value text attributes
   KeyValues &keyval() { return keyval_; }
-  //! merge key/value entries from another header
-  void merge_keyval(const Header &H);
+  //! merge key/value entries from another dictionary
+  void merge_keyval(const KeyValues &);
 
   static Header open(const std::string &image_name);
   static Header

@@ -296,7 +296,7 @@ void run() {
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   DWI::stash_DW_scheme(header, grad);
-  Metadata::PhaseEncoding::clear_scheme(header);
+  Metadata::PhaseEncoding::clear_scheme(header.keyval());
 
   Image<value_type> predict;
   opt = get_options("predicted_signal");

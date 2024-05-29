@@ -154,7 +154,7 @@ void run() {
     Eigen::MatrixXd new_scheme(volumes.size(), pe_scheme.cols());
     for (size_t i = 0; i != volumes.size(); ++i)
       new_scheme.row(i) = pe_scheme.row(volumes[i]);
-    Metadata::PhaseEncoding::set_scheme(header, new_scheme);
+    Metadata::PhaseEncoding::set_scheme(header.keyval(), new_scheme);
   }
 
   auto output_image = Image<float>::create(argument[1], header);

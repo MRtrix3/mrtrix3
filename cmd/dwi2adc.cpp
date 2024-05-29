@@ -159,7 +159,7 @@ void run() {
   Header header(dwi);
   header.datatype() = DataType::Float32;
   DWI::stash_DW_scheme(header, grad);
-  Metadata::PhaseEncoding::clear_scheme(header);
+  Metadata::PhaseEncoding::clear_scheme(header.keyval());
   header.ndim() = 4;
   header.size(3) = ivim ? 4 : 2;
 

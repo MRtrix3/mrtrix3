@@ -320,7 +320,6 @@ UNARY_OP(
 #include "image.h"
 #include "math/rng.h"
 #include "memory.h"
-#include "phase_encoding.h"
 
 using namespace MR;
 using namespace App;
@@ -824,7 +823,7 @@ void get_header(const StackEntry &entry, Header &header) {
       header.spacing(n) = entry.image->spacing(n);
   }
 
-  header.merge_keyval(*entry.image);
+  header.merge_keyval(entry.image->keyval());
 }
 
 class ThreadFunctor {

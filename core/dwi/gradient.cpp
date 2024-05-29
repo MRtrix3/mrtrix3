@@ -138,27 +138,13 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_
     throw Exception("bvecs and bvals files must have same number of diffusion directions as DW-image (gradients: " +
                     str(bvecs.cols()) + ", image: " + str(num_volumes) + ")");
 
-  Eigen::MatrixXd G(bvecs.cols(), 3);
-  // account for the fact that bvecs are specified wrt original image axes,
-  // which may have been re-ordered and/or inverted by MRtrix to match the
-  // expected anatomical frame of reference:
-  const std::array<size_t, 3> permutations = header.realignment().permutations();
-  const std::array<bool, 3> flips = header.realignment().flips();
   // bvecs format actually assumes a LHS coordinate system even if image is
   // stored using RHS; first axis is flipped to make linear 3x3 part of
   // transform have negative determinant:
-  Eigen::MatrixXd modified_bvecs(bvecs);
   if (header.realignment().orig_transform().linear().determinant() > 0.0)
-    modified_bvecs.row(0) *= -1.0;
-  for (ssize_t n = 0; n < G.rows(); ++n) {
-    G(n, permutations[0]) = flips[permutations[0]] ? -modified_bvecs(0, n) : modified_bvecs(0, n);
-    G(n, permutations[1]) = flips[permutations[1]] ? -modified_bvecs(1, n) : modified_bvecs(1, n);
-    G(n, permutations[2]) = flips[permutations[2]] ? -modified_bvecs(2, n) : modified_bvecs(2, n);
-  }
-
-  // rotate gradients into scanner coordinate system:
-  Eigen::MatrixXd grad(G.rows(), 4);
-  grad.leftCols<3>().transpose() = header.transform().linear() * G.transpose();
+    bvecs.row(0) *= -1.0;
+  Eigen::MatrixXd grad(bvecs.cols(), 4);
+  grad.leftCols<3>().transpose() = header.realignment().orig_transform().linear() * bvecs;
   grad.col(3) = bvals.row(0);
 
   return grad;

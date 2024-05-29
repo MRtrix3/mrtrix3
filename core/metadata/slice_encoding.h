@@ -26,7 +26,7 @@ namespace MR {
 
 namespace MR::Metadata::SliceEncoding {
 
-void transform_for_image_load(Header &H);
+void transform_for_image_load(KeyValues &keyval, const Header &H);
 
 void transform_for_nifti_write(KeyValues& keyval, const Header &H);
 

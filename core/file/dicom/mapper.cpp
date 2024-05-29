@@ -284,7 +284,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   }
 
   try {
-    Metadata::PhaseEncoding::set_scheme(H, Frame::get_PE_scheme(frames, dim[1]));
+    Metadata::PhaseEncoding::set_scheme(H.keyval(), Frame::get_PE_scheme(frames, dim[1]));
   } catch (Exception &e) {
     e.display(3);
     WARN("Malformed phase encoding information; ignored");

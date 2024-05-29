@@ -21,7 +21,9 @@
 #include "file/json_utils.h"
 #include "file/nifti_utils.h"
 
+#include "app.h"
 #include "axes.h"
+#include "dwi/gradient.h"
 #include "exception.h"
 #include "file/ofstream.h"
 #include "header.h"
@@ -53,7 +55,7 @@ void save(const Header &H, const std::string &json_path, const std::string &imag
   out << json.dump(4);
 }
 
-KeyValues read(const nlohmann::json &json, const KeyValues &preexisting) {
+KeyValues read(const nlohmann::json &json) {
   KeyValues result;
   for (auto i = json.cbegin(); i != json.cend(); ++i) {
     if (i->is_boolean()) {
@@ -105,39 +107,16 @@ KeyValues read(const nlohmann::json &json, const KeyValues &preexisting) {
         throw Exception("JSON entry \"" + i.key() + "\" contains mixture of elements and arrays");
     }
   }
-  for (const auto &kv : preexisting) {
-    if (kv.first == "comments" && result.find("comments") != result.end()) {
-      add_line(result["comments"], kv.second);
-    } else {
-      // Will not overwrite existing entries
-      result.insert(kv);
-    }
-  }
   return result;
 }
 
 void read(const nlohmann::json &json, Header &header) {
-  header.keyval() = read(json, header.keyval());
-
-  // The corresponding header may have been rotated on image load prior to the JSON
-  //   being loaded. If this is the case, any fields that indicate an image axis
-  //   number / direction need to be correspondingly modified.
-  if (!header.realignment()) {
-    INFO("No internal header transform realignment performed for image \"" + header.name() + "\";"
-         " no need to transform metadata loaded from JSON");
-    return;
-  }
-
-  auto pe_scheme = Metadata::PhaseEncoding::get_scheme(header);
-  if (pe_scheme.rows()) {
-    Metadata::PhaseEncoding::set_scheme(header, Metadata::PhaseEncoding::transform_for_image_load(pe_scheme, header));
-    INFO("Phase encoding information read from JSON file"
-         " modified to conform to prior MRtrix3 internal transform realignment"
-         " of image \"" + header.name() + "\"");
-  }
-
-  Metadata::SliceEncoding::transform_for_image_load(header);
-
+  KeyValues keyval = read(json);
+  // Reorientation based on image load should be applied
+  //   exclusively to metadata loaded via JSON; not anything pre-existing
+  Metadata::PhaseEncoding::transform_for_image_load(keyval, header);
+  Metadata::SliceEncoding::transform_for_image_load(keyval, header);
+  header.merge_keyval(keyval);
 }
 
 namespace {
@@ -236,26 +215,10 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
     write(H_adj.keyval(), json);
     return;
   }
-
-  const Axes::Shuffle shuffle = File::NIfTI::axes_on_write(header);
-  if (!shuffle) {
-    INFO("No need to transform orientation-based information written to JSON file to match image:"
-         " image is already RAS");
-    write(H_adj.keyval(), json);
-    return;
-  }
-
-  auto pe_scheme = Metadata::PhaseEncoding::get_scheme(header);
-  if (pe_scheme.rows()) {
-    // Assume that image being written to disk is going to have its transform adjusted,
-    //   so modify the phase encoding scheme appropriately before writing to JSON
-    Metadata::PhaseEncoding::set_scheme(H_adj, Metadata::PhaseEncoding::transform_for_nifti_write(pe_scheme, header));
-    INFO("Phase encoding information written to JSON file"
-         " modified according to output NIfTI strides");
-  }
-
+  if (App::get_options("export_grad_fsl").size())
+    DWI::clear_DW_scheme(H_adj);
+  Metadata::PhaseEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
   Metadata::SliceEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
-
   write(H_adj.keyval(), json);
 }
 

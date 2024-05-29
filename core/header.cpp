@@ -64,7 +64,7 @@ void Header::check(const Header &H) const {
     throw Exception("scaling coefficients differ between image files for \"" + name() + "\"");
 }
 
-void Header::merge_keyval(const Header &H) {
+void Header::merge_keyval(const KeyValues &in) {
   std::map<std::string, std::string> new_keyval;
   std::set<std::string> unique_comments;
   for (const auto &item : keyval()) {
@@ -77,7 +77,7 @@ void Header::merge_keyval(const Header &H) {
       new_keyval.insert(item);
     }
   }
-  for (const auto &item : H.keyval()) {
+  for (const auto &item : in) {
     if (item.first == "comments") {
       const auto comments = split_lines(item.second);
       for (const auto &c : comments) {
@@ -217,8 +217,7 @@ Header Header::open(const std::string &image_name) {
     } // End branching for [] notation
 
     H.sanitise();
-    if (do_realign_transform)
-      H.realign_transform();
+    H.realign_transform();
   } catch (CancelException &e) {
     throw;
   } catch (Exception &E) {
@@ -319,9 +318,9 @@ Header Header::create(const std::string &image_name, const Header &template_head
       DWI::clear_DW_scheme(H);
     }
     try {
-      pe_scheme = Metadata::PhaseEncoding::parse_scheme(template_header);
+      pe_scheme = Metadata::PhaseEncoding::parse_scheme(template_header.keyval(), template_header);
     } catch (Exception &) {
-      Metadata::PhaseEncoding::clear_scheme(H);
+      Metadata::PhaseEncoding::clear_scheme(H.keyval());
     }
     if (split_4d_schemes) {
       try {
@@ -333,10 +332,10 @@ Header Header::create(const std::string &image_name, const Header &template_head
       }
       try {
         Metadata::PhaseEncoding::check(pe_scheme, template_header);
-        Metadata::PhaseEncoding::set_scheme(H, pe_scheme.row(0));
+        Metadata::PhaseEncoding::set_scheme(H.keyval(), pe_scheme.row(0));
       } catch (Exception &) {
         pe_scheme.resize(0, 0);
-        Metadata::PhaseEncoding::clear_scheme(H);
+        Metadata::PhaseEncoding::clear_scheme(H.keyval());
       }
     }
 
@@ -370,7 +369,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
         if (dw_scheme.rows())
           DWI::set_DW_scheme(header, dw_scheme.row(counter));
         if (pe_scheme.rows())
-          Metadata::PhaseEncoding::set_scheme(header, pe_scheme.row(counter));
+          Metadata::PhaseEncoding::set_scheme(header.keyval(), pe_scheme.row(counter));
       }
       std::shared_ptr<ImageIO::Base> io_handler((*format_handler)->create(header));
       assert(io_handler);
@@ -401,7 +400,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
 
     if (split_4d_schemes) {
       DWI::set_DW_scheme(H, dw_scheme);
-      Metadata::PhaseEncoding::set_scheme(H, pe_scheme);
+      Metadata::PhaseEncoding::set_scheme(H.keyval(), pe_scheme);
     }
     H.io->set_image_is_new(true);
     H.io->set_readwrite(true);
@@ -585,6 +584,9 @@ void Header::realign_transform() {
   realignment_.orig_strides_ = Stride::get(*this);
   realignment_.orig_keyval_ = keyval();
 
+  if (!do_realign_transform)
+    return;
+
   // find which row of the transform is closest to each scanner axis:
   realignment_.shuffle_ = Axes::get_shuffle_to_make_RAS(transform());
 
@@ -642,16 +644,8 @@ void Header::realign_transform() {
 
   INFO("Axes and transform of image \"" + name() + "\" altered to approximate RAS coordinate system");
 
-  // If there's any phase encoding direction information present in the
-  //   header, it's necessary here to update it according to the
-  //   flips / permutations that have taken place
-  auto pe_scheme = Metadata::PhaseEncoding::get_scheme(*this);
-  if (pe_scheme.rows()) {
-    Metadata::PhaseEncoding::set_scheme(*this, Metadata::PhaseEncoding::transform_for_image_load(pe_scheme, *this));
-    INFO("Phase encoding scheme modified to conform to MRtrix3 internal header transform realignment");
-  }
-
-  Metadata::SliceEncoding::transform_for_image_load(*this);
+  Metadata::PhaseEncoding::transform_for_image_load(keyval(), *this);
+  Metadata::SliceEncoding::transform_for_image_load(keyval(), *this);
 }
 
 Header concatenate(const std::vector<Header> &headers,
@@ -759,7 +753,7 @@ Header concatenate(const std::vector<Header> &headers,
     }
 
     // Resolve key-value pairs
-    result.merge_keyval(H);
+    result.merge_keyval(H.keyval());
 
     // Resolve discrepancies in datatype;
     //   also throw an exception if such mismatch is not permitted
@@ -775,7 +769,7 @@ Header concatenate(const std::vector<Header> &headers,
 
   if (axis_to_concat == 3) {
     DWI::set_DW_scheme(result, dw_scheme);
-    Metadata::PhaseEncoding::set_scheme(result, pe_scheme);
+    Metadata::PhaseEncoding::set_scheme(result.keyval(), pe_scheme);
   }
   return result;
 }

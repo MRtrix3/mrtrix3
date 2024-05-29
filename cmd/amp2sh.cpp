@@ -219,7 +219,7 @@ void run() {
       DWI::stash_DW_scheme(header, grad);
     }
   }
-  Metadata::PhaseEncoding::clear_scheme(header);
+  Metadata::PhaseEncoding::clear_scheme(header.keyval());
 
   auto sh2amp = DWI::compute_SH2amp_mapping(dirs, true, 8);
 
