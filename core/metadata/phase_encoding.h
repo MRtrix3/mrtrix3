@@ -37,29 +37,10 @@ extern const App::OptionGroup ExportOptions;
 using scheme_type = Eigen::MatrixXd;
 
 //! check that a phase-encoding table is valid
-template <class MatrixType> void check(const MatrixType &PE) {
-  if (!PE.rows())
-    throw Exception("No valid phase encoding table found");
-
-  if (PE.cols() < 3)
-    throw Exception("Phase-encoding matrix must have at least 3 columns");
-
-  for (ssize_t row = 0; row != PE.rows(); ++row) {
-    for (ssize_t axis = 0; axis != 3; ++axis) {
-      if (std::round(PE(row, axis)) != PE(row, axis))
-        throw Exception("Phase-encoding matrix contains non-integral axis designation");
-    }
-  }
-}
+void check(const scheme_type &PE);
 
 //! check that the PE scheme matches the DWI data in \a header
-template <class MatrixType, class HeaderType> void check(const MatrixType &PE, const HeaderType &header) {
-  check(PE);
-  const ssize_t num_volumes = (header.ndim() > 3) ? header.size(3) : 1;
-  if (num_volumes != PE.rows())
-    throw Exception("Number of volumes in image \"" + header.name() + "\" (" + str(num_volumes) +
-                    ") does not match that in phase encoding table (" + str(PE.rows()) + ")");
-}
+void check(const scheme_type &PE, const Header &header);
 
 //! store the phase encoding matrix in a header
 /*! this will store the phase encoding matrix into the
@@ -70,49 +51,7 @@ template <class MatrixType, class HeaderType> void check(const MatrixType &PE, c
  *    will instead be stored in fields "PhaseEncodingDirection"
  *    and "TotalReadoutTime"
  */
-namespace {
-  void erase(KeyValues &keyval, const std::string &s) {
-    auto it = keyval.find(s);
-    if (it != keyval.end())
-      keyval.erase(it);
-  };
-}
-template <class MatrixType> void set_scheme(KeyValues &keyval, const MatrixType &PE) {
-  if (!PE.rows()) {
-    erase(keyval, "pe_scheme");
-    erase(keyval, "PhaseEncodingDirection");
-    erase(keyval, "TotalReadoutTime");
-    return;
-  }
-  std::string pe_scheme;
-  std::string first_line;
-  bool variation = false;
-  for (ssize_t row = 0; row < PE.rows(); ++row) {
-    std::string line = str(PE(row, 0));
-    for (ssize_t col = 1; col < PE.cols(); ++col)
-      line += "," + str(PE(row, col), 3);
-    add_line(pe_scheme, line);
-    if (first_line.empty())
-      first_line = line;
-    else if (line != first_line)
-      variation = true;
-  }
-  if (variation) {
-    keyval["pe_scheme"] = pe_scheme;
-    erase(keyval, "PhaseEncodingDirection");
-    erase(keyval, "TotalReadoutTime");
-  } else {
-    erase(keyval, "pe_scheme");
-    const Metadata::BIDS::axis_vector_type dir{int(PE(0, 0)), int(PE(0, 1)), int(PE(0, 2))};
-    keyval["PhaseEncodingDirection"] = Metadata::BIDS::vector2axisid(dir);
-    if (PE.cols() >= 4)
-      keyval["TotalReadoutTime"] = str(PE(0, 3), 3);
-    else
-      erase(keyval, "TotalReadoutTime");
-  }
-}
-
-
+void set_scheme(KeyValues &keyval, const scheme_type &PE);
 
 //! clear the phase encoding matrix from a key-value dictionary
 /*! this will delete any trace of phase encoding information
@@ -151,7 +90,7 @@ void transform_for_nifti_write(KeyValues &keyval, const Header &H);
 scheme_type transform_for_nifti_write(const scheme_type &pe_scheme, const Header &H);
 
 namespace {
-template <class MatrixType> void __save(const MatrixType &PE, const std::string &path) {
+void __save(const scheme_type &PE, const std::string &path) {
   File::OFStream out(path);
   for (ssize_t row = 0; row != PE.rows(); ++row) {
     // Write phase-encode direction as integers; other information as floating-point
@@ -167,8 +106,8 @@ template <class MatrixType> void __save(const MatrixType &PE, const std::string 
 // Note that because the output table requires permutation / sign flipping
 //   only if the output target image is a NIfTI, the output file name must have
 //   already been set
-template <class MatrixType, class HeaderType>
-void save(const MatrixType &PE, const HeaderType &header, const std::string &path) {
+template <class HeaderType>
+void save(const scheme_type &PE, const HeaderType &header, const std::string &path) {
   try {
     check(PE, header);
   } catch (Exception &e) {
@@ -202,13 +141,6 @@ void export_commandline(const Header &);
 scheme_type load(const std::string &path, const Header &header);
 
 //! Load a phase-encoding scheme from an EDDY-format config / indices file pair
-template <class HeaderType>
-scheme_type load_eddy(const std::string &config_path, const std::string &index_path, const HeaderType &header) {
-  const Eigen::MatrixXd config = File::Matrix::load_matrix(config_path);
-  const Eigen::Array<int, Eigen::Dynamic, 1> indices = File::Matrix::load_vector<int>(index_path);
-  const scheme_type PE = eddy2scheme(config, indices);
-  check(PE, header);
-  return transform_for_image_load(PE, header);
-}
+scheme_type load_eddy(const std::string &config_path, const std::string &index_path, const Header &header);
 
 } // namespace MR::Metadata::PhaseEncoding
