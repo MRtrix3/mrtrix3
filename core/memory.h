@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __memory_h__
-#define __memory_h__
+#pragma once
 
 #include <memory>
 
@@ -45,5 +44,3 @@ struct compare_ptr_contents {
 };
 
 } // namespace MR
-
-#endif

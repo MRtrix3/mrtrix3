@@ -14,16 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_opengl_shader_h__
-#define __gui_opengl_shader_h__
+#pragma once
 
 #include "app.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
-namespace Shader {
+namespace MR::GUI::GL::Shader {
 
 void print_log(bool is_program, const std::string &type_name, GLuint index);
 
@@ -160,9 +156,4 @@ protected:
   GLuint index_;
 };
 
-} // namespace Shader
-} // namespace GL
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::GL::Shader

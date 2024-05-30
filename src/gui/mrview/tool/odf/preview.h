@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_odf_preview_h__
-#define __gui_mrview_tool_odf_preview_h__
+#pragma once
 
 #include "gui/dwi/render_frame.h"
 
@@ -23,10 +22,7 @@
 #include "gui/mrview/tool/odf/odf.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class ODF_Preview : public QWidget {
   Q_OBJECT
@@ -64,9 +60,4 @@ protected:
   friend class ODF;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

@@ -18,10 +18,7 @@
 #include "gui/gui.h"
 #include <cassert>
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
-namespace ProgressBar {
+namespace MR::GUI::Dialog::ProgressBar {
 
 namespace {
 QProgressDialog *progress_dialog = nullptr;
@@ -62,7 +59,4 @@ void done(const ::MR::ProgressBar &p) {
   p.data = nullptr;
 }
 
-} // namespace ProgressBar
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog::ProgressBar

@@ -24,15 +24,20 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two peak images for differences, within specified tolerance";
 
   ARGUMENTS
-  +Argument("peaks1", "a peaks image.").type_image_in() + Argument("peaks2", "another peaks image.").type_image_in() +
-      Argument("tolerance", "the dot product difference to consider acceptable").type_float(0.0);
+  + Argument ("peaks1", "a peaks image.").type_image_in()
+  + Argument ("peaks2", "another peaks image.").type_image_in()
+  + Argument ("tolerance", "the dot product difference to consider acceptable").type_float(0.0);
+
 }
+// clang-format on
 
 void run() {
   auto in1 = Image<double>::open(argument[0]);

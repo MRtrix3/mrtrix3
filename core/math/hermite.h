@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_hermite_h__
-#define __math_hermite_h__
+#pragma once
 
 #include <limits>
 
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <typename T> class Hermite {
 public:
@@ -52,7 +50,4 @@ private:
   value_type t;
 };
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

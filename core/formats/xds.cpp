@@ -22,8 +22,7 @@
 #include "header.h"
 #include "image_io/default.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   if (!Path::has_suffix(H.name(), ".bfloat") && !Path::has_suffix(H.name(), ".bshort"))
@@ -66,7 +65,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
   io_handler->files.push_back(File::Entry(H.name()));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
 bool XDS::check(Header &H, size_t num_axes) const {
@@ -121,8 +120,7 @@ std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
   File::create(H.name(), footprint(H, "11 1"));
   io_handler->files.push_back(File::Entry(H.name()));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

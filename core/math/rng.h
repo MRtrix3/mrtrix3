@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_rng_h__
-#define __math_rng_h__
+#pragma once
 
 #include <random>
 #ifdef MRTRIX_WINDOWS
@@ -26,8 +25,7 @@
 
 #include "mrtrix.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 //! random number generator
 /*! this is a thin wrapper around the standard C++11 std::mt19937 random
@@ -107,7 +105,4 @@ public:
   ValueType operator()() { return dist(rng); }
 };
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

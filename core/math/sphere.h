@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_sphere_h__
-#define __math_sphere_h__
+#pragma once
 
 #include <cmath>
 #include <sys/types.h>
@@ -25,9 +24,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace Math {
-namespace Sphere {
+namespace MR::Math::Sphere {
 
 //! convert spherical coordinates to Cartesian coordinates
 template <class VectorType1, class VectorType2>
@@ -103,8 +100,4 @@ template <class MatrixType> inline void normalise_cartesian(MatrixType &cartesia
   }
 }
 
-} // namespace Sphere
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math::Sphere

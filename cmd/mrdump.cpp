@@ -24,23 +24,26 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Print out the values within an image";
 
   DESCRIPTION
-  +"If no destination file is specified, the voxel locations will be "
-   "printed to stdout.";
+  + "If no destination file is specified,"
+    " the voxel locations will be printed to stdout.";
 
   ARGUMENTS
-  +Argument("input", "the input image.").type_image_in() +
-      Argument("output", "the (optional) output text file.").type_file_out().optional();
+  + Argument ("input",  "the input image.").type_image_in()
+  + Argument ("output", "the (optional) output text file.").type_file_out().optional();
 
   OPTIONS
-  +Option("mask", "only write the image values within voxels specified by a mask image") +
-      Argument("image").type_image_in();
+  + Option ("mask", "only write the image values within voxels specified by a mask image")
+    + Argument ("image").type_image_in();
 }
+// clang-format on
 
 template <typename T, class StreamType> void write(Image<T> &image, StreamType &out) {
   for (auto l = Loop(image)(image); l; ++l)
@@ -102,7 +105,7 @@ void run() {
 
   Image<bool> mask;
   auto opt = get_options("mask");
-  if (opt.size())
+  if (!opt.empty())
     mask = Image<bool>::open(opt[0][0]);
 
   if (argument.size() == 2) {

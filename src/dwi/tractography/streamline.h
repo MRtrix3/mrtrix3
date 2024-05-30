@@ -14,16 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_streamline_h__
-#define __dwi_tractography_streamline_h__
+#pragma once
 
 #include <limits>
 
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 // Base class for storing an index alongside either streamline vertex or track scalar data
 //
@@ -118,8 +115,4 @@ template <typename PointType> typename PointType::Scalar length(const std::vecto
   return value;
 }
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

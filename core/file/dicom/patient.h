@@ -14,15 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_patient_h__
-#define __file_dicom_patient_h__
+#pragma once
 
 #include "file/dicom/study.h"
 #include "memory.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class Study;
 
@@ -49,8 +46,4 @@ public:
 
 std::ostream &operator<<(std::ostream &stream, const Patient &item);
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File::Dicom

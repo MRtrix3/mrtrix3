@@ -16,9 +16,7 @@
 
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 void check_timestamps(const Properties &a, const Properties &b, const std::string &type) {
   Properties::const_iterator stamp_a = a.find("timestamp");
@@ -61,7 +59,7 @@ void Properties::set_version_info() {
 void Properties::update_command_history() {
   // Make sure the current command is not concatenated more than once
   const auto command_history = split_lines((*this)["command_history"]);
-  if (!(command_history.size() && command_history.back() == App::command_history_string))
+  if (!(!command_history.empty() && command_history.back() == App::command_history_string))
     add_line((*this)["command_history"], App::command_history_string);
 }
 
@@ -120,6 +118,4 @@ std::ostream &operator<<(std::ostream &stream, const Properties &P) {
   return (stream);
 }
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography

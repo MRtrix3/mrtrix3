@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 TrackIndexRangeWriter::TrackIndexRangeWriter(const track_t buffer_size,
                                              const track_t num_tracks,
@@ -41,7 +38,4 @@ bool TrackIndexRangeWriter::operator()(TrackIndexRange &out) {
   return true;
 }
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT

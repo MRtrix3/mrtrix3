@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_nodeoverlay_h__
-#define __gui_mrview_tool_connectome_nodeoverlay_h__
+#pragma once
 
 #include "header.h"
 #include "types.h"
@@ -23,10 +22,7 @@
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/gui_image.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 // Class to handle the node image overlay
 class NodeOverlay : public MR::GUI::MRView::ImageBase {
@@ -49,9 +45,4 @@ public:
   } slice_shader;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

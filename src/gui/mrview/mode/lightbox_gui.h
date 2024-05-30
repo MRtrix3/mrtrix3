@@ -14,16 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_mode_lightbox_gui_h__
-#define __gui_mrview_mode_lightbox_gui_h__
+#pragma once
 
 #include "gui/mrview/spin_box.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
-namespace LightBoxViewControls {
+namespace MR::GUI::MRView::Mode::LightBoxViewControls {
 class LightBoxEditButton : public SpinBox {
 public:
   LightBoxEditButton(QWidget *parent, const QString &suffix) : LightBoxEditButton(parent, 1, 100, 1, suffix) {}
@@ -38,10 +33,4 @@ public:
   }
 };
 
-} // namespace LightBoxViewControls
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Mode::LightBoxViewControls

@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/tracking/method.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 void MethodBase::truncate_track(GeneratedTrack &tck, const size_t length_to_revert_from, const size_t revert_step) {
   if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
@@ -94,7 +91,4 @@ Eigen::Vector3f MethodBase::rotate_direction(const Eigen::Vector3f &reference, c
           direction[2] + alpha * (reference[2] - 1.0f) + beta * (mp[2] - m[2])};
 }
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking

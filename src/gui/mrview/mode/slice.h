@@ -14,16 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_mode_slice_h__
-#define __gui_mrview_mode_slice_h__
+#pragma once
 
 #include "app.h"
 #include "gui/mrview/mode/base.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 class Slice : public Base {
 public:
@@ -43,9 +39,4 @@ protected:
   void draw_plane(int axis, Displayable::Shader &shader_program, Projection &with_projection);
 };
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Mode

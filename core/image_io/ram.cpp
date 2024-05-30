@@ -21,8 +21,7 @@
 #include "header.h"
 #include "image_io/ram.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void RAM::load(const Header &header, size_t) {
   DEBUG("allocating RAM buffer for image \"" + header.name() + "\"...");
@@ -32,11 +31,10 @@ void RAM::load(const Header &header, size_t) {
 }
 
 void RAM::unload(const Header &header) {
-  if (addresses.size()) {
+  if (!addresses.empty()) {
     DEBUG("deleting RAM buffer for image \"" + header.name() + "\"...");
     addresses[0].reset();
   }
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

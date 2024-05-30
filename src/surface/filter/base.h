@@ -14,17 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_filter_base_h__
-#define __surface_filter_base_h__
+#pragma once
 
 #include "progressbar.h" // May be needed for any derived classes that make use of the message string
 
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 
-namespace MR {
-namespace Surface {
-namespace Filter {
+namespace MR::Surface::Filter {
 
 /*! A base class for defining surface mesh filters.
  *
@@ -56,8 +53,4 @@ protected:
 };
 //! @}
 
-} // namespace Filter
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface::Filter

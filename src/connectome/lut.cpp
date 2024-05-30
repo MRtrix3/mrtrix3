@@ -20,8 +20,7 @@
 
 #include "mrtrix.h" // For strip()
 
-namespace MR {
-namespace Connectome {
+namespace MR::Connectome {
 
 LUT::LUT(const std::string &path) : exclusive(true) { load(path); }
 
@@ -130,9 +129,10 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       //   encased within quotation marks
       auto split_by_quotes = split(line, "\"\'", false);
       if (!(split_by_quotes.size() % 2))
-        throw Exception("Line " + str(line_counter) + " of LUT file \"" + Path::basename(path) +
-                        "\" contains an odd number of quotation marks, and hence cannot be properly split up according "
-                        "to quotation marks");
+        throw Exception("Line " + str(line_counter) +                     //
+                        " of LUT file \"" + Path::basename(path) + "\"" + //
+                        " contains an odd number of quotation marks," +   //
+                        " and hence cannot be properly split up according to quotation marks");
       decltype(split_by_quotes) entries;
       for (size_t i = 0; i != split_by_quotes.size(); ++i) {
         // Every second line must be encased in quotation marks, and is
@@ -145,16 +145,16 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
         }
       }
       for (decltype(entries)::iterator i = entries.begin(); i != entries.end();) {
-        if (!i->size() || (i->size() == 1 && std::isspace((*i)[0])))
+        if (i->empty() || (i->size() == 1 && std::isspace((*i)[0])))
           i = entries.erase(i);
         else
           ++i;
       }
-      if (entries.size()) {
-        if (columns.size() && entries.size() != columns.size()) {
+      if (!entries.empty()) {
+        if (!columns.empty() && entries.size() != columns.size()) {
           Exception E("Inconsistent number of columns in LUT file \"" + Path::basename(path) + "\"");
-          E.push_back("Initial file contents contain " + str(columns.size()) + " columns, but line " +
-                      str(line_counter) + " contains " + str(entries.size()) + " entries:");
+          E.push_back("Initial file contents contain " + str(columns.size()) + " columns," + //
+                      " but line " + str(line_counter) + " contains " + str(entries.size()) + " entries:");
           E.push_back("\"" + line + "\"");
           throw E;
         }
@@ -168,33 +168,39 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
 
   // Make an assessment of the LUT format
   if (columns.size() == 2 && columns[0].is_integer() && !columns[1].is_numeric()) {
-    DEBUG("LUT file \"" + Path::basename(path) + "\" contains 1 integer, 1 string per line: Basic format");
+    DEBUG("LUT file \"" + Path::basename(path) +
+          "\" contains 1 integer, 1 string per line:"
+          " Basic format");
     return LUT_BASIC;
   }
   if (columns.size() == 6 && columns[0].is_integer() && !columns[1].is_numeric() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_8bit() && columns[5].is_8bit()) {
     DEBUG("LUT file \"" + Path::basename(path) +
-          "\" contains 1 integer, 1 string, then 4 8-bit integers per line: Freesurfer format");
+          "\" contains 1 integer, 1 string, then 4 8-bit integers per line:"
+          " Freesurfer format");
     return LUT_FREESURFER;
   }
   if (columns.size() == 3 && !columns[0].is_numeric() && !columns[1].is_numeric() &&
       columns[0].mean_length() < columns[1].mean_length() && columns[2].is_integer()) {
     DEBUG("LUT file \"" + Path::basename(path) +
-          "\" contains 2 strings (shorter first), then an integer per line: AAL format");
+          "\" contains 2 strings (shorter first), then an integer per line:"
+          " AAL format");
     return LUT_AAL;
   }
   if (columns.size() == 8 && columns[0].is_integer() && columns[1].is_8bit() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_unary_range_float() && columns[5].is_integer() && columns[6].is_integer() &&
       !columns[7].is_numeric()) {
     DEBUG("LUT file \"" + Path::basename(path) +
-          "\" contains an integer, 3 8-bit integers, a float, two integers, and a string per line: ITKSNAP format");
+          "\" contains an integer, 3 8-bit integers, a float, two integers, and a string per line:"
+          " ITKSNAP format");
     return LUT_ITKSNAP;
   }
   if (columns.size() == 7 && columns[0].is_integer() && !columns[1].is_numeric() && !columns[2].is_numeric() &&
       columns[1].mean_length() < columns[2].mean_length() && columns[3].is_8bit() && columns[4].is_8bit() &&
       columns[5].is_8bit() && columns[6].is_8bit()) {
     DEBUG("LUT file \"" + Path::basename(path) +
-          "\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per line: MRtrix format");
+          "\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per line:"
+          " MRtrix format");
     return LUT_MRTRIX;
   }
   std::string format_string;
@@ -290,5 +296,4 @@ std::vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
   return map;
 }
 
-} // namespace Connectome
-} // namespace MR
+} // namespace MR::Connectome

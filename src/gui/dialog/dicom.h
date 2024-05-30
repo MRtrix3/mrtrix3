@@ -14,22 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dialog_dicom_h__
-#define __dialog_dicom_h__
+#pragma once
 
 #include "file/dicom/tree.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 using namespace MR::File::Dicom;
 
 std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree);
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::Dialog

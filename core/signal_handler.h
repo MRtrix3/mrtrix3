@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __signal_handler_h__
-#define __signal_handler_h__
+#pragma once
 
 #include <string>
 
-namespace MR {
-namespace SignalHandler {
+namespace MR::SignalHandler {
 //! the type of function expected for on_signal()
 using cleanup_function_type = void (*)();
 
@@ -33,7 +31,4 @@ void on_signal(cleanup_function_type func);
 void mark_file_for_deletion(const std::string &filename);
 //! unmark the file from deletion
 void unmark_file_for_deletion(const std::string &filename);
-} // namespace SignalHandler
-} // namespace MR
-
-#endif
+} // namespace MR::SignalHandler

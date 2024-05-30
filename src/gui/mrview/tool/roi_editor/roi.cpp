@@ -23,10 +23,7 @@
 #include "gui/projection.h"
 #include "header.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
 
@@ -297,7 +294,7 @@ void ROI::dropEvent(QDropEvent *event) {
         e.display();
       }
     }
-    if (list.size()) {
+    if (!list.empty()) {
       load(list);
       in_insert_mode = false;
     }
@@ -322,7 +319,7 @@ void ROI::save(ROI_Item *roi) {
     header.datatype() = DataType::Bit;
     std::string name = GUI::Dialog::File::get_save_image_name(
         &window(), "Select name of ROI to save", roi->get_filename(), &current_folder);
-    if (name.size()) {
+    if (!name.empty()) {
       auto out = MR::Image<bool>::create(name, header);
       roi->save(out, data.data());
     }
@@ -525,7 +522,7 @@ void ROI::model_rows_changed() { updateGL(); }
 void ROI::update_undo_redo() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
 
-  if (indices.size()) {
+  if (!indices.empty()) {
     ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
     undo_button->defaultAction()->setEnabled(roi->has_undo());
     redo_button->defaultAction()->setEnabled(roi->has_redo());
@@ -543,7 +540,7 @@ void ROI::update_selection() {
     setEnabled(true);
 
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  bool enable = window().image() && indices.size();
+  bool enable = window().image() && !indices.empty();
 
   opacity_slider->setEnabled(enable);
   save_button->setEnabled(enable);
@@ -556,7 +553,7 @@ void ROI::update_selection() {
 
   update_undo_redo();
 
-  if (!indices.size()) {
+  if (indices.empty()) {
     draw_button->defaultAction()->setChecked(false);
     return;
   }
@@ -637,7 +634,7 @@ bool ROI::mouse_move_event() {
     return false;
 
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  if (!indices.size()) {
+  if (indices.empty()) {
     WARN("FIXME: shouldn't be here!");
     return false;
   }
@@ -691,16 +688,15 @@ QCursor *ROI::get_cursor() {
 
 void ROI::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("ROI editor tool options")
-
-      + Option("roi.load", "Loads the specified image on the ROI editor tool.").allow_multiple() +
-      Argument("image").type_image_in()
-
-      + Option("roi.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple() +
-      Argument("value").type_float(0.0, 1.0)
-
-      + Option("roi.colour", "Sets the colour of the ROI overlay").allow_multiple() +
-      Argument("R,G,B").type_sequence_float();
+      + Option("roi.load", "Loads the specified image on the ROI editor tool.").allow_multiple()
+        + Argument("image").type_image_in()
+      + Option("roi.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
+        + Argument("value").type_float(0.0, 1.0)
+      + Option("roi.colour", "Sets the colour of the ROI overlay").allow_multiple()
+        + Argument("R,G,B").type_sequence_float();
+  // clang-format on
 }
 
 bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
@@ -746,7 +742,4 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
   return false;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

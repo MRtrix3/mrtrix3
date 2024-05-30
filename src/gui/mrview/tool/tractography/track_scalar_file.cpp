@@ -19,10 +19,7 @@
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
     : QGroupBox("Scalar file options", parent), tool(parent), tractogram(nullptr) {
@@ -211,7 +208,7 @@ bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot(std::string s
   }
   update_UI();
   window().updateGL();
-  return scalar_file.size();
+  return !scalar_file.empty();
 }
 
 void TrackScalarFileOptions::toggle_show_colour_bar(bool show_colour_bar, const ColourMapButton &) {
@@ -392,7 +389,4 @@ void TrackScalarFileOptions::toggle_invert_colourmap(bool invert, const ColourMa
   }
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

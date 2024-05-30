@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_selection_h__
-#define __gui_mrview_tool_connectome_selection_h__
+#pragma once
 
 #include "mrtrix.h"
 
 #include "gui/color_button.h"
 #include "gui/mrview/adjust_button.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class NodeSelectionSettings : public QObject {
 
@@ -197,9 +193,4 @@ public:
   NodeSelectionSettingsFrame *frame;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

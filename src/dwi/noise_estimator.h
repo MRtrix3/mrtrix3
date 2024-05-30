@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_noise_estimator_h__
-#define __dwi_noise_estimator_h__
+#pragma once
 
 #include "dwi/gradient.h"
 #include "image.h"
@@ -23,8 +22,7 @@
 #include "math/Sn_scale_estimator.h"
 #include "math/least_squares.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 namespace {
 
@@ -74,7 +72,4 @@ inline void estimate_noise(InputImageType &dwi, OutputImageType &noise, const Ma
   loop.run_outer(functor);
 }
 
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI

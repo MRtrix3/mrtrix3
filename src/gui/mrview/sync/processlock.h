@@ -13,18 +13,14 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __sync_processlock_h__
-#define __sync_processlock_h__
+#pragma once
 
 #include <QSharedMemory>
 #include <QSystemSemaphore>
 
 #include "types.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 /**
  * Can be used to prevent multiple processes accessing a resource at the
  * same time. QLockFile is another option but not available in Qt 4.8
@@ -52,9 +48,4 @@ private:
   Q_DISABLE_COPY(ProcessLock)
 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif // __sync_processlock_h__
+} // namespace MR::GUI::MRView::Sync

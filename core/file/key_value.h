@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_key_value_h__
-#define __file_key_value_h__
+#pragma once
 
 #include "mrtrix.h"
 #include "types.h"
 #include <fstream>
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 class OFStream;
 
@@ -52,7 +50,4 @@ void write(File::OFStream &out,
            const bool add_to_command_history = true);
 
 } // namespace KeyValue
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File

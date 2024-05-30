@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_extract_h__
-#define __dwi_tractography_connectome_extract_h__
+#pragma once
 
 #include "file/ofstream.h"
 
@@ -24,10 +23,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 class Selector {
 public:
@@ -100,9 +96,4 @@ private:
   Tractography::Streamline<> empty_tck;
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Connectome

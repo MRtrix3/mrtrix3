@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_internalenergy_h__
-#define __gt_internalenergy_h__
+#pragma once
 
 #include "types.h"
 
@@ -27,10 +26,7 @@
 #include "dwi/tractography/GT/particle.h"
 #include "dwi/tractography/GT/particlegrid.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 class InternalEnergyComputer : public EnergyComputer {
 public:
@@ -110,9 +106,4 @@ protected:
   ParticleEnd pickNeighbour();
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_internalenergy_h__
+} // namespace MR::DWI::Tractography::GT

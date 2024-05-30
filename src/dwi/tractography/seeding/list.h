@@ -14,17 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_seeding_list_h__
-#define __dwi_tractography_seeding_list_h__
+#pragma once
 
 #include "types.h"
 
 #include "dwi/tractography/seeding/base.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 class List {
 
@@ -58,9 +54,4 @@ private:
   uint32_t total_count;
 };
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Seeding

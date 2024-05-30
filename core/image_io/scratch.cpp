@@ -19,8 +19,7 @@
 #include "header.h"
 #include "image_io/scratch.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 bool Scratch::is_file_backed() const { return false; }
 
@@ -36,11 +35,10 @@ void Scratch::load(const Header &header, size_t buffer_size) {
 }
 
 void Scratch::unload(const Header &header) {
-  if (addresses.size()) {
+  if (!addresses.empty()) {
     DEBUG("deleting scratch buffer for image \"" + header.name() + "\"...");
     addresses[0].reset();
   }
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

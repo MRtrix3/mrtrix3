@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_name_parser_h__
-#define __file_name_parser_h__
+#pragma once
 
 #include <memory>
 
@@ -23,8 +22,7 @@
 #include "memory.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 //! a class to interpret numbered filenames
 class NameParser {
@@ -40,7 +38,7 @@ public:
 
     void set_seq(const std::string &s) {
       clear();
-      if (s.size())
+      if (!s.empty())
         seq = parse_ints<uint32_t>(s);
       seq_length = 1;
     }
@@ -155,7 +153,4 @@ protected:
   std::string filename;
 };
 
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File

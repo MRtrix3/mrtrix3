@@ -18,9 +18,7 @@
 
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 Volume::~Volume() {
   GL::Context::Grab context;
@@ -62,6 +60,4 @@ void Volume::allocate() {
   }
 }
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView

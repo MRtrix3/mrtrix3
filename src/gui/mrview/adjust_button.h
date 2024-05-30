@@ -14,17 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_adjust_button_h__
-#define __gui_mrview_adjust_button_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 #include "mrtrix.h"
 
 #define ADJUST_BUTTON_DEADZONE_SIZE 8
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 class AdjustButton : public QLineEdit {
   Q_OBJECT
@@ -108,8 +105,4 @@ protected:
   bool eventFilter(QObject *obj, QEvent *event);
 };
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView

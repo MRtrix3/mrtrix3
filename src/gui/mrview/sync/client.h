@@ -13,18 +13,14 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __sync_client_h__
-#define __sync_client_h__
+#pragma once
 
 #include "types.h"
 #include <qlocalsocket.h>
 
 class QLocalSocket;
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 /**
 Sends data to another process
 */
@@ -43,8 +39,4 @@ private:
   QLocalSocket *socket;
 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-#endif
+} // namespace MR::GUI::MRView::Sync

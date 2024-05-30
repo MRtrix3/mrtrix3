@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_connectome_h__
-#define __dwi_tractography_connectome_connectome_h__
+#pragma once
 
 #include "app.h"
 #include "image.h"
 
 #include "connectome/connectome.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 #define TCK2NODES_RADIAL_DEFAULT_DIST 4.0
 #define TCK2NODES_REVSEARCH_DEFAULT_DIST                                                                               \
@@ -45,9 +41,4 @@ Tck2nodes_base *load_assignment_mode(Image<node_t> &);
 extern const App::OptionGroup MetricOptions;
 void setup_metric(Metric &, Image<node_t> &);
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Connectome

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __formats_list_h__
-#define __formats_list_h__
+#pragma once
 
 #include "header.h"
 
@@ -28,10 +27,8 @@
     virtual std::unique_ptr<ImageIO::Base> create(Header &H) const;                                                    \
   }
 
-namespace MR {
-
 //! Classes responsible for handling of specific image formats
-namespace Formats {
+namespace MR::Formats {
 
 //! the interface for classes that support the various image formats.
 /*! All image formats supported by %MRtrix are handled by a class derived
@@ -112,7 +109,4 @@ extern const Base *handlers[];
 extern MRtrix mrtrix_handler;
 //! \endcond
 
-} // namespace Formats
-} // namespace MR
-
-#endif
+} // namespace MR::Formats

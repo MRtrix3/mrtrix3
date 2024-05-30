@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_tfce_h__
-#define __stats_tfce_h__
+#pragma once
 
 #include "filter/connected_components.h"
 #include "math/stats/typedefs.h"
@@ -23,9 +22,7 @@
 
 #include "stats/enhance.h"
 
-namespace MR {
-namespace Stats {
-namespace TFCE {
+namespace MR::Stats::TFCE {
 
 const App::OptionGroup Options(const default_type, const default_type, const default_type);
 
@@ -72,8 +69,4 @@ private:
   void operator()(in_column_type, out_column_type) const override;
 };
 
-} // namespace TFCE
-} // namespace Stats
-} // namespace MR
-
-#endif
+} // namespace MR::Stats::TFCE

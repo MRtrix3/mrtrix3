@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_welch_satterthwaite_h__
-#define __math_welch_satterthwaite_h__
+#pragma once
 
 #include "math/math.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <class VarArrayType, class CountArrayType>
 default_type welch_satterthwaite(const VarArrayType &variances, const CountArrayType &counts) {
@@ -34,7 +32,4 @@ default_type welch_satterthwaite(const VarArrayType &variances, const CountArray
   return Math::pow2(numerator) / denominator;
 }
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

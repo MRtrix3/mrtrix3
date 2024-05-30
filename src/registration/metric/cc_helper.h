@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_cc_helper_h__
-#define __registration_metric_cc_helper_h__
+#pragma once
 
 #include "algo/neighbourhooditerator.h"
 #include "debug.h"
@@ -110,4 +109,3 @@ void cc_precompute(Im1ImageType &im1_image,
 } // namespace Metric
 } // namespace Registration
 } // namespace MR
-#endif

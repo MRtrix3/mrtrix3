@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __formats_mrtrix_utils_h__
-#define __formats_mrtrix_utils_h__
+#pragma once
 
 #include "header.h"
 #include "types.h"
@@ -26,8 +25,7 @@
 #include "file/path.h"
 #include "file/utils.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 // Read generic image header information - common between conventional, compressed and sparse formats
 template <class SourceType> void read_mrtrix_header(Header &, SourceType &);
@@ -70,7 +68,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
       scaling = parse_floats(value);
     else if (lkey == "transform")
       transform.push_back(parse_floats(value));
-    else if (key.size() && value.size())
+    else if (!key.empty() && !value.empty())
       add_line(H.keyval()[key], value); // Preserve capitalization if not a compulsory key
   }
 
@@ -103,7 +101,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
   for (size_t i = 0; i < ax.size(); ++i)
     H.stride(i) = ax[i];
 
-  if (transform.size()) {
+  if (!transform.empty()) {
 
     auto check_transform = [&transform]() {
       if (transform.size() < 3)
@@ -121,7 +119,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
         H.transform()(row, col) = transform[row][col];
   }
 
-  if (scaling.size()) {
+  if (!scaling.empty()) {
     if (scaling.size() != 2)
       throw Exception("invalid \"scaling\" specification for MRtrix image \"" + H.name() + "\"");
     H.set_intensity_scaling(scaling[1], scaling[0]);
@@ -161,7 +159,4 @@ template <class StreamType> void write_mrtrix_header(const Header &H, StreamType
   out << "\n";
 }
 
-} // namespace Formats
-} // namespace MR
-
-#endif
+} // namespace MR::Formats

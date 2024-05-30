@@ -14,20 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_weights_h__
-#define __dwi_tractography_weights_h__
+#pragma once
 
 #include "cmdline_option.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 extern const App::Option TrackWeightsInOption;
 extern const App::Option TrackWeightsOutOption;
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

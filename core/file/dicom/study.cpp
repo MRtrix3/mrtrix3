@@ -18,9 +18,7 @@
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 namespace {
 bool series_time_mismatch_warning_issued = false;
@@ -38,7 +36,7 @@ std::shared_ptr<Series> Study::find(const std::string &series_name,
     bool match = true;
     if (series_name == (*this)[n]->name) {
       match = (series_number == (*this)[n]->number);
-      if (!match && series_ref_UID.size() && (*this)[n]->series_ref_UID.size()) {
+      if (!match && !series_ref_UID.empty() && !(*this)[n]->series_ref_UID.empty()) {
         if (series_ref_UID == (*this)[n]->series_ref_UID) {
           if (!series_number_UID_mismatch_warning_issued) {
             series_number_UID_mismatch_warning_issued = true;
@@ -51,25 +49,24 @@ std::shared_ptr<Series> Study::find(const std::string &series_name,
       if (match) {
         if (image_type != (*this)[n]->image_type)
           match = false;
-        if (series_modality.size() && (*this)[n]->modality.size())
-          if (series_modality != (*this)[n]->modality)
-            match = false;
+        if (!series_modality.empty() && !(*this)[n]->modality.empty() && series_modality != (*this)[n]->modality)
+          match = false;
+        if (match && !series_date.empty() && !(*this)[n]->date.empty() && series_date != (*this)[n]->date)
+          match = false;
         if (match) {
-          if (series_date.size() && (*this)[n]->date.size())
-            if (series_date != (*this)[n]->date)
-              match = false;
-        }
-        if (match) {
-          float stime = NaN, stime_ref = NaN;
+          float stime = std::numeric_limits<float>::quiet_NaN();
+          float stime_ref = std::numeric_limits<float>::quiet_NaN();
           try {
             stime = to<float>(series_time);
             stime_ref = to<float>((*this)[n]->time);
           } catch (Exception &E) {
-            INFO("error reading DICOM series time - field does not exist or is empty?");
+            INFO("error reading DICOM series time;"
+                 " field does not exist or is empty?");
           }
           if (stime != stime_ref) {
             if (!series_time_mismatch_warning_issued) {
-              INFO("WARNING: series times do not match - this may cause problems with series grouping");
+              INFO("WARNING: series times do not match;"
+                   " this may cause problems with series grouping");
               series_time_mismatch_warning_issued = true;
             }
             if (stime < stime_ref)
@@ -100,6 +97,4 @@ std::ostream &operator<<(std::ostream &stream, const Study &item) {
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

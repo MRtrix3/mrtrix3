@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_golden_section_search_h__
-#define __math_golden_section_search_h__
+#pragma once
 
 #include <cmath>
 
 #include "memory.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 /** \addtogroup Optimisation
 @{ */
 
@@ -53,7 +51,7 @@ ValueType golden_section_search(FunctionType &function,
                                 ValueType max_bound,
                                 ValueType tolerance = 0.01) {
 
-  std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message) : nullptr);
+  std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
   const ValueType g1 = 0.61803399, g2 = 1 - g1;
   ValueType x0 = min_bound, x1, x2, x3 = max_bound;
@@ -86,7 +84,4 @@ ValueType golden_section_search(FunctionType &function,
   }
   return f1 < f2 ? x1 : x2;
 }
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

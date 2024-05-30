@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify default operation of the "dwinormalise manual" algorithm
+#   where image pipes are used
+
+# Input and output DWI series are both piped
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+dwinormalise manual - BIDS/sub-01/dwi/sub-01_brainmask.nii.gz - | \
+testing_diff_image - dwinormalise/manual/out.mif.gz -frac 1e-5
+
+# Input mask is piped
+mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz - | \
+dwinormalise manual BIDS/sub-01/dwi/sub-01_dwi.nii.gz - tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+testing_diff_image tmp.mif dwinormalise/manual/out.mif.gz -frac 1e-5

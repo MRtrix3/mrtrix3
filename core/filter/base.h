@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_base_h__
-#define __filter_base_h__
+#pragma once
 
 #include "header.h"
 #include "progressbar.h" // May be needed for any derived classes that make use of the message string
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 /** \addtogroup Filters
 @{ */
 
@@ -57,7 +55,4 @@ protected:
   std::string message;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
-
-#endif
+} // namespace MR::Filter

@@ -47,53 +47,60 @@ using Stats::PermTest::count_matrix_type;
 
 #define DEFAULT_EMPIRICAL_SKEW 1.0
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Voxel-based analysis using permutation testing and threshold-free cluster enhancement";
 
   DESCRIPTION
-  +Math::Stats::GLM::column_ones_description;
+      + Math::Stats::GLM::column_ones_description;
 
   REFERENCES
-  +"* If not using the -threshold command-line option:\n"
-   "Smith, S. M. & Nichols, T. E. "
-   "Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in "
-   "cluster inference. "
-   "NeuroImage, 2009, 44, 83-98"
+   + "* If not using the -threshold command-line option:\n"
+     "Smith, S. M. & Nichols, T. E. "
+     "Threshold-free cluster enhancement:"
+     " Addressing problems of smoothing, threshold dependence and localisation in cluster inference. "
+     "NeuroImage, 2009, 44, 83-98"
 
-      + "* If using the -nonstationary option:\n"
-        "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and "
-        "TFCE inference. "
-        "Neuroimage, 2011, 54(3), 2006-19";
+   + "* If using the -nonstationary option:\n"
+   "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. "
+   "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. "
+   "Neuroimage, 2011, 54(3), 2006-19";
+
 
   ARGUMENTS
-  +Argument("input", "a text file containing the file names of the input images, one file per line").type_file_in()
+  + Argument ("input", "a text file containing the file names of the input images,"
+                       " one file per line").type_file_in()
 
-      + Argument("design", "the design matrix").type_file_in()
+  + Argument ("design", "the design matrix").type_file_in()
 
-      + Argument("contrast", "the contrast matrix").type_file_in()
+  + Argument ("contrast", "the contrast matrix").type_file_in()
 
-      + Argument("mask", "a mask used to define voxels included in the analysis.").type_image_in()
+  + Argument ("mask", "a mask used to define voxels included in the analysis.").type_image_in()
 
-      + Argument("output", "the filename prefix for all output.").type_text();
+  + Argument ("output", "the filename prefix for all output.").type_text();
+
 
   OPTIONS
-  +Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
+  + Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
 
-      + Stats::TFCE::Options(DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
+  + Stats::TFCE::Options(DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
 
-      + Math::Stats::GLM::glm_options("voxel")
+  + Math::Stats::GLM::glm_options("voxel")
 
-      + OptionGroup("Additional options for mrclusterstats")
+  + OptionGroup ("Additional options for mrclusterstats")
 
-      + Option("threshold",
-               "the cluster-forming threshold to use for a standard cluster-based analysis. "
-               "This disables TFCE, which is the default otherwise.") +
-      Argument("value").type_float(1.0e-6)
+    + Option ("threshold", "the cluster-forming threshold to use for a standard cluster-based analysis."
+                           " This disables TFCE, which is the default otherwise.")
+      + Argument ("value").type_float (1.0e-6)
 
-      + Option("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
+    + Option ("connectivity", "use 26-voxel-neighbourhood connectivity"
+                              " (Default: 6)");
+
 }
+// clang-format on
 
 using value_type = Stats::TFCE::value_type;
 
@@ -167,8 +174,8 @@ void run() {
   const value_type tfce_H = get_option_value("tfce_h", DEFAULT_TFCE_H);
   const value_type tfce_E = get_option_value("tfce_e", DEFAULT_TFCE_E);
   const bool use_tfce = !std::isfinite(cluster_forming_threshold);
-  const bool do_26_connectivity = get_options("connectivity").size();
-  const bool do_nonstationarity_adjustment = get_options("nonstationarity").size();
+  const bool do_26_connectivity = !get_options("connectivity").empty();
+  const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
   const default_type empirical_skew = get_option_value("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   // Load analysis mask and compute adjacency
@@ -208,15 +215,16 @@ void run() {
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }
+  const bool have_extra_columns = !extra_columns.empty();
   const index_type num_factors = design.cols() + extra_columns.size();
   CONSOLE("Number of factors: " + str(num_factors));
-  if (extra_columns.size()) {
+  if (have_extra_columns) {
     CONSOLE("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       CONSOLE("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from "
               "voxel-wise design matrices accordingly");
   }
-  check_design(design, extra_columns.size());
+  check_design(design, have_extra_columns);
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups(design.rows());
@@ -231,7 +239,7 @@ void run() {
     throw Exception(
         "The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")" +
         " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")" +
-        (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
+        (have_extra_columns ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
   matrix_type data(importer.size(), num_voxels);
@@ -246,10 +254,11 @@ void run() {
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
     INFO("Non-finite values present in data; rows will be removed from voxel-wise design matrices accordingly");
-    if (!extra_columns.size()) {
+    if (extra_columns.empty()) {
       INFO("(Note that this will result in slower execution than if such values were not present)");
     }
   }
+  const bool variable_design_matrix = nans_in_data || have_extra_columns;
 
   Header output_header(mask_header);
   output_header.datatype() = DataType::Float32;
@@ -280,7 +289,7 @@ void run() {
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
-                         num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
+                         num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
       write_output(betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
@@ -296,7 +305,7 @@ void run() {
       }
       ++progress;
     }
-    if (nans_in_data || extra_columns.size()) {
+    if (variable_design_matrix) {
       write_output(cond, *v2v, prefix + "cond.mif", output_header);
       ++progress;
     }
@@ -312,7 +321,7 @@ void run() {
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
-  if (extra_columns.size() || nans_in_data) {
+  if (variable_design_matrix) {
     if (variance_groups.size())
       glm_test.reset(new GLM::TestVariableHeteroscedastic(
           extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
@@ -361,9 +370,9 @@ void run() {
                  output_header);
   }
 
-  if (!get_options("notest").size()) {
+  if (get_options("notest").empty()) {
 
-    const bool fwe_strong = get_options("strong").size();
+    const bool fwe_strong = !get_options("strong").empty();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }

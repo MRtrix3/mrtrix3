@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_node_list_h__
-#define __gui_mrview_tool_connectome_node_list_h__
+#pragma once
 
 #include <memory>
 
@@ -25,9 +24,7 @@
 #include <QAbstractItemModel>
 #include <QTableView>
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 class Window;
 
@@ -113,8 +110,4 @@ private:
 };
 
 } // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView

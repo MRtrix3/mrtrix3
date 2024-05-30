@@ -14,17 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_shapes_halfsphere_h__
-#define __gui_shapes_halfsphere_h__
+#pragma once
 
 #include "types.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 
-namespace MR {
-namespace GUI {
-namespace Shapes {
+namespace MR::GUI::Shapes {
 
 class HalfSphere {
 public:
@@ -64,8 +61,4 @@ public:
   std::vector<Vertex> vertices;
 };
 
-} // namespace Shapes
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::Shapes

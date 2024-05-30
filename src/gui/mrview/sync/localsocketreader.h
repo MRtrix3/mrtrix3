@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __sync_localsocketreader_h__
-#define __sync_localsocketreader_h__
+#pragma once
 
 #include <QtNetwork>
 #include <qlocalsocket.h>
@@ -23,10 +22,7 @@
 
 class QLocalSocket;
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 /**
  * Auto reads data from its local socket when data arrives, and fires an event with that data attached
  */
@@ -46,8 +42,4 @@ private:
   QLocalSocket *socket;
 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-#endif
+} // namespace MR::GUI::MRView::Sync

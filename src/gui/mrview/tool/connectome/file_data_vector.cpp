@@ -21,10 +21,7 @@
 #include "file/matrix.h"
 #include "file/path.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 FileDataVector::FileDataVector() : base_t(), min(NaN), mean(NaN), max(NaN) {}
 
@@ -92,7 +89,4 @@ void FileDataVector::calc_stats() {
   mean = sum / double(size());
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

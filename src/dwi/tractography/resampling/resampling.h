@@ -14,17 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_resampling_resampling_h__
-#define __dwi_tractography_resampling_resampling_h__
+#pragma once
 
 #include "app.h"
 
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 extern const App::OptionGroup ResampleOption;
 
@@ -52,9 +48,4 @@ public:
   virtual Base *clone() const { return new Derived(static_cast<Derived const &>(*this)); }
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Resampling

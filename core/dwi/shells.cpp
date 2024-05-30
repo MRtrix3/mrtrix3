@@ -18,21 +18,25 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
+// clang-format off
 const App::OptionGroup ShellsOption =
-    App::OptionGroup("DW shell selection options") +
-    App::Option("shells",
-                "specify one or more b-values to use during processing, as a comma-separated list "
-                "of the desired approximate b-values (b-values are clustered to allow for small "
-                "deviations). Note that some commands are incompatible with multiple b-values, "
-                "and will report an error if more than one b-value is provided. \n"
-                "WARNING: note that, even though the b=0 volumes are never referred to as shells "
-                "in the literature, they still have to be explicitly included in the list of "
-                "b-values as provided to the -shell option! Several algorithms which include the "
-                "b=0 volumes in their computations may otherwise return an undesired result.") +
-    App::Argument("b-values").type_sequence_float();
+    App::OptionGroup("DW shell selection options")
+    + App::Option("shells",
+                  "specify one or more b-values to use during processing,"
+                  " as a comma-separated list of the desired approximate b-values"
+                  " (b-values are clustered to allow for small deviations)."
+                  " Note that some commands are incompatible with multiple b-values,"
+                  " and will report an error if more than one b-value is provided. \n"
+                  "WARNING: note that,"
+                  " even though the b=0 volumes are never referred to as a 'shell' in the literature,"
+                  " they still have to be explicitly included in the list of b-values"
+                  " as provided to the -shell option!"
+                  " Several algorithms that include the b=0 volumes in their computations"
+                  " may otherwise return an undesired result.")
+      + App::Argument("bvalues").type_sequence_float();
+// clang-format on
 
 FORCE_INLINE default_type bvalue_epsilon() {
   static const default_type value = File::Config::get_float("BValueEpsilon", DWI_SHELLS_EPSILON);
@@ -90,7 +94,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
   BitSet to_retain(count(), false);
 
   auto opt = App::get_options("shells");
-  if (opt.size()) {
+  if (!opt.empty()) {
 
     std::vector<default_type> desired_bvalues = opt[0][0];
     bool bzero_selected = false;
@@ -200,7 +204,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
             if (ambiguous) {
               std::string bvalues;
               for (size_t s = 0; s != count(); ++s) {
-                if (bvalues.size())
+                if (!bvalues.empty())
                   bvalues += ", ";
                 bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
               }
@@ -304,10 +308,10 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
 
     if (shellIdx) {
       shells.push_back(Shell(grad, volumes));
-    } else if (volumes.size()) {
+    } else if (!volumes.empty()) {
       std::string unassigned;
       for (size_t i = 0; i != volumes.size(); ++i) {
-        if (unassigned.size())
+        if (!unassigned.empty())
           unassigned += ", ";
         unassigned += str(volumes[i]) + " (" + str(bvals[volumes[i]]) + ")";
       }
@@ -386,5 +390,4 @@ void Shells::regionQuery(const BValueList &bvals, const default_type b, std::vec
   }
 }
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI

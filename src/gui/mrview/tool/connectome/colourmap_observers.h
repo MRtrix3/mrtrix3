@@ -14,16 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_colourmap_observers_h__
-#define __gui_mrview_tool_connectome_colourmap_observers_h__
+#pragma once
 
 #include "gui/mrview/colourmap_button.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Connectome;
 
@@ -53,9 +49,4 @@ private:
   Connectome &master;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_search_h__
-#define __registration_transform_search_h__
+#pragma once
 
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
@@ -45,9 +44,7 @@
 #include "registration/transform/initialiser.h"
 #include "registration/transform/rigid.h"
 
-namespace MR {
-namespace Registration {
-namespace RotationSearch {
+namespace MR::Registration::RotationSearch {
 
 using TrafoType = transform_type;
 using MatType = Eigen::Matrix<default_type, 3, 3>;
@@ -344,8 +341,4 @@ private:
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> overlap_it, cost_it;
   std::vector<transform_type> trafo_it;
 };
-} // namespace RotationSearch
-} // namespace Registration
-} // namespace MR
-
-#endif
+} // namespace MR::Registration::RotationSearch

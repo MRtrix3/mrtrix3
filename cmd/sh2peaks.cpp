@@ -29,60 +29,70 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Extract the peaks of a spherical harmonic function in each voxel";
 
   DESCRIPTION
-  +"Peaks of the spherical harmonic function in each voxel are located by "
-   "commencing a Newton search along each of a set of pre-specified directions";
+  + "Peaks of the spherical harmonic function in each voxel are located"
+    " by commencing a Newton search along each of a set of pre-specified directions"
+
+  + "Within the output image,"
+    " each successive triplet of volumes encodes the x, y & z components of a 3-vector;"
+    " their directions in 3D space encode the orientation of the identified peaks,"
+    " while the norm of each vector encodes the magnitude of the peaks.";
 
   DESCRIPTION
-  +Math::SH::encoding_description;
+  + Math::SH::encoding_description;
 
   ARGUMENTS
-  +Argument("SH", "the input image of SH coefficients.").type_image_in()
-
-      + Argument("output",
-                 "the output image. Each volume corresponds to the x, y & z component "
-                 "of each peak direction vector in turn.")
-            .type_image_out();
+  + Argument ("SH", "the input image of SH coefficients.").type_image_in()
+  + Argument ("output", "the output peaks image").type_image_out();
 
   OPTIONS
-  +Option("num", "the number of peaks to extract (default: " + str(DEFAULT_NPEAKS) + ").") +
-      Argument("peaks").type_integer(0)
+  + Option ("num", "the number of peaks to extract"
+                   " (default: " + str(DEFAULT_NPEAKS) + ").")
+    + Argument ("peaks").type_integer (0)
 
-      + Option("direction",
-               "the direction of a peak to estimate. The algorithm will attempt to "
-               "find the same number of peaks as have been specified using this option.")
-            .allow_multiple() +
-      Argument("phi").type_float() + Argument("theta").type_float()
+  + Option ("direction",
+            "the direction of a peak to estimate."
+            " The algorithm will attempt to find the same number of peaks"
+            " as have been specified using this option.").allow_multiple()
+    + Argument ("phi").type_float()
+    + Argument ("theta").type_float()
 
-      + Option("peaks",
-               "the program will try to find the peaks that most closely match those "
-               "in the image provided.") +
-      Argument("image").type_image_in()
+  + Option ("peaks",
+            "the program will try to find the peaks that most closely match those"
+            " in the image provided.")
+    + Argument ("image").type_image_in()
 
-      + Option("threshold", "only peak amplitudes greater than the threshold will be considered.") +
-      Argument("value").type_float(0.0)
+  + Option ("threshold",
+            "only peak amplitudes greater than the threshold will be considered.")
+    + Argument ("value").type_float(0.0)
 
-      + Option("seeds",
-               "specify a set of directions from which to start the multiple restarts of "
-               "the optimisation (by default, the built-in 60 direction set is used)") +
-      Argument("file").type_file_in()
+  + Option ("seeds",
+            "specify a set of directions from which to start the multiple restarts of the optimisation"
+            " (by default, the built-in 60 direction set is used)")
+    + Argument ("file").type_file_in()
 
-      + Option("mask", "only perform computation within the specified binary brain mask image.") +
-      Argument("image").type_image_in()
+  + Option ("mask",
+            "only perform computation within the specified binary brain mask image.")
+    + Argument ("image").type_image_in()
 
-      + Option("fast", "use lookup table to compute associated Legendre polynomials (faster, but approximate).");
+  + Option ("fast",
+            "use lookup table to compute associated Legendre polynomials"
+            " (faster, but approximate).");
 
   REFERENCES
-  +"Jeurissen, B.; Leemans, A.; Tournier, J.-D.; Jones, D.K.; Sijbers, J. "
-   "Investigating the prevalence of complex fiber configurations in white matter tissue with diffusion magnetic "
-   "resonance imaging. "
-   "Human Brain Mapping, 2013, 34(11), 2747-2766";
+  + "Jeurissen, B.; Leemans, A.; Tournier, J.-D.; Jones, D.K.; Sijbers, J. "
+    "Investigating the prevalence of complex fiber configurations in white matter tissue"
+    " with diffusion magnetic resonance imaging. "
+    "Human Brain Mapping, 2013, 34(11), 2747-2766";
 }
+// clang-format on
 
 using value_type = float;
 
@@ -211,7 +221,7 @@ public:
           }
         }
       }
-    } else if (true_peaks.size()) {
+    } else if (!true_peaks.empty()) {
       for (int i = 0; i < npeaks; i++) {
         value_type mdot = 0.0;
         for (size_t n = 0; n < all_peaks.size(); n++) {
@@ -222,8 +232,9 @@ public:
           }
         }
       }
-    } else
+    } else {
       std::partial_sort_copy(all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
+    }
 
     int actual_npeaks = std::min(npeaks, (int)all_peaks.size());
     dirs_vox.index(3) = 0;
@@ -281,18 +292,16 @@ void run() {
   Math::SH::check(SH_data);
 
   auto opt = get_options("mask");
-
   Image<bool> mask_data;
-  if (opt.size())
+  if (!opt.empty())
     mask_data = Image<bool>::open(opt[0][0]);
 
   opt = get_options("seeds");
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
-  if (opt.size())
+  if (!opt.empty())
     dirs = File::Matrix::load_matrix<value_type>(opt[0][0]);
-  else {
+  else
     dirs = Eigen::Map<Eigen::Matrix<value_type, 60, 2>>(default_directions, 60, 2);
-  }
   if (dirs.cols() != 2)
     throw Exception("expecting 2 columns for search directions matrix");
 
@@ -304,7 +313,7 @@ void run() {
     Direction p(Math::pi * to<float>(opt[n][0]) / 180.0, Math::pi * float(opt[n][1]) / 180.0);
     true_peaks.push_back(p);
   }
-  if (true_peaks.size())
+  if (!true_peaks.empty())
     npeaks = true_peaks.size();
 
   value_type threshold = get_option_value("threshold", -INFINITY);
@@ -314,10 +323,10 @@ void run() {
 
   opt = get_options("peaks");
   Image<value_type> ipeaks_data;
-  if (opt.size()) {
-    if (true_peaks.size())
+  if (!opt.empty()) {
+    if (!true_peaks.empty())
       throw Exception("you can't specify both a peaks file and orientations to be estimated at the same time");
-    if (opt.size())
+    if (!opt.empty())
       ipeaks_data = Image<value_type>::open(opt[0][0]);
 
     check_dimensions(SH_data, ipeaks_data, 0, 3);
@@ -334,7 +343,7 @@ void run() {
                       true_peaks,
                       threshold,
                       ipeaks_data,
-                      get_options("fast").size());
+                      !get_options("fast").empty());
 
   Thread::run_queue(loader, Thread::batch(Item()), Thread::multi(processor));
 }

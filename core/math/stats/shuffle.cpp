@@ -23,75 +23,72 @@
 #include "math/factorial.h"
 #include "math/rng.h"
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 const char *error_types[] = {"ee", "ise", "both", nullptr};
 
 App::OptionGroup shuffle_options(const bool include_nonstationarity, const default_type default_skew) {
   using namespace App;
 
+  // clang-format off
   OptionGroup result =
       OptionGroup("Options relating to shuffling of data for nonparametric statistical inference")
-
       + Option("notest",
-               "don't perform statistical inference; only output population statistics (effect size, stdev etc)")
-
+               "don't perform statistical inference;"
+               " only output population statistics"
+               " (effect size, stdev etc)")
       + Option("errors",
-               "specify nature of errors for shuffling; options are: " + join(error_types, ",") + " (default: ee)") +
-      Argument("spec").type_choice(error_types)
-
+               "specify nature of errors for shuffling;"
+               " options are: " + join(error_types, ",") +
+               " (default: ee)")
+        + Argument("spec").type_choice(error_types)
       + Option("exchange_within",
-               "specify blocks of observations within each of which data may undergo restricted exchange") +
-      Argument("file").type_file_in()
-
+               "specify blocks of observations within each of which data may undergo restricted exchange")
+        + Argument("file").type_file_in()
       + Option("exchange_whole",
-               "specify blocks of observations that may be exchanged with one another "
-               "(for independent and symmetric errors, sign-flipping will occur block-wise)") +
-      Argument("file").type_file_in()
-
-      + Option("strong", "use strong familywise error control across multiple hypotheses")
-
-      + Option("nshuffles", "the number of shuffles (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")") +
-      Argument("number").type_integer(1)
-
-      +
-      Option("permutations",
-             "manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, "
-             "where each relabelling is defined as a column vector of size m, and the number of columns, n, defines "
-             "the number of permutations. Can be generated with the palm_quickperms function in PALM "
-             "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). "
-             "Overrides the -nshuffles option.") +
-      Argument("file").type_file_in();
+               "specify blocks of observations that may be exchanged with one another"
+               " (for independent and symmetric errors, sign-flipping will occur block-wise)")
+        + Argument("file").type_file_in()
+      + Option("strong",
+               "use strong familywise error control across multiple hypotheses")
+      + Option("nshuffles",
+               "the number of shuffles"
+               " (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")")
+        + Argument("number").type_integer(1)
+      + Option("permutations",
+               "manually define the permutations (relabelling)."
+               " The input should be a text file defining a m x n matrix,"
+               " where each relabelling is defined as a column vector of size m,"
+               " and the number of columns n defines the number of permutations."
+               " Can be generated with the palm_quickperms function in PALM"
+               " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
+               " Overrides the -nshuffles option.")
+        + Argument("file").type_file_in();
 
   if (include_nonstationarity) {
-
-    result + Option("nonstationarity", "perform non-stationarity correction")
-
-        + Option("skew_nonstationarity",
-                 "specify the skew parameter for empirical statistic calculation (default for this command is " +
-                     str(default_skew) + ")") +
-        Argument("value").type_float(0.0)
-
-        + Option("nshuffles_nonstationarity",
-                 "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity "
-                 "correction (default: " +
-                     str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")") +
-        Argument("number").type_integer(1)
-
-        + Option("permutations_nonstationarity",
-                 "manually define the permutations (relabelling) for computing the emprical statistics for "
-                 "non-stationarity correction. "
-                 "The input should be a text file defining a m x n matrix, where each relabelling is defined as a "
-                 "column vector of size m, "
-                 "and the number of columns, n, defines the number of permutations. Can be generated with the "
-                 "palm_quickperms function in PALM "
-                 "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) "
-                 "Overrides the -nshuffles_nonstationarity option.") +
-        Argument("file").type_file_in();
+    result + Option("nonstationarity",
+                    "perform non-stationarity correction")
+           + Option("skew_nonstationarity",
+                    "specify the skew parameter for empirical statistic calculation"
+                    " (default for this command is " + str(default_skew) + ")")
+             + Argument("value").type_float(0.0)
+           + Option("nshuffles_nonstationarity",
+                    "the number of shuffles to use when precomputing the empirical statistic image"
+                    " for non-stationarity correction"
+                    " (default: " + str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")")
+             + Argument("number").type_integer(1)
+           + Option("permutations_nonstationarity",
+                    "manually define the permutations (relabelling)"
+                    " for computing the emprical statistics for non-stationarity correction."
+                    " The input should be a text file defining a m x n matrix,"
+                    " where each relabelling is defined as a column vector of size m,"
+                    " and the number of columns n defines the number of permutations."
+                    " Can be generated with the palm_quickperms function in PALM"
+                    " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
+                    " Overrides the -nshuffles_nonstationarity option.")
+             + Argument("file").type_file_in();
   }
-
+  // clang-format on
   return result;
 }
 
@@ -102,7 +99,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
   using namespace App;
   auto opt = get_options("errors");
   error_t error_types = error_t::EE;
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch (int(opt[0][0])) {
     case 0:
       error_types = error_t::EE;
@@ -118,13 +115,13 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
 
   bool nshuffles_explicit = false;
   opt = get_options(is_nonstationarity ? "nshuffles_nonstationarity" : "nshuffles");
-  if (opt.size()) {
+  if (!opt.empty()) {
     nshuffles = opt[0][0];
     nshuffles_explicit = true;
   }
 
   opt = get_options(is_nonstationarity ? "permutations_nonstationarity" : "permutations");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (error_types == error_t::EE || error_types == error_t::BOTH) {
       load_permutations(opt[0][0]);
       if (permutations[0].size() != rows)
@@ -142,7 +139,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
 
   opt = get_options("exchange_within");
   index_array_type eb_within;
-  if (opt.size()) {
+  if (!opt.empty()) {
     try {
       eb_within = load_blocks(std::string(opt[0][0]), false);
     } catch (Exception &e) {
@@ -152,7 +149,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
 
   opt = get_options("exchange_whole");
   index_array_type eb_whole;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (eb_within.size())
       throw Exception("Cannot specify both \"within\" and \"whole\" exchangeability block data");
     try {
@@ -164,7 +161,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
 
   initialise(error_types, nshuffles_explicit, is_nonstationarity, eb_within, eb_whole);
 
-  if (msg.size())
+  if (!msg.empty())
     progress.reset(new ProgressBar(msg, nshuffles));
 }
 
@@ -184,7 +181,7 @@ Shuffler::Shuffler(const index_type num_rows,
                    const std::string msg)
     : rows(num_rows), nshuffles(num_shuffles) {
   initialise(error_types, true, is_nonstationarity, eb_within, eb_whole);
-  if (msg.size())
+  if (!msg.empty())
     progress.reset(new ProgressBar(msg, nshuffles));
 }
 
@@ -197,14 +194,14 @@ bool Shuffler::operator()(Shuffle &output) {
     return false;
   }
   // TESTME Think I need to adjust the signflips application based on the permutations
-  if (permutations.size()) {
+  if (!permutations.empty()) {
     output.data = matrix_type::Zero(rows, rows);
     for (index_type i = 0; i != rows; ++i)
       output.data(i, permutations[counter][i]) = 1.0;
   } else {
     output.data = matrix_type::Identity(rows, rows);
   }
-  if (signflips.size()) {
+  if (!signflips.empty()) {
     for (index_type r = 0; r != rows; ++r) {
       if (signflips[counter][r]) {
         for (index_type c = 0; c != rows; ++c) {
@@ -318,7 +315,7 @@ void Shuffler::initialise(const error_t error_types,
   //     while disabling detection of duplicates
   //   - Repeat the three steps above for signflips
 
-  if (ee && !permutations.size()) {
+  if (ee && permutations.empty()) {
     if (ise) {
       if (nshuffles == max_shuffles) {
         generate_all_permutations(rows, eb_within, eb_whole);
@@ -578,7 +575,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
 
 void Shuffler::load_permutations(const std::string &filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
-  if (!temp.size())
+  if (temp.empty())
     throw Exception("no data found in permutations file: " + str(filename));
 
   const index_type min_value = *std::min_element(std::begin(temp[0]), std::end(temp[0]));
@@ -704,6 +701,4 @@ std::vector<std::vector<index_type>> Shuffler::indices2blocks(const index_array_
   return result;
 }
 
-} // namespace Stats
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Stats

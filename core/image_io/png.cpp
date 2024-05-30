@@ -22,8 +22,7 @@
 #include "header.h"
 #include "image_helpers.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void PNG::load(const Header &header, size_t) {
   segsize = header.datatype().bytes() * voxel_count(header) * files.size();
@@ -58,7 +57,7 @@ void PNG::load(const Header &header, size_t) {
 }
 
 void PNG::unload(const Header &header) {
-  if (addresses.size()) {
+  if (!addresses.empty()) {
     if (writable) {
       size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) + 7) / 8;
       if (header.ndim() == 4)
@@ -73,7 +72,6 @@ void PNG::unload(const Header &header) {
   }
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO
 
 #endif

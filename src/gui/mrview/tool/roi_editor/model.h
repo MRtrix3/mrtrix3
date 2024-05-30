@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_roi_editor_model_h__
-#define __gui_mrview_tool_roi_editor_model_h__
+#pragma once
 
 #include "gui/mrview/tool/list_model_base.h"
 #include "gui/mrview/tool/roi_editor/item.h"
 #include "header.h"
 #include "memory.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class ROI_Model : public ListModelBase {
 public:
@@ -37,9 +33,4 @@ public:
   ROI_Item *get(QModelIndex &index) { return dynamic_cast<ROI_Item *>(items[index.row()].get()); }
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

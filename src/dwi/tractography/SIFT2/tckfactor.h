@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift2_tckfactor_h__
-#define __dwi_tractography_sift2_tckfactor_h__
+#pragma once
 
 #include <fstream>
 #include <limits>
@@ -43,10 +42,7 @@
 #define SIFT2_MAX_COEFF_STEP_DEFAULT 1.0
 #define SIFT2_MIN_CF_DECREASE_DEFAULT 2.5e-5
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 class TckFactor : public SIFT::Model<Fixel> {
 
@@ -125,9 +121,4 @@ private:
   }
 };
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT2

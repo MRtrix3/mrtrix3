@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_set_h__
-#define __dwi_directions_set_h__
+#pragma once
 
 #include <cstdint>
 
@@ -25,9 +24,7 @@
 #include "progressbar.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 using index_type = unsigned int;
 
@@ -168,8 +165,4 @@ private:
   void test_lookup() const;
 };
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Directions

@@ -28,28 +28,32 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "View spherical harmonics surface plots";
 
   ARGUMENTS
-  +Argument("coefs", "a text file containing the even order spherical harmonics coefficients to display.")
-       .optional()
-       .type_file_in();
+  + Argument ("coefs", "a text file containing the even order"
+                       " spherical harmonics coefficients to display.").optional().type_file_in();
 
   OPTIONS
-  +Option("response",
-          "assume SH coefficients file only contains m=0 terms (zonal harmonics). "
-          "Used to display the response function as produced by estimate_response");
+  + Option ("response",
+            "assume SH coefficients file only contains m=0 terms"
+            " (zonal harmonics)."
+            " Used to display the response function as produced by eg. amp2response");
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
+
 }
+// clang-format on
 
 void run() {
-  GUI::DWI::Window window(get_options("response").size());
+  GUI::DWI::Window window(!get_options("response").empty());
 
-  if (argument.size())
+  if (!argument.empty())
     window.set_values(std::string(argument[0]));
 
   window.show();

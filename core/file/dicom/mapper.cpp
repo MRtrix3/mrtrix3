@@ -28,9 +28,7 @@
 #include "image_io/variable_scaling.h"
 #include "phase_encoding.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<std::shared_ptr<Series>> &series) {
   // ENVVAR name: MRTRIX_PRESERVE_PHILIPS_ISO
@@ -52,11 +50,11 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   std::unique_ptr<MR::ImageIO::Base> io_handler;
 
   Patient *patient(series[0]->study->patient);
-  std::string sbuf = (patient->name.size() ? patient->name : "unnamed");
+  std::string sbuf = (!patient->name.empty() ? patient->name : "unnamed");
   sbuf += " " + format_ID(patient->ID);
-  if (series[0]->modality.size())
+  if (!series[0]->modality.empty())
     sbuf += std::string(" [") + series[0]->modality + "]";
-  if (series[0]->name.size())
+  if (!series[0]->name.empty())
     sbuf += std::string(" ") + series[0]->name;
   add_line(H.keyval()["comments"], sbuf);
   H.name() = sbuf;
@@ -87,7 +85,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
         throw E;
       }
       // if multi-frame, loop over frames in image:
-      if (image_it->frames.size()) {
+      if (!image_it->frames.empty()) {
         std::sort(image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
         for (auto frame_it : image_it->frames)
           if (frame_it->image_type == series_it->image_type)
@@ -100,7 +98,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     }
   }
 
-  if (!frames.size())
+  if (frames.empty())
     throw Exception("no DICOM frames found!");
 
   auto dim = Frame::count(frames);
@@ -122,16 +120,16 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 
   default_type slice_separation = Frame::get_slice_separation(frames, dim[1]);
 
-  if (series[0]->study->name.size())
+  if (!series[0]->study->name.empty())
     add_line(H.keyval()["comments"],
              std::string("study: " + series[0]->study->name + " [ " + series[0]->image_type + " ]"));
 
-  if (patient->DOB.size())
+  if (!patient->DOB.empty())
     add_line(H.keyval()["comments"], std::string("DOB: " + format_date(patient->DOB)));
 
-  if (series[0]->date.size()) {
+  if (!series[0]->date.empty()) {
     sbuf = "DOS: " + format_date(series[0]->date);
-    if (series[0]->time.size())
+    if (!series[0]->time.empty())
       sbuf += " " + format_time(series[0]->time);
     add_line(H.keyval()["comments"], sbuf);
   }
@@ -152,7 +150,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       if (values.empty() || value_string != values.back())
         values.push_back(value_string);
     }
-    if (values.size())
+    if (!values.empty())
       H.keyval()[key] = join(values, ",");
   };
   import_parameter(
@@ -208,7 +206,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   }
 
   size_t nchannels = image.samples_per_pixel;
-  if (nchannels == 1 && !image.frames.size()) {
+  if (nchannels == 1 && image.frames.empty()) {
     // only guess number of samples per pixel if not explicitly set in
     // DICOM and not using multi-frame:
     nchannels = image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc / 8));
@@ -281,7 +279,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 
     H.transform() = M;
     std::string dw_scheme = Frame::get_DW_scheme(frames, dim[1], M);
-    if (dw_scheme.size())
+    if (!dw_scheme.empty())
       H.keyval()["dw_scheme"] = dw_scheme;
   }
 
@@ -346,11 +344,11 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     for (size_t n = 0; n != dim[1]; ++n)
       slices_timing_float.push_back(default_type(frames[n]->acquisition_time) - min_acquisition_time);
   }
-  if (slices_timing_float.size()) {
+  if (!slices_timing_float.empty()) {
     const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
     if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
       H.keyval()["SliceTiming"] =
-          slices_timing_str.size() ? join(slices_timing_str, ",") : join(slices_timing_float, ",");
+          !slices_timing_str.empty() ? join(slices_timing_str, ",") : join(slices_timing_float, ",");
       H.keyval()["MultibandAccelerationFactor"] = str(slices_acquired_at_zero);
       H.keyval()["SliceEncodingDirection"] = "k";
     } else {
@@ -420,6 +418,4 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   return io_handler;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

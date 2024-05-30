@@ -21,10 +21,7 @@
 #include "gui/mrview/tool/view.h"
 #include "gui/opengl/lighting.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 std::string Volume::Shader::vertex_shader_source(const Displayable &) {
   std::string source = "layout(location=0) in vec3 vertpos;\n"
@@ -54,7 +51,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
   const bool AND = mode.get_clipintersectionmodestate();
   std::string clip_color_spec = File::Config::get("MRViewClipPlaneColour");
   std::vector<float> clip_color = {1.0, 0.0, 0.0, 0.1};
-  if (clip_color_spec.size()) {
+  if (!clip_color_spec.empty()) {
     auto colour = parse_floats(clip_color_spec);
     if (colour.size() != 4)
       WARN("malformed config file entry for \"MRViewClipPlaneColour\" - expected 4 comma-separated values");
@@ -112,7 +109,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n";
 
-  if (clip.size()) {
+  if (!clip.empty()) {
     source += std::string("    bool show = ") + (AND ? "false" : "true") + ";\n";
     for (size_t n = 0; n < clip.size(); ++n)
       source +=
@@ -150,7 +147,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
             "        final_color.a += color.a;\n"
             "      }\n";
 
-  if (clip.size())
+  if (!clip.empty())
     source += "    }\n";
 
   // OVERLAYS:
@@ -204,7 +201,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
               "    }\n";
   }
 
-  if (clip.size() && mode.get_cliphighlightstate()) {
+  if (!clip.empty() && mode.get_cliphighlightstate()) {
     source += "    float highlight = 0.0;\n";
     for (size_t n = 0; n < clip.size(); ++n)
       source += "    if (clip" + str(n) +
@@ -511,7 +508,4 @@ inline bool Volume::get_clipintersectionmodestate() const {
   return view ? view->get_clipintersectionmodestate() : false;
 }
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode

@@ -23,28 +23,33 @@
 
 #include "connectome/connectome.h"
 
+#include <iomanip>
+
 using namespace MR;
 using namespace App;
 
 const char *field_choices[] = {"mass", "centre", nullptr};
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compute statistics of parcels within a label image";
 
   ARGUMENTS
-  +Argument("input", "the input label image").type_image_in();
+  + Argument ("input", "the input label image").type_image_in();
 
   OPTIONS
-  +Option("output",
-          "output only the field specified; "
-          "options are: " +
-              join(field_choices, ",")) +
-      Argument("choice").type_choice(field_choices)
+  + Option ("output", "output only the field specified;"
+                      " options are: " + join(field_choices, ","))
+    + Argument ("choice").type_choice (field_choices)
 
-      + Option("voxelspace", "report parcel centres of mass in voxel space rather than scanner space");
+  + Option ("voxelspace", "report parcel centres of mass in voxel space"
+                          " rather than scanner space");
+
 }
+// clang-format on
 
 using Connectome::node_t;
 using vector_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
@@ -74,11 +79,11 @@ void run() {
 
   coms = coms.array().colwise() / masses;
 
-  if (!get_options("voxelspace").size())
+  if (get_options("voxelspace").empty())
     coms = (image.transform() * coms.transpose()).transpose();
 
   auto opt = get_options("output");
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch (int(opt[0][0])) {
     case 0:
       std::cout << masses;
@@ -102,7 +107,7 @@ void run() {
   // Find width of first non-empty string, in order to centralise header label
   size_t com_width = 0;
   for (const auto &i : com_strings) {
-    if (i.size()) {
+    if (!i.empty()) {
       com_width = i.size();
       break;
     }

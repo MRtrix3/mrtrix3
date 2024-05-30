@@ -24,8 +24,7 @@
 
 #define BYTES_PER_ZCALL 524288
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void GZ::load(const Header &header, size_t) {
   if (files.empty())
@@ -71,7 +70,7 @@ void GZ::load(const Header &header, size_t) {
 }
 
 void GZ::unload(const Header &header) {
-  if (addresses.size()) {
+  if (!addresses.empty()) {
     assert(addresses[0]);
 
     if (writable) {
@@ -98,5 +97,4 @@ void GZ::unload(const Header &header) {
   }
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

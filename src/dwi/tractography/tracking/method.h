@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_tracking_method_h__
-#define __dwi_tractography_tracking_method_h__
+#pragma once
 
 #include "dwi/tractography/ACT/method.h"
 #include "dwi/tractography/rng.h"
@@ -23,10 +22,7 @@
 #include "memory.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class MethodBase {
 
@@ -93,9 +89,4 @@ protected:
   }
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Tracking

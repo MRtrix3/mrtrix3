@@ -19,9 +19,7 @@
 #include "gui/dialog/list.h"
 #include "gui/gui.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 namespace {
 
@@ -32,13 +30,13 @@ public:
     itemData = qstr(p->name + " " + format_ID(p->ID) + " " + format_date(p->DOB));
   }
   Item(Item *parent, const std::shared_ptr<Study> &p) : parentItem(parent) {
-    itemData = qstr((p->name.size() ? p->name : std::string("unnamed")) + " " + format_ID(p->ID) + " " +
+    itemData = qstr((!p->name.empty() ? p->name : std::string("unnamed")) + " " + format_ID(p->ID) + " " +
                     format_date(p->date) + " " + format_time(p->time));
   }
   Item(Item *parent, const std::shared_ptr<Series> &p) : parentItem(parent), dicom_series(p) {
-    itemData = qstr(str(p->size()) + " " + (p->modality.size() ? p->modality : std::string()) + " images " +
-                    format_time(p->time) + " " + (p->name.size() ? p->name : std::string("unnamed")) + " (" +
-                    ((*p)[0]->sequence_name.size() ? (*p)[0]->sequence_name : std::string("?")) + ") [" +
+    itemData = qstr(str(p->size()) + " " + (!p->modality.empty() ? p->modality : std::string()) + " images " +
+                    format_time(p->time) + " " + (!p->name.empty() ? p->name : std::string("unnamed")) + " (" +
+                    (!(*p)[0]->sequence_name.empty() ? (*p)[0]->sequence_name : std::string("?")) + ") [" +
                     str(p->number) + "] " + p->image_type);
   }
   ~Item() { qDeleteAll(childItems); }
@@ -191,7 +189,7 @@ std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree) {
   DicomSelector selector(tree);
   if (selector.exec()) {
     QModelIndexList indexes = selector.view->selectionModel()->selectedIndexes();
-    if (indexes.size()) {
+    if (!indexes.empty()) {
       QModelIndex index;
       Q_FOREACH (index, indexes) {
         Item *item = static_cast<Item *>(index.internalPointer());
@@ -204,6 +202,4 @@ std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree) {
   return ret;
 }
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog

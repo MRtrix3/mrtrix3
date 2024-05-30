@@ -14,14 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_opengl_lighting_h__
-#define __gui_opengl_lighting_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 class Lighting : public QObject {
   Q_OBJECT
@@ -41,8 +38,4 @@ signals:
   void changed();
 };
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::GL

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify command operation when:
+# - The input image is 4D
+# - A user-specified mask controls which voxels contribute to threshold determination
+# - The median value (within each volume, only voxels within the mask) is used to determine the threshold
+mrthreshold dwi.mif - -mask mask.mif -percentile 50 | \
+testing_diff_image - mrthreshold/4d_median_masked.mif

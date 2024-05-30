@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_scalar_file_h__
-#define __dwi_tractography_scalar_file_h__
+#pragma once
 
 #include <map>
 
@@ -27,9 +26,7 @@
 #include "file/ofstream.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 //! convenience function to verify that tck/tsf files match
 /*! in order to be interpreted correctly, track scalar files must match some
@@ -224,8 +221,4 @@ protected:
   ScalarWriter(const ScalarWriter &) = delete;
 };
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

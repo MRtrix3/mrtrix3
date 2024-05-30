@@ -4,13 +4,16 @@ list(FILTER HEADLESS_SOURCES EXCLUDE REGEX "gui/.*")
 file(GLOB_RECURSE GUI_SOURCES gui/*.h gui/*.cpp)
 
 if(MRTRIX_BUILD_GUI)
-    if(MRTRIX_USE_QT6)
-        find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL Network OpenGLWidgets REQUIRED)
-        qt6_add_resources(RCC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../icons/icons.qrc)
-    else()
+    if(MRTRIX_USE_QT5)
         find_package(Qt5 COMPONENTS Core Gui Widgets OpenGL Network REQUIRED)
         qt5_add_resources(RCC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../icons/icons.qrc)
+    else()
+        find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL Network OpenGLWidgets REQUIRED)
+        qt6_add_resources(RCC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../icons/icons.qrc)
     endif()
+    # Explicitly log Qt's location since it's not done automatically by the FindQt module
+    message(STATUS "Qt${QT_MAJOR_VERSION}_DIR is set to: ${Qt${QT_MAJOR_VERSION}_DIR}")
+
     find_package(OpenGL REQUIRED)
     find_package(Threads REQUIRED)
 endif()
@@ -21,7 +24,7 @@ find_package(Git QUIET)
 set(EXEC_VERSION_CPP ${CMAKE_CURRENT_BINARY_DIR}/exec_version.cpp)
 
 add_custom_target(exec-version-target ALL
-    COMMAND ${CMAKE_COMMAND} 
+    COMMAND ${CMAKE_COMMAND}
         -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
         -D DST=${EXEC_VERSION_CPP}
@@ -40,12 +43,6 @@ add_dependencies(mrtrix-exec-version-lib exec-version-target)
 add_library(mrtrix-headless SHARED ${HEADLESS_SOURCES})
 add_library(mrtrix::headless ALIAS mrtrix-headless)
 
-# On Windows, the library need to be in the same directory as the executables
-if(WIN32)
-    set_target_properties(mrtrix-headless PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
-    )
-endif()
 
 target_include_directories(mrtrix-exec-version-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -54,6 +51,14 @@ target_include_directories(mrtrix-exec-version-lib PUBLIC
 target_include_directories(mrtrix-headless PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if(MRTRIX_USE_PCH)
+    target_precompile_headers(mrtrix-headless PRIVATE
+        [["exception.h"]]
+        <fstream>
+        <complex>
+    )
+endif()
 
 target_link_libraries(mrtrix-headless PUBLIC
     mrtrix::core
@@ -69,6 +74,10 @@ if(MRTRIX_BUILD_GUI)
         LINK_DEPENDS_NO_SHARED ON
     )
 
+    if(MRTRIX_USE_PCH)
+        target_precompile_headers(mrtrix-gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/gui/gui_pch.h)
+    endif()
+
     target_link_libraries(mrtrix-gui PUBLIC
         mrtrix::headless
         Qt${QT_MAJOR_VERSION}::Core
@@ -79,8 +88,20 @@ if(MRTRIX_BUILD_GUI)
         Threads::Threads
         ${OPENGL_LIBRARIES}
     )
-    if(MRTRIX_USE_QT6)
+    if(NOT MRTRIX_USE_QT5)
         target_link_libraries(mrtrix-gui PUBLIC Qt6::OpenGLWidgets)
+    endif()
+endif()
+
+# On Windows, the libraries need to be in the same directory as the executables
+if(WIN32)
+    set_target_properties(mrtrix-headless PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
+    )
+    if(MRTRIX_BUILD_GUI)
+        set_target_properties(mrtrix-gui PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
+        )
     endif()
 endif()
 

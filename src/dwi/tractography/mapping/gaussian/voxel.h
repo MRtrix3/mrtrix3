@@ -14,16 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_gaussian_voxel_h__
-#define __dwi_tractography_mapping_gaussian_voxel_h__
+#pragma once
 
 #include "dwi/tractography/mapping/voxel.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
-namespace Gaussian {
+namespace MR::DWI::Tractography::Mapping::Gaussian {
 
 // Base class to handle case where the factor contributed by the streamline varies along its length
 //   (currently only occurs when the track-wise statistic is Gaussian)
@@ -242,10 +237,4 @@ public:
   }
 };
 
-} // namespace Gaussian
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Mapping::Gaussian

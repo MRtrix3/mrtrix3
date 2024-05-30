@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_editing_worker_h__
-#define __dwi_tractography_editing_worker_h__
+#pragma once
 
 #include <string>
 
@@ -25,10 +24,7 @@
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 class Worker {
 
@@ -68,9 +64,4 @@ private:
   mutable IncludeROIVisitation include_visitation;
 };
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Editing

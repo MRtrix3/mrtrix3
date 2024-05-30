@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __cursor_h__
-#define __cursor_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 class Cursor {
 public:
   Cursor();
@@ -35,7 +33,4 @@ public:
   static QCursor erase;
 };
 
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

@@ -14,17 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_transform_h__
-#define __gui_mrview_tool_transform_h__
+#pragma once
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Transform : public Base, public Tool::CameraInteractor {
   Q_OBJECT
@@ -49,9 +44,4 @@ protected slots:
   void onActivate(bool);
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

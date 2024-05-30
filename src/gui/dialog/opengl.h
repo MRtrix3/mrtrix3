@@ -14,22 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dialog_opengl_h__
-#define __gui_dialog_opengl_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 class OpenGL : public QDialog {
 public:
   OpenGL(QWidget *parent, const GL::Format &format);
 };
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::Dialog

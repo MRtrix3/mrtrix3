@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_helpers_h__
-#define __fixel_helpers_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "app.h"
@@ -175,7 +174,7 @@ check_fixel_directory(const std::string &path, bool create_if_missing = false, b
   } else if (!Path::is_dir(path_temp))
     throw Exception(str(path_temp) + " is not a directory");
 
-  if (check_if_empty && Path::Dir(path_temp).read_name().size() != 0)
+  if (check_if_empty && !Path::Dir(path_temp).read_name().empty())
     throw Exception("Output fixel directory \"" + path_temp + "\" is not empty" +
                     (App::overwrite_files
                          ? " (-force option cannot safely be applied on directories; please erase manually instead)"
@@ -211,7 +210,7 @@ FORCE_INLINE std::vector<Header> find_data_headers(const std::string &fixel_dire
   std::vector<std::string> file_names;
   {
     std::string temp;
-    while ((temp = dir_walker.read_name()).size())
+    while (!(temp = dir_walker.read_name()).empty())
       file_names.push_back(temp);
   }
   std::sort(file_names.begin(), file_names.end());
@@ -247,7 +246,7 @@ FORCE_INLINE Header find_directions_header(const std::string fixel_directory_pat
 
   auto dir_walker = Path::Dir(fixel_directory_path);
   std::string fname;
-  while ((fname = dir_walker.read_name()).size()) {
+  while (!(fname = dir_walker.read_name()).empty()) {
     if (is_directions_filename(fname)) {
       Header tmp_header = Header::open(Path::join(fixel_directory_path, fname));
       if (is_directions_file(tmp_header)) {
@@ -404,5 +403,3 @@ template <class ValueType> Image<ValueType> open_fixel_data_file(const std::stri
 }
 } // namespace Fixel
 } // namespace MR
-
-#endif

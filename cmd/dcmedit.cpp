@@ -24,41 +24,49 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Edit DICOM file in-place";
 
   DESCRIPTION
-  +"Note that this command simply replaces the existing "
-   "values without modifying the DICOM structure in any way. Replacement text "
-   "will be truncated if it is too long to fit inside the existing tag."
+  + "Note that this command simply replaces the existing values"
+    " without modifying the DICOM structure in any way."
+    " Replacement text will be truncated"
+    " if it is too long to fit inside the existing tag."
 
-      + "WARNING: this command will modify existing data! It is recommended to run "
-        "this command on a copy of the original data set to avoid loss of data.";
+  + "WARNING: this command will modify existing data!"
+    " It is recommended to run this command"
+    " on a copy of the original data set to avoid loss of data."
+
+  + "Command-line option -anonymise attempts to remove identifiable information"
+    " by replacing the following tags: \n"
+    "- any tag with Value Representation PN will be replaced with 'anonymous'; \n"
+    "- tag (0010,0030) PatientBirthDate will be replaced with an empty string. \n"
+    "WARNING: there is no guarantee that this command will remove all identiable information,"
+    " since such information may be contained in any number of private vendor-specific tags."
+    " You will need to double-check the results independently"
+    " if you need to ensure anonymity.";
 
   ARGUMENTS
-  +Argument("file", "the DICOM file to be edited.").type_file_in();
+  + Argument ("file", "the DICOM file to be edited.").type_file_in();
 
   OPTIONS
-  +Option("anonymise",
-          "remove any identifiable information, by replacing the following tags:\n"
-          "- any tag with Value Representation PN will be replaced with 'anonymous'\n"
-          "- tag (0010,0030) PatientBirthDate will be replaced with an empty string\n"
-          "WARNING: there is no guarantee that this command will remove all identiable "
-          "information, since such information may be contained in any number "
-          "of private vendor-specific tags. You will need to double-check the "
-          "results independently if you "
-          "need to ensure anonymity.")
+  + Option ("anonymise", "remove identifiable information (see Description).")
 
-      + Option("id",
-               "replace all ID tags with string supplied. This consists of tags "
-               "(0010, 0020) PatientID and (0010, 1000) OtherPatientIDs") +
-      Argument("text").type_text()
+  + Option ("id", "replace all ID tags with string supplied."
+                  " This consists of tags (0010, 0020) PatientID"
+                  " and (0010, 1000) OtherPatientIDs")
+    + Argument ("text").type_text()
 
-      + Option("tag", "replace specific tag.").allow_multiple() + Argument("group") + Argument("element") +
-      Argument("newvalue");
+  + Option ("tag", "replace specific tag.").allow_multiple()
+    + Argument ("group")
+    + Argument ("element")
+    + Argument ("newvalue");
 }
+// clang-format on
 
 class Tag {
 public:
@@ -85,19 +93,18 @@ void run() {
   std::vector<Tag> tags;
   std::vector<uint16_t> VRs;
 
-  auto opt = get_options("anonymise");
-  if (opt.size()) {
+  if (!get_options("anonymise").empty()) {
     tags.push_back(Tag(0x0010U, 0x0030U, "")); // PatientBirthDate
     VRs.push_back(VR_PN);
   }
 
-  opt = get_options("tag");
-  if (opt.size())
+  auto opt = get_options("tag");
+  if (!opt.empty())
     for (size_t n = 0; n < opt.size(); ++n)
       tags.push_back(Tag(read_hex(opt[n][0]), read_hex(opt[n][1]), opt[n][2]));
 
   opt = get_options("id");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::string newid = opt[0][0];
     tags.push_back(Tag(0x0010U, 0x0020U, newid)); // PatientID
     tags.push_back(Tag(0x0010U, 0x1000U, newid)); // OtherPatientIDs

@@ -38,67 +38,69 @@ using namespace App;
 
 using Fixel::index_type;
 
-const OptionGroup OutputOptions =
-    OptionGroup("Metric values for fixel-based sparse output images")
+// clang-format off
+const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
 
-    + Option("afd", "output the total Apparent Fibre Density per fixel (integral of FOD lobe)") +
-    Argument("image").type_image_out()
+  + Option ("afd",
+            "output the total Apparent Fibre Density per fixel"
+            " (integral of FOD lobe)")
+    + Argument ("image").type_image_out()
 
-    + Option("peak_amp", "output the amplitude of the FOD at the maximal peak per fixel") +
-    Argument("image").type_image_out()
+  + Option ("peak_amp",
+            "output the amplitude of the FOD at the maximal peak per fixel")
+    + Argument ("image").type_image_out()
 
-    +
-    Option(
-        "disp",
-        "output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude") +
-    Argument("image").type_image_out();
+  + Option ("disp",
+            "output a measure of dispersion per fixel"
+            " as the ratio between FOD lobe integral and maximal peak amplitude")
+    + Argument ("image").type_image_out();
 
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels";
-
-  DESCRIPTION
-  +Fixel::format_description;
+  SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs)"
+             " to produce discrete fixels";
 
   REFERENCES
-  +"* Reference for the FOD segmentation method:\n"
-   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-   "NeuroImage, 2013, 67, 298-312 (Appendix 2)"
+    + "* Reference for the FOD segmentation method:\n"
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312 (Appendix 2)"
 
-      +
-      "* Reference for Apparent Fibre Density (AFD):\n"
-      "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
-      "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
-      "Neuroimage, 2012, 15;59(4), 3976-94";
+    + "* Reference for Apparent Fibre Density (AFD):\n"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
+    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
+    "Neuroimage, 2012, 15;59(4), 3976-94";
 
   ARGUMENTS
-  +Argument("fod", "the input fod image.").type_image_in() +
-      Argument("fixel_directory", "the output fixel directory").type_directory_out();
+  + Argument ("fod", "the input fod image.").type_image_in ()
+  + Argument ("fixel_directory", "the output fixel directory").type_directory_out();
+
 
   OPTIONS
 
-  +OutputOptions
+  + OutputOptions
 
-      + FMLSSegmentOption
+  + FMLSSegmentOption
 
-      + OptionGroup("Other options for fod2fixel")
+  + OptionGroup ("Other options for fod2fixel")
 
-      + Option("mask", "only perform computation within the specified binary brain mask image.") +
-      Argument("image").type_image_in()
+  + Option ("mask", "only perform computation within the specified binary brain mask image.")
+    + Argument ("image").type_image_in()
 
-      + Option("maxnum", "maximum number of fixels to output for any particular voxel (default: no limit)") +
-      Argument("number").type_integer(1)
+  + Option ("maxnum", "maximum number of fixels to output for any particular voxel"
+                      " (default: no limit)")
+    + Argument ("number").type_integer(1)
 
-      + Option("nii", "output the directions and index file in nii format (instead of the default mif)")
+  + Option ("nii", "output the directions and index file in nii format"
+                   " (instead of the default mif)")
 
-      + Option("dirpeak",
-               "define the fixel direction as that of the lobe's maximal peak as opposed to its weighted mean "
-               "direction (the default)");
+  + Option ("dirpeak", "define the fixel direction as that of the lobe's maximal peak"
+                       " as opposed to its weighted mean direction (the default)");
+
 }
-
+// clang-format on
 class Segmented_FOD_receiver {
 
 public:
@@ -149,15 +151,15 @@ private:
 };
 
 bool Segmented_FOD_receiver::operator()(const FOD_lobes &in) {
-  if (in.size()) {
-    lobes.emplace_back(in, max_per_voxel, dir_from_peak);
-    fixel_count += lobes.back().size();
-  }
+  if (in.empty())
+    return true;
+  lobes.emplace_back(in, max_per_voxel, dir_from_peak);
+  fixel_count += lobes.back().size();
   return true;
 }
 
 void Segmented_FOD_receiver::commit() {
-  if (!lobes.size() || !fixel_count)
+  if (lobes.empty() || fixel_count == 0)
     return;
 
   using DataImage = Image<float>;
@@ -188,7 +190,7 @@ void Segmented_FOD_receiver::commit() {
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
 
-  if (dir_path.size()) {
+  if (!dir_path.empty()) {
     auto dir_header(fixel_data_header);
     dir_header.size(1) = 3;
     dir_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, dir_path), dir_header));
@@ -196,7 +198,7 @@ void Segmented_FOD_receiver::commit() {
     Fixel::check_fixel_size(*index_image, *dir_image);
   }
 
-  if (afd_path.size()) {
+  if (!afd_path.empty()) {
     auto afd_header(fixel_data_header);
     afd_header.size(1) = 1;
     afd_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, afd_path), afd_header));
@@ -204,7 +206,7 @@ void Segmented_FOD_receiver::commit() {
     Fixel::check_fixel_size(*index_image, *afd_image);
   }
 
-  if (peak_amp_path.size()) {
+  if (!peak_amp_path.empty()) {
     auto peak_amp_header(fixel_data_header);
     peak_amp_header.size(1) = 1;
     peak_amp_image = std::make_unique<DataImage>(
@@ -213,7 +215,7 @@ void Segmented_FOD_receiver::commit() {
     Fixel::check_fixel_size(*index_image, *peak_amp_image);
   }
 
-  if (disp_path.size()) {
+  if (!disp_path.empty()) {
     auto disp_header(fixel_data_header);
     disp_header.size(1) = 1;
     disp_image =
@@ -222,8 +224,7 @@ void Segmented_FOD_receiver::commit() {
     Fixel::check_fixel_size(*index_image, *disp_image);
   }
 
-  size_t offset = 0;
-
+  size_t offset(0);
   for (const auto &vox_fixels : lobes) {
     size_t n_vox_fixels = vox_fixels.size();
 
@@ -274,7 +275,7 @@ void run() {
   Math::SH::check(H);
   auto fod_data = H.get_image<float>();
 
-  const bool dir_as_peak = get_options("dirpeak").size();
+  const bool dir_as_peak = !get_options("dirpeak").empty();
   const index_type maxnum = get_option_value("maxnum", 0);
 
   Segmented_FOD_receiver receiver(H, maxnum, dir_as_peak);
@@ -283,7 +284,7 @@ void run() {
   receiver.set_fixel_directory_output(fixel_directory_path);
 
   std::string file_extension(".mif");
-  if (get_options("nii").size())
+  if (!get_options("nii").empty())
     file_extension = ".nii";
 
   static const std::string default_index_filename("index" + file_extension);
@@ -292,18 +293,18 @@ void run() {
   receiver.set_directions_output(default_directions_filename);
 
   auto opt = get_options("afd");
-  if (opt.size())
+  if (!opt.empty())
     receiver.set_afd_output(opt[0][0]);
   opt = get_options("peak_amp");
-  if (opt.size())
+  if (!opt.empty())
     receiver.set_peak_amp_output(opt[0][0]);
   opt = get_options("disp");
-  if (opt.size())
+  if (!opt.empty())
     receiver.set_disp_output(opt[0][0]);
 
   opt = get_options("mask");
   Image<float> mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<float>::open(std::string(opt[0][0]));
     if (!dimensions_match(fod_data, mask, 0, 3))
       throw Exception("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");

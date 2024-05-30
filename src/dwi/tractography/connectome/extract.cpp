@@ -18,10 +18,7 @@
 
 #include "misc/bitset.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 bool Selector::operator()(const node_t node) const {
   for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
@@ -143,7 +140,7 @@ void WriterExemplars::write(const node_t one,
     else
       writer.skip();
   }
-  if (weights_path.size()) {
+  if (!weights_path.empty()) {
     File::OFStream output(weights_path);
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i](one, two))
@@ -162,7 +159,7 @@ void WriterExemplars::write(const node_t node, const std::string &path, const st
     else
       writer.skip();
   }
-  if (weights_path.size()) {
+  if (!weights_path.empty()) {
     File::OFStream output(weights_path);
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i](node))
@@ -177,7 +174,7 @@ void WriterExemplars::write(const std::string &path, const std::string &weights_
   Tractography::Writer<float> writer(path, properties);
   for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
     writer(i->get());
-  if (weights_path.size()) {
+  if (!weights_path.empty()) {
     File::OFStream output(weights_path);
     for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
       output << str(i->get_weight()) << "\n";
@@ -193,7 +190,7 @@ WriterExtraction::WriterExtraction(const Tractography::Properties &p,
 void WriterExtraction::add(const node_t node, const std::string &path, const std::string weights_path = "") {
   selectors.emplace_back(Selector(node, keep_self));
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-  if (weights_path.size())
+  if (!weights_path.empty())
     writers.back()->set_weights_path(weights_path);
 }
 
@@ -204,7 +201,7 @@ void WriterExtraction::add(const node_t node_one,
   if (keep_self || (node_one != node_two)) {
     selectors.emplace_back(Selector(node_one, node_two));
     writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-    if (weights_path.size())
+    if (!weights_path.empty())
       writers.back()->set_weights_path(weights_path);
   }
 }
@@ -214,7 +211,7 @@ void WriterExtraction::add(const std::vector<node_t> &list,
                            const std::string weights_path = "") {
   selectors.emplace_back(Selector(list, exclusive, keep_self));
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-  if (weights_path.size())
+  if (!weights_path.empty())
     writers.back()->set_weights_path(weights_path);
 }
 
@@ -274,7 +271,4 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) con
   return true;
 }
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome

@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_zstatistic_h__
-#define __math_zstatistic_h__
+#pragma once
 
 #include <map>
 #include <mutex>
 
 #include "math/stats/typedefs.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 default_type t2z(const default_type stat, const default_type dof);
 default_type F2z(const default_type stat, const size_t rank, const default_type dof);
@@ -93,7 +91,4 @@ protected:
   std::mutex mutex;
 };
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_lighting_dock_h__
-#define __gui_lighting_dock_h__
+#pragma once
 
 #include "gui/opengl/lighting.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 class LightingSettings : public QFrame {
   Q_OBJECT
 
@@ -47,7 +45,4 @@ public:
 private:
   LightingSettings *settings;
 };
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

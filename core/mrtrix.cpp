@@ -16,6 +16,8 @@
 
 #include "mrtrix.h"
 
+#include <cstdarg>
+
 namespace MR {
 
 /************************************************************************
@@ -24,7 +26,7 @@ namespace MR {
 
 std::vector<default_type> parse_floats(const std::string &spec) {
   std::vector<default_type> V;
-  if (!spec.size())
+  if (spec.empty())
     throw Exception("floating-point sequence specifier is empty");
   std::string::size_type start = 0, end;
   default_type range_spec[3];
@@ -66,7 +68,7 @@ std::vector<default_type> parse_floats(const std::string &spec) {
 std::vector<std::string>
 split(const std::string &string, const char *delimiters, bool ignore_empty_fields, size_t num) {
   std::vector<std::string> V;
-  if (!string.size())
+  if (string.empty())
     return V;
   std::string::size_type start = 0, end;
   try {
@@ -126,6 +128,140 @@ bool match(const std::string &pattern, const std::string &text, bool ignore_case
     return __match(lowercase(pattern).c_str(), lowercase(text).c_str());
   else
     return __match(pattern.c_str(), text.c_str());
+}
+
+std::istream &getline(std::istream &stream, std::string &string) {
+  std::getline(stream, string);
+  if (!string.empty())
+    if (string[string.size() - 1] == 015)
+      string.resize(string.size() - 1);
+  return stream;
+}
+
+std::string &add_line(std::string &original, const std::string &new_line) {
+  return original.empty() ? (original = new_line) : (original += "\n" + new_line);
+}
+
+std::string shorten(const std::string &text, size_t longest, size_t prefix) {
+  if (text.size() > longest)
+    return (text.substr(0, prefix) + "..." + text.substr(text.size() - longest + prefix + 3));
+  else
+    return text;
+}
+
+std::string lowercase(const std::string &string) {
+  std::string ret;
+  ret.resize(string.size());
+  transform(string.begin(), string.end(), ret.begin(), tolower);
+  return ret;
+}
+
+std::string uppercase(const std::string &string) {
+  std::string ret;
+  ret.resize(string.size());
+  transform(string.begin(), string.end(), ret.begin(), toupper);
+  return ret;
+}
+
+std::string printf(const char *format, ...) {
+  size_t len = 0;
+  va_list list1, list2;
+  va_start(list1, format);
+  va_copy(list2, list1);
+  len = vsnprintf(nullptr, 0, format, list1) + 1;
+  va_end(list1);
+  VLA(buf, char, len);
+  vsnprintf(buf, len, format, list2);
+  va_end(list2);
+  return buf;
+}
+
+std::string strip(const std::string &string, const std::string &ws, bool left, bool right) {
+  const std::string::size_type start = (left ? string.find_first_not_of(ws) : 0);
+  if (start == std::string::npos)
+    return "";
+  const std::string::size_type end = (right ? string.find_last_not_of(ws) + 1 : std::string::npos);
+  return string.substr(start, end - start);
+}
+
+std::string unquote(const std::string &string) {
+  if (string.size() <= 2)
+    return string;
+  if (!(string.front() == '\"' && string.back() == '\"'))
+    return string;
+  std::string substring = string.substr(1, string.size() - 2);
+  if (std::none_of(substring.begin(), substring.end(), [](const char &c) { return c == '\"'; }))
+    return substring;
+  return string;
+}
+
+void replace(std::string &string, char orig, char final) {
+  for (auto &c : string)
+    if (c == orig)
+      c = final;
+}
+
+void replace(std::string &str, const std::string &from, const std::string &to) {
+  if (from.empty())
+    return;
+  size_t start_pos = 0;
+  while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    str.replace(start_pos, from.length(), to);
+    start_pos += to.length();
+  }
+}
+
+std::vector<std::string> split_lines(const std::string &string, bool ignore_empty_fields, size_t num) {
+  return split(string, "\n", ignore_empty_fields, num);
+}
+
+size_t char_is_dash(const char *arg) {
+  assert(arg != nullptr);
+  if (arg[0] == '-')
+    return 1;
+  if (arg[0] == '\0' || arg[1] == '\0' || arg[2] == '\0')
+    return 0;
+  const unsigned char *uarg = reinterpret_cast<const unsigned char *>(arg);
+  if (uarg[0] == 0xE2 && uarg[1] == 0x80 && (uarg[2] >= 0x90 && uarg[2] <= 0x95))
+    return 3;
+  if (uarg[0] == 0xEF) {
+    if (uarg[1] == 0xB9 && (uarg[2] == 0x98 || uarg[2] == 0xA3))
+      return 3;
+    if (uarg[1] == 0xBC && uarg[2] == 0x8D)
+      return 3;
+  }
+  return 0;
+}
+
+bool is_dash(const std::string &arg) {
+  const size_t nbytes = char_is_dash(arg.c_str());
+  return nbytes != 0 && nbytes == arg.size();
+}
+
+bool consume_dash(const char *&arg) {
+  size_t nbytes = char_is_dash(arg);
+  arg += nbytes;
+  return nbytes != 0;
+}
+
+std::string join(const std::vector<std::string> &V, const std::string &delimiter) {
+  std::string ret;
+  if (V.empty())
+    return ret;
+  ret = V[0];
+  for (std::vector<std::string>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
+    ret += delimiter + *i;
+  return ret;
+}
+
+std::string join(const char *const *null_terminated_array, const std::string &delimiter) {
+  std::string ret;
+  if (!null_terminated_array)
+    return ret;
+  ret = null_terminated_array[0];
+  for (const char *const *p = null_terminated_array + 1; *p; ++p)
+    ret += delimiter + *p;
+  return ret;
 }
 
 } // namespace MR

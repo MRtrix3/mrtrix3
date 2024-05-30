@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_mapper_h__
-#define __file_dicom_mapper_h__
+#pragma once
 
 #include "memory.h"
 
@@ -26,15 +25,12 @@ namespace ImageIO {
 class Base;
 }
 
-namespace File {
-namespace Dicom {
+namespace File::Dicom {
 
 class Series;
 
 std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<std::shared_ptr<Series>> &series);
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace File::Dicom
 
-#endif
+} // namespace MR

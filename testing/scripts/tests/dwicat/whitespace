@@ -1,0 +1,18 @@
+#!/bin/bash
+# Test operation of the dwicat command
+#   where image paths include whitespace characters
+rm -f "tmp out.mif"
+rm -rf "tmp scratch"
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.mif" -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+
+ln -s BIDS/sub-01/dwi/sub-01_brainmask.nii.gz "tmp mask.nii.gz"
+
+mkdir "tmp scratch"
+
+dwicat "tmp in.mif" "tmp in.mif" "tmp out.mif" -force \
+-mask "tmp mask.nii.gz" \
+-scratch "tmp scratch"
+
+ls | grep "tmp out.mif"

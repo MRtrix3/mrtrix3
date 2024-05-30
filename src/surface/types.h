@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_types_h__
-#define __surface_types_h__
+#pragma once
 
 #include "connectome/connectome.h"
 #include "surface/polygon.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 using Vertex = Eigen::Vector3d;
 using VertexList = std::vector<Vertex>;
@@ -43,7 +41,4 @@ public:
 
 using label_vector_type = Eigen::Array<Connectome::node_t, Eigen::Dynamic, 1>;
 
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface

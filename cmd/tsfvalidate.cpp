@@ -26,15 +26,19 @@ using namespace MR;
 using namespace MR::DWI::Tractography;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate a track scalar file against the corresponding track data";
 
   ARGUMENTS
-  +Argument("tsf", "the input track scalar file").type_file_in() +
-      Argument("tracks", "the track file on which the TSF is based").type_file_in();
+  + Argument ("tsf", "the input track scalar file").type_file_in()
+  + Argument ("tracks", "the track file on which the TSF is based").type_file_in();
+
 }
+// clang-format on
 
 typedef float value_type;
 

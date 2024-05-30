@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_image_h__
-#define __gui_mrview_image_h__
+#pragma once
 
 #include "gui/mrview/volume.h"
 #include "gui/opengl/gl.h"
@@ -25,8 +24,7 @@
 #include "types.h"
 #include <unordered_map>
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 class Projection;
 
@@ -101,7 +99,4 @@ private:
 };
 
 } // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

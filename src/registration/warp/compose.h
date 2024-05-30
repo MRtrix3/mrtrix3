@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_warp_compose_h__
-#define __registration_warp_compose_h__
+#pragma once
 
 #include "adapter/extract.h"
 #include "adapter/jacobian.h" //TODO remove after debug
@@ -25,9 +24,7 @@
 #include "registration/warp/helpers.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-namespace Warp {
+namespace MR::Registration::Warp {
 
 class ComposeLinearDeformKernel {
 public:
@@ -295,8 +292,4 @@ FORCE_INLINE WarpType compute_full_deformation(WarpType &warp, TemplateType &tem
   return deform;
 }
 
-} // namespace Warp
-} // namespace Registration
-} // namespace MR
-
-#endif
+} // namespace MR::Registration::Warp

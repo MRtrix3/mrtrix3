@@ -20,9 +20,9 @@ Usage
 Description
 -----------
 
-5ttgen acts as a 'master' script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after '5ttgen'. The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.
+5ttgen acts as a "master" script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after "5ttgen". The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.
 
-Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the 'fsl' algorithm, type '5ttgen fsl'.
+Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the "fsl" algorithm, type "5ttgen fsl".
 
 Options
 -------
@@ -39,9 +39,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -107,16 +107,16 @@ Usage
 
     5ttgen freesurfer input output [ options ]
 
--  *input*: The input FreeSurfer parcellation image (any image containing 'aseg' in its name)
+-  *input*: The input FreeSurfer parcellation image (any image containing "aseg" in its name)
 -  *output*: The output 5TT image
 
 Options
 -------
 
-Options specific to the 'freesurfer' algorithm
+Options specific to the "freesurfer" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-lut** Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)
+- **-lut file** Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)
 
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -130,9 +130,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -204,12 +204,12 @@ Usage
 Options
 -------
 
-Options specific to the 'fsl' algorithm
+Options specific to the "fsl" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-t2 <T2 image>** Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
+- **-t2 image** Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
 
-- **-mask** Manually provide a brain mask, rather than deriving one in the script
+- **-mask image** Manually provide a brain mask, rather than deriving one in the script
 
 - **-premasked** Indicate that brain masking has already been applied to the input image
 
@@ -225,9 +225,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -319,9 +319,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -393,11 +393,11 @@ Usage
 Options
 -------
 
-- **-template** Provide an image that will form the template for the generated 5TT image
+- **-template image** Provide an image that will form the template for the generated 5TT image
 
-- **-hippocampi** Select method to be used for hippocampi (& amygdalae) segmentation; options are: subfields,first,aseg
+- **-hippocampi choice** Select method to be used for hippocampi (& amygdalae) segmentation; options are: subfields,first,aseg
 
-- **-thalami** Select method to be used for thalamic segmentation; options are: nuclei,first,aseg
+- **-thalami choice** Select method to be used for thalamic segmentation; options are: nuclei,first,aseg
 
 - **-white_stem** Classify the brainstem as white matter
 
@@ -413,9 +413,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^

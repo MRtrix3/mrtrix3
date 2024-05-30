@@ -29,30 +29,30 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Generate an appropriate response function from the image data for spherical deconvolution";
 
   DESCRIPTION
-  +Math::SH::encoding_description;
+  + Math::SH::encoding_description;
 
   ARGUMENTS
-  +Argument("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in() +
-      Argument("mask", "the mask containing the voxels from which to estimate the response function").type_image_in() +
-      Argument("directions",
-               "a 4D image containing the direction vectors along which to estimate the response function")
-          .type_image_in() +
-      Argument("response", "the output axially-symmetric spherical harmonic coefficients").type_file_out();
+    + Argument ("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in()
+    + Argument ("mask", "the mask containing the voxels from which to estimate the response function").type_image_in()
+    + Argument ("directions", "a 4D image containing the direction vectors along which to estimate the response function").type_image_in()
+    + Argument ("response", "the output axially-symmetric spherical harmonic coefficients").type_file_out();
 
   OPTIONS
-
-  +Option("lmax", "specify the maximum harmonic degree of the response function to estimate") +
-      Argument("value").type_integer(0, 20) +
-      Option("dump",
-             "dump the m=0 SH coefficients from all voxels in the mask to the output file, rather than their mean") +
-      Argument("file").type_file_out();
+    + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
+      + Argument ("value").type_integer(0, 20)
+    + Option ("dump", "dump the m=0 SH coefficients from all voxels in the mask to the output file,"
+                      " rather than their mean")
+      + Argument ("file").type_file_out();
 }
+// clang-format on
 
 using value_type = double;
 
@@ -77,7 +77,7 @@ void run() {
 
   File::OFStream dump_stream;
   auto opt = get_options("dump");
-  if (opt.size())
+  if (!opt.empty())
     dump_stream.open(opt[0][0]);
 
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);

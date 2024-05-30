@@ -29,8 +29,7 @@
 #include "header.h"
 #include "image_io/sparse.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 // extensions are:
 // msh: MRtrix Sparse image Header
@@ -81,7 +80,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::read(Header &H) const {
   for (size_t n = 0; n < image_list.size(); ++n)
     io_handler->files.push_back(File::Entry(image_list[n].name(), image_offset));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
 bool MRtrix_sparse::check(Header &H, size_t num_axes) const {
@@ -150,8 +149,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
       H, name_it->second, to<size_t>(size_it->second), File::Entry(sparse_path, sparse_offset)));
   io_handler->files.push_back(File::Entry(image_path, image_offset));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

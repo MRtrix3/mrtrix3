@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2023 the MRtrix3 contributors.
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,23 +20,43 @@
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import algorithm, app, _version #pylint: disable=no-name-in-module, import-outside-toplevel
 
-  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)')
+  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)'
+                     ' and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
-  cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after \'dwi2response\'. The subsequent arguments and options depend on the particular algorithm being invoked.')
-  cmdline.add_description('Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the \'fa\' algorithm, type \'dwi2response fa\'.')
-  cmdline.add_description('More information on response function estimation for spherical deconvolution can be found at the following link: \n'
-                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/constrained_spherical_deconvolution/response_function_estimation.html')
-  cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
-                          'derive an initial voxel exclusion mask. '
-                          'More information on mask derivation from DWI data can be found at: '
-                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/dwi_preprocessing/masking.html')
+  cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. '
+                          'The name of the algorithm must appear as the first argument on the command-line after "dwi2response". '
+                          'The subsequent arguments and options depend on the particular algorithm being invoked.')
+  cmdline.add_description('Each algorithm available has its own help page,'
+                          ' including necessary references;'
+                          ' e.g. to see the help page of the "fa" algorithm,'
+                           ' type "dwi2response fa".')
+  cmdline.add_description('More information on response function estimation for spherical deconvolution'
+                          ' can be found at the following link: \n'
+                          f'https://mrtrix.readthedocs.io/en/{_version.__tag__}/constrained_spherical_deconvolution/response_function_estimation.html')
+  cmdline.add_description('Note that if the -mask command-line option is not specified,'
+                          ' the MRtrix3 command dwi2mask will automatically be called to'
+                          ' derive an initial voxel exclusion mask.'
+                          ' More information on mask derivation from DWI data can be found at: \n'
+                          f'https://mrtrix.readthedocs.io/en/{_version.__tag__}/dwi_preprocessing/masking.html')
 
   # General options
   common_options = cmdline.add_argument_group('General dwi2response options')
-  common_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
-  common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
-  common_options.add_argument('-shells', help='The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)')
-  common_options.add_argument('-lmax', help='The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)')
+  common_options.add_argument('-mask',
+                              type=app.Parser.ImageIn(),
+                              help='Provide an initial mask for response voxel selection')
+  common_options.add_argument('-voxels',
+                              type=app.Parser.ImageOut(),
+                              help='Output an image showing the final voxel selection(s)')
+  common_options.add_argument('-shells',
+                              type=app.Parser.SequenceFloat(),
+                              metavar='bvalues',
+                              help='The b-value(s) to use in response function estimation '
+                                   '(comma-separated list in case of multiple b-values; '
+                                   'b=0 must be included explicitly if desired)')
+  common_options.add_argument('-lmax',
+                              type=app.Parser.SequenceInt(),
+                              help='The maximum harmonic degree(s) for response function estimation '
+                                   '(comma-separated list in case of multiple b-values)')
   app.add_dwgrad_import_options(cmdline)
 
   # Import the command-line settings for all algorithms found in the relevant directory
@@ -49,61 +69,55 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
-  from mrtrix3 import algorithm, app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import algorithm, app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Find out which algorithm the user has requested
   alg = algorithm.get_module(app.ARGS.algorithm)
 
-  # Check for prior existence of output files, and grab any input files, used by the particular algorithm
-  if app.ARGS.voxels:
-    app.check_output_path(app.ARGS.voxels)
-  alg.check_output_paths()
-
   # Sanitise some inputs, and get ready for data import
   if app.ARGS.lmax:
-    try:
-      lmax = [ int(x) for x in app.ARGS.lmax.split(',') ]
-      if any(lmax_value%2 for lmax_value in lmax):
-        raise MRtrixError('Value of lmax must be even')
-    except ValueError as exception:
-      raise MRtrixError('Parameter lmax must be a number') from exception
-    if alg.needs_single_shell() and not len(lmax) == 1:
+    if any(lmax%2 for lmax in app.ARGS.lmax):
+      raise MRtrixError('Value(s) of lmax must be even')
+    if alg.NEEDS_SINGLE_SHELL and not len(app.ARGS.lmax) == 1:
       raise MRtrixError('Can only specify a single lmax value for single-shell algorithms')
-  shells_option = ''
+  shells_option = []
   if app.ARGS.shells:
-    try:
-      shells_values = [ int(round(float(x))) for x in app.ARGS.shells.split(',') ]
-    except ValueError as exception:
-      raise MRtrixError('-shells option should provide a comma-separated list of b-values') from exception
-    if alg.needs_single_shell() and not len(shells_values) == 1:
+    if alg.NEEDS_SINGLE_SHELL and len(app.ARGS.shells) != 1:
       raise MRtrixError('Can only specify a single b-value shell for single-shell algorithms')
-    shells_option = ' -shells ' + app.ARGS.shells
-  singleshell_option = ''
-  if alg.needs_single_shell():
-    singleshell_option = ' -singleshell -no_bzero'
+    shells_option = ['-shells', ','.join(map(str,app.ARGS.shells))]
+  singleshell_option = []
+  if alg.NEEDS_SINGLE_SHELL:
+    singleshell_option = ['-singleshell', '-no_bzero']
 
-  grad_import_option = app.read_dwgrad_import_options()
-  if not grad_import_option and 'dw_scheme' not in image.Header(path.from_user(app.ARGS.input, False)).keyval():
-    raise MRtrixError('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
+  grad_import_option = app.dwgrad_import_options()
+  if not grad_import_option and 'dw_scheme' not in image.Header(app.ARGS.input).keyval():
+    raise MRtrixError('Script requires diffusion gradient table: '
+                      'either in image header, or using -grad / -fslgrad option')
 
-  app.make_scratch_dir()
-
+  app.activate_scratch_dir()
   # Get standard input data into the scratch directory
-  if alg.needs_single_shell() or shells_option:
-    app.console('Importing DWI data (' + path.from_user(app.ARGS.input) + ') and selecting b-values...')
-    run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' - -strides 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.to_scratch('dwi.mif') + shells_option + singleshell_option, show=False)
+  if alg.NEEDS_SINGLE_SHELL or shells_option:
+    app.console(f'Importing DWI data ({app.ARGS.input}) and selecting b-values...')
+    run.command(['mrconvert', app.ARGS.input, '-', '-strides', '0,0,0,1']
+                + grad_import_option
+                + ['|', 'dwiextract', '-', 'dwi.mif']
+                + shells_option
+                + singleshell_option,
+                show=False,
+                preserve_pipes=True)
   else: # Don't discard b=0 in multi-shell algorithms
-    app.console('Importing DWI data (' + path.from_user(app.ARGS.input) + ')...')
-    run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('dwi.mif') + ' -strides 0,0,0,1' + grad_import_option, show=False)
+    app.console(f'Importing DWI data ({app.ARGS.input})...')
+    run.command(['mrconvert', app.ARGS.input, 'dwi.mif', '-strides', '0,0,0,1']
+                + grad_import_option,
+                show=False,
+                preserve_pipes=True)
   if app.ARGS.mask:
-    app.console('Importing mask (' + path.from_user(app.ARGS.mask) + ')...')
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit', show=False)
+    app.console(f'Importing mask ({app.ARGS.mask})...')
+    run.command(['mrconvert', app.ARGS.mask, 'mask.mif', '-datatype', 'bit'],
+                show=False,
+                preserve_pipes=True)
 
-  alg.get_inputs()
-
-  app.goto_scratch_dir()
-
-  if alg.supports_mask():
+  if alg.SUPPORTS_MASK:
     if app.ARGS.mask:
       # Check that the brain mask is appropriate
       mask_header = image.Header('mask.mif')
@@ -112,8 +126,9 @@ def execute(): #pylint: disable=unused-variable
       if not (len(mask_header.size()) == 3 or (len(mask_header.size()) == 4 and mask_header.size()[3] == 1)):
         raise MRtrixError('Provided mask image needs to be a 3D image')
     else:
-      app.console('Computing brain mask (dwi2mask)...')
-      run.command('dwi2mask ' + CONFIG['Dwi2maskAlgorithm'] + ' dwi.mif mask.mif', show=False)
+      dwi2mask_algo = CONFIG['Dwi2maskAlgorithm']
+      app.console(f'Computing brain mask (dwi2mask {dwi2mask_algo})...')
+      run.command(f'dwi2mask {dwi2mask_algo} dwi.mif mask.mif', show=False)
 
     if not image.statistics('mask.mif', mask='mask.mif').count:
       raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')

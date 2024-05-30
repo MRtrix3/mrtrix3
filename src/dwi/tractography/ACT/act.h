@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_act_act_h__
-#define __dwi_tractography_act_act_h__
+#pragma once
 
 #include "app.h"
 #include "header.h"
@@ -36,9 +35,7 @@ namespace App {
 class OptionGroup;
 }
 
-namespace DWI {
-
-namespace Tractography {
+namespace DWI::Tractography {
 
 class Properties;
 
@@ -51,8 +48,6 @@ void load_act_properties(Properties &properties);
 void verify_5TT_image(const Header &);
 
 } // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace DWI::Tractography
 
-#endif
+} // namespace MR

@@ -14,15 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_mapped_track_h__
-#define __dwi_tractography_connectome_mapped_track_h__
+#pragma once
 
 #include "dwi/tractography/connectome/connectome.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 class Mapped_track_base {
 
@@ -74,9 +70,4 @@ private:
   std::vector<node_t> nodes;
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Connectome

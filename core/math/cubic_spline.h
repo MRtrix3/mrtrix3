@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_cubic_spline_h__
-#define __math_cubic_spline_h__
+#pragma once
 namespace MR {
 namespace Math {
 enum SplineProcessingType { Value = 1, Derivative = 2, ValueAndDerivative = Value | Derivative };
@@ -118,5 +117,3 @@ const typename UniformBSpline<T>::BasisMatrix UniformBSpline<T>::uniform_bspline
 
 } // namespace Math
 } // namespace MR
-
-#endif

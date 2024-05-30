@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_tracking_early_exit_h__
-#define __dwi_tractography_tracking_early_exit_h__
+#pragma once
 
 #include <Eigen/Core>
 
@@ -32,10 +31,7 @@
 
 #define TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE 0.20
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class EarlyExit {
 public:
@@ -52,9 +48,4 @@ private:
   size_t counter, next_test;
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Tracking

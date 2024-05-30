@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_filter_gaussian_h__
-#define __image_filter_gaussian_h__
+#pragma once
 
 #include "adapter/gaussian1D.h"
 #include "algo/copy.h"
@@ -24,8 +23,7 @@
 #include "image.h"
 #include "memory.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 /** \addtogroup Filters
 @{ */
 
@@ -109,7 +107,7 @@ public:
     std::shared_ptr<Image<ValueType>> out;
 
     std::unique_ptr<ProgressBar> progress;
-    if (message.size()) {
+    if (!message.empty()) {
       size_t axes_to_smooth = 0;
       for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
@@ -134,7 +132,7 @@ public:
   //! Smooth the image in place
   template <class ImageType> void operator()(ImageType &in_and_output) {
     std::unique_ptr<ProgressBar> progress;
-    if (message.size()) {
+    if (!message.empty()) {
       size_t axes_to_smooth = 0;
       for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
@@ -265,7 +263,4 @@ protected:
   };
 };
 //! @}
-} // namespace Filter
-} // namespace MR
-
-#endif
+} // namespace MR::Filter

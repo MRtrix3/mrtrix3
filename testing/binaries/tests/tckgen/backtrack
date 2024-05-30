@@ -1,0 +1,5 @@
+#!/bin/bash
+# Ensure that the ACT -backtrack capability executes
+#   (no validation of "correct" operation is performed; only that execution completes)
+tckgen SIFT_phantom/fods.mif -algo ifod1 -seed_image SIFT_phantom/mask.mif -select 100 tmp.tck -force \
+-act SIFT_phantom/5tt.mif -backtrack

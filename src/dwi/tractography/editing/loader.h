@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_editing_loader_h__
-#define __dwi_tractography_editing_loader_h__
+#pragma once
 
 #include <string>
 
@@ -26,10 +25,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 class Loader {
 
@@ -62,9 +58,4 @@ bool Loader::operator()(Streamline<> &out) {
   return false;
 }
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Editing

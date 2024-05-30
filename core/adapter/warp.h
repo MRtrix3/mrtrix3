@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_warp_h__
-#define __adapter_warp_h__
+#pragma once
 
 #include "adapter/jacobian.h"
 #include "image.h"
 #include "interp/cubic.h"
 #include "transform.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 //! \addtogroup interp
 // @{
@@ -124,7 +122,4 @@ private:
 
 //! @}
 
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_algorithms_fact_h__
-#define __dwi_tractography_algorithms_fact_h__
+#pragma once
 
 #include "interp/masked.h"
 #include "interp/nearest.h"
@@ -25,10 +24,7 @@
 #include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Algorithms {
+namespace MR::DWI::Tractography::Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
@@ -134,9 +130,4 @@ protected:
   }
 };
 
-} // namespace Algorithms
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Algorithms

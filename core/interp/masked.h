@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __interp_masked_h__
-#define __interp_masked_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "datatype.h"
 #include "interp/base.h"
 
-namespace MR {
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -83,7 +81,4 @@ public:
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
-
-#endif
+} // namespace MR::Interp

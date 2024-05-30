@@ -22,24 +22,28 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Threshold and invert track scalar files";
 
   ARGUMENTS
-  +Argument("input", "the input track scalar file.").type_file_in() +
-      Argument("T", "the desired threshold").type_float() +
-      Argument("output", "the binary output track scalar file").type_file_out();
+  + Argument ("input", "the input track scalar file.").type_file_in()
+  + Argument ("T", "the desired threshold").type_float()
+  + Argument ("output", "the binary output track scalar file").type_file_out();
 
   OPTIONS
-  +Option("invert", "invert the output mask");
+  + Option ("invert", "invert the output mask");
+
 }
+// clang-format on
 
 using value_type = float;
 
 void run() {
-  bool invert = get_options("invert").size() ? true : false;
+  bool invert = !get_options("invert").empty();
   float threshold = argument[1];
 
   DWI::Tractography::Properties properties;

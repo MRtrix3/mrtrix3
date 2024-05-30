@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_seeding_dynamic_h__
-#define __dwi_tractography_seeding_dynamic_h__
+#pragma once
 
 #include <atomic>
 #include <fstream>
@@ -48,9 +47,7 @@
 // How much of the projected change in seed probability is included in seeds outside the fixel
 #define DYNAMIC_SEEDING_DAMPING_FACTOR 0.5
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 namespace ACT {
 class GMWMI_finder;
@@ -250,8 +247,4 @@ public:
 };
 
 } // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_subset_h__
-#define __adapter_subset_h__
+#pragma once
 
 #include "adapter/base.h"
 #include "image.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Subset : public Base<Subset<ImageType>, ImageType> {
 public:
@@ -68,7 +66,4 @@ protected:
   transform_type transform_;
 };
 
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

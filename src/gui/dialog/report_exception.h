@@ -14,20 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dialog_exception_h__
-#define __gui_dialog_exception_h__
+#pragma once
 
 #include "exception.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 extern void display_exception(const Exception &E, int log_level);
 
 }
-} // namespace GUI
-} // namespace MR
-
-#endif

@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_multi_resolution_lmax_h__
-#define __registration_multi_resolution_lmax_h__
+#pragma once
 
 #include "adapter/extract.h"
 #include "adapter/subset.h"
 #include "filter/smooth.h"
 #include "registration/multi_contrast.h"
 
-namespace MR {
-namespace Registration {
+namespace MR::Registration {
 
 template <class ImageType>
 FORCE_INLINE ImageType multi_resolution_lmax(ImageType &input,
@@ -86,6 +84,4 @@ FORCE_INLINE ImageType multi_resolution_lmax(ImageType &input,
   smooth_filter(smoothed);
   return smoothed;
 }
-} // namespace Registration
-} // namespace MR
-#endif
+} // namespace MR::Registration

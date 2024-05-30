@@ -37,6 +37,7 @@ using namespace MR::DWI::Tractography;
 
 const char *field_choices[] = {"mean", "median", "std", "min", "max", "count", NULL};
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -44,25 +45,28 @@ void usage() {
   SYNOPSIS = "Calculate statistics on streamlines lengths";
 
   ARGUMENTS
-  +Argument("tracks_in", "the input track file").type_tracks_in();
+  + Argument ("tracks_in", "the input track file").type_tracks_in();
 
   OPTIONS
 
-  +Option("output",
-          "output only the field specified. Multiple such options can be supplied if required. "
-          "Choices are: " +
-              join(field_choices, ", ") + ". Useful for use in scripts.")
-          .allow_multiple() +
-      Argument("field").type_choice(field_choices)
+  + Option ("output", "output only the field specified."
+                      " Multiple such options can be supplied if required."
+                      " Choices are: " + join (field_choices, ", ") + "."
+                      " Useful for use in scripts.").allow_multiple()
+    + Argument ("field").type_choice(field_choices)
 
-      + Option("histogram", "output a histogram of streamline lengths") + Argument("path").type_file_out()
+  + Option ("histogram", "output a histogram of streamline lengths")
+    + Argument ("path").type_file_out()
 
-      + Option("dump", "dump the streamlines lengths to a text file") + Argument("path").type_file_out()
+  + Option ("dump", "dump the streamlines lengths to a text file")
+    + Argument ("path").type_file_out()
 
-      + Option("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
+  + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
 
-      + Tractography::TrackWeightsInOption;
+  + Tractography::TrackWeightsInOption;
+
 }
+// clang-format off
 
 // Store length and weight of each streamline
 class LW {
@@ -88,7 +92,7 @@ LW operator/(const LW &lw, const double div) { return LW(lw.get_length() / div, 
 
 void run() {
 
-  const bool weights_provided = get_options("tck_weights_in").size();
+  const bool weights_provided = !get_options("tck_weights_in").empty();
 
   float step_size = NaN;
   size_t count = 0, header_count = 0;
@@ -108,7 +112,7 @@ void run() {
       header_count = to<size_t>(properties["count"]);
 
     step_size = properties.get_stepsize();
-    if ((!std::isfinite(step_size) || !step_size) && get_options("histogram").size()) {
+    if ((!std::isfinite(step_size) || !step_size) && !get_options("histogram").empty()) {
       WARN("Do not have streamline step size with which to bin histogram; histogram will be generated using 1mm bin "
            "widths");
     }
@@ -141,11 +145,11 @@ void run() {
     }
 
     auto opt = get_options("dump");
-    if (opt.size())
+    if (!opt.empty())
       File::Matrix::save_vector(dump, opt[0][0]);
   }
 
-  if (!get_options("ignorezero").size() && (empty_streamlines || zero_length_streamlines)) {
+  if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
     std::string s("read");
     if (empty_streamlines) {
       s += " " + str(empty_streamlines) + " empty streamlines";
@@ -193,7 +197,7 @@ void run() {
   for (size_t n = 0; n < opt.size(); ++n)
     fields.push_back(opt[n][0]);
 
-  if (fields.size()) {
+  if (!fields.empty()) {
 
     for (size_t n = 0; n < fields.size(); ++n) {
       if (fields[n] == "mean")
@@ -229,11 +233,11 @@ void run() {
   }
 
   opt = get_options("histogram");
-  if (opt.size()) {
+  if (!opt.empty()) {
     File::OFStream out(opt[0][0], std::ios_base::out | std::ios_base::trunc);
     out << "# " << App::command_history_string << "\n";
     if (!std::isfinite(step_size))
-      step_size = 1.0f;
+      step_size = 1.0F;
     if (weights_provided) {
       out << "Length,Sum_weights\n";
       for (size_t i = 0; i != histogram.size(); ++i)

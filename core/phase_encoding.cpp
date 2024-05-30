@@ -16,28 +16,35 @@
 
 #include "phase_encoding.h"
 
-namespace MR {
-namespace PhaseEncoding {
+namespace MR::PhaseEncoding {
 
+// clang-format off
 using namespace App;
 const OptionGroup ImportOptions =
-    OptionGroup("Options for importing phase-encode tables") +
-    Option("import_pe_table", "import a phase-encoding table from file") + Argument("file").type_file_in() +
-    Option("import_pe_eddy", "import phase-encoding information from an EDDY-style config / index file pair") +
-    Argument("config").type_file_in() + Argument("indices").type_file_in();
+    OptionGroup("Options for importing phase-encode tables")
+    + Option("import_pe_table", "import a phase-encoding table from file")
+      + Argument("file").type_file_in()
+    + Option("import_pe_eddy", "import phase-encoding information from an EDDY-style config / index file pair")
+      + Argument("config").type_file_in()
+      + Argument("indices").type_file_in();
 
-const OptionGroup SelectOptions = OptionGroup("Options for selecting volumes based on phase-encoding") +
-                                  Option("pe",
-                                         "select volumes with a particular phase encoding; "
-                                         "this can be three comma-separated values (for i,j,k components of vector "
-                                         "direction) or four (direction & total readout time)") +
-                                  Argument("desc").type_sequence_float();
+const OptionGroup SelectOptions =
+    OptionGroup("Options for selecting volumes based on phase-encoding")
+    + Option("pe",
+             "select volumes with a particular phase encoding;"
+             " this can be three comma-separated values"
+             " (for i,j,k components of vector direction)"
+             " or four (direction & total readout time)")
+      + Argument("desc").type_sequence_float();
 
 const OptionGroup ExportOptions =
-    OptionGroup("Options for exporting phase-encode tables") +
-    Option("export_pe_table", "export phase-encoding table to file") + Argument("file").type_file_out() +
-    Option("export_pe_eddy", "export phase-encoding information to an EDDY-style config / index file pair") +
-    Argument("config").type_file_out() + Argument("indices").type_file_out();
+    OptionGroup("Options for exporting phase-encode tables")
+    + Option("export_pe_table", "export phase-encoding table to file")
+      + Argument("file").type_file_out()
+    + Option("export_pe_eddy", "export phase-encoding information to an EDDY-style config / index file pair")
+      + Argument("config").type_file_out()
+      + Argument("indices").type_file_out();
+// clang-format on
 
 void clear_scheme(Header &header) {
   auto erase = [&](const std::string &s) {
@@ -60,8 +67,8 @@ Eigen::MatrixXd parse_scheme(const Header &header) {
       throw Exception(e, "malformed PE scheme in image \"" + header.name() + "\"");
     }
     if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
-      throw Exception("malformed PE scheme in image \"" + header.name() +
-                      "\" - number of rows does not equal number of volumes");
+      throw Exception("malformed PE scheme in image \"" + header.name() + "\":" + //
+                      " number of rows does not equal number of volumes");
   } else {
     const auto it_dir = header.keyval().find("PhaseEncodingDirection");
     if (it_dir != header.keyval().end()) {
@@ -85,16 +92,17 @@ Eigen::MatrixXd get_scheme(const Header &header) {
 
   try {
     const auto opt_table = get_options("import_pe_table");
-    if (opt_table.size())
+    if (!opt_table.empty())
       result = load(opt_table[0][0], header);
     const auto opt_eddy = get_options("import_pe_eddy");
-    if (opt_eddy.size()) {
-      if (opt_table.size())
-        throw Exception("Phase encoding table can be provided using either -import_pe_table or -import_pe_eddy option, "
-                        "but NOT both");
+    if (!opt_eddy.empty()) {
+      if (!opt_table.empty())
+        throw Exception("Phase encoding table can be provided"
+                        " using either -import_pe_table or -import_pe_eddy option,"
+                        " but NOT both");
       result = load_eddy(opt_eddy[0][0], opt_eddy[0][1], header);
     }
-    if (!opt_table.size() && !opt_eddy.size())
+    if (opt_table.empty() && opt_eddy.empty())
       result = parse_scheme(header);
   } catch (Exception &e) {
     throw Exception(e, "error importing phase encoding table for image \"" + header.name() + "\"");
@@ -117,7 +125,8 @@ Eigen::MatrixXd eddy2scheme(const Eigen::MatrixXd &config, const Eigen::Array<in
   Eigen::MatrixXd result(indices.size(), 4);
   for (ssize_t row = 0; row != indices.size(); ++row) {
     if (indices[row] > config.rows())
-      throw Exception("Malformed EDDY-style phase-encoding information: Index exceeds number of config entries");
+      throw Exception("Malformed EDDY-style phase-encoding information:"
+                      " index exceeds number of config entries");
     result.row(row) = config.row(indices[row] - 1);
   }
   return result;
@@ -133,13 +142,12 @@ void export_commandline(const Header &header) {
   auto scheme = parse_scheme(header);
 
   auto opt = get_options("export_pe_table");
-  if (opt.size())
+  if (!opt.empty())
     save(check(scheme), header, opt[0][0]);
 
   opt = get_options("export_pe_eddy");
-  if (opt.size())
+  if (!opt.empty())
     save_eddy(check(scheme), header, opt[0][0], opt[0][1]);
 }
 
-} // namespace PhaseEncoding
-} // namespace MR
+} // namespace MR::PhaseEncoding

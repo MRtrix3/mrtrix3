@@ -22,15 +22,20 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Compare two direction sets for differences, within specified tolerance";
 
   ARGUMENTS
-  +Argument("dir1", "directions file").type_file_in() + Argument("dir2", "another directions file.").type_file_in() +
-      Argument("tolerance", "the amount of difference to consider acceptable").type_float(0.0);
+  + Argument ("dir1", "directions file").type_file_in()
+  + Argument ("dir2", "another directions file.").type_file_in()
+  + Argument ("tolerance", "the amount of difference to consider acceptable").type_float(0.0);
+
 }
+// clang-format on
 
 void run() {
   double tol = argument[2];

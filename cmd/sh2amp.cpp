@@ -29,54 +29,54 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Evaluate the amplitude of an image of spherical harmonic functions along specified directions";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
+
+  SYNOPSIS = "Evaluate the amplitude of an image of spherical harmonic functions"
+             " along specified directions";
 
   DESCRIPTION
-  +"The input image should consist of a 4D or 5D image, with SH coefficients "
-   "along the 4th dimension according to the convention below. If 4D (or "
-   "size 1 along the 5th dimension), the program expects to be provided with "
-   "a single shell of directions. If 5D, each set of coefficients along the "
-   "5th dimension is understood to correspond to a different shell." +
-      "The directions can be provided as:\n"
-      "- a 2-column ASCII text file contained azimuth / elevation pairs (as "
-      "produced by dirgen)\n"
-      "- a 3-column ASCII text file containing x, y, z Cartesian direction "
-      "vectors (as produced by dirgen -cart)\n"
-      "- a 4-column ASCII text file containing the x, y, z, b components of a "
-      "full DW encoding scheme (in MRtrix format, see main documentation for "
-      "details).\n"
-      "- an image file whose header contains a valid DW encoding scheme" +
-      "If a full DW encoding is provided, the number of shells needs to match "
-      "those found in the input image of coefficients (i.e. its size along the 5th "
-      "dimension). If needed, the -shell option can be used to pick out the "
-      "specific shell(s) of interest." +
-      "If the input image contains multiple shells (its size along the 5th "
-      "dimension is greater than one), the program will expect the direction "
-      "set to contain multiple shells, which can only be provided as a full DW "
-      "encodings (the last two options in the list above)." +
-      Math::SH::encoding_description;
+    + "The input image should consist of a 4D or 5D image,"
+      " with SH coefficients along the 4th dimension according to the convention below."
+      " If 4D (or size 1 along the 5th dimension),"
+      " the program expects to be provided with a single shell of directions."
+      " If 5D, each set of coefficients along the 5th dimension is understood"
+      " to correspond to a different shell."
+    + "The directions can be provided as:\n"
+      "- a 2-column ASCII text file containing azimuth / elevation pairs"
+      " (eg. as produced by dirgen)\n"
+      "- a 3-column ASCII text file containing x, y, z Cartesian direction vectors"
+      " (eg. as produced by dirgen -cart)\n"
+      "- a 4-column ASCII text file containing the x, y, z, b components"
+      " of a full DW encoding scheme"
+      " (in MRtrix format, see main documentation for details).\n"
+      "- an image file whose header contains a valid DW encoding scheme"
+    + "If a full DW encoding is provided,"
+      " the number of shells needs to match those found in the input image of coefficients"
+      " (i.e. its size along the 5th dimension)."
+      " If needed, the -shell option can be used to pick out the specific shell(s) of interest."
+    + "If the input image contains multiple shells"
+      " (its size along the 5th dimension is greater than one),"
+      " the program will expect the direction set to contain multiple shells,"
+      " which can only be provided as a full DW encodings"
+      " (the last two options in the list above)."
+    + Math::SH::encoding_description;
 
   ARGUMENTS
-  +Argument("input",
-            "the input image consisting of spherical harmonic (SH) "
-            "coefficients.")
-          .type_image_in() +
-      Argument("directions",
-               "the list of directions along which the SH functions will "
-               "be sampled, generated using the dirgen command")
-          .type_file_in() +
-      Argument("output",
-               "the output image consisting of the amplitude of the SH "
-               "functions along the specified directions.")
-          .type_image_out();
+    + Argument ("input", "the input spherical harmonic (SH) coefficients image").type_image_in()
+    + Argument ("directions", "the set of directions along which the SH functions will be sampled").type_file_in()
+    + Argument ("output", "the output amplitudes image").type_image_out();
 
   OPTIONS
-  +Option("nonnegative", "cap all negative amplitudes to zero") + DWI::GradImportOptions() + Stride::Options +
-      DataType::options();
+    + Option ("nonnegative", "cap all negative amplitudes to zero")
+    + DWI::GradImportOptions()
+    + Stride::Options
+    + DataType::options();
 }
+// clang-format on
 
 using value_type = float;
 
@@ -132,6 +132,7 @@ void run() {
   auto sh_data = Image<value_type>::open(argument[0]);
   Math::SH::check(sh_data);
   const size_t lmax = Math::SH::LforN(sh_data.size(3));
+  const bool nonnegative = !get_options("nonnegative").empty();
 
   Eigen::MatrixXd directions;
   try {
@@ -175,7 +176,7 @@ void run() {
     auto amp_data = Image<value_type>::create(argument[2], amp_header);
     auto transform = Math::SH::init_transform(directions, lmax);
 
-    SH2Amp sh2amp(transform, get_options("nonnegative").size());
+    SH2Amp sh2amp(transform, nonnegative);
     ThreadedLoop("computing amplitudes", sh_data, 0, 3, 2).run(sh2amp, sh_data, amp_data);
 
   } else { // full gradient scheme:
@@ -209,7 +210,7 @@ void run() {
 
     auto amp_data = Image<value_type>::create(argument[2], amp_header);
 
-    SH2AmpMultiShell sh2amp(transforms, shells, get_options("nonnegative").size());
+    SH2AmpMultiShell sh2amp(transforms, shells, nonnegative);
     ThreadedLoop("computing amplitudes", sh_data, 0, 3).run(sh2amp, sh_data, amp_data);
   }
 }

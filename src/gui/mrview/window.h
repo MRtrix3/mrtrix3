@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_window_h__
-#define __gui_mrview_window_h__
+#pragma once
 
 #include "gui/cursor.h"
 #include "gui/gui.h"
@@ -26,8 +25,7 @@
 #include "image.h"
 #include "memory.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 namespace GL {
 class Lighting;
 }
@@ -329,7 +327,4 @@ private:
 };
 
 } // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

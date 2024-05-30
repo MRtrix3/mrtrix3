@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_ordered_thread_queue_h__
-#define __mrtrix_ordered_thread_queue_h__
+#pragma once
 
 #include "thread_queue.h"
 #include <set>
 
-namespace MR {
-namespace Thread {
+namespace MR::Thread {
 
 namespace {
 
@@ -324,7 +322,4 @@ inline void run_ordered_queue(Source &&source,
             capacity);
 }
 
-} // namespace Thread
-} // namespace MR
-
-#endif
+} // namespace MR::Thread

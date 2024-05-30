@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_mapper_h__
-#define __dwi_tractography_connectome_mapper_h__
+#pragma once
 
 #include "dwi/tractography/connectome/mapped_track.h"
 #include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 class Mapper {
 
@@ -59,9 +55,4 @@ private:
   const Metric &metric;
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Connectome

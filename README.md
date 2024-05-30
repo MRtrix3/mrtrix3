@@ -31,6 +31,9 @@ You can address all *MRtrix3*-related queries there, using your GitHub or Google
         $ cmake --install build
     
     It's **highly** recommended, that you use [Ninja](https://ninja-build.org/) and a compiler caching tool like [ccache](https://ccache.dev/) or [sccache](https://github.com/mozilla/sccache) to speed up compilation time. You can install these tools using your package manager (e.g. `apt install ninja-build ccache` or `brew install ninja ccache`). Then, add `-GNinja` to the third step above or set the environment variable `CMAKE_GENERATOR` variable to `Ninja`.
+    
+    NOTE: by default MRtrix3 will build using Qt 6, but if you wish to use Qt 5
+    you can specify this by passing `-DMRTRIX_USE_QT5=ON` when configuring the build.
 
 3. Set the `PATH`:
 

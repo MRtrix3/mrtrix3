@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify command operation when input data are of complex type
+# Note that complex data are arbitrarily formed
+#   by mapping mean DWI image to real axis and estimated noise level to imaginary axis;
+#   this image has no meaning,
+#   but is just used to ensure successful command execution
+# Outcome is compared to that generated using a prior software version
+mrcalc dwi_mean.mif noise.mif -complex - | \
+mrstats - -output mean -output std -output std_rv -output min -output max -output count > tmp.txt
+
+testing_diff_matrix tmp.txt mrstats/complex.txt

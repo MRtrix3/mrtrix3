@@ -14,13 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_twi_stat_h__
-#define __dwi_tractography_mapping_twi_stat_h__
+#pragma once
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 enum contrast_t { TDI, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE, VECTOR_FILE };
 enum vox_stat_t { V_SUM, V_MIN, V_MEAN, V_MAX };
@@ -44,9 +40,4 @@ extern const char *contrasts[];
 extern const char *voxel_statistics[];
 extern const char *track_statistics[];
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Mapping

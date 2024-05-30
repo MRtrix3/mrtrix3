@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_tracking_write_kernel_h__
-#define __dwi_tractography_tracking_write_kernel_h__
+#pragma once
 
 #include <cinttypes>
 #include <string>
@@ -32,10 +31,7 @@
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class WriteKernel {
 public:
@@ -91,9 +87,4 @@ protected:
   EarlyExit early_exit;
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Tracking

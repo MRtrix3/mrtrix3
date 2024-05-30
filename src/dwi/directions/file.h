@@ -14,15 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_load_h__
-#define __dwi_directions_load_h__
+#pragma once
 
 #include "file/matrix.h"
 #include "math/sphere.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 Eigen::MatrixXd load_spherical(const std::string &filename);
 Eigen::MatrixXd load_cartesian(const std::string &filename);
@@ -49,8 +46,4 @@ inline void save(const MatrixType &directions, const std::string &filename, bool
     save_spherical(directions, filename);
 }
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Directions

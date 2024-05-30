@@ -27,9 +27,7 @@
 #include "surface/types.h"
 #include "surface/utils.h"
 
-namespace MR {
-namespace Surface {
-namespace Algo {
+namespace MR::Surface::Algo {
 
 constexpr size_t pve_os_ratio = 10;
 constexpr size_t pve_nsamples = Math::pow3(pve_os_ratio);
@@ -276,7 +274,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
               }
             }
           }
-        } while (to_expand.size());
+        } while (!to_expand.empty());
         vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
         if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
           fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
@@ -537,6 +535,4 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
   Thread::run_queue(source, std::pair<Vox, std::vector<size_t>>(), Thread::multi(pipe), std::pair<Vox, float>(), sink);
 }
 
-} // namespace Algo
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::Algo

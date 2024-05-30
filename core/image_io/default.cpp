@@ -21,8 +21,7 @@
 #include "header.h"
 #include "image_io/default.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void Default::load(const Header &header, size_t) {
   if (files.empty())
@@ -47,7 +46,7 @@ void Default::load(const Header &header, size_t) {
 }
 
 void Default::unload(const Header &header) {
-  if (mmaps.empty() && addresses.size()) {
+  if (mmaps.empty() && !addresses.empty()) {
     assert(addresses[0].get());
 
     if (writable) {
@@ -99,5 +98,4 @@ void Default::copy_to_mem(const Header &header) {
     segsize = std::numeric_limits<size_t>::max();
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

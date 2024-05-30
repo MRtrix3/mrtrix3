@@ -28,42 +28,52 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Compare two track files for differences, within specified tolerance";
 
   DESCRIPTION
-  +"This uses the symmetric Hausdorff distance to compare streamline pairs. For each "
-   "streamline in the first input, the distance to the corresponding streamline in the "
-   "second file is used and compared to the tolerance."
+  + "This uses the symmetric Hausdorff distance to compare streamline pairs."
+    " For each streamline in the first input,"
+    " the distance to the corresponding streamline in the second file is used"
+    " and compared to the tolerance."
 
-      + "If probabilistic streamlines tractography is to be tested, provide a larger file "
-        "as the reference second input (streamlines from first file are matched to the second "
-        "file, but not the other way around), and use the -unordered option."
+  + "If probabilistic streamlines tractography is to be tested,"
+    " provide a larger file as the reference second input"
+    " (streamlines from first file are matched to the second file,"
+    " but not the other way around),"
+    " and use the -unordered option."
 
-      + "If the streamlines are not guaranteed to be provided in the same order between the "
-        "two files, using the -unordered option will result in, for every streamline in the "
-        "first input file, comparison against every streamline in the second file, with the "
-        "distance to the nearest streamline in the second file compared against the threshold.";
+  + "If the streamlines are not guaranteed to be provided"
+    " in the same order between the two files,"
+    " using the -unordered option will result in,"
+    " for every streamline in the first input file,"
+    " comparison against every streamline in the second file,"
+    " with the distance to the nearest streamline in the second file"
+    " compared against the threshold.";
 
   ARGUMENTS
-  +Argument("tck1", "the file from which all tracks will be checked.").type_file_in() +
-      Argument("tck2", "the reference track file").type_file_in();
+  + Argument ("tck1", "the file from which all tracks will be checked.").type_file_in()
+  + Argument ("tck2", "the reference track file").type_file_in();
 
   OPTIONS
-  +Option("distance", "maximum permissible Hausdorff distance in mm (default: " + str(DEFAULT_HAUSDORFF) + "mm)") +
-      Argument("value").type_float(0.0)
+  + Option ("distance", "maximum permissible Hausdorff distance in mm"
+                        " (default: " + str(DEFAULT_HAUSDORFF) + "mm)")
+    + Argument ("value").type_float(0.0)
 
-      + Option("maxfail",
-               "the maximum number of streamlines permitted to exceed the "
-               "Hausdorff distance before the unit test will fail (default: " +
-                   str(DEFAULT_MAXFAIL) + ")")
+  + Option ("maxfail", "the maximum number of streamlines permitted to exceed"
+                       " the Hausdorff distance before the unit test will fail"
+                       " (default: " + str(DEFAULT_MAXFAIL) + ")")
 
-      + Option("unordered",
-               "compare the streamlines in an unordered fashion; "
-               " i.e. compare every streamline in the first file to all streamlines in the second file");
+  + Option ("unordered", "compare the streamlines in an unordered fashion;"
+                         " i.e. compare every streamline in the first file"
+                         " to all streamlines in the second file");
+
 }
+// clang-format on
 
 inline bool
 within_haussdorf(const DWI::Tractography::Streamline<> &tck1, const DWI::Tractography::Streamline<> &tck2, float tol) {
@@ -98,7 +108,7 @@ void run() {
   DWI::Tractography::Reader<> reader1(argument[0], properties1);
   DWI::Tractography::Reader<> reader2(argument[1], properties2);
 
-  if (get_options("unordered").size()) {
+  if (!get_options("unordered").empty()) {
 
     std::vector<DWI::Tractography::Streamline<>> ref_list;
     DWI::Tractography::Streamline<> tck;

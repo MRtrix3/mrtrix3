@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_algo_image2mesh_h__
-#define __surface_algo_image2mesh_h__
+#pragma once
 
 #include <array>
 #include <map>
@@ -27,9 +26,7 @@
 #include "surface/mesh.h"
 #include "surface/types.h"
 
-namespace MR {
-namespace Surface {
-namespace Algo {
+namespace MR::Surface::Algo {
 
 // Function to convert a binary image into a mesh
 // Note that this produces a mesh that follows the voxel boundaries exactly;
@@ -504,8 +501,4 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
   out.load(vertices, triangles);
 }
 
-} // namespace Algo
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface::Algo

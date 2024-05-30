@@ -27,23 +27,29 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Reorder a set of directions to ensure near-uniformity upon truncation";
 
   DESCRIPTION
-  +"The intent of this command is to reorder a set of gradient directions such that "
-   "if a scan is terminated prematurely, at any point, the acquired directions will "
-   "still be close to optimally distributed on the half-sphere.";
+  + "The intent of this command is to reorder a set of gradient directions"
+    " such that if a scan is terminated prematurely,"
+    " at any point,"
+    " the acquired directions will still be close to optimally distributed on the half-sphere.";
 
   ARGUMENTS
-  +Argument("input", "the input directions file").type_file_in() +
-      Argument("output", "the output directions file").type_file_out();
+  + Argument ("input", "the input directions file").type_file_in()
+  + Argument ("output", "the output directions file").type_file_out();
 
   OPTIONS
-  +Option("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
+  + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
+                         " instead of [az el].");
+
 }
+// clang-format on
 
 using value_type = double;
 
@@ -54,7 +60,7 @@ std::vector<size_t> optimise(const Eigen::MatrixXd &directions, const size_t fir
     if (n != indices[0])
       remaining.push_back(n);
 
-  while (remaining.size()) {
+  while (!remaining.empty()) {
     ssize_t best = 0;
     value_type best_E = std::numeric_limits<value_type>::max();
 
@@ -128,5 +134,5 @@ void run() {
   for (ssize_t n = 0; n < directions.rows(); ++n)
     output.row(n) = directions.row(best_order[n]);
 
-  DWI::Directions::save(output, argument[1], get_options("cartesian").size());
+  DWI::Directions::save(output, argument[1], !get_options("cartesian").empty());
 }

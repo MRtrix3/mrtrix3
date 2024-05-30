@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_sort_h__
-#define __dwi_tractography_sift_sort_h__
+#pragma once
 
 #include <set>
 
@@ -24,10 +23,7 @@
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 class Cost_fn_gradient_sort {
 public:
@@ -124,9 +120,4 @@ private:
   };
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT

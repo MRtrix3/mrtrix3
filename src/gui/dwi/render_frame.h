@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dwi_render_frame_h__
-#define __gui_dwi_render_frame_h__
+#pragma once
 
 #include "dwi/directions/set.h"
 #include "gui/dwi/renderer.h"
@@ -29,9 +28,7 @@
 
 #define MAX_LOD 8
 
-namespace MR {
-namespace GUI {
-namespace DWI {
+namespace MR::GUI::DWI {
 
 class RenderFrame : public GL::Area {
   Q_OBJECT
@@ -165,8 +162,4 @@ protected:
   void snapshot();
 };
 
-} // namespace DWI
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::DWI

@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_jacobian_h__
-#define __image_adapter_jacobian_h__
+#pragma once
 
 #include "adapter/base.h"
 #include "adapter/gradient1D.h"
 #include "transform.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class WarpType> class Jacobian : public Base<Jacobian<WarpType>, WarpType> {
 public:
@@ -59,7 +57,4 @@ protected:
   Transform transform;
   const bool wrt_scanner;
 };
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

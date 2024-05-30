@@ -14,29 +14,20 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_config_h__
-#define __file_config_h__
+#pragma once
 
 #include "file/key_value.h"
 #include "types.h"
 #include <map>
 
-namespace MR {
-namespace File {
+namespace MR::File {
 class Config {
 public:
   static void init();
 
   static void set(const std::string &key, const std::string &value) { config[key] = value; }
-  static std::string get(const std::string &key) {
-    const KeyValues::const_iterator i = config.find(key);
-    return (i != config.end() ? i->second : "");
-  }
-  static std::string get(const std::string &key, const std::string &default_value) {
-    KeyValues::iterator i = config.find(key);
-    return (i != config.end() ? i->second : default_value);
-  }
-
+  static std::string get(const std::string &key);
+  static std::string get(const std::string &key, const std::string &default_value);
   static bool get_bool(const std::string &key, bool default_value);
   static int get_int(const std::string &key, int default_value);
   static float get_float(const std::string &key, float default_value);
@@ -45,7 +36,4 @@ public:
 private:
   static KeyValues config;
 };
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File

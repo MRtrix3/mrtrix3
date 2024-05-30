@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify command "dwi2mask ants" executes to completion
+# This algorithm invokves ANTs software command antsBrainExtraction.sh
+# This test simulates the scenario where a user has specified the path to an appropriate template image and corresponding brain mask
+#   using an MRtrix config file;
+#   however since the test cannot modify the user's config files themselves,
+#   simulate this by using the standard option "-config" to modify the configuration just for this one invocation
+dwi2mask ants BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-config Dwi2maskTemplateImage $(dirname $(dirname $(dirname $(realpath "$0"))))/data/dwi2mask/template_image.mif.gz \
+-config Dwi2maskTemplateMask $(dirname $(dirname $(dirname $(realpath "$0"))))/data/dwi2mask/template_mask.mif.gz

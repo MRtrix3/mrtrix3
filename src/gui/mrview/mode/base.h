@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_mode_base_h__
-#define __gui_mrview_mode_base_h__
+#pragma once
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/window.h"
@@ -26,9 +25,7 @@
 #define ROTATION_INC 0.002
 #define MOVE_IN_OUT_FOV_MULTIPLIER 1.0e-3f
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 namespace Tool {
 class Dock;
@@ -226,8 +223,4 @@ public:
 
 } // namespace Mode
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView

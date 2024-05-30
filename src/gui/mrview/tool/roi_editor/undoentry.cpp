@@ -20,10 +20,7 @@
 #include "gui/mrview/tool/roi_editor/undoentry.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 std::unique_ptr<ROI_UndoEntry::Shared> ROI_UndoEntry::shared;
 
@@ -406,7 +403,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
     return;
   after[seed_index] = fill_value;
   std::vector<std::array<int, 3>> buffer(1, seed_voxel);
-  while (buffer.size()) {
+  while (!buffer.empty()) {
     const std::array<int, 3> v(buffer.back());
     buffer.pop_back();
     for (size_t i = 0; i != 4; ++i) {
@@ -508,7 +505,4 @@ void ROI_UndoEntry::copy(ROI_Item &roi, ROI_UndoEntry &source) {
   GL::assert_context_is_current();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

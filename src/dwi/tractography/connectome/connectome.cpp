@@ -18,10 +18,7 @@
 #include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 using namespace App;
 
@@ -32,41 +29,40 @@ const char *modes[] = {"assignment_end_voxels",
                        "assignment_all_voxels",
                        NULL};
 
+// clang-format off
 const OptionGroup AssignmentOptions =
     OptionGroup("Structural connectome streamline assignment option")
-
-    + Option("assignment_end_voxels", "use a simple voxel lookup value at each streamline endpoint")
-
+    + Option("assignment_end_voxels",
+             "use a simple voxel lookup value at each streamline endpoint")
     + Option("assignment_radial_search",
-             "perform a radial search from each streamline endpoint to locate the nearest node. "
-             "Argument is the maximum radius in mm; if no node is found within this radius, the streamline endpoint is "
-             "not assigned to any node. "
-             "Default search distance is " +
-                 str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm.") +
-    Argument("radius").type_float(0.0)
-
+             "perform a radial search from each streamline endpoint to locate the nearest node."
+             " Argument is the maximum radius in mm;"
+             " if no node is found within this radius,"
+             " the streamline endpoint is not assigned to any node."
+             " Default search distance is " + str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm.")
+      + Argument("radius").type_float(0.0)
     + Option("assignment_reverse_search",
-             "traverse from each streamline endpoint inwards along the streamline, in search of the last node "
-             "traversed by the streamline. "
-             "Argument is the maximum traversal length in mm (set to 0 to allow search to continue to the streamline "
-             "midpoint).") +
-    Argument("max_dist").type_float(0.0)
-
+             "traverse from each streamline endpoint inwards along the streamline,"
+             " in search of the last node traversed by the streamline."
+             " Argument is the maximum traversal length in mm"
+             " (set to 0 to allow search to continue to the streamline midpoint).")
+      + Argument("max_dist").type_float(0.0)
     + Option("assignment_forward_search",
-             "project the streamline forwards from the endpoint in search of a parcellation node voxel. "
-             "Argument is the maximum traversal length in mm.") +
-    Argument("max_dist").type_float(0.0)
-
+             "project the streamline forwards from the endpoint in search of a parcellation node voxel."
+             " Argument is the maximum traversal length in mm.")
+      + Argument("max_dist").type_float(0.0)
     + Option("assignment_all_voxels",
-             "assign the streamline to all nodes it intersects along its length "
-             "(note that this means a streamline may be assigned to more than two nodes, or indeed none at all)");
+             "assign the streamline to all nodes it intersects along its length"
+             " (note that this means a streamline may be assigned to more than two nodes,"
+             " or indeed none at all)");
+// clang-format on
 
 Tck2nodes_base *load_assignment_mode(Image<node_t> &nodes_data) {
 
   Tck2nodes_base *tck2nodes = nullptr;
   for (size_t index = 0; modes[index]; ++index) {
     auto opt = get_options(modes[index]);
-    if (opt.size()) {
+    if (!opt.empty()) {
 
       if (tck2nodes) {
         delete tck2nodes;
@@ -113,17 +109,17 @@ const OptionGroup MetricOptions =
     Argument("path").type_image_in();
 
 void setup_metric(Metric &metric, Image<node_t> &nodes_data) {
-  if (get_options("scale_length").size()) {
-    if (get_options("scale_invlength").size())
+  if (!get_options("scale_length").empty()) {
+    if (!get_options("scale_invlength").empty())
       throw Exception("Options -scale_length and -scale_invlength are mutually exclusive");
     metric.set_scale_length();
-  } else if (get_options("scale_invlength").size()) {
+  } else if (!get_options("scale_invlength").empty()) {
     metric.set_scale_invlength();
   }
-  if (get_options("scale_invnodevol").size())
+  if (!get_options("scale_invnodevol").empty())
     metric.set_scale_invnodevol(nodes_data);
   auto opt = get_options("scale_file");
-  if (opt.size()) {
+  if (!opt.empty()) {
     try {
       metric.set_scale_file(opt[0][0]);
     } catch (Exception &e) {
@@ -135,7 +131,4 @@ void setup_metric(Metric &metric, Image<node_t> &nodes_data) {
   }
 }
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome

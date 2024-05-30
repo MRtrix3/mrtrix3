@@ -14,23 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dialog_progressbar_h__
-#define __gui_dialog_progressbar_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
-namespace ProgressBar {
+namespace MR::GUI::Dialog::ProgressBar {
 
 void display(const ::MR::ProgressBar &p);
 void done(const ::MR::ProgressBar &p);
 
-} // namespace ProgressBar
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::Dialog::ProgressBar

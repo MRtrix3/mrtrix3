@@ -16,9 +16,7 @@
 
 #include "stats/permtest.h"
 
-namespace MR {
-namespace Stats {
-namespace PermTest {
+namespace MR::Stats::PermTest {
 
 PreProcessor::PreProcessor(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                            const std::shared_ptr<EnhancerBase> enhancer,
@@ -207,6 +205,4 @@ void run_permutations(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_ca
   uncorrected_pvalues = global_uncorrected_pvalue_count.cast<default_type>() / default_type(shuffler.size());
 }
 
-} // namespace PermTest
-} // namespace Stats
-} // namespace MR
+} // namespace MR::Stats::PermTest

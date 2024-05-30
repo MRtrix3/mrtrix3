@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_quadratic_line_search_h__
-#define __math_quadratic_line_search_h__
+#pragma once
 
 #include "progressbar.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 /** \addtogroup Optimisation
 @{ */
 
@@ -93,7 +91,7 @@ public:
 
     status = EXECUTING;
 
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
     ValueType l = init_lower, m = init_mid, u = init_upper;
     ValueType fl = functor(l), fm = functor(m), fu = functor(u);
@@ -289,7 +287,4 @@ private:
   mutable return_t status;
 };
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

@@ -14,16 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_stats_types_h__
-#define __math_stats_types_h__
+#pragma once
 
 #include "types.h"
 
 #include <Eigen/Dense>
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 using value_type = MR::default_type;
 using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
@@ -31,8 +28,4 @@ using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
 using index_type = uint32_t;
 using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
 
-} // namespace Stats
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math::Stats

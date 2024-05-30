@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __interp_nearest_h__
-#define __interp_nearest_h__
+#pragma once
 
 #include "datatype.h"
 #include "image_helpers.h"
 #include "interp/base.h"
 #include "types.h"
 
-namespace MR {
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -127,7 +125,4 @@ inline Nearest<ImageType> make_nearest(const ImageType &parent, Args &&...args) 
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
-
-#endif
+} // namespace MR::Interp

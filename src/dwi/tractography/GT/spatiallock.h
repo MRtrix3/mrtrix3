@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_spatiallock_h__
-#define __gt_spatiallock_h__
+#pragma once
 
 #include <Eigen/Dense>
 #include <mutex>
 
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 /**
  * @brief SpatialLock manages a mutex lock on n positions in 3D space.
@@ -100,9 +96,4 @@ protected:
   void unlock(const size_t idx) { lockcentres[idx].second = false; }
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_spatiallock_h__
+} // namespace MR::DWI::Tractography::GT

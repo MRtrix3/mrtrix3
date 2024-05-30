@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_filter_normalise3D_h__
-#define __image_filter_normalise3D_h__
+#pragma once
 
 #include "adapter/normalise3D.h"
 #include "algo/threaded_copy.h"
 #include "filter/base.h"
 #include "image.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 /** \addtogroup Filters
 @{ */
 
@@ -74,7 +72,7 @@ public:
 
   template <class InputImageType, class OutputImageType> void operator()(InputImageType &in, OutputImageType &out) {
     Adapter::Normalise3D<InputImageType> normalise(in, extent);
-    if (message.size())
+    if (!message.empty())
       threaded_copy_with_progress_message(message, normalise, out);
     else
       threaded_copy(normalise, out);
@@ -84,7 +82,4 @@ protected:
   std::vector<uint32_t> extent;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
-
-#endif
+} // namespace MR::Filter

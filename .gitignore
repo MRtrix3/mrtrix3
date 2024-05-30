@@ -33,3 +33,5 @@
 .check_syntax2.tmp
 build/
 CMakeLists.txt.user
+testing/data/tmp*
+testing/data/*-tmp-*

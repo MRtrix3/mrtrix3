@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify "header" operation
+# Output is compared to that calculated using a prior software version
+transformcalc template.mif.gz dwi_mean.mif header tmp.txt -force
+testing_diff_matrix tmp.txt transformcalc/out3.txt -abs 1e-3

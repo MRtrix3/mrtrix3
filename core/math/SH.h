@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_SH_h__
-#define __math_SH_h__
+#pragma once
 
 #include "exception.h"
 #include "math/least_squares.h"
@@ -25,9 +24,7 @@
 #define MAX_DIR_CHANGE 0.2
 #define ANGLE_TOLERANCE 1e-4
 
-namespace MR {
-namespace Math {
-namespace SH {
+namespace MR::Math::SH {
 
 /** \defgroup spherical_harmonics Spherical Harmonics
  * \brief Classes & functions to manage spherical harmonics. */
@@ -564,88 +561,95 @@ inline void derivatives(const VectorType &sh,
   }
 }
 
-//! a class to hold the coefficients for an apodised point-spread function.
-template <typename ValueType> class aPSF {
+template <typename ValueType> class ApodizedBase {
 public:
-  aPSF(const size_t lmax) : lmax(lmax), RH(lmax / 2 + 1) {
-    switch (lmax) {
-    case 2:
-      RH[0] = ValueType(1.00000000);
-      RH[1] = ValueType(0.41939279);
-      break;
-    case 4:
-      RH[0] = ValueType(1.00000000);
-      RH[1] = ValueType(0.63608543);
-      RH[2] = ValueType(0.18487087);
-      break;
-    case 6:
-      RH[0] = ValueType(1.00000000);
-      RH[1] = ValueType(0.75490341);
-      RH[2] = ValueType(0.37126442);
-      RH[3] = ValueType(0.09614699);
-      break;
-    case 8:
-      RH[0] = ValueType(1.00000000);
-      RH[1] = ValueType(0.82384816);
-      RH[2] = ValueType(0.51261696);
-      RH[3] = ValueType(0.22440563);
-      RH[4] = ValueType(0.05593079);
-      break;
-    case 10:
-      RH[0] = ValueType(1.00000000);
-      RH[1] = ValueType(0.86725945);
-      RH[2] = ValueType(0.61519436);
-      RH[3] = ValueType(0.34570667);
-      RH[4] = ValueType(0.14300355);
-      RH[5] = ValueType(0.03548062);
-      break;
-    case 12:
-      RH[0] = ValueType(1.00000000);
-      RH[1] = ValueType(0.89737759);
-      RH[2] = ValueType(0.69278503);
-      RH[3] = ValueType(0.45249879);
-      RH[4] = ValueType(0.24169922);
-      RH[5] = ValueType(0.09826171);
-      RH[6] = ValueType(0.02502481);
-      break;
-    case 14:
-      RH[0] = ValueType(1.00000000);
-      RH[1] = ValueType(0.91717853);
-      RH[2] = ValueType(0.74685644);
-      RH[3] = ValueType(0.53467773);
-      RH[4] = ValueType(0.33031863);
-      RH[5] = ValueType(0.17013825);
-      RH[6] = ValueType(0.06810155);
-      RH[7] = ValueType(0.01754930);
-      break;
-    case 16:
-      RH[0] = ValueType(1.00000000);
-      RH[1] = ValueType(0.93261196);
-      RH[2] = ValueType(0.79064858);
-      RH[3] = ValueType(0.60562880);
-      RH[4] = ValueType(0.41454703);
-      RH[5] = ValueType(0.24880754);
-      RH[6] = ValueType(0.12661242);
-      RH[7] = ValueType(0.05106681);
-      RH[8] = ValueType(0.01365433);
-      break;
-    default:
-      throw Exception("No aPSF RH data for lmax " + str(lmax));
-    }
-  }
-
+  ApodizedBase(const size_t lmax) : lmax(lmax), RH(Eigen::Matrix<ValueType, Eigen::Dynamic, 1>::Zero(lmax / 2 + 1)) {}
   template <class VectorType, class UnitVectorType>
   VectorType &operator()(VectorType &sh, const UnitVectorType &dir) const {
     sh.resize(RH.size());
     delta(sh, dir, lmax);
     return sconv(sh, RH);
   }
-
   inline const Eigen::Matrix<ValueType, Eigen::Dynamic, 1> &RH_coefs() const { return RH; }
 
-private:
+protected:
   const size_t lmax;
   Eigen::Matrix<ValueType, Eigen::Dynamic, 1> RH;
+};
+
+//! a class to hold the coefficients for an apodised point-spread function.
+template <typename ValueType> class aPSF : public ApodizedBase<ValueType> {
+public:
+  aPSF(const size_t lmax) : ApodizedBase<ValueType>(lmax) {
+    switch (lmax) {
+    case 2:
+      ApodizedBase<ValueType>::RH << 1.00000000, 0.41939279;
+      break;
+    case 4:
+      ApodizedBase<ValueType>::RH << 1.00000000, 0.63608543, 0.18487087;
+      break;
+    case 6:
+      ApodizedBase<ValueType>::RH << 1.00000000, 0.75490341, 0.37126442, 0.09614699;
+      break;
+    case 8:
+      ApodizedBase<ValueType>::RH << 1.00000000, 0.82384816, 0.51261696, 0.22440563, 0.05593079;
+      break;
+    case 10:
+      ApodizedBase<ValueType>::RH << 1.00000000, 0.86725945, 0.61519436, 0.34570667, 0.14300355, 0.03548062;
+      break;
+    case 12:
+      ApodizedBase<ValueType>::RH << 1.00000000, 0.89737759, 0.69278503, 0.45249879, 0.24169922, 0.09826171, 0.02502481;
+      break;
+    case 14:
+      ApodizedBase<ValueType>::RH << 1.00000000, 0.91717853, 0.74685644, 0.53467773, 0.33031863, 0.17013825, 0.06810155,
+          0.01754930;
+      break;
+    case 16:
+      ApodizedBase<ValueType>::RH << 1.00000000, 0.93261196, 0.79064858, 0.60562880, 0.41454703, 0.24880754, 0.12661242,
+          0.05106681, 0.01365433;
+      break;
+    default:
+      throw Exception("No aPSF RH data for lmax " + str(lmax));
+    }
+  }
+};
+
+//! a class to hold the coefficients for an apodised disc function.
+template <typename ValueType> class aDF : public ApodizedBase<ValueType> {
+public:
+  aDF(const size_t lmax) : ApodizedBase<ValueType>(lmax) {
+    switch (lmax) {
+    case 2:
+      ApodizedBase<ValueType>::RH << 1.00000000, -0.20980440;
+      break;
+    case 4:
+      ApodizedBase<ValueType>::RH << 1.00000000, -0.32978670, 0.07586349;
+      break;
+    case 6:
+      ApodizedBase<ValueType>::RH << 1.00000000, -0.39063368, 0.15768564, -0.03783370;
+      break;
+    case 8:
+      ApodizedBase<ValueType>::RH << 1.00000000, -0.42562849, 0.21421890, -0.08941999, 0.02256183;
+      break;
+    case 10:
+      ApodizedBase<ValueType>::RH << 1.00000000, -0.44556363, 0.25340653, -0.13204417, 0.05652718, -0.01499076;
+      break;
+    case 12:
+      ApodizedBase<ValueType>::RH << 1.00000000, -0.45894067, 0.28010314, -0.16643825, 0.08800988, -0.03868096,
+          0.01075463;
+      break;
+    case 14:
+      ApodizedBase<ValueType>::RH << 1.00000000, -0.46756890, 0.29920102, -0.19231217, 0.11586324, -0.06198480,
+          0.02794562, -0.00810281;
+      break;
+    case 16:
+      ApodizedBase<ValueType>::RH << 1.00000000, -0.47395091, 0.31300714, -0.21252770, 0.13875942, -0.08428515,
+          0.04562587, -0.02109019, 0.00635246;
+      break;
+    default:
+      throw Exception("No aDF RH data for lmax " + str(lmax));
+    }
+  }
 };
 
 //! convenience function to check if an input image can contain SH coefficients
@@ -658,8 +662,4 @@ template <class ImageType> void check(const ImageType &H) {
 }
 /** @} */
 
-} // namespace SH
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math::SH

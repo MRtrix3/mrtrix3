@@ -1,0 +1,6 @@
+#!/bin/bash
+# Test command when the input T1-weighted image has been explicitly multiplied by a brain mask
+#   (this changes the internal execution of FSL commands)
+mrcalc BIDS/sub-01/anat/sub-01_T1w.nii.gz BIDS/sub-01/anat/sub-01_brainmask.nii.gz -mult tmp-in.mif -force
+labelsgmfirst BIDS/sub-01/anat/sub-01_parc-desikan_indices.nii.gz tmp-in.mif BIDS/parc-desikan_lookup.txt tmp-out.mif -premasked -force
+testing_diff_header tmp-out.mif labelsgmfirst/premasked.mif.gz

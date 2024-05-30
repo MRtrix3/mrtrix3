@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test command execution when the -sgm_amyg_hipp command-line flag is specified,
+#   such that the hippocampi and amygdalae are also substituted with estimates from FSL FIRST
+labelsgmfirst BIDS/sub-01/anat/sub-01_parc-desikan_indices.nii.gz BIDS/sub-01/anat/sub-01_T1w.nii.gz BIDS/parc-desikan_lookup.txt tmp.mif -sgm_amyg_hipp -force
+testing_diff_header tmp.mif labelsgmfirst/sgm_amyg_hipp.mif.gz

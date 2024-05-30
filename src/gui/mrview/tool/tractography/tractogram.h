@@ -14,16 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_tractogram_h__
-#define __gui_mrview_tool_tractogram_h__
+#pragma once
 
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 
-namespace MR {
-
-namespace GUI {
+namespace MR::GUI {
 class Projection;
 
 namespace MRView {
@@ -168,7 +165,4 @@ private slots:
 };
 } // namespace Tool
 } // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

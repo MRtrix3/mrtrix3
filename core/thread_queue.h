@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_thread_queue_h__
-#define __mrtrix_thread_queue_h__
+#pragma once
 
 #include <condition_variable>
 #include <stack>
@@ -27,8 +26,7 @@
 #define MRTRIX_QUEUE_DEFAULT_CAPACITY 128
 #define MRTRIX_QUEUE_DEFAULT_BATCH_SIZE 128
 
-namespace MR {
-namespace Thread {
+namespace MR::Thread {
 
 //* \cond skip
 namespace {
@@ -1093,7 +1091,4 @@ inline void run_queue(Source &&source,
 
 /** @} */
 /** @} */
-} // namespace Thread
-} // namespace MR
-
-#endif
+} // namespace MR::Thread

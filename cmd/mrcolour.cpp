@@ -32,6 +32,7 @@ using namespace App;
 std::vector<std::string> colourmap_choices_std;
 std::vector<const char *> colourmap_choices_cstr;
 
+// clang-format off
 void usage() {
 
   const ColourMap::Entry *entry = ColourMap::maps;
@@ -39,9 +40,9 @@ void usage() {
     if (strcmp(entry->name, "Complex"))
       colourmap_choices_std.push_back(lowercase(entry->name));
     ++entry;
-  } while (entry->name);
+  } while(entry->name != nullptr);
   colourmap_choices_cstr.reserve(colourmap_choices_std.size() + 1);
-  for (const auto &s : colourmap_choices_std)
+  for (const auto& s : colourmap_choices_std)
     colourmap_choices_cstr.push_back(s.c_str());
   colourmap_choices_cstr.push_back(nullptr);
 
@@ -50,30 +51,38 @@ void usage() {
   SYNOPSIS = "Apply a colour map to an image";
 
   DESCRIPTION
-  +"Under typical usage, this command will receive as input ad 3D greyscale image, and "
-   "output a 4D image with 3 volumes corresponding to red-green-blue components; "
-   "other use cases are possible, and are described in more detail below."
+  + "Under typical usage,"
+    " this command will receive as input ad 3D greyscale image,"
+    " and output a 4D image with 3 volumes corresponding to red-green-blue components;"
+    " other use cases are possible,"
+    " and are described in more detail below."
 
-      + "By default, the command will automatically determine the maximum and minimum "
-        "intensities of the input image, and use that information to set the upper and "
-        "lower bounds of the applied colourmap. This behaviour can be overridden by manually "
-        "specifying these bounds using the -upper and -lower options respectively.";
+  + "By default,"
+    " the command will automatically determine the maximum and minimum"
+    " intensities of the input image,"
+    " and use that information to set the upper and lower bounds of the applied colourmap."
+    " This behaviour can be overridden by manually specifying these bounds"
+    " using the -upper and -lower options respectively.";
 
   ARGUMENTS
-  +Argument("input", "the input image").type_image_in() +
-      Argument("map", "the colourmap to apply; choices are: " + join(colourmap_choices_std, ","))
-          .type_choice(colourmap_choices_cstr.data()) +
-      Argument("output", "the output image").type_image_out();
+  + Argument ("input",  "the input image").type_image_in()
+  + Argument ("map",    "the colourmap to apply;"
+                        " choices are: " + join(colourmap_choices_std, ",")).type_choice (colourmap_choices_cstr.data())
+  + Argument ("output", "the output image").type_image_out();
 
   OPTIONS
-  +Option("upper", "manually set the upper intensity of the colour mapping") + Argument("value").type_float()
+  + Option ("upper", "manually set the upper intensity of the colour mapping")
+    + Argument ("value").type_float()
 
-      + Option("lower", "manually set the lower intensity of the colour mapping") + Argument("value").type_float()
+  + Option ("lower", "manually set the lower intensity of the colour mapping")
+    + Argument ("value").type_float()
 
-      + Option("colour",
-               "set the target colour for use of the 'colour' map (three comma-separated floating-point values)") +
-      Argument("values").type_sequence_float();
+  + Option ("colour", "set the target colour for use of the 'colour' map"
+                      " (three comma-separated floating-point values)")
+    + Argument ("values").type_sequence_float();
+
 }
+// clang-format on
 
 void run() {
   Header H_in = Header::open(argument[0]);
@@ -83,7 +92,7 @@ void run() {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))
       throw Exception("For applying a fixed colour, command expects a 3D image as input");
     auto opt = get_options("colour");
-    if (!opt.size())
+    if (opt.empty())
       throw Exception("For \'colour\' colourmap, target colour must be specified using the -colour option");
     const auto values = parse_floats(opt[0][0]);
     if (values.size() != 3)
@@ -94,13 +103,13 @@ void run() {
   } else if (colourmap.is_rgb) {
     if (!(H_in.ndim() == 4 && H_in.size(3) == 3))
       throw Exception("\'rgb\' colourmap only applies to 4D images with 3 volumes");
-    if (get_options("lower").size()) {
+    if (!get_options("lower").empty()) {
       WARN("Option -lower ignored: not compatible with \'rgb\' colourmap (a minimum of 0.0 is assumed)");
     }
   } else {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))
       throw Exception("For standard colour maps, command expects a 3D image as input");
-    if (get_options("colour").size()) {
+    if (!get_options("colour").empty()) {
       WARN("Option -colour ignored: only applies if \'colour\' colourmap is used");
     }
   }

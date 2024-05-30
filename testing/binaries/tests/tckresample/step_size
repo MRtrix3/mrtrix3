@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify operation of "-step_size" option
+tckresample tracks.tck tmp.tck -step_size 0.9 -force
+testing_diff_tck tmp.tck tckresample/stepsize.tck -distance 2e-3

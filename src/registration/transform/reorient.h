@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_reorient_h__
-#define __registration_transform_reorient_h__
+#pragma once
 
 #include "adapter/jacobian.h"
 #include "algo/threaded_loop.h"
@@ -23,9 +22,7 @@
 #include "math/least_squares.h"
 #include "registration/multi_contrast.h"
 
-namespace MR {
-namespace Registration {
-namespace Transform {
+namespace MR::Registration::Transform {
 
 FORCE_INLINE Eigen::MatrixXd aPSF_weights_to_FOD_transform(const int num_SH, const Eigen::MatrixXd &directions) {
   const size_t lmax = Math::SH::LforN(num_SH);
@@ -39,7 +36,7 @@ FORCE_INLINE std::vector<std::vector<ssize_t>>
 multiContrastSetting2start_nvols(const std::vector<MultiContrastSetting> &mcsettings, size_t &max_n_SH) {
   max_n_SH = 0;
   std::vector<std::vector<ssize_t>> start_nvols;
-  if (mcsettings.size() != 0) {
+  if (!mcsettings.empty()) {
     for (const auto &mc : mcsettings) {
       if (mc.do_reorientation && mc.lmax > 0) {
         start_nvols.emplace_back(std::initializer_list<ssize_t>{(ssize_t)mc.start, (ssize_t)mc.nvols});
@@ -152,10 +149,10 @@ void reorient(FODImageType &input_fod_image,
   assert(directions.cols() > directions.rows());
   std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
-  if (multi_contrast_settings.size())
+  if (!multi_contrast_settings.empty())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
 
-  if (start_nvols.size()) {
+  if (!start_nvols.empty()) {
     assert(max_n_SH > 1);
     ThreadedLoop(input_fod_image, 0, 3)
         .run(LinearKernelMultiContrast<FODImageType>(
@@ -185,10 +182,10 @@ void reorient(const std::string progress_message,
   assert(directions.cols() > directions.rows());
   std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
-  if (multi_contrast_settings.size())
+  if (!multi_contrast_settings.empty())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
 
-  if (start_nvols.size()) {
+  if (!start_nvols.empty()) {
     assert(max_n_SH > 1);
     ThreadedLoop(progress_message, input_fod_image, 0, 3)
         .run(LinearKernelMultiContrast<FODImageType>(
@@ -345,9 +342,9 @@ void reorient_warp(const std::string progress_message,
   check_dimensions(fod_image, warp, 0, 3);
   std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
-  if (multi_contrast_settings.size())
+  if (!multi_contrast_settings.empty())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
-  if (start_nvols.size()) {
+  if (!start_nvols.empty()) {
     DEBUG("reorienting warp using MultiContrast NonLinearKernel");
     ThreadedLoop(progress_message, fod_image, 0, 3)
         .run(NonLinearKernelMultiContrast<FODImageType>(
@@ -370,10 +367,10 @@ void reorient_warp(FODImageType &fod_image,
   check_dimensions(fod_image, warp, 0, 3);
   std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
-  if (multi_contrast_settings.size())
+  if (!multi_contrast_settings.empty())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
 
-  if (start_nvols.size()) {
+  if (!start_nvols.empty()) {
     DEBUG("reorienting warp using MultiContrast NonLinearKernel");
     ThreadedLoop(fod_image, 0, 3)
         .run(NonLinearKernelMultiContrast<FODImageType>(
@@ -386,8 +383,60 @@ void reorient_warp(FODImageType &fod_image,
   }
 }
 
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
+// Explicit instantiation in registration/transform/reorient.cpp to reduce compile time
+extern template void reorient<Image<double>>(Image<double> &input_fod_image,
+                                             Image<double> &output_fod_image,
+                                             const transform_type &transform,
+                                             const Eigen::MatrixXd &directions,
+                                             bool modulate,
+                                             std::vector<MultiContrastSetting> multi_contrast_settings);
 
-#endif
+extern template void reorient<Image<float>>(Image<float> &input_fod_image,
+                                            Image<float> &output_fod_image,
+                                            const transform_type &transform,
+                                            const Eigen::MatrixXd &directions,
+                                            bool modulate,
+                                            std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient<Image<double>>(const std::string progress_message,
+                                             Image<double> &input_fod_image,
+                                             Image<double> &output_fod_image,
+                                             const transform_type &transform,
+                                             const Eigen::MatrixXd &directions,
+                                             bool modulate,
+                                             std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient<Image<float>>(const std::string progress_message,
+                                            Image<float> &input_fod_image,
+                                            Image<float> &output_fod_image,
+                                            const transform_type &transform,
+                                            const Eigen::MatrixXd &directions,
+                                            bool modulate,
+                                            std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient_warp<Image<double>>(Image<double> &fod_image,
+                                                  Image<default_type> &warp,
+                                                  const Eigen::MatrixXd &directions,
+                                                  const bool modulate,
+                                                  std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient_warp<Image<float>>(Image<float> &fod_image,
+                                                 Image<default_type> &warp,
+                                                 const Eigen::MatrixXd &directions,
+                                                 const bool modulate,
+                                                 std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient_warp<Image<double>>(const std::string progress_message,
+                                                  Image<double> &fod_image,
+                                                  Image<default_type> &warp,
+                                                  const Eigen::MatrixXd &directions,
+                                                  const bool modulate,
+                                                  std::vector<MultiContrastSetting> multi_contrast_settings);
+
+extern template void reorient_warp<Image<float>>(const std::string progress_message,
+                                                 Image<float> &fod_image,
+                                                 Image<default_type> &warp,
+                                                 const Eigen::MatrixXd &directions,
+                                                 const bool modulate,
+                                                 std::vector<MultiContrastSetting> multi_contrast_settings);
+} // namespace MR::Registration::Transform

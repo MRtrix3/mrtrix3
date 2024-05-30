@@ -14,20 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_rng_h__
-#define __dwi_tractography_rng_h__
+#pragma once
 
 #include "math/rng.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 //! thread-local, but globally accessible RNG to vastly simplify multi-threading
 extern thread_local Math::RNG rng;
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

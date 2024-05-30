@@ -1,0 +1,7 @@
+#!/bin/bash
+# Basic test:
+# Default operation of command
+# Run on the SIFT phantom image
+# Ensure outcome is equivalent to that pre-generated
+5tt2gmwmi SIFT_phantom/5tt.mif - | \
+testing_diff_image - 5tt2gmwmi/out.mif -abs 1e-3

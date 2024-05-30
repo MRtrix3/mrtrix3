@@ -28,6 +28,7 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -35,22 +36,23 @@ void usage() {
   SYNOPSIS = "Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface";
 
   REFERENCES
-  +"Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-   "Anatomically-constrained tractography:"
-   "Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
-   "NeuroImage, 2012, 62, 1924-1938";
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+      "Anatomically-constrained tractography:"
+      " Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+      "NeuroImage, 2012, 62, 1924-1938";
 
   ARGUMENTS
-  +Argument("5tt_in", "the input 5TT segmented anatomical image").type_image_in() +
-      Argument("mask_out", "the output mask image").type_image_out();
+    + Argument ("5tt_in", "the input 5TT segmented anatomical image").type_image_in()
+    + Argument ("mask_out", "the output mask image").type_image_out();
 
   OPTIONS
-  +Option("mask_in",
-          "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. "
-          "If no input mask is provided, the output will be a whole-brain mask image calculated using the anatomical "
-          "image only.") +
-      Argument("image", "the input mask image").type_image_in();
+    + Option("mask_in", "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. "
+                        "If no input mask is provided, "
+                        "the output will be a whole-brain mask image calculated using the anatomical image only.")
+      + Argument ("image", "the input mask image").type_image_in();
+
 }
+// clang-format on
 
 class Processor {
 
@@ -115,7 +117,7 @@ void run() {
 
   Image<bool> mask;
   auto opt = get_options("mask_in");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     if (!dimensions_match(input, mask, 0, 3))
       throw Exception("Mask image provided using the -mask option must match the input 5TT image");

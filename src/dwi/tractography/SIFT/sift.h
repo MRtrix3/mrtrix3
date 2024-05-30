@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_sift_h__
-#define __dwi_tractography_sift_sift_h__
+#pragma once
 
 #include "app.h"
 
@@ -23,17 +22,13 @@ namespace MR {
 namespace App {
 class OptionGroup;
 }
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+
+namespace DWI::Tractography::SIFT {
 
 extern const App::OptionGroup SIFTModelOption;
 extern const App::OptionGroup SIFTOutputOption;
 extern const App::OptionGroup SIFTTermOption;
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace DWI::Tractography::SIFT
 
-#endif
+} // namespace MR

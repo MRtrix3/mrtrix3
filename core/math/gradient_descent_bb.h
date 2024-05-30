@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_gradient_descent_bb_h__
-#define __math_gradient_descent_bb_h__
+#pragma once
 
 #include "math/check_gradient.h"
 #include <deque>
@@ -23,8 +22,7 @@
 #include <iostream>
 #include <limits>
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 //! \addtogroup Optimisation
 // @{
@@ -242,7 +240,4 @@ protected:
   }
 };
 //! @}
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

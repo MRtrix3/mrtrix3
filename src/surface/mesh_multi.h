@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_mesh_multi_h__
-#define __surface_mesh_multi_h__
+#pragma once
 
 #include "types.h"
 
 #include "surface/mesh.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 // Class to handle multiple meshes per file
 // For now, this will only be supported using the .obj file type
@@ -38,7 +36,4 @@ public:
   void save(const std::string &) const;
 };
 
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface

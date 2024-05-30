@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_roi_editor_roi_h__
-#define __gui_mrview_tool_roi_editor_roi_h__
+#pragma once
 
 #include "memory.h"
 #include "transform.h"
@@ -35,9 +34,7 @@ namespace MR {
 
 class Header;
 
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace GUI::MRView::Tool {
 
 class ROI : public Base {
   Q_OBJECT
@@ -106,9 +103,6 @@ protected:
   void dropEvent(QDropEvent *event) override;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace GUI::MRView::Tool
 
-#endif
+} // namespace MR

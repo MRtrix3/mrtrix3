@@ -11,11 +11,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(MRTRIX_BASE_VERSION "${CMAKE_PROJECT_VERSION}")
 
 option(MRTRIX_BUILD_GUI "Build the MRtrix3 GUI" ON)
-option(MRTRIX_USE_QT6 "Use Qt6 to build" OFF)
+option(MRTRIX_USE_QT5 "Use Qt 5 to build" OFF)
 option(MRTRIX_WARNINGS_AS_ERRORS "Compiler warnings result in compilation errors" OFF)
 option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
 option(MRTRIX_STRIP_CONDA "Strip ananconda/mininconda from PATH to avoid conflicts" ON)
+option(MRTRIX_USE_PCH "Use precompiled headers" ON)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)
@@ -24,10 +25,10 @@ if(MRTRIX_BUILD_TESTS)
     enable_testing()
 endif()
 
-if(MRTRIX_USE_QT6)
-    set(QT_MAJOR_VERSION 6)
-else()
+if(MRTRIX_USE_QT5)
     set(QT_MAJOR_VERSION 5)
+else()
+    set(QT_MAJOR_VERSION 6)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -56,6 +57,7 @@ file(RELATIVE_PATH relDir
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
 include(BuildType)
+include(LinkerSetup)
 include(FindFFTW)
 include(CompilerCache)
 include(ECMEnableSanitizers)
@@ -134,6 +136,7 @@ add_custom_target(Github SOURCES
     .github/ISSUE_TEMPLATE/custom.md
     .github/ISSUE_TEMPLATE/feature_request.md
     .github/workflows/checks.yml
+    .github/workflows/package-linux-tarball.yml
     .github/workflows/package-linux-anaconda.yml
     .github/workflows/package-macos-anaconda.yml
     .github/workflows/package-macos-native.yml

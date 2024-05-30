@@ -14,15 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_fixel_legacy_h__
-#define __gui_mrview_tool_fixel_legacy_h__
+#pragma once
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class Legacy : public FixelType<FixelLegacyType> {
 public:
   Legacy(const std::string &filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool) {
@@ -38,9 +34,4 @@ public:
 
   void load_image_buffer() override;
 };
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

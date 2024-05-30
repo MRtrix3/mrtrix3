@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_node_h__
-#define __gui_mrview_tool_connectome_node_h__
+#pragma once
 
 #include "image.h"
 
 #include "gui/opengl/gl.h"
 #include "surface/mesh.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 // Stores all information relating to the drawing of individual nodes, both fixed and variable
 class Node {
@@ -100,9 +96,4 @@ private:
   std::unique_ptr<Mesh> mesh;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

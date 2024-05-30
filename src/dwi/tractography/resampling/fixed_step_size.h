@@ -14,15 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_resampling_fixed_step_size_h__
-#define __dwi_tractography_resampling_fixed_step_size_h__
+#pragma once
 
 #include "dwi/tractography/resampling/resampling.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 class FixedStepSize : public BaseCRTP<FixedStepSize> {
 
@@ -41,9 +37,4 @@ private:
   value_type step_size;
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Resampling

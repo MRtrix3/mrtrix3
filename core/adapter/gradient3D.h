@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_gradient3D_h__
-#define __image_adapter_gradient3D_h__
+#pragma once
 
 #include "adapter/gradient1D.h"
 #include "transform.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Gradient3D : public Gradient1D<ImageType> {
 
@@ -47,7 +45,4 @@ protected:
   const bool wrt_scanner;
   Transform transform;
 };
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

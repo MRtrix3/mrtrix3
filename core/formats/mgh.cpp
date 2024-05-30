@@ -23,8 +23,7 @@
 #include "image_io/default.h"
 #include "raw.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
   if (!Path::has_suffix(H.name(), ".mgh"))
@@ -64,5 +63,4 @@ std::unique_ptr<ImageIO::Base> MGH::create(Header &H) const {
   return io_handler;
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

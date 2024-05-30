@@ -18,9 +18,7 @@
 #include "file/dicom/patient.h"
 #include "file/dicom/study.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 std::vector<int> Series::count() const {
   std::vector<int> dim(3);
@@ -28,7 +26,7 @@ std::vector<int> Series::count() const {
   dim[0] = dim[1] = dim[2] = 0;
   current_dim[0] = current_dim[1] = 1;
 
-  if (size() == 0)
+  if (!size())
     return dim;
 
   const Image *first[] = {(*this)[0].get(), (*this)[0].get()};
@@ -76,7 +74,7 @@ std::ostream &operator<<(std::ostream &stream, const Series &item) {
   stream << MR::printf("      %4u - %4u %4s images %10s %8s %s [ %s ]\n",
                        item.number,
                        item.size(),
-                       (item.modality.size() ? item.modality.c_str() : "(?)"),
+                       (!item.modality.empty() ? item.modality.c_str() : "(?)"),
                        format_date(item.date).c_str(),
                        format_time(item.time).c_str(),
                        item.name.c_str(),
@@ -88,6 +86,4 @@ std::ostream &operator<<(std::ostream &stream, const Series &item) {
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

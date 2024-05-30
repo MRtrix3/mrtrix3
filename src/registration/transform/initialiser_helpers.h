@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_initialiser_helpers_h__
-#define __registration_transform_initialiser_helpers_h__
+#pragma once
 
 #include "image.h"
 #include "math/SH.h"
@@ -26,10 +25,7 @@
 #include <Eigen/Geometry>
 #include <algorithm>
 
-namespace MR {
-namespace Registration {
-namespace Transform {
-namespace Init {
+namespace MR::Registration::Transform::Init {
 template <class ImageType, class ValueType>
 void get_geometric_centre(const ImageType &image, Eigen::Matrix<ValueType, 3, 1> &centre) {
   Eigen::Vector3d centre_voxel;
@@ -122,9 +118,4 @@ private:
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> im1_eval, im2_eval;
 };
 
-} // namespace Init
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
-
-#endif
+} // namespace MR::Registration::Transform::Init

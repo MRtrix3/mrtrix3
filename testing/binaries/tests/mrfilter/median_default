@@ -1,0 +1,5 @@
+#!/bin/bash
+# Execution of the "median" filter under default operation
+# Outcome is compared against that generated using a prior software version
+mrfilter dwi.mif median - | \
+testing_diff_image - mrfilter/out6.mif

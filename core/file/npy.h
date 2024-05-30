@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_npy_h__
-#define __file_npy_h__
+#pragma once
 
 #include <array>
 #include <sstream>
@@ -30,9 +29,7 @@
 #include "raw.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace NPY {
+namespace MR::File::NPY {
 
 constexpr unsigned char magic_string[] = "\x93NUMPY";
 constexpr size_t alignment = 16;
@@ -121,8 +118,4 @@ template <class ContType> void save_matrix(const ContType &data, const std::stri
     }
 }
 
-} // namespace NPY
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File::NPY

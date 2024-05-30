@@ -23,10 +23,7 @@
 #include "dwi/tractography/streamline.h"
 #include "gui/mrview/tool/connectome/connectome.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Edge::Edge(const node_t one, const node_t two, const Eigen::Vector3f &c_one, const Eigen::Vector3f &c_two)
     : node_indices{one, two},
@@ -173,13 +170,13 @@ Edge::Streamline::Streamline(const Exemplar &data) {
 
   vertex_buffer.gen();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
-  if (data.vertices.size())
+  if (!data.vertices.empty())
     gl::BufferData(
         gl::ARRAY_BUFFER, data.vertices.size() * sizeof(Eigen::Vector3f), &data.vertices[0][0], gl::STATIC_DRAW);
 
   tangent_buffer.gen();
   tangent_buffer.bind(gl::ARRAY_BUFFER);
-  if (data.tangents.size())
+  if (!data.tangents.empty())
     gl::BufferData(
         gl::ARRAY_BUFFER, data.tangents.size() * sizeof(Eigen::Vector3f), &data.tangents[0][0], gl::STATIC_DRAW);
 
@@ -230,7 +227,7 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   }
   vertex_buffer.gen();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
-  if (vertices.size())
+  if (!vertices.empty())
     gl::BufferData(gl::ARRAY_BUFFER, vertices.size() * sizeof(Eigen::Vector3f), &vertices[0][0], gl::STATIC_DRAW);
 
   std::vector<Eigen::Vector3f> tangents;
@@ -241,7 +238,7 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   }
   tangent_buffer.gen();
   tangent_buffer.bind(gl::ARRAY_BUFFER);
-  if (tangents.size())
+  if (!tangents.empty())
     gl::BufferData(gl::ARRAY_BUFFER, tangents.size() * sizeof(Eigen::Vector3f), &tangents[0][0], gl::STATIC_DRAW);
 
   std::vector<std::pair<float, float>> normal_multipliers;
@@ -258,7 +255,7 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   }
   normal_buffer.gen();
   normal_buffer.bind(gl::ARRAY_BUFFER);
-  if (normals.size())
+  if (!normals.empty())
     gl::BufferData(gl::ARRAY_BUFFER, normals.size() * sizeof(Eigen::Vector3f), &normals[0][0], gl::STATIC_DRAW);
 
   vertex_array_object.gen();
@@ -341,7 +338,4 @@ void Edge::Streamtube::Shared::clear() {
   }
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

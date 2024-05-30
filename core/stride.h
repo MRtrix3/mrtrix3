@@ -14,16 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stride_h__
-#define __stride_h__
+#pragma once
 
 #include "app.h"
 #include "datatype.h"
 #include "debug.h"
 #include "math/math.h"
 #include "types.h"
-
-namespace MR {
 
 //! Functions to handle the memory layout of images
 /*! Strides are typically supplied as a symbolic list of increments,
@@ -56,7 +53,7 @@ namespace MR {
  *
  * The functions defined in this namespace provide an interface to
  * manipulate the strides and convert symbolic into actual strides. */
-namespace Stride {
+namespace MR::Stride {
 
 using List = std::vector<ssize_t>;
 
@@ -344,11 +341,8 @@ inline void set_from_command_line(HeaderType &header, const List &default_stride
   auto cmdline_strides = __from_command_line(get(header));
   if (cmdline_strides.size())
     set(header, cmdline_strides);
-  else if (default_strides.size())
+  else if (!default_strides.empty())
     set(header, default_strides);
 }
 
-} // namespace Stride
-} // namespace MR
-
-#endif
+} // namespace MR::Stride

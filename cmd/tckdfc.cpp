@@ -43,92 +43,104 @@ using namespace MR::DWI::Tractography::Mapping;
 
 const char *windows[] = {"rectangle", "triangle", "cosine", "hann", "hamming", "lanczos", nullptr};
 
-void usage() {
+// clang-format off
+void usage () {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method";
 
   DESCRIPTION
-  +"This command generates a Track-Weighted Image (TWI), where the "
-   "contribution from each streamline to the image is the Pearson "
-   "correlation between the fMRI time series at the streamline endpoints."
+  + "This command generates a Track-Weighted Image (TWI),"
+    " where the contribution from each streamline to the image"
+    " is the Pearson correlation between the fMRI time series at the streamline endpoints."
 
-      + "The output image can be generated in one of two ways "
-        "(note that one of these two command-line options MUST be provided): "
+  + "The output image can be generated in one of two ways"
+    " (note that one of these two command-line options MUST be provided):"
 
-      + "- \"Static\" functional connectivity (-static option): "
-        "Each streamline contributes to a static 3D output image based on the "
-        "correlation between the signals at the streamline endpoints using the "
-        "entirety of the input time series."
+  + "- \"Static\" functional connectivity"
+    " (-static option):"
+    " Each streamline contributes to a static 3D output image"
+    " based on the correlation between the signals at the streamline endpoints"
+    " using the entirety of the input time series."
 
-      + "- \"Dynamic\" functional connectivity (-dynamic option): "
-        "The output image is a 4D image, with the same number of volumes as "
-        "the input fMRI time series. For each volume, the contribution from "
-        "each streamline is calculated based on a finite-width sliding time "
-        "window, centred at the timepoint corresponding to that volume."
+  + "- \"Dynamic\" functional connectivity"
+    " (-dynamic option):"
+    " The output image is a 4D image,"
+    " with the same number of volumes as the input fMRI time series."
+    " For each volume,"
+    " the contribution from each streamline is calculated"
+    " based on a finite-width sliding time window,"
+    " centred at the timepoint corresponding to that volume."
 
-      + "Note that the -backtrack option in this command is similar, but not precisely "
-        "equivalent, to back-tracking as can be used with Anatomically-Constrained "
-        "Tractography (ACT) in the tckgen command. However, here the feature does not "
-        "change the streamlines trajectories in any way; it simply enables detection of "
-        "the fact that the input fMRI image may not contain a valid timeseries underneath "
-        "the streamline endpoint, and where this occurs, searches from the streamline "
-        "endpoint inwards along the streamline trajectory in search of a valid "
-        "timeseries to sample from the input image.";
+  + "Note that the -backtrack option in this command is similar,"
+    " but not precisely equivalent,"
+    " to back-tracking as can be used with Anatomically-Constrained Tractography (ACT)"
+    " in the tckgen command."
+    " However, here the feature does not change the streamlines trajectories in any way;"
+    " it simply enables detection of the fact that the input fMRI image"
+    " may not contain a valid timeseries underneath the streamline endpoint,"
+    " and where this occurs,"
+    " searches from the streamline endpoint inwards along the streamline trajectory"
+    " in search of a valid timeseries to sample from the input image.";
 
   ARGUMENTS
-  +Argument("tracks", "the input track file.").type_file_in() +
-      Argument("fmri", "the pre-processed fMRI time series").type_image_in() +
-      Argument("output", "the output TW-dFC image").type_image_out();
+  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("fmri", "the pre-processed fMRI time series").type_image_in()
+  + Argument ("output", "the output TW-dFC image").type_image_out();
 
   OPTIONS
-  +OptionGroup("Options for toggling between static and dynamic TW-dFC methods; "
-               "note that one of these options MUST be provided")
+  + OptionGroup ("Options for toggling between static and dynamic TW-dFC methods;"
+                 " note that one of these options MUST be provided")
 
-      + Option("static", "generate a \"static\" (3D) output image.")
+  + Option ("static", "generate a \"static\" (3D) output image.")
 
-      + Option("dynamic",
-               "generate a \"dynamic\" (4D) output image; "
-               "must additionally provide the shape and width (in volumes) of the sliding window.") +
-      Argument("shape").type_choice(windows) + Argument("width").type_integer(3)
+  + Option ("dynamic", "generate a \"dynamic\" (4D) output image;"
+                       " must additionally provide the shape and width (in volumes)"
+                       " of the sliding window.")
+    + Argument ("shape").type_choice(windows)
+    + Argument ("width").type_integer(3)
 
-      + OptionGroup("Options for setting the properties of the output image")
+  + OptionGroup ("Options for setting the properties of the output image")
 
-      + Option("template",
-               "an image file to be used as a template for the output (the output image "
-               "will have the same transform and field of view).") +
-      Argument("image").type_image_in()
+  + Option ("template",
+      "an image file to be used as a template for the output"
+      " (the output image will have the same transform and field of view).")
+    + Argument ("image").type_image_in()
 
-      + Option("vox",
-               "provide either an isotropic voxel size (in mm), or comma-separated list "
-               "of 3 voxel dimensions.") +
-      Argument("size").type_sequence_float()
+  + Option ("vox",
+      "provide either an isotropic voxel size (in mm),"
+      " or comma-separated list of 3 voxel dimensions.")
+    + Argument ("size").type_sequence_float()
 
-      + Option("stat_vox",
-               "define the statistic for choosing the final voxel intensities for a given contrast "
-               "type given the individual values from the tracks passing through each voxel\n"
-               "Options are: " +
-                   join(voxel_statistics, ", ") + " (default: mean)") +
-      Argument("type").type_choice(voxel_statistics)
+  + Option ("stat_vox",
+      "define the statistic for choosing the final voxel intensities"
+      " for a given contrast type given the individual values"
+      " from the tracks passing through each voxel;"
+      " options are: " + join(voxel_statistics, ", ") +
+      " (default: mean)")
+    + Argument ("type").type_choice(voxel_statistics)
 
-      + OptionGroup("Other options for affecting the streamline sampling & mapping behaviour")
+  + OptionGroup ("Other options for affecting the streamline sampling & mapping behaviour")
 
-      + Option("backtrack",
-               "if no valid timeseries is found at the streamline endpoint, back-track along "
-               "the streamline trajectory until a valid timeseries is found")
+  + Option ("backtrack",
+            "if no valid timeseries is found at the streamline endpoint,"
+            " back-track along the streamline trajectory until a valid timeseries is found")
 
-      + Option("upsample",
-               "upsample the tracks by some ratio using Hermite interpolation before mapping "
-               "(if omitted, an appropriate ratio will be determined automatically)") +
-      Argument("factor").type_integer(1);
+  + Option ("upsample",
+            "upsample the tracks by some ratio using Hermite interpolation before mapping"
+            " (if omitted, an appropriate ratio will be determined automatically)")
+    + Argument ("factor").type_integer(1);
+
 
   REFERENCES
-  +"Calamante, F.; Smith, R.E.; Liang, X.; Zalesky, A.; Connelly, A " // Internal
-   "Track-weighted dynamic functional connectivity (TW-dFC): a new method to study time-resolved functional "
-   "connectivity. "
-   "Brain Struct Funct, 2017, doi: 10.1007/s00429-017-1431-1";
+  + "Calamante, F.; Smith, R.E.; Liang, X.; Zalesky, A.; Connelly, A. " // Internal
+    "Track-weighted dynamic functional connectivity (TW-dFC):"
+    " a new method to study time-resolved functional connectivity. "
+    "Brain Struct Funct, 2017, doi: 10.1007/s00429-017-1431-1";
+
 }
+// clang-format on
 
 // This class is similar to Mapping::MapWriter, but doesn't write to a HDD file on close
 // Instead, the one timepoint volume generated during this iteration is written
@@ -211,11 +223,11 @@ private:
 };
 
 void run() {
-  bool is_static = get_options("static").size();
+  const bool is_static = !get_options("static").empty();
   std::vector<float> window;
 
   auto opt = get_options("dynamic");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (is_static)
       throw Exception("Do not specify both -static and -dynamic options");
 
@@ -283,7 +295,7 @@ void run() {
 
   std::vector<default_type> voxel_size;
   opt = get_options("vox");
-  if (opt.size())
+  if (!opt.empty())
     voxel_size = parse_floats(opt[0][0]);
 
   if (voxel_size.size() == 1)
@@ -298,7 +310,7 @@ void run() {
 
   Header header;
   opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header = Header::open(opt[0][0]);
     if (!voxel_size.empty())
       Mapping::oversample_header(header, voxel_size);
@@ -321,7 +333,7 @@ void run() {
 
   size_t upsample_ratio;
   opt = get_options("upsample");
-  if (opt.size()) {
+  if (!opt.empty()) {
     upsample_ratio = opt[0][0];
     INFO("track interpolation factor manually set to " + str(upsample_ratio));
   } else {
@@ -336,7 +348,7 @@ void run() {
   }
 
   opt = get_options("stat_vox");
-  const vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_MEAN;
+  const vox_stat_t stat_vox = !opt.empty() ? vox_stat_t(int(opt[0][0])) : V_MEAN;
 
   Header H_3D(header);
   H_3D.ndim() = 3;

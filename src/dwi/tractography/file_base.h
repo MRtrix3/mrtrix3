@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_file_base_h__
-#define __dwi_tractography_file_base_h__
+#pragma once
 
 #include <iomanip>
 #include <map>
@@ -27,9 +26,7 @@
 #include "file/path.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 //! \cond skip
 class __ReaderBase__ {
@@ -132,8 +129,4 @@ protected:
 
 //! \endcond
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

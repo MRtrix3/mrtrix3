@@ -31,18 +31,23 @@ using namespace App;
 
 #define MAX_ERROR 0.001
 
-void usage() {
+// clang-format off
+void usage()
+{
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format";
+  SYNOPSIS = "Thoroughly check that one or more images conform "
+             "to the expected ACT five-tissue-type (5TT) format";
 
   ARGUMENTS
-  +Argument("input", "the 5TT image(s) to be tested").type_image_in().allow_multiple();
+  + Argument ("input", "the 5TT image(s) to be tested").type_image_in().allow_multiple();
 
   OPTIONS
-  +Option("voxels", "output mask images highlighting voxels where the input does not conform to 5TT requirements") +
-      Argument("prefix").type_text();
+  + Option ("voxels", "output mask images highlighting voxels "
+                      "where the input does not conform to 5TT requirements")
+    + Argument ("prefix").type_text();
 }
+// clang-format on
 
 void run() {
   const std::string voxels_prefix = get_option_value<std::string>("voxels", "");
@@ -56,7 +61,7 @@ void run() {
     Header H_out(in);
     H_out.ndim() = 3;
     H_out.datatype() = DataType::Bit;
-    if (voxels_prefix.size())
+    if (!voxels_prefix.empty())
       voxels = Image<bool>::scratch(H_out, "Scratch image for " + argument[i]);
 
     try {
@@ -141,10 +146,10 @@ void run() {
   }
 
   const std::string vox_option_suggestion =
-      get_options("masks").size()
-          ? (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") +
-             " -masks option)")
-          : " (suggest re-running using the -masks option to see voxels where tissue fractions do not sum to 1.0)";
+      get_options("masks").empty()
+          ? " (suggest re-running using the -masks option to see voxels where tissue fractions do not sum to 1.0)"
+          : (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") +
+             " -masks option)");
 
   if (major_error_count) {
     if (argument.size() > 1)

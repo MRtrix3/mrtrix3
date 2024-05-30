@@ -14,15 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_legacy_metric_h__
-#define __fixel_legacy_metric_h__
+#pragma once
 
 #include "types.h"
 
-namespace MR {
-namespace Fixel {
-
-namespace Legacy {
+namespace MR::Fixel::Legacy {
 
 // A class for storing a single quantitative value per fixel
 // This simple class will form the basis of most fixel-based image outputs and statistical analysis
@@ -39,8 +35,4 @@ public:
   float value;
 };
 
-} // namespace Legacy
-} // namespace Fixel
-} // namespace MR
-
-#endif
+} // namespace MR::Fixel::Legacy

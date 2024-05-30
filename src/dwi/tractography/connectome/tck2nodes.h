@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_tck2nodes_h__
-#define __dwi_tractography_connectome_tck2nodes_h__
+#pragma once
 
 #include "image.h"
 #include "interp/linear.h"
@@ -26,10 +25,7 @@
 
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 // Provides a common interface for assigning a streamline to the relevant parcellation node pair
 // Note that this class is NOT copy-constructed, so derivative classes must be thread-safe
@@ -184,9 +180,4 @@ private:
   void select_nodes(const Streamline<> &, Image<node_t> &, std::vector<node_t> &) const override;
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Connectome

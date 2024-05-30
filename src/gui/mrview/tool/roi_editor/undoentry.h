@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_roi_editor_undoentry_h__
-#define __gui_mrview_tool_roi_editor_undoentry_h__
+#pragma once
 
 #include <array>
 #include <atomic>
@@ -25,10 +24,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class ROI_Item;
 
@@ -72,9 +68,4 @@ struct ROI_UndoEntry {
   static std::unique_ptr<Shared> shared;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

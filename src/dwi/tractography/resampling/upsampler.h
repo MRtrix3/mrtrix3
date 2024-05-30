@@ -14,15 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_resampling_upsampler_h__
-#define __dwi_tractography_resampling_upsampler_h__
+#pragma once
 
 #include "dwi/tractography/resampling/resampling.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 class Upsampler : public BaseCRTP<Upsampler> {
 
@@ -49,9 +45,4 @@ private:
   void increment(const point_type &) const;
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Resampling

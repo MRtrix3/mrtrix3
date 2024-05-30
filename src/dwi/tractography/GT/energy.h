@@ -14,16 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_energy_h__
-#define __gt_energy_h__
+#pragma once
 
 #include "dwi/tractography/GT/gt.h"
 #include "dwi/tractography/GT/particle.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 class EnergyComputer {
 public:
@@ -95,9 +91,4 @@ protected:
   double l1, l2;
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_energy_h__
+} // namespace MR::DWI::Tractography::GT

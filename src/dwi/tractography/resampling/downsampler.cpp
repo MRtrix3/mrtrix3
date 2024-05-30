@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/resampling/downsampler.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 bool Downsampler::operator()(Tracking::GeneratedTrack &tck) const {
   if (!valid())
@@ -62,7 +59,4 @@ bool Downsampler::operator()(const Streamline<> &in, Streamline<> &out) const {
   return true;
 }
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling

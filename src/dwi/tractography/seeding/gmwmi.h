@@ -14,16 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_seeding_gmwmi_h__
-#define __dwi_tractography_seeding_gmwmi_h__
+#pragma once
 
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/seeding/basic.h"
 #include "image.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 namespace ACT {
 class GMWMI_finder;
@@ -54,8 +51,4 @@ private:
 };
 
 } // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

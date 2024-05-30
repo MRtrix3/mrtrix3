@@ -16,20 +16,14 @@ Usage
     tck2fixel [ options ]  tracks fixel_folder_in fixel_folder_out fixel_data_out
 
 -  *tracks*: the input tracks.
--  *fixel_folder_in*: the input fixel folder. Used to define the fixels and their directions
--  *fixel_folder_out*: the fixel folder to which the output will be written. This can be the same as the input folder if desired
+-  *fixel_folder_in*: the input fixel folder; used to define the fixels and their directions
+-  *fixel_folder_out*: the fixel folder to which the output will be written; this can be the same as the input folder if desired
 -  *fixel_data_out*: the name of the fixel data image.
-
-Description
------------
-
-Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
 
--  **-angle value** the max angle threshold for assigning streamline tangents to fixels (Default: 45 degrees)
+-  **-angle value** the max angle threshold for assigning streamline tangents to fixels (default: 45 degrees)
 
 Standard options
 ^^^^^^^^^^^^^^^^

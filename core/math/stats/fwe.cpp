@@ -19,9 +19,7 @@
 #include <algorithm>
 #include <types.h>
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 // FIXME Jump based on non-initialised value in the sort
 // Pre-fill the null distribution / stats matrices with NaNs, detect when it's not overwritten
@@ -71,6 +69,4 @@ matrix_type fwe_pvalue(const matrix_type &null_distributions, const matrix_type 
   return pvalues;
 }
 
-} // namespace Stats
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Stats

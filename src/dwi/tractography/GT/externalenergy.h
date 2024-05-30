@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_externalenergy_h__
-#define __gt_externalenergy_h__
+#pragma once
 
 #include "image.h"
 #include "math/constrained_least_squares.h"
@@ -25,10 +24,7 @@
 #include "dwi/tractography/GT/gt.h"
 #include "dwi/tractography/GT/particle.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 class ExternalEnergyComputer : public EnergyComputer {
 public:
@@ -98,9 +94,4 @@ protected:
   }
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_externalenergy_h__
+} // namespace MR::DWI::Tractography::GT

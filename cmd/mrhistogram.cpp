@@ -22,21 +22,26 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Generate a histogram of image intensities";
 
   ARGUMENTS
-  +Argument("image", "the input image from which the histogram will be computed").type_image_in() +
-      Argument("hist", "the output histogram file").type_file_out();
+  + Argument ("image", "the input image from which the histogram will be computed").type_image_in()
+  + Argument ("hist", "the output histogram file").type_file_out();
 
   OPTIONS
-  +Algo::Histogram::Options
+  + Algo::Histogram::Options
 
-      + OptionGroup("Additional options for mrhistogram") +
-      Option("allvolumes", "generate one histogram across all image volumes, rather than one per image volume");
+  + OptionGroup ("Additional options for mrhistogram")
+  + Option ("allvolumes", "generate one histogram across all image volumes,"
+                          " rather than one per image volume");
+
 }
+// clang-format on
 
 class Volume_loop {
 public:
@@ -87,12 +92,13 @@ void run() {
     throw Exception("histogram generation not supported for complex data types");
   auto data = header.get_image<float>();
 
-  const bool allvolumes = get_options("allvolumes").size();
-  size_t nbins = get_option_value("bins", 0);
+  const bool allvolumes = !get_options("allvolumes").empty();
+  const size_t nbins_user = get_option_value("bins", 0);
+  const bool ignorezero = !get_options("ignorezero").empty();
 
   auto opt = get_options("mask");
   Image<bool> mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(mask, header, 0, 3);
   }
@@ -100,9 +106,9 @@ void run() {
   File::OFStream output(argument[1]);
   output << "# " << App::command_history_string << "\n";
 
-  Algo::Histogram::Calibrator calibrator(nbins, get_options("ignorezero").size());
+  Algo::Histogram::Calibrator calibrator(nbins_user, ignorezero);
   opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     calibrator.from_file(opt[0][0]);
   } else {
     for (auto v = Volume_loop(data); v; ++v)
@@ -114,14 +120,13 @@ void run() {
                         header.datatype().is_integer() && header.intensity_offset() == 0.0 &&
                             header.intensity_scale() == 1.0);
   }
-  nbins = calibrator.get_num_bins();
-  if (!nbins)
-    throw Exception(std::string("No histogram bins constructed") +
-                    ((get_options("ignorezero").size() || get_options("bins").size())
-                         ? "."
-                         : "; you might want to use the -ignorezero or -bins option."));
+  const size_t nbins_data = calibrator.get_num_bins();
+  if (nbins_data == 0)
+    throw Exception(
+        std::string("No histogram bins constructed") +
+        ((ignorezero || nbins_user > 1) ? "." : "; you might want to use the -ignorezero or -bins option."));
 
-  for (size_t i = 0; i != nbins; ++i)
+  for (size_t i = 0; i != nbins_data; ++i)
     output << (calibrator.get_min() + ((i + 0.5) * calibrator.get_bin_width())) << ",";
   output << "\n";
 
@@ -130,7 +135,7 @@ void run() {
     Algo::Histogram::Data histogram(calibrator);
     for (auto v = Volume_loop(data); v; ++v)
       run_volume(histogram, data, mask);
-    for (size_t i = 0; i != nbins; ++i)
+    for (size_t i = 0; i != nbins_data; ++i)
       output << histogram[i] << ",";
     output << "\n";
 
@@ -139,7 +144,7 @@ void run() {
     for (auto v = Volume_loop(data); v; ++v) {
       Algo::Histogram::Data histogram(calibrator);
       run_volume(histogram, data, mask);
-      for (size_t i = 0; i != nbins; ++i)
+      for (size_t i = 0; i != nbins_data; ++i)
         output << histogram[i] << ",";
       output << "\n";
     }

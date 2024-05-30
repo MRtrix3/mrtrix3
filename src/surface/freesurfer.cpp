@@ -18,9 +18,7 @@
 
 #include "debug.h"
 
-namespace MR {
-namespace Surface {
-namespace FreeSurfer {
+namespace MR::Surface::FreeSurfer {
 
 void read_annot(const std::string &path, label_vector_type &labels, Connectome::LUT &lut) {
   std::ifstream in(path.c_str(), std::ios_base::in | std::ios_base::binary);
@@ -153,6 +151,4 @@ void read_label(const std::string &path, VertexList &vertices, Scalar &scalar) {
   scalar.set_name(path);
 }
 
-} // namespace FreeSurfer
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface::FreeSurfer

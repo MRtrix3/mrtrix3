@@ -1,0 +1,17 @@
+#!/bin/bash
+# Verify operation of a very specific use case:
+# - There is no phase encoding contrast within the input DWI data
+# - The additional data acquired for the purpose of susceptibility field estimation
+#   do not themselves contain phase encoding contrast either;
+#   however once those data are concatenated with the b=0 volumes from the DWIs,
+#   it is then possible to use that combined data to estimate the susceptibility field
+
+mrconvert BIDS/sub-04/fmap/sub-04_dir-2_epi.nii.gz tmp-sub-04_dir-2_epi.mif -force \
+-json_import BIDS/sub-04/fmap/sub-04_dir-2_epi.json
+
+dwifslpreproc BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp.mif -rpe_header -force \
+-fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
+-json_import BIDS/sub-04/dwi/sub-04_dwi.json \
+-se_epi tmp-sub-04_dir-2_epi.mif -align_seepi
+
+testing_diff_header tmp.mif dwifslpreproc/rpeheader_singlefmap.mif.gz

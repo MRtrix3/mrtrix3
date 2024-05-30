@@ -14,15 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_filter_smooth_h__
-#define __surface_filter_smooth_h__
+#pragma once
 
 #include "surface/filter/base.h"
 #include "surface/mesh.h"
 
-namespace MR {
-namespace Surface {
-namespace Filter {
+namespace MR::Surface::Filter {
 
 constexpr default_type default_smoothing_spatial_factor = 10.0;
 constexpr default_type default_smoothing_influence_factor = 10.0;
@@ -46,8 +43,4 @@ private:
   default_type spatial, influence;
 };
 
-} // namespace Filter
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface::Filter

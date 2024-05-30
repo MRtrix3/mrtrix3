@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_seeding_basic_h__
-#define __dwi_tractography_seeding_basic_h__
+#pragma once
 
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/base.h"
@@ -26,10 +25,7 @@
 //   at each trial seed point
 // #define REJECTION_SAMPLING_USE_INTERPOLATION
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 class Sphere : public Base {
 
@@ -132,9 +128,4 @@ private:
   float max;
 };
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Seeding

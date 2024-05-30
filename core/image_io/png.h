@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_handler_png_h__
-#define __image_handler_png_h__
+#pragma once
 
 #ifdef MRTRIX_PNG_SUPPORT
 
 #include "image_io/base.h"
 #include "types.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 class PNG : public Base {
 public:
@@ -34,8 +32,6 @@ protected:
   virtual void unload(const Header &);
 };
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO
 
-#endif
 #endif

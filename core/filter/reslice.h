@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_reslice_h__
-#define __filter_reslice_h__
+#pragma once
 
 #include "adapter/reslice.h"
 #include "algo/threaded_copy.h"
 #include "datatype.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 //! convenience function to regrid one Image onto another
 /*! This function resamples (regrids) the Image \a source onto the
@@ -55,7 +53,4 @@ void reslice(ImageTypeSource &source,
 }
 
 //! @}
-} // namespace Filter
-} // namespace MR
-
-#endif
+} // namespace MR::Filter

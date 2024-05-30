@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_mesh_h__
-#define __surface_mesh_h__
+#pragma once
 
 #include <cstdint>
 #include <fstream>
@@ -29,8 +28,7 @@
 
 #include "surface/types.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 namespace Filter {
 class Smooth;
@@ -133,7 +131,7 @@ public:
   size_t num_quads() const { return quads.size(); }
   size_t num_polygons() const { return triangles.size() + quads.size(); }
 
-  bool have_normals() const { return normals.size(); }
+  bool have_normals() const { return !normals.empty(); }
   void calculate_normals();
 
   const std::string &get_name() const { return name; }
@@ -188,7 +186,4 @@ private:
   template <class ImageType> void mesh2image(const ImageType &, Mesh &, const default_type);
 };
 
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface

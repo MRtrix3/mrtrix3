@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_nifti_utils_h__
-#define __file_nifti_utils_h__
+#pragma once
 
 #include <array>
 // nifti1_io.h and nifti2_io.h headers must be included after dirent.h (transitively included by header.h)
@@ -32,8 +31,7 @@
 namespace MR {
 class Header;
 
-namespace File {
-namespace NIfTI {
+namespace File::NIfTI {
 extern bool right_left_warning_issued;
 
 void axes_on_write(const Header &H, std::vector<size_t> &order, std::array<bool, 3> &flip);
@@ -50,8 +48,6 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H);
 int version(Header &H);
 std::string get_json_path(const std::string &nifti_path);
 
-} // namespace NIfTI
-} // namespace File
-} // namespace MR
+} // namespace File::NIfTI
 
-#endif
+} // namespace MR

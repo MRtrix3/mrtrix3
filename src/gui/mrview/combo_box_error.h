@@ -14,15 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_combo_box_error_h__
-#define __gui_mrview_combo_box_error_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 class ComboBoxWithErrorMsg : public QComboBox {
   Q_OBJECT
@@ -42,8 +39,4 @@ protected:
   int error_index;
 };
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView

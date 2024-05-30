@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify operation of dwibiasnormmask command
+#   when the maximal spherical harmonic degree per macroscopic tissue type "lmax"
+#   is explicitly modified at the command-line
+dwibiasnormmask BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif tmpmask.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-lmax 6,0,0 \
+-output_bias tmpbias.mif \
+-output_scale tmpscale.txt \
+-output_tissuesum tmptissuesum.mif
+
+testing_diff_image tmpout.mif dwibiasnormmask/lmax600_out.mif.gz -frac 1e-5
+testing_diff_image tmpmask.mif dwibiasnormmask/lmax600_mask.mif.gz
+testing_diff_image tmpbias.mif dwibiasnormmask/lmax600_bias.mif.gz -frac 1e-5
+testing_diff_matrix tmpscale.txt dwibiasnormmask/lmax600_scale.txt -frac 1e-5
+testing_diff_image tmptissuesum.mif dwibiasnormmask/lmax600_tissuesum.mif.gz -abs 1e-5

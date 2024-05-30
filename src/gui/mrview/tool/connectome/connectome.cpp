@@ -32,10 +32,7 @@
 
 #include "surface/mesh_multi.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 Connectome::Connectome(Dock *parent)
     : Base(parent),
@@ -852,13 +849,13 @@ size_t Connectome::visible_number_colourbars() {
 
 void Connectome::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("Connectome tool options")
-
-      + Option("connectome.init", "Initialise the connectome tool using a parcellation image.") +
-      Argument("image").type_image_in()
-
-      + Option("connectome.load", "Load a matrix file into the connectome tool.").allow_multiple() +
-      Argument("path").type_file_in();
+      + Option("connectome.init", "Initialise the connectome tool using a parcellation image.")
+        + Argument("image").type_image_in()
+      + Option("connectome.load", "Load a matrix file into the connectome tool.").allow_multiple()
+        + Argument("path").type_file_in();
+  // clang-format on
 }
 
 bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
@@ -916,7 +913,7 @@ void Connectome::matrix_open_slot() {
 
 void Connectome::matrix_close_slot() {
   QModelIndexList indexes = matrix_list_view->selectionModel()->selectedIndexes();
-  if (indexes.size())
+  if (!indexes.empty())
     matrix_list_model->remove_item(indexes.first());
   window().updateGL();
 }
@@ -943,7 +940,7 @@ void Connectome::connectome_selection_changed_slot(const QItemSelection &, const
 
   // Also need to update limits on UI controls
   QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-  if (list.size()) {
+  if (!list.empty()) {
     const FileDataVector &data(matrix_list_model->get(list[0]));
     if (node_visibility == node_visibility_t::CONNECTOME)
       update_controls_node_visibility(data.get_min(), data.get_mean(), data.get_max());
@@ -1020,7 +1017,7 @@ void Connectome::node_visibility_selection_slot(int index) {
     {
       float min = 0.0f, mean = 0.0f, max = 0.0f;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-      if (list.size()) {
+      if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
         min = data.get_min();
         mean = data.get_mean();
@@ -1286,7 +1283,7 @@ void Connectome::node_colour_selection_slot(int index) {
     {
       float min = 0.0f, mean = 0.0f, max = 0.0f;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-      if (list.size()) {
+      if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
         min = data.get_min();
         mean = data.get_mean();
@@ -1454,7 +1451,7 @@ void Connectome::node_size_selection_slot(int index) {
     {
       float min = 0.0f, mean = 0.0f, max = 0.0f;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-      if (list.size()) {
+      if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
         min = data.get_min();
         mean = data.get_mean();
@@ -1606,7 +1603,7 @@ void Connectome::node_alpha_selection_slot(int index) {
     {
       float min = 0.0f, mean = 0.0f, max = 0.0f;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-      if (list.size()) {
+      if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
         min = data.get_min();
         mean = data.get_mean();
@@ -1884,7 +1881,7 @@ void Connectome::edge_visibility_selection_slot(int index) {
     {
       float min = 0.0f, mean = 0.0f, max = 0.0f;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-      if (list.size()) {
+      if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
         min = data.get_min();
         mean = data.get_mean();
@@ -2031,7 +2028,7 @@ void Connectome::edge_colour_selection_slot(int index) {
     {
       float min = 0.0f, mean = 0.0f, max = 0.0f;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-      if (list.size()) {
+      if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
         min = data.get_min();
         mean = data.get_mean();
@@ -2098,7 +2095,7 @@ void Connectome::edge_size_selection_slot(int index) {
     {
       float min = 0.0f, mean = 0.0f, max = 0.0f;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-      if (list.size()) {
+      if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
         min = data.get_min();
         mean = data.get_mean();
@@ -2160,7 +2157,7 @@ void Connectome::edge_alpha_selection_slot(int index) {
     {
       float min = 0.0f, mean = 0.0f, max = 0.0f;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-      if (list.size()) {
+      if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
         min = data.get_min();
         mean = data.get_mean();
@@ -2248,7 +2245,7 @@ void Connectome::lut_open_slot() {
   const std::string path = Dialog::File::get_file(this, std::string("Select lookup table file"));
   if (path.empty())
     return;
-  if (lut.size()) {
+  if (!lut.empty()) {
     lut.clear();
     lut_button->blockSignals(true);
     lut_button->setText("(none)");
@@ -2549,7 +2546,7 @@ void Connectome::add_matrices(const std::vector<std::string> &list) {
     }
   }
 
-  if (data.size()) {
+  if (!data.empty()) {
     const size_t previous_size = matrix_list_model->rowCount();
     matrix_list_model->add_items(data);
     QModelIndex first = matrix_list_model->index(previous_size, 0, QModelIndex());
@@ -2986,7 +2983,7 @@ void Connectome::load_properties() {
     }
     size_t absent_entry_count = 0;
     for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
-      if (nodes[node_index].get_volume() && !nodes[node_index].get_name().size()) {
+      if (nodes[node_index].get_volume() && nodes[node_index].get_name().empty()) {
         const std::string name = "Node " + str(node_index);
         nodes[node_index].set_name(name);
         lut.insert(std::make_pair(node_index, MR::Connectome::LUT_node(name)));
@@ -3035,7 +3032,7 @@ void Connectome::calculate_node_visibility() {
   } else if (node_visibility == node_visibility_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (list.size() && selected_node_count) {
+    if (!list.empty() && selected_node_count) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
 
@@ -3131,7 +3128,7 @@ void Connectome::calculate_node_colours() {
 
   } else if (node_colour == node_colour_t::FROM_LUT) {
 
-    if (lut.size()) {
+    if (!lut.empty()) {
       for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
         const LUT::const_iterator i = lut.find(node_index);
         if (i == lut.end())
@@ -3147,7 +3144,7 @@ void Connectome::calculate_node_colours() {
   } else if (node_colour == node_colour_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (list.size() && selected_node_count) {
+    if (!list.empty() && selected_node_count) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
@@ -3276,7 +3273,7 @@ void Connectome::calculate_node_sizes() {
   } else if (node_size == node_size_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (list.size() && selected_node_count) {
+    if (!list.empty() && selected_node_count) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
@@ -3394,7 +3391,7 @@ void Connectome::calculate_node_alphas() {
   } else if (node_alpha == node_alpha_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (list.size() && selected_node_count) {
+    if (!list.empty() && selected_node_count) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
@@ -3442,7 +3439,7 @@ void Connectome::calculate_node_alphas() {
 
   } else if (node_alpha == node_alpha_t::FROM_LUT) {
 
-    if (lut.size()) {
+    if (!lut.empty()) {
       for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
         const LUT::const_iterator i = lut.find(node_index);
         if (i == lut.end())
@@ -3553,7 +3550,7 @@ void Connectome::calculate_edge_visibility() {
   } else if (edge_visibility == edge_visibility_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (list.size()) {
+    if (!list.empty()) {
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const bool invert = edge_visibility_threshold_invert_checkbox->isChecked();
       const float threshold = edge_visibility_threshold_button->value();
@@ -3610,7 +3607,7 @@ void Connectome::calculate_edge_colours() {
   } else if (edge_colour == edge_colour_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (list.size()) {
+    if (!list.empty()) {
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = edge_colour_lower_button->value(), upper = edge_colour_upper_button->value();
       for (size_t i = 0; i != num_edges(); ++i) {
@@ -3652,7 +3649,7 @@ void Connectome::calculate_edge_sizes() {
   } else if (edge_size == edge_size_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (list.size()) {
+    if (!list.empty()) {
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = edge_size_lower_button->value(), upper = edge_size_upper_button->value();
       const bool invert = edge_size_invert_checkbox->isChecked();
@@ -3690,7 +3687,7 @@ void Connectome::calculate_edge_alphas() {
   } else if (edge_alpha == edge_alpha_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (list.size()) {
+    if (!list.empty()) {
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = edge_alpha_lower_button->value(), upper = edge_alpha_upper_button->value();
       const bool invert = edge_alpha_invert_checkbox->isChecked();
@@ -4003,7 +4000,7 @@ void Connectome::get_meshes() {
   // Request exemplar track file path from user
   const std::string path = GUI::Dialog::File::get_file(
       this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)", &current_folder);
-  if (!path.size())
+  if (path.empty())
     return;
   Surface::MeshMulti meshes;
   meshes.load(path);
@@ -4023,7 +4020,7 @@ void Connectome::get_exemplars() {
                                   "Select track file resulting from running connectome2tck -exemplars",
                                   "Track files (*.tck)",
                                   &current_folder);
-  if (!path.size())
+  if (path.empty())
     return;
   MR::DWI::Tractography::Properties properties;
   MR::DWI::Tractography::Reader<float> reader(path, properties);
@@ -4091,7 +4088,4 @@ float Connectome::calc_line_width(const float desired_width, const bool is_smoot
   }
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

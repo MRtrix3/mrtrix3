@@ -14,13 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __sync_enums_h__
-#define __sync_enums_h__
+#pragma once
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 /**
  * The type of message being sent between processes
  */
@@ -33,8 +29,4 @@ enum class MessageKey {
  */
 enum class DataKey { WindowFocus = 1 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-#endif
+} // namespace MR::GUI::MRView::Sync

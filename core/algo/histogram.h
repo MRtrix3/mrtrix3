@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __algo_histogram_h__
-#define __algo_histogram_h__
+#pragma once
 
 #include <cmath>
 
@@ -24,9 +23,7 @@
 #include "image_helpers.h"
 #include "types.h"
 
-namespace MR {
-namespace Algo {
-namespace Histogram {
+namespace MR::Algo::Histogram {
 
 extern const App::OptionGroup Options;
 
@@ -194,8 +191,4 @@ private:
   vector_type mapping;
 };
 
-} // namespace Histogram
-} // namespace Algo
-} // namespace MR
-
-#endif
+} // namespace MR::Algo::Histogram

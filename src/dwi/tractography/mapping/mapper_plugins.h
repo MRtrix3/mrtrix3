@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_mapper_plugins_h__
-#define __dwi_tractography_mapping_mapper_plugins_h__
+#pragma once
 
 #include "image.h"
 #include "interp/linear.h"
@@ -27,10 +26,7 @@
 #include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 class DixelMappingPlugin {
 public:
@@ -166,9 +162,4 @@ protected:
   const ssize_t kernel_centre, sample_centre;
 };
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Mapping

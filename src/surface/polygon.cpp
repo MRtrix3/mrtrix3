@@ -16,8 +16,7 @@
 
 #include "surface/polygon.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 template <> bool Polygon<3>::shares_edge(const Polygon<3> &that) const {
   uint32_t shared_vertices = 0;
@@ -30,5 +29,4 @@ template <> bool Polygon<3>::shares_edge(const Polygon<3> &that) const {
   return (shared_vertices == 2);
 }
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface

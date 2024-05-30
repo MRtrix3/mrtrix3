@@ -1,0 +1,11 @@
+#!/bin/bash
+# Evaluate the "gradient" operation when the -scanner option is specified
+# The -stdev option is also specified only as this is what was used in generating
+#   the reference data using a prior software version against which the outcome is compared
+# The threshold used for testing an intolerable regression is modulated
+#   based upon the image intensity of the image from which the gradient is computed
+mrcalc dwi_mean.mif -abs 1e-5 -mult - | \
+mrfilter - smooth tmp.mif -force
+
+mrfilter dwi.mif gradient -stdev 1.5,2.5,3.5 -scanner - | \
+testing_diff_image - mrfilter/out16.mif -image tmp.mif

@@ -21,21 +21,27 @@ Usage
 Description
 -----------
 
-This script concatenates two or more 4D DWI series, accounting for the fact that there may be differences in intensity scaling between those series. This intensity scaling is corrected by determining scaling factors that will make the overall image intensities in the b=0 volumes of each series approximately equivalent.
+This script concatenates two or more 4D DWI series, accounting for various detrimental confounds that may affect such an operation. Each of those confounds are described in separate paragraphs below.
+
+There may be differences in intensity scaling between the input series. This intensity scaling is corrected by determining scaling factors that will make the overall image intensities in the b=0 volumes of each series approximately equivalent. This operation is only appropriate if the sequence parameters that influence the contrast of the b=0 image volumes are identical.
+
+Concatenation of DWI series defined on different voxel grids. If the voxel grids of the input DWI series are not precisely identical, then it may not be possible to do a simple concatenation operation. In this scenario the script will determine the appropriate way to combine the input series, ideally only manipulating header transformations and avoiding image interpolation if possible.
 
 Options
 -------
 
 - **-mask image** Provide a binary mask within which image intensities will be matched
 
+- **-nointensity** Do not perform intensity matching based on b=0 volumes
+
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^

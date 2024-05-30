@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_matrix_h__
-#define __dwi_tractography_connectome_matrix_h__
+#pragma once
 
 #include <set>
 
@@ -28,10 +27,7 @@
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapped_track.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 enum stat_edge { SUM, MEAN, MIN, MAX };
 extern const char *statistics[];
@@ -97,9 +93,4 @@ private:
 extern template class Matrix<float>;
 extern template class Matrix<double>;
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Connectome

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_index_remapper_h__
-#define __fixel_index_remapper_h__
+#pragma once
 
 #include <limits>
 
@@ -23,8 +22,7 @@
 #include "image.h"
 #include "types.h"
 
-namespace MR {
-namespace Fixel {
+namespace MR::Fixel {
 
 class IndexRemapper {
 public:
@@ -55,7 +53,4 @@ private:
   std::vector<index_type> internal2external;
 };
 
-} // namespace Fixel
-} // namespace MR
-
-#endif
+} // namespace MR::Fixel
