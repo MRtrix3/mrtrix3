@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_stats_shuffle_h__
-#define __math_stats_shuffle_h__
+#pragma once
 
 #include "app.h"
 #include "progressbar.h"
@@ -28,9 +27,7 @@
 #define DEFAULT_NUMBER_SHUFFLES 5000
 #define DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY 5000
 
-namespace MR {
-namespace Math {
-namespace Stats {
+namespace MR::Math::Stats {
 
 // Generic command-line options:
 // - Set nature of errors
@@ -129,8 +126,4 @@ private:
   std::vector<std::vector<index_type>> indices2blocks(const index_array_type &) const;
 };
 
-} // namespace Stats
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math::Stats

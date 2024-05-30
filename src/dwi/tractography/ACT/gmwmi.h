@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_act_gmwmi_h__
-#define __dwi_tractography_act_gmwmi_h__
+#pragma once
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
@@ -27,9 +26,7 @@
 #define GMWMI_MAX_ITERS_TO_FIND_BOUNDARY 10
 #define GMWMI_HERMITE_TENSION 0.1
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 namespace Seeding {
 class Dynamic_ACT_additions;
@@ -78,8 +75,4 @@ protected:
 };
 
 } // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

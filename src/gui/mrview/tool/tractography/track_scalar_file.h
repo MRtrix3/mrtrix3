@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrtrix_tools_tractography_scalar_file_options_h__
-#define __gui_mrtrix_tools_tractography_scalar_file_options_h__
+#pragma once
 
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
@@ -23,11 +22,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/tractography/tractogram_enums.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class Tractogram;
 class Tractography;
 
@@ -84,9 +79,4 @@ private:
   Window &window() const { return *Window::main; }
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

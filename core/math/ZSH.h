@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_ZSH_h__
-#define __math_ZSH_h__
+#pragma once
 
 #include <Eigen/Dense>
 
@@ -23,9 +22,7 @@
 #include "math/least_squares.h"
 #include "math/legendre.h"
 
-namespace MR {
-namespace Math {
-namespace ZSH {
+namespace MR::Math::ZSH {
 
 /** \defgroup zonal_spherical_harmonics Zonal Spherical Harmonics
  * \brief Classes & functions to manage zonal spherical harmonics
@@ -228,8 +225,4 @@ inline VectorType &FA2ZSH(VectorType &zsh,
   return (zsh = pinv(ZSHT) * sigs);
 }
 
-} // namespace ZSH
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math::ZSH

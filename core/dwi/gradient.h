@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_gradient_h__
-#define __dwi_gradient_h__
+#pragma once
 
 #include "app.h"
 #include "dwi/shells.h"
@@ -218,7 +217,7 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
   bool lmax_set_from_commandline = false;
   if (lmax_from_command_line) {
     auto opt = App::get_options("lmax");
-    if (opt.size()) {
+    if (!opt.empty()) {
       lmax_set_from_commandline = true;
       lmax = to<int>(opt[0][0]);
       if (lmax % 2)
@@ -273,5 +272,3 @@ inline size_t lmax_for_directions(const Eigen::MatrixXd &directions,
 
 } // namespace DWI
 } // namespace MR
-
-#endif

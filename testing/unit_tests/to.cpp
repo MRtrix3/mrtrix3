@@ -23,13 +23,13 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
-
   SYNOPSIS = "Test the to<>(std::string) function";
-
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 std::vector<std::string> failures;
 
@@ -279,7 +279,7 @@ void run() {
   test<float>(data, float_tests);
   test<std::complex<float>>(data, complex_tests);
 
-  if (failures.size()) {
+  if (!failures.empty()) {
     Exception e(str(failures.size()) + " of " + str(4 * data.size()) + " tests failed:");
     for (const auto &s : failures)
       e.push_back(s);

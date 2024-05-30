@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __timer_h__
-#define __timer_h__
+#pragma once
 
 #include <chrono>
 
@@ -69,5 +68,3 @@ protected:
 };
 
 } // namespace MR
-
-#endif

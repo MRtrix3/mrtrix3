@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tensor_h__
-#define __dwi_tensor_h__
+#pragma once
 
 #include "types.h"
 
 #include "dwi/shells.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 template <typename T, class MatrixType>
 inline Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> grad2bmatrix(const MatrixType &grad, bool dki = false) {
@@ -117,7 +115,4 @@ template <class VectorType> inline typename VectorType::Scalar tensor2RA(const V
                : T(0.0);
 }
 
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dwi_renderer_h__
-#define __gui_dwi_renderer_h__
+#pragma once
 
 #include <Eigen/Eigenvalues>
 #include <QOpenGLWidget>
@@ -27,8 +26,7 @@
 #include "gui/shapes/halfsphere.h"
 #include "math/SH.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 class Projection;
 
@@ -232,7 +230,4 @@ private:
 };
 
 } // namespace DWI
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

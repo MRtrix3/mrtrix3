@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_view_h__
-#define __gui_mrview_tool_view_h__
+#pragma once
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/spin_box.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/opengl/transformation.h"
 
-namespace MR {
-namespace GUI {
-
-namespace MRView {
+namespace MR::GUI::MRView {
 class AdjustButton;
 
 namespace Tool {
@@ -142,8 +138,4 @@ private:
 };
 
 } // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView

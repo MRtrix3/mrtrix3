@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_gradient1D_h__
-#define __image_adapter_gradient1D_h__
+#pragma once
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Gradient1D : public Base<Gradient1D<ImageType>, ImageType> {
 public:
@@ -82,7 +80,4 @@ protected:
   std::vector<value_type> derivative_weights;
   std::vector<value_type> half_derivative_weights;
 };
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

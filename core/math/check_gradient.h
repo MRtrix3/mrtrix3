@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_check_gradient_h__
-#define __math_check_gradient_h__
+#pragma once
 
 #include "datatype.h"
 #include "debug.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <class Function>
 Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, Eigen::Dynamic>
@@ -103,7 +101,4 @@ check_function_gradient(Function &function,
   }
   return hessian;
 }
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

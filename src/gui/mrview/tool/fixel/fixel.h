@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_fixel_h__
-#define __gui_mrview_tool_fixel_h__
+#pragma once
 
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
@@ -23,10 +22,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class Fixel : public Base, public ColourMapButtonObserver, public DisplayableVisitor {
   Q_OBJECT
 
@@ -110,9 +106,4 @@ private:
   void update_gui_threshold_controls(bool reload_threshold_types = true);
   void update_gui_tracking_controls();
 };
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

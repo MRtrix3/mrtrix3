@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_extract_h__
-#define __adapter_extract_h__
+#pragma once
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Extract1D : public Base<Extract1D<ImageType>, ImageType> {
 public:
@@ -131,7 +129,4 @@ private:
   transform_type trans;
 };
 
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

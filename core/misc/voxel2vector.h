@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __misc_voxel2vector_h__
-#define __misc_voxel2vector_h__
+#pragma once
 
 #include <limits>
 
@@ -104,5 +103,3 @@ Voxel2Vector::Voxel2Vector(MaskType &mask, const Header &data)
 }
 
 } // namespace MR
-
-#endif

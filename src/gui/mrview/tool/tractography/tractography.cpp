@@ -24,10 +24,7 @@
 #include "gui/opengl/lighting.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 const char *tractogram_geometry_types[] = {"pseudotubes", "lines", "points", nullptr};
 
 TrackGeometryType geometry_index2type(const int idx) {
@@ -385,7 +382,7 @@ void Tractography::dropEvent(QDropEvent *event) {
 void Tractography::tractogram_close_slot() {
   GL::Context::Grab context;
   QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
-  while (indexes.size()) {
+  while (!indexes.empty()) {
     tractogram_list_model->remove_item(indexes.first());
     indexes = tractogram_list_view->selectionModel()->selectedIndexes();
   }
@@ -659,7 +656,7 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
   update_geometry_type_gui();
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  if (!indices.size()) {
+  if (indices.empty()) {
     colour_combobox->setEnabled(false);
     colour_button->setEnabled(false);
     return;
@@ -749,7 +746,7 @@ void Tractography::update_geometry_type_gui() {
   geom_type_combobox->setEnabled(false);
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  if (!indices.size())
+  if (indices.empty())
     return;
 
   geom_type_combobox->setEnabled(true);
@@ -767,54 +764,61 @@ void Tractography::update_geometry_type_gui() {
 
 void Tractography::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("Tractography tool options")
 
-      + Option("tractography.load", "Load the specified tracks file into the tractography tool.").allow_multiple() +
-      Argument("tracks").type_file_in()
+      + Option("tractography.load",
+               "Load the specified tracks file into the tractography tool.").allow_multiple()
+        + Argument("tracks").type_file_in()
 
-      + Option("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.")
-            .allow_multiple() +
-      Argument("value").type_float(-1.0, 1.0)
+      + Option("tractography.thickness",
+               "Line thickness of tractography display, [-1.0, 1.0];"
+               " default is 0.0.").allow_multiple()
+        + Argument("value").type_float(-1.0, 1.0)
 
       + Option("tractography.geometry",
-               "The geometry type to use when rendering tractograms (options are: " +
-                   join(tractogram_geometry_types, ", ") + ")")
-            .allow_multiple() +
-      Argument("value").type_choice(tractogram_geometry_types)
+               "The geometry type to use when rendering tractograms"
+               " (options are: " + join(tractogram_geometry_types, ", ") + ")").allow_multiple()
+        + Argument("value").type_choice(tractogram_geometry_types)
 
-      +
-      Option("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple() +
-      Argument("value").type_float(0.0, 1.0)
+      + Option("tractography.opacity",
+               "Opacity of tractography display, [0.0, 1.0];"
+               " default is 1.0.").allow_multiple()
+        + Argument("value").type_float(0.0, 1.0)
 
-      + Option("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.")
-            .allow_multiple() +
-      Argument("value").type_float(-1, 1e6)
+      + Option("tractography.slab",
+               "Slab thickness of tractography display, in mm."
+               " -1 to turn off crop to slab.").allow_multiple()
+        + Argument("value").type_float(-1, 1e6)
 
-      + Option("tractography.lighting", "Toggle the use of lighting of tractogram geometry").allow_multiple() +
-      Argument("value").type_bool()
+      + Option("tractography.lighting",
+               "Toggle the use of lighting of tractogram geometry").allow_multiple()
+        + Argument("value").type_bool()
 
-      + Option("tractography.colour", "Specify a manual colour for the tractogram, as three comma-separated values")
-            .allow_multiple() +
-      Argument("R,G,B").type_sequence_float()
+      + Option("tractography.colour",
+               "Specify a manual colour for the tractogram,"
+               " as three comma-separated values").allow_multiple()
+        + Argument("R,G,B").type_sequence_float()
 
-      + Option("tractography.tsf_load", "Load the specified tractography scalar file.").allow_multiple() +
-      Argument("tsf").type_file_in()
+      + Option("tractography.tsf_load",
+               "Load the specified tractography scalar file.").allow_multiple()
+        + Argument("tsf").type_file_in()
 
       + Option("tractography.tsf_range",
-               "Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.")
-            .allow_multiple() +
-      Argument("RangeMin,RangeMax").type_sequence_float()
+               "Set range for the tractography scalar file."
+               " Requires -tractography.tsf_load already provided.").allow_multiple()
+        + Argument("RangeMin,RangeMax").type_sequence_float()
 
       + Option("tractography.tsf_thresh",
-               "Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.")
-            .allow_multiple() +
-      Argument("ThresholdMin,ThesholdMax").type_sequence_float()
+               "Set thresholds for the tractography scalar file."
+               " Requires -tractography.tsf_load already provided.").allow_multiple()
+        + Argument("ThresholdMin,ThesholdMax").type_sequence_float()
 
       + Option("tractography.tsf_colourmap",
-               "Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires "
-               "-tractography.tsf_load already.")
-            .allow_multiple() +
-      Argument("index").type_integer();
+               "Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu."
+               " Requires -tractography.tsf_load already.").allow_multiple()
+        + Argument("index").type_integer();
+  // clang-format on
 }
 
 /*
@@ -965,7 +969,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
     try {
       const TrackGeometryType geom_type = geometry_index2type(geometry_string2index(opt[0]));
       QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-      if (indices.size()) {
+      if (!indices.empty()) {
         for (int i = 0; i < indices.size(); ++i)
           tractogram_list_model->get_tractogram(indices[i])->set_geometry_type(geom_type);
       } else {
@@ -1050,7 +1054,4 @@ bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOp
   }
   return false;
 }
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

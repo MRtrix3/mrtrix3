@@ -14,15 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_filter_base_h__
-#define __fixel_filter_base_h__
+#pragma once
 
 #include "image.h"
 #include <string>
 
-namespace MR {
-namespace Fixel {
-namespace Filter {
+namespace MR::Fixel::Filter {
 
 /*! A base class for defining fixel data filters.
  *
@@ -52,8 +49,4 @@ protected:
 };
 //! @}
 
-} // namespace Filter
-} // namespace Fixel
-} // namespace MR
-
-#endif
+} // namespace MR::Fixel::Filter

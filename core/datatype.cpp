@@ -374,19 +374,20 @@ const char *DataType::specifier() const {
 
 DataType DataType::from_command_line(DataType default_datatype) {
   auto opt = App::get_options("datatype");
-  if (opt.size())
+  if (!opt.empty())
     default_datatype = parse(opt[0][0]);
   return default_datatype;
 }
 
+// clang-format off
 App::OptionGroup DataType::options() {
   using namespace App;
-  return OptionGroup("Data type options") +
-         Option("datatype",
-                "specify output image data type. "
-                "Valid choices are: " +
-                    join(identifiers, ", ") + ".") +
-         Argument("spec").type_choice(identifiers);
+  return OptionGroup("Data type options")
+         + Option("datatype", "specify output image data type."
+                              " Valid choices are: "
+                              + join(identifiers, ", ") + ".")
+          + Argument("spec").type_choice(identifiers);
 }
+// clang-format on
 
 } // namespace MR

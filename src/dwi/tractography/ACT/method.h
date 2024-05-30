@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_act_method_h__
-#define __dwi_tractography_act_method_h__
+#pragma once
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
@@ -28,10 +27,7 @@
 
 #define GMWMI_NORMAL_PERTURBATION 0.001
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 
 using namespace MR::DWI::Tractography::Tracking;
 
@@ -139,9 +135,4 @@ private:
   Tissues tissue_values;
 };
 
-} // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::ACT

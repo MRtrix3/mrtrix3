@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_least_squares_h__
-#define __math_least_squares_h__
+#pragma once
 
 #include <Eigen/Cholesky>
 
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 /** @addtogroup linalg
   @{ */
@@ -47,7 +45,4 @@ template <class MatrixType> inline size_t rank(const MatrixType &M) {
 /** @} */
 /** @} */
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

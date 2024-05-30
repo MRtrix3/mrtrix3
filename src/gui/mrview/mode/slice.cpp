@@ -18,10 +18,7 @@
 
 #include "gui/opengl/transformation.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 std::string Slice::Shader::vertex_shader_source(const Displayable &) {
   return "layout(location = 0) in vec3 vertpos;\n"
@@ -111,7 +108,4 @@ void Slice::draw_plane(int axis, Displayable::Shader &shader_program, Projection
   GL::assert_context_is_current();
 }
 
-} // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Mode

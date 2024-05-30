@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_params_h__
-#define __registration_metric_params_h__
+#pragma once
 
 #include "adapter/reslice.h"
 #include "image.h"
@@ -23,9 +22,7 @@
 #include "interp/nearest.h"
 #include "registration/multi_contrast.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 
 template <class TransformType,
           class Im1ImageType,
@@ -240,8 +237,4 @@ public:
 private:
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> mc_weights;
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
-
-#endif
+} // namespace MR::Registration::Metric

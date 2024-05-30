@@ -14,15 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dialog_list_h__
-#define __gui_dialog_list_h__
+#pragma once
 
 #include "gui/gui.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 class TreeItem {
 public:
@@ -63,8 +60,4 @@ public:
   TreeItem *rootItem;
 };
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::Dialog

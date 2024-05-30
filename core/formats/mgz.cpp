@@ -23,8 +23,7 @@
 #include "image_io/gz.h"
 #include "raw.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
   if (!Path::has_suffix(H.name(), ".mgh.gz") && !Path::has_suffix(H.name(), ".mgz"))
@@ -81,5 +80,4 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   return io_handler;
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

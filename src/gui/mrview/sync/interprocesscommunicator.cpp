@@ -23,10 +23,7 @@
 #include "gui/mrview/sync/interprocesscommunicator.h"
 #include "gui/mrview/sync/processlock.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
 
   //***Set up a socket which listens for incoming messages***
@@ -186,7 +183,7 @@ void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteA
 
   // We notify all listeners now that we have received these messages.
   // It is up to those listeners to check their validity and let us know if they have changed their value
-  if (toSync.size()) {
+  if (!toSync.empty()) {
     emit SyncDataReceived(toSync);
   }
 }
@@ -244,7 +241,4 @@ int InterprocessCommunicator::CharTo32bitNum(char a[]) {
   return n;
 }
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Sync

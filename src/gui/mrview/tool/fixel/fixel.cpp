@@ -26,10 +26,7 @@
 #include "math/rng.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Fixel::Model : public ListModelBase {
 
@@ -353,7 +350,7 @@ void Fixel::dropEvent(QDropEvent *event) {
 
 void Fixel::fixel_close_slot() {
   QModelIndexList indexes = fixel_list_view->selectionModel()->selectedIndexes();
-  while (indexes.size()) {
+  while (!indexes.empty()) {
     fixel_list_model->remove_item(indexes.first());
     indexes = fixel_list_view->selectionModel()->selectedIndexes();
   }
@@ -737,13 +734,15 @@ void Fixel::threshold_upper_value_changed() {
 
 void Fixel::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("Fixel plot tool options")
-
       + Option("fixel.load",
-               "Load a fixel file (any file inside a fixel directory, or an old .msf / .msh legacy format file) into "
-               "the fixel tool.")
-            .allow_multiple() +
-      Argument("image").type_image_in();
+               "Load a fixel file"
+               " (any file inside a fixel directory,"
+               " or an old .msf / .msh legacy format file)"
+               " into the fixel tool.").allow_multiple()
+        + Argument("image").type_image_in();
+  // clang-format on
 }
 
 bool Fixel::process_commandline_option(const MR::App::ParsedOption &opt) {
@@ -760,7 +759,4 @@ bool Fixel::process_commandline_option(const MR::App::ParsedOption &opt) {
   return false;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

@@ -17,10 +17,7 @@
 #include "gui/mrview/tool/roi_editor/model.h"
 #include "gui/mrview/window.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 void ROI_Model::load(std::vector<std::unique_ptr<MR::Header>> &list) {
   beginInsertRows(QModelIndex(), items.size(), items.size() + list.size());
@@ -44,7 +41,4 @@ void ROI_Model::create(MR::Header &&image) {
   endInsertRows();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

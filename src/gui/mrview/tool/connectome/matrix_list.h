@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_matrix_list_h__
-#define __gui_mrview_tool_connectome_matrix_list_h__
+#pragma once
 
 #include <memory>
 
@@ -24,9 +23,7 @@
 #include "gui/mrview/tool/connectome/file_data_vector.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 class Window;
 
@@ -97,8 +94,4 @@ protected:
 };
 
 } // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView

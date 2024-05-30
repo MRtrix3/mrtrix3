@@ -14,15 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_tree_h__
-#define __file_dicom_tree_h__
+#pragma once
 
 #include "file/dicom/patient.h"
 #include "memory.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class Series;
 class Patient;
@@ -52,8 +49,4 @@ std::ostream &operator<<(std::ostream &stream, const Tree &item);
 
 extern std::vector<std::shared_ptr<Series>> (*select_func)(const Tree &tree);
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File::Dicom

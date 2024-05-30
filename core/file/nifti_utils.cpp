@@ -26,9 +26,7 @@
 #include "image_io/gz.h"
 #include "raw.h"
 
-namespace MR {
-namespace File {
-namespace NIfTI {
+namespace MR::File::NIfTI {
 
 namespace {
 template <class NiftiHeader> struct Type {
@@ -373,7 +371,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     const auto hit = H.keyval().find("comments");
     auto comments = split_lines(hit == H.keyval().end() ? std::string() : hit->second);
     strncpy(
-        Type<NiftiHeader>::db_name(NH), comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 17);
+        Type<NiftiHeader>::db_name(NH), !comments.empty() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 17);
     Type<NiftiHeader>::db_name(NH)[17] = '\0';
     Raw::store<int32_t>(16384, Type<NiftiHeader>::extents(NH), is_BE);
     *Type<NiftiHeader>::regular(NH) = 'r';
@@ -650,7 +648,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
     handler->files.push_back(File::Entry(H.name(), (single_file ? data_offset : 0)));
-    return std::move(handler);
+    return handler;
   } catch (Exception &e) {
     e.display();
     return std::unique_ptr<ImageIO::Base>();
@@ -674,7 +672,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     memcpy(io_handler.get()->header(), &NH, sizeof(NH));
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
     io_handler->files.push_back(File::Entry(H.name(), data_offset));
-    return std::move(io_handler);
+    return io_handler;
   } catch (...) {
     return std::unique_ptr<ImageIO::Base>();
   }
@@ -709,7 +707,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
   handler->files.push_back(File::Entry(H.name(), data_offset));
 
-  return std::move(handler);
+  return handler;
 }
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
@@ -728,7 +726,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   File::create(H.name());
   io_handler->files.push_back(File::Entry(H.name(), sizeof(nifti_header) + 4));
 
-  return std::move(io_handler);
+  return io_handler;
 }
 
 // force explicit instantiation:
@@ -775,6 +773,4 @@ std::string get_json_path(const std::string &nifti_path) {
   return json_path + ".json";
 }
 
-} // namespace NIfTI
-} // namespace File
-} // namespace MR
+} // namespace MR::File::NIfTI

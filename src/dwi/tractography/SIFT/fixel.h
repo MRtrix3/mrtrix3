@@ -14,17 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_fixel_h__
-#define __dwi_tractography_sift_fixel_h__
+#pragma once
 
 #include "dwi/fmls.h"
 
 #include "dwi/tractography/SIFT/model_base.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 class Fixel : public FixelBase {
 
@@ -61,9 +57,4 @@ private:
   }
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT

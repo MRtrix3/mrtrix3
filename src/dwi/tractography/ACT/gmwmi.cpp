@@ -16,10 +16,7 @@
 
 #include "dwi/tractography/ACT/gmwmi.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 
 bool GMWMI_finder::find_interface(Eigen::Vector3f &p) const {
   Interp interp(interp_template);
@@ -156,7 +153,7 @@ Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &
 Eigen::Vector3f
 GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool end, Interp &interp) const {
 
-  if (tck.size() == 0)
+  if (tck.empty())
     return {NaN, NaN, NaN};
 
   if (tck.size() == 1)
@@ -223,7 +220,4 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
   return p_best;
 }
 
-} // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::ACT

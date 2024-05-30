@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_loader_h__
-#define __dwi_tractography_mapping_loader_h__
+#pragma once
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/streamline.h"
@@ -23,16 +22,15 @@
 #include "progressbar.h"
 #include "thread_queue.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 class TrackLoader {
 
 public:
   TrackLoader(Reader<> &file, const size_t to_load = 0, const std::string &msg = "mapping tracks to image")
-      : reader(file), tracks_to_load(to_load), progress(msg.size() ? new ProgressBar(msg, tracks_to_load) : nullptr) {}
+      : reader(file),
+        tracks_to_load(to_load),
+        progress(!msg.empty() ? new ProgressBar(msg, tracks_to_load) : nullptr) {}
 
   virtual ~TrackLoader() {}
   virtual bool operator()(Streamline<> &out) {
@@ -56,9 +54,4 @@ protected:
   std::unique_ptr<ProgressBar> progress;
 };
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Mapping

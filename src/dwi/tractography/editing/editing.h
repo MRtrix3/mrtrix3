@@ -14,17 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_editing_editing_h__
-#define __dwi_tractography_editing_editing_h__
+#pragma once
 
 #include "app.h"
 
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 extern const App::OptionGroup LengthOption;
 extern const App::OptionGroup TruncateOption;
@@ -32,9 +28,4 @@ extern const App::OptionGroup WeightsOption;
 
 void load_properties(Tractography::Properties &);
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Editing

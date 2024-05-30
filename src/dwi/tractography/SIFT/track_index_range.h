@@ -14,16 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_track_index_range_h__
-#define __dwi_tractography_sift_track_index_range_h__
+#pragma once
 
 #include "dwi/tractography/SIFT/types.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 #define SIFT_TRACK_INDEX_BUFFER_SIZE 10000
 
@@ -47,9 +43,4 @@ private:
   std::unique_ptr<ProgressBar> progress;
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT

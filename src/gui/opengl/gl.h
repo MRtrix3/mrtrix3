@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_opengl_gl_h__
-#define __gui_opengl_gl_h__
+#pragma once
 
 #include "debug.h"
 #include "mrtrix.h"
@@ -68,9 +67,7 @@
     std::cerr << "\n";                                                                                                 \
   }
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 using Area = QOpenGLWidget;
 using Format = QSurfaceFormat;
@@ -398,8 +395,4 @@ protected:
   GLuint id;
 };
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::GL

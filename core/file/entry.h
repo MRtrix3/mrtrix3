@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_entry_h__
-#define __file_entry_h__
+#pragma once
 
 #include <string>
 
 #include "types.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 class Entry {
 public:
@@ -44,7 +42,4 @@ inline std::ostream &operator<<(std::ostream &stream, const Entry &e) {
   stream << "File::Entry { \"" << e.name << "\", offset " << e.start << " }";
   return stream;
 }
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File

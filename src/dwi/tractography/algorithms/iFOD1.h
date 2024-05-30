@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_algorithms_iFOD1_h__
-#define __dwi_tractography_algorithms_iFOD1_h__
+#pragma once
 
 #include "dwi/tractography/algorithms/calibrator.h"
 #include "dwi/tractography/tracking/method.h"
@@ -24,10 +23,7 @@
 #include "dwi/tractography/tracking/types.h"
 #include "math/SH.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Algorithms {
+namespace MR::DWI::Tractography::Algorithms {
 
 extern const App::OptionGroup iFODOptions;
 void load_iFOD_options(Tractography::Properties &);
@@ -241,9 +237,4 @@ protected:
   friend void calibrate<iFOD1>(iFOD1 &method);
 };
 
-} // namespace Algorithms
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Algorithms

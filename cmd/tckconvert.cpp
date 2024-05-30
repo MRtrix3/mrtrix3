@@ -30,72 +30,88 @@ using namespace MR::DWI::Tractography;
 using namespace MR::Raw;
 using namespace MR::ByteOrder;
 
+#define DEFAULT_PLY_INCREMENT 1
+#define DEFAULT_PLY_RADIUS 0.1F
+#define DEFAULT_PLY_SIDES 5
+
+// clang-format off
 void usage() {
-  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk), "
-           "J-Donald Tournier (jdtournier@gmail.com), "
-           "Philip Broser (philip.broser@me.com), "
-           "Daniel Blezek (daniel.blezek@gmail.com).";
+
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)"
+           " and J-Donald Tournier (jdtournier@gmail.com)"
+           " and Philip Broser (philip.broser@me.com)"
+           " and Daniel Blezek (daniel.blezek@gmail.com)";
 
   SYNOPSIS = "Convert between different track file formats";
 
   DESCRIPTION
-  +"The program currently supports MRtrix .tck files (input/output), "
-   "ascii text files (input/output), VTK polydata files (input/output), "
-   "and RenderMan RIB (export only)."
+    + "The program currently supports"
+      " MRtrix .tck files (input/output),"
+      " ascii text files (input/output),"
+      " VTK polydata files (input/output),"
+      " and RenderMan RIB (export only).";
 
-      + "Note that ascii files will be stored with one streamline per numbered file. "
-        "To support this, the command will use the multi-file numbering syntax, "
-        "where square brackets denote the position of the numbering for the files, "
-        "for example:"
-
-      + "$ tckconvert input.tck output-'[]'.txt"
-
-      + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
+  EXAMPLES
+    + Example("Writing multiple ASCII files, one per streamline",
+              "tckconvert input.tck output-[].txt",
+              "By using the multi-file numbering syntax,"
+              " where square brackets denote the position of the numbering for the files,"
+              " this example will produce files named"
+              " output-0000.txt, output-0001.txt, output-0002.txt, ...");
 
   ARGUMENTS
-  +Argument("input", "the input track file.").type_various() +
-      Argument("output", "the output track file.").type_file_out();
+    + Argument ("input", "the input track file.").type_various()
+    + Argument ("output", "the output track file.").type_file_out();
 
   OPTIONS
-  +Option("scanner2voxel",
-          "if specified, the properties of this image will be used to convert "
-          "track point positions from real (scanner) coordinates into voxel coordinates.") +
-      Argument("reference").type_image_in()
+    + Option ("scanner2voxel",
+        "if specified,"
+        " the properties of this image will be used to convert track point positions"
+        " from real (scanner) coordinates into voxel coordinates.")
+      + Argument ("reference").type_image_in()
 
-      + Option("scanner2image",
-               "if specified, the properties of this image will be used to convert "
-               "track point positions from real (scanner) coordinates into image coordinates (in mm).") +
-      Argument("reference").type_image_in()
+    + Option ("scanner2image",
+        "if specified,"
+        " the properties of this image will be used to convert track point positions"
+        " from real (scanner) coordinates into image coordinates (in mm).")
+      + Argument ("reference").type_image_in()
 
-      + Option("voxel2scanner",
-               "if specified, the properties of this image will be used to convert "
-               "track point positions from voxel coordinates into real (scanner) coordinates.") +
-      Argument("reference").type_image_in()
+    + Option ("voxel2scanner",
+        "if specified,"
+        " the properties of this image will be used to convert track point positions"
+        " from voxel coordinates into real (scanner) coordinates.")
+      + Argument ("reference").type_image_in()
 
-      + Option("image2scanner",
-               "if specified, the properties of this image will be used to convert "
-               "track point positions from image coordinates (in mm) into real (scanner) coordinates.") +
-      Argument("reference").type_image_in()
+    + Option ("image2scanner",
+        "if specified,"
+        " the properties of this image will be used to convert track point positions"
+        " from image coordinates (in mm) into real (scanner) coordinates.")
+      + Argument ("reference").type_image_in()
 
-      + OptionGroup("Options specific to PLY writer")
+    + OptionGroup ("Options specific to PLY writer")
 
-      + Option("sides", "number of sides for streamlines") + Argument("sides").type_integer(3, 15)
+    + Option ("sides", "number of sides for streamlines")
+      + Argument("sides").type_integer(3, 15)
 
-      + Option("increment", "generate streamline points at every (increment) points") +
-      Argument("increment").type_integer(1)
+    + Option ("increment", "generate streamline points at every (increment) points")
+      + Argument("increment").type_integer(1)
 
-      + OptionGroup("Options specific to RIB writer")
+    + OptionGroup ("Options specific to RIB writer")
 
-      + Option("dec", "add DEC as a primvar")
+    + Option ("dec", "add DEC as a primvar")
 
-      + OptionGroup("Options for both PLY and RIB writer")
+    + OptionGroup ("Options for both PLY and RIB writer")
 
-      + Option("radius", "radius of the streamlines") + Argument("radius").type_float(0.0f)
+    + Option ("radius", "radius of the streamlines")
+      + Argument("radius").type_float(0.0)
 
-      + OptionGroup("Options specific to VTK writer")
+    + OptionGroup ("Options specific to VTK writer")
 
-      + Option("ascii", "write an ASCII VTK file (binary by default)");
+    + Option ("ascii", "write an ASCII VTK file"
+                       " (binary by default)");
+
 }
+// clang-format on
 
 class VTKWriter : public WriterInterface<float> {
 public:
@@ -313,7 +329,10 @@ private:
 
 class PLYWriter : public WriterInterface<float> {
 public:
-  PLYWriter(const std::string &file, int increment = 1, float radius = 0.1, int sides = 5)
+  PLYWriter(const std::string &file,
+            int increment = DEFAULT_PLY_INCREMENT,
+            float radius = DEFAULT_PLY_RADIUS,
+            int sides = DEFAULT_PLY_SIDES)
       : out(file), increment(increment), radius(radius), sides(sides) {
     vertexFilename = File::create_tempfile(0, "vertex");
     faceFilename = File::create_tempfile(0, "face");
@@ -680,9 +699,9 @@ void run() {
     auto write_ascii = get_options("ascii").size();
     writer.reset(new VTKWriter(argument[1], write_ascii));
   } else if (Path::has_suffix(argument[1], ".ply")) {
-    auto increment = get_options("increment").size() ? get_options("increment")[0][0].as_int() : 1;
-    auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
-    auto sides = get_options("sides").size() ? get_options("sides")[0][0].as_int() : 5;
+    const int increment = get_option_value("increment", DEFAULT_PLY_INCREMENT);
+    const float radius = get_option_value("radius", DEFAULT_PLY_RADIUS);
+    const int sides = get_option_value("sides", DEFAULT_PLY_SIDES);
     writer.reset(new PLYWriter(argument[1], increment, radius, sides));
   } else if (Path::has_suffix(argument[1], ".rib")) {
     writer.reset(new RibWriter(argument[1]));
@@ -697,25 +716,25 @@ void run() {
   T.setIdentity();
   size_t nopts = 0;
   auto opt = get_options("scanner2voxel");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).scanner2voxel;
     nopts++;
   }
   opt = get_options("scanner2image");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).scanner2image;
     nopts++;
   }
   opt = get_options("voxel2scanner");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).voxel2scanner;
     nopts++;
   }
   opt = get_options("image2scanner");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).image2scanner;
     nopts++;

@@ -14,16 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_series_h__
-#define __file_dicom_series_h__
+#pragma once
 
 #include "file/dicom/image.h"
 #include "memory.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class Study;
 class Image;
@@ -66,9 +63,9 @@ public:
   bool operator<(const Series &s) const {
     if (number != s.number)
       return number < s.number;
-    if (date.size() && date != s.date)
+    if (!date.empty() && date != s.date)
       return date < s.date;
-    if (time.size() && time != s.time)
+    if (!time.empty() && time != s.time)
       return time < s.time;
     return image_type < s.image_type;
   }
@@ -76,8 +73,4 @@ public:
   friend std::ostream &operator<<(std::ostream &stream, const Series &item);
 };
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File::Dicom

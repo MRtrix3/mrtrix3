@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_app_h__
-#define __gui_app_h__
+#pragma once
+#define GUI_APP_H
 
 #include <QApplication>
 #if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
@@ -28,8 +28,7 @@
 
 #include <functional>
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 inline QString qstr(const std::string &s) { return QString::fromUtf8(s.c_str()); }
 
@@ -55,7 +54,4 @@ private:
   std::function<bool(QEvent *)> event_handler;
 };
 
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

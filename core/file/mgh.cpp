@@ -20,9 +20,7 @@
 #include "file/ofstream.h"
 #include "header.h"
 
-namespace MR {
-namespace File {
-namespace MGH {
+namespace MR::File::MGH {
 
 std::string tag_ID_to_string(const int32_t tag) {
   switch (tag) {
@@ -123,6 +121,4 @@ int32_t string_to_tag_ID(const std::string &key) {
   return 0;
 }
 
-} // namespace MGH
-} // namespace File
-} // namespace MR
+} // namespace MR::File::MGH

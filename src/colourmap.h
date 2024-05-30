@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __colourmap_h__
-#define __colourmap_h__
+#pragma once
 
 #include "types.h"
 #include <functional>
 
-namespace MR {
-namespace ColourMap {
+namespace MR::ColourMap {
 
 class Entry {
 public:
@@ -87,7 +85,4 @@ inline size_t num_special() {
   return n;
 }
 
-} // namespace ColourMap
-} // namespace MR
-
-#endif
+} // namespace MR::ColourMap

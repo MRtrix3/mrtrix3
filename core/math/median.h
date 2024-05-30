@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_median_h__
-#define __math_median_h__
+#pragma once
 
 #include <algorithm>
 #include <limits>
@@ -23,8 +22,7 @@
 #include "app.h"
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 namespace {
 template <typename X> inline bool not_a_number(X x) { return false; }
@@ -118,7 +116,4 @@ bool median_weiszfeld(const MatrixType &X,
   // std::cerr << str(dist) << std::endl;
   return convergence;
 }
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

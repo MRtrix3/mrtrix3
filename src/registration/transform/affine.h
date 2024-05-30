@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_affine_h__
-#define __registration_transform_affine_h__
+#pragma once
 
 #include "file/config.h"
 #include "math/math.h"
@@ -24,9 +23,7 @@
 
 using namespace MR::Math;
 
-namespace MR {
-namespace Registration {
-namespace Transform {
+namespace MR::Registration::Transform {
 enum TransformProjectionType { rigid_nonsym, affine, affine_nonsym, none };
 
 class AffineUpdate {
@@ -125,8 +122,4 @@ protected:
   RobustEstimatorType robust_estimator;
 };
 //! @}
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
-
-#endif
+} // namespace MR::Registration::Transform

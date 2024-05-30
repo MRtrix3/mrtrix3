@@ -16,41 +16,44 @@
 
 #include "dwi/tractography/editing/editing.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+namespace MR::DWI::Tractography::Editing {
 
 using namespace App;
 
+// clang-format off
 const OptionGroup LengthOption =
     OptionGroup("Streamline length threshold options")
-
-    + Option("maxlength", "set the maximum length of any streamline in mm") + Argument("value").type_float(0.0)
-
-    + Option("minlength", "set the minimum length of any streamline in mm") + Argument("value").type_float(0.0);
+    + Option("maxlength",
+             "set the maximum length of any streamline in mm")
+      + Argument("value").type_float(0.0)
+    + Option("minlength",
+             "set the minimum length of any streamline in mm")
+      + Argument("value").type_float(0.0);
 
 const OptionGroup TruncateOption =
     OptionGroup("Streamline count truncation options")
-
-    + Option("number", "set the desired number of selected streamlines to be propagated to the output file") +
-    Argument("count").type_integer(1)
-
-    + Option("skip", "omit this number of selected streamlines before commencing writing to the output file") +
-    Argument("count").type_integer(1);
+    + Option("number",
+             "set the desired number of selected streamlines to be propagated to the output file")
+      + Argument("count").type_integer(1)
+    + Option("skip",
+             "omit this number of selected streamlines before commencing writing to the output file")
+      + Argument("count").type_integer(1);
 
 const OptionGroup WeightsOption =
     OptionGroup("Thresholds pertaining to per-streamline weighting")
-
-    + Option("maxweight", "set the maximum weight of any streamline") + Argument("value").type_float(0.0)
-
-    + Option("minweight", "set the minimum weight of any streamline") + Argument("value").type_float(0.0);
+    + Option("maxweight",
+             "set the maximum weight of any streamline")
+      + Argument("value").type_float(0.0)
+    + Option("minweight",
+             "set the minimum weight of any streamline")
+      + Argument("value").type_float(0.0);
+// clang-format on
 
 void load_properties(Tractography::Properties &properties) {
 
   // LengthOption
   auto opt = get_options("maxlength");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (properties.find("max_dist") == properties.end()) {
       properties["max_dist"] = str(float(opt[0][0]));
     } else {
@@ -63,7 +66,7 @@ void load_properties(Tractography::Properties &properties) {
     }
   }
   opt = get_options("minlength");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (properties.find("min_dist") == properties.end()) {
       properties["min_dist"] = str(float(opt[0][0]));
     } else {
@@ -82,14 +85,11 @@ void load_properties(Tractography::Properties &properties) {
   // WeightsOption
   // Only the thresholds have an influence on Properties
   opt = get_options("maxweight");
-  if (opt.size())
+  if (!opt.empty())
     properties["max_weight"] = str(float(opt[0][0]));
   opt = get_options("minweight");
-  if (opt.size())
+  if (!opt.empty())
     properties["min_weight"] = str(float(opt[0][0]));
 }
 
-} // namespace Editing
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Editing

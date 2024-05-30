@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_mapping_mapper_h__
-#define __dwi_tractography_mapping_mapper_h__
+#pragma once
 
 #include "image.h"
 #include "thread_queue.h"
@@ -38,10 +37,7 @@
 // smoothing
 #define CURVATURE_TRACK_SMOOTHING_FWHM 10.0 // In mm
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 class TrackMapperBase {
 
@@ -257,7 +253,7 @@ template <class Cont> void TrackMapperBase::voxelise_precise(const Streamline<> 
 }
 
 template <class Cont> void TrackMapperBase::voxelise_ends(const Streamline<> &tck, Cont &out) const {
-  if (!tck.size())
+  if (tck.empty())
     return;
   if (tck.size() == 1) {
     const auto vox = round(scanner2voxel * tck.front());
@@ -359,9 +355,4 @@ private:
   }
 };
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Mapping

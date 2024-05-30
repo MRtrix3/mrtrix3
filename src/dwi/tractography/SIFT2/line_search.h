@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift2_line_search_h__
-#define __dwi_tractography_sift2_line_search_h__
+#pragma once
 
 #include "types.h"
 
 #include "dwi/tractography/SIFT/track_contribution.h"
 #include "dwi/tractography/SIFT/types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 class TckFactor;
 
@@ -82,9 +78,4 @@ protected:
   std::vector<Fixel> fixels;
 };
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT2

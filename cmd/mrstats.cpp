@@ -31,21 +31,24 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Compute images statistics";
 
   ARGUMENTS
-  +Argument("image", "the input image from which statistics will be computed.").type_image_in();
+  + Argument ("image", "the input image from which statistics will be computed.").type_image_in ();
 
   OPTIONS
-  +Stats::Options
+  + Stats::Options
+  + OptionGroup ("Additional options for mrstats")
+    + Option ("allvolumes", "generate statistics across all image volumes,"
+                            " rather than one set of statistics per image volume");
 
-      + OptionGroup("Additional options for mrstats") +
-      Option("allvolumes",
-             "generate statistics across all image volumes, rather than one set of statistics per image volume");
 }
+// clang-format on
 
 using value_type = Stats::value_type;
 using complex_type = Stats::complex_type;
@@ -97,11 +100,11 @@ void run() {
     throw Exception("mrstats is not designed to handle images greater than 4D");
   const bool is_complex = header.datatype().is_complex();
   auto data = header.get_image<complex_type>();
-  const bool ignorezero = get_options("ignorezero").size();
+  const bool ignorezero = !get_options("ignorezero").empty();
 
   auto opt = get_options("mask");
   Image<bool> mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(mask, header, 0, 3);
   }
@@ -114,19 +117,16 @@ void run() {
   if (App::log_level && fields.empty())
     Stats::print_header(is_complex);
 
-  if (get_options("allvolumes").size()) {
-
-    Stats::Stats stats(is_complex, ignorezero);
-    for (auto i = Volume_loop(data); i; ++i)
-      run_volume(stats, data, mask);
-    stats.print(data, fields);
-
-  } else {
-
+  if (get_options("allvolumes").empty()) {
     for (auto i = Volume_loop(data); i; ++i) {
       Stats::Stats stats(is_complex, ignorezero);
       run_volume(stats, data, mask);
       stats.print(data, fields);
     }
+  } else {
+    Stats::Stats stats(is_complex, ignorezero);
+    for (auto i = Volume_loop(data); i; ++i)
+      run_volume(stats, data, mask);
+    stats.print(data, fields);
   }
 }

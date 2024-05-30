@@ -14,16 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_mode_volume_h__
-#define __gui_mrview_mode_volume_h__
+#pragma once
 
 #include "app.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/opengl/transformation.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 namespace Tool {
 class View;
 }
@@ -66,8 +63,4 @@ protected:
 };
 
 } // namespace Mode
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView

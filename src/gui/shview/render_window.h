@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dwi_render_window_h__
-#define __gui_dwi_render_window_h__
+#pragma once
 
 #include "gui/dwi/render_frame.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 class LightingDock;
 
 namespace DWI {
@@ -81,7 +79,4 @@ protected:
 };
 
 } // namespace DWI
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

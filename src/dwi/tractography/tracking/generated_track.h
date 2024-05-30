@@ -14,17 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_tracking_generated_track_h__
-#define __dwi_tractography_tracking_generated_track_h__
+#pragma once
 
 #include "types.h"
 
 #include "dwi/tractography/tracking/types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class GeneratedTrack : public std::vector<Eigen::Vector3f> {
 
@@ -91,9 +87,4 @@ private:
   status_t status;
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Tracking

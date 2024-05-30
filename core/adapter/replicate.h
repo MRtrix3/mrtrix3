@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_replicate_h__
-#define __adapter_replicate_h__
+#pragma once
 
 #include "adapter/base.h"
 #include "header.h"
 #include "image_helpers.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Replicate : public Base<Replicate<ImageType>, ImageType> {
 public:
@@ -62,7 +60,4 @@ protected:
   std::vector<ssize_t> pos_;
 };
 
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

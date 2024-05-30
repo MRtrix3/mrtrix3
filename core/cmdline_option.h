@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __cmdline_option_h__
-#define __cmdline_option_h__
+#pragma once
 
 #include <cassert>
 #include <limits>
@@ -28,8 +27,7 @@
 #include "mrtrix.h"
 #include "types.h"
 
-namespace MR {
-namespace App {
+namespace MR::App {
 
 /*! \defgroup CmdParse Command-Line Parsing
  * \brief Classes and functions to parse command-line arguments and options.
@@ -418,9 +416,6 @@ public:
   static std::string footer(int format);
 };
 
-} // namespace App
+} // namespace MR::App
 
 //! @}
-} // namespace MR
-
-#endif

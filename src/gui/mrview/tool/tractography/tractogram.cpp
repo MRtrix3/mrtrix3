@@ -27,10 +27,7 @@
 
 const size_t MAX_BUFFER_SIZE = 2796200; // number of points to fill 32MB
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 const int Tractogram::track_padding;
 TrackGeometryType Tractogram::default_tract_geom(TrackGeometryType::Pseudotubes);
 
@@ -334,15 +331,15 @@ Tractogram::Tractogram(Tractography &tool, const std::string &filename)
 
 Tractogram::~Tractogram() {
   GL::assert_context_is_current();
-  if (vertex_buffers.size())
+  if (!vertex_buffers.empty())
     gl::DeleteBuffers(vertex_buffers.size(), &vertex_buffers[0]);
-  if (vertex_array_objects.size())
+  if (!vertex_array_objects.empty())
     gl::DeleteVertexArrays(vertex_array_objects.size(), &vertex_array_objects[0]);
-  if (colour_buffers.size())
+  if (!colour_buffers.empty())
     gl::DeleteBuffers(colour_buffers.size(), &colour_buffers[0]);
-  if (intensity_scalar_buffers.size())
+  if (!intensity_scalar_buffers.empty())
     gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
-  if (threshold_scalar_buffers.size())
+  if (!threshold_scalar_buffers.empty())
     gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
   GL::assert_context_is_current();
 }
@@ -584,7 +581,7 @@ void Tractogram::load_tracks() {
 
     endpoint_tangents.push_back((tck.back() - tck.front()).normalized());
   }
-  if (buffer.size())
+  if (!buffer.empty())
     load_tracks_onto_GPU(buffer, starts, sizes, tck_count);
   file.close();
   GL::assert_context_is_current();
@@ -592,7 +589,7 @@ void Tractogram::load_tracks() {
 
 void Tractogram::load_end_colours() {
   // These data are now retained in memory - no need to re-scan track file
-  if (colour_buffers.size())
+  if (!colour_buffers.empty())
     return;
 
   // Make sure to set graphics context!
@@ -668,7 +665,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
       if (buffer.size() >= MAX_BUFFER_SIZE)
         load_intensity_scalars_onto_GPU(buffer, tck_count);
     }
-    if (buffer.size())
+    if (!buffer.empty())
       load_intensity_scalars_onto_GPU(buffer, tck_count);
     file.close();
   } else {
@@ -760,7 +757,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
       if (buffer.size() >= MAX_BUFFER_SIZE)
         load_threshold_scalars_onto_GPU(buffer, tck_count);
     }
-    if (buffer.size())
+    if (!buffer.empty())
       load_threshold_scalars_onto_GPU(buffer, tck_count);
     file.close();
   } else {
@@ -809,7 +806,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
 void Tractogram::erase_colour_data() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
-  if (colour_buffers.size()) {
+  if (!colour_buffers.empty()) {
     gl::DeleteBuffers(colour_buffers.size(), &colour_buffers[0]);
     colour_buffers.clear();
   }
@@ -819,7 +816,7 @@ void Tractogram::erase_colour_data() {
 void Tractogram::erase_intensity_scalar_data() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
-  if (intensity_scalar_buffers.size()) {
+  if (!intensity_scalar_buffers.empty()) {
     gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
     intensity_scalar_buffers.clear();
   }
@@ -830,7 +827,7 @@ void Tractogram::erase_intensity_scalar_data() {
 void Tractogram::erase_threshold_scalar_data() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
-  if (threshold_scalar_buffers.size()) {
+  if (!threshold_scalar_buffers.empty()) {
     gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
     threshold_scalar_buffers.clear();
   }
@@ -951,7 +948,4 @@ void Tractogram::load_threshold_scalars_onto_GPU(std::vector<float> &buffer, siz
   GL::assert_context_is_current();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

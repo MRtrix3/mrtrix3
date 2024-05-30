@@ -31,101 +31,112 @@ using value_type = float;
 const char *modulate_choices[] = {"none", "fa", "eigval", NULL};
 #define DEFAULT_RK_NDIRS 300
 
+// clang-format off
 void usage() {
+
   ARGUMENTS
-  +Argument("tensor", "the input tensor image.").type_image_in();
+  + Argument("tensor", "the input tensor image.").type_image_in();
 
   OPTIONS
-  +Option("mask", "only perform computation within the specified binary brain mask image.") +
-      Argument("image").type_image_in()
+  + Option("mask", "only perform computation within the specified binary brain mask image.")
+    + Argument("image").type_image_in()
 
-      + OptionGroup("Diffusion Tensor Imaging")
+  + OptionGroup("Diffusion Tensor Imaging")
 
-      + Option("adc",
-               "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor. "
-               "(sometimes also referred to as the mean diffusivity (MD))") +
-      Argument("image").type_image_out()
+    + Option("adc",
+             "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor."
+             " (sometimes also referred to as the mean diffusivity (MD))")
+      + Argument("image").type_image_out()
 
-      + Option("fa", "compute the fractional anisotropy (FA) of the diffusion tensor.") +
-      Argument("image").type_image_out()
+    + Option("fa", "compute the fractional anisotropy (FA) of the diffusion tensor.")
+      + Argument("image").type_image_out()
 
-      + Option("ad",
-               "compute the axial diffusivity (AD) of the diffusion tensor. "
-               "(equivalent to the principal eigenvalue)") +
-      Argument("image").type_image_out()
+    + Option("ad",
+             "compute the axial diffusivity (AD) of the diffusion tensor."
+               " (equivalent to the principal eigenvalue)")
+      + Argument("image").type_image_out()
 
-      + Option("rd",
-               "compute the radial diffusivity (RD) of the diffusion tensor. "
-               "(equivalent to the mean of the two non-principal eigenvalues)") +
-      Argument("image").type_image_out()
+    + Option("rd",
+             "compute the radial diffusivity (RD) of the diffusion tensor."
+               " (equivalent to the mean of the two non-principal eigenvalues)")
+      + Argument("image").type_image_out()
 
-      + Option("value", "compute the selected eigenvalue(s) of the diffusion tensor.") +
-      Argument("image").type_image_out()
+    + Option("value", "compute the selected eigenvalue(s) of the diffusion tensor.")
+      + Argument("image").type_image_out()
 
-      + Option("vector", "compute the selected eigenvector(s) of the diffusion tensor.") +
-      Argument("image").type_image_out()
+    + Option("vector", "compute the selected eigenvector(s) of the diffusion tensor.")
+      + Argument("image").type_image_out()
 
-      + Option("num",
-               "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
-               "can be specified as a number sequence. For example, '1,3' specifies the "
-               "principal (1) and minor (3) eigenvalues/eigenvectors (default = 1).") +
-      Argument("sequence").type_sequence_int()
+    + Option("num",
+             "specify the desired eigenvalue/eigenvector(s)."
+             " Note that several eigenvalues can be specified as a number sequence."
+             " For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors"
+             " (default = 1).")
+      + Argument("sequence").type_sequence_int()
 
-      + Option("modulate",
-               "specify how to modulate the magnitude of the eigenvectors. Valid choices "
-               "are: none, FA, eigval (default = FA).") +
-      Argument("choice").type_choice(modulate_choices)
+    + Option("modulate",
+             "specify how to modulate the magnitude of the eigenvectors."
+             " Valid choices are:"
+             " none, FA, eigval"
+             " (default = FA).")
+      + Argument("choice").type_choice(modulate_choices)
 
-      + Option("cl",
-               "compute the linearity metric of the diffusion tensor. "
-               "(one of the three Westin shape metrics)") +
-      Argument("image").type_image_out()
+    + Option("cl",
+             "compute the linearity metric of the diffusion tensor."
+             " (one of the three Westin shape metrics)")
+      + Argument("image").type_image_out()
 
-      + Option("cp",
-               "compute the planarity metric of the diffusion tensor. "
-               "(one of the three Westin shape metrics)") +
-      Argument("image").type_image_out()
+    + Option("cp",
+             "compute the planarity metric of the diffusion tensor."
+             " (one of the three Westin shape metrics)")
+      + Argument("image").type_image_out()
 
-      + Option("cs",
-               "compute the sphericity metric of the diffusion tensor. "
-               "(one of the three Westin shape metrics)") +
-      Argument("image").type_image_out()
+    + Option("cs",
+             "compute the sphericity metric of the diffusion tensor."
+             " (one of the three Westin shape metrics)")
+      + Argument("image").type_image_out()
 
-      + OptionGroup("Diffusion Kurtosis Imaging")
+  + OptionGroup("Diffusion Kurtosis Imaging")
 
-      + Option("dkt", "input diffusion kurtosis tensor.") + Argument("image").type_image_in()
+    + Option("dkt", "input diffusion kurtosis tensor.")
+      + Argument("image").type_image_in()
 
-      + Option("mk", "compute the mean kurtosis (MK) of the kurtosis tensor.") + Argument("image").type_image_out()
+    + Option("mk", "compute the mean kurtosis (MK) of the kurtosis tensor.")
+      + Argument("image").type_image_out()
 
-      + Option("ak", "compute the axial kurtosis (AK) of the kurtosis tensor.") + Argument("image").type_image_out()
+    + Option("ak", "compute the axial kurtosis (AK) of the kurtosis tensor.")
+      + Argument("image").type_image_out()
 
-      + Option("rk", "compute the radial kurtosis (RK) of the kurtosis tensor.") + Argument("image").type_image_out()
+    + Option("rk", "compute the radial kurtosis (RK) of the kurtosis tensor.")
+      + Argument("image").type_image_out()
 
-      + Option("mk_dirs",
-               "specify the directions used to numerically calculate mean kurtosis "
-               "(by default, the built-in 300 direction set is used). These should be "
-               "supplied as a text file containing [ az el ] pairs for the directions.") +
-      Argument("file").type_file_in()
+    + Option("mk_dirs",
+             "specify the directions used to numerically calculate mean kurtosis"
+             " (by default, the built-in 300 direction set is used)."
+             " These should be supplied as a text file containing [ az el ] pairs for the directions.")
+      + Argument("file").type_file_in()
 
-      + Option("rk_ndirs",
-               "specify the number of directions used to numerically calculate radial kurtosis "
-               "(by default, " +
-                   str(DEFAULT_RK_NDIRS) + " directions are used).") +
-      Argument("integer").type_integer(0, 1000);
+    + Option("rk_ndirs",
+             "specify the number of directions used to numerically calculate radial kurtosis"
+             " (by default, " + str(DEFAULT_RK_NDIRS) + " directions are used).")
+      + Argument("integer").type_integer(0, 1000);
 
-  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be), Thijs Dhollander (thijs.dhollander@gmail.com) & J-Donald "
-           "Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)"
+           " and Thijs Dhollander (thijs.dhollander@gmail.com)"
+           " and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Generate maps of tensor-derived parameters";
 
   REFERENCES
-  +"Basser, P. J.; Mattiello, J. & Lebihan, D. "
-   "MR diffusion tensor spectroscopy and imaging. "
-   "Biophysical Journal, 1994, 66, 259-267" +
-      "Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. "
-      "Geometrical diffusion measures for MRI from tensor basis analysis. "
-      "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
+  + "Basser, P. J.; Mattiello, J. & Lebihan, D. "
+    "MR diffusion tensor spectroscopy and imaging. "
+    "Biophysical Journal, 1994, 66, 259-267"
+  + "* If using -cl, -cp or -cs options: \n"
+    "Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. "
+    "Geometrical diffusion measures for MRI from tensor basis analysis. "
+    "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
 }
+// clang-format on
 
 class Processor {
 public:
@@ -379,7 +390,7 @@ void run() {
 
   auto mask_img = Image<bool>();
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask_img = Image<bool>::open(opt[0][0]);
     check_dimensions(dt_img, mask_img, 0, 3);
   }
@@ -389,7 +400,7 @@ void run() {
 
   auto adc_img = Image<value_type>();
   opt = get_options("adc");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     adc_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -397,7 +408,7 @@ void run() {
 
   auto fa_img = Image<value_type>();
   opt = get_options("fa");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     fa_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -405,7 +416,7 @@ void run() {
 
   auto ad_img = Image<value_type>();
   opt = get_options("ad");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     ad_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -413,7 +424,7 @@ void run() {
 
   auto rd_img = Image<value_type>();
   opt = get_options("rd");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     rd_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -421,7 +432,7 @@ void run() {
 
   auto cl_img = Image<value_type>();
   opt = get_options("cl");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     cl_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -429,7 +440,7 @@ void run() {
 
   auto cp_img = Image<value_type>();
   opt = get_options("cp");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     cp_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -437,7 +448,7 @@ void run() {
 
   auto cs_img = Image<value_type>();
   opt = get_options("cs");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     cs_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -445,7 +456,7 @@ void run() {
 
   std::vector<uint32_t> vals = {1};
   opt = get_options("num");
-  if (opt.size()) {
+  if (!opt.empty()) {
     vals = parse_ints<uint32_t>(opt[0][0]);
     if (vals.empty())
       throw Exception("invalid eigenvalue/eigenvector number specifier");
@@ -458,7 +469,7 @@ void run() {
 
   auto value_img = Image<value_type>();
   opt = get_options("value");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     if (vals.size() > 1) {
       header.ndim() = 4;
@@ -470,7 +481,7 @@ void run() {
 
   auto vector_img = Image<value_type>();
   opt = get_options("vector");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 4;
     header.size(3) = vals.size() * 3;
     vector_img = Image<value_type>::create(opt[0][0], header);
@@ -479,14 +490,14 @@ void run() {
 
   auto dkt_img = Image<value_type>();
   opt = get_options("dkt");
-  if (opt.size()) {
+  if (!opt.empty()) {
     dkt_img = Image<value_type>::open(opt[0][0]);
     check_dimensions(dt_img, dkt_img, 0, 3);
   }
 
   auto mk_img = Image<value_type>();
   opt = get_options("mk");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     mk_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -495,7 +506,7 @@ void run() {
 
   auto ak_img = Image<value_type>();
   opt = get_options("ak");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     ak_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -504,7 +515,7 @@ void run() {
 
   auto rk_img = Image<value_type>();
   opt = get_options("rk");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     rk_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -513,8 +524,8 @@ void run() {
 
   opt = get_options("mk_dirs");
   const Eigen::MatrixXd mk_dirs =
-      opt.size() ? File::Matrix::load_matrix(opt[0][0])
-                 : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+      opt.empty() ? Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300())
+                  : File::Matrix::load_matrix(opt[0][0]);
 
   auto rk_ndirs = get_option_value("rk_ndirs", DEFAULT_RK_NDIRS);
 

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_fixel_fixelimage_h__
-#define __gui_mrview_tool_fixel_fixelimage_h__
+#pragma once
 
 #include <unordered_map>
 
@@ -32,10 +31,7 @@
 #include "gui/mrview/tool/fixel/fixel.h"
 #include "gui/mrview/tool/fixel/vector_structs.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class BaseFixel : public Displayable {
 public:
@@ -187,7 +183,7 @@ public:
     combo_box.setCurrentIndex(threshold_type_index);
   }
 
-  bool has_values() const { return fixel_values.size(); }
+  bool has_values() const { return !fixel_values.empty(); }
 
 protected:
   struct IntPointHasher {
@@ -287,8 +283,4 @@ protected:
 using FixelLegacyType = MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric>;
 using FixelImage4DType = MR::Image<float>;
 using FixelIndexImageType = MR::Image<uint32_t>;
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-#endif
+} // namespace MR::GUI::MRView::Tool

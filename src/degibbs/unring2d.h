@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __degibbs_unring_2d_h__
-#define __degibbs_unring_2d_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 #include "axes.h"
@@ -23,8 +22,7 @@
 #include "image.h"
 #include "progressbar.h"
 
-namespace MR {
-namespace Degibbs {
+namespace MR::Degibbs {
 
 typedef cdouble value_type;
 
@@ -144,7 +142,4 @@ protected:
   Unring2D unring2d;
 };
 
-} // namespace Degibbs
-} // namespace MR
-
-#endif
+} // namespace MR::Degibbs

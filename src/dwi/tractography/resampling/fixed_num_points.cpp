@@ -18,10 +18,7 @@
 
 #include "math/hermite.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const {
   // Perform an explicit calculation of streamline length
@@ -67,7 +64,4 @@ bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const
   return true;
 }
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Resampling

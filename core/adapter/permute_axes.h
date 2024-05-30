@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __adapter_permute_axes_h__
-#define __adapter_permute_axes_h__
+#pragma once
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class PermuteAxes : public Base<PermuteAxes<ImageType>, ImageType> {
 public:
@@ -79,7 +77,4 @@ private:
   std::vector<size_t> non_existent_axes;
 };
 
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

@@ -19,9 +19,7 @@
 #include "file/ofstream.h"
 #include <fstream>
 
-namespace MR {
-namespace File {
-namespace KeyValue {
+namespace MR::File::KeyValue {
 
 void Reader::open(const std::string &file, const char *first_line) {
   filename.clear();
@@ -54,7 +52,7 @@ bool Reader::next() {
       return false;
     }
 
-    if (sbuf.size()) {
+    if (!sbuf.empty()) {
       size_t colon = sbuf.find_first_of(':');
       if (colon == std::string::npos) {
         INFO("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
@@ -89,6 +87,4 @@ void write(File::OFStream &out,
     out << prefix << "command_history: " << App::command_history_string << "\n";
 }
 
-} // namespace KeyValue
-} // namespace File
-} // namespace MR
+} // namespace MR::File::KeyValue

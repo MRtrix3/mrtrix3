@@ -18,9 +18,9 @@
 #include "debug.h"
 #include "file/path.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+#include <iomanip>
+
+namespace MR::File::Dicom {
 
 std::ostream &operator<<(std::ostream &stream, const Date &item) {
   stream << item.year << "/" << std::setfill('0') << std::setw(2) << item.month << "/" << std::setfill('0')
@@ -138,14 +138,14 @@ bool Element::read() {
     // filling it in...
     if (VR == VR_UN) {
       std::string name = tag_name();
-      if (name.size())
+      if (!name.empty())
         VR = get_VR_from_tag_name(name);
     }
   } else {
 
     // implicit encoding:
     std::string name = tag_name();
-    if (!name.size()) {
+    if (name.empty()) {
       DEBUG(printf("WARNING: unknown DICOM tag (%04X %04X) "
                    "with implicit encoding in file \"",
                    group,
@@ -161,35 +161,39 @@ bool Element::read() {
 
   if (size == LENGTH_UNDEFINED) {
     if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM))
-      INFO("undefined length used for DICOM tag " + (tag_name().size() ? tag_name().substr(2) : "") +
-           MR::printf("(%04X, %04X) in file \"", group, element) + fmap->name() + "\"");
+      INFO("undefined length used for DICOM tag " +            //
+           (!tag_name().empty() ? tag_name().substr(2) : "") + //
+           MR::printf("(%04X, %04X)", group, element) +        //
+           " in file \"" + fmap->name() + "\"");
   } else if (next + size > fmap->address() + fmap->size())
     throw Exception("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
   else {
     if (size % 2)
-      DEBUG("WARNING: odd length (" + str(size) + ") used for DICOM tag " +
-            (tag_name().size() ? tag_name().substr(2) : "") + " (" + str(group) + ", " + str(element) + ") in file \"" +
-            fmap->name() + "");
+      DEBUG("WARNING: odd length (" + str(size) + ")" +         //
+            " used for DICOM tag " +                            //
+            (!tag_name().empty() ? tag_name().substr(2) : "") + //
+            " (" + str(group) + ", " + str(element) + ")" +     //
+            " in file \"" + fmap->name() + "");
     if (VR != VR_SQ) {
       if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM) {
-        if (parents.size() && parents.back().group == GROUP_DATA && parents.back().element == ELEMENT_DATA)
+        if (!parents.empty() && parents.back().group == GROUP_DATA && parents.back().element == ELEMENT_DATA)
           next += size;
       } else
         next += size;
     }
   }
 
-  if (parents.size())
-    if ((parents.back().end && data > parents.back().end) ||
-        (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM))
+  if (!parents.empty()) {
+    if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM) {
       parents.pop_back();
-
-  if (is_new_sequence()) {
-    if (size == LENGTH_UNDEFINED)
-      parents.push_back(Sequence(group, element, nullptr));
-    else
-      parents.push_back(Sequence(group, element, data + size));
+    } else { // Undefined length encoding
+      while (!parents.empty() && (parents.back().end != nullptr) && data > parents.back().end)
+        parents.pop_back();
+    }
   }
+
+  if (is_new_sequence())
+    parents.push_back(Sequence(group, element, size == LENGTH_UNDEFINED ? nullptr : data + size));
 
   switch (group) {
   case GROUP_BYTE_ORDER:
@@ -405,20 +409,23 @@ template <class T> inline void print_vec(const std::vector<T> &V) {
 
 void Element::error_in_get(size_t idx) const {
   const std::string &name(tag_name());
-  DEBUG("value not found for DICOM tag " + printf("%04X %04X ", group, element) +
-        (name.size() ? name.substr(2) : "unknown") + " (at index " + str(idx) + ")");
+  DEBUG("value not found for DICOM tag " +             //
+        printf("%04X %04X ", group, element) +         //
+        (!name.empty() ? name.substr(2) : "unknown") + //
+        " (at index " + str(idx) + ")");
 }
 
 void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
   const std::string &name(tag_name());
-  throw Exception("not enough items in for DICOM tag " + printf("%04X %04X ", group, element) +
-                  (name.size() ? name.substr(2) : "unknown") + " (expected " + str(min_size) + ", got " +
-                  str(actual_size) + ")");
+  throw Exception("not enough items in for DICOM tag " +         //
+                  printf("%04X %04X ", group, element) +         //
+                  (!name.empty() ? name.substr(2) : "unknown") + //
+                  " (expected " + str(min_size) + ", got " + str(actual_size) + ")");
 }
 
 void Element::report_unknown_tag_with_implicit_syntax() const {
   DEBUG(MR::printf("attempt to read data of unknown value representation "
-                   "in DICOM implicit syntax for tag (%04X %04X) - ignored",
+                   "in DICOM implicit syntax for tag (%04X %04X); ignored",
                    group,
                    element));
 }
@@ -445,13 +452,11 @@ std::ostream &operator<<(std::ostream &stream, const Element &item) {
     tmp += "- ";
   else
     tmp += "  ";
-  tmp += (name.size() ? name.substr(2) : "unknown");
+  tmp += (!name.empty() ? name.substr(2) : "unknown");
   tmp.resize(40, ' ');
   stream << tmp << " " << item.as_string() << "\n";
 
   return stream;
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

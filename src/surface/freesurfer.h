@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_freesurfer_h__
-#define __surface_freesurfer_h__
+#pragma once
 
 #include <fstream>
 #include <stdint.h>
@@ -27,9 +26,7 @@
 #include "surface/scalar.h"
 #include "surface/types.h"
 
-namespace MR {
-namespace Surface {
-namespace FreeSurfer {
+namespace MR::Surface::FreeSurfer {
 
 constexpr int32_t triangle_file_magic_number = 16777214;
 constexpr int32_t quad_file_magic_number = 16777215;
@@ -52,8 +49,4 @@ template <typename T> inline T get_BE(std::ifstream &stream) {
 void read_annot(const std::string &, label_vector_type &, Connectome::LUT &);
 void read_label(const std::string &, VertexList &, Scalar &);
 
-} // namespace FreeSurfer
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface::FreeSurfer

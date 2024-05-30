@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_roi_editor_item_h__
-#define __gui_mrview_tool_roi_editor_item_h__
+#pragma once
 
 #include <array>
 
@@ -25,10 +24,7 @@
 #include "header.h"
 #include "types.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 namespace {
 constexpr std::array<std::array<GLubyte, 3>, 6> preset_colours = {
@@ -72,9 +68,4 @@ template <class ImageType> void ROI_Item::save(ImageType &&out, GLubyte *data) {
   filename = out.name();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

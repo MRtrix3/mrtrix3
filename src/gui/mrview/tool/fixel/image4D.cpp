@@ -16,10 +16,7 @@
 
 #include "gui/mrview/tool/fixel/image4D.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 void Image4D::load_image_buffer() {
   size_t ndim = fixel_data->ndim();
@@ -120,7 +117,4 @@ void Image4D::update_image_buffers() {
   BaseFixel::update_image_buffers();
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

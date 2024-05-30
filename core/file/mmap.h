@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_mmap_h__
-#define __file_mmap_h__
+#pragma once
 
 #include <cassert>
 #include <cstdint>
@@ -24,8 +23,7 @@
 #include "file/entry.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 class MMap : protected Entry {
 public:
@@ -83,7 +81,4 @@ private:
   }
 };
 
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File

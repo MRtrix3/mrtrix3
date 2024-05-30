@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_warp_h__
-#define __filter_warp_h__
+#pragma once
 
 #include "adapter/reslice.h"
 #include "adapter/warp.h"
@@ -25,8 +24,7 @@
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 // TODO if there is a use for this elsewhere then we should have threaded_copy4D convenience functions
 class CopyKernel4D {
@@ -120,7 +118,4 @@ void warp(ImageTypeSource &source,
 }
 
 //! @}
-} // namespace Filter
-} // namespace MR
-
-#endif
+} // namespace MR::Filter

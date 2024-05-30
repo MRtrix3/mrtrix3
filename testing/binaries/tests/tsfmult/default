@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify basic operation of command
+# Outcome is compared to that calculated using a prior software version
+tsfmult afd.tsf afd.tsf tmp.tsf -force
+testing_diff_tsf tmp.tsf tsfmult/out.tsf -frac 1e-5

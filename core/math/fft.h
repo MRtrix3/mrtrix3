@@ -13,14 +13,12 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __math_fft_h__
-#define __math_fft_h__
+#pragma once
 
 #include "image.h"
 #include <fftw3.h>
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 //! a class to perform an in-place 1D FFT
 /*! This class expects its data buffer of size \a N to be filled in using
@@ -120,7 +118,4 @@ inline void FFT(ImageTypeIn &in, ImageTypeOut &out, size_t axis, int direction, 
       .run_outer(FFTFunctor(in, out, axis, direction, centre_FFT));
 }
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

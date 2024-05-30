@@ -17,16 +17,13 @@
 #include "dwi/tractography/seeding/list.h"
 #include "dwi/tractography/rng.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 void List::add(Base *const in) {
-  if (seeders.size() && !(in->is_finite() == is_finite()))
+  if (!seeders.empty() && !(in->is_finite() == is_finite()))
     throw Exception("Cannot use a combination of seed types where some are number-limited and some are not!");
 
-  if (!App::get_options("max_seed_attempts").size())
+  if (App::get_options("max_seed_attempts").empty())
     for (auto &i : seeders)
       if (i->get_max_attempts() != in->get_max_attempts())
         throw Exception("Cannot use a combination of seed types where the default maximum number "
@@ -72,7 +69,4 @@ bool List::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
   }
 }
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Seeding

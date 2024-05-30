@@ -23,10 +23,7 @@
 #include "gui/mrview/window.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Overlay::Item : public Image {
 public:
@@ -212,7 +209,7 @@ void Overlay::dropEvent(QDropEvent *event) {
         e.display();
       }
     }
-    if (list.size())
+    if (!list.empty())
       add_images(list);
     event->acceptProposedAction();
   }
@@ -222,7 +219,7 @@ void Overlay::image_close_slot() {
   QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
   GL::Context::Grab context;
   GL::assert_context_is_current();
-  while (indexes.size()) {
+  while (!indexes.empty()) {
     GL::assert_context_is_current();
     image_list_model->remove_item(indexes.first());
     GL::assert_context_is_current();
@@ -447,7 +444,7 @@ void Overlay::lower_threshold_changed(int) {
     overlay->lessthan = lower_threshold->value();
     overlay->set_use_discard_lower(lower_threshold_check_box->isChecked());
   }
-  lower_threshold->setEnabled(indices.size() && lower_threshold_check_box->isChecked());
+  lower_threshold->setEnabled(!indices.empty() && lower_threshold_check_box->isChecked());
   updateGL();
 }
 
@@ -458,7 +455,7 @@ void Overlay::upper_threshold_changed(int) {
     overlay->greaterthan = upper_threshold->value();
     overlay->set_use_discard_upper(upper_threshold_check_box->isChecked());
   }
-  upper_threshold->setEnabled(indices.size() && upper_threshold_check_box->isChecked());
+  upper_threshold->setEnabled(!indices.empty() && upper_threshold_check_box->isChecked());
   updateGL();
 }
 
@@ -517,17 +514,18 @@ void Overlay::update_selection() {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
   while (volume_index_layout->count())
     delete volume_index_layout->takeAt(volume_index_layout->count() - 1)->widget();
-  colourmap_button->setEnabled(indices.size());
-  max_value->setEnabled(indices.size());
-  min_value->setEnabled(indices.size());
-  lower_threshold_check_box->setEnabled(indices.size());
-  upper_threshold_check_box->setEnabled(indices.size());
-  lower_threshold->setEnabled(indices.size());
-  upper_threshold->setEnabled(indices.size());
-  opacity_slider->setEnabled(indices.size());
-  interpolate_check_box->setEnabled(indices.size());
+  const bool enable_controls = !indices.empty();
+  colourmap_button->setEnabled(enable_controls);
+  max_value->setEnabled(enable_controls);
+  min_value->setEnabled(enable_controls);
+  lower_threshold_check_box->setEnabled(enable_controls);
+  upper_threshold_check_box->setEnabled(enable_controls);
+  lower_threshold->setEnabled(enable_controls);
+  upper_threshold->setEnabled(enable_controls);
+  opacity_slider->setEnabled(enable_controls);
+  interpolate_check_box->setEnabled(enable_controls);
 
-  if (!indices.size()) {
+  if (indices.empty()) {
     max_value->setValue(NAN);
     min_value->setValue(NAN);
     lower_threshold->setValue(NAN);
@@ -627,36 +625,47 @@ void Overlay::update_selection() {
 
 void Overlay::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
+  // clang-format off
   options + OptionGroup("Overlay tool options")
 
-      + Option("overlay.load", "Loads the specified image on the overlay tool.").allow_multiple() +
-      Argument("image").type_image_in()
+      + Option("overlay.load",
+               "Loads the specified image on the overlay tool.").allow_multiple()
+        + Argument("image").type_image_in()
 
-      + Option("overlay.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple() +
-      Argument("value").type_float(0.0, 1.0)
+      + Option("overlay.opacity",
+               "Sets the overlay opacity to floating value [0-1].").allow_multiple()
+        + Argument("value").type_float(0.0, 1.0)
 
-      + Option("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
-            .allow_multiple() +
-      Argument("index").type_integer()
+      + Option("overlay.colourmap",
+               "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.").allow_multiple()
+        + Argument("index").type_integer()
 
-      + Option("overlay.colour", "Specify a manual colour for the overlay, as three comma-separated values")
-            .allow_multiple() +
-      Argument("R,G,B").type_sequence_float()
+      + Option("overlay.colour",
+               "Specify a manual colour for the overlay,"
+               " as three comma-separated values").allow_multiple()
+        + Argument("R,G,B").type_sequence_float()
 
-      + Option("overlay.intensity", "Set the intensity windowing of the overlay").allow_multiple() +
-      Argument("Min,Max").type_sequence_float()
+      + Option("overlay.intensity",
+               "Set the intensity windowing of the overlay").allow_multiple()
+        + Argument("Min,Max").type_sequence_float()
 
-      + Option("overlay.threshold_min", "Set the lower threshold value of the overlay").allow_multiple() +
-      Argument("value").type_float()
+      + Option("overlay.threshold_min",
+               "Set the lower threshold value of the overlay").allow_multiple()
+        + Argument("value").type_float()
 
-      + Option("overlay.threshold_max", "Set the upper threshold value of the overlay").allow_multiple() +
-      Argument("value").type_float()
+      + Option("overlay.threshold_max",
+               "Set the upper threshold value of the overlay").allow_multiple()
+        + Argument("value").type_float()
 
-      + Option("overlay.no_threshold_min", "Disable the lower threshold for the overlay").allow_multiple() +
-      Option("overlay.no_threshold_max", "Disable the upper threshold for the overlay").allow_multiple()
+      + Option("overlay.no_threshold_min",
+               "Disable the lower threshold for the overlay").allow_multiple()
+      + Option("overlay.no_threshold_max",
+               "Disable the upper threshold for the overlay").allow_multiple()
 
-      + Option("overlay.interpolation", "Enable or disable overlay image interpolation.").allow_multiple() +
-      Argument("value").type_bool();
+      + Option("overlay.interpolation",
+               "Enable or disable overlay image interpolation.").allow_multiple()
+        + Argument("value").type_bool();
+  // clang-format on
 }
 
 bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
@@ -767,7 +776,4 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
   return false;
 }
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

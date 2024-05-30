@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_mask_h__
-#define __dwi_directions_mask_h__
+#pragma once
 
 #include <fstream>
 
@@ -23,9 +22,7 @@
 
 #include "dwi/directions/set.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 class Mask : public BitSet {
 
@@ -46,8 +43,4 @@ private:
   const Set *dirs;
 };
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Directions

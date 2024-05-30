@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_base_h__
-#define __gui_mrview_tool_base_h__
+#pragma once
 
 #include "file/config.h"
 
@@ -33,9 +32,7 @@ class OptionList;
 class Options;
 } // namespace App
 
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace GUI::MRView::Tool {
 class Base;
 
 class CameraInteractor {
@@ -198,9 +195,6 @@ public:
   }
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace GUI::MRView::Tool
 
-#endif
+} // namespace MR

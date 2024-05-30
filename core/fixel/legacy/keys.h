@@ -14,20 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_legacy_keys_h__
-#define __fixel_legacy_keys_h__
+#pragma once
 
 #include <string>
 
-namespace MR {
-namespace Fixel {
-namespace Legacy {
+namespace MR::Fixel::Legacy {
 
 // These are the keys that must be present in an image header to successfully read or write sparse image data
 const std::string name_key("sparse_data_name");
 const std::string size_key("sparse_data_size");
-} // namespace Legacy
-} // namespace Fixel
-} // namespace MR
-
-#endif
+} // namespace MR::Fixel::Legacy

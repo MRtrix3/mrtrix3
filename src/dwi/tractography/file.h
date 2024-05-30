@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_file_h__
-#define __dwi_tractography_file_h__
+#pragma once
 
 #include <map>
 
@@ -30,9 +29,7 @@
 #include "memory.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
+namespace MR::DWI::Tractography {
 
 template <class ValueType> class ReaderInterface {
 public:
@@ -53,7 +50,7 @@ public:
   Reader(const std::string &file, Properties &properties) {
     open(file, "tracks", properties);
     auto opt = App::get_options("tck_weights_in");
-    if (opt.size())
+    if (!opt.empty())
       weights = File::Matrix::load_vector<ValueType>(opt[0][0]);
   }
 
@@ -213,7 +210,7 @@ public:
     open_success = true;
 
     auto opt = App::get_options("tck_weights_out");
-    if (opt.size())
+    if (!opt.empty())
       set_weights_path(opt[0][0]);
   }
 
@@ -229,7 +226,7 @@ public:
 
     commit(buffer, tck.size() + 1);
 
-    if (weights_name.size())
+    if (!weights_name.empty())
       write_weights(str(tck.weight) + "\n");
 
     ++count;
@@ -239,7 +236,7 @@ public:
 
   //! set the path to the track weights
   void set_weights_path(const std::string &path) {
-    if (weights_name.size())
+    if (!weights_name.empty())
       throw Exception("Cannot change output streamline weights file path");
     weights_name = path;
     App::check_overwrite(weights_name);
@@ -381,8 +378,4 @@ protected:
   }
 };
 
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography

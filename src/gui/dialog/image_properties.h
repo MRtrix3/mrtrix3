@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_dialog_image_properties_h__
-#define __gui_dialog_image_properties_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 #include "header.h"
@@ -23,8 +22,7 @@
 namespace MR {
 class Header;
 
-namespace GUI {
-namespace Dialog {
+namespace GUI::Dialog {
 class TreeModel;
 
 class ImageProperties : public QDialog {
@@ -44,8 +42,6 @@ private:
   Eigen::MatrixXd save_data;
 };
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace GUI::Dialog
 
-#endif
+} // namespace MR

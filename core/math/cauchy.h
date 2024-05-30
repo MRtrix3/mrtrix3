@@ -14,18 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_cauchy_h__
-#define __math_cauchy_h__
+#pragma once
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 inline float cauchy(float x, float s) {
   x /= s;
   return (1.0 / (1.0 + x * x));
 }
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

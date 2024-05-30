@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_tractography_h__
-#define __gui_mrview_tool_tractography_h__
+#pragma once
 
 #include "gui/color_button.h"
 #include "gui/mrview/adjust_button.h"
@@ -24,16 +23,14 @@
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "gui/projection.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 namespace GL {
 class Lighting;
 }
 
 class LightingDock;
 
-namespace MRView {
-namespace Tool {
+namespace MRView::Tool {
 
 extern const char *tractogram_geometry_types[];
 
@@ -118,9 +115,6 @@ protected:
   bool process_commandline_option_tsf_option(const MR::App::ParsedOption &, uint, std::vector<default_type> &range);
   void update_geometry_type_gui();
 };
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MRView::Tool
 
-#endif
+} // namespace MR::GUI

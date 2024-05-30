@@ -14,15 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_quick_scan_h__
-#define __file_dicom_quick_scan_h__
+#pragma once
 
 #include "mrtrix.h"
 #include <map>
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class QuickScan {
 
@@ -44,8 +41,4 @@ public:
 
 std::ostream &operator<<(std::ostream &stream, const QuickScan &file);
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File::Dicom

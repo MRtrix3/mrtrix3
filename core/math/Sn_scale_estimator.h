@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_Sn_scale_estimator_h__
-#define __math_Sn_scale_estimator_h__
+#pragma once
 
 #include "math/median.h"
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 // Sn robust estimator of scale to get solid estimate of standard deviation:
 // for details, see: Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. Journal of the American
@@ -44,7 +42,4 @@ protected:
   std::vector<value_type> diff, med_diff;
 };
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __interp_linear_h__
-#define __interp_linear_h__
+#pragma once
 
 #include <complex>
 #include <type_traits>
@@ -24,8 +23,7 @@
 #include "interp/base.h"
 #include "types.h"
 
-namespace MR {
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -561,7 +559,4 @@ inline Linear<ImageType> make_linear(const ImageType &parent, Args &&...args) {
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
-
-#endif
+} // namespace MR::Interp

@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift2_reg_calculator_h__
-#define __dwi_tractography_sift2_reg_calculator_h__
+#pragma once
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
 
 #include "dwi/tractography/SIFT2/regularisation.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 class TckFactor;
 
@@ -46,9 +42,4 @@ private:
   double tikhonov_sum, tv_sum;
 };
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT2

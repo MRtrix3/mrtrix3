@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_normalise3D_h__
-#define __image_adapter_normalise3D_h__
+#pragma once
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Normalise3D : public Base<Normalise3D<ImageType>, ImageType> {
 public:
@@ -89,7 +87,4 @@ protected:
   size_t nelements;
 };
 
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

@@ -24,20 +24,24 @@ using namespace MR;
 using namespace MR::DWI;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Print out information about a track file";
 
   ARGUMENTS
-  +Argument("tracks", "the input track file.").type_tracks_in().allow_multiple();
+  + Argument ("tracks", "the input track file.").type_tracks_in().allow_multiple();
 
   OPTIONS
-  +Option("count", "count number of tracks in file explicitly, ignoring the header");
+  + Option ("count", "count number of tracks in file explicitly, ignoring the header");
+
 }
+// clang-format on
 
 void run() {
-  bool actual_count = get_options("count").size();
+  const bool actual_count = !get_options("count").empty();
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;
@@ -55,7 +59,7 @@ void run() {
         std::cout << "                          " << lines[i] << "\n";
     }
 
-    if (properties.comments.size()) {
+    if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
       for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";

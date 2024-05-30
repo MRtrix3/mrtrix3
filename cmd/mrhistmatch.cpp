@@ -31,6 +31,7 @@ using namespace App;
 
 const char *choices[] = {"scale", "linear", "nonlinear", nullptr};
 
+// clang-format off
 void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -38,28 +39,33 @@ void usage() {
   SYNOPSIS = "Modify the intensities of one image to match the histogram of another";
 
   ARGUMENTS
-  +Argument("type", "type of histogram matching to perform; options are: " + join(choices, ",")).type_choice(choices) +
-      Argument("input", "the input image to be modified").type_image_in() +
-      Argument("target", "the input image from which to derive the target histogram").type_image_in() +
-      Argument("output", "the output image").type_image_out();
+    + Argument ("type", "type of histogram matching to perform;"
+                        " options are: " + join(choices, ",")).type_choice (choices)
+    + Argument ("input", "the input image to be modified").type_image_in ()
+    + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
+    + Argument ("output", "the output image").type_image_out();
 
   OPTIONS
-  +OptionGroup("Image masking options") +
-      Option("mask_input", "only generate input histogram based on a specified binary mask image") +
-      Argument("image").type_image_in() +
-      Option("mask_target", "only generate target histogram based on a specified binary mask image") +
-      Argument("image").type_image_in()
+    + OptionGroup ("Image masking options")
+    + Option ("mask_input", "only generate input histogram based on a specified binary mask image")
+      + Argument ("image").type_image_in ()
+    + Option ("mask_target", "only generate target histogram based on a specified binary mask image")
+      + Argument ("image").type_image_in ()
 
-      + OptionGroup("Non-linear histogram matching options") +
-      Option("bins", "the number of bins to use to generate the histograms") + Argument("num").type_integer(2);
+    + OptionGroup ("Non-linear histogram matching options")
+    + Option ("bins", "the number of bins to use to generate the histograms")
+      + Argument ("num").type_integer (2);
+
 
   REFERENCES
-  +"* If using inverse contrast normalization for inter-modal (DWI - T1) registration:\n"
-   "Bhushan, C.; Haldar, J. P.; Choi, S.; Joshi, A. A.; Shattuck, D. W. & Leahy, R. M. "
-   "Co-registration and distortion correction of diffusion and anatomical images based on inverse contrast "
-   "normalization. "
-   "NeuroImage, 2015, 115, 269-280";
+    + "* If using inverse contrast normalization for inter-modal (DWI - T1) registration:\n"
+      "Bhushan, C.; Haldar, J. P.; Choi, S.; Joshi, A. A.; Shattuck, D. W. & Leahy, R. M. "
+      "Co-registration and distortion correction of diffusion and anatomical images"
+      " based on inverse contrast normalization. "
+      "NeuroImage, 2015, 115, 269-280";
+
 }
+// clang-format on
 
 void match_linear(Image<float> &input,
                   Image<float> &target,
@@ -184,12 +190,12 @@ void run() {
 
   Image<bool> mask_input, mask_target;
   auto opt = get_options("mask_input");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask_input = Image<bool>::open(opt[0][0]);
     check_dimensions(input, mask_input, 0, 3);
   }
   opt = get_options("mask_target");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask_target = Image<bool>::open(opt[0][0]);
     check_dimensions(target, mask_target, 0, 3);
   }

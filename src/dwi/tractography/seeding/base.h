@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_seeding_base_h__
-#define __dwi_tractography_seeding_base_h__
+#pragma once
 
 #include "algo/threaded_loop.h"
 #include "file/path.h"
@@ -45,10 +44,7 @@
 //   be made to find an appropriate tracking direction from every seed point provided
 #define MAX_TRACKING_SEED_ATTEMPTS_FIXED 1000
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 template <class ImageType> uint32_t get_count(ImageType &data) {
   std::atomic<uint32_t> count(0);
@@ -115,9 +111,4 @@ private:
                              // provided seed point
 };
 
-} // namespace Seeding
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Seeding

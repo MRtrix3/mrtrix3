@@ -29,78 +29,105 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
+
 const OptionGroup GradImportOptions = DWI::GradImportOptions();
 const OptionGroup GradExportOptions = DWI::GradExportOptions();
 
-const OptionGroup FieldExportOptions =
-    OptionGroup("Options for exporting image header fields")
+const OptionGroup FieldExportOptions = OptionGroup ("Options for exporting image header fields")
 
-    + Option("property",
-             "any text properties embedded in the image header under the "
-             "specified key (use 'all' to list all keys found)")
-          .allow_multiple() +
-    Argument("key").type_text()
+  + Option ("property", "any text properties embedded in the image header under the specified key"
+                        " (use 'all' to list all keys found)").allow_multiple()
+    + Argument ("key").type_text()
 
-    + Option("json_keyval", "export header key/value entries to a JSON file") + Argument("file").type_file_out()
+  + Option ("json_keyval", "export header key/value entries to a JSON file")
+    + Argument ("file").type_file_out()
 
-    + Option("json_all", "export all header contents to a JSON file") + Argument("file").type_file_out();
+  + Option ("json_all", "export all header contents to a JSON file")
+    + Argument ("file").type_file_out();
+
+
 
 void usage() {
 
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Display image header information, or extract specific information from the header";
+  SYNOPSIS = "Display image header information,"
+             " or extract specific information from the header";
 
   DESCRIPTION
-  +"By default, all information contained in each image header will be printed to the console in "
-   "a reader-friendly format."
+    + "By default,"
+      " all information contained in each image header will be printed to the console"
+      " in a reader-friendly format."
 
-      + "Alternatively, command-line options may be used to extract specific details from the header(s); "
-        "these are printed to the console in a format more appropriate for scripting purposes or "
-        "piping to file. If multiple options and/or images are provided, the requested header fields "
-        "will be printed in the order in which they appear in the help page, with all requested details "
-        "from each input image in sequence printed before the next image is processed."
+    + "Alternatively,"
+      " command-line options may be used to extract specific details from the header(s);"
+      " these are printed to the console in a format more appropriate"
+      " for scripting purposes or piping to file."
+      " If multiple options and/or images are provided,"
+      " the requested header fields will be printed"
+      " in the order in which they appear in the help page,"
+      " with all requested details from each input image in sequence"
+      " printed before the next image is processed."
 
-      + "The command can also write the diffusion gradient table from a single input image to file; "
-        "either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion "
-        "gradient vector reorientation)"
+    + "The command can also write the diffusion gradient table"
+      " from a single input image to file;"
+      " either in the MRtrix or FSL format"
+      " (bvecs/bvals file pair;"
+      " includes appropriate diffusion gradient vector reorientation)"
 
-      + "The -dwgrad, -export_* and -shell_* options provide (information about) "
-        "the diffusion weighting gradient table after it has been processed by "
-        "the MRtrix3 back-end (vectors normalised, b-values scaled by the square "
-        "of the vector norm, depending on the -bvalue_scaling option). To see the "
-        "raw gradient table information as stored in the image header, i.e. without "
-        "MRtrix3 back-end processing, use \"-property dw_scheme\"."
+    + "The -dwgrad, -export_* and -shell_* options"
+    " provide (information about) the diffusion weighting gradient table"
+    " after it has been processed by the MRtrix3 back-end"
+    " (vectors normalised,"
+    " b-values scaled by the square of the vector norm,"
+    " depending on the -bvalue_scaling option)."
+    " To see the raw gradient table information as stored in the image header,"
+    " i.e. without MRtrix3 back-end processing,"
+    " use \"-property dw_scheme\"."
 
-      + DWI::bvalue_scaling_description;
+    + DWI::bvalue_scaling_description;
 
   ARGUMENTS
-  +Argument("image", "the input image(s).").allow_multiple().type_image_in();
+    + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
 
   OPTIONS
-  +Option("all", "print all properties, rather than the first and last 2 of each.") +
-      Option("name", "print the file system path of the image") + Option("format", "image file format") +
-      Option("ndim", "number of image dimensions") + Option("size", "image size along each axis") +
-      Option("spacing", "voxel spacing along each image dimension") +
-      Option("datatype", "data type used for image data storage") +
-      Option("strides", "data strides i.e. order and direction of axes data layout") +
-      Option("offset", "image intensity offset") + Option("multiplier", "image intensity multiplier") +
-      Option("transform", "the transformation from image coordinates [mm] to scanner / real world coordinates [mm]")
+    + Option ("all", "print all properties,"
+                     " rather than the first and last 2 of each.")
+    + Option ("name", "print the file system path of the image")
+    + Option ("format", "image file format")
+    + Option ("ndim", "number of image dimensions")
+    + Option ("size", "image size along each axis")
+    + Option ("spacing", "voxel spacing along each image dimension")
+    + Option ("datatype", "data type used for image data storage")
+    + Option ("strides", "data strides i.e. order and direction of axes data layout")
+    + Option ("offset", "image intensity offset")
+    + Option ("multiplier", "image intensity multiplier")
+    + Option ("transform", "the transformation from image coordinates [mm]"
+                           " to scanner / real world coordinates [mm]")
 
-      + FieldExportOptions
+    + FieldExportOptions
 
-      + DWI::GradImportOptions() + DWI::bvalue_scaling_option
+    + DWI::GradImportOptions()
+    + DWI::bvalue_scaling_option
 
-      + GradExportOptions + Option("dwgrad", "the diffusion-weighting gradient table, as interpreted by MRtrix3") +
-      Option("shell_bvalues", "list the average b-value of each shell") +
-      Option("shell_sizes", "list the number of volumes in each shell") +
-      Option("shell_indices", "list the image volumes attributed to each b-value shell")
+    + GradExportOptions
+      + Option ("dwgrad", "the diffusion-weighting gradient table,"
+                          " as interpreted by MRtrix3")
+      + Option ("shell_bvalues", "list the average b-value of each shell")
+      + Option ("shell_sizes", "list the number of volumes in each shell")
+      + Option ("shell_indices", "list the image volumes attributed to each b-value shell")
 
-      + PhaseEncoding::ExportOptions + Option("petable", "print the phase encoding table")
+    + PhaseEncoding::ExportOptions
+      + Option ("petable", "print the phase encoding table")
 
-      + OptionGroup("Handling of piped images") +
-      Option("nodelete", "don't delete temporary images or images passed to mrinfo via Unix pipes");
+    + OptionGroup ("Handling of piped images")
+      + Option ("nodelete", "don't delete temporary images"
+                            " or images passed to mrinfo via Unix pipes");
+
 }
+// clang-format on
 
 void print_dimensions(const Header &header) {
   std::string buffer;
@@ -216,12 +243,12 @@ void header2json(const Header &header, nlohmann::json &json) {
 void run() {
   auto check_option_group = [](const App::OptionGroup &g) {
     for (auto o : g)
-      if (get_options(o.id).size())
+      if (!get_options(o.id).empty())
         return true;
     return false;
   };
 
-  if (get_options("nodelete").size())
+  if (!get_options("nodelete").empty())
     ImageIO::Pipe::delete_piped_images = false;
 
   const bool export_grad = check_option_group(GradExportOptions);
@@ -232,31 +259,31 @@ void run() {
   if (export_pe && argument.size() > 1)
     throw Exception("can only export phase encoding table to file if a single input image is provided");
 
-  std::unique_ptr<nlohmann::json> json_keyval(get_options("json_keyval").size() ? new nlohmann::json : nullptr);
-  std::unique_ptr<nlohmann::json> json_all(get_options("json_all").size() ? new nlohmann::json : nullptr);
+  std::unique_ptr<nlohmann::json> json_keyval(get_options("json_keyval").empty() ? nullptr : new nlohmann::json);
+  std::unique_ptr<nlohmann::json> json_all(get_options("json_all").empty() ? nullptr : new nlohmann::json);
 
   if (json_all && argument.size() > 1)
     throw Exception("Cannot use -json_all option with multiple input images");
 
-  const bool name = get_options("name").size();
-  const bool format = get_options("format").size();
-  const bool ndim = get_options("ndim").size();
-  const bool size = get_options("size").size();
-  const bool spacing = get_options("spacing").size();
-  const bool datatype = get_options("datatype").size();
-  const bool strides = get_options("strides").size();
-  const bool offset = get_options("offset").size();
-  const bool multiplier = get_options("multiplier").size();
+  const bool name = !get_options("name").empty();
+  const bool format = !get_options("format").empty();
+  const bool ndim = !get_options("ndim").empty();
+  const bool size = !get_options("size").empty();
+  const bool spacing = !get_options("spacing").empty();
+  const bool datatype = !get_options("datatype").empty();
+  const bool strides = !get_options("strides").empty();
+  const bool offset = !get_options("offset").empty();
+  const bool multiplier = !get_options("multiplier").empty();
   const auto properties = get_options("property");
-  const bool transform = get_options("transform").size();
-  const bool dwgrad = get_options("dwgrad").size();
-  const bool shell_bvalues = get_options("shell_bvalues").size();
-  const bool shell_sizes = get_options("shell_sizes").size();
-  const bool shell_indices = get_options("shell_indices").size();
-  const bool petable = get_options("petable").size();
+  const bool transform = !get_options("transform").empty();
+  const bool dwgrad = !get_options("dwgrad").empty();
+  const bool shell_bvalues = !get_options("shell_bvalues").empty();
+  const bool shell_sizes = !get_options("shell_sizes").empty();
+  const bool shell_indices = !get_options("shell_indices").empty();
+  const bool petable = !get_options("petable").empty();
 
   const bool print_full_header = !(format || ndim || size || spacing || datatype || strides || offset || multiplier ||
-                                   properties.size() || transform || dwgrad || export_grad || shell_bvalues ||
+                                   !properties.empty() || transform || dwgrad || export_grad || shell_bvalues ||
                                    shell_sizes || shell_indices || export_pe || petable || json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -311,7 +338,7 @@ void run() {
       header2json(header, *json_all);
 
     if (print_full_header)
-      std::cout << header.description(get_options("all").size());
+      std::cout << header.description(!get_options("all").empty());
   }
 
   if (json_keyval) {

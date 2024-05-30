@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __mrtrix_thread_h__
-#define __mrtrix_thread_h__
+#pragma once
 
 #include <future>
 #include <mutex>
@@ -53,8 +52,7 @@
  * \sa Thread::run_queue()
  */
 
-namespace MR {
-namespace Thread {
+namespace MR::Thread {
 
 class __Backend {
 public:
@@ -366,7 +364,4 @@ inline typename __run<Functor>::type run(Functor &&functor, const std::string &n
 
 /** @} */
 /** @} */
-} // namespace Thread
-} // namespace MR
-
-#endif
+} // namespace MR::Thread

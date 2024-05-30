@@ -14,16 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_resampling_downsampler_h__
-#define __dwi_tractography_resampling_downsampler_h__
+#pragma once
 
 #include "dwi/tractography/resampling/resampling.h"
 #include "dwi/tractography/tracking/generated_track.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 class Downsampler : public BaseCRTP<Downsampler> {
 
@@ -45,9 +41,4 @@ private:
   size_t ratio;
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Resampling

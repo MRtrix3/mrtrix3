@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify "norm" operator
+# Given that this differs from the output of the "rms" operator
+#   only based on the square root of the number of volumes in the input image,
+#   ensure that by reversing that scaling factor,
+#   the same outcome as that generated using the rms operator is obtained.
+mrmath dwi.mif norm -axis 3 - | \
+mrcalc - 0.12126781251816648 -mult - | \
+testing_diff_image - mrmath/out2.mif -frac 1e-5

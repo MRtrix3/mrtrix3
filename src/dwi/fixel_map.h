@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_fixel_map_h__
-#define __dwi_fixel_map_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "dwi/directions/mask.h"
@@ -23,8 +22,7 @@
 #include "header.h"
 #include "image.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 template <class Fixel> class Fixel_map {
 
@@ -164,7 +162,4 @@ template <class Fixel> bool Fixel_map<Fixel>::operator()(const FMLS::FOD_lobes &
   return true;
 }
 
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI

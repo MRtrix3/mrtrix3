@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_copy_h__
-#define __file_copy_h__
+#pragma once
 
 #include "exception.h"
 #include "file/mmap.h"
 #include "file/utils.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 inline void copy(const std::string &source, const std::string &destination) {
   {
@@ -35,7 +33,4 @@ inline void copy(const std::string &source, const std::string &destination) {
   check_app_exit_code();
 }
 
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File

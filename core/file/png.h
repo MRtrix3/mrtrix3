@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_png_h__
-#define __file_png_h__
+#pragma once
 
 #ifdef MRTRIX_PNG_SUPPORT
 
@@ -26,9 +25,7 @@
 #include "raw.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace PNG {
+namespace MR::File::PNG {
 
 class Reader {
 public:
@@ -105,9 +102,6 @@ void Writer::fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, c
   }
 };
 
-} // namespace PNG
-} // namespace File
-} // namespace MR
+} // namespace MR::File::PNG
 
-#endif
 #endif

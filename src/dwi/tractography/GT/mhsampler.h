@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_mhsampler_h__
-#define __gt_mhsampler_h__
+#pragma once
 
 #include "image.h"
 #include "transform.h"
@@ -28,10 +27,7 @@
 #include "dwi/tractography/GT/particlegrid.h"
 #include "dwi/tractography/GT/spatiallock.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 /**
  * @brief The MHSampler class
@@ -117,9 +113,4 @@ protected:
   }
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_mhsampler_h__
+} // namespace MR::DWI::Tractography::GT

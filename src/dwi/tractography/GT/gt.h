@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_gt_h__
-#define __gt_gt_h__
+#pragma once
 
 #define ITER_BIGSTEP 10000
 #define FRAC_BURNIN 10
@@ -31,10 +30,7 @@
 #include "progressbar.h"
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 const double M_4PI = 4.0 * Math::pi;
 const double M_sqrt4PI = std::sqrt(M_4PI);
@@ -231,9 +227,4 @@ protected:
   std::ofstream out;
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_gt_h__
+} // namespace MR::DWI::Tractography::GT

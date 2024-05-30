@@ -171,7 +171,7 @@ Header Header::open(const std::string &image_name) {
 
     H.format_ = (*format_handler)->description;
 
-    if (num.size()) {
+    if (!num.empty()) {
 
       const Header template_header(H);
 
@@ -198,7 +198,7 @@ Header Header::open(const std::string &image_name) {
           [&](Header &result, std::vector<Header> &this_data, const size_t loop_index) -> void {
         if (loop_index == num.size() - 1) {
           std::vector<std::unique_ptr<ImageIO::Base>> ios;
-          if (this_data.size())
+          if (!this_data.empty())
             ios.push_back(std::move(this_data[0].io));
           for (size_t i = this_data.size(); i != size_t(num[loop_index]); ++i) {
             Header header(template_header);
@@ -223,7 +223,7 @@ Header Header::open(const std::string &image_name) {
         std::vector<Header> nested_data;
         // The nested concatenation may still include the very first header that has already been read;
         //   this needs to be propagated through to the nested call
-        if (this_data.size()) {
+        if (!this_data.empty()) {
           assert(this_data.size() == 1);
           nested_data.push_back(std::move(this_data[0]));
           this_data.clear();
@@ -289,7 +289,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
     if (add_to_command_history) {
       // Make sure the current command is not concatenated more than once
       const auto command_history = split_lines(H.keyval()["command_history"]);
-      if (!(command_history.size() && command_history.back() == App::command_history_string))
+      if (!(!command_history.empty() && command_history.back() == App::command_history_string))
         add_line(H.keyval()["command_history"], App::command_history_string);
     }
 
@@ -407,7 +407,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
       H.io->merge(*io_handler);
     }
 
-    if (Pdim.size()) {
+    if (!Pdim.empty()) {
       int a = 0, n = 0;
       ssize_t next_stride = 0;
       for (size_t i = 0; i < H.ndim(); ++i) {
@@ -535,7 +535,7 @@ std::string Header::description(bool print_all) const {
     if (key.size() < 21)
       key.resize(21, ' ');
     const auto entries = split_lines(p.second);
-    if (entries.size()) {
+    if (!entries.empty()) {
       bool shorten = (!print_all && entries.size() > 5);
       desc += key + entries[0] + "\n";
       if (entries.size() > 5) {
@@ -611,7 +611,7 @@ void Header::sanitise_transform() {
 
 void Header::realign_transform() {
   // find which row of the transform is closest to each scanner axis:
-  Axes::get_permutation_to_make_axial(transform(), realign_perm_, realign_flip_);
+  Axes::get_shuffle_to_make_axial(transform(), realign_perm_, realign_flip_);
 
   // check if image is already near-axial, return if true:
   if (realign_perm_[0] == 0 && realign_perm_[1] == 1 && realign_perm_[2] == 2 && !realign_flip_[0] &&

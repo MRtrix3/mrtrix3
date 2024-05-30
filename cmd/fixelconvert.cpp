@@ -36,61 +36,71 @@ using namespace App;
 using Fixel::index_type;
 using Fixel::Legacy::FixelMetric;
 
+// clang-format off
 void usage() {
 
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format";
+  SYNOPSIS = "Convert between the old format fixel image (.msf / .msh)"
+             " and the new fixel directory format";
 
   DESCRIPTION
-  +Fixel::format_description;
+  + Fixel::format_description;
 
   EXAMPLES
-  +Example("Convert from the old file format to the new directory format",
-           "fixelconvert old_fixels.msf new_fixels/ -out_size",
-           "This performs a simple conversion from old to new format, and "
-           "additionally writes the contents of the \"size\" field within "
-           "old-format fixel images stored using the \"FixelMetric\" class "
-           "(likely all of them) as an additional fixel data file.")
+  + Example ("Convert from the old file format to the new directory format",
+             "fixelconvert old_fixels.msf new_fixels/ -out_size",
+             "This performs a simple conversion from old to new format,"
+             " and additionally writes the contents of the \"size\" field "
+             " within old-format fixel images stored using the \"FixelMetric\" class"
+             " (likely all of them)"
+             " as an additional fixel data file.")
 
-      + Example("Convert multiple files from old to new format, preserving fixel correspondence",
-                "for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
-                "In this example, the for_each script is used to execute the fixelconvert "
-                "command once for each of a series of input files in the old fixel format, "
-                "generating a new output fixel directory for each."
-                "Importantly here though, the -template option is used to ensure that the "
-                "ordering of fixels within these output directories is identical, such that "
-                "fixel data files can be exchanged between them (e.g. accumulating fixel "
-                "data files across subjects into a single template fixel directory")
+  + Example ("Convert multiple files from old to new format, preserving fixel correspondence",
+             "for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
+             "In this example,"
+             " the for_each script is used to execute the fixelconvert command"
+             " once for each of a series of input files in the old fixel format,"
+             " generating a new output fixel directory for each."
+             " Importantly here though,"
+             " the -template option is used to ensure that the ordering of fixels"
+             " within these output directories is identical,"
+             " such that fixel data files can be exchanged between them"
+             " (e.g. accumulating fixel data files across subjects into a single template fixel directory")
 
-      + Example("Convert from the new directory format to the old file format",
-                "fixelconvert new_fixels/ old_fixels.msf -value parameter.mif -in_size new_fixels/afd.mif",
-                "Conversion from the new directory format will contain the value 1.0 "
-                "for all output fixels in both the \"size\" and \"value\" fields of the "
-                "\"FixelMetric\" class, unless the -in_size and/or -value options are "
-                "used respectively to indicate which fixel data files should be used as "
-                "the source(s) of this information.");
+  + Example ("Convert from the new directory format to the old file format",
+             "fixelconvert new_fixels/ old_fixels.msf -value parameter.mif -in_size new_fixels/afd.mif",
+             "Conversion from the new directory format"
+             " will contain the value 1.0 for all output fixels"
+             " in both the \"size\" and \"value\" fields of the \"FixelMetric\" class,"
+             " unless the -in_size and/or -value options are used respectively"
+             " to indicate which fixel data files should be used as the source(s) of this information.");
 
   ARGUMENTS
-  +Argument("fixel_in", "the input fixel file / directory.").type_various() +
-      Argument("fixel_out", "the output fixel file / directory.").type_various();
+  + Argument ("fixel_in",  "the input fixel file / directory.").type_various()
+  + Argument ("fixel_out", "the output fixel file / directory.").type_various();
 
   OPTIONS
-  +OptionGroup("Options for converting from old to new format") +
-      Option("name",
-             "assign a different name to the value field output (Default: value). Do not include the file extension.") +
-      Argument("string").type_text() +
-      Option("nii", "output the index, directions and data file in NIfTI format instead of .mif") +
-      Option("out_size", "also output the 'size' field from the old format") +
-      Option("template",
-             "specify an existing fixel directory (in the new format) to which the new output should conform") +
-      Argument("path").type_directory_in()
+  + OptionGroup ("Options for converting from old to new format")
+    + Option ("name", "assign a different name to the value field output"
+                      " (Default: value)."
+                      " Do not include the file extension.")
+      + Argument ("string").type_text()
+    + Option ("nii", "output the index, directions and data file in NIfTI format instead of .mif")
+    + Option ("out_size", "also output the 'size' field from the old format")
+    + Option ("template", "specify an existing fixel directory (in the new format)"
+                          " to which the new output should conform")
+      + Argument ("path").type_directory_in()
 
-      + OptionGroup("Options for converting from new to old format") +
-      Option("value", "nominate the data file to import to the 'value' field in the old format") +
-      Argument("path").type_file_in() + Option("in_size", "import data for the 'size' field in the old format") +
-      Argument("path").type_file_in();
+  + OptionGroup ("Options for converting from new to old format")
+    + Option ("value", "nominate the data file to import to the 'value' field in the old format")
+      + Argument ("path").type_file_in()
+    + Option ("in_size", "import data for the 'size' field in the old format")
+      + Argument ("path").type_file_in();
+
 }
+// clang-format on
 
 void convert_old2new() {
   Header header(Header::open(argument[0]));
@@ -99,14 +109,14 @@ void convert_old2new() {
 
   Fixel::Legacy::Image<FixelMetric> input(argument[0]);
 
-  const std::string file_extension = get_options("nii").size() ? ".nii" : ".mif";
+  const std::string file_extension = !get_options("nii").empty() ? ".nii" : ".mif";
 
   std::string value_name("value");
   auto opt = get_options("name");
-  if (opt.size())
+  if (!opt.empty())
     value_name = std::string(opt[0][0]);
 
-  const bool output_size = get_options("out_size").size();
+  const bool output_size = !get_options("out_size").empty();
 
   const std::string output_fixel_directory = argument[1];
   Fixel::check_fixel_directory(output_fixel_directory, true, true);
@@ -144,7 +154,7 @@ void convert_old2new() {
   Image<index_type> template_index_image;
   Image<float> template_directions_image;
   opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     Fixel::check_fixel_directory(opt[0][0]);
     template_index_image = Fixel::find_index_header(opt[0][0]).get_image<index_type>();
     check_dimensions(index_image, template_index_image);
@@ -196,11 +206,10 @@ void convert_old2new() {
 void convert_new2old() {
   const std::string input_fixel_directory = argument[0];
   auto opt = get_options("value");
-  if (!opt.size())
+  if (opt.empty())
     throw Exception("for converting from new to old formats, option -value is compulsory");
-  const std::string value_path = get_options("value")[0][0];
-  opt = get_options("in_size");
-  const std::string size_path = opt.size() ? std::string(opt[0][0]) : "";
+  const std::string value_path = opt[0][0];
+  const std::string size_path = get_option_value<std::string>("in_size", "");
 
   Header H_index = Fixel::find_index_header(input_fixel_directory);
   Header H_dirs = Fixel::find_directions_header(input_fixel_directory);

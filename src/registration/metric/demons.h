@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_demons_h__
-#define __registration_metric_demons_h__
+#pragma once
 
 #include <mutex>
 
@@ -138,4 +137,3 @@ protected:
 } // namespace Metric
 } // namespace Registration
 } // namespace MR
-#endif

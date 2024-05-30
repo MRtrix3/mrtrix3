@@ -14,15 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_resampling_endpoints_h__
-#define __dwi_tractography_resampling_endpoints_h__
+#pragma once
 
 #include "dwi/tractography/resampling/resampling.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Resampling {
+namespace MR::DWI::Tractography::Resampling {
 
 class Endpoints : public BaseCRTP<Endpoints> {
 
@@ -33,9 +29,4 @@ public:
   bool valid() const override { return true; }
 };
 
-} // namespace Resampling
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Resampling

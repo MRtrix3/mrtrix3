@@ -16,10 +16,10 @@
 
 #include "file/ofstream.h"
 
+#include "exception.h"
 #include "file/utils.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 void OFStream::open(const std::string &path, const std::ios_base::openmode mode) {
   if (!(mode & std::ios_base::app) && !(mode & std::ios_base::ate) && !(mode & std::ios_base::in)) {
@@ -32,5 +32,4 @@ void OFStream::open(const std::string &path, const std::ios_base::openmode mode)
     throw Exception("error opening output file \"" + path + "\": " + std::strerror(errno));
 }
 
-} // namespace File
-} // namespace MR
+} // namespace MR::File

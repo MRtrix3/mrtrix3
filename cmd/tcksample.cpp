@@ -39,43 +39,43 @@ const char *statistics[] = {"mean", "median", "min", "max", nullptr};
 
 enum interp_type { NEAREST, LINEAR, PRECISE };
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Sample values of an associated image along tracks";
 
   DESCRIPTION
-  +"By default, the value of the underlying image at each point along the track "
-   "is written to either an ASCII file (with all values for each track on the same "
-   "line), or a track scalar file (.tsf). Alternatively, some statistic can be "
-   "taken from the values along each streamline and written to a vector file.";
+  + "By default,"
+    " the value of the underlying image at each point along the track"
+    " is written to either an ASCII file"
+    " (with all values for each track on the same line),"
+    " or a track scalar file (.tsf)."
+    " Alternatively, some statistic can be taken from the values along each streamline"
+    " and written to a vector file.";
 
   ARGUMENTS
-  +Argument("tracks", "the input track file").type_tracks_in() +
-      Argument("image", "the image to be sampled").type_image_in() +
-      Argument("values", "the output sampled values").type_file_out();
+  + Argument ("tracks", "the input track file").type_tracks_in()
+  + Argument ("image", "the image to be sampled").type_image_in()
+  + Argument ("values", "the output sampled values").type_file_out();
 
   OPTIONS
+  + Option ("stat_tck", "compute some statistic from the values along each streamline;"
+                        " (options are: " + join(statistics, ",") + ")")
+    + Argument ("statistic").type_choice (statistics)
 
-  +Option("stat_tck",
-          "compute some statistic from the values along each streamline "
-          "(options are: " +
-              join(statistics, ",") + ")") +
-      Argument("statistic").type_choice(statistics)
+  + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
 
-      + Option("nointerp", "do not use trilinear interpolation when sampling image values")
+  + Option ("precise", "use the precise mechanism for mapping streamlines to voxels"
+                       " (obviates the need for trilinear interpolation) "
+                       " (only applicable if some per-streamline statistic is requested)")
 
-      + Option("precise",
-               "use the precise mechanism for mapping streamlines to voxels "
-               "(obviates the need for trilinear interpolation) "
-               "(only applicable if some per-streamline statistic is requested)")
-
-      + Option("use_tdi_fraction",
-               "each streamline is assigned a fraction of the image intensity "
-               "in each voxel based on the fraction of the track density "
-               "contributed by that streamline (this is only appropriate for "
-               "processing a whole-brain tractogram, and images for which the "
-               "quantiative parameter is additive)");
+  + Option ("use_tdi_fraction",
+            "each streamline is assigned a fraction of the image intensity in each voxel"
+            " based on the fraction of the track density contributed by that streamline"
+            " (this is only appropriate for processing a whole-brain tractogram,"
+            " and images for which the quantiative parameter is additive)");
 
   // TODO add support for SH amplitude along tangent
   // TODO add support for reading from fixel image
@@ -83,11 +83,13 @@ void usage() {
   //   (wait until fixel_twi is merged; should simplify)
 
   REFERENCES
-  +"* If using -precise option: " // Internal
-   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-   "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-   "NeuroImage, 2013, 67, 298-312";
+    + "* If using -precise option: " // Internal
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312";
+
 }
+// clang-format on
 
 using value_type = float;
 using vector_type = Eigen::VectorXf;
@@ -353,7 +355,7 @@ public:
     // Requires preservation of order
     assert(in.get_index() == ReceiverBase::received);
     if (ascii) {
-      if (in.size()) {
+      if (!in.empty()) {
         auto i = in.begin();
         (*ascii) << *i;
         for (++i; i != in.end(); ++i)
@@ -411,9 +413,9 @@ void run() {
   auto image = H.get_image<value_type>();
 
   auto opt = get_options("stat_tck");
-  const stat_tck statistic = opt.size() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
-  const bool nointerp = get_options("nointerp").size();
-  const bool precise = get_options("precise").size();
+  const stat_tck statistic = !opt.empty() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
+  const bool nointerp = !get_options("nointerp").empty();
+  const bool precise = !get_options("precise").empty();
   if (nointerp && precise)
     throw Exception("Option -nointerp and -precise are mutually exclusive");
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
@@ -423,7 +425,7 @@ void run() {
     throw Exception("Precise streamline mapping may only be used with per-streamline statistics");
 
   Image<value_type> tdi;
-  if (get_options("use_tdi_fraction").size()) {
+  if (!get_options("use_tdi_fraction").empty()) {
     if (statistic == stat_tck::NONE)
       throw Exception("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
     DWI::Tractography::Reader<value_type> tdi_reader(argument[0], properties);

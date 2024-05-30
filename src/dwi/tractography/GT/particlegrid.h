@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_particlegrid_h__
-#define __gt_particlegrid_h__
+#pragma once
 
 #include <mutex>
 
@@ -27,10 +26,7 @@
 #include "dwi/tractography/GT/particle.h"
 #include "dwi/tractography/GT/particlepool.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 /**
  * @brief The ParticleGrid class
@@ -105,9 +101,4 @@ protected:
   }
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_particlegrid_h__
+} // namespace MR::DWI::Tractography::GT

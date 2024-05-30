@@ -18,9 +18,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace DWI {
-namespace Directions {
+namespace MR::DWI::Directions {
 
 Eigen::MatrixXd load_spherical(const std::string &filename) {
   auto directions = File::Matrix::load_matrix<>(filename);
@@ -49,6 +47,4 @@ Eigen::MatrixXd load_cartesian(const std::string &filename) {
   return directions;
 }
 
-} // namespace Directions
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Directions

@@ -14,22 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_types_h__
-#define __dwi_tractography_sift_types_h__
+#pragma once
 
 #include "thread_queue.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 using track_t = unsigned int;
 using voxel_t = unsigned int;
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT

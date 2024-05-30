@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_fill_h__
-#define __filter_fill_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "filter/base.h"
 #include "filter/connected_components.h"
 #include "image.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 /** \addtogroup Filters
   @{ */
@@ -71,7 +69,7 @@ public:
 
   template <class InputImageType, class OutputImageType>
   void operator()(InputImageType &input, OutputImageType &output) {
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message, 3) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, 3) : nullptr);
     auto temp_image = Image<bool>::scratch(input, "scratch mask for interior-filling filter");
     for (auto l = Loop(input)(input, temp_image); l; ++l)
       temp_image.value() = !input.value();
@@ -93,7 +91,4 @@ protected:
   bool do_26_connectivity;
 };
 //! @}
-} // namespace Filter
-} // namespace MR
-
-#endif
+} // namespace MR::Filter

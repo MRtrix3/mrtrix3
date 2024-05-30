@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_utils_h__
-#define __surface_utils_h__
+#pragma once
 
 #include "surface/mesh.h"
 #include "surface/polygon.h"
 #include "surface/types.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 inline Vertex normal(const Vertex &one, const Vertex &two, const Vertex &three) {
   return (two - one).cross(three - two).normalized();
@@ -55,7 +53,4 @@ inline default_type area(const Mesh &mesh, const Quad &quad) {
   return area(mesh.vert(quad[0]), mesh.vert(quad[1]), mesh.vert(quad[2]), mesh.vert(quad[3]));
 }
 
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface

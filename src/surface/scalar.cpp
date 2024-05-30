@@ -20,8 +20,7 @@
 
 #include "surface/freesurfer.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 Scalar::Scalar(const std::string &path, const Mesh &mesh) {
   DEBUG("Attempting to load surface scalar file \"" + path + "\"...");
@@ -116,5 +115,4 @@ void Scalar::load_fs_curv(const std::string &path, const Mesh &mesh) {
     throw Exception("Error opening file \"" + path + "\" as Freesurfer curv file: Truncated file");
 }
 
-} // namespace Surface
-} // namespace MR
+} // namespace MR::Surface

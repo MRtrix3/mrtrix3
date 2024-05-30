@@ -20,10 +20,7 @@
 #include "file/path.h"
 #include "misc/bitset.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 const char *statistics[] = {"sum", "mean", "min", "max", NULL};
 
@@ -164,7 +161,7 @@ template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missin
     if (!visited[i] && missing_nodes.find(i) == missing_nodes.end())
       empty_nodes.push_back(str(i));
   }
-  if (empty_nodes.size()) {
+  if (!empty_nodes.empty()) {
     WARN("The following nodes do not have any streamlines assigned:");
     WARN(join(empty_nodes, ", "));
     WARN("(This may indicate a poor registration)");
@@ -276,7 +273,4 @@ template <typename T> void Matrix<T>::inc_count(const size_t node_one, const siz
 template class Matrix<float>;
 template class Matrix<double>;
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Connectome

@@ -14,17 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_shaders_h__
-#define __gui_mrview_tool_connectome_shaders_h__
+#pragma once
 
 #include "gui/opengl/shader.h"
 
 #include "gui/mrview/tool/connectome/types.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 class Connectome;
 
@@ -82,9 +78,4 @@ private:
   bool use_alpha;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

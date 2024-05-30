@@ -27,66 +27,71 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Generate a fixel-fixel connectivity matrix";
 
   DESCRIPTION
-  +"This command will generate a directory containing three images, which encodes the "
-   "fixel-fixel connectivity matrix. Documentation regarding this format and how to "
-   "use it will come in the future."
+  + "This command will generate a directory containing three images,"
+    " which encodes the fixel-fixel connectivity matrix."
+    " Documentation regarding this format and how to use it will come in the future."
 
-      + Fixel::format_description;
+  + Fixel::format_description;
 
   ARGUMENTS
-  +Argument("fixel_directory", "the directory containing the fixels between which connectivity will be quantified")
-          .type_directory_in()
-
-      + Argument("tracks", "the tracks used to determine fixel-fixel connectivity").type_tracks_in()
-
-      + Argument("matrix", "the output fixel-fixel connectivity matrix directory path").type_directory_out();
+  + Argument("fixel_directory",
+             "the directory containing the fixels between which connectivity will be quantified").type_directory_in()
+  + Argument("tracks",
+             "the tracks used to determine fixel-fixel connectivity").type_tracks_in()
+  + Argument("matrix",
+             "the output fixel-fixel connectivity matrix directory path").type_directory_out();
 
   OPTIONS
-  +OptionGroup("Options that influence generation of the connectivity matrix / matrices")
+  + OptionGroup("Options that influence generation of the connectivity matrix / matrices")
 
-      + Option("threshold",
-               "a threshold to define the required fraction of shared connections to be included in the neighbourhood "
-               "(default: " +
-                   str(DEFAULT_CONNECTIVITY_THRESHOLD, 2) + ")") +
-      Argument("value").type_float(0.0, 1.0)
+    + Option("threshold",
+             "a threshold to define the required fraction of shared connections to be included in the neighbourhood"
+              " (default: " + str(DEFAULT_CONNECTIVITY_THRESHOLD, 2) + ")")
+      + Argument("value").type_float(0.0, 1.0)
 
-      + Option("angle",
-               "the max angle threshold for assigning streamline tangents to fixels (Default: " +
-                   str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)") +
-      Argument("value").type_float(0.0, 90.0)
+    + Option("angle",
+             "the max angle threshold for assigning streamline tangents to fixels"
+             " (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
+      + Argument("value").type_float(0.0, 90.0)
 
-      + Option("mask",
-               "provide a fixel data file containing a mask of those fixels to be computed; fixels outside the mask "
-               "will be empty in the output matrix") +
-      Argument("file").type_image_in()
+    + Option("mask",
+             "provide a fixel data file containing a mask of those fixels to be computed;"
+             " fixels outside the mask will be empty in the output matrix")
+      + Argument("file").type_image_in()
 
-      + DWI::Tractography::TrackWeightsInOption
+  + DWI::Tractography::TrackWeightsInOption
 
-      + OptionGroup("Options for additional outputs to be generated")
+  + OptionGroup("Options for additional outputs to be generated")
 
-      + Option("count", "export a fixel data file encoding the number of connections for each fixel") +
-      Argument("path").type_image_out()
+    + Option("count",
+             "export a fixel data file encoding the number of connections for each fixel")
+      + Argument("path").type_image_out()
 
-      +
-      Option("extent", "export a fixel data file encoding the extent of connectivity (sum of weights) for each fixel") +
-      Argument("path").type_image_out();
+    + Option("extent",
+             "export a fixel data file encoding the extent of connectivity"
+             " (sum of weights)"
+             " for each fixel")
+      + Argument("path").type_image_out();
 }
+// clang-format on
 
 using value_type = float;
 using Fixel::index_type;
 
 template <class WriterType> void set_optional_outputs(WriterType &writer) {
   auto opt = get_options("count");
-  if (opt.size())
+  if (!opt.empty())
     writer.set_count_path(opt[0][0]);
   opt = get_options("extent");
-  if (opt.size())
+  if (!opt.empty())
     writer.set_extent_path(opt[0][0]);
 }
 
@@ -104,7 +109,7 @@ void run() {
   //   these will appear empty in the output matrix
   auto opt = get_options("mask");
   Image<bool> fixel_mask;
-  if (opt.size()) {
+  if (!opt.empty()) {
     fixel_mask = Image<bool>::open(opt[0][0]);
     Fixel::check_data_file(fixel_mask);
     if (!Fixel::fixels_match(index_header, fixel_mask))
@@ -117,21 +122,16 @@ void run() {
       fixel_mask.value() = true;
   }
 
-  if (get_options("tck_weights_in").size()) {
-
-    auto connectivity_matrix =
-        Fixel::Matrix::generate_weighted(argument[1], index_image, fixel_mask, angular_threshold);
-
-    Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixWeighted> writer(connectivity_matrix, connectivity_threshold);
-    set_optional_outputs(writer);
-    writer.save(argument[2]);
-
-  } else {
-
+  if (get_options("tck_weights_in").empty()) {
     auto connectivity_matrix =
         Fixel::Matrix::generate_unweighted(argument[1], index_image, fixel_mask, angular_threshold);
-
     Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixUnweighted> writer(connectivity_matrix, connectivity_threshold);
+    set_optional_outputs(writer);
+    writer.save(argument[2]);
+  } else {
+    auto connectivity_matrix =
+        Fixel::Matrix::generate_weighted(argument[1], index_image, fixel_mask, angular_threshold);
+    Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixWeighted> writer(connectivity_matrix, connectivity_threshold);
     set_optional_outputs(writer);
     writer.save(argument[2]);
   }

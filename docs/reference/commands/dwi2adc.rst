@@ -6,7 +6,7 @@ dwi2adc
 Synopsis
 --------
 
-Convert mean dwi (trace-weighted) images to mean ADC maps
+Calculate ADC and/or IVIM parameters.
 
 Usage
 --------
@@ -18,13 +18,26 @@ Usage
 -  *input*: the input image.
 -  *output*: the output image.
 
+Description
+-----------
+
+By default, the command will estimate the Apparent Diffusion Coefficient (ADC) using the isotropic mono-exponential model: S(b) = S(0) * exp(-D * b). The output consists of 2 volumes, respectively S(0) and D.
+
+When using the -ivim option, the command will additionally estimate the Intra-Voxel Incoherent Motion (IVIM) parameters f and D', i.e., the perfusion fraction and the pseudo-diffusion coefficient. IVIM assumes a bi-exponential model: S(b) = S(0) * ((1-f) * exp(-D * b) + f * exp(-D' * b)). This command adopts a 2-stage fitting strategy, in which the ADC is first estimated based on the DWI data with b > cutoff, and the other parameters are estimated subsequently. The output consists of 4 volumes, respectively S(0), D, f, and D'.
+
+Note that this command ignores the gradient orientation entirely. This approach is therefore only suited for mean DWI (trace-weighted) images or for DWI data collected with isotropically-distributed gradient directions.
+
 Options
 -------
+
+-  **-ivim** also estimate IVIM parameters in 2-stage fit.
+
+-  **-cutoff bval** minimum b-value for ADC estimation in IVIM fit (default = 120 s/mm^2).
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
@@ -50,13 +63,17 @@ Standard options
 References
 ^^^^^^^^^^
 
+Le Bihan, D.; Breton, E.; Lallemand, D.; Aubin, M.L.; Vignaud, J.; Laval-Jeantet, M. Separation of diffusion and perfusion in intravoxel incoherent motion MR imaging. Radiology, 1988, 168, 497–505.
+
+Jalnefjord, O.; Andersson, M.; Montelius; M.; Starck, G.; Elf, A.; Johanson, V.; Svensson, J.; Ljungberg, M. Comparison of methods for estimation of the intravoxel incoherent motion (IVIM) diffusion coefficient (D) and perfusion fraction (f). Magn Reson Mater Phy, 2018, 31, 715–723.
+
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** J-Donald Tournier (jdtournier@gmail.com) and Daan Christiaens (daan.christiaens@kuleuven.be)
 
 **Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 

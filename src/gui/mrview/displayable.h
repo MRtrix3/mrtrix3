@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_displayable_h__
-#define __gui_mrview_displayable_h__
+#pragma once
 
 #include "math/math.h"
 
@@ -27,9 +26,7 @@
 namespace MR {
 class ProgressBar;
 
-namespace GUI {
-
-namespace MRView {
+namespace GUI::MRView {
 
 class Window;
 
@@ -304,8 +301,6 @@ protected:
   }
 };
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace GUI::MRView
 
-#endif
+} // namespace MR

@@ -14,15 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_particle_h__
-#define __gt_particle_h__
+#pragma once
 
 #include "types.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 using Point_t = Eigen::Vector3f;
 
@@ -171,9 +167,4 @@ struct ParticleEnd {
   double p_suc = 1.0;
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_particle_h__
+} // namespace MR::DWI::Tractography::GT

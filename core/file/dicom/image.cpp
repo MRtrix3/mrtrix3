@@ -22,9 +22,7 @@
 #include "file/dicom/study.h"
 #include "file/path.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 void Image::parse_item(Element &item, const std::string &dirname) {
   if (item.ignore_when_parsing())
@@ -50,7 +48,7 @@ void Image::parse_item(Element &item, const std::string &dirname) {
     switch (item.element) {
     case 0x0024U:
       sequence_name = item.get_string(0);
-      if (!sequence_name.size())
+      if (sequence_name.empty())
         return;
       {
         int c = sequence_name.size() - 1;
@@ -236,7 +234,7 @@ void Image::parse_item(Element &item, const std::string &dirname) {
     return;
   case 0x0043U: // GEMS_PARMS_01 block
     if (item.element == 0x1039U) {
-      if (item.get_int().size())
+      if (!item.get_int().empty())
         bvalue = item.get_int()[0];
     }
     return;
@@ -277,7 +275,7 @@ void Image::parse_item(Element &item, const std::string &dirname) {
   case 0xFFFEU:
     switch (item.element) {
     case 0xE000U:
-      if (item.parents.size() && item.parents.back().group == 0x5200U &&
+      if (!item.parents.empty() && item.parents.back().group == 0x5200U &&
           item.parents.back().element == 0x9230U) { // multi-frame item
         if (in_frames) {
           calc_distance();
@@ -450,7 +448,7 @@ std::ostream &operator<<(std::ostream &stream, const Frame &item) {
          << (item.sequence == UINT_MAX ? 0 : item.sequence) << " " << item.dim[0] << "x" << item.dim[1] << ", "
          << item.pixel_size[0] << "x" << item.pixel_size[1] << " x " << item.slice_thickness << " ("
          << item.slice_spacing << ") mm, z = " << item.distance
-         << (item.index.size() ? ", index = " + str(item.index) : std::string()) << ", [ " << item.position_vector[0]
+         << (!item.index.empty() ? ", index = " + str(item.index) : std::string()) << ", [ " << item.position_vector[0]
          << " " << item.position_vector[1] << " " << item.position_vector[2] << " ] [ " << item.orientation_x[0] << " "
          << item.orientation_x[1] << " " << item.orientation_x[2] << " ] [ " << item.orientation_y[0] << " "
          << item.orientation_y[1] << " " << item.orientation_y[2] << " ]";
@@ -465,12 +463,12 @@ std::ostream &operator<<(std::ostream &stream, const Frame &item) {
 }
 
 std::ostream &operator<<(std::ostream &stream, const Image &item) {
-  stream << (item.filename.size() ? item.filename : "file not set") << ":\n"
-         << (item.sequence_name.size() ? item.sequence_name : "sequence not set") << " ["
-         << (item.manufacturer.size() ? item.manufacturer : std::string("unknown manufacturer")) << "] "
-         << (item.frames.size() > 0 ? str(item.frames.size()) + " frames with dim " + str(item.frame_dim)
-                                    : std::string());
-  if (item.frames.size()) {
+  stream << (!item.filename.empty() ? item.filename : "file not set") << ":\n"
+         << (!item.sequence_name.empty() ? item.sequence_name : "sequence not set") << " ["
+         << (!item.manufacturer.empty() ? item.manufacturer : std::string("unknown manufacturer")) << "] "
+         << (!item.frames.empty() ? str(item.frames.size()) + " frames with dim " + str(item.frame_dim)
+                                  : std::string());
+  if (!item.frames.empty()) {
     for (size_t n = 0; n < item.frames.size(); ++n)
       stream << "  " << static_cast<const Frame &>(*item.frames[n]) << "\n";
   } else
@@ -615,6 +613,4 @@ Eigen::MatrixXd Frame::get_PE_scheme(const std::vector<Frame *> &frames, const s
   return pe_scheme.leftCols(3);
 }
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

@@ -20,15 +20,13 @@
 #include "file/dicom/study.h"
 #include "file/dicom/tree.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
   std::vector<std::shared_ptr<Series>> series;
 
-  if (tree.size() == 0)
-    throw Exception("DICOM tree its empty");
+  if (tree.empty())
+    throw Exception("DICOM tree is empty");
 
   // ENVVAR name: DICOM_PATIENT
   // ENVVAR when reading DICOM data, match the PatientName entry against
@@ -133,7 +131,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
         fprintf(stderr,
                 "  %4" PRI_SIZET " - %s %s %s %s\n",
                 i + 1,
-                (patient[i]->name.size() ? patient[i]->name.c_str() : "unnamed"),
+                (!patient[i]->name.empty() ? patient[i]->name.c_str() : "unnamed"),
                 format_ID(patient[i]->ID).c_str(),
                 format_date(patient[i]->date).c_str(),
                 format_time(patient[i]->time).c_str());
@@ -158,24 +156,24 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
   if (patient.size() > 1) {
     fprintf(stderr,
             "study: %s %s %s %s\n",
-            (study.name.size() ? study.name.c_str() : "unnamed"),
+            (!study.name.empty() ? study.name.c_str() : "unnamed"),
             format_ID(study.ID).c_str(),
             format_date(study.date).c_str(),
             format_time(study.time).c_str());
   }
 
   if (study.size() > 1) {
-    while (series.size() == 0) {
+    while (series.empty()) {
       fprintf(stderr, "Select series ('q' to abort):\n");
       for (size_t i = 0; i < study.size(); i++) {
         fprintf(stderr,
                 "  %2" PRI_SIZET " - %4" PRI_SIZET " %s images %8s %s (%s) [%" PRI_SIZET "] %s\n",
                 i,
                 study[i]->size(),
-                (study[i]->modality.size() ? study[i]->modality.c_str() : ""),
+                (!study[i]->modality.empty() ? study[i]->modality.c_str() : ""),
                 format_time(study[i]->time).c_str(),
-                (study[i]->name.size() ? study[i]->name.c_str() : "unnamed"),
-                ((*study[i])[0]->sequence_name.size() ? (*study[i])[0]->sequence_name.c_str() : "?"),
+                (!study[i]->name.empty() ? study[i]->name.c_str() : "unnamed"),
+                (!(*study[i])[0]->sequence_name.empty() ? (*study[i])[0]->sequence_name.c_str() : "?"),
                 study[i]->number,
                 study[i]->image_type.c_str());
       }
@@ -198,7 +196,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
           seq.clear();
         }
       }
-      if (series.size() == 0)
+      if (series.empty())
         fprintf(stderr, "Invalid selection - please try again\n");
     }
   } else
@@ -209,6 +207,4 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
 
 std::vector<std::shared_ptr<Series>> (*select_func)(const Tree &tree) = select_cmdline;
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
+} // namespace MR::File::Dicom

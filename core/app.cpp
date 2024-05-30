@@ -42,9 +42,7 @@
   "MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. "             \
   "NeuroImage, 2019, 202, 116137"
 
-namespace MR {
-
-namespace App {
+namespace MR::App {
 
 Description DESCRIPTION;
 ExampleList EXAMPLES;
@@ -53,23 +51,28 @@ OptionList OPTIONS;
 Description REFERENCES;
 bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
+// clang-format off
 OptionGroup __standard_options =
-    OptionGroup("Standard options") + Option("info", "display information messages.") +
-    Option(
-        "quiet",
-        "do not display information messages or progress status; "
-        "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.") +
-    Option("debug", "display debugging messages.") +
-    Option("force",
-           "force overwrite of output files "
-           "(caution: using the same file as input and output might cause unexpected behaviour).") +
-    Option("nthreads",
-           "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).") +
-    Argument("number").type_integer(0) +
-    Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple() +
-    Argument("key").type_text() + Argument("value").type_text() +
-    Option("help", "display this information page and exit.") +
-    Option("version", "display version information and exit.");
+    OptionGroup("Standard options")
+    + Option("info", "display information messages.")
+    + Option("quiet",
+             "do not display information messages or progress status; "
+             "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
+             " to a non-empty string.")
+    + Option("debug", "display debugging messages.")
+    + Option("force",
+             "force overwrite of output files"
+             " (caution: using the same file as input and output might cause unexpected behaviour).")
+    + Option("nthreads",
+             "use this number of threads in multi-threaded applications"
+             " (set to 0 to disable multi-threading).")
+      + Argument("number").type_integer(0)
+    + Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
+      + Argument("key").type_text()
+      + Argument("value").type_text()
+    + Option("help", "display this information page and exit.")
+    + Option("version", "display version information and exit.");
+// clang-format on
 
 const char *AUTHOR = nullptr;
 const char *COPYRIGHT = "Copyright (c) 2008-2024 the MRtrix3 contributors.\n"
@@ -290,6 +293,17 @@ std::string usage_syntax(int format) {
   return s + "\n\n";
 }
 
+Description &Description::operator+(const char *text) {
+  push_back(text);
+  return *this;
+}
+
+Description &Description::operator+(const char *const text[]) {
+  for (const char *const *p = text; *p != nullptr; ++p)
+    push_back(*p);
+  return *this;
+}
+
 std::string Description::syntax(int format) const {
   if (!size())
     return std::string();
@@ -301,16 +315,24 @@ std::string Description::syntax(int format) const {
   return s;
 }
 
+Example::Example(const std::string &title, const std::string &code, const std::string &description)
+    : title(title), code(code), description(description) {}
+
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
 
 std::string Example::syntax(int format) const {
   std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", HELP_PURPOSE_INDENT);
   s += std::string(HELP_EXAMPLE_INDENT, ' ') + "$ " + code + "\n";
-  if (description.size())
+  if (!description.empty())
     s += paragraph("", description, HELP_PURPOSE_INDENT);
   if (format)
     s += "\n";
   return s;
+}
+
+ExampleList &ExampleList::operator+(const Example &example) {
+  push_back(example);
+  return *this;
 }
 
 std::string ExampleList::syntax(int format) const {
@@ -329,6 +351,11 @@ std::string Argument::syntax(int format) const {
   if (format)
     retval += "\n";
   return retval;
+}
+
+ArgumentList &ArgumentList::operator+(const Argument &argument) {
+  push_back(argument);
+  return *this;
 }
 
 std::string ArgumentList::syntax(int format) const {
@@ -368,6 +395,27 @@ std::string OptionGroup::contents(int format) const {
 }
 
 std::string OptionGroup::footer(int format) { return format ? "" : "\n"; }
+
+OptionList &OptionList::operator+(const OptionGroup &option_group) {
+  push_back(option_group);
+  return *this;
+}
+
+OptionGroup &OptionList::back() {
+  if (empty())
+    push_back(OptionGroup());
+  return std::vector<OptionGroup>::back();
+}
+
+OptionList &OptionList::operator+(const Option &option) {
+  back() + option;
+  return *this;
+}
+
+OptionList &OptionList::operator+(const Argument &argument) {
+  back() + argument;
+  return *this;
+}
 
 std::string OptionList::syntax(int format) const {
   std::vector<std::string> group_names;
@@ -453,7 +501,7 @@ std::string Argument::usage() const {
     assert(0);
   }
   stream << "\n";
-  if (desc.size())
+  if (!desc.empty())
     stream << desc << "\n";
 
   return stream.str();
@@ -464,7 +512,7 @@ std::string Option::usage() const {
   stream << "OPTION " << id << " " << (flags & Optional ? '1' : '0') << " " << (flags & AllowMultiple ? '1' : '0')
          << "\n";
 
-  if (desc.size())
+  if (!desc.empty())
     stream << desc << "\n";
 
   for (size_t i = 0; i < size(); ++i)
@@ -489,7 +537,7 @@ void print_help() {
   // CONF empty to send directly to the terminal).
   const std::string help_display_command = File::Config::get("HelpCommand", MRTRIX_HELP_COMMAND);
 
-  if (help_display_command.size()) {
+  if (!help_display_command.empty()) {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
@@ -504,7 +552,7 @@ void print_help() {
     INFO("error launching help display command \"" + help_display_command + "\"");
   }
 
-  if (help_display_command.size())
+  if (!help_display_command.empty())
     INFO("displaying help page using fail-safe output:\n");
 
   print(get_help_string(0));
@@ -589,18 +637,18 @@ std::string markdown_usage() {
   for (size_t i = 0; i < ARGUMENTS.size(); ++i)
     s += std::string("- *") + ARGUMENTS[i].id + "*: " + ARGUMENTS[i].desc + "\n";
 
-  if (DESCRIPTION.size()) {
+  if (!DESCRIPTION.empty()) {
     s += "\n## Description\n\n";
     for (size_t i = 0; i < DESCRIPTION.size(); ++i)
       s += std::string(DESCRIPTION[i]) + "\n\n";
   }
 
-  if (EXAMPLES.size()) {
+  if (!EXAMPLES.empty()) {
     s += "\n## Example usages\n\n";
     for (size_t i = 0; i < EXAMPLES.size(); ++i) {
       s += std::string("__") + EXAMPLES[i].title + ":__\n";
       s += std::string("`$ ") + EXAMPLES[i].code + "`\n";
-      if (EXAMPLES[i].description.size())
+      if (!EXAMPLES[i].description.empty())
         s += EXAMPLES[i].description + "\n";
       s += "\n";
     }
@@ -648,10 +696,8 @@ std::string markdown_usage() {
     s += std::string(REFERENCES[i]) + "\n\n";
   s += std::string(MRTRIX_CORE_REFERENCE) + "\n\n";
 
-  s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date +
-       "\n\n"
-       "\n\n**Author:** " +
-       AUTHOR + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
+  s += std::string("**Author:** ") + AUTHOR + "\n\n";
+  s += std::string("**Copyright:** ") + COPYRIGHT + "\n\n";
 
   return s;
 }
@@ -713,7 +759,7 @@ std::string restructured_text_usage() {
   }
   s += "\n";
 
-  if (DESCRIPTION.size()) {
+  if (!DESCRIPTION.empty()) {
     s += "Description\n-----------\n\n";
     for (size_t i = 0; i < DESCRIPTION.size(); ++i) {
       auto desc = split_lines(DESCRIPTION[i], false);
@@ -724,12 +770,12 @@ std::string restructured_text_usage() {
     }
   }
 
-  if (EXAMPLES.size()) {
+  if (!EXAMPLES.empty()) {
     s += "Example usages\n--------------\n\n";
     for (size_t i = 0; i < EXAMPLES.size(); ++i) {
       s += std::string("-   *") + EXAMPLES[i].title + "*::\n\n";
       s += std::string("        $ ") + EXAMPLES[i].code + "\n\n";
-      if (EXAMPLES[i].description.size())
+      if (!EXAMPLES[i].description.empty())
         s += std::string("    ") + EXAMPLES[i].description + "\n\n";
     }
   }
@@ -803,7 +849,7 @@ const Option *match_option(const char *arg) {
     get_matches(candidates, __standard_options, root);
 
     // no matches
-    if (candidates.size() == 0)
+    if (candidates.empty())
       throw Exception(std::string("unknown option \"-") + root + "\"");
 
     // return match if unique:
@@ -849,15 +895,13 @@ void sort_arguments(int argc, const char *const *argv) {
 }
 
 void parse_standard_options() {
-  if (get_options("info").size()) {
-    if (log_level < 2)
-      log_level = 2;
-  }
-  if (get_options("debug").size())
+  if (!get_options("info").empty())
+    log_level = std::max(log_level, 2);
+  if (!get_options("debug").empty())
     log_level = 3;
-  if (get_options("quiet").size())
+  if (!get_options("quiet").empty())
     log_level = 0;
-  if (get_options("force").size()) {
+  if (!get_options("force").empty()) {
     WARN("existing output files will be overwritten");
     overwrite_files = true;
   }
@@ -897,21 +941,20 @@ void parse() {
 
   sort_arguments(argc, argv);
 
-  if (get_options("help").size()) {
+  if (!get_options("help").empty()) {
     print_help();
     throw 0;
   }
-  if (get_options("version").size()) {
+  if (!get_options("version").empty()) {
     print(version_string());
     throw 0;
   }
 
-  size_t num_args_required = 0, num_command_arguments = 0;
+  size_t num_args_required = 0;
   size_t num_optional_arguments = 0;
 
   ArgFlags flags = None;
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    ++num_command_arguments;
     if (ARGUMENTS[i].flags) {
       if (flags && flags != ARGUMENTS[i].flags)
         throw Exception("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in "
@@ -924,7 +967,7 @@ void parse() {
       ++num_args_required;
   }
 
-  if (!option.size() && !argument.size() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
+  if (option.empty() && argument.empty() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
     print_help();
     throw 0;
   }
@@ -953,7 +996,7 @@ void parse() {
           }
         }
       }
-      if (potential_options.size())
+      if (!potential_options.empty())
         e.push_back("(Did you mean " + join(potential_options, " or ") + "?)");
     }
     throw e;
@@ -1098,7 +1141,9 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
     Exception E("executable was compiled for a different version of the MRtrix3 library!");
     E.push_back(std::string("  ") + NAME + " version: " + executable_uses_mrtrix_version);
     E.push_back(std::string("  library version: ") + mrtrix_version);
-    E.push_back("Running ./build again may correct error");
+    E.push_back("You may need to erase files left over from prior MRtrix3 versions;");
+    E.push_back("eg. core/version.cpp; src/exec_version.cpp");
+    E.push_back(", and re-configure cmake");
     throw E;
   }
 
@@ -1271,5 +1316,98 @@ default_type App::ParsedArgument::as_float() const {
   return retval;
 }
 
-} // namespace App
-} // namespace MR
+std::vector<int32_t> ParsedArgument::as_sequence_int() const {
+  assert(arg->type == IntSeq);
+  try {
+    return parse_ints<int32_t>(p);
+  } catch (Exception &e) {
+    error(e);
+  }
+  return std::vector<int32_t>();
+}
+
+std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
+  assert(arg->type == IntSeq);
+  try {
+    return parse_ints<uint32_t>(p);
+  } catch (Exception &e) {
+    error(e);
+  }
+  return std::vector<uint32_t>();
+}
+
+std::vector<default_type> ParsedArgument::as_sequence_float() const {
+  assert(arg->type == FloatSeq);
+  try {
+    return parse_floats(p);
+  } catch (Exception &e) {
+    error(e);
+  }
+  return std::vector<default_type>();
+}
+
+ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, const char *text)
+    : opt(option), arg(argument), p(text) {
+  assert(text);
+}
+
+void ParsedArgument::error(Exception &e) const {
+  std::string msg("error parsing token \"");
+  msg += p;
+  if (opt != nullptr)
+    msg += std::string("\" for option \"") + opt->id + "\"";
+  else
+    msg += std::string("\" for argument \"") + arg->id + "\"";
+  throw Exception(e, msg);
+}
+
+void check_overwrite(const std::string &name) {
+  if (Path::exists(name) && !overwrite_files) {
+    if (check_overwrite_files_func != nullptr)
+      check_overwrite_files_func(name);
+    else
+      throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
+  }
+}
+
+ParsedOption::ParsedOption(const Option *option, const char *const *arguments) : opt(option), args(arguments) {
+  for (size_t i = 0; i != option->size(); ++i) {
+    const char *p = arguments[i];
+    if (!consume_dash(p))
+      continue;
+    if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
+      continue;
+    if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
+        (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+      continue;
+    WARN(std::string("Value \"") + arguments[i] + "\" is being used as " +
+         ((option->size() == 1) ? "the expected argument "
+                                : ("one of the " + str(option->size()) + " expected arguments ")) +
+         "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+         "the requisite input" + ((option->size() == 1) ? " " : "s ") + "to command-line option \"-" + option->id +
+         "\" may have been erroneously omitted, which may cause " + "other command-line parsing errors");
+  }
+}
+
+ParsedArgument ParsedOption::operator[](size_t num) const {
+  assert(num < opt->size());
+  return ParsedArgument(opt, &(*opt)[num], args[num]);
+}
+
+bool ParsedOption::operator==(const char *match) const {
+  const std::string name = lowercase(match);
+  return name == opt->id;
+}
+
+std::string operator+(const char *left, const ParsedArgument &right) {
+  std::string retval(left);
+  retval += std::string(right);
+  return retval;
+}
+
+std::ostream &operator<<(std::ostream &stream, const ParsedArgument &arg) {
+  stream << std::string(arg);
+  return stream;
+}
+
+} // namespace MR::App

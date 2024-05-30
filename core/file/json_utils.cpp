@@ -29,9 +29,7 @@
 #include "phase_encoding.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace JSON {
+namespace MR::File::JSON {
 
 void load(Header &H, const std::string &path) {
   std::ifstream in(path);
@@ -286,6 +284,4 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
   write(H_adj.keyval(), json);
 }
 
-} // namespace JSON
-} // namespace File
-} // namespace MR
+} // namespace MR::File::JSON

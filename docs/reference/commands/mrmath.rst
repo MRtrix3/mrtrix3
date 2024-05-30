@@ -16,7 +16,7 @@ Usage
     mrmath [ options ]  input [ input ... ] operation output
 
 -  *input*: the input image(s).
--  *operation*: the operation to apply, one of: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax.
+-  *operation*: the operation to apply; one of: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax.
 -  *output*: the output image.
 
 Description

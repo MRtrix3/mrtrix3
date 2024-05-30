@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_scalar_h__
-#define __surface_scalar_h__
+#pragma once
 
 #include "surface/mesh.h"
 
-namespace MR {
-namespace Surface {
+namespace MR::Surface {
 
 class Scalar : public Eigen::Array<default_type, Eigen::Dynamic, 1> {
 
@@ -64,7 +62,4 @@ private:
   void load_fs_curv(const std::string &, const Mesh &);
 };
 
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface

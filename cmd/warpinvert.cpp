@@ -24,38 +24,45 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
+           " and David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Invert a non-linear warp field";
 
   DESCRIPTION
-  +"By default, this command assumes that the input warp field is a deformation field, i.e. each voxel "
-   "stores the corresponding position in the other image (in scanner space), and the calculated output "
-   "warp image will also be a deformation field. If the input warp field is instead a displacment field, "
-   "i.e. where each voxel stores an offset from which to sample the other image (but still in scanner "
-   "space), then the -displacement option should be used; the output warp field will additionally be "
-   "calculated as a displacement field in this case.";
+  + "By default, this command assumes that the input warp field is a deformation field,"
+    " i.e. each voxel stores the corresponding position in the other image"
+    " (in scanner space),"
+    " and the calculated output warp image will also be a deformation field."
+    " If the input warp field is instead a displacment field,"
+    " i.e. where each voxel stores an offset from which to sample the other image"
+    " (but still in scanner space),"
+    " then the -displacement option should be used;"
+    " the output warp field will additionally be calculated as a displacement field in this case.";
 
   ARGUMENTS
-  +Argument("in", "the input warp image.").type_image_in() + Argument("out", "the output warp image.").type_image_out();
+  + Argument ("in", "the input warp image.").type_image_in()
+  + Argument ("out", "the output warp image.").type_image_out();
 
   OPTIONS
-  +Option("template", "define a template image grid for the output warp") + Argument("image").type_image_in()
+  + Option ("template", "define a template image grid for the output warp")
+  + Argument ("image").type_image_in ()
 
-      +
-      Option(
-          "displacement",
-          "indicates that the input warp field is a displacement field; the output will also be a displacement field");
+  + Option ("displacement", "indicates that the input warp field is a displacement field;"
+                            " the output will also be a displacement field");
+
 }
+// clang-format on
 
 void run() {
-  const bool displacement = get_options("displacement").size();
+  const bool displacement = !get_options("displacement").empty();
   Header header_in(Header::open(argument[0]));
   Registration::Warp::check_warp(header_in);
   Header header_out(header_in);
   auto opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header_out = Header::open(opt[0][0]);
     if (displacement) {
       header_out.ndim() = 3;

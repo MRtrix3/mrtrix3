@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __degibbs_unring_1d_h__
-#define __degibbs_unring_1d_h__
+#pragma once
 
 #include "math/fft.h"
 
-namespace MR {
-namespace Degibbs {
+namespace MR::Degibbs {
 
 class Unring1D {
 public:
@@ -134,7 +132,4 @@ private:
   std::vector<int> shifts;
 };
 
-} // namespace Degibbs
-} // namespace MR
-
-#endif
+} // namespace MR::Degibbs

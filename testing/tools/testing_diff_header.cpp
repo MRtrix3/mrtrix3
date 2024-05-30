@@ -20,23 +20,28 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
   SYNOPSIS = "Compare two images for differences in the basic contents of their headers";
 
   ARGUMENTS
-  +Argument("header1", "an image.").type_image_in() + Argument("header2", "another image.").type_image_in();
+  + Argument ("header1", "an image.").type_image_in()
+  + Argument ("header2", "another image.").type_image_in();
 
   OPTIONS
-  +Option("keyval", "also test the contents of the key-value entries in the header");
+  + Option ("keyval", "also test the contents of the key-value entries in the header");
+
 }
+// clang-format on
 
 void run() {
   auto in1 = Header::open(argument[0]);
   auto in2 = Header::open(argument[1]);
 
   check_headers(in1, in2);
-  if (get_options("keyval").size())
+  if (!get_options("keyval").empty())
     check_keyvals(in1, in2);
 
   CONSOLE("headers checked OK");

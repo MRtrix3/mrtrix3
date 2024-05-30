@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __filter_optimal_threshold_h__
-#define __filter_optimal_threshold_h__
+#pragma once
 
 #include "adapter/replicate.h"
 #include "algo/min_max.h"
@@ -25,8 +24,7 @@
 #include "math/golden_section_search.h"
 #include "memory.h"
 
-namespace MR {
-namespace Filter {
+namespace MR::Filter {
 
 //! \cond skip
 namespace {
@@ -242,7 +240,4 @@ public:
   }
 };
 //! @}
-} // namespace Filter
-} // namespace MR
-
-#endif
+} // namespace MR::Filter

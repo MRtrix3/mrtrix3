@@ -13,8 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-#ifndef __sync_interprocesscommunicator_h__
-#define __sync_interprocesscommunicator_h__
+#pragma once
 
 #include <qlocalsocket.h>
 
@@ -25,10 +24,7 @@
 // raised, but may reduce performance when new IPS are created.
 #define MAX_NO_ALLOWED 32
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Sync {
+namespace MR::GUI::MRView::Sync {
 
 /**
  * Sends and receives information from other MRView processes
@@ -58,8 +54,4 @@ private:
   void TryConnectTo(int connectToId); // tries to connect with another interprocesscommunicator
 };
 
-} // namespace Sync
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-#endif
+} // namespace MR::GUI::MRView::Sync

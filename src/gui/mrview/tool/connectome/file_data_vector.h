@@ -14,17 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_connectome_filedatavector_h__
-#define __gui_mrview_tool_connectome_filedatavector_h__
+#pragma once
 
 #include <QString>
 
 #include "gui/gui.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 
 // Vector that stores the name of the file imported, so it can be displayed in the GUI
 class FileDataVector : public Eigen::VectorXf {
@@ -56,9 +52,4 @@ private:
   float min, mean, max;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::MRView::Tool

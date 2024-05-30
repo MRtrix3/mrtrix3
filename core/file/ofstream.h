@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_ofstream_h__
-#define __file_ofstream_h__
+#pragma once
 
 #include <fstream>
 #include <string>
 
 #include "types.h"
 
-namespace MR {
-namespace File {
+namespace MR::File {
 
 //! open output files for writing, checking for pre-existing file if necessary
 /*! This class is intended to be used as a substitute for std::ofstream.
@@ -41,7 +39,4 @@ public:
   void open(const std::string &path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
 };
 
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File

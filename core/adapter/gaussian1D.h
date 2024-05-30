@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_gaussian1D_h__
-#define __image_adapter_gaussian1D_h__
+#pragma once
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace Adapter {
+namespace MR::Adapter {
 
 template <class ImageType> class Gaussian1D : public Base<Gaussian1D<ImageType>, ImageType> {
 public:
@@ -48,7 +46,7 @@ public:
   }
 
   value_type value() {
-    if (!kernel.size())
+    if (kernel.empty())
       return base_type::value();
 
     const ssize_t pos = index(axis);
@@ -98,7 +96,4 @@ protected:
   std::vector<default_type> kernel;
   const bool zero_boundary;
 };
-} // namespace Adapter
-} // namespace MR
-
-#endif
+} // namespace MR::Adapter

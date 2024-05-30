@@ -25,18 +25,23 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two fixel images for differences, within specified tolerance";
 
   ARGUMENTS
-  +Argument("fixel1", "fixel directory.").type_directory_in() +
-      Argument("fixel2", "another fixel directory.").type_directory_in();
+  + Argument ("fixel1", "fixel directory.").type_directory_in()
+  + Argument ("fixel2", "another fixel directory.").type_directory_in();
 
   OPTIONS
-  +Testing::Diff_Image_Options;
+  + Testing::Diff_Image_Options;
+
 }
+// clang-format on
 
 void run() {
   std::string fixel_directory1 = argument[0];
@@ -49,7 +54,7 @@ void run() {
 
   auto dir_walker1 = Path::Dir(fixel_directory1);
   std::string fname;
-  while ((fname = dir_walker1.read_name()).size()) {
+  while (!(fname = dir_walker1.read_name()).empty()) {
     auto in1 = Image<cdouble>::open(Path::join(fixel_directory1, fname));
     std::string filename2 = Path::join(fixel_directory2, fname);
     if (!Path::exists(filename2))
@@ -59,7 +64,7 @@ void run() {
     Testing::diff_images(in1, in2);
   }
   auto dir_walker2 = Path::Dir(fixel_directory2);
-  while ((fname = dir_walker2.read_name()).size()) {
+  while (!(fname = dir_walker2.read_name()).empty()) {
     std::string filename1 = Path::join(fixel_directory1, fname);
     if (!Path::exists(filename1))
       throw Exception("File (" + fname + ") exists in fixel directory (" + fixel_directory2 +

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_odf_type_h__
-#define __gui_mrview_tool_odf_type_h__
+#pragma once
 
 #include "gui/dwi/renderer.h"
 
@@ -23,16 +22,11 @@ namespace MR {
 
 class Header;
 
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace GUI::MRView::Tool {
 
 // TODO Remove
 using odf_type_t = GUI::DWI::Renderer::mode_t;
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace GUI::MRView::Tool
 
-#endif
+} // namespace MR

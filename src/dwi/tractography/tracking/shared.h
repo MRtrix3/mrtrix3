@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_tracking_shared_h__
-#define __dwi_tractography_tracking_shared_h__
+#pragma once
 
 #include <atomic>
 
@@ -34,10 +33,7 @@
 // to different termination mechanisms throughout the brain
 // #define DEBUG_TERMINATIONS
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 class SharedBase {
 
@@ -96,9 +92,4 @@ private:
 #endif
 };
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Tracking

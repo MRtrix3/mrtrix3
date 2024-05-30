@@ -27,10 +27,7 @@
 #define FILE_DIALOG_OPTIONS QFileDialog::Options()
 #endif
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
-namespace File {
+namespace MR::GUI::Dialog::File {
 
 const std::string image_filter_string = "Medical Images (*" + join(MR::Formats::known_extensions, " *") + ")";
 
@@ -67,7 +64,7 @@ get_files(QWidget *parent, const std::string &caption, const std::string &filter
       parent, qstr(caption), folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
 
   std::vector<std::string> list;
-  if (qlist.size()) {
+  if (!qlist.empty()) {
     for (int n = 0; n < qlist.size(); ++n)
       list.push_back(qlist[n].toUtf8().data());
     std::string new_folder = Path::dirname(list[0]);
@@ -104,12 +101,10 @@ std::string get_save_name(QWidget *parent,
 
   QString selection;
   if (folder) {
-    if (suggested_name.size())
-      selection = qstr(MR::Path::join(*folder, suggested_name));
-    else
-      selection = qstr(*folder);
-  } else if (suggested_name.size())
+    selection = suggested_name.empty() ? qstr(*folder) : qstr(MR::Path::join(*folder, suggested_name));
+  } else if (!suggested_name.empty()) {
     selection = qstr(suggested_name);
+  }
 
   QString qstring = QFileDialog::getSaveFileName(
       parent, qstr(caption), selection, qstr(filter), 0, FILE_DIALOG_OPTIONS | QFileDialog::DontConfirmOverwrite);
@@ -124,7 +119,4 @@ std::string get_save_name(QWidget *parent,
   return filename;
 }
 
-} // namespace File
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog::File

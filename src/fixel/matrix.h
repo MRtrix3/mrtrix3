@@ -14,17 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_matrix_h__
-#define __fixel_matrix_h__
+#pragma once
 
 #include "file/ofstream.h"
 #include "fixel/fixel.h"
 #include "image.h"
 #include "types.h"
 
-namespace MR {
-namespace Fixel {
-namespace Matrix {
+namespace MR::Fixel::Matrix {
 
 using index_image_type = uint64_t;
 using fixel_index_type = MR::Fixel::index_type;
@@ -249,8 +246,4 @@ protected:
   Image<bool> mask_image;
 };
 
-} // namespace Matrix
-} // namespace Fixel
-} // namespace MR
-
-#endif
+} // namespace MR::Fixel::Matrix

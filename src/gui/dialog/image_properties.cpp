@@ -22,9 +22,7 @@
 #include "header.h"
 #include "stride.h"
 
-namespace MR {
-namespace GUI {
-namespace Dialog {
+namespace MR::GUI::Dialog {
 
 ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
     : QDialog(parent), H(header), save_data(0, 0) {
@@ -36,7 +34,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   assert(H.format());
   root->appendChild(new TreeItem("Format", H.format(), root));
 
-  if (H.keyval().size()) {
+  if (!H.keyval().empty()) {
     TreeItem *keyvals = new TreeItem("Key/value pairs", std::string(), root);
     root->appendChild(keyvals);
     for (auto n : H.keyval()) {
@@ -151,10 +149,8 @@ void ImageProperties::context_menu(const QPoint &point) {
 void ImageProperties::write_to_file() {
   assert(save_data.rows());
   std::string name = File::get_save_name(this, "Save as...", "dwgrad.txt");
-  if (name.size())
+  if (!name.empty())
     MR::File::Matrix::save_matrix(save_data, name);
 }
 
-} // namespace Dialog
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::Dialog

@@ -14,16 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_crosshair_h__
-#define __gui_crosshair_h__
+#pragma once
 
 #include "types.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 class ModelViewProjection;
 
@@ -38,7 +36,4 @@ protected:
   mutable GL::Shader::Program program;
 };
 
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

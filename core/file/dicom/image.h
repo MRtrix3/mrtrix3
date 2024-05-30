@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_image_h__
-#define __file_dicom_image_h__
+#pragma once
 
 #include <memory>
 
@@ -23,9 +22,7 @@
 #include "file/dicom/element.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class Series;
 class Element;
@@ -158,8 +155,4 @@ public:
   friend std::ostream &operator<<(std::ostream &stream, const Image &item);
 };
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File::Dicom

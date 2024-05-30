@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_proc_mask_h__
-#define __dwi_tractography_sift_proc_mask_h__
+#pragma once
 
 #include "cmdline_option.h"
 #include "image.h"
@@ -26,10 +25,7 @@
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 extern const App::OptionGroup SIFTModelProcMaskOption;
 
@@ -56,9 +52,4 @@ private:
   ACT::Tissues ACT2pve(const Iterator &);
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT

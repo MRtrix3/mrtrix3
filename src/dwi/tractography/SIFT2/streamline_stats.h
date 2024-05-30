@@ -14,18 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift2_streamline_stats_h__
-#define __dwi_tractography_sift2_streamline_stats_h__
+#pragma once
 
 #include <cassert>
 #include <limits>
 
 #include "math/math.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT2 {
+namespace MR::DWI::Tractography::SIFT2 {
 
 class StreamlineStats {
 
@@ -53,9 +49,4 @@ private:
   unsigned int count, nonzero;
 };
 
-} // namespace SIFT2
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT2

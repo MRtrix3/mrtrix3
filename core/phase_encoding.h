@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __phaseencoding_h__
-#define __phaseencoding_h__
+#pragma once
 
 #include <Eigen/Dense>
 #include <array>
@@ -27,8 +26,7 @@
 #include "file/ofstream.h"
 #include "header.h"
 
-namespace MR {
-namespace PhaseEncoding {
+namespace MR::PhaseEncoding {
 
 extern const App::OptionGroup ImportOptions;
 extern const App::OptionGroup SelectOptions;
@@ -280,7 +278,4 @@ Eigen::MatrixXd load_eddy(const std::string &config_path, const std::string &ind
   return transform_for_image_load(PE, header);
 }
 
-} // namespace PhaseEncoding
-} // namespace MR
-
-#endif
+} // namespace MR::PhaseEncoding

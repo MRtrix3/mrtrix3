@@ -14,14 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_opengl_font_h__
-#define __gui_opengl_font_h__
+#pragma once
 
 #include "gui/opengl/shader.h"
 
-namespace MR {
-namespace GUI {
-namespace GL {
+namespace MR::GUI::GL {
 
 class Font {
 public:
@@ -64,8 +61,4 @@ protected:
   float font_tex_pos[256], font_tex_width[256];
 };
 
-} // namespace GL
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI::GL

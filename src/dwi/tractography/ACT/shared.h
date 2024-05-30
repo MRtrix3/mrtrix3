@@ -14,17 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_act_shared_h__
-#define __dwi_tractography_act_shared_h__
+#pragma once
 
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/properties.h"
 #include "memory.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 
 class ACT_Shared_additions {
 
@@ -54,9 +50,4 @@ protected:
   friend class ACT_Method_additions;
 };
 
-} // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::ACT

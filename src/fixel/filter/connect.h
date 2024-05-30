@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_filter_connect_h__
-#define __fixel_filter_connect_h__
+#pragma once
 
 #include "fixel/filter/base.h"
 #include "fixel/matrix.h"
@@ -24,9 +23,7 @@
 #define DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD 0.5
 #define DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD 0.1
 
-namespace MR {
-namespace Fixel {
-namespace Filter {
+namespace MR::Fixel::Filter {
 
 /** \addtogroup Filters
 @{ */
@@ -62,8 +59,4 @@ protected:
 };
 //! @}
 
-} // namespace Filter
-} // namespace Fixel
-} // namespace MR
-
-#endif
+} // namespace MR::Fixel::Filter

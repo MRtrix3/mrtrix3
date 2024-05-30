@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_factorial_h__
-#define __math_factorial_h__
+#pragma once
 
 #include <functional>
 #include <limits>
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <typename T> T factorial(const T i) {
   if (i < 2) {
@@ -38,7 +36,4 @@ template <typename T> T factorial(const T i) {
   }
 };
 
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math

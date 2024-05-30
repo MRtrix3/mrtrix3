@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __progressbar_h__
-#define __progressbar_h__
+#pragma once
 
 #include <chrono>
 #include <condition_variable>
@@ -201,32 +200,31 @@ FORCE_INLINE void ProgressBar::set_text(const std::string &new_text) {
   if (!show)
     return;
   _text_has_been_modified = true;
-  if (new_text.size()) {
+  if (new_text.empty())
+    return;
 #ifdef MRTRIX_WINDOWS
-    size_t old_size = _text.size();
+  size_t old_size = _text.size();
 #endif
-    _text = new_text;
+  _text = new_text;
 #ifdef MRTRIX_WINDOWS
-    if (_text.size() < old_size)
-      _text.resize(old_size, ' ');
+  if (_text.size() < old_size)
+    _text.resize(old_size, ' ');
 #endif
-  }
 }
 
 template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_func, const bool increment) {
   if (!show)
     return;
-  double time = timer.elapsed();
-  if (increment && _multiplier) {
-    if (++current_val >= next_percent) {
-      set_text(text_func());
-      _ellipsis.clear();
-      _value = std::round(current_val / _multiplier);
-      next_percent = std::ceil((_value + 1) * _multiplier);
-      next_time = time;
-      display_now();
-      return;
-    }
+  const std::unique_lock<std::mutex> lock(mutex);
+  const double time = timer.elapsed();
+  if (increment && _multiplier && ++current_val >= next_percent) {
+    set_text(text_func());
+    _ellipsis.clear();
+    _value = std::round(current_val / _multiplier);
+    next_percent = std::ceil((_value + 1) * _multiplier);
+    next_time = time;
+    display_now();
+    return;
   }
   if (time >= next_time) {
     set_text(text_func());
@@ -246,6 +244,7 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
 FORCE_INLINE void ProgressBar::operator++() {
   if (!show)
     return;
+  const std::unique_lock<std::mutex> lock(mutex);
   if (_multiplier) {
     if (++current_val >= next_percent) {
       _value = std::round(current_val / _multiplier);
@@ -278,5 +277,3 @@ template <class ThreadType> inline void ProgressBar::run_update_thread(const Thr
 }
 
 } // namespace MR
-
-#endif

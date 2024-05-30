@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_tool_odf_item_h__
-#define __gui_mrview_tool_odf_item_h__
+#pragma once
 
 #include <memory>
 
@@ -30,9 +29,7 @@ namespace MR {
 
 class Header;
 
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace GUI::MRView::Tool {
 
 class ODF_Item {
 public:
@@ -76,9 +73,6 @@ public:
   std::unique_ptr<DixelPlugin> dixel;
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace GUI::MRView::Tool
 
-#endif
+} // namespace MR

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_transform_rigid_h__
-#define __registration_transform_rigid_h__
+#pragma once
 
 #include "math/math.h"
 #include "registration/transform/base.h"
@@ -23,9 +22,7 @@
 
 using namespace MR::Math;
 
-namespace MR {
-namespace Registration {
-namespace Transform {
+namespace MR::Registration::Transform {
 
 class RigidLinearNonSymmetricUpdate {
 public:
@@ -112,8 +109,4 @@ protected:
   RobustEstimatorType robust_estimator;
 };
 //! @}
-} // namespace Transform
-} // namespace Registration
-} // namespace MR
-
-#endif
+} // namespace MR::Registration::Transform

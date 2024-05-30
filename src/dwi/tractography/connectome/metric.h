@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_metric_h__
-#define __dwi_tractography_connectome_metric_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "file/matrix.h"
@@ -28,10 +27,7 @@
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 // Provide a common interface for calculating the contribution from a
 //   particular streamline to a particular edge of the connectome
@@ -121,9 +117,4 @@ private:
   Eigen::VectorXd file_values;
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Connectome

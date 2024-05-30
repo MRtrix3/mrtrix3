@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_connectome_exemplar_h__
-#define __dwi_tractography_connectome_exemplar_h__
+#pragma once
 
 #include <mutex>
 
@@ -23,10 +22,7 @@
 #include "dwi/tractography/connectome/streamline.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+namespace MR::DWI::Tractography::Connectome {
 
 class Exemplar : private Tractography::Streamline<float> {
 public:
@@ -81,9 +77,4 @@ private:
   void add(const Tractography::Streamline<float> &, const bool is_reversed);
 };
 
-} // namespace Connectome
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::Connectome

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __apply_h__
-#define __apply_h__
+#pragma once
 
 #include <tuple>
 #include <type_traits>
@@ -27,5 +26,3 @@ template <typename Function, typename Tuple> constexpr void apply_for_each(Funct
 }
 
 } // namespace MR
-
-#endif

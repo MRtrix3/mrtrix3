@@ -16,8 +16,7 @@
 
 #include "fixel/index_remapper.h"
 
-namespace MR {
-namespace Fixel {
+namespace MR::Fixel {
 
 constexpr index_type IndexRemapper::invalid;
 
@@ -50,5 +49,4 @@ IndexRemapper::IndexRemapper(Image<bool> fixel_mask) {
   mapping_is_default = false;
 }
 
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel

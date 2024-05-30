@@ -23,8 +23,7 @@
 #include "image_io/pipe.h"
 #include "signal_handler.h"
 
-namespace MR {
-namespace Formats {
+namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> Pipe::read(Header &H) const {
   if (is_dash(H.name())) {
@@ -47,7 +46,7 @@ std::unique_ptr<ImageIO::Base> Pipe::read(Header &H) const {
 
   std::unique_ptr<ImageIO::Base> original_handler(mrtrix_handler.read(H));
   std::unique_ptr<ImageIO::Pipe> io_handler(new ImageIO::Pipe(std::move(*original_handler)));
-  return std::move(io_handler);
+  return io_handler;
 }
 
 bool Pipe::check(Header &H, size_t num_axes) const {
@@ -67,8 +66,7 @@ bool Pipe::check(Header &H, size_t num_axes) const {
 std::unique_ptr<ImageIO::Base> Pipe::create(Header &H) const {
   std::unique_ptr<ImageIO::Base> original_handler(mrtrix_handler.create(H));
   std::unique_ptr<ImageIO::Pipe> io_handler(new ImageIO::Pipe(std::move(*original_handler)));
-  return std::move(io_handler);
+  return io_handler;
 }
 
-} // namespace Formats
-} // namespace MR
+} // namespace MR::Formats

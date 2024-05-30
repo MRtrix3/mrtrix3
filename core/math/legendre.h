@@ -14,14 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_legendre_h__
-#define __math_legendre_h__
+#pragma once
 
 #include "math/math.h"
 
-namespace MR {
-namespace Math {
-namespace Legendre {
+namespace MR::Math::Legendre {
 
 template <typename ValueType> inline ValueType factorial(const ValueType n) {
   return (n < 2.0 ? 1.0 : n * factorial(n - 1.0));
@@ -136,8 +133,4 @@ inline void Plm_sph_deriv(VectorType &array, const int lmax, const int m, const 
   array[m] *= x2 * m * x;
 }
 
-} // namespace Legendre
-} // namespace Math
-} // namespace MR
-
-#endif
+} // namespace MR::Math::Legendre

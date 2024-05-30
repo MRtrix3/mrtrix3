@@ -24,40 +24,42 @@
 using namespace MR;
 using namespace App;
 
+#define DEFAULT_NUM_TILES 5
+
+// clang-format off
 void usage() {
+
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   SYNOPSIS = "Create bitwise checkerboard image";
 
   ARGUMENTS
-  +Argument("input", "the input image to be used as a template.").type_image_in() +
-      Argument("output", "the output binary image mask.").type_image_out();
+  + Argument ("input", "the input image to be used as a template.").type_image_in ()
+  + Argument ("output", "the output binary image mask.").type_image_out ();
 
   OPTIONS
-  +Option("tiles", "specify the number of tiles in any direction") + Argument("value").type_integer()
+  + Option ("tiles", "specify the number of tiles in any direction")
+    + Argument ("value").type_integer()
 
-      + Option("invert", "invert output binary mask.")
+  + Option ("invert", "invert output binary mask.")
 
-      + Option("nan", "use NaN as the output zero value.");
+  + Option ("nan", "use NaN as the output zero value.");
+
 }
+// clang-format on
 
 void run() {
 
-  size_t ntiles = 5;
-  auto opt = get_options("tiles");
-  if (opt.size()) {
-    ntiles = opt[0][0];
-  }
-
-  bool invert = get_options("invert").size();
-  const bool use_NaN = get_options("nan").size();
+  const size_t ntiles = get_option_value("tiles", DEFAULT_NUM_TILES);
+  const bool invert = !get_options("invert").empty();
+  const bool use_NaN = !get_options("nan").empty();
 
   auto in = Image<float>::open(argument[0]);
   check_3D_nonunity(in);
 
-  size_t patchwidth_x = ceil((float)in.size(0) / ntiles);
-  size_t patchwidth_y = ceil((float)in.size(1) / ntiles);
-  size_t patchwidth_z = ceil((float)in.size(2) / ntiles);
+  const size_t patchwidth_x = std::ceil((float)in.size(0) / (float)ntiles);
+  const size_t patchwidth_y = std::ceil((float)in.size(1) / (float)ntiles);
+  const size_t patchwidth_z = std::ceil((float)in.size(2) / (float)ntiles);
 
   Header header_out(in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;

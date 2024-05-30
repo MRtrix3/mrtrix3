@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __connectome_lut_h__
-#define __connectome_lut_h__
+#pragma once
 
 #include <map>
 #include <string>
@@ -25,8 +24,7 @@
 
 #include "connectome/connectome.h"
 
-namespace MR {
-namespace Connectome {
+namespace MR::Connectome {
 
 // Class for storing any useful information regarding a parcellation node that
 //   may be imported from a lookup table
@@ -57,7 +55,7 @@ public:
   void set_alpha(const uint8_t a) { alpha = a; }
 
   const std::string &get_name() const { return name; }
-  const std::string &get_short_name() const { return short_name.size() ? short_name : name; }
+  const std::string &get_short_name() const { return !short_name.empty() ? short_name : name; }
   const RGB &get_colour() const { return colour; }
   uint8_t get_alpha() const { return alpha; }
 
@@ -96,7 +94,4 @@ private:
 //   mapping TO that index is required, the conversion is ill-formed.
 std::vector<node_t> get_lut_mapping(const LUT &, const LUT &);
 
-} // namespace Connectome
-} // namespace MR
-
-#endif
+} // namespace MR::Connectome

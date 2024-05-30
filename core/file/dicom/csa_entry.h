@@ -14,17 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_dicom_csa_entry_h__
-#define __file_dicom_csa_entry_h__
+#pragma once
 
 #include "datatype.h"
 #include "file/dicom/element.h"
 #include "raw.h"
 #include "types.h"
 
-namespace MR {
-namespace File {
-namespace Dicom {
+namespace MR::File::Dicom {
 
 class CSAEntry {
 public:
@@ -162,8 +159,4 @@ protected:
   uint32_t nitems, num, cnum;
 };
 
-} // namespace Dicom
-} // namespace File
-} // namespace MR
-
-#endif
+} // namespace MR::File::Dicom

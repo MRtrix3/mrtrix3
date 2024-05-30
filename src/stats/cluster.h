@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_cluster_h__
-#define __stats_cluster_h__
+#pragma once
 
 #include "filter/connected_components.h"
 #include "math/stats/typedefs.h"
@@ -23,9 +22,7 @@
 #include "stats/enhance.h"
 #include "stats/tfce.h"
 
-namespace MR {
-namespace Stats {
-namespace Cluster {
+namespace MR::Stats::Cluster {
 
 using value_type = Math::Stats::value_type;
 using vector_type = Math::Stats::vector_type;
@@ -49,8 +46,4 @@ protected:
 };
 //! @}
 
-} // namespace Cluster
-} // namespace Stats
-} // namespace MR
-
-#endif
+} // namespace MR::Stats::Cluster

@@ -14,17 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_colourmap_button_h__
-#define __gui_mrview_colourmap_button_h__
+#pragma once
 
 #include "mrtrix.h"
 
 #include "colourmap.h"
 #include "gui/opengl/gl.h"
 
-namespace MR {
-namespace GUI {
-namespace MRView {
+namespace MR::GUI::MRView {
 
 class ColourMapButton;
 
@@ -81,8 +78,4 @@ private slots:
   void reset_intensity_slot();
 };
 
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
-
-#endif // __gui_mrview_colourmap_button_h__
+} // namespace MR::GUI::MRView

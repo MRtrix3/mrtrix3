@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gt_particlepool_h__
-#define __gt_particlepool_h__
+#pragma once
 
 #include <deque>
 #include <mutex>
@@ -25,10 +24,7 @@
 
 #include "dwi/tractography/GT/particle.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace GT {
+namespace MR::DWI::Tractography::GT {
 
 /**
  * @brief ParticlePool manages creation and deletion of particles,
@@ -105,9 +101,4 @@ protected:
   Math::RNG rng;
 };
 
-} // namespace GT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif // __gt_particlepool_h__
+} // namespace MR::DWI::Tractography::GT

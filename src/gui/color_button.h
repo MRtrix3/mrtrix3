@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_color_button_h__
-#define __gui_color_button_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 
@@ -45,5 +44,3 @@ private:
   QColor col;
   QPoint mPos;
 };
-
-#endif

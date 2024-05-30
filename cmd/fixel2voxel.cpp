@@ -52,54 +52,64 @@ const char *operations[] = {"mean",
                             "none",
                             nullptr};
 
+// clang-format off
+
 void usage() {
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)";
+
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
+           " and David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Convert a fixel-based sparse-data image into some form of scalar image";
 
   DESCRIPTION
-  +"Fixel data can be reduced to voxel data in a number of ways:" +
-      "- Some statistic computed across all fixel values within a voxel: mean, sum, product, min, max, absmax, magmax" +
-      "- The number of fixels in each voxel: count" +
-      "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')" +
-      "- A 4D directionally-encoded colour image: dec_unit, dec_scaled" +
-      "- A 4D image containing all fixel data values in each voxel unmodified: none"
+  + "Fixel data can be reduced to voxel data in a number of ways:"
+  + "- Some statistic computed across all fixel values within a voxel:"
+       " mean, sum, product, min, max, absmax, magmax"
+  + "- The number of fixels in each voxel: count"
+  + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')"
+  + "- A 4D directionally-encoded colour image: dec_unit, dec_scaled"
+  + "- A 4D image containing all fixel data values in each voxel unmodified: none"
 
-      + "The -weighted option deals with the case where there is some per-fixel metric of interest "
-        "that you wish to collapse into a single scalar measure per voxel, but each fixel possesses "
-        "a different volume, and you wish for those fixels with greater volume to have a greater "
-        "influence on the calculation than fixels with lesser volume. For instance, when estimating "
-        "a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's "
-        "mean axon diameter should be weigthed by its relative volume within the voxel in the "
-        "calculation of that voxel mean."
+  + "The -weighted option deals with the case where there is some per-fixel metric of interest"
+    " that you wish to collapse into a single scalar measure per voxel,"
+    " but each fixel possesses a different volume,"
+    " and you wish for those fixels with greater volume"
+    " to have a greater influence on the calculation than fixels with lesser volume."
+    " For instance,"
+    " when estimating a voxel-based measure of mean axon diameter from per-fixel mean axon diameters,"
+    " a fixel's mean axon diameter should be weigthed by its relative volume within the voxel"
+    " in the calculation of that voxel mean."
 
-      + Fixel::format_description;
+  + Fixel::format_description;
 
   REFERENCES
-  +"* Reference for 'complexity' operation:\n"
-   "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
-   "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
-   "NeuroImage, 2014, 100, 176-191";
+  + "* Reference for 'complexity' operation:\n"
+    "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
+    "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
+    "NeuroImage, 2014, 100, 176-191";
 
   ARGUMENTS
-  +Argument("fixel_in", "the input fixel data file").type_image_in() +
-      Argument("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice(operations) +
-      Argument("image_out", "the output scalar image.").type_image_out();
+  + Argument ("fixel_in", "the input fixel data file").type_image_in()
+  + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice(operations)
+  + Argument ("image_out", "the output scalar image.").type_image_out();
 
   OPTIONS
-  +Option("number",
-          "use only the largest N fixels in calculation of the voxel-wise statistic; "
-          "in the case of operation \"none\", output only the largest N fixels in each voxel.") +
-      Argument("N").type_integer(1)
+  + Option ("number", "use only the largest N fixels in calculation of the voxel-wise statistic;"
+                      " in the case of operation \"none\","
+                      " output only the largest N fixels in each voxel.")
+      + Argument ("N").type_integer(1)
 
-      + Option("fill",
-               "for \"none\" operation, specify the value to fill when number of fixels is fewer than the maximum "
-               "(default: 0.0)") +
-      Argument("value").type_float()
+  + Option ("fill", "for \"none\" operation,"
+                    " specify the value to fill when number of fixels is fewer than the maximum"
+                    " (default: 0.0)")
+      + Argument ("value").type_float()
 
-      + Option("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume.") +
-      Argument("fixel_in").type_image_in();
+  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result"
+                        " according to its volume.")
+      + Argument ("fixel_in").type_image_in();
+
 }
+// clang-format on
 
 using FixelIndexType = Image<index_type>;
 using FixelDataType = Image<float>;
@@ -474,7 +484,7 @@ void run() {
 
   FixelDataType in_vol;
   auto opt = get_options("weighted");
-  if (opt.size()) {
+  if (!opt.empty()) {
     in_vol = FixelDataType::open(opt[0][0]);
     check_dimensions(in_data, in_vol);
   }
@@ -486,7 +496,7 @@ void run() {
 
   opt = get_options("fill");
   float fill_value = 0.0;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (op == 12) {
       fill_value = opt[0][0];
     } else {

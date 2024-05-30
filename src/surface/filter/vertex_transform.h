@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __surface_filter_vertex_transform_h__
-#define __surface_filter_vertex_transform_h__
+#pragma once
 
 #include "header.h"
 #include "transform.h"
@@ -24,9 +23,7 @@
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 
-namespace MR {
-namespace Surface {
-namespace Filter {
+namespace MR::Surface::Filter {
 
 class VertexTransform : public Base {
 public:
@@ -52,8 +49,4 @@ private:
   transform_t mode;
 };
 
-} // namespace Filter
-} // namespace Surface
-} // namespace MR
-
-#endif
+} // namespace MR::Surface::Filter

@@ -14,14 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_spin_box_h__
-#define __gui_spin_box_h__
+#pragma once
 
 #include "gui/opengl/gl.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace GUI {
+namespace MR::GUI {
 
 class SpinBox : public QSpinBox {
   Q_OBJECT
@@ -41,7 +39,4 @@ private:
   }
 };
 
-} // namespace GUI
-} // namespace MR
-
-#endif
+} // namespace MR::GUI

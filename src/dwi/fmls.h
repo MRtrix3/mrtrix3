@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_fmls_h__
-#define __dwi_fmls_h__
+#pragma once
 
 #include <map> // Used for sorting FOD samples
 
@@ -39,9 +38,7 @@
 //   Uncomment this line to activate the optimal mean direction calculation (about a 20% performance penalty).
 // #define FMLS_OPTIMISE_MEAN_DIR
 
-namespace MR {
-namespace DWI {
-namespace FMLS {
+namespace MR::DWI::FMLS {
 
 using DWI::Directions::index_type;
 using DWI::Directions::Mask;
@@ -273,8 +270,4 @@ private:
 #endif
 };
 
-} // namespace FMLS
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::FMLS

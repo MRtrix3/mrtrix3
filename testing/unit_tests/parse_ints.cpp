@@ -23,13 +23,13 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
-
   SYNOPSIS = "Test the parse_ints (std::string) function";
-
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 std::vector<std::string> failures;
 
@@ -69,12 +69,12 @@ void run() {
         failures.push_back("\"" + std::string(t.str) + "\" to " + str(t.result) + " failed (produced " +
                            str(parse_ints<int>(t.str)) + ")");
     } catch (Exception &e) {
-      if (t.result.size())
+      if (!t.result.empty())
         failures.push_back("\"" + std::string(t.str) + "\" to " + str(t.result) + " failed: " + e[0]);
     }
   }
 
-  if (failures.size()) {
+  if (!failures.empty()) {
     Exception e(str(failures.size()) + " of " + str(sizeof(tests) / sizeof(Test)) + " tests failed:");
     for (const auto &s : failures)
       e.push_back(s);

@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_track_contribution_h__
-#define __dwi_tractography_sift_track_contribution_h__
+#pragma once
 
 #include <cstdint>
 
@@ -24,10 +23,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 class Track_fixel_contribution {
 public:
@@ -121,9 +117,4 @@ private:
   const float total_contribution, total_length;
 };
 
-} // namespace SIFT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
-
-#endif
+} // namespace MR::DWI::Tractography::SIFT

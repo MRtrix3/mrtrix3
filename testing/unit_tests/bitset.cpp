@@ -22,11 +22,13 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
   SYNOPSIS = "Verify correct operation of the BitSet class";
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
+// clang-format on
 
 void run() {
   std::vector<std::string> failed_tests;
@@ -144,7 +146,7 @@ void run() {
       }
     }
   }
-  if (failed_tests.size()) {
+  if (!failed_tests.empty()) {
     Exception e(str(failed_tests.size()) + " tests of BitSet class failed:");
     for (auto s : failed_tests)
       e.push_back(s);

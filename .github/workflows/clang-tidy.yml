@@ -6,13 +6,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: sudo apt install qt6-base-dev libqt6opengl6-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+
+    - name: Run CMake
+      run: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - uses: ZedThree/clang-tidy-review@v0.17.0
       id: review
       with:
-        apt_packages: g++,libqt5opengl5-dev,libqt5svg5-dev,libglvnd-dev,libeigen3-dev,zlib1g-dev,libfftw3-dev,ninja-build
-        cmake_command: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=on
+        apt_packages: g++,qt6-base-dev,libqt6opengl6-dev,libglvnd-dev,libeigen3-dev,zlib1g-dev,libfftw3-dev,ninja-build
         config_file: .clang-tidy
 
     - uses: ZedThree/clang-tidy-review/upload@v0.17.0

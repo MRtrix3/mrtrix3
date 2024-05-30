@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_evaluate_h__
-#define __registration_metric_evaluate_h__
+#pragma once
 
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
@@ -23,9 +22,7 @@
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/reorient.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 //! \cond skip
 namespace {
 template <class T> struct Void2 {
@@ -274,8 +271,4 @@ protected:
   Eigen::MatrixXd directions;
   ssize_t overlap_count;
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
-
-#endif
+} // namespace MR::Registration::Metric

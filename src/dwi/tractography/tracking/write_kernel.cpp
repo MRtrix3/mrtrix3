@@ -16,15 +16,12 @@
 
 #include "dwi/tractography/tracking/write_kernel.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Tracking {
+namespace MR::DWI::Tractography::Tracking {
 
 bool WriteKernel::operator()(const GeneratedTrack &tck) {
   if (complete())
     return false;
-  if (tck.size() && output_seeds) {
+  if (!tck.empty() && output_seeds) {
     const auto &p = tck[tck.get_seed_index()];
     (*output_seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1])
                     << "," << str(p[2]) << ",\n";
@@ -62,7 +59,4 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
   return true;
 }
 
-} // namespace Tracking
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking

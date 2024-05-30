@@ -26,39 +26,44 @@
 using namespace MR;
 using namespace App;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Compute fixel-wise or voxel-wise metrics from a 4D deformation field";
 
   DESCRIPTION
-  +Fixel::format_description;
+  + Fixel::format_description;
 
   REFERENCES
-  +"Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A." // Internal
-   "Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. "
-   "Neuroimage, 2017, 144, 58-73, doi: 10.1016/j.neuroimage.2016.09.029";
+  + "Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A. " // Internal
+    "Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. "
+    "Neuroimage, 2017, 144, 58-73. "
+    "doi: 10.1016/j.neuroimage.2016.09.029";
 
   ARGUMENTS
-  +Argument("in", "the input deformation field").type_image_in();
+  + Argument ("in", "the input deformation field").type_image_in();
 
   OPTIONS
-  +Option("fc",
-          "use an input template fixel image to define fibre orientations and output "
-          "a fixel image describing the change in fibre cross-section (FC) in the perpendicular "
-          "plane to the fixel orientation. e.g. warp2metric warp.mif -fc fixel_template_directory "
-          "output_fixel_directory fc.mif") +
-      Argument("template_fixel_directory").type_image_in() + Argument("output_fixel_directory").type_text() +
-      Argument("output_fixel_data").type_text()
+  + Option ("fc", "use an input template fixel image to define fibre orientations"
+                  " and output a fixel image describing the change in fibre cross-section (FC)"
+                  " in the perpendicular plane to the fixel orientation.")
+    + Argument ("template_fixel_directory").type_image_in()
+    + Argument ("output_fixel_directory").type_text()
+    + Argument ("output_fixel_data").type_text()
 
-      + Option("jmat",
-               "output a Jacobian matrix image stored in column-major order along the 4th dimension."
-               "Note the output jacobian describes the warp gradient w.r.t the scanner space coordinate system") +
-      Argument("output").type_image_out()
+  + Option ("jmat", "output a Jacobian matrix image stored in column-major order"
+                    " along the 4th dimension."
+                    " Note the output jacobian describes the warp gradient"
+                    " w.r.t the scanner space coordinate system")
+    + Argument ("output").type_image_out()
 
-      + Option("jdet", "output the Jacobian determinant instead of the full matrix") +
-      Argument("output").type_image_out();
+  + Option ("jdet", "output the Jacobian determinant instead of the full matrix")
+    + Argument ("output").type_image_out();
+
 }
+// clang-format on
 
 using value_type = float;
 
@@ -74,7 +79,7 @@ void run() {
   Image<value_type> fc_output_data;
 
   auto opt = get_options("fc");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::string template_fixel_directory(opt[0][0]);
     fixel_template_index = Fixel::find_index_header(template_fixel_directory).get_image<uint32_t>();
     fixel_template_directions =
@@ -91,14 +96,14 @@ void run() {
   }
 
   opt = get_options("jmat");
-  if (opt.size()) {
+  if (!opt.empty()) {
     Header output_header(input);
     output_header.size(3) = 9;
     jmatrix_output = Image<value_type>::create(opt[0][0], output_header);
   }
 
   opt = get_options("jdet");
-  if (opt.size()) {
+  if (!opt.empty()) {
     Header output_header(input);
     output_header.ndim() = 3;
     jdeterminant_output = Image<value_type>::create(opt[0][0], output_header);

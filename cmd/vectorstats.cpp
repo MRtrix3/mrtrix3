@@ -35,34 +35,35 @@ using namespace MR::Math::Stats::GLM;
 
 using MR::Math::Stats::index_type;
 
+// clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Statistical testing of vector data using non-parametric permutation testing";
 
   DESCRIPTION
-  +"This command can be used to perform permutation testing of any form of data. "
-   "The data for each input subject must be stored in a text file, with one value per row. "
-   "The data for each row across subjects will be tested independently, i.e. there is no "
-   "statistical enhancement that occurs between the data; however family-wise error control "
-   "will be used."
+  + "This command can be used to perform permutation testing of any form of data."
+    " The data for each input subject must be stored in a text file,"
+    " with one value per row."
+    " The data for each row across subjects will be tested independently,"
+    " i.e. there is no statistical enhancement that occurs between the data;"
+    " however family-wise error control will be used."
 
-      + Math::Stats::GLM::column_ones_description;
+  + Math::Stats::GLM::column_ones_description;
 
   ARGUMENTS
-  +Argument("input", "a text file listing the file names of the input subject data").type_file_in()
-
-      + Argument("design", "the design matrix").type_file_in()
-
-      + Argument("contrast", "the contrast matrix").type_file_in()
-
-      + Argument("output", "the filename prefix for all output").type_text();
+  + Argument ("input", "a text file listing the file names of the input subject data").type_file_in()
+  + Argument ("design", "the design matrix").type_file_in()
+  + Argument ("contrast", "the contrast matrix").type_file_in()
+  + Argument ("output", "the filename prefix for all output").type_text();
 
   OPTIONS
-  +Math::Stats::shuffle_options(false)
+  + Math::Stats::shuffle_options(false)
+  + Math::Stats::GLM::glm_options("element");
 
-      + Math::Stats::GLM::glm_options("element");
 }
+// clang-format on
 
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
@@ -151,15 +152,16 @@ void run() {
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }
+  const bool have_extra_columns = !extra_columns.empty();
   const index_type num_factors = design.cols() + extra_columns.size();
   CONSOLE("Number of factors: " + str(num_factors));
-  if (extra_columns.size()) {
+  if (have_extra_columns) {
     CONSOLE("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
-      CONSOLE("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from "
-              "voxel-wise design matrices accordingly");
+      CONSOLE("Non-finite values detected in element-wise design matrix columns;"
+              " individual rows will be removed from voxel-wise design matrices accordingly");
   }
-  check_design(design, extra_columns.size());
+  check_design(design, have_extra_columns);
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups(num_inputs);
@@ -174,7 +176,7 @@ void run() {
     throw Exception(
         "The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")" +
         " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")" +
-        (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
+        (have_extra_columns ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
   const std::string output_prefix = argument[3];
@@ -182,10 +184,11 @@ void run() {
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
     INFO("Non-finite values present in data; rows will be removed from element-wise design matrices accordingly");
-    if (!extra_columns.size()) {
+    if (!have_extra_columns) {
       INFO("(Note that this will result in slower execution than if such values were not present)");
     }
   }
+  const bool variable_design_matrix = nans_in_data || have_extra_columns;
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&](const index_type i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
@@ -201,7 +204,7 @@ void run() {
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
-                         2 + (2 * num_hypotheses) + (nans_in_data || extra_columns.size() ? 1 : 0));
+                         2 + (2 * num_hypotheses) + (variable_design_matrix ? 1 : 0));
     File::Matrix::save_matrix(betas, output_prefix + "betas.csv");
     ++progress;
     for (index_type i = 0; i != num_hypotheses; ++i) {
@@ -215,7 +218,7 @@ void run() {
       }
       ++progress;
     }
-    if (nans_in_data || extra_columns.size()) {
+    if (variable_design_matrix) {
       File::Matrix::save_vector(cond, output_prefix + "cond.csv");
       ++progress;
     }
@@ -227,7 +230,7 @@ void run() {
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
-  if (extra_columns.size() || nans_in_data) {
+  if (variable_design_matrix) {
     if (variance_groups.size())
       glm_test.reset(new GLM::TestVariableHeteroscedastic(
           extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
@@ -255,9 +258,9 @@ void run() {
   }
 
   // Perform permutation testing
-  if (!get_options("notest").size()) {
+  if (get_options("notest").empty()) {
 
-    const bool fwe_strong = get_options("strong").size();
+    const bool fwe_strong = !get_options("strong").empty();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
