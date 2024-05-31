@@ -61,6 +61,9 @@ include(LinkerSetup)
 include(FindFFTW)
 include(CompilerCache)
 include(ECMEnableSanitizers)
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    include(MacOSBundle)
+endif()
 
 use_compiler_cache()
 
