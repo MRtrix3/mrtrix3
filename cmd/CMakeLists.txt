@@ -40,6 +40,7 @@ function(add_cmd CMD_SRC IS_GUI)
 
     if (IS_GUI AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         set_bundle_properties(${CMD_NAME})
+        install_bundle_wrapper_scripts(${CMD_NAME})
     endif ()
 
     install(TARGETS ${CMD_NAME}
