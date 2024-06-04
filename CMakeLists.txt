@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15 CACHE STRING "")
 project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
 
 include(GNUInstallDirs)
