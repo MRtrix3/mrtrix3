@@ -5,6 +5,9 @@ function(set_bundle_properties executable_name)
         set(mrtrix_icon_macos ${CMAKE_CURRENT_SOURCE_DIR}/../icons/macos/${executable_name}.icns)
     endif()
 
+    string(TIMESTAMP CURRENT_YEAR "%Y")
+    set(COPYRIGHT_YEAR "2008-${CURRENT_YEAR}" CACHE STRING "Copyright year")
+
     target_sources(${executable_name} PRIVATE ${mrtrix_icon_macos})
     set_target_properties(${executable_name} PROPERTIES
         MACOSX_BUNDLE TRUE
