@@ -70,6 +70,11 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE
 endif()
 
 
+# Allow compilation of big object of files in debug mode on MINGW
+if(MINGW AND CMAKE_BUILD_TYPE MATCHES "Debug")
+    add_compile_options(-Wa,-mbig-obj)
+endif()
+
 add_compile_definitions(
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
