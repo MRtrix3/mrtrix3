@@ -1,18 +1,17 @@
 function(set_bundle_properties executable_name)
+    set(icon_files ${CMAKE_CURRENT_SOURCE_DIR}/../icons/macos/${executable_name}.icns)
     if(${executable_name} STREQUAL "mrview")
-        set(mrtrix_icon_macos ${CMAKE_CURRENT_SOURCE_DIR}/../icons/macos/mrview_doc.icns)
-    else()
-        set(mrtrix_icon_macos ${CMAKE_CURRENT_SOURCE_DIR}/../icons/macos/${executable_name}.icns)
+        list(APPEND icon_files ${CMAKE_CURRENT_SOURCE_DIR}/../icons/macos/mrview_doc.icns)
     endif()
 
     string(TIMESTAMP CURRENT_YEAR "%Y")
     set(COPYRIGHT_YEAR "2008-${CURRENT_YEAR}" CACHE STRING "Copyright year")
 
-    target_sources(${executable_name} PRIVATE ${mrtrix_icon_macos})
+    target_sources(${executable_name} PRIVATE ${icon_files})
     set_target_properties(${executable_name} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../packaging/macos/bundle/${executable_name}.plist.in"
-        RESOURCE ${mrtrix_icon_macos}
+        RESOURCE "${icon_files}"
         INSTALL_RPATH "@executable_path/../../../../lib"
     )
 endfunction()
