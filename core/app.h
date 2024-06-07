@@ -168,10 +168,14 @@ public:
 
   const char *c_str() const { return p.c_str(); }
 
+  //! the index of this argument in the raw command-line arguments list
+  size_t index() const { return index_; }
+
 private:
   const Option *opt;
   const Argument *arg;
   std::string p;
+  size_t index_;
 
   ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
 
