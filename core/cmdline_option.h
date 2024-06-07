@@ -19,6 +19,8 @@
 #include <cassert>
 #include <limits>
 #include <string>
+#include <utility>
+#include <vector>
 
 #ifdef None
 #undef None
@@ -125,7 +127,7 @@ public:
   using Limits = std::variant<std::vector<std::string>, IntRange, FloatRange>;
   Limits limits;
 
-  operator bool() const { return id; }
+  operator bool() const { return id.empty(); }
 
   //! specifies that the argument is optional
   /*! For example:
@@ -200,17 +202,17 @@ public:
   }
 
   //! specifies that the argument should be selected from a predefined list
-  /*! The list of allowed values must be specified as a nullptr-terminated
-   * list of C strings. Here is an example usage:
+  /*! The list of allowed values must be specified as a vector of strings.
+   * Here is an example usage:
    * \code
-   * const char* mode_list [] = { "standard", "pedantic", "approx", nullptr };
+   * const std::vector<std::string> mode_list = { "standard", "pedantic", "approx" };
    *
    * ARGUMENTS
    *   + Argument ("mode", "the mode of operation")
    *     .type_choice (mode_list);
    * \endcode
    * \note Each string in the list must be supplied in \b lowercase. */
-  Argument &type_choice(const char *const *choices) {
+  Argument &type_choice(const std::vector<std::string> &choices) {
     assert(type == Undefined);
     type = Choice;
     limits = choices;
@@ -323,18 +325,19 @@ public:
  */
 class Option : public std::vector<Argument> {
 public:
-  Option() : id(nullptr), flags(Optional) {}
+  Option() : flags(Optional) {}
 
-  Option(const char *name, const std::string &description) : id(name), desc(description), flags(Optional) {}
+  Option(std::string name, const std::string &description)
+      : id(std::move(name)), desc(std::move(description)), flags(Optional) {}
 
   Option &operator+(const Argument &arg) {
     push_back(arg);
     return *this;
   }
-  operator bool() const { return id; }
+  operator bool() const { return id.empty(); }
 
   //! the option name
-  const char *id;
+  std::string id;
   //! the option description
   std::string desc;
   //! option flags (AllowMultiple and/or Optional)
@@ -388,8 +391,8 @@ public:
  */
 class OptionGroup : public std::vector<Option> {
 public:
-  OptionGroup(const char *group_name = "OPTIONS") : name(group_name) {}
-  const char *name;
+  OptionGroup(std::string group_name = "OPTIONS") : name(std::move(group_name)) {}
+  std::string name;
 
   OptionGroup &operator+(const Option &option) {
     push_back(option);

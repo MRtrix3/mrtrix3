@@ -46,8 +46,7 @@ extern bool fail_on_warn;
 extern bool terminal_use_colour;
 extern const std::thread::id main_thread_ID;
 
-extern int argc;
-extern const char *const *argv;
+extern std::vector<std::string> raw_arguments_list;
 
 extern const char *project_version;
 extern const char *project_build_date;
@@ -130,10 +129,10 @@ void parse_special_options();
 void parse();
 
 //! sort command-line tokens into arguments and options [used internally]
-void sort_arguments(int argc, const char *const *argv);
+void sort_arguments(const std::vector<std::string> &arguments);
 
 //! uniquely match option stub to Option
-const Option *match_option(const char *stub);
+const Option *match_option(std::string_view arg);
 
 //! dump formatted help page [used internally]
 std::string full_usage();
@@ -142,7 +141,7 @@ class ParsedArgument {
 public:
   operator std::string() const { return p; }
 
-  const char *as_text() const { return p; }
+  const std::string &as_text() const { return p; }
   bool as_bool() const { return to<bool>(p); }
   int64_t as_int() const;
   uint64_t as_uint() const { return uint64_t(as_int()); }
@@ -167,14 +166,14 @@ public:
   operator std::vector<uint32_t>() const { return as_sequence_uint(); }
   operator std::vector<default_type>() const { return as_sequence_float(); }
 
-  const char *c_str() const { return p; }
+  const char *c_str() const { return p.c_str(); }
 
 private:
   const Option *opt;
   const Argument *arg;
-  const char *p;
+  std::string p;
 
-  ParsedArgument(const Option *option, const Argument *argument, const char *text);
+  ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
 
   void error(Exception &e) const;
 
@@ -182,7 +181,7 @@ private:
   friend class Options;
   friend void MR::App::init(int argc, const char *const *argv);
   friend void MR::App::parse();
-  friend void MR::App::sort_arguments(int argc, const char *const *argv);
+  friend void MR::App::sort_arguments(const std::vector<std::string> &arguments);
 };
 
 //! object storing information about option parsed from command-line
@@ -190,12 +189,12 @@ private:
  * returned by App::get_options(). */
 class ParsedOption {
 public:
-  ParsedOption(const Option *option, const char *const *arguments);
+  ParsedOption(const Option *option, const std::vector<std::string> &arguments);
 
   //! reference to the corresponding Option entry in the OPTIONS section
   const Option *opt;
   //! pointer into \c argv corresponding to the option's first argument
-  const char *const *args;
+  std::vector<std::string> args;
 
   ParsedArgument operator[](size_t num) const;
 
@@ -285,13 +284,13 @@ extern OptionList OPTIONS;
 extern bool REQUIRES_AT_LEAST_ONE_ARGUMENT;
 
 //! set the author of the command
-extern const char *AUTHOR;
+extern std::string AUTHOR;
 
 //! set the copyright notice if different from that used in MRtrix
-extern const char *COPYRIGHT;
+extern std::string COPYRIGHT;
 
 //! set a one-sentence synopsis for the command
-extern const char *SYNOPSIS;
+extern std::string SYNOPSIS;
 
 //! add references to command help page
 /*! Like the description, use the '+' operator to add paragraphs (typically
