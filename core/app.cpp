@@ -886,13 +886,13 @@ const Option *match_option(std::string_view arg) {
 void sort_arguments(const std::vector<std::string> &arguments) {
   auto it = arguments.begin();
   while (it != arguments.end()) {
+    const size_t index = std::distance(arguments.begin(), it);
     const Option *opt = match_option(*it);
     if (opt != nullptr) {
       if (it + opt->size() >= arguments.end()) {
         throw Exception(std::string("not enough parameters to option \"-") + opt->id + "\"");
       }
 
-      const size_t index = std::distance(arguments.begin(), it);
       std::vector<std::string> option_args;
       std::copy_n(it + 1, opt->size(), std::back_inserter(option_args));
       std::transform(option_args.begin(), option_args.end(), option_args.begin(), [](std::string_view arg) {
@@ -901,7 +901,7 @@ void sort_arguments(const std::vector<std::string> &arguments) {
       option.push_back(ParsedOption(opt, option_args, index));
       it += opt->size();
     } else {
-      argument.push_back(ParsedArgument(nullptr, nullptr, *it));
+      argument.push_back(ParsedArgument(nullptr, nullptr, *it, index));
     }
     ++it;
   }
@@ -1359,7 +1359,7 @@ std::vector<default_type> ParsedArgument::as_sequence_float() const {
 }
 
 ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index)
-    : opt(option), arg(argument), p(std::move(text)), index_(index){
+    : opt(option), arg(argument), p(std::move(text)), index_(index) {
   assert(!p.empty());
 }
 
@@ -1404,7 +1404,7 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
 
 ParsedArgument ParsedOption::operator[](size_t num) const {
   assert(num < opt->size());
-  return ParsedArgument(opt, &(*opt)[num], args[num]);
+  return ParsedArgument(opt, &(*opt)[num], args[num], index + num + 1);
 }
 
 bool ParsedOption::operator==(const char *match) const {
