@@ -721,14 +721,7 @@ void Window::parse_arguments() {
   if (!MR::App::argument.empty()) {
     if (!MR::App::option.empty()) {
       // check that first non-standard option appears after last argument:
-      const auto last_arg = std::find(
-          MR::App::raw_arguments_list.rbegin(), MR::App::raw_arguments_list.rend(), MR::App::argument.back().c_str());
-
-      if (last_arg == MR::App::raw_arguments_list.rend()) {
-        throw Exception("FIXME: error determining position of last argument!");
-      }
-
-      const auto last_arg_pos = std::distance(last_arg, MR::App::raw_arguments_list.rend()) - 1;
+      const auto last_arg_pos = MR::App::argument.back().index();
 
       const auto is_non_standard_option = [](const MR::App::ParsedOption &option) {
         return std::none_of(MR::App::__standard_options.begin(),
