@@ -35,9 +35,18 @@ function(add_cmd CMD_SRC IS_GUI)
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
     if(MRTRIX_USE_PCH AND NOT ${IS_GUI})
-	target_precompile_headers(${CMD_NAME} REUSE_FROM pch_cmd)
+        target_precompile_headers(${CMD_NAME} REUSE_FROM pch_cmd)
     endif()
-    install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+    if (IS_GUI AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        set_bundle_properties(${CMD_NAME})
+        install_bundle_wrapper_scripts(${CMD_NAME})
+    endif ()
+
+    install(TARGETS ${CMD_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 endfunction()
 
 
