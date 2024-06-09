@@ -13,787 +13,25 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import json, math, os, re, shlex, shutil, sys
-
-DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
-DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
-DEFAULT_AFFINE_SCALES = [0.3,0.4,0.6,0.8,1.0,1.0]
-DEFAULT_AFFINE_LMAX   = [2,2,2,4,4,4]
-
-DEFAULT_NL_SCALES = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]
-DEFAULT_NL_NITER  = [  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5]
-DEFAULT_NL_LMAX   = [  2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4,  4,  4,  4,  4]
-
-DEFAULT_NL_UPDATE_SMOOTH = 2.0
-DEFAULT_NL_DISP_SMOOTH = 1.0
-DEFAULT_NL_GRAD_STEP = 0.5
-
-REGISTRATION_MODES = ['rigid',
-                      'affine',
-                      'nonlinear',
-                      'rigid_affine',
-                      'rigid_nonlinear',
-                      'affine_nonlinear',
-                      'rigid_affine_nonlinear']
-
-LINEAR_ESTIMATORS = ['l1', 'l2', 'lp', 'none']
-
-AGGREGATION_MODES = ['mean', 'median']
-
-LINEAR_ESTIMATORS = ['l1', 'l2', 'lp', 'none']
-
-INITIAL_ALIGNMENT = ['mass', 'robust_mass', 'geometric', 'none']
-
-LEAVE_ONE_OUT = ['0', '1', 'auto']
-
-IMAGEEXT = ['mif', 'nii', 'mih', 'mgh', 'mgz', 'img', 'hdr']
-
-def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-  cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au)'
-                     ' and Max Pietsch (maximilian.pietsch@kcl.ac.uk)'
-                     ' and Thijs Dhollander (thijs.dhollander@gmail.com)')
-
-  cmdline.set_synopsis('Generates an unbiased group-average template from a series of images')
-  cmdline.add_description('First a template is optimised with linear registration'
-                          ' (rigid and/or affine, both by default),'
-                          ' then non-linear registration is used to optimise the template further.')
-  cmdline.add_argument('input_dir',
-                       nargs='+',
-                       type=app.Parser.Various(),
-                       help='Input directory containing all images of a given contrast')
-  cmdline.add_argument('template',
-                       type=app.Parser.ImageOut(),
-                       help='Output template image')
-  cmdline.add_example_usage('Multi-contrast registration',
-                            'population_template input_WM_ODFs/ output_WM_template.mif input_GM_ODFs/ output_GM_template.mif',
-                            'When performing multi-contrast registration,'
-                            ' the input directory and corresponding output template image'
-                            ' for a given contrast are to be provided as a pair,'
-                            ' with the pairs corresponding to different contrasts provided sequentially.')
-
-  options = cmdline.add_argument_group('Multi-contrast options')
-  options.add_argument('-mc_weight_initial_alignment',
-                       type=app.Parser.SequenceFloat(),
-                       help='Weight contribution of each contrast to the initial alignment.'
-                            ' Comma separated,'
-                            ' default: 1.0 for each contrast (ie. equal weighting).')
-  options.add_argument('-mc_weight_rigid',
-                       type=app.Parser.SequenceFloat(),
-                       help='Weight contribution of each contrast to the objective of rigid registration.'
-                            ' Comma separated,'
-                            ' default: 1.0 for each contrast (ie. equal weighting)')
-  options.add_argument('-mc_weight_affine',
-                       type=app.Parser.SequenceFloat(),
-                       help='Weight contribution of each contrast to the objective of affine registration.'
-                            ' Comma separated,'
-                            ' default: 1.0 for each contrast (ie. equal weighting)')
-  options.add_argument('-mc_weight_nl',
-                       type=app.Parser.SequenceFloat(),
-                       help='Weight contribution of each contrast to the objective of nonlinear registration.'
-                            ' Comma separated,'
-                            ' default: 1.0 for each contrast (ie. equal weighting)')
-
-  linoptions = cmdline.add_argument_group('Options for the linear registration')
-  linoptions.add_argument('-linear_no_pause',
-                          action='store_true',
-                          default=None,
-                          help='Do not pause the script if a linear registration seems implausible')
-  linoptions.add_argument('-linear_no_drift_correction',
-                          action='store_true',
-                          default=None,
-                          help='Deactivate correction of template appearance (scale and shear) over iterations')
-  linoptions.add_argument('-linear_estimator',
-                          choices=LINEAR_ESTIMATORS,
-                          help='Specify estimator for intensity difference metric.'
-                               ' Valid choices are:'
-                               ' l1 (least absolute: |x|),'
-                               ' l2 (ordinary least squares),'
-                               ' lp (least powers: |x|^1.2),'
-                               ' none (no robust estimator).'
-                               ' Default: none.')
-  linoptions.add_argument('-rigid_scale',
-                          type=app.Parser.SequenceFloat(),
-                          help='Specify the multi-resolution pyramid used to build the rigid template,'
-                               ' in the form of a list of scale factors'
-                               f' (default: {",".join([str(x) for x in DEFAULT_RIGID_SCALES])}).'
-                               ' This and affine_scale implicitly define the number of template levels')
-  linoptions.add_argument('-rigid_lmax',
-                          type=app.Parser.SequenceInt(),
-                          help='Specify the lmax used for rigid registration for each scale factor,'
-                               ' in the form of a list of integers'
-                               f' (default: {",".join([str(x) for x in DEFAULT_RIGID_LMAX])}).'
-                               ' The list must be the same length as the linear_scale factor list')
-  linoptions.add_argument('-rigid_niter',
-                          type=app.Parser.SequenceInt(),
-                          help='Specify the number of registration iterations used'
-                               ' within each level before updating the template,'
-                               ' in the form of a list of integers'
-                               ' (default: 50 for each scale).'
-                               ' This must be a single number'
-                               ' or a list of same length as the linear_scale factor list')
-  linoptions.add_argument('-affine_scale',
-                          type=app.Parser.SequenceFloat(),
-                          help='Specify the multi-resolution pyramid used to build the affine template,'
-                               ' in the form of a list of scale factors'
-                               f' (default: {",".join([str(x) for x in DEFAULT_AFFINE_SCALES])}).'
-                               ' This and rigid_scale implicitly define the number of template levels')
-  linoptions.add_argument('-affine_lmax',
-                          type=app.Parser.SequenceInt(),
-                          help='Specify the lmax used for affine registration for each scale factor,'
-                               ' in the form of a list of integers'
-                               f' (default: {",".join([str(x) for x in DEFAULT_AFFINE_LMAX])}).'
-                               ' The list must be the same length as the linear_scale factor list')
-  linoptions.add_argument('-affine_niter',
-                          type=app.Parser.SequenceInt(),
-                          help='Specify the number of registration iterations'
-                               ' used within each level before updating the template,'
-                               ' in the form of a list of integers'
-                               ' (default: 500 for each scale).'
-                               ' This must be a single number'
-                               ' or a list of same length as the linear_scale factor list')
-
-  nloptions = cmdline.add_argument_group('Options for the non-linear registration')
-  nloptions.add_argument('-nl_scale',
-                         type=app.Parser.SequenceFloat(),
-                         help='Specify the multi-resolution pyramid used to build the non-linear template,'
-                              ' in the form of a list of scale factors'
-                              f' (default: {",".join([str(x) for x in DEFAULT_NL_SCALES])}).'
-                              ' This implicitly defines the number of template levels')
-  nloptions.add_argument('-nl_lmax',
-                         type=app.Parser.SequenceInt(),
-                         help='Specify the lmax used for non-linear registration for each scale factor,'
-                              ' in the form of a list of integers'
-                              f' (default: {",".join([str(x) for x in DEFAULT_NL_LMAX])}).'
-                              ' The list must be the same length as the nl_scale factor list')
-  nloptions.add_argument('-nl_niter',
-                         type=app.Parser.SequenceInt(),
-                         help='Specify the number of registration iterations'
-                              ' used within each level before updating the template,'
-                              ' in the form of a list of integers'
-                              f' (default: {",".join([str(x) for x in DEFAULT_NL_NITER])}).'
-                              ' The list must be the same length as the nl_scale factor list')
-  nloptions.add_argument('-nl_update_smooth',
-                         type=app.Parser.Float(0.0),
-                         default=DEFAULT_NL_UPDATE_SMOOTH,
-                         help='Regularise the gradient update field with Gaussian smoothing'
-                              ' (standard deviation in voxel units,'
-                              f' Default {DEFAULT_NL_UPDATE_SMOOTH} x voxel_size)')
-  nloptions.add_argument('-nl_disp_smooth',
-                         type=app.Parser.Float(0.0),
-                         default=DEFAULT_NL_DISP_SMOOTH,
-                         help='Regularise the displacement field with Gaussian smoothing'
-                              ' (standard deviation in voxel units,'
-                              f' Default {DEFAULT_NL_DISP_SMOOTH} x voxel_size)')
-  nloptions.add_argument('-nl_grad_step',
-                         type=app.Parser.Float(0.0),
-                         default=DEFAULT_NL_GRAD_STEP,
-                         help='The gradient step size for non-linear registration'
-                              f' (Default: {DEFAULT_NL_GRAD_STEP})')
-
-  class SequenceDirectoryOut(app.Parser.CustomTypeBase):
-    def __call__(self, input_value):
-      return [cmdline.make_userpath_object(app.Parser._UserDirOutPathExtras, item) # pylint: disable=protected-access \
-              for item in input_value.split(',')]
-    @staticmethod
-    def _legacytypestring():
-      return 'SEQDIROUT'
-    @staticmethod
-    def _metavar():
-      return 'directory_list'
-
-  options = cmdline.add_argument_group('Input, output and general options')
-  registration_modes_string = ', '.join(f'"{x}"' for x in REGISTRATION_MODES if '_' in x)
-  options.add_argument('-type',
-                       choices=REGISTRATION_MODES,
-                       help='Specify the types of registration stages to perform.'
-                            ' Options are:'
-                            ' "rigid" (perform rigid registration only,'
-                            ' which might be useful for intra-subject registration in longitudinal analysis);'
-                            ' "affine" (perform affine registration);'
-                            ' "nonlinear";'
-                            f' as well as combinations of registration types: {registration_modes_string}.'
-                            ' Default: rigid_affine_nonlinear',
-                            default='rigid_affine_nonlinear')
-  options.add_argument('-voxel_size',
-                       type=app.Parser.SequenceFloat(),
-                       help='Define the template voxel size in mm.'
-                            ' Use either a single value for isotropic voxels or 3 comma-separated values.')
-  options.add_argument('-initial_alignment',
-                       choices=INITIAL_ALIGNMENT,
-                       default='mass',
-                       help='Method of alignment to form the initial template.'
-                            ' Options are:'
-                            ' "mass" (default);'
-                            ' "robust_mass" (requires masks);'
-                            ' "geometric";'
-                            ' "none".')
-  options.add_argument('-mask_dir',
-                       type=app.Parser.DirectoryIn(),
-                       help='Optionally input a set of masks inside a single directory,'
-                            ' one per input image'
-                            ' (with the same file name prefix).'
-                            ' Using masks will speed up registration significantly.'
-                            ' Note that masks are used for registration,'
-                            ' not for aggregation.'
-                            ' To exclude areas from aggregation,'
-                            ' NaN-mask your input images.')
-  options.add_argument('-warp_dir',
-                       type=app.Parser.DirectoryOut(),
-                       help='Output a directory containing warps from each input to the template.'
-                            ' If the folder does not exist it will be created')
-  options.add_argument('-transformed_dir',
-                       type=SequenceDirectoryOut(),
-                       help='Output a directory containing the input images transformed to the template.'
-                            ' If the folder does not exist it will be created.'
-                            ' For multi-contrast registration,'
-                            ' provide a comma-separated list of directories.')
-  options.add_argument('-linear_transformations_dir',
-                       type=app.Parser.DirectoryOut(),
-                       help='Output a directory containing the linear transformations'
-                            ' used to generate the template.'
-                            ' If the folder does not exist it will be created')
-  options.add_argument('-template_mask',
-                       type=app.Parser.ImageOut(),
-                       help='Output a template mask.'
-                            ' Only works if -mask_dir has been input.'
-                            ' The template mask is computed as the intersection'
-                            ' of all subject masks in template space.')
-  options.add_argument('-noreorientation',
-                       action='store_true',
-                       default=None,
-                       help='Turn off FOD reorientation in mrregister.'
-                            ' Reorientation is on by default if the number of volumes in the 4th dimension'
-                            ' corresponds to the number of coefficients'
-                            ' in an antipodally symmetric spherical harmonic series'
-                            ' (i.e. 6, 15, 28, 45, 66 etc)')
-  options.add_argument('-leave_one_out',
-                       choices=LEAVE_ONE_OUT,
-                       default='auto',
-                       help='Register each input image to a template that does not contain that image.'
-                            f' Valid choices: {", ".join(LEAVE_ONE_OUT)}.'
-                            ' (Default: auto (true if n_subjects larger than 2 and smaller than 15))')
-  options.add_argument('-aggregate',
-                       choices=AGGREGATION_MODES,
-                       help='Measure used to aggregate information from transformed images to the template image.'
-                            f' Valid choices: {", ".join(AGGREGATION_MODES)}.'
-                            ' Default: mean')
-  options.add_argument('-aggregation_weights',
-                       type=app.Parser.FileIn(),
-                       help='Comma-separated file containing weights used for weighted image aggregation.'
-                            ' Each row must contain the identifiers of the input image and its weight.'
-                            ' Note that this weighs intensity values not transformations (shape).')
-  options.add_argument('-nanmask',
-                       action='store_true',
-                       default=None,
-                       help='Optionally apply masks to (transformed) input images using NaN values'
-                            ' to specify include areas for registration and aggregation.'
-                            ' Only works if -mask_dir has been input.')
-  options.add_argument('-copy_input',
-                       action='store_true',
-                       default=None,
-                       help='Copy input images and masks into local scratch directory.')
-  options.add_argument('-delete_temporary_files',
-                       action='store_true',
-                       default=None,
-                       help='Delete temporary files from scratch directory during template creation.')
-
-# ENH: add option to initialise warps / transformations
-
-
-
-def abspath(arg, *args):
-  return os.path.abspath(os.path.join(arg, *args))
-
-
-def copy(src, dst, follow_symlinks=True):
-  """Copy data but do not set mode bits. Return the file's destination.
-
-  mimics shutil.copy but without setting mode bits as shutil.copymode can fail on exotic mounts
-  (observed on cifs with file_mode=0777).
-  """
-  if os.path.isdir(dst):
-    dst = os.path.join(dst, os.path.basename(src))
-  if sys.version_info[0] > 2:
-    shutil.copyfile(src, dst, follow_symlinks=follow_symlinks)   # pylint: disable=unexpected-keyword-arg
-  else:
-    shutil.copyfile(src, dst)
-  return dst
-
-
-def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
-  from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
-  if max_rot is None:
-    max_rot = 2 * math.pi
-
-  good = True
-  run.command(f'transformcalc {transformation} decompose {transformation}decomp')
-  if not os.path.isfile(f'{transformation}decomp'):  # does not exist if run with -continue option
-    app.console(f'"{transformation}decomp" not found; skipping check')
-    return True
-  data = utils.load_keyval(f'{transformation}decomp')
-  run.function(os.remove, f'{transformation}decomp')
-  scaling = [float(value) for value in data['scaling']]
-  if any(a < 0 for a in scaling) or any(a > (1 + max_scaling) for a in scaling) or any(
-      a < (1 - max_scaling) for a in scaling):
-    app.warn(f'large scaling ({scaling})) in {transformation}')
-    good = False
-  shear = [float(value) for value in data['shear']]
-  if any(abs(a) > max_shear for a in shear):
-    app.warn(f'large shear ({shear}) in {transformation}')
-    good = False
-  rot_angle = float(data['angle_axis'][0])
-  if abs(rot_angle) > max_rot:
-    app.warn(f'large rotation ({rot_angle}) in {transformation}')
-    good = False
-
-  if not good:
-    newcmd = []
-    what = ''
-    init_rotation_found = False
-    skip = 0
-    for element in cmd.split():
-      if skip:
-        skip -= 1
-        continue
-      if '_init_rotation' in element:
-        init_rotation_found = True
-      if '_init_matrix' in element:
-        skip = 1
-        continue
-      if 'affine_scale' in element:
-        assert what != 'rigid'
-        what = 'affine'
-      elif 'rigid_scale' in element:
-        assert what != 'affine'
-        what = 'rigid'
-      newcmd.append(element)
-    newcmd = ' '.join(newcmd)
-    if not init_rotation_found:
-      app.console('replacing the transformation obtained with:')
-      app.console(cmd)
-      if what:
-        newcmd += f' -{what}_init_translation mass -{what}_init_rotation search'
-      app.console("by the one obtained with:")
-      app.console(newcmd)
-      run.command(newcmd, force=True)
-      return check_linear_transformation(transformation, newcmd, max_scaling, max_shear, max_rot, pause_on_warn=pause_on_warn)
-    if pause_on_warn:
-      app.warn('you might want to manually repeat mrregister with different parameters and overwrite the transformation file: \n{transformation}')
-      app.console(f'The command that failed the test was: \n{cmd}')
-      app.console(f'Working directory: \n{os.getcwd()}')
-      input('press enter to continue population_template')
-  return good
-
-
-def aggregate(inputs, output, contrast_idx, mode, force=True):
-  from mrtrix3 import MRtrixError, run  # pylint: disable=no-name-in-module, import-outside-toplevel
-
-  images = [inp.ims_transformed[contrast_idx] for inp in inputs]
-  if mode == 'mean':
-    run.command(['mrmath', images, 'mean', '-keep_unary_axes', output], force=force)
-  elif mode == 'median':
-    run.command(['mrmath', images, 'median', '-keep_unary_axes', output], force=force)
-  elif mode == 'weighted_mean':
-    weights = [inp.aggregation_weight for inp in inputs]
-    assert not any(w is None for w in weights), weights
-    wsum = sum(float(w) for w in weights)
-    cmd = ['mrcalc']
-    if wsum <= 0:
-      raise MRtrixError('the sum of aggregetion weights has to be positive')
-    for weight, image in zip(weights, images):
-      if float(weight) != 0:
-        cmd += [image, weight, '-mult'] + (['-add'] if len(cmd) > 1 else [])
-    cmd += [f'{wsum:.16f}', '-div', output]
-    run.command(cmd, force=force)
-  else:
-    raise MRtrixError(f'aggregation mode {mode} not understood')
-
-
-def inplace_nan_mask(images, masks):
-  from mrtrix3 import run  # pylint: disable=no-name-in-module, import-outside-toplevel
-  assert len(images) == len(masks), (len(images), len(masks))
-  for image, mask in zip(images, masks):
-    target_dir = os.path.split(image)[0]
-    masked = os.path.join(target_dir, f'__{os.path.split(image)[1]}')
-    run.command(f'mrcalc {mask} {image} nan -if {masked}', force=True)
-    run.function(shutil.move, masked, image)
-
-
-def calculate_isfinite(inputs, contrasts):
-  from mrtrix3 import run, path  # pylint: disable=no-name-in-module, import-outside-toplevel
-  agg_weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
-  for cid in range(contrasts.n_contrasts):
-    for inp in inputs:
-      if contrasts.n_volumes[cid] > 0:
-        cmd = f'mrconvert {inp.ims_transformed[cid]} -coord 3 0 - | ' \
-              f'mrcalc - -finite'
-      else:
-        cmd = f'mrcalc {inp.ims_transformed[cid]} -finite'
-      if inp.aggregation_weight:
-        cmd += f' {inp.aggregation_weight} -mult'
-      cmd += f' isfinite{contrasts.suff[cid]}/{inp.uid}.mif'
-      run.command(cmd, force=True)
-  for cid in range(contrasts.n_contrasts):
-    cmd = ['mrmath', path.all_in_dir(f'isfinite{contrasts.suff[cid]}'), 'sum']
-    if agg_weights:
-      agg_weight_norm = float(len(agg_weights)) / sum(agg_weights)
-      cmd += ['-', '|', 'mrcalc', '-', str(agg_weight_norm), '-mult']
-    run.command(cmd + [contrasts.isfinite_count[cid]], force=True)
-
-
-def get_common_postfix(file_list):
-  return os.path.commonprefix([i[::-1] for i in file_list])[::-1]
-
-
-def get_common_prefix(file_list):
-  return os.path.commonprefix(file_list)
-
-
-class Contrasts:
-  """
-      Class that parses arguments and holds information specific to each image contrast
-
-      Attributes
-      ----------
-      suff: list of str
-        identifiers used for contrast-specific filenames and folders ['_c0', '_c1', ...]
-
-      names: list of str
-        derived from constrast-specific input folder
-
-      templates_out: list of str
-        full path to output templates
-
-      templates: list of str
-        holds current template names during registration
-
-      n_volumes: list of int
-        number of volumes in each contrast
-
-      fod_reorientation: list of bool
-        whether to perform FOD reorientation with mrtransform
-
-      isfinite_count: list of str
-        filenames of images holding (weighted) number of finite-valued voxels across all images
-
-      mc_weight_<mode>: list of floats
-        contrast-specific weight used during initialisation / registration
-
-      <mode>_weight_option: list of str
-        weight option to be passed to mrregister, <mode> = {'initial_alignment', 'rigid', 'affine', 'nl'}
-
-      n_contrasts: int
-
-      """
-
-
-  def __init__(self):
-    from mrtrix3 import MRtrixError, app  # pylint: disable=no-name-in-module, import-outside-toplevel
-
-    n_contrasts = len(app.ARGS.input_dir)
-    self.suff = [f'_c{c}' for c in map(str, range(n_contrasts))]
-    self.names = [os.path.relpath(f, os.path.commonprefix(app.ARGS.input_dir)) for f in app.ARGS.input_dir]
-
-    self.templates_out = list(app.ARGS.template)
-
-    self.mc_weight_initial_alignment = [None for _ in range(self.n_contrasts)]
-    self.mc_weight_rigid = [None for _ in range(self.n_contrasts)]
-    self.mc_weight_affine = [None for _ in range(self.n_contrasts)]
-    self.mc_weight_nl = [None for _ in range(self.n_contrasts)]
-    self.initial_alignment_weight_option = [None for _ in range(self.n_contrasts)]
-    self.rigid_weight_option = [None for _ in range(self.n_contrasts)]
-    self.affine_weight_option = [None for _ in range(self.n_contrasts)]
-    self.nl_weight_option = [None for _ in range(self.n_contrasts)]
-
-    self.isfinite_count = [f'isfinite{c}.mif' for c in self.suff]
-    self.templates = [None for _ in range(self.n_contrasts)]
-    self.n_volumes = [None for _ in range(self.n_contrasts)]
-    self.fod_reorientation = [None for _ in range(self.n_contrasts)]
-
-
-    for mode in ['initial_alignment', 'rigid', 'affine', 'nl']:
-      opt = app.ARGS.__dict__.get(f'mc_weight_{mode}', None)
-      if opt:
-        if n_contrasts == 1:
-          raise MRtrixError(f'mc_weight_{mode} requires multiple input contrasts')
-        if len(opt) != n_contrasts:
-          raise MRtrixError(f'mc_weight_{mode} needs to be defined for each contrast')
-      else:
-        opt = [1.0] * n_contrasts
-      self.__dict__[f'mc_weight_{mode}'] = opt
-      self.__dict__[f'{mode}_weight_option'] = f' -mc_weights {",".join(map(str, opt))}' if n_contrasts > 1 else ''
-
-    if len(app.ARGS.template) != n_contrasts:
-      raise MRtrixError(f'number of templates ({len(app.ARGS.template)}) '
-                        f'does not match number of input directories ({n_contrasts})')
-
-  @property
-  def n_contrasts(self):
-    return len(self.suff)
-
-  def __repr__(self, *args, **kwargs):
-    text = ''
-    for cid in range(self.n_contrasts):
-      text += f'\tcontrast: {self.names[cid]}, suffix: {self.suff[cid]}\n'
-    return text
-
-
-class Input:
-  """
-      Class that holds input information specific to a single image (multiple contrasts)
-
-      Attributes
-      ----------
-      uid: str
-        unique identifier for these input image(s), does not contain spaces
-
-      ims_path: list of str
-        full path to input images, shell quoted OR paths to cached file if cache_local was called
-
-      msk_path: str
-        full path to input mask, shell quoted OR path to cached file if cache_local was called
-
-      ims_filenames : list of str
-        for each contrast the input file paths stripped of their respective directories. Used for final output only.
-
-      msk_filename: str
-        as ims_filenames
-
-      ims_transformed: list of str
-        input_transformed<contrast identifier>/<uid>.mif
-
-      msk_transformed: list of str
-        mask_transformed/<uid>.mif
-
-      aggregation_weight: float
-        weights used in image aggregation that forms the template. Has to be normalised across inputs.
-
-      _im_directories : list of str
-        full path to user-provided input directories containing the input images, one for each contrast
-
-      _msk_directory: str
-        full path to user-provided mask directory
-
-      _local_ims: list of str
-        path to cached input images
-
-      _local_msk: str
-        path to cached input mask
-
-      Methods
-      -------
-      cache_local()
-        copy files into folders in current working directory. modifies _local_ims and  _local_msk
-
-      """
-  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''):
-    self.contrasts = contrasts
-
-    self.uid = uid
-    assert self.uid, "UID empty"
-    assert self.uid.count(' ') == 0, f'UID "{self.uid}" contains whitespace'
-
-    assert len(directories) == len(filenames)
-    self.ims_filenames = filenames
-    self._im_directories = directories
-
-    self.msk_filename = mask_filename
-    self._msk_directory = mask_directory
-
-    n_contrasts = len(contrasts)
-
-    self.ims_transformed = [os.path.join(f'input_transformed{contrasts[cid]}', f'{uid}.mif') for cid in range(n_contrasts)]
-    self.msk_transformed = os.path.join('mask_transformed', f'{uid}.mif')
-
-    self.aggregation_weight = None
-
-    self._local_ims = []
-    self._local_msk = None
-
-  def __repr__(self, *args, **kwargs):
-    text = '\nInput ['
-    for key in sorted([k for k in self.__dict__ if not k.startswith('_')]):
-      text += f'\n\t{key}: {self.__dict__[key]}'
-    text += '\n]'
-    return text
-
-  def info(self):
-    message = [f'input: {self.uid}']
-    if self.aggregation_weight:
-      message += [f'agg weight: {self.aggregation_weight}']
-    for csuff, fname in zip(self.contrasts, self.ims_filenames):
-      message += [f'{(csuff + ": ") if csuff else ""}: "{fname}"']
-    if self.msk_filename:
-      message += [f'mask: {self.msk_filename}']
-    return ', '.join(message)
-
-  def cache_local(self):
-    from mrtrix3 import run  # pylint: disable=no-name-in-module, import-outside-toplevel
-    contrasts = self.contrasts
-    for cid, csuff in enumerate(contrasts):
-      os.makedirs(f'input{csuff}', exist_ok=True)
-      run.command(['mrconvert', self.ims_path[cid], os.path.join(f'input{csuff}', f'{self.uid}.mif')])
-    self._local_ims = [os.path.join(f'input{csuff}', f'{self.uid}.mif') for csuff in contrasts]
-    if self.msk_filename:
-      os.makedirs('mask', exist_ok=True)
-      run.command(['mrconvert', self.msk_path, os.path.join('mask', f'{self.uid}.mif')])
-      self._local_msk = os.path.join('mask', f'{self.uid}.mif')
-
-  def get_ims_path(self, quoted=True):
-    """ return path to input images """
-    if self._local_ims:
-      return self._local_ims
-    return [(shlex.quote(abspath(d, f)) \
-             if quoted \
-              else abspath(d, f)) \
-                for d, f in zip(self._im_directories, self.ims_filenames)]
-  ims_path = property(get_ims_path)
-
-  def get_msk_path(self, quoted=True):
-    """ return path to input mask """
-    if self._local_msk:
-      return self._local_msk
-    if not self.msk_filename:
-      return None
-    unquoted_path = os.path.join(self._msk_directory, self.msk_filename)
-    if quoted:
-      return shlex.quote(unquoted_path)
-    return unquoted_path
-  msk_path = property(get_msk_path)
-
-
-def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whitespace_repl='_'):
-  """
-    matches input images across contrasts and pair them with masks.
-    extracts unique identifiers from mask and image filenames by stripping common pre and postfix (per contrast and for masks)
-    unique identifiers contain ASCII letters, numbers and '_' but no whitespace which is replaced by whitespace_repl
-
-    in_files: list of lists
-      the inner list holds filenames specific to a contrast
-
-    mask_files:
-      can be empty
-
-    returns list of Input
-
-    checks: 3d_nonunity
-    TODO check if no common grid & trafo across contrasts (only relevant for robust init?)
-
-  """
-  from mrtrix3 import MRtrixError, app, image  # pylint: disable=no-name-in-module, import-outside-toplevel
-  contrasts = contrasts.suff
-  inputs = []
-  def paths_to_file_uids(paths, prefix, postfix):
-    """ strip pre and postfix from filename, replace whitespace characters """
-    uid_path = {}
-    uids = []
-    for path in paths:
-      uid = re.sub(re.escape(postfix)+'$', '', re.sub('^'+re.escape(prefix), '', os.path.split(path)[1]))
-      uid = re.sub(r'\s+', whitespace_repl, uid)
-      if not uid:
-        raise MRtrixError(f'No uniquely identifiable part of filename "{path}" '
-                          'after prefix and postfix substitution '
-                          'with prefix "{prefix}" and postfix "{postfix}"')
-      app.debug(f'UID mapping: "{path}" --> "{uid}"')
-      if uid in uid_path:
-        raise MRtrixError(f'unique file identifier is not unique: '
-                          f'"{uid}" mapped to "{path}" and "{uid_path[uid]}"')
-      uid_path[uid] = path
-      uids.append(uid)
-    return uids
-
-  # mask uids
-  mask_uids = []
-  if mask_files:
-    mask_common_postfix = get_common_postfix(mask_files)
-    if not mask_common_postfix:
-      raise MRtrixError('mask filenames do not have a common postfix')
-    mask_common_prefix = get_common_prefix([os.path.split(m)[1] for m in mask_files])
-    mask_uids = paths_to_file_uids(mask_files, mask_common_prefix, mask_common_postfix)
-    if app.VERBOSITY > 1:
-      app.console(f'mask uids: {mask_uids}')
-
-  # images uids
-  common_postfix = [get_common_postfix(files) for files in in_files]
-  common_prefix = [get_common_prefix(files) for files in in_files]
-  # xcontrast_xsubject_pre_postfix: prefix and postfix of the common part across contrasts and subjects,
-  # without image extensions and leading or trailing '_' or '-'
-  xcontrast_xsubject_pre_postfix = [get_common_postfix(common_prefix).lstrip('_-'),
-                                    get_common_prefix([re.sub('.('+'|'.join(IMAGEEXT)+')(.gz)?$', '', pfix).rstrip('_-') for pfix in common_postfix])]
-  if app.VERBOSITY > 1:
-    app.console(f'common_postfix: {common_postfix}')
-    app.console(f'common_prefix: {common_prefix}')
-    app.console(f'xcontrast_xsubject_pre_postfix: {xcontrast_xsubject_pre_postfix}')
-  for ipostfix, postfix in enumerate(common_postfix):
-    if not postfix:
-      raise MRtrixError('image filenames do not have a common postfix:\n%s' % '\n'.join(in_files[ipostfix]))
-
-  c_uids = []
-  for cid, files in enumerate(in_files):
-    c_uids.append(paths_to_file_uids(files, common_prefix[cid], common_postfix[cid]))
-
-  if app.VERBOSITY > 1:
-    app.console(f'uids by contrast: {c_uids}')
-
-  # join images and masks
-  for ifile, fname in enumerate(in_files[0]):
-    uid = c_uids[0][ifile]
-    fnames = [fname]
-    dirs = [app.ARGS.input_dir[0]]
-    if len(contrasts) > 1:
-      for cid in range(1, len(contrasts)):
-        dirs.append(app.ARGS.input_dir[cid])
-        image.check_3d_nonunity(os.path.join(dirs[cid], in_files[cid][ifile]))
-        if uid != c_uids[cid][ifile]:
-          raise MRtrixError(f'no matching image was found for image {fname} and contrasts {dirs[0]} and {dirs[cid]}')
-        fnames.append(in_files[cid][ifile])
-
-    if mask_files:
-      if uid not in mask_uids:
-        candidates_string = ', '.join([f'"{m}"' for m in mask_uids])
-        raise MRtrixError(f'No matching mask image was found for input image {fname} with uid "{uid}". '
-                          f'Mask uid candidates: {candidates_string}')
-      index = mask_uids.index(uid)
-      # uid, filenames, directories, contrasts, mask_filename = '', mask_directory = '', agg_weight = None
-      inputs.append(Input(uid, fnames, dirs, contrasts,
-                          mask_filename=mask_files[index],
-                          mask_directory=app.ARGS.mask_dir))
-    else:
-      inputs.append(Input(uid, fnames, dirs, contrasts))
-
-  # parse aggregation weights and match to inputs
-  if f_agg_weight:
-    import csv  # pylint: disable=import-outside-toplevel
-    try:
-      with open(f_agg_weight, 'r', encoding='utf-8') as fweights:
-        agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in csv.reader(fweights, delimiter=',', quotechar='#'))
-    except UnicodeDecodeError:
-      with open(f_agg_weight, 'r', encoding='utf-8') as fweights:
-        reader = csv.reader(fweights.read().decode('utf-8', errors='replace'), delimiter=',', quotechar='#')
-        agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in reader)
-    pref = '^' + re.escape(get_common_prefix(list(agg_weights.keys())))
-    suff = re.escape(get_common_postfix(list(agg_weights.keys()))) + '$'
-    for key in agg_weights.keys():
-      agg_weights[re.sub(suff, '', re.sub(pref, '', key))] = agg_weights.pop(key).strip()
-
-    for inp in inputs:
-      if inp.uid not in agg_weights:
-        raise MRtrixError(f'aggregation weight not found for {inp.uid}')
-      inp.aggregation_weight = agg_weights[inp.uid]
-    app.console(f'Using aggregation weights {f_agg_weight}')
-    weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
-    if sum(weights) <= 0:
-      raise MRtrixError(f'Sum of aggregation weights is not positive: {weights}')
-    if any(w < 0 for w in weights):
-      app.warn(f'Negative aggregation weights: {weights}')
-
-  return inputs, xcontrast_xsubject_pre_postfix
-
+import json, os, shutil
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, matrix, path, run
+from .contrasts import Contrasts
+from . import utils
+from . import AGGREGATION_MODES, \
+              DEFAULT_AFFINE_LMAX, \
+              DEFAULT_AFFINE_SCALES, \
+              DEFAULT_NL_LMAX, \
+              DEFAULT_NL_NITER, \
+              DEFAULT_NL_SCALES, \
+              DEFAULT_RIGID_LMAX, \
+              DEFAULT_RIGID_SCALES, \
+              INITIAL_ALIGNMENT, \
+              LEAVE_ONE_OUT, \
+              REGISTRATION_MODES
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError, app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError(f'Registration type must be one of {REGISTRATION_MODES}; provided: "{app.ARGS.type}"')
@@ -891,7 +129,7 @@ def execute(): #pylint: disable=unused-variable
   if nanmask_input and not use_masks:
     raise MRtrixError('You cannot use NaN masking when no subject masks were input using -mask_dir')
 
-  ins, xcontrast_xsubject_pre_postfix = parse_input_files(in_files, mask_files, cns, agg_weights)
+  ins, xcontrast_xsubject_pre_postfix = utils.parse_input_files(in_files, mask_files, cns, agg_weights)
 
   leave_one_out = 'auto'
   if app.ARGS.leave_one_out is not None:
@@ -1182,9 +420,9 @@ def execute(): #pylint: disable=unused-variable
     run.command(f'mrconvert {avh3d} -axes 0,1,2,-1 {avh4d}')
     for cid in range(n_contrasts):
       if cns.n_volumes[cid] == 0:
-        run.function(copy, avh3d, f'average_header{cns.suff[cid]}.mif')
+        run.function(utils.copy, avh3d, f'average_header{cns.suff[cid]}.mif')
       elif cns.n_volumes[cid] == 1:
-        run.function(copy, avh4d, f'average_header{cns.suff[cid]}.mif')
+        run.function(utils.copy, avh4d, f'average_header{cns.suff[cid]}.mif')
       else:
         run.command(['mrcat', [avh3d] * cns.n_volumes[cid], '-axis', '3', f'average_header{cns.suff[cid]}.mif'])
     run.function(os.remove, avh3d)
@@ -1212,18 +450,18 @@ def execute(): #pylint: disable=unused-variable
       progress.done()
 
     if nanmask_input:
-      inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
-                       [inp.msk_transformed for inp in ins for cid in range(n_contrasts)])
+      utils.inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
+                             [inp.msk_transformed for inp in ins for cid in range(n_contrasts)])
 
     if leave_one_out:
-      calculate_isfinite(ins, cns)
+      utils.calculate_isfinite(ins, cns)
 
     if not dolinear:
       for inp in ins:
         with open(os.path.join('linear_transforms_initial', f'{inp.uid}.txt'), 'w', encoding='utf-8') as fout:
           fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
 
-    run.function(copy, f'average_header{cns.suff[0]}.mif', 'average_header.mif')
+    run.function(utils.copy, f'average_header{cns.suff[0]}.mif', 'average_header.mif')
 
   else:
     progress = app.ProgressBar('Performing initial rigid registration to template', len(ins))
@@ -1333,15 +571,15 @@ def execute(): #pylint: disable=unused-variable
     progress.done()
 
     if nanmask_input:
-      inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
-                       [inp.msk_transformed for inp in ins for cid in range(n_contrasts)])
+      utils.inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
+                             [inp.msk_transformed for inp in ins for cid in range(n_contrasts)])
 
     if leave_one_out:
-      calculate_isfinite(ins, cns)
+      utils.calculate_isfinite(ins, cns)
 
   cns.templates = [f'initial_template{contrast}.mif' for contrast in cns.suff]
   for cid in range(n_contrasts):
-    aggregate(ins, f'initial_template{cns.suff[cid]}.mif', cid, agg_measure)
+    utils.aggregate(ins, f'initial_template{cns.suff[cid]}.mif', cid, agg_measure)
     if cns.n_volumes[cid] == 1:
       run.function(shutil.move, f'initial_template{cns.suff[cid]}.mif', 'tmp.mif')
       run.command(f'mrconvert tmp.mif initial_template{cns.suff[cid]}.mif -axes 0,1,2,-1')
@@ -1349,7 +587,8 @@ def execute(): #pylint: disable=unused-variable
   # Optimise template with linear registration
   if not dolinear:
     for inp in ins:
-      run.function(copy, os.path.join('linear_transforms_initial', f'{inp.uid}.txt'),
+      run.function(utils.copy,
+                   os.path.join('linear_transforms_initial', f'{inp.uid}.txt'),
                    os.path.join('linear_transforms', f'{inp.uid}.txt'))
   else:
     level = 0
@@ -1440,9 +679,9 @@ def execute(): #pylint: disable=unused-variable
                   output_option + \
                   mrregister_log_option
         run.command(command, force=True)
-        check_linear_transformation(os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt'),
-                                    command,
-                                    pause_on_warn=do_pause_on_warn)
+        utils.check_linear_transformation(os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt'),
+                                          command,
+                                          pause_on_warn=do_pause_on_warn)
         if leave_one_out:
           for im_temp in tmpl:
             run.function(os.remove, im_temp)
@@ -1499,7 +738,7 @@ def execute(): #pylint: disable=unused-variable
           for inp in ins:
             transform = matrix.load_transform(os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt'))
             transform_updated = matrix.dot(transform, transform_update)
-            run.function(copy,
+            run.function(utils.copy,
                          os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt'),
                          os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.precorrection'))
             matrix.save_transform(os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt'), transform_updated, force=True)
@@ -1535,24 +774,24 @@ def execute(): #pylint: disable=unused-variable
           progress.increment()
 
       if nanmask_input:
-        inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
-                         [inp.msk_transformed for inp in ins for cid in range(n_contrasts)])
+        utils.inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
+                               [inp.msk_transformed for inp in ins for cid in range(n_contrasts)])
 
       if leave_one_out:
-        calculate_isfinite(ins, cns)
+        utils.calculate_isfinite(ins, cns)
 
       for cid in range(n_contrasts):
         if level > 0 and app.ARGS.delete_temporary_files:
           os.remove(cns.templates[cid])
         cns.templates[cid] = f'linear_template{level:02d}{cns.suff[cid]}.mif'
-        aggregate(ins, cns.templates[cid], cid, agg_measure)
+        utils.aggregate(ins, cns.templates[cid], cid, agg_measure)
         if cns.n_volumes[cid] == 1:
           run.function(shutil.move, cns.templates[cid], 'tmp.mif')
           run.command(f'mrconvert tmp.mif {cns.templates[cid]} -axes 0,1,2,-1')
           run.function(os.remove, 'tmp.mif')
 
     for entry in os.listdir(f'linear_transforms_{level:02d}'):
-      run.function(copy,
+      run.function(utils.copy,
                    os.path.join(f'linear_transforms_{level:02d}', entry),
                    os.path.join('linear_transforms', entry))
     progress.done()
@@ -1642,17 +881,17 @@ def execute(): #pylint: disable=unused-variable
         progress.increment(nonlinear_msg())
 
       if nanmask_input:
-        inplace_nan_mask([_inp.ims_transformed[cid] for _inp in ins for cid in range(n_contrasts)],
-                         [_inp.msk_transformed for _inp in ins for cid in range(n_contrasts)])
+        utils.inplace_nan_mask([_inp.ims_transformed[cid] for _inp in ins for cid in range(n_contrasts)],
+                               [_inp.msk_transformed for _inp in ins for cid in range(n_contrasts)])
 
       if leave_one_out:
-        calculate_isfinite(ins, cns)
+        utils.calculate_isfinite(ins, cns)
 
       for cid in range(n_contrasts):
         if level > 0 and app.ARGS.delete_temporary_files:
           os.remove(cns.templates[cid])
         cns.templates[cid] = f'nl_template{level:02d}{cns.suff[cid]}.mif'
-        aggregate(ins, cns.templates[cid], cid, agg_measure)
+        utils.aggregate(ins, cns.templates[cid], cid, agg_measure)
         if cns.n_volumes[cid] == 1:
           run.function(shutil.move, cns.templates[cid], 'tmp.mif')
           run.command(f'mrconvert tmp.mif {cns.templates[cid]} -axes 0,1,2,-1')
