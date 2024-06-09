@@ -45,17 +45,16 @@ ProcessFile = namedtuple('ProcessFile', 'path keep_shebang comment')
 MRTRIX_ROOT = os.path.abspath(os.path.dirname(__file__))
 APP_CPP_PATH = os.path.join(MRTRIX_ROOT, 'core', 'app.cpp')
 APP_CPP_STRING = 'const char *COPYRIGHT ='
-APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'python', 'lib', 'mrtrix3', 'app.py')
+APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'python', 'mrtrix3', 'app.py')
 APP_PY_STRING = '_DEFAULT_COPYRIGHT ='
 
 SEARCH_PATHS = [
     SearchPath('.', False, True, '#', [], ['mrtrix-mrview.desktop']),
-    SearchPath(os.path.join('python', 'bin'), False, True, '#', ['.py'], []),
     SearchPath('cmd', False, False, '*', ['.cpp'], []),
     SearchPath('core', True, False, '*', ['.cpp', '.h'], [os.path.join('file', 'json.h'), os.path.join('file', 'nifti1.h'), 'version.h']),
     SearchPath('docs', False, True, '#', [], []),
     SearchPath('matlab', True, False, '%', ['.m'], []),
-    SearchPath(os.path.join('python', 'lib'), True, False, '#', ['.py'], [os.path.join('mrtrix3', '_version.py.in')]),
+    SearchPath('python', True, False, '#', ['.py'], [os.path.join('mrtrix3', 'version.py.in'), os.path.join('mrtrix3', 'commands', '__init__.py.in')]),
     SearchPath(os.path.join('share', 'mrtrix3'), True, False, '#', ['.txt'], []),
     SearchPath('src', True, False, '*', ['.cpp', '.h'], []),
     SearchPath(os.path.join('testing', 'tools'), False, False, '*', ['.cpp'], []),
