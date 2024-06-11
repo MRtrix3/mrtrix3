@@ -17,6 +17,7 @@
 #pragma once
 
 #include "dwi/tractography/SIFT/types.h"
+#include "thread_queue.h"
 #include "progressbar.h"
 
 namespace MR::DWI::Tractography::SIFT {

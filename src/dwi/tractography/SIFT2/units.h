@@ -16,9 +16,17 @@
 
 #pragma once
 
-namespace MR::DWI::Tractography::SIFT {
+#include <string>
 
-using track_t = unsigned int;
-using voxel_t = unsigned int;
+namespace MR::DWI::Tractography::SIFT2 {
 
-} // namespace MR::DWI::Tractography::SIFT
+extern const char* const units_choices[];
+
+enum class units_t { NOS, AFDpermm, mm2 };
+
+constexpr units_t default_units = units_t::mm2;
+
+units_t str2units(const std::string&);
+std::string units2str(units_t);
+
+} // namespace MR::DWI::Tractography::SIFT2
