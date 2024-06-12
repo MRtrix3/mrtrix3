@@ -70,7 +70,6 @@ endforeach()
 
 add_custom_target(MakePythonExecutables ALL)
 
-file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/temporary/python)
 set(PYTHON_BIN_FILES "")
 foreach(CMDNAME ${PYTHON_COMMAND_LIST})
     add_custom_command(
@@ -81,9 +80,6 @@ foreach(CMDNAME ${PYTHON_COMMAND_LIST})
     list(APPEND PYTHON_BIN_FILES ${PROJECT_BINARY_DIR}/bin/${CMDNAME})
 endforeach()
 
-set_target_properties(MakePythonExecutables
-    PROPERTIES ADDITIONAL_CLEAN_FILES "${PROJECT_BINARY_DIR}/temporary/python"
-)
 
 # We need to generate a list of MRtrix3 commands:
 #   function run.command() does different things if it is executing an MRtrix3 command vs. an external command,
