@@ -76,7 +76,7 @@ foreach(CMDNAME ${PYTHON_COMMAND_LIST})
     add_custom_command(
         TARGET MakePythonExecutables
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND ${CMAKE_COMMAND} -DCMDNAME=${CMDNAME} -DBUILDDIR=${PROJECT_BINARY_DIR} -P ${CMAKE_SOURCE_DIR}/cmake/MakePythonExecutable.cmake
+        COMMAND ${CMAKE_COMMAND} -DCMDNAME=${CMDNAME} -DBUILDDIR=${PROJECT_BINARY_DIR} -P ${PROJECT_SOURCE_DIR}/cmake/MakePythonExecutable.cmake
     )
     list(APPEND PYTHON_BIN_FILES ${PROJECT_BINARY_DIR}/bin/${CMDNAME})
 endforeach()
