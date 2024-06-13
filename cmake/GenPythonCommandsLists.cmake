@@ -1,11 +1,11 @@
 file(
     GLOB CPP_COMMAND_FILES
-    ${CMAKE_SOURCE_DIR}/cmd/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmd/*.cpp
 )
 
 file(
     GLOB PYTHON_ROOT_ENTRIES
-    ${CMAKE_SOURCE_DIR}/python/mrtrix3/commands/*
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/mrtrix3/commands/*
 )
 
 set(MRTRIX_CPP_COMMAND_LIST "")
