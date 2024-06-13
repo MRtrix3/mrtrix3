@@ -3,6 +3,12 @@ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15 CACHE STRING "")
 project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
 
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    message(WARNING "It is recommended to use the Ninja generator to build MRtrix3. "
+                    "To use it, run cmake with -G Ninja or set the CMAKE_GENERATOR"
+                    "environment variable to Ninja.")
+endif()
+
 include(GNUInstallDirs)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
