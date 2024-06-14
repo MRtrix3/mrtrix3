@@ -5,7 +5,7 @@ project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
 
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
     message(WARNING "It is recommended to use the Ninja generator to build MRtrix3. "
-                    "To use it, run cmake with -G Ninja or set the CMAKE_GENERATOR"
+                    "To use it, run cmake with -G Ninja or set the CMAKE_GENERATOR "
                     "environment variable to Ninja.")
 endif()
 
