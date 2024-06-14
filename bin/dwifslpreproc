@@ -476,7 +476,7 @@ def execute(): #pylint: disable=unused-variable
         overwrite_dwi_pe_scheme = True
     if manual_trt:
       # Compare manual specification to that read from the header
-      if not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
+      if len(dwi_pe_scheme[0]) == 4 and app.ARGS.readout_time is not None and not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
         app.warn('User-defined total readout time does not match what is stored in DWI image header; proceeding with user specification')
         overwrite_dwi_pe_scheme = True
     if overwrite_dwi_pe_scheme:
@@ -549,7 +549,7 @@ def execute(): #pylint: disable=unused-variable
             app.warn('User-defined phase-encoding direction design does not match what is stored in SE EPI image header; proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
         if manual_trt:
-          if not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
+          if len(se_epi_pe_scheme[0]) == 4 and not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
             app.warn('User-defined total readout time does not match what is stored in SE EPI image header; proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
         if overwrite_se_epi_pe_scheme:
