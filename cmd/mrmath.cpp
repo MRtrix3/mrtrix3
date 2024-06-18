@@ -33,19 +33,20 @@
 using namespace MR;
 using namespace App;
 
-const char *operations[] = {"mean",
-                            "median",
-                            "sum",
-                            "product",
-                            "rms",
-                            "norm",
-                            "var",
-                            "std",
-                            "min",
-                            "max",
-                            "absmax", // Maximum of absolute values
-                            "magmax", // Value for which the magnitude is the maximum (i.e. preserves signed-ness)
-                            NULL};
+const std::vector<std::string> operations = {
+    "mean",
+    "median",
+    "sum",
+    "product",
+    "rms",
+    "norm",
+    "var",
+    "std",
+    "min",
+    "max",
+    "absmax", // Maximum of absolute values
+    "magmax"  // Value for which the magnitude is the maximum (i.e. preserves signed-ness)
+};
 
 // clang-format off
 void usage() {

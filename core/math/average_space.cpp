@@ -56,8 +56,8 @@ double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixX
 
 namespace MR {
 
-const char *const avgspace_voxspacing_choices[]{
-    "min_projection", "mean_projection", "min_nearest", "mean_nearest", nullptr};
+const std::vector<std::string> avgspace_voxspacing_choices{
+    "min_projection", "mean_projection", "min_nearest", "mean_nearest"};
 
 FORCE_INLINE Eigen::Matrix<default_type, 8, 4> get_cuboid_corners(const Eigen::Matrix<default_type, 4, 1> &xyz_sizes) {
   Eigen::Matrix<default_type, 8, 4> corners;

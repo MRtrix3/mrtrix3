@@ -23,9 +23,8 @@
 using namespace MR;
 using namespace App;
 
-const char *const dtypes[] = {"float32", "float64", NULL};
-
-const char *const estimators[] = {"exp1", "exp2", NULL};
+const std::vector<std::string> dtypes = {"float32", "float64"};
+const std::vector<std::string> estimators = {"exp1", "exp2"};
 
 // clang-format off
 void usage() {

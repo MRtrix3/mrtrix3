@@ -40,9 +40,10 @@
 using namespace MR;
 using namespace App;
 
-const char *algorithms[] = {
-    "fact", "ifod1", "ifod2", "nulldist1", "nulldist2", "sd_stream", "seedtest", "tensor_det", "tensor_prob", nullptr};
 #define DEFAULT_ALGORITHM 2 // ifod2
+
+const std::vector<std::string> algorithms = {
+    "fact", "ifod1", "ifod2", "nulldist1", "nulldist2", "sd_stream", "seedtest", "tensor_det", "tensor_prob"};
 
 // clang-format off
 void usage() {

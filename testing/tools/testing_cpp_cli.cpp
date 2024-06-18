@@ -22,7 +22,7 @@
 using namespace MR;
 using namespace App;
 
-const char *const choices[] = {"One", "Two", "Three", nullptr};
+const std::vector<std::string> choices = {"One", "Two", "Three"};
 
 // clang-format off
 void usage() {

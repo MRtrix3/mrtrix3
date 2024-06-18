@@ -29,7 +29,7 @@
 using namespace MR;
 using namespace App;
 
-const char *const algorithms[] = {"csd", "msmt_csd", NULL};
+const std::vector<std::string> algorithms = {"csd", "msmt_csd"};
 
 // clang-format off
 const OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
