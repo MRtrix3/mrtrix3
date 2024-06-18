@@ -28,7 +28,7 @@ using namespace MR;
 using namespace App;
 
 enum class operator_type { LT, LE, GE, GT, UNDEFINED };
-const char *const operator_list[] = {"lt", "le", "ge", "gt", nullptr};
+const std::vector<std::string> operator_list = {"lt", "le", "ge", "gt"};
 
 // clang-format off
 void usage() {

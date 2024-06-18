@@ -23,7 +23,8 @@ using namespace MR::Connectome;
 using namespace MR::Math;
 using namespace App;
 
-const char *operations[] = {"to_symmetric", "upper_triangular", "lower_triangular", "transpose", "zero_diagonal", NULL};
+const std::vector<std::string> operations = {
+    "to_symmetric", "upper_triangular", "lower_triangular", "transpose", "zero_diagonal"};
 
 // clang-format off
 void usage() {

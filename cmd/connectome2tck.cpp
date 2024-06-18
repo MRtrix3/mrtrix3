@@ -39,7 +39,7 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Connectome;
 
-const char *file_outputs[] = {"per_edge", "per_node", "single", NULL};
+const std::vector<std::string> file_outputs = {"per_edge", "per_node", "single"};
 
 // clang-format off
 const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the content / format of output files")

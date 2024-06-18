@@ -356,6 +356,11 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(const std:
 
 std::string join(const std::vector<std::string> &V, const std::string &delimiter);
 
+template <size_t N> inline std::string join(const std::array<std::string, N> &array, const std::string &delimiter) {
+  const auto v = std::vector<std::string>(array.begin(), array.end());
+  return join(v, delimiter);
+}
+
 template <typename T> inline std::string join(const std::vector<T> &V, const std::string &delimiter) {
   std::string ret;
   if (V.empty())
