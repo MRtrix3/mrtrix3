@@ -41,7 +41,7 @@ using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
-const char *algorithms[] = {"nbs", "tfnbs", "none", nullptr};
+const std::vector<std::string> algorithms = {"nbs", "tfnbs", "none"};
 
 // TODO Eventually these will move to some kind of TFCE header
 #define TFCE_DH_DEFAULT 0.1

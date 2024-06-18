@@ -327,7 +327,7 @@ class Option : public std::vector<Argument> {
 public:
   Option() : flags(Optional) {}
 
-  Option(std::string name, const std::string &description)
+  Option(std::string name, std::string description)
       : id(std::move(name)), desc(std::move(description)), flags(Optional) {}
 
   Option &operator+(const Argument &arg) {

@@ -25,7 +25,7 @@
 
 namespace MR::Math::Stats {
 
-const char *error_types[] = {"ee", "ise", "both", nullptr};
+std::vector<std::string> error_types = {"ee", "ise", "both"};
 
 App::OptionGroup shuffle_options(const bool include_nonstationarity, const default_type default_skew) {
   using namespace App;

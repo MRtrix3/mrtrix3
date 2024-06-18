@@ -480,13 +480,12 @@ public:
 
 class StackEntry {
 public:
-  StackEntry(const char *entry) : arg(entry), rng_gaussian(false), image_is_complex(false) {}
+  StackEntry(std::string entry) : arg(std::move(entry)), rng_gaussian(false), image_is_complex(false) {}
 
-  StackEntry(Evaluator *evaluator_p)
-      : arg(nullptr), evaluator(evaluator_p), rng_gaussian(false), image_is_complex(false) {}
+  StackEntry(Evaluator *evaluator_p) : evaluator(evaluator_p), rng_gaussian(false), image_is_complex(false) {}
 
   void load() {
-    if (!arg)
+    if (arg.empty())
       return;
     auto search = image_list.find(arg);
     if (search != image_list.end()) {
@@ -530,10 +529,9 @@ public:
         }
       }
     }
-    arg = nullptr;
   }
 
-  const char *arg;
+  std::string arg;
   std::shared_ptr<Evaluator> evaluator;
   std::shared_ptr<Image<complex_type>> image;
   copy_ptr<Math::RNG> rng;
@@ -898,7 +896,7 @@ void run_operations(const std::vector<StackEntry> &stack) {
   if (stack.size() > 2)
     throw Exception("too many operands left on stack!");
 
-  if (!stack[1].arg)
+  if (stack[1].arg.empty())
     throw Exception("output image not specified");
 
   if (stack[0].is_complex()) {
@@ -984,15 +982,14 @@ public:
 void run() {
   std::vector<StackEntry> stack;
 
-  for (int n = 1; n < App::argc; ++n) {
-
-    const Option *opt = match_option(App::argv[n]);
+  for (const auto &argument : App::raw_arguments_list) {
+    const Option *opt = match_option(argument);
     if (opt) {
 
       if (opt->is("datatype"))
-        ++n;
+        continue;
       else if (opt->is("nthreads"))
-        ++n;
+        continue;
       else if (opt->is("force") || opt->is("info") || opt->is("debug") || opt->is("quiet"))
         continue;
 
@@ -1003,7 +1000,7 @@ void run() {
         throw Exception(std::string("operation \"") + opt->id + "\" not yet implemented!");
 
     } else {
-      stack.push_back(App::argv[n]);
+      stack.push_back(argument);
     }
   }
 
