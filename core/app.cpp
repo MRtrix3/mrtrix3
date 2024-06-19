@@ -842,7 +842,6 @@ std::string restructured_text_usage() {
 }
 
 const Option *match_option(std::string_view arg) {
-  // let's check if arg starts with a dash
   auto no_dash_arg = without_leading_dash(arg);
   if (arg.size() == no_dash_arg.size() || no_dash_arg.empty() || isdigit(no_dash_arg.front()) != 0 ||
       no_dash_arg.front() == '.') {
