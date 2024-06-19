@@ -140,7 +140,7 @@ git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
 sed -i.bak -e '90,101d' cmake/FindFFTW.cmake
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
-cmake -B build -G Ninja -DMRTRIX_USE_QT6=ON -DCMAKE_PREFIX_PATH=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/X11;/usr/X11R6" -DFFTW_USE_STATIC_LIBS=ON -DCMAKE_OSX_ARCHITECTURES=${CMAKE_ARCHS} -DPNG_PNG_INCLUDE_DIR=${PREFIX}/include/QtPng -DPNG_LIBRARY=${PREFIX}/lib/libQt6BundledLibpng.a -DCMAKE_INSTALL_PREFIX=${PREFIX}
+cmake -B build -G Ninja -DCMAKE_PREFIX_PATH=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/X11;/usr/X11R6" -DFFTW_USE_STATIC_LIBS=ON -DCMAKE_OSX_ARCHITECTURES=${CMAKE_ARCHS} -DPNG_PNG_INCLUDE_DIR=${PREFIX}/include/QtPng -DPNG_LIBRARY=${PREFIX}/lib/libQt6BundledLibpng.a -DCMAKE_INSTALL_PREFIX=${PREFIX}
 cmake --build build
 cd ..
 MRTRIX_SECONDS=${SECONDS}
@@ -171,17 +171,10 @@ if [ "${OS}" = "macos" ]; then
 fi
 rm -rf ${PREFIX}_dep
 
-if [ "${OS}" = "macos" ]; then
-  cp -R ${PLD}/MRView.app ${PREFIX}/bin
-  mkdir -p ${PREFIX}/bin/MRView.app/Contents/MacOS/
-  mv ${PREFIX}/bin/mrview ${PREFIX}/bin/MRView.app/Contents/MacOS/
-  cp ${PLD}/mrview ${PREFIX}/bin
-
-  cp -R ${PLD}/SHView.app ${PREFIX}/bin
-  mkdir -p ${PREFIX}/bin/SHView.app/Contents/MacOS/
-  mv ${PREFIX}/bin/shview ${PREFIX}/bin/SHView.app/Contents/MacOS/
-  cp ${PLD}/shview ${PREFIX}/bin
-fi
+cd ${PREFIX}/bin/mrview.app/Contents
+ln -s ../../../bin/plugins
+cd ${PREFIX}/bin/shview.app/Contents
+ln -s ../../../bin/plugins
 
 cd ${PREFIX}/..
 tar cfJ mrtrix3-${OS}-${TAGNAME}.tar.xz mrtrix3
