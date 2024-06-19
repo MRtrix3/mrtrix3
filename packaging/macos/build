@@ -171,6 +171,11 @@ if [ "${OS}" = "macos" ]; then
 fi
 rm -rf ${PREFIX}_dep
 
+cd ${PREFIX}/bin/mrview.app/Contents
+ln -s ../../../bin/plugins
+cd ${PREFIX}/bin/shview.app/Contents
+ln -s ../../../bin/plugins
+
 cd ${PREFIX}/..
 tar cfJ mrtrix3-${OS}-${TAGNAME}.tar.xz mrtrix3
 rm -rf ${PREFIX}
