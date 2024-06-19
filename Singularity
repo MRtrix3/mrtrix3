@@ -27,7 +27,7 @@ Include: apt
 
 # All
     LD_LIBRARY_PATH="/.singularity.d/libs:/usr/lib:/opt/fsl/lib:$LD_LIBRARY_PATH"
-    PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:$PATH"
+    PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/share/fsl/bin:$PATH"
     export LD_LIBRARY_PATH PATH
 
 %post
@@ -51,8 +51,8 @@ Include: apt
     mkdir -p /opt/ants && curl -fsSL https://osf.io/yswa4/download | tar xz -C /opt/ants --strip-components 1
     # Download FreeSurfer lookup table file (v7.1.1).
     mkdir -p /opt/freesurfer && curl -fsSL -o /opt/freesurfer/FreeSurferColorLUT.txt https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/distribution/FreeSurferColorLUT.txt
-    # Download minified FSL (6.0.4-2).
-    mkdir -p /opt/fsl && curl -fsSL https://osf.io/dtep4/download | tar xz -C /opt/fsl --strip-components 1
+    # Download minified FSL (6.0.7.7).
+    mkdir -p /opt/fsl && curl -fsSL https://osf.io/ph9ex/download | tar xz -C /opt/fsl --strip-components 1
 
 # Use Python3 for anything requesting Python, since Python2 is not installed
     ln -s /usr/bin/python3 /usr/bin/python
