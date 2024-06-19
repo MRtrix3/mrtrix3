@@ -733,7 +733,8 @@ void Window::parse_arguments() {
           std::find_if(MR::App::option.begin(), MR::App::option.end(), is_non_standard_option);
 
       if (first_non_standard_option != MR::App::option.end() && first_non_standard_option->index < last_arg_pos) {
-        throw Exception("options must appear after the last argument - see help page for details");
+        throw Exception("MRView-specific options can only appear on the command-line after all arguments specifying "
+                        "input images; see help page for details");
       }
     }
 
