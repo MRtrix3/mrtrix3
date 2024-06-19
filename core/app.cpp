@@ -1185,7 +1185,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
     }
     return s;
   };
-  command_history_string = raw_arguments_list.front();
+  command_history_string = cmdline_argv[0];
   for (const auto &a : raw_arguments_list)
     command_history_string += std::string(" ") + argv_quoted(a);
   command_history_string += std::string("  (version=") + mrtrix_version;
