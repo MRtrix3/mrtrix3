@@ -982,14 +982,13 @@ public:
 void run() {
   std::vector<StackEntry> stack;
 
-  for (const auto &argument : App::raw_arguments_list) {
+  for (size_t n = 0; n < raw_arguments_list.size(); ++n) {
+    const auto &argument = raw_arguments_list[n];
     const Option *opt = match_option(argument);
     if (opt) {
 
-      if (opt->is("datatype"))
-        continue;
-      else if (opt->is("nthreads"))
-        continue;
+      if (opt->is("datatype") || opt->is("nthreads"))
+        ++n;
       else if (opt->is("force") || opt->is("info") || opt->is("debug") || opt->is("quiet"))
         continue;
 
