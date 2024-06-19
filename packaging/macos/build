@@ -171,18 +171,6 @@ if [ "${OS}" = "macos" ]; then
 fi
 rm -rf ${PREFIX}_dep
 
-if [ "${OS}" = "macos" ]; then
-  cp -R ${PLD}/MRView.app ${PREFIX}/bin
-  mkdir -p ${PREFIX}/bin/MRView.app/Contents/MacOS/
-  mv ${PREFIX}/bin/mrview ${PREFIX}/bin/MRView.app/Contents/MacOS/
-  cp ${PLD}/mrview ${PREFIX}/bin
-
-  cp -R ${PLD}/SHView.app ${PREFIX}/bin
-  mkdir -p ${PREFIX}/bin/SHView.app/Contents/MacOS/
-  mv ${PREFIX}/bin/shview ${PREFIX}/bin/SHView.app/Contents/MacOS/
-  cp ${PLD}/shview ${PREFIX}/bin
-fi
-
 cd ${PREFIX}/..
 tar cfJ mrtrix3-${OS}-${TAGNAME}.tar.xz mrtrix3
 rm -rf ${PREFIX}
