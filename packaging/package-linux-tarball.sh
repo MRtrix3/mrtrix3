@@ -43,7 +43,6 @@ sudo apt install cmake \
     libeigen3-dev \
     zlib1g-dev \
     libfftw3-dev \
-    libtiff5-dev \
     libpng-dev
 
 if ! command -v clang++-17 &> /dev/null
