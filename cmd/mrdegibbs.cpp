@@ -48,10 +48,11 @@ void usage ()
     "to such data, some residual ringing artefacts may still be present in the output."
 
     + "Note that this method is designed to work on images acquired with full k-space coverage. "
-    "Running this method on partial Fourier (‘half-scan’) may not fully remove all ringing artifacts, "
-    "and you may observe residuals of the original artifact in the partial-fourier direction. "
-    "Nonetheless, application of the method is still safe and worthwhile. Users are however encouraged "
-    "to acquired full-Fourier data where possible.";
+    "If this method is executed on data acquired with partial Fourier (eg. \"half-scan\") acceleration, "
+    "it may not fully remove all ringing artifacts, "
+    "and you may observe residuals of the original artifact in the partial Fourier direction. "
+    "Nonetheless, application of the method is still considered safe and worthwhile. "
+    "Users are however encouraged to acquired full-Fourier data where possible.";
 
 
   ARGUMENTS
