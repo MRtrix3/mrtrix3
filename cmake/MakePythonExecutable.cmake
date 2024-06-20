@@ -1,7 +1,8 @@
-# Creates within the bin/ sub-directory of the project build directory
-#   a short Python executable that is used to run a Python command from the terminal
-# Receives name of the command as ${CMDNAME}; output build directory as ${BUILDDIR}
-set(BINPATH "${BUILDDIR}/temporary/python/${CMDNAME}")
+# Creates a short Python executable that is used to run a Python command from the terminal.
+# Inputs:
+#   - CMDNAME: Name of the command
+#   - OUTPUT_DIR: Directory in which to create the executable
+#   - EXTRA_PATH_DIRS: an optional list of directories to be prepended to the Python path (shouldn't be necessary for most commands).
 
 set(BINPATH_CONTENTS
     "#!/usr/bin/python3\n"
@@ -13,8 +14,17 @@ set(BINPATH_CONTENTS
     "\n"
     "mrtrix_lib_path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, 'lib'))\n"
     "sys.path.insert(0, mrtrix_lib_path)\n"
-    "from mrtrix3.app import _execute\n"
 )
+
+if(EXTRA_PATH_DIRS)
+    foreach(PATH_DIR ${EXTRA_PATH_DIRS})
+        string(APPEND BINPATH_CONTENTS
+            "sys.path.insert(0, '${PATH_DIR}')\n"
+        )
+    endforeach()
+endif()
+
+string(APPEND BINPATH_CONTENTS "from mrtrix3.app import _execute\n")
 
 # Three possible interfaces:
 #   1. Standalone file residing in commands/
