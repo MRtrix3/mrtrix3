@@ -16,31 +16,48 @@ set(CPP_TOOLS_SRCS
 )
 
 set(PYTHON_TOOLS_SRCS
-    testing_check_npy
-    testing_gen_npy
-    testing_python_cli
+    testing_check_npy.py
+    testing_gen_npy.py
+    testing_python_cli.py
 )
 
-add_custom_target(testing_tools)
+add_custom_target(testing_tools ALL)
 
-function(add_testing_cmd CMD_SRC)
+function(add_cpp_tool TOOL_SRC)
     # Extract the filename without an extension (NAME_WE)
-    get_filename_component(CMD_NAME ${CMD} NAME_WE)
-    add_executable(${CMD_NAME} ${CMD})
-    target_link_libraries(${CMD_NAME} PRIVATE
+    get_filename_component(TOOL_NAME ${TOOL_SRC} NAME_WE)
+    add_executable(${TOOL_NAME} ${TOOL_SRC})
+    target_link_libraries(${TOOL_NAME} PRIVATE
         mrtrix::headless
         mrtrix::exec-version-lib
         mrtrix::tests-lib
     )
-    set_target_properties(${CMD_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
-    add_dependencies(testing_tools ${CMD_NAME})
+    set_target_properties(${TOOL_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
+    add_dependencies(testing_tools ${TOOL_NAME})
 endfunction()
 
+function(add_python_tool TOOL_SRC IS_MRTRIX_CMD)
+    get_filename_component(TOOL_NAME ${TOOL_SRC} NAME_WE)
+    # If the tool behaves like a Python MRtrix3 command, then we need to generate its executable using
+    # the MakePythonExecutable script
+    if(IS_MRTRIX_CMD)
+        set(MRTRIX_PYTHON_LIB_PATH "${PROJECT_BINARY_DIR}/lib")
+        add_custom_command(
+            TARGET testing_tools PRE_BUILD
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMAND ${CMAKE_COMMAND} -DCMDNAME=${TOOL_NAME} -DOUTPUT_DIR="${CMAKE_CURRENT_BINARY_DIR}" -DEXTRA_PATH_DIRS="${MRTRIX_PYTHON_LIB_PATH}" -P ${PROJECT_SOURCE_DIR}/cmake/MakePythonExecutable.cmake
+        )
+        # Install "module" file alongside the executable
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TOOL_SRC} ${CMAKE_CURRENT_BINARY_DIR}/${TOOL_SRC} COPYONLY)
+    else()
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TOOL_SRC} ${CMAKE_CURRENT_BINARY_DIR}/${TOOL_NAME} COPYONLY)
+    endif()
+endfunction()
 
 foreach(CMD ${CPP_TOOLS_SRCS})
-    add_testing_cmd(${CMD})
+    add_cpp_tool(${CMD})
 endforeach(CMD)
 
-foreach(CMD ${PYTHON_TOOLS_SRCS})
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${CMD} ${CMAKE_CURRENT_BINARY_DIR}/${CMD} COPYONLY)
-endforeach(CMD)
+add_python_tool(testing_check_npy.py FALSE)
+add_python_tool(testing_gen_npy.py FALSE)
+add_python_tool(testing_python_cli.py TRUE)
