@@ -136,9 +136,3 @@ def execute(): #pylint: disable=unused-variable
     value = getattr(app.ARGS, key)
     if value is not None:
       app.console(f'{key}: {repr(value)}')
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member
