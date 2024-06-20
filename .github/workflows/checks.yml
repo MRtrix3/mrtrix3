@@ -192,6 +192,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
       SCCACHE_DIR: ${{ github.workspace }}/.sccache
+      LANG: C.UTF-8
 
     steps:
       - uses: actions/checkout@v1
