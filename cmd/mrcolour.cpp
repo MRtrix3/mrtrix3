@@ -29,22 +29,17 @@
 using namespace MR;
 using namespace App;
 
-std::vector<std::string> colourmap_choices_std;
-std::vector<const char *> colourmap_choices_cstr;
+std::vector<std::string> colourmap_choices;
 
 // clang-format off
 void usage() {
 
-  const ColourMap::Entry *entry = ColourMap::maps;
-  do {
-    if (strcmp(entry->name, "Complex"))
-      colourmap_choices_std.push_back(lowercase(entry->name));
-    ++entry;
-  } while(entry->name != nullptr);
-  colourmap_choices_cstr.reserve(colourmap_choices_std.size() + 1);
-  for (const auto& s : colourmap_choices_std)
-    colourmap_choices_cstr.push_back(s.c_str());
-  colourmap_choices_cstr.push_back(nullptr);
+  for(const auto& entry : ColourMap::maps) {
+    const bool is_complex = strcmp(entry.name, "Complex") == 0;
+    if(!is_complex) {
+      colourmap_choices.push_back(lowercase(entry.name));
+    }
+  }
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
@@ -67,7 +62,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input",  "the input image").type_image_in()
   + Argument ("map",    "the colourmap to apply;"
-                        " choices are: " + join(colourmap_choices_std, ",")).type_choice (colourmap_choices_cstr.data())
+                        " choices are: " + join(colourmap_choices, ",")).type_choice (colourmap_choices)
   + Argument ("output", "the output image").type_image_out();
 
   OPTIONS

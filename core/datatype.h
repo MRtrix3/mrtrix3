@@ -157,7 +157,7 @@ public:
 #endif
   static App::OptionGroup options();
 
-  static const char *identifiers[];
+  static const std::vector<std::string> identifiers;
 
   friend std::ostream &operator<<(std::ostream &stream, const DataType &dt) {
     stream << dt.specifier();

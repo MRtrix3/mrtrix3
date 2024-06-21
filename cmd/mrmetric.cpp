@@ -37,10 +37,10 @@
 using namespace MR;
 using namespace App;
 
-const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", NULL};
 #define DEFAULT_INTERP 1 // linear
-const char *space_choices[] = {"voxel", "image1", "image2", "average", NULL};
-#define DEFAULT_SPACE 0 // voxel
+#define DEFAULT_SPACE 0  // voxel
+const std::vector<std::string> interp_choices = {"nearest", "linear", "cubic", "sinc"};
+const std::vector<std::string> space_choices = {"voxel", "image1", "image2", "average"};
 
 template <class ValueType>
 inline void
@@ -169,7 +169,7 @@ void evaluate_voxelwise_msq(InType1 &in1,
 }
 
 enum MetricType { MeanSquared, CrossCorrelation };
-const char *metric_choices[] = {"diff", "cc", NULL};
+const std::vector<std::string> metric_choices = {"diff", "cc"};
 
 // clang-format off
 void usage() {
