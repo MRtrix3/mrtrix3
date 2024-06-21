@@ -15,7 +15,7 @@ Usage
 
     dwinormalise algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: group, manual, mtnorm
+-  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: group, manual, mtnorm
 
 Description
 -----------
