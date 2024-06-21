@@ -73,7 +73,7 @@ function (add_bash_unit_test FILE_SRC)
         WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         ENVIRONMENT "PYTHONPATH=${PYTHON_ENV_PATH}"
-        LABELS "unittest"
+        LABELS "unittest;${NAME}"
     )
 endfunction()
 

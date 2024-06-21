@@ -267,7 +267,6 @@ jobs:
 
     - name: pylint
       run: |
-         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./python/lib/mrtrix3/_version.py
          ./run_pylint || { cat pylint.log; false; }
 
     - name: check copyright headers

@@ -15,7 +15,7 @@ Usage
 
     5ttgen algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: freesurfer, fsl, gif, hsvs
+-  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: freesurfer, fsl, gif, hsvs
 
 Description
 -----------

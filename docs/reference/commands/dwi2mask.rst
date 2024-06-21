@@ -15,7 +15,7 @@ Usage
 
     dwi2mask algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: 3dautomask, ants, b02template, consensus, fslbet, hdbet, legacy, mean, mtnorm, synthstrip, trace
+-  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: 3dautomask, ants, b02template, consensus, fslbet, hdbet, legacy, mean, mtnorm, synthstrip, trace
 
 Description
 -----------
