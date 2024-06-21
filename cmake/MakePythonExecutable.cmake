@@ -30,7 +30,6 @@ string(APPEND BINPATH_CONTENTS "from mrtrix3.app import _execute\n")
 #   1. Standalone file residing in commands/
 #   2. File stored in location commands/<cmdname>/<cmdname>.py, which will contain usage() and execute() functions
 #   3. Two files stored at commands/<cmdname>/usage.py and commands/<cmdname>/execute.py, defining the two corresponding functions
-# TODO Port population_template to type 3; both for readability and to ensure that it works
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/__init__.py")
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/usage.py" AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/execute.py")
         string(APPEND BINPATH_CONTENTS
