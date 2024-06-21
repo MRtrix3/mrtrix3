@@ -15,7 +15,7 @@ Usage
 
     dwibiascorrect algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ants, fsl, mtnorm
+-  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: ants, fsl, mtnorm
 
 Description
 -----------
