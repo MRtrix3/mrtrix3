@@ -15,7 +15,7 @@ Usage
 
     dwi2response algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
+-  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
 
 Description
 -----------
