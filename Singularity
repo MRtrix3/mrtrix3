@@ -26,7 +26,7 @@ Include: apt
     export FSLDIR FSLOUTPUTTYPE FSLMULTIFILEQUIT FSLTCLSH FSLWISH
 
 # All
-    LD_LIBRARY_PATH="/.singularity.d/libs:/usr/lib:/opt/fsl/lib:$LD_LIBRARY_PATH"
+    LD_LIBRARY_PATH="/.singularity.d/libs:/usr/lib:$LD_LIBRARY_PATH"
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/share/fsl/bin:$PATH"
     export LD_LIBRARY_PATH PATH
 

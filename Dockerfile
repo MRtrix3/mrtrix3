@@ -98,7 +98,6 @@ ENV ANTSPATH="/opt/ants/bin" \
     FSLMULTIFILEQUIT="TRUE" \
     FSLTCLSH="/opt/fsl/bin/fsltclsh" \
     FSLWISH="/opt/fsl/bin/fslwish" \
-    LD_LIBRARY_PATH="/opt/fsl/lib:$LD_LIBRARY_PATH" \
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/share/fsl/bin:$PATH"
 
 # Fix "Singularity container cannot load libQt5Core.so.5" on CentOS 7
