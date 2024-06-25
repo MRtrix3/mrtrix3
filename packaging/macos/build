@@ -140,7 +140,7 @@ git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
 sed -i.bak -e '90,101d' cmake/FindFFTW.cmake
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
-cmake -B build -G Ninja -DCMAKE_PREFIX_PATH=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/X11;/usr/X11R6" -DFFTW_USE_STATIC_LIBS=ON -DCMAKE_OSX_ARCHITECTURES=${CMAKE_ARCHS} -DPNG_PNG_INCLUDE_DIR=${PREFIX}/include/QtPng -DPNG_LIBRARY=${PREFIX}/lib/libQt6BundledLibpng.a -DCMAKE_INSTALL_PREFIX=${PREFIX} -DMRTRIX_USE_PCH=OFF
+cmake -B build -G Ninja -DCMAKE_PREFIX_PATH=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/X11;/usr/X11R6" -DFFTW_USE_STATIC_LIBS=ON -DCMAKE_OSX_ARCHITECTURES=${CMAKE_ARCHS} -DPNG_PNG_INCLUDE_DIR=${PREFIX}/include/QtPng -DPNG_LIBRARY=${PREFIX}/lib/libQt6BundledLibpng.a -DCMAKE_INSTALL_PREFIX=${PREFIX} -DMRTRIX_USE_PCH=OFF -DMRTRIX_BUILD_NON_CORE_STATIC=ON
 cmake --build build
 cd ..
 MRTRIX_SECONDS=${SECONDS}
