@@ -39,7 +39,7 @@ pkgver() {
 
 build() {
   cd "${_realname}"
-  cmake -B build -G Ninja
+  cmake -B build -G Ninja -DMRTRIX_BUILD_NON_CORE_STATIC=ON
   cmake --build build
   cmake --install build --prefix=./install
 }

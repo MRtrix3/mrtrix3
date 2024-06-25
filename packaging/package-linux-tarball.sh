@@ -66,7 +66,8 @@ cmake -B $build_dir -S $source_dir \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$install_dir \
     -DCMAKE_EXE_LINKER_FLAGS="-Wl,--as-needed" \
-    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
+    -DMRTRIX_BUILD_NON_CORE_STATIC=ON
     
 cmake --build $build_dir
 cmake --install $build_dir
