@@ -109,14 +109,15 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-qt6-base
             ${{env.MINGW_PACKAGE_PREFIX}}-qt6-svg
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
-      
-      - name: Checkout
-        run: git clone https://github.com/mrtrix3/mrtrix3 -b ${{ github.event.inputs.branch }}
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.branch }}
       
       - name: Set env vars
         id: envs
         run: |
-          cd mrtrix3
           commit_sha=$(git rev-parse HEAD)
           date=$(date +%Y_%m_%d)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
@@ -125,7 +126,6 @@ jobs:
 
       - name: Run build
         run: |
-          cd mrtrix3
           cd packaging/mingw
           ./run.sh ${{ steps.envs.outputs.commit_sha }} mrtrix3
           mv mingw*.tar.zst ../../../${{ steps.envs.outputs.output_name }}
