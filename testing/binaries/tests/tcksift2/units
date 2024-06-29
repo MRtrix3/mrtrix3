@@ -1,0 +1,28 @@
+#!/bin/bash
+# Verify manipulation of the units of the output SIFT2 weights
+
+# 1. If the streamline weights are of units AFD/mm,
+#   then if one takes for each voxel,
+#   for every streamline the product of the streamline weight and the length of the intersection,
+#   and sum these across all streamlines intersecting that voxel,
+#   then the result should be close to the AFD of that voxel
+
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp.csv -proc_mask SIFT_phantom/mask.mif -units AFD/mm -force
+# Zero out the streamlines density outside of the bundles; we don't want those to contribute to the difference calculation
+tckmap SIFT_phantom/tracks.tck -template SIFT_phantom/mask.mif -precise -tck_weights_in tmp.csv - | \
+mrcalc - SIFT_phantom/mask.mif -mult tmp_AFD_tractogram.mif -force
+fixel2voxel SIFT_phantom/fixels/fd.mif sum tmp_AFD_fixels.mif -force
+testing_diff_image tmp_AFD_tractogram.mif tmp_AFD_fixels.mif -abs 0.1
+
+# 2. The SIFT phantom has a voxel size of 2mm^3.
+#    If you take the AFD in a fixel and multiply it by the voxel volume,
+#    you get the total fibre volume represented by that fixel in mm^3.
+#    If your streamline weights are in mm^2,
+#    and you sum the products of these weights with the voxel intersection lengths,
+#    you get a tractogram-based reconstructed fibre volume in mm^3.
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp.csv -proc_mask SIFT_phantom/mask.mif -units mm^2 -force
+tckmap SIFT_phantom/tracks.tck -template SIFT_phantom/mask.mif -precise -tck_weights_in tmp.csv - | \
+mrcalc - SIFT_phantom/mask.mif -mult tmp_mm3_tractogram.mif -force
+fixel2voxel SIFT_phantom/fixels/fd.mif sum - | \
+mrcalc - 8.0 -mult tmp_mm3_fixels.mif -force
+testing_diff_image tmp_mm3_tractogram.mif tmp_mm3_fixels.mif -frac 0.1
