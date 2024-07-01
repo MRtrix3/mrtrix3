@@ -1,0 +1,137 @@
+name: Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to release from'
+        required: true
+        default: 'dev'
+
+jobs:
+  linux-release:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.branch }}
+      
+      - name: Set env vars
+        id: envs
+        run: |
+          commit_sha=$(git rev-parse HEAD)
+          date=$(date +%Y_%m_%d)
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+          echo "date=$date" >> $GITHUB_OUTPUT
+          echo "output_name=mrtrix3-linux-$commit_sha-$date" >> $GITHUB_OUTPUT
+
+      - name: Install Eigen3
+        run: |
+          git clone https://gitlab.com/libeigen/eigen.git && cd eigen && git checkout 3.4.0
+          cmake -B build && cmake --build build
+          sudo cmake --install build
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.7.0'
+          set-env: true
+
+      - name: Run build
+        run: |
+          ./packaging/package-linux-tarball.sh .
+          mv mrtrix.tar.gz ${{ steps.envs.outputs.output_name }}.tar.gz
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.envs.outputs.output_name }}
+          path: ${{ steps.envs.outputs.output_name }}.tar.gz
+
+  macos-release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set env vars
+        id: envs
+        run: |
+          commit_sha=$(git rev-parse HEAD)
+          date=$(date +%Y_%m_%d)
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+          echo "date=$date" >> $GITHUB_OUTPUT
+          echo "output_name=mrtrix3-macos-$commit_sha-$date" >> $GITHUB_OUTPUT
+
+      - name: Install deps
+        run: brew install numpy cmake qt eigen pkg-config fftw libpng ninja
+
+      - name: Run build
+        run: |
+          cd ./packaging/macos
+          ./build ${{ github.event.inputs.branch }}
+          mv ./mrtrix3-macos-${{ github.event.inputs.branch }}.tar.xz ../../${{ steps.envs.outputs.output_name }}.tar.xz
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.envs.outputs.output_name }}
+          path: ${{ steps.envs.outputs.output_name }}.tar.xz
+
+  windows-release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
+
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: |
+            git
+            python
+            ${{env.MINGW_PACKAGE_PREFIX}}-bc
+            ${{env.MINGW_PACKAGE_PREFIX}}-cmake
+            ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
+            ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
+            ${{env.MINGW_PACKAGE_PREFIX}}-fftw
+            ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
+            ${{env.MINGW_PACKAGE_PREFIX}}-ninja
+            ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt6-base
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt6-svg
+            ${{env.MINGW_PACKAGE_PREFIX}}-zlib
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.branch }}
+      
+      - name: Set env vars
+        id: envs
+        run: |
+          commit_sha=$(git rev-parse HEAD)
+          date=$(date +%Y_%m_%d)
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+          echo "date=$date" >> $GITHUB_OUTPUT
+          echo "output_name=mrtrix3-windows-$commit_sha-$date" >> $GITHUB_OUTPUT
+
+      - name: Run build
+        run: |
+          cd packaging/mingw
+          ./run.sh ${{ steps.envs.outputs.commit_sha }} mrtrix3
+          mv mingw*.tar.zst ../../../${{ steps.envs.outputs.output_name }}.tar.zst
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.envs.outputs.output_name }}
+          path: ${{ steps.envs.outputs.output_name }}.tar.zst
