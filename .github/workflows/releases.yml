@@ -24,7 +24,7 @@ jobs:
           date=$(date +%Y_%m_%d)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
           echo "date=$date" >> $GITHUB_OUTPUT
-          echo "output_name=mrtrix3-linux-$commit_sha-$date.tar.gz" >> $GITHUB_OUTPUT
+          echo "output_name=mrtrix3-linux-$commit_sha-$date" >> $GITHUB_OUTPUT
 
       - name: Install Eigen3
         run: |
@@ -41,13 +41,13 @@ jobs:
       - name: Run build
         run: |
           ./packaging/package-linux-tarball.sh .
-          mv mrtrix.tar.gz ${{ steps.envs.outputs.output_name }}
+          mv mrtrix.tar.gz ${{ steps.envs.outputs.output_name }}.tar.gz
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.envs.outputs.output_name }}
-          path: ${{ steps.envs.outputs.output_name }}
+          path: ${{ steps.envs.outputs.output_name }}.tar.gz
 
   macos-release:
     runs-on: macos-latest
@@ -64,7 +64,7 @@ jobs:
           date=$(date +%Y_%m_%d)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
           echo "date=$date" >> $GITHUB_OUTPUT
-          echo "output_name=mrtrix3-macos-$commit_sha-$date.tar.xz" >> $GITHUB_OUTPUT
+          echo "output_name=mrtrix3-macos-$commit_sha-$date" >> $GITHUB_OUTPUT
 
       - name: Install deps
         run: brew install numpy cmake qt eigen pkg-config fftw libpng ninja
@@ -73,13 +73,13 @@ jobs:
         run: |
           cd ./packaging/macos
           ./build ${{ github.event.inputs.branch }}
-          mv ./mrtrix3-macos-${{ github.event.inputs.branch }}.tar.xz ../../${{ steps.envs.outputs.output_name }}
+          mv ./mrtrix3-macos-${{ github.event.inputs.branch }}.tar.xz ../../${{ steps.envs.outputs.output_name }}.tar.xz
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.envs.outputs.output_name }}
-          path: ${{ steps.envs.outputs.output_name }}
+          path: ${{ steps.envs.outputs.output_name }}.tar.xz
 
   windows-release:
     runs-on: windows-latest
@@ -122,16 +122,16 @@ jobs:
           date=$(date +%Y_%m_%d)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
           echo "date=$date" >> $GITHUB_OUTPUT
-          echo "output_name=mrtrix3-windows-$commit_sha-$date.tar.zst" >> $GITHUB_OUTPUT
+          echo "output_name=mrtrix3-windows-$commit_sha-$date" >> $GITHUB_OUTPUT
 
       - name: Run build
         run: |
           cd packaging/mingw
           ./run.sh ${{ steps.envs.outputs.commit_sha }} mrtrix3
-          mv mingw*.tar.zst ../../../${{ steps.envs.outputs.output_name }}
+          mv mingw*.tar.zst ../../../${{ steps.envs.outputs.output_name }}.tar.zst
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.envs.outputs.output_name }}
-          path: ${{ steps.envs.outputs.output_name }}
+          path: ${{ steps.envs.outputs.output_name }}.tar.zst
