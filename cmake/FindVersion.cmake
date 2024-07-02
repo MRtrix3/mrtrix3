@@ -1,4 +1,4 @@
-if(GIT_EXECUTABLE)
+if(GIT_EXECUTABLE AND PROJECT_IS_TOP_LEVEL)
     message(VERBOSE "Git found: ${GIT_EXECUTABLE}")
     # Get tag
     execute_process(
@@ -31,7 +31,11 @@ endif()
 
 if(NOT MRTRIX_VERSION)
     set(MRTRIX_VERSION ${MRTRIX_BASE_VERSION})
-    message(STATUS "Failed to determine version from Git, using default base version: ${MRTRIX_BASE_VERSION}")
+    if(PROJECT_IS_TOP_LEVEL)
+        message(STATUS "Failed to determine version from Git, using default base version: ${MRTRIX_BASE_VERSION}")
+    else()
+        message(VERBOSE "MRtrix3 version is set to version: ${MRTRIX_BASE_VERSION}")
+    endif()
 endif()
 
 
