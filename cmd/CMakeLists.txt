@@ -10,7 +10,7 @@ if(MRTRIX_USE_PCH)
     add_executable(pch_cmd ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp)
     target_include_directories(pch_cmd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../core)
     find_package(Eigen3 REQUIRED)
-    target_link_libraries(pch_cmd PRIVATE Eigen3::Eigen mrtrix::common)
+    target_link_libraries(pch_cmd PRIVATE Eigen3::Eigen half::half mrtrix::common)
     target_precompile_headers(pch_cmd PRIVATE
         [["app.h"]]
         [["image.h"]]
