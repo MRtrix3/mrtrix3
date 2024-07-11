@@ -1,7 +1,5 @@
 include(FetchContent)
 
-set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/_deps)
-
 if(NOT ${MRTRIX_DEPENDENCIES_DIR} STREQUAL "")
     message(STATUS "Using local dependencies at ${MRTRIX_DEPENDENCIES_DIR}")
     set(MRTRIX_LOCAL_DEPENDENCIES ON)
