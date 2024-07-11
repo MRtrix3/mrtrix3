@@ -14,6 +14,7 @@ include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(MRTRIX_BASE_VERSION "${CMAKE_PROJECT_VERSION}")
+set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/_fetchcontent" CACHE PATH "Directory where fetched content is stored")
 
 option(MRTRIX_BUILD_GUI "Build the MRtrix3 GUI" ON)
 option(MRTRIX_USE_QT5 "Use Qt 5 to build" OFF)
