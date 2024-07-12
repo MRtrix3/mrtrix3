@@ -9,54 +9,43 @@ endif()
 
 # Eigen
 if(MRTRIX_LOCAL_DEPENDENCIES)
-    FetchContent_Declare(
-        eigen3
-        SOURCE_DIR ${MRTRIX_DEPENDENCIES_DIR}/eigen
-        UPDATE_DISCONNECTED ON
-    )
+    set(eigen_url ${MRTRIX_DEPENDENCIES_DIR}/eigen-3.4.0.tar.gz)
 else()
-    FetchContent_Declare(
-      eigen3
-      GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-      GIT_TAG 3.4.0
-      PATCH_COMMAND git apply --ignore-space-change --ignore-whitespace ${PROJECT_SOURCE_DIR}/thirdparty/eigen.patch
-      UPDATE_DISCONNECTED ON
-    )
+    set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz")
 endif()
 FetchContent_MakeAvailable(eigen3)
 
+FetchContent_Declare(
+    eigen3
+    DOWNLOAD_EXTRACT_TIMESTAMP ON
+    URL ${eigen_url}
+)
 
 # Json for Modern C++
 if(MRTRIX_LOCAL_DEPENDENCIES)
-    FetchContent_Declare(
-        json
-        SOURCE_DIR ${MRTRIX_DEPENDENCIES_DIR}/json
-        UPDATE_DISCONNECTED ON
-    )
+    set(json_url ${MRTRIX_DEPENDENCIES_DIR}/json.tar.xz)
 else()
-    FetchContent_Declare(json
-        DOWNLOAD_EXTRACT_TIMESTAMP ON
-        URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
-    )
+    set(json_url "https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz")
 endif()
+FetchContent_Declare(
+    json
+    DOWNLOAD_EXTRACT_TIMESTAMP ON
+    URL ${json_url}
+)
 FetchContent_MakeAvailable(json)
 
 
 # Half-precision floating-point library
 if(MRTRIX_LOCAL_DEPENDENCIES)
-    FetchContent_Declare(
-        half
-        SOURCE_DIR ${MRTRIX_DEPENDENCIES_DIR}/half
-        UPDATE_DISCONNECTED ON
-    )
+    set(half_url ${MRTRIX_DEPENDENCIES_DIR}/half-2.1.0.zip)
 else()
-    FetchContent_Declare(
-        half
-        DOWNLOAD_EXTRACT_TIMESTAMP ON
-        URL "https://sourceforge.net/projects/half/files/half/2.1.0/half-2.1.0.zip/download"
-    )
+    set(half_url "https://sourceforge.net/projects/half/files/half/2.1.0/half-2.1.0.zip/download")
 endif()
-
+FetchContent_Declare(
+    half
+    DOWNLOAD_EXTRACT_TIMESTAMP ON
+    URL ${half_url}
+)
 FetchContent_MakeAvailable(half)
 
 add_library(half INTERFACE)
