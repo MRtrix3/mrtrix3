@@ -25,6 +25,13 @@ option(MRTRIX_USE_PCH "Use precompiled headers" ON)
 option(MRTRIX_PYTHON_SOFTLINK "Build directory softlink to Python source code rather than copying" ON)
 option(MRTRIX_BUILD_NON_CORE_STATIC "Build MRtrix's non-core code as a static library" OFF)
 
+set(MRTRIX_DEPENDENCIES_DIR "" CACHE PATH
+    "An optional local directory containing thirdparty dependencies:\n \
+    - Eigen3 https://gitlab.com/libeigen/eigen\n \
+    - Json for Modern C++ https://github.com/nlohmann/json\n \
+    - Half https://half.sourceforge.net/\n"
+)
+
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)
         list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
@@ -68,6 +75,7 @@ include(LinkerSetup)
 include(FindFFTW)
 include(CompilerCache)
 include(ECMEnableSanitizers)
+include(Dependencies)
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     include(MacOSBundle)
 endif()
