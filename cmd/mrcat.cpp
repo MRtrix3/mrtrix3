@@ -18,7 +18,6 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 
 using namespace MR;
