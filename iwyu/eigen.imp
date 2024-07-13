@@ -1,0 +1,11 @@
+[
+    { include: ["@<Eigen/src/Core/.*>", "private", "<Eigen/Core>", "public"] },
+    { include: ["@<Eigen/src/Core/.*>", "private", "<Eigen/Core>", "public"] },
+    { include: ["@<Eigen/src/Dense/.*>", "private", "<Eigen/Dense>", "public"] },
+    { include: ["@<Eigen/src/Eigen/.*>", "private", "<Eigen/Eigen>", "public"] },
+    { include: ["@<Eigen/src/Eigenvalues/.*>", "private", "<Eigen/Eigenvalues>", "public"] },
+    { include: ["@<Eigen/src/Geometry/.*>", "private", "<Eigen/Geometry>", "public"] },
+    { include: ["@<Eigen/src/Jacobi/.*>", "private", "<Eigen/Jacobi>", "public"] },
+
+    { include: ["@\"src/Core/.*\"", "private", "<Eigen/Dense>", "public"] }
+]
