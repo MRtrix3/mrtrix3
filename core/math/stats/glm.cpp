@@ -24,7 +24,7 @@
 #include "misc/bitset.h"
 #include "thread_queue.h"
 
-#define MRTRIX_USE_ZSTATISTIC_LOOKUP
+// #define MRTRIX_USE_ZSTATISTIC_LOOKUP
 
 // #define GLM_ALL_STATS_DEBUG
 
