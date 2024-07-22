@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify operation of command when tensor fit is performed using a purely ordinary least squares fit
+# This involves both:
+#   - The "-ols" option to use ordinary least squares rather than weighted least squares
+#   - Using "-iter 0" to disable iterative reweighting of samples in the fit
+# Ensure that the output matches that generated using a prior software version
+dwi2tensor dwi.mif -mask mask.mif -ols -iter 0 - | \
+testing_diff_image - dwi2tensor/out_ols_it0.mif -frac 1e-5

@@ -337,7 +337,7 @@ void run() {
   const std::string &output_path = argument.back();
 
   auto opt = get_options("axis");
-  if (opt.size()) {
+  if (!opt.empty()) {
 
     if (num_inputs != 1)
       throw Exception("Option -axis only applies if a single input image is used");
@@ -426,7 +426,7 @@ void run() {
     header.datatype() = DataType::from_command_line(DataType::Float32);
 
     // Wipe any excess unary-dimensional axes
-    if (!get_options("keep_unary_axes").size()) {
+    if (get_options("keep_unary_axes").empty()) {
       while (header.size(header.ndim() - 1) == 1)
         header.ndim() = header.ndim() - 1;
     }

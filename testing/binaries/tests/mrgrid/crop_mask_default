@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify the "crop" operation when a mask is used to determine the extent of cropping
+# By default, the voxels present in the mask do not determine the spatial extent;
+#   rather, if available, an additional voxel is included at each permiter,
+#   such that interpolation can still be performed
+#   within the volumes of those voxels included within the mask
+mrgrid noise.mif crop -mask mrcrop/mask.mif - | \
+testing_diff_image - mrcrop/out.mif

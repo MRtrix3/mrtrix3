@@ -1,0 +1,18 @@
+#!/bin/bash
+# Run the command specifying a cluster-forming threshold,
+#   such that cluster enhancement (and null distribution) will be based on cluster sizes
+#   rather than the TFCE expression,
+#   and make sure that these sizes match those generated using a prior software version
+rm -rf tmp/
+mkdir tmp/
+
+mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt mrclusterstats/contrast.txt SIFT_phantom/mask.mif tmp/ \
+-threshold 3.5
+
+testing_diff_image tmp/clustersize.mif mrclusterstats/threshold/cluster_sizes.mif
+
+# Also make sure that the entirety of the bundle where a synthetic effect was added
+#   comes out as statistically significant
+mrcalc tmp/fwe_1mpvalue.mif 0.95 -gt - | \
+testing_diff_image - SIFT_phantom/upper.mif
+

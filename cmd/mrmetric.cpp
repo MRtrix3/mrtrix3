@@ -38,7 +38,9 @@ using namespace MR;
 using namespace App;
 
 const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", NULL};
+#define DEFAULT_INTERP 1 // linear
 const char *space_choices[] = {"voxel", "image1", "image2", "average", NULL};
+#define DEFAULT_SPACE 0 // voxel
 
 template <class ValueType>
 inline void
@@ -59,7 +61,7 @@ void reslice(size_t interp,
              ImageType2 &output,
              const TransformType &trafo = Adapter::NoTransform,
              const OversampleType &oversample = Adapter::AutoOverSample,
-             const ValueType out_of_bounds_value = 0.f) {
+             const ValueType out_of_bounds_value = ValueType(0)) {
   switch (interp) {
   case 0:
     Filter::reslice<Interp::Nearest>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
@@ -185,40 +187,40 @@ void usage() {
   + Argument ("image2", "the second input image.").type_image_in ();
 
   OPTIONS
-  + Option ("space", "Image \"space\" in which the metric will be computed."
+  + Option ("space", std::string("Image \"space\" in which the metric will be computed.") +
                      " Options are:"
-                     " voxel (default): per voxel;"
+                     " voxel: per voxel;"
                      " image1: scanner space of image 1;"
                      " image2: scanner space of image 2;"
                      " average: scanner space of the average affine transformation"
-                     " of image 1 and 2")
-    +   Argument ("iteration method").type_choice (space_choices)
+                     " of image 1 and 2;"
+                     " default: " + space_choices[DEFAULT_SPACE] + ".")
+    + Argument ("iteration method").type_choice (space_choices)
 
-    + Option ("interp",
-        "set the interpolation method to use when reslicing"
-        " (choices: nearest, linear, cubic, sinc."
-        " Default: linear).")
+  + Option ("interp", std::string("set the interpolation method to use when reslicing") +
+                      " (choices: nearest, linear, cubic, sinc."
+                      " Default: " + interp_choices[DEFAULT_INTERP] + ").")
     + Argument ("method").type_choice (interp_choices)
 
-    + Option ("metric",
-        "define the dissimilarity metric used to calculate the cost."
-        " Choices:"
-        " diff (squared differences);"
-        " cc (non-normalised negative cross correlation aka negative cross covariance)."
-        " Default: diff)."
-        " cc is only implemented for -space average and -interp linear and cubic.")
+  + Option ("metric",
+            "define the dissimilarity metric used to calculate the cost."
+            " Choices:"
+            " diff (squared differences);"
+            " cc (non-normalised negative cross correlation aka negative cross covariance)."
+            " Default: diff)."
+            " cc is only implemented for -space average and -interp linear and cubic.")
     + Argument ("method").type_choice (metric_choices)
 
-    + Option ("mask1", "mask for image 1")
+  + Option ("mask1", "mask for image 1")
     + Argument ("image").type_image_in ()
 
-    + Option ("mask2", "mask for image 2")
+  + Option ("mask2", "mask for image 2")
     + Argument ("image").type_image_in ()
 
-    + Option ("nonormalisation", "do not normalise the dissimilarity metric"
-                                 " to the number of voxels.")
+  + Option ("nonormalisation", "do not normalise the dissimilarity metric"
+                               " to the number of voxels.")
 
-    + Option ("overlap", "output number of voxels that were used.");
+  + Option ("overlap", "output number of voxels that were used.");
 
 }
 // clang-format on
@@ -227,19 +229,12 @@ using value_type = double;
 using MaskType = Image<bool>;
 
 void run() {
-  int space = 0; // voxel
-  auto opt = get_options("space");
-  if (opt.size())
-    space = opt[0][0];
-
-  int interp = 1; // linear
-  opt = get_options("interp");
-  if (opt.size())
-    interp = opt[0][0];
+  const int space = get_option_value("space", DEFAULT_SPACE);
+  const int interp = get_option_value("interp", DEFAULT_INTERP);
 
   MetricType metric_type = MetricType::MeanSquared;
-  opt = get_options("metric");
-  if (opt.size()) {
+  auto opt = get_options("metric");
+  if (!opt.empty()) {
     if (int(opt[0][0]) == 1) { // CC
       if (space != 3)
         throw Exception("CC metric only implemented for use in average space");
@@ -287,12 +282,10 @@ void run() {
       throw Exception("mask has to be 3D");
   }
 
-  bool nonormalisation = false;
-  if (get_options("nonormalisation").size())
-    nonormalisation = true;
+  const bool normalisation = get_options("nonormalisation").empty();
   ssize_t n_voxels = input1.size(0) * input1.size(1) * input1.size(2);
 
-  value_type out_of_bounds_value = 0.0;
+  const value_type out_of_bounds_value = 0.0;
 
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> sos = Eigen::Matrix<value_type, Eigen::Dynamic, 1>::Zero(volumes, 1);
   if (space == 0) {
@@ -488,11 +481,11 @@ void run() {
   if (n_voxels == 0)
     WARN("number of overlapping voxels is zero");
 
-  if (!nonormalisation)
+  if (normalisation)
     sos.array() /= static_cast<value_type>(n_voxels);
   std::cout << str(sos.transpose());
 
-  if (get_options("overlap").size())
+  if (!get_options("overlap").empty())
     std::cout << " " << str(n_voxels);
   std::cout << std::endl;
 }

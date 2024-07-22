@@ -65,16 +65,9 @@ std::string usage_syntax(int format);
 //! vector of strings to hold more comprehensive command description
 class Description : public std::vector<const char *> {
 public:
-  Description &operator+(const char *text) {
-    push_back(text);
-    return *this;
-  }
+  Description &operator+(const char *text);
 
-  Description &operator+(const char *const text[]) {
-    for (const char *const *p = text; *p; ++p)
-      push_back(*p);
-    return *this;
-  }
+  Description &operator+(const char *const text[]);
 
   std::string syntax(int format) const;
 };
@@ -82,8 +75,7 @@ public:
 //! object for storing a single example command usage
 class Example {
 public:
-  Example(const std::string &title, const std::string &code, const std::string &description)
-      : title(title), code(code), description(description) {}
+  Example(const std::string &title, const std::string &code, const std::string &description);
   const std::string title, code, description;
 
   operator std::string() const;
@@ -93,10 +85,7 @@ public:
 //! a class to hold the list of Example's
 class ExampleList : public std::vector<Example> {
 public:
-  ExampleList &operator+(const Example &example) {
-    push_back(example);
-    return *this;
-  }
+  ExampleList &operator+(const Example &example);
 
   std::string syntax(int format) const;
 };
@@ -104,10 +93,7 @@ public:
 //! a class to hold the list of Argument's
 class ArgumentList : public std::vector<Argument> {
 public:
-  ArgumentList &operator+(const Argument &argument) {
-    push_back(argument);
-    return *this;
-  }
+  ArgumentList &operator+(const Argument &argument);
 
   std::string syntax(int format) const;
 };
@@ -115,38 +101,18 @@ public:
 //! a class to hold the list of option groups
 class OptionList : public std::vector<OptionGroup> {
 public:
-  OptionList &operator+(const OptionGroup &option_group) {
-    push_back(option_group);
-    return *this;
-  }
+  OptionList &operator+(const OptionGroup &option_group);
 
-  OptionList &operator+(const Option &option) {
-    back() + option;
-    return *this;
-  }
+  OptionList &operator+(const Option &option);
 
-  OptionList &operator+(const Argument &argument) {
-    back() + argument;
-    return *this;
-  }
+  OptionList &operator+(const Argument &argument);
 
-  OptionGroup &back() {
-    if (empty())
-      push_back(OptionGroup());
-    return std::vector<OptionGroup>::back();
-  }
+  OptionGroup &back();
 
   std::string syntax(int format) const;
 };
 
-inline void check_overwrite(const std::string &name) {
-  if (Path::exists(name) && !overwrite_files) {
-    if (check_overwrite_files_func)
-      check_overwrite_files_func(name);
-    else
-      throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
-  }
-}
+void check_overwrite(const std::string &name);
 
 //! initialise MRtrix and parse command-line arguments
 /*! this function must be called from within main(), immediately after the
@@ -182,35 +148,11 @@ public:
   uint64_t as_uint() const { return uint64_t(as_int()); }
   default_type as_float() const;
 
-  std::vector<int32_t> as_sequence_int() const {
-    assert(arg->type == IntSeq);
-    try {
-      return parse_ints<int32_t>(p);
-    } catch (Exception &e) {
-      error(e);
-    }
-    return std::vector<int32_t>();
-  }
+  std::vector<int32_t> as_sequence_int() const;
 
-  std::vector<uint32_t> as_sequence_uint() const {
-    assert(arg->type == IntSeq);
-    try {
-      return parse_ints<uint32_t>(p);
-    } catch (Exception &e) {
-      error(e);
-    }
-    return std::vector<uint32_t>();
-  }
+  std::vector<uint32_t> as_sequence_uint() const;
 
-  std::vector<default_type> as_sequence_float() const {
-    assert(arg->type == FloatSeq);
-    try {
-      return parse_floats(p);
-    } catch (Exception &e) {
-      error(e);
-    }
-    return std::vector<default_type>();
-  }
+  std::vector<default_type> as_sequence_float() const;
 
   operator bool() const { return as_bool(); }
   operator int() const { return as_int(); }
@@ -232,20 +174,9 @@ private:
   const Argument *arg;
   const char *p;
 
-  ParsedArgument(const Option *option, const Argument *argument, const char *text)
-      : opt(option), arg(argument), p(text) {
-    assert(text);
-  }
+  ParsedArgument(const Option *option, const Argument *argument, const char *text);
 
-  void error(Exception &e) const {
-    std::string msg("error parsing token \"");
-    msg += p;
-    if (opt)
-      msg += std::string("\" for option \"") + opt->id + "\"";
-    else
-      msg += std::string("\" for argument \"") + arg->id + "\"";
-    throw Exception(e, msg);
-  }
+  void error(Exception &e) const;
 
   friend class ParsedOption;
   friend class Options;
@@ -259,40 +190,17 @@ private:
  * returned by App::get_options(). */
 class ParsedOption {
 public:
-  ParsedOption(const Option *option, const char *const *arguments) : opt(option), args(arguments) {
-    for (size_t i = 0; i != option->size(); ++i) {
-      const char *p = arguments[i];
-      if (!consume_dash(p))
-        continue;
-      if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
-        continue;
-      if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
-          (*option)[i].type == FloatSeq || (*option)[i].type == Various)
-        continue;
-      WARN(std::string("Value \"") + arguments[i] + "\" is being used as " +
-           ((option->size() == 1) ? "the expected argument "
-                                  : ("one of the " + str(option->size()) + " expected arguments ")) +
-           "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
-           "the requisite input" + ((option->size() == 1) ? " " : "s ") + "to command-line option \"-" + option->id +
-           "\" may have been erroneously omitted, which may cause " + "other command-line parsing errors");
-    }
-  }
+  ParsedOption(const Option *option, const char *const *arguments);
 
   //! reference to the corresponding Option entry in the OPTIONS section
   const Option *opt;
   //! pointer into \c argv corresponding to the option's first argument
   const char *const *args;
 
-  const ParsedArgument operator[](size_t num) const {
-    assert(num < opt->size());
-    return ParsedArgument(opt, &(*opt)[num], args[num]);
-  }
+  ParsedArgument operator[](size_t num) const;
 
   //! check whether this option matches the name supplied
-  bool operator==(const char *match) const {
-    std::string name = lowercase(match);
-    return name == opt->id;
-  }
+  bool operator==(const char *match) const;
 };
 
 //! the list of arguments parsed from the command-line
@@ -438,16 +346,9 @@ template <typename T> inline T get_option_value(const std::string &name, const T
 }
 
 //! convenience function provided mostly to ease writing Exception strings
-inline std::string operator+(const char *left, const App::ParsedArgument &right) {
-  std::string retval(left);
-  retval += std::string(right);
-  return retval;
-}
+std::string operator+(const char *left, const App::ParsedArgument &right);
 
-inline std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument &arg) {
-  stream << std::string(arg);
-  return stream;
-}
+std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument &arg);
 
 } // namespace MR::App
 

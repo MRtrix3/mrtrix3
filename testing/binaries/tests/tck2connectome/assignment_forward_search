@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify operation of command when an alternative mechanism for assigning streamlines to parcels is used
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp.csv -force \
+-assignment_forward_search 5
+
+testing_diff_matrix tmp.csv tck2connectome/out.csv

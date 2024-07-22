@@ -25,7 +25,7 @@ namespace MR::Surface::Filter {
 
 void Base::operator()(const MeshMulti &in, MeshMulti &out) const {
   std::unique_ptr<ProgressBar> progress;
-  if (message.size())
+  if (!message.empty())
     progress.reset(new ProgressBar(message, in.size()));
   out.assign(in.size(), Mesh());
 

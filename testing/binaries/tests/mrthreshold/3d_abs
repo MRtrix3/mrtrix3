@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify command operation when the "-abs" command-line is used
+#   to manually specify the binarisation threshold,
+#   rather than internally automatically computing a threshold
+mrthreshold dwi_mean.mif - -abs 100 | \
+testing_diff_image - mrthreshold/3d_abs100.mif

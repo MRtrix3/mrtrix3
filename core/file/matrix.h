@@ -179,7 +179,7 @@ template <class VectorType> inline transform_type load_transform(const std::stri
         elements = split(strip(line.substr(key.size())), " ,;\t", true);
       else if (strncmp(line.c_str(), key_legacy.c_str(), key_legacy.size()) == 0)
         elements = split(strip(line.substr(key_legacy.size())), " ,;\t", true);
-      if (elements.size()) {
+      if (!elements.empty()) {
         if (elements.size() != 3)
           throw Exception("could not parse centre in transformation file " + filename + ": " +
                           strip(line.substr(key.size())));
@@ -188,8 +188,8 @@ template <class VectorType> inline transform_type load_transform(const std::stri
           centre[1] = to<default_type>(elements[1]);
           centre[2] = to<default_type>(elements[2]);
         } catch (...) {
-          throw Exception("File \"" + filename +
-                          "\" contains non-numerical data in centre: " + strip(line.substr(key.size())));
+          throw Exception("File \"" + filename + "\" contains non-numerical data in centre: " + //
+                          strip(line.substr(key.size())));
         }
         break;
       }

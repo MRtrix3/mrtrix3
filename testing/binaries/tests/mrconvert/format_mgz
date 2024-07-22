@@ -1,0 +1,5 @@
+#!/bin/bash
+# Convert an image into compressed MGZ format,
+#   and ensure that it is subsequently interpreted as being identical to the original
+mrconvert mrconvert/in.mif tmp.mgz -force
+testing_diff_image tmp.mgz mrconvert/in.mif

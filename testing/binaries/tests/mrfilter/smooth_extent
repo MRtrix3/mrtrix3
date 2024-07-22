@@ -1,0 +1,5 @@
+#!/bin/bash
+# Evaluate use of the "smooth" filter when the extent of the filter is modified
+# Outcome is compared against that generated using a prior software version
+mrfilter dwi.mif smooth -stdev 1.4 -extent 5 - | \
+testing_diff_image - mrfilter/out5.mif -frac 1e-5

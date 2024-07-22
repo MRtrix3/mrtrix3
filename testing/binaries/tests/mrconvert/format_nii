@@ -1,0 +1,5 @@
+#!/bin/bash
+# Ensure that an image can be written to NIfTI format,
+#   and that the resulting image can then be read and interpreted as being identical to the original
+mrconvert mrconvert/in.mif tmp.nii -force
+testing_diff_image tmp.nii mrconvert/in.mif

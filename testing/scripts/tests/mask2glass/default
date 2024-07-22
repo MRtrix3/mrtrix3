@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation of the "mask2glass" command
+#   under default operation
+mask2glass BIDS/sub-01/dwi/sub-01_brainmask.nii.gz tmp.mif -force
+testing_diff_image tmp.mif mask2glass/out.mif.gz

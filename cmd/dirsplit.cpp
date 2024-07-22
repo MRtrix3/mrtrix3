@@ -169,7 +169,7 @@ void run() {
     best = shared.get_best_subset();
   }
 
-  const bool cartesian = get_options("cartesian").size();
+  const bool cartesian = !get_options("cartesian").empty();
   for (size_t i = 0; i < best.size(); ++i) {
     Eigen::MatrixXd output(best[i].size(), 3);
     for (size_t n = 0; n < best[i].size(); ++n)

@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#define GUI_APP_H
 
 #include <QApplication>
 #if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)

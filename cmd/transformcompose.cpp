@@ -133,7 +133,7 @@ void run() {
   }
   auto opt = get_options("template");
 
-  if (opt.size()) {
+  if (!opt.empty()) {
     template_header.reset(new Header(Header::open(opt[0][0])));
     // no template is supplied and there are input warps, then make sure the last transform in the list is a warp
   } else if (template_header) {

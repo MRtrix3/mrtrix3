@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify operation of the "-num_points" option
+tckresample tracks.tck tmp.tck -num_points 10 -force
+testing_diff_tck tmp.tck tckresample/numpoints.tck -distance 1e-3

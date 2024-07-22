@@ -119,3 +119,8 @@ cd8a6f1c2d0debcf3a6de185f8b92fc0be3e1401
 #Author: MRtrixBot <gitbot@mrtrix.org>
 #Date:   Fri, 5 Apr 2024 14:06:00 +0100
 #    Replace include guards with #pragma once
+
+9b3de4d4defc3c7572bcd3ab9f214b72ce91abf3
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Sun Jun 9 20:33:33 2024 +1000
+#    population_template: Split source code between files

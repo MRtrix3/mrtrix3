@@ -57,12 +57,12 @@ void usage() {
 // clang-format on
 
 void run() {
-  const bool displacement = get_options("displacement").size();
+  const bool displacement = !get_options("displacement").empty();
   Header header_in(Header::open(argument[0]));
   Registration::Warp::check_warp(header_in);
   Header header_out(header_in);
   auto opt = get_options("template");
-  if (opt.size()) {
+  if (!opt.empty()) {
     header_out = Header::open(opt[0][0]);
     if (displacement) {
       header_out.ndim() = 3;

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify command operation when the -allvolumes command-line flag is specified;
+#   this results in determination of a single threshold from data across all volumes
+#   that is then applied homogeneously to the data across all volumes
+mrthreshold dwi.mif - -allvolumes | \
+testing_diff_image - mrthreshold/4d_default_allvolumes.mif

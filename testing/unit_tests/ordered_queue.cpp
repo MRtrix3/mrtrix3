@@ -22,7 +22,7 @@
 using namespace MR;
 using namespace App;
 
-size_t num_items;
+std::atomic<size_t> num_items;
 
 #define START(msg)                                                                                                     \
   {                                                                                                                    \

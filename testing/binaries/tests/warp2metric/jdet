@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test calculation of the Jacobian determinant
+# Outcome is compared to that calculated using a prior software version
+warp2metric fod_warp.mif -jdet - | \
+testing_diff_image - warp2metric/jdet.mif -frac 0.001

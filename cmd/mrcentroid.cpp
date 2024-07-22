@@ -51,7 +51,7 @@ void run() {
 
   Image<bool> mask;
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(image, mask);
   }
@@ -73,7 +73,7 @@ void run() {
   }
 
   com /= mass;
-  if (!get_options("voxelspace").size())
+  if (get_options("voxelspace").empty())
     com = image.transform() * com;
 
   std::cout << com.transpose();

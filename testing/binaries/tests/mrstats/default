@@ -1,0 +1,8 @@
+#!/bin/bash
+# Operation of command when exporting all metrics of interest to stdout,
+#   but default operation otherwise
+# Outcomes compared against those claculated using a prior version of the software
+mrstats dwi.mif \
+-output mean -output median -output std -output std_rv -output min -output max -output count > tmp.txt
+
+testing_diff_matrix tmp.txt mrstats/out.txt -frac 1e-5

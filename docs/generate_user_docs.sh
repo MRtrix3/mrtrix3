@@ -42,7 +42,7 @@ function prepend {
 # Generating documentation for all commands
 
 mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
-export PATH=$build_dir/bin:${mrtrix_root}/python/bin:"$PATH"
+export PATH=$build_dir/bin:$PATH
 dirpath=${mrtrix_root}'/docs/reference/commands'
 export LC_ALL=C
 
@@ -82,8 +82,8 @@ cmdlist=""
 for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
-for n in `find "${mrtrix_root}"/python/bin/ -type f -print0 | xargs -0 grep -l "import mrtrix3"`; do
-  cmdlist=$cmdlist$'\n'`basename $n`
+for n in `ls "${mrtrix_root}"/python/mrtrix3/commands/ --ignore=__init__.py* --ignore=CMakeLists.txt`; do
+  cmdlist=$cmdlist$'\n'`basename $n .py`
 done
 
 for n in `echo "$cmdlist" | sort`; do

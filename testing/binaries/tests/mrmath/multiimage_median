@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify "median" operator, when applied across multiple input images
+# The output is compared against that generated using a prior software version
+rm -f tmp-*.mif
+mrconvert dwi.mif tmp-[].mif
+
+mrmath tmp-??.mif median - | \
+testing_diff_image - mrmath/out3.mif -frac 1e-5

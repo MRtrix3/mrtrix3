@@ -65,7 +65,7 @@ void run() {
   }
 
   auto opt = get_options("transform");
-  if (opt.size()) {
+  if (!opt.empty()) {
     auto H = Header::open(opt[0][1]);
     auto transform = std::make_unique<Surface::Filter::VertexTransform>(H);
     switch (int(opt[0][0])) {
@@ -94,7 +94,7 @@ void run() {
 
   // Create the output file
   if (meshes.size() == 1)
-    meshes[0].save(argument[1], get_options("binary").size());
+    meshes[0].save(argument[1], !get_options("binary").empty());
   else
     meshes.save(argument[1]);
 }

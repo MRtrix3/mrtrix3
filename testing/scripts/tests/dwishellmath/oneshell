@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that if the input DWI series consists of just a single b-value,
+#   the script still completes
+dwiextract BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp-in.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-shells 3000
+
+dwishellmath tmp-in.mif mean tmp-out.mif -force

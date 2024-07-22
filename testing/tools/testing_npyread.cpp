@@ -140,7 +140,7 @@ void run() {
   size_t wrong_endianness_count = 0;
   size_t advanced_boolean_count = 0;
   std::string entry;
-  while ((entry = dir.read_name()).size()) {
+  while (!(entry = dir.read_name()).empty()) {
 
     // TODO Do two reads:
     // - One with type tailored to what is known about the input file
@@ -184,7 +184,7 @@ void run() {
     CONSOLE(str(wrong_endianness_count) + " files skipped from advanced read due to possessing mismatched endianness");
     CONSOLE(str(advanced_boolean_count) +
             " files skipped from advanced read due to numpy not exporting packed boolean data");
-    if (errors_basic.size() || errors_advanced.size())
+    if (!errors_basic.empty() || !errors_advanced.empty())
       throw Exception("Errors on basic read in " + str(errors_basic.size()) + " files & advanced read in " +
                       str(errors_advanced.size()) +
                       " files: "

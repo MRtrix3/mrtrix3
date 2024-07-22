@@ -1,0 +1,6 @@
+#!/bin/bash
+# Execution of the "median" filter,
+#   specifying an _anisotropic_ filter kernel shape
+# Outcome is compared against that generated using a prior software version
+mrfilter dwi.mif median -extent 5,3,1 - | \
+testing_diff_image - mrfilter/out7.mif -frac 1e-5

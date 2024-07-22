@@ -132,7 +132,7 @@ void run() {
 
   // If the spine segment option has been provided, add this retrospectively
   auto opt = get_options("spine");
-  if (opt.size()) {
+  if (!opt.empty()) {
 
     if (duplicates)
       throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" appears multiple times in output LUT");

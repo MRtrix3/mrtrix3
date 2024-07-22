@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation of command when a user-specified mask is provided
+# Ensure that output matches that generated using a prior software version
+dwidenoise dwi.mif -mask mask.mif - | \
+testing_diff_image - dwidenoise/masked.mif -voxel 2e-4

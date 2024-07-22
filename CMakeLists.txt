@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET 11.00 CACHE STRING "")
 project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    message(WARNING "It is recommended to use the Ninja generator to build MRtrix3. "
+                    "To use it, run cmake with -G Ninja or set the CMAKE_GENERATOR "
+                    "environment variable to Ninja.")
+endif()
 
 include(GNUInstallDirs)
 
@@ -14,6 +21,9 @@ option(MRTRIX_WARNINGS_AS_ERRORS "Compiler warnings result in compilation errors
 option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
 option(MRTRIX_STRIP_CONDA "Strip ananconda/mininconda from PATH to avoid conflicts" ON)
+option(MRTRIX_USE_PCH "Use precompiled headers" ON)
+option(MRTRIX_PYTHON_SOFTLINK "Build directory softlink to Python source code rather than copying" ON)
+option(MRTRIX_BUILD_NON_CORE_STATIC "Build MRtrix's non-core code as a static library" OFF)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)
@@ -58,6 +68,9 @@ include(LinkerSetup)
 include(FindFFTW)
 include(CompilerCache)
 include(ECMEnableSanitizers)
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    include(MacOSBundle)
+endif()
 
 use_compiler_cache()
 
@@ -68,6 +81,11 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE
         "and then run `pre-commit install` from the ${CMAKE_CURRENT_SOURCE_DIR} directory.")
 endif()
 
+
+# Allow compilation of big object of files in debug mode on MINGW
+if(MINGW AND CMAKE_BUILD_TYPE MATCHES "Debug")
+    add_compile_options(-Wa,-mbig-obj)
+endif()
 
 add_compile_definitions(
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"

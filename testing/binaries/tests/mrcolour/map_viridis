@@ -1,0 +1,5 @@
+#!/bin/bash
+# Validate defulat operation with the "viridis" colourmap
+#   against a result generated with a prior software version
+mrcolour dwi_mean.mif viridis - | \
+testing_diff_image - mrcolour/viridis.mif -abs 1e-5

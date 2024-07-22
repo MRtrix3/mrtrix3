@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify command operation when instructed to select some fixed number of voxels
+#   for which the intensities are greater than all other voxels
+mrthreshold dwi_mean.mif - -top 20 | \
+testing_diff_image - mrthreshold/3d_top20.mif

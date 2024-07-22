@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify "5ttgen hsvs" operation when the segmentation of hippocampi and thalami
+#   are explicitly requested to be pulled from the FreeSurfer aseg image
+5ttgen hsvs freesurfer/sub-01 tmp.mif -hippocampi aseg -thalami aseg -force
+testing_diff_header tmp.mif  5ttgen/hsvs/aseg.mif.gz

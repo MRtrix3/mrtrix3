@@ -1,0 +1,6 @@
+#!/bin/bash
+# Evaluate command when input set of directions along which to sample amplitudes
+#   is in fact a single-shell gradient table
+# Output is compared to that generated using a prior software version
+sh2amp amp2sh/out.mif sh2amp/grad.txt - | \
+testing_diff_image - sh2amp/out_grad.mif -voxel 1e-5

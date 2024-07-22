@@ -64,7 +64,7 @@ inline uint16_t read_hex(const std::string &m) {
 
 void run() {
   auto opt = get_options("tag");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::istringstream hex;
 
     std::vector<Tag> tags(opt.size());
@@ -86,9 +86,9 @@ void run() {
 
   File::Dicom::QuickScan reader;
 
-  const bool all = get_options("all").size();
-  const bool csa = get_options("csa").size();
-  const bool phoenix = get_options("phoenix").size();
+  const bool all = !get_options("all").empty();
+  const bool csa = !get_options("csa").empty();
+  const bool phoenix = !get_options("phoenix").empty();
 
   if (all)
     print(File::Dicom::Element::print_header());

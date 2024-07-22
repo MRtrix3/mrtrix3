@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify operation of the command
+#   when filesystem paths include whitespace characters
+rm -rf "tmp in/"
+mkdir "tmp in/"
+
+touch "tmp in/not a tempfile.txt"
+touch "tmp in/mrtrix-tmp-ABCDEF.mif"
+mkdir "tmp in/not a scratchdir/"
+mkdir "tmp in/command-tmp-ABCDEF/"
+
+mrtrix_cleanup "tmp in/"
+ITEMCOUNT=$(ls "tmp in/" | wc)
+if [ "$ITEMCOUNT" -neq "2" ]; then
+    exit 1
+fi

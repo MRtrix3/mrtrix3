@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify command operation when used to select 10% of voxels that have the lowest intensities
+mrthreshold dwi_mean.mif - -percentile 10 -comparison lt | \
+testing_diff_image - mrthreshold/3d_bottom10perc.mif

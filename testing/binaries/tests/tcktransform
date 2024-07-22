@@ -1,1 +1,0 @@
-tcktransform tracks.tck unit_warp.mif tmp.tck -force && testing_diff_tck tmp.tck tcktransform/out.tck -distance 1e-4

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify command operation when the output is binarised in such a way
+#   that it contains the 10% highest intensity voxels
+mrthreshold dwi_mean.mif - -percentile 90 | \
+testing_diff_image - mrthreshold/3d_top10perc.mif

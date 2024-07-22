@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify "average" operation
+# Averaging of two affine transformations should be independent of
+#   the order in which they are specified;
+#   therefore test that the result is not only consistent with that
+#   generated using a prior software version,
+#   but also with itself when the order is reversed.
+transformcalc moving2templateFSL.txt transformcalc/out.txt average tmp.txt -force
+testing_diff_matrix tmp.txt transformcalc/out2.txt -abs 1e-3
+
+transformcalc transformcalc/out.txt moving2templateFSL.txt average tmp2.txt -force
+testing_diff_matrix tmp.txt tmp2.txt -abs 1e-3

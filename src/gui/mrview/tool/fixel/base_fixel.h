@@ -183,7 +183,7 @@ public:
     combo_box.setCurrentIndex(threshold_type_index);
   }
 
-  bool has_values() const { return fixel_values.size(); }
+  bool has_values() const { return !fixel_values.empty(); }
 
 protected:
   struct IntPointHasher {

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verification of default operation of command,
+#   where voxel grid is determined based on a user-specified voxel size
+#   with no accompanying template image
+#   (position of voxel grid is determined after calculating the spatial extent of the tractogram)
+# Output is compared to that generated using a prior software version;
+#   it is permitted to vary by as much as one streamline per voxel
+#   just in case of differences in precision / rounding between platforms
+tckmap tracks.tck -vox 1 - | \
+testing_diff_image - tckmap/tdi_vox1.mif.gz -abs 1.5

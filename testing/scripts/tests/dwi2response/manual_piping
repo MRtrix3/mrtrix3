@@ -1,0 +1,22 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response manual"
+#   where image pipes are used
+
+# Input DWI is piped
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-strides 0,0,0,1 \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+dwi2response manual - dwi2response/fa/default.mif.gz tmp.txt -force
+
+testing_diff_matrix tmp.txt dwi2response/manual/default.txt -abs 1e-2
+
+# Input directions image is piped
+dwi2tensor BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+tensor2metric - -vector - | \
+dwi2response manual BIDS/sub-01/dwi/sub-01_dwi.nii.gz dwi2response/fa/default.mif.gz tmp.txt -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+ -dirs -
+
+testing_diff_matrix tmp.txt dwi2response/manual/dirs.txt -abs 1e-2

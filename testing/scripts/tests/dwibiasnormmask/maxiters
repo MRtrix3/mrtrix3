@@ -1,0 +1,15 @@
+#!/bin/bash
+# Ensure correct execution of dwibiasnormmask command
+#   when it is forced to perform exactly 3 iterations
+dwibiasnormmask BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif tmpmask.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-max_iters 3 -dice 1.0 \
+-output_bias tmpbias.mif \
+-output_scale tmpscale.txt \
+-output_tissuesum tmptissuesum.mif
+
+testing_diff_image tmpout.mif dwibiasnormmask/3iters_out.mif.gz -frac 1e-5
+testing_diff_image tmpmask.mif dwibiasnormmask/3iters_mask.mif.gz
+testing_diff_image tmpbias.mif dwibiasnormmask/3iters_bias.mif.gz -frac 1e-5
+testing_diff_matrix tmpscale.txt dwibiasnormmask/3iters_scale.txt -frac 1e-5
+testing_diff_image tmptissuesum.mif dwibiasnormmask/3iters_tissuesum.mif.gz -abs 1e-5

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify operation of the "-endpoints" option
+tckresample tracks.tck tmp.tck -endpoints -force
+testing_diff_tck tmp.tck tckresample/endpoints.tck

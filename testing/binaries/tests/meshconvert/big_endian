@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify correct read of a VTK file where the binary data type has been manually verified to be big endian
+# Ensure that output matches the same input data stored using ASCII VTK
+meshconvert meshconvert/in_be.vtk tmp.vtk -force
+testing_diff_mesh tmp.vtk meshconvert/in_ascii.vtk 0.001

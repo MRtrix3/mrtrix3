@@ -253,7 +253,7 @@ template <class Cont> void TrackMapperBase::voxelise_precise(const Streamline<> 
 }
 
 template <class Cont> void TrackMapperBase::voxelise_ends(const Streamline<> &tck, Cont &out) const {
-  if (!tck.size())
+  if (tck.empty())
     return;
   if (tck.size() == 1) {
     const auto vox = round(scanner2voxel * tck.front());

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Evaluate the "gradient" filter when the -magnitude option is specified
+# The output is compared against that generated using a prior software version
+# The tolerance for the comparison is modulated based on the intensity
+#   of the image from which the gradient is computed
+mrcalc dwi_mean.mif -abs 1e-5 -mult - | \
+mrfilter - smooth tmp.mif -force
+
+mrfilter dwi.mif gradient -stdev 1.5,2.5,3.5 -magnitude - | \
+testing_diff_image - mrfilter/out15.mif -image tmp.mif

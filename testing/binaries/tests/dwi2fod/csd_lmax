@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation of "csd" algorithm when the output FOD lmax is overridden
+# Ensure that the output matches that generated using a prior software version
+dwi2fod csd dwi.mif response.txt -lmax 12 - | \
+testing_diff_image - dwi2fod/out_lmax12.mif -voxel 1e-5

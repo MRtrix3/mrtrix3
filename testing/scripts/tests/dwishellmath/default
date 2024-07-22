@@ -1,0 +1,42 @@
+#!/bin/bash
+# Verify fundamental operation of the dwishellmath command
+# Using the most frequently used "mean" shell-wise statistic,
+#   obtain the mean intensity per shell using two approaches:
+#   - Explicitly split the data into shells,
+#     compute the mean per shell,
+#     and then concatenate together the results,
+#     using other MRtrix3 command;
+#   - Using the dwishellmath command.
+# Ensure that these produce the same result.
+#
+# In addition, make sure that the command works
+#   regardless of how the input diffusion gradient table is provided:
+#   - Within the image header
+#   - Via the -fslgrad option
+#   - Via the -grad option
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp-sub-01_dwi.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-export_grad_mrtrix tmp-sub-01_dwi.b \
+-force
+
+dwiextract tmp-sub-01_dwi.mif tmp_allb0.mif -shell 0 -force
+dwiextract tmp-sub-01_dwi.mif tmp_allb1000.mif -shell 1000 -force
+dwiextract tmp-sub-01_dwi.mif tmp_allb2000.mif -shell 2000 -force
+dwiextract tmp-sub-01_dwi.mif tmp_allb3000.mif -shell 3000 -force
+mrmath tmp_allb0.mif mean tmp_meanb0.mif -axis 3 -force
+mrmath tmp_allb1000.mif mean tmp_meanb1000.mif -axis 3 -force
+mrmath tmp_allb2000.mif mean tmp_meanb2000.mif -axis 3 -force
+mrmath tmp_allb3000.mif mean tmp_meanb3000.mif -axis 3 -force
+mrcat tmp_meanb0.mif tmp_meanb1000.mif tmp_meanb2000.mif tmp_meanb3000.mif -axis 3 tmp-target.mif -force
+
+dwishellmath tmp-sub-01_dwi.mif mean tmp.mif -force
+testing_diff_image tmp.mif tmp-target.mif
+
+dwishellmath BIDS/sub-01/dwi/sub-01_dwi.nii.gz mean tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+testing_diff_image tmp.mif tmp-target.mif
+
+dwishellmath BIDS/sub-01/dwi/sub-01_dwi.nii.gz mean tmp.mif -force \
+-grad tmp-sub-01_dwi.b
+testing_diff_image tmp.mif tmp-target.mif

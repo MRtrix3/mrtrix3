@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify command operation when the -allvolumes command-line option is specified;
+#   for a 4D input image,
+#   this results in a single histogram taking into account intensity data from all volumes,
+#   rather than an individual histogram per image volume
+# Outcome is compared to that generated using a prior software version
+mrhistogram dwi.mif tmp.txt -allvolumes -force
+testing_diff_matrix tmp.txt mrhistogram/allvolumes.txt -abs 0.5

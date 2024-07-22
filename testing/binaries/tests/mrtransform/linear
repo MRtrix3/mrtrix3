@@ -1,0 +1,6 @@
+#!/bin/bash
+# Application of a linear transformation,
+#   which should only involve header transformation modification
+#   and not induce any interpolation
+mrtransform moving.mif.gz -linear moving2template.txt - | \
+testing_diff_image - mrtransform/out2.mif.gz

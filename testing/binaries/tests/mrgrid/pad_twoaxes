@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify the "pad" operation when the -axis option is specified twice,
+#   providing custom padding margins at the upper and lower ends of each
+# Outcome is compared against pregenerated output using prior software version
+mrgrid dwi.mif pad -axis 0 1,2 -axis 1 0,2 - | \
+testing_diff_image - mrpad/out4.mif

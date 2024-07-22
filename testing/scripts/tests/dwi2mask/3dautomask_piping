@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify successful execution of "dwi2mask 3dautomask"
+#   when utilising image pipes
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+dwi2mask 3dautomask - - | \
+mrconvert - tmp.mif -force

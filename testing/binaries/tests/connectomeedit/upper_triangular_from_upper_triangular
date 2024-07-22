@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify "upperer_triangular" operation, when input data are upper triangular
+# Input:
+# [[1, 2, 3],
+#  [0, 4, 5],
+#  [0, 0, 6]]
+# Output: Same as input
+printf $"1 2 3\n0 4 5\n0 0 6\n" > tmp.txt
+connectomeedit -force tmp.txt upper_triangular tmp1.txt
+testing_diff_matrix tmp1.txt tmp.txt

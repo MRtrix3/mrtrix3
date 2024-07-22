@@ -183,7 +183,7 @@ void compute_average_voxel2scanner(
     Eigen::Transform<default_type, 3, Eigen::Projective> v2s_trafo =
         (Eigen::Transform<default_type, 3, Eigen::Projective>)Transform(input_headers[iFile]).voxel2scanner;
 
-    if (transform_header_with.size()) {
+    if (!transform_header_with.empty()) {
       assert(transform_header_with.size() == input_headers.size());
       if (transform_header_with[iFile].matrix().hasNaN()) {
         throw Exception("compute_average_voxel2scanner: transformation to image header of image " + str(iFile) +

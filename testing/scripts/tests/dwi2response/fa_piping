@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response fa"
+#   where image pipes are used
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-strides 0,0,0,1 \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+dwi2response fa - tmp_out.txt -force \
+-voxels - \
+-number 20 | \
+testing_diff_image - dwi2response/fa/default.mif.gz

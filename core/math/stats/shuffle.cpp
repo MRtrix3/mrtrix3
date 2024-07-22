@@ -99,7 +99,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
   using namespace App;
   auto opt = get_options("errors");
   error_t error_types = error_t::EE;
-  if (opt.size()) {
+  if (!opt.empty()) {
     switch (int(opt[0][0])) {
     case 0:
       error_types = error_t::EE;
@@ -115,13 +115,13 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
 
   bool nshuffles_explicit = false;
   opt = get_options(is_nonstationarity ? "nshuffles_nonstationarity" : "nshuffles");
-  if (opt.size()) {
+  if (!opt.empty()) {
     nshuffles = opt[0][0];
     nshuffles_explicit = true;
   }
 
   opt = get_options(is_nonstationarity ? "permutations_nonstationarity" : "permutations");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (error_types == error_t::EE || error_types == error_t::BOTH) {
       load_permutations(opt[0][0]);
       if (permutations[0].size() != rows)
@@ -139,7 +139,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
 
   opt = get_options("exchange_within");
   index_array_type eb_within;
-  if (opt.size()) {
+  if (!opt.empty()) {
     try {
       eb_within = load_blocks(std::string(opt[0][0]), false);
     } catch (Exception &e) {
@@ -149,7 +149,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
 
   opt = get_options("exchange_whole");
   index_array_type eb_whole;
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (eb_within.size())
       throw Exception("Cannot specify both \"within\" and \"whole\" exchangeability block data");
     try {
@@ -161,7 +161,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
 
   initialise(error_types, nshuffles_explicit, is_nonstationarity, eb_within, eb_whole);
 
-  if (msg.size())
+  if (!msg.empty())
     progress.reset(new ProgressBar(msg, nshuffles));
 }
 
@@ -181,7 +181,7 @@ Shuffler::Shuffler(const index_type num_rows,
                    const std::string msg)
     : rows(num_rows), nshuffles(num_shuffles) {
   initialise(error_types, true, is_nonstationarity, eb_within, eb_whole);
-  if (msg.size())
+  if (!msg.empty())
     progress.reset(new ProgressBar(msg, nshuffles));
 }
 
@@ -194,14 +194,14 @@ bool Shuffler::operator()(Shuffle &output) {
     return false;
   }
   // TESTME Think I need to adjust the signflips application based on the permutations
-  if (permutations.size()) {
+  if (!permutations.empty()) {
     output.data = matrix_type::Zero(rows, rows);
     for (index_type i = 0; i != rows; ++i)
       output.data(i, permutations[counter][i]) = 1.0;
   } else {
     output.data = matrix_type::Identity(rows, rows);
   }
-  if (signflips.size()) {
+  if (!signflips.empty()) {
     for (index_type r = 0; r != rows; ++r) {
       if (signflips[counter][r]) {
         for (index_type c = 0; c != rows; ++c) {
@@ -315,7 +315,7 @@ void Shuffler::initialise(const error_t error_types,
   //     while disabling detection of duplicates
   //   - Repeat the three steps above for signflips
 
-  if (ee && !permutations.size()) {
+  if (ee && permutations.empty()) {
     if (ise) {
       if (nshuffles == max_shuffles) {
         generate_all_permutations(rows, eb_within, eb_whole);
@@ -575,7 +575,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
 
 void Shuffler::load_permutations(const std::string &filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
-  if (!temp.size())
+  if (temp.empty())
     throw Exception("no data found in permutations file: " + str(filename));
 
   const index_type min_value = *std::min_element(std::begin(temp[0]), std::end(temp[0]));

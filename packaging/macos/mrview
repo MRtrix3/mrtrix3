@@ -1,8 +1,0 @@
-#!/bin/bash
-f="${BASH_SOURCE}"
-while [[ -L "${f}" ]]; do
- f2="$(readlink "${f}")"
- if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
-done
-f=$(dirname "${f}")
-"${f}"/MRView.app/Contents/MacOS/mrview "$@"

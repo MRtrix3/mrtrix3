@@ -1,0 +1,37 @@
+#!/bin/bash
+# This set of tests verifies that the operation of the mrthreshold command,
+#   when the -allvolumes option is _not_ specified,
+#   is identical to running mrthreshold individually on each volume
+#   and then concatenating the results.
+
+# Split the 4D input image into numbered series of individual 3D images
+rm -f tmp-*-in.mif
+mrconvert dwi.mif tmp-[]-in.mif
+
+# Default operation
+for i in tmp-*-in.mif; do
+    mrthreshold $i ${i%"in.mif"}out.mif -force -quiet
+done
+mrthreshold dwi.mif - | \
+testing_diff_image - tmp-[]-out.mif
+
+# Masked
+for i in tmp-*-in.mif; do
+    mrthreshold $i ${i%"in.mif"}out.mif -mask mask.mif -force -quiet
+done
+mrthreshold dwi.mif - -mask mask.mif | \
+testing_diff_image - tmp-[]-out.mif
+
+# Median threshold
+for i in tmp-*-in.mif; do
+    mrthreshold $i ${i%"in.mif"}out.mif -percentile 50 -force -quiet
+done
+mrthreshold dwi.mif - -percentile 50 | \
+testing_diff_image - tmp-[]-out.mif
+
+# Both median threshold & masked
+for i in tmp-*-in.mif; do
+    mrthreshold $i ${i%"in.mif"}out.mif -percentile 50 -mask mask.mif -force -quiet
+done
+mrthreshold dwi.mif - -percentile 50 -mask mask.mif | \
+testing_diff_image - tmp-[]-out.mif

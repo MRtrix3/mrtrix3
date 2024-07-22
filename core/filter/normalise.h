@@ -72,7 +72,7 @@ public:
 
   template <class InputImageType, class OutputImageType> void operator()(InputImageType &in, OutputImageType &out) {
     Adapter::Normalise3D<InputImageType> normalise(in, extent);
-    if (message.size())
+    if (!message.empty())
       threaded_copy_with_progress_message(message, normalise, out);
     else
       threaded_copy(normalise, out);

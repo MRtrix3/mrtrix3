@@ -52,7 +52,7 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
     }
   }
 
-  if (hlist.size()) {
+  if (!hlist.empty()) {
     beginInsertRows(QModelIndex(), items.size(), items.size() + hlist.size());
     for (size_t i = 0; i < hlist.size(); ++i)
       items.push_back(

@@ -63,9 +63,9 @@ public:
   bool operator<(const Series &s) const {
     if (number != s.number)
       return number < s.number;
-    if (date.size() && date != s.date)
+    if (!date.empty() && date != s.date)
       return date < s.date;
-    if (time.size() && time != s.time)
+    if (!time.empty() && time != s.time)
       return time < s.time;
     return image_type < s.image_type;
   }

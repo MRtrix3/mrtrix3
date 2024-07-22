@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify "5ttgen fsl" operation when the -sgm_amyg_hipp option is specified
+# The outcome cannot be trivially compared to that computed using a prior software version
+#   because a change in the outcomes of "standard_space_roi" between FSL software versions
+#   resulted in changes in the output image FoV
+# The test therefore currently only ensures that the command executes successfully
+5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz tmp.mif -sgm_amyg_hipp -force
+# testing_diff_header tmp.mif 5ttgen/fsl/sgm_amyg_hipp.mif.gz

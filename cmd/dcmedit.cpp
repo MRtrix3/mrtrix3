@@ -93,19 +93,18 @@ void run() {
   std::vector<Tag> tags;
   std::vector<uint16_t> VRs;
 
-  auto opt = get_options("anonymise");
-  if (opt.size()) {
+  if (!get_options("anonymise").empty()) {
     tags.push_back(Tag(0x0010U, 0x0030U, "")); // PatientBirthDate
     VRs.push_back(VR_PN);
   }
 
-  opt = get_options("tag");
-  if (opt.size())
+  auto opt = get_options("tag");
+  if (!opt.empty())
     for (size_t n = 0; n < opt.size(); ++n)
       tags.push_back(Tag(read_hex(opt[n][0]), read_hex(opt[n][1]), opt[n][2]));
 
   opt = get_options("id");
-  if (opt.size()) {
+  if (!opt.empty()) {
     std::string newid = opt[0][0];
     tags.push_back(Tag(0x0010U, 0x0020U, newid)); // PatientID
     tags.push_back(Tag(0x0010U, 0x1000U, newid)); // OtherPatientIDs

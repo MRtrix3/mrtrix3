@@ -1,0 +1,5 @@
+#!/bin/bash
+# Ensure successful execution of the tensor_prob algorithm
+#   (no validation of the generated data is performed)
+tckgen SIFT_phantom/dwi.mif -algo tensor_prob \
+-seed_image SIFT_phantom/mask.mif -mask SIFT_phantom/mask.mif -minlength 4 -select 100 tmp.tck -force

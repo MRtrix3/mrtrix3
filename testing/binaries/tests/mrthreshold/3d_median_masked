@@ -1,0 +1,6 @@
+#!/bin/bash
+# Validate command execution when both:
+# - Determining binarisation threshold based on the median intensity rather than the default behaviour
+# - Restricting that median calculation to only a subset of voxels
+mrthreshold dwi_mean.mif - -percentile 50 -mask mask.mif | \
+testing_diff_image - mrthreshold/3d_median_masked.mif

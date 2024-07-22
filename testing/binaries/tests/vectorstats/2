@@ -1,0 +1,32 @@
+#!/bin/bash
+# vectorstats test 2
+#
+# Prior version where test data were generated dynamically:
+# N=16 SNR=5 vectorstats/gen2.py
+# vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -column tmpcolumn.txt -ftests tmpftests.csv -force
+# vectorstats/test2.py
+vectorstats vectorstats/2/subjects.txt vectorstats/2/design.csv vectorstats/2/contrast.csv tmpout -column vectorstats/2/column.txt -ftests vectorstats/2/ftests.csv -force
+testing_diff_matrix tmpoutFvalue_F1.csv vectorstats/2/outFvalue_F1.csv -frac 1e-6
+testing_diff_matrix tmpoutFvalue_F2.csv vectorstats/2/outFvalue_F2.csv -frac 1e-6
+testing_diff_matrix tmpoutZstat_F1.csv vectorstats/2/outZstat_F1.csv -frac 1e-6
+testing_diff_matrix tmpoutZstat_F2.csv vectorstats/2/outZstat_F2.csv -frac 1e-6
+testing_diff_matrix tmpoutZstat_t1.csv vectorstats/2/outZstat_t1.csv -frac 1e-6
+testing_diff_matrix tmpoutZstat_t2.csv vectorstats/2/outZstat_t2.csv -frac 1e-6
+testing_diff_matrix tmpoutZstat_t3.csv vectorstats/2/outZstat_t3.csv -frac 1e-6
+testing_diff_matrix tmpoutZstat_t4.csv vectorstats/2/outZstat_t4.csv -frac 1e-6
+testing_diff_matrix tmpoutabs_effect_t1.csv vectorstats/2/outabs_effect_t1.csv -frac 1e-6
+testing_diff_matrix tmpoutabs_effect_t2.csv vectorstats/2/outabs_effect_t2.csv -frac 1e-6
+testing_diff_matrix tmpoutabs_effect_t3.csv vectorstats/2/outabs_effect_t3.csv -frac 1e-6
+testing_diff_matrix tmpoutabs_effect_t4.csv vectorstats/2/outabs_effect_t4.csv -frac 1e-6
+testing_diff_matrix tmpoutbetas.csv vectorstats/2/outbetas.csv -frac 1e-6
+testing_diff_matrix tmpoutcond.csv vectorstats/2/outcond.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_dev.csv vectorstats/2/outstd_dev.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_effect_t1.csv vectorstats/2/outstd_effect_t1.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_effect_t2.csv vectorstats/2/outstd_effect_t2.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_effect_t3.csv vectorstats/2/outstd_effect_t3.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_effect_t4.csv vectorstats/2/outstd_effect_t4.csv -frac 1e-6
+testing_diff_matrix tmpouttvalue_t1.csv vectorstats/2/outtvalue_t1.csv -frac 1e-6
+testing_diff_matrix tmpouttvalue_t2.csv vectorstats/2/outtvalue_t2.csv -frac 1e-6
+testing_diff_matrix tmpouttvalue_t3.csv vectorstats/2/outtvalue_t3.csv -frac 1e-6
+testing_diff_matrix tmpouttvalue_t4.csv vectorstats/2/outtvalue_t4.csv -frac 1e-6
+vectorstats/test2.py

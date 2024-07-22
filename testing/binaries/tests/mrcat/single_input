@@ -1,0 +1,6 @@
+#!/bin/bash
+# Ensure that the mrcat command creates an output identical to the input
+#   if only a single input image is specified
+# (previous version sof this command enforced that at least two inputs be present)
+mrcat dwi.mif - | \
+testing_diff_image - dwi.mif

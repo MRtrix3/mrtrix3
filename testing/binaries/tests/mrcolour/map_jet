@@ -1,0 +1,5 @@
+#!/bin/bash
+# Validate defulat operation with the "jet" colourmap
+#   against a result generated with a prior software version
+mrcolour dwi_mean.mif jet - | \
+testing_diff_image - mrcolour/jet.mif -abs 1e-5

@@ -199,7 +199,7 @@ public:
   }
 
   template <class InputVoxelType, class OutputVoxelType> void operator()(InputVoxelType &in, OutputVoxelType &out) {
-    std::unique_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message, 5) : nullptr);
+    std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, 5) : nullptr);
 
     Voxel2Vector v2v(in, *this);
     if (progress)

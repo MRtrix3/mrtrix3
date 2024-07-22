@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify successful execution of "dwi2mask fslbet" algorithm,
+#   which invokes FSL command "bet",
+#   when a range of available command-line options are utilised
+dwi2mask fslbet BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-bet_f 0.5 -bet_g 0.0 -bet_c 14,18,16 -bet_r 130.0

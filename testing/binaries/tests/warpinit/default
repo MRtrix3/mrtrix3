@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test basic operation of command
+# Outcome is compared to that calculated using a prior software version
+warpinit dwi.mif - | \
+testing_diff_image - warpinit/out.mif -frac 1e-5

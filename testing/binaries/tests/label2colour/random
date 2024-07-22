@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify operation where no lookup table is provided,
+#   and therefore random colours are assigned to parcels
+# Since there is no reference image to use to verify the output,
+#   here we just make sure that the command executes successfully
+label2colour labelconvert/in_fs.mif.gz tmp.mif -force

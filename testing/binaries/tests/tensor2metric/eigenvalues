@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify export of tensor eigenvalues
+# The command does not facilitate export of all eigenvalues at the command-line interface;
+#   instead export each of the three eigenvalues individually
+# Outcomes are verified against those generated using a prior software version
+tensor2metric tensor2metric/dt.mif -num 1 -value - | \
+testing_diff_image - tensor2metric/eigval1.mif -frac 1e-4
+
+tensor2metric tensor2metric/dt.mif -num 2 -value - | \
+testing_diff_image - tensor2metric/eigval2.mif -frac 1e-4
+
+tensor2metric tensor2metric/dt.mif -num 3 -value - | \
+testing_diff_image - tensor2metric/eigval3.mif -frac 1e-4
