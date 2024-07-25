@@ -35,4 +35,3 @@ build/
 CMakeLists.txt.user
 testing/data/tmp*
 testing/data/*-tmp-*
-_fetchcontent/
