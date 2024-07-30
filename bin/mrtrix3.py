@@ -15,7 +15,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import os, sys
-from distutils.spawn import find_executable
 
 try:
   # since importlib code below only works on Python 3.5+

@@ -17,9 +17,14 @@
 # pylint: disable=unspecified-encoding
 
 import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
-from distutils.spawn import find_executable
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
 from mrtrix3.utils import STRING_TYPES
+
+# Distutils removed in 3.12, but shutil.which not available in 2.7
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
