@@ -20,7 +20,7 @@ namespace MR::Stats {
 
 using namespace App;
 
-const char *field_choices[] = {"mean", "median", "std", "std_rv", "min", "max", "count", nullptr};
+std::vector<std::string> field_choices{"mean", "median", "std", "std_rv", "min", "max", "count"};
 
 // clang-format off
 const OptionGroup Options =

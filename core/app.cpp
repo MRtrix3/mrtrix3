@@ -74,8 +74,8 @@ OptionGroup __standard_options =
     + Option("version", "display version information and exit.");
 // clang-format on
 
-const char *AUTHOR = nullptr;
-const char *COPYRIGHT = "Copyright (c) 2008-2024 the MRtrix3 contributors.\n"
+std::string AUTHOR{};
+std::string COPYRIGHT = "Copyright (c) 2008-2024 the MRtrix3 contributors.\n"
                         "\n"
                         "This Source Code Form is subject to the terms of the Mozilla Public\n"
                         "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -89,7 +89,7 @@ const char *COPYRIGHT = "Copyright (c) 2008-2024 the MRtrix3 contributors.\n"
                         "See the Mozilla Public License v. 2.0 for more details.\n"
                         "\n"
                         "For more details, see http://www.mrtrix.org/.\n";
-const char *SYNOPSIS = nullptr;
+std::string SYNOPSIS{};
 
 std::string NAME;
 std::string command_history_string;
@@ -116,8 +116,7 @@ const char *project_version = nullptr;
 const char *project_build_date = nullptr;
 const char *executable_uses_mrtrix_version = nullptr;
 
-int argc = 0;
-const char *const *argv = nullptr;
+std::vector<std::string> raw_arguments_list;
 
 bool overwrite_files = false;
 void (*check_overwrite_files_func)(const std::string &name) = nullptr;
@@ -450,12 +449,16 @@ std::string Argument::usage() const {
   case Undefined:
     assert(0);
     break;
-  case Integer:
-    stream << "INT " << limits.i.min << " " << limits.i.max;
+  case Integer: {
+    const auto int_range = std::get<IntRange>(limits);
+    stream << "INT " << int_range.min << " " << int_range.max;
     break;
-  case Float:
-    stream << "FLOAT " << limits.f.min << " " << limits.f.max;
+  }
+  case Float: {
+    const auto float_range = std::get<FloatRange>(this->limits);
+    stream << "FLOAT " << float_range.min << " " << float_range.max;
     break;
+  }
   case Text:
     stream << "TEXT";
     break;
@@ -471,11 +474,13 @@ std::string Argument::usage() const {
   case ArgDirectoryOut:
     stream << "DIROUT";
     break;
-  case Choice:
+  case Choice: {
     stream << "CHOICE";
-    for (const char *const *p = limits.choices; *p; ++p)
-      stream << " " << *p;
+    const auto &choices = std::get<std::vector<std::string>>(limits);
+    for (const std::string &p : choices)
+      stream << " " << p;
     break;
+  }
   case ImageIn:
     stream << "IMAGEIN";
     break;
@@ -807,7 +812,7 @@ std::string restructured_text_usage() {
     while (OPTIONS[n].name != group_names[i])
       ++n;
     if (OPTIONS[n].name != std::string("OPTIONS"))
-      s += OPTIONS[n].name + std::string("\n") + std::string(std::strlen(OPTIONS[n].name), '^') + "\n\n";
+      s += OPTIONS[n].name + std::string("\n") + std::string(OPTIONS[n].name.size(), '^') + "\n\n";
     while (n < OPTIONS.size()) {
       if (OPTIONS[n].name == group_names[i]) {
         for (size_t o = 0; o < OPTIONS[n].size(); ++o)
@@ -831,66 +836,73 @@ std::string restructured_text_usage() {
   }
   s += std::string(MRTRIX_CORE_REFERENCE) + "\n\n";
 
-  s += std::string("--------------\n\n") + "\n\n**Author:** " + (char *)AUTHOR + "\n\n**Copyright:** " + COPYRIGHT +
-       "\n\n";
+  s += std::string("--------------\n\n") + "\n\n**Author:** " + AUTHOR + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
 
   return s;
 }
 
-const Option *match_option(const char *arg) {
-  if (consume_dash(arg) && *arg && !isdigit(*arg) && *arg != '.') {
-    while (consume_dash(arg))
-      ;
-    std::vector<const Option *> candidates;
-    std::string root(arg);
-
-    for (size_t i = 0; i < OPTIONS.size(); ++i)
-      get_matches(candidates, OPTIONS[i], root);
-    get_matches(candidates, __standard_options, root);
-
-    // no matches
-    if (candidates.empty())
-      throw Exception(std::string("unknown option \"-") + root + "\"");
-
-    // return match if unique:
-    if (candidates.size() == 1)
-      return candidates[0];
-
-    // return match if fully specified:
-    for (size_t i = 0; i < candidates.size(); ++i)
-      if (root == candidates[i]->id)
-        return candidates[i];
-
-    // check if there is only one *unique* candidate
-    const auto cid = candidates[0]->id;
-    if (std::all_of(++candidates.begin(), candidates.end(), [&cid](const Option *cand) { return cand->id == cid; }))
-      return candidates[0];
-
-    // report something useful:
-    root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
-
-    for (size_t i = 1; i < candidates.size(); ++i)
-      root += std::string("\", \"-") + candidates[i]->id + "\"";
-
-    throw Exception(root);
+const Option *match_option(std::string_view arg) {
+  auto no_dash_arg = without_leading_dash(arg);
+  if (arg.size() == no_dash_arg.size() || no_dash_arg.empty() || isdigit(no_dash_arg.front()) != 0 ||
+      no_dash_arg.front() == '.') {
+    return nullptr;
   }
 
-  return nullptr;
+  std::vector<const Option *> candidates;
+  std::string root(no_dash_arg);
+
+  for (size_t i = 0; i < OPTIONS.size(); ++i)
+    get_matches(candidates, OPTIONS[i], root);
+  get_matches(candidates, __standard_options, root);
+
+  // no matches
+  if (candidates.empty())
+    throw Exception(std::string("unknown option \"-") + root + "\"");
+
+  // return match if unique:
+  if (candidates.size() == 1)
+    return candidates[0];
+
+  // return match if fully specified:
+  for (size_t i = 0; i < candidates.size(); ++i)
+    if (root == candidates[i]->id)
+      return candidates[i];
+
+  // check if there is only one *unique* candidate
+  const auto cid = candidates[0]->id;
+  if (std::all_of(++candidates.begin(), candidates.end(), [&cid](const Option *cand) { return cand->id == cid; }))
+    return candidates[0];
+
+  // report something useful:
+  root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
+
+  for (size_t i = 1; i < candidates.size(); ++i)
+    root += std::string("\", \"-") + candidates[i]->id + "\"";
+
+  throw Exception(root);
 }
 
-void sort_arguments(int argc, const char *const *argv) {
-  for (int n = 1; n < argc; ++n) {
-    if (argv[n]) {
-      const Option *opt = match_option(argv[n]);
-      if (opt) {
-        if (n + int(opt->size()) >= argc)
-          throw Exception(std::string("not enough parameters to option \"-") + opt->id + "\"");
+void sort_arguments(const std::vector<std::string> &arguments) {
+  auto it = arguments.begin();
+  while (it != arguments.end()) {
+    const size_t index = std::distance(arguments.begin(), it);
+    const Option *opt = match_option(*it);
+    if (opt != nullptr) {
+      if (it + opt->size() >= arguments.end()) {
+        throw Exception(std::string("not enough parameters to option \"-") + opt->id + "\"");
+      }
 
-        option.push_back(ParsedOption(opt, argv + n + 1));
-        n += opt->size();
-      } else
-        argument.push_back(ParsedArgument(nullptr, nullptr, argv[n]));
+      std::vector<std::string> option_args;
+      std::copy_n(it + 1, opt->size(), std::back_inserter(option_args));
+      std::transform(option_args.begin(), option_args.end(), option_args.begin(), [](std::string_view arg) {
+        return is_dash(arg) ? arg : without_leading_dash(arg);
+      });
+      option.push_back(ParsedOption(opt, option_args, index));
+      it += opt->size();
+    } else {
+      argument.push_back(ParsedArgument(nullptr, nullptr, *it, index));
     }
+    ++it;
   }
 }
 
@@ -908,28 +920,30 @@ void parse_standard_options() {
 }
 
 void verify_usage() {
-  if (!AUTHOR)
+  if (AUTHOR.empty())
     throw Exception("No author specified for command " + std::string(NAME));
-  if (!SYNOPSIS)
+  if (SYNOPSIS.empty())
     throw Exception("No synopsis specified for command " + std::string(NAME));
 }
 
 void parse_special_options() {
-  if (argc != 2)
+  // special options are only accessible as the first argument
+  if (raw_arguments_list.size() != 1)
     return;
-  if (strcmp(argv[1], "__print_full_usage__") == 0) {
+
+  if (raw_arguments_list.front() == "__print_full_usage__") {
     print(full_usage());
     throw 0;
   }
-  if (strcmp(argv[1], "__print_usage_markdown__") == 0) {
+  if (raw_arguments_list.front() == "__print_usage_markdown__") {
     print(markdown_usage());
     throw 0;
   }
-  if (strcmp(argv[1], "__print_usage_rst__") == 0) {
+  if (raw_arguments_list.front() == "__print_usage_rst__") {
     print(restructured_text_usage());
     throw 0;
   }
-  if (strcmp(argv[1], "__print_synopsis__") == 0) {
+  if (raw_arguments_list.front() == "__print_synopsis__") {
     print(SYNOPSIS);
     throw 0;
   }
@@ -939,7 +953,7 @@ void parse() {
   argument.clear();
   option.clear();
 
-  sort_arguments(argc, argv);
+  sort_arguments(raw_arguments_list);
 
   if (!get_options("help").empty()) {
     print_help();
@@ -1128,10 +1142,10 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
 
   terminal_use_colour = !ProgressBar::set_update_method();
 
-  argc = cmdline_argc;
-  argv = cmdline_argv;
+  raw_arguments_list = std::vector<std::string>(cmdline_argv, cmdline_argv + cmdline_argc);
+  NAME = Path::basename(raw_arguments_list.front());
+  raw_arguments_list.erase(raw_arguments_list.begin());
 
-  NAME = Path::basename(argv[0]);
 #ifdef MRTRIX_WINDOWS
   if (Path::has_suffix(NAME, ".exe"))
     NAME.erase(NAME.size() - 4);
@@ -1170,9 +1184,9 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
     }
     return s;
   };
-  command_history_string = argv[0];
-  for (int n = 1; n < argc; ++n)
-    command_history_string += std::string(" ") + argv_quoted(argv[n]);
+  command_history_string = cmdline_argv[0];
+  for (const auto &a : raw_arguments_list)
+    command_history_string += std::string(" ") + argv_quoted(a);
   command_history_string += std::string("  (version=") + mrtrix_version;
   if (project_version)
     command_history_string += std::string(", project=") + project_version;
@@ -1189,7 +1203,7 @@ const std::vector<ParsedOption> get_options(const std::string &name) {
   for (size_t i = 0; i < option.size(); ++i) {
     assert(option[i].opt);
     if (option[i].opt->is(name))
-      matches.push_back({option[i].opt, option[i].args});
+      matches.push_back({option[i].opt, option[i].args, option[i].index});
   }
   return matches;
 }
@@ -1206,15 +1220,15 @@ int64_t App::ParsedArgument::as_int() const {
     bool alpha_is_last = false;
     bool contains_dotpoint = false;
     char alpha_char = 0;
-    for (const char *c = p; *c; ++c) {
-      if (std::isalpha(*c)) {
+    for (const char &c : p) {
+      if (std::isalpha(c) != 0) {
         ++alpha_count;
         alpha_is_last = true;
-        alpha_char = *c;
+        alpha_char = c;
       } else {
         alpha_is_last = false;
       }
-      if (*c == '.')
+      if (c == '.')
         contains_dotpoint = true;
     }
     if (alpha_count > 1)
@@ -1262,16 +1276,15 @@ int64_t App::ParsedArgument::as_int() const {
       retval = to<int64_t>(p);
     }
 
-    const int64_t min = arg->limits.i.min;
-    const int64_t max = arg->limits.i.max;
-    if (retval < min || retval > max) {
+    const auto range = std::get<Argument::IntRange>(arg->limits);
+    if (retval < range.min || retval > range.max) {
       std::string msg("value supplied for ");
       if (opt)
         msg += std::string("option \"") + opt->id;
       else
         msg += std::string("argument \"") + arg->id;
-      msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) +
-             ")";
+      msg += "\" is out of bounds (valid range: " + str(range.min) + " to " + str(range.max) +
+             ", value supplied: " + str(retval) + ")";
       throw Exception(msg);
     }
     return retval;
@@ -1279,19 +1292,18 @@ int64_t App::ParsedArgument::as_int() const {
 
   if (arg->type == Choice) {
     std::string selection = lowercase(p);
-    const char *const *choices = arg->limits.choices;
-    for (int i = 0; choices[i]; ++i) {
-      if (selection == choices[i]) {
-        return i;
-      }
+    const auto &choices = std::get<std::vector<std::string>>(arg->limits);
+    auto it = std::find(choices.begin(), choices.end(), selection);
+    if (it == choices.end()) {
+      std::string msg = std::string("unexpected value supplied for ");
+      if (opt != nullptr)
+        msg += std::string("option \"") + opt->id;
+      else
+        msg += std::string("argument \"") + arg->id;
+      msg += std::string("\" (received \"" + std::string(p) + "\"; valid choices are: ") + join(choices, ", ") + ")";
+      throw Exception(msg);
     }
-    std::string msg = std::string("unexpected value supplied for ");
-    if (opt)
-      msg += std::string("option \"") + opt->id;
-    else
-      msg += std::string("argument \"") + arg->id;
-    msg += std::string("\" (received \"" + std::string(p) + "\"; valid choices are: ") + join(choices, ", ") + ")";
-    throw Exception(msg);
+    return static_cast<int>(std::distance(choices.begin(), it));
   }
   assert(0);
   return (0);
@@ -1300,16 +1312,15 @@ int64_t App::ParsedArgument::as_int() const {
 default_type App::ParsedArgument::as_float() const {
   assert(arg->type == Float);
   const default_type retval = to<default_type>(p);
-  const default_type min = arg->limits.f.min;
-  const default_type max = arg->limits.f.max;
-  if (retval < min || retval > max) {
+  const auto range = std::get<Argument::FloatRange>(arg->limits);
+  if (retval < range.min || retval > range.max) {
     std::string msg("value supplied for ");
     if (opt)
       msg += std::string("option \"") + opt->id;
     else
       msg += std::string("argument \"") + arg->id;
-    msg +=
-        "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+    msg += "\" is out of bounds (valid range: " + str(range.min) + " to " + str(range.max) +
+           ", value supplied: " + str(retval) + ")";
     throw Exception(msg);
   }
 
@@ -1346,9 +1357,9 @@ std::vector<default_type> ParsedArgument::as_sequence_float() const {
   return std::vector<default_type>();
 }
 
-ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, const char *text)
-    : opt(option), arg(argument), p(text) {
-  assert(text);
+ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index)
+    : opt(option), arg(argument), p(std::move(text)), index_(index) {
+  assert(!p.empty());
 }
 
 void ParsedArgument::error(Exception &e) const {
@@ -1370,10 +1381,11 @@ void check_overwrite(const std::string &name) {
   }
 }
 
-ParsedOption::ParsedOption(const Option *option, const char *const *arguments) : opt(option), args(arguments) {
+ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> &arguments, size_t i)
+    : opt(option), args(arguments), index(i) {
   for (size_t i = 0; i != option->size(); ++i) {
-    const char *p = arguments[i];
-    if (!consume_dash(p))
+    const auto &p = arguments[i];
+    if (!is_dash(p))
       continue;
     if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
       continue;
@@ -1391,7 +1403,7 @@ ParsedOption::ParsedOption(const Option *option, const char *const *arguments) :
 
 ParsedArgument ParsedOption::operator[](size_t num) const {
   assert(num < opt->size());
-  return ParsedArgument(opt, &(*opt)[num], args[num]);
+  return ParsedArgument(opt, &(*opt)[num], args[num], index + num + 1);
 }
 
 bool ParsedOption::operator==(const char *match) const {

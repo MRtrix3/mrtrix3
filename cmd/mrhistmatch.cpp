@@ -29,7 +29,7 @@
 using namespace MR;
 using namespace App;
 
-const char *choices[] = {"scale", "linear", "nonlinear", nullptr};
+const std::vector<std::string> choices = {"scale", "linear", "nonlinear"};
 
 // clang-format off
 void usage() {

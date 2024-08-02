@@ -35,7 +35,7 @@ using namespace MR;
 using namespace App;
 
 enum stat_tck { MEAN, MEDIAN, MIN, MAX, NONE };
-const char *statistics[] = {"mean", "median", "min", "max", nullptr};
+const std::vector<std::string> statistics = {"mean", "median", "min", "max"};
 
 enum interp_type { NEAREST, LINEAR, PRECISE };
 

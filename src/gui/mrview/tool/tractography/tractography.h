@@ -32,7 +32,7 @@ class LightingDock;
 
 namespace MRView::Tool {
 
-extern const char *tractogram_geometry_types[];
+extern const std::vector<std::string> tractogram_geometry_types;
 
 class Tractography : public Base {
   Q_OBJECT

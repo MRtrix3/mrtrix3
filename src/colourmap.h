@@ -49,7 +49,7 @@ public:
   static const char *default_amplitude;
 };
 
-extern const Entry maps[];
+extern const std::vector<Entry> maps;
 
 inline size_t num() {
   size_t n = 0;
