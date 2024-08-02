@@ -67,9 +67,13 @@ testing_cpp_cli -bool 2
 ! testing_cpp_cli -2244223
 
 # Test handling of various dash-like characters
-testing_cpp_cli —bool false # Em dash
-testing_cpp_cli –bool false # En dash
-testing_cpp_cli -bool false # Hyphen
+# Skip the dash tests on MSYS2 as they don't seem to be correctly parsed by CTest
+# TODO: try to find whether there is a solution to this
+if ![[ -z "${MSYSTEM}" ]]; then
+    testing_cpp_cli —bool false # Em dash
+    testing_cpp_cli –bool false # En dash
+    testing_cpp_cli -bool false # Hyphen
+fi
 
 # Test interfaces relating to filesystem paths:
 # - Make sure that command fails if expected input is not present
