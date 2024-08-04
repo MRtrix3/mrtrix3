@@ -296,7 +296,7 @@ namespace MR
           const Eigen::Vector3d orig_dir (Axes::id2dir (slice_encoding_it->second));
           Eigen::Vector3d new_dir;
           for (size_t axis = 0; axis != 3; ++axis)
-            new_dir[axis] = flip[axis] ? orig_dir[order[axis]] : -orig_dir[order[axis]];
+            new_dir[axis] = flip[axis] ? -orig_dir[order[axis]] : orig_dir[order[axis]];
           slice_encoding_it->second = Axes::dir2id (new_dir);
           INFO ("Slice encoding direction written to JSON file modified according to expected output NIfTI header transform realignment");
         }
