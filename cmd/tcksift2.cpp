@@ -318,6 +318,8 @@ void run() {
 
   opt = get_options("out_mu");
   if (!opt.empty()) {
+    CONSOLE("Note that while \"-out_mu\" option remains available, "
+            "value of proportionality coefficient is also available in output file header comments");
     File::OFStream out_mu(opt[0][0]);
     out_mu << tckfactor.mu();
   }
