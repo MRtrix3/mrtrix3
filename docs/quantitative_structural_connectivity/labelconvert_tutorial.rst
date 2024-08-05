@@ -20,7 +20,7 @@ Desikan-Killiany atlas. The default FreeSurfer pipeline provides the
 volumetric image aparc+aseg.mgz; this is the file that will be used to
 define the nodes of our connectome.
 
-.. figure:: labelconvert_before.png
+.. figure:: labelconvert/before.png
    :alt: labelconvert\_before
 
 Looking at the raw image itself, each node possesses a particular
@@ -103,7 +103,7 @@ This is what the actual command call looks like:
 
 And this is what the resulting image looks like:
 
-.. figure:: labelconvert_after.png
+.. figure:: labelconvert/after.png
    :alt: labelconvert\_after
 
 The integer labels of the underlying grey matter parcels have been

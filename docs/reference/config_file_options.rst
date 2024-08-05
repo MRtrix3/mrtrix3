@@ -675,6 +675,13 @@ List of MRtrix3 configuration file options
      Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop
      registration.
 
+.. option:: SIFT2DefaultUnits
+
+    *default: "mm^2"*
+
+     A string indicating the units of the streamline weights
+     yielded by the tcksift2 command.
+
 .. option:: ScriptScratchDir
 
     *default: `.`*

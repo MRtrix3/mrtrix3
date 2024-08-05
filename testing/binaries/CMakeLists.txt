@@ -404,6 +404,7 @@ add_bash_binary_test(tcksample/tdifraction)
 add_bash_binary_test(tcksift/default)
 
 add_bash_binary_test(tcksift2/default)
+add_bash_binary_test(tcksift2/units)
 
 add_bash_binary_test(tcktransform/unitwarp)
 

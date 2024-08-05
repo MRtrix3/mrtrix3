@@ -29,6 +29,7 @@
 #include "dwi/tractography/SIFT/output.h"
 
 #include "dwi/tractography/SIFT2/fixel.h"
+#include "dwi/tractography/SIFT2/units.h"
 
 #define SIFT2_REGULARISATION_TIKHONOV_DEFAULT 0.0
 #define SIFT2_REGULARISATION_TV_DEFAULT 0.1
@@ -88,7 +89,7 @@ public:
 
   void report_entropy() const;
 
-  void output_factors(const std::string &) const;
+  void output_factors(const std::string &, const units_t) const;
   void output_coefficients(const std::string &) const;
 
   void output_TD_images(const std::string &, const std::string &, const std::string &) const;

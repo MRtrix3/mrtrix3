@@ -58,7 +58,8 @@ const OptionGroup SIFTOutputOption =
              "output statistics of execution per iteration to a .csv file")
       + Argument("file").type_file_out()
     + Option("out_mu",
-             "output the final value of SIFT proportionality coefficient mu to a text file")
+             "output the final value of SIFT proportionality coefficient mu to a text file"
+             " (note: also available in output file headers)")
       + Argument("file").type_file_out()
     + Option("output_debug",
              "write to a directory various output images for assessing & debugging performance etc.")
