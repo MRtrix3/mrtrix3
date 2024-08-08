@@ -134,9 +134,10 @@ DataType descr2datatype(const std::string &s) {
   if (bytes > 1) {
     data_type = data_type() | (is_little_endian ? DataType::LittleEndian : DataType::BigEndian);
     if (issue_endianness_warning) {
-      WARN(std::string("NumPy file does not indicate data endianness;") +         //
-           " assuming " + (MRTRIX_IS_BIG_ENDIAN ? "big" : "little") + "-endian" + //
-           " (same as system)");
+      using namespace std::string_literals;
+      const std::string message = "NumPy file does not indicate data endianness; assuming "s +
+                                  (MRTRIX_IS_BIG_ENDIAN ? "big"s : "little"s) + "-endian"s + " (same as system)"s;
+      WARN(message);
     }
   }
   return data_type;
