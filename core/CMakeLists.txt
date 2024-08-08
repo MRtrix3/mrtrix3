@@ -87,6 +87,7 @@ target_link_libraries(mrtrix-core PUBLIC
     ZLIB::ZLIB
     ${FFTW_LIBRARIES}
     mrtrix::core-version-lib
+    mrtrix::common
     Threads::Threads
     ${FFTW_LIBRARIES}
 )
