@@ -101,7 +101,7 @@ References based on fitting algorithm used:
   Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
 
 * any of above with constraints: |br|
-  Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. Optimal experimental design and estimation for q-space trajectory imaging. Human Brain Mapping, In press
+  Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. Optimal experimental design and estimation for q-space trajectory imaging. Human Brain Mapping, 2023, 44, 1793-1809
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
