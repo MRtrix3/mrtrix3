@@ -613,7 +613,7 @@ def _shebang(item):
 
   class ShebangParseError(Exception):
     pass
-  def parse_shebang(line):
+  def parse_shebang(line, resolve_env):
     # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
     shebang = line[2:].strip().split(' ')
     # On Windows, /usr/bin/env can't be easily found
@@ -624,23 +624,29 @@ def _shebang(item):
     # This selection should apply to shebangs both of the form "/usr/bin/env python3" and "/usr/bin/python3"
     shebang_firstitem_basename = os.path.basename(shebang[0])
     shebang_python_version = None
+    shebang_extras = None
     if shebang_firstitem_basename == 'env':
+      shebang_extras = shebang[2:]
       if len(shebang) < 2:
         raise ShebangParseError('missing interpreter after "env"')
-      if shebang[1].startswith('python'):
+      if shebang[1] == 'python':
+        shebang_python_version = tuple()
+      elif shebang[1].startswith('python'):
         try:
           shebang_python_version = tuple(map(int, shebang[1][len('python'):].split('.')))
         except ValueError as exc:
           raise ShebangParseError(f'unable to extract Python version from text "{line}"') from exc
-      elif utils.is_windows():
-        return [ os.path.abspath(shutil.which(exe_name(shebang[1]))) ] + shebang[2:]
-    elif shebang_firstitem_basename == 'python':
-      shebang_python_version = tuple()
-    elif shebang_firstitem_basename.startswith('python'):
-      try:
-        shebang_python_version = tuple(map(int, shebang_firstitem_basename[len('python'):].split('.')))
-      except ValueError as exc:
-        raise ShebangParseError(f'unable to extract Python version from text "{line}"') from exc
+      elif resolve_env:
+        return [ shutil.which(shebang[1]) ] + shebang[2:]
+    else:
+      shebang_extras = shebang[1:]
+      if shebang_firstitem_basename == 'python':
+        shebang_python_version = tuple()
+      elif shebang_firstitem_basename.startswith('python'):
+        try:
+          shebang_python_version = tuple(map(int, shebang_firstitem_basename[len('python'):].split('.')))
+        except ValueError as exc:
+          raise ShebangParseError(f'unable to extract Python version from text "{line}"') from exc
     if shebang_python_version is None:
       return shebang
     if len(shebang_python_version) > 3:
@@ -650,7 +656,16 @@ def _shebang(item):
     #   or the shebang just requests "python"
     if this_version[:len(shebang_python_version)] == shebang_python_version \
         or not shebang_python_version:
-      return [ sys.executable ] + shebang[2:] if sys.executable else []
+      return [ sys.executable ] + shebang_extras if sys.executable else []
+    if shebang_firstitem_basename == 'env' and resolve_env:
+      exe_path = shutil.which(shebang[1])
+      if not exe_path:
+        raise ShebangParseError(f'on Windows with "env" shebang, but unable to find command "{shebang[1]}"')
+      return [exe_path] + shebang_extras
+    if os.path.exists(shebang[0]):
+      if not os.access(shebang[0], os.X_OK):
+        raise ShebangParseError(f'no execution access to "{shebang[1]}"')
+      return shebang
     return []
 
   # Try to find the shebang line
@@ -665,7 +680,7 @@ def _shebang(item):
     if not (len(line) > 2 and line[0:2] == '#!'):
       continue
     try:
-      shebang = parse_shebang(line)
+      shebang = parse_shebang(line, utils.is_windows())
       app.debug(f'File "{item}": shebang line "{line}"; utilised shebang {shebang}')
     except ShebangParseError as exc:
       app.warn(f'Invalid shebang in script file "{item}": {exc}')
