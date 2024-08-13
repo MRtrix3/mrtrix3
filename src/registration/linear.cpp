@@ -20,13 +20,13 @@ namespace MR::Registration {
 
 using namespace App;
 
-const char *const initialisation_translation_choices[] = {"mass", "geometric", "none", nullptr};
-const char *const initialisation_rotation_choices[] = {"search", "moments", "none", nullptr};
+const std::vector<std::string> initialisation_translation_choices = {"mass", "geometric", "none"};
+const std::vector<std::string> initialisation_rotation_choices = {"search", "moments", "none"};
 
-const char *const linear_metric_choices[] = {"diff", "ncc", nullptr};
-const char *const linear_robust_estimator_choices[] = {"l1", "l2", "lp", "none", nullptr};
-const char *const linear_optimisation_algo_choices[] = {"bbgd", "gd", nullptr};
-const char *const optim_algo_names[] = {"BBGD", "GD", nullptr};
+const std::vector<std::string> linear_metric_choices = {"diff", "ncc"};
+const std::vector<std::string> linear_robust_estimator_choices = {"l1", "l2", "lp", "none"};
+const std::vector<std::string> linear_optimisation_algo_choices = {"bbgd", "gd"};
+const std::vector<std::string> optim_algo_names = {"BBGD", "GD"};
 
 // define parameters of initialisation methods used for both, rigid and affine registration
 void parse_general_options(Registration::Linear &registration) {

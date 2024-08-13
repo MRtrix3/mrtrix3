@@ -37,20 +37,19 @@ using namespace App;
 
 using Fixel::index_type;
 
-const char *operations[] = {"mean",
-                            "sum",
-                            "product",
-                            "min",
-                            "max",
-                            "absmax",
-                            "magmax",
-                            "count",
-                            "complexity",
-                            "sf",
-                            "dec_unit",
-                            "dec_scaled",
-                            "none",
-                            nullptr};
+const std::vector<std::string> operations = {"mean",
+                                             "sum",
+                                             "product",
+                                             "min",
+                                             "max",
+                                             "absmax",
+                                             "magmax",
+                                             "count",
+                                             "complexity",
+                                             "sf",
+                                             "dec_unit",
+                                             "dec_scaled",
+                                             "none"};
 
 // clang-format off
 

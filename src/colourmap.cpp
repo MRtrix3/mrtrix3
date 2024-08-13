@@ -23,7 +23,7 @@ namespace {
 float clamp(const float i) { return std::max(0.0f, std::min(1.0f, i)); }
 } // namespace
 
-const Entry maps[] = {
+const std::vector<Entry> maps = {
     Entry("Gray",
           "color.rgb = vec3 (amplitude);\n",
           [](float amplitude) { return Eigen::Array3f(clamp(amplitude), clamp(amplitude), clamp(amplitude)); }),
@@ -140,8 +140,5 @@ const Entry maps[] = {
           "color.rgb = scale * (amplitude - offset) * color.rgb;\n",
           Entry::basic_map_fn(),
           "length (color.rg)",
-          true),
-
-    Entry(NULL, NULL, Entry::basic_map_fn(), NULL, true)};
-
+          true)};
 } // namespace MR::ColourMap

@@ -30,7 +30,7 @@ using namespace App;
 #define DEFAULT_BALANCE_MAXITER_VALUE 7
 #define DEFAULT_POLY_ORDER 3
 
-const char *poly_order_choices[] = {"0", "1", "2", "3", nullptr};
+const std::vector<std::string> poly_order_choices = {"0", "1", "2", "3"};
 
 // clang-format off
 void usage() {

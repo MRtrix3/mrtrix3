@@ -33,7 +33,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Fixel;
 
-const char *const filters[] = {"connect", "smooth", nullptr};
+const std::vector<std::string> filters = {"connect", "smooth"};
 
 // clang-format off
 void usage() {

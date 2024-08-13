@@ -29,7 +29,7 @@ using namespace App;
 
 #define DEFAULT_CLEAN_SCALE 2
 
-const char *filters[] = {"clean", "connect", "dilate", "erode", "fill", "median", nullptr};
+const std::vector<std::string> filters = {"clean", "connect", "dilate", "erode", "fill", "median"};
 
 // clang-format off
 const OptionGroup CleanOption =

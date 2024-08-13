@@ -29,7 +29,7 @@
 using namespace MR;
 using namespace App;
 
-const char *filters[] = {"fft", "gradient", "median", "smooth", "normalise", "zclean", NULL};
+const std::vector<std::string> filters = {"fft", "gradient", "median", "smooth", "normalise", "zclean"};
 
 // clang-format off
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")

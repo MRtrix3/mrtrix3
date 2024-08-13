@@ -42,9 +42,9 @@
 using namespace MR;
 using namespace App;
 
-const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", nullptr};
 #define DEFAULT_INTERP 2 // cubic
-const char *modulation_choices[] = {"fod", "jac", nullptr};
+const std::vector<std::string> interp_choices = {"nearest", "linear", "cubic", "sinc"};
+const std::vector<std::string> modulation_choices = {"fod", "jac"};
 
 // clang-format off
 void usage() {
