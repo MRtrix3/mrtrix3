@@ -22,7 +22,7 @@
 
 namespace MR::DWI::Tractography::Connectome {
 
-const char *statistics[] = {"sum", "mean", "min", "max", NULL};
+std::vector<std::string> statistics = {"sum", "mean", "min", "max"};
 
 const App::Option EdgeStatisticOption
 

@@ -28,7 +28,7 @@ using namespace MR;
 using namespace App;
 
 using value_type = float;
-const char *modulate_choices[] = {"none", "fa", "eigval", NULL};
+const std::vector<std::string> modulate_choices = {"none", "fa", "eigval"};
 #define DEFAULT_RK_NDIRS 300
 
 // clang-format off

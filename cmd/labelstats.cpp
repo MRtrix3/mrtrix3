@@ -28,7 +28,7 @@
 using namespace MR;
 using namespace App;
 
-const char *field_choices[] = {"mass", "centre", nullptr};
+const std::vector<std::string> field_choices = {"mass", "centre"};
 
 // clang-format off
 void usage() {
