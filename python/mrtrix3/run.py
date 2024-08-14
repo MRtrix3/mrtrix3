@@ -369,14 +369,15 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
           line.append('-force')
       else:
         line[0] = exe_name(line[0])
-      shebang = _shebang(line[0])
-      if shebang:
+      interpreter = get_interpreter(line[0])
+      if interpreter:
         if not is_mrtrix_exe:
-          # If a shebang is found, and this call is therefore invoking an
-          #   interpreter, can't rely on the interpreter finding the script
-          #   from PATH; need to find the full path ourselves.
+          # If a shebang is found,
+          #   and this call is therefore explicitly invoking an interpreter,
+          #   can't rely on the interpreter finding the script from PATH;
+          #   need to find the full path ourselves.
           line[0] = shutil.which(line[0])
-        for item in reversed(shebang):
+        for item in reversed(interpreter):
           line.insert(0, item)
 
     with shared.lock:
@@ -595,7 +596,7 @@ def version_match(item):
 
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
-def _shebang(item):
+def get_interpreter(item):
   from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
   if os.sep in item:
@@ -616,7 +617,8 @@ def _shebang(item):
   def parse_shebang(line, resolve_env):
     # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
     shebang = line[2:].strip().split(' ')
-    # On Windows, /usr/bin/env can't be easily found
+    # On Windows MSYS2, can have issues attempting to run commands through subprocess
+    #   without the shell interpreter if /usr/bin/env is used in the shebang
     #   Instead, manually find the right interpreter to call using shutil.which()
     # Also if script is written in Python,
     #   try to execute it using the same interpreter as that currently running,
@@ -680,9 +682,9 @@ def _shebang(item):
     if not (len(line) > 2 and line[0:2] == '#!'):
       continue
     try:
-      shebang = parse_shebang(line, utils.is_windows())
-      app.debug(f'File "{item}": shebang line "{line}"; utilised shebang {shebang}')
-      return shebang
+      interpreter = parse_shebang(line, utils.is_windows())
+      app.debug(f'File "{item}": shebang line "{line}"; utilising interpreter {interpreter}')
+      return interpreter
     except ShebangParseError as exc:
       app.warn(f'Invalid shebang in script file "{item}": {exc}')
       return []
