@@ -682,6 +682,7 @@ def _shebang(item):
     try:
       shebang = parse_shebang(line, utils.is_windows())
       app.debug(f'File "{item}": shebang line "{line}"; utilised shebang {shebang}')
+      return shebang
     except ShebangParseError as exc:
       app.warn(f'Invalid shebang in script file "{item}": {exc}')
       return []
