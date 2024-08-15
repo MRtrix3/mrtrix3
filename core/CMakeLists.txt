@@ -2,16 +2,12 @@ include(CheckSymbolExists)
 
 file(GLOB_RECURSE CORE_SRCS *.cpp *.h)
 
-find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(ZLIB REQUIRED)
 find_package(FFTW REQUIRED)
 find_package(Git QUIET)
 find_package(Threads REQUIRED)
 find_package(PNG QUIET)
 
-# The find modules for Eigen3, and PNG don't log the location
-# of the libraries, so we do it manually here
-message(STATUS "Found Eigen3: ${EIGEN3_INCLUDE_DIR}")
 if(PNG_FOUND)
     message(STATUS "Found PNG: ${PNG_LIBRARIES}")
 endif()
@@ -90,6 +86,9 @@ target_link_libraries(mrtrix-core PUBLIC
     mrtrix::common
     Threads::Threads
     ${FFTW_LIBRARIES}
+    nlohmann_json::nlohmann_json
+    nifti::nifti
+    half::half
 )
 
 target_include_directories(mrtrix-core PUBLIC
