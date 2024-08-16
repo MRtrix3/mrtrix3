@@ -4,7 +4,7 @@
 #   - OUTPUT_DIR: Directory in which to create the executable
 
 set(BINPATH_CONTENTS
-    "#!/usr/bin/python3\n"
+    "#!/usr/bin/env python3\n"
     "# -*- coding: utf-8 -*-\n"
     "\n"
     "import importlib\n"
