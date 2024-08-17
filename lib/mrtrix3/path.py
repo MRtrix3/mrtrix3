@@ -263,7 +263,7 @@ def wait_for(paths): #pylint: disable=unused-variable
       time.sleep(delay)
       new_num_exist = num_exist(paths)
       if new_num_exist == current_num_exist:
-        delay = max(60.0, delay*2.0)
+        delay = min(60.0, delay*2.0)
       elif new_num_exist > current_num_exist:
         for _ in range(new_num_exist - current_num_exist):
           progress.increment()
@@ -305,7 +305,7 @@ def wait_for(paths): #pylint: disable=unused-variable
     time.sleep(delay)
     new_num_in_use = num_in_use(paths)
     if new_num_in_use == current_num_in_use:
-      delay = max(60.0, delay*2.0)
+      delay = min(60.0, delay*2.0)
     elif new_num_in_use < current_num_in_use:
       for _ in range(current_num_in_use - new_num_in_use):
         progress.increment()
