@@ -17,7 +17,7 @@
 
 
 
-import ctypes, os, shutil, subprocess, time
+import ctypes, os, pathlib, shutil, subprocess, time
 
 
 
@@ -51,7 +51,7 @@ def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
 #   need to be used in conjunction with scriptSubDirName()
 def shared_data_path(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
+  result = pathlib.Path(__file__).resolve().parents[2] / 'share' / 'mrtrix3'
   app.debug(result)
   return result
 
@@ -95,7 +95,7 @@ def wait_for(paths): #pylint: disable=unused-variable
     # A fatal error will result in a non-zero code -> in_use() = False, so wait_for() can return
     return not subprocess.call(['fuser', '-s', path], shell=False, stdin=None, stdout=None, stderr=None)
 
-  def num_exit(data):
+  def num_exist(data):
     count = 0
     for entry in data:
       if os.path.exists(entry):
@@ -122,27 +122,27 @@ def wait_for(paths): #pylint: disable=unused-variable
   else:
     assert isinstance(paths, list)
     for entry in paths:
-      assert isinstance(entry, str)
+      assert isinstance(entry, (str, pathlib.Path))
 
   app.debug(str(paths))
 
   # Wait until all files exist
-  num_exist = num_exit(paths)
-  if num_exist != len(paths):
+  current_num_exist = num_exist(paths)
+  if current_num_exist != len(paths):
     item_message = f'new item "{paths[0]}"' if len(paths) == 1 else f'{len(paths)} new items'
     progress = app.ProgressBar(f'Waiting for creation of {item_message}', len(paths))
-    for _ in range(num_exist):
+    for _ in range(current_num_exist):
       progress.increment()
     delay = 1.0/1024.0
-    while not num_exist == len(paths):
+    while not current_num_exist == len(paths):
       time.sleep(delay)
-      new_num_exist = num_exit(paths)
-      if new_num_exist == num_exist:
-        delay = max(60.0, delay*2.0)
-      elif new_num_exist > num_exist:
-        for _ in range(new_num_exist - num_exist):
+      new_num_exist = num_exist(paths)
+      if new_num_exist == current_num_exist:
+        delay = min(60.0, delay*2.0)
+      elif new_num_exist > current_num_exist:
+        for _ in range(new_num_exist - current_num_exist):
           progress.increment()
-        num_exist = new_num_exist
+        current_num_exist = new_num_exist
         delay = 1.0/1024.0
     progress.done()
   else:
@@ -160,29 +160,29 @@ def wait_for(paths): #pylint: disable=unused-variable
     return
 
   # Can we query the in-use status of any of these paths
-  num_in_use = num_in_use(paths)
-  if num_in_use is None:
+  current_num_in_use = num_in_use(paths)
+  if current_num_in_use is None:
     app.debug('Unable to test for finalization of new files')
     return
 
   # Wait until all files are not in use
-  if not num_in_use:
+  if not current_num_in_use:
     app.debug(f'{"Items" if len(paths) > 1 else "Item"} immediately ready')
     return
 
   item_message = f'new file "{paths[0]}"' if len(paths) == 1 else f'{len(paths)} new files'
   progress = app.ProgressBar('Waiting for finalization of {item_message}')
-  for _ in range(len(paths) - num_in_use):
+  for _ in range(len(paths) - current_num_in_use):
     progress.increment()
   delay = 1.0/1024.0
-  while num_in_use:
+  while current_num_in_use:
     time.sleep(delay)
     new_num_in_use = num_in_use(paths)
-    if new_num_in_use == num_in_use:
-      delay = max(60.0, delay*2.0)
-    elif new_num_in_use < num_in_use:
-      for _ in range(num_in_use - new_num_in_use):
+    if new_num_in_use == current_num_in_use:
+      delay = min(60.0, delay*2.0)
+    elif new_num_in_use < current_num_in_use:
+      for _ in range(current_num_in_use - new_num_in_use):
         progress.increment()
-      num_in_use = new_num_in_use
+      current_num_in_use = new_num_in_use
       delay = 1.0/1024.0
   progress.done()
