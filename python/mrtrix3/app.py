@@ -601,6 +601,9 @@ class _QuoteEscapedPath:
 #   (which itself through __new__() / __init__() could be Posix or Windows)
 #   and a desired augmentation that provides additional functions
 # TODO Can this be made a callable?
+# TODO Trouble with exposing this outside of the Parser is that
+#   as soon as one of the member functions is called,
+#   the returned type will no longer be derived from _QuoteEscapedPath
 def make_quote_escaped_path_object(base_class, *args):
   abspath = pathlib.Path(WORKING_DIR, *args).resolve()
   super_class = type(abspath)
@@ -663,21 +666,21 @@ class Parser(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
     def check_input(self, item_type='path'):
-      if not self.exists():
+      if not super().exists(): # pylint: disable=no-member
         raise argparse.ArgumentTypeError(f'Input {item_type} "{self}" does not exist')
   class _UserFileInPathExtras(_UserInPathExtras):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
     def check_input(self): # pylint: disable=arguments-differ
       super().check_input('file')
-      if not self.is_file():
+      if not super().is_file(): # pylint: disable=no-member
         raise argparse.ArgumentTypeError(f'Input path "{self}" is not a file')
   class _UserDirInPathExtras(_UserInPathExtras):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)
     def check_input(self): # pylint: disable=arguments-differ
       super().check_input('directory')
-      if not self.is_dir():
+      if not super().is_dir(): # pylint: disable=no-member
         raise argparse.ArgumentTypeError(f'Input path "{self}" is not a directory')
 
   # Various callable types for use as argparse argument types
@@ -832,8 +835,8 @@ class Parser(argparse.ArgumentParser):
       input_value = sys.stdin.readline().strip()
       if shutil.which('cygpath.exe'):
         try:
-          new_path = subprocess.run(['cygpath.exe', '-m', input_value], check=True, capture_output=True, text=True).stdout.strip()
-          debug(f'stdin contents to cygpath.exe: {input_value} -> {new_path}\n')
+          new_path = subprocess.run(['cygpath.exe', '-u', input_value], check=True, capture_output=True, text=True).stdout.strip()
+          debug(f'stdin contents to cygpath.exe: {input_value} -> {new_path}')
           abspath = make_quote_escaped_path_object(_QuoteEscapedPath, new_path)
         except subprocess.CalledProcessError:
           warn(f'Error converting input piped image path {input_value} using cygpath;'

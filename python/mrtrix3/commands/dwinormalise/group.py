@@ -140,7 +140,7 @@ def execute(): #pylint: disable=unused-variable
                  in_path,
                  wm_mask_warped_path,
                  dwi_normalised_path])
-    run.command(['mrconvert', dwi_normalised_path, app.ARGS.output_dir / i.filename],
+    run.command(['mrconvert', dwi_normalised_path, app.make_quote_escaped_path_object(app.ARGS.output_dir, i.filename)],
                 mrconvert_keyval=in_path,
                 force=app.FORCE_OVERWRITE)
     app.cleanup([warp_path, fa_path, wm_mask_warped_path, dwi_normalised_path])
