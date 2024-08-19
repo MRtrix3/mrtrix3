@@ -19,12 +19,13 @@
 
 #include "command.h"
 #include "dwi/gradient.h"
-#include "file/json.h"
 #include "file/json_utils.h"
 #include "header.h"
 #include "image_io/pipe.h"
 #include "phase_encoding.h"
 #include "types.h"
+
+#include <nlohmann/json.hpp>
 
 using namespace MR;
 using namespace App;
