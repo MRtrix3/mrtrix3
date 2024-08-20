@@ -88,6 +88,7 @@ target_link_libraries(mrtrix-core PUBLIC
     ${FFTW_LIBRARIES}
     nlohmann_json::nlohmann_json
     nifti::nifti
+    half::half
 )
 
 target_include_directories(mrtrix-core PUBLIC
