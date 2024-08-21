@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "exception.h"
 #include "types.h"
 #include <functional>
 
@@ -51,38 +52,22 @@ public:
 
 extern const std::vector<Entry> maps;
 
-inline size_t num() {
-  size_t n = 0;
-  while (maps[n].name)
-    ++n;
-  return n;
-}
+inline size_t num() { return maps.size(); }
 
 inline size_t num_scalar() {
-  size_t n = 0, i = 0;
-  while (maps[i].name) {
-    if (!maps[i].special)
-      ++n;
-    ++i;
-  }
-  return n;
+  return std::count_if(maps.begin(), maps.end(), [](const Entry &map) { return map.special; });
 }
 
 inline size_t index(const std::string &name) {
-  size_t n = 0;
-  while (maps[n].name != name)
-    ++n;
-  return n;
+  auto it = std::find_if(maps.begin(), maps.end(), [&name](const Entry &map) { return map.name == name; });
+
+  if (it == maps.end())
+    throw MR::Exception("Colour map \"" + name + "\" not found");
+  return std::distance(maps.begin(), it);
 }
 
 inline size_t num_special() {
-  size_t n = 0, i = 0;
-  while (maps[i].name) {
-    if (maps[i].special)
-      ++n;
-    ++i;
-  }
-  return n;
+  return std::count_if(maps.begin(), maps.end(), [](const Entry &map) { return map.special; });
 }
 
 } // namespace MR::ColourMap
