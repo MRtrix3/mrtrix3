@@ -132,7 +132,7 @@ void run() {
     return largestshell_index;
   }();
   INFO("first volume will be from shell b=" + str(bvalue[largest_shell]));
-  size_t largest_subset_within_largest_shell = [&] {
+  const size_t largest_subset_within_largest_shell = [&] {
     size_t largestsubset_index = 0;
     size_t largestsubset_n = dirs[largest_shell][0].size();
     for (size_t n = 1; n != dirs[largest_shell].size(); ++n) {
@@ -149,7 +149,8 @@ void run() {
   }
   std::random_device rd;
   std::mt19937 rng(rd());
-  const size_t first = std::uniform_int_distribution<size_t>(0, dirs[largest_shell][largest_subset_within_largest_shell].size() - 1)(rng);
+  const size_t first = std::uniform_int_distribution<size_t>(
+      0, dirs[largest_shell][largest_subset_within_largest_shell].size() - 1)(rng);
 
   std::vector<OutDir> merged;
 
