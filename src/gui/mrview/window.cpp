@@ -23,6 +23,7 @@
 #include "gui/dialog/progress.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/list.h"
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/list.h"
 #include "gui/opengl/gl.h"
@@ -154,7 +155,9 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        const auto &url = urlList.at(i);
+        const auto filePath = QtHelpers::url_to_std_string(url);
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(filePath)));
       } catch (Exception &e) {
         e.display();
       }
