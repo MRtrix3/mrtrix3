@@ -64,4 +64,28 @@ target_include_directories(half INTERFACE "${half_SOURCE_DIR}/include")
 # Nifti headers
 add_library(nifti INTERFACE)
 add_library(nifti::nifti ALIAS nifti)
-target_include_directories(nifti INTERFACE "${PROJECT_SOURCE_DIR}/thirdparty/nifti")
+
+if(MRTRIX_LOCAL_DEPENDENCIES)
+    target_include_directories(nifti INTERFACE "${MRTRIX_DEPENDENCIES_DIR}/nifti")
+else()
+    include(ExternalProject)
+    ExternalProject_Add(
+        nifti1
+        PREFIX nifti
+        URL "https://nifti.nimh.nih.gov/pub/dist/src/nifti2/nifti1.h"
+        CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
+        DOWNLOAD_NO_EXTRACT ON
+        DOWNLOAD_NO_PROGRESS ON
+    )
+    ExternalProject_Add(
+        nifti2
+        PREFIX nifti
+        URL "https://nifti.nimh.nih.gov/pub/dist/src/nifti2/nifti2.h"
+        CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
+        DOWNLOAD_NO_EXTRACT ON
+        DOWNLOAD_NO_PROGRESS ON
+    )
+    target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti/src/")
+    target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti/src/")
+endif()
+
