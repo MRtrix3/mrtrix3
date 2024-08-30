@@ -86,6 +86,5 @@ else()
         DOWNLOAD_NO_PROGRESS ON
     )
     target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti/src/")
-    target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti/src/")
 endif()
 
