@@ -657,7 +657,7 @@ def execute(): #pylint: disable=unused-variable
       run.command(['mrcalc', aparc_image, str(wm_index), '-eq', aparc_image, str(gm_index), '-eq', '-add', '-', '|',
                   'voxel2mesh', '-', f'{hemi}cerebellum_all_init.vtk'])
       progress.increment()
-      run.command(['mrcalc', aparc_image, gm_index, '-eq', '-', '|',
+      run.command(['mrcalc', aparc_image, str(gm_index), '-eq', '-', '|',
                   'voxel2mesh', '-', f'{hemi}cerebellum_grey_init.vtk'])
       progress.increment()
       for name, tissue in { 'all':2, 'grey':1 }.items():
