@@ -185,8 +185,8 @@ def execute(): #pylint: disable=unused-variable
     app.console(f'Default "{MASK_ALGO_DEFAULT}" algorithm will be used for brain masking during iteration')
 
   # Check mask algorithm, including availability of external software if necessary
-  for mask_algo, software, command in [('fslbet', 'FSL', 'bet'), ('hdbet', 'HD-BET', 'hd-bet'), ('synthstrip', 'FreeSurfer', 'mri_synthstrip')]:
-    if app.ARGS.mask_algo == mask_algo and not shutil.which(command):
+  for algo, software, command in [('fslbet', 'FSL', 'bet'), ('hdbet', 'HD-BET', 'hd-bet'), ('synthstrip', 'FreeSurfer', 'mri_synthstrip')]:
+    if mask_algo == algo and not shutil.which(command):
       raise MRtrixError(f'{software} command "{command}" not found; cannot use for internal mask calculations')
 
   app.activate_scratch_dir()
