@@ -57,6 +57,13 @@ add_bash_binary_test(dirgen/default)
 add_bash_binary_test(dirgen/power)
 add_bash_binary_test(dirgen/unipolar)
 
+add_bash_binary_test(dirmerge/onesubset)
+add_bash_binary_test(dirmerge/twosubsets)
+add_bash_binary_test(dirmerge/foursubsets)
+add_bash_binary_test(dirmerge/onesubset_firstisfirst)
+add_bash_binary_test(dirmerge/twosubsets_firstisfirst)
+add_bash_binary_test(dirmerge/foursubsets_firstisfirst)
+
 add_bash_binary_test(dwi2adc/default)
 
 add_bash_binary_test(dwi2fod/csd_default)
