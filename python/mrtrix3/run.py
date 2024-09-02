@@ -266,21 +266,49 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       if isinstance(entry, str):
         cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry)}'
         cmdsplit.append(entry)
-      elif isinstance(entry, list):
-        assert all(isinstance(item, str) for item in entry)
-        if len(entry) > 1:
-          common_prefix = os.path.commonprefix(entry)
-          common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
-          if common_prefix == entry[0] and common_prefix == common_suffix:
-            cmdstring += f'{" " if cmdstring else ""}[{entry[0]} (x{len(entry)})]'
-          else:
-            cmdstring += f'{" " if cmdstring else ""}[{common_prefix}*{common_suffix} ({len(entry)} items)]'
-        else:
-          cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry[0])}'
-        cmdsplit.extend(entry)
-      elif isinstance(entry, pathlib.Path):
-        cmdstring += f'{" " if cmdstring else ""}{shlex.quote(str(entry))}'
+      elif isinstance(entry, app.FSQEPath):
+        cmdstring += f'{" " if cmdstring else ""}' \
+                     f'{entry.relative_to(app.SCRATCH_DIR) \
+                        if app.SCRATCH_DIR and entry.is_relative_to(app.SCRATCH_DIR) \
+                        else entry}'
         cmdsplit.append(str(entry))
+      elif isinstance(entry, pathlib.Path):
+        cmdstring += f'{" " if cmdstring else ""}' \
+                     + shlex.quote(str(entry.relative_to(app.SCRATCH_DIR)) \
+                                       if app.SCRATCH_DIR and entry.is_relative_to(app.SCRATCH_DIR) \
+                                       else entry)
+        cmdsplit.append(str(entry))
+      elif isinstance(entry, list):
+        if all(isinstance(item, str) for item in entry):
+          if len(entry) > 1:
+            common_prefix = os.path.commonprefix(entry)
+            common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
+            if common_prefix == entry[0] and common_prefix == common_suffix:
+              cmdstring += f'{" " if cmdstring else ""}[{entry[0]} (x{len(entry)})]'
+            else:
+              cmdstring += f'{" " if cmdstring else ""}[{common_prefix}*{common_suffix} ({len(entry)} items)]'
+          else:
+            cmdstring += f'{" " if cmdstring else ""}{shlex.quote(entry[0])}'
+          cmdsplit.extend(entry)
+        elif all(isinstance(item, (app.FSQEPath, pathlib.Path)) for item in entry):
+          if len(entry) > 1:
+            common_prefix = os.path.commonprefix(entry)
+            common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
+            if common_prefix == entry[0] and common_prefix == common_suffix:
+              cmdstring += f'{" " if cmdstring else ""}' \
+                           f'[{shlex.quote(entry[0])} (x{len(entry)})]'
+            else:
+              cmdstring += f'{" " if cmdstring else ""} [' \
+                           + shlex.quote(f'{common_prefix}*{common_suffix}') \
+                           + f'({len(entry)} items)]'
+          else:
+            cmdstring += f'{" " if cmdstring else ""}' \
+                         f'{entry[0] if isinstance(entry[0], app.FSQEPath) else shlex.quote(entry[0])}'
+          cmdsplit.extend(entry)
+        else:
+          raise TypeError('If a list input to run.command() includes within it a list, '
+                          'the entries in that list must all be of the same type, '
+                          'and that type must be either str, app.FSQEPath or pathlib.Path')
       else:
         raise TypeError('When run.command() is provided with a list as input, '
                         'entries in the list must be either strings or lists of strings; '

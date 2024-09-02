@@ -34,9 +34,7 @@ from . import AGGREGATION_MODES, \
 
 class SequenceDirectoryOut(app.Parser.CustomTypeBase):
   def __call__(self, input_value):
-    # pylint: disable=protected-access
-    return [app.make_quote_escaped_path_object(app.Parser._UserDirOutPathExtras, item)
-            for item in input_value.split(',')]
+    return [app.Parser.UserDirOutPath(item) for item in input_value.split(',')]
   @staticmethod
   def _legacytypestring():
     return 'SEQDIROUT'

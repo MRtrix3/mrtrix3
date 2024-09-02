@@ -184,7 +184,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   try:
     for key in vars(ARGS):
       value = getattr(ARGS, key)
-      if isinstance(value, Parser._UserOutPathExtras): # pylint: disable=protected-access
+      if isinstance(value, Parser.UserOutPath):
         value.check_output()
   except FileExistsError as exception:
     sys.stderr.write('\n')
@@ -584,38 +584,57 @@ class ProgressBar: #pylint: disable=unused-variable
 
 
 
-
-# This class is intended to _augment_ the pathlib.Path class
-#   by modifying its behaviour when used in f-strings.
-# By quote-escaping when formatted in an f-string,
-#   such filesystem paths can be used to construct command strings
-#   that can be fed to run.command() as shell strings (rather than argument lists)
-#   whilst being compatible with the prospect of whitespace in those paths.
-# Note that this class cannot be instantiated in isolation;
-#   it is necessary to initialise it using the function below.
-class _QuoteEscapedPath:
+# This class provides exactly the same functionality as pathlib.Path,
+#   with the exception that where filesystem paths are used
+#   to construct command strings to be executed via the run.command() function
+#   by using Python3's f-strings,
+#   these paths will be quote-escaped in the presence of whitespace
+#   (which may be outside of the developer's control if a user-specified path),
+#   so that within the contewxt of a full command string,
+#   the filesystem path is properly interpreted as a singular string.
+class FSQEPath(type(pathlib.Path.cwd())):
+  def absolute(self):
+    return FSQEPath(super().absolute())
+  @classmethod
+  def cwd():
+    return FSQEPath(pathlib.Path.cwd())
+  def expanduser(self):
+    return FSQEPath(super().expanduser())
+  def joinpath(self, *pathsegments):
+    return FSQEPath(self, *pathsegments)
+  @classmethod
+  def home():
+    return FSQEPath(pathlib.Path.home())
+  @property
+  def parent(self):
+    return FSQEPath(super().parent)
+  def readlink(self):
+    return FSQEPath(super().readlink())
+  def rename(self, target):
+    return FSQEPath(super().rename(target))
+  def replace(self, target):
+    return FSQEPath(super().replace(target))
+  def resolve(self):
+    return FSQEPath(super().resolve())
+  def with_name(self, name):
+    return FSQEPath(super().with_name(name))
+  def with_segments(self, *pathsegments):
+    return FSQEPath(super().with_segments(*pathsegments))
+  def with_stem(self, stem):
+    return FSQEPath(super().with_stem(stem))
+  def with_suffix(self, stem):
+    return FSQEPath(super().with_suffix(stem))
   def __format__(self, _):
     return shlex.quote(str(self))
-# Function that will create a new class,
-#   which will derive from both pathlib.Path
-#   (which itself through __new__() / __init__() could be Posix or Windows)
-#   and a desired augmentation that provides additional functions
-# TODO Can this be made a callable?
-# TODO Trouble with exposing this outside of the Parser is that
-#   as soon as one of the member functions is called,
-#   the returned type will no longer be derived from _QuoteEscapedPath
-def make_quote_escaped_path_object(base_class, *args):
-  abspath = pathlib.Path(WORKING_DIR, *args).resolve()
-  super_class = type(abspath)
-  new_class = type(f'{base_class.__name__.lstrip("_").rstrip("Extras")}',
-                  (base_class, super_class),
-                  {})
-  if sys.version_info < (3, 12):
-    instance = new_class.__new__(new_class, abspath)
-  else:
-    instance = new_class.__new__(new_class)
-    super(super_class, instance).__init__(abspath) # pylint: disable=bad-super-call
-  return instance
+  def __truediv__(self, key):
+    return FSQEPath(super() / key)
+  def __rtruediv__(self, key):
+    return FSQEPath(key / super())
+
+
+
+
+
 
 # The Parser class is responsible for setting up command-line parsing for the script.
 #   This includes proper configuration of the argparse functionality, adding standard options
@@ -624,25 +643,19 @@ def make_quote_escaped_path_object(base_class, *args):
 #   automated self-documentation.
 class Parser(argparse.ArgumentParser):
 
-  class _UserOutPathExtras(_QuoteEscapedPath):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserOutPath(FSQEPath):
     def check_output(self, item_type='path'):
-      if self.exists(): # pylint: disable=no-member
+      if self.exists():
         if FORCE_OVERWRITE:
           warn(f'Output {item_type} "{str(self)}" already exists; '
                 'will be overwritten at script completion')
         else:
           raise FileExistsError(f'Output {item_type} "{str(self)}" already exists '
                                 '(use -force option to force overwrite)')
-  class _UserFileOutPathExtras(_UserOutPathExtras):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserFileOutPath(UserOutPath):
     def check_output(self): # pylint: disable=arguments-differ
       return super().check_output('file')
-  class _UserDirOutPathExtras(_UserOutPathExtras):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserDirOutPath(UserOutPath):
     def check_output(self): # pylint: disable=arguments-differ
       return super().check_output('directory')
     # Force parents=True for user-specified path
@@ -662,22 +675,16 @@ class Parser(argparse.ArgumentParser):
             # pylint: disable=raise-missing-from
             raise FileExistsError(f'Output directory "{str(self)}" already exists '
                                   '(use -force option to force overwrite)')
-  class _UserInPathExtras(_QuoteEscapedPath):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserInPath(FSQEPath):
     def check_input(self, item_type='path'):
       if not super().exists(): # pylint: disable=no-member
         raise argparse.ArgumentTypeError(f'Input {item_type} "{self}" does not exist')
-  class _UserFileInPathExtras(_UserInPathExtras):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserFileInPath(UserInPath):
     def check_input(self): # pylint: disable=arguments-differ
       super().check_input('file')
       if not super().is_file(): # pylint: disable=no-member
         raise argparse.ArgumentTypeError(f'Input path "{self}" is not a file')
-  class _UserDirInPathExtras(_UserInPathExtras):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserDirInPath(UserInPath):
     def check_input(self): # pylint: disable=arguments-differ
       super().check_input('directory')
       if not super().is_dir(): # pylint: disable=no-member
@@ -785,7 +792,7 @@ class Parser(argparse.ArgumentParser):
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = make_quote_escaped_path_object(Parser._UserDirInPathExtras, input_value)
+      abspath = Parser.UserDirInPath(os.path.join(WORKING_DIR, input_value))
       abspath.check_input()
       return abspath
     @staticmethod
@@ -797,7 +804,7 @@ class Parser(argparse.ArgumentParser):
 
   class DirectoryOut(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = make_quote_escaped_path_object(Parser._UserDirOutPathExtras, input_value)
+      abspath = Parser.UserDirOutPath(os.path.join(WORKING_DIR, input_value))
       return abspath
     @staticmethod
     def _legacytypestring():
@@ -808,7 +815,7 @@ class Parser(argparse.ArgumentParser):
 
   class FileIn(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = make_quote_escaped_path_object(Parser._UserFileInPathExtras, input_value)
+      abspath = Parser.UserFileInPath(os.path.join(WORKING_DIR, input_value))
       abspath.check_input()
       return abspath
     @staticmethod
@@ -820,7 +827,7 @@ class Parser(argparse.ArgumentParser):
 
   class FileOut(CustomTypeBase):
     def __call__(self, input_value):
-      return make_quote_escaped_path_object(Parser._UserFileOutPathExtras, input_value)
+      return Parser.UserFileOutPath(os.path.join(WORKING_DIR, input_value))
     @staticmethod
     def _legacytypestring():
       return 'FILEOUT'
@@ -831,19 +838,18 @@ class Parser(argparse.ArgumentParser):
   class ImageIn(CustomTypeBase):
     def __call__(self, input_value):
       if input_value != '-':
-        return make_quote_escaped_path_object(_QuoteEscapedPath, input_value)
+        return FSQEPath(os.path.join(WORKING_DIR, input_value))
       input_value = sys.stdin.readline().strip()
       if shutil.which('cygpath.exe'):
         try:
-          new_path = subprocess.run(['cygpath.exe', '-u', input_value], check=True, capture_output=True, text=True).stdout.strip()
-          debug(f'stdin contents to cygpath.exe: {input_value} -> {new_path}')
-          abspath = make_quote_escaped_path_object(_QuoteEscapedPath, new_path)
+          new_path = subprocess.run(['cygpath.exe', '-u', '-a', input_value], check=True, capture_output=True, text=True).stdout.strip()
+          abspath = FSQEPath(new_path)
         except subprocess.CalledProcessError:
           warn(f'Error converting input piped image path {input_value} using cygpath;'
                ' attempts to read piped image may fail')
-          abspath = make_quote_escaped_path_object(_QuoteEscapedPath, input_value)
+          abspath = FSQEPath(input_value)
       else:
-        abspath = make_quote_escaped_path_object(_QuoteEscapedPath, input_value)
+        abspath = FSQEPath(input_value)
       _STDIN_IMAGES.append(abspath)
       return abspath
 
@@ -859,13 +865,13 @@ class Parser(argparse.ArgumentParser):
       if input_value == '-':
         # TODO Create a different class for handling output piped images,
         #   which only invokes utils.name_temporary() upon first usage
-        abspath = make_quote_escaped_path_object(_QuoteEscapedPath, utils.name_temporary('mif'))
+        abspath = FSQEPath(utils.name_temporary('mif'))
         _STDOUT_IMAGES.append(abspath)
         return abspath
       # No detriments to using "UserFileOutPath" here;
       #   not guaranteed to catch all cases of output images trying to overwrite existing files;
       #   but will at least catch some of them
-      return make_quote_escaped_path_object(Parser._UserFileOutPathExtras, input_value)
+      return Parser.UserFileOutPath(os.path.join(WORKING_DIR, input_value))
     @staticmethod
     def _legacytypestring():
       return 'IMAGEOUT'

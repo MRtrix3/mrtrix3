@@ -128,7 +128,7 @@ def execute_ants(mode):
   check_ants_executable(ANTS_REGISTERFULL_CMD if mode == 'full' else ANTS_REGISTERQUICK_CMD)
   check_ants_executable(ANTS_TRANSFORM_CMD)
   if app.ARGS.ants_options:
-    ants_options_as_path = app.make_quote_escaped_path_object(app._QuoteEscapedPath, app.ARGS.ants_options) # pylint: disable=protected-access
+    ants_options_as_path = app.FSQEPath(app.ARGS.ants_options)
     if ants_options_as_path.is_file():
       run.function(shutil.copyfile, ants_options_as_path, 'ants_options.txt')
       with open('ants_options.txt', 'r', encoding='utf-8') as ants_options_file:
