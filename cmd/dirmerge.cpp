@@ -47,7 +47,11 @@ OPTIONS
   + Option ("unipolar_weight", "set the weight given to the unipolar electrostatic repulsion model"
                                " compared to the bipolar model"
                                " (default: 0.2).")
-    + Argument ("value").type_float(0.0, 1.0);
+    + Argument ("value").type_float(0.0, 1.0)
+
+  + Option ("firstisfirst", "choose the first volume in the list from the first shell,"
+                            " rather than choosing such from the shell with the most volumes"
+                            " (replicates behaviour prior to version 3.1.0)");
 
 }
 // clang-format on
@@ -112,45 +116,55 @@ void run() {
   INFO("found total of " + str(total) + " volumes");
 
   // pick which volume will be first
-  // from within the shell with the largest number of volumes,
-  //   choose the subset with the largest number of volumes,
-  //   then choose a random volume within that subset
-  size_t largest_shell = [&] {
-    value_type largestshell_b = 0.0;
-    size_t largestshell_n = 0;
-    size_t largestshell_index = 0;
-    for (size_t n = 0; n != dirs.size(); ++n) {
-      size_t size = 0;
-      for (auto &m : dirs[n])
-        size += m.size();
-      if (size > largestshell_n || (size == largestshell_n && bvalue[n] > largestshell_b)) {
-        largestshell_b = bvalue[n];
-        largestshell_n = size;
-        largestshell_index = n;
+  size_t first_shell = 0;
+  size_t first_subset_within_first_shell = 0;
+  if (get_options("firstisfirst").empty()) {
+
+    // from within the shell with the largest number of volumes,
+    //   choose the subset with the largest number of volumes,
+    //   then choose a random volume within that subset
+    size_t largest_shell = [&] {
+      value_type largestshell_b = 0.0;
+      size_t largestshell_n = 0;
+      size_t largestshell_index = 0;
+      for (size_t n = 0; n != dirs.size(); ++n) {
+        size_t size = 0;
+        for (auto &m : dirs[n])
+          size += m.size();
+        if (size > largestshell_n || (size == largestshell_n && bvalue[n] > largestshell_b)) {
+          largestshell_b = bvalue[n];
+          largestshell_n = size;
+          largestshell_index = n;
+        }
       }
-    }
-    return largestshell_index;
-  }();
-  INFO("first volume will be from shell b=" + str(bvalue[largest_shell]));
-  const size_t largest_subset_within_largest_shell = [&] {
-    size_t largestsubset_index = 0;
-    size_t largestsubset_n = dirs[largest_shell][0].size();
-    for (size_t n = 1; n != dirs[largest_shell].size(); ++n) {
-      const size_t size = dirs[largest_shell][n].size();
-      if (size > largestsubset_n) {
-        largestsubset_n = size;
-        largestsubset_index = n;
+      return largestshell_index;
+    }();
+    first_shell = largest_shell;
+    INFO("first volume will be from shell b=" + str(bvalue[first_shell]));
+    const size_t largest_subset_within_largest_shell = [&] {
+      size_t largestsubset_index = 0;
+      size_t largestsubset_n = dirs[largest_shell][0].size();
+      for (size_t n = 1; n != dirs[largest_shell].size(); ++n) {
+        const size_t size = dirs[largest_shell][n].size();
+        if (size > largestsubset_n) {
+          largestsubset_n = size;
+          largestsubset_index = n;
+        }
       }
+      return largestsubset_index;
+    }();
+    first_subset_within_first_shell = largest_subset_within_largest_shell;
+    if (num_subsets > 1) {
+      INFO("first volume will be from subset " + str(first_subset_within_first_shell + 1) + " from largest shell");
     }
-    return largestsubset_index;
-  }();
-  if (num_subsets > 1) {
-    INFO("first volume will be from subset " + str(largest_subset_within_largest_shell + 1) + " from largest shell");
+  } else {
+    INFO("first volume will be" + std::string(num_subsets > 1 ? " from first subset" : "") +
+         " from first shell (b=" + str(bvalue[0]) + ")");
   }
   std::random_device rd;
   std::mt19937 rng(rd());
-  const size_t first = std::uniform_int_distribution<size_t>(
-      0, dirs[largest_shell][largest_subset_within_largest_shell].size() - 1)(rng);
+  const size_t first_index_within_first_subset =
+      std::uniform_int_distribution<size_t>(0, dirs[first_shell][first_subset_within_first_shell].size() - 1)(rng);
 
   std::vector<OutDir> merged;
 
@@ -206,9 +220,9 @@ void run() {
   };
 
   // write the volume that was chosen to be first
-  push(largest_shell, largest_subset_within_largest_shell, first);
+  push(first_shell, first_subset_within_first_shell, first_index_within_first_subset);
   std::vector<size_t> counts(bvalue.size(), 0);
-  ++counts[largest_shell];
+  ++counts[first_shell];
 
   size_t nPE = num_subsets > 1 ? 1 : 0;
   while (merged.size() < total) {
