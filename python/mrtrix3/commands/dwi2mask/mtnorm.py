@@ -97,7 +97,7 @@ def execute(): #pylint: disable=unused-variable
       int(round(float(value)))
       for value in image.mrinfo('input.mif', 'shell_bvalues') \
                                .strip().split()]
-  multishell = (len(bvalues) > 2)
+  multishell = len(bvalues) > 2
   if lmax is None:
     lmax = LMAXES_MULTI if multishell else LMAXES_SINGLE
   elif len(lmax) == 3 and not multishell:

@@ -157,7 +157,7 @@ def execute(): #pylint: disable=unused-variable
 
           grad_option = f' -grad {grad_path}'
 
-        elif basis == 'image':
+        else:
 
           grad = copy.copy(grad_fsl)
 
