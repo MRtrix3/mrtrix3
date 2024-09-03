@@ -1,0 +1,4 @@
+#!/bin/bash
+# Evaluation of the default operation of the "entropy" operation for the sh2metric command
+sh2metric amp2sh/out.mif entropy - | \
+testing_diff_image - sh2power/entropy.mif -frac 0.1

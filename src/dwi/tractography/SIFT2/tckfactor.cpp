@@ -18,6 +18,7 @@
 #include "image.h"
 
 #include "file/matrix.h"
+#include "math/entropy.h"
 #include "misc/bitset.h"
 
 #include "fixel/legacy/fixel_metric.h"
@@ -331,19 +332,7 @@ void TckFactor::report_entropy() const {
   const default_type logP_before = std::log2(P_before);
   const default_type H_before = -coefficients.size() * (P_before * logP_before);
   // After SIFT2:
-  // - First, need normalising factor, which is the reciprocal sum of all streamline weights
-  //   (as opposed to the reciprocal number of streamlines)
-  default_type sum_weights = 0.0;
-  for (ssize_t i = 0; i != coefficients.size(); ++i)
-    sum_weights += std::exp(coefficients[i]);
-  const default_type inv_sum_weights = 1.0 / sum_weights;
-  default_type H_after = 0.0;
-  for (ssize_t i = 0; i != coefficients.size(); ++i) {
-    const default_type P_after = std::exp(coefficients[i]) * inv_sum_weights;
-    const default_type logP_after = std::log2(P_after);
-    H_after += P_after * logP_after;
-  }
-  H_after *= -1.0;
+  const default_type H_after = Math::Entropy::bits(coefficients.exp());
   const size_t equiv_N = std::round(std::pow(2.0, H_after));
   INFO("Entropy decreased from " + str(H_before, 6) + " to " + str(H_after, 6) + "; " + "this is equivalent to " +
        str(equiv_N) + " equally-weighted streamlines");

@@ -99,8 +99,8 @@ List of MRtrix3 commands
     commands/population_template
     commands/responsemean
     commands/sh2amp
+    commands/sh2metric
     commands/sh2peaks
-    commands/sh2power
     commands/sh2response
     commands/shbasis
     commands/shconv
@@ -231,8 +231,8 @@ List of MRtrix3 commands
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
+    |cpp.png|, :ref:`sh2metric`, "Compute voxel-wise metrics from one or more spherical harmonics images"
     |cpp.png|, :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function in each voxel"
-    |cpp.png|, :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
     |cpp.png|, :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
     |cpp.png|, :ref:`shbasis`, "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used"
     |cpp.png|, :ref:`shconv`, "Perform spherical convolution"
