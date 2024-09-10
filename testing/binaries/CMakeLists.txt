@@ -57,6 +57,9 @@ add_bash_binary_test(dirgen/default)
 add_bash_binary_test(dirgen/power)
 add_bash_binary_test(dirgen/unipolar)
 
+add_bash_binary_test(dirrotate/default)
+add_bash_binary_test(dirrotate/onerotation)
+
 add_bash_binary_test(dwi2adc/default)
 
 add_bash_binary_test(dwi2fod/csd_default)
