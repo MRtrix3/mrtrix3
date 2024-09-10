@@ -76,6 +76,7 @@ else()
         CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
         DOWNLOAD_NO_EXTRACT ON
         DOWNLOAD_NO_PROGRESS ON
+        LOG_DOWNLOAD ON
     )
     ExternalProject_Add(
         nifti2
@@ -84,6 +85,7 @@ else()
         CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
         DOWNLOAD_NO_EXTRACT ON
         DOWNLOAD_NO_PROGRESS ON
+        LOG_DOWNLOAD ON
     )
     target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti/src/")
 endif()
