@@ -21,12 +21,12 @@ Usage
 Description
 -----------
 
-The primary use case of this command is to find, for a given basis direction set, an appropriate rotation that preserves the homogeneity of coverage on the sphere but that minimises the maximal peak amplitude along the physical axes of the scanner, so as to minimise the peak gradient system demands. It can alternatively be used to introduce a random rotation to hopefully prevent any collinearity between directions in different shells, by requesting only a single permutation.
+The primary use case of this command is to find, for a given basis direction set, an appropriate rotation that preserves the homogeneity of coverage on the sphere but that minimises the maximal peak amplitude along the physical axes of the scanner, so as to minimise the peak gradient system demands. It can alternatively be used to introduce a random rotation to hopefully prevent any collinearity between directions in different shells, by requesting only a single rotation.
 
 Options
 -------
 
--  **-permutations num** number of permutations to try (default: 100000000)
+-  **-number num** number of rotations to try (default: 100000000)
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
 
