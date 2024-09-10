@@ -23,7 +23,7 @@
 using namespace MR;
 using namespace App;
 
-const char *modes[] = {"2d", "3d", nullptr};
+const std::vector<std::string> modes = {"2d", "3d"};
 
 // clang-format off
 void usage() {

@@ -25,8 +25,8 @@
 using namespace MR;
 using namespace App;
 
-const char *conversion_types[] = {
-    "deformation2displacement", "displacement2deformation", "warpfull2deformation", "warpfull2displacement", nullptr};
+const std::vector<std::string> conversion_types = {
+    "deformation2displacement", "displacement2deformation", "warpfull2deformation", "warpfull2displacement"};
 
 // clang-format off
 void usage() {

@@ -57,6 +57,13 @@ add_bash_binary_test(dirgen/default)
 add_bash_binary_test(dirgen/power)
 add_bash_binary_test(dirgen/unipolar)
 
+add_bash_binary_test(dirmerge/onesubset)
+add_bash_binary_test(dirmerge/twosubsets)
+add_bash_binary_test(dirmerge/foursubsets)
+add_bash_binary_test(dirmerge/onesubset_firstisfirst)
+add_bash_binary_test(dirmerge/twosubsets_firstisfirst)
+add_bash_binary_test(dirmerge/foursubsets_firstisfirst)
+
 add_bash_binary_test(dirrotate/default)
 add_bash_binary_test(dirrotate/onerotation)
 
@@ -195,6 +202,7 @@ add_bash_binary_test(mrcalc/expression_1)
 add_bash_binary_test(mrcalc/expression_2)
 add_bash_binary_test(mrcalc/expression_3)
 add_bash_binary_test(mrcalc/expression_4)
+add_bash_binary_test(mrcalc/expression_5)
 
 add_bash_binary_test(mrcat/axis)
 add_bash_binary_test(mrcat/single_input)

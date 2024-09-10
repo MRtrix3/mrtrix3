@@ -27,7 +27,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
-const char *filters[] = {"smooth", NULL};
+const std::vector<std::string> filters = {"smooth"};
 
 // clang-format off
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")

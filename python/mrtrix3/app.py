@@ -583,13 +583,17 @@ class Parser(argparse.ArgumentParser):
   #   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
   #   and a desired augmentation that provides additional functions
   @staticmethod
-  def make_userpath_object(base_class, *args, **kwargs):
+  def make_userpath_object(base_class, *args):
     abspath = os.path.normpath(os.path.join(WORKING_DIR, *args))
+    super_class = pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath
     new_class = type(f'{base_class.__name__.lstrip("_").rstrip("Extras")}',
-                    (base_class,
-                     pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath),
+                    (base_class, super_class),
                     {})
-    instance = new_class.__new__(new_class, abspath, **kwargs)
+    if sys.version_info < (3, 12):
+      instance = new_class.__new__(new_class, abspath)
+    else:
+      instance = new_class.__new__(new_class)
+      super(super_class, instance).__init__(abspath) # pylint: disable=bad-super-call
     return instance
 
   # Classes that extend the functionality of pathlib.Path
@@ -606,7 +610,7 @@ class Parser(argparse.ArgumentParser):
                 'will be overwritten at script completion')
         else:
           raise FileExistsError(f'Output {item_type} "{str(self)}" already exists '
-                            '(use -force option to force overwrite)')
+                                '(use -force option to force overwrite)')
   class _UserFileOutPathExtras(_UserOutPathExtras):
     def __init__(self, *args, **kwargs):
       super().__init__(self, *args, **kwargs)

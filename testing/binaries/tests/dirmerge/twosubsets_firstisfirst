@@ -1,0 +1,11 @@
+#!/bin/bash
+# Test successful execution for two subsets
+#   where the -firstisfirst option is specified
+# Cannot compare directly to a pre-generated output due to stochasticity of command
+
+dirmerge 2 \
+0 dirmerge/bzero_4.txt dirmerge/bzero_4.txt \
+300 dirmerge/12_1of2.txt dirmerge/12_2of2.txt \
+1000 dirmerge/24_1of2.txt dirmerge/24_2of2.txt \
+3000 dirmerge/60_1of2.txt dirmerge/60_2of2.txt \
+tmp.txt -force -firstisfirst

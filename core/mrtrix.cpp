@@ -233,15 +233,18 @@ size_t char_is_dash(const char *arg) {
   return 0;
 }
 
-bool is_dash(const std::string &arg) {
-  const size_t nbytes = char_is_dash(arg.c_str());
+bool is_dash(std::string_view arg) {
+  const size_t nbytes = char_is_dash(arg.data());
   return nbytes != 0 && nbytes == arg.size();
 }
 
-bool consume_dash(const char *&arg) {
-  size_t nbytes = char_is_dash(arg);
-  arg += nbytes;
-  return nbytes != 0;
+std::string_view without_leading_dash(std::string_view arg) {
+  size_t nbytes = char_is_dash(arg.data());
+  while (nbytes > 0) {
+    arg.remove_prefix(nbytes);
+    nbytes = char_is_dash(arg.data());
+  }
+  return arg;
 }
 
 std::string join(const std::vector<std::string> &V, const std::string &delimiter) {

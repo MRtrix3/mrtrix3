@@ -64,8 +64,8 @@ def execute(): #pylint: disable=unused-variable
   except run.MRtrixCmdError as e_cpu:
     if app.ARGS.nogpu:
       raise
-    gpu_header = ('===\nGPU\n===\n')
-    cpu_header = ('===\nCPU\n===\n')
+    gpu_header = '===\nGPU\n===\n'
+    cpu_header = '===\nCPU\n===\n'
     exception_stdout = f'{gpu_header}{e_gpu.stdout}\n\n{cpu_header}{e_cpu.stdout}\n\n'
     exception_stderr = f'{gpu_header}{e_gpu.stderr}\n\n{cpu_header}{e_cpu.stderr}\n\n'
     raise run.MRtrixCmdError('hd-bet', 1, exception_stdout, exception_stderr)
