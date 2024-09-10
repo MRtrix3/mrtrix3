@@ -16,17 +16,12 @@
 
 #pragma once
 
-#include <array>
-// nifti1_io.h and nifti2_io.h headers must be included after dirent.h (transitively included by header.h)
-// otherwise we run into definitions conflict on Linux
-// clang-format off
-#include "header.h"
-#include "file/nifti1.h"
-#include "file/nifti2.h"
-// clang-format on
 #include "file/config.h"
+#include "header.h"
 #include "raw.h"
 #include "types.h"
+
+#include <array>
 
 namespace MR {
 class Header;

@@ -30,9 +30,9 @@
 using namespace MR;
 using namespace App;
 
-const char *interp_choices[] = {"nearest", "linear", "cubic", "sinc", NULL};
 #define DEFAULT_INTERP 2 // cubic
-const char *operation_choices[] = {"regrid", "crop", "pad", NULL};
+const std::vector<std::string> interp_choices = {"nearest", "linear", "cubic", "sinc"};
+const std::vector<std::string> operation_choices = {"regrid", "crop", "pad"};
 
 // clang-format off
 void usage() {

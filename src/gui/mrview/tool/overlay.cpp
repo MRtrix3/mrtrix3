@@ -19,6 +19,7 @@
 #include "gui/dialog/file.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/mode/slice.h"
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/tool/list_model_base.h"
 #include "gui/mrview/window.h"
 #include "mrtrix.h"
@@ -204,7 +205,7 @@ void Overlay::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_std_string(urlList.at(i)))));
       } catch (Exception &e) {
         e.display();
       }
@@ -775,5 +776,4 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   return false;
 }
-
 } // namespace MR::GUI::MRView::Tool

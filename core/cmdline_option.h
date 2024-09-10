@@ -19,6 +19,8 @@
 #include <cassert>
 #include <limits>
 #include <string>
+#include <utility>
+#include <vector>
 
 #ifdef None
 #undef None
@@ -26,6 +28,7 @@
 
 #include "mrtrix.h"
 #include "types.h"
+#include <variant>
 
 namespace MR::App {
 
@@ -101,13 +104,11 @@ public:
   /*! this is used to construct a command-line argument object, with a name
    * and description. If default arguments are used, the object corresponds
    * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
-  Argument(const char *name = nullptr, std::string description = std::string())
-      : id(name), desc(description), type(Undefined), flags(None) {
-    memset(&limits, 0x00, sizeof(limits));
-  }
+  Argument(std::string name, std::string description = std::string())
+      : id(std::move(name)), desc(std::move(description)), type(Undefined), flags(None) {}
 
   //! the argument name
-  const char *id;
+  std::string id;
   //! the argument description
   std::string desc;
   //! the argument type
@@ -115,18 +116,18 @@ public:
   //! the argument flags (AllowMultiple & Optional)
   ArgFlags flags;
 
-  //! a structure to store the various parameters of the Argument
-  union {
-    const char *const *choices;
-    struct {
-      int64_t min, max;
-    } i;
-    struct {
-      default_type min, max;
-    } f;
-  } limits;
+  struct IntRange {
+    int64_t min, max;
+  };
+  struct FloatRange {
+    default_type min, max;
+  };
 
-  operator bool() const { return id; }
+  //! a structure to store the various parameters of the Argument
+  using Limits = std::variant<std::vector<std::string>, IntRange, FloatRange>;
+  Limits limits;
+
+  operator bool() const { return id.empty(); }
 
   //! specifies that the argument is optional
   /*! For example:
@@ -178,8 +179,7 @@ public:
                          const int64_t max = std::numeric_limits<int64_t>::max()) {
     assert(type == Undefined);
     type = Integer;
-    limits.i.min = min;
-    limits.i.max = max;
+    limits = IntRange{min, max};
     return *this;
   }
 
@@ -197,26 +197,25 @@ public:
                        const default_type max = std::numeric_limits<default_type>::infinity()) {
     assert(type == Undefined);
     type = Float;
-    limits.f.min = min;
-    limits.f.max = max;
+    limits = FloatRange{min, max};
     return *this;
   }
 
   //! specifies that the argument should be selected from a predefined list
-  /*! The list of allowed values must be specified as a nullptr-terminated
-   * list of C strings. Here is an example usage:
+  /*! The list of allowed values must be specified as a vector of strings.
+   * Here is an example usage:
    * \code
-   * const char* mode_list [] = { "standard", "pedantic", "approx", nullptr };
+   * const std::vector<std::string> mode_list = { "standard", "pedantic", "approx" };
    *
    * ARGUMENTS
    *   + Argument ("mode", "the mode of operation")
    *     .type_choice (mode_list);
    * \endcode
    * \note Each string in the list must be supplied in \b lowercase. */
-  Argument &type_choice(const char *const *choices) {
+  Argument &type_choice(const std::vector<std::string> &choices) {
     assert(type == Undefined);
     type = Choice;
-    limits.choices = choices;
+    limits = choices;
     return *this;
   }
 
@@ -326,18 +325,19 @@ public:
  */
 class Option : public std::vector<Argument> {
 public:
-  Option() : id(nullptr), flags(Optional) {}
+  Option() : flags(Optional) {}
 
-  Option(const char *name, const std::string &description) : id(name), desc(description), flags(Optional) {}
+  Option(std::string name, std::string description)
+      : id(std::move(name)), desc(std::move(description)), flags(Optional) {}
 
   Option &operator+(const Argument &arg) {
     push_back(arg);
     return *this;
   }
-  operator bool() const { return id; }
+  operator bool() const { return id.empty(); }
 
   //! the option name
-  const char *id;
+  std::string id;
   //! the option description
   std::string desc;
   //! option flags (AllowMultiple and/or Optional)
@@ -391,8 +391,8 @@ public:
  */
 class OptionGroup : public std::vector<Option> {
 public:
-  OptionGroup(const char *group_name = "OPTIONS") : name(group_name) {}
-  const char *name;
+  OptionGroup(std::string group_name = "OPTIONS") : name(std::move(group_name)) {}
+  std::string name;
 
   OptionGroup &operator+(const Option &option) {
     push_back(option);

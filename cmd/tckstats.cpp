@@ -35,7 +35,7 @@ using namespace MR::DWI::Tractography;
 // TODO Make compatible with stats generic options?
 // - Some features would not be compatible due to potential presence of track weights
 
-const char *field_choices[] = {"mean", "median", "std", "min", "max", "count", NULL};
+const std::vector<std::string> field_choices = {"mean", "median", "std", "min", "max", "count"};
 
 // clang-format off
 void usage() {

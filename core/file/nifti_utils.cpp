@@ -26,6 +26,9 @@
 #include "image_io/gz.h"
 #include "raw.h"
 
+#include <nifti1.h>
+#include <nifti2.h>
+
 namespace MR::File::NIfTI {
 
 namespace {

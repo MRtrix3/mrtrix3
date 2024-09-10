@@ -24,7 +24,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
-const char *transform_choices[] = {"first2real", "real2first", "voxel2real", "real2voxel", "fs2real", nullptr};
+const std::vector<std::string> transform_choices = {"first2real", "real2first", "voxel2real", "real2voxel", "fs2real"};
 
 // clang-format off
 void usage() {

@@ -23,6 +23,7 @@
 #include "misc/bitset.h"
 
 #include "math/stats/typedefs.h"
+#include <vector>
 
 #define DEFAULT_NUMBER_SHUFFLES 5000
 #define DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY 5000
@@ -35,7 +36,7 @@ namespace MR::Math::Stats {
 // - Import permutations (actual & nonstationarity correction)
 // - (future) Set exchangeability blocks
 
-extern const char *error_types[];
+extern std::vector<std::string> error_types;
 App::OptionGroup shuffle_options(const bool include_nonstationarity, const default_type default_skew = 1.0);
 
 class Shuffle {

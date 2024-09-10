@@ -44,7 +44,7 @@ ProcessFile = namedtuple('ProcessFile', 'path keep_shebang comment')
 
 MRTRIX_ROOT = os.path.abspath(os.path.dirname(__file__))
 APP_CPP_PATH = os.path.join(MRTRIX_ROOT, 'core', 'app.cpp')
-APP_CPP_STRING = 'const char *COPYRIGHT ='
+APP_CPP_STRING = 'std::string COPYRIGHT ='
 APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'python', 'mrtrix3', 'app.py')
 APP_PY_STRING = '_DEFAULT_COPYRIGHT ='
 

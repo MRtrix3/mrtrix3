@@ -41,7 +41,7 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 
-const char *windows[] = {"rectangle", "triangle", "cosine", "hann", "hamming", "lanczos", nullptr};
+const std::vector<std::string> windows = {"rectangle", "triangle", "cosine", "hann", "hamming", "lanczos"};
 
 // clang-format off
 void usage () {
