@@ -24,7 +24,7 @@
 #include "progressbar.h"
 #include "thread.h"
 
-constexpr size_t default_number = 1e8;
+constexpr size_t default_number = 1e7;
 
 using namespace MR;
 using namespace App;

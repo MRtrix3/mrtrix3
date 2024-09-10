@@ -26,7 +26,7 @@ The primary use case of this command is to find, for a given basis direction set
 Options
 -------
 
--  **-number num** number of rotations to try (default: 100000000)
+-  **-number num** number of rotations to try (default: 10000000)
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
 
