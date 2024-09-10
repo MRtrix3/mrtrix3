@@ -64,6 +64,9 @@ add_bash_binary_test(dirmerge/onesubset_firstisfirst)
 add_bash_binary_test(dirmerge/twosubsets_firstisfirst)
 add_bash_binary_test(dirmerge/foursubsets_firstisfirst)
 
+add_bash_binary_test(dirrotate/default)
+add_bash_binary_test(dirrotate/onerotation)
+
 add_bash_binary_test(dwi2adc/default)
 
 add_bash_binary_test(dwi2fod/csd_default)
