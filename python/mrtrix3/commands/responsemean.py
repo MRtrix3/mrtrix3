@@ -75,7 +75,7 @@ def execute(): #pylint: disable=unused-variable
     data.append(subject)
 
   app.console(f'Calculating mean RF across {len(data)} inputs, '
-              f'with {len(data[0])} {"b-values" if len(data[0])>1 else ""} '
+              f'with {len(data[0])} b-value{"s" if len(data[0])>1 else ""} '
               f'and lmax={2*(len(data[0][0])-1)}')
 
   # Old approach: Just take the average across all subjects
