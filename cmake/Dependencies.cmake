@@ -72,7 +72,7 @@ else()
     ExternalProject_Add(
         nifti1
         PREFIX nifti
-        URL "https://nifti.nimh.nih.gov/pub/dist/src/nifti2/nifti1.h"
+        URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti1.h"
         CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
         DOWNLOAD_NO_EXTRACT ON
         DOWNLOAD_NO_PROGRESS ON
@@ -81,7 +81,7 @@ else()
     ExternalProject_Add(
         nifti2
         PREFIX nifti
-        URL "https://nifti.nimh.nih.gov/pub/dist/src/nifti2/nifti2.h"
+        URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h"
         CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
         DOWNLOAD_NO_EXTRACT ON
         DOWNLOAD_NO_PROGRESS ON
