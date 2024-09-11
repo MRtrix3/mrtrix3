@@ -1,0 +1,5 @@
+#!/bin/bash
+# Evaluation of the operation of the "entropy" operation for the sh2metric command
+#   when the entropy is normalised to range [0.0, 1.0]
+sh2metric amp2sh/out.mif entropy - -normalised | \
+testing_diff_image - sh2power/entropy_normalised.mif -frac 0.1

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Evaluation of the operation of the "entropy" operation for the sh2metric command
+#   when multiple SH images are provided as input
+sh2metric dwi2fod/msmt/wm.mif dwi2fod/msmt/gm.mif dwi2fod/msmt/csf.mif entropy - | \
+testing_diff_image - sh2power/entropy_multiinput.mif -frac 0.1

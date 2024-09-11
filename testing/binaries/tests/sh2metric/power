@@ -1,0 +1,4 @@
+#!/bin/bash
+# Evaluation of the default operation of the "power" operation for the sh2metric command
+sh2metric amp2sh/out.mif power - | \
+testing_diff_image - sh2power/power.mif -frac 0.1
