@@ -261,7 +261,7 @@ def execute(): #pylint: disable=unused-variable
   tissue_sum_image = None
   iteration = 0
   step = 'initialisation'
-  prev_dice_coefficient = 0.0
+  prev_dice_coefficient = None
   total_scaling_factor = 1.0
 
   def msg():
@@ -388,7 +388,7 @@ def execute(): #pylint: disable=unused-variable
     app.debug(f'Old mask voxel count: {dwi_old_mask_count}')
     app.debug(f'New mask voxel count: {dwi_new_mask_count}')
     dwi_mask_overlap_image = f'dwi_mask_overlap{iter_string}.mif'
-    run.command(f'mrcalc {dwi_mask_image} {new_dwi_mask_image} -mult {dwi_mask_overlap_image}')
+    run.command(f'mrcalc {dwi_mask_image} {new_dwi_mask_image} -mult {dwi_mask_overlap_image} -datatype bit')
 
     old_dwi_mask_image = dwi_mask_image
     dwi_mask_image = new_dwi_mask_image
@@ -422,7 +422,7 @@ def execute(): #pylint: disable=unused-variable
       total_scaling_factor *= scale_multiplier
       break
 
-    if new_dice_coefficient < prev_dice_coefficient:
+    if prev_dice_coefficient is not None and new_dice_coefficient < prev_dice_coefficient:
       progress.done()
       app.warn(f'Mask divergence at iteration {iteration} '
                f'(Dice coefficient = {new_dice_coefficient}); '
