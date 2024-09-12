@@ -1,7 +1,5 @@
 find_program(BASH bash)
 
-set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
-
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
@@ -23,7 +21,7 @@ function(add_bash_binary_test file_path)
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/${file_path}"
         PREFIX "${folder_name}"
-        WORKING_DIRECTORY ${DATA_DIR}
+        WORKING_DIRECTORY ${BINARY_DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         LABELS "binary;${folder_name};${extra_labels}"
     )
