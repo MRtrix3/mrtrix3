@@ -30,7 +30,6 @@ namespace MR
     template <class ImageType>
     class ReadCache : public Adapter::Base<ReadCache<ImageType>, ImageType>
     {
-      MEMALIGN (ReadCache<ImageType>)
       public:
         using base_type = Adapter::Base<ReadCache<ImageType>, ImageType>;
         using value_type = typename ImageType::value_type;
@@ -87,7 +86,6 @@ namespace MR
     template <class ImageType>
     class WriteCache : public Adapter::Base<WriteCache<ImageType>, ImageType>
     {
-      MEMALIGN (WriteCache<ImageType>)
       public:
         using base_type = Adapter::Base<WriteCache<ImageType>, ImageType>;
         using value_type = typename ImageType::value_type;
@@ -169,12 +167,11 @@ namespace MR
 
       class QSpaceBasis
       {
-        MEMALIGN (QSpaceBasis)
         public:
           typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
 
           QSpaceBasis (const Eigen::MatrixXf& grad, const int lmax,
-                       const vector<Eigen::MatrixXf>& rf, const Eigen::MatrixXf& rigid)
+                       const std::vector<Eigen::MatrixXf>& rf, const Eigen::MatrixXf& rigid)
             : lmax (lmax), nv (grad.rows()), ne (rigid.rows() / nv), nc (get_ncoefs(rf)),
               shellbasis (init_shellbasis(grad, rf))
           {
@@ -182,7 +179,7 @@ namespace MR
           }
 
           QSpaceBasis (const Eigen::MatrixXf& grad, const int lmax,
-                       const vector<Eigen::MatrixXf>& rf)
+                       const std::vector<Eigen::MatrixXf>& rf)
             : lmax (lmax), nv (grad.rows()), ne (1), nc (get_ncoefs(rf)),
               shellbasis (init_shellbasis(grad, rf))
           {
@@ -200,13 +197,13 @@ namespace MR
         private:
           const int lmax;
           const size_t nv, ne, nc;
-          const vector<Eigen::MatrixXf> shellbasis;
+          const std::vector<Eigen::MatrixXf> shellbasis;
           RowMatrixXf Y;
 
-          vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
+          std::vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const std::vector<Eigen::MatrixXf>& rf) const
           {
             Shells shells (grad.template cast<double>());
-            vector<Eigen::MatrixXf> basis;
+            std::vector<Eigen::MatrixXf> basis;
 
             for (size_t s = 0; s < shells.count(); s++) {
               Eigen::MatrixXf B;
@@ -233,7 +230,7 @@ namespace MR
             DEBUG("initialise Y");
             assert (grad.rows() == nv);     // one gradient per volume
 
-            vector<size_t> idx = get_shellidx(grad);
+            std::vector<size_t> idx = get_shellidx(grad);
             Y.resize(nv*ne, nc);
 
             Eigen::Vector3f vec;
@@ -260,7 +257,7 @@ namespace MR
             return m;
           }
 
-          inline size_t get_ncoefs(const vector<Eigen::MatrixXf>& rf) const
+          inline size_t get_ncoefs(const std::vector<Eigen::MatrixXf>& rf) const
           {
             size_t n = 0;
             if (rf.empty()) {
@@ -272,10 +269,10 @@ namespace MR
             return n;
           }
 
-          vector<size_t> get_shellidx(const Eigen::MatrixXf& grad) const
+          std::vector<size_t> get_shellidx(const Eigen::MatrixXf& grad) const
           {
             Shells shells (grad.template cast<double>());
-            vector<size_t> idx (shells.volumecount());
+            std::vector<size_t> idx (shells.volumecount());
 
             for (size_t s = 0; s < shells.count(); s++) {
               for (auto v : shells[s].get_volumes())
@@ -290,7 +287,6 @@ namespace MR
       template <class ImageType>
       class QSpaceMapping : public Adapter::Base<QSpaceMapping<ImageType>, ImageType>
       {
-        MEMALIGN (QSpaceMapping<ImageType>)
         public:
           using base_type = Adapter::Base<QSpaceMapping<ImageType>, ImageType>;
           using value_type = typename ImageType::value_type;

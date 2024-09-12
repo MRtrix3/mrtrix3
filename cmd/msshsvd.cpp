@@ -9,6 +9,7 @@
 #include "command.h"
 #include "image.h"
 #include "math/SH.h"
+#include "file/matrix.h"
 
 #include <Eigen/Dense>
 #include <Eigen/SVD>
@@ -59,7 +60,7 @@ void usage ()
 using value_type = float;
 
 class SHSVDProject
-{ MEMALIGN (SHSVDProject)
+{
   public:
     SHSVDProject (const int l, const Eigen::MatrixXf& P)
       : l(l), P(P)
@@ -94,7 +95,7 @@ void run ()
   int nshells = in.size(3);
   size_t nvox = in.size(0)*in.size(1)*in.size(2);
 
-  vector<int> lmax;
+  std::vector<int> lmax;
   opt = get_options("lmax");
   if (opt.size()) {
     lmax = opt[0][0].as_sequence_int();
@@ -110,7 +111,7 @@ void run ()
     throw Exception("no. output arguments does not match desired lmax.");
   if (nrf > nshells)
     throw Exception("no. basis functions can't exceed no. shells.");
-  vector<Eigen::MatrixXf> rf;
+  std::vector<Eigen::MatrixXf> rf;
   for (int l : lmax) {
     rf.push_back( Eigen::MatrixXf::Zero(nshells, l/2+1) );
   }
@@ -119,7 +120,7 @@ void run ()
   auto key = in.keyval().find("shellcounts");
   opt = get_options("weights");
   if (opt.size()) {
-    W = load_vector<float>(opt[0][0]).cwiseSqrt();
+    W = File::Matrix::load_vector<float>(opt[0][0]).cwiseSqrt();
     if (W.size() != nshells)
       throw Exception("provided weights do not match the no. shells.");
   } else if (key != in.keyval().end()) {
@@ -184,7 +185,7 @@ void run ()
 
   // Write basis functions to file
   for (int n = 0; n < nrf; n++) {
-    save_matrix(rf[n], argument[n+1]);
+    File::Matrix::save_matrix(rf[n], argument[n+1]);
   }
 
 }

@@ -16,6 +16,7 @@
 #include "phase_encoding.h"
 #include "dwi/shells.h"
 #include "adapter/extract.h"
+#include "file/matrix.h"
 
 #include "dwi/svr/qspacebasis.h"
 #include "dwi/svr/recon.h"
@@ -128,7 +129,7 @@ void run ()
   auto opt = get_options("motion");
   Eigen::MatrixXf motion;
   if (opt.size())
-    motion = load_matrix<float>(opt[0][0]);
+    motion = File::Matrix::load_matrix<float>(opt[0][0]);
   else
     motion = Eigen::MatrixXf::Zero(dwi.size(3), 6); 
 
@@ -146,10 +147,10 @@ void run ()
 
   // Read multi-shell basis
   int lmax = 0;
-  vector<Eigen::MatrixXf> rf;
+  std::vector<Eigen::MatrixXf> rf;
   opt = get_options("rf");
   for (size_t k = 0; k < opt.size(); k++) {
-    Eigen::MatrixXf t = load_matrix<float>(opt[k][0]);
+    Eigen::MatrixXf t = File::Matrix::load_matrix<float>(opt[k][0]);
     if (t.rows() != shells.count())
       throw Exception("No. shells does not match no. rows in basis function " + opt[k][0] + ".");
     lmax = std::max(2*(int(t.cols())-1), lmax);
@@ -160,7 +161,7 @@ void run ()
   Eigen::MatrixXf W = Eigen::MatrixXf::Ones(dwi.size(2), dwi.size(3));
   opt = get_options("weights");
   if (opt.size()) {
-    W = load_matrix<float>(opt[0][0]);
+    W = File::Matrix::load_matrix<float>(opt[0][0]);
     if (W.rows() != dwi.size(2) || W.cols() != dwi.size(3))
       throw Exception("Weights matrix dimensions don't match image dimensions.");
   }
@@ -183,7 +184,7 @@ void run ()
   }
 
   // Get volume indices 
-  vector<size_t> idx;
+  std::vector<size_t> idx;
   if (rf.empty()) {
     idx = shells.largest().get_volumes();
   } else {
@@ -193,7 +194,7 @@ void run ()
   }
 
   // Select subset
-  auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<uint32_t>> (idx));
+  auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<std::vector<uint32_t>> (idx));
 
   Eigen::MatrixXf gradsub (idx.size(), grad.cols());
   for (size_t i = 0; i < idx.size(); i++)
@@ -225,7 +226,7 @@ void run ()
       ssp = DWI::SVR::SSP<float>(std::stof(t));
     } catch (std::invalid_argument& e) {
       try {
-        Eigen::VectorXf v = load_vector<float>(t);
+        Eigen::VectorXf v = File::Matrix::load_vector<float>(t);
         ssp = DWI::SVR::SSP<float>(v);
       } catch (...) {
         throw Exception ("Invalid argument for SSP.");

@@ -14,6 +14,7 @@
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "interp/nearest.h"
+#include "file/matrix.h"
 
 #include "dwi/svr/param.h"
 
@@ -62,7 +63,6 @@ using value_type = float;
  * @brief RMSE Functor
  */
 class RMSErrorFunctor {
-  MEMALIGN(RMSErrorFunctor)
   public:
     RMSErrorFunctor (const Image<value_type>& in, const Image<bool>& mask,
                      const Eigen::MatrixXf& mot, const int mb = 1)
@@ -127,7 +127,6 @@ class RMSErrorFunctor {
  */
 template <typename T>
 class GMModel {
-  MEMALIGN(GMModel)
   public:
 
     using float_t = T;
@@ -208,7 +207,7 @@ class GMModel {
     }
 
     inline float_t median(const VecType& x) const {
-      vector<float_t> vec (x.size());
+      std::vector<float_t> vec (x.size());
       for (size_t i = 0; i < x.size(); i++)
         vec[i] = x[i];
       return Math::median(vec);
@@ -242,7 +241,7 @@ void run ()
   Eigen::MatrixXf motion (data.size(3), 6); motion.setZero();
   opt = get_options("motion");
   if (opt.size()) {
-    motion = load_matrix<float>(opt[0][0]);
+    motion = File::Matrix::load_matrix<float>(opt[0][0]);
     if (motion.cols() != 6 || ((data.size(3)*data.size(2)) % motion.rows()))
       throw Exception("dimension mismatch in motion initialisaton.");
   }
@@ -261,7 +260,7 @@ void run ()
 
   opt = get_options("export_error");
   if (opt.size()) {
-    save_matrix(E.replicate(mb, 1), opt[0][0]);
+    File::Matrix::save_matrix(E.replicate(mb, 1), opt[0][0]);
   }
   
   // Compute weights
@@ -291,7 +290,7 @@ void run ()
   // Output
   Eigen::ArrayXXf Wfull = 1e6 * W.replicate(mb, 1);
   Wfull = 1e-6 * Wfull.round();
-  save_matrix(Wfull, argument[2]);
+  File::Matrix::save_matrix(Wfull, argument[2]);
 
 }
 

@@ -14,6 +14,7 @@
 #include "phase_encoding.h"
 #include "interp/linear.h"
 #include "interp/cubic.h"
+#include "file/matrix.h"
 
 #include "dwi/svr/param.h"
 
@@ -66,7 +67,6 @@ using value_type = float;
 
 
 class FieldUnwarp {
-  MEMALIGN(FieldUnwarp)
   public:
 
     FieldUnwarp (const Image<value_type>& data, const Image<value_type>& field,
@@ -158,7 +158,7 @@ void run ()
   auto opt = get_options("motion");
   Eigen::MatrixXd motion;
   if (opt.size())
-    motion = load_matrix<double>(opt[0][0]);
+    motion = File::Matrix::load_matrix<double>(opt[0][0]);
   else
     motion = Eigen::MatrixXd::Zero(data.size(3), 6);
 

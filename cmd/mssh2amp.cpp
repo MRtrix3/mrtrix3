@@ -12,6 +12,7 @@
 #include "math/SH.h"
 #include "image.h"
 #include "dwi/gradient.h"
+#include "file/matrix.h"
 
 
 using namespace MR;
@@ -53,10 +54,10 @@ void usage ()
 using value_type = float;
 
 
-class MSSH2Amp { MEMALIGN(MSSH2Amp)
+class MSSH2Amp {
   public:
     template <class MatrixType>
-    MSSH2Amp (const MatrixType& dirs, const size_t lmax, const vector<size_t>& idx, bool nonneg) :
+    MSSH2Amp (const MatrixType& dirs, const size_t lmax, const std::vector<size_t>& idx, bool nonneg) :
       SHT ( Math::SH::init_transform_cart(dirs.template cast<value_type>(), lmax) ),
       bidx (idx),
       nonnegative (nonneg),
@@ -76,15 +77,15 @@ class MSSH2Amp { MEMALIGN(MSSH2Amp)
 
   private:
     const Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> SHT;
-    const vector<size_t>& bidx;
+    const std::vector<size_t>& bidx;
     const bool nonnegative;
     Eigen::Matrix<value_type, Eigen::Dynamic, 1> sh, amp;
 };
 
 template <class VectorType>
-inline vector<size_t> get_indices(const VectorType& blist, const value_type bval)
+inline std::vector<size_t> get_indices(const VectorType& blist, const value_type bval)
 {
-  vector<size_t> indices;
+  std::vector<size_t> indices;
   for (size_t j = 0; j < blist.size(); j++)
     if ((blist[j] > bval - DWI_SHELLS_EPSILON) && (blist[j] < bval + DWI_SHELLS_EPSILON))
       indices.push_back(j);
@@ -102,7 +103,7 @@ void run ()
   auto bvals = parse_floats (header.keyval().find("shells")->second);
 
   Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
-  grad = load_matrix(argument[1]).leftCols<4>();
+  grad = File::Matrix::load_matrix(argument[1]).leftCols<4>();
   // copied from core/dwi/gradient.cpp; refactor upon merge
   Eigen::Array<default_type, Eigen::Dynamic, 1> squared_norms = grad.leftCols(3).rowwise().squaredNorm();
   for (ssize_t row = 0; row != grad.rows(); ++row) {
@@ -115,7 +116,7 @@ void run ()
   T.setIdentity();
   auto opt = get_options("transform");
   if (opt.size())
-    T = load_transform(opt[0][0]);
+    T = File::Matrix::load_transform(opt[0][0]);
 
   grad.leftCols<3>() = grad.leftCols<3>() * T.rotation().transpose();
 

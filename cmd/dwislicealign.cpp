@@ -10,6 +10,7 @@
 #include "image.h"
 #include "thread_queue.h"
 #include "dwi/gradient.h"
+#include "file/matrix.h"
 
 #include "dwi/svr/register.h"
 #include "dwi/svr/psf.h"
@@ -103,7 +104,7 @@ void run ()
       ssp = DWI::SVR::SSP<float>(std::stof(t));
     } catch (std::invalid_argument& e) {
       try {
-        Eigen::VectorXf v = load_vector<float>(t);
+        Eigen::VectorXf v = File::Matrix::load_vector<float>(t);
         ssp = DWI::SVR::SSP<float>(v);
       } catch (...) {
         throw Exception ("Invalid argument for SSP.");
@@ -116,7 +117,7 @@ void run ()
   Eigen::MatrixXf init (data.size(3), 6); init.setZero();
   opt = get_options("init");
   if (opt.size()) {
-    init = load_matrix<float>(opt[0][0]);
+    init = File::Matrix::load_matrix<float>(opt[0][0]);
     if (init.cols() != 6 || ((data.size(3)*data.size(2)) % init.rows()))
       throw Exception("dimension mismatch in motion initialisaton.");
   }
@@ -128,7 +129,7 @@ void run ()
   Thread::run_queue(source, DWI::SVR::SliceIdx(), Thread::multi(pipe), DWI::SVR::SliceIdx(), sink);
 
   // output
-  save_matrix(sink.get_motion(), argument[2]);
+  File::Matrix::save_matrix(sink.get_motion(), argument[2]);
 
 }
 
