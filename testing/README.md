@@ -26,19 +26,26 @@ able to run the tests.
 
 ### Running tests for specific commands
 
-In order to run a specific set of tests, `ctest` allows you to make use of regex expressions, for example:
+In order to run a specific set of tests, `ctest` allows you to make use of labels. 
+There are three different labels you can use: "binary", "unittest" and "script". To run all tests under a specific label, you can run `ctest -L label`. For example:
+```ShellSession
+ctest -L unittests # Runs all unit tests
+ctest -L binary # Runs all binary tests
+ctests -L script # Runs all script tests
+```
+
+Alternatively, `ctest` also allows you to run tests whose name matches a regular expression using the `ctest -R regex` syntax. For example:
 
 ```ShellSession
 ctest -R unit # Runs all unit tests
 ctest -R bin # Runs all binary tests
 ctest -R bin_5tt2gmwmi # Runs the binary test for the 5tt2gmwmi command
-ctest -E unit # Runs all tests, except unit tests
 ```
 
-You can also choose to rerun tests have failed by specifying the `--rerun-failed` option.
+It's also possible to rerun tests have failed by specifying the `--rerun-failed` option.
 
 You don't need to build every command to test one particular command.
-For example, you can do this:
+For example, you can do to the following:
 ```ShellSession
 cmake --build build --target mrconvert testing_tools
 cd build
@@ -49,26 +56,21 @@ target that builds the tools needed to run binary tests).
 
 ## Adding tests
  
-Add a script to the `tests/` folder. Each line of these scripts constitutes a
-single test, and will be run as a single unit. Use `&&` and `||` bash
+To add test a new for a given command, add a bash script to the `tests/command_name` folder.
+You can use `&&` and `||` bash
 constructs if needed to create compound commands. Each of these lines should
 return a zero exit code if successful. You can test the output of your commands
 against your expected output using the `testing_diff_image` command (note other
 commands are available to check various types of output - look in `testing/tools`
 for the full list). 
 
+The name of your test should be appropriate for its scope and you should explain the purpose of your test by adding relevant comments in the header (comments in bash can be added by prefixing `#` to any given line).
 
-Note that this script will be invoked directly parsed by the build system, 
-so does not need to be executable, or to set up any
-redirection, or to uses a hash-bang line to specify the interpreter.  Just add
-commands to be run, and if any of them produce a non-zero exit code, this will
-be reported when running `ctest`.  All commands will also be logged. 
+Additionally, you will also need to modify the relevant CMake files to ensure your new tests is picked up by the build system.
+For example, if you add a new test called `test_name` for the `dwidenoise` command, you will need to add
+a new line `add_bash_tests(dwidenoise/test_name)` in the `binaries/CMakeLists.txt` file.
 
-The testing will consider each line of the test scripts to correspond to an
-individual test, and report as such. If any of your tests need multiple
-commands, simply list them all on the same line, separated by semicolons or
-other constructs such as `&&` or `||`. Look within existing test scripts for
-examples.
+If your test reports a non-zero exit code, this will be reported as a failure when running `ctest`.
 
 #### Temporary files 
 
@@ -76,8 +78,7 @@ If your tests need to create temporary files, make sure they are prefixed with
 'tmp' and are not placed in subfolders - these will be deleted prior to running the
 next set of tests. 
 
-## Adding test data
-
+## Test data
 If needed, you can add test data to the [test_data
 repo](https://github.com/MRtrix3/test_data), preferably within its own
 subfolder if you don't anticipate these data will be suitable for testing other
@@ -99,6 +100,14 @@ To add data, you will need to:
 **Note:** if you need to _modify_ exising data in a way that would break
 existing tests, you will need to be very careful with how you do this - see the
 relevant section below for details.
+
+**Tip**: by default, when configuring CMake with `-DMRTRIX_BUILD_TESTS=ON`, the test data will be automatically
+cloned from the [test_data](http://github.com/MRtrix3/test_data) repo into the build directory. 
+This can be quite time consuming and if you delete your build directory (or you use separate build directories
+per build configuration), the data will need to be downloaded from the network again. 
+To mitigate this problem, you can clone the test data repo in some local folder on your system. Then you can set the
+`MRTRIX_BINARIES_DATA_DIR` environment variable to point to the local clone (e.g. `export MRTRIX_BINARIES_DATA_DIR=/path/to/local/testdata/clone`). This will allow for the data to be clone into build directory directly from your clone.
+
 
 #### Adding the data to the [test_data repo](https://github.com/MRtrix3/test_data) repository
 
