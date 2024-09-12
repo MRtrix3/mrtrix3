@@ -1,7 +1,15 @@
-#!/usr/bin/env python
+#   Copyright (c) 2017-2019 Daan Christiaens
+#
+#   MRtrix and this add-on module are distributed in the hope
+#   that it will be useful, but WITHOUT ANY WARRANTY; without
+#   even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE.
+#
+#   Author:  Daan Christiaens
+#            King's College London
+#            daan.christiaens@kcl.ac.uk
+#
 
-import argparse
-import math
 import numpy as np
 from scipy.linalg import logm, expm
 import matplotlib.pyplot as plt
@@ -46,32 +54,35 @@ def tr2euler(T):
     return np.array([T[0,3], T[1,3], T[2,3], yaw, pitch, roll])
 
 
+def usage(cmdline): #pylint: disable=unused-variable
+    from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+    cmdline.set_author('Daan Christiaens (daan.christiaens@kcl.ac.uk)')
+    cmdline.set_synopsis('Calculate motion and outlier statistics')
+    cmdline.add_description('This command calculates statistics of the subject translation and rotation'
+                            ' and of the detected slice outliers.')
+    cmdline.add_argument('input',
+                         type=app.Parser.FileIn(),
+                         help='The input motion file')
+    cmdline.add_argument('weights',
+                         type=app.Parser.FileIn(),
+                         help='The input weight matrix')
+    cmdline.add_argument('-packs', type=int, default=2, help='no. slice packs')
+    cmdline.add_argument('-shift', type=int, default=1, help='slice shift')
+    cmdline.add_argument('-plot', action='store_true', help='plot motion trajectory')
+    cmdline.add_argument('-grad', type=app.Parser.FileIn(), help='dMRI gradient table')
+    cmdline.add_argument('-dispersion', type=app.Parser.FileIn(), help='output gradient dispersion to file')
 
-if __name__ == '__main__':
-    # arguments
-    parser = argparse.ArgumentParser(description='Calculate motion and outlier statistics.')
-    parser.add_argument('input', type=str, help='input motion file')
-    parser.add_argument('weights', type=str, help='input weight matrix')
-    #parser.add_argument('-mb', type=int, default=1, help='multiband factor')
-    parser.add_argument('-packs', type=int, default=2, help='no. slice packs')
-    parser.add_argument('-shift', type=int, default=1, help='slice shift')
-    parser.add_argument('-plot', action='store_true', help='plot motion trajectory')
-    parser.add_argument('-grad', type=str, help='dMRI gradient table')
-    parser.add_argument('-dispersion', type=str, help='output gradient dispersion to file')
-    # mandatory MRtrix options (unused)
-    parser.add_argument('-nthreads', type=int, default=1, help='no. threads (unused)')
-    parser.add_argument('-info', action='store_true', help='(unused)')
-    parser.add_argument('-debug', action='store_true', help='(unused)')
-    parser.add_argument('-quiet', action='store_true', help='(unused)')
-    parser.add_argument('-force', action='store_true', help='(unused)')
-    args = parser.parse_args()
+
+def execute(): #pylint: disable=unused-variable
+    from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+    from mrtrix3 import app, image #pylint: disable=no-name-in-module, import-outside-toplevel
     # read inputs
-    M0 = np.loadtxt(args.input)
-    W = np.loadtxt(args.weights)
+    M0 = np.loadtxt(app.ARGS.input)
+    W = np.loadtxt(app.ARGS.weights)
     # set up slice order
     nv = W.shape[1]
     ne = M0.shape[0]//nv
-    sliceorder = getsliceorder(ne, args.packs, args.shift)
+    sliceorder = getsliceorder(ne, app.ARGS.packs, app.ARGS.shift)
     isliceorder = np.argsort(sliceorder)
     # reorder
     M = np.reshape(M0.reshape((nv,ne,6))[:,sliceorder,:], (-1,6))
@@ -84,22 +95,22 @@ if __name__ == '__main__':
     # print stats
     print('{:f} {:f} {:f}'.format(mtra, mrot, orratio))
     # plot trajectory
-    if args.plot:
+    if app.ARGS.plot:
         T = np.array([tr2euler(lie2tr(m)) for m in M])
         ax1 = plt.subplot(2,1,1); plt.plot(T[:,:3]); plt.ylabel('translation'); plt.legend(['x', 'y', 'z']);
         ax2 = plt.subplot(2,1,2, sharex=ax1); plt.plot(T[:,3:]); plt.ylabel('rotation'); plt.legend(['yaw', 'pitch', 'roll']);
         plt.xlim(0, nv*ne); plt.xlabel('time'); plt.tight_layout();
         plt.show();
     # intra-volume gradient scatter
-    if args.dispersion:
-        if args.grad:
-            grad = np.loadtxt(args.grad)
+    if app.ARGS.dispersion:
+        if app.ARGS.grad:
+            grad = np.loadtxt(app.ARGS.grad)
             bvec = grad[:,:3] / np.linalg.norm(grad[:,:3], axis=1)[:,np.newaxis]
             r = np.array([[np.dot(lie2tr(m)[:3,:3], v) for m in mvol] for mvol, v in zip(M.reshape((nv,ne,6)), bvec)])
             rm = np.sum(r, axis=1); rm /= np.linalg.norm(rm, axis=1)[:,np.newaxis]
             rd = np.einsum('vzi,vi->vz', r, rm)
             dispersion = np.degrees(2*np.arccos(np.sqrt(np.mean(rd**2, axis=1))))
-            np.savetxt(args.dispersion, dispersion[np.newaxis,:], fmt='%.4f')
+            np.savetxt(app.ARGS.dispersion, dispersion[np.newaxis,:], fmt='%.4f')
         else:
-            print('error: gradient table not provided.')
+            raise MRtrixError('No diffusion gradient table provided')
 

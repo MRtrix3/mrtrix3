@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #   Copyright (c) 2017-2019 Daan Christiaens
 #
 #   MRtrix and this add-on module are distributed in the hope
@@ -17,7 +15,6 @@
 #            daan.christiaens@kcl.ac.uk
 #
 
-import mrtrix3
 from mrtrix3 import app, image, path, run, MRtrixError
 import json
 
@@ -150,7 +147,7 @@ def execute(): #pylint: disable=unused-variable
         for l in range(0,10,2):
             if (l+3)*(l+4)/2 * oversampling_factor > N:
                 return l
- 
+
     lmax = [(b>10) * get_max_sh_degree(n) for b, n in zip(shells, shell_sizes)]
     if app.ARGS.lmax:
         lmax = [int(l) for l in app.ARGS.lmax.split(',')]
@@ -204,7 +201,7 @@ def execute(): #pylint: disable=unused-variable
     nthr = ''
     if app.ARGS.nthreads:
         nthr = ' -nthreads ' + str(app.ARGS.nthreads)
-        
+
     # Set multiband factor
     mb = 1
     if app.ARGS.mb:
@@ -332,5 +329,4 @@ def execute(): #pylint: disable=unused-variable
         run.command('cp sliceweights.txt ' + path.from_user(app.ARGS.export_weights, True))
 
 
-mrtrix3.execute()
 

@@ -1,7 +1,20 @@
-#!/usr/bin/env python
+#   Copyright (c) 2017-2019 Daan Christiaens
+#
+#   MRtrix and this add-on module are distributed in the hope
+#   that it will be useful, but WITHOUT ANY WARRANTY; without
+#   even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE.
+#
+#   MOTION CORRECTION FOR DWI VOLUME SERIES
+#
+#   This script performs volume-to-series and slice-to-series registration
+#   of diffusion-weighted images for motion correction in the brain.
+#
+#   Author:  Daan Christiaens
+#            King's College London
+#            daan.christiaens@kcl.ac.uk
+#
 
-import argparse
-import math
 import numpy as np
 from scipy.linalg import logm, expm
 from scipy.signal import medfilt
@@ -11,31 +24,37 @@ def getsliceorder(n, p=2, s=1):
     return np.array([j for k in range(0,p) for j in range((k*s)%p,n,p)], dtype=int)
 
 
-if __name__ == '__main__':
-    # arguments
-    parser = argparse.ArgumentParser(description='Filtering a series of rigid motion parameters.')
-    parser.add_argument('input', type=str, help='input motion file')
-    parser.add_argument('weights', type=str, help='input weight matrix')
-    parser.add_argument('output', type=str, help='output motion file')
-    #parser.add_argument('-mb', type=int, default=1, help='multiband factor')
-    parser.add_argument('-packs', type=int, default=2, help='no. slice packs')
-    parser.add_argument('-shift', type=int, default=1, help='slice shift')
-    parser.add_argument('-medfilt', type=int, default=1, help='median filtering kernel size (default = 1; disabled)')
-    parser.add_argument('-driftfilt', action='store_true', help='drift filter slice packs')
-    # mandatory MRtrix options (unused)
-    parser.add_argument('-nthreads', type=int, default=1, help='no. threads (unused)')
-    parser.add_argument('-info', help='(unused)')
-    parser.add_argument('-debug', help='(unused)')
-    parser.add_argument('-quiet', help='(unused)')
-    parser.add_argument('-force', help='(unused)')
-    args = parser.parse_args()
+def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+  cmdline.set_author('Daan Christiaens (daan.christiaens@kcl.ac.uk)')
+  cmdline.set_synopsis('Filtering a series of rigid motion parameters')
+  cmdline.add_description('This command applies a filter on a timeseries of rigid motion parameters.'
+                          ' This is used in dwimotioncorrect to correct severe registration errors.')
+  cmdline.add_argument('input',
+                       type=app.Parser.FileIn(),
+                       help='The input motion file')
+  cmdline.add_argument('weights',
+                       type=app.Parser.FileIn(),
+                       help='The input weight matrix')
+  cmdline.add_argument('output',
+                       type=app.Parser.FileOut(),
+                       help='The output motion file')
+  cmdline.add_argument('-packs', type=int, default=2, help='no. slice packs')
+  cmdline.add_argument('-shift', type=int, default=1, help='slice shift')
+  cmdline.add_argument('-medfilt', type=int, default=1, help='median filtering kernel size (default = 1; disabled)')
+  cmdline.add_argument('-driftfilt', action='store_true', help='drift filter slice packs')
+
+
+def execute(): #pylint: disable=unused-variable
+    from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+    from mrtrix3 import app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
     # read inputs
-    M = np.loadtxt(args.input)
-    W = np.clip(np.loadtxt(args.weights), 1e-6, None)
+    M = np.loadtxt(app.ARGS.input)
+    W = np.clip(np.loadtxt(app.ARGS.weights), 1e-6, None)
     # set up slice order
     nv = W.shape[1]
     ne = M.shape[0]//nv
-    sliceorder = getsliceorder(ne, args.packs, args.shift)
+    sliceorder = getsliceorder(ne, app.ARGS.packs, app.ARGS.shift)
     isliceorder = np.argsort(sliceorder)
     # reorder
     M1 = np.reshape(M.reshape((nv,ne,6))[:,sliceorder,:], (-1,6))
@@ -47,11 +66,10 @@ if __name__ == '__main__':
     M2 = np.linalg.solve(A, W1 * M1)
     # median filtering
     if ne > 1:
-        M2 = medfilt(M2, (args.medfilt, 1))
-    if args.driftfilt:
+        M2 = medfilt(M2, (app.ARGS.medfilt, 1))
+    if app.ARGS.driftfilt:
         M2 = M2.reshape((nv,ne,6)) - np.median(M2.reshape((nv,ne,6)), 0)
     # reorder output
     M3 = np.reshape(M2.reshape((nv,ne,6))[:,isliceorder,:], (-1,6))
-    np.savetxt(args.output, M3, fmt='%.6f')
-
+    np.savetxt(app.ARGS.output, M3, fmt='%.6f')
 
