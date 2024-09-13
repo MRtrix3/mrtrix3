@@ -22,10 +22,8 @@
 #include "dwi/svr/param.h"
 
 
-namespace MR
+namespace MR::Adapter
 {
-  namespace Adapter
-  {
     template <class ImageType>
     class ReadCache : public Adapter::Base<ReadCache<ImageType>, ImageType>
     {
@@ -156,14 +154,10 @@ namespace MR
     inline WriteCache<AdapterType<ImageType>> makecached_add (const ImageType& parent, Args&&... args) {
       return { { parent, std::forward<Args> (args)... } };
     }
+}
 
-  }
-
-  namespace DWI
-  {
-    namespace SVR
-    {
-
+namespace MR::DWI::SVR
+{
       class QSpaceBasis
       {
         public:
@@ -327,10 +321,6 @@ namespace MR
           const QSpaceBasis& basis;
           vector_type qr;
       };
-
-
-    }
-  }
 
 }
 

@@ -74,17 +74,14 @@ namespace MR
       size_t data_offset;
   };
 
-  namespace DWI {
-    namespace SVR {
+  namespace DWI::SVR {
       class ReconMatrix;
       class ReconMatrixAdjoint;
-    }
   }
 }
 
 
-namespace Eigen {
-  namespace internal {
+namespace Eigen::internal {
     // ReconMatrix inherits its traits from SparseMatrix
     template<>
     struct traits<MR::DWI::SVR::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
@@ -93,17 +90,11 @@ namespace Eigen {
     template<>
     struct traits<MR::DWI::SVR::ReconMatrixAdjoint> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::ColMajor> >
     {};
-  }
 }
 
 
-namespace MR
+namespace MR::DWI::SVR
 {
-  namespace DWI
-  {
-    namespace SVR
-    {
-
     class ReconMatrix : public Eigen::EigenBase<ReconMatrix>
     {
     public:
@@ -322,15 +313,11 @@ namespace MR
       return ReconMatrixAdjoint(*this);
     }
 
-
-    }
-  }
 }
 
 
 // Implementation of ReconMatrix * Eigen::DenseVector though a specialization of internal::generic_product_impl:
-namespace Eigen {
-  namespace internal {
+namespace Eigen::internal {
 
     template<typename Rhs>
     struct generic_product_impl<MR::DWI::SVR::ReconMatrix, Rhs, SparseShape, DenseShape, GemvProduct>
@@ -366,6 +353,5 @@ namespace Eigen {
       }
     };
 
-  }
 }
 

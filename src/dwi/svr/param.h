@@ -12,13 +12,8 @@
 #include <unsupported/Eigen/MatrixFunctions>
 
 
-namespace MR
+namespace MR::DWI::SVR
 {
-  namespace DWI
-  {
-    namespace SVR
-    {
-
       /* Exponential Lie mapping on SE(3). */
       template <typename VectorType>
       Eigen::Matrix4f se3exp(const VectorType& v)
@@ -45,9 +40,6 @@ namespace MR
         return v;
       }
 
-
-    }
-  }
 }
 
 

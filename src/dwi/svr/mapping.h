@@ -27,10 +27,8 @@
 #include "dwi/svr/qspacebasis.h"
 
 
-namespace MR
+namespace MR::Interp
 {
-  namespace Interp
-  {
     template <class ImageType>
     class LinearAdjoint : public Linear <ImageType>
     {
@@ -96,14 +94,10 @@ namespace MR
           }
         }
     };
+}
 
-  }
-
-  namespace DWI
-  {
-    namespace SVR
-    {
-
+namespace MR::DWI::SVR
+{
       template <class ImageType>
       class MotionMapping : public Adapter::Base<MotionMapping<ImageType>, ImageType>
       {
@@ -289,9 +283,6 @@ namespace MR
           const SSP<float> ssp;
 
       };
-
-    }
-  }
 
 }
 

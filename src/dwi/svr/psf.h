@@ -14,12 +14,8 @@
 #include "types.h"
 
 
-namespace MR
+namespace MR::DWI::SVR
 {
-  namespace DWI
-  {
-    namespace SVR
-    {
 
     /**
      *  1-D Slice Sensitivity Profile.
@@ -75,8 +71,5 @@ namespace MR
 
     };
 
-
-    }
-  }
 }
 

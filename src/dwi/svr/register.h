@@ -23,13 +23,8 @@
 #include "dwi/svr/psf.h"
 
 
-namespace MR
+namespace MR::DWI::SVR
 {
-  namespace DWI
-  {
-    namespace SVR
-    {
-
       /* Register prediction to slices. */
       class SliceRegistrationFunctor : public Eigen::DenseFunctor<float>
       {
@@ -319,8 +314,5 @@ namespace MR
         ProgressBar progress;
 
       };
-
-    }
-  }
 }
 
