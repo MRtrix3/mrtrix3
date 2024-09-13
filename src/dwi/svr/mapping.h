@@ -6,8 +6,7 @@
  * FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef __dwi_svr_mapping_h__
-#define __dwi_svr_mapping_h__
+#pragma once
 
 
 #include <Eigen/Dense>
@@ -296,5 +295,3 @@ namespace MR
 
 }
 
-
-#endif

@@ -6,8 +6,7 @@
  * FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef __dwi_svr_psf_h__
-#define __dwi_svr_psf_h__
+#pragma once
 
 
 #include <cmath>
@@ -80,8 +79,4 @@ namespace MR
     }
   }
 }
-
-
-#endif
-
 

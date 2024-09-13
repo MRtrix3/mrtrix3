@@ -6,8 +6,7 @@
  * FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef __dwi_svr_register_h__
-#define __dwi_svr_register_h__
+#pragma once
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
@@ -324,7 +323,4 @@ namespace MR
     }
   }
 }
-
-#endif
-
 

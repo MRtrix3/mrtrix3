@@ -6,8 +6,7 @@
  * FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef __dwi_svr_qspacebasis_h__
-#define __dwi_svr_qspacebasis_h__
+#pragma once
 
 
 #include <atomic>
@@ -335,5 +334,3 @@ namespace MR
 
 }
 
-
-#endif

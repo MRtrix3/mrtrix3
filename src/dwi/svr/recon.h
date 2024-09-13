@@ -6,8 +6,7 @@
  * FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef __dwi_svr_recon_h__
-#define __dwi_svr_recon_h__
+#pragma once
 
 
 #include <Eigen/Dense>
@@ -369,7 +368,4 @@ namespace Eigen {
 
   }
 }
-
-
-#endif
 
