@@ -8,68 +8,50 @@
 
 #pragma once
 
-
 #include <cmath>
 
 #include "types.h"
 
+namespace MR::DWI::SVR {
 
-namespace MR::DWI::SVR
-{
+/**
+ *  1-D Slice Sensitivity Profile.
+ */
+template <typename T = float> struct SSP {
+public:
+  SSP(const T fwhm = 1) : n(std::floor(fwhm / scale)), values(2 * n + 1) {
+    for (int z = -n; z <= n; z++)
+      values[n + z] = gaussian(z, fwhm / scale);
+    normalise_values();
+  }
 
-    /**
-     *  1-D Slice Sensitivity Profile.
-     */
-    template <typename T = float>
-    struct SSP
-    {
-    public:
+  template <typename VectorType> SSP(const VectorType &vec) : n(vec.size() / 2), values(2 * n + 1) {
+    for (size_t i = 0; i < values.size(); i++)
+      values[i] = vec[i];
+    normalise_values();
+  }
 
-        SSP (const T fwhm = 1)
-          : n (std::floor(fwhm / scale)), values (2*n+1)
-        {
-            for (int z = -n; z <= n; z++)
-                values[n+z] = gaussian(z, fwhm / scale);
-            normalise_values();
-        }
+  inline T operator()(const int z) const { return values[n + z]; }
 
-        template<typename VectorType>
-        SSP (const VectorType& vec)
-          : n (vec.size() / 2), values (2*n+1)
-        {
-            for (size_t i = 0; i < values.size(); i++)
-                values[i] = vec[i];
-            normalise_values();
-        }
-     
-        inline T operator() (const int z) const {
-            return values[n+z];
-        }
+  inline int size() const { return n; }
 
-        inline int size () const {
-            return n;
-        }
+private:
+  int n;
+  std::vector<T> values;
+  static constexpr T scale = 2.35482; // 2.sqrt(2.ln(2));
 
+  inline T gaussian(T x, T sigma) const {
+    T y = x / sigma;
+    return std::exp(-0.5 * y * y);
+  }
 
-    private:
-        int n;
-        std::vector<T> values;
-        static constexpr T scale = 2.35482;     // 2.sqrt(2.ln(2));
-                
-        inline T gaussian (T x, T sigma) const {
-            T y = x / sigma;
-            return std::exp(-0.5 * y*y);
-        }
+  inline void normalise_values() {
+    T norm = 0;
+    for (int z = -n; z <= n; z++)
+      norm += values[n + z];
+    for (int z = -n; z <= n; z++)
+      values[n + z] /= norm;
+  }
+};
 
-        inline void normalise_values () {
-            T norm = 0;
-            for (int z = -n; z <= n; z++)
-                norm += values[n+z];
-            for (int z = -n; z <= n; z++)
-                values[n+z] /= norm;
-        }
-
-    };
-
-}
-
+} // namespace MR::DWI::SVR

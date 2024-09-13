@@ -9,16 +9,15 @@
 #include <sstream>
 
 #include "command.h"
-#include "math/SH.h"
-#include "image.h"
 #include "dwi/gradient.h"
 #include "file/matrix.h"
-
+#include "image.h"
+#include "math/SH.h"
 
 using namespace MR;
 using namespace App;
 
-
+// clang-format off
 void usage ()
 {
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) and "
@@ -49,42 +48,39 @@ void usage ()
     + Stride::Options
     + DataType::options();
 }
-
+// clang-format on
 
 using value_type = float;
 
-
 class MSSH2Amp {
-  public:
-    template <class MatrixType>
-    MSSH2Amp (const MatrixType& dirs, const size_t lmax, const std::vector<size_t>& idx, bool nonneg) :
-      SHT ( Math::SH::init_transform_cart(dirs.template cast<value_type>(), lmax) ),
-      bidx (idx),
-      nonnegative (nonneg),
-      sh (SHT.cols()),
-      amp (SHT.rows()) { }
-    
-    void operator() (Image<value_type>& in, Image<value_type>& out) {
-      sh = in.row (4);
-      amp = SHT * sh;
-      if (nonnegative)
-        amp = amp.cwiseMax(value_type(0.0));
-      for (size_t j = 0; j < amp.size(); j++) {
-        out.index(3) = bidx[j];
-        out.value() = amp[j];
-      }
-    }
+public:
+  template <class MatrixType>
+  MSSH2Amp(const MatrixType &dirs, const size_t lmax, const std::vector<size_t> &idx, bool nonneg)
+      : SHT(Math::SH::init_transform_cart(dirs.template cast<value_type>(), lmax)),
+        bidx(idx),
+        nonnegative(nonneg),
+        sh(SHT.cols()),
+        amp(SHT.rows()) {}
 
-  private:
-    const Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> SHT;
-    const std::vector<size_t>& bidx;
-    const bool nonnegative;
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> sh, amp;
+  void operator()(Image<value_type> &in, Image<value_type> &out) {
+    sh = in.row(4);
+    amp = SHT * sh;
+    if (nonnegative)
+      amp = amp.cwiseMax(value_type(0.0));
+    for (size_t j = 0; j < amp.size(); j++) {
+      out.index(3) = bidx[j];
+      out.value() = amp[j];
+    }
+  }
+
+private:
+  const Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> SHT;
+  const std::vector<size_t> &bidx;
+  const bool nonnegative;
+  Eigen::Matrix<value_type, Eigen::Dynamic, 1> sh, amp;
 };
 
-template <class VectorType>
-inline std::vector<size_t> get_indices(const VectorType& blist, const value_type bval)
-{
+template <class VectorType> inline std::vector<size_t> get_indices(const VectorType &blist, const value_type bval) {
   std::vector<size_t> indices;
   for (size_t j = 0; j < blist.size(); j++)
     if ((blist[j] > bval - DWI_SHELLS_EPSILON) && (blist[j] < bval + DWI_SHELLS_EPSILON))
@@ -92,15 +88,13 @@ inline std::vector<size_t> get_indices(const VectorType& blist, const value_type
   return indices;
 }
 
-
-void run ()
-{
+void run() {
   auto mssh = Image<value_type>::open(argument[0]);
   if (mssh.ndim() != 5)
     throw Exception("5-D MSSH image expected.");
 
-  Header header (mssh);
-  auto bvals = parse_floats (header.keyval().find("shells")->second);
+  Header header(mssh);
+  auto bvals = parse_floats(header.keyval().find("shells")->second);
 
   Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
   grad = File::Matrix::load_matrix(argument[1]).leftCols<4>();
@@ -123,9 +117,9 @@ void run ()
   // Save output
   header.ndim() = 4;
   header.size(3) = grad.rows();
-  DWI::set_DW_scheme (header, grad);
-  Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
-  header.datatype() = DataType::from_command_line (DataType::Float32);
+  DWI::set_DW_scheme(header, grad);
+  Stride::set_from_command_line(header, Stride::contiguous_along_axis(3));
+  header.datatype() = DataType::from_command_line(DataType::Float32);
 
   auto amp_data = Image<value_type>::create(argument[2], header);
 
@@ -135,15 +129,11 @@ void run ()
     auto idx = get_indices(grad.col(3), bvals[k]);
     if (idx.empty())
       continue;
-    Eigen::MatrixXd directions (idx.size(), 3);
+    Eigen::MatrixXd directions(idx.size(), 3);
     for (size_t i = 0; i < idx.size(); i++) {
       directions.row(i) = grad.row(idx[i]).template head<3>();
     }
-    MSSH2Amp mssh2amp (directions, Math::SH::LforN (mssh.size(4)),
-                       idx, get_options("nonnegative").size());
+    MSSH2Amp mssh2amp(directions, Math::SH::LforN(mssh.size(4)), idx, get_options("nonnegative").size());
     ThreadedLoop("computing amplitudes", mssh, 0, 3, 2).run(mssh2amp, mssh, amp_data);
   }
-
 }
-
-

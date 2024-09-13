@@ -9,14 +9,14 @@
 #include <algorithm>
 #include <sstream>
 
+#include "adapter/extract.h"
 #include "command.h"
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
+#include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
-#include "dwi/gradient.h"
 #include "phase_encoding.h"
-#include "dwi/shells.h"
-#include "adapter/extract.h"
-#include "file/matrix.h"
 
 #include "dwi/svr/qspacebasis.h"
 #include "dwi/svr/recon.h"
@@ -28,11 +28,10 @@ constexpr double DEFAULT_ZREG = 1e-3;
 constexpr double DEFAULT_TOL = 1e-4;
 constexpr int DEFAULT_MAXITER = 10;
 
-
 using namespace MR;
 using namespace App;
 
-
+// clang-format off
 void usage ()
 {
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)";
@@ -110,14 +109,11 @@ void usage ()
     + Argument ("img").type_image_in();
 
 }
-
+// clang-format on
 
 typedef float value_type;
 
-
-
-void run ()
-{
+void run() {
   // Load input data
   auto dwi = Image<value_type>::open(argument[0]).with_direct_io({1, 2, 3, 4});
 
@@ -127,7 +123,7 @@ void run ()
   if (opt.size())
     motion = File::Matrix::load_matrix<float>(opt[0][0]);
   else
-    motion = Eigen::MatrixXf::Zero(dwi.size(3), 6); 
+    motion = Eigen::MatrixXf::Zero(dwi.size(3), 6);
 
   // Check dimensions
   if (motion.size() && motion.cols() != 6)
@@ -135,11 +131,10 @@ void run ()
   if (motion.size() && ((dwi.size(3) * dwi.size(2)) % motion.rows()))
     throw Exception("No. rows in motion parameters does not match image dimensions.");
 
-
   // Select shells
-  auto grad = DWI::get_DW_scheme (dwi);
-  DWI::Shells shells (grad);
-  shells.select_shells (false, false, false);
+  auto grad = DWI::get_DW_scheme(dwi);
+  DWI::Shells shells(grad);
+  shells.select_shells(false, false, false);
 
   // Read multi-shell basis
   int lmax = 0;
@@ -149,7 +144,7 @@ void run ()
     Eigen::MatrixXf t = File::Matrix::load_matrix<float>(opt[k][0]);
     if (t.rows() != shells.count())
       throw Exception("No. shells does not match no. rows in basis function " + opt[k][0] + ".");
-    lmax = std::max(2*(int(t.cols())-1), lmax);
+    lmax = std::max(2 * (int(t.cols()) - 1), lmax);
     rf.push_back(t);
   }
 
@@ -162,7 +157,7 @@ void run ()
       throw Exception("Weights matrix dimensions don't match image dimensions.");
   }
 
-  // Get volume indices 
+  // Get volume indices
   std::vector<size_t> idx;
   if (rf.empty()) {
     idx = shells.largest().get_volumes();
@@ -173,41 +168,41 @@ void run ()
   }
 
   // Select subset
-  auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<std::vector<uint32_t>> (idx));
+  auto dwisub = Adapter::make<Adapter::Extract1D>(dwi, 3, container_cast<std::vector<uint32_t>>(idx));
 
-  Eigen::MatrixXf gradsub (idx.size(), grad.cols());
+  Eigen::MatrixXf gradsub(idx.size(), grad.cols());
   for (size_t i = 0; i < idx.size(); i++)
     gradsub.row(i) = grad.row(idx[i]).template cast<float>();
 
-  size_t ne = motion.rows()/dwi.size(3);
-  Eigen::MatrixXf motionsub (ne * idx.size(), 6);
+  size_t ne = motion.rows() / dwi.size(3);
+  Eigen::MatrixXf motionsub(ne * idx.size(), 6);
   for (size_t i = 0; i < idx.size(); i++)
     for (size_t j = 0; j < ne; j++)
       motionsub.row(i * ne + j) = motion.row(idx[i] * ne + j);
 
-  Eigen::MatrixXf Wsub (W.rows(), idx.size());
+  Eigen::MatrixXf Wsub(W.rows(), idx.size());
   for (size_t i = 0; i < idx.size(); i++)
     Wsub.col(i) = W.col(idx[i]);
 
   // SSP
-  DWI::SVR::SSP<float> ssp (DEFAULT_SSPW);
+  DWI::SVR::SSP<float> ssp(DEFAULT_SSPW);
   opt = get_options("ssp");
   if (opt.size()) {
     std::string t = opt[0][0];
     try {
       ssp = DWI::SVR::SSP<float>(std::stof(t));
-    } catch (std::invalid_argument& e) {
+    } catch (std::invalid_argument &e) {
       try {
         Eigen::VectorXf v = File::Matrix::load_vector<float>(t);
         ssp = DWI::SVR::SSP<float>(v);
       } catch (...) {
-        throw Exception ("Invalid argument for SSP.");
+        throw Exception("Invalid argument for SSP.");
       }
     }
   }
 
   // Read voxel weights
-  Eigen::VectorXf Wvox = Eigen::VectorXf::Ones(dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
+  Eigen::VectorXf Wvox = Eigen::VectorXf::Ones(dwisub.size(0) * dwisub.size(1) * dwisub.size(2) * dwisub.size(3));
   opt = get_options("voxweights");
   if (opt.size()) {
     auto voxweights = Image<value_type>::open(opt[0][0]);
@@ -222,58 +217,57 @@ void run ()
   if (rf.empty())
     lmax = get_option_value("lmax", DEFAULT_LMAX);
   else
-    lmax = std::min(lmax, (int) get_option_value("lmax", lmax));
-  
+    lmax = std::min(lmax, (int)get_option_value("lmax", lmax));
+
   float reg = get_option_value("reg", DEFAULT_REG);
   float zreg = get_option_value("zreg", DEFAULT_ZREG);
 
   value_type tol = get_option_value("tolerance", DEFAULT_TOL);
   size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
 
-  DWI::SVR::QSpaceBasis qbasis {gradsub, lmax, rf, motionsub};
+  DWI::SVR::QSpaceBasis qbasis{gradsub, lmax, rf, motionsub};
 
   size_t ncoefs = qbasis.get_ncoefs();
   size_t padding = get_option_value("padding", Math::SH::NforL(lmax));
   if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
 
-
   // Create source header - needed due to stride handling
-  Header srchdr (dwisub);
-  Stride::set (srchdr, {1, 2, 3, 4});
-  DWI::set_DW_scheme (srchdr, gradsub);
+  Header srchdr(dwisub);
+  Stride::set(srchdr, {1, 2, 3, 4});
+  DWI::set_DW_scheme(srchdr, gradsub);
   srchdr.datatype() = DataType::Float32;
   srchdr.sanitise();
 
   // Create recon header
-  Header rechdr (dwisub);
+  Header rechdr(dwisub);
   opt = get_options("template");
   if (opt.size()) {
     rechdr = Header::open(opt[0][0]);
   }
   rechdr.ndim() = 4;
   rechdr.size(3) = ncoefs;
-  Stride::set (rechdr, {2, 3, 4, 1});
+  Stride::set(rechdr, {2, 3, 4, 1});
   rechdr.datatype() = DataType::Float32;
   rechdr.sanitise();
 
-
   // Create mapping
-  DWI::SVR::ReconMapping map (rechdr, srchdr, qbasis, motionsub, ssp);
+  DWI::SVR::ReconMapping map(rechdr, srchdr, qbasis, motionsub, ssp);
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::SVR::ReconMatrix R (map, reg, zreg);
+  DWI::SVR::ReconMatrix R(map, reg, zreg);
   R.setWeights(Wsub);
 
   R.setVoxelWeights(Wvox);
 
   // Read input data to vector (this enforces positive strides!)
-  Eigen::VectorXf y (R.rows()); y.setZero();
+  Eigen::VectorXf y(R.rows());
+  y.setZero();
   size_t j = 0;
   for (auto lv = Loop("loading image data", {0, 1, 2, 3})(dwisub); lv; lv++, j++) {
-      float w = Wsub(size_t(dwisub.index(2)), size_t(dwisub.index(3))) * Wvox[j];
-      y[j] = std::sqrt(w) * dwisub.value();
+    float w = Wsub(size_t(dwisub.index(2)), size_t(dwisub.index(3))) * Wvox[j];
+    y[j] = std::sqrt(w) * dwisub.value();
   }
 
   // Fit scattered data in basis...
@@ -286,7 +280,7 @@ void run ()
   cg.setMaxIterations(maxiter);
 
   // Solve y = M x
-  Eigen::VectorXf x (R.cols());
+  Eigen::VectorXf x(R.cols());
   opt = get_options("init");
   if (opt.size()) {
     // load initialisation
@@ -295,26 +289,26 @@ void run ()
     if ((init.size(3) != shells.count()) || (init.size(4) < Math::SH::NforL(lmax)))
       throw Exception("dimensions of init image don't match.");
     // init vector
-    Eigen::VectorXf x0 (R.cols());
+    Eigen::VectorXf x0(R.cols());
     // convert from mssh
-    Eigen::VectorXf c (shells.count() * Math::SH::NforL(lmax));
-    Eigen::MatrixXf x2mssh (c.size(), ncoefs); x2mssh.setZero();
+    Eigen::VectorXf c(shells.count() * Math::SH::NforL(lmax));
+    Eigen::MatrixXf x2mssh(c.size(), ncoefs);
+    x2mssh.setZero();
     for (int k = 0; k < shells.count(); k++)
-      x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = qbasis.getShellBasis(k).transpose();
+      x2mssh.middleRows(k * Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = qbasis.getShellBasis(k).transpose();
     auto mssh2x = x2mssh.fullPivHouseholderQr();
     size_t j = 0, k = 0;
-    for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j+=ncoefs) {
+    for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j += ncoefs) {
       k = 0;
       for (auto l2 = Loop(3)(init); l2; l2++) {
         for (init.index(4) = 0; init.index(4) < Math::SH::NforL(lmax); init.index(4)++)
-          c[k++] = std::isfinite((float) init.value()) ? init.value() : 0.0f;
+          c[k++] = std::isfinite((float)init.value()) ? init.value() : 0.0f;
       }
       x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
     INFO("solve from given starting point");
     x = cg.solveWithGuess(y, x0);
-  }
-  else {
+  } else {
     INFO("solve from zero starting point");
     x = cg.solve(y);
   }
@@ -322,38 +316,41 @@ void run ()
   CONSOLE("CG: #iterations: " + str(cg.iterations()));
   CONSOLE("CG: estimated error: " + str(cg.error()));
 
-
   // Write result to output file
-  Header msshhdr (rechdr);
+  Header msshhdr(rechdr);
   msshhdr.ndim() = 5;
   msshhdr.size(3) = shells.count();
   msshhdr.size(4) = padding;
-  Stride::set_from_command_line (msshhdr, {3, 4, 5, 2, 1});
-  msshhdr.datatype() = DataType::from_command_line (DataType::Float32);
-  PhaseEncoding::set_scheme (msshhdr, Eigen::MatrixXf());
+  Stride::set_from_command_line(msshhdr, {3, 4, 5, 2, 1});
+  msshhdr.datatype() = DataType::from_command_line(DataType::Float32);
+  PhaseEncoding::set_scheme(msshhdr, Eigen::MatrixXf());
   // store b-values and counts
   {
-  std::stringstream ss;
-  for (auto b : shells.get_bvalues())
-    ss << b << ",";
-  std::string key = "shells";
-  std::string val = ss.str(); val.erase(val.length()-1);
-  msshhdr.keyval()[key] = val;
-  } {
-  std::stringstream ss;
-  for (auto c : shells.get_counts())
-    ss << c << ",";
-  std::string key = "shellcounts";
-  std::string val = ss.str(); val.erase(val.length()-1);
-  msshhdr.keyval()[key] = val;
+    std::stringstream ss;
+    for (auto b : shells.get_bvalues())
+      ss << b << ",";
+    std::string key = "shells";
+    std::string val = ss.str();
+    val.erase(val.length() - 1);
+    msshhdr.keyval()[key] = val;
+  }
+  {
+    std::stringstream ss;
+    for (auto c : shells.get_counts())
+      ss << c << ",";
+    std::string key = "shellcounts";
+    std::string val = ss.str();
+    val.erase(val.length() - 1);
+    msshhdr.keyval()[key] = val;
   }
 
-  auto out = Image<value_type>::create (argument[1], msshhdr);
+  auto out = Image<value_type>::create(argument[1], msshhdr);
 
   j = 0;
-  Eigen::VectorXf c (ncoefs);
-  Eigen::VectorXf sh (padding); sh.setZero();
-  for (auto l = Loop("writing result to image", {0, 1, 2})(out); l; l++, j+=ncoefs) {
+  Eigen::VectorXf c(ncoefs);
+  Eigen::VectorXf sh(padding);
+  sh.setZero();
+  for (auto l = Loop("writing result to image", {0, 1, 2})(out); l; l++, j += ncoefs) {
     c = x.segment(j, ncoefs);
     for (int k = 0; k < shells.count(); k++) {
       out.index(3) = k;
@@ -361,7 +358,6 @@ void run ()
       out.row(4) = sh;
     }
   }
-
 
   // Output source prediction
   bool complete = get_options("complete").size();
@@ -372,8 +368,4 @@ void run ()
     auto recon = ImageView<value_type>(rechdr, x.data());
     map.x2y(recon, spred);
   }
-
-
 }
-
-

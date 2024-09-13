@@ -7,21 +7,20 @@
  */
 
 #include "command.h"
-#include "image.h"
-#include "thread_queue.h"
 #include "dwi/gradient.h"
 #include "file/matrix.h"
+#include "image.h"
+#include "thread_queue.h"
 
-#include "dwi/svr/register.h"
 #include "dwi/svr/psf.h"
+#include "dwi/svr/register.h"
 
 constexpr float DEFAULT_SSPW = 1.0f;
-
 
 using namespace MR;
 using namespace App;
 
-
+// clang-format off
 void usage ()
 {
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)";
@@ -58,16 +57,14 @@ void usage ()
   + DWI::GradImportOptions();
 
 }
-
+// clang-format on
 
 using value_type = float;
 
-
-void run ()
-{
+void run() {
   // input data
   auto data = Image<value_type>::open(argument[0]);
-  auto grad = DWI::get_DW_scheme (data);
+  auto grad = DWI::get_DW_scheme(data);
 
   // input template
   auto mssh = Image<value_type>::open(argument[1]);
@@ -92,46 +89,43 @@ void run ()
     INFO("volume-to-volume registration.");
   } else {
     if (data.size(2) % mb != 0)
-      throw Exception ("multiband factor invalid.");
+      throw Exception("multiband factor invalid.");
   }
 
   // SSP
-  DWI::SVR::SSP<float> ssp (DEFAULT_SSPW);
+  DWI::SVR::SSP<float> ssp(DEFAULT_SSPW);
   opt = get_options("ssp");
   if (opt.size()) {
     std::string t = opt[0][0];
     try {
       ssp = DWI::SVR::SSP<float>(std::stof(t));
-    } catch (std::invalid_argument& e) {
+    } catch (std::invalid_argument &e) {
       try {
         Eigen::VectorXf v = File::Matrix::load_vector<float>(t);
         ssp = DWI::SVR::SSP<float>(v);
       } catch (...) {
-        throw Exception ("Invalid argument for SSP.");
+        throw Exception("Invalid argument for SSP.");
       }
     }
   }
 
   // settings and initialisation
   size_t niter = get_option_value("maxiter", 0);
-  Eigen::MatrixXf init (data.size(3), 6); init.setZero();
+  Eigen::MatrixXf init(data.size(3), 6);
+  init.setZero();
   opt = get_options("init");
   if (opt.size()) {
     init = File::Matrix::load_matrix<float>(opt[0][0]);
-    if (init.cols() != 6 || ((data.size(3)*data.size(2)) % init.rows()))
+    if (init.cols() != 6 || ((data.size(3) * data.size(2)) % init.rows()))
       throw Exception("dimension mismatch in motion initialisaton.");
   }
 
   // run registration
-  DWI::SVR::SliceAlignSource source (data.size(3), data.size(2), mb, grad, bvals, init);
-  DWI::SVR::SliceAlignPipe pipe (data, mssh, mask, mb, niter, ssp);
-  DWI::SVR::SliceAlignSink sink (data.size(3), data.size(2), mb);
+  DWI::SVR::SliceAlignSource source(data.size(3), data.size(2), mb, grad, bvals, init);
+  DWI::SVR::SliceAlignPipe pipe(data, mssh, mask, mb, niter, ssp);
+  DWI::SVR::SliceAlignSink sink(data.size(3), data.size(2), mb);
   Thread::run_queue(source, DWI::SVR::SliceIdx(), Thread::multi(pipe), DWI::SVR::SliceIdx(), sink);
 
   // output
   File::Matrix::save_matrix(sink.get_motion(), argument[2]);
-
 }
-
-
-
