@@ -87,10 +87,10 @@ def execute(): #pylint: disable=unused-variable
     isliceorder = np.argsort(sliceorder)
     # reorder
     M = np.reshape(M0.reshape((nv,ne,6))[:,sliceorder,:], (-1,6))
+    dM = np.diff(M, axis=0)
     # motion stats
-    dM = M[1:,:] - M[:-1,:]
-    mtra = np.mean(np.sum(dM[:,:3]**2, axis=1))
-    mrot = np.mean(np.sum(dM[:,3:]**2, axis=1)) * 1000.
+    mtra = np.mean(np.sqrt(np.sum(dM[:,:3]**2, axis=1)))
+    mrot = np.mean(np.sqrt(np.sum(dM[:,3:]**2, axis=1))) * 180./np.pi
     # outlier stats
     orratio = 1.0 - np.sum(W) / (W.shape[0] * W.shape[1])
     # print stats
