@@ -15,7 +15,7 @@
 #include "dwi/svr/register.h"
 #include "dwi/svr/psf.h"
 
-#define DEFAULT_SSPW 1.0f
+constexpr float DEFAULT_SSPW = 1.0f;
 
 
 using namespace MR;

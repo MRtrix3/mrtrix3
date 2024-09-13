@@ -21,12 +21,12 @@
 #include "dwi/svr/qspacebasis.h"
 #include "dwi/svr/recon.h"
 
-#define DEFAULT_LMAX 4
-#define DEFAULT_SSPW 1.0f
-#define DEFAULT_REG 0.001
-#define DEFAULT_ZREG 0.001
-#define DEFAULT_TOL 1e-4
-#define DEFAULT_MAXITER 10
+constexpr int DEFAULT_LMAX = 4;
+constexpr float DEFAULT_SSPW = 1.0f;
+constexpr double DEFAULT_REG = 1e-3;
+constexpr double DEFAULT_ZREG = 1e-3;
+constexpr double DEFAULT_TOL = 1e-4;
+constexpr int DEFAULT_MAXITER = 10;
 
 
 using namespace MR;
