@@ -76,10 +76,6 @@ void usage ()
   + Option ("zreg", "Regularization in the slice direction. (default = " + str(DEFAULT_ZREG) + ")")
     + Argument ("l").type_float()
 
-  + Option ("field", "Static susceptibility field, aligned in recon space.")
-    + Argument ("map").type_image_in()
-    + Argument ("idx").type_integer()
-
   + Option ("template", "Template header to determine the reconstruction grid.")
     + Argument ("header").type_image_in()
 
@@ -166,23 +162,6 @@ void run ()
       throw Exception("Weights matrix dimensions don't match image dimensions.");
   }
 
-  // Read field map and PE scheme
-  opt = get_options("field");
-  bool hasfield = opt.size();
-  auto fieldmap = Image<value_type>();
-  size_t fieldidx = 0;
-  Eigen::MatrixXf PE;
-  if (hasfield) {
-    auto petable = PhaseEncoding::get_scheme(dwi);
-    PE = petable.leftCols<3>().cast<float>();
-    PE.array().colwise() *= petable.col(3).array().cast<float>();
-    // -----------------------  // TODO: Eddy uses a reverse LR axis for storing
-    PE.col(0) *= -1;            // the PE table, akin to the gradient table.
-    // -----------------------  // Fix in the eddy import/export functions in core.
-    fieldmap = Image<value_type>::open(opt[0][0]);
-    fieldidx = opt[0][1];
-  }
-
   // Get volume indices 
   std::vector<size_t> idx;
   if (rf.empty()) {
@@ -209,13 +188,6 @@ void run ()
   Eigen::MatrixXf Wsub (W.rows(), idx.size());
   for (size_t i = 0; i < idx.size(); i++)
     Wsub.col(i) = W.col(idx[i]);
-
-  Eigen::MatrixXf PEsub;
-  if (hasfield) {
-    PEsub.resize(idx.size(), PE.cols());
-    for (size_t i = 0; i < idx.size(); i++)
-      PEsub.row(i) = PE.row(idx[i]);
-  }
 
   // SSP
   DWI::SVR::SSP<float> ssp (DEFAULT_SSPW);
@@ -295,12 +267,6 @@ void run ()
   R.setWeights(Wsub);
 
   R.setVoxelWeights(Wvox);
-
-//  if (hasfield)
-//    R.setField(fieldmap, fieldidx, PEsub);
-
-
-
 
   // Read input data to vector (this enforces positive strides!)
   Eigen::VectorXf y (R.rows()); y.setZero();
