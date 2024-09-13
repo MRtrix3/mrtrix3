@@ -86,6 +86,15 @@ ctest -L dwi2response # Runs all tests of the Python command dwi2response
     ctest -R 5ttgen_hsvs # Run only the tests of specifically the "HSVS" algorithm of the 5ttgen command
     ```
 
+-   Environment variables "`MRTRIX_BINARIES_DATA_DIR`" and "`MRTRIX_SCRIPTS_DATA_DIR`"
+    can be used to specify alternative locations to be used by `cmake`
+    to clone the appropriate versions of those data within the build directory.
+    By setting these to contain local filesystem locations,
+    internet traffic will be reduced if deleting build directories or using multiple build configurations;
+    it additionally enables the execution of `ctest` utilising updated test data
+    prior to pushing the updated test data to GitHub
+    (see "Adding test data" step 7 below).
+
 ## Adding tests
 
 A new text file should be added to one of the following locations,
@@ -192,10 +201,21 @@ depending on the nature of the proposed modification.
     It is highly recommended to give this branch in the data repository
     the same name as the relevant branch in the source code repository.
 
-6.  Create a commit adding or modifying test data,
-    and push the updated branch to GitHub.
+6.  Create a commit adding or modifying test data.
 
-7.  In your clone of the source code repository:
+7.  Push the updated branch to GitHub.
+    Note that if `cmake` is configured to use local clones
+    of the test data repositories rather than GitHub
+    (as explained in "Running tests" -> "Advanced usage" above),
+    then this step will not be necessary for verifying test suite success
+    on your local machine;
+    test data changes will however nevertheless eventually
+    need to be pushed to GitHub
+    in order for other developers,
+    or indeed Continuous Integration (CI) checks,
+    to be able to acquire the updated data.
+
+8.  In your clone of the source code repository:
 
     1.  In file `testing/CMakeLists.txt`,
         find the invocation of the ExternalProject_Add() function
@@ -206,19 +226,19 @@ depending on the nature of the proposed modification.
     2.  Make any other additions or modifications to tests
         that do not involve modification of test *data*.
 
-    3.  Create a commit that includes changes from both steps 7.1 and 7.2
+    3.  Create a commit that includes changes from both steps 8.1 and 8.2,
         and push the updated source code repository branch to GitHub.
 
-8.  Ensure that within the Pull Request,
-    no merge conflict occurs at the location modified by step 7.1.
+9.  Ensure that within the Pull Request,
+    no merge conflict occurs at the location modified by step 8.1.
     A merge conflict here indicates that on the target source branch,
     there has been evolution of the test data accessed by that branch
     in parallel to the test data changes made in step 6.
     Resolving this necessitates explicit merging of changes
     between the corresponding branches in the test data repository,
-    followed by repeating step 7.1 and 7.3 to access the result of this merge.
+    followed by repeating step 8.1 and 8.3 to access the result of this merge.
 
-9.  After the relevant Pull Request on the source code repository is merged:
+10. After the relevant Pull Request on the source code repository is merged:
 
     1.  For the data repository branch that has the same name
         as the target branch of the Pull Request,
