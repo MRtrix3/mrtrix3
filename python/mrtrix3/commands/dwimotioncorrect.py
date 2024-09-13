@@ -57,31 +57,31 @@ def usage(cmdline): #pylint: disable=unused-variable
     cmdline.add_description('Volume-level and/or slice-level motion correction for dMRI, '
                             'based on the SHARD representation for multi-shell data. ')
     # arguments
-    cmdline.add_argument('input',  help='The input image series to be corrected')
-    cmdline.add_argument('output', help='The output multi-shell SH coefficients')
+    cmdline.add_argument('input', type=app.Parser.ImageIn(), help='The input image series to be corrected')
+    cmdline.add_argument('output', type=app.Parser.ImageOut(), help='The output multi-shell SH coefficients')
     # options
     options = cmdline.add_argument_group('Options for the dwimotioncorrect script')
-    options.add_argument('-mask', help='Manually provide a mask image for motion correction')
+    options.add_argument('-mask', type=app.Parser.ImageIn(), help='Manually provide a mask image for motion correction')
     options.add_argument('-lmax', help='SH basis order per shell (default = maximum with at least 30% oversampling)')
     options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 4,2,0 or lower if needed)')
     options.add_argument('-reg', help='Regularization for dwirecon (overrides config; default = 0.005)')
     options.add_argument('-zreg', help='Regularization for dwirecon (overrides config; default = 0.001)')
-    options.add_argument('-setup', help='Configuration setup file (json structured)')
+    options.add_argument('-setup', type=app.Parser.FileIn(), help='Configuration setup file (json structured)')
     options.add_argument('-mb', help='Multiband factor (default = 1)')
     options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
     options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
-    options.add_argument('-sspfile', help='Slice sensitivity profile as vector')
-    options.add_argument('-fieldmap', help='B0 field map for distortion correction')
+    options.add_argument('-sspfile', type=app.Parser.FileIn(), help='Slice sensitivity profile as vector')
+    options.add_argument('-fieldmap', type=app.Parser.ImageIn(), help='B0 field map for distortion correction')
     options.add_argument('-fieldidx', help='Index of volume to which field map is aligned (default = 0)')
-    options.add_argument('-pe_table', help='Phase encoding table in MRtrix format')
-    options.add_argument('-pe_eddy', nargs=2, help='Phase encoding table in FSL acqp/index format')
-    options.add_argument('-priorweights', help='Import prior slice weights')
-    options.add_argument('-fixedweights', help='Import fixed slice weights')
-    options.add_argument('-fixedmotion', help='Import fixed motion traces')
+    options.add_argument('-pe_table', type=app.Parser.FileIn(), help='Phase encoding table in MRtrix format')
+    options.add_argument('-pe_eddy', nargs=2, type=app.Parser.FileIn(), help='Phase encoding table in FSL acqp/index format')
+    options.add_argument('-priorweights', type=app.Parser.FileIn(), help='Import prior slice weights')
+    options.add_argument('-fixedweights', type=app.Parser.FileIn(), help='Import fixed slice weights')
+    options.add_argument('-fixedmotion', type=app.Parser.FileIn(), help='Import fixed motion traces')
     options.add_argument('-driftfilter', action='store_true', help='Filter motion for drift')
-    options.add_argument('-voxelweights', help='Import fixed voxel weights')
-    options.add_argument('-export_motion', help='Export rigid motion parameters')
-    options.add_argument('-export_weights', help='Export slice weights')
+    options.add_argument('-voxelweights', type=app.Parser.ImageIn(), help='Import fixed voxel weights')
+    options.add_argument('-export_motion', type=app.Parser.FileOut(), help='Export rigid motion parameters')
+    options.add_argument('-export_weights', type=app.Parser.FileOut(), help='Export slice weights')
     app.add_dwgrad_import_options(cmdline)
 
 
@@ -92,26 +92,26 @@ def execute(): #pylint: disable=unused-variable
     except ImportError:
         raise MRtrixError('SciPy required: https://www.scipy.org/install.html')
     # import metadata
-    grad_import_option = app.read_dwgrad_import_options()
-    pe_import_option = ''
+    grad_import_option = app.dwgrad_import_options()
+    pe_import_option = []
     if app.ARGS.pe_table:
-        pe_import_option = ' -import_pe_table ' + path.from_user(app.ARGS.pe_table, True)
+        pe_import_option = ['-import_pe_table', app.ARGS.pe_table]
     elif app.ARGS.pe_eddy:
-        pe_import_option = ' -import_pe_eddy ' + path.from_user(app.ARGS.pe_eddy[0], True) + ' ' + path.from_user(app.ARGS.pe_eddy[1], True)
-    # check output path
-    app.check_output_path(app.ARGS.output)
-    if app.ARGS.export_motion:
-        app.check_output_path(app.ARGS.export_motion)
-    if app.ARGS.export_weights:
-        app.check_output_path(app.ARGS.export_weights)
+        pe_import_option = ['-import_pe_eddy', app.ARGS.pe_eddy[0], app.ARGS.pe_eddy[1]]
+    # check output path - code no longer works; now done internally??
+    #app.check_output_path(app.ARGS.output)
+    #if app.ARGS.export_motion:
+    #    app.check_output_path(app.ARGS.export_motion)
+    #if app.ARGS.export_weights:
+    #    app.check_output_path(app.ARGS.export_weights)
     # prepare working directory
-    app.make_scratch_dir()
-    run.command('mrconvert ' + path.from_user(app.ARGS.input, True) + ' ' + path.to_scratch('in.mif', True) + grad_import_option + pe_import_option)
+    app.activate_scratch_dir()
+    run.command(['mrconvert', app.ARGS.input, 'in.mif'] + grad_import_option + pe_import_option)
     if app.ARGS.mask:
-        run.command('mrconvert ' + path.from_user(app.ARGS.mask, True) + ' ' + path.to_scratch('mask.mif', True))
+        run.command(['mrconvert', app.ARGS.mask, 'mask.mif'])
     if app.ARGS.fieldmap:
-        run.command('mrconvert ' + path.from_user(app.ARGS.fieldmap, True) + ' ' + path.to_scratch('field.mif', True))
-    app.goto_scratch_dir()
+        run.command(['mrconvert', app.ARGS.fieldmap, 'field.mif'])
+    #app.goto_scratch_dir()
 
     # Make sure it's actually a DWI that's been passed
     header = image.Header('in.mif')
@@ -142,13 +142,14 @@ def execute(): #pylint: disable=unused-variable
     shells = [int(round(float(s))) for s in image.mrinfo('in.mif', 'shell_bvalues').split()]
     shell_sizes = [int(s) for s in image.mrinfo('in.mif', 'shell_sizes').split()]
 
-    # Set lmax
+    # Set default lmax
     def get_max_sh_degree(N, oversampling_factor=1.3):
         for l in range(0,10,2):
             if (l+3)*(l+4)/2 * oversampling_factor > N:
                 return l
+        return 8
 
-    lmax = [(b>10) * get_max_sh_degree(n) for b, n in zip(shells, shell_sizes)]
+    lmax = [get_max_sh_degree(n) for b, n in zip(shells, shell_sizes)]
     if app.ARGS.lmax:
         lmax = [int(l) for l in app.ARGS.lmax.split(',')]
     if len(lmax) != len(shells):
@@ -164,7 +165,7 @@ def execute(): #pylint: disable=unused-variable
     # Configuration
     config = json.loads(DEFAULT_CONFIG)
     if app.ARGS.setup:
-        with open(path.from_user(app.ARGS.setup, True)) as f:
+        with open(app.ARGS.setup) as f:
             customconfig = json.load(f)
             # use defaults for unspecified config options
             customconfig['global'] = {**config['global'], **customconfig['global']}
@@ -180,7 +181,7 @@ def execute(): #pylint: disable=unused-variable
     # SSP option
     ssp_option = ''
     if app.ARGS.sspfile:
-        run.command('cp ' + path.from_user(app.ARGS.sspfile, True) + ' ssp.txt')
+        run.command(f'cp {app.ARGS.sspfile} ssp.txt')
         ssp_option = ' -ssp ssp.txt'
     elif app.ARGS.sspwidth:
         ssp_option = ' -ssp ' + app.ARGS.sspwidth
@@ -217,17 +218,17 @@ def execute(): #pylint: disable=unused-variable
 
     # Import fixed slice weights
     if app.ARGS.priorweights:
-        run.command('cp ' + path.from_user(app.ARGS.priorweights, True) + ' priorweights.txt')
+        run.command(f'cp {app.ARGS.priorweights} priorweights.txt')
     if app.ARGS.fixedweights:
-        run.command('cp ' + path.from_user(app.ARGS.fixedweights, True) + ' sliceweights.txt')
+        run.command(f'cp {app.ARGS.fixedweights} sliceweights.txt')
     # Import fixed motion traces
     if app.ARGS.fixedmotion:
-        run.command('cp ' + path.from_user(app.ARGS.fixedmotion, True) + ' motion.txt')
+        run.command(f'cp {app.ARGS.fixedmotion} motion.txt')
 
     # Import voxel weights
     if app.ARGS.voxelweights:
         # mrcalc "hack" to check image dimensions & copy PE table
-        run.command('mrcalc in.mif 0 -mult ' + path.from_user(app.ARGS.voxelweights, True) + ' -add voxelweights.mif')
+        run.command(f'mrcalc in.mif 0 -mult {app.ARGS.voxelweights} -add voxelweights.mif')
 
 
     # Variable input file name
@@ -285,7 +286,7 @@ def execute(): #pylint: disable=unused-variable
         rcmd += ' -mb ' + (str(mb) if conf['svr'] else '0') + (' -init motion.txt' if k>0 else '')
         rcmd += ssp_option + ' -force' + nthr
         run.command(rcmd)
-        run.command('motionfilter motion.txt sliceweights.txt motion.txt -medfilt 5' + motfilt_option)
+        run.command('motionfilter motion.txt sliceweights.txt motion.txt -medfilt 5' + motfilt_option + ' -force')
 
 
     def fieldalignstep(k):
@@ -322,11 +323,11 @@ def execute(): #pylint: disable=unused-variable
 
     #   __________ Copy outputs __________
 
-    run.command('mrconvert recon-'+str(nepochs)+'.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='recon-'+str(nepochs)+'.mif', force=app.FORCE_OVERWRITE)
+    run.command(['mrconvert', f'recon-{nepochs}.mif', app.ARGS.output], mrconvert_keyval=f'recon-{nepochs}.mif', force=app.FORCE_OVERWRITE)
     if app.ARGS.export_motion:
-        run.command('cp motion.txt ' + path.from_user(app.ARGS.export_motion, True))
+        run.command(f'cp motion.txt {app.ARGS.export_motion}')
     if app.ARGS.export_weights:
-        run.command('cp sliceweights.txt ' + path.from_user(app.ARGS.export_weights, True))
+        run.command(f'cp sliceweights.txt {app.ARGS.export_weights}')
 
 
 

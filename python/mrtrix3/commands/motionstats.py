@@ -10,6 +10,7 @@
 #            daan.christiaens@kcl.ac.uk
 #
 
+import math
 import numpy as np
 from scipy.linalg import logm, expm
 import matplotlib.pyplot as plt

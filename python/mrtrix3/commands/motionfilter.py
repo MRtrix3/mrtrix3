@@ -5,11 +5,6 @@
 #   even the implied warranty of MERCHANTABILITY or FITNESS
 #   FOR A PARTICULAR PURPOSE.
 #
-#   MOTION CORRECTION FOR DWI VOLUME SERIES
-#
-#   This script performs volume-to-series and slice-to-series registration
-#   of diffusion-weighted images for motion correction in the brain.
-#
 #   Author:  Daan Christiaens
 #            King's College London
 #            daan.christiaens@kcl.ac.uk
@@ -25,29 +20,29 @@ def getsliceorder(n, p=2, s=1):
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-  cmdline.set_author('Daan Christiaens (daan.christiaens@kcl.ac.uk)')
-  cmdline.set_synopsis('Filtering a series of rigid motion parameters')
-  cmdline.add_description('This command applies a filter on a timeseries of rigid motion parameters.'
-                          ' This is used in dwimotioncorrect to correct severe registration errors.')
-  cmdline.add_argument('input',
-                       type=app.Parser.FileIn(),
-                       help='The input motion file')
-  cmdline.add_argument('weights',
-                       type=app.Parser.FileIn(),
-                       help='The input weight matrix')
-  cmdline.add_argument('output',
-                       type=app.Parser.FileOut(),
-                       help='The output motion file')
-  cmdline.add_argument('-packs', type=int, default=2, help='no. slice packs')
-  cmdline.add_argument('-shift', type=int, default=1, help='slice shift')
-  cmdline.add_argument('-medfilt', type=int, default=1, help='median filtering kernel size (default = 1; disabled)')
-  cmdline.add_argument('-driftfilt', action='store_true', help='drift filter slice packs')
+    from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+    cmdline.set_author('Daan Christiaens (daan.christiaens@kcl.ac.uk)')
+    cmdline.set_synopsis('Filtering a series of rigid motion parameters')
+    cmdline.add_description('This command applies a filter on a timeseries of rigid motion parameters.'
+                            ' This is used in dwimotioncorrect to correct severe registration errors.')
+    cmdline.add_argument('input',
+                         type=app.Parser.FileIn(),
+                         help='The input motion file')
+    cmdline.add_argument('weights',
+                         type=app.Parser.FileIn(),
+                         help='The input weight matrix')
+    cmdline.add_argument('output',
+                         type=app.Parser.FileOut(),
+                         help='The output motion file')
+    cmdline.add_argument('-packs', type=int, default=2, help='no. slice packs')
+    cmdline.add_argument('-shift', type=int, default=1, help='slice shift')
+    cmdline.add_argument('-medfilt', type=int, default=1, help='median filtering kernel size (default = 1; disabled)')
+    cmdline.add_argument('-driftfilt', action='store_true', help='drift filter slice packs')
 
 
 def execute(): #pylint: disable=unused-variable
     from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
-    from mrtrix3 import app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
+    from mrtrix3 import app, image #pylint: disable=no-name-in-module, import-outside-toplevel
     # read inputs
     M = np.loadtxt(app.ARGS.input)
     W = np.clip(np.loadtxt(app.ARGS.weights), 1e-6, None)
