@@ -71,7 +71,7 @@ void usage() {
     + Argument("choice").type_choice(formats)
   + Option ("out_reference", "specify the reference axes against which the output directions will be specified"
                              " (defaults to real / scanner space if omitted)")
-    + Argument("choice").type_choice(references)
+    + Argument("choice").type_choice(references);
   // TODO Implement -fill
   //+ Option ("fill", "specify value to be inserted into output image in the absence of valid information")
   //  + Argument("value").type_float();
