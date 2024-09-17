@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
 namespace MR::DWI::Tractography::Mapping {
 
 enum contrast_t { TDI, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE, VECTOR_FILE };
@@ -36,8 +38,8 @@ enum tck_stat_t {
   ENDS_CORR
 };
 
-extern const char *contrasts[];
-extern const char *voxel_statistics[];
-extern const char *track_statistics[];
+extern const std::vector<std::string> contrasts;
+extern const std::vector<std::string> voxel_statistics;
+extern const std::vector<std::string> track_statistics;
 
 } // namespace MR::DWI::Tractography::Mapping

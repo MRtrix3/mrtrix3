@@ -49,7 +49,7 @@ extern const App::OptionGroup lin_stage_options;
 extern const App::OptionGroup rigid_options;
 extern const App::OptionGroup affine_options;
 extern const App::OptionGroup fod_options;
-extern const char *optim_algo_names[];
+extern const std::vector<std::string> optim_algo_names;
 
 enum LinearMetricType { Diff, NCC };
 enum LinearRobustMetricEstimatorType { L1, L2, LP, None };

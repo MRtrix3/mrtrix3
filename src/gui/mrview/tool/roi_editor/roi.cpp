@@ -16,6 +16,7 @@
 
 #include <string>
 
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/tool/roi_editor/roi.h"
 
 #include "gui/cursor.h"
@@ -289,7 +290,7 @@ void ROI::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_std_string(urlList.at(i)))));
       } catch (Exception &e) {
         e.display();
       }

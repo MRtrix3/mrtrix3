@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "file/json.h"
 #include "file/key_value.h"
+#include <nlohmann/json.hpp>
 
 namespace MR {
 class Header;

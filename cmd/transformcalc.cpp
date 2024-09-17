@@ -29,16 +29,15 @@
 using namespace MR;
 using namespace App;
 
-const char *operations[] = {"invert",
-                            "half",
-                            "rigid",
-                            "header",
-                            "average",
-                            "interpolate",
-                            "decompose",
-                            "align_vertices_rigid",
-                            "align_vertices_rigid_scale",
-                            NULL};
+const std::vector<std::string> operations = {"invert",
+                                             "half",
+                                             "rigid",
+                                             "header",
+                                             "average",
+                                             "interpolate",
+                                             "decompose",
+                                             "align_vertices_rigid",
+                                             "align_vertices_rigid_scale"};
 
 // clang-format off
 void usage() {

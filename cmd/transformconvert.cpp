@@ -27,7 +27,7 @@
 using namespace MR;
 using namespace App;
 
-const char *operations[] = {"flirt_import", "itk_import", NULL};
+const std::vector<std::string> operations = {"flirt_import", "itk_import"};
 
 // clang-format off
 void usage() {

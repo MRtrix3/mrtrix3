@@ -23,6 +23,7 @@
 #include "gui/dialog/progress.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/list.h"
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/list.h"
 #include "gui/opengl/gl.h"
@@ -154,7 +155,9 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        const auto &url = urlList.at(i);
+        const auto filePath = QtHelpers::url_to_std_string(url);
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(filePath)));
       } catch (Exception &e) {
         e.display();
       }
@@ -721,22 +724,20 @@ void Window::parse_arguments() {
   if (!MR::App::argument.empty()) {
     if (!MR::App::option.empty()) {
       // check that first non-standard option appears after last argument:
-      size_t last_arg_pos = 1;
-      for (; MR::App::argv[last_arg_pos] != MR::App::argument.back().c_str(); ++last_arg_pos)
-        if (MR::App::argv[last_arg_pos] == nullptr)
-          throw Exception("FIXME: error determining position of last argument!");
+      const auto last_arg_pos = MR::App::argument.back().index();
 
-      // identify first non-standard option:
-      size_t first_option = 0;
-      for (; first_option < MR::App::option.size(); ++first_option) {
-        if (size_t(MR::App::option[first_option].opt - &MR::App::__standard_options[0]) >=
-            MR::App::__standard_options.size())
-          break;
-      }
-      if (MR::App::option.size() > first_option) {
-        first_option = MR::App::option[first_option].args - MR::App::argv;
-        if (first_option < last_arg_pos)
-          throw Exception("options must appear after the last argument - see help page for details");
+      const auto is_non_standard_option = [](const MR::App::ParsedOption &option) {
+        return std::none_of(MR::App::__standard_options.begin(),
+                            MR::App::__standard_options.end(),
+                            [&option](const auto &standard_option) { return option.opt == &standard_option; });
+      };
+
+      const auto first_non_standard_option =
+          std::find_if(MR::App::option.begin(), MR::App::option.end(), is_non_standard_option);
+
+      if (first_non_standard_option != MR::App::option.end() && first_non_standard_option->index < last_arg_pos) {
+        throw Exception("MRView-specific options can only appear on the command-line after all arguments specifying "
+                        "input images; see help page for details");
       }
     }
 

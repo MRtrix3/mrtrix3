@@ -22,7 +22,7 @@
 #include "progressbar.h"
 #include "thread.h"
 
-constexpr size_t default_permutations = 1e8;
+constexpr size_t default_number = 1e8;
 
 using namespace MR;
 using namespace App;
@@ -47,8 +47,8 @@ void usage() {
 
 
   OPTIONS
-    + Option ("permutations", "number of permutations to try"
-                              " (default: " + str(default_permutations) + ")")
+    + Option ("number", "number of shuffles to try"
+                        " (default: " + str(default_number) + ")")
     +   Argument ("num").type_integer (1)
 
     + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
@@ -61,11 +61,11 @@ using vector3_type = Eigen::Vector3d;
 
 class Shared {
 public:
-  Shared(const Eigen::MatrixXd &directions, size_t target_num_permutations)
+  Shared(const Eigen::MatrixXd &directions, size_t target_num_shuffles)
       : directions(directions),
-        target_num_permutations(target_num_permutations),
-        num_permutations(0),
-        progress("optimising directions for eddy-currents", target_num_permutations),
+        target_num_shuffles(target_num_shuffles),
+        num_shuffles(0),
+        progress("optimising directions for eddy-currents", target_num_shuffles),
         best_signs(directions.rows(), 1),
         best_eddy(std::numeric_limits<value_type>::max()) {}
 
@@ -77,9 +77,9 @@ public:
       progress.set_text(
           "optimising directions for eddy-currents (current best configuration: energy = " + str(best_eddy) + ")");
     }
-    ++num_permutations;
+    ++num_shuffles;
     ++progress;
-    return num_permutations < target_num_permutations;
+    return num_shuffles < target_num_shuffles;
   }
 
   value_type eddy(size_t i, size_t j, const std::vector<int> &signs) const {
@@ -97,8 +97,8 @@ public:
 
 protected:
   const Eigen::MatrixXd &directions;
-  const size_t target_num_permutations;
-  size_t num_permutations;
+  const size_t target_num_shuffles;
+  size_t num_shuffles;
   ProgressBar progress;
   std::vector<int> best_signs;
   value_type best_eddy;
@@ -114,10 +114,10 @@ public:
       ;
   }
 
-  void next_permutation() { signs[uniform(rng)] *= -1; }
+  void next_shuffle() { signs[uniform(rng)] *= -1; }
 
   bool eval() {
-    next_permutation();
+    next_shuffle();
 
     value_type eddy = 0.0;
     for (size_t i = 0; i < signs.size(); ++i)
@@ -137,11 +137,11 @@ protected:
 void run() {
   auto directions = DWI::Directions::load_cartesian(argument[0]);
 
-  size_t num_permutations = get_option_value<size_t>("permutations", default_permutations);
+  size_t num_shuffles = get_option_value<size_t>("number", default_number);
 
   std::vector<int> signs;
   {
-    Shared eddy_shared(directions, num_permutations);
+    Shared eddy_shared(directions, num_shuffles);
     Thread::run(Thread::multi(Processor(eddy_shared)), "eval thread");
     signs = eddy_shared.get_best_signs();
   }

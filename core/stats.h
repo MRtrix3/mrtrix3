@@ -19,10 +19,11 @@
 #include "math/median.h"
 
 #include <iomanip>
+#include <vector>
 
 namespace MR::Stats {
 
-extern const char *field_choices[];
+extern std::vector<std::string> field_choices;
 extern const App::OptionGroup Options;
 
 using value_type = default_type;

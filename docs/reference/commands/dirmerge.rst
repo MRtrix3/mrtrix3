@@ -24,6 +24,8 @@ Options
 
 -  **-unipolar_weight value** set the weight given to the unipolar electrostatic repulsion model compared to the bipolar model (default: 0.2).
 
+-  **-firstisfirst** choose the first volume in the list from the first shell, rather than choosing such from the shell with the most volumes (replicates behaviour prior to version 3.1.0)
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

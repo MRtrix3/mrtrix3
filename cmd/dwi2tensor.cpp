@@ -150,7 +150,7 @@ void usage() {
   + "* any of above with constraints:\n"
     "Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. " // Internal
     "Optimal experimental design and estimation for q-space trajectory imaging. "
-    "Human Brain Mapping, In press";
+    "Human Brain Mapping, 2023, 44, 1793-1809";
 
 }
 // clang-format on
