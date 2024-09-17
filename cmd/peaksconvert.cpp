@@ -30,9 +30,9 @@ using namespace App;
 // TODO Do we need to support both mathematics and physics conventions for spherical coordinates?
 // And if so, where do we do it?
 
-const char *const formats[] = {"unitspherical", "spherical", "unit3vector", "3vector", nullptr};
+const std::vector<std::string> formats = {"unitspherical", "spherical", "unit3vector", "3vector"};
 enum class format_t { UNITSPHERICAL, SPHERICAL, UNITTHREEVECTOR, THREEVECTOR };
-const char *const references[] = {"xyz", "ijk", "bvec", nullptr};
+const std::vector<std::string> references = {"xyz", "ijk", "bvec"};
 enum class reference_t { XYZ, IJK, BVEC };
 
 using transform_linear_type = Eigen::Matrix<default_type, 3, 3>;
@@ -209,12 +209,15 @@ private:
   static Eigen::Vector3d out_ijk2bvec;
 };
 
-transform_linear_type Fixel::in_ijk2xyz = transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
+transform_linear_type Fixel::in_ijk2xyz =
+    transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
 bool Fixel::in_bvec_flipi = false;
 default_type Fixel::in_bvec_imultiplier = std::numeric_limits<default_type>::signaling_NaN();
 Eigen::Vector3d Fixel::in_bvec2ijk = Eigen::Vector3d::Constant(std::numeric_limits<default_type>::signaling_NaN());
-transform_linear_type Fixel::out_ijk2xyz = transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
-transform_linear_type Fixel::out_xyz2ijk = transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
+transform_linear_type Fixel::out_ijk2xyz =
+    transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
+transform_linear_type Fixel::out_xyz2ijk =
+    transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
 bool Fixel::out_bvec_flipi = false;
 default_type Fixel::out_bvec_imultiplier = std::numeric_limits<default_type>::signaling_NaN();
 Eigen::Vector3d Fixel::out_ijk2bvec = Eigen::Vector3d::Constant(std::numeric_limits<default_type>::signaling_NaN());
@@ -226,7 +229,9 @@ void Fixel::set_input_transforms(const Header &H) {
   in_bvec2ijk = {in_bvec_imultiplier, 1.0, 1.0};
   DEBUG("Input transform configured based on image \"" + H.name() + "\":");
   DEBUG("IJK-to-XYZ transform:\n" + str(in_ijk2xyz));
-  DEBUG("bvec: flip " + str(in_bvec_flipi) + ", i component multiplier " + str(in_bvec_imultiplier) + ", vector multiplier [" + str(in_bvec2ijk.transpose()) + "]");
+  DEBUG("bvec: flip " + str(in_bvec_flipi) + ", "                      //
+        + "i component multiplier " + str(in_bvec_imultiplier) + ", "  //
+        + "vector multiplier [" + str(in_bvec2ijk.transpose()) + "]"); //
 }
 
 void Fixel::set_output_transforms(const Header &H) {
@@ -238,7 +243,9 @@ void Fixel::set_output_transforms(const Header &H) {
   DEBUG("Output transform configured based on image \"" + H.name() + "\":");
   DEBUG("IJK-to-XYZ transform:\n" + str(out_ijk2xyz));
   DEBUG("XYZ-to-IJK transform:\n" + str(out_xyz2ijk));
-  DEBUG("bvec: flip " + str(out_bvec_flipi) + ", i component multiplier " + str(out_bvec_imultiplier) + ", vector multiplier [" + str(out_ijk2bvec.transpose()) + "]");
+  DEBUG("bvec: flip " + str(out_bvec_flipi) + ", "                      //
+        + "i component multiplier " + str(out_bvec_imultiplier) + ", "  //
+        + "vector multiplier [" + str(out_ijk2bvec.transpose()) + "]"); //
 }
 
 template <> Fixel Fixel::from<UnitSpherical, reference_t::XYZ>(const UnitSpherical &in) {
@@ -287,9 +294,7 @@ template <> Fixel Fixel::from<Spherical, reference_t::BVEC>(const Spherical &in)
   return Fixel(in_ijk2xyz * unit_threevector_ijk, r_az_in_ijk[0]);
 }
 
-template <> Fixel Fixel::from<UnitThreeVector, reference_t::XYZ>(const UnitThreeVector &in) {
-  return Fixel(in());
-}
+template <> Fixel Fixel::from<UnitThreeVector, reference_t::XYZ>(const UnitThreeVector &in) { return Fixel(in()); }
 
 template <> Fixel Fixel::from<UnitThreeVector, reference_t::IJK>(const UnitThreeVector &in) {
   return Fixel(in_ijk2xyz * in());
@@ -317,15 +322,15 @@ template <> UnitSpherical Fixel::to<UnitSpherical, reference_t::XYZ>() const {
 }
 
 template <> UnitSpherical Fixel::to<UnitSpherical, reference_t::IJK>() const {
-  const default_type azimuth = std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)),
-                                          unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
+  const default_type azimuth =
+      std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)), unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
   const default_type inclination = std::acos(unit_threevector_xyz.dot(out_ijk2xyz.col(2)));
   return UnitSpherical({azimuth, inclination});
 }
 
 template <> UnitSpherical Fixel::to<UnitSpherical, reference_t::BVEC>() const {
-  default_type azimuth = std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)),
-                                    unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
+  default_type azimuth =
+      std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)), unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
   if (out_bvec_flipi)
     azimuth = Math::pi - azimuth;
   const default_type inclination = std::acos(unit_threevector_xyz.dot(out_ijk2xyz.col(2)));
@@ -340,15 +345,15 @@ template <> Spherical Fixel::to<Spherical, reference_t::XYZ>() const {
 }
 
 template <> Spherical Fixel::to<Spherical, reference_t::IJK>() const {
-  const default_type azimuth = std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)),
-                                          unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
+  const default_type azimuth =
+      std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)), unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
   const default_type inclination = std::acos(unit_threevector_xyz.dot(out_ijk2xyz.col(2)));
   return Spherical({radius, azimuth, inclination});
 }
 
 template <> Spherical Fixel::to<Spherical, reference_t::BVEC>() const {
-  default_type azimuth = std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)),
-                                    unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
+  default_type azimuth =
+      std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)), unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
   if (out_bvec_flipi)
     azimuth = Math::pi - azimuth;
   const default_type inclination = std::acos(unit_threevector_xyz.dot(out_ijk2xyz.col(2)));
@@ -543,9 +548,8 @@ void run() {
   const size_t in_volumes_per_fixel(volumes_per_fixel(in_format));
   const size_t num_fixels = H_in.size(3) / in_volumes_per_fixel;
   if (num_fixels * in_volumes_per_fixel != H_in.size(3))
-    throw Exception("Number of volumes in input image (" + str(H_in.size(3)) + ")"
-                    + " incompatible with "
-                    + str(volumes_per_fixel) + " volumes per orientation");
+    throw Exception("Number of volumes in input image (" + str(H_in.size(3)) + ")" + " incompatible with " +
+                    str(volumes_per_fixel) + " volumes per orientation");
   const reference_t in_reference(reference_from_option("in_reference"));
 
   const format_t out_format(format_from_option("out_format"));
