@@ -50,16 +50,16 @@ void Element::set(const std::string &filename, bool force_read, bool read_write)
   fmap.reset(new File::MMap(filename, read_write));
 
   if (fmap->size() < 256)
-    throw Exception("\"" + fmap->name() + "\" is too small to be a valid DICOM file");
+    throw Exception("\"" + fmap->name().string() + "\" is too small to be a valid DICOM file");
 
   next = fmap->address();
 
   if (memcmp(next + 128, "DICM", 4)) {
     is_explicit = false;
-    DEBUG("DICOM magic number not found in file \"" + fmap->name() + "\" - trying truncated format");
+    DEBUG("DICOM magic number not found in file \"" + fmap->name().string() + "\" - trying truncated format");
     if (!force_read)
-      if (!Path::has_suffix(fmap->name(), ".dcm"))
-        throw Exception("file \"" + fmap->name() +
+      if (!Path::has_suffix(fmap->name().string(), ".dcm"))
+        throw Exception("file \"" + fmap->name().string() +
                         "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
   } else
     next += 132;
@@ -67,7 +67,7 @@ void Element::set(const std::string &filename, bool force_read, bool read_write)
   try {
     set_explicit_encoding();
   } catch (Exception) {
-    throw Exception("\"" + fmap->name() + "\" is not a valid DICOM file");
+    throw Exception("\"" + fmap->name().string() + "\" is not a valid DICOM file");
     fmap.reset();
   }
 }
@@ -75,7 +75,7 @@ void Element::set(const std::string &filename, bool force_read, bool read_write)
 void Element::set_explicit_encoding() {
   assert(fmap);
   if (read_GR_EL())
-    throw Exception("\"" + fmap->name() + "\" is too small to be DICOM");
+    throw Exception("\"" + fmap->name().string() + "\" is too small to be DICOM");
 
   is_explicit = true;
   next = start;
@@ -109,7 +109,7 @@ bool Element::read_GR_EL() {
 
   if (group == GROUP_BYTE_ORDER_SWAPPED) {
     if (!is_BE)
-      throw Exception("invalid DICOM group ID " + str(group) + " in file \"" + fmap->name() + "\"");
+      throw Exception("invalid DICOM group ID " + str(group) + " in file \"" + fmap->name().string() + "\"");
 
     is_BE = false;
     group = GROUP_BYTE_ORDER;
@@ -150,7 +150,7 @@ bool Element::read() {
                    "with implicit encoding in file \"",
                    group,
                    element) +
-            fmap->name() + "\"");
+            fmap->name().string() + "\"");
       VR = VR_UN;
     } else
       VR = get_VR_from_tag_name(name);
@@ -164,16 +164,16 @@ bool Element::read() {
       INFO("undefined length used for DICOM tag " +            //
            (!tag_name().empty() ? tag_name().substr(2) : "") + //
            MR::printf("(%04X, %04X)", group, element) +        //
-           " in file \"" + fmap->name() + "\"");
+           " in file \"" + fmap->name().string() + "\"");
   } else if (next + size > fmap->address() + fmap->size())
-    throw Exception("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
+    throw Exception("file \"" + fmap->name().string() + "\" is too small to contain DICOM elements specified");
   else {
     if (size % 2)
       DEBUG("WARNING: odd length (" + str(size) + ")" +         //
             " used for DICOM tag " +                            //
             (!tag_name().empty() ? tag_name().substr(2) : "") + //
             " (" + str(group) + ", " + str(element) + ")" +     //
-            " in file \"" + fmap->name() + "");
+            " in file \"" + fmap->name().string() + "");
     if (VR != VR_SQ) {
       if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM) {
         if (!parents.empty() && parents.back().group == GROUP_DATA && parents.back().element == ELEMENT_DATA)
@@ -213,7 +213,7 @@ bool Element::read() {
       } else {
         transfer_syntax_supported = false;
         INFO("unsupported DICOM transfer syntax: \"" + std::string(reinterpret_cast<const char *>(data), size) +
-             "\" in file \"" + fmap->name() + "\"");
+             "\" in file \"" + fmap->name().string() + "\"");
       }
       break;
     }
