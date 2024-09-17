@@ -69,24 +69,21 @@ if(MRTRIX_LOCAL_DEPENDENCIES)
     target_include_directories(nifti INTERFACE "${MRTRIX_DEPENDENCIES_DIR}/nifti")
 else()
     include(ExternalProject)
-    ExternalProject_Add(
+    FetchContent_Declare(
         nifti1
-        PREFIX nifti
+        DOWNLOAD_NO_EXTRACT ON
         URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti1.h"
-        CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
-        DOWNLOAD_NO_EXTRACT ON
-        DOWNLOAD_NO_PROGRESS ON
-        LOG_DOWNLOAD ON
     )
-    ExternalProject_Add(
+    FetchContent_Declare(
         nifti2
-        PREFIX nifti
-        URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h"
-        CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
         DOWNLOAD_NO_EXTRACT ON
-        DOWNLOAD_NO_PROGRESS ON
-        LOG_DOWNLOAD ON
+        URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h"
     )
-    target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti/src/")
+    FetchContent_MakeAvailable(nifti1)
+    FetchContent_MakeAvailable(nifti2)
+    target_include_directories(nifti INTERFACE
+        "${nifti1_SOURCE_DIR}"
+        "${nifti2_SOURCE_DIR}"
+    )
 endif()
 
