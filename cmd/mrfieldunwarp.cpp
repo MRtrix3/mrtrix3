@@ -149,13 +149,13 @@ void run() {
   if (petable.rows() != data.size(3))
     throw Exception("Invalid PE table.");
   // -----------------------  // TODO: Eddy uses a reverse LR axis for storing
-  petable.col(0) *= -1; // the PE table, akin to the gradient table.
+  petable.col(0) *= -1;       // the PE table, akin to the gradient table.
   // -----------------------  // Fix in the eddy import/export functions in core.
 
   // Apply rigid rotation to field.
   auto opt = get_options("motion");
   Eigen::MatrixXd motion;
-  if (opt.size())
+  if (!opt.empty())
     motion = File::Matrix::load_matrix<double>(opt[0][0]);
   else
     motion = Eigen::MatrixXd::Zero(data.size(3), 6);
@@ -167,7 +167,7 @@ void run() {
 
   // other options
   opt = get_options("nomodulation");
-  bool nomod = opt.size();
+  bool nomod = !opt.empty();
 
   // Save output
   Header header(data);

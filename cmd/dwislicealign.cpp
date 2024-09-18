@@ -15,7 +15,7 @@
 #include "dwi/svr/psf.h"
 #include "dwi/svr/register.h"
 
-constexpr float DEFAULT_SSPW = 1.0f;
+constexpr float DEFAULT_SSPW = 1.0F;
 
 using namespace MR;
 using namespace App;
@@ -77,7 +77,7 @@ void run() {
   // mask
   auto mask = Image<bool>();
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(data, mask, 0, 3);
   }
@@ -95,13 +95,13 @@ void run() {
   // SSP
   DWI::SVR::SSP<float> ssp(DEFAULT_SSPW);
   opt = get_options("ssp");
-  if (opt.size()) {
-    std::string t = opt[0][0];
+  if (!opt.empty()) {
+    std::string const t = opt[0][0];
     try {
       ssp = DWI::SVR::SSP<float>(std::stof(t));
     } catch (std::invalid_argument &e) {
       try {
-        Eigen::VectorXf v = File::Matrix::load_vector<float>(t);
+        Eigen::VectorXf const v = File::Matrix::load_vector<float>(t);
         ssp = DWI::SVR::SSP<float>(v);
       } catch (...) {
         throw Exception("Invalid argument for SSP.");
@@ -110,13 +110,13 @@ void run() {
   }
 
   // settings and initialisation
-  size_t niter = get_option_value("maxiter", 0);
+  size_t const niter = get_option_value("maxiter", 0);
   Eigen::MatrixXf init(data.size(3), 6);
   init.setZero();
   opt = get_options("init");
-  if (opt.size()) {
+  if (!opt.empty()) {
     init = File::Matrix::load_matrix<float>(opt[0][0]);
-    if (init.cols() != 6 || ((data.size(3) * data.size(2)) % init.rows()))
+    if ((init.cols() != 6) || (((data.size(3) * data.size(2)) % init.rows()) != 0))
       throw Exception("dimension mismatch in motion initialisaton.");
   }
 

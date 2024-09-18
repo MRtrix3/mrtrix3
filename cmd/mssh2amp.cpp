@@ -109,7 +109,7 @@ void run() {
   transform_type T;
   T.setIdentity();
   auto opt = get_options("transform");
-  if (opt.size())
+  if (!opt.empty())
     T = File::Matrix::load_transform(opt[0][0]);
 
   grad.leftCols<3>() = grad.leftCols<3>() * T.rotation().transpose();

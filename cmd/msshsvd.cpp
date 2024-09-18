@@ -82,7 +82,7 @@ void run() {
 
   auto mask = Image<bool>();
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(in, mask, 0, 3);
   }
@@ -92,7 +92,7 @@ void run() {
 
   std::vector<int> lmax;
   opt = get_options("lmax");
-  if (opt.size()) {
+  if (!opt.empty()) {
     lmax = opt[0][0].as_sequence_int();
   } else {
     lmax = {4, 2, 0};
@@ -115,7 +115,7 @@ void run() {
   W.setOnes();
   auto key = in.keyval().find("shellcounts");
   opt = get_options("weights");
-  if (opt.size()) {
+  if (!opt.empty()) {
     W = File::Matrix::load_vector<float>(opt[0][0]).cwiseSqrt();
     if (W.size() != nshells)
       throw Exception("provided weights do not match the no. shells.");
@@ -138,7 +138,7 @@ void run() {
 
   auto proj = Image<value_type>();
   opt = get_options("proj");
-  bool pout = opt.size();
+  bool pout = !opt.empty();
   if (pout) {
     Header header(in);
     proj = Image<value_type>::create(opt[0][0], header);

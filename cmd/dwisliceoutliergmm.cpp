@@ -228,7 +228,7 @@ void run() {
 
   auto mask = Image<bool>();
   auto opt = get_options("mask");
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(data, mask, 0, 3);
   } else {
@@ -238,7 +238,7 @@ void run() {
   Eigen::MatrixXf motion(data.size(3), 6);
   motion.setZero();
   opt = get_options("motion");
-  if (opt.size()) {
+  if (!opt.empty()) {
     motion = File::Matrix::load_matrix<float>(opt[0][0]);
     if (motion.cols() != 6 || ((data.size(3) * data.size(2)) % motion.rows()))
       throw Exception("dimension mismatch in motion initialisaton.");
@@ -257,7 +257,7 @@ void run() {
   Eigen::MatrixXf E = rmse.result();
 
   opt = get_options("export_error");
-  if (opt.size()) {
+  if (!opt.empty()) {
     File::Matrix::save_matrix(E.replicate(mb, 1), opt[0][0]);
   }
 
