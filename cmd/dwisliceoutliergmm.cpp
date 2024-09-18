@@ -76,11 +76,11 @@ public:
   }
 
   void operator()(Image<value_type> &data, Image<value_type> &pred) {
-    size_t v = data.get_index(3);
-    size_t z = data.get_index(2);
+    ssize_t const v = data.get_index(3);
+    ssize_t const z = data.get_index(2);
     // Get transformation for masking. Note that the MB-factor of the motion table and the OR settings can be different.
-    size_t ne_mot = motion.rows() / nv;
-    transform_type T{DWI::SVR::se3exp(motion.row(v * ne_mot + z % ne_mot)).cast<double>()};
+    ssize_t const ne_mot = motion.rows() / nv;
+    transform_type const T{DWI::SVR::se3exp(motion.row(v * ne_mot + z % ne_mot)).cast<double>()};
     // Calculate slice error
     value_type e = 0.0;
     int n = 0;
@@ -92,7 +92,7 @@ public:
         if (!mask.value())
           continue;
       }
-      value_type d = data.value() - pred.value();
+      value_type const d = data.value() - pred.value();
       e += d * d;
       n++;
     }
@@ -105,16 +105,16 @@ public:
     Emb.setZero();
     Eigen::MatrixXi Nmb(ne, nv);
     Nmb.setZero();
-    for (size_t b = 0; b < nz / ne; b++) {
+    for (ssize_t b = 0; b < nz / ne; b++) {
       Emb += E->block(b * ne, 0, ne, nv);
       Nmb += N->block(b * ne, 0, ne, nv);
     }
-    Eigen::MatrixXf R = (Nmb.array() > 0).select(Emb.cwiseQuotient(Nmb.cast<float>()), Eigen::MatrixXf::Zero(ne, nv));
+    Eigen::MatrixXf const R = (Nmb.array() > 0).select(Emb.cwiseQuotient(Nmb.cast<float>()), Eigen::MatrixXf::Zero(ne, nv));
     return R.cwiseSqrt();
   }
 
 private:
-  const size_t nv, nz, ne;
+  const ssize_t nv, nz, ne;
   const Transform T0;
   Interp::Nearest<Image<bool>> mask;
   const Eigen::MatrixXf motion;
@@ -140,7 +140,8 @@ public:
   void fit(const VecType &x) {
     // initialise
     init(x);
-    float_t ll, ll0 = -std::numeric_limits<float_t>::infinity();
+    float_t ll;
+    float_t ll0 = -std::numeric_limits<float_t>::infinity();
     // Expectation-Maximization
     for (int n = 0; n < niter; n++) {
       ll = e_step(x);

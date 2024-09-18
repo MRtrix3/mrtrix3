@@ -266,7 +266,7 @@ void run() {
   y.setZero();
   ssize_t j = 0;
   for (auto lv = Loop("loading image data", {0, 1, 2, 3})(dwisub); lv; lv++, j++) {
-    float const w = Wsub(size_t(dwisub.index(2)), size_t(dwisub.index(3))) * Wvox[j];
+    float const w = Wsub(dwisub.index(2), dwisub.index(3)) * Wvox[j];
     y[j] = std::sqrt(w) * dwisub.value();
   }
 
@@ -361,7 +361,7 @@ void run() {
   }
 
   // Output source prediction
-  bool complete = !get_options("complete").empty();
+  bool const complete = !get_options("complete").empty();
   opt = get_options("spred");
   if (!opt.empty()) {
     srchdr.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
