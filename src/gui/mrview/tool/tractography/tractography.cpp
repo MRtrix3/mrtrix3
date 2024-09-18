@@ -17,6 +17,7 @@
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/dialog/file.h"
 #include "gui/lighting_dock.h"
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/tool/list_model_base.h"
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
@@ -25,7 +26,7 @@
 #include "mrtrix.h"
 
 namespace MR::GUI::MRView::Tool {
-const char *tractogram_geometry_types[] = {"pseudotubes", "lines", "points", nullptr};
+const std::vector<std::string> tractogram_geometry_types = {"pseudotubes", "lines", "points"};
 
 TrackGeometryType geometry_index2type(const int idx) {
   switch (idx) {
@@ -43,13 +44,15 @@ TrackGeometryType geometry_index2type(const int idx) {
 
 size_t geometry_string2index(std::string type_str) {
   type_str = lowercase(type_str);
-  size_t index = 0;
-  for (const char *const *p = tractogram_geometry_types; *p; ++p, ++index) {
-    if (type_str == *p)
-      return index;
-  }
-  throw Exception("Unrecognised value for tractogram geometry \"" + type_str +
-                  "\" (options are: " + join(tractogram_geometry_types, ", ") + "); ignoring");
+
+  auto matches = [&type_str](const std::string &s) { return type_str == lowercase(s); };
+  const auto &list = tractogram_geometry_types;
+  auto it = std::find_if(list.begin(), list.end(), matches);
+  if (it != list.end())
+    return std::distance(list.begin(), it);
+
+  throw Exception("Unrecognised value for tractogram geometry \"" + type_str + "\" (options are: " + join(list, ", ") +
+                  "); ignoring");
   return 0;
 }
 
@@ -367,7 +370,7 @@ void Tractography::dropEvent(QDropEvent *event) {
     std::vector<std::string> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
-      list.push_back(urlList.at(i).path().toUtf8().constData());
+      list.push_back(QtHelpers::url_to_std_string(urlList.at(i)));
     }
     try {
       tractogram_list_model->add_items(list, *this);

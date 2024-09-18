@@ -6,7 +6,8 @@
 # Therefore, if a different reference intensity is requested,
 #   it should be possible to multiply the result of such by the ratio of those references
 #   and that result should then match the pre-calculated one
-dwibiasnormmask tmp-sub-01_dwi.mif tmpout.mif tmpmask.mif -force \
+dwibiasnormmask BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif tmpmask.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -reference 1.0 \
 -output_scale tmpscale.txt
 

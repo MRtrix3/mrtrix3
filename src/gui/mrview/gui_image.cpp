@@ -115,9 +115,12 @@ size_t Image::guess_colourmap() const {
     if (header().size(3) == 3)
       map = "RGB";
   }
-  for (size_t n = 0; ColourMap::maps[n].name; ++n)
-    if (ColourMap::maps[n].name == map)
-      return n;
+  auto it = std::find_if(
+      ColourMap::maps.begin(), ColourMap::maps.end(), [&map](const auto &entry) { return entry.name == map; });
+  if (it != ColourMap::maps.end()) {
+    return std::distance(ColourMap::maps.begin(), it);
+  }
+
   return 0;
 }
 

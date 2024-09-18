@@ -39,15 +39,9 @@
 using namespace MR;
 using namespace App;
 
-const char *transformation_choices[] = {"rigid",
-                                        "affine",
-                                        "nonlinear",
-                                        "rigid_affine",
-                                        "rigid_nonlinear",
-                                        "affine_nonlinear",
-                                        "rigid_affine_nonlinear",
-                                        nullptr};
 #define DEFAULT_TRANSFORMATION_TYPE 5 // affine_nonlinear
+const std::vector<std::string> transformation_choices = {
+    "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear"};
 
 // clang-format off
 const OptionGroup multiContrastOptions =
@@ -584,8 +578,11 @@ void run() {
     case 2:
       affine_estimator = Registration::LP;
       break;
-    default:
+    case 3:
+      affine_estimator = Registration::None;
       break;
+    default:
+      assert(false);
     }
   }
 

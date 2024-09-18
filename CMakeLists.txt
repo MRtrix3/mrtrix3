@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET 11.00 CACHE STRING "")
 project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    message(WARNING "It is recommended to use the Ninja generator to build MRtrix3. "
+                    "To use it, run cmake with -G Ninja or set the CMAKE_GENERATOR "
+                    "environment variable to Ninja.")
+endif()
 
 include(GNUInstallDirs)
 
@@ -15,6 +22,17 @@ option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
 option(MRTRIX_STRIP_CONDA "Strip ananconda/mininconda from PATH to avoid conflicts" ON)
 option(MRTRIX_USE_PCH "Use precompiled headers" ON)
+option(MRTRIX_PYTHON_SOFTLINK "Build directory softlink to Python source code rather than copying" ON)
+option(MRTRIX_BUILD_NON_CORE_STATIC "Build MRtrix's non-core code as a static library" OFF)
+option(MRTRIX_USE_LLD "Use lld as the linker" OFF)
+
+set(MRTRIX_DEPENDENCIES_DIR "" CACHE PATH
+    "An optional local directory containing all thirdparty dependencies:\n \
+    - Eigen3 https://gitlab.com/libeigen/eigen (version 3.4.0 in .tar.gz format)\n \
+    - Json for Modern C++ https://github.com/nlohmann/json (version 3.11.3 in .tar.xz format)\n \
+    - Half https://half.sourceforge.net/ (version 2.1.0 in zip format)\n \
+    - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n"
+)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)
@@ -59,6 +77,10 @@ include(LinkerSetup)
 include(FindFFTW)
 include(CompilerCache)
 include(ECMEnableSanitizers)
+include(Dependencies)
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    include(MacOSBundle)
+endif()
 
 use_compiler_cache()
 
@@ -69,30 +91,35 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE
         "and then run `pre-commit install` from the ${CMAKE_CURRENT_SOURCE_DIR} directory.")
 endif()
 
-
-add_compile_definitions(
+add_library(mrtrix-common INTERFACE)
+add_library(mrtrix::common ALIAS mrtrix-common)
+target_compile_definitions(mrtrix-common INTERFACE
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
     $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOSX>
     $<$<PLATFORM_ID:FreeBSD>:MRTRIX_FREEBSD>
 )
 
-if(MRTRIX_STL_DEBUGGING AND $<NOT:$<CONFIG:Debug>>)
-    if(MSVC)
-        add_compile_definitions(_ITERATOR_DEBUG_LEVEL=1)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(_LIBCPP_DEBUG)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        add_compile_options(_GLIBCXX_DEBUG _GLIBCXX_DEBUG_PEDANTIC)
-    endif()
+if(MRTRIX_STL_DEBUGGING AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Enabling STL debug mode")
+    target_compile_definitions(mrtrix-common INTERFACE
+        $<$<CXX_COMPILER_ID:MSVC>:_ITERATOR_DEBUG_LEVEL=1>
+        $<$<CXX_COMPILER_ID:GNU>:_GLIBCXX_DEBUG _GLIBCXX_DEBUG_PEDANTIC>
+        $<$<CXX_COMPILER_ID:Clang>:_LIBCPP_DEBUG=1>
+    )
 endif()
 
 if(MRTRIX_WARNINGS_AS_ERRORS)
-    if (MSVC)
-        add_compile_options(/WX)
-    else()
-        add_compile_options(-Werror)
-    endif()
+    message(STATUS "Enabling warnings as errors")
+    target_compile_options(mrtrix-common INTERFACE
+        $<$<CXX_COMPILER_ID:MSVC>:/WX>
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Werror>
+    )
+endif()
+
+# Allow compilation of big object of files in debug mode on MINGW
+if(MINGW AND CMAKE_BUILD_TYPE MATCHES "Debug")
+    target_compile_options(mrtrix-common INTERFACE -Wa,-mbig-obj)
 endif()
 
 

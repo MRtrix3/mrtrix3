@@ -30,7 +30,7 @@
 using namespace MR;
 using namespace App;
 
-const char *conversions[] = {"old", "new", "force_oldtonew", "force_newtoold", nullptr};
+const std::vector<std::string> conversions = {"old", "new", "force_oldtonew", "force_newtoold"};
 enum conv_t { NONE, OLD, NEW, FORCE_OLDTONEW, FORCE_NEWTOOLD };
 
 // clang-format off

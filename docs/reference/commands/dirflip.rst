@@ -26,7 +26,7 @@ The orientations themselves are not affected, only their polarity; this is neces
 Options
 -------
 
--  **-permutations num** number of permutations to try (default: 100000000)
+-  **-number num** number of shuffles to try (default: 100000000)
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
 

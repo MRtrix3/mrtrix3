@@ -25,7 +25,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-distutils python3-numpy
+         sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-distutils python3-numpy
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
@@ -86,7 +86,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy
+         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
@@ -208,10 +208,8 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-bc
             ${{env.MINGW_PACKAGE_PREFIX}}-cmake
             ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
-            ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
             ${{env.MINGW_PACKAGE_PREFIX}}-fftw
             ${{env.MINGW_PACKAGE_PREFIX}}-gcc
-            ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
             ${{env.MINGW_PACKAGE_PREFIX}}-ninja
             ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
             ${{env.MINGW_PACKAGE_PREFIX}}-qt6-base
@@ -268,7 +266,6 @@ jobs:
 
     - name: pylint
       run: |
-         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./python/lib/mrtrix3/_version.py
          ./run_pylint || { cat pylint.log; false; }
 
     - name: check copyright headers
@@ -284,5 +281,4 @@ jobs:
         extensions: 'h,cpp'
         clangFormatVersion: 16
         # Ignore third party headers
-        exclude: './core/file/json.h ./core/file/nifti1.h ./core/file/nifti2.h'
-
+        exclude: './thirdparty ./_deps'

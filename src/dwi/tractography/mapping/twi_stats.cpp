@@ -13,26 +13,27 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+#include "twi_stats.h"
 
-#include "dwi/tractography/mapping/twi_stats.h"
+#include <string>
+#include <vector>
 
 namespace MR::DWI::Tractography::Mapping {
 
-const char *contrasts[] = {
-    "tdi", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", "vector_file", 0};
-const char *voxel_statistics[] = {"sum", "min", "mean", "max", 0};
+const std::vector<std::string> contrasts = {
+    "tdi", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", "vector_file"};
+const std::vector<std::string> voxel_statistics = {"sum", "min", "mean", "max"};
 // Note: ENDS_CORR not provided as a command-line option
-const char *track_statistics[] = {"sum",
-                                  "min",
-                                  "mean",
-                                  "max",
-                                  "median",
-                                  "mean_nonzero",
-                                  "gaussian",
-                                  "ends_min",
-                                  "ends_mean",
-                                  "ends_max",
-                                  "ends_prod",
-                                  0};
+const std::vector<std::string> track_statistics = {"sum",
+                                                   "min",
+                                                   "mean",
+                                                   "max",
+                                                   "median",
+                                                   "mean_nonzero",
+                                                   "gaussian",
+                                                   "ends_min",
+                                                   "ends_mean",
+                                                   "ends_max",
+                                                   "ends_prod"};
 
 } // namespace MR::DWI::Tractography::Mapping

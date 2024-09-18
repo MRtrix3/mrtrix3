@@ -17,6 +17,7 @@
 #include "gui/mrview/tool/fixel/fixel.h"
 
 #include "gui/dialog/file.h"
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/tool/fixel/base_fixel.h"
 #include "gui/mrview/tool/fixel/directory.h"
 #include "gui/mrview/tool/fixel/image4D.h"
@@ -337,7 +338,7 @@ void Fixel::dropEvent(QDropEvent *event) {
     std::vector<std::string> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
-      list.push_back(urlList.at(i).path().toUtf8().constData());
+      list.push_back(QtHelpers::url_to_std_string(urlList.at(i)));
     }
     try {
       add_images(list);
@@ -415,8 +416,8 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   // how many menu elements were actually created by ColourMap::create_menu()
   static size_t colourmap_count = 0;
   if (!colourmap_count) {
-    for (size_t i = 0; ColourMap::maps[i].name; ++i) {
-      if (!ColourMap::maps[i].special)
+    for (const auto &map : ColourMap::maps) {
+      if (!map.special)
         ++colourmap_count;
     }
   }

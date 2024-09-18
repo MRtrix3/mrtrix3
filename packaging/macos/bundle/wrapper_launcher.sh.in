@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# This script is a wrapper around the actual MacOSX bundle executable.
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+real_path=${DIR}/@executable_name@.app/Contents/MacOS/@executable_name@
+if [ -x "${real_path}" ]; then
+  exec "${real_path}" "$@"
+else
+  echo "Could not find executable at ${real_path}"
+  exit 1
+fi

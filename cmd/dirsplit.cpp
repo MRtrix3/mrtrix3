@@ -20,7 +20,7 @@
 #include "progressbar.h"
 #include "thread.h"
 
-constexpr size_t default_permutations = 1e8;
+constexpr size_t default_number = 1e8;
 
 using namespace MR;
 using namespace App;
@@ -40,8 +40,8 @@ ARGUMENTS
 
 
 OPTIONS
-  + Option ("permutations", "number of permutations to try"
-                            " (default: " + str(default_permutations) + ")")
+  + Option ("number", "number of permutations to try"
+                            " (default: " + str(default_number) + ")")
     + Argument ("num").type_integer (1)
 
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
@@ -160,7 +160,7 @@ void run() {
   if (num_subsets == 1)
     throw Exception("Directions must be split across two or more output files");
 
-  const size_t num_permutations = get_option_value<size_t>("permutations", default_permutations);
+  const size_t num_permutations = get_option_value<size_t>("number", default_number);
 
   std::vector<std::vector<size_t>> best;
   {

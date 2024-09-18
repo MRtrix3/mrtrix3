@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify basic operation of the command
+#   when cleanup is activated
+rm -rf tmp/
+mkdir tmp/
+
+touch tmp/not_a_tempfile.txt
+touch tmp/mrtrix-tmp-ABCDEF.mif
+mkdir tmp/not_a_scratchdir/
+mkdir tmp/command-tmp-ABCDEF/
+
+mrtrix_cleanup tmp/
+ITEMCOUNT=$(ls tmp/ | wc)
+if [ "$ITEMCOUNT" -neq "2" ]; then
+    exit 1
+fi
