@@ -85,10 +85,10 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' to be applied to the image data *before* transforming them to real / scanner space.'
                           ' 2b. There may be requisite axis permutations / flips'
                           ' to be applied to the image data *after* transforming them to real / scanner space.')
-  cmdline.add_argument('input', help='The input fibre orientations image to be checked')
-  cmdline.add_argument('-mask', metavar='image', help='Provide a mask image within which to seed & constrain tracking')
-  cmdline.add_argument('-number', type=int, default=DEFAULT_NUMBER, help='Set the number of tracks to generate for each test')
-  cmdline.add_argument('-threshold', type=float, default=DEFAULT_THRESHOLD, help='Modulate thresold on the ratio of empirical to maximal mean length to issue an error')
+  cmdline.add_argument('input', type=app.Parser.ImageIn(), help='The input fibre orientations image to be checked')
+  cmdline.add_argument('-mask', type=app.Parser.ImageIn(), help='Provide a mask image within which to seed & constrain tracking')
+  cmdline.add_argument('-number', type=app.Parser.Int(1), default=DEFAULT_NUMBER, help='Set the number of tracks to generate for each test')
+  cmdline.add_argument('-threshold', type=app.Parser.Float(0.0, 1.0), default=DEFAULT_THRESHOLD, help='Modulate thresold on the ratio of empirical to maximal mean length to issue an error')
   cmdline.add_argument('-in_format', choices=FORMATS, default=DEFAULT_FORMAT, help='The format in which peak orientations are specified; one of: ' + ','.join(FORMATS))
   # TODO Add -in_reference option, which would control which variant is considered the default for the purpose of command return code
   cmdline.add_argument('-noshuffle',
@@ -101,7 +101,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' only consider prospective shuffles of axes or angles')
   cmdline.flag_mutually_exclusive_options(['noshuffle', 'notransform'])
   cmdline.add_argument('-all', action='store_true', help='Print table containing all results to standard output')
-  cmdline.add_argument('-out_table', help='Write text file with table containing all results')
+  cmdline.add_argument('-out_table', type=app.Parser.FileOut(), help='Write text file with table containing all results')
 
 
 
@@ -313,9 +313,7 @@ def sort_key(item):
 
 def execute(): #pylint: disable=unused-variable
 
-  app.check_output_path(app.ARGS.out_table)
-
-  image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
+  image_dimensions = image.Header(app.ARGS.input).size()
   if len(image_dimensions) != 4:
     raise MRtrixError('Input image must be a 4D image')
   if min(image_dimensions) == 1:
@@ -341,25 +339,19 @@ def execute(): #pylint: disable=unused-variable
 
   is_unit = app.ARGS.in_format in ('unitspherical', 'unit3vector')
 
-  app.make_scratch_dir()
+  app.activate_scratch_dir()
 
   # Unlike dwigradcheck, here we're going to be performing manual permutation & flipping of volumes
   # Therefore, we'd actually prefer to *not* have contiguous memory across volumes
   # Also, in order for subsequent reference transforms to be valid,
   #   we need for the strides to not be modified by MRtrix3 at the load stage
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('data.mif')
-              + ' -datatype float32'
-              + ' -config RealignTransform false')
+  run.command(f'mrconvert {app.ARGS.input} data.mif -datatype float32 -config RealignTransform false')
 
   if app.ARGS.mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif')
-                + ' -datatype bit'
-                + ' -config RealignTransform false')
-
-  app.goto_scratch_dir()
+    run.command(f'mrconvert {app.ARGS.mask} mask.mif -datatype bit -config RealignTransform false')
 
   # Generate a brain mask if we weren't provided with one
-  if not os.path.exists('mask.mif'):
+  if not app.ARGS.mask:
     run.command('mrcalc data.mif -abs - -config RealignTransform false | '
                 'mrmath - max -axis 3 - -config RealignTransform false | '
                 'mrthreshold - mask.mif -abs 0.0 -comparison gt -config RealignTransform false')
@@ -485,13 +477,13 @@ def execute(): #pylint: disable=unused-variable
 
   # Write comprehensive results to a file
   if app.ARGS.out_table:
-    if os.path.splitext(app.ARGS.out_table)[-1].lower() == '.tsv':
+    if app.ARGS.out_table.suffix.lower() == '.tsv':
       delimiter = '\t'
       quote = ''
     else:
       delimiter = ','
       quote = '"'
-    with open(path.from_user(app.ARGS.out_table, False), 'w') as f:
+    with open(app.ARGS.out_table, 'w') as f:
       f.write(f'{quote}Mean length{quote}{delimiter}'
               f'{quote}Operation 1 type{quote}{delimiter}{quote}Operation 1 parameters{quote}{delimiter}'
               f'{quote}Operation 2 type{quote}{delimiter}{quote}Operation 2 parameters{quote}{delimiter}'
