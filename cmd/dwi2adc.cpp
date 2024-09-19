@@ -16,11 +16,11 @@
 
 #include "command.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 #include "algo/threaded_copy.h"
-#include "math/least_squares.h"
 #include "dwi/gradient.h"
+#include "math/least_squares.h"
+#include "metadata/phase_encoding.h"
 
 
 using namespace MR;
@@ -99,7 +99,7 @@ void run () {
   Header header (dwi);
   header.datatype() = DataType::Float32;
   DWI::stash_DW_scheme (header, grad);
-  PhaseEncoding::clear_scheme (header);
+  Metadata::PhaseEncoding::clear_scheme (header.keyval());
   header.ndim() = 4;
   header.size(3) = 2;
 

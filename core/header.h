@@ -21,6 +21,7 @@
 #include <functional>
 
 #include "app.h"
+#include "axes.h"
 #include "debug.h"
 #include "types.h"
 #include "memory.h"
@@ -61,9 +62,7 @@ namespace MR
         transform_ (Eigen::Matrix<default_type,3,4>::Constant (NaN)),
         format_ (nullptr),
         offset_ (0.0),
-        scale_ (1.0),
-        realign_perm_ {{0, 1, 2}},
-        realign_flip_ {{false, false, false}} {}
+        scale_ (1.0) {}
 
       explicit Header (Header&& H) noexcept :
         axes_ (std::move (H.axes_)),
@@ -75,8 +74,7 @@ namespace MR
         datatype_ (std::move (H.datatype_)),
         offset_ (H.offset_),
         scale_ (H.scale_),
-        realign_perm_ {{0, 1, 2}},
-        realign_flip_ {{false, false, false}} {}
+        realignment_ (H.realignment_) {}
 
       Header& operator= (Header&& H) noexcept {
         axes_ = std::move (H.axes_);
@@ -88,8 +86,7 @@ namespace MR
         datatype_ = std::move (H.datatype_);
         offset_ = H.offset_;
         scale_ = H.scale_;
-        realign_perm_ = H.realign_perm_;
-        realign_flip_ = H.realign_flip_;
+        realignment_ = H.realignment_;
         return *this;
       }
 
@@ -105,8 +102,7 @@ namespace MR
         datatype_ (H.datatype_),
         offset_ (datatype().is_integer() ? H.offset_ : 0.0),
         scale_ (datatype().is_integer() ? H.scale_ : 1.0),
-        realign_perm_ (H.realign_perm_),
-        realign_flip_ (H.realign_flip_) { }
+        realignment_ (H.realignment_) { }
 
       //! copy constructor from type of class derived from Header
       /*! This invokes the standard Header(const Header&) copy-constructor. */
@@ -124,9 +120,7 @@ namespace MR
           format_ (nullptr),
           datatype_ (DataType::from<typename HeaderType::value_type>()),
           offset_ (0.0),
-          scale_ (1.0),
-          realign_perm_ {{0, 1, 2}},
-          realign_flip_ {{false, false, false}} {
+          scale_ (1.0) {
             axes_.resize (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
@@ -148,8 +142,7 @@ namespace MR
         datatype_ = H.datatype_;
         offset_ = datatype().is_integer() ? H.offset_ : 0.0;
         scale_ = datatype().is_integer() ? H.scale_ : 1.0;
-        realign_perm_ = H.realign_perm_;
-        realign_flip_ = H.realign_flip_;
+        realignment_ = H.realignment_;
         io.reset();
         return *this;
       }
@@ -178,8 +171,7 @@ namespace MR
           datatype_ = DataType::from<typename HeaderType::value_type>();
           offset_ = 0.0;
           scale_ = 1.0;
-          realign_perm_ = {{0, 1, 2}};
-          realign_flip_ = {{false, false, false}};
+          realignment_ = Realignment();
           io.reset();
           return *this;
         }
@@ -209,8 +201,34 @@ namespace MR
       //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
       transform_type& transform () { return transform_; }
 
+      // Class to store all information relating to internal transform realignment
+      class Realignment {
+        public:
+          // From one image space to another image space;
+          //   linear component is permutations & flips only,
+          //   transformation is in voxel count,
+          //   therefore can store as integer
+          using applied_transform_type = Eigen::Matrix<int, 3, 3>;
+          Realignment();
+          Realignment (Header&);
+          operator bool() const { return bool(shuffle_); }
+          const std::array<size_t, 3>& permutations() const { return shuffle_.permutations; }
+          size_t permutation (const size_t axis) const { assert(axis < 3); return shuffle_.permutations[axis]; }
+          const std::array<bool, 3>& flips() const { return shuffle_.flips; }
+          bool flip (const size_t axis) const { assert(axis < 3); return shuffle_.flips[axis]; }
+          const transform_type& orig_transform() const { return orig_transform_; }
+          const applied_transform_type& applied_transform() const { return applied_transform_; }
+          KeyValues& orig_keyval() { return orig_keyval_; }
+        private:
+          Axes::Shuffle shuffle_;
+          transform_type orig_transform_;
+          Stride::List orig_strides_;
+          applied_transform_type applied_transform_;
+          KeyValues orig_keyval_;
+          friend class Header;
+      };
       //! get information on how the transform was modified on image load
-      void realignment (std::array<size_t, 3>& perm, std::array<bool, 3>& flip) const { perm = realign_perm_; flip = realign_flip_; }
+      const Realignment& realignment() const { return realignment_; }
 
       class NDimProxy { NOMEMALIGN
         public:
@@ -341,8 +359,8 @@ namespace MR
       const KeyValues& keyval () const { return keyval_; }
       //! get/set generic key/value text attributes
       KeyValues& keyval () { return keyval_; }
-      //! merge key/value entries from another header
-      void merge_keyval (const Header& H);
+      //! merge key/value entries from another dictionary
+      void merge_keyval (const KeyValues&);
 
       static Header open (const std::string& image_name);
       static Header create (const std::string& image_name, const Header& template_header, bool add_to_command_history = true);
@@ -379,8 +397,7 @@ namespace MR
       void realign_transform ();
       /*! store information about how image was
        * realigned via realign_transform(). */
-      std::array<size_t, 3> realign_perm_;
-      std::array<bool, 3> realign_flip_;
+      Realignment realignment_;
 
       void sanitise_voxel_sizes ();
       void sanitise_transform ();

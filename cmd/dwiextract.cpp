@@ -16,11 +16,11 @@
 
 #include "command.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
-#include "dwi/gradient.h"
-#include "algo/loop.h"
 #include "adapter/extract.h"
+#include "algo/loop.h"
+#include "dwi/gradient.h"
+#include "metadata/phase_encoding.h"
 
 
 using namespace MR;
@@ -54,8 +54,8 @@ void usage ()
     + DWI::GradImportOptions()
     + DWI::ShellsOption
     + DWI::GradExportOptions()
-    + PhaseEncoding::ImportOptions
-    + PhaseEncoding::SelectOptions
+    + Metadata::PhaseEncoding::ImportOptions
+    + Metadata::PhaseEncoding::SelectOptions
     + Stride::Options;
 }
 
@@ -101,7 +101,7 @@ void run()
   }
 
   auto opt = get_options ("pe");
-  const auto pe_scheme = PhaseEncoding::get_scheme (input_image);
+  const auto pe_scheme = Metadata::PhaseEncoding::get_scheme (input_image);
   if (opt.size()) {
     if (!pe_scheme.rows())
       throw Exception ("Cannot filter volumes by phase-encoding: No such information present");
@@ -147,7 +147,7 @@ void run()
     Eigen::MatrixXd new_scheme (volumes.size(), pe_scheme.cols());
     for (size_t i = 0; i != volumes.size(); ++i)
       new_scheme.row(i) = pe_scheme.row (volumes[i]);
-    PhaseEncoding::set_scheme (header, new_scheme);
+    Metadata::PhaseEncoding::set_scheme (header.keyval(), new_scheme);
   }
 
   auto output_image = Image<float>::create (argument[1], header);

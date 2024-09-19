@@ -16,12 +16,12 @@
 
 #include "command.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "math/SH.h"
+#include "metadata/phase_encoding.h"
 
 
 using namespace MR;
@@ -239,7 +239,7 @@ void run ()
       DWI::stash_DW_scheme (header, grad);
     }
   }
-  PhaseEncoding::clear_scheme (header);
+  Metadata::PhaseEncoding::clear_scheme (header.keyval());
 
   auto sh2amp = DWI::compute_SH2amp_mapping (dirs, true, 8);
 
