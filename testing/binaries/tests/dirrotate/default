@@ -25,7 +25,7 @@ tail -n +2 | \
 tr -d "-" | \
 tr -d "n" | \
 tr " " "\n" | \
-sort -r | \
+sort -g -r | \
 head -n1 > tmp1_max.txt
 
 cat tmp2.txt | \
@@ -33,7 +33,7 @@ tail -n +2 | \
 tr -d "-" | \
 tr -d "n" | \
 tr " " "\n" | \
-sort -r | \
+sort -g -r | \
 head -n1 > tmp2_max.txt
 
 a=$(cat tmp1_max.txt)
