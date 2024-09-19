@@ -75,10 +75,8 @@ namespace MR
         for (auto i = json.cbegin(); i != json.cend(); ++i) {
           if (i->is_boolean()) {
             result.insert (std::make_pair (i.key(), i.value() ? "true" : "false"));
-          } else if (i->is_number_integer()) {
-            result.insert (std::make_pair (i.key(), str<int>(i.value())));
-          } else if (i->is_number_float()) {
-            result.insert (std::make_pair (i.key(), str<float>(i.value())));
+          } else if (i->is_number_integer() || i->is_number_float()) {
+            result.insert (std::make_pair (i.key(), i->dump()));
           } else if (i->is_string()) {
             const std::string s = unquote(i.value());
             result.insert (std::make_pair (i.key(), s));

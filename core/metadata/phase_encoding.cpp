@@ -16,6 +16,8 @@
 
 #include "metadata/phase_encoding.h"
 
+#include "exception.h"
+
 namespace MR {
   namespace Metadata {
     namespace PhaseEncoding {
@@ -152,8 +154,13 @@ namespace MR {
             const size_t cols = it_time == keyval.end() ? 3 : 4;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> row(cols);
             row.head(3) = BIDS::axisid2vector(it_dir->second).cast<default_type>();
-            if (it_time != keyval.end())
-              row[3] = to<default_type>(it_time->second);
+            if (it_time != keyval.end()) {
+              try {
+                row[3] = to<default_type>(it_time->second);
+              } catch (Exception& e) {
+                throw Exception(e, "Error adding readout time to phase encoding table");
+              }
+            }
             PE.resize((header.ndim() > 3) ? header.size(3) : 1, cols);
             PE.rowwise() = row.transpose();
           }
