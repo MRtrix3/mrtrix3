@@ -235,13 +235,14 @@ namespace MR
       {
         Header H_adj (header);
         H_adj.name() = image_path;
+
+        if (!App::get_options("export_grad_fsl").empty() || !App::get_options("export_grad_mrtrix").empty())
+          DWI::clear_DW_scheme(H_adj);
+
         if (!Path::has_suffix (image_path, { ".nii", ".nii.gz", ".img" })) {
           write (H_adj.keyval(), json);
           return;
         }
-
-        if (!App::get_options("export_grad_fsl").empty())
-          DWI::clear_DW_scheme(H_adj);
 
         Metadata::PhaseEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
         Metadata::SliceEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
