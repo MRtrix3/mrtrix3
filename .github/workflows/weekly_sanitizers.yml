@@ -28,7 +28,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang llvm qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install clang llvm qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
@@ -56,7 +56,7 @@ jobs:
       run: cmake --build build
 
     - name: binary tests
-      run: cd build && ctest -R bin --output-on-failure
+      run: cd build && ctest -L binary --output-on-failure
 
     - name: unit tests
-      run: cd build && ctest -R unit --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure
