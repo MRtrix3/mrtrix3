@@ -178,7 +178,8 @@ void run() {
                          multiple_files.size());
     for (auto &H : multiple_files) {
       auto input_image = H.get_image<float>();
-      auto output_image = Image<float>::create(Path::join(output_path, Path::basename(H.name())), H);
+      const std::filesystem::path header_name{H.name()};
+      auto output_image = Image<float>::create(Path::join(output_path, header_name.filename()), H);
       (*filter)(input_image, output_image);
       ++progress;
     }

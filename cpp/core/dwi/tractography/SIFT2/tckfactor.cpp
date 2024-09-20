@@ -349,14 +349,14 @@ void TckFactor::report_entropy() const {
        str(equiv_N) + " equally-weighted streamlines");
 }
 
-void TckFactor::output_factors(const std::string &path) const {
+void TckFactor::output_factors(const std::filesystem::path &path) const {
   if (size_t(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
   decltype(coefficients) weights;
   try {
     weights.resize(coefficients.size());
   } catch (...) {
-    WARN("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
+    WARN("Unable to assign memory for output factor file: \"" + path.filename().string() + "\" not created");
     return;
   }
   for (SIFT::track_t i = 0; i != num_tracks(); ++i)

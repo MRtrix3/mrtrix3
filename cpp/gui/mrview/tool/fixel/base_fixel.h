@@ -31,6 +31,8 @@
 #include "mrview/tool/fixel/fixel.h"
 #include "mrview/tool/fixel/vector_structs.h"
 
+#include <filesystem>
+
 namespace MR::GUI::MRView::Tool {
 
 class BaseFixel : public Displayable {
@@ -60,7 +62,7 @@ public:
       visitor.render_fixel_colourbar(*this);
   }
 
-  void load_image(const std::string &filename);
+  void load_image(const std::filesystem::path &filename);
 
   void reload_directions_buffer();
 

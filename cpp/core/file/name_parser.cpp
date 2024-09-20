@@ -33,7 +33,7 @@ inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
 
 } // namespace
 
-void NameParser::parse(const std::string &imagename, size_t max_num_sequences) {
+void NameParser::parse(const std::filesystem::path &imagename, size_t max_num_sequences) {
   specification = imagename;
   if (Path::is_dir(imagename)) {
     array.resize(1);
@@ -45,14 +45,14 @@ void NameParser::parse(const std::string &imagename, size_t max_num_sequences) {
 
   try {
     std::string::size_type pos;
-    std::string basename = Path::basename(specification);
+    std::string basename = specification.filename().string();
     size_t num = 0;
 
     while ((pos = basename.find_last_of(']')) < std::string::npos && num < max_num_sequences) {
       insert_str(basename.substr(pos + 1));
       basename = basename.substr(0, pos);
       if ((pos = basename.find_last_of('[')) == std::string::npos)
-        throw Exception("malformed image sequence specifier for image \"" + specification + "\"");
+        throw Exception("malformed image sequence specifier for image \"" + specification.string() + "\"");
 
       insert_seq(basename.substr(pos + 1));
       num++;
@@ -67,7 +67,7 @@ void NameParser::parse(const std::string &imagename, size_t max_num_sequences) {
           for (size_t n = 0; n < array[i].sequence().size() - 1; n++)
             for (size_t m = n + 1; m < array[i].sequence().size(); m++)
               if (array[i].sequence()[n] == array[i].sequence()[m])
-                throw Exception("malformed image sequence specifier for image \"" + specification +
+                throw Exception("malformed image sequence specifier for image \"" + specification.string() +
                                 "\" (duplicate indices)");
   } catch (...) {
     array.resize(1);
@@ -132,7 +132,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
     if (!item.sequence().empty()) {
       if (maxvals[m])
         if (item.sequence().size() != (size_t)maxvals[m])
-          throw Exception("dimensions requested in image specifier \"" + specification +
+          throw Exception("dimensions requested in image specifier \"" + specification.string() +
                           "\" do not match supplied header information");
     } else {
       item.sequence().resize(maxvals[m]);

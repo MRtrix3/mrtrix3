@@ -20,10 +20,12 @@
 
 #include "surface/freesurfer.h"
 
+#include <filesystem>
+
 namespace MR::Surface {
 
-Scalar::Scalar(const std::string &path, const Mesh &mesh) {
-  DEBUG("Attempting to load surface scalar file \"" + path + "\"...");
+Scalar::Scalar(const std::filesystem::path &path, const Mesh &mesh) {
+  DEBUG("Attempting to load surface scalar file \"" + path.string() + "\"...");
   try {
     File::Matrix::load_vector(path);
   } catch (Exception &e) {
@@ -36,14 +38,14 @@ Scalar::Scalar(const std::string &path, const Mesh &mesh) {
         load_fs_curv(path, mesh);
       } catch (Exception &e) {
         DEBUG(e[0]);
-        throw Exception("Input surface scalar file \"" + path + "\" not in supported format");
+        throw Exception("Input surface scalar file \"" + path.string() + "\" not in supported format");
       }
     }
   }
   if (size_t(size()) != mesh.num_vertices())
-    throw Exception("Input surface scalar file \"" + path + "\" has incorrect number of vertices (" + str(size()) +
+    throw Exception("Input surface scalar file \"" + path.string() + "\" has incorrect number of vertices (" + str(size()) +
                     ", mesh has " + str(mesh.num_vertices()) + ")");
-  name = Path::basename(path);
+  name = path.filename();
 }
 
 void Scalar::save(const std::string &path) const { File::Matrix::save_vector(*this, path); }

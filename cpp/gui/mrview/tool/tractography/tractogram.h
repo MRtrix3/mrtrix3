@@ -20,6 +20,8 @@
 #include "mrview/displayable.h"
 #include "mrview/tool/tractography/tractography.h"
 
+#include <filesystem>
+
 namespace MR::GUI {
 class Projection;
 
@@ -84,8 +86,8 @@ public:
   bool should_update_stride;
   float original_fov;
   float line_thickness;
-  std::string intensity_scalar_filename;
-  std::string threshold_scalar_filename;
+  std::filesystem::path intensity_scalar_filename;
+  std::filesystem::path threshold_scalar_filename;
 
   class Shader : public Displayable::Shader {
   public:

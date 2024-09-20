@@ -624,7 +624,7 @@ void run() {
         throw Exception(
             "If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
-    const std::string assoc_image(opt[0][0]);
+    const std::filesystem::path assoc_image(opt[0][0]);
     if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
       mapper->add_scalar_image(assoc_image);
       if (backtrack)
@@ -632,15 +632,15 @@ void run() {
     } else {
       mapper->add_fod_image(assoc_image);
     }
-    header.keyval()["twi_assoc_image"] = Path::basename(assoc_image);
+    header.keyval()["twi_assoc_image"] = assoc_image.filename();
   } else if (contrast == VECTOR_FILE) {
     opt = get_options("vector_file");
     if (opt.empty())
       throw Exception(
           "If using 'vector_file' contrast, must provide the relevant data file using the -vector_file option");
-    const std::string path(opt[0][0]);
+    const std::filesystem::path path(opt[0][0]);
     mapper->add_vector_data(path);
-    header.keyval()["twi_vector_file"] = Path::basename(path);
+    header.keyval()["twi_vector_file"] = path.filename();
   }
 
   std::unique_ptr<MapWriterBase> writer;

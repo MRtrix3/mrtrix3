@@ -411,7 +411,7 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
   Formats::write_mrtrix_header(*buffer, out);
 
   const bool single_file = Path::has_suffix(filename, ".mif");
-  std::string data_filename = filename;
+  std::filesystem::path data_filename = filename;
 
   int64_t offset = 0;
   out << "file: ";
@@ -420,8 +420,8 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else {
-    data_filename = filename.substr(0, filename.size() - 4) + ".dat";
-    out << Path::basename(data_filename) << "\n";
+    data_filename.replace_extension(".dat");
+    out << data_filename.filename().string() << "\n";
     out.close();
     out.open(data_filename, std::ios::out | std::ios::binary);
   }
@@ -430,7 +430,7 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
   out.seekp(offset, out.beg);
   out.write((const char *)data_pointer, data_size);
   if (!out.good())
-    throw Exception("error writing back contents of file \"" + data_filename + "\": " + strerror(errno));
+    throw Exception("error writing back contents of file \"" + data_filename.string() + "\": " + strerror(errno));
   out.close();
 
   // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()

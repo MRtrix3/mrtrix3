@@ -106,7 +106,7 @@ void run() {
 
   // Modify the header for the output file
   H.datatype() = DataType::from<node_t>();
-  add_line(H.keyval()["comments"], "LUT: " + Path::basename(argument[2]));
+  add_line(H.keyval()["comments"], "LUT: " + output_lut_path.filename().string());
 
   // Create the output file
   auto out = Image<node_t>::create(argument[3], H);

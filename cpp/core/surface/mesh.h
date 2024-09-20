@@ -28,6 +28,8 @@
 
 #include "surface/types.h"
 
+#include <filesystem>
+
 namespace MR::Surface {
 
 namespace Filter {
@@ -37,7 +39,7 @@ class Smooth;
 class Mesh {
 
 public:
-  Mesh(const std::string &);
+  Mesh(const std::filesystem::path &);
 
   Mesh(const Mesh &that) = default;
 
@@ -172,9 +174,9 @@ private:
   std::string name;
 
   void load_vtk(const std::string &);
-  void load_stl(const std::string &);
-  void load_obj(const std::string &);
-  void load_fs(const std::string &);
+  void load_stl(const std::filesystem::path &);
+  void load_obj(const std::filesystem::path &);
+  void load_fs(const std::filesystem::path &);
   void save_vtk(const std::string &, const bool) const;
   void save_stl(const std::string &, const bool) const;
   void save_obj(const std::string &) const;

@@ -55,7 +55,7 @@ public:
   virtual ~Model();
 
   // Over-rides the function defined in ModelBase; need to build contributions member also
-  void map_streamlines(const std::string &);
+  void map_streamlines(const std::filesystem::path &);
 
   void remove_excluded_fixels();
 
@@ -133,13 +133,13 @@ template <class Fixel> Model<Fixel>::~Model() {
   }
 }
 
-template <class Fixel> void Model<Fixel>::map_streamlines(const std::string &path) {
+template <class Fixel> void Model<Fixel>::map_streamlines(const std::filesystem::path &path) {
   Tractography::Properties properties;
   Tractography::Reader<> file(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
-    throw Exception("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
+    throw Exception("Cannot map streamlines: track file " + path.filename().string() + " is empty");
 
   contributions.assign(count, nullptr);
 

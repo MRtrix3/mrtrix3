@@ -22,13 +22,13 @@ void Image4D::load_image_buffer() {
   size_t ndim = fixel_data->ndim();
 
   if (ndim < 4)
-    throw InvalidImageException("Vector image " + filename + " should contain 4 dimensions. Instead " + str(ndim) +
+    throw InvalidImageException("Vector image " + filename.string() + " should contain 4 dimensions. Instead " + str(ndim) +
                                 " found.");
 
   const size_t dim4_len = fixel_data->size(3);
 
   if (dim4_len % 3)
-    throw InvalidImageException("Expecting 4th-dimension size of vector image " + filename +
+    throw InvalidImageException("Expecting 4th-dimension size of vector image " + filename.string() +
                                 " to be a multiple of 3. Instead " + str(dim4_len) + " entries found.");
 
   for (size_t axis = 0; axis < 3; ++axis) {

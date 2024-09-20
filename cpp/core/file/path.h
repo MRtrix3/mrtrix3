@@ -50,12 +50,9 @@
 #define PATH_SEPARATORS "/"
 #endif
 
-namespace MR::Path {
+#include <filesystem>
 
-inline std::string basename(const std::string &name) {
-  size_t i = name.find_last_of(PATH_SEPARATORS);
-  return (i == std::string::npos ? name : name.substr(i + 1));
-}
+namespace MR::Path {
 
 inline std::string dirname(const std::string &name) {
   size_t i = name.find_last_of(PATH_SEPARATORS);

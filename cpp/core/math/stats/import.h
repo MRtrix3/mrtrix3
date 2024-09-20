@@ -156,7 +156,7 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
   if (load_from_dir.empty())
     throw e_nosuccess;
 
-  ProgressBar progress("Configuring data import from files listed in \"" + Path::basename(listpath) +
+  ProgressBar progress("Configuring data import from files listed in \"" + std::filesystem::path(listpath).filename().string() +
                        "\" as found relative to directory \"" + load_from_dir + "\"");
 
   for (const auto &line : lines) {

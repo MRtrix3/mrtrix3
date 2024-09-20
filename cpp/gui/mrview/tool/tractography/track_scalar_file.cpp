@@ -144,8 +144,8 @@ void TrackScalarFileOptions::update_UI() {
     colourmap_button->set_scale_inverted(tractogram->scale_inverted());
     colourmap_button->set_show_colourbar(tractogram->show_colour_bar);
 
-    assert(tractogram->intensity_scalar_filename.length());
-    intensity_file_button->setText(qstr(shorten(Path::basename(tractogram->intensity_scalar_filename), 35, 0)));
+    assert(!tractogram->intensity_scalar_filename.empty());
+    intensity_file_button->setText(qstr(shorten(tractogram->intensity_scalar_filename.filename(), 35, 0)));
     intensity_file_button->setToolTip(qstr(tractogram->intensity_scalar_filename));
 
   } else {
@@ -164,8 +164,8 @@ void TrackScalarFileOptions::update_UI() {
     threshold_file_combobox->setCurrentIndex(1);
     break;
   case TrackThresholdType::SeparateFile:
-    assert(tractogram->threshold_scalar_filename.length());
-    threshold_file_combobox->addItem(qstr(shorten(Path::basename(tractogram->threshold_scalar_filename), 35, 0)));
+    assert(!tractogram->threshold_scalar_filename.empty());
+    threshold_file_combobox->addItem(qstr(shorten(tractogram->threshold_scalar_filename.filename(), 35, 0)));
     threshold_file_combobox->setToolTip(qstr(tractogram->threshold_scalar_filename));
     threshold_file_combobox->setCurrentIndex(3);
     break;

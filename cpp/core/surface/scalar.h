@@ -17,6 +17,7 @@
 #pragma once
 
 #include "surface/mesh.h"
+#include <filesystem>
 
 namespace MR::Surface {
 
@@ -25,7 +26,7 @@ class Scalar : public Eigen::Array<default_type, Eigen::Dynamic, 1> {
 public:
   using Base = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 
-  Scalar(const std::string &, const Mesh &);
+  Scalar(const std::filesystem::path &, const Mesh &);
 
   Scalar(const Scalar &that) = default;
 

@@ -21,6 +21,8 @@
 #include "surface/mesh_multi.h"
 #include "types.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -43,23 +45,26 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_mesh_path{argument[0]};
+  const std::filesystem::path input_mesh2_path{argument[1]};
+
   const default_type dist_sq = Math::pow2(default_type(argument[2]));
 
   MR::Surface::MeshMulti multi_in1, multi_in2;
 
   // Read in the mesh data
   try {
-    MR::Surface::Mesh mesh(argument[0]);
+    MR::Surface::Mesh mesh(input_mesh_path);
     multi_in1.push_back(mesh);
   } catch (...) {
-    multi_in1.load(argument[0]);
+    multi_in1.load(input_mesh2_path);
   }
 
   try {
-    MR::Surface::Mesh mesh(argument[1]);
+    MR::Surface::Mesh mesh(input_mesh2_path);
     multi_in2.push_back(mesh);
   } catch (...) {
-    multi_in2.load(argument[1]);
+    multi_in2.load(input_mesh2_path);
   }
 
   if (multi_in1.size() != multi_in2.size())

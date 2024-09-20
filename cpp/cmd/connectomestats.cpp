@@ -140,11 +140,11 @@ void load_tfce_parameters(Stats::TFCE::Wrapper &enhancer) {
 //   that subject
 class SubjectConnectomeImport : public SubjectDataImportBase {
 public:
-  SubjectConnectomeImport(const std::string &path) : SubjectDataImportBase(path) {
+  SubjectConnectomeImport(const std::filesystem::path &path) : SubjectDataImportBase(path) {
     auto M = File::Matrix::load_matrix(path);
     Connectome::check(M);
     if (Connectome::is_directed(M))
-      throw Exception("Connectome from file \"" + Path::basename(path) + "\" is a directed matrix");
+      throw Exception("Connectome from file \"" + path.filename().string() + "\" is a directed matrix");
     Connectome::to_upper(M);
     Connectome::Mat2Vec mat2vec(M.rows());
     mat2vec.M2V(M, data);

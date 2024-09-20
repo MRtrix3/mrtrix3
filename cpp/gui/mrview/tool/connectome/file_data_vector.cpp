@@ -19,7 +19,8 @@
 #include <limits>
 
 #include "file/matrix.h"
-#include "file/path.h"
+
+#include <filesystem>
 
 namespace MR::GUI::MRView::Tool {
 
@@ -36,8 +37,8 @@ FileDataVector::FileDataVector(FileDataVector &&V)
 
 FileDataVector::FileDataVector(const size_t nelements) : base_t(nelements), min(NaN), mean(NaN), max(NaN) {}
 
-FileDataVector::FileDataVector(const std::string &file)
-    : base_t(), name(qstr(Path::basename(file))), min(NaN), mean(NaN), max(NaN) {
+FileDataVector::FileDataVector(const std::filesystem::path &file)
+    : base_t(), name(qstr(file.filename())), min(NaN), mean(NaN), max(NaN) {
   base_t temp = File::Matrix::load_vector<float>(file);
   base_t::operator=(temp);
   calc_stats();
@@ -62,10 +63,10 @@ FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
   return *this;
 }
 
-FileDataVector &FileDataVector::load(const std::string &filename) {
-  base_t temp = File::Matrix::load_vector<float>(filename);
+FileDataVector &FileDataVector::load(const std::filesystem::path &filePath) {
+  base_t temp = File::Matrix::load_vector<float>(filePath);
   base_t::operator=(temp);
-  name = qstr(Path::basename(filename));
+  name = qstr(filePath.filename());
   calc_stats();
   return *this;
 }

@@ -304,7 +304,7 @@ int Overlay::draw_tool_labels(int position, int start_line_num, const Projection
 
     Image *image = dynamic_cast<Image *>(image_list_model->items[i].get());
     if (image && image->show) {
-      std::string value_str = Path::basename(image->get_filename()) + " ";
+      std::string value_str = image->get_filename().filename().string() + " ";
       cfloat value;
       if (image->interpolate()) {
         value_str += "interp value: ";

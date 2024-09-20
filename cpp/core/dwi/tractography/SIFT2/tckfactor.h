@@ -88,7 +88,7 @@ public:
 
   void report_entropy() const;
 
-  void output_factors(const std::string &) const;
+  void output_factors(const std::filesystem::path &) const;
   void output_coefficients(const std::string &) const;
 
   void output_TD_images(const std::string &, const std::string &, const std::string &) const;

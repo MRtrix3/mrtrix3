@@ -22,6 +22,8 @@
 #include "memory.h"
 #include "mrtrix.h"
 
+#include <filesystem>
+
 namespace MR::File {
 
 //! a class to interpret numbered filenames
@@ -71,7 +73,7 @@ public:
     std::vector<uint32_t> seq;
   };
 
-  void parse(const std::string &imagename, size_t max_num_sequences = std::numeric_limits<size_t>::max());
+  void parse(const std::filesystem::path &imagename, size_t max_num_sequences = std::numeric_limits<size_t>::max());
 
   size_t num() const { return (array.size()); }
 
@@ -95,7 +97,7 @@ public:
 private:
   std::vector<Item> array;
   std::vector<size_t> seq_index;
-  std::string folder_name, specification, current_name;
+  std::filesystem::path folder_name, specification, current_name;
   std::unique_ptr<Path::Dir> folder;
 
   void insert_str(const std::string &str) {
