@@ -82,7 +82,8 @@ void run() {
     auto tmp = Fixel::find_directions_header(input_fixel_directory).get_image<float>();
     input_directions_image = Image<float>::scratch(tmp);
     threaded_copy(tmp, input_directions_image);
-    output_directions_filename = Path::basename(tmp.name());
+    output_directions_filename =
+        output_directions_filename = std::filesystem::path{tmp.name()}.filename();
   }
 
   auto output_directions_image =

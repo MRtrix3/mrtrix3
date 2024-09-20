@@ -126,7 +126,7 @@ void run() {
 
   if (filter_index == 0) { // Mask clean
     Filter::MaskClean filter(input_image,
-                             std::string("applying mask cleaning filter to image ") + Path::basename(input_image_path));
+                             std::string("applying mask cleaning filter to image ") + input_image_path.filename().string());
     filter.set_scale(get_option_value("scale", DEFAULT_CLEAN_SCALE));
 
     Stride::set_from_command_line(filter);
@@ -138,7 +138,7 @@ void run() {
 
   if (filter_index == 1) { // Connected components
     Filter::ConnectedComponents filter(
-        input_image, std::string("applying connected-component filter to image ") + Path::basename(input_image_path));
+        input_image, std::string("applying connected-component filter to image ") + input_image_path.filename().string());
     auto opt = get_options("axes");
     if (!opt.empty()) {
       const std::vector<int> axes = opt[0][0];
@@ -174,7 +174,7 @@ void run() {
 
   if (filter_index == 2) { // Dilate
     Filter::Dilate filter(input_image,
-                          std::string("applying dilate filter to image ") + Path::basename(input_image_path));
+                          std::string("applying dilate filter to image ") + input_image_path.filename().string());
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(int(opt[0][0]));
@@ -189,7 +189,7 @@ void run() {
 
   if (filter_index == 3) { // Erode
     Filter::Erode filter(input_image,
-                         std::string("applying erode filter to image ") + Path::basename(input_image_path));
+                         std::string("applying erode filter to image ") + input_image_path.string());
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(int(opt[0][0]));
@@ -203,7 +203,7 @@ void run() {
   }
 
   if (filter_index == 4) { // Fill
-    Filter::Fill filter(input_image, std::string("filling interior of image ") + Path::basename(input_image_path));
+    Filter::Fill filter(input_image, std::string("filling interior of image ") + input_image_path.string());
     auto opt = get_options("axes");
     if (!opt.empty()) {
       const std::vector<int> axes = opt[0][0];
@@ -220,7 +220,7 @@ void run() {
 
   if (filter_index == 5) { // Median
     Filter::Median filter(input_image,
-                          std::string("applying median filter to image ") + Path::basename(input_image_path));
+                          std::string("applying median filter to image ") + input_image_path.string());
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));

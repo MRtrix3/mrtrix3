@@ -79,8 +79,10 @@ void run() {
   }
 
   out_header.keyval()[Fixel::n_fixels_key] = str(total_nfixels);
+  const std::filesystem::path in_index_image_name{in_index_image.name()};
+
   auto out_index_image =
-      Image<index_type>::create(Path::join(out_fixel_directory, Path::basename(in_index_image.name())), out_header);
+      Image<index_type>::create(Path::join(out_fixel_directory, in_index_image_name.filename()), out_header);
 
   // Open all data images and create output date images with size equal to expected number of fixels
   std::vector<Header> in_headers = Fixel::find_data_headers(input_directory, in_index_header, true);
@@ -93,7 +95,7 @@ void run() {
     Header out_data_header(in_data_header);
     out_data_header.size(0) = total_nfixels;
     out_data_images.push_back(
-        Image<float>::create(Path::join(out_fixel_directory, Path::basename(in_data_header.name())), out_data_header)
+        Image<float>::create(Path::join(out_fixel_directory, in_index_image_name.filename()), out_data_header)
             .with_direct_io());
   }
 

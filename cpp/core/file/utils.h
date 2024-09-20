@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 namespace MR::File {
@@ -23,7 +24,7 @@ namespace MR::File {
 void remove(const std::string &file);
 void create(const std::string &filename, int64_t size = 0);
 void resize(const std::string &filename, int64_t size);
-bool is_tempfile(const std::string &name, const char *suffix = NULL);
+bool is_tempfile(const std::filesystem::path &name, const char *suffix = NULL);
 std::string create_tempfile(int64_t size = 0, const char *suffix = NULL);
 void mkdir(const std::string &folder);
 void rmdir(const std::string &folder, bool recursive = false);

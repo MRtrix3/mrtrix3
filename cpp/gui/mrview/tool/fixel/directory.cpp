@@ -16,6 +16,8 @@
 
 #include "mrview/tool/fixel/directory.h"
 
+#include <filesystem>
+
 namespace MR::GUI::MRView::Tool {
 void Directory::load_image_buffer() {
   for (size_t axis = 0; axis < 3; ++axis) {
@@ -73,7 +75,7 @@ void Directory::load_image_buffer() {
     if (header.size(1) != 1)
       continue;
 
-    const auto data_key = Path::basename(header.name());
+    const auto data_key = std::filesystem::path(header.name()).filename().string();
     fixel_values[data_key];
     value_types.push_back(data_key);
     colour_types.push_back(data_key);

@@ -323,7 +323,7 @@ void Tractography::draw_colourbars() {
   for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
     Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
     if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
-        tractogram->intensity_scalar_filename.length())
+        tractogram->intensity_scalar_filename.string().length())
       tractogram->request_render_colourbar(*scalar_file_options);
   }
 }
@@ -335,7 +335,7 @@ size_t Tractography::visible_number_colourbars() {
     for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
       Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
       if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
-          tractogram->intensity_scalar_filename.length())
+          tractogram->intensity_scalar_filename.string().length())
         total_visible += 1;
     }
   }
