@@ -68,25 +68,29 @@ add_library(nifti::nifti ALIAS nifti)
 if(MRTRIX_LOCAL_DEPENDENCIES)
     target_include_directories(nifti INTERFACE "${MRTRIX_DEPENDENCIES_DIR}/nifti")
 else()
-    include(ExternalProject)
-    ExternalProject_Add(
-        nifti1
-        PREFIX nifti
-        URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti1.h"
-        CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
-        DOWNLOAD_NO_EXTRACT ON
-        DOWNLOAD_NO_PROGRESS ON
-        LOG_DOWNLOAD ON
-    )
-    ExternalProject_Add(
-        nifti2
-        PREFIX nifti
-        URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h"
-        CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
-        DOWNLOAD_NO_EXTRACT ON
-        DOWNLOAD_NO_PROGRESS ON
-        LOG_DOWNLOAD ON
-    )
-    target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti/src/")
+    set(NIFTI1_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti1.h")
+    set(NIFTI2_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h")
+    # DOWNLOAD_NO_EXTRACT for FetchContent is only available in CMake 3.18 and later
+    if(CMAKE_VERSION VERSION_LESS 3.18)
+        file(DOWNLOAD ${NIFTI1_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti1.h")
+        file(DOWNLOAD ${NIFTI2_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti2.h")
+        target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti")
+    else()
+        FetchContent_Declare(
+            nifti1
+            DOWNLOAD_NO_EXTRACT ON
+            URL ${NIFTI1_URL}
+        )
+        FetchContent_Declare(
+            nifti2
+            DOWNLOAD_NO_EXTRACT ON
+            URL ${NIFTI2_URL}
+        )
+        FetchContent_MakeAvailable(nifti1 nifti2)
+        target_include_directories(nifti INTERFACE
+            "${nifti1_SOURCE_DIR}"
+            "${nifti2_SOURCE_DIR}"
+        )
+    endif()
 endif()
 
