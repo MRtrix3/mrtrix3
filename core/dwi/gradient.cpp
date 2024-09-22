@@ -115,6 +115,8 @@ namespace MR
 
     Eigen::MatrixXd load_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
+      assert (header.realignment().orig_transform().matrix().allFinite());
+
       Eigen::MatrixXd bvals, bvecs;
       try {
         bvals = load_matrix<> (bvals_path);
@@ -167,8 +169,8 @@ namespace MR
       // transform have negative determinant:
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
-      save_matrix(bvecs, bvecs_path, KeyValues(), false);
-      save_matrix(grad.col(3), bvals_path, KeyValues(), false);
+      save_matrix (bvecs, bvecs_path, KeyValues(), false);
+      save_matrix (grad.col(3).transpose(), bvals_path, KeyValues(), false);
     }
 
 
@@ -257,6 +259,7 @@ namespace MR
                 "(maximum scaling factor = " + str(max_scaling_factor) + ")");
           }
         }
+        assert (grad.allFinite());
 
         // write the scheme as interpreted back into the header if:
         // - vector normalisation effect is large, regardless of whether or not b-value scaling was applied

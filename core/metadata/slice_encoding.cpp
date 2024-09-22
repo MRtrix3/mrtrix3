@@ -33,7 +33,7 @@ namespace MR {
         auto slice_encoding_it = keyval.find("SliceEncodingDirection");
         auto slice_timing_it = keyval.find("SliceTiming");
         if (!(slice_encoding_it == keyval.end() && slice_timing_it == keyval.end())) {
-          if (!header.realignment()) {
+          if (header.realignment().is_identity()) {
             INFO("No transformation of slice encoding direction for load of image \"" + header.name() + "\" required");
             return;
           }
@@ -71,7 +71,7 @@ namespace MR {
           return;
 
         const Axes::Shuffle shuffle = File::NIfTI::axes_on_write(H);
-        if (!shuffle) {
+        if (shuffle.is_identity()) {
           INFO("No need to transform slice encoding information for NIfTI image write:"
                " image is already RAS");
           return;
@@ -106,8 +106,8 @@ namespace MR {
       std::string resolve_slice_timing (const std::string &one, const std::string &two) {
         if (one == "variable" || two == "variable")
           return "variable";
-        std::vector<std::string> one_split = split(one, ",");
-        std::vector<std::string> two_split = split(two, ",");
+        const vector<std::string> one_split = split(one, ",");
+        const vector<std::string> two_split = split(two, ",");
         if (one_split.size() != two_split.size()) {
           DEBUG("Slice timing vectors of inequal length");
           return "invalid";

@@ -93,20 +93,17 @@ namespace MR {
       void transform_for_nifti_write(KeyValues& keyval, const Header& H);
       scheme_type transform_for_nifti_write(const scheme_type& pe_scheme, const Header& H);
 
-      namespace {
-        void _save(const scheme_type& PE, const std::string& path) {
-          File::OFStream out(path);
-          for (ssize_t row = 0; row != PE.rows(); ++row) {
-            // Write phase-encode direction as integers; other information as floating-point
-            out << PE.template block<1, 3>(row, 0).template cast<int>();
-            if (PE.cols() > 3)
-              out << " " << PE.block(row, 3, 1, PE.cols() - 3);
-            out << "\n";
-          }
-        }
-      } // namespace
+      void save(const scheme_type& PE, const std::string& path);
 
-      //! Save a phase-encoding scheme to file
+      template <class HeaderType>
+      void save(const HeaderType &header, const std::string &path) {
+        const scheme_type scheme = get_scheme(header);
+        if (scheme.rows() == 0)
+          throw Exception ("No phase encoding scheme in header of image \"" + header.name() + "\" to save");
+        save(scheme, header, path);
+      }
+
+      //! Save a phase-encoding scheme associated with an image to file
       // Note that because the output table requires permutation / sign flipping
       //   only if the output target image is a NIfTI, the output file name must have
       //   already been set
@@ -119,9 +116,9 @@ namespace MR {
         }
 
         if (Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
-          _save(transform_for_nifti_write(PE, header), path);
+          save(transform_for_nifti_write(PE, header), path);
         } else {
-          _save(PE, path);
+          save(PE, path);
         }
       }
 

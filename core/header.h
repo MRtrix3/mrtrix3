@@ -111,7 +111,9 @@ namespace MR
           Header (static_cast<const Header&> (original)) { }
 
       //! copy constructor from type of class other than Header
-      /*! This copies all relevant parameters over from \a original. */
+      /*! This copies all relevant parameters over from \a original.
+       * Note that information about transform realignment on image load will not be available.
+       */
       template <class HeaderType, typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
         Header (const HeaderType& original) :
           transform_ (original.transform()),
@@ -203,18 +205,20 @@ namespace MR
 
       // Class to store all information relating to internal transform realignment
       class Realignment {
+        MEMALIGN(Realignment)
         public:
           // From one image space to another image space;
           //   linear component is permutations & flips only,
           //   transformation is in voxel count,
           //   therefore can store as integer
+          // TODO Calculate translations; turn into affine transform; verify
           using applied_transform_type = Eigen::Matrix<int, 3, 3>;
           Realignment();
-          Realignment (Header&);
-          operator bool() const { return bool(shuffle_); }
-          const std::array<size_t, 3>& permutations() const { return shuffle_.permutations; }
+          bool is_identity() const { return shuffle_.is_identity(); }
+          bool valid() const { return shuffle_.valid(); }
+          const Axes::permutations_type& permutations() const { return shuffle_.permutations; }
           size_t permutation (const size_t axis) const { assert(axis < 3); return shuffle_.permutations[axis]; }
-          const std::array<bool, 3>& flips() const { return shuffle_.flips; }
+          const Axes::flips_type& flips() const { return shuffle_.flips; }
           bool flip (const size_t axis) const { assert(axis < 3); return shuffle_.flips[axis]; }
           const transform_type& orig_transform() const { return orig_transform_; }
           const applied_transform_type& applied_transform() const { return applied_transform_; }

@@ -212,7 +212,7 @@ namespace MR {
           DEBUG("No phase encoding information found for transformation with load of image \"" + H.name() + "\"");
           return;
         }
-        if (!H.realignment()) {
+        if (H.realignment().is_identity()) {
           INFO("No transformation of phase encoding data for load of image \"" + H.name() + "\" required");
           return;
         }
@@ -223,7 +223,7 @@ namespace MR {
 
 
       scheme_type transform_for_image_load(const scheme_type& pe_scheme, const Header& H) {
-        if (!H.realignment())
+        if (H.realignment().is_identity())
           return pe_scheme;
         scheme_type result(pe_scheme.rows(), pe_scheme.cols());
         for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
@@ -251,7 +251,7 @@ namespace MR {
         if (pe_scheme.rows() == 0)
           return pe_scheme;
         Axes::Shuffle shuffle = File::NIfTI::axes_on_write(H);
-        if (!shuffle) {
+        if (shuffle.is_identity()) {
           INFO("No transformation of phase encoding data required for export to file:"
                " output image will be RAS");
           return pe_scheme;
@@ -354,6 +354,19 @@ namespace MR {
         const scheme_type PE = eddy2scheme(config, indices);
         check(PE, header);
         return transform_for_image_load(PE, header);
+      }
+
+
+
+      void save(const scheme_type& PE, const std::string& path) {
+        File::OFStream out(path);
+        for (ssize_t row = 0; row != PE.rows(); ++row) {
+          // Write phase-encode direction as integers; other information as floating-point
+          out << PE.template block<1, 3>(row, 0).template cast<int>();
+          if (PE.cols() > 3)
+            out << " " << PE.block(row, 3, 1, PE.cols() - 3);
+          out << "\n";
+        }
       }
 
 

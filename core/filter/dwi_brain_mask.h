@@ -46,8 +46,9 @@ namespace MR
      *
      * Typical usage:
      * \code
+     * auto header = Header::open (argument[0]);
+     * auto grad = DWI::get_DW_scheme (header);
      * auto input = Image<value_type>::open (argument[0]);
-     * auto grad = DWI::get_DW_scheme (input);
      * Filter::DWIBrainMask dwi_brain_mask_filter (input, grad);
      * auto output = Image<bool>::create (argument[1], dwi_brain_mask_filter);
      * dwi_brain_mask_filter (input, output);

@@ -632,7 +632,7 @@ namespace MR
       return;
 
     realignment_.shuffle_ = Axes::get_shuffle_to_make_RAS(transform());
-    if (!realignment_)
+    if (realignment_.is_identity())
       return;
 
     auto M (transform());
@@ -811,9 +811,9 @@ namespace MR
 
 
 
-  Header::Realignment::Realignment() :
-      applied_transform_(applied_transform_type::Identity()) {
-    orig_transform_.matrix().fill(std::numeric_limits<default_type>::quiet_NaN());
+  Header::Realignment::Realignment() {
+    applied_transform_.matrix().fill(0);
+    orig_transform_.matrix().fill(std::numeric_limits<default_type>::signaling_NaN());
   }
 
 

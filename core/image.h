@@ -61,6 +61,7 @@ namespace MR
 
         FORCE_INLINE const std::string& name() const { return buffer->name(); }
         FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }
+        //FORCE_INLINE const Header::Realignment& realignment() const { return buffer->realignment(); }
 
         FORCE_INLINE size_t  ndim () const { return buffer->ndim(); }
         FORCE_INLINE ssize_t size (size_t axis) const { return buffer->size (axis); }
