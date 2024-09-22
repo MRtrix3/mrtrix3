@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import csv, math, os, re, shutil, sys
+import csv, math, os, re, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, path, run, utils
 from . import IMAGEEXT
@@ -33,10 +33,7 @@ def copy(src, dst, follow_symlinks=True): # pylint: disable=unused-variable
   """
   if os.path.isdir(dst):
     dst = os.path.join(dst, os.path.basename(src))
-  if sys.version_info[0] > 2:
-    shutil.copyfile(src, dst, follow_symlinks=follow_symlinks)   # pylint: disable=unexpected-keyword-arg
-  else:
-    shutil.copyfile(src, dst)
+  shutil.copyfile(src, dst, follow_symlinks=follow_symlinks) # pylint: disable=unexpected-keyword-arg
   return dst
 
 
@@ -52,16 +49,16 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
     return True
   data = utils.load_keyval(f'{transformation}decomp')
   run.function(os.remove, f'{transformation}decomp')
-  scaling = [float(value) for value in data['scaling']]
+  scaling = [float(value) for value in data['scaling'].split()]
   if any(a < 0 for a in scaling) or any(a > (1 + max_scaling) for a in scaling) or any(
       a < (1 - max_scaling) for a in scaling):
     app.warn(f'large scaling ({scaling})) in {transformation}')
     good = False
-  shear = [float(value) for value in data['shear']]
+  shear = [float(value) for value in data['shear'].split()]
   if any(abs(a) > max_shear for a in shear):
     app.warn(f'large shear ({shear}) in {transformation}')
     good = False
-  rot_angle = float(data['angle_axis'][0])
+  rot_angle = float(data['angle_axis'].split()[0])
   if abs(rot_angle) > max_rot:
     app.warn(f'large rotation ({rot_angle}) in {transformation}')
     good = False

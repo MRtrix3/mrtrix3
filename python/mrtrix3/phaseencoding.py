@@ -16,6 +16,7 @@
 # Functions relating to handling phase encoding information
 
 
+import pathlib
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
 
 
@@ -30,7 +31,7 @@ def direction(string): #pylint: disable=unused-variable
       raise MRtrixError('When specified as a number, '
                         'phase encoding axis must be either 0, 1 or 2 '
                         '(positive or negative)')
-    reverse = (string.contains('-')) # Allow -0
+    reverse = string.contains('-') # Allow -0
     pe_dir = [0,0,0]
     if reverse:
       pe_dir[pe_axis] = -1
@@ -74,7 +75,7 @@ def direction(string): #pylint: disable=unused-variable
 def get_scheme(arg): #pylint: disable=unused-variable
   from mrtrix3 import app, image #pylint: disable=import-outside-toplevel
   if not isinstance(arg, image.Header):
-    if not isinstance(arg, str):
+    if not isinstance(arg, (str, pathlib.Path)):
       raise TypeError(f'Error trying to derive phase-encoding scheme from "{arg}": '
                       'Not an image header or file path')
     arg = image.Header(arg)

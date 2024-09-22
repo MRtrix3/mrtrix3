@@ -29,15 +29,14 @@ from mrtrix3 import MRtrixError
 class Header:
   def __init__(self, image_path):
     from mrtrix3 import app, run, utils #pylint: disable=import-outside-toplevel
-    image_path_str = str(image_path) if isinstance(image_path, pathlib.Path) else image_path
     filename = utils.name_temporary('json')
     command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename, '-nodelete' ]
     if app.VERBOSITY > 1:
-      app.console(f'Loading header for image file "{image_path_str}"')
+      app.console(f'Loading header for image file {image_path}')
     app.debug(str(command))
     result = subprocess.call(command, stdout=None, stderr=None)
     if result:
-      raise MRtrixError(f'Could not access header information for image "{image_path_str}"')
+      raise MRtrixError(f'Could not access header information for image {image_path}')
     try:
       with open(filename, 'r', encoding='utf-8') as json_file:
         data = json.load(json_file)
@@ -99,27 +98,26 @@ class Header:
 
 # From a string corresponding to a NIfTI axis & direction code,
 #   yield a 3-vector corresponding to that axis and direction
-# Note that unlike phaseEncoding.direction(), this does not accept
-#   an axis index, nor a phase-encoding indication string (e.g. AP);
+# Note that unlike phase_encoding.direction(),
+#   this does not accept an axis index,
+#   nor a phase-encoding indication string (e.g. AP);
 #   it only accepts NIfTI codes, i.e. i, i-, j, j-, k, k-
+AXIS2DIR = {'i' : [ 1, 0, 0],
+            'i-': [-1, 0, 0],
+            'j' : [ 0, 1, 0],
+            'j-': [ 0,-1, 0],
+            'k' : [ 0, 0, 1],
+            'k-': [ 0, 0,-1]}
 def axis2dir(string): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  if string == 'i':
-    direction = [1,0,0]
-  elif string == 'i-':
-    direction = [-1,0,0]
-  elif string == 'j':
-    direction = [0,1,0]
-  elif string == 'j-':
-    direction = [0,-1,0]
-  elif string == 'k':
-    direction = [0,0,1]
-  elif string == 'k-':
-    direction = [0,0,-1]
-  else:
+  try:
+    direction = AXIS2DIR[string]
+    app.debug(f'{string} -> {direction}')
+    return direction
+  except KeyError:
+    # pylint: disable=raise-missing-from
     raise MRtrixError(f'Unrecognized NIfTI axis & direction specifier: {string}')
-  app.debug(f'{string} -> {direction}')
-  return direction
+
 
 
 
@@ -129,7 +127,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not isinstance(image_in, Header):
-    if not isinstance(image_in, str) and not isinstance(image_in, pathlib.Path):
+    if not isinstance(image_in, (str, pathlib.PurePath)):
       raise MRtrixError(f'Error trying to test "{image_in}": '
                         'Not an image header or file path')
     image_in = Header(image_in)
@@ -150,7 +148,7 @@ def check_3d_nonunity(image_in): #pylint: disable=unused-variable
 #   form is not performed by this function.
 def mrinfo(image_path, field): #pylint: disable=unused-variable
   from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
-  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field, '-nodelete' ]
+  command = [ run.exe_name(run.version_match('mrinfo')), str(image_path), '-' + field, '-nodelete' ]
   if app.VERBOSITY > 1:
     app.console(f'Command: "{" ".join(command)}" '
                 '(piping data to local storage)')
@@ -175,12 +173,12 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
     raise TypeError('Unsupported keyword arguments passed to image.match(): '
                     + str(kwargs))
   if not isinstance(image_one, Header):
-    if not isinstance(image_one, str):
+    if not isinstance(image_one, (str, pathlib.PurePath)):
       raise MRtrixError(f'Error trying to test "{image_one}": '
                         'Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
-    if not isinstance(image_two, str):
+    if not isinstance(image_two, (str, pathlib.PurePath)):
       raise MRtrixError(f'Error trying to test "{image_two}": '
                         'Not an image header or file path')
     image_two = Header(image_two)
@@ -241,7 +239,7 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
     raise TypeError('Unsupported keyword arguments passed to image.statistics(): '
                     + str(kwargs))
 
-  command = [ run.exe_name(run.version_match('mrstats')), image_path ]
+  command = [ run.exe_name(run.version_match('mrstats')), str(image_path) ]
   for stat in IMAGE_STATISTICS:
     command.extend([ '-output', stat ])
   if mask:
