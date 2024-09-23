@@ -94,11 +94,11 @@ template <class HeaderType> FORCE_INLINE void check_data_file(const HeaderType &
                                 " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
 }
 
-FORCE_INLINE std::string get_fixel_directory(const std::string &fixel_file) {
-  std::string fixel_directory = Path::dirname(fixel_file);
+FORCE_INLINE std::string get_fixel_directory(const std::filesystem::path &fixel_file) {
+  std::filesystem::path fixel_directory = fixel_file.parent_path();
   // assume the user is running the command from within the fixel directory
   if (fixel_directory.empty())
-    fixel_directory = Path::cwd();
+    fixel_directory = std::filesystem::current_path();
   return fixel_directory;
 }
 
@@ -183,7 +183,7 @@ check_fixel_directory(const std::string &path, bool create_if_missing = false, b
                          : ""));
 }
 
-FORCE_INLINE Header find_index_header(const std::string &fixel_directory_path) {
+FORCE_INLINE Header find_index_header(const std::filesystem::path &fixel_directory_path) {
   Header header;
   check_fixel_directory(fixel_directory_path);
 
@@ -193,12 +193,12 @@ FORCE_INLINE Header find_index_header(const std::string &fixel_directory_path) {
     std::string full_path = Path::join(fixel_directory_path, "index" + *it);
     if (Path::exists(full_path)) {
       if (header.valid())
-        throw InvalidFixelDirectoryException("Multiple index images found in directory " + fixel_directory_path);
+        throw InvalidFixelDirectoryException("Multiple index images found in directory " + fixel_directory_path.string());
       header = Header::open(full_path);
     }
   }
   if (!header.valid())
-    throw InvalidFixelDirectoryException("Could not find index image in directory " + fixel_directory_path);
+    throw InvalidFixelDirectoryException("Could not find index image in directory " + fixel_directory_path.string());
 
   check_index_image(header);
   return header;

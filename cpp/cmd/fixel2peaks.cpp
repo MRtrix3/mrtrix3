@@ -64,7 +64,7 @@ void usage() {
 void run() {
   Header index_header, directions_header, data_header;
   const std::filesystem::path input_path(argument[0]);
-  const auto input_dirname = Path::dirname(input_path);
+  const auto input_dirname = input_path.parent_path();
   const std::filesystem::path output_path(argument[1]);
 
   try {
