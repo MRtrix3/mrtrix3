@@ -26,6 +26,8 @@
 #include "file/path.h"
 #include "types.h"
 
+#include <filesystem>
+
 namespace MR::DWI::Tractography {
 
 //! \cond skip
@@ -37,7 +39,7 @@ public:
       in.close();
   }
 
-  void open(const std::string &file, const std::string &firstline, Properties &properties);
+  void open(const std::filesystem::path &file, const std::string &firstline, Properties &properties);
 
   void close() { in.close(); }
 

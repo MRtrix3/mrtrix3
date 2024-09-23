@@ -41,7 +41,7 @@ void NameParser::parse(const std::filesystem::path &imagename, size_t max_num_se
     return;
   }
 
-  folder_name = Path::dirname(specification);
+  folder_name = specification.parent_path();
 
   try {
     std::string::size_type pos;
