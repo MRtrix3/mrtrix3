@@ -27,6 +27,8 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/writer.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -117,8 +119,11 @@ void write_fixel_output(const std::string &filename, const VectorType &data, con
 }
 
 void run() {
-  const std::string input_fixel_folder = argument[1];
-  Header index_header = Fixel::find_index_header(input_fixel_folder);
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_fixel_folder_path{argument[1]};
+  const std::filesystem::path output_fixel_folder_path{argument[2]};
+
+  Header index_header = Fixel::find_index_header(input_fixel_folder_path);
   auto index_image = index_header.get_image<index_type>();
 
   const index_type num_fixels = Fixel::get_number_of_fixels(index_header);
@@ -128,11 +133,11 @@ void run() {
   std::vector<Eigen::Vector3d> positions(num_fixels);
   std::vector<Eigen::Vector3d> directions(num_fixels);
 
-  const std::string output_fixel_folder = argument[2];
-  Fixel::copy_index_and_directions_file(input_fixel_folder, output_fixel_folder);
+  Fixel::copy_index_and_directions_file(input_fixel_folder_path, output_fixel_folder_path);
 
   {
-    auto directions_data = Fixel::find_directions_header(input_fixel_folder).get_image<default_type>().with_direct_io();
+    auto directions_data =
+        Fixel::find_directions_header(input_fixel_folder_path).get_image<default_type>().with_direct_io();
     // Load template fixel directions
     Transform image_transform(index_image);
     for (auto i = Loop("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
@@ -149,9 +154,8 @@ void run() {
   }
 
   std::vector<uint16_t> fixel_TDI(num_fixels, 0.0);
-  const std::string track_filename = argument[0];
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> track_file(track_filename, properties);
+  DWI::Tractography::Reader<float> track_file(input_tracks_path, properties);
   // Read in tracts, and compute whole-brain fixel-fixel connectivity
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int>(properties["count"]);
   if (!num_tracks)
@@ -174,5 +178,5 @@ void run() {
 
   Header output_header(Fixel::data_header_from_index(index_image));
 
-  write_fixel_output(Path::join(output_fixel_folder, argument[3]), fixel_TDI, output_header);
+  write_fixel_output(Path::join(output_fixel_folder_path, argument[3]), fixel_TDI, output_header);
 }

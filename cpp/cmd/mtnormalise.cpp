@@ -22,6 +22,8 @@
 #include "math/least_squares.h"
 #include "transform.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -153,7 +155,7 @@ int num_basis_vec_for_order(int order) {
 
 // Struct to get user specified number of basis functions
 struct PolyBasisFunction {
-  PolyBasisFunction(const int order) : n_basis_vecs(num_basis_vec_for_order(order)){};
+  PolyBasisFunction(const int order) : n_basis_vecs(num_basis_vec_for_order(order)) {};
 
   const int n_basis_vecs;
 
@@ -499,10 +501,12 @@ void run() {
 
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
-    if (Path::exists(argument[2 * n + 1]) && !App::overwrite_files)
-      throw Exception("Output file \"" + argument[2 * n + 1] + "\" already exists." +
+    const std::filesystem::path output_path{argument[2 * n + 1]};
+    if (std::filesystem::exists(output_path) && !App::overwrite_files)
+      throw Exception("Output file \"" + output_path.string() + "\" already exists." +
                       " (use -force option to force overwrite)");
-    load_data(data, argument[2 * n], index);
+    const std::filesystem::path input_path{argument[2 * n]};
+    load_data(data, input_path, index);
   }
 
   size_t num_non_finite = (!data.array().isFinite()).count();
@@ -575,6 +579,9 @@ void run() {
   double lognorm_scale = std::exp((field.array().log() * weights.array()).sum() / weights.sum());
 
   const bool output_balanced = !get_options("balanced").empty();
-  for (size_t n = 0; n < n_tissue_types; ++n)
-    write_output(argument[2 * n], argument[2 * n + 1], output_balanced, balance_factors[n], full_field, lognorm_scale);
+  for (size_t n = 0; n < n_tissue_types; ++n) {
+    const std::filesystem::path input_path{argument[2 * n]};
+    const std::filesystem::path output_path{argument[2 * n + 1]};
+    write_output(input_path, output_path, output_balanced, balance_factors[n], full_field, lognorm_scale);
+  }
 }

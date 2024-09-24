@@ -20,6 +20,8 @@
 #include "dwi/tractography/streamline.h"
 #include "math/median.h"
 
+#include <filesystem>
+
 #define DEFAULT_SMOOTHING 4.0
 
 using namespace MR;
@@ -48,9 +50,12 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
   DWI::Tractography::Properties properties;
-  DWI::Tractography::ScalarReader<value_type> reader(argument[0], properties);
-  DWI::Tractography::ScalarWriter<value_type> writer(argument[1], properties);
+  DWI::Tractography::ScalarReader<value_type> reader(input_path, properties);
+  DWI::Tractography::ScalarWriter<value_type> writer(output_path, properties);
 
   float stdev = get_option_value("stdev", DEFAULT_SMOOTHING);
 

@@ -30,6 +30,7 @@
 #include "connectome/mat2vec.h"
 
 #include "stats/permtest.h"
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -166,10 +167,14 @@ private:
 };
 
 void run() {
+  const std::filesystem::path files_input_path{argument[0]};
+  const std::filesystem::path design_input_path{argument[2]};
+  const std::filesystem::path contrast_input_path{argument[3]};
+  const std::string output_prefix = argument[4];
 
   // Read file names and check files exist
   CohortDataImport importer;
-  importer.initialise<SubjectConnectomeImport>(argument[0]);
+  importer.initialise<SubjectConnectomeImport>(files_input_path);
   CONSOLE("Number of inputs: " + str(importer.size()));
   const index_type num_edges = importer[0]->size();
 
@@ -213,7 +218,7 @@ void run() {
   const default_type empirical_skew = get_option_value("skew_nonstationarity", EMPIRICAL_SKEW_DEFAULT);
 
   // Load design matrix
-  const matrix_type design = File::Matrix::load_matrix(argument[2]);
+  const matrix_type design = File::Matrix::load_matrix(design_input_path);
   if (index_type(design.rows()) != importer.size())
     throw Exception("number of subjects (" + str(importer.size()) +
                     ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
@@ -246,7 +251,7 @@ void run() {
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(argument[3]);
+  const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(contrast_input_path);
   const index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception(
@@ -254,8 +259,6 @@ void run() {
         " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")" +
         (!extra_columns.empty() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
-
-  const std::string output_prefix = argument[4];
 
   // Load input data
   // For compatibility with existing statistics code, symmetric matrix data is adjusted

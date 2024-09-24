@@ -22,6 +22,8 @@
 #include "progressbar.h"
 #include "thread.h"
 
+#include <filesystem>
+
 #define DEFAULT_POWER 1
 #define DEFAULT_NITER 10000
 #define DEFAULT_RESTARTS 10
@@ -232,6 +234,7 @@ double Energy::best_E = std::numeric_limits<double>::infinity();
 Eigen::VectorXd Energy::best_directions;
 
 void run() {
+  const std::filesystem::path dirs_input_path{argument[1]};
   Energy::restarts = get_option_value("restarts", DEFAULT_RESTARTS);
   Energy::target_power = get_option_value("power", DEFAULT_POWER);
   Energy::niter = get_option_value("niter", DEFAULT_NITER);
@@ -249,5 +252,5 @@ void run() {
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row(n) = Energy::best_directions.segment(3 * n, 3);
 
-  DWI::Directions::save(directions_matrix, argument[1], !get_options("cartesian").empty());
+  DWI::Directions::save(directions_matrix, dirs_input_path, !get_options("cartesian").empty());
 }

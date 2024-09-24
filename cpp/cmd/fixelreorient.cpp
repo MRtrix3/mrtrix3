@@ -24,6 +24,8 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -58,17 +60,19 @@ void usage() {
 // clang-format on
 
 void run() {
-  std::string input_fixel_directory = argument[0];
+  const std::filesystem::path input_fixel_directory{argument[0]};
+  const std::filesystem::path input_warp_file{argument[1]};
+  const std::filesystem::path output_fixel_directory{argument[2]};
+
   Fixel::check_fixel_directory(input_fixel_directory);
 
   auto input_index_image = Fixel::find_index_header(input_fixel_directory).get_image<index_type>();
 
-  Header warp_header = Header::open(argument[1]);
+  Header warp_header = Header::open(input_warp_file);
   Registration::Warp::check_warp(warp_header);
   check_dimensions(input_index_image, warp_header, 0, 3);
   Adapter::Jacobian<Image<float>> jacobian(warp_header.get_image<float>());
 
-  std::string output_fixel_directory = argument[2];
   Fixel::check_fixel_directory(output_fixel_directory, true);
 
   // scratch buffer so inplace reorientation can be performed if desired

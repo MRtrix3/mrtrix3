@@ -29,6 +29,8 @@
 #include "fixel/matrix.h"
 #include "stats/cfe.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Fixel;
@@ -86,6 +88,8 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
 
   std::set<std::string> option_list{"threhsold_value", "threshold_connectivity", "fwhm", "minweight", "mask"};
 
@@ -97,25 +101,25 @@ void run() {
     Header index_header;
     Header output_header;
     try {
-      index_header = Fixel::find_index_header(argument[0]);
-      multiple_files = Fixel::find_data_headers(argument[0], index_header);
+      index_header = Fixel::find_index_header(input_path);
+      multiple_files = Fixel::find_data_headers(input_path, index_header);
       if (multiple_files.empty())
-        throw Exception("No fixel data files found in directory \"" + argument[0] + "\"");
+        throw Exception("No fixel data files found in directory \"" + input_path.string() + "\"");
       output_header = Header(multiple_files[0]);
     } catch (...) {
       try {
-        index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
-        single_file = Image<float>::open(argument[0]);
+        index_header = Fixel::find_index_header(Fixel::get_fixel_directory(input_path));
+        single_file = Image<float>::open(input_path);
         Fixel::check_data_file(single_file);
         output_header = Header(single_file);
       } catch (...) {
-        throw Exception("Could not interpret first argument \"" + argument[0] +
+        throw Exception("Could not interpret first argument \"" + input_path.string() +
                         "\" as either a fixel data file, or a fixel directory");
       }
     }
 
     if (single_file.valid() && !Fixel::fixels_match(index_header, single_file))
-      throw Exception("File \"" + argument[0] +
+      throw Exception("File \"" + input_path.string() +
                       "\" is not a valid fixel data file (does not match corresponding index image)");
 
     auto opt = get_options("matrix");
@@ -163,18 +167,18 @@ void run() {
   }
 
   if (single_file.valid()) {
-    auto output_image = Image<float>::create(argument[2], single_file);
+    auto output_image = Image<float>::create(output_path, single_file);
     CONSOLE(std::string("Applying \"") + filters[argument[1]] + "\" operation to fixel data file \"" +
             single_file.name() + "\"");
     (*filter)(single_file, output_image);
   } else {
-    Fixel::copy_index_and_directions_file(argument[0], argument[2]);
+    Fixel::copy_index_and_directions_file(input_path, output_path);
     ProgressBar progress(std::string("Applying \"") + filters[argument[1]] + "\" operation to " +
                              str(multiple_files.size()) + " fixel data files",
                          multiple_files.size());
     for (auto &H : multiple_files) {
       auto input_image = H.get_image<float>();
-      auto output_image = Image<float>::create(Path::join(argument[2], Path::basename(H.name())), H);
+      auto output_image = Image<float>::create(Path::join(output_path, Path::basename(H.name())), H);
       (*filter)(input_image, output_image);
       ++progress;
     }

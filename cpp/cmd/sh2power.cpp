@@ -19,6 +19,8 @@
 #include "image.h"
 #include "math/SH.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -48,7 +50,10 @@ void usage() {
 // clang-format on
 
 void run() {
-  auto SH_data = Image<float>::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
+  auto SH_data = Image<float>::open(input_path);
   Math::SH::check(SH_data);
 
   Header power_header(SH_data);
@@ -64,7 +69,7 @@ void run() {
     power_header.ndim() = 3;
   power_header.datatype() = DataType::Float32;
 
-  auto power_data = Image<float>::create(argument[1], power_header);
+  auto power_data = Image<float>::create(output_path, power_header);
 
   auto f1 = [&](decltype(power_data) &P, decltype(SH_data) &SH) {
     P.index(3) = 0;

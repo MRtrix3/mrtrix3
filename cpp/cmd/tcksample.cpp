@@ -31,6 +31,8 @@
 #include "ordered_thread_queue.h"
 #include "thread.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -407,9 +409,13 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
 }
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_image_path{argument[1]};
+  const std::filesystem::path output_path{argument[2]};
+
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<value_type> reader(argument[0], properties);
-  auto H = Header::open(argument[1]);
+  DWI::Tractography::Reader<value_type> reader(input_tracks_path, properties);
+  auto H = Header::open(input_image_path);
   auto image = H.get_image<value_type>();
 
   auto opt = get_options("stat_tck");
@@ -428,7 +434,7 @@ void run() {
   if (!get_options("use_tdi_fraction").empty()) {
     if (statistic == stat_tck::NONE)
       throw Exception("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
-    DWI::Tractography::Reader<value_type> tdi_reader(argument[0], properties);
+    DWI::Tractography::Reader<value_type> tdi_reader(input_tracks_path, properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper(H);
     mapper.set_use_precise_mapping(interp == interp_type::PRECISE);
     tdi = Image<value_type>::scratch(H, "TDI scratch image");
@@ -443,10 +449,10 @@ void run() {
   if (statistic == stat_tck::NONE) {
     switch (interp) {
     case interp_type::NEAREST:
-      execute_nostat<Interp::Nearest<Image<value_type>>>(reader, properties, num_tracks, image, argument[2]);
+      execute_nostat<Interp::Nearest<Image<value_type>>>(reader, properties, num_tracks, image, output_path);
       break;
     case interp_type::LINEAR:
-      execute_nostat<Interp::Linear<Image<value_type>>>(reader, properties, num_tracks, image, argument[2]);
+      execute_nostat<Interp::Linear<Image<value_type>>>(reader, properties, num_tracks, image, output_path);
       break;
     case interp_type::PRECISE:
       throw Exception("Precise streamline mapping may only be used with per-streamline statistics");
@@ -455,14 +461,14 @@ void run() {
     switch (interp) {
     case interp_type::NEAREST:
       execute<SamplerNonPrecise<Interp::Nearest<Image<value_type>>>>(
-          reader, num_tracks, image, statistic, tdi, argument[2]);
+          reader, num_tracks, image, statistic, tdi, output_path);
       break;
     case interp_type::LINEAR:
       execute<SamplerNonPrecise<Interp::Linear<Image<value_type>>>>(
-          reader, num_tracks, image, statistic, tdi, argument[2]);
+          reader, num_tracks, image, statistic, tdi, output_path);
       break;
     case interp_type::PRECISE:
-      execute<SamplerPrecise>(reader, num_tracks, image, statistic, tdi, argument[2]);
+      execute<SamplerPrecise>(reader, num_tracks, image, statistic, tdi, output_path);
       break;
     }
   }

@@ -21,6 +21,8 @@
 #include "image.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -59,10 +61,15 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_data_path{argument[0]};
+  const std::filesystem::path template_directory{argument[1]};
+  const std::filesystem::path output_directory{argument[2]};
+  const std::filesystem::path output_data_path{argument[3]};
+
   const float angular_threshold = get_option_value("angle", DEFAULT_ANGLE_THRESHOLD);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
 
-  const std::string input_file(argument[0]);
+  const std::string input_file(input_data_path);
   if (Path::is_dir(input_file))
     throw Exception("please input the specific fixel data file to be converted"
                     " (not the fixel directory)");
@@ -77,16 +84,16 @@ void run() {
   auto subject_data = Image<float>::open(input_file);
   Fixel::check_fixel_size(subject_index, subject_data);
 
-  auto template_index = Fixel::find_index_header(argument[1]).get_image<index_type>();
-  auto template_directions = Fixel::find_directions_header(argument[1]).get_image<float>().with_direct_io();
+  auto template_index = Fixel::find_index_header(template_directory).get_image<index_type>();
+  auto template_directions = Fixel::find_directions_header(template_directory).get_image<float>().with_direct_io();
 
   check_dimensions(subject_index, template_index);
-  std::string output_fixel_directory = argument[2];
-  Fixel::copy_index_and_directions_file(argument[1], output_fixel_directory);
+  std::string output_fixel_directory = output_directory;
+  Fixel::copy_index_and_directions_file(template_directory, output_fixel_directory);
 
   Header output_data_header(template_directions);
   output_data_header.size(1) = 1;
-  auto output_data = Image<float>::create(Path::join(output_fixel_directory, argument[3]), output_data_header);
+  auto output_data = Image<float>::create(Path::join(output_fixel_directory, output_data_path), output_data_header);
 
   for (auto i =
            Loop("mapping subject fixel data to template fixels", template_index, 0, 3)(template_index, subject_index);

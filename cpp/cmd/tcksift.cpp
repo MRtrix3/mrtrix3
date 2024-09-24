@@ -26,6 +26,8 @@
 #include "dwi/tractography/SIFT/sift.h"
 #include "dwi/tractography/SIFT/sifter.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -77,10 +79,12 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path debug_path{get_option_value<std::string>("output_debug", "")};
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_fod_path{argument[1]};
+  const std::filesystem::path output_tracks_path{argument[2]};
 
-  const std::string debug_path = get_option_value<std::string>("output_debug", "");
-
-  auto in_dwi = Image<float>::open(argument[1]);
+  auto in_dwi = Image<float>::open(input_tracks_path);
   Math::SH::check(in_dwi);
   DWI::Directions::FastLookupSet dirs(1281);
 
@@ -96,7 +100,7 @@ void run() {
   sifter.perform_FOD_segmentation(in_dwi);
   sifter.scale_FDs_by_GM();
 
-  sifter.map_streamlines(argument[0]);
+  sifter.map_streamlines(input_tracks_path);
 
   if (!debug_path.empty())
     sifter.output_all_debug_images(debug_path, "before");
@@ -128,7 +132,7 @@ void run() {
     if (!debug_path.empty())
       sifter.output_all_debug_images(debug_path, "after");
 
-    sifter.output_filtered_tracks(argument[0], argument[2]);
+    sifter.output_filtered_tracks(input_tracks_path, output_tracks_path);
 
     opt = get_options("out_selection");
     if (!opt.empty())

@@ -25,6 +25,7 @@
 #include "phase_encoding.h"
 #include "progressbar.h"
 
+#include <filesystem>
 using namespace MR;
 using namespace App;
 
@@ -277,7 +278,10 @@ inline Processor<MASKType, B0Type, DTType, DKTType, PredictType> processor(const
 }
 
 void run() {
-  auto dwi = Header::open(argument[0]).get_image<value_type>();
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
+  auto dwi = Header::open(input_path).get_image<value_type>();
   auto grad = DWI::get_DW_scheme(dwi);
 
   Image<bool> mask;
@@ -304,13 +308,14 @@ void run() {
 
   DWI::stash_DW_scheme(header, grad);
   header.size(3) = 6;
-  auto dt = Image<value_type>::create(argument[1], header);
+  auto dt = Image<value_type>::create(output_path, header);
 
   Image<value_type> b0;
   opt = get_options("b0");
   if (!opt.empty()) {
     header.ndim() = 3;
-    b0 = Image<value_type>::create(opt[0][0], header);
+    const std::filesystem::path b0_path{opt[0][0]};
+    b0 = Image<value_type>::create(b0_path, header);
   }
 
   Image<value_type> dkt;
@@ -319,7 +324,8 @@ void run() {
   if (dki) {
     header.ndim() = 4;
     header.size(3) = 15;
-    dkt = Image<value_type>::create(opt[0][0], header);
+    const std::filesystem::path dkt_path{opt[0][0]};
+    dkt = Image<value_type>::create(dkt_path, header);
   }
 
   Eigen::MatrixXd A = -DWI::grad2bmatrix<double>(grad, dki);

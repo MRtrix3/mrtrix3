@@ -31,6 +31,8 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::DWI;
@@ -153,8 +155,9 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   const stat_edge statistic = !opt.empty() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
 
   // Prepare for reading the track data
+  const std::filesystem::path input_tracks_path{argument[0]};
   Tractography::Properties properties;
-  Tractography::Reader<float> reader(argument[0], properties);
+  Tractography::Reader<float> reader(input_tracks_path, properties);
 
   // Initialise classes in preparation for multi-threading
   Mapping::TrackLoader loader(
@@ -180,7 +183,9 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   connectome.finalize();
   connectome.error_check(missing_nodes);
 
-  connectome.save(argument[2],
+  const std::filesystem::path output_connectome_path{argument[2]};
+
+  connectome.save(output_connectome_path,
                   get_options("keep_unassigned").size(),
                   get_options("symmetric").size(),
                   get_options("zero_diagonal").size());
@@ -191,7 +196,9 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
 }
 
 void run() {
-  auto node_header = Header::open(argument[1]);
+  const std::filesystem::path input_nodes_path{argument[1]};
+
+  auto node_header = Header::open(input_nodes_path);
   MR::Connectome::check(node_header);
   auto node_image = node_header.get_image<node_t>();
 

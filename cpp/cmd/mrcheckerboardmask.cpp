@@ -21,6 +21,8 @@
 #include "image.h"
 #include "image_helpers.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -49,12 +51,14 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
 
   const size_t ntiles = get_option_value("tiles", DEFAULT_NUM_TILES);
   const bool invert = !get_options("invert").empty();
   const bool use_NaN = !get_options("nan").empty();
 
-  auto in = Image<float>::open(argument[0]);
+  auto in = Image<float>::open(input_path);
   check_3D_nonunity(in);
 
   const size_t patchwidth_x = std::ceil((float)in.size(0) / (float)ntiles);
@@ -63,7 +67,7 @@ void run() {
 
   Header header_out(in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
-  auto out = Image<float>::create(argument[1], header_out);
+  auto out = Image<float>::create(output_path, header_out);
 
   float zero = use_NaN ? NAN : 0.0;
   float one = 1.0;

@@ -23,6 +23,8 @@
 #include "surface/algo/mesh2image.h"
 #include "surface/mesh.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -49,12 +51,15 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path source_path{argument[0]};
+  const std::filesystem::path template_path{argument[1]};
+  const std::filesystem::path output_path{argument[2]};
 
   // Read in the mesh data
-  Surface::Mesh mesh(argument[0]);
+  Surface::Mesh mesh(source_path);
 
   // Get the template image
-  Header template_header = Header::open(argument[1]);
+  Header template_header = Header::open(template_path);
   check_3D_nonunity(template_header);
 
   // Ensure that a floating-point representation is used for the output image,
@@ -63,7 +68,7 @@ void run() {
   template_header.datatype().set_byte_order_native();
 
   // Create the output image
-  Image<float> output = Image<float>::create(argument[2], template_header);
+  Image<float> output = Image<float>::create(output_path, template_header);
 
   // Perform the partial volume estimation
   Surface::Algo::mesh2image(mesh, output);

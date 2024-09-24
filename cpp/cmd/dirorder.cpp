@@ -21,6 +21,7 @@
 #include "math/rng.h"
 #include "progressbar.h"
 
+#include <filesystem>
 #include <functional>
 #include <random>
 
@@ -107,7 +108,10 @@ value_type calc_cost(const Eigen::MatrixXd &directions, const std::vector<size_t
 }
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  const std::filesystem::path input_path(argument[0]);
+  const std::filesystem::path output_path(argument[1]);
+
+  auto directions = DWI::Directions::load_cartesian(input_path);
 
   size_t last_candidate_first_volume = directions.rows();
   if (size_t(directions.rows()) <= Math::SH::NforL(2)) {
@@ -134,5 +138,5 @@ void run() {
   for (ssize_t n = 0; n < directions.rows(); ++n)
     output.row(n) = directions.row(best_order[n]);
 
-  DWI::Directions::save(output, argument[1], !get_options("cartesian").empty());
+  DWI::Directions::save(output, output_path, !get_options("cartesian").empty());
 }

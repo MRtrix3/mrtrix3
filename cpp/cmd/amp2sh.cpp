@@ -24,6 +24,8 @@
 #include "phase_encoding.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -183,7 +185,10 @@ protected:
 };
 
 void run() {
-  auto amp = Image<value_type>::open(argument[0]).with_direct_io(3);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
+  auto amp = Image<value_type>::open(input_path).with_direct_io(3);
   Header header(amp);
 
   std::vector<size_t> bzeros, dwis;
@@ -229,7 +234,7 @@ void run() {
 
   header.size(3) = sh2amp.cols();
   Stride::set_from_command_line(header);
-  auto SH = Image<value_type>::create(argument[1], header);
+  auto SH = Image<value_type>::create(output_path, header);
 
   Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
 

@@ -27,6 +27,8 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::DWI;
@@ -91,6 +93,7 @@ LW operator+(const LW &one, const LW &two) {
 LW operator/(const LW &lw, const double div) { return LW(lw.get_length() / div, lw.get_weight() / div); }
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
 
   const bool weights_provided = !get_options("tck_weights_in").empty();
 
@@ -106,7 +109,7 @@ void run() {
 
   {
     Tractography::Properties properties;
-    Tractography::Reader<float> reader(argument[0], properties);
+    Tractography::Reader<float> reader(input_tracks_path, properties);
 
     if (properties.find("count") != properties.end())
       header_count = to<size_t>(properties["count"]);

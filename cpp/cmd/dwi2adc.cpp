@@ -22,6 +22,8 @@
 #include "phase_encoding.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -144,7 +146,10 @@ private:
 };
 
 void run() {
-  auto dwi = Header::open(argument[0]).get_image<value_type>();
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
+  auto dwi = Header::open(input_path).get_image<value_type>();
   auto grad = DWI::get_DW_scheme(dwi);
 
   size_t dwi_axis = 3;
@@ -163,7 +168,7 @@ void run() {
   header.ndim() = 4;
   header.size(3) = ivim ? 4 : 2;
 
-  auto adc = Image<value_type>::create(argument[1], header);
+  auto adc = Image<value_type>::create(output_path, header);
 
   ThreadedLoop("computing ADC values", dwi, 0, 3).run(DWI2ADC(grad.col(3), dwi_axis, ivim, bmin), dwi, adc);
 }

@@ -37,6 +37,8 @@
 
 #include "dwi/tractography/seeding/seeding.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -241,6 +243,9 @@ void run() {
   using namespace DWI::Tractography::Tracking;
   using namespace DWI::Tractography::Algorithms;
 
+  const std::filesystem::path input_source_path{argument[0]};
+  const std::filesystem::path output_tracks_path{argument[1]};
+
   Properties properties;
 
   const int algorithm = get_option_value("algorithm", DEFAULT_ALGORITHM);
@@ -277,31 +282,31 @@ void run() {
 
   switch (algorithm) {
   case 0:
-    Exec<FACT>::run(argument[0], argument[1], properties);
+    Exec<FACT>::run(input_source_path, output_tracks_path, properties);
     break;
   case 1:
-    Exec<iFOD1>::run(argument[0], argument[1], properties);
+    Exec<iFOD1>::run(input_source_path, output_tracks_path, properties);
     break;
   case 2:
-    Exec<iFOD2>::run(argument[0], argument[1], properties);
+    Exec<iFOD2>::run(input_source_path, output_tracks_path, properties);
     break;
   case 3:
-    Exec<NullDist1>::run(argument[0], argument[1], properties);
+    Exec<NullDist1>::run(input_source_path, output_tracks_path, properties);
     break;
   case 4:
-    Exec<NullDist2>::run(argument[0], argument[1], properties);
+    Exec<NullDist2>::run(input_source_path, output_tracks_path, properties);
     break;
   case 5:
-    Exec<SDStream>::run(argument[0], argument[1], properties);
+    Exec<SDStream>::run(input_source_path, output_tracks_path, properties);
     break;
   case 6:
-    Exec<Seedtest>::run(argument[0], argument[1], properties);
+    Exec<Seedtest>::run(input_source_path, output_tracks_path, properties);
     break;
   case 7:
-    Exec<Tensor_Det>::run(argument[0], argument[1], properties);
+    Exec<Tensor_Det>::run(input_source_path, output_tracks_path, properties);
     break;
   case 8:
-    Exec<Tensor_Prob>::run(argument[0], argument[1], properties);
+    Exec<Tensor_Prob>::run(input_source_path, output_tracks_path, properties);
     break;
   default:
     assert(0);

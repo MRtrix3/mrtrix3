@@ -34,6 +34,8 @@
 #include "registration/transform/rigid.h"
 #include "transform.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -229,6 +231,9 @@ using value_type = double;
 using MaskType = Image<bool>;
 
 void run() {
+  const std::filesystem::path first_input_path{argument[0]};
+  const std::filesystem::path second_input_path{argument[1]};
+
   const int space = get_option_value("space", DEFAULT_SPACE);
   const int interp = get_option_value("interp", DEFAULT_INTERP);
 
@@ -244,8 +249,8 @@ void run() {
     }
   }
 
-  auto input1 = Image<value_type>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
-  auto input2 = Image<value_type>::open(argument[1]).with_direct_io(Stride::contiguous_along_axis(3));
+  auto input1 = Image<value_type>::open(first_input_path).with_direct_io(Stride::contiguous_along_axis(3));
+  auto input2 = Image<value_type>::open(second_input_path).with_direct_io(Stride::contiguous_along_axis(3));
 
   const size_t dimensions = input1.ndim();
   if (input1.ndim() != input2.ndim())

@@ -22,6 +22,8 @@
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -74,8 +76,10 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument.front()};
+  const std::filesystem::path output_path{argument.begin()[1]};
 
-  auto input = Image<float>::open(argument[0]);
+  auto input = Image<float>::open(input_path);
   DWI::Tractography::ACT::verify_5TT_image(input);
 
   Header H(input);
@@ -88,7 +92,7 @@ void run() {
   const float csf_multiplier = get_option_value("csf", VALUE_DEFAULT_CSF);
   const float path_multiplier = get_option_value("path", VALUE_DEFAULT_PATH);
 
-  auto output = Image<float>::create(argument[1], H);
+  auto output = Image<float>::create(output_path, H);
 
   auto f = [&](decltype(input) &in, decltype(output) &out) {
     const DWI::Tractography::ACT::Tissues t(in);

@@ -23,6 +23,8 @@
 #include "progressbar.h"
 #include "thread_queue.h"
 
+#include <filesystem>
+
 #define DOT_THRESHOLD 0.99
 #define DEFAULT_NPEAKS 3
 

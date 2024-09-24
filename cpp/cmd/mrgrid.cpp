@@ -25,6 +25,8 @@
 #include "interp/nearest.h"
 #include "interp/sinc.h"
 #include "progressbar.h"
+
+#include <filesystem>
 #include <set>
 
 using namespace MR;
@@ -201,7 +203,10 @@ void usage() {
 // clang-format on
 
 void run() {
-  auto input_header = Header::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
+
+  auto input_header = Header::open(input_path);
 
   const int op = argument[1];
 
@@ -281,7 +286,7 @@ void run() {
       output_header.datatype() = DataType::from_command_line(input_header.datatype());
     else
       output_header.datatype() = DataType::from_command_line(DataType::from<float>());
-    auto output = Image<float>::create(argument[2], output_header);
+    auto output = Image<float>::create(output_path, output_header);
 
     auto input = input_header.get_image<float>();
     regrid_filter(input, output);
@@ -478,7 +483,7 @@ void run() {
     output_header.datatype() = DataType::from_command_line(DataType::from<float>());
     Stride::set_from_command_line(output_header);
 
-    auto output = Image<float>::create(argument[2], output_header);
+    auto output = Image<float>::create(output_path, output_header);
     threaded_copy_with_progress_message(message.c_str(), regridded, output);
   }
 }

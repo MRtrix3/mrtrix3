@@ -21,6 +21,8 @@
 #include "dwi/tractography/weights.h"
 #include "fixel/matrix.h"
 
+#include <filesystem>
+
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
 
@@ -96,11 +98,14 @@ template <class WriterType> void set_optional_outputs(WriterType &writer) {
 }
 
 void run() {
+  const std::filesystem::path input_fixel_directory{argument[0]};
+  const std::filesystem::path input_tracks_path{argument[1]};
+  const std::filesystem::path output_matrix_directory{argument[2]};
+
   const value_type connectivity_threshold =
       get_option_value("connectivity", value_type(DEFAULT_CONNECTIVITY_THRESHOLD));
   const value_type angular_threshold = get_option_value("angle", value_type(DEFAULT_ANGLE_THRESHOLD));
 
-  const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header(input_fixel_directory);
   auto index_image = index_header.get_image<index_type>();
   const index_type num_fixels = Fixel::get_number_of_fixels(index_image);
@@ -110,7 +115,8 @@ void run() {
   auto opt = get_options("mask");
   Image<bool> fixel_mask;
   if (!opt.empty()) {
-    fixel_mask = Image<bool>::open(opt[0][0]);
+    const std::filesystem::path mask_path{opt[0][0]};
+    fixel_mask = Image<bool>::open(mask_path);
     Fixel::check_data_file(fixel_mask);
     if (!Fixel::fixels_match(index_header, fixel_mask))
       throw Exception("Mask image provided using -mask option does not match input fixel directory");
@@ -124,15 +130,15 @@ void run() {
 
   if (get_options("tck_weights_in").empty()) {
     auto connectivity_matrix =
-        Fixel::Matrix::generate_unweighted(argument[1], index_image, fixel_mask, angular_threshold);
+        Fixel::Matrix::generate_unweighted(input_tracks_path, index_image, fixel_mask, angular_threshold);
     Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixUnweighted> writer(connectivity_matrix, connectivity_threshold);
     set_optional_outputs(writer);
-    writer.save(argument[2]);
+    writer.save(output_matrix_directory);
   } else {
     auto connectivity_matrix =
-        Fixel::Matrix::generate_weighted(argument[1], index_image, fixel_mask, angular_threshold);
+        Fixel::Matrix::generate_weighted(input_tracks_path, index_image, fixel_mask, angular_threshold);
     Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixWeighted> writer(connectivity_matrix, connectivity_threshold);
     set_optional_outputs(writer);
-    writer.save(argument[2]);
+    writer.save(output_matrix_directory);
   }
 }

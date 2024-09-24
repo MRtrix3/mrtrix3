@@ -24,6 +24,8 @@
 
 #include "dwi/tractography/ACT/act.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -128,10 +130,12 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
 
-  auto in = Image<float>::open(argument[0]);
+  auto in = Image<float>::open(input_path);
   DWI::Tractography::ACT::verify_5TT_image(in);
-  auto out = Image<float>::create(argument[1], in);
+  auto out = Image<float>::create(output_path, in);
 
   Modifier modifier(in, out);
 

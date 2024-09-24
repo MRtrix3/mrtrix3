@@ -26,6 +26,8 @@
 
 #include "dwi/directions/file.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -129,21 +131,25 @@ private:
 };
 
 void run() {
-  auto sh_data = Image<value_type>::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path directions_path{argument[1]};
+  const std::filesystem::path output_path{argument[2]};
+
+  auto sh_data = Image<value_type>::open(input_path);
   Math::SH::check(sh_data);
   const size_t lmax = Math::SH::LforN(sh_data.size(3));
   const bool nonnegative = !get_options("nonnegative").empty();
 
   Eigen::MatrixXd directions;
   try {
-    directions = DWI::Directions::load_spherical(argument[1]);
+    directions = DWI::Directions::load_spherical(directions_path);
   } catch (Exception &E) {
     try {
-      directions = File::Matrix::load_matrix<double>(argument[1]);
+      directions = File::Matrix::load_matrix<double>(directions_path);
       if (directions.cols() < 4)
-        throw("unable to interpret file \"" + std::string(argument[1]) + "\" as a directions or gradient file");
+        throw("unable to interpret file \"" + directions_path.string() + "\" as a directions or gradient file");
     } catch (Exception &E) {
-      auto header = Header::open(argument[1]);
+      auto header = Header::open(directions_path);
       directions = DWI::get_DW_scheme(header);
     }
   }
@@ -173,7 +179,7 @@ void run() {
     dir_stream << directions(directions.rows() - 1, 0) << "," << directions(directions.rows() - 1, 1);
     amp_header.keyval()["directions"] = dir_stream.str();
 
-    auto amp_data = Image<value_type>::create(argument[2], amp_header);
+    auto amp_data = Image<value_type>::create(output_path, amp_header);
     auto transform = Math::SH::init_transform(directions, lmax);
 
     SH2Amp sh2amp(transform, nonnegative);
@@ -208,7 +214,7 @@ void run() {
       transforms.push_back(Math::SH::init_transform(dirs, lmax));
     }
 
-    auto amp_data = Image<value_type>::create(argument[2], amp_header);
+    auto amp_data = Image<value_type>::create(output_path, amp_header);
 
     SH2AmpMultiShell sh2amp(transforms, shells, nonnegative);
     ThreadedLoop("computing amplitudes", sh_data, 0, 3).run(sh2amp, sh_data, amp_data);
