@@ -19,6 +19,8 @@
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -39,18 +41,22 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path first_input_path{argument[0]};
+  const std::filesystem::path second_input_path{argument[1]};
+  const std::filesystem::path output_path{argument[2]};
+
   DWI::Tractography::Properties properties1, properties2;
-  DWI::Tractography::ScalarReader<value_type> reader1(argument[0], properties1);
-  DWI::Tractography::ScalarReader<value_type> reader2(argument[1], properties2);
+  DWI::Tractography::ScalarReader<value_type> reader1(first_input_path, properties1);
+  DWI::Tractography::ScalarReader<value_type> reader2(second_input_path, properties2);
   DWI::Tractography::check_properties_match(properties1, properties2, "scalar", false);
 
-  DWI::Tractography::ScalarWriter<value_type> writer(argument[2], properties1);
+  DWI::Tractography::ScalarWriter<value_type> writer(output_path, properties1);
   DWI::Tractography::TrackScalar<value_type> tck_scalar1, tck_scalar2, tck_scalar_output;
   while (reader1(tck_scalar1)) {
     if (!reader2(tck_scalar2)) {
-      WARN("No more track scalars left in input file \"" + std::string(argument[1]) + "\" after " +
+      WARN("No more track scalars left in input file \"" + second_input_path.string() + "\" after " +
            str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-           std::string(argument[0]) + "\"");
+           first_input_path.string() + "\"");
       break;
     }
     if (tck_scalar1.size() != tck_scalar2.size())
@@ -67,8 +73,8 @@ void run() {
     writer(tck_scalar_output);
   }
   if (reader2(tck_scalar2)) {
-    WARN("No more track scalars left in input file \"" + std::string(argument[0]) + "\" after " +
+    WARN("No more track scalars left in input file \"" + first_input_path.string() + "\" after " +
          str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-         std::string(argument[1]) + "\"");
+         second_input_path.string() + "\"");
   }
 }

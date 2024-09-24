@@ -21,6 +21,8 @@
 #include "surface/algo/image2mesh.h"
 #include "surface/mesh.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -60,18 +62,20 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
 
   Surface::Mesh mesh;
 
   if (get_options("blocky").empty()) {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     auto opt = get_options("template");
     const float threshold = opt.empty() ? Filter::estimate_optimal_threshold(input) : float(opt[0][0]);
     Surface::Algo::image2mesh_mc(input, mesh, threshold);
   } else {
-    auto input = Image<bool>::open(argument[0]);
+    auto input = Image<bool>::open(output_path);
     Surface::Algo::image2mesh_blocky(input, mesh);
   }
 
-  mesh.save(argument[1]);
+  mesh.save(output_path);
 }

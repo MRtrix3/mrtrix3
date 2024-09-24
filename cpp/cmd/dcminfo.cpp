@@ -20,6 +20,8 @@
 #include "file/dicom/quick_scan.h"
 #include "file/path.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -63,6 +65,7 @@ inline uint16_t read_hex(const std::string &m) {
 }
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
   auto opt = get_options("tag");
   if (!opt.empty()) {
     std::istringstream hex;

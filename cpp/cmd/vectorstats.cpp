@@ -28,6 +28,8 @@
 
 #include "stats/permtest.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Math::Stats;
@@ -98,6 +100,9 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_subject_path{argument[0]};
+  const std::filesystem::path input_design_path{argument[1]};
+  const std::filesystem::path input_contrast_path{argument[2]};
 
   // Unlike other statistical inference commands, don't delay actual
   //   loading of input data: feasible for the input itself to be
@@ -107,7 +112,7 @@ void run() {
   matrix_type data;
   index_type num_inputs = 0, num_elements = 0;
   try {
-    importer.initialise<SubjectVectorImport>(argument[0]);
+    importer.initialise<SubjectVectorImport>(input_subject_path);
     num_inputs = importer.size();
     num_elements = importer[0]->size();
     for (index_type i = 0; i != importer.size(); ++i) {
@@ -120,11 +125,11 @@ void run() {
       (*importer[subject])(data.row(subject));
   } catch (Exception &e_asfilelist) {
     try {
-      data = File::Matrix::load_matrix(argument[0]);
+      data = File::Matrix::load_matrix(input_subject_path);
       num_inputs = data.rows();
       num_elements = data.cols();
     } catch (Exception &e_asmatrix) {
-      Exception e("Unable to load input data from file \"" + argument[0] + '"');
+      Exception e("Unable to load input data from file \"" + input_subject_path.string() + '"');
       e.push_back("Error when interpreted as containing list of file names: ");
       e.push_back(e_asfilelist);
       e.push_back("Error when interpreted as numerical matrix data: ");
@@ -136,7 +141,7 @@ void run() {
   CONSOLE("Number of elements: " + str(num_elements));
 
   // Load design matrix
-  const matrix_type design = File::Matrix::load_matrix(argument[1]);
+  const matrix_type design = File::Matrix::load_matrix(input_design_path);
   if (index_type(design.rows()) != num_inputs)
     throw Exception("Number of subjects (" + str(num_inputs) + ") does not match number of rows in design matrix (" +
                     str(design.rows()) + ")");
@@ -170,7 +175,7 @@ void run() {
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(argument[2]);
+  const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(input_contrast_path);
   const index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception(

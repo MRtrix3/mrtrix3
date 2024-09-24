@@ -20,6 +20,8 @@
 #include "degibbs/unring2d.h"
 #include "degibbs/unring3d.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -114,6 +116,9 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
   const int nshifts = App::get_option_value("nshifts", 20);
   const int minW = App::get_option_value("minW", 1);
   const int maxW = App::get_option_value("maxW", 3);
@@ -121,12 +126,12 @@ void run() {
   if (minW >= maxW)
     throw Exception("minW must be smaller than maxW");
 
-  auto header = Header::open(argument[0]);
+  auto header = Header::open(input_path);
   auto in = header.get_image<Degibbs::value_type>();
 
   header.datatype() =
       DataType::from_command_line(header.datatype().is_complex() ? DataType::CFloat32 : DataType::Float32);
-  auto out = Image<Degibbs::value_type>::create(argument[1], header);
+  auto out = Image<Degibbs::value_type>::create(output_path, header);
 
   int mode = get_option_value("mode", 0);
 

@@ -27,6 +27,8 @@
 #include "math/SH.h"
 #include "misc/bitset.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -326,9 +328,10 @@ void run() {
     }
   }
 
-  for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
+  for (const auto &arg : argument) {
 
-    const std::string path = *i;
+    const std::filesystem::path path{arg};
+
     Header H = Header::open(path);
     try {
       Math::SH::check(H);

@@ -23,6 +23,7 @@
 
 #include "connectome/connectome.h"
 
+#include <filesystem>
 #include <iomanip>
 
 using namespace MR;
@@ -56,7 +57,9 @@ using vector_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 using matrix_type = Eigen::Matrix<default_type, Eigen::Dynamic, 3>;
 
 void run() {
-  Header H = Header::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+
+  Header H = Header::open(input_path);
   if (H.ndim() > 3)
     throw Exception("Command does not accept images with more than 3 dimensions");
   Connectome::check(H);

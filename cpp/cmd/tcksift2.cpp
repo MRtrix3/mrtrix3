@@ -30,6 +30,8 @@
 
 #include "dwi/tractography/SIFT2/tckfactor.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -142,16 +144,19 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_fod_path{argument[1]};
+  const std::filesystem::path output_weights_path{argument[2]};
 
   if (!get_options("min_factor").empty() && !get_options("min_coeff").empty())
     throw Exception("Options -min_factor and -min_coeff are mutually exclusive");
   if (!get_options("max_factor").empty() && !get_options("max_coeff").empty())
     throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
 
-  if (Path::has_suffix(argument[2], ".tck"))
+  if (Path::has_suffix(output_weights_path, ".tck"))
     throw Exception("Output of tcksift2 command should be a text file, not a tracks file");
 
-  auto in_dwi = Image<float>::open(argument[1]);
+  auto in_dwi = Image<float>::open(input_fod_path);
 
   DWI::Directions::FastLookupSet dirs(1281);
 
@@ -166,7 +171,7 @@ void run() {
     tckfactor.output_proc_mask(Path::join(debug_path, "proc_mask.mif"));
   }
 
-  tckfactor.map_streamlines(argument[0]);
+  tckfactor.map_streamlines(input_tracks_path);
   tckfactor.store_orig_TDs();
 
   tckfactor.remove_excluded_fixels(get_option_value("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
@@ -220,7 +225,7 @@ void run() {
 
   tckfactor.report_entropy();
 
-  tckfactor.output_factors(argument[2]);
+  tckfactor.output_factors(output_weights_path);
 
   auto opt = get_options("out_coeffs");
   if (!opt.empty())

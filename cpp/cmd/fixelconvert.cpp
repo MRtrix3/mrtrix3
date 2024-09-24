@@ -30,6 +30,8 @@
 #include "fixel/legacy/image.h"
 #include "fixel/legacy/keys.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -266,14 +268,17 @@ bool is_old_format(const std::string &path) {
 }
 
 void run() {
+  const std::filesystem::path input_path(argument[0]);
+  const std::filesystem::path output_path(argument[1]);
+
   // Detect in which direction the conversion is occurring
-  if (is_old_format(argument[0])) {
-    if (is_old_format(argument[1]))
+  if (is_old_format(input_path)) {
+    if (is_old_format(output_path))
       throw Exception("fixelconvert can only be used to convert between old and new fixel formats; NOT to convert "
                       "images within the old format");
     convert_old2new();
   } else {
-    if (!is_old_format(argument[1]))
+    if (!is_old_format(output_path))
       throw Exception("fixelconvert can only be used to convert between old and new fixel formats; NOT to convert "
                       "within the new format");
     convert_new2old();

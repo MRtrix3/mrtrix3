@@ -31,6 +31,8 @@
 
 #include <string>
 
+#include <filesystem>
+
 #define SPINE_NODE_NAME std::string("Spinal_column")
 
 using namespace MR;
@@ -83,14 +85,18 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_image_path{argument[0]};
+  const std::filesystem::path input_lut_path{argument[1]};
+  const std::filesystem::path output_lut_path{argument[2]};
+  const std::filesystem::path output_image_path{argument[3]};
 
   // Open the input file
-  auto H = Header::open(argument[0]);
+  auto H = Header::open(input_image_path);
   Connectome::check(H);
   auto in = H.get_image<node_t>();
 
   // Load the lookup tables
-  LUT lut_in(argument[1]), lut_out(argument[2]);
+  LUT lut_in(input_lut_path), lut_out(argument[2]);
 
   // Build the mapping from input to output indices
   const auto mapping = get_lut_mapping(lut_in, lut_out);

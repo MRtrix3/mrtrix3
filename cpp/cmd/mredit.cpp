@@ -24,6 +24,8 @@
 
 #include "algo/copy.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -87,15 +89,17 @@ public:
 const Vox voxel_offsets[6] = {{0, 0, -1}, {0, 0, 1}, {0, -1, 0}, {0, 1, 0}, {-1, 0, 0}, {1, 0, 0}};
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+
   bool inplace = (argument.size() == 1);
-  auto H = Header::open(argument[0]);
+  auto H = Header::open(input_path);
   auto in = H.get_image<float>(inplace); // Need to set read/write flag
   Image<float> out;
   if (inplace) {
     out = Image<float>(in);
   } else {
-    if (std::string(argument[1]) ==
-        std::string(argument[0])) // Not ideal test - could be different paths to the same file
+    const std::filesystem::path output_path{argument[1]};
+    if (input_path == output_path) // Not ideal test - could be different paths to the same file
       throw Exception("Do not provide same image as input and output; instad specify image to be edited in-place");
     out = Image<float>::create(argument[1], H);
     copy(in, out);

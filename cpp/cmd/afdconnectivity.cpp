@@ -25,6 +25,8 @@
 #include "memory.h"
 #include "mrtrix_version.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace MR::DWI;
 using namespace App;
@@ -287,18 +289,20 @@ void AFDConnectivity::save(const std::string &path) {
 }
 
 void run() {
-  const std::string wbft_path = get_option_value<std::string>("wbft", "");
+  const std::filesystem::path input_image_path{argument[0]};
+  const std::filesystem::path input_tracks_path{argument[1]};
+  const std::filesystem::path wbft_path{get_option_value<std::string>("wbft", "")};
 
   DWI::Directions::FastLookupSet dirs(1281);
-  auto fod = Image<value_type>::open(argument[0]);
+  auto fod = Image<value_type>::open(input_image_path);
   Math::SH::check(fod);
   check_3D_nonunity(fod);
-  AFDConnectivity model(fod, dirs, argument[1], wbft_path);
+  AFDConnectivity model(fod, dirs, input_tracks_path, wbft_path);
 
   auto opt = get_options("all_fixels");
   model.set_all_fixels(!opt.empty());
 
-  const value_type connectivity_value = model.get(argument[1]);
+  const value_type connectivity_value = model.get(input_tracks_path);
 
   // output the AFD sum using std::cout. This enables output to be redirected to a file without the console output.
   std::cout << connectivity_value << std::endl;

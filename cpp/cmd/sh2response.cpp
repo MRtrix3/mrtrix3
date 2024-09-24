@@ -26,6 +26,8 @@
 #include "mrtrix.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -57,19 +59,24 @@ void usage() {
 using value_type = double;
 
 void run() {
-  auto SH = Image<value_type>::open(argument[0]);
+  const std::filesystem::path sh_path{argument[0]};
+  const std::filesystem::path mask_path{argument[1]};
+  const std::filesystem::path dir_path{argument[2]};
+  const std::filesystem::path response_path{argument[3]};
+
+  auto SH = Image<value_type>::open(sh_path);
   Math::SH::check(SH);
-  auto mask = Image<bool>::open(argument[1]);
-  auto dir = Image<value_type>::open(argument[2]).with_direct_io();
+  auto mask = Image<bool>::open(mask_path);
+  auto dir = Image<value_type>::open(dir_path).with_direct_io();
 
   int lmax = get_option_value("lmax", Math::SH::LforN(SH.size(3)));
 
   check_dimensions(SH, mask, 0, 3);
   check_dimensions(SH, dir, 0, 3);
   if (dir.ndim() != 4)
-    throw Exception("input direction image \"" + std::string(argument[2]) + "\" must be a 4D image");
+    throw Exception("input direction image \"" + dir_path.string() + "\" must be a 4D image");
   if (dir.size(3) != 3)
-    throw Exception("input direction image \"" + std::string(argument[2]) + "\" must contain precisely 3 volumes");
+    throw Exception("input direction image \"" + dir_path.string() + "\" must contain precisely 3 volumes");
 
   Eigen::VectorXd delta;
   Eigen::VectorXd response = Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax));
@@ -130,11 +137,11 @@ void run() {
 
   response /= count;
 
-  if (std::string(argument[3]) == "-") {
+  if (response_path == "-") {
     for (ssize_t n = 0; n < response.size(); ++n)
       std::cout << response[n] << " ";
     std::cout << "\n";
   } else {
-    File::Matrix::save_vector(response, argument[3]);
+    File::Matrix::save_vector(response, response_path);
   }
 }

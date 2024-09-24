@@ -32,6 +32,8 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 
+#include <filesystem>
+
 #define MAX_VOXEL_STEP_RATIO 0.333
 
 using namespace MR;
@@ -223,6 +225,10 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_fmri_path{argument[1]};
+  const std::filesystem::path output_path{argument[2]};
+
   const bool is_static = !get_options("static").empty();
   std::vector<float> window;
 
@@ -282,16 +288,15 @@ void run() {
     throw Exception("Either the -static or -dynamic option must be provided");
   }
 
-  const std::string tck_path = argument[0];
   Tractography::Properties properties;
   {
     // Just get the properties for now; will re-instantiate the reader multiple times later
     // TODO Constructor for properties using the file path?
-    Tractography::Reader<float> tck_file(tck_path, properties);
+    Tractography::Reader<float> tck_file(input_tracks_path, properties);
   }
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
-  Image<float> fmri_image(Image<float>::open(argument[1]).with_direct_io(3));
+  Image<float> fmri_image(Image<float>::open(input_fmri_path).with_direct_io(3));
 
   std::vector<default_type> voxel_size;
   opt = get_options("vox");
@@ -318,7 +323,7 @@ void run() {
     if (voxel_size.empty())
       throw Exception("please specify either a template image using the -template option, or the desired voxel size "
                       "using the -vox option");
-    Mapping::generate_header(header, argument[0], voxel_size);
+    Mapping::generate_header(header, input_tracks_path, voxel_size);
   }
 
   header.datatype() = DataType::Float32;
@@ -355,12 +360,12 @@ void run() {
 
   if (is_static) {
 
-    Tractography::Reader<float> tck_file(tck_path, properties);
+    Tractography::Reader<float> tck_file(input_tracks_path, properties);
     Mapping::TrackLoader loader(tck_file, num_tracks, "Generating (static) TW-dFC image");
     Mapping::TrackMapperTWI mapper(H_3D, SCALAR_MAP, ENDS_CORR);
     mapper.set_upsample_ratio(upsample_ratio);
     mapper.add_twdfc_static_image(fmri_image);
-    Mapping::MapWriter<float> writer(header, argument[2], stat_vox);
+    Mapping::MapWriter<float> writer(header, output_path, stat_vox);
     Thread::run_queue(loader,
                       Thread::batch(Tractography::Streamline<>()),
                       Thread::multi(mapper),
@@ -373,7 +378,7 @@ void run() {
     Image<uint32_t> counts;
     if (stat_vox == V_MEAN) {
       counts = Image<uint32_t>::scratch(H_3D, "Track count scratch buffer");
-      Tractography::Reader<float> tck_file(tck_path, properties);
+      Tractography::Reader<float> tck_file(input_tracks_path, properties);
       Mapping::TrackLoader loader(tck_file, num_tracks, "Calculating initial TDI");
       Mapping::TrackMapperBase mapper(H_3D);
       mapper.set_upsample_ratio(upsample_ratio);
@@ -385,13 +390,13 @@ void run() {
                         receiver);
     }
 
-    Image<float> out_image(Image<float>::create(argument[2], header));
+    Image<float> out_image(Image<float>::create(output_path, header));
     ProgressBar progress("Generating TW-dFC image", header.size(3));
     for (ssize_t timepoint = 0; timepoint != header.size(3); ++timepoint) {
 
       {
         LogLevelLatch latch(0);
-        Tractography::Reader<float> tck_file(tck_path, properties);
+        Tractography::Reader<float> tck_file(input_tracks_path, properties);
         Mapping::TrackLoader loader(tck_file);
         Mapping::TrackMapperTWI mapper(H_3D, SCALAR_MAP, ENDS_CORR);
         mapper.set_upsample_ratio(upsample_ratio);
