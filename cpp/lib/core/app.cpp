@@ -22,8 +22,10 @@
 
 #include "app.h"
 #include "debug.h"
+#include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
+#include "mrtrix_version.h"
 #include "progressbar.h"
 #include "signal_handler.h"
 

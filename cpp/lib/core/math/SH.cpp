@@ -14,14 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "fixel/fixel.h"
-#include "version.h"
+#include "math/SH.h"
+#include "mrtrix_version.h"
 
-namespace MR::Fixel {
+namespace MR::Math::SH {
 
-const char *format_description =
-    "Fixel data are stored utilising the fixel directory format "
+const char *encoding_description =
+    "The spherical harmonic coefficients are stored according to the conventions "
     "described in the main documentation, which can be found at the following link: \n"
-    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/fixel_based_analysis/fixel_directory_format.html";
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/spherical_harmonics.html";
 
 }

@@ -1,3 +1,7 @@
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    include(MacOSBundle)
+endif()
+
 set(GUI_CMD_SRCS mrview.cpp shview.cpp)
 
 file(GLOB HEADLESS_CMD_SRCS *.cpp)
@@ -8,7 +12,7 @@ endforeach(CMD)
 if(MRTRIX_USE_PCH)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp CONTENT "int main(){}")
     add_executable(pch_cmd ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp)
-    target_include_directories(pch_cmd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../core)
+    target_include_directories(pch_cmd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lib/core)
     target_link_libraries(pch_cmd PRIVATE Eigen3::Eigen half::half mrtrix::common)
     target_precompile_headers(pch_cmd PRIVATE
         [["app.h"]]
@@ -27,7 +31,6 @@ function(add_cmd CMD_SRC IS_GUI)
     add_executable(${CMD_NAME} ${CMD_SRC})
     target_link_libraries(${CMD_NAME} PRIVATE
         $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::headless>
-        mrtrix::exec-version-lib
     )
     set_target_properties(${CMD_NAME} PROPERTIES
         LINK_DEPENDS_NO_SHARED true
