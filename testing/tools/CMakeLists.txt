@@ -32,7 +32,7 @@ function(add_cpp_tool TOOL_SRC)
     add_executable(${TOOL_NAME} ${TOOL_SRC})
     target_link_libraries(${TOOL_NAME} PRIVATE
         mrtrix::headless
-        mrtrix::exec-version-lib
+        mrtrix::executable-version
         mrtrix::tests-lib
     )
     set_target_properties(${TOOL_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)

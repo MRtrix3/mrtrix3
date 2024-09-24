@@ -50,7 +50,7 @@ function(add_cpp_unit_test FILE_SRC)
     add_executable(${NAME} ${FILE_SRC})
     target_link_libraries(${NAME} PRIVATE
         mrtrix::headless
-        mrtrix::exec-version-lib
+        mrtrix::executable-version
         mrtrix::tests-lib
     )
     set_target_properties(${NAME} PROPERTIES
