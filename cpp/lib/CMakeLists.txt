@@ -82,7 +82,7 @@ target_include_directories(mrtrix-executable-version PRIVATE ${CMAKE_CURRENT_SOU
 add_dependencies(mrtrix-executable-version mrtrix-executable-version-target)
 
 
-if(MRTRIX_BUILD_NON_CORE_STATIC)
+if(MRTRIX_BUILD_STATIC)
     set(MRTRIX_LIBRARY_TYPE STATIC)
 else()
     set(MRTRIX_LIBRARY_TYPE SHARED)
