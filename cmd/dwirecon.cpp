@@ -144,7 +144,7 @@ void run() {
     Eigen::MatrixXf const t = File::Matrix::load_matrix<float>(opt[k][0]);
     if (t.rows() != shells.count())
       throw Exception("No. shells does not match no. rows in basis function " + opt[k][0] + ".");
-    lmax = std::max(2 * (int(t.cols()) - 1), lmax);
+    lmax = std::max(2 * (static_cast<int>(t.cols()) - 1), lmax);
     rf.push_back(t);
   }
 
@@ -172,17 +172,17 @@ void run() {
 
   Eigen::MatrixXf gradsub(idx.size(), grad.cols());
   for (ssize_t i = 0; i < idx.size(); i++)
-    gradsub.row(i) = grad.row(ssize_t(idx[i])).template cast<float>();
+    gradsub.row(i) = grad.row(static_cast<ssize_t>(idx[i])).template cast<float>();
 
   ssize_t const ne = motion.rows() / dwi.size(3);
   Eigen::MatrixXf motionsub(ne * idx.size(), 6);
   for (ssize_t i = 0; i < idx.size(); i++)
     for (ssize_t j = 0; j < ne; j++)
-      motionsub.row(i * ne + j) = motion.row(ssize_t(idx[i]) * ne + j);
+      motionsub.row(i * ne + j) = motion.row(static_cast<ssize_t>(idx[i]) * ne + j);
 
   Eigen::MatrixXf Wsub(W.rows(), idx.size());
   for (ssize_t i = 0; i < idx.size(); i++)
-    Wsub.col(i) = W.col(ssize_t(idx[i]));
+    Wsub.col(i) = W.col(static_cast<ssize_t>(idx[i]));
 
   // SSP
   DWI::SVR::SSP<float> ssp(DEFAULT_SSPW);
@@ -217,7 +217,7 @@ void run() {
   if (rf.empty())
     lmax = get_option_value("lmax", DEFAULT_LMAX);
   else
-    lmax = std::min(lmax, (int)get_option_value("lmax", lmax));
+    lmax = std::min(lmax, static_cast<int>(get_option_value("lmax", lmax)));
 
   float const reg = get_option_value("reg", DEFAULT_REG);
   float const zreg = get_option_value("zreg", DEFAULT_ZREG);
@@ -227,7 +227,7 @@ void run() {
 
   DWI::SVR::QSpaceBasis const qbasis{gradsub, lmax, rf, motionsub};
 
-  ssize_t const ncoefs = ssize_t(qbasis.get_ncoefs());
+  ssize_t const ncoefs = static_cast<ssize_t>(qbasis.get_ncoefs());
   size_t const padding = get_option_value("padding", Math::SH::NforL(lmax));
   if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
@@ -295,7 +295,7 @@ void run() {
     Eigen::MatrixXf x2mssh(c.size(), ncoefs);
     x2mssh.setZero();
     for (int k = 0; k < shells.count(); k++)
-      x2mssh.middleRows(ssize_t(k * Math::SH::NforL(lmax)), ssize_t(Math::SH::NforL(lmax))) = qbasis.getShellBasis(k).transpose();
+      x2mssh.middleRows(static_cast<ssize_t>(k * Math::SH::NforL(lmax)), static_cast<ssize_t>(Math::SH::NforL(lmax))) = qbasis.getShellBasis(k).transpose();
     auto mssh2x = x2mssh.fullPivHouseholderQr();
     ssize_t j = 0;
     ssize_t k = 0;
@@ -303,7 +303,7 @@ void run() {
       k = 0;
       for (auto l2 = Loop(3)(init); l2; l2++) {
         for (init.index(4) = 0; init.index(4) < Math::SH::NforL(lmax); init.index(4)++)
-          c[k++] = std::isfinite((float)init.value()) ? init.value() : 0.0F;
+          c[k++] = std::isfinite(static_cast<float>(init.value())) ? init.value() : 0.0F;
       }
       x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
@@ -320,8 +320,8 @@ void run() {
   // Write result to output file
   Header msshhdr(rechdr);
   msshhdr.ndim() = 5;
-  msshhdr.size(3) = ssize_t(shells.count());
-  msshhdr.size(4) = ssize_t(padding);
+  msshhdr.size(3) = static_cast<ssize_t>(shells.count());
+  msshhdr.size(4) = static_cast<ssize_t>(padding);
   Stride::set_from_command_line(msshhdr, {3, 4, 5, 2, 1});
   msshhdr.datatype() = DataType::from_command_line(DataType::Float32);
   PhaseEncoding::set_scheme(msshhdr, Eigen::MatrixXf());
