@@ -79,7 +79,7 @@ echo "
 " > $table_file
 
 cmdlist=""
-for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp"`; do
+for n in `find "${mrtrix_root}"/cpp/cmd/ -name "*.cpp"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
 for n in `ls "${mrtrix_root}"/python/mrtrix3/commands/ --ignore=__init__.py* --ignore=CMakeLists.txt`; do
