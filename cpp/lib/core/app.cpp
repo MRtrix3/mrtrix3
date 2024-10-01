@@ -1153,7 +1153,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
     NAME.erase(NAME.size() - 4);
 #endif
 
-  if (strcmp(mrtrix_version, executable_uses_mrtrix_version) != 0) {
+  if (mrtrix_version != executable_uses_mrtrix_version) {
     Exception E("executable was compiled for a different version of the MRtrix3 library!");
     E.push_back(std::string("  ") + NAME + " version: " + executable_uses_mrtrix_version);
     E.push_back(std::string("  library version: ") + mrtrix_version);

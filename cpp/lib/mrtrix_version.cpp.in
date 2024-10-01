@@ -1,6 +1,7 @@
 #include "mrtrix_version.h"
+#include <string>
 
 namespace MR::App {
-const char *mrtrix_version = "@MRTRIX_VERSION@";
-const char *build_date = __DATE__;
+const std::string mrtrix_version = "@MRTRIX_VERSION@";
+const std::string build_date = __DATE__;
 }

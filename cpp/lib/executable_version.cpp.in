@@ -1,4 +1,4 @@
-#include "cmd_version.h"
+#include "executable_version.h"
 
 namespace MR {
   namespace App {
