@@ -21,7 +21,7 @@
 #endif
 
 #include "app.h"
-#include "cmd_version.h"
+#include "executable_version.h"
 #include "mrtrix.h"
 #ifdef MRTRIX_PROJECT
 namespace MR {

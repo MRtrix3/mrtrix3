@@ -15,8 +15,9 @@
  */
 
 #pragma once
+#include <string>
 
 namespace MR::App {
-extern const char *mrtrix_version;
-extern const char *build_date;
+extern const std::string mrtrix_version;
+extern const std::string build_date;
 } // namespace MR::App
