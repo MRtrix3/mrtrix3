@@ -15,7 +15,8 @@
  */
 
 #pragma once
+#include <string>
 
 namespace MR::App {
-void set_executable_uses_mrtrix_version();
-}
+extern const std::string mrtrix_executable_version;
+} // namespace MR::App

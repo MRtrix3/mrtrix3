@@ -36,7 +36,6 @@ void set_project_version();
 #ifdef MRTRIX_AS_R_LIBRARY
 
 extern "C" void R_main(int *cmdline_argc, char **cmdline_argv) {
-  ::MR::App::set_executable_uses_mrtrix_version();
 #ifdef MRTRIX_PROJECT
   ::MR::App::set_project_version();
 #endif
@@ -79,7 +78,6 @@ int main(int cmdline_argc, char **cmdline_argv) {
   mxcsr |= (1 << 6); // denormals-are-zero
   _mm_setcsr(mxcsr);
 #endif
-  ::MR::App::set_executable_uses_mrtrix_version();
 #ifdef MRTRIX_PROJECT
   ::MR::App::set_project_version();
 #endif
