@@ -116,7 +116,6 @@ const std::thread::id main_thread_ID = std::this_thread::get_id();
 
 const char *project_version = nullptr;
 const char *project_build_date = nullptr;
-const char *executable_uses_mrtrix_version = nullptr;
 
 std::vector<std::string> raw_arguments_list;
 
@@ -1153,9 +1152,9 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
     NAME.erase(NAME.size() - 4);
 #endif
 
-  if (mrtrix_version != executable_uses_mrtrix_version) {
+  if (mrtrix_version != mrtrix_executable_version) {
     Exception E("executable was compiled for a different version of the MRtrix3 library!");
-    E.push_back(std::string("  ") + NAME + " version: " + executable_uses_mrtrix_version);
+    E.push_back(std::string("  ") + NAME + " version: " + mrtrix_executable_version);
     E.push_back(std::string("  library version: ") + mrtrix_version);
     E.push_back("You may need to erase files left over from prior MRtrix3 versions;");
     E.push_back("eg. core/version.cpp; src/exec_version.cpp");
