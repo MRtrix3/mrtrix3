@@ -126,7 +126,6 @@ target_link_libraries(mrtrix-headless PUBLIC
     ${FFTW_LIBRARIES}
     mrtrix::common
     mrtrix::version
-    mrtrix::executable-version
     Threads::Threads
     nlohmann_json::nlohmann_json
     nifti::nifti
