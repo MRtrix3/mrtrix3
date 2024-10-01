@@ -23,6 +23,7 @@
 #include "app.h"
 #include "executable_version.h"
 #include "mrtrix.h"
+#include "mrtrix_version.h"
 #ifdef MRTRIX_PROJECT
 namespace MR {
 namespace App {
@@ -69,6 +70,16 @@ extern "C" void R_usage(char **output) {
 #else
 
 int main(int cmdline_argc, char **cmdline_argv) {
+  if (MR::App::mrtrix_version != MR::App::mrtrix_executable_version) {
+    MR::Exception E("executable was compiled for a different version of the MRtrix3 library!");
+    E.push_back(std::string("  ") + MR::App::NAME + " version: " + MR::App::mrtrix_executable_version);
+    E.push_back(std::string("  library version: ") + MR::App::mrtrix_version);
+    E.push_back("You may need to erase files left over from prior MRtrix3 versions;");
+    E.push_back("eg. core/version.cpp; src/exec_version.cpp");
+    E.push_back(", and re-configure cmake");
+    throw E;
+  }
+
 #ifdef FLUSH_TO_ZERO
   // use gcc switches: -msse -mfpmath=sse -ffast-math
   int mxcsr = _mm_getcsr();

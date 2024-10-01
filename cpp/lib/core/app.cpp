@@ -1152,16 +1152,6 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
     NAME.erase(NAME.size() - 4);
 #endif
 
-  if (mrtrix_version != mrtrix_executable_version) {
-    Exception E("executable was compiled for a different version of the MRtrix3 library!");
-    E.push_back(std::string("  ") + NAME + " version: " + mrtrix_executable_version);
-    E.push_back(std::string("  library version: ") + mrtrix_version);
-    E.push_back("You may need to erase files left over from prior MRtrix3 versions;");
-    E.push_back("eg. core/version.cpp; src/exec_version.cpp");
-    E.push_back(", and re-configure cmake");
-    throw E;
-  }
-
   auto argv_quoted = [](const std::string &s) -> std::string {
     for (size_t i = 0; i != s.size(); ++i) {
       if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
