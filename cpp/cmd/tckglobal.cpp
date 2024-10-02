@@ -22,8 +22,8 @@
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
+#include "mrtrix_version.h"
 #include "thread.h"
-#include "version.h"
 
 #include "dwi/tractography/GT/externalenergy.h"
 #include "dwi/tractography/GT/gt.h"

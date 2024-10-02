@@ -14,14 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "fixel/fixel.h"
-#include "version.h"
+#pragma once
+#include <string>
 
-namespace MR::Fixel {
-
-const char *format_description =
-    "Fixel data are stored utilising the fixel directory format "
-    "described in the main documentation, which can be found at the following link: \n"
-    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/fixel_based_analysis/fixel_directory_format.html";
-
-}
+namespace MR::App {
+extern const std::string mrtrix_version;
+extern const std::string build_date;
+} // namespace MR::App

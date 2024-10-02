@@ -15,7 +15,7 @@
  */
 
 #include "math/SH.h"
-#include "version.h"
+#include "mrtrix_version.h"
 
 namespace MR::Math::SH {
 

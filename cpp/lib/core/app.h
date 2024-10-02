@@ -34,8 +34,8 @@ extern void run();
 
 namespace MR::App {
 
-extern const char *mrtrix_version;
-extern const char *build_date;
+extern const std::string mrtrix_version;
+extern const std::string build_date;
 extern int log_level;
 extern int exit_error_code;
 extern std::string NAME;

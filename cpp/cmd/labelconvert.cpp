@@ -18,8 +18,8 @@
 #include "image.h"
 #include "image_helpers.h"
 #include "mrtrix.h"
+#include "mrtrix_version.h"
 #include "transform.h"
-#include "version.h"
 
 #include "algo/loop.h"
 #include "file/path.h"

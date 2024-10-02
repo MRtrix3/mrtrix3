@@ -23,7 +23,7 @@
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/properties.h"
 #include "memory.h"
-#include "version.h"
+#include "mrtrix_version.h"
 
 using namespace MR;
 using namespace MR::DWI;
