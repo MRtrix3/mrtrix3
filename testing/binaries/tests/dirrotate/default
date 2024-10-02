@@ -23,7 +23,6 @@ testing_diff_matrix tmp1_stats.txt tmp2_stats.txt
 cat tmp1.txt | \
 tail -n +2 | \
 tr -d "-" | \
-tr -d "n" | \
 tr " " "\n" | \
 sort -g -r | \
 head -n1 > tmp1_max.txt
@@ -31,11 +30,10 @@ head -n1 > tmp1_max.txt
 cat tmp2.txt | \
 tail -n +2 | \
 tr -d "-" | \
-tr -d "n" | \
 tr " " "\n" | \
 sort -g -r | \
 head -n1 > tmp2_max.txt
 
 a=$(cat tmp1_max.txt)
 b=$(cat tmp2_max.txt)
-[[ $(echo "${b} < ${a}" | bc) -eq 1 ]]
+awk 'BEGIN{if ('$a'<='$b') exit 1}'
