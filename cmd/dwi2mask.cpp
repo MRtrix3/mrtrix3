@@ -66,13 +66,13 @@ OPTIONS
 
 void run () {
 
-  auto input = Image<float>::open (argument[0]).with_direct_io (3);
-  auto grad = DWI::get_DW_scheme (input);
-
-  if (input.ndim() != 4)
+  auto header = Header::open(argument[0]);
+  if (header.ndim() != 4)
     throw Exception ("input DWI image must be 4D");
+  auto grad = DWI::get_DW_scheme (header);
+  auto input = header.get_image<float>().with_direct_io (3);
 
-  Filter::DWIBrainMask dwi_brain_mask_filter (input, grad);
+  Filter::DWIBrainMask dwi_brain_mask_filter (header, grad);
   dwi_brain_mask_filter.set_message ("computing dwi brain mask");
   auto temp_mask = Image<bool>::scratch (dwi_brain_mask_filter, "brain mask");
   dwi_brain_mask_filter (input, temp_mask);

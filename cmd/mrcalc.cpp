@@ -182,7 +182,6 @@ UNARY_OP (atanh, "atanh (%1)", NORMAL, "inverse hyperbolic tangent", { return st
 #include "command.h"
 #include "image.h"
 #include "memory.h"
-#include "phase_encoding.h"
 #include "math/rng.h"
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
@@ -731,7 +730,7 @@ void get_header (const StackEntry& entry, Header& header)
       header.spacing(n) = entry.image->spacing(n);
   }
 
-  header.merge_keyval (*entry.image);
+  header.merge_keyval (entry.image->keyval());
 }
 
 

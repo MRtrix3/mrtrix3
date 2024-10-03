@@ -14,35 +14,29 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_json_utils_h__
-#define __file_json_utils_h__
+#ifndef __metadata_slice_encoding_h__
+#define __metadata_slice_encoding_h__
 
-#include "file/json.h"
-#include "file/key_value.h"
+#include <string>
 
-namespace MR
-{
+#include "types.h"
+
+namespace MR {
   class Header;
+}
 
-  namespace File
-  {
-    namespace JSON
-    {
+namespace MR {
+  namespace Metadata {
+    namespace SliceEncoding {
 
-      void load (Header& H, const std::string& path);
-      void save (const Header& H, const std::string& json_path, const std::string& image_path);
+      void transform_for_image_load(KeyValues& keyval, const Header& H);
 
-      KeyValues read (const nlohmann::json& json);
-      void read (const nlohmann::json& json, Header& header);
+      void transform_for_nifti_write(KeyValues& keyval, const Header& H);
 
-      void write (const KeyValues& keyval, nlohmann::json& json);
-      void write (const Header& header,
-                  nlohmann::json& json,
-                  const std::string& image_path);
+      std::string resolve_slice_timing(const std::string& one, const std::string& two);
 
     }
   }
 }
 
 #endif
-
