@@ -213,7 +213,9 @@ namespace MR
           //   therefore can store as integer
           // TODO Calculate translations; turn into affine transform; verify
           using applied_transform_type = Eigen::Matrix<int, 3, 3>;
-          Realignment();
+          Realignment() :
+              orig_transform_ (Eigen::Matrix<default_type,3,4>::Constant(std::numeric_limits<default_type>::signaling_NaN())),
+              applied_transform_ (applied_transform_type::Constant(0)) {}
           bool is_identity() const { return shuffle_.is_identity(); }
           bool valid() const { return shuffle_.valid(); }
           const Axes::permutations_type& permutations() const { return shuffle_.permutations; }

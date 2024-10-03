@@ -21,6 +21,7 @@
 
 #include "app.h"
 #include "axes.h"
+#include "math/math.h"
 #include "mrtrix.h"
 #include "metadata/phase_encoding.h"
 #include "metadata/slice_encoding.h"
@@ -807,13 +808,6 @@ namespace MR
       Metadata::PhaseEncoding::set_scheme (result.keyval(), pe_scheme);
     }
     return result;
-  }
-
-
-
-  Header::Realignment::Realignment() {
-    applied_transform_.matrix().fill(0);
-    orig_transform_.matrix().fill(std::numeric_limits<default_type>::signaling_NaN());
   }
 
 

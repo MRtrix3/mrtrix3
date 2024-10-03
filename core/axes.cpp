@@ -25,7 +25,7 @@ namespace MR
 
     Shuffle get_shuffle_to_make_RAS(const transform_type &T) {
       Shuffle result;
-      result.permutations = closest(T.matrix().topLeftCorner<3, 3>());
+      result.permutations = closest(T.linear());
       // Figure out whether any of the rows of the transform point in the
       //   opposite direction to the MRtrix convention
       result.flips[result.permutations[0]] = T(0, result.permutations[0]) < 0.0;
@@ -37,7 +37,7 @@ namespace MR
 
 
     permutations_type closest(const Eigen::Matrix3d &M) {
-      permutations_type result{3, 3, 3};
+      permutations_type result{-1, -1, -1};
 
       // Find which row of the transform is closest to each scanner axis
       Eigen::Matrix3d::Index index(0);
@@ -67,6 +67,7 @@ namespace MR
       if (result[1] == result[2])
         result[2] = not_any_of (result[0], result[1]);
       assert (result[0] != result[1] && result[1] != result[2] && result[2] != result[0]);
+      assert (std::min(result.begin(), result.end()) == 0);
 
       return result;
     }
