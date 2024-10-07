@@ -38,13 +38,11 @@ verify "mrcalc 5 7 -max" "7"
 verify "mrcalc -5 7 -max" "7"
 verify "mrcalc 3 3 -max" "3"
 
-
 verify "mrcalc 0 5 7 -if" "7"
 verify "mrcalc 1 5 7 -if" "5"
 
 verify "mrcalc 1 1 3 -replace" "3"
 verify "mrcalc 2 1 3 -replace" "2"
-
 
 verify "mrcalc 4 -sqrt" "2"
 verify "mrcalc 10.89 -sqrt" "3.3"
@@ -121,7 +119,6 @@ verify "mrcalc 0 -asin" "0"
 verify "mrcalc 1 -asin" "1.5708"
 verify "mrcalc 0 -atan" "0"
 verify "mrcalc 1 -atan" "0.785398"
-
 
 verify "mrcalc 0 -cosh" "1"
 verify "mrcalc 1 -cosh" "1.54308"
