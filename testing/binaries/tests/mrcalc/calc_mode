@@ -28,7 +28,7 @@ verify "mrcalc 10.2 0.0 -div" "inf"
 verify "mrcalc 10 3 -modulo" "1"
 verify "mrcalc 10 -3 -modulo" "1"
 
-verify "mrcalc 2 3 4 -add -mult" "14" # Computes (3 * 4) + 2 = 14
+verify "mrcalc 2 3 4 -add -mult" "14" # Computes 2 * (3 + 4) = 14
 verify "mrcalc 5 1 2 -add 4 -multiply -add 3 -subtract" "14" # Computes 5 + ((1 + 2) * 4) - 3 = 14
 
 verify "mrcalc 5 7 -min" "5"
