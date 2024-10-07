@@ -196,6 +196,7 @@ add_bash_binary_test(mraverageheader/min_nearest)
 add_bash_binary_test(mraverageheader/min_projection)
 add_bash_binary_test(mraverageheader/padding)
 
+add_bash_binary_test(mrcalc/calc_mode)
 add_bash_binary_test(mrcalc/expression_1)
 add_bash_binary_test(mrcalc/expression_2)
 add_bash_binary_test(mrcalc/expression_3)

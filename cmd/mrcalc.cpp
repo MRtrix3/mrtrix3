@@ -529,6 +529,7 @@ public:
         }
       }
     }
+    arg.erase();
   }
 
   std::string arg;
