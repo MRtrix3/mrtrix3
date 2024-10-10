@@ -41,14 +41,20 @@ public:
   }
 };
 
+
+// "LEGACY" corresponds to implementation prior to 3.1.x, which may be erroneous
+enum class bbgd_step_size_t {SHORT, LONG, GEOMMEAN, LEGACY};
+
+
 //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach. ENH: implement stabilised
 //! version https://arxiv.org/abs/1907.06409
 template <class Function, class UpdateFunctor = LinearUpdateBB> class GradientDescentBB {
 public:
   using value_type = typename Function::value_type;
 
-  GradientDescentBB(Function &function, UpdateFunctor update_functor = LinearUpdateBB(), bool verbose = false)
+  GradientDescentBB(Function &function, bbgd_step_size_t step_type, UpdateFunctor update_functor = LinearUpdateBB(), bool verbose = false)
       : func(function),
+        step_type (step_type),
         update_func(update_functor),
         x1(func.size()),
         x2(func.size()),
@@ -207,6 +213,7 @@ public:
 
 protected:
   Function &func;
+  bbgd_step_size_t step_type;
   UpdateFunctor update_func;
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> x1, x2, x3, g1, g2, g3, preconditioner_weights;
   value_type f, dt, normg;
@@ -230,14 +237,30 @@ protected:
     return cost;
   }
 
-  void compute_normg_and_step() {
-    if (preconditioner_weights.size()) {
-      g2.array() *= preconditioner_weights.array();
-    }
-    normg = g2.norm();
-    assert((g2 - g1).norm() > 0.0);
-    dt = (x2 - x1).norm() / (g2 - g1).norm();
+  void compute_normg_and_step () {
+  if (preconditioner_weights.size()) {
+    g2.array() *= preconditioner_weights.array();
   }
+  normg = g2.norm();
+  auto dx = x2-x1;
+  auto dg = g2-g1;
+  assert(dg.norm() > 0.0);
+  switch (step_type) {
+    case bbgd_step_size_t::SHORT:
+      dt = dx.dot(dg) / dg.squaredNorm();
+      break;
+    case bbgd_step_size_t::LONG:
+      dt = dx.squaredNorm() / dx.dot(dg);
+      break;
+    case bbgd_step_size_t::GEOMMEAN:
+      dt = std::sqrt(Math::pow2 (dx.dot(dg) / dg.squaredNorm()) + Math::pow2 (dx.squaredNorm() / dx.dot(dg)));
+      break;
+    case bbgd_step_size_t::LEGACY:
+      dt = dx.norm() / dg.norm();
+      break;
+  }
+}
+
 };
 //! @}
 } // namespace MR::Math
