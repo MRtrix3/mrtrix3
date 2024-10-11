@@ -24,9 +24,9 @@ def usage(base_parser, subparsers):  # pylint: disable=unused-variable
     parser.set_author("Arkiev D'Souza (arkiev.dsouza@sydney.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)")
     parser.set_synopsis('Generate a 5TT image from ODF images.')
     
-    parser.add_argument('template_odf_wm', type=app.Parser.ImageIn(), help='The input white-matter ODF')
-    parser.add_argument('template_odf_gm', type=app.Parser.ImageIn(), help='The input grey-matter ODF')
-    parser.add_argument('template_odf_csf', type=app.Parser.ImageIn(), help='The input cerebrospinal fluid ODF')
+    parser.add_argument('odf_wm', type=app.Parser.ImageIn(), help='The input white-matter ODF')
+    parser.add_argument('odf_gm', type=app.Parser.ImageIn(), help='The input grey-matter ODF')
+    parser.add_argument('odf_csf', type=app.Parser.ImageIn(), help='The input cerebrospinal fluid ODF')
     parser.add_argument('mask_image', type=app.Parser.ImageIn(), help='The input binary brain mask image')
     parser.add_argument('fTT_image', type=app.Parser.ImageOut(), help='The output 5TT image')
 
