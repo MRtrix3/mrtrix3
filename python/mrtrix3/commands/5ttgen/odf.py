@@ -38,7 +38,7 @@ def usage(base_parser, subparsers):  # pylint: disable=unused-variable
 def execute(): # pylint: disable=unused-variable
 
     # Extract l=0 term from WM
-    run.command(f'mrconvert', app.ARGS.template_odf_wm, '-coord 3 0 -axes 0,1,2 wm_vol.mif')
+    run.command(f'mrconvert {app.ARGS.odf_wm} -coord 3 0 -axes 0,1,2 wm_vol.mif')
 
     # Set negative values to zero
     run.command(f'mrcalc wm_vol.mif 0.0 -max wm_vol_pos.mif')
