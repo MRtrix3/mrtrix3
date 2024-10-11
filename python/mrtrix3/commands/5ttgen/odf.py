@@ -42,8 +42,8 @@ def execute(): # pylint: disable=unused-variable
 
     # Set negative values to zero
     run.command('mrcalc wm_vol.mif 0.0 -max wm_vol_pos.mif')
-    run.command(f'mrcalc', app.ARGS.template_odf_gm, '0.0 -max gm_vol_pos.mif')
-    run.command(f'mrcalc', app.ARGS.template_odf_csf, '0.0 -max csf_vol_pos.mif')
+    run.command(f'mrcalc {app.ARGS.odf_gm} 0.0 -max gm_vol_pos.mif')
+    run.command(f'mrcalc {app.ARGS.odf_csf} 0.0 -max csf_vol_pos.mif')
 
     # Normalize each volume
     run.command(f'mrmath wm_vol_pos.mif gm_vol_pos.mif csf_vol_pos.mif sum totalvol.mif')
