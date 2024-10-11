@@ -35,17 +35,7 @@ def usage(base_parser, subparsers):  # pylint: disable=unused-variable
     options.add_argument('-pathology', nargs='?', default=None, type=app.Parser.ImageIn(), help='Provide a mask of voxels that should be set to pathological tissue')
 
 
-def check_file(filepath):
-    if not os.path.isfile(filepath):
-        raise MRtrixError(f'Required input file missing (expected location: {filepath})')
-
-
-def execute():  # pylint: disable=unused-variable
-    # Check for input files
-    check_file(app.ARGS.template_odf_wm)
-    check_file(app.ARGS.template_odf_gm)
-    check_file(app.ARGS.template_odf_csf)
-    check_file(app.ARGS.mask_image)
+def execute(): # pylint: disable=unused-variable
 
     # Extract l=0 term from WM
     run.command(f'mrconvert', app.ARGS.template_odf_wm, '-coord 3 0 -axes 0,1,2 wm_vol.mif')
