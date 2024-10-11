@@ -52,8 +52,7 @@ def execute(): # pylint: disable=unused-variable
     run.command(f'mrcalc csf_vol_pos.mif totalvol.mif -divide csf_vol_pos_norm.mif')
 
     # Create empty volume for SGM and pathology
-    run.command(f'mrcalc wm_vol.mif 0 -neq wm_vol_1.mif')
-    run.command(f'mrcalc wm_vol_1.mif 1 0 -replace empty_vol.mif')
+    run.command(f'mrcalc wm_vol.mif inf -gt empty_vol.mif')
 
     # Concatenate volumes
     run.command(f'mrcat -datatype float32 gm_vol_pos_norm.mif empty_vol.mif wm_vol_pos_norm.mif csf_vol_pos_norm.mif empty_vol.mif fTT_dirty.mif')
