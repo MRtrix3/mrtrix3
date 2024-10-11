@@ -1,4 +1,3 @@
-# HSVS SCRIPT
 # Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -25,9 +24,9 @@ def usage(base_parser, subparsers):  # pylint: disable=unused-variable
     parser.set_author("Arkiev D'Souza (arkiev.dsouza@sydney.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)")
     parser.set_synopsis('Generate a 5TT image from ODF images.')
     
-    parser.add_argument('template_odf_wm', type=app.Parser.ImageIn(), help='The input white-matter ODF')
-    parser.add_argument('template_odf_gm', type=app.Parser.ImageIn(), help='The input grey-matter ODF')
-    parser.add_argument('template_odf_csf', type=app.Parser.ImageIn(), help='The input cerebrospinal fluid ODF')
+    parser.add_argument('odf_wm', type=app.Parser.ImageIn(), help='The input white-matter ODF')
+    parser.add_argument('odf_gm', type=app.Parser.ImageIn(), help='The input grey-matter ODF')
+    parser.add_argument('odf_csf', type=app.Parser.ImageIn(), help='The input cerebrospinal fluid ODF')
     parser.add_argument('mask_image', type=app.Parser.ImageIn(), help='The input binary brain mask image')
     parser.add_argument('fTT_image', type=app.Parser.ImageOut(), help='The output 5TT image')
 
@@ -36,25 +35,15 @@ def usage(base_parser, subparsers):  # pylint: disable=unused-variable
     options.add_argument('-pathology', nargs='?', default=None, type=app.Parser.ImageIn(), help='Provide a mask of voxels that should be set to pathological tissue')
 
 
-def check_file(filepath):
-    if not os.path.isfile(filepath):
-        raise MRtrixError(f'Required input file missing (expected location: {filepath})')
-
-
-def execute():  # pylint: disable=unused-variable
-    # Check for input files
-    check_file(app.ARGS.template_odf_wm)
-    check_file(app.ARGS.template_odf_gm)
-    check_file(app.ARGS.template_odf_csf)
-    check_file(app.ARGS.mask_image)
+def execute(): # pylint: disable=unused-variable
 
     # Extract l=0 term from WM
-    run.command(f'mrconvert', app.ARGS.template_odf_wm, '-coord 3 0 -axes 0,1,2 wm_vol.mif')
+    run.command(f'mrconvert {app.ARGS.odf_wm} -coord 3 0 -axes 0,1,2 wm_vol.mif')
 
     # Set negative values to zero
-    run.command(f'mrcalc wm_vol.mif 0.0 -max wm_vol_pos.mif')
-    run.command(f'mrcalc', app.ARGS.template_odf_gm, '0.0 -max gm_vol_pos.mif')
-    run.command(f'mrcalc', app.ARGS.template_odf_csf, '0.0 -max csf_vol_pos.mif')
+    run.command('mrcalc wm_vol.mif 0.0 -max wm_vol_pos.mif')
+    run.command(f'mrcalc {app.ARGS.odf_gm} 0.0 -max gm_vol_pos.mif')
+    run.command(f'mrcalc {app.ARGS.odf_csf} 0.0 -max csf_vol_pos.mif')
 
     # Normalize each volume
     run.command(f'mrmath wm_vol_pos.mif gm_vol_pos.mif csf_vol_pos.mif sum totalvol.mif')
@@ -63,8 +52,7 @@ def execute():  # pylint: disable=unused-variable
     run.command(f'mrcalc csf_vol_pos.mif totalvol.mif -divide csf_vol_pos_norm.mif')
 
     # Create empty volume for SGM and pathology
-    run.command(f'mrcalc wm_vol.mif 0 -neq wm_vol_1.mif')
-    run.command(f'mrcalc wm_vol_1.mif 1 0 -replace empty_vol.mif')
+    run.command(f'mrcalc wm_vol.mif inf -gt empty_vol.mif')
 
     # Concatenate volumes
     run.command(f'mrcat -datatype float32 gm_vol_pos_norm.mif empty_vol.mif wm_vol_pos_norm.mif csf_vol_pos_norm.mif empty_vol.mif fTT_dirty.mif')
