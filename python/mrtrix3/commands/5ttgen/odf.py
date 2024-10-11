@@ -41,7 +41,7 @@ def execute(): # pylint: disable=unused-variable
     run.command(f'mrconvert {app.ARGS.odf_wm} -coord 3 0 -axes 0,1,2 wm_vol.mif')
 
     # Set negative values to zero
-    run.command(f'mrcalc wm_vol.mif 0.0 -max wm_vol_pos.mif')
+    run.command('mrcalc wm_vol.mif 0.0 -max wm_vol_pos.mif')
     run.command(f'mrcalc', app.ARGS.template_odf_gm, '0.0 -max gm_vol_pos.mif')
     run.command(f'mrcalc', app.ARGS.template_odf_csf, '0.0 -max csf_vol_pos.mif')
 
