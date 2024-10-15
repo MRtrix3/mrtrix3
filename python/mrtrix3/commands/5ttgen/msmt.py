@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# Covered Software is provided under this License on an "as is"
+# Covered Software is provided under this License on an 'as is'
 # basis, without warranty of any kind, either expressed, implied, or
 # statutory, including, without limitation, warranties that the
 # Covered Software is free of defects, merchantable, fit for a
@@ -15,49 +15,48 @@
 
 import os
 import subprocess
-from mrtrix3 import MRtrixError
-from mrtrix3 import app, path, run
+from mrtrix3 import MRtrixError, app, path, run, image
 
 
 def usage(base_parser, subparsers):  # pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt', parents=[base_parser])
-  parser.set_author('Arkiev D'Souza (arkiev.dsouza@sydney.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.set_author('Arkiev D\'Souza (arkiev.dsouza@sydney.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate a 5TT image from ODF images.')
 
   parser.add_argument('odf_wm', type=app.Parser.ImageIn(), help='The input white-matter ODF')
   parser.add_argument('odf_gm', type=app.Parser.ImageIn(), help='The input grey-matter ODF')
   parser.add_argument('odf_csf', type=app.Parser.ImageIn(), help='The input cerebrospinal fluid ODF')
-  parser.add_argument('fTT_image', type=app.Parser.ImageOut(), help='The output 5TT image')
+  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output 5TT image')
 
-  options = parser.add_argument_group('Options specific to the "msmt" algorithm')
+  options = parser.add_argument_group('Options specific to the 'msmt' algorithm')
   parser.add_argument('-mask', nargs='?', default=None, type=app.Parser.ImageIn(), help='The input binary brain mask image')
 
 
 def execute(): # pylint: disable=unused-variable
   # Extract l=0 term from WM
-  run.command('mrconvert {app.ARGS.odf_wm} -coord 3 0 -axes 0,1,2 wm_vol.mif')
+  run.command(f'mrconvert {app.ARGS.odf_wm} -coord 3 0 -axes 0,1,2 wm_vol.mif')
 
   # check whether the GM and CSF ODF voxel grid match that of wm_vol.mif. If the do not match, regrid with wm_vol.mif as template
-  command_size_WModf = 'mrinfo -spacing wm_vol.mif'
-  spacing_size_WModf = subprocess.check_output(command_size_WModf, shell=True).decode('utf-8')
-  command_size_GModf = 'mrinfo -spacing {app.ARGS.odf_gm}'
-  spacing_size_GModf = subprocess.check_output(command_size_GModf, shell=True).decode('utf-8')
-  command_size_CSFodf = 'mrinfo -spacing {app.ARGS.odf_gm}'
-  spacing_size_CSFodf = subprocess.check_output(command_size_CSFodf, shell=True).decode('utf-8')
+  # Load the images
+  wm_vol_img = image.Image('wm_vol.mif')
+  gm_odf_img = image.Image(app.ARGS.odf_gm)
+  csf_odf_img = image.Image(app.ARGS.odf_csf)
 
-  if spacing_size_WModf == spacing_size_GModf:
-    print("voxel grid of GM and WM ODF match")
-    run.command('mrconvert {app.ARGS.odf_gm} gm_vol.mif')
+  # Check GM ODF against WM ODF
+  if image.match(wm_vol_img, gm_odf_img):
+      app.console('Voxel grid of GM and WM ODF match')
+      run.command(f'mrconvert {app.ARGS.odf_gm} gm_vol.mif')
   else:
-    print("WARNING: GM ODF has different dimeonsions to WM ODF. Regridding GM ODF")
-    run.command('mrgrid {app.ARGS.odf_gm} -template wm_vol.mif regrid gm_vol.mif')
+      app.warn('GM ODF has different dimensions to WM ODF. Regridding GM ODF')
+      run.command(f'mrgrid {app.ARGS.odf_gm} -template wm_vol.mif regrid gm_vol.mif')
 
-  if spacing_size_WModf == spacing_size_CSFodf:
-    print("voxel grid of CSF and WM ODF match")
-    run.command('mrconvert {app.ARGS.odf_csf} csf_vol.mif')
+  # Check CSF ODF against WM ODF
+  if image.match(wm_vol_img, csf_odf_img):
+      app.console('Voxel grid of CSF and WM ODF match')
+      run.command(f'mrconvert {app.ARGS.odf_csf} csf_vol.mif')
   else:
-    print("WARNING: CSF ODF has different dimeonsions to WM ODF. Regridding CSF ODF")
-    run.command('mrgrid {app.ARGS.odf_csf} -template wm_vol.mif regrid csf_vol.mif')
+      app.warn('CSF ODF has different dimensions to WM ODF. Regridding CSF ODF')
+      run.command(f'mrgrid {app.ARGS.odf_csf} -template wm_vol.mif regrid csf_vol.mif')
 
   # Set negative values to zero
   run.command('mrcalc wm_vol.mif 0.0 -max wm_vol_pos.mif')
@@ -84,27 +83,20 @@ def execute(): # pylint: disable=unused-variable
   if app.ARGS.mask:
     # case 1: using provided brainmask
     # check if dimensions of brainmask match 5TT_dirty. If not, regrid
-    command_fTTdirty = 'mrinfo -spacing fTT_dirty.mif'
-    spacing_fTTdirty = subprocess.check_output(command_fTTdirty, shell=True).decode('utf-8')
+    mask_img = image.Image(app.ARGS.mask)
+    if image.match(mask_img, wm_vol_img):
+      app.console('Mask has equal dimensions to 5TT image. No regridding of mask required')
+      run.command(f'mrcalc fTT_dirty.mif {app.ARGS.mask} -mult result.mif')
+    else:
+      app.warn('Mask has different dimensions to 5TT image; regridding')
+      run.command(f'mrgrid {app.ARGS.mask} -template wm_vol.mif regrid - | mrcalc - 0.5 -gt - | mrcalc - fTT_dirty.mif -mult result.mif')
 
-    command_mask = 'mrinfo -spacing {app.ARGS.mask}'
-    spacing_mask = subprocess.check_output(command_mask, shell=True).decode('utf-8')
-
-      if spacing_fTTdirty == spacing_mask:
-        app.console("mask has equal dimensions to 5TT image. No regridding of mask required")
-        run.command('mrcalc fTT_dirty.mif {app.ARGS.mask} -mult result.mif')
-
-      else:
-        app.warn('Mask has different dimensions to 5TT image; regridding')
-        run.command(f'mrgrid {app.ARGS.mask} -template wm_vol.mif regrid - | mrcalc - 0.5 -gt - | mrcalc - fTT_dirty.mif -mult result.mif')
-
-
-  elif not app.ARGS.mask:
+  else:
     # case 2: Generate a mask that contains only those voxels where the sum of ODF l=0 terms exceeds 0.5/sqrt(4pi); then select the largest component and fill any holes. 
     # 0.5/sqrt(4pi)=0.1410473959
     run.command('mrcalc totalvol.mif 0.1410473959 -gt - | maskfilter - clean - | maskfilter - fill - | mrcalc - fTT_dirty.mif -mult result.mif')
 
-  run.command(['mrconvert', 'result.mif', app.ARGS.fTT_image],
+  run.command(['mrconvert', 'result.mif', app.ARGS.output],
     force=app.FORCE_OVERWRITE,
     preserve_pipes=True)
 
