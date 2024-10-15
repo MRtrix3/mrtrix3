@@ -13,12 +13,6 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-# A collection of functions for extracting information from images. Mostly these involve
-#   calling the relevant MRtrix3 binaries in order to parse image headers / process image
-#   data, rather than trying to duplicate support for all possible image formats natively
-#   in Python.
-
-
 import math
 
 def n_for_l(lmax): #pylint: disable=unused-variable

@@ -126,7 +126,7 @@ def load_matrix(filename, **kwargs): #pylint: disable=unused-variable
   columns = len(data[0])
   for line in data[1:]:
     if len(line) != columns:
-      raise MRtrixError(f'Inconsistent number of columns in matrix text file "{filename}"')
+      raise MRtrixError(f'Inconsistent number of columns in matrix text file {filename}')
   return data
 
 
@@ -136,7 +136,7 @@ def load_transform(filename, **kwargs): #pylint: disable=unused-variable
   data = load_matrix(filename, **kwargs)
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
-      raise MRtrixError(f'File "{filename}" does not contain a valid transform '
+      raise MRtrixError(f'File {filename} does not contain a valid transform '
                         '(fourth line contains values other than "0,0,0,1")')
   elif len(data) == 3:
     data.append(_TRANSFORM_LAST_ROW)
@@ -157,7 +157,7 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
     return data[0]
   for line in data:
     if len(line) != 1:
-      raise MRtrixError(f'File "{filename}" does not contain vector data '
+      raise MRtrixError(f'File {filename} does not contain vector data '
                         '(multiple columns detected)')
   return [ line[0] for line in data ]
 

@@ -42,7 +42,8 @@ std::unique_ptr<ImageIO::Base> Pipe::read(Header &H) const {
     SignalHandler::mark_file_for_deletion(H.name());
 
   if (!Path::has_suffix(H.name(), ".mif"))
-    throw Exception("MRtrix only supports the .mif format for command-line piping");
+    throw Exception("MRtrix only supports the .mif format for command-line piping"
+                    " (received \"" + H.name() + "\")");
 
   std::unique_ptr<ImageIO::Base> original_handler(mrtrix_handler.read(H));
   std::unique_ptr<ImageIO::Pipe> io_handler(new ImageIO::Pipe(std::move(*original_handler)));

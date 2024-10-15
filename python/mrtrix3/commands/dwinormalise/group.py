@@ -15,7 +15,7 @@
 
 import os
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, image, path, run, utils
+from mrtrix3 import app, image, path, run
 
 
 FA_THRESHOLD_DEFAULT = 0.4
@@ -97,7 +97,7 @@ def execute(): #pylint: disable=unused-variable
 
   app.activate_scratch_dir()
 
-  utils.make_dir('fa')
+  os.makedirs('fa')
   progress = app.ProgressBar('Computing FA images', len(input_list))
   for i in input_list:
     run.command(['dwi2tensor', os.path.join(app.ARGS.input_dir, i.filename), '-mask', os.path.join(app.ARGS.mask_dir, i.mask_filename), '-', '|',
@@ -122,22 +122,28 @@ def execute(): #pylint: disable=unused-variable
   run.command(f'mrthreshold fa_template.mif -abs {app.ARGS.fa_threshold} template_wm_mask.mif')
 
   progress = app.ProgressBar('Intensity normalising subject images', len(input_list))
-  utils.make_dir(app.ARGS.output_dir)
-  utils.make_dir('wm_mask_warped')
+  app.ARGS.output_dir.mkdir()
+  os.makedirs('wm_mask_warped')
+  os.makedirs('dwi_normalised')
   for i in input_list:
-    run.command(['mrtransform', 'template_wm_mask.mif', os.path.join('wm_mask_warped', f'{i.prefix}.mif'),
+    in_path = os.path.join(app.ARGS.input_dir, i.filename)
+    warp_path = os.path.join('warps', f'{i.prefix}.mif')
+    fa_path = os.path.join('fa', f'{i.prefix}.mif')
+    wm_mask_warped_path = os.path.join('wm_mask_warped', f'{i.prefix}.mif')
+    dwi_normalised_path = os.path.join('dwi_normalised', f'{i.prefix}.mif')
+    run.command(['mrtransform', 'template_wm_mask.mif', wm_mask_warped_path,
                  '-interp', 'nearest',
-                 '-warp_full', os.path.join('warps', f'{i.prefix}.mif'),
+                 '-warp_full', warp_path,
                  '-from', '2',
-                 '-template', os.path.join('fa', f'{i.prefix}.mif')])
+                 '-template', fa_path])
     run.command(['dwinormalise', 'manual',
-                 os.path.join(app.ARGS.input_dir, i.filename),
-                 os.path.join('wm_mask_warped', f'{i.prefix}.mif'),
-                 'temp.mif'])
-    run.command(['mrconvert', 'temp.mif', os.path.join(app.ARGS.output_dir, i.filename)],
-                mrconvert_keyval=os.path.join(app.ARGS.input_dir, i.filename),
+                 in_path,
+                 wm_mask_warped_path,
+                 dwi_normalised_path])
+    run.command(['mrconvert', dwi_normalised_path, app.ARGS.output_dir / i.filename],
+                mrconvert_keyval=in_path,
                 force=app.FORCE_OVERWRITE)
-    os.remove('temp.mif')
+    app.cleanup([warp_path, fa_path, wm_mask_warped_path, dwi_normalised_path])
     progress.increment()
   progress.done()
 
