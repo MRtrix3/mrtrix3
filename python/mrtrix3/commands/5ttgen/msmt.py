@@ -21,7 +21,7 @@ from mrtrix3 import app, path, run
 
 def usage(base_parser, subparsers):  # pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt', parents=[base_parser])
-  parser.set_author("Arkiev D'Souza (arkiev.dsouza@sydney.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)")
+  parser.set_author('Arkiev D'Souza (arkiev.dsouza@sydney.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate a 5TT image from ODF images.')
 
   parser.add_argument('odf_wm', type=app.Parser.ImageIn(), help='The input white-matter ODF')
@@ -29,7 +29,7 @@ def usage(base_parser, subparsers):  # pylint: disable=unused-variable
   parser.add_argument('odf_csf', type=app.Parser.ImageIn(), help='The input cerebrospinal fluid ODF')
   parser.add_argument('fTT_image', type=app.Parser.ImageOut(), help='The output 5TT image')
 
-  options = parser.add_argument_group('Options specific to the "odf" algorithm')
+  options = parser.add_argument_group('Options specific to the "msmt" algorithm')
   parser.add_argument('-mask', nargs='?', default=None, type=app.Parser.ImageIn(), help='The input binary brain mask image')
 
 
@@ -91,12 +91,12 @@ def execute(): # pylint: disable=unused-variable
     spacing_mask = subprocess.check_output(command_mask, shell=True).decode('utf-8')
 
       if spacing_fTTdirty == spacing_mask:
-        print("mask has equal dimensions to 5TT image. No regridding of mask required")
+        app.console("mask has equal dimensions to 5TT image. No regridding of mask required")
         run.command('mrcalc fTT_dirty.mif {app.ARGS.mask} -mult result.mif')
 
       else:
-        print("WARNING: mask has different dimeonsions to 5TT image. Regridding mask")
-        run.command('mrgrid {app.ARGS.mask} -template wm_vol.mif regrid - | mrcalc - 0.5 -gt - | mrcalc - fTT_dirty.mif -mult result.mif')
+        app.warn('Mask has different dimensions to 5TT image; regridding')
+        run.command(f'mrgrid {app.ARGS.mask} -template wm_vol.mif regrid - | mrcalc - 0.5 -gt - | mrcalc - fTT_dirty.mif -mult result.mif')
 
 
   elif not app.ARGS.mask:
