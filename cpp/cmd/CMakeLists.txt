@@ -30,7 +30,7 @@ function(add_cmd CMD_SRC IS_GUI)
     get_filename_component(CMD_NAME ${CMD_SRC} NAME_WE)
     add_executable(${CMD_NAME} ${CMD_SRC})
     target_link_libraries(${CMD_NAME} PRIVATE
-        $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::headless>
+        $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::core>
         mrtrix::executable-version
     )
     set_target_properties(${CMD_NAME} PROPERTIES
