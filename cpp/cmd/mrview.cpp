@@ -15,16 +15,16 @@
  */
 
 // clang-format off
-#include "gui/gui.h"
+#include "gui.h"
 #include "command.h"
 // clang-format on
 
-#include "gui/mrview/icons.h"
-#include "gui/mrview/mode/list.h"
-#include "gui/mrview/sync/syncmanager.h"
-#include "gui/mrview/tool/list.h"
-#include "gui/mrview/window.h"
 #include "memory.h"
+#include "mrview/icons.h"
+#include "mrview/mode/list.h"
+#include "mrview/sync/syncmanager.h"
+#include "mrview/tool/list.h"
+#include "mrview/window.h"
 #include "progressbar.h"
 
 using namespace MR;
@@ -75,7 +75,7 @@ void usage() {
   MR::GUI::MRView::Tool::classname::add_commandline_options(OPTIONS);
   {
     using namespace MR::GUI::MRView::Tool;
-#include "gui/mrview/tool/list.h"
+#include "mrview/tool/list.h"
   }
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;

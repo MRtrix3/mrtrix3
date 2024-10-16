@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/dialog/list.h"
+#include "dialog/list.h"
 
 namespace MR::GUI::Dialog {
 

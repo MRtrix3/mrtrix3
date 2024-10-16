@@ -21,9 +21,9 @@
 #include "dwi/shells.h"
 
 #include "dwi/directions/set.h"
-#include "gui/dwi/renderer.h"
-#include "gui/mrview/gui_image.h"
-#include "gui/mrview/tool/odf/type.h"
+#include "dwi/renderer.h"
+#include "mrview/gui_image.h"
+#include "mrview/tool/odf/type.h"
 
 namespace MR {
 

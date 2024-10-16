@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/spin_box.h"
-#include "gui/mrview/tool/base.h"
-#include "gui/opengl/transformation.h"
+#include "mrview/mode/base.h"
+#include "mrview/spin_box.h"
+#include "mrview/tool/base.h"
+#include "opengl/transformation.h"
 
 namespace MR::GUI::MRView {
 class AdjustButton;

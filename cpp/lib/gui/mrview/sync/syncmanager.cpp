@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/sync/syncmanager.h"
-#include "gui/mrview/window.h"
+#include "mrview/sync/syncmanager.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView::Sync {
 SyncManager::SyncManager() : QObject(0) {

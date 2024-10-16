@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "gui/mrview/tool/list_model_base.h"
-#include "gui/mrview/tool/roi_editor/item.h"
 #include "header.h"
 #include "memory.h"
+#include "mrview/tool/list_model_base.h"
+#include "mrview/tool/roi_editor/item.h"
 
 namespace MR::GUI::MRView::Tool {
 

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "gui/opengl/gl.h"
 #include "mrtrix.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::MRView {
 

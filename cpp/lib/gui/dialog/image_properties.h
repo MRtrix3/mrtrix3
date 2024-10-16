@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "gui/opengl/gl.h"
 #include "header.h"
+#include "opengl/gl.h"
 
 namespace MR {
 class Header;

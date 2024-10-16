@@ -17,8 +17,8 @@
 
 #include <qlocalsocket.h>
 
-#include "gui/mrview/sync/client.h"
-#include "gui/mrview/sync/localsocketreader.h"
+#include "mrview/sync/client.h"
+#include "mrview/sync/localsocketreader.h"
 
 // maximum number of inter process syncers that are allowed. This can be
 // raised, but may reduce performance when new IPS are created.

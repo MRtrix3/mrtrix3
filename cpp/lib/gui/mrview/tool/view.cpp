@@ -14,16 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/view.h"
+#include "mrview/tool/view.h"
 
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/mode/lightbox.h"
-#include "gui/mrview/mode/lightbox_gui.h"
-#include "gui/mrview/mode/ortho.h"
-#include "gui/mrview/mode/volume.h"
-#include "gui/mrview/window.h"
 #include "math/math.h"
 #include "mrtrix.h"
+#include "mrview/adjust_button.h"
+#include "mrview/mode/lightbox.h"
+#include "mrview/mode/lightbox_gui.h"
+#include "mrview/mode/ortho.h"
+#include "mrview/mode/volume.h"
+#include "mrview/window.h"
 
 #define FOV_RATE_MULTIPLIER 0.01f
 #define MRTRIX_MIN_ALPHA 1.0e-3f

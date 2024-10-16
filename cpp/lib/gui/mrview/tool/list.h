@@ -17,15 +17,15 @@
 #ifndef TOOL
 
 // place #include files in here:
-#include "gui/mrview/tool/connectome/connectome.h"
-#include "gui/mrview/tool/fixel/fixel.h"
-#include "gui/mrview/tool/odf/odf.h"
-#include "gui/mrview/tool/overlay.h"
-#include "gui/mrview/tool/roi_editor/roi.h"
-#include "gui/mrview/tool/screen_capture.h"
-#include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/mrview/tool/transform.h"
-#include "gui/mrview/tool/view.h"
+#include "mrview/tool/connectome/connectome.h"
+#include "mrview/tool/fixel/fixel.h"
+#include "mrview/tool/odf/odf.h"
+#include "mrview/tool/overlay.h"
+#include "mrview/tool/roi_editor/roi.h"
+#include "mrview/tool/screen_capture.h"
+#include "mrview/tool/tractography/tractography.h"
+#include "mrview/tool/transform.h"
+#include "mrview/tool/view.h"
 
 #else
 

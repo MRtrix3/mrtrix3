@@ -14,11 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/colourbars.h"
+#include "mrview/colourbars.h"
 #include "file/config.h"
-#include "gui/mrview/displayable.h"
-#include "gui/opengl/font.h"
-#include "gui/projection.h"
+#include "mrview/displayable.h"
+#include "opengl/font.h"
+#include "projection.h"
 
 namespace MR::GUI::MRView {
 // CONF option: MRViewMaxNumColourBarRows

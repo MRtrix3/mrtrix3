@@ -14,10 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/shaders.h"
-#include "gui/mrview/window.h"
+#include "mrview/tool/connectome/shaders.h"
+#include "mrview/window.h"
 
-#include "gui/mrview/tool/connectome/connectome.h"
+#include "mrview/tool/connectome/connectome.h"
 
 namespace MR::GUI::MRView::Tool {
 

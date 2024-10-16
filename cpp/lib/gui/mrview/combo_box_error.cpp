@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/combo_box_error.h"
+#include "mrview/combo_box_error.h"
 #include "math/math.h"
 
 namespace MR::GUI::MRView {

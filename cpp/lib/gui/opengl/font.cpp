@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/opengl/font.h"
+#include "opengl/font.h"
 #include "debug.h"
 #include "math/math.h"
 

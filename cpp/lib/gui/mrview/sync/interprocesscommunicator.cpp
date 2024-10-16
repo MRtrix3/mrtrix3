@@ -19,9 +19,9 @@
 #include <thread>
 
 #include "exception.h"
-#include "gui/mrview/sync/enums.h"
-#include "gui/mrview/sync/interprocesscommunicator.h"
-#include "gui/mrview/sync/processlock.h"
+#include "mrview/sync/enums.h"
+#include "mrview/sync/interprocesscommunicator.h"
+#include "mrview/sync/processlock.h"
 
 namespace MR::GUI::MRView::Sync {
 InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {

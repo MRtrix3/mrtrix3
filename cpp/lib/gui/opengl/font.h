@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "gui/opengl/shader.h"
+#include "opengl/shader.h"
 
 namespace MR::GUI::GL {
 

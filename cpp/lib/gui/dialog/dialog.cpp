@@ -14,17 +14,17 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/dialog/dialog.h"
+#include "dialog/dialog.h"
 
 #include "app.h"
 #include "exception.h"
 #include "file/dicom/tree.h"
 #include "progressbar.h"
 
-#include "gui/dialog/dicom.h"
-#include "gui/dialog/file.h"
-#include "gui/dialog/progress.h"
-#include "gui/dialog/report_exception.h"
+#include "dialog/dicom.h"
+#include "dialog/file.h"
+#include "dialog/progress.h"
+#include "dialog/report_exception.h"
 
 namespace MR::GUI::Dialog {
 

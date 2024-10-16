@@ -20,8 +20,8 @@
 
 #include <QAbstractItemModel>
 
-#include "gui/mrview/tool/connectome/file_data_vector.h"
 #include "mrtrix.h"
+#include "mrview/tool/connectome/file_data_vector.h"
 
 namespace MR::GUI::MRView {
 

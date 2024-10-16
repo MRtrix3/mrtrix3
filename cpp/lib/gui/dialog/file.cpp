@@ -17,9 +17,9 @@
 #include <QMessageBox>
 
 #include "app.h"
+#include "dialog/file.h"
 #include "formats/list.h"
-#include "gui/dialog/file.h"
-#include "gui/gui.h"
+#include "gui.h"
 
 #ifdef MRTRIX_MACOSX
 #define FILE_DIALOG_OPTIONS QFileDialog::DontUseNativeDialog

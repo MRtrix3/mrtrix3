@@ -23,7 +23,7 @@ set_target_properties(mrtrix-gui PROPERTIES
 )
 
 if(MRTRIX_USE_PCH)
-    target_precompile_headers(mrtrix-gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/gui/gui_pch.h)
+    target_precompile_headers(mrtrix-gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/gui_pch.h)
 endif()
 
 target_include_directories(mrtrix-gui PUBLIC

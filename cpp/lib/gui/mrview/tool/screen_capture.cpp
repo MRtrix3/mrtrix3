@@ -16,13 +16,13 @@
 
 #include <Eigen/Geometry>
 
+#include "dialog/file.h"
 #include "file/path.h"
-#include "gui/dialog/file.h"
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/tool/screen_capture.h"
-#include "gui/mrview/window.h"
-#include "gui/opengl/transformation.h"
 #include "mrtrix.h"
+#include "mrview/mode/base.h"
+#include "mrview/tool/screen_capture.h"
+#include "mrview/window.h"
+#include "opengl/transformation.h"
 
 namespace MR::GUI::MRView::Tool {
 

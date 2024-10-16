@@ -18,8 +18,8 @@
 
 #include <iostream>
 
-#include "gui/opengl/gl.h"
 #include "math/least_squares.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::GL {
 

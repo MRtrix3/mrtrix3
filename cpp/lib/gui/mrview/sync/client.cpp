@@ -15,7 +15,7 @@
  */
 #include <QtNetwork>
 
-#include "gui/mrview/sync/client.h"
+#include "mrview/sync/client.h"
 #include <iostream>
 
 namespace MR::GUI::MRView::Sync {

@@ -17,14 +17,14 @@
 #include <iomanip>
 #include <string>
 
-#include "gui/mrview/tool/roi_editor/item.h"
+#include "mrview/tool/roi_editor/item.h"
 
 #include "algo/loop.h"
 #include "file/config.h"
 #include "progressbar.h"
 
-#include "gui/dialog/file.h"
-#include "gui/mrview/window.h"
+#include "dialog/file.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView::Tool {
 

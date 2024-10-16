@@ -27,9 +27,9 @@
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/image.h"
 
-#include "gui/mrview/displayable.h"
-#include "gui/mrview/tool/fixel/fixel.h"
-#include "gui/mrview/tool/fixel/vector_structs.h"
+#include "mrview/displayable.h"
+#include "mrview/tool/fixel/fixel.h"
+#include "mrview/tool/fixel/vector_structs.h"
 
 namespace MR::GUI::MRView::Tool {
 

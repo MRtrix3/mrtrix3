@@ -20,15 +20,15 @@
 #include "transform.h"
 #include "types.h"
 
-#include "gui/color_button.h"
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/mode/slice.h"
-#include "gui/mrview/tool/base.h"
+#include "color_button.h"
+#include "mrview/adjust_button.h"
+#include "mrview/mode/base.h"
+#include "mrview/mode/slice.h"
+#include "mrview/tool/base.h"
 
-#include "gui/mrview/tool/roi_editor/item.h"
-#include "gui/mrview/tool/roi_editor/model.h"
-#include "gui/mrview/tool/roi_editor/undoentry.h"
+#include "mrview/tool/roi_editor/item.h"
+#include "mrview/tool/roi_editor/model.h"
+#include "mrview/tool/roi_editor/undoentry.h"
 
 namespace MR {
 

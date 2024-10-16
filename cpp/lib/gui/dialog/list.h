@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "gui/gui.h"
-#include "gui/opengl/gl.h"
+#include "gui.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::Dialog {
 

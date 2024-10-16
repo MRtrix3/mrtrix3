@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "gui/opengl/gl.h"
-#include "gui/opengl/gl_core_3_3.h"
+#include "opengl/gl.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::Shapes {
 

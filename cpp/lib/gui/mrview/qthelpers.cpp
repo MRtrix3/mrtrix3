@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/qthelpers.h"
+#include "mrview/qthelpers.h"
 
 #include <QString>
 #include <QUrl>

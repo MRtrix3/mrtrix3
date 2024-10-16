@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/color_button.h"
+#include "color_button.h"
 
 QColorButton::QColorButton(QWidget *parent, const char *name) : QPushButton(name, parent) {
   connect(this, SIGNAL(clicked()), this, SLOT(chooseColor()));

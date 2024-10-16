@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "gui/mrview/volume.h"
-#include "gui/opengl/gl.h"
 #include "image.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
+#include "mrview/volume.h"
+#include "opengl/gl.h"
 #include "types.h"
 #include <unordered_map>
 

@@ -14,10 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/dialog/dicom.h"
+#include "dialog/dicom.h"
+#include "dialog/list.h"
 #include "file/dicom/tree.h"
-#include "gui/dialog/list.h"
-#include "gui/gui.h"
+#include "gui.h"
 
 namespace MR::GUI::Dialog {
 

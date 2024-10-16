@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/fixel/legacy.h"
+#include "mrview/tool/fixel/legacy.h"
 
 namespace MR::GUI::MRView::Tool {
 

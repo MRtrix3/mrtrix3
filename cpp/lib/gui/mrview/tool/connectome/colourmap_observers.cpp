@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/colourmap_observers.h"
+#include "mrview/tool/connectome/colourmap_observers.h"
 
-#include "gui/mrview/tool/connectome/connectome.h"
+#include "mrview/tool/connectome/connectome.h"
 
 namespace MR::GUI::MRView::Tool {
 

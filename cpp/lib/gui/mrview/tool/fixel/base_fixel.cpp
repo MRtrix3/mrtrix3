@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/fixel/base_fixel.h"
+#include "mrview/tool/fixel/base_fixel.h"
 
 namespace MR::GUI::MRView::Tool {
 BaseFixel::BaseFixel(const std::string &filename, Fixel &fixel_tool)

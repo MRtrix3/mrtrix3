@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "gui/mrview/tool/fixel/base_fixel.h"
+#include "mrview/tool/fixel/base_fixel.h"
 
 namespace MR::GUI::MRView::Tool {
 class Image4D : public FixelType<FixelImage4DType> {

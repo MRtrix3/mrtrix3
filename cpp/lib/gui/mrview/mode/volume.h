@@ -17,8 +17,8 @@
 #pragma once
 
 #include "app.h"
-#include "gui/mrview/mode/base.h"
-#include "gui/opengl/transformation.h"
+#include "mrview/mode/base.h"
+#include "opengl/transformation.h"
 
 namespace MR::GUI::MRView {
 namespace Tool {

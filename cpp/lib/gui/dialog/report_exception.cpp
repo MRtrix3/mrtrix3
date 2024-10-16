@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/dialog/report_exception.h"
-#include "gui/gui.h"
+#include "dialog/report_exception.h"
+#include "gui.h"
 
 namespace MR::GUI::Dialog {
 

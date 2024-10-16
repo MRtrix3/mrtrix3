@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/colourmap_button.h"
-#include "gui/gui.h"
+#include "mrview/colourmap_button.h"
+#include "gui.h"
 #include "math/rng.h"
 
 namespace MR::GUI::MRView {

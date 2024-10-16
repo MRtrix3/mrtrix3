@@ -17,7 +17,7 @@
 #pragma once
 
 #include "app.h"
-#include "gui/mrview/mode/slice.h"
+#include "mrview/mode/slice.h"
 
 namespace MR::GUI::MRView::Mode {
 

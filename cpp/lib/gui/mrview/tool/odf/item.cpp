@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/odf/item.h"
+#include "mrview/tool/odf/item.h"
 
 #include "dwi/gradient.h"
 #include "header.h"

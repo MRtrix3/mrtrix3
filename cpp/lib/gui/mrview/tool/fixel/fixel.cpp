@@ -14,18 +14,18 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/fixel/fixel.h"
+#include "mrview/tool/fixel/fixel.h"
 
-#include "gui/dialog/file.h"
-#include "gui/mrview/qthelpers.h"
-#include "gui/mrview/tool/fixel/base_fixel.h"
-#include "gui/mrview/tool/fixel/directory.h"
-#include "gui/mrview/tool/fixel/image4D.h"
-#include "gui/mrview/tool/fixel/legacy.h"
-#include "gui/mrview/tool/list_model_base.h"
-#include "gui/mrview/window.h"
+#include "dialog/file.h"
 #include "math/rng.h"
 #include "mrtrix.h"
+#include "mrview/qthelpers.h"
+#include "mrview/tool/fixel/base_fixel.h"
+#include "mrview/tool/fixel/directory.h"
+#include "mrview/tool/fixel/image4D.h"
+#include "mrview/tool/fixel/legacy.h"
+#include "mrview/tool/list_model_base.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView::Tool {
 

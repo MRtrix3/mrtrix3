@@ -17,8 +17,8 @@
 #pragma once
 
 #include "colourmap.h"
-#include "gui/opengl/gl.h"
-#include "gui/opengl/shader.h"
+#include "opengl/gl.h"
+#include "opengl/shader.h"
 
 namespace MR::GUI {
 class Projection;

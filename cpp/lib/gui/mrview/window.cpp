@@ -15,20 +15,20 @@
  */
 #include "algo/copy.h"
 #include "app.h"
+#include "dialog/dialog.h"
+#include "dialog/file.h"
+#include "dialog/image_properties.h"
+#include "dialog/opengl.h"
+#include "dialog/progress.h"
 #include "file/config.h"
-#include "gui/dialog/dialog.h"
-#include "gui/dialog/file.h"
-#include "gui/dialog/image_properties.h"
-#include "gui/dialog/opengl.h"
-#include "gui/dialog/progress.h"
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/mode/list.h"
-#include "gui/mrview/qthelpers.h"
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/list.h"
-#include "gui/opengl/gl.h"
-#include "gui/opengl/lighting.h"
 #include "header.h"
+#include "mrview/mode/base.h"
+#include "mrview/mode/list.h"
+#include "mrview/qthelpers.h"
+#include "mrview/tool/base.h"
+#include "mrview/tool/list.h"
+#include "opengl/gl.h"
+#include "opengl/lighting.h"
 #include "timer.h"
 #include <QDebug>
 
@@ -40,7 +40,7 @@ using namespace App;
 
       const OptionGroup Window::options = OptionGroup ("General options")
         + Option ("mode", "select initial display mode by its short ID. Valid mode IDs are: "
-#include "gui/mrview/mode/list.h"
+#include "mrview/mode/list.h"
             )
         + Argument ("name");
 #undef MODE
@@ -448,7 +448,7 @@ Window::Window()
 #define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
   {
     size_t n = 1;
-#include "gui/mrview/mode/list.h"
+#include "mrview/mode/list.h"
   }
 #undef MODE
 #undef MODE_OPTION
@@ -661,7 +661,7 @@ Window::Window()
   {
     using namespace Tool;
     size_t n = 1;
-#include "gui/mrview/tool/list.h"
+#include "mrview/tool/list.h"
   }
   for (int n = 0; n < tool_group->actions().size(); ++n)
     addAction(tool_group->actions()[n]);
@@ -1663,7 +1663,7 @@ void Window::process_commandline_option() {
     // see whether option is claimed by any tools:
     size_t tool_id = 0;
     std::string stub;
-#include "gui/mrview/tool/list.h"
+#include "mrview/tool/list.h"
 
     // process general options:
     if (opt.opt->is("mode")) {

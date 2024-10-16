@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/shapes/cylinder.h"
+#include "shapes/cylinder.h"
 
 #include "types.h"
 

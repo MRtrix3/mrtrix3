@@ -14,11 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/dialog/image_properties.h"
+#include "dialog/image_properties.h"
+#include "dialog/file.h"
+#include "dialog/list.h"
 #include "dwi/gradient.h"
 #include "file/matrix.h"
-#include "gui/dialog/file.h"
-#include "gui/dialog/list.h"
 #include "header.h"
 #include "stride.h"
 

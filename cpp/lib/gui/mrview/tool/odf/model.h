@@ -21,8 +21,8 @@
 
 #include "types.h"
 
-#include "gui/mrview/tool/odf/item.h"
-#include "gui/mrview/tool/odf/type.h"
+#include "mrview/tool/odf/item.h"
+#include "mrview/tool/odf/type.h"
 
 namespace MR::GUI::MRView::Tool {
 

@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/gui.h"
-#include "gui/opengl/gl.h"
+#include "gui.h"
+#include "opengl/gl.h"
 #include <clocale>
 #include <locale>
 

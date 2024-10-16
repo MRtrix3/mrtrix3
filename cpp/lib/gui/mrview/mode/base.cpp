@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/mode/base.h"
+#include "mrview/mode/base.h"
 #include "file/config.h"
-#include "gui/opengl/gl.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::MRView::Mode {
 

@@ -19,7 +19,7 @@
 #include <QOpenGLWidget>
 
 #include "app.h"
-#include "gui/dwi/render_frame.h"
+#include "dwi/render_frame.h"
 
 namespace MR::GUI::DWI {
 

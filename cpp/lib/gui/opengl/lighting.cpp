@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/opengl/lighting.h"
+#include "opengl/lighting.h"
 #include "file/config.h"
 
 namespace MR::GUI::GL {

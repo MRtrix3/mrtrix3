@@ -18,8 +18,8 @@
 
 #include <memory>
 
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/connectome/selection.h"
+#include "mrview/tool/base.h"
+#include "mrview/tool/connectome/selection.h"
 
 #include <QAbstractItemModel>
 #include <QTableView>

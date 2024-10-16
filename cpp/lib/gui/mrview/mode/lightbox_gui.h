@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "gui/mrview/spin_box.h"
+#include "mrview/spin_box.h"
 
 namespace MR::GUI::MRView::Mode::LightBoxViewControls {
 class LightBoxEditButton : public SpinBox {

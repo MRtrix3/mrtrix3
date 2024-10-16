@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/file_data_vector.h"
+#include "mrview/tool/connectome/file_data_vector.h"
 
 #include <limits>
 

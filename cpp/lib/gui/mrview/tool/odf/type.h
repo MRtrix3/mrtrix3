@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "gui/dwi/renderer.h"
+#include "dwi/renderer.h"
 
 namespace MR {
 

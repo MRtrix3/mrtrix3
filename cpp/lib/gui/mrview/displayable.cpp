@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/displayable.h"
+#include "mrview/displayable.h"
 
 namespace MR::GUI::MRView {
 

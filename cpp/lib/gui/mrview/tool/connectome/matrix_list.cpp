@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/matrix_list.h"
+#include "mrview/tool/connectome/matrix_list.h"
 
-#include "gui/mrview/tool/connectome/connectome.h"
+#include "mrview/tool/connectome/connectome.h"
 
 namespace MR::GUI::MRView::Tool {
 

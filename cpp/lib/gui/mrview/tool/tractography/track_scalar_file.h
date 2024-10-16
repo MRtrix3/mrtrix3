@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/colourmap_button.h"
-#include "gui/mrview/displayable.h"
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/tractography/tractogram_enums.h"
+#include "mrview/adjust_button.h"
+#include "mrview/colourmap_button.h"
+#include "mrview/displayable.h"
+#include "mrview/tool/base.h"
+#include "mrview/tool/tractography/tractogram_enums.h"
 
 namespace MR::GUI::MRView::Tool {
 class Tractogram;

@@ -15,8 +15,8 @@
  */
 #pragma once
 
-#include "gui/mrview/sync/enums.h"
-#include "gui/mrview/sync/interprocesscommunicator.h"
+#include "mrview/sync/enums.h"
+#include "mrview/sync/interprocesscommunicator.h"
 
 namespace MR::GUI::MRView::Sync {
 /**

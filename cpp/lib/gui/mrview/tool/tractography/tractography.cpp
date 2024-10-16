@@ -14,16 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/dialog/file.h"
-#include "gui/lighting_dock.h"
-#include "gui/mrview/qthelpers.h"
-#include "gui/mrview/tool/list_model_base.h"
-#include "gui/mrview/tool/tractography/track_scalar_file.h"
-#include "gui/mrview/tool/tractography/tractogram.h"
-#include "gui/mrview/window.h"
-#include "gui/opengl/lighting.h"
+#include "mrview/tool/tractography/tractography.h"
+#include "dialog/file.h"
+#include "lighting_dock.h"
 #include "mrtrix.h"
+#include "mrview/qthelpers.h"
+#include "mrview/tool/list_model_base.h"
+#include "mrview/tool/tractography/track_scalar_file.h"
+#include "mrview/tool/tractography/tractogram.h"
+#include "mrview/window.h"
+#include "opengl/lighting.h"
 
 namespace MR::GUI::MRView::Tool {
 const std::vector<std::string> tractogram_geometry_types = {"pseudotubes", "lines", "points"};
