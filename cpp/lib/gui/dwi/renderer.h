@@ -20,11 +20,11 @@
 #include <QOpenGLWidget>
 
 #include "dwi/directions/set.h"
-#include "gui/gui.h"
-#include "gui/opengl/gl.h"
-#include "gui/opengl/shader.h"
-#include "gui/shapes/halfsphere.h"
+#include "gui.h"
 #include "math/SH.h"
+#include "opengl/gl.h"
+#include "opengl/shader.h"
+#include "shapes/halfsphere.h"
 
 namespace MR::GUI {
 

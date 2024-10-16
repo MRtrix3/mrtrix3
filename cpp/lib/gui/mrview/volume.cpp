@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/volume.h"
+#include "mrview/volume.h"
 
-#include "gui/mrview/window.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView {
 

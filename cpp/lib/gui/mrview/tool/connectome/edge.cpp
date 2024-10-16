@@ -14,14 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/edge.h"
+#include "mrview/tool/connectome/edge.h"
 
 #include "math/rng.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
-#include "gui/mrview/tool/connectome/connectome.h"
+#include "mrview/tool/connectome/connectome.h"
 
 namespace MR::GUI::MRView::Tool {
 

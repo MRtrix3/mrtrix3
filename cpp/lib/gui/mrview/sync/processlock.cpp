@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/sync/processlock.h"
+#include "mrview/sync/processlock.h"
 #include <QCryptographicHash>
 
 namespace MR::GUI::MRView::Sync {

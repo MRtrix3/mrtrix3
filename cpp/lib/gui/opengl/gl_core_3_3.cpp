@@ -25,7 +25,7 @@
 #include <windows.h>
 #endif
 
-#include "gui/opengl/gl_core_3_3.h"
+#include "opengl/gl_core_3_3.h"
 #include <algorithm>
 #include <cstddef>
 #include <cstring>

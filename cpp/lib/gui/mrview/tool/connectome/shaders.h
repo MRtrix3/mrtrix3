@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "gui/opengl/shader.h"
+#include "opengl/shader.h"
 
-#include "gui/mrview/tool/connectome/types.h"
+#include "mrview/tool/connectome/types.h"
 
 namespace MR::GUI::MRView::Tool {
 

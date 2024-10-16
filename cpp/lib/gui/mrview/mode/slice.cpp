@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/mode/slice.h"
+#include "mrview/mode/slice.h"
 
-#include "gui/opengl/transformation.h"
+#include "opengl/transformation.h"
 
 namespace MR::GUI::MRView::Mode {
 

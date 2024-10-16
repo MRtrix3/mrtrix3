@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/tool/base.h"
+#include "mrview/mode/base.h"
+#include "mrview/tool/base.h"
 
 namespace MR::GUI::MRView::Tool {
 

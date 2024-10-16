@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/shapes/halfsphere.h"
+#include "shapes/halfsphere.h"
 
 #include <map>
 

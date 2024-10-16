@@ -24,7 +24,7 @@
 
 #include "app.h"
 #include "file/config.h"
-#include "gui/opengl/gl.h"
+#include "opengl/gl.h"
 
 #include <functional>
 

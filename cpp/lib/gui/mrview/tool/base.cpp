@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/base.h"
+#include "mrview/tool/base.h"
 #include "app.h"
 
 namespace MR::GUI::MRView::Tool {

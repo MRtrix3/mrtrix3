@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/node_overlay.h"
+#include "mrview/tool/connectome/node_overlay.h"
 
 #include <limits>
 

@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/projection.h"
+#include "projection.h"
 
 namespace MR::GUI {
 

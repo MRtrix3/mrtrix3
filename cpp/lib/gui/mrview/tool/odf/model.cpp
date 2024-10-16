@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/odf/model.h"
+#include "mrview/tool/odf/model.h"
 
 #include "header.h"
 

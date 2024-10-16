@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/transform.h"
+#include "mrview/tool/transform.h"
 
 namespace MR::GUI::MRView::Tool {
 

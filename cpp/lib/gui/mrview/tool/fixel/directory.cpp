@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/fixel/directory.h"
+#include "mrview/tool/fixel/directory.h"
 
 namespace MR::GUI::MRView::Tool {
 void Directory::load_image_buffer() {

@@ -14,11 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/odf/preview.h"
-#include "gui/dwi/render_frame.h"
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/tool/odf/odf.h"
-#include "gui/mrview/window.h"
+#include "mrview/tool/odf/preview.h"
+#include "dwi/render_frame.h"
+#include "mrview/mode/base.h"
+#include "mrview/tool/odf/odf.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView::Tool {
 

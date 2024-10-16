@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/colourmap_button.h"
-#include "gui/mrview/combo_box_error.h"
-#include "gui/mrview/tool/base.h"
-#include "gui/projection.h"
+#include "mrview/adjust_button.h"
+#include "mrview/colourmap_button.h"
+#include "mrview/combo_box_error.h"
+#include "mrview/tool/base.h"
+#include "projection.h"
 
 namespace MR::GUI::MRView::Tool {
 class Fixel : public Base, public ColourMapButtonObserver, public DisplayableVisitor {

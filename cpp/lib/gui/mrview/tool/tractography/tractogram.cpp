@@ -14,16 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/tractography/tractogram.h"
+#include "mrview/tool/tractography/tractogram.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "file/matrix.h"
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/window.h"
-#include "gui/opengl/lighting.h"
-#include "gui/projection.h"
+#include "mrview/mode/base.h"
+#include "mrview/window.h"
+#include "opengl/lighting.h"
 #include "progressbar.h"
+#include "projection.h"
 
 const size_t MAX_BUFFER_SIZE = 2796200; // number of points to fill 32MB
 

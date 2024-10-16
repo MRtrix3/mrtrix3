@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "gui/opengl/lighting.h"
+#include "opengl/lighting.h"
 
 namespace MR::GUI {
 class LightingSettings : public QFrame {

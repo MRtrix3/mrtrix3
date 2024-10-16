@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/colourmap_button.h"
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/spin_box.h"
-#include "gui/mrview/tool/base.h"
+#include "mrview/adjust_button.h"
+#include "mrview/colourmap_button.h"
+#include "mrview/mode/base.h"
+#include "mrview/spin_box.h"
+#include "mrview/tool/base.h"
 
 namespace MR::GUI::MRView::Tool {
 

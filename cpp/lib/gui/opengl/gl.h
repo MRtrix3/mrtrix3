@@ -26,7 +26,7 @@
 #include <QOpenGLWidget>
 #include <QtGlobal>
 #include <QtWidgets>
-#include "gui/opengl/gl_core_3_3.h"
+#include "opengl/gl_core_3_3.h"
 // clang-format on
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 5, 0)

@@ -14,15 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/overlay.h"
+#include "mrview/tool/overlay.h"
 
-#include "gui/dialog/file.h"
-#include "gui/mrview/gui_image.h"
-#include "gui/mrview/mode/slice.h"
-#include "gui/mrview/qthelpers.h"
-#include "gui/mrview/tool/list_model_base.h"
-#include "gui/mrview/window.h"
+#include "dialog/file.h"
 #include "mrtrix.h"
+#include "mrview/gui_image.h"
+#include "mrview/mode/slice.h"
+#include "mrview/qthelpers.h"
+#include "mrview/tool/list_model_base.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView::Tool {
 

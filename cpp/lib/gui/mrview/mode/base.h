@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/window.h"
-#include "gui/opengl/gl.h"
-#include "gui/opengl/transformation.h"
-#include "gui/projection.h"
+#include "mrview/tool/base.h"
+#include "mrview/window.h"
+#include "opengl/gl.h"
+#include "opengl/transformation.h"
+#include "projection.h"
 
 #define ROTATION_INC 0.002
 #define MOVE_IN_OUT_FOV_MULTIPLIER 1.0e-3f

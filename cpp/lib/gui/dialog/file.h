@@ -17,7 +17,7 @@
 #pragma once
 
 #include "file/path.h"
-#include "gui/opengl/gl.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::Dialog::File {
 

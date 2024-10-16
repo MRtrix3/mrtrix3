@@ -18,9 +18,9 @@
 
 #include <deque>
 
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/spin_box.h"
-#include "gui/mrview/tool/base.h"
+#include "mrview/adjust_button.h"
+#include "mrview/spin_box.h"
+#include "mrview/tool/base.h"
 
 namespace MR::GUI::MRView {
 class AdjustButton;

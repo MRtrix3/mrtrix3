@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "gui/dwi/render_frame.h"
+#include "dwi/render_frame.h"
 
-#include "gui/mrview/spin_box.h"
-#include "gui/mrview/tool/odf/odf.h"
-#include "gui/mrview/window.h"
+#include "mrview/spin_box.h"
+#include "mrview/tool/odf/odf.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView::Tool {
 

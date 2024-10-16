@@ -14,10 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/lighting_dock.h"
+#include "lighting_dock.h"
+#include "color_button.h"
 #include "file/config.h"
-#include "gui/color_button.h"
-#include "gui/gui.h"
+#include "gui.h"
 #include "math/math.h"
 
 namespace MR::GUI {

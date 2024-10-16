@@ -17,10 +17,10 @@
 #ifndef MODE
 
 // place #include files in here:
-#include "gui/mrview/mode/lightbox.h"
-#include "gui/mrview/mode/ortho.h"
-#include "gui/mrview/mode/slice.h"
-#include "gui/mrview/mode/volume.h"
+#include "mrview/mode/lightbox.h"
+#include "mrview/mode/ortho.h"
+#include "mrview/mode/slice.h"
+#include "mrview/mode/volume.h"
 
 #else
 

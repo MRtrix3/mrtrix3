@@ -14,14 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/shview/render_window.h"
+#include "shview/render_window.h"
 #include "app.h"
+#include "dialog/dialog.h"
+#include "dialog/file.h"
+#include "dwi/render_frame.h"
 #include "file/matrix.h"
 #include "file/path.h"
-#include "gui/dialog/dialog.h"
-#include "gui/dialog/file.h"
-#include "gui/dwi/render_frame.h"
-#include "gui/lighting_dock.h"
+#include "lighting_dock.h"
 #include "math/SH.h"
 #include "math/math.h"
 

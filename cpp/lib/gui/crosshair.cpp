@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/crosshair.h"
+#include "crosshair.h"
 
-#include "gui/projection.h"
+#include "projection.h"
 
 namespace MR::GUI {
 

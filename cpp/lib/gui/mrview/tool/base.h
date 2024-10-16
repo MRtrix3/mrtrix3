@@ -18,8 +18,8 @@
 
 #include "file/config.h"
 
-#include "gui/mrview/window.h"
-#include "gui/projection.h"
+#include "mrview/window.h"
+#include "projection.h"
 
 #define LAYOUT_SPACING 3
 

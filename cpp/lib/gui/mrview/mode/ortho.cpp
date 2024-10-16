@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/mode/ortho.h"
+#include "mrview/mode/ortho.h"
 
-#include "gui/cursor.h"
+#include "cursor.h"
 #include "mrtrix.h"
 
 namespace MR::GUI::MRView::Mode {

@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/mode/lightbox.h"
+#include "mrview/mode/lightbox.h"
 
 namespace MR::GUI::MRView::Mode {
 

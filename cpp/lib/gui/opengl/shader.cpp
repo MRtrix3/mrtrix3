@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/opengl/shader.h"
+#include "opengl/shader.h"
 
 namespace MR::GUI::GL::Shader {
 

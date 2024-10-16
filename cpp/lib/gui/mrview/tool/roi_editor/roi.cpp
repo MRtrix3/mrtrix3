@@ -16,13 +16,13 @@
 
 #include <string>
 
-#include "gui/mrview/qthelpers.h"
-#include "gui/mrview/tool/roi_editor/roi.h"
+#include "mrview/qthelpers.h"
+#include "mrview/tool/roi_editor/roi.h"
 
-#include "gui/cursor.h"
-#include "gui/dialog/file.h"
-#include "gui/projection.h"
+#include "cursor.h"
+#include "dialog/file.h"
 #include "header.h"
+#include "projection.h"
 
 namespace MR::GUI::MRView::Tool {
 

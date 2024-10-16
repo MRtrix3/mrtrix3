@@ -14,12 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/node_list.h"
+#include "mrview/tool/connectome/node_list.h"
 
 #include <QVector>
 
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/connectome/connectome.h"
+#include "mrview/tool/base.h"
+#include "mrview/tool/connectome/connectome.h"
 
 namespace MR::GUI::MRView::Tool {
 

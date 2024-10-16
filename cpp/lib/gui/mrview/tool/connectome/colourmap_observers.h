@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "gui/mrview/colourmap_button.h"
-#include "gui/opengl/gl.h"
+#include "mrview/colourmap_button.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::MRView::Tool {
 

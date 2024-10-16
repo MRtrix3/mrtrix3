@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/cursor.h"
+#include "cursor.h"
 
 namespace MR::GUI {
 

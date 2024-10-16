@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/shapes/cube.h"
+#include "shapes/cube.h"
 
 namespace {
 

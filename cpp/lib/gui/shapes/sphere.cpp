@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/shapes/sphere.h"
+#include "shapes/sphere.h"
 
 #include <map>
 

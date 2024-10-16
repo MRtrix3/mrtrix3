@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "gui/crosshair.h"
-#include "gui/gui.h"
-#include "gui/opengl/font.h"
-#include "gui/opengl/gl.h"
-#include "gui/opengl/transformation.h"
+#include "crosshair.h"
+#include "gui.h"
+#include "opengl/font.h"
+#include "opengl/gl.h"
+#include "opengl/transformation.h"
 
 namespace MR::GUI {
 

@@ -16,9 +16,9 @@
 
 #include <limits>
 
-#include "gui/mrview/tool/roi_editor/item.h"
-#include "gui/mrview/tool/roi_editor/undoentry.h"
-#include "gui/mrview/window.h"
+#include "mrview/tool/roi_editor/item.h"
+#include "mrview/tool/roi_editor/undoentry.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView::Tool {
 

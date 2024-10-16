@@ -17,7 +17,7 @@
 #pragma once
 
 #include "app.h"
-#include "gui/mrview/mode/base.h"
+#include "mrview/mode/base.h"
 
 namespace MR::GUI::MRView::Mode {
 

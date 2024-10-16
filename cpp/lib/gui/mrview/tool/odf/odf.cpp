@@ -18,16 +18,16 @@
 #include "dwi/shells.h"
 #include "mrtrix.h"
 
+#include "dialog/file.h"
 #include "dwi/directions/set.h"
-#include "gui/dialog/file.h"
-#include "gui/dwi/render_frame.h"
-#include "gui/lighting_dock.h"
-#include "gui/mrview/mode/base.h"
-#include "gui/mrview/tool/odf/item.h"
-#include "gui/mrview/tool/odf/model.h"
-#include "gui/mrview/tool/odf/odf.h"
-#include "gui/mrview/tool/odf/preview.h"
-#include "gui/mrview/window.h"
+#include "dwi/render_frame.h"
+#include "lighting_dock.h"
+#include "mrview/mode/base.h"
+#include "mrview/tool/odf/item.h"
+#include "mrview/tool/odf/model.h"
+#include "mrview/tool/odf/odf.h"
+#include "mrview/tool/odf/preview.h"
+#include "mrview/window.h"
 
 namespace MR::GUI::MRView::Tool {
 

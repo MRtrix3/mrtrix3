@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/dialog/opengl.h"
-#include "gui/dialog/list.h"
-#include "gui/opengl/gl.h"
+#include "dialog/opengl.h"
+#include "dialog/list.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::Dialog {
 

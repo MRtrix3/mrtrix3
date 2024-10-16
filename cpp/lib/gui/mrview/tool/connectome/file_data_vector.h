@@ -18,7 +18,7 @@
 
 #include <QString>
 
-#include "gui/gui.h"
+#include "gui.h"
 
 namespace MR::GUI::MRView::Tool {
 

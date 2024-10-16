@@ -20,8 +20,8 @@
 
 #include "connectome/connectome.h"
 #include "dwi/tractography/streamline.h"
-#include "gui/opengl/gl.h"
 #include "math/math.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::MRView::Tool {
 

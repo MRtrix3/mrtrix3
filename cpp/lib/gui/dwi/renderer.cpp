@@ -16,11 +16,11 @@
 
 #include <map>
 
-#include "gui/dwi/renderer.h"
-#include "gui/gui.h"
-#include "gui/opengl/lighting.h"
-#include "gui/projection.h"
+#include "dwi/renderer.h"
+#include "gui.h"
 #include "math/legendre.h"
+#include "opengl/lighting.h"
+#include "projection.h"
 
 namespace MR::GUI::DWI {
 

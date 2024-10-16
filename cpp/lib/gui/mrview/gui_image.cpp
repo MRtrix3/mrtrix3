@@ -14,12 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/gui_image.h"
+#include "mrview/gui_image.h"
 
-#include "gui/mrview/window.h"
-#include "gui/projection.h"
 #include "header.h"
+#include "mrview/window.h"
 #include "progressbar.h"
+#include "projection.h"
 
 namespace MR::GUI::MRView {
 

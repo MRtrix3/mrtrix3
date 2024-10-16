@@ -19,9 +19,9 @@
 #include <array>
 
 #include "algo/loop.h"
-#include "gui/mrview/tool/roi_editor/undoentry.h"
-#include "gui/mrview/volume.h"
 #include "header.h"
+#include "mrview/tool/roi_editor/undoentry.h"
+#include "mrview/volume.h"
 #include "types.h"
 
 namespace MR::GUI::MRView::Tool {

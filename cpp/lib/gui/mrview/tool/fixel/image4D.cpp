@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/fixel/image4D.h"
+#include "mrview/tool/fixel/image4D.h"
 
 namespace MR::GUI::MRView::Tool {
 

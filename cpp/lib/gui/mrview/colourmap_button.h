@@ -19,7 +19,7 @@
 #include "mrtrix.h"
 
 #include "colourmap.h"
-#include "gui/opengl/gl.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI::MRView {
 

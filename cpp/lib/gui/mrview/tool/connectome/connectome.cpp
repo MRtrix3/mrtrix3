@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/connectome.h"
+#include "mrview/tool/connectome/connectome.h"
 
 #include "header.h"
 #include "transform.h"
@@ -22,8 +22,8 @@
 #include "adapter/subset.h"
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
+#include "dialog/file.h"
 #include "file/path.h"
-#include "gui/dialog/file.h"
 #include "math/math.h"
 #include "math/rng.h"
 

@@ -18,8 +18,8 @@
 
 #include "mrtrix.h"
 
-#include "gui/color_button.h"
-#include "gui/mrview/adjust_button.h"
+#include "color_button.h"
+#include "mrview/adjust_button.h"
 
 namespace MR::GUI::MRView::Tool {
 

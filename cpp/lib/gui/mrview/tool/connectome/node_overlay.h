@@ -19,8 +19,8 @@
 #include "header.h"
 #include "types.h"
 
-#include "gui/mrview/displayable.h"
-#include "gui/mrview/gui_image.h"
+#include "mrview/displayable.h"
+#include "mrview/gui_image.h"
 
 namespace MR::GUI::MRView::Tool {
 

@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/adjust_button.h"
+#include "mrview/adjust_button.h"
 #include "math/math.h"
 
 namespace MR::GUI::MRView {

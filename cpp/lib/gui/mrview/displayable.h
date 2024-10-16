@@ -19,9 +19,9 @@
 #include "math/math.h"
 
 #include "colourmap.h"
-#include "gui/opengl/gl.h"
-#include "gui/opengl/shader.h"
-#include "gui/projection.h"
+#include "opengl/gl.h"
+#include "opengl/shader.h"
+#include "projection.h"
 
 namespace MR {
 class ProgressBar;

@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/sync/localsocketreader.h"
+#include "mrview/sync/localsocketreader.h"
 #include "exception.h"
 
 namespace MR::GUI::MRView::Sync {

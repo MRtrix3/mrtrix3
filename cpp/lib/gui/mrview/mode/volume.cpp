@@ -14,12 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/mode/volume.h"
+#include "mrview/mode/volume.h"
 #include "file/config.h"
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/view.h"
-#include "gui/opengl/lighting.h"
+#include "mrview/adjust_button.h"
+#include "mrview/tool/base.h"
+#include "mrview/tool/view.h"
+#include "opengl/lighting.h"
 
 namespace MR::GUI::MRView::Mode {
 

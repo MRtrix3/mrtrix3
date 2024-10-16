@@ -14,10 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/tractography/track_scalar_file.h"
+#include "mrview/tool/tractography/track_scalar_file.h"
 
-#include "gui/dialog/file.h"
-#include "gui/mrview/tool/tractography/tractogram.h"
+#include "dialog/file.h"
+#include "mrview/tool/tractography/tractogram.h"
 
 namespace MR::GUI::MRView::Tool {
 

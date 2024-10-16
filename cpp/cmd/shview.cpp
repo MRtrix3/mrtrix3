@@ -15,15 +15,15 @@
  */
 
 // clang-format off
-#include "gui/gui.h"
+#include "gui.h"
 #include "command.h"
 // clang-format on
 
 #include "file/path.h"
-#include "gui/shview/icons.h"
-#include "gui/shview/render_window.h"
 #include "math/SH.h"
 #include "progressbar.h"
+#include "shview/icons.h"
+#include "shview/render_window.h"
 
 using namespace MR;
 using namespace App;

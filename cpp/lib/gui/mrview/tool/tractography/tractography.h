@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include "gui/color_button.h"
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/combo_box_error.h"
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/tractography/track_scalar_file.h"
-#include "gui/projection.h"
+#include "color_button.h"
+#include "mrview/adjust_button.h"
+#include "mrview/combo_box_error.h"
+#include "mrview/tool/base.h"
+#include "mrview/tool/tractography/track_scalar_file.h"
+#include "projection.h"
 
 namespace MR::GUI {
 namespace GL {

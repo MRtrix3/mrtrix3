@@ -20,8 +20,8 @@
 #include "transform.h"
 
 #include "file/config.h"
-#include "gui/mrview/displayable.h"
-#include "gui/opengl/gl.h"
+#include "mrview/displayable.h"
+#include "opengl/gl.h"
 
 namespace MR::GUI {
 class Projection;

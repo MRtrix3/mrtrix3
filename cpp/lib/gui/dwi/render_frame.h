@@ -17,13 +17,13 @@
 #pragma once
 
 #include "dwi/directions/set.h"
-#include "gui/dwi/renderer.h"
-#include "gui/opengl/font.h"
-#include "gui/opengl/gl.h"
-#include "gui/opengl/lighting.h"
-#include "gui/opengl/transformation.h"
-#include "gui/projection.h"
+#include "dwi/renderer.h"
 #include "memory.h"
+#include "opengl/font.h"
+#include "opengl/gl.h"
+#include "opengl/lighting.h"
+#include "opengl/transformation.h"
+#include "projection.h"
 #include "types.h"
 
 #define MAX_LOD 8

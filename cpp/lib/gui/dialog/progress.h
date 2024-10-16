@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "gui/opengl/gl.h"
+#include "opengl/gl.h"
 #include "progressbar.h"
 
 namespace MR::GUI::Dialog::ProgressBar {

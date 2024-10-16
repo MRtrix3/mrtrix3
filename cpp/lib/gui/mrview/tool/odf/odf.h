@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "gui/color_button.h"
-#include "gui/mrview/adjust_button.h"
-#include "gui/mrview/spin_box.h"
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/odf/type.h"
+#include "color_button.h"
+#include "mrview/adjust_button.h"
+#include "mrview/spin_box.h"
+#include "mrview/tool/base.h"
+#include "mrview/tool/odf/type.h"
 
 namespace MR::GUI {
 namespace DWI {

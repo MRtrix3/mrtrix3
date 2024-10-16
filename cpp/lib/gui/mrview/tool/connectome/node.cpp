@@ -14,11 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/tool/connectome/node.h"
-#include "gui/mrview/window.h"
+#include "mrview/tool/connectome/node.h"
+#include "mrview/window.h"
 
 #include "exception.h"
-#include "gui/mrview/window.h"
+#include "mrview/window.h"
 #include "types.h"
 
 namespace MR::GUI::MRView::Tool {

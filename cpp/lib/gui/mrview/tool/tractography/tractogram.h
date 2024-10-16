@@ -17,8 +17,8 @@
 #pragma once
 
 #include "dwi/tractography/properties.h"
-#include "gui/mrview/displayable.h"
-#include "gui/mrview/tool/tractography/tractography.h"
+#include "mrview/displayable.h"
+#include "mrview/tool/tractography/tractography.h"
 
 namespace MR::GUI {
 class Projection;

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "gui/mrview/displayable.h"
+#include "mrview/displayable.h"
 
 namespace MR::GUI::MRView::Tool {
 

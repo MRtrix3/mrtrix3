@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/dialog/progress.h"
-#include "gui/gui.h"
+#include "dialog/progress.h"
+#include "gui.h"
 #include <cassert>
 
 namespace MR::GUI::Dialog::ProgressBar {
