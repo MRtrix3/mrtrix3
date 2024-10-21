@@ -51,7 +51,7 @@ def execute(): # pylint: disable=unused-variable
       else:
         app.debug(f'{name} ODF image already on target voxel grid')
       is_anisotropic = len(header.size()) > 3 and header.size()[3] > 1
-      if not (is_anisotropic == expect_anisotropic):
+      if is_anisotropic != expect_anisotropic:
         app.warn(f'Received {"anisotropic" if is_anisotropic else "isotropic"} ODF for {name}'
                  f' but expected {"anisotropic" if expect_anisotropic else "isotropic"};'
                  ' check order of input ODF images if this was not intentional')
@@ -125,4 +125,3 @@ def execute(): # pylint: disable=unused-variable
     preserve_pipes=True)
 
   return result_masked
-
