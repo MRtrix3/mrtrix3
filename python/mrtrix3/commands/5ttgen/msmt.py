@@ -13,92 +13,116 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os
-import subprocess
-from mrtrix3 import MRtrixError, app, path, run, image
+from mrtrix3 import app, image, run
 
 
 def usage(base_parser, subparsers):  # pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt', parents=[base_parser])
   parser.set_author('Arkiev D\'Souza (arkiev.dsouza@sydney.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)')
-  parser.set_synopsis('Generate a 5TT image from ODF images.')
+  parser.set_synopsis('Generate a 5TT image from ODF images')
+  parser.add_description('If the user does not manually provide a brain mask using the -mask option,'
+                         ' the command will automatically determine a mask for the output 5TT image;'
+                         ' this is necessary to conform to the expectations of the 5TT format.'
+                         ' This mask will be computed based on where the sum of the ODFs exceeds 50%'
+                         ' of what is expected from a voxel that contains a DWI signal'
+                         ' that exactly matches one of the response functions.')
 
-  parser.add_argument('odf_wm', type=app.Parser.ImageIn(), help='The input white-matter ODF')
-  parser.add_argument('odf_gm', type=app.Parser.ImageIn(), help='The input grey-matter ODF')
+  parser.add_argument('odf_wm', type=app.Parser.ImageIn(), help='The input white matter ODF')
+  parser.add_argument('odf_gm', type=app.Parser.ImageIn(), help='The input grey matter ODF')
   parser.add_argument('odf_csf', type=app.Parser.ImageIn(), help='The input cerebrospinal fluid ODF')
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output 5TT image')
 
-  options = parser.add_argument_group('Options specific to the 'msmt' algorithm')
-  parser.add_argument('-mask', nargs='?', default=None, type=app.Parser.ImageIn(), help='The input binary brain mask image')
+  options = parser.add_argument_group('Options specific to the \'msmt\' algorithm')
+  options.add_argument('-mask', type=app.Parser.ImageIn(), help='An input binary brain mask image')
 
 
 def execute(): # pylint: disable=unused-variable
-  # Extract l=0 term from WM
-  run.command(f'mrconvert {app.ARGS.odf_wm} -coord 3 0 -axes 0,1,2 wm_vol.mif')
 
-  # check whether the GM and CSF ODF voxel grid match that of wm_vol.mif. If the do not match, regrid with wm_vol.mif as template
-  # Load the images
-  wm_vol_img = image.Image('wm_vol.mif')
-  gm_odf_img = image.Image(app.ARGS.odf_gm)
-  csf_odf_img = image.Image(app.ARGS.odf_csf)
+  target_voxel_grid = image.Header(app.ARGS.odf_wm)
 
-  # Check GM ODF against WM ODF
-  if image.match(wm_vol_img, gm_odf_img):
-      app.console('Voxel grid of GM and WM ODF match')
-      run.command(f'mrconvert {app.ARGS.odf_gm} gm_vol.mif')
-  else:
-      app.warn('GM ODF has different dimensions to WM ODF. Regridding GM ODF')
-      run.command(f'mrgrid {app.ARGS.odf_gm} -template wm_vol.mif regrid gm_vol.mif')
+  class Tissue:
+    def __init__(self, inpath, name, expect_anisotropic):
+      self.name = name
+      header = image.Header(inpath)
+      do_regrid = not image.match(header, target_voxel_grid, up_to_dim=3)
+      if do_regrid:
+        app.warn(f'ODF image "{inpath}" not defined on same voxel grid as WM ODF image;'
+                 ' will have to resample')
+      else:
+        app.debug(f'{name} ODF image already on target voxel grid')
+      is_anisotropic = len(header.size()) > 3 and header.size()[3] > 1
+      if not (is_anisotropic == expect_anisotropic):
+        app.warn(f'Received {"anisotropic" if is_anisotropic else "isotropic"} ODF for {name}'
+                 f' but expected {"anisotropic" if expect_anisotropic else "isotropic"};'
+                 ' check order of input ODF images if this was not intentional')
+      self.lzeropath = f'{name}_lzero.mif'
+      command = ['mrgrid', inpath, 'regrid', '-template', app.ARGS.odf_wm, '-', '|'] \
+                if do_regrid                                                         \
+                else []
+      if is_anisotropic:
+        command.extend(['mrconvert', '-' if command else inpath, '-coord', '3', '0', '-axes', '0,1,2', '-', '|'])
+      command.extend(['mrcalc', '-' if command else inpath, '0.0', '-max', self.lzeropath])
+      run.command(command)
+      self.normpath = None
 
-  # Check CSF ODF against WM ODF
-  if image.match(wm_vol_img, csf_odf_img):
-      app.console('Voxel grid of CSF and WM ODF match')
-      run.command(f'mrconvert {app.ARGS.odf_csf} csf_vol.mif')
-  else:
-      app.warn('CSF ODF has different dimensions to WM ODF. Regridding CSF ODF')
-      run.command(f'mrgrid {app.ARGS.odf_csf} -template wm_vol.mif regrid csf_vol.mif')
+    def normalise(self, volsum_image):
+      assert self.normpath is None
+      self.normpath = f'{self.name}_fraction.mif'
+      run.command(f'mrcalc {self.lzeropath} {volsum_image} -divide {self.normpath}')
 
-  # Set negative values to zero
-  run.command('mrcalc wm_vol.mif 0.0 -max wm_vol_pos.mif')
-  run.command('mrcalc gm_vol.mif 0.0 -max gm_vol_pos.mif')
-  run.command('mrcalc csf_vol.mif 0.0 -max csf_vol_pos.mif')
+  # End definitiion of class Tissues
 
-  # Normalize each volume
-  run.command('mrmath wm_vol_pos.mif gm_vol_pos.mif csf_vol_pos.mif sum totalvol.mif')
-  run.command('mrcalc wm_vol_pos.mif totalvol.mif -divide wm_vol_pos_norm.mif')
-  run.command('mrcalc gm_vol_pos.mif totalvol.mif -divide gm_vol_pos_norm.mif')
-  run.command('mrcalc csf_vol_pos.mif totalvol.mif -divide csf_vol_pos_norm.mif')
+  tissues = [Tissue(app.ARGS.odf_wm,  'WM',  True),
+             Tissue(app.ARGS.odf_gm,  'GM',  False),
+             Tissue(app.ARGS.odf_csf, 'CSF', False)]
+
+  # Compute volume sum in each voxel
+  volsum_image = 'totalvol.mif'
+  run.command(['mrmath', [item.lzeropath for item in tissues], 'sum', volsum_image])
+  # Normalise to tissue fractions
+  for tissue in tissues:
+    tissue.normalise(volsum_image)
 
   # Create empty volume for SGM and pathology
-  run.command('mrcalc wm_vol.mif inf -gt empty_vol.mif')
+  empty_volume = 'empty_vol.mif'
+  run.command(f'mrcalc {volsum_image} inf -gt {empty_volume}')
 
   # Concatenate volumes
-  run.command('mrcat -datatype float32 gm_vol_pos_norm.mif empty_vol.mif wm_vol_pos_norm.mif csf_vol_pos_norm.mif empty_vol.mif fTT_dirty.mif')
+  result_unmasked = '5TT_unmasked.mif'
+  ####################################################################################################################
+  # 5TT volumes:          Cortical GM      Sub-cortical GM          WM                   CSF             Pathology   #
+  ####################################################################################################################
+  run.command(f'mrcat {tissues[1].normpath} {empty_volume} {tissues[0].normpath} {tissues[2].normpath} {empty_volume}'
+              f' {result_unmasked} -datatype float32')
 
-  #########################
-  # Tidy image by masking #
-  #########################
-
-# if mask is provided, use it. If not, create one
+  # Tidy image by masking
+  result_masked = '5TT_masked.mif'
+  # If mask is provided, use it; if not, create one
   if app.ARGS.mask:
-    # case 1: using provided brainmask
-    # check if dimensions of brainmask match 5TT_dirty. If not, regrid
-    mask_img = image.Image(app.ARGS.mask)
-    if image.match(mask_img, wm_vol_img):
-      app.console('Mask has equal dimensions to 5TT image. No regridding of mask required')
-      run.command(f'mrcalc fTT_dirty.mif {app.ARGS.mask} -mult result.mif')
+    # Case 1: Using provided brainmask
+    # Check if brainmask is on same voxel grid; if not, regrid
+    mask_header = image.Header(app.ARGS.mask)
+    if image.match(target_voxel_grid, mask_header, up_to_dim=3):
+      app.debug('Mask matches ODF voxel grid; no regridding of mask required')
+      run.command(f'mrcalc {result_unmasked} {app.ARGS.mask} -mult {result_masked}')
     else:
-      app.warn('Mask has different dimensions to 5TT image; regridding')
-      run.command(f'mrgrid {app.ARGS.mask} -template wm_vol.mif regrid - | mrcalc - 0.5 -gt - | mrcalc - fTT_dirty.mif -mult result.mif')
-
+      app.warn('Mask has different voxel grid to WM ODF image; regridding')
+      run.command(f'mrgrid {app.ARGS.mask} -template {empty_volume} regrid - |'
+                  ' mrcalc - 0.5 -gt - |'
+                  f' mrcalc - {result_unmasked} -mult {result_masked}')
   else:
-    # case 2: Generate a mask that contains only those voxels where the sum of ODF l=0 terms exceeds 0.5/sqrt(4pi); then select the largest component and fill any holes. 
-    # 0.5/sqrt(4pi)=0.1410473959
-    run.command('mrcalc totalvol.mif 0.1410473959 -gt - | maskfilter - clean - | maskfilter - fill - | mrcalc - fTT_dirty.mif -mult result.mif')
+    # Case 2: Generate a mask that contains only those voxels where the sum of ODF l=0 terms exceeds 0.5/sqrt(4pi);
+    #   then select the largest component and fill any holes.
+    # 0.5/sqrt(4pi) = 0.1410473959
+    app.console('No 5TT mask provided; generating from input ODFs')
+    run.command(f'mrcalc {volsum_image} 0.1410473959 -gt - |'
+                ' maskfilter - clean - |'
+                ' maskfilter - fill - |'
+                f' mrcalc - {result_unmasked} -mult {result_masked}')
 
-  run.command(['mrconvert', 'result.mif', app.ARGS.output],
+  run.command(['mrconvert', result_masked, app.ARGS.output],
     force=app.FORCE_OVERWRITE,
     preserve_pipes=True)
 
-  return 'result.mif'
+  return result_masked
 
