@@ -24,6 +24,7 @@
 #include "file/json.h"
 #include "file/json_utils.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "image_io/pipe.h"
 
 

@@ -29,6 +29,7 @@
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 
 
 namespace MR
