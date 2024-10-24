@@ -29,6 +29,7 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "math/median.h"
+#include "math/SH.h"
 
 
 
@@ -59,7 +60,13 @@ void usage ()
   + "In the circumstance where a per-streamline statistic is requested, the input "
     "image can be 4D rather than 3D; in that circumstance, each volume will be sampled "
     "independently, and the output (whether in .npy or text format) will be a matrix, "
-    "with one row per streamline and one column per metric.";
+    "with one row per streamline and one column per metric."
+
+  + "If the input image is 4D, "
+    "and the number of volumes corresponds to an antipodally symmetric spherical harmonics function, "
+    "then the -sh option must be specified, "
+    "indicating whether the input image should be interpreted as such a function "
+    "or whether the input volumes should be sampled individually.";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file").type_tracks_in()
@@ -83,10 +90,13 @@ void usage ()
             "in each voxel based on the fraction of the track density "
             "contributed by that streamline (this is only appropriate for "
             "processing a whole-brain tractogram, and images for which the "
-            "quantiative parameter is additive)");
+            "quantiative parameter is additive)")
 
+  + Option ("sh",
+            "Interpret a 4D image input as representing coefficients of a spherical harmonic function, "
+            "and sample the amplitudes of that function along the streamline")
+    + Argument ("value").type_bool();
 
-  // TODO add support for SH amplitude along tangent
   // TODO add support for reading from fixel image
   //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
   //   (wait until fixel_twi is merged; should simplify)
@@ -143,11 +153,12 @@ class TDI { MEMALIGN(TDI)
 
 
 
+// TODO Consider moving SH to be a template rather than a boolean member requiring code branching
 template <class Interp>
 class SamplerNonPrecise
 { MEMALIGN (SamplerNonPrecise<Interp>)
   public:
-    SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
+    SamplerNonPrecise (Image<value_type>& image, const bool sample_sh, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
         interp (image),
         mapper (precalc_tdi.valid() ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
         tdi (precalc_tdi),
@@ -155,6 +166,11 @@ class SamplerNonPrecise
     {
       if (mapper)
         mapper->set_use_precise_mapping (false);
+      if (sample_sh) {
+        sh_precomputer = std::make_shared<Math::SH::PrecomputedAL<default_type>>();
+        sh_precomputer->init(Math::SH::LforN(image.size(3)));
+        sh_coeffs.resize(image.size(3));
+      }
     }
 
     bool operator() (const DWI::Tractography::Streamline<value_type>& tck, Statistics4D& out)
@@ -186,11 +202,24 @@ class SamplerNonPrecise
     {
       out.set_index (tck.get_index());
       out.resize (tck.size());
-      for (size_t i = 0; i != tck.size(); ++i) {
-        if (interp.scanner (tck[i]))
-          out[i] = interp.value();
-        else
-          out[i] = NAN;
+      if (sh_precomputer) {
+        for (size_t i = 0; i != tck.size(); ++i) {
+          if (interp.scanner (tck[i])) {
+            for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
+              sh_coeffs[interp.index(3)] = interp.value();
+            const Eigen::Vector3f dir = (tck[(i == ssize_t(tck.size()-1)) ? i : (i+1)] - tck[i ? (i-1) : 0]).normalized();
+            out[i] = sh_precomputer->value (sh_coeffs, dir);
+          } else {
+            out[i] = std::numeric_limits<value_type>::quiet_NaN();
+          }
+        }
+      } else {
+        for (size_t i = 0; i != tck.size(); ++i) {
+          if (interp.scanner (tck[i]))
+            out[i] = interp.value();
+          else
+            out[i] = std::numeric_limits<value_type>::quiet_NaN();
+        }
       }
       return true;
     }
@@ -199,13 +228,14 @@ class SamplerNonPrecise
                      matrix_type& out)
     {
       assert (interp.ndim() == 4);
+      assert (!sh_precomputer);
       out.resize (tck.size(), interp.size(3));
       for (size_t i = 0; i != tck.size(); ++i) {
         if (interp.scanner (tck[i])) {
           for (auto l = Loop(3) (interp); l; ++l)
-            out(i, interp.index(3)) = interp.value();
+            out(i, ssize_t(interp.index(3))) = value_type(interp.value());
         } else {
-          out.row(i).setConstant (NAN);
+          out.row(i).setConstant (std::numeric_limits<value_type>::quiet_NaN());
         }
       }
       return true;
@@ -214,6 +244,8 @@ class SamplerNonPrecise
   private:
     Interp interp;
     std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
+    std::shared_ptr<Math::SH::PrecomputedAL<default_type>> sh_precomputer;
+    vector_type sh_coeffs;
     Image<value_type> tdi;
     const stat_tck statistic;
 
@@ -256,7 +288,7 @@ class SamplerNonPrecise
               sum_weights += weights[i];
             }
           }
-          return sum_weights ? (integral / sum_weights) : NAN;
+          return sum_weights ? (integral / sum_weights) : std::numeric_limits<value_type>::quiet_NaN();
         }
         case stat_tck::MEDIAN: {
           // Don't bother with a weighted median here
@@ -266,7 +298,7 @@ class SamplerNonPrecise
             if (!std::isnan (data[i]))
               finite_data.push_back (data[i]);
           }
-          return finite_data.size() ? Math::median (finite_data) : NAN;
+          return finite_data.size() ? Math::median (finite_data) : std::numeric_limits<value_type>::quiet_NaN();
         }
         break;
         case stat_tck::MIN: {
@@ -278,7 +310,7 @@ class SamplerNonPrecise
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? NAN : value;
+          return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
         }
         break;
         case stat_tck::MAX: {
@@ -290,7 +322,7 @@ class SamplerNonPrecise
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? NAN : value;
+          return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
         }
         break;
         default: assert (0); return std::numeric_limits<value_type>::signaling_NaN();
@@ -306,7 +338,7 @@ class SamplerNonPrecise
 class SamplerPrecise
 { MEMALIGN (SamplerPrecise)
   public:
-    SamplerPrecise (Image<value_type>& image, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
+    SamplerPrecise (Image<value_type>& image, const bool sample_sh, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
         image (image),
         mapper (new DWI::Tractography::Mapping::TrackMapperBase (image)),
         tdi (precalc_tdi),
@@ -314,25 +346,42 @@ class SamplerPrecise
     {
       assert (statistic != stat_tck::NONE);
       mapper->set_use_precise_mapping (true);
+      if (sample_sh) {
+        sh_precomputer = std::make_shared<Math::SH::PrecomputedAL<default_type>>();
+        sh_precomputer->init(Math::SH::LforN(image.size(3)));
+        sh_coeffs.resize(image.size(3));
+      }
     }
 
     bool operator() (DWI::Tractography::Streamline<value_type>& tck, Statistics4D& out)
     {
+      assert (!sh_precomputer);
       out.index = tck.get_index();
       DWI::Tractography::Mapping::SetVoxel voxels;
       (*mapper) (tck, voxels);
       out.values.resize (image.size(3));
-      for (auto l = Loop(3) (image); l; ++l)
-        out.values[image.index(3)] = compute_statistic (voxels);
+      vector<ValueLength> data;
+      for (auto l = Loop(3) (image); l; ++l) {
+        data = sample_scalar (voxels);
+        out.values[image.index(3)] = compute_statistic (data);
+      }
       return true;
     }
 
     bool operator() (DWI::Tractography::Streamline<value_type>& tck, Statistic3D& out)
     {
       out.index = tck.get_index();
-      DWI::Tractography::Mapping::SetVoxel voxels;
-      (*mapper) (tck, voxels);
-      out.value = compute_statistic (voxels);
+      vector<ValueLength> data;
+      if (sh_precomputer) {
+        DWI::Tractography::Mapping::SetVoxelDir intersections;
+        (*mapper) (tck, intersections);
+        data = sample_SH (intersections);
+      } else {
+        DWI::Tractography::Mapping::SetVoxel voxels;
+        (*mapper) (tck, voxels);
+        data = sample_scalar (voxels);
+      }
+      out.value = compute_statistic (data);
       return true;
     }
 
@@ -340,6 +389,8 @@ class SamplerPrecise
   private:
     Image<value_type> image;
     std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
+    std::shared_ptr<Math::SH::PrecomputedAL<default_type>> sh_precomputer;
+    vector_type sh_coeffs;
     Image<value_type> tdi;
     const stat_tck statistic;
 
@@ -352,45 +403,62 @@ class SamplerPrecise
       return v.get_length() / tdi.value();
     }
 
-    value_type compute_statistic (const DWI::Tractography::Mapping::SetVoxel& voxels)
+    class ValueLength {
+      public:
+        ValueLength(const float value, const float length) :
+            value (value),
+            length (length) {}
+        bool operator< (const ValueLength& that) const { return value < that.value; }
+        float value;
+        float length;
+    };
+
+    vector<ValueLength> sample_scalar (const DWI::Tractography::Mapping::SetVoxel& voxels)
     {
+      vector<ValueLength> data;
+      for (const auto& v : voxels) {
+        assign_pos_of (v, 0, 3).to (image);
+        data.emplace_back(ValueLength(image.value() * get_tdi_multiplier (v), v.get_length()));
+      }
+      return data;
+    }
+
+    vector<ValueLength> sample_SH (const DWI::Tractography::Mapping::SetVoxelDir& intersections)
+    {
+      assert (!tdi.valid());
+      vector<ValueLength> data;
+      for (const auto& i : intersections) {
+        assign_pos_of(i, 0, 3).to (image);
+        sh_coeffs = image.row(3);
+        data.emplace_back(ValueLength(sh_precomputer->value(sh_coeffs, i.get_dir()), i.get_length()));
+      }
+      return data;
+    }
+
+    value_type compute_statistic (vector<ValueLength>& data) const
+    {
+      if (!data.size())
+        return std::numeric_limits<value_type>::quiet_NaN();
       switch (statistic) {
         case stat_tck::MEAN: {
           value_type integral = value_type(0), sum_lengths = value_type(0);
-          for (const auto& v : voxels) {
-            assign_pos_of (v, 0, 3).to (image);
-            const value_type value = image.value();
-            if (std::isfinite (value)) {
-              integral += v.get_length() * (value * get_tdi_multiplier (v));
-              sum_lengths += v.get_length();
+          for (const auto& v : data) {
+            if (std::isfinite (v.value)) {
+              integral += v.length * v.value;
+              sum_lengths += v.length;
             }
           }
-          return sum_lengths ? (integral / sum_lengths) : NAN;
+          return sum_lengths ?
+                 (integral / sum_lengths) :
+                 std::numeric_limits<value_type>::quiet_NaN();
         }
         case stat_tck::MEDIAN: {
-          // Should be a weighted median...
-          // Just use the n.log(n) algorithm
-          class WeightSort { NOMEMALIGN
-            public:
-              WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
-                value (value),
-                length (voxel.get_length()) { }
-              bool operator< (const WeightSort& that) const { return value < that.value; }
-              value_type value, length;
-          };
-          vector<WeightSort> data;
-          value_type sum_lengths (value_type(0));
-          for (const auto& v : voxels) {
-            assign_pos_of (v).to (image);
-            const value_type value = image.value();
-            if (std::isfinite (value)) {
-              data.push_back (WeightSort (v, (image.value() * get_tdi_multiplier (v))));
-              sum_lengths += v.get_length();
-            }
-          }
-          if (!data.size())
-            return NAN;
           std::sort (data.begin(), data.end());
+          value_type sum_lengths (value_type(0));
+          for (const auto& d : data) {
+            if (std::isfinite(d.value))
+              sum_lengths += d.length;
+          }
           const value_type target_length = 0.5 * sum_lengths;
           sum_lengths = value_type(0);
           value_type prev_value = data.front().value;
@@ -399,38 +467,39 @@ class SamplerPrecise
               return prev_value;
             prev_value = d.value;
           }
-          assert (0);
+          assert (false);
           return std::numeric_limits<value_type>::signaling_NaN();
         }
         case stat_tck::MIN: {
           value_type minvalue = std::numeric_limits<value_type>::infinity();
           bool cast_to_nan = true;
-          for (const auto& v : voxels) {
-            assign_pos_of (v).to (image);
-            const value_type value = image.value();
-            if (!std::isnan (value)) {
-              minvalue = std::min (minvalue, value * get_tdi_multiplier (v));
+          for (const auto& d : data) {
+            if (!std::isnan (d.value)) {
+              minvalue = std::min (minvalue, d.value);
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? NAN : minvalue;
+          return cast_to_nan ?
+                 std::numeric_limits<value_type>::quiet_NaN() :
+                 minvalue;
         }
         case stat_tck::MAX: {
           value_type maxvalue = -std::numeric_limits<value_type>::infinity();
           bool cast_to_nan = true;
-          for (const auto& v : voxels) {
-            assign_pos_of (v).to (image);
-            const value_type value = image.value();
-            if (!std::isnan (value)) {
-              maxvalue = std::max (maxvalue, value * get_tdi_multiplier (v));
+          for (const auto& d : data) {
+            if (!std::isnan (d.value)) {
+              maxvalue = std::max (maxvalue, d.value);
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? NAN : maxvalue;
+          return cast_to_nan ?
+                 std::numeric_limits<value_type>::quiet_NaN() :
+                 maxvalue;
         }
-        default:
+        default: {
           assert (0);
           return std::numeric_limits<value_type>::signaling_NaN();
+        }
       }
     }
 
@@ -565,9 +634,10 @@ void execute_nostat (DWI::Tractography::Reader<value_type>& reader,
                      const DWI::Tractography::Properties& properties,
                      const size_t num_tracks,
                      Image<value_type>& image,
+                     const bool sample_sh,
                      const std::string& path)
 {
-  SamplerNonPrecise<InterpType> sampler (image, stat_tck::NONE, Image<value_type>());
+  SamplerNonPrecise<InterpType> sampler (image, sample_sh, stat_tck::NONE, Image<value_type>());
   Receiver_NoStatistic receiver (path, num_tracks, properties);
   Thread::run_ordered_queue (reader,
                              Thread::batch (DWI::Tractography::Streamline<value_type>()),
@@ -580,12 +650,13 @@ template <class SamplerType>
 void execute (DWI::Tractography::Reader<value_type>& reader,
               const size_t num_tracks,
               Image<value_type>& image,
+              const bool sample_sh,
               const stat_tck statistic,
               Image<value_type>& tdi,
               const std::string& path)
 {
-  SamplerType sampler (image, statistic, tdi);
-  const size_t num_metrics = image.ndim() == 4 ? image.size(3) : 1;
+  SamplerType sampler (image, sample_sh, statistic, tdi);
+  const size_t num_metrics = image.ndim() == 4 && !sample_sh ? image.size(3) : 1;
   if (num_metrics == 1) {
     Receiver_Statistic3D receiver (num_tracks);
     Thread::run_ordered_queue (reader,
@@ -611,9 +682,41 @@ void run ()
 {
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<value_type> reader (argument[0], properties);
-  auto H = Header::open (argument[1]);
 
-  auto opt = get_options ("stat_tck");
+  auto H = Header::open (argument[1]);
+  const bool plausibly_SH = H.ndim() > 3 && Math::SH::NforL(Math::SH::LforN(H.size(3))) == H.size(3);
+  auto opt = get_options ("sh");
+  bool sample_sh = false;
+  if (opt.size()) {
+    if (plausibly_SH) {
+      if (bool(opt[0][0])) {
+        DEBUG("User specified -sh true, "
+              "and image can be interpreted as spherical harmonics; "
+              "spherical harmonics sampling will be used");
+        sample_sh = true;
+      } else {
+        DEBUG("User specified -sh false, "
+              "so even though image could be reasonably interpreted as spherical harmonics, "
+              "it will instead be sampled as individual volumes");
+      }
+    } else {
+      if (bool(opt[0][0])) {
+        throw Exception ("Cannot sample spherical harmonic function amplitudes, "
+                         "as input image cannot be interpreted as such");
+      } else {
+        WARN("Specification of -sh false was unnecessary, "
+             "as input image could not be interpreted as spherical harmonics functions");
+      }
+    }
+  } else if (plausibly_SH) {
+    throw Exception (std::string("Input image coupld plausibly be interpreted as spherical harmonics; "
+                     "must specify the -sh option to inform command whether to interpret image in this way")
+                     + ((H.ndim() == 4 && H.size(3) == 1) ?
+                       " this may be due to being a 4D image with 1 volume rather than a 3D image" :
+                       ""));
+  }
+
+  opt = get_options ("stat_tck");
   const stat_tck statistic = opt.size() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
   if (H.ndim() == 4 && H.size(3) != 1 && statistic != stat_tck::NONE) {
     INFO ("Input image is 4D; output will be 2D matrix");
@@ -637,6 +740,8 @@ void run ()
   if (get_options ("use_tdi_fraction").size()) {
     if (statistic == stat_tck::NONE)
       throw Exception ("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
+    if (sample_sh)
+      throw Exception ("Cannot use -use_tdi_fraction option in conjunction with SH function sampling");
     DWI::Tractography::Reader<value_type> tdi_reader (argument[0], properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper (H);
     mapper.set_use_precise_mapping (interp == interp_type::PRECISE);
@@ -653,10 +758,10 @@ void run ()
   if (statistic == stat_tck::NONE) {
     switch (interp) {
       case interp_type::NEAREST:
-        execute_nostat<Interp::Nearest<Image<value_type>>> (reader, properties, num_tracks, image, argument[2]);
+        execute_nostat<Interp::Nearest<Image<value_type>>> (reader, properties, num_tracks, image, sample_sh, argument[2]);
         break;
       case interp_type::LINEAR:
-        execute_nostat<Interp::Linear<Image<value_type>>> (reader, properties, num_tracks, image, argument[2]);
+        execute_nostat<Interp::Linear<Image<value_type>>> (reader, properties, num_tracks, image, sample_sh, argument[2]);
         break;
       case interp_type::PRECISE:
         throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");
@@ -664,13 +769,13 @@ void run ()
   } else {
     switch (interp) {
       case interp_type::NEAREST:
-        execute<SamplerNonPrecise<Interp::Nearest<Image<value_type>>>> (reader, num_tracks, image, statistic, tdi, argument[2]);
+        execute<SamplerNonPrecise<Interp::Nearest<Image<value_type>>>> (reader, num_tracks, image, sample_sh, statistic, tdi, argument[2]);
         break;
       case interp_type::LINEAR:
-        execute<SamplerNonPrecise<Interp::Linear<Image<value_type>>>> (reader, num_tracks, image, statistic, tdi, argument[2]);
+        execute<SamplerNonPrecise<Interp::Linear<Image<value_type>>>> (reader, num_tracks, image, sample_sh, statistic, tdi, argument[2]);
         break;
       case interp_type::PRECISE:
-        execute<SamplerPrecise> (reader, num_tracks, image, statistic, tdi, argument[2]);
+        execute<SamplerPrecise> (reader, num_tracks, image, sample_sh, statistic, tdi, argument[2]);
         break;
     }
   }
