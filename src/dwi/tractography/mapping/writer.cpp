@@ -18,6 +18,6 @@
 
 namespace MR::DWI::Tractography::Mapping {
 
-const char *writer_dims[] = {"undefined", "greyscale", "DEC", "dixel", "TOD", NULL};
+const char *writer_dims[] = {"undefined", "greyscale", "DEC", "vectorfield", "dixel", "TOD", NULL};
 
 }

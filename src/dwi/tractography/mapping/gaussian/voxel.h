@@ -101,6 +101,39 @@ public:
   }
 };
 
+class VoxelDir : public Mapping::VoxelDir, public VoxelAddon {
+
+  using Base = Mapping::VoxelDir;
+
+public:
+  VoxelDir() : Base(), VoxelAddon() {}
+  VoxelDir(const Eigen::Vector3i &V) : Base(V), VoxelAddon() {}
+  VoxelDir(const Eigen::Vector3i &V, const Eigen::Vector3d &d) : Base(V, d), VoxelAddon() {}
+  VoxelDir(const Eigen::Vector3i &V, const Eigen::Vector3d &d, const default_type l) : Base(V, d, l), VoxelAddon() {}
+  VoxelDir(const Eigen::Vector3i &V, const Eigen::Vector3d &d, const default_type l, const default_type f)
+      : Base(V, d, l), VoxelAddon(f) {}
+
+  VoxelDir &operator=(const VoxelDir &V) {
+    Base::operator=(V);
+    VoxelAddon::operator=(V);
+    return (*this);
+  }
+  void operator+=(const default_type) const { assert(0); }
+  void operator+=(const Eigen::Vector3d &) const { assert(0); }
+  bool operator==(const VoxelDir &V) const { return Base::operator==(V); }
+  bool operator<(const VoxelDir &V) const { return Base::operator<(V); }
+
+  void add(const Eigen::Vector3d &, const default_type) const { assert(0); }
+  void add(const Eigen::Vector3d &i, const default_type l, const default_type f) const {
+    Base::add(i, l);
+    VoxelAddon::operator+=(f);
+  }
+  void normalize() const {
+    VoxelAddon::normalize(get_length());
+    Base::normalize();
+  }
+};
+
 class Dixel : public Mapping::Dixel, public VoxelAddon {
 
   using Base = Mapping::Dixel;
@@ -202,6 +235,20 @@ public:
     iterator existing = std::set<VoxelDEC>::find(temp);
     if (existing == std::set<VoxelDEC>::end())
       std::set<VoxelDEC>::insert(temp);
+    else
+      (*existing).add(d, l, f);
+  }
+};
+
+class SetVoxelDir : public std::set<VoxelDir>, public Mapping::SetVoxelExtras {
+public:
+  using VoxType = VoxelDir;
+
+  inline void insert(const Eigen::Vector3i &v, const Eigen::Vector3d &d, const default_type l, const default_type f) {
+    const VoxelDir temp(v, d, l, f);
+    iterator existing = std::set<VoxelDir>::find(temp);
+    if (existing == std::set<VoxelDir>::end())
+      std::set<VoxelDir>::insert(temp);
     else
       (*existing).add(d, l, f);
   }

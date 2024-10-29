@@ -31,7 +31,7 @@
 
 namespace MR::DWI::Tractography::Mapping {
 
-enum writer_dim { UNDEFINED, GREYSCALE, DEC, DIXEL, TOD };
+enum writer_dim { UNDEFINED, GREYSCALE, DEC, VF, DIXEL, TOD };
 extern const char *writer_dims[];
 
 class MapWriterBase {
@@ -56,11 +56,13 @@ public:
 
   virtual bool operator()(const SetVoxel &) { return false; }
   virtual bool operator()(const SetVoxelDEC &) { return false; }
+  virtual bool operator()(const SetVoxelDir &) { return false; }
   virtual bool operator()(const SetDixel &) { return false; }
   virtual bool operator()(const SetVoxelTOD &) { return false; }
 
   virtual bool operator()(const Gaussian::SetVoxel &) { return false; }
   virtual bool operator()(const Gaussian::SetVoxelDEC &) { return false; }
+  virtual bool operator()(const Gaussian::SetVoxelDir &) { return false; }
   virtual bool operator()(const Gaussian::SetDixel &) { return false; }
   virtual bool operator()(const Gaussian::SetVoxelTOD &) { return false; }
 
@@ -87,7 +89,7 @@ public:
       : MapWriterBase(header, name, voxel_statistic, type),
         buffer(Image<value_type>::scratch(header, "TWI " + str(writer_dims[type]) + " buffer")) {
     auto loop = Loop(buffer);
-    if (type == DEC || type == TOD) {
+    if (type == DEC || type == VF || type == TOD) {
 
       if (voxel_statistic == V_MIN) {
         for (auto l = loop(buffer); l; ++l)
@@ -115,11 +117,11 @@ public:
 
     // With TOD, hijack the counts buffer in voxel statistic min/max mode
     //   (use to store maximum / minimum factors and hence decide when to update the TOD)
-    if ((type != DEC && voxel_statistic == V_MEAN) ||
+    if ((type != DEC && type != VF && voxel_statistic == V_MEAN) ||
         (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX)) ||
-        (type == DEC && voxel_statistic == V_SUM)) {
+        ((type == DEC || type == VF) && voxel_statistic == V_SUM)) {
       Header H_counts(header);
-      if (type == DEC || type == TOD)
+      if (type == DEC || type == VF || type == TOD)
         H_counts.ndim() = 3;
       counts.reset(new Image<float>(Image<float>::scratch(H_counts, "TWI streamline count buffer")));
     }
@@ -133,7 +135,7 @@ public:
     switch (voxel_statistic) {
 
     case V_SUM:
-      if (type == DEC) {
+      if (type == DEC || type == VF) {
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
           const float total_weight = counts->value();
@@ -162,7 +164,7 @@ public:
           if (counts->value())
             buffer.value() /= value_type(counts->value());
         }
-      } else if (type == DEC) {
+      } else if (type == DEC || type == VF) {
         for (auto l = loop(buffer); l; ++l) {
           auto value = get_dec();
           if (value.squaredNorm())
@@ -218,6 +220,10 @@ public:
     receive_dec(in);
     return true;
   }
+  bool operator()(const SetVoxelDir &in) override {
+    receive_dir(in);
+    return true;
+  }
   bool operator()(const SetDixel &in) override {
     receive_dixel(in);
     return true;
@@ -233,6 +239,10 @@ public:
   }
   bool operator()(const Gaussian::SetVoxelDEC &in) override {
     receive_dec(in);
+    return true;
+  }
+  bool operator()(const Gaussian::SetVoxelDir &in) override {
+    receive_dir(in);
     return true;
   }
   bool operator()(const Gaussian::SetDixel &in) override {
@@ -251,6 +261,7 @@ private:
   //   (once for standard TWI and one for Gaussian track-wise statistic)
   template <class Cont> void receive_greyscale(const Cont &);
   template <class Cont> void receive_dec(const Cont &);
+  template <class Cont> void receive_dir(const Cont &);
   template <class Cont> void receive_dixel(const Cont &);
   template <class Cont> void receive_tod(const Cont &);
 
@@ -264,12 +275,16 @@ private:
   //   For the Gaussian SetVoxel classes, there is a factor per mapped element
   default_type get_factor(const Voxel &element, const SetVoxel &set) const { return set.factor; }
   default_type get_factor(const VoxelDEC &element, const SetVoxelDEC &set) const { return set.factor; }
+  default_type get_factor(const VoxelDir &element, const SetVoxelDir &set) const { return set.factor; }
   default_type get_factor(const Dixel &element, const SetDixel &set) const { return set.factor; }
   default_type get_factor(const VoxelTOD &element, const SetVoxelTOD &set) const { return set.factor; }
   default_type get_factor(const Gaussian::Voxel &element, const Gaussian::SetVoxel &set) const {
     return element.get_factor();
   }
   default_type get_factor(const Gaussian::VoxelDEC &element, const Gaussian::SetVoxelDEC &set) const {
+    return element.get_factor();
+  }
+  default_type get_factor(const Gaussian::VoxelDir &element, const Gaussian::SetVoxelDir &set) const {
     return element.get_factor();
   }
   default_type get_factor(const Gaussian::Dixel &element, const Gaussian::SetDixel &set) const {
@@ -342,6 +357,39 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
     case V_MAX:
       if (scaled_colour.squaredNorm() > current_value.squaredNorm())
         set_dec(scaled_colour);
+      break;
+    default:
+      throw Exception("Unknown / unhandled voxel statistic in MapWriter::receive_dec()");
+    }
+  }
+}
+
+template <typename value_type> template <class Cont> void MapWriter<value_type>::receive_dir(const Cont &in) {
+  assert(type == VF);
+  for (const auto &i : in) {
+    assign_pos_of(i).to(buffer);
+    const default_type factor = get_factor(i, in);
+    const default_type weight = in.weight * i.get_length();
+    auto scaled_dir = i.get_dir();
+    scaled_dir *= factor;
+    const auto current_value = get_dec();
+    switch (voxel_statistic) {
+    case V_SUM:
+      set_dec(current_value + (scaled_dir * weight));
+      assert(counts);
+      assign_pos_of(i).to(*counts);
+      counts->value() += weight;
+      break;
+    case V_MIN:
+      if (scaled_dir.squaredNorm() < current_value.squaredNorm())
+        set_dec(scaled_dir);
+      break;
+    case V_MEAN:
+      set_dec(current_value + (scaled_dir * weight));
+      break;
+    case V_MAX:
+      if (scaled_dir.squaredNorm() > current_value.squaredNorm())
+        set_dec(scaled_dir);
       break;
     default:
       throw Exception("Unknown / unhandled voxel statistic in MapWriter::receive_dec()");
@@ -438,7 +486,7 @@ inline void MapWriter<value_type>::add(const default_type weight, const default_
 }
 
 template <typename value_type> Eigen::Vector3d MapWriter<value_type>::get_dec() {
-  assert(type == DEC);
+  assert(type == DEC || type == VF);
   Eigen::Vector3d value;
   buffer.index(3) = 0;
   value[0] = buffer.value();
@@ -450,7 +498,7 @@ template <typename value_type> Eigen::Vector3d MapWriter<value_type>::get_dec() 
 }
 
 template <typename value_type> void MapWriter<value_type>::set_dec(const Eigen::Vector3d &value) {
-  assert(type == DEC);
+  assert(type == DEC || type == VF);
   buffer.index(3) = 0;
   buffer.value() = value[0];
   buffer.index(3)++;

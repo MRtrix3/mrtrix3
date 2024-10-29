@@ -58,7 +58,12 @@ const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of t
 const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality of the output image")
   + Option ("dec",
       "perform track mapping in directionally-encoded colour (DEC) space")
-  + Option ("dixel",
+  + Option ("vectorfield",
+      "map streamlines to a vectorfield of the mean track direction "
+      "in each voxel. Note that no sign correction is done; this  "
+      "operation is therefore intended for unidirectional tracking "
+      "of individual fibre bundles")
+   + Option ("dixel",
       "map streamlines to dixels within each voxel;"
       " requires either a number of dixels "
       "(references an internal direction set),"
@@ -337,6 +342,15 @@ void run() {
   opt = get_options("dec");
   if (!opt.empty()) {
     writer_type = DEC;
+    header.ndim() = 4;
+    header.size(3) = 3;
+    header.sanitise();
+    Stride::set(header, Stride::contiguous_along_axis(3, header));
+  }
+
+  opt = get_options("vectorfield");
+  if (!opt.empty()) {
+    writer_type = VF;
     header.ndim() = 4;
     header.size(3) = 3;
     header.sanitise();
@@ -649,6 +663,9 @@ void run() {
   case DEC:
     writer.reset(new MapWriter<float>(header, argument[1], stat_vox, DEC));
     break;
+  case VF:
+    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, VF));
+    break;
   case DIXEL:
     writer.reset(make_writer(header, argument[1], stat_vox, DIXEL));
     break;
@@ -678,6 +695,13 @@ void run() {
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper_ptr),
                         Thread::batch(Gaussian::SetVoxelDEC()),
+                        *writer);
+      break;
+    case VF:
+      Thread::run_queue(loader,
+                        Thread::batch(Tractography::Streamline<float>()),
+                        Thread::multi(*mapper_ptr),
+                        Thread::batch(Gaussian::SetVoxelDir()),
                         *writer);
       break;
     case DIXEL:
@@ -711,6 +735,13 @@ void run() {
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper),
                         Thread::batch(SetVoxelDEC()),
+                        *writer);
+      break;
+    case VF:
+      Thread::run_queue(loader,
+                        Thread::batch(Tractography::Streamline<float>()),
+                        Thread::multi(*mapper),
+                        Thread::batch(SetVoxelDir()),
                         *writer);
       break;
     case DIXEL:

@@ -90,6 +90,8 @@ protected:
   inline void add_to_set(
       SetVoxelDEC &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type, const default_type) const;
   inline void add_to_set(
+      SetVoxelDir &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type, const default_type) const;
+  inline void add_to_set(
       SetDixel &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type, const default_type) const;
   inline void add_to_set(
       SetVoxelTOD &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type, const default_type) const;
@@ -228,6 +230,13 @@ inline void TrackMapper::add_to_set(SetVoxel &out,
   out.insert(v, l, f);
 }
 inline void TrackMapper::add_to_set(SetVoxelDEC &out,
+                                    const Eigen::Vector3i &v,
+                                    const Eigen::Vector3d &d,
+                                    const default_type l,
+                                    const default_type f) const {
+  out.insert(v, d, l, f);
+}
+inline void TrackMapper::add_to_set(SetVoxelDir &out,
                                     const Eigen::Vector3i &v,
                                     const Eigen::Vector3d &d,
                                     const default_type l,
