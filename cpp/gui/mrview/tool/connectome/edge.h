@@ -21,7 +21,7 @@
 #include "connectome/connectome.h"
 #include "dwi/tractography/streamline.h"
 #include "math/math.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI::MRView::Tool {
 

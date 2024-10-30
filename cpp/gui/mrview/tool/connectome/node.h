@@ -18,7 +18,7 @@
 
 #include "image.h"
 
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "surface/mesh.h"
 
 namespace MR::GUI::MRView::Tool {

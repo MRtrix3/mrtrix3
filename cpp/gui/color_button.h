@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 class QColorButton : public QPushButton {
   Q_OBJECT

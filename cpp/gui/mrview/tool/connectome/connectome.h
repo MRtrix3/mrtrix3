@@ -31,7 +31,7 @@
 #include "mrview/mode/base.h"
 #include "mrview/spin_box.h"
 #include "mrview/tool/base.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/lighting.h"
 #include "opengl/shader.h"
 #include "projection.h"

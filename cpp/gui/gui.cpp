@@ -15,7 +15,7 @@
  */
 
 #include "gui.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include <clocale>
 #include <locale>
 

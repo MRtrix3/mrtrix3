@@ -16,7 +16,7 @@
 
 #include "dialog/opengl.h"
 #include "dialog/list.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI::Dialog {
 

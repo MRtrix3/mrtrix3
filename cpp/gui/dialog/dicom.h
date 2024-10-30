@@ -17,7 +17,7 @@
 #pragma once
 
 #include "file/dicom/tree.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI::Dialog {
 

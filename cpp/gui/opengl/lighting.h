@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI::GL {
 

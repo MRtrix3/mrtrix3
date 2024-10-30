@@ -19,7 +19,7 @@
 #include "math/math.h"
 
 #include "colourmap.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/shader.h"
 #include "projection.h"
 

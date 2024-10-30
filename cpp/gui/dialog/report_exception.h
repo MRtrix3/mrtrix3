@@ -17,7 +17,7 @@
 #pragma once
 
 #include "exception.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI::Dialog {
 

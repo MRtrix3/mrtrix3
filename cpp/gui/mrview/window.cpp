@@ -27,7 +27,7 @@
 #include "mrview/qthelpers.h"
 #include "mrview/tool/base.h"
 #include "mrview/tool/list.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/lighting.h"
 #include "timer.h"
 #include <QDebug>

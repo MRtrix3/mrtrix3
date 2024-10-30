@@ -22,7 +22,7 @@
 #include "dwi/directions/set.h"
 #include "gui.h"
 #include "math/SH.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/shader.h"
 #include "shapes/halfsphere.h"
 

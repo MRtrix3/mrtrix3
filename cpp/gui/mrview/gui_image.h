@@ -20,7 +20,7 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "mrview/volume.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "types.h"
 #include <unordered_map>
 
