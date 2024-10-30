@@ -12,7 +12,7 @@ endforeach(CMD)
 if(MRTRIX_USE_PCH)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp CONTENT "int main(){}")
     add_executable(pch_cmd ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp)
-    target_include_directories(pch_cmd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lib/core)
+    target_include_directories(pch_cmd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../core)
     target_link_libraries(pch_cmd PRIVATE Eigen3::Eigen half::half mrtrix::common)
     target_precompile_headers(pch_cmd PRIVATE
         [["app.h"]]
