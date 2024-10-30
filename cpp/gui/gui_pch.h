@@ -16,4 +16,4 @@
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
-#include "opengl/gl.h"
+#include "opengl/glutils.h"

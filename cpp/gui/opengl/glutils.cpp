@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "file/config.h"
 
 namespace MR::GUI::GL {

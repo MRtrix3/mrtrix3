@@ -21,7 +21,7 @@
 
 #include "types.h"
 
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/shader.h"
 
 namespace MR::GUI::MRView::Tool {

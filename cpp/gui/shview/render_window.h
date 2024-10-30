@@ -17,7 +17,7 @@
 #pragma once
 
 #include "dwi/render_frame.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI {
 class LightingDock;

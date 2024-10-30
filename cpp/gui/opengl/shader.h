@@ -17,7 +17,7 @@
 #pragma once
 
 #include "app.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI::GL::Shader {
 

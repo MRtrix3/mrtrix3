@@ -18,7 +18,7 @@
 
 #include "mrview/tool/base.h"
 #include "mrview/window.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/transformation.h"
 #include "projection.h"
 

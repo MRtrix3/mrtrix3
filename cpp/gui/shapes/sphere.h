@@ -18,7 +18,7 @@
 
 #include "types.h"
 
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::Shapes {

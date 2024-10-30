@@ -17,7 +17,7 @@
 #pragma once
 
 #include "mrtrix.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 #define ADJUST_BUTTON_DEADZONE_SIZE 8
 

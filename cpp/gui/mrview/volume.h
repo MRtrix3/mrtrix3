@@ -21,7 +21,7 @@
 
 #include "file/config.h"
 #include "mrview/displayable.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI {
 class Projection;

@@ -19,7 +19,7 @@
 #include "crosshair.h"
 #include "gui.h"
 #include "opengl/font.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/transformation.h"
 
 namespace MR::GUI {

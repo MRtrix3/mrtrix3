@@ -20,7 +20,7 @@
 #include "dwi/renderer.h"
 #include "memory.h"
 #include "opengl/font.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 #include "opengl/lighting.h"
 #include "opengl/transformation.h"
 #include "projection.h"

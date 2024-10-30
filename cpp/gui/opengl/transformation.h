@@ -19,7 +19,7 @@
 #include <iostream>
 
 #include "math/least_squares.h"
-#include "opengl/gl.h"
+#include "opengl/glutils.h"
 
 namespace MR::GUI::GL {
 
