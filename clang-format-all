@@ -36,8 +36,8 @@ args = parser.parse_args()
 clang_format = args.executable
 paths = ['cpp', 'testing']
 extensions = ['.h', '.cpp']
-exclusion_list = ['cpp/lib/src/gui/gl_core_3_3.h',
-                  'cpp/lib/src/gui/gl_core_3_3.cpp']
+exclusion_list = ['cpp/gui/opengl/gl_core_3_3.h',
+                  'cpp/gui/opengl/gl_core_3_3.cpp']
 
 # if clang-format path contains spaces, wrap it in quotes
 if ' ' in clang_format and not clang_format.startswith('"'):
