@@ -36,5 +36,6 @@ if(MINGW AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(mrtrix-common INTERFACE -Wa,-mbig-obj)
 endif()
 
-add_subdirectory(lib)
 add_subdirectory(cmd)
+add_subdirectory(core)
+add_subdirectory(gui)
