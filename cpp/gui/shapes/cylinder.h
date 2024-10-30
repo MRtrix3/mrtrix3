@@ -16,8 +16,12 @@
 
 #pragma once
 
+// glutils.h must be included before gl_core_3_3.h since it include Qt OpenGL headers
+// which must be included before gl_core_3_3.h
+// clang-format off
 #include "opengl/glutils.h"
 #include "opengl/gl_core_3_3.h"
+// clang-format on
 
 namespace MR::GUI::Shapes {
 
