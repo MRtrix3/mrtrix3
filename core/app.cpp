@@ -1199,6 +1199,8 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
 }
 
 const std::vector<ParsedOption> get_options(const std::string &name) {
+  assert(!name.empty());
+  assert(name[0] != '-');
   std::vector<ParsedOption> matches;
   for (size_t i = 0; i < option.size(); ++i) {
     assert(option[i].opt);
