@@ -56,6 +56,7 @@ List of MRtrix3 commands
     commands/fixelcrop
     commands/fixelfilter
     commands/fixelreorient
+    commands/fixeltransform
     commands/fod2dec
     commands/fod2fixel
     commands/for_each
@@ -189,6 +190,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
     |cpp.png|, :ref:`fixelfilter`, "Perform filtering operations on fixel-based data"
     |cpp.png|, :ref:`fixelreorient`, "Reorient fixel directions"
+    |cpp.png|, :ref:`fixeltransform`, "Transform a fixel dataset"
     |cpp.png|, :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
     |cpp.png|, :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
     |python.png|, :ref:`for_each`, "Perform some arbitrary processing step for each of a set of inputs"
