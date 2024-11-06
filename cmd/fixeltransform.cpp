@@ -69,7 +69,7 @@ void usage() {
 using dir_type = Eigen::Vector3f;
 
 void run() {
-  std::string input_fixel_directory = argument[0];
+  const std::string input_fixel_directory = argument[0];
   Fixel::check_fixel_directory(input_fixel_directory);
   Header input_index_header(Fixel::find_index_header(input_fixel_directory));
   Interp::Nearest<Image<index_type>> input_index_image(input_index_header.get_image<index_type>());
@@ -96,7 +96,7 @@ void run() {
   auto warp_image = warp_header.get_image<float>();
   Adapter::Jacobian<Image<float>> jacobian_adapter(warp_image);
 
-  std::string output_fixel_directory = argument[2];
+  const std::string output_fixel_directory = argument[2];
 
   // First pass through data:
   // - Discover how many fixels there will be in the output dataset
@@ -119,10 +119,10 @@ void run() {
     if (input_index_image.scanner(Eigen::Vector3f(warp_image.row(3)))) {
       input_index_image.index(3) = 0;
       const index_type count = input_index_image.value();
-      if (count) {
+      if (count > 0) {
         count_buffer.value() = count;
         offset_buffer.value() = rotated_directions.size();
-        Eigen::Matrix<float, 3, 3> transform = jacobian_adapter.value().inverse();
+        const Eigen::Matrix<float, 3, 3> transform = jacobian_adapter.value().inverse();
         for (auto l_fixel = Fixel::Loop(input_index_image)(input_directions_image); l_fixel; ++l_fixel) {
           rotated_directions.push_back((transform * Eigen::Vector3f(input_directions_image.row(1))).normalized());
           usage_counts[input_directions_image.index(0)]++;
