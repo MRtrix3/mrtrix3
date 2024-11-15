@@ -8,6 +8,10 @@ on:
       types: [checks_requested]
       branches: [master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   linux-clang-build:
     runs-on: ubuntu-latest
