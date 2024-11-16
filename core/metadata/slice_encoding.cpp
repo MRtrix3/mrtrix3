@@ -37,10 +37,17 @@ namespace MR {
             INFO("No transformation of slice encoding direction for load of image \"" + header.name() + "\" required");
             return;
           }
-          const Metadata::BIDS::axis_vector_type
-              orig_dir(slice_encoding_it == keyval.end() ?
-                       Metadata::BIDS::axis_vector_type({0, 0, 1}) :
-                       Metadata::BIDS::axisid2vector(slice_encoding_it->second));
+          Metadata::BIDS::axis_vector_type orig_dir = Metadata::BIDS::axis_vector_type({0, 0, 1});
+          if (slice_encoding_it != keyval.end()) {
+            try {
+              orig_dir = Metadata::BIDS::axisid2vector(slice_encoding_it->second);
+            } catch (Exception& e) {
+              WARN("Unable to conform slice encoding direction to image realignment "
+                   "for image \"" + header.name() + "\"; erasing");
+              clear(keyval);
+              return;
+            }
+          }
           const Metadata::BIDS::axis_vector_type new_dir = header.realignment().applied_transform() * orig_dir;
           if (slice_encoding_it != keyval.end()) {
             slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
@@ -130,6 +137,18 @@ namespace MR {
           }
         }
         return one;
+      }
+
+
+
+      void clear(KeyValues &keyval) {
+        auto erase = [](KeyValues& keyval, const std::string& s) {
+          auto it = keyval.find(s);
+          if (it != keyval.end())
+            keyval.erase(it);
+        };
+        erase(keyval, "SliceEncodingDirection");
+        erase(keyval, "SliceTiming");
       }
 
 

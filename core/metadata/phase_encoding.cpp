@@ -79,7 +79,7 @@ namespace MR {
         void erase(KeyValues& keyval, const std::string& s) {
           auto it = keyval.find(s);
           if (it != keyval.end())
-          keyval.erase(it);
+            keyval.erase(it);
         };
       }
 
@@ -153,7 +153,11 @@ namespace MR {
             const auto it_time = keyval.find("TotalReadoutTime");
             const size_t cols = it_time == keyval.end() ? 3 : 4;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> row(cols);
-            row.head(3) = BIDS::axisid2vector(it_dir->second).cast<default_type>();
+            try {
+              row.head(3) = BIDS::axisid2vector(it_dir->second).cast<default_type>();
+            } catch (Exception& e) {
+              throw Exception(e, "malformed phase encoding direction associated with image \"" + header.name() + "\"");
+            }
             if (it_time != keyval.end()) {
               try {
                 row[3] = to<default_type>(it_time->second);
@@ -207,7 +211,15 @@ namespace MR {
 
 
       void transform_for_image_load(KeyValues& keyval, const Header& H) {
-        const scheme_type pe_scheme = parse_scheme(keyval, H);
+        scheme_type pe_scheme;
+        try {
+          pe_scheme = parse_scheme(keyval, H);
+        } catch (Exception& e) {
+          WARN("Unable to conform phase encoding information to image realignment "
+               " for image \"" + H.name() + "\"; erasing");
+          clear_scheme(keyval);
+          return;
+        }
         if (pe_scheme.rows() == 0) {
           DEBUG("No phase encoding information found for transformation with load of image \"" + H.name() + "\"");
           return;

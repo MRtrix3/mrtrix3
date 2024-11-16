@@ -35,6 +35,8 @@ namespace MR {
 
       std::string resolve_slice_timing(const std::string& one, const std::string& two);
 
+      void clear(KeyValues&);
+
     }
   }
 }
