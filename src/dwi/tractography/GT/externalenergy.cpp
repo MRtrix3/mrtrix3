@@ -28,17 +28,17 @@ namespace MR {
     namespace Tractography {
       namespace GT {
 
-        ExternalEnergyComputer::ExternalEnergyComputer(Stats& stat, const Image<float>& dwimage, const Properties& props)
+        ExternalEnergyComputer::ExternalEnergyComputer(Stats& stat, Header& dwiheader, const Properties& props)
           : EnergyComputer(stat),
-            dwi(dwimage),
-            T(Transform(dwimage).scanner2voxel),
+            dwi(dwiheader.get_image<float>().with_direct_io(3)),
+            T(Transform(dwiheader).scanner2voxel),
             lmax(props.Lmax), ncols(Math::SH::NforL(lmax)), nf(props.resp_ISO.size()),
             beta(props.beta), mu(props.ppot*M_sqrt4PI), dE(0.0)
         {
           DEBUG("Initialise computation of external energy.");
 
           // Create images --------------------------------------------------------------
-          Header header (dwimage);
+          Header header (dwiheader);
           header.datatype() = DataType::Float32;
           header.size(3) = ncols;
           tod = Image<float>::scratch(header, "TOD image");
@@ -54,7 +54,7 @@ namespace MR {
           eext = Image<float>::scratch(header, "external energy");
 
           // Set kernel matrices --------------------------------------------------------
-          auto grad = DWI::get_DW_scheme(dwimage);
+          auto grad = DWI::get_DW_scheme(dwiheader);
           nrows = grad.rows();
           DWI::Shells shells (grad);
 

@@ -17,7 +17,6 @@
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 #include "dwi/gradient.h"
 
