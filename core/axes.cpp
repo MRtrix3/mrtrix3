@@ -67,7 +67,7 @@ namespace MR
       if (result[1] == result[2])
         result[2] = not_any_of (result[0], result[1]);
       assert (result[0] != result[1] && result[1] != result[2] && result[2] != result[0]);
-      assert (std::min(result.begin(), result.end()) == 0);
+      assert (*std::min_element(result.begin(), result.end()) == 0);
 
       return result;
     }

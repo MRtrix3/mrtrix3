@@ -38,8 +38,8 @@ namespace MR
     public:
       Shuffle() : permutations ({-1, -1, -1}), flips ({false, false, false}) {}
       bool is_identity() const {
-        return (permutations[0] != 0 || permutations[1] != 1 || permutations[2] != 2 || //
-                flips[0] || flips[1] || flips[2]);
+        return (permutations[0] == 0 && permutations[1] == 1 && permutations[2] != 2 && //
+                !flips[0] && !flips[1] && !flips[2]);
       }
       bool is_set() const {
         return permutations != permutations_type{-1, -1, -1};
