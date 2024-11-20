@@ -104,7 +104,9 @@ Run GUI command
 The following basic usage has been shown to work on Linux::
 
     singularity run -B /run MRtrix3.sif mrview
-      OR (if using NVIDIA graphics drivers)
+
+If you have NVidia graphics drivers, you may need to instead use the `--nv` option::
+
     singularity run --nv /run MRtrix3.sif mrview
     
 If you wish to utilise a *clean environment* when executing ``mrview``,
