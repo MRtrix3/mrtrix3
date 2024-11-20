@@ -30,11 +30,11 @@ namespace MR
     class TIFF : public Base
     { MEMALIGN (TIFF)
       public:
-        TIFF (const Header& header) : Base (header) { } 
+        TIFF (const Header& header) : Base (header) { }
 
       protected:
         virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
+        virtual void unload (const Header&) { }
     };
 
   }

@@ -54,6 +54,7 @@ namespace MR
           void load (uint8_t*);
 
         private:
+          FILE* infile;
           png_structp png_ptr;
           png_infop info_ptr;
           png_uint_32 width, height;

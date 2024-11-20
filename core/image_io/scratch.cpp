@@ -38,15 +38,6 @@ namespace MR
       }
     }
 
-
-    void Scratch::unload (const Header& header)
-    {
-      if (addresses.size()) {
-        DEBUG ("deleting scratch buffer for image \"" + header.name() + "\"...");
-        addresses[0].reset();
-      }
-    }
-
   }
 }
 

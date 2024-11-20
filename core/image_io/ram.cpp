@@ -36,14 +36,6 @@ namespace MR
     }
 
 
-    void RAM::unload (const Header& header)
-    {
-      if (addresses.size()) {
-        DEBUG ("deleting RAM buffer for image \"" + header.name() + "\"...");
-        delete [] addresses[0];
-      }
-    }
-
   }
 }
 

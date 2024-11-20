@@ -38,6 +38,7 @@ namespace MR
 
 
       Reader::Reader (const std::string& filename) :
+          infile (fopen (filename.c_str(), "rb")),
           png_ptr (NULL),
           info_ptr (NULL),
           width (0),
@@ -46,7 +47,6 @@ namespace MR
           color_type (0),
           channels (0)
       {
-        FILE* infile = fopen (filename.c_str(), "rb");
         unsigned char sig[8];
         if (fread (sig, 1, 8, infile) < 8)
           throw Exception ("error reading from PNG file \"" + filename + "\"");
@@ -129,6 +129,10 @@ namespace MR
           png_destroy_read_struct (&png_ptr, &info_ptr, NULL);
           png_ptr = NULL;
           info_ptr = NULL;
+        }
+        if (infile) {
+          fclose(infile);
+          infile = NULL;
         }
       }
 
@@ -311,6 +315,10 @@ namespace MR
           png_ptr = NULL;
           info_ptr = NULL;
         }
+        if (outfile) {
+          fclose(outfile);
+          outfile = NULL;
+        }
       }
 
 
@@ -332,7 +340,7 @@ namespace MR
             row_pointers[row] = to_write + row * row_bytes;
           png_write_image (png_ptr, row_pointers);
           png_write_end (png_ptr, info_ptr);
-          delete[] row_pointers;
+          delete [] row_pointers;
         };
 
 
