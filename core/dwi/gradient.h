@@ -220,7 +220,7 @@ namespace MR
           }
           if (one_bvalue == two_bvalue) {
             result(rowindex, 3) = one_bvalue;
-          } else if (is_bzero || std::abs(one_bvalue - two_bvalue) <= 1.0) {
+          } else if (is_bzero || abs(one_bvalue - two_bvalue) <= 1.0) {
             result(rowindex, 3) = 0.5 * (one_bvalue + two_bvalue);
           } else {
             throw Exception("Diffusion gradient table b-values not equivalent");
