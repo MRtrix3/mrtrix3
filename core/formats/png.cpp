@@ -149,7 +149,6 @@ namespace MR
       // - 4 volumes (save as RGBA)
       // This needs to be compatible with NameParser used in Header::create():
       //   "num_axes" subtracts from H.ndim() however many instances of [] there are
-      // size_t width_axis = 0;
       size_t axis_to_zero = 3;
       if (H.ndim() - num_axes > 1)
         throw Exception ("Cannot nominate more than one axis using square-bracket notation for PNG format");
@@ -171,7 +170,6 @@ namespace MR
             axis_to_zero = 1;
           } else if (H.size(0) == 1) {
             axis_to_zero = 0;
-            //width_axis = 1;
           } else {
             // If image is 3D, and all three axes have size greater than one, and we
             //   haven't used the square-bracket notation, we can't export genuine 3D data
@@ -193,8 +191,6 @@ namespace MR
           }
           if (axis < 0)
             throw Exception ("Cannot export 4D image to PNG format if all three spatial axes have size greater than 1 and square-bracket notation is not used");
-          // if (!axis_to_zero)
-          //   width_axis = 1;
           break;
         default:
           throw Exception ("Cannot generate PNG file(s) from image with more than 4 axes");
