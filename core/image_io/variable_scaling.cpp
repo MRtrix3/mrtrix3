@@ -61,8 +61,6 @@ namespace MR
 
     }
 
-    void VariableScaling::unload (const Header& header) { }
-
   }
 }
 
