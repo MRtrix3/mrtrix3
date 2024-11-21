@@ -19,6 +19,7 @@
 #include "phase_encoding.h"
 #include "progressbar.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "algo/loop.h"
 #include "adapter/extract.h"
 
