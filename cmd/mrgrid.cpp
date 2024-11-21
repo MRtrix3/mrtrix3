@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -107,7 +107,7 @@ void usage ()
   + OptionGroup ("Pad and crop options (no image interpolation is performed, header transformation is adjusted)")
     + Option   ("as", "pad or crop the input image on the upper bound to match the specified reference image grid. "
                 "This operation ignores differences in image transformation between input and reference image.")
-    + Argument ("reference image").type_image_in ()
+    + Argument ("reference_image").type_image_in ()
 
     + Option   ("uniform", "pad or crop the input image by a uniform number of voxels on all sides")
     + Argument ("number").type_integer ()

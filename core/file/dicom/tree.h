@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,8 +31,8 @@ namespace MR {
         public:
           std::string description;
           void read (const std::string& filename);
-          std::shared_ptr<Patient> find (const std::string& patient_name, const std::string& patient_ID = "",
-              const std::string& patient_DOB = "");
+          std::shared_ptr<Patient> find (const std::string& patient_name, const std::string& patient_ID,
+              const std::string& patient_DOB);
 
           void sort() {
             std::sort (begin(), end(), compare_ptr_contents());

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -128,6 +128,7 @@ void check_and_update (Header& H, const conv_t conversion)
       }
     }
   }
+  INFO (str(voxel_count) + " voxels to be included in calculations");
 
   // Get sums independently for each l
 

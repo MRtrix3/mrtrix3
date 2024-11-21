@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -271,9 +271,10 @@ void run () {
 
   vector<default_type> voxel_size = get_option_value ("vox", vector<default_type>());
 
-  if (voxel_size.size() == 1)
-    voxel_size.assign (3, voxel_size.front());
-  else if (!voxel_size.empty() && voxel_size.size() != 3)
+  if (voxel_size.size() == 1) {
+    auto v = voxel_size.front();                                                                                          
+    voxel_size.assign (3, v);                                                                                             
+  } else if (!voxel_size.empty() && voxel_size.size() != 3)
     throw Exception ("voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())

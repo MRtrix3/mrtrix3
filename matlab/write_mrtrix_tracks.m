@@ -1,4 +1,4 @@
-% Copyright (c) 2008-2021 the MRtrix3 contributors.
+% Copyright (c) 2008-2024 the MRtrix3 contributors.
 %
 % This Source Code Form is subject to the terms of the Mozilla Public
 % License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,9 @@ for i=1:size(names)
   if strcmpi (names{i}, 'data'), continue; end
   if strcmpi (names{i}, 'count'), continue; end
   if strcmpi (names{i}, 'datatype'), continue; end
-  fprintf (f, '%s: %s\n', names{i}, getfield(tracks, names{i}));
+  if iscell  (tracks.(names{i}))
+      fprintf (f, '%s: %s\n', names{i}, strjoin(tracks.(names{i}), '\n'));
+  else fprintf (f, '%s: %s\n', names{i}, tracks.(names{i})); end
 end
 data_offset = ftell (f) + 20;
 fprintf (f, 'file: . %d\nEND\n', data_offset);

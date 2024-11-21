@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -2485,7 +2485,8 @@ namespace MR
 
               std::map<float, size_t> node_ordering;
               for (size_t i = 1; i <= num_nodes(); ++i)
-                node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
+                if (nodes[i].get_volume() > 0)
+                  node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
 
               for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
                 const Node& node (nodes[it->second]);
@@ -3692,7 +3693,7 @@ namespace MR
             fade = node_selection_settings.get_edge_associated_colour_fade();
             colour = node_selection_settings.get_edge_associated_colour();
           }
-          if (selected_nodes[edge.get_node_index (0)] & selected_nodes[edge.get_node_index (1)]) {
+          if (selected_nodes[edge.get_node_index (0)] && selected_nodes[edge.get_node_index (1)]) {
             fade = node_selection_settings.get_edge_selected_colour_fade();
             colour = node_selection_settings.get_edge_selected_colour();
           }
@@ -3705,7 +3706,7 @@ namespace MR
           float multiplier = node_selection_settings.get_edge_other_size_multiplier();
           if (selected_nodes[edge.get_node_index (0)] || selected_nodes[edge.get_node_index (1)])
             multiplier = node_selection_settings.get_edge_associated_size_multiplier();
-          if (selected_nodes[edge.get_node_index (0)] & selected_nodes[edge.get_node_index (1)])
+          if (selected_nodes[edge.get_node_index (0)] && selected_nodes[edge.get_node_index (1)])
             multiplier = node_selection_settings.get_edge_selected_size_multiplier();
           return (multiplier * edge.get_size());
         }
@@ -3716,7 +3717,7 @@ namespace MR
           float multiplier = node_selection_settings.get_edge_other_alpha_multiplier();
           if (selected_nodes[edge.get_node_index (0)] || selected_nodes[edge.get_node_index (1)])
             multiplier = node_selection_settings.get_edge_associated_alpha_multiplier();
-          if (selected_nodes[edge.get_node_index (0)] & selected_nodes[edge.get_node_index (1)])
+          if (selected_nodes[edge.get_node_index (0)] && selected_nodes[edge.get_node_index (1)])
             multiplier = node_selection_settings.get_edge_selected_alpha_multiplier();
           return (multiplier * edge.get_alpha());
         }

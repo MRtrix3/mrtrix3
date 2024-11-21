@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -236,9 +236,7 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *disp_image);
   }
 
-  size_t offset (0), lobe_index (0);
-
-
+  size_t offset (0);
   for (const auto& vox_fixels : lobes) {
     size_t n_vox_fixels = vox_fixels.size();
 
@@ -279,7 +277,6 @@ void Segmented_FOD_receiver::commit ()
     }
 
     offset += n_vox_fixels;
-    lobe_index ++;
   }
 
   assert (offset == fixel_count);

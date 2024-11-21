@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,7 @@ def dot(input_a, input_b): #pylint: disable=unused-variable
     raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
   if len(input_a) != len(input_b):
     raise MRtrixError('Dimension mismatch (' + str(len(input_a)) + ' vs. ' + str(len(input_b)) + ')')
-  return sum([ x*y for x,y in zip(input_a, input_b) ])
+  return sum(x*y for x,y in zip(input_a, input_b))
 
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -572,7 +572,7 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
       flags = []
       for flag in shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RunError)[1]):
         if flag.startswith ('-I'):
-          flags += [ '-idirafter', flag[2:] ]
+          flags += [ '-isystem', flag[2:] ]
         else:
           flags += [ flag ]
       return flags
@@ -1291,21 +1291,15 @@ int main() { Foo f; }
               line = line.strip()
               if line.startswith ('DEFINES'):
                 qt_defines = shlex.split (line[line.find('=')+1:].strip())
-              elif line.startswith ('CXXFLAGS'):
-                qt_cflags = shlex.split (line[line.find('=')+1:].strip())
               elif line.startswith ('INCPATH'):
                 qt_includes = shlex.split (line[line.find('=')+1:].strip())
               elif line.startswith ('LIBS'):
                 qt_libs = shlex.split (line[line.find('=')+1:].strip())
-              elif line.startswith ('LFLAGS'):
-                qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
-          if qt_defines or qt_cflags or qt_includes or qt_libs or qt_ldflags:
+          if qt_defines or qt_includes or qt_libs:
             log ('ok\n')
             log ('  qt_defines: ' + str(qt_defines) + '\n')
-            log ('  qt_cflags: ' + str(qt_cflags) + '\n')
             log ('  qt_includes: ' + str(qt_includes) + '\n')
             log ('  qt_libs: ' + str(qt_libs) + '\n')
-            log ('  qt_ldflags: ' + str(qt_ldflags) + '\n\n')
             break
         except OSError:
           log ('not found\n')
@@ -1318,20 +1312,18 @@ int main() { Foo f; }
         if entry[2:].startswith('..'):
           qt_includes[index] = '-I' + os.path.abspath(qt_dir.name + '/' + entry[2:])
 
-      qt_cflags = [ entry for entry in qt_cflags if entry != '-O2' ]
-      qt = qt_cflags + qt_defines + qt_includes
+      qt = qt_defines + qt_includes
       qt_cflags = []
       for entry in qt:
         if entry[0] != '$' and not entry == '-I.':
           entry = entry.replace('\"','').replace("'",'')
           if entry.startswith('-I'):
-            qt_cflags += [ '-idirafter', entry[2:] ]
+            qt_cflags += [ '-isystem', entry[2:] ]
           else:
             qt_cflags += [ entry ]
 
-      qt = qt_ldflags + qt_libs
       qt_ldflags = []
-      for entry in qt:
+      for entry in qt_libs:
         if entry[0] != '$':
           qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
 

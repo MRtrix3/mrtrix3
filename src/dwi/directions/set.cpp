@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -211,7 +211,9 @@ namespace MR {
         assigned[base_plane.indices[1]] = true;
         assigned[base_plane.indices[2]] = true;
         assigned[fourth_point] = true;
+#ifndef NDEBUG
         size_t assigned_counter = 4;
+#endif
 
         while (planes.size()) {
           Plane current (planes.back());
@@ -279,10 +281,13 @@ namespace MR {
 
             // This point no longer needs to be tested
             assigned[max_index] = true;
+#ifndef NDEBUG
             ++assigned_counter;
+#endif
 
           }
         }
+        assert (assigned_counter == 2 * size());
 
         for (auto& current : hull) {
           // Each of these three directions is adjacent

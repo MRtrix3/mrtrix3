@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,6 @@
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 
 #include "gui/dialog/file.h"
-#include "gui/mrview/colourmap_menu.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 
 
@@ -52,34 +51,7 @@ namespace MR
           connect (intensity_file_button, SIGNAL (clicked()), this, SLOT (open_intensity_track_scalar_file_slot ()));
           hlayout->addWidget (intensity_file_button);
 
-          // Colourmap menu:
-          colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
-
-          MRView::create_colourmap_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
-          connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
-          colourmap_actions[1]->setChecked (true);
-
-          colourmap_menu->addSeparator();
-
-          show_colour_bar = colourmap_menu->addAction (tr ("Show colour bar"), this, SLOT (show_colour_bar_slot()));
-          show_colour_bar->setCheckable (true);
-          show_colour_bar->setChecked (true);
-          addAction (show_colour_bar);
-
-          invert_scale = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_colourmap_slot()));
-          invert_scale->setCheckable (true);
-          addAction (invert_scale);
-
-          colourmap_menu->addSeparator();
-
-          QAction* reset_intensity = colourmap_menu->addAction (tr ("Reset intensity"), this, SLOT (reset_intensity_slot()));
-          addAction (reset_intensity);
-
-          colourmap_button = new QToolButton (this);
-          colourmap_button->setToolTip (tr ("Colourmap menu"));
-          colourmap_button->setIcon (QIcon (":/colourmap.svg"));
-          colourmap_button->setPopupMode (QToolButton::InstantPopup);
-          colourmap_button->setMenu (colourmap_menu);
+          colourmap_button = new ColourMapButton(this, *this, false, false, true);
           hlayout->addWidget (colourmap_button);
 
           vlayout->addLayout (hlayout);
@@ -159,7 +131,8 @@ namespace MR
 
           window().colourbar_renderer.render (tractogram.colourmap, tractogram.scale_inverted(),
                                               min_value, max_value,
-                                              tractogram.scaling_min(), tractogram.display_range, tractogram.colour);
+                                              tractogram.scaling_min(), tractogram.display_range,
+                                              { tractogram.colour[0]/255.0f, tractogram.colour[1]/255.0f, tractogram.colour[2]/255.0f });
         }
 
 
@@ -180,10 +153,10 @@ namespace MR
             min_entry->setValue (tractogram->scaling_min());
             max_entry->setValue (tractogram->scaling_max());
 
-            colourmap_menu->setEnabled (true);
-            colourmap_actions[tractogram->colourmap]->setChecked (true);
-            show_colour_bar->setChecked (tractogram->show_colour_bar);
-            invert_scale->setChecked (tractogram->scale_inverted());
+            colourmap_button->setEnabled (true);
+            colourmap_button->set_colourmap_index(tractogram->colourmap);
+            colourmap_button->set_scale_inverted (tractogram->scale_inverted());
+            colourmap_button->set_show_colourbar (tractogram->show_colour_bar);
 
             assert (tractogram->intensity_scalar_filename.length());
             intensity_file_button->setText (qstr (shorten (Path::basename (tractogram->intensity_scalar_filename), 35, 0)));
@@ -259,28 +232,30 @@ namespace MR
           return scalar_file.size();
         }
 
-        void TrackScalarFileOptions::show_colour_bar_slot ()
+        void TrackScalarFileOptions::toggle_show_colour_bar(bool show_colour_bar, const ColourMapButton&)
         {
           if (tractogram) {
-            tractogram->show_colour_bar = show_colour_bar->isChecked();
+            tractogram->show_colour_bar = show_colour_bar;
             window().updateGL();
           }
         }
 
 
-        void TrackScalarFileOptions::select_colourmap_slot ()
+        void TrackScalarFileOptions::selected_colourmap (size_t cmap, const ColourMapButton&)
         {
           if (tractogram) {
-            QAction* action = colourmap_group->checkedAction();
-            size_t n = 0;
-            while (action != colourmap_actions[n])
-              ++n;
-            tractogram->colourmap = n;
+            tractogram->colourmap = cmap;
             window().updateGL();
           }
         }
 
-
+        void TrackScalarFileOptions::selected_custom_colour (const QColor& c, const ColourMapButton&)
+        {
+          if (tractogram) {
+            tractogram->set_colour (c);
+            window().updateGL();
+          }
+        }
 
         void TrackScalarFileOptions::set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max)//TrackThresholdType dataSource
         {
@@ -429,7 +404,7 @@ namespace MR
         }
 
 
-        void TrackScalarFileOptions::reset_intensity_slot ()
+        void TrackScalarFileOptions::reset_colourmap (const ColourMapButton&)
         {
           if (tractogram) {
             tractogram->reset_windowing();
@@ -439,19 +414,10 @@ namespace MR
         }
 
 
-        void TrackScalarFileOptions::invert_colourmap_slot ()
+        void TrackScalarFileOptions::toggle_invert_colourmap (bool invert, const ColourMapButton&)
         {
           if (tractogram) {
-            tractogram->set_invert_scale (invert_scale->isChecked());
-            window().updateGL();
-          }
-        }
-        
-        void TrackScalarFileOptions::set_colourmap (int colourmap_index)
-        {
-          if (tractogram) {
-            tractogram->colourmap = colourmap_index;
-            update_UI();
+            tractogram->set_invert_scale (invert);
             window().updateGL();
           }
         }

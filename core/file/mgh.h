@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -642,7 +642,7 @@ namespace MR
           {
             char buffer[MGH_MATRIX_STRLEN];
             memset (buffer, 0x00, MGH_MATRIX_STRLEN);
-            sprintf (buffer, "AutoAlign %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf",
+            snprintf (buffer, sizeof(buffer)/sizeof(buffer[0]), "AutoAlign %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf",
                     M(0,0), M(0,1), M(0,2), M(0,3),
                     M(1,0), M(1,1), M(1,2), M(1,3),
                     M(2,0), M(2,1), M(2,2), M(2,3),

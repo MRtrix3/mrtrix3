@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,6 +48,9 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_example_usage('Testing the command string substitution',
                             'for_each -test * : mrconvert IN PRE.mif',
                             'By specifying the -test option, the script will print to the terminal the results of text substitutions for all of the specified inputs, but will not actually execute those commands. It can therefore be used to verify that the script is receiving the intended set of inputs, and that the text substitutions on those inputs lead to the intended command strings.')
+  cmdline.add_example_usage('Utilising shell operators within the command substitution',
+                            'for_each * : tensor2metric IN/dwi.mif - "|" tensor2metric - -fa IN/fa.mif',
+                            'In this example, if the double-quotes were NOT placed around the pipe operator, then the shell would take the sum total output of the for_each script and pipe that to a single invocation of the tensor2metric command. Since in this example it is instead desired for the pipe operator to be a part of the command string that is executed multiple times by the for_each script, it must be escaped using double-quotes.')
   cmdline.add_argument('inputs',   help='Each of the inputs for which processing should be run', nargs='+')
   cmdline.add_argument('colon',    help='Colon symbol (":") delimiting the for_each inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
   cmdline.add_argument('command',  help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
@@ -201,12 +204,12 @@ def execute(): #pylint: disable=unused-variable
   parallel = app.NUM_THREADS is not None and app.NUM_THREADS > 1
 
   def progress_string():
-    text = str(sum([ 1 if job.returncode is not None else 0 for job in jobs ])) + \
+    text = str(sum(1 if job.returncode is not None else 0 for job in jobs)) + \
         '/' + \
         str(len(jobs)) + \
         ' jobs completed ' + \
         ('across ' + str(app.NUM_THREADS) + ' threads' if parallel else 'sequentially')
-    fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
+    fail_count = sum(bool(job.returncode) for job in jobs)
     if fail_count:
       text += ' (' + str(fail_count) + ' errors)'
     return text
@@ -257,7 +260,7 @@ def execute(): #pylint: disable=unused-variable
   progress.done()
 
   assert all(job.returncode is not None for job in jobs)
-  fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
+  fail_count = sum(bool(job.returncode) for job in jobs)
   if fail_count:
     app.warn(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
     if fail_count > 1:

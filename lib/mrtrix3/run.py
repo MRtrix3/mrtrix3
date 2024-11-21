@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,9 +17,14 @@
 # pylint: disable=unspecified-encoding
 
 import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
-from distutils.spawn import find_executable
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
 from mrtrix3.utils import STRING_TYPES
+
+# Distutils removed in 3.12, but shutil.which not available in 2.7
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
@@ -64,7 +69,7 @@ class Shared(object):
       self.env.pop('MRTRIX_QUIET')
     except KeyError:
       pass
-    self.env['MRTRIX_LOGLEVEL'] = 1
+    self.env['MRTRIX_LOGLEVEL'] = '1'
 
     # Flagged by calling the set_continue() function;
     #   run.command() and run.function() calls will be skipped until one of the inputs to
@@ -473,7 +478,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   if shared.get_scratch_dir():
     with shared.lock:
       with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a') as outfile:
-        outfile.write(cmdstring + '\n')
+        outfile.write(' '.join(cmdsplit) + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
 

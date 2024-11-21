@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -161,7 +161,7 @@ namespace MR {
           { 0x00081198UL, "SQFailedSOPSequence" },
           { 0x00081199UL, "SQReferencedSOPSequence" },
           { 0x00081200UL, "SQStudiesContainingOtherReferencedInstancesSequence" },
-          { 0x00081250UL, "SQRelatedSeriesSequenceired" },
+          { 0x00081250UL, "SQRelatedSeriesSequence" },
           { 0x00082111UL, "STDerivationDescription" },
           { 0x00082112UL, "SQSourceImageSequence" },
           { 0x00082120UL, "SHStageName" },

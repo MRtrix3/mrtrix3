@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,76 +21,83 @@
 #include "file/name_parser.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-
+#include "raw.h"
 
 using namespace MR;
 using namespace App;
 using namespace MR::DWI::Tractography;
+using namespace MR::Raw;
+using namespace MR::ByteOrder;
 
 void usage ()
 {
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk), "
-           "J-Donald Tournier (jdtournier@gmail.com), "
-           "Philip Broser (philip.broser@me.com), "
-           "Daniel Blezek (daniel.blezek@gmail.com).";
+    "J-Donald Tournier (jdtournier@gmail.com), "
+    "Philip Broser (philip.broser@me.com), "
+    "Daniel Blezek (daniel.blezek@gmail.com).";
 
   SYNOPSIS = "Convert between different track file formats";
 
   DESCRIPTION
-  + "The program currently supports MRtrix .tck files (input/output), "
+    + "The program currently supports MRtrix .tck files (input/output), "
     "ascii text files (input/output), VTK polydata files (input/output), "
     "and RenderMan RIB (export only)."
 
-  + "Note that ascii files will be stored with one streamline per numbered file. "
+    + "Note that ascii files will be stored with one streamline per numbered file. "
     "To support this, the command will use the multi-file numbering syntax, "
     "where square brackets denote the position of the numbering for the files, "
     "for example:"
 
-   + "$ tckconvert input.tck output-'[]'.txt"
+    + "$ tckconvert input.tck output-'[]'.txt"
 
-   + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
+    + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
 
   ARGUMENTS
-  + Argument ("input", "the input track file.").type_various ()
-  + Argument ("output", "the output track file.").type_file_out ();
+    + Argument ("input", "the input track file.").type_various ()
+    + Argument ("output", "the output track file.").type_file_out ();
 
   OPTIONS
-  + Option ("scanner2voxel",
-      "if specified, the properties of this image will be used to convert "
-      "track point positions from real (scanner) coordinates into voxel coordinates.")
+    + Option ("scanner2voxel",
+        "if specified, the properties of this image will be used to convert "
+        "track point positions from real (scanner) coordinates into voxel coordinates.")
     + Argument ("reference").type_image_in ()
 
-  + Option ("scanner2image",
-      "if specified, the properties of this image will be used to convert "
-      "track point positions from real (scanner) coordinates into image coordinates (in mm).")
-  +    Argument ("reference").type_image_in ()
+    + Option ("scanner2image",
+        "if specified, the properties of this image will be used to convert "
+        "track point positions from real (scanner) coordinates into image coordinates (in mm).")
+    +    Argument ("reference").type_image_in ()
 
-  + Option ("voxel2scanner",
-      "if specified, the properties of this image will be used to convert "
-      "track point positions from voxel coordinates into real (scanner) coordinates.")
+    + Option ("voxel2scanner",
+        "if specified, the properties of this image will be used to convert "
+        "track point positions from voxel coordinates into real (scanner) coordinates.")
     + Argument ("reference").type_image_in ()
 
-  + Option ("image2scanner",
-      "if specified, the properties of this image will be used to convert "
-      "track point positions from image coordinates (in mm) into real (scanner) coordinates.")
-  +    Argument ("reference").type_image_in ()
+    + Option ("image2scanner",
+        "if specified, the properties of this image will be used to convert "
+        "track point positions from image coordinates (in mm) into real (scanner) coordinates.")
+    +    Argument ("reference").type_image_in ()
 
-  + OptionGroup ("Options specific to PLY writer")
+    + OptionGroup ("Options specific to PLY writer")
 
-  + Option ("sides", "number of sides for streamlines")
-  +   Argument("sides").type_integer(3,15)
+    + Option ("sides", "number of sides for streamlines")
+    +   Argument("sides").type_integer(3,15)
 
-  + Option ("increment", "generate streamline points at every (increment) points")
-  +   Argument("increment").type_integer(1)
+    + Option ("increment", "generate streamline points at every (increment) points")
+    +   Argument("increment").type_integer(1)
 
-  + OptionGroup ("Options specific to RIB writer")
+    + OptionGroup ("Options specific to RIB writer")
 
-  + Option ("dec", "add DEC as a primvar")
+    + Option ("dec", "add DEC as a primvar")
 
-  + OptionGroup ("Options for both PLY and RIB writer")
+    + OptionGroup ("Options for both PLY and RIB writer")
 
-  + Option ("radius", "radius of the streamlines")
-  +   Argument("radius").type_float(0.0f);
+    + Option ("radius", "radius of the streamlines")
+    +   Argument("radius").type_float(0.0f)
+
+    + OptionGroup ("Options specific to VTK writer")
+
+    + Option ("ascii", "write an ASCII VTK file (this is the default)")
+    + Option ("binary", "write a binary VTK file");
 
 }
 
@@ -102,27 +109,39 @@ void usage ()
 
 class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
   public:
-    VTKWriter(const std::string& file) : VTKout (file) {
-      // create and write header of VTK output file:
-      VTKout <<
-        "# vtk DataFile Version 1.0\n"
-        "Data values for Tracks\n"
-        "ASCII\n"
-        "DATASET POLYDATA\n"
-        "POINTS ";
-      // keep track of offset to write proper value later:
-      offset_num_points = VTKout.tellp();
-      VTKout << "XXXXXXXXXX float\n";
-    }
+    VTKWriter(const std::string& file, bool write_ascii = true) :
+      VTKout (file, std::ios::binary ), write_ascii(write_ascii) {
+        // create and write header of VTK output file:
+        VTKout <<
+          "# vtk DataFile Version 3.0\n"
+          "Data values for Tracks\n";
+        if ( write_ascii ) {
+          VTKout << "ASCII\n";
+        } else {
+          VTKout << "BINARY\n";
+        }
+        VTKout << "DATASET POLYDATA\n"
+          "POINTS ";
+        // keep track of offset to write proper value later:
+        offset_num_points = VTKout.tellp();
+        VTKout << "XXXXXXXXXX float\n";
+      }
 
     bool operator() (const Streamline<float>& tck) {
       // write out points, and build index of tracks:
       size_t start_index = current_index;
       current_index += tck.size();
       track_list.push_back (std::pair<size_t,size_t> (start_index, current_index));
-
-      for (const auto& pos : tck) {
-        VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+      if (write_ascii) {
+        for (const auto &pos : tck) {
+          VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+        }
+      } else {
+        float p[3];
+        for (const auto& pos : tck) {
+          for (auto i = 0; i < 3; ++i) Raw::store_BE(pos[i], p, i);
+          VTKout.write((char*)p, 3 * sizeof(float));
+        }
       }
       return true;
     }
@@ -130,13 +149,36 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
     ~VTKWriter() {
       try {
         // write out list of tracks:
+        if ( write_ascii == false ) {
+          // Need to include an extra new line when writing binary
+          VTKout << "\n";
+        }
         VTKout << "LINES " << track_list.size() << " " << track_list.size() + current_index << "\n";
         for (const auto& track : track_list) {
-          VTKout << track.second - track.first << " " << track.first;
-          for (size_t i = track.first + 1; i < track.second; ++i)
-            VTKout << " " << i;
+          if (write_ascii) {
+            VTKout << track.second - track.first << " " << track.first;
+            for (size_t i = track.first + 1; i < track.second; ++i)
+              VTKout << " " << i;
+            VTKout << "\n";
+          }
+          else {
+            int32_t buffer;
+            buffer = ByteOrder::BE<int32_t> (track.second - track.first);
+            VTKout.write ((char*) &buffer, 1 * sizeof(int32_t));
+
+            buffer = ByteOrder::BE<int32_t> (track.first);
+            VTKout.write ((char*) &buffer, 1 * sizeof(int32_t));
+
+            for (size_t i = track.first + 1; i < track.second; ++i) {
+              buffer = ByteOrder::BE<int32_t> (i);
+              VTKout.write ((char*)&buffer, 1* sizeof(int32_t));
+            }
+          }
+        }
+        if (write_ascii == false) {
+          // Need to include an extra new line when writing binary
           VTKout << "\n";
-        };
+        }
 
         // write back total number of points:
         VTKout.seekp (offset_num_points);
@@ -145,7 +187,8 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
         VTKout.write (num_points.c_str(), 10);
 
         VTKout.close();
-      } catch (Exception& e) {
+      }
+      catch (Exception& e) {
         e.display();
         App::exit_error_code = 1;
       }
@@ -153,6 +196,7 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 
   private:
     File::OFStream VTKout;
+    const bool write_ascii;
     size_t offset_num_points;
     vector<std::pair<size_t,size_t>> track_list;
     size_t current_index = 0;
@@ -163,39 +207,47 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 
 
 
+template <class T> void loadLines(vector<int64_t>& lines, std::ifstream& input, int number_of_line_indices)
+{
+  vector<T> buffer (number_of_line_indices);
+  input.read((char*) &buffer[0], number_of_line_indices * sizeof(T));
+  lines.resize (number_of_line_indices);
+  // swap from big endian
+  for (int i = 0; i < number_of_line_indices; i++)
+    lines[i] = int64_t (ByteOrder::BE (buffer[i]));
+}
+
 
 
 class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
   public:
-    VTKReader(const std::string& file) {
-      points = NULL;
-      lines = NULL;
+    VTKReader (const std::string& file) {
       std::ifstream input (file, std::ios::binary );
       std::string line;
       int number_of_points = 0;
       number_of_lines = 0;
       number_of_line_indices = 0;
-      while ( std::getline(input,line) ) {
-        if ( line.find ( "ASCII" ) == 0 ) {
+
+      while (std::getline(input,line)) {
+        if (line.find ("ASCII") == 0)
           throw Exception("VTK Reader only supports BINARY input");
-        }
-        if ( sscanf ( line.c_str(), "POINTS %d float", &number_of_points ) == 1) {
-          points = new float[3*number_of_points];
-          input.read((char*) points, 3*number_of_points * sizeof(float) );
+
+        if (sscanf (line.c_str(), "POINTS %d float", &number_of_points) == 1) {
+          points.resize (3*number_of_points);
+          input.read ((char*) points.data(), 3*number_of_points * sizeof(float));
 
           // swap
-          for ( int i = 0; i < 3*number_of_points; i++ ) {
-            points[i] = Raw::fetch_BE<float>(points, i);
-          }
+          for (int i = 0; i < 3*number_of_points; i++)
+            points[i] = ByteOrder::BE (points[i]);
 
           continue;
-        } else {
-          if ( sscanf ( line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices ) == 2) {
-            lines = new int[number_of_line_indices];
-            input.read((char*) lines, number_of_line_indices * sizeof(int) );
-            // swap
-            for ( int i = 0; i < number_of_line_indices; i++ ) {
-              lines[i] = Raw::fetch_BE<int>(lines, i);
+        }
+        else {
+          if (sscanf (line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
+            if (line.find ("vtktypeint64") != std::string::npos) {
+              loadLines<int64_t> (lines, input, number_of_line_indices);
+            } else {
+              loadLines<int32_t> (lines, input, number_of_line_indices);
             }
             // We can safely break
             break;
@@ -208,12 +260,12 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
 
     bool operator() (Streamline<float>& tck) {
       tck.clear();
-      if ( lineIdx < number_of_line_indices ) {
+      if (lineIdx < number_of_line_indices) {
         int count = lines[lineIdx];
         lineIdx++;
         for ( int i = 0; i < count; i++ ) {
           int idx = lines[lineIdx];
-          Eigen::Vector3f f ( points[idx*3], points[idx*3+1], points[idx*3+2] );
+          Eigen::Vector3f f (points[idx*3], points[idx*3+1], points[idx*3+2]);
           tck.push_back(f);
           lineIdx++;
         }
@@ -222,14 +274,9 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
       return false;
     }
 
-    ~VTKReader() {
-      if ( points != NULL ) { delete[] points; }
-      if ( lines != NULL ) { delete[] lines; }
-    }
-
   private:
-    float *points;
-    int *lines;
+    vector<float> points;
+    vector<int64_t> lines;
     int lineIdx;
     int number_of_lines;
     int number_of_line_indices;
@@ -496,12 +543,12 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
           isFirst = false;
         }
         if ( isLast ) {
-          // faceOF << "Writing end cap, num_vertices = " << num_vertices << "\n";
           for ( auto sideIdx = 2; sideIdx <= nSides - 1; ++sideIdx ) {
             faceOF << "3"
-              << " " << num_vertices
+              << " " << num_vertices + sideIdx - 1
               << " " << num_vertices + sideIdx
-              << " " << num_vertices + sideIdx - 1 << "\n";
+              << " " << num_vertices
+              << "\n";
           }
           num_faces += nSides - 2;
         }
@@ -522,6 +569,7 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
           "format ascii 1.0\n"
           "comment written by tckconvert v" << App::mrtrix_version << "\n"
           "comment part of the mtrix3 suite of tools (http://www.mrtrix.org/)\n"
+          "comment the coordinate system and scale is taken from directly from the input and is not adjusted\n"
           "element vertex " << num_vertices << "\n"
           "property float32 x\n"
           "property float32 y\n"
@@ -685,41 +733,42 @@ void run ()
   Properties properties;
   std::unique_ptr<ReaderInterface<float> > reader;
   if (Path::has_suffix(argument[0], ".tck")) {
-    reader.reset( new Reader<float>(argument[0], properties) );
+    reader.reset (new Reader<float>(argument[0], properties));
   }
   else if (Path::has_suffix(argument[0], ".txt")) {
-    reader.reset( new ASCIIReader(argument[0]) );
+    reader.reset (new ASCIIReader(argument[0]));
   }
   else if (Path::has_suffix(argument[0], ".vtk")) {
-    reader.reset( new VTKReader(argument[0]) );
+    reader.reset (new VTKReader(argument[0]));
   }
   else {
-    throw Exception("Unsupported input file type.");
+    throw Exception ("Unsupported input file type.");
   }
 
 
   // Writer
   std::unique_ptr<WriterInterface<float> > writer;
   if (Path::has_suffix(argument[1], ".tck")) {
-    writer.reset( new Writer<float>(argument[1], properties) );
+    writer.reset (new Writer<float>(argument[1], properties));
   }
   else if (Path::has_suffix(argument[1], ".vtk")) {
-    writer.reset( new VTKWriter(argument[1]) );
+    bool write_ascii = !get_options("binary").size();
+    writer.reset (new VTKWriter(argument[1], write_ascii));
   }
   else if (Path::has_suffix(argument[1], ".ply")) {
     auto increment = get_options("increment").size() ? get_options("increment")[0][0].as_int() : 1;
     auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
     auto sides = get_options("sides").size() ? get_options("sides")[0][0].as_int() : 5;
-    writer.reset( new PLYWriter(argument[1], increment, radius, sides) );
+    writer.reset (new PLYWriter(argument[1], increment, radius, sides));
   }
   else if (Path::has_suffix(argument[1], ".rib")) {
-    writer.reset( new RibWriter(argument[1]) );
+    writer.reset (new RibWriter(argument[1]));
   }
   else if (Path::has_suffix(argument[1], ".txt")) {
-    writer.reset( new ASCIIWriter(argument[1]) );
+    writer.reset (new ASCIIWriter(argument[1]));
   }
   else {
-    throw Exception("Unsupported output file type.");
+    throw Exception ("Unsupported output file type.");
   }
 
 
@@ -758,8 +807,7 @@ void run ()
 
   // Copy
   Streamline<float> tck;
-  while ( (*reader)(tck) )
-  {
+  while ((*reader)(tck)) {
     for (auto& pos : tck) {
       pos = T.cast<float>() * pos;
     }

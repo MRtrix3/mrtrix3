@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,11 +48,10 @@ namespace MR {
       void TckFactor::set_reg_lambdas (const double lambda_tikhonov, const double lambda_tv)
       {
         assert (num_tracks());
-        double A = 0.0, sum_PM = 0.0;
-        for (size_t i = 1; i != fixels.size(); ++i) {
+        double A = 0.0;
+        for (size_t i = 1; i != fixels.size(); ++i)
           A += fixels[i].get_weight() * Math::pow2 (fixels[i].get_FOD());
-          sum_PM += fixels[i].get_weight();
-        }
+
         A /= double(num_tracks());
         INFO ("Constant A scaling regularisation terms to match data term is " + str(A));
         reg_multiplier_tikhonov = lambda_tikhonov * A;
@@ -336,8 +335,6 @@ namespace MR {
 
           // Leaving out testing the fixel exclusion mask criterion; doesn't converge, and results in CF increase
         } while (((new_cf - prev_cf < required_cf_change) || (iter < min_iters) /* || !fixels_to_exclude.empty() */ ) && (iter < max_iters));
-
-        progress.done();
       }
 
 
@@ -347,17 +344,20 @@ namespace MR {
       {
         if (size_t(coefficients.size()) != contributions.size())
           throw Exception ("Cannot output weighting factors if they have not first been estimated!");
+        decltype(coefficients) weights;
         try {
-          decltype(coefficients) weights (coefficients.size());
-          for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
-                         0.0 :
-                         std::exp (coefficients[i]);
-          save_vector (weights, path);
+          weights.resize (coefficients.size());
         } catch (...) {
           WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
+          return;
         }
+        for (SIFT::track_t i = 0; i != num_tracks(); ++i)
+          weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
+                        0.0 :
+                        std::exp (coefficients[i]);
+        save_vector (weights, path);
       }
+
 
 
       void TckFactor::output_coefficients (const std::string& path) const

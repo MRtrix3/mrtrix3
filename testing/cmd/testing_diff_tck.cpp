@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,8 +49,8 @@ void usage ()
     "distance to the nearest streamline in the second file compared against the threshold.";
 
   ARGUMENTS
-  + Argument ("tck1", "the file from which all tracks will be checked.").type_file_in ()
-  + Argument ("tck2", "the reference track file").type_file_in ();
+  + Argument ("tck1", "the file from which all tracks will be checked.").type_tracks_in ()
+  + Argument ("tck2", "the reference track file").type_tracks_in ();
 
   OPTIONS
   + Option ("distance", "maximum permissible Hausdorff distance in mm (default: " + str(DEFAULT_HAUSDORFF) + "mm)")
