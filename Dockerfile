@@ -1,7 +1,7 @@
 ARG MAKE_JOBS="1"
 ARG DEBIAN_FRONTEND="noninteractive"
 
-FROM python:3.8 AS base
+FROM python:3.8-slim AS base
 FROM buildpack-deps:bookworm AS base-builder
 
 FROM base-builder AS mrtrix3-builder
@@ -82,6 +82,7 @@ RUN apt-get -qq update \
         libtiff5-dev \
         python3 \
         python3-distutils \
+        procps \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=acpcdetect-installer /opt/art /opt/art
