@@ -36,24 +36,24 @@ RUN git clone -b $MRTRIX3_GIT_COMMITISH --depth 1 https://github.com/MRtrix3/mrt
     && rm -rf tmp
 
 # Download minified ART ACPCdetect (V2.0).
-FROM base-builder as acpcdetect-installer
+FROM base-builder AS acpcdetect-installer
 WORKDIR /opt/art
 RUN curl -fsSL https://osf.io/73h5s/download \
     | tar xz --strip-components 1
 
 # Download minified ANTs (2.3.4-2).
-FROM base-builder as ants-installer
+FROM base-builder AS ants-installer
 WORKDIR /opt/ants
 RUN curl -fsSL https://osf.io/yswa4/download \
     | tar xz --strip-components 1
 
 # Download FreeSurfer files.
-FROM base-builder as freesurfer-installer
+FROM base-builder AS freesurfer-installer
 WORKDIR /opt/freesurfer
 RUN curl -fsSLO https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/distribution/FreeSurferColorLUT.txt
 
 # Download minified FSL (6.0.7.7)
-FROM base-builder as fsl-installer
+FROM base-builder AS fsl-installer
 WORKDIR /opt/fsl
 RUN curl -fsSL https://osf.io/ph9ex/download \
     | tar xz --strip-components 1
