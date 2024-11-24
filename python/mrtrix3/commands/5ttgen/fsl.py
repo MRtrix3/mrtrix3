@@ -65,7 +65,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-fast_dir',
                        metavar='/path/to/fast/dir',
                        help='use pre-calculated output of FSL FAST previously run on input T1-weighted image; '
-                            'data must be defined in the same space as input T1w')
+                            'data must be defined in the same space as input T1w; '
+                            'filename prefix must be "T1_BET"')
   parser.flag_mutually_exclusive_options( [ 'mask', 'premasked' ] )
 
 
@@ -198,22 +199,21 @@ def execute(): #pylint: disable=unused-variable
   # Finish branching based on brain masking
 
   # FAST
-  if not app.args.fast_dir:
+  if not app.ARGS.fast_dir:
     if fast_t2_input:
       run.command(f'{fast_cmd} -S 2 {fast_t2_input} {fast_t1_input}')
     else:
       run.command(f'{fast_cmd} {fast_t1_input}')
-  if app.args.fast_dir:
-    if not os.path.isdir(os.path.abspath(app.args.fast_dir)):
-      app.error('FAST directory cannot be found, please check path')
-    else:
-      fast_output_prefix = fast_t1_input.split('.')[0]
-      fast_csf_input = fsl.find_image(app.args.fast_dir + '/' + fast_output_prefix + '_pve_0.nii.gz')
-      fast_gm_input = fsl.find_image(app.args.fast_dir + '/' + fast_output_prefix + '_pve_1.nii.gz')
-      fast_wm_input = fsl.find_image(app.args.fast_dir + '/' + fast_output_prefix + '_pve_2.nii.gz')
-      run.command('cp ' + fast_csf_input + ' .' )
-      run.command('cp ' + fast_gm_input + ' .' )
-      run.command('cp ' + fast_wm_input + ' .' )
+  if app.ARGS.fast_dir:
+    if not os.path.isdir(os.path.abspath(app.ARGS.fast_dir)):
+      raise MRtrixError('FAST directory cannot be found, please check path')
+    fast_output_prefix = fast_t1_input.split('.')[0]
+    fast_csf_input = fast_output_prefix + 'pve_0.nii.gz'
+    fast_gm_input = fast_output_prefix + '_pve_1.nii.gz'
+    fast_wm_input = fast_output_prefix + '_pve_2.nii.gz'
+    run.command('cp ' + path.from_user(fast_csf_input) + ' ' + path.to_scratch(fast_csf_input))
+    run.command('cp ' + path.from_user(fast_gm_input) + ' ' + path.to_scratch(fast_gm_input))
+    run.command('cp ' + path.from_user(fast_wm_input) + ' ' + path.to_scratch(fast_wm_input))
 
   # FIRST
   first_input = 'T1.nii'
@@ -225,19 +225,18 @@ def execute(): #pylint: disable=unused-variable
   first_brain_extracted_option = ['-b'] if app.ARGS.premasked else []
   first_debug_option = [] if app.DO_CLEANUP else ['-d']
   first_verbosity_option = ['-v'] if app.VERBOSITY == 3 else []
-  if not app.args.first_dir:
+  if not app.ARGS.first_dir:
     run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_input, '-o', 'first']
                 + first_brain_extracted_option
                 + first_debug_option
                 + first_verbosity_option)
-  elif app.args.first_dir:
-    if not os.path.isdir(os.path.abspath(app.args.first_dir)):
-      app.error('FIRST directory cannot be found, please check path')
-    else:
-      for struct in sgm_structures:
-        vtk_in_path = 'first-' + struct + '_first.vtk'
-        run.command('cp ' + app.args.first_dir + '/' + vtk_in_path + ' .')
-      run.command('cp -r ' + app.args.first_dir + '/first.logs' + ' .')
+  elif app.ARGS.first_dir:
+    if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
+      raise MRtrixError('FIRST directory cannot be found, please check path')
+    for struct in sgm_structures:
+      vtk_in_path = 'first-' + struct + '_first.vtk'
+      run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
+    run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
   fsl.check_first('first', sgm_structures)
 
   # Convert FIRST meshes to partial volume images

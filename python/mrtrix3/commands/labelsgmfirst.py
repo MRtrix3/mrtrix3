@@ -68,8 +68,8 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, fsl, image, path, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
   if not app.ARGS.first_dir:
-  	if utils.is_windows():
-    	  raise MRtrixError('Script cannot run on Windows due to FSL dependency')
+    if utils.is_windows():
+      raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
   image.check_3d_nonunity(app.ARGS.t1)
 
@@ -79,7 +79,7 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('Environment variable FSLDIR is not set; '
                         'please run appropriate FSL configuration script')
 
-  	first_cmd = fsl.exe_name('run_first_all')
+    first_cmd = fsl.exe_name('run_first_all')
 
     first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
     if not os.path.isdir(first_atlas_path):
@@ -124,7 +124,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.premasked:
     first_input_is_brain_extracted = ' -b'
   if not app.ARGS.first_dir:
-	  structures_string = ','.join(structure_map.keys())
+    structures_string = ','.join(structure_map.keys())
     run.command(f'{first_cmd} -m none -s {structures_string} -i T1.nii {first_input_is_brain_extracted} -o first')
   elif app.ARGS.first_dir:
     if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):

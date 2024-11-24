@@ -13,8 +13,6 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-
-
 import glob, os, re, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run
@@ -566,11 +564,10 @@ def execute(): #pylint: disable=unused-variable
     elif app.ARGS.first_dir:
       if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
         app.error('FIRST directory cannot be found, please check path')
-      else:
-        for key, value in from_first.items():
-          vtk_in_path = 'first-' + key + '_first.vtk'
-          run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
-          run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
+      for key, value in from_first.items():
+        vtk_in_path = 'first-' + key + '_first.vtk'
+        run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
+        run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
     fsl.check_first('first', from_first.keys())
     app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))
