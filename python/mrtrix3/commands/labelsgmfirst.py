@@ -55,6 +55,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures,'
                             ' and also replace their estimates with those from FIRST')
   cmdline.add_argument('-first_dir',
+                       type=app.Parser.DirectoryIn(),
                        metavar='/path/to/first/dir',
                        help='use pre-calculated output of FSL FIRST previously run on T1-weighted image; '
                             'must be defined in the same space as input FreeSurfer parcellation')
@@ -71,9 +72,25 @@ def execute(): #pylint: disable=unused-variable
     if utils.is_windows():
       raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
+  # Want a mapping between FreeSurfer node names and FIRST structure names
+  # Just deal with the 5 that are used in ACT; FreeSurfer's hippocampus / amygdala segmentations look good enough.
+  structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area',
+                    'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate',
+                    'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum',
+                    'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
+                    'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
+  if app.ARGS.sgm_amyg_hipp:
+    structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
+                           'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
+
   image.check_3d_nonunity(app.ARGS.t1)
 
-  if not app.ARGS.first_dir:
+  first_cmd = None
+  first_object_files = []
+  if app.ARGS.first_dir:
+    first_prefix = fsl.check_first_input(app.ARGS.first_dir, structure_map.keys())
+    first_object_files = [app.ARGS.first_dir / f'{first_prefix}{struct}_first.vtk' for struct in structure_map.keys()]
+  else:
     fsl_path = os.environ.get('FSLDIR', '')
     if not fsl_path:
       raise MRtrixError('Environment variable FSLDIR is not set; '
@@ -86,21 +103,10 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('Atlases required for FSL\'s FIRST program not installed; '
                         'please install fsl-first-data using your relevant package manager')
 
-  # Want a mapping between FreeSurfer node names and FIRST structure names
-  # Just deal with the 5 that are used in ACT; FreeSurfer's hippocampus / amygdala segmentations look good enough.
-  structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area',
-                    'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate',
-                    'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum',
-                    'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
-                    'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
-  if app.ARGS.sgm_amyg_hipp:
-    structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
-                           'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
-
   t1_spacing = image.Header(app.ARGS.t1).spacing()
   upsample_for_first = False
   # If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
-  if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
+  if not app.ARGS.first_dir and math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
     app.warn(f'Voxel size of input T1 image larger than expected for T1-weighted images ({t1_spacing}); '
              f'image will be resampled to 1mm isotropic in order to maximise chance of '
              f'FSL FIRST script succeeding')
@@ -120,21 +126,13 @@ def execute(): #pylint: disable=unused-variable
                 preserve_pipes=True)
 
   # Run FIRST
-  first_input_is_brain_extracted = ''
-  if app.ARGS.premasked:
-    first_input_is_brain_extracted = ' -b'
   if not app.ARGS.first_dir:
+    first_input_is_brain_extracted = ''
+    if app.ARGS.premasked:
+      first_input_is_brain_extracted = ' -b'
     structures_string = ','.join(structure_map.keys())
     run.command(f'{first_cmd} -m none -s {structures_string} -i T1.nii {first_input_is_brain_extracted} -o first')
-  elif app.ARGS.first_dir:
-    if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
-      app.error('FIRST directory cannot be found, please check path')
-    else:
-      for key, value in structure_map.items():
-          vtk_in_path = 'first-' + key + '_first.vtk'
-          run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
-          run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
-  fsl.check_first('first', structure_map.keys())
+    fsl.check_first_output('first', structure_map.keys())
 
   # Generate an empty image that will be used to construct the new SGM nodes
   run.command('mrcalc parc.mif 0 -min sgm.mif')
@@ -155,10 +153,9 @@ def execute(): #pylint: disable=unused-variable
   # In this use case, don't want the PVE images; want to threshold at 0.5
   mask_list = [ ]
   progress = app.ProgressBar('Generating mask images for SGM structures', len(structure_map))
-  for key, value in structure_map.items():
+  for (key, value), vtk_in_path in zip(structure_map.items(), first_object_files):
     image_path = f'{key}_mask.mif'
     mask_list.append(image_path)
-    vtk_in_path = f'first-{key}_first.vtk'
     run.command(f'meshconvert {vtk_in_path} first-{key}_transformed.vtk -transform first2real T1.nii')
     run.command(f'mesh2voxel first-{key}_transformed.vtk parc.mif - | '
                 f'mrthreshold - {image_path} -abs 0.5')

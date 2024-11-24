@@ -55,6 +55,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       default=None,
                       help='Classify the brainstem as white matter')
   parser.add_argument('-first_dir',
+                      type=app.Parser.DirectoryIn(),
                       metavar='/path/to/first/dir',
                       help='utilise pre-calculated output of FSL FIRST run on input T1-weighted image; '
                            'must have been computed in the same space as FreeSurfer T1w')
@@ -182,7 +183,9 @@ def execute(): #pylint: disable=unused-variable
 
   # Most freeSurfer files will be accessed in-place; no need to pre-convert them into the temporary directory
   # However convert aparc image so that it does not have to be repeatedly uncompressed
-  run.command(['mrconvert', os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), 'aparc.mif'],
+  # TODO See if this can be deferred until later
+  aparc_image = 'aparc.mif'
+  run.command(['mrconvert', os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), aparc_image],
               preserve_pipes=True)
   if app.ARGS.template:
     run.command(['mrconvert', app.ARGS.template, 'template.mif', '-axes', '0,1,2'],
@@ -192,10 +195,8 @@ def execute(): #pylint: disable=unused-variable
   mri_dir = os.path.join(app.ARGS.input, 'mri')
   check_dir(surf_dir)
   check_dir(mri_dir)
-  aparc_image = 'aparc.mif'
   mask_image = os.path.join(mri_dir, 'brainmask.mgz')
   reg_file = os.path.join(mri_dir, 'transforms', 'talairach.xfm')
-  check_file(aparc_image)
   check_file(mask_image)
   check_file(reg_file)
   template_image = 'template.mif' if app.ARGS.template else aparc_image
@@ -220,17 +221,22 @@ def execute(): #pylint: disable=unused-variable
       else:
         fast_suffix = '.nii.gz'
     else:
-      app.warn('Could not find FSL program fast; script will not use fast for cerebellar tissue segmentation')
-    # Verify FIRST availability
+      app.warn('Could not find FSL program fast; '
+               'script will not use fast for cerebellar tissue segmentation')
+  else:
+    app.warn('Environment variable FSLDIR is not set; '
+             'script will run without FSL components')
+  # Verify that FIRST data will be available,
+  #   whether from an input directory or by executing internally
+  if app.ARGS.first_dir:
+    have_first = True
+  else:
     try:
       first_cmd = fsl.exe_name('run_first_all')
     except MRtrixError:
       first_cmd = None
     first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-    have_first = first_cmd and os.path.isdir(first_atlas_path)
-  else:
-    app.warn('Environment variable FSLDIR is not set; '
-             'script will run without FSL components')
+    have_first = fsl_path and first_cmd and os.path.isdir(first_atlas_path)
 
   acpc_string = f'anterior {"& posterior commissures" if ATTEMPT_PC else "commissure"}'
   have_acpcdetect = bool(shutil.which('acpcdetect')) and 'ARTHOME' in os.environ
@@ -302,8 +308,8 @@ def execute(): #pylint: disable=unused-variable
                           f'(candidate images: {hipp_subfield_all_images})')
     elif hippocampi_method == 'first':
       if not have_first:
-        raise MRtrixError('Cannot use "first" method for hippocampi segmentation; '
-                          'check FSL installation')
+        raise MRtrixError('Cannot use "first" method for hippocampi segmentation: '
+                          'FSL installation not found, and -fist_dir not specified')
   else:
     if have_hipp_subfields:
       hippocampi_method = 'subfields'
@@ -313,9 +319,8 @@ def execute(): #pylint: disable=unused-variable
                   ' segmentation')
     elif have_first:
       hippocampi_method = 'first'
-      app.console('No hippocampal subfields module output detected, '
-                  'but FSL FIRST is installed; '
-                  'will utilise latter for hippocampi segmentation')
+      app.console('No hippocampal subfields module output detected; '
+                  'FSL FIRST will be utilised for hippocampi segmentation')
     else:
       hippocampi_method = 'aseg'
       app.console('Neither hippocampal subfields module output nor FSL FIRST detected; '
@@ -337,7 +342,6 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Option -sgm_amyg_hipp ignored '
              '(hsvs algorithm always assigns hippocampi & ampygdalae as sub-cortical grey matter)')
 
-
   # Similar logic for thalami
   thalami_method = app.ARGS.thalami
   if thalami_method:
@@ -346,8 +350,8 @@ def execute(): #pylint: disable=unused-variable
         raise MRtrixError('Could not find thalamic nuclei module output')
     elif thalami_method == 'first':
       if not have_first:
-        raise MRtrixError('Cannot use "first" method for thalami segmentation; '
-                          'check FSL installation')
+        raise MRtrixError('Cannot use "first" method for thalami segmentation: '
+                          'no FSL installation found, and -first_dir not specified')
   else:
     # Not happy with outputs of thalamic nuclei submodule; default to FIRST
     if have_first:
@@ -364,6 +368,24 @@ def execute(): #pylint: disable=unused-variable
       thalami_method = 'aseg'
       app.console('Neither thalamic nuclei module output nor FSL FIRST detected; '
                   'FreeSurfer aseg will be used for thalami segmentation')
+
+  # Generate the list of structures to be segmented by FIRST
+  from_first = []
+  if have_first:
+    from_first = SGM_FIRST_MAP.copy()
+    if hippocampi_method == 'subfields':
+      from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value }
+      if hipp_subfield_has_amyg:
+        from_first = { key: value for key, value in from_first.items() if 'Amygdala' not in value }
+    elif hippocampi_method == 'aseg':
+      from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value and 'Amygdala' not in value }
+    if thalami_method != 'first':
+      from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
+
+  # If -first_dir has been specified, need to make sure that we can find all requisite files
+  first_input_prefix = None
+  if app.ARGS.first_dir:
+    first_input_prefix = fsl.check_first_input(app.ARGS.first_dir, from_first.keys())
 
 
   ###########################
@@ -549,30 +571,18 @@ def execute(): #pylint: disable=unused-variable
     progress.done()
 
   if have_first:
-    app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
-    from_first = SGM_FIRST_MAP.copy()
-    if hippocampi_method == 'subfields':
-      from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value }
-      if hipp_subfield_has_amyg:
-        from_first = { key: value for key, value in from_first.items() if 'Amygdala' not in value }
-    elif hippocampi_method == 'aseg':
-      from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value and 'Amygdala' not in value }
-    if thalami_method != 'first':
-      from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
-    if not app.ARGS.first_dir:
-        run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first'])
-    elif app.ARGS.first_dir:
-      if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
-        app.error('FIRST directory cannot be found, please check path')
-      for key, value in from_first.items():
-        vtk_in_path = 'first-' + key + '_first.vtk'
-        run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
-        run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
-    fsl.check_first('first', from_first.keys())
-    app.cleanup(glob.glob('T1_to_std_sub.*'))
+    first_vtk_files = []
+    if app.ARGS.first_dir:
+      assert first_input_prefix
+      first_vtk_files = [app.ARGS.first_dir / f'{first_input_prefix}{key}_first.vtk' for key in from_first.keys()]
+    else:
+      app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
+      run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first'])
+      fsl.check_first_output('first', from_first.keys())
+      first_vtk_files = [f'first-{key}_first-vtk' for key in from_first.keys()]
+      app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))
-    for key, value in from_first.items():
-      vtk_in_path = f'first-{key}_first.vtk'
+    for (key, value), vtk_in_path in zip(from_first.items(), first_vtk_files):
       vtk_converted_path = f'first-{key}_transformed.vtk'
       run.command(['meshconvert', vtk_in_path, vtk_converted_path, '-transform', 'first2real', 'T1.nii'])
       app.cleanup(vtk_in_path)
