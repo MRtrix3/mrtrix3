@@ -56,6 +56,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       action='store_true',
                       default=None,
                       help='Classify the brainstem as white matter')
+  parser.add_argument('-first_dir',
+                      metavar='/path/to/first/dir',
+                      help='utilise pre-calculated output of FSL FIRST run on input T1-weighted image; '
+                           'must have been computed in the same space as FreeSurfer T1w')
   parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. '
                       'Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. '
                       'In Proc OHBM 2020')
@@ -102,6 +106,7 @@ ASEG_STRUCTURES = [ ( 5,  4, 'Left-Inf-Lat-Vent'),
                     (57,  5, 'Right-Lesion'),
                     (62,  4, 'Right-vessel'),
                     (72,  4, '5th-Ventricle'),
+		                (77,  5, 'WM-Hypointensities'),
                     (250, 3, 'Fornix') ]
 
 
@@ -189,7 +194,6 @@ def execute(): #pylint: disable=unused-variable
   mri_dir = os.path.join(app.ARGS.input, 'mri')
   check_dir(surf_dir)
   check_dir(mri_dir)
-  #aparc_image = os.path.join(mri_dir, 'aparc+aseg.mgz')
   aparc_image = 'aparc.mif'
   mask_image = os.path.join(mri_dir, 'brainmask.mgz')
   reg_file = os.path.join(mri_dir, 'transforms', 'talairach.xfm')
@@ -557,7 +561,16 @@ def execute(): #pylint: disable=unused-variable
       from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value and 'Amygdala' not in value }
     if thalami_method != 'first':
       from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
-    run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first'])
+    if not app.ARGS.first_dir:
+        run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first'])
+    elif app.ARGS.first_dir:
+      if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
+        app.error('FIRST directory cannot be found, please check path')
+      else:
+        for key, value in from_first.items():
+          vtk_in_path = 'first-' + key + '_first.vtk'
+          run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
+          run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
     fsl.check_first('first', from_first.keys())
     app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))

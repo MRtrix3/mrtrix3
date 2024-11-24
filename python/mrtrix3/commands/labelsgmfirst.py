@@ -54,6 +54,10 @@ def usage(cmdline): #pylint: disable=unused-variable
                        default=None,
                        help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures,'
                             ' and also replace their estimates with those from FIRST')
+  cmdline.add_argument('-first_dir',
+                       metavar='/path/to/first/dir',
+                       help='use pre-calculated output of FSL FIRST previously run on T1-weighted image; '
+                            'must be defined in the same space as input FreeSurfer parcellation')
 
 
 
@@ -63,23 +67,24 @@ def usage(cmdline): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, fsl, image, path, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
-
-  if utils.is_windows():
-    raise MRtrixError('Script cannot run on Windows due to FSL dependency')
+  if not app.ARGS.first_dir:
+  	if utils.is_windows():
+    	  raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
   image.check_3d_nonunity(app.ARGS.t1)
 
-  fsl_path = os.environ.get('FSLDIR', '')
-  if not fsl_path:
-    raise MRtrixError('Environment variable FSLDIR is not set; '
-                      'please run appropriate FSL configuration script')
+  if not app.ARGS.first_dir:
+    fsl_path = os.environ.get('FSLDIR', '')
+    if not fsl_path:
+      raise MRtrixError('Environment variable FSLDIR is not set; '
+                        'please run appropriate FSL configuration script')
 
-  first_cmd = fsl.exe_name('run_first_all')
+  	first_cmd = fsl.exe_name('run_first_all')
 
-  first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-  if not os.path.isdir(first_atlas_path):
-    raise MRtrixError('Atlases required for FSL\'s FIRST program not installed; '
-                      'please install fsl-first-data using your relevant package manager')
+    first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
+    if not os.path.isdir(first_atlas_path):
+      raise MRtrixError('Atlases required for FSL\'s FIRST program not installed; '
+                        'please install fsl-first-data using your relevant package manager')
 
   # Want a mapping between FreeSurfer node names and FIRST structure names
   # Just deal with the 5 that are used in ACT; FreeSurfer's hippocampus / amygdala segmentations look good enough.
@@ -118,8 +123,17 @@ def execute(): #pylint: disable=unused-variable
   first_input_is_brain_extracted = ''
   if app.ARGS.premasked:
     first_input_is_brain_extracted = ' -b'
-  structures_string = ','.join(structure_map.keys())
-  run.command(f'{first_cmd} -m none -s {structures_string} -i T1.nii {first_input_is_brain_extracted} -o first')
+  if not app.ARGS.first_dir:
+	  structures_string = ','.join(structure_map.keys())
+    run.command(f'{first_cmd} -m none -s {structures_string} -i T1.nii {first_input_is_brain_extracted} -o first')
+  elif app.ARGS.first_dir:
+    if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
+      app.error('FIRST directory cannot be found, please check path')
+    else:
+      for key, value in structure_map.items():
+          vtk_in_path = 'first-' + key + '_first.vtk'
+          run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
+          run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
   fsl.check_first('first', structure_map.keys())
 
   # Generate an empty image that will be used to construct the new SGM nodes
