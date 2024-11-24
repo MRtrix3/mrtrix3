@@ -166,7 +166,6 @@ namespace MR {
           WARN ("Non-finite values present in input weighting coefficients file \"" + path + "\"; "
                 "may lead to unexpected behaviour");
         }
-        enforce_coeff_limits();
         update_fixels<operation_mode_t::ABSOLUTE>();
       }
 
@@ -203,18 +202,78 @@ namespace MR {
           WARN ("Input weighting factors file \"" + path + "\" contains zero values; "
                 "these cannot be re-introduced by SIFT2 and so will remain zero-valued at output");
         }
-        enforce_coeff_limits();
         update_fixels<operation_mode_t::ABSOLUTE>();
       }
 
 
 
-      void TckFactor::import_delta_data (const std::string& delta_fd_path)
+
+      void TckFactor::set_deltas (const std::string &path) {
+        deltas = load_vector<value_type> (path);
+        if (deltas.size() != contributions.size())
+          throw Exception ("Number of entries in input deltas file \"" + path + "\" (" + str(coefficients.size()) + ")"
+                           + "does not match number of streamlines read (" + str(contributions.size()) + ")");
+        if (!deltas.allFinite()) {
+          WARN ("Non-finite values present in input weighting coefficients file \"" + path + "\"; "
+                "may lead to unexpected behaviour");
+        }
+      }
+
+
+
+      template <>
+      void TckFactor::enforce_limits<operation_mode_t::ABSOLUTE>()
+      {
+        if (min_coeff == -std::numeric_limits<value_type>::infinity() && max_coeff == std::numeric_limits<value_type>::infinity())
+          return;
+        SIFT::track_t removed_count = 0, clamped_count = 0;
+        for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
+          if (coefficients[i] < min_coeff) {
+            coefficients[i] = -std::numeric_limits<value_type>::infinity();
+            ++removed_count;
+          } else if (coefficients[i] > max_coeff) {
+            coefficients[i] = max_coeff;
+            ++clamped_count;
+          }
+        }
+        if (removed_count) {
+          INFO (str(removed_count) + " streamlines were removed due to initial weights being lower than minimum permissible");
+        }
+        if (clamped_count) {
+          INFO (str(clamped_count) + " streamlines had their initial weight reduced due to exceeding the maximum permissible");
+        }
+      }
+
+
+
+      template <>
+      void TckFactor::enforce_limits<operation_mode_t::DIFFERENTIAL>()
+      {
+        if (min_delta == -std::numeric_limits<value_type>::infinity() && max_delta == std::numeric_limits<value_type>::infinity())
+          return;
+        SIFT::track_t clamped_count = 0;
+        for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
+          if (coefficients[i] < -min_delta) {
+            coefficients[i] = -min_delta;
+            ++clamped_count;
+          } else if (coefficients[i] > max_delta) {
+            coefficients[i] = max_delta;
+            ++clamped_count;
+          }
+        }
+        if (clamped_count) {
+          INFO (str(clamped_count) + " streamlines had their initial delta reduced in magnitude due to exceeding the maximum permissible");
+        }
+      }
+
+
+
+      void TckFactor::import_differential_data (const std::string& path)
       {
         fixels.conservativeResizeLike (data_matrix_type::Zero (nfixels(), 9));
-        Image<float> delta_fd_image (Image<float>::open (delta_fd_path));
-        MR::Fixel::check_data_file (delta_fd_image, nfixels());
-        fixels.col(delta_fd_column) = delta_fd_image.row(0);
+        Image<float> diff_fd_image (Image<float>::open (path));
+        MR::Fixel::check_data_file (diff_fd_image, nfixels());
+        fixels.col(delta_fd_column) = diff_fd_image.row(0);
       }
 
 
@@ -854,30 +913,6 @@ namespace MR {
           scatter << str (fixel.delta_FD()) << "," << str (fixel.delta_TD()) << "," << str (fixel.delta_TD() * current_mu) << "," << str (fixel.weight()) << ",\n";
         }
 
-      }
-
-
-
-      void TckFactor::enforce_coeff_limits()
-      {
-        if (min_coeff == -std::numeric_limits<value_type>::infinity() && max_coeff == std::numeric_limits<value_type>::infinity())
-          return;
-        SIFT::track_t removed_count = 0, clamped_count = 0;
-        for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-          if (coefficients[i] < min_coeff) {
-            coefficients[i] = -std::numeric_limits<value_type>::infinity();
-            ++removed_count;
-          } else if (coefficients[i] > max_coeff) {
-            coefficients[i] = max_coeff;
-            ++clamped_count;
-          }
-        }
-        if (removed_count) {
-          INFO (str(removed_count) + " streamlines were removed due to initial weights being lower than minimum permissible");
-        }
-        if (clamped_count) {
-          INFO (str(clamped_count) + " streamlines had their initial weight reduced due to exceeding the maximum permissible");
-        }
       }
 
 

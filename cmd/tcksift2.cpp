@@ -69,18 +69,24 @@ const OptionGroup SIFT2IterationOption = OptionGroup ("Options for controlling i
 
 
 
-const OptionGroup SIFT2InitOption = OptionGroup ("Options for initialising the SIFT2 model")
+const OptionGroup SIFT2InitOption = OptionGroup ("Options for initialising / constraining the SIFT2 model")
 
-  + Option ("init_coeffs", "initialise the set of per-streamline coefficients for commencement of optimisation")
+  + Option ("init_coeffs", "initialise the set of per-streamline coefficients for commencement of absolute mode optimisation")
     + Argument ("file").type_file_in()
 
-  + Option ("init_factors", "initialise the set of per-streamline weighting factors for commencement of optimisation")
+  + Option ("init_factors", "initialise the set of per-streamline weighting factors for commencement of absolute mode optimisation")
     + Argument ("file").type_file_in()
 
-  + Option ("in_coeffs", "provide the set of per-streamline coefficients; do not perform any subsequent optimisation of such")
+  + Option ("in_coeffs", "provide the set of per-streamline coefficients for absolute mode; do not perform any subsequent optimisation of such")
     + Argument ("file").type_file_in()
 
-  + Option ("in_factors", "provide the set of per-streamline weighting factors; do not perform any subsequent optimisation of such")
+  + Option ("in_factors", "provide the set of per-streamline weighting factors for absolute mode; do not perform any subsequent optimisation of such")
+    + Argument ("file").type_file_in()
+
+  // TODO Implement
+  + Option ("init_deltas", "initialise the set of per-streamline delta weights for commencement of differential mode optimisation")
+    + Argument ("file").type_file_in()
+  + Option ("in_deltas", "provide the set of per-streamline delta weights for differential mode; do not perform any subsequent optimisation of such")
     + Argument ("file").type_file_in();
 
 
@@ -290,11 +296,16 @@ void run ()
       tckfactor.set_min_cf_decrease (value_type(opt[0][0]));
 
     opt = get_options ("init_factors");
-    if (opt.size())
+    if (opt.size()) {
       tckfactor.set_factors (opt[0][0]);
+      tckfactor.enforce_limits<operation_mode_t::ABSOLUTE>();
+    }
     opt = get_options ("init_coeffs");
-    if (opt.size())
+    if (opt.size()) {
       tckfactor.set_coefficients (opt[0][0]);
+      tckfactor.enforce_limits<operation_mode_t::ABSOLUTE>();
+    }
+
 
     tckfactor.estimate_weights<operation_mode_t::ABSOLUTE>();
   }
@@ -313,33 +324,53 @@ void run ()
   opt = get_options ("differential");
   if (opt.size()) {
 
-    tckfactor.import_delta_data (opt[0][0]);
+    tckfactor.import_differential_data (opt[0][0]);
     const std::string output_delta_path = opt[0][1];
 
-    opt = get_options ("reg_basis_diff");
-    if (opt.size())
-      tckfactor.set_reg_basis_diff (reg_basis_t (int(opt[0][0])));
-    tckfactor.set_reg_lambda_diff (get_option_value("reg_strength_diff", SIFT2::regularisation_strength_diff_default));
+    opt = get_options("init_deltas");
+    if (opt.empty()) {
 
-    if (debug_path.size())
-      tckfactor.output_delta_debug_images (debug_path, "before");
+      opt = get_options ("reg_basis_diff");
+      if (opt.size())
+        tckfactor.set_reg_basis_diff (reg_basis_t (int(opt[0][0])));
+      tckfactor.set_reg_lambda_diff (get_option_value("reg_strength_diff", SIFT2::regularisation_strength_diff_default));
+      opt = get_options ("min_delta");
+      if (opt.size())
+        tckfactor.set_min_delta (value_type(opt[0][0]));
+      opt = get_options ("max_delta");
+      if (opt.size())
+        tckfactor.set_max_delta (value_type(opt[0][0]));
+      opt = get_options ("max_delta_step");
+      if (opt.size())
+        tckfactor.set_max_delta_step (value_type(opt[0][0]));
 
-    opt = get_options ("min_delta");
-    if (opt.size())
-      tckfactor.set_min_delta (value_type(opt[0][0]));
-    opt = get_options ("max_delta");
-    if (opt.size())
-      tckfactor.set_max_delta (value_type(opt[0][0]));
-    opt = get_options ("max_delta_step");
-    if (opt.size())
-      tckfactor.set_max_delta_step (value_type(opt[0][0]));
+      opt = get_options ("init_deltas");
+      if (!opt.empty()) {
+        tckfactor.set_deltas (opt[0][0]);
+        tckfactor.enforce_limits<operation_mode_t::DIFFERENTIAL>();
+      }
 
-    tckfactor.estimate_weights<operation_mode_t::DIFFERENTIAL>();
+      if (debug_path.size())
+        tckfactor.output_delta_debug_images (debug_path, "before");
+
+      tckfactor.estimate_weights<operation_mode_t::DIFFERENTIAL>();
+
+    } else {
+      tckfactor.set_deltas (opt[0][0]);
+    }
 
     tckfactor.output_deltas (output_delta_path);
     if (debug_path.size())
       tckfactor.output_delta_debug_images (debug_path, "after");
 
+  } else {
+    // TODO Could alternatively use presence of these to imply engagement of differential mode
+    if (!get_options("init_deltas").empty()) {
+      WARN("Option -init_deltas ignored; differential mode not active");
+    }
+    if (!get_options("in_deltas").empty()) {
+      WARN("Option -in_deltas ignored; differential mode not active");
+    }
   }
 
 }

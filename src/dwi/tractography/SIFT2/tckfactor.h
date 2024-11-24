@@ -182,18 +182,23 @@ namespace MR {
           void set_max_factor      (const value_type i) { max_coeff = std::log(i); }
           void set_max_coeff       (const value_type i) { max_coeff = i; }
           void set_max_coeff_step  (const value_type i) { max_coeff_step = i; }
-          void set_min_delta       (const value_type i) { min_delta = i; }
-          void set_max_delta       (const value_type i) { max_delta = i; }
-          void set_max_delta_step  (const value_type i) { max_delta_step = i; }
+          void set_min_delta       (const value_type i) { assert (i >= -1.0); min_delta = i; }
+          void set_max_delta       (const value_type i) { assert (i <= 1.0); max_delta = i; }
+          void set_max_delta_step  (const value_type i) { assert (i > 0.0); assert (i <= 2.0); max_delta_step = i; }
           void set_min_cf_decrease (const value_type i) { min_cf_decrease_percentage = i; }
 
           void set_csv_path (const std::string& path);
 
           void set_coefficients (const std::string& path);
           void set_factors (const std::string& path);
+          void set_deltas (const std::string &path);
 
+          // This should only be called if coefficients have been loaded from the command-line;
+          //   these limits should otherwise be being enforced by whatever code is responsible for the optimisation
+          template <operation_mode_t Mode>
+          void enforce_limits();
 
-          void import_delta_data (const std::string& delta_path);
+          void import_differential_data (const std::string& delta_path);
 
 
           void store_orig_TDs();
@@ -272,9 +277,7 @@ namespace MR {
 
           void indicate_progress() { if (App::log_level) fprintf (stderr, "."); }
 
-          // This should only be called if coefficients have been loaded from the command-line;
-          //   these limits should otherwise be being enforced by whatever code is responsible for the optimisation
-          void enforce_coeff_limits();
+
 
           template <operation_mode_t Mode>
           void update_fixels();
