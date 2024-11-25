@@ -51,7 +51,6 @@ namespace MR {
             local_stats_steps (),
             local_stats_coefficients (),
             local_participation_count (0),
-            local_to_exclude (fixels_to_exclude.size()),
             local_sum_costs (0.0) { }
 
 
@@ -74,7 +73,6 @@ namespace MR {
             local_stats_steps (),
             local_stats_coefficients (),
             local_participation_count (0),
-            local_to_exclude (fixels_to_exclude.size()),
             local_sum_costs (0.0) { }
 
 
@@ -88,7 +86,10 @@ namespace MR {
         step_stats += local_stats_steps;
         coefficient_stats += local_stats_coefficients;
         participating_streamlines += local_participation_count;
-        fixels_to_exclude |= local_to_exclude;
+        for (auto i : local_streamlines_to_exclude)
+          master.mask_absolute[i] = false;
+        for (auto f : local_fixels_to_exclude)
+          fixels_to_exclude[f] = true;
         sum_costs += local_sum_costs;
       }
 
@@ -122,8 +123,9 @@ namespace MR {
           const value_type old_coefficient = master.coefficients[track_index];
           value_type new_coefficient = old_coefficient + dFs;
           if (new_coefficient < master.min_coeff) {
-            new_coefficient = master.min_coeff;
+            new_coefficient = -std::numeric_limits<value_type>::infinity();
             dFs = master.min_coeff - old_coefficient;
+            local_streamlines_to_exclude.push_back(track_index);
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
             ++coeff_truncated;
 #endif
@@ -197,7 +199,7 @@ namespace MR {
         }
 
         if (index_to_exclude)
-          local_to_exclude[index_to_exclude] = true;
+          local_fixels_to_exclude.push_back(index_to_exclude);
         else
           return 0.0;
 

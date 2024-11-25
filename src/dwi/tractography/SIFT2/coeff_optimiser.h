@@ -27,6 +27,8 @@
 #include "dwi/tractography/SIFT2/regularisation.h"
 #include "dwi/tractography/SIFT2/streamline_stats.h"
 
+#include "fixel/fixel.h"
+
 
 //#define SIFT2_COEFF_OPTIMISER_DEBUG
 //#define SIFT2_DELTA_OPTIMISER_DEBUG
@@ -76,7 +78,8 @@ namespace MR {
 
           StreamlineStats local_stats_steps, local_stats_coefficients;
           SIFT::track_t local_participation_count;
-          BitSet local_to_exclude;
+          std::vector<MR::Fixel::index_type> local_fixels_to_exclude;
+          std::vector<SIFT::track_t> local_streamlines_to_exclude;
 
         protected:
           mutable value_type local_sum_costs;
