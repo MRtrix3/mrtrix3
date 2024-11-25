@@ -56,8 +56,6 @@ namespace MR
       // Ideally, for computational performance, these would be templated out,
       //   since they may be involved in derivative calculations in deep line search loops
 
-      // TODO Experiment with non-strong enums,
-      //   since we want to be able to template by these
       enum reg_basis_t { STREAMLINE, FIXEL };
       enum reg_fn_t { FACTOR, COEFF, GAMMA };
 
@@ -71,9 +69,6 @@ namespace MR
 
 
 
-      // TODO At least initially, would it be safer to assume that a coefficient is always provided?
-      // TODO Later we may want to work more natively with weights;
-      //   but that may require structural changes elsewhere
       // TODO Also will want derivatives with respect to weighting factor rather than coefficient
       FORCE_INLINE value_type reg_factor (const value_type factor)
       {

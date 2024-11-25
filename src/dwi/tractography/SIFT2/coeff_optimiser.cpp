@@ -33,7 +33,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
+      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, SIFT::track_t& participating_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
             master (tckfactor),
             mu (tckfactor.mu()),
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
@@ -45,12 +45,12 @@ namespace MR {
 #endif
             step_stats (step_stats),
             coefficient_stats (coefficient_stats),
-            nonzero_streamlines (nonzero_streamlines),
+            participating_streamlines (participating_streamlines),
             fixels_to_exclude (fixels_to_exclude),
             sum_costs (sum_costs),
             local_stats_steps (),
             local_stats_coefficients (),
-            local_nonzero_count (0),
+            local_participation_count (0),
             local_to_exclude (fixels_to_exclude.size()),
             local_sum_costs (0.0) { }
 
@@ -68,12 +68,12 @@ namespace MR {
 #endif
             step_stats (that.step_stats),
             coefficient_stats (that.coefficient_stats),
-            nonzero_streamlines (that.nonzero_streamlines),
+            participating_streamlines (that.participating_streamlines),
             fixels_to_exclude (that.fixels_to_exclude),
             sum_costs (that.sum_costs),
             local_stats_steps (),
             local_stats_coefficients (),
-            local_nonzero_count (0),
+            local_participation_count (0),
             local_to_exclude (fixels_to_exclude.size()),
             local_sum_costs (0.0) { }
 
@@ -87,7 +87,7 @@ namespace MR {
 #endif
         step_stats += local_stats_steps;
         coefficient_stats += local_stats_coefficients;
-        nonzero_streamlines += local_nonzero_count;
+        participating_streamlines += local_participation_count;
         fixels_to_exclude |= local_to_exclude;
         sum_costs += local_sum_costs;
       }
@@ -98,6 +98,8 @@ namespace MR {
       {
 
         for (auto track_index : range) {
+          if (!master.mask_absolute[track_index])
+            continue;
 
           value_type dFs = get_coeff_change (track_index);
 
@@ -139,7 +141,7 @@ namespace MR {
           local_stats_steps += dFs;
           local_stats_coefficients += new_coefficient;
           if (master.contributions[track_index] && master.contributions[track_index]->dim() && new_coefficient > master.min_coeff)
-            ++local_nonzero_count;
+            ++local_participation_count;
 
 #ifdef STREAMLINE_OF_INTEREST
           if (track_index == STREAMLINE_OF_INTEREST) {
@@ -226,8 +228,8 @@ namespace MR {
 
 
 /*
-      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) { }
+      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, SIFT::track_t& participating_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs) { }
 
       CoefficientOptimiserGSS::CoefficientOptimiserGSS (const CoefficientOptimiserGSS& that) :
             CoefficientOptimiserBase (that) { }
@@ -252,8 +254,8 @@ namespace MR {
 
 
 /*
-      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
+      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, SIFT::track_t& participating_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs),
             qls (-master.max_coeff_step, master.max_coeff_step)
       {
         qls.set_exit_if_outside_bounds (false);
@@ -298,8 +300,8 @@ namespace MR {
 
 
 
-      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs)
+      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, SIFT::track_t& participating_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs)
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
       , iter_count (0)
 #endif
@@ -517,6 +519,9 @@ namespace MR {
       {
 
         for (auto track_index : range) {
+
+          if (!master.mask_differential[track_index])
+            continue;
 
           value_type dDelta = (*this) (track_index);
 

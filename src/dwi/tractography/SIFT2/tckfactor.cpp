@@ -162,9 +162,29 @@ namespace MR {
         if (coefficients.size() != contributions.size())
           throw Exception ("Number of entries in input weighting coefficients file \"" + path + "\" (" + str(coefficients.size()) + ")"
                            + "does not match number of streamlines read (" + str(contributions.size()) + ")");
-        if (!coefficients.allFinite()) {
-          WARN ("Non-finite values present in input weighting coefficients file \"" + path + "\"; "
-                "may lead to unexpected behaviour");
+        if (mask_absolute.size() == 0)
+          mask_absolute = Eigen::Array<bool, Eigen::Dynamic, 1>::Ones(num_tracks());
+        SIFT::track_t inclusion_count = 0;
+        SIFT::track_t exclusion_count = 0;
+        for (SIFT::track_t index = 0; index != num_tracks(); ++index) {
+          if (coefficients[index] == -std::numeric_limits<value_type>::infinity()) {
+            if (mask_absolute[index])
+              ++exclusion_count;
+            mask_absolute[index] = false;
+          } else if (coefficients[index] == std::numeric_limits<value_type>::infinity()) {
+            throw Exception("Input coefficients file \"" + path + "\" contains infinity; check derivation");
+          } else if (std::isnan(coefficients[index])) {
+            coefficients[index] = -std::numeric_limits<value_type>::infinity();
+            if (mask_absolute[index])
+              ++exclusion_count;
+            mask_absolute[index] = false;
+          } else if (mask_absolute[index]) {
+            ++inclusion_count;
+          }
+        }
+        if (exclusion_count > 0) {
+          INFO(str(exclusion_count) + " streamlines excluded from absolute mode optimisation due to non-finite coefficients imported from \"" + path + "\"");
+          INFO(str(inclusion_count) + " remaining streamlines will participate in optimisation");
         }
         update_fixels<operation_mode_t::ABSOLUTE>();
       }
@@ -178,29 +198,28 @@ namespace MR {
           throw Exception ("Number of entries in input weighting factors file \"" + path + "\" (" + str(coefficients.size()) + ")"
                            + "does not match number of streamlines read (" + str(contributions.size()) + ")");
         coefficients.resize (factors.size());
-        bool issue_nonfinite_warning = false, issue_negative_warning = false, issue_zero_warning = false;
+        if (mask_absolute.size() == 0)
+          mask_absolute = Eigen::Array<bool, Eigen::Dynamic, 1>::Ones(factors.size());
+        SIFT::track_t inclusion_count = 0;
+        SIFT::track_t exclusion_count = 0;
         for (SIFT::track_t i = 0; i != factors.size(); ++i) {
-          if (!std::isfinite (factors[i])) {
-            coefficients[i] = std::numeric_limits<value_type>::quiet_NaN();
-            issue_nonfinite_warning = true;
-          } else if (factors[i] < value_type(0)) {
-            coefficients[i] = std::numeric_limits<value_type>::quiet_NaN();
-            issue_negative_warning = true;
-          } else if (!factors[i]) {
+          if (factors[i] == -std::numeric_limits<value_type>::infinity() || factors[i] == std::numeric_limits<value_type>::infinity())
+            throw Exception("Input weighting factors file \"" + path + "\" contains infinity; check derivation");
+          if (factors[i] < 0.0)
+            throw Exception("Input weighting factors file \"" + path + "\" contains negative value; check derivation");
+          if (std::isnan(factors[i]) || factors[i] == value_type(0)) {
             coefficients[i] = -std::numeric_limits<value_type>::infinity();
-            issue_zero_warning = true;
+            if (mask_absolute[i])
+              ++exclusion_count;
+            mask_absolute[i] = false;
           } else {
             coefficients[i] = std::log (factors[i]);
+            ++inclusion_count;
           }
         }
-        if (issue_nonfinite_warning || issue_negative_warning) {
-          WARN ("Input weighting factors file \"" + path + "\" contains "
-                + ((issue_nonfinite_warning || issue_negative_warning) ? "both non-finite and negative " : (issue_nonfinite_warning ? "non-finite" : "negative"))
-                + "values; this may lead to unexpected behaviour");
-        }
-        if (issue_zero_warning) {
-          WARN ("Input weighting factors file \"" + path + "\" contains zero values; "
-                "these cannot be re-introduced by SIFT2 and so will remain zero-valued at output");
+        if (exclusion_count > 0) {
+          INFO(str(exclusion_count) + " streamlines excluded from absolute mode optimisation due to zero / NaN weighting factors imported from \"" + path + "\"");
+          INFO(str(inclusion_count) + " remaining streamlines will participate in optimisation");
         }
         update_fixels<operation_mode_t::ABSOLUTE>();
       }
@@ -213,10 +232,30 @@ namespace MR {
         if (deltas.size() != contributions.size())
           throw Exception ("Number of entries in input deltas file \"" + path + "\" (" + str(coefficients.size()) + ")"
                            + "does not match number of streamlines read (" + str(contributions.size()) + ")");
-        if (!deltas.allFinite()) {
-          WARN ("Non-finite values present in input weighting coefficients file \"" + path + "\"; "
-                "may lead to unexpected behaviour");
+        if (mask_differential.size() == 0)
+          mask_differential = Eigen::Array<bool, Eigen::Dynamic, 1>::Ones(deltas.size());
+        SIFT::track_t inclusion_count = 0;
+        SIFT::track_t exclusion_count = 0;
+        for (SIFT::track_t i = 0; i != deltas.size(); ++i) {
+          if (deltas[i] == -std::numeric_limits<value_type>::infinity() || deltas[i] == std::numeric_limits<value_type>::infinity())
+            throw Exception("Input delta weights file \"" + path + "\" contains infinity; check derivation");
+          if (deltas[i] > value_type(1))
+            throw Exception("Input delta weights file \"" + path + "\" contains values greater than 1.0; check derivation");
+          if (deltas[i] < value_type(-1))
+            throw Exception("Input delta weights file \"" + path + "\" contains values less than -1.0; check derivation");
+          if (std::isnan(deltas[i])) {
+            if (mask_differential[i])
+              ++exclusion_count;
+            mask_differential[i] = false;
+          } else {
+            ++inclusion_count;
+          }
         }
+        if (exclusion_count > 0) {
+          INFO(str(exclusion_count) + " streamlines excluded from differential mode optimisation due to NaN delta weights imported from \"" + path + "\"");
+          INFO(str(inclusion_count) + " remaining streamlines will participate in optimisation");
+        }
+        update_fixels<operation_mode_t::DIFFERENTIAL>();
       }
 
 
@@ -262,8 +301,28 @@ namespace MR {
           }
         }
         if (clamped_count) {
-          INFO (str(clamped_count) + " streamlines had their initial delta reduced in magnitude due to exceeding the maximum permissible");
+          INFO (str(clamped_count) + " streamlines had their initial delta weights reduced in magnitude due to exceeding the maximum permissible");
         }
+      }
+
+
+
+      template <>
+      void TckFactor::set_mask<operation_mode_t::ABSOLUTE> (const std::string &path) {
+        mask_absolute = load_vector<bool>(path);
+        if (mask_absolute.size() != contributions.size())
+          throw Exception ("Number of entries in streamline mask for absolute mode \"" + path + "\" (" + str(mask_absolute.size()) + ")"
+                           + "does not match number of streamlines read (" + str(contributions.size()) + ")");
+        INFO(str(mask_absolute.count()) + " of " + str(contributions.size()) + " streamlines present in mask for absolute mode");
+      }
+
+      template <>
+      void TckFactor::set_mask<operation_mode_t::DIFFERENTIAL> (const std::string &path) {
+        mask_differential = load_vector<bool>(path);
+        if (mask_differential.size() != contributions.size())
+          throw Exception ("Number of entries in streamline mask for differential mode \"" + path + "\" (" + str(mask_differential.size()) + ")"
+                           + "does not match number of streamlines read (" + str(contributions.size()) + ")");
+        INFO(str(mask_differential.count()) + " of " + str(contributions.size()) + " streamlines present in mask for differential mode");
       }
 
 
@@ -441,7 +500,7 @@ namespace MR {
 
 
 
-      value_type TckFactor::calc_cost_function_delta()
+      value_type TckFactor::calc_cost_function_differential()
       {
         const value_type current_mu = mu();
         value_type cost = value_type(0);
@@ -459,11 +518,21 @@ namespace MR {
       {
         auto allocate_vector = [] (Eigen::Array<value_type, Eigen::Dynamic, 1>& vector, const ssize_t size)
         {
-          if (!vector.size()) {
+          if (vector.size() == 0) {
             try {
               vector = Eigen::Array<value_type, Eigen::Dynamic, 1>::Zero (size);
             } catch (...) {
               throw Exception ("Error assigning memory for streamline weights vector");
+            }
+          }
+        };
+        auto allocate_mask = [] (Eigen::Array<bool, Eigen::Dynamic, 1>& mask, const ssize_t size)
+        {
+          if (mask.size() == 0) {
+            try {
+              mask = Eigen::Array<bool, Eigen::Dynamic, 1>::Ones (size);
+            } catch (...) {
+              throw Exception ("Error assigning memory for streamline mask");
             }
           }
         };
@@ -472,11 +541,13 @@ namespace MR {
         switch (Mode) {
           case operation_mode_t::ABSOLUTE:
             allocate_vector (coefficients, num_tracks());
+            allocate_mask (mask_absolute, num_tracks());
             cf_data = calc_cost_function();
             break;
           case operation_mode_t::DIFFERENTIAL:
             allocate_vector (deltas, num_tracks());
-            cf_data = calc_cost_function_delta();
+            allocate_mask (mask_differential, num_tracks());
+            cf_data = calc_cost_function_differential();
             break;
         }
 
@@ -487,20 +558,20 @@ namespace MR {
         value_type prev_cf = init_cf;
         const value_type required_cf_change = -min_cf_decrease_percentage * init_cf;
 
-        SIFT::track_t nonzero_streamlines = 0;
+        Eigen::Array<bool, Eigen::Dynamic, 1> &mask (Mode == operation_mode_t::ABSOLUTE ? mask_absolute : mask_differential);
+        SIFT::track_t participating_streamlines = 0;
         for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-          if (contributions[i] && contributions[i]->dim() && std::isfinite (coefficients[i]))
-            ++nonzero_streamlines;
+          if (contributions[i] && contributions[i]->dim() && std::isfinite (coefficients[i]) && mask[i])
+            ++participating_streamlines;
         }
 
         unsigned int iter = 0;
 
-        auto display_func = [&](){ return printf("    %5u        %3.3f%%         %2.3f%%        %u", iter, 100.0 * cf_data / init_cf, 100.0 * cf_reg / init_cf, nonzero_streamlines); };
-        // TODO Consider changing console display from streamline count to entropy-equivalent streamline count
+        auto display_func = [&](){ return printf("    %5u        %3.3f%%         %2.3f%%        %u", iter, 100.0 * cf_data / init_cf, 100.0 * cf_reg / init_cf, participating_streamlines); };
         CONSOLE ("         Iteration     CF (data)       CF (reg)    Streamlines");
         ProgressBar progress ("");
 
-        // Keep track of total exclusions, not just how many are removed in each iteration
+        // Keep track of total fixel exclusions, not just how many are removed in each iteration
         MR::Fixel::index_type total_excluded = fixels.col(exclude_column).sum();
 
         std::unique_ptr<std::ofstream> csv_out;
@@ -509,7 +580,7 @@ namespace MR {
           // TODO If running in combined absolute & differential mode, will need to handle this file differently
           // TODO Consider adding weight vector entropy to CSV output in absolute mode
           csv_out->open (csv_path.c_str(), std::ios_base::app);
-          (*csv_out) << "0," << cf_data << "," << cf_reg << "," << init_cf << "," << nonzero_streamlines << "," << total_excluded << ",0,0,0,0,0,0,0,0,0,0,0,\n";
+          (*csv_out) << "0," << cf_data << "," << cf_reg << "," << init_cf << "," << participating_streamlines << "," << total_excluded << ",0,0,0,0,0,0,0,0,0,0,0,\n";
           csv_out->flush();
         }
 
@@ -589,23 +660,23 @@ namespace MR {
           value_type sum_costs = 0.0;
 
 #ifdef SIFT2_USE_BBGD
-          nonzero_streamlines = 0;
+          participating_streamlines = 0;
           switch (reg_basis_abs) {
             case reg_basis_t::STREAMLINE: {
               switch (reg_fn_abs)
               {
-                case reg_fn_t::COEFF:  BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>  (gradients, step_size, step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs); break;
-                case reg_fn_t::FACTOR: BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::FACTOR> (gradients, step_size, step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs); break;
-                case reg_fn_t::GAMMA:  BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>  (gradients, step_size, step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_t::COEFF:  BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_t::FACTOR: BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::FACTOR> (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_t::GAMMA:  BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
               }
             }
             break;
             case reg_basis_t::FIXEL: {
               switch (reg_fn_abs)
               {
-                case reg_fn_t::COEFF:  BBGD_update<reg_basis_t::FIXEL, reg_fn_t::COEFF>  (gradients, step_size, step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs); break;
-                case reg_fn_t::FACTOR: BBGD_update<reg_basis_t::FIXEL, reg_fn_t::FACTOR> (gradients, step_size, step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs); break;
-                case reg_fn_t::GAMMA:  BBGD_update<reg_basis_t::FIXEL, reg_fn_t::GAMMA>  (gradients, step_size, step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_t::COEFF:  BBGD_update<reg_basis_t::FIXEL, reg_fn_t::COEFF>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_t::FACTOR: BBGD_update<reg_basis_t::FIXEL, reg_fn_t::FACTOR> (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_t::GAMMA:  BBGD_update<reg_basis_t::FIXEL, reg_fn_t::GAMMA>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
               }
             }
             break;
@@ -617,11 +688,11 @@ namespace MR {
           {
             case operation_mode_t::ABSOLUTE:
             {
-              nonzero_streamlines = 0;
+              participating_streamlines = 0;
               SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
-              //CoefficientOptimiserGSS worker (*this, /*projected_steps,*/ step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
-              //CoefficientOptimiserQLS worker (*this, /*projected_steps,*/ step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
-              CoefficientOptimiserIterative worker (*this, /*projected_steps,*/ step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
+              //CoefficientOptimiserGSS worker (*this, /*projected_steps,*/ step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs);
+              //CoefficientOptimiserQLS worker (*this, /*projected_steps,*/ step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs);
+              CoefficientOptimiserIterative worker (*this, /*projected_steps,*/ step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs);
               Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
             }
             break;
@@ -658,9 +729,11 @@ namespace MR {
           update_fixels<Mode>();
           indicate_progress();
 
+          // TODO Template this out
+          // (SIFT1 code would need to become aware of "absolute" vs "differential" modes)
           switch (Mode) {
             case operation_mode_t::ABSOLUTE:     cf_data = calc_cost_function(); break;
-            case operation_mode_t::DIFFERENTIAL: cf_data = calc_cost_function_delta(); break;
+            case operation_mode_t::DIFFERENTIAL: cf_data = calc_cost_function_differential(); break;
           }
 
           // Calculate the cost of regularisation, given the updates to both the
@@ -669,7 +742,7 @@ namespace MR {
           new_cf = cf_data + cf_reg;
 
           if (!csv_path.empty()) {
-            (*csv_out) << str (iter) << "," << str (cf_data) << "," << str (cf_reg) << "," << str (new_cf) << "," << str (nonzero_streamlines) << "," << str (total_excluded) << ","
+            (*csv_out) << str (iter) << "," << str (cf_data) << "," << str (cf_reg) << "," << str (new_cf) << "," << str (participating_streamlines) << "," << str (total_excluded) << ","
                 << str (step_stats  .get_min()) << "," << str (step_stats  .get_mean()) << "," << str (step_stats  .get_mean_abs()) << "," << str (step_stats  .get_var()) << "," << str (step_stats  .get_max()) << ","
                 << str (weight_stats.get_min()) << "," << str (weight_stats.get_mean()) << "," << str (weight_stats.get_mean_abs()) << "," << str (weight_stats.get_var()) << "," << str (weight_stats.get_max()) << ","
                 << str (weight_stats.get_var() * (num_tracks() - 1))
@@ -832,7 +905,7 @@ namespace MR {
 
 
 
-      void TckFactor::output_delta_debug_images (const std::string& dirpath, const std::string& prefix)
+      void TckFactor::output_differential_debug_images (const std::string& dirpath, const std::string& prefix)
       {
         vector<value_type> mins   (nfixels(), std::numeric_limits<value_type>::infinity());
         vector<value_type> stdevs (nfixels(), 0.0);
@@ -943,12 +1016,12 @@ namespace MR {
                                    const value_type step_size,
                                    StreamlineStats& step_stats,
                                    StreamlineStats& coefficient_stats,
-                                   unsigned int& nonzero_streamlines,
+                                   unsigned int& participating_streamlines,
                                    BitSet& fixels_to_exclude,
                                    value_type& sum_costs)
       {
         SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
-        CoefficientOptimiserBBGD<RegBasis, RegFn> worker (*this, gradients, step_size, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
+        CoefficientOptimiserBBGD<RegBasis, RegFn> worker (*this, gradients, step_size, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs);
         Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
       }
       template void TckFactor::BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::COEFF> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);

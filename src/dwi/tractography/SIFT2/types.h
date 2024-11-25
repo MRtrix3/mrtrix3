@@ -33,15 +33,13 @@ namespace MR {
 
 
 
-      // TODO Enum to distinguish between absolute and differential fitting
       enum class operation_mode_t { ABSOLUTE, DIFFERENTIAL };
 
 
 
-      // TODO Class to track both exponential coeff and weighting factor during absolute SIFT2 calculations
+      // Class to track both exponential coeff and weighting factor during absolute SIFT2 calculations
       // In part this will assist to distinguish between absolute and differential calculations,
       //   as the former will use this class whereas the latter will just be a floating point number
-      // TODO Rename; precedent seems to be "weighting coefficient" and "weighting coeff"
       class WeightingCoeffAndFactor
       {
         public:

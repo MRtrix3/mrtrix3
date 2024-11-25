@@ -48,7 +48,7 @@ namespace MR {
         public:
           using value_type = SIFT::value_type;
 
-          CoefficientOptimiserBase (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+          CoefficientOptimiserBase (TckFactor&, StreamlineStats&, StreamlineStats&, SIFT::track_t&, BitSet&, value_type&);
           CoefficientOptimiserBase (const CoefficientOptimiserBase&);
           virtual ~CoefficientOptimiserBase();
 
@@ -70,12 +70,12 @@ namespace MR {
         private:
           StreamlineStats& step_stats;
           StreamlineStats& coefficient_stats;
-          unsigned int& nonzero_streamlines;
+          SIFT::track_t& participating_streamlines;
           BitSet& fixels_to_exclude;
           value_type& sum_costs;
 
           StreamlineStats local_stats_steps, local_stats_coefficients;
-          size_t local_nonzero_count;
+          SIFT::track_t local_participation_count;
           BitSet local_to_exclude;
 
         protected:
@@ -101,7 +101,7 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserGSS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+          CoefficientOptimiserGSS (TckFactor&, StreamlineStats&, StreamlineStats&, SIFT::track_t&, BitSet&, value_type&);
           CoefficientOptimiserGSS (const CoefficientOptimiserGSS&);
           ~CoefficientOptimiserGSS() { }
 
@@ -125,7 +125,7 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserQLS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+          CoefficientOptimiserQLS (TckFactor&, StreamlineStats&, StreamlineStats&, SIFT::track_t&, BitSet&, value_type&);
           CoefficientOptimiserQLS (const CoefficientOptimiserQLS&);
           ~CoefficientOptimiserQLS() { }
 
@@ -148,7 +148,7 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+          CoefficientOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, SIFT::track_t&, BitSet&, value_type&);
           CoefficientOptimiserIterative (const CoefficientOptimiserIterative&);
           ~CoefficientOptimiserIterative();
 
@@ -175,10 +175,10 @@ namespace MR {
                                     const value_type step_size,
                                     StreamlineStats& step_stats,
                                     StreamlineStats& coefficient_stats,
-                                    unsigned int& nonzero_streamlines,
+                                    SIFT::track_t& participating_streamlines,
                                     BitSet& fixels_to_exclude,
                                     value_type& sum_costs) :
-              CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
+              CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs),
               gradients (gradients),
               step_size (step_size) { }
 

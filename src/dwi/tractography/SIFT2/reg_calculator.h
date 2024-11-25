@@ -50,7 +50,7 @@ namespace MR {
             global_sum += local_sum;
           }
 
-          // TODO Should be possible to define this in the case class,
+          // TODO Should be possible to define this in the base class,
           //   and just execute a per-index functor for the derived class
           virtual bool operator() (const SIFT::TrackIndexRange& range) = 0;
 

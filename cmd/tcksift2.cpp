@@ -83,10 +83,16 @@ const OptionGroup SIFT2InitOption = OptionGroup ("Options for initialising / con
   + Option ("in_factors", "provide the set of per-streamline weighting factors for absolute mode; do not perform any subsequent optimisation of such")
     + Argument ("file").type_file_in()
 
-  // TODO Implement
   + Option ("init_deltas", "initialise the set of per-streamline delta weights for commencement of differential mode optimisation")
     + Argument ("file").type_file_in()
+
   + Option ("in_deltas", "provide the set of per-streamline delta weights for differential mode; do not perform any subsequent optimisation of such")
+    + Argument ("file").type_file_in()
+
+  + Option ("mask_absolute", "provide a binary mask controlling which streamlines can be optimised vs. must retain their default value in absolute mode")
+    + Argument ("file").type_file_in()
+
+  + Option ("mask_differential", "provide a binary mask controlling which streamlines can be optimised vs. must retain their default value in differential mode")
     + Argument ("file").type_file_in();
 
 
@@ -259,6 +265,9 @@ void run ()
       assert (opt.size());
       tckfactor.set_factors (opt[0][0]);
     }
+    if (!get_options("mask_absolute").empty()) {
+      WARN("-mask_absolute option ignored, as optimisation in absolute mode is not being performed");
+    }
 
   } else {
 
@@ -305,7 +314,9 @@ void run ()
       tckfactor.set_coefficients (opt[0][0]);
       tckfactor.enforce_limits<operation_mode_t::ABSOLUTE>();
     }
-
+    opt = get_options("mask_absolute");
+    if (!opt.empty())
+      tckfactor.set_mask<operation_mode_t::ABSOLUTE>(opt[0][0]);
 
     tckfactor.estimate_weights<operation_mode_t::ABSOLUTE>();
   }
@@ -349,19 +360,25 @@ void run ()
         tckfactor.set_deltas (opt[0][0]);
         tckfactor.enforce_limits<operation_mode_t::DIFFERENTIAL>();
       }
+      opt = get_options("mask_differential");
+      if (!opt.empty())
+        tckfactor.set_mask<operation_mode_t::DIFFERENTIAL>(opt[0][0]);
 
       if (debug_path.size())
-        tckfactor.output_delta_debug_images (debug_path, "before");
+        tckfactor.output_differential_debug_images (debug_path, "before");
 
       tckfactor.estimate_weights<operation_mode_t::DIFFERENTIAL>();
 
     } else {
       tckfactor.set_deltas (opt[0][0]);
+      if (!get_options("mask_differential").empty()) {
+        WARN("-mask_differential option ignored, as no optimisation in differential mode is taking place");
+      }
     }
 
     tckfactor.output_deltas (output_delta_path);
     if (debug_path.size())
-      tckfactor.output_delta_debug_images (debug_path, "after");
+      tckfactor.output_differential_debug_images (debug_path, "after");
 
   } else {
     // TODO Could alternatively use presence of these to imply engagement of differential mode

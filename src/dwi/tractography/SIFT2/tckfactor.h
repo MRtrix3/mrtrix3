@@ -54,7 +54,16 @@
 
 
 
-
+// TODO Should tcksift (ie. SIFT1) be given a differential mode?
+// It may need an additional global multiplier on top of mu that modulates the total differential signal
+// Also would need a bool per streamline to represent whether it's a positive or negative effect
+// Would need multiple prospective changes per remaining streamline:
+// - Change to negative effect (if not already so)
+// - Change to positive effect (if not already so)
+// - Remove from differential effect (irreversible)
+// Maybe first complete some number of iterations where streamlines are just classified as positive or negative;
+//   once that is completed, start a second set of iterations that prunes streamlines
+//   (potentially not permitting streamlines to switch from positive to negative)
 
 
 
@@ -192,13 +201,16 @@ namespace MR {
           void set_coefficients (const std::string& path);
           void set_factors (const std::string& path);
           void set_deltas (const std::string &path);
-
-          // This should only be called if coefficients have been loaded from the command-line;
+          // This should only be called if coefficients have been loaded from the command-line,
+          //   and there is to be subsequent optimisation performed based on such;
           //   these limits should otherwise be being enforced by whatever code is responsible for the optimisation
           template <operation_mode_t Mode>
           void enforce_limits();
 
-          void import_differential_data (const std::string& delta_path);
+          template <operation_mode_t Mode>
+          void set_mask (const std::string &path);
+
+          void import_differential_data (const std::string &path);
 
 
           void store_orig_TDs();
@@ -216,7 +228,7 @@ namespace MR {
           //   see how the cost function fares
           void calc_afcsa();
 
-          value_type calc_cost_function_delta();
+          value_type calc_cost_function_differential();
 
           template <operation_mode_t Mode>
           void estimate_weights();
@@ -230,19 +242,21 @@ namespace MR {
           void output_all_debug_images (const std::string&, const std::string&);
 
           void output_deltas (const std::string&) const;
-          void output_delta_debug_images (const std::string&, const std::string&);
+          void output_differential_debug_images (const std::string&, const std::string&);
 
         private:
           Eigen::Array<value_type, Eigen::Dynamic, 1> coefficients;
           Eigen::Array<value_type, Eigen::Dynamic, 1> deltas;
 
-          // TODO Eventually may want the ability to use different regularisation bases between absolute and differential modes
-          //   (entirely possible that fixel-wise is preferable for absolute, whereas streamline-wise is preferable for differential)
+          // TODO Preclude specific streamlines from having their contributions modified by the optimiser
+          // TODO If there is any multi-threading process that attempts to update this,
+          //   a race condition is going to occur
+          Eigen::Array<bool, Eigen::Dynamic, 1> mask_absolute;
+          Eigen::Array<bool, Eigen::Dynamic, 1> mask_differential;
+
           reg_basis_t reg_basis_abs, reg_basis_diff;
           reg_fn_t reg_fn_abs;
-          // TODO Do we want ability to use different strengths of regularisation between absolute and differential modes?
           value_type reg_multiplier_abs, reg_multiplier_diff;
-          // TODO Store regularisation scaling term explicitly, since it might need to be applied to two different values
           value_type reg_scaling;
           size_t min_iters, max_iters;
           value_type min_coeff, max_coeff, max_coeff_step;
@@ -283,6 +297,7 @@ namespace MR {
           void update_fixels();
           template <operation_mode_t Mode>
           value_type calculate_regularisation();
+          // TODO Implement entropy calculation for differential mode (based on absolute values)
           value_type calculate_entropy() const;
 
 

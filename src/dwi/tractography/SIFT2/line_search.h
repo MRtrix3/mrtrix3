@@ -40,7 +40,7 @@ namespace MR {
 
 
 
-      // TODO Base class containing all features common to cost function & derivatives calculations
+      // Base class containing all features common to cost function & derivatives calculations
       //   for either absolute or differential modes
       class LineSearchFunctorBase
       {
@@ -51,7 +51,6 @@ namespace MR {
         protected:
           const SIFT::track_t track_index;
           const value_type mu;
-          // TODO Later there may be different regularisation between absolute and differential modes
           value_type reg_multiplier_streamline;
           value_type reg_multiplier_fixel;
 
@@ -68,11 +67,7 @@ namespace MR {
 
 
 
-      // TODO New templated version of LineSearchFunctor that will deal with new regularisation templates
-      // TODO Consider templating maximal required derivative order?
-      // TODO Can we avoid templating the class and just template the functors?
-      //   - Worried that this will have downsides...
-      //template <reg_basis_t RegBasis, reg_fn_t RegFn>
+      // TODO Consider templating maximal required derivative order
       class LineSearchFunctorAbsolute : public LineSearchFunctorBase
       {
         public:
