@@ -63,15 +63,6 @@ namespace MR
 
     }
 
-
-    void TIFF::unload (const Header& header)
-    {
-      if (addresses.size()) {
-        DEBUG ("deleting buffer for TIFF image \"" + header.name() + "\"...");
-        addresses[0].release();
-      }
-    }
-
   }
 }
 
