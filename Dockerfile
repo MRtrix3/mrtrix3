@@ -82,6 +82,7 @@ RUN apt-get -qq update \
         libtiff5-dev \
         python3 \
         python3-distutils \
+        procps \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=acpcdetect-installer /opt/art /opt/art
