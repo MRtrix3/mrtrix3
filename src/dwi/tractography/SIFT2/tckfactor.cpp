@@ -49,15 +49,15 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
 void TckFactor::set_coefficients(const std::string &path) {
   coefficients = File::Matrix::load_vector<default_type>(path);
   if (coefficients.size() != contributions.size())
-    throw Exception("Number of entries in input weighting coefficients file" //
-                    + " \"" + path + "\""                                    //
-                    + " (" + str(coefficients.size()) + ")"                  //
-                    + " does not match number of streamlines read"           //
-                    + " (" + str(contributions.size()) + ")");               //
+    throw Exception(std::string("Number of entries in input weighting coefficients file") //
+                    + " \"" + path + "\""                                                 //
+                    + " (" + str(coefficients.size()) + ")"                               //
+                    + " does not match number of streamlines read"                        //
+                    + " (" + str(contributions.size()) + ")");                            //
   if (!coefficients.allFinite()) {
-    WARN("Non-finite values present in input weighting coefficients file" //
-         + " \"" + path + "\";"                                           //
-         + " may lead to unexpected behaviour");                          //
+    WARN(std::string("Non-finite values present in input weighting coefficients file") //
+         + " \"" + path + "\";"                                                        //
+         + " may lead to unexpected behaviour");                                       //
   }
   enforce_coeff_limits();
   update_fixels();
@@ -66,10 +66,11 @@ void TckFactor::set_coefficients(const std::string &path) {
 void TckFactor::set_factors(const std::string &path) {
   const Eigen::Array<default_type, Eigen::Dynamic, 1> factors = File::Matrix::load_vector<default_type>(path);
   if (factors.size() != contributions.size())
-    throw Exception("Number of entries in input weighting factors file \"" + path + "\"" //
-                    + " (" + str(coefficients.size()) + ")"                              //
-                    + " does not match number of streamlines read"                       //
-                    + " (" + str(contributions.size()) + ")");                           //
+    throw Exception(std::string("Number of entries in input weighting factors file") //
+                    + " \"" + path + "\""                                            //
+                    + " (" + str(coefficients.size()) + ")"                          //
+                    + " does not match number of streamlines read"                   //
+                    + " (" + str(contributions.size()) + ")");                       //
   coefficients.resize(factors.size());
   bool issue_nonfinite_warning = false, issue_negative_warning = false, issue_zero_warning = false;
   for (SIFT::track_t i = 0; i != factors.size(); ++i) {
