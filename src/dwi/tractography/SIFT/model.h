@@ -148,6 +148,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::string &pat
     TrackMappingWorker worker(*this, Mapping::determine_upsample_ratio(Fixel_map<Fixel>::header(), properties, 0.1));
     Thread::run_queue(loader, Thread::batch(Tractography::Streamline<>()), Thread::multi(worker));
   }
+  ModelBase<Fixel>::update_dynamic_mu();
 
   if (!contributions.back()) {
     track_t num_tracks = 0, max_index = 0;
@@ -216,7 +217,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
   TD_sum = 0.0;
   for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
     TD_sum += i->get_weight() * i->get_TD();
-
+  ModelBase<Fixel>::update_dynamic_mu();
   INFO("After fixel exclusion, the proportionality coefficient is " + str(mu()));
 }
 

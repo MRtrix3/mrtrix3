@@ -232,6 +232,7 @@ void SIFTer::perform_filtering() {
             fixels[fixel_cont.get_fixel_index()] -= fixel_cont.get_length();
           }
           TD_sum -= candidate_contribution.get_total_contribution();
+          update_dynamic_mu();
           contributing_length_removed += candidate_contribution.get_total_length();
           delete contributions[candidate_index];
           contributions[candidate_index] = nullptr;

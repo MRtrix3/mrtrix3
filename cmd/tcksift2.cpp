@@ -49,7 +49,11 @@ const OptionGroup SIFT2InitialisationOption =
     + Argument ("file").type_file_in()
   + Option ("in_factors", "provide the set of per-streamline weighting factors;"
                           " do not perform any subsequent optimisation of such")
-    + Argument ("file").type_file_in();
+    + Argument ("file").type_file_in()
+  + Option ("in_mu", "utilise some fixed value of proportionality coefficient mu "
+                     "rather than deriving from the input image data / tractogram")
+    + Argument("value").type_float(0.0);
+
 
 const OptionGroup SIFT2RegularisationOption = OptionGroup ("Regularisation options for SIFT2")
   + Option ("reg_tikhonov", "provide coefficient for regularising streamline weighting coefficients"
@@ -161,12 +165,12 @@ void run() {
     throw Exception("Options -min_factor and -min_coeff are mutually exclusive");
   if (get_options("max_factor").size() && get_options("max_coeff").size())
     throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
-  if (get_options ("linear").size()
-      + get_options("init_coeffs").size()
-      + get_options("init_factors").size()
-      + get_options ("in_coeffs").size()
-      + get_options("in_factors").size() > 1)
-    throw Exception ("Options -linear, -init_coeffs, -init_factors, -in_coeffs and -in_factors are mutually exclusive");
+  if ((get_options("linear").size()             //
+       + get_options("init_coeffs").size()      //
+       + get_options("init_factors").size()     //
+       + get_options("in_coeffs").size()        //
+       + get_options("in_factors").size()) > 1) //
+    throw Exception("Options -linear, -init_coeffs, -init_factors, -in_coeffs and -in_factors are mutually exclusive");
 
   if (Path::has_suffix(argument[2], ".tck"))
     throw Exception("Output of tcksift2 command should be a text file, not a tracks file");
@@ -179,6 +183,10 @@ void run() {
 
   tckfactor.perform_FOD_segmentation(in_dwi);
   tckfactor.scale_FDs_by_GM();
+
+  auto opt = get_options("in_mu");
+  if (opt.size())
+    tckfactor.set_fixed_mu(opt[0][0]);
 
   std::string debug_path = get_option_value<std::string>("output_debug", "");
   if (debug_path.size()) {
@@ -196,9 +204,9 @@ void run() {
     tckfactor.output_all_debug_images(debug_path, "before");
   }
 
-  auto opt = get_options ("out_mu");
+  opt = get_options("out_mu");
   if (opt.size()) {
-    File::OFStream out_mu (opt[0][0]);
+    File::OFStream out_mu(opt[0][0]);
     out_mu << tckfactor.mu();
   }
 
@@ -213,7 +221,7 @@ void run() {
       tckfactor.set_coefficients(opt[0][0]);
     } else {
       opt = get_options("in_factors");
-      assert (!opt.empty());
+      assert(!opt.empty());
       tckfactor.set_factors(opt[0][0]);
     }
 

@@ -46,31 +46,30 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
   reg_multiplier_tv = lambda_tv * A;
 }
 
-void TckFactor::set_coefficients (const std::string& path)
-{
+void TckFactor::set_coefficients(const std::string &path) {
   coefficients = File::Matrix::load_vector<default_type>(path);
   if (coefficients.size() != contributions.size())
-    throw Exception("Number of entries in input weighting coefficients file \"" + path + "\""
-                    + " (" + str(coefficients.size()) + ")"
-                    + " does not match number of streamlines read"
-                    + " (" + str(contributions.size()) + ")");
+    throw Exception("Number of entries in input weighting coefficients file" //
+                    + " \"" + path + "\""                                    //
+                    + " (" + str(coefficients.size()) + ")"                  //
+                    + " does not match number of streamlines read"           //
+                    + " (" + str(contributions.size()) + ")");               //
   if (!coefficients.allFinite()) {
-    WARN ("Non-finite values present in input weighting coefficients file \"" + path + "\";"
-          " may lead to unexpected behaviour");
+    WARN("Non-finite values present in input weighting coefficients file" //
+         + " \"" + path + "\";"                                           //
+         + " may lead to unexpected behaviour");                          //
   }
   enforce_coeff_limits();
   update_fixels();
 }
 
-
-
-void TckFactor::set_factors(const std::string& path) {
+void TckFactor::set_factors(const std::string &path) {
   const Eigen::Array<default_type, Eigen::Dynamic, 1> factors = File::Matrix::load_vector<default_type>(path);
   if (factors.size() != contributions.size())
-    throw Exception("Number of entries in input weighting factors file \"" + path + "\""
-                    + " (" + str(coefficients.size()) + ")"
-                    + " does not match number of streamlines read"
-                    + " (" + str(contributions.size()) + ")");
+    throw Exception("Number of entries in input weighting factors file \"" + path + "\"" //
+                    + " (" + str(coefficients.size()) + ")"                              //
+                    + " does not match number of streamlines read"                       //
+                    + " (" + str(contributions.size()) + ")");                           //
   coefficients.resize(factors.size());
   bool issue_nonfinite_warning = false, issue_negative_warning = false, issue_zero_warning = false;
   for (SIFT::track_t i = 0; i != factors.size(); ++i) {
@@ -88,15 +87,16 @@ void TckFactor::set_factors(const std::string& path) {
     }
   }
   if (issue_nonfinite_warning || issue_negative_warning) {
-    WARN ("Input weighting factors file \"" + path + "\" contains"
-          + ((issue_nonfinite_warning || issue_negative_warning) ?
-             " both non-finite and negative " :
-             (issue_nonfinite_warning ? " non-finite" : " negative"))
-          + " values; this may lead to unexpected behaviour");
+    WARN("Input weighting factors file \"" + path + "\" contains" +
+         ((issue_nonfinite_warning || issue_negative_warning)
+              ? " both non-finite and negative "
+              : (issue_nonfinite_warning ? " non-finite" : " negative")) +
+         " values; this may lead to unexpected behaviour");
   }
   if (issue_zero_warning) {
-    WARN ("Input weighting factors file \"" + path + "\" contains zero values;"
-          " these cannot be re-introduced by SIFT2 and so will remain zero-valued at output");
+    WARN("Input weighting factors file \"" + path +
+         "\" contains zero values;"                                                           //
+         " these cannot be re-introduced by SIFT2 and so will remain zero-valued at output"); //
   }
   enforce_coeff_limits();
   update_fixels();
@@ -157,6 +157,7 @@ void TckFactor::test_streamline_length_scaling() {
       fixels[tck_cont[i].get_fixel_index()] += weight * tck_cont[i].get_length();
     TD_sum += weight * tck_cont.get_total_contribution();
   }
+  update_dynamic_mu();
 
   VAR(calc_cost_function());
 
@@ -166,12 +167,14 @@ void TckFactor::test_streamline_length_scaling() {
   for (int i = -1000; i != 1000; ++i) {
     const double factor = std::pow(10.0, double(i) / 1000.0);
     TD_sum = factor * actual_TD_sum;
+    update_dynamic_mu();
     out << str(factor) << "," << str(calc_cost_function()) << "\n";
   }
   out << "\n";
   out.close();
 
   TD_sum = actual_TD_sum;
+  update_dynamic_mu();
 }
 
 void TckFactor::calc_afcsa() {
@@ -506,8 +509,8 @@ void TckFactor::update_fixels() {
 }
 
 void TckFactor::enforce_coeff_limits() {
-  if (min_coeff == -std::numeric_limits<default_type>::infinity()
-      && max_coeff == std::numeric_limits<default_type>::infinity())
+  if (min_coeff == -std::numeric_limits<default_type>::infinity() &&
+      max_coeff == std::numeric_limits<default_type>::infinity())
     return;
   SIFT::track_t removed_count = 0, clamped_count = 0;
   for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
@@ -520,12 +523,11 @@ void TckFactor::enforce_coeff_limits() {
     }
   }
   if (removed_count) {
-    INFO (str(removed_count) + " streamlines were removed due to initial weights being lower than minimum permissible");
+    INFO(str(removed_count) + " streamlines were removed due to initial weights being lower than minimum permissible");
   }
   if (clamped_count) {
-    INFO (str(clamped_count) + " streamlines had their initial weight reduced due to exceeding the maximum permissible");
+    INFO(str(clamped_count) + " streamlines had their initial weight reduced due to exceeding the maximum permissible");
   }
 }
-
 
 } // namespace MR::DWI::Tractography::SIFT2

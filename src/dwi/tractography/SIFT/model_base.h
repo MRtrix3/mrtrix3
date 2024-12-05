@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <limits>
+
 #include "algo/copy.h"
 #include "app.h"
 #include "file/path.h"
@@ -100,6 +102,8 @@ public:
         proc_mask(Image<float>::scratch(Fixel_map<Fixel>::header(), "SIFT model processing mask")),
         FOD_sum(0.0),
         TD_sum(0.0),
+        dynamic_mu(std::numeric_limits<default_type>::signaling_NaN()),
+        fixed_mu(std::numeric_limits<default_type>::signaling_NaN()),
         have_null_lobes(false) {
     SIFT::initialise_processing_mask(dwi, proc_mask, act_5tt);
   }
@@ -117,7 +121,7 @@ public:
 
   default_type calc_cost_function() const;
 
-  default_type mu() const { return FOD_sum / TD_sum; }
+  default_type mu() const { return std::isnan(fixed_mu) ? dynamic_mu : fixed_mu; }
   bool have_act_data() const { return act_5tt.valid(); }
 
   void output_proc_mask(const std::string &);
@@ -134,7 +138,10 @@ protected:
 
   Image<float> act_5tt, proc_mask;
   default_type FOD_sum, TD_sum;
+  default_type dynamic_mu, fixed_mu;
   bool have_null_lobes;
+
+  void update_dynamic_mu() { dynamic_mu = FOD_sum / TD_sum; }
 
   // The definitions of these functions are located in dwi/tractography/SIFT/output.h
   void output_target_voxel(const std::string &) const;
@@ -179,6 +186,7 @@ template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
       FOD_sum += i().get_weight() * i().get_FOD();
     }
   }
+  update_dynamic_mu();
 }
 
 template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::string &path) {
@@ -199,7 +207,8 @@ template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::string 
                     Thread::batch(Mapping::SetDixel()),
                     *this);
 
-  INFO("Proportionality coefficient after streamline mapping is " + str(mu()));
+  update_dynamic_mu();
+  INFO("Proportionality coefficient after streamline mapping is " + str(dynamic_mu));
 }
 
 template <class Fixel> bool ModelBase<Fixel>::operator()(const FMLS::FOD_lobes &in) {

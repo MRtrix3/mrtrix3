@@ -68,10 +68,10 @@ public:
   void set_max_coeff(const double i) { max_coeff = i; }
   void set_max_coeff_step(const double i) { max_coeff_step = i; }
   void set_min_cf_decrease(const double i) { min_cf_decrease_percentage = i; }
+  void set_fixed_mu(const double i) { fixed_mu = i; }
 
-  void set_coefficients(const std::string& path);
-  void set_factors(const std::string& path);
-
+  void set_coefficients(const std::string &path);
+  void set_factors(const std::string &path);
 
   void set_csv_path(const std::string &i) { csv_path = i; }
 
