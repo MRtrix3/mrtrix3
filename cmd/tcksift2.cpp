@@ -144,8 +144,8 @@ const OptionGroup SIFT2AbsoluteOption = OptionGroup ("Options for controlling SI
 const OptionGroup SIFT2DiffOption = OptionGroup ("Options specific to operating SIFT2 in differential mode")
 
   + Option ("differential", "Estimate a set of differential weighting factors to fit fixel-wise FD differences")
-    + Argument ("in_diff", "input fixel data file containing fibre density differences").type_image_in()
-    + Argument ("out_delta", "output text file containing delta weight per streamline").type_file_out()
+    + Argument ("in_diff", "input fixel data file containing fibre density half-differences").type_image_in()
+    + Argument ("out_delta", "output text file containing delta weighting factor per streamline").type_file_out()
 
   + Option ("min_delta", "minimum delta weight for an individual streamline "
                          "(default: " + str(SIFT2_MIN_DELTA_DEFAULT, 2) + ")")
@@ -197,7 +197,10 @@ void usage ()
   + SIFT2::RegularisationOptions
   + SIFT2InitOption
   + SIFT2AbsoluteOption
-  + SIFT2DiffOption;
+  + SIFT2DiffOption
+
+  + Option ("out_deltacoeffs", "output text file containing the delta weighting coefficients for each streamline in differential mode")
+    + Argument ("path").type_file_out();
 
 }
 
@@ -379,7 +382,10 @@ void run ()
       }
     }
 
-    tckfactor.output_deltas (output_delta_path);
+    tckfactor.output_deltaweights(output_delta_path);
+    opt = get_options("out_deltacoeffs");
+    if (!opt.empty())
+      tckfactor.output_deltacoeffs(opt[0][0]);
     if (debug_path.size())
       tckfactor.output_differential_debug_images (debug_path, "after");
 

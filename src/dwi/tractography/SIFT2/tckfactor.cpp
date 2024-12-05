@@ -898,9 +898,25 @@ namespace MR {
 
 
 
-      void TckFactor::output_deltas (const std::string& path) const
+      void TckFactor::output_deltacoeffs (const std::string& path) const
       {
         save_vector(deltas, path);
+      }
+
+      void TckFactor::output_deltaweights (const std::string& path) const
+      {
+        if (size_t(deltas.size()) != contributions.size())
+          throw Exception ("Cannot output differential weighting factors if they have not first been estimated!");
+        try {
+          decltype(deltas) weights (deltas.size());
+          for (SIFT::track_t i = 0; i != num_tracks(); ++i)
+            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
+                         0.0 :
+                         std::exp (coefficients[i]) * deltas[i];
+          save_vector (weights, path);
+        } catch (...) {
+          WARN ("Unable to assign memory for output differential factor file: \"" + Path::basename(path) + "\" not created");
+        }
       }
 
 

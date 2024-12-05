@@ -243,7 +243,8 @@ namespace MR {
           void output_TD_images (const std::string&, const std::string&, const std::string&);
           void output_all_debug_images (const std::string&, const std::string&);
 
-          void output_deltas (const std::string&) const;
+          void output_deltacoeffs (const std::string&) const;
+          void output_deltaweights (const std::string&) const;
           void output_differential_debug_images (const std::string&, const std::string&);
 
         private:
