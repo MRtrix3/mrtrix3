@@ -342,17 +342,17 @@ namespace MR {
           switch (master.reg_basis_abs) {
             case reg_basis_t::STREAMLINE: {
               switch (master.reg_fn_abs) {
-                case reg_fn_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>  (dFs); break;
-                case reg_fn_t::FACTOR: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_t::FACTOR> (dFs); break;
-                case reg_fn_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>  (dFs); break;
+                case reg_fn_abs_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF>  (dFs); break;
+                case reg_fn_abs_t::FACTOR: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR> (dFs); break;
+                case reg_fn_abs_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA>  (dFs); break;
               }
             }
             break;
             case reg_basis_t::FIXEL: {
               switch (master.reg_fn_abs) {
-                case reg_fn_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_t::COEFF>  (dFs); break;
-                case reg_fn_t::FACTOR: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_t::FACTOR> (dFs); break;
-                case reg_fn_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_t::GAMMA>  (dFs); break;
+                case reg_fn_abs_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF>  (dFs); break;
+                case reg_fn_abs_t::FACTOR: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR> (dFs); break;
+                case reg_fn_abs_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA>  (dFs); break;
               }
             }
             break;
@@ -401,17 +401,17 @@ namespace MR {
         switch (master.reg_basis_abs) {
           case reg_basis_t::STREAMLINE: {
             switch (master.reg_fn_abs) {
-              case reg_fn_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>  (dFs);
-              case reg_fn_t::FACTOR: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_t::FACTOR> (dFs); break;
-              case reg_fn_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>  (dFs); break;
+              case reg_fn_abs_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF>  (dFs);
+              case reg_fn_abs_t::FACTOR: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR> (dFs); break;
+              case reg_fn_abs_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA>  (dFs); break;
             }
           }
           break;
           case reg_basis_t::FIXEL: {
             switch (master.reg_fn_abs) {
-              case reg_fn_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_t::COEFF>  (dFs); break;
-              case reg_fn_t::FACTOR: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_t::FACTOR> (dFs); break;
-              case reg_fn_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_t::GAMMA>  (dFs); break;
+              case reg_fn_abs_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF>  (dFs); break;
+              case reg_fn_abs_t::FACTOR: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR> (dFs); break;
+              case reg_fn_abs_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA>  (dFs); break;
             }
           }
           break;
@@ -423,7 +423,7 @@ namespace MR {
 
 
 
-      template <reg_basis_t RegBasis, reg_fn_t RegFn>
+      template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
       SIFT::value_type CoefficientOptimiserBBGD<RegBasis, RegFn>::get_coeff_change (const SIFT::track_t track_index) const
       {
         // TODO Manually calculate gradient since:
@@ -471,12 +471,12 @@ namespace MR {
 
         return (-step_size * gradient);
       }
-      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>::get_coeff_change (const SIFT::track_t) const;
-      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_t::FACTOR>::get_coeff_change (const SIFT::track_t) const;
-      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>::get_coeff_change (const SIFT::track_t) const;
-      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_t::COEFF>::get_coeff_change (const SIFT::track_t) const;
-      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_t::FACTOR>::get_coeff_change (const SIFT::track_t) const;
-      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_t::GAMMA>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA>::get_coeff_change (const SIFT::track_t) const;
 
 
 
@@ -584,10 +584,9 @@ namespace MR {
         size_t iter = 0;
         CostAndDerivatives cost_and_derivatives;
         do {
-
-          switch (master.reg_basis_diff) {
-            case reg_basis_t::STREAMLINE: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE> (dDelta); break;
-            case reg_basis_t::FIXEL:      cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL>      (dDelta); break;
+          switch (master.reg_fn_diff) {
+            case reg_fn_diff_t::ASYMPTOTIC: cost_and_derivatives = line_search_functor.get<reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
+            case reg_fn_diff_t::DELTA:      cost_and_derivatives = line_search_functor.get<reg_fn_diff_t::DELTA>      (dDelta); break;
           }
 
           // Newton update
@@ -624,9 +623,9 @@ namespace MR {
         iter_count += iter;
 #endif
 
-        switch (master.reg_basis_diff) {
-          case reg_basis_t::STREAMLINE: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE> (dDelta); break;
-          case reg_basis_t::FIXEL:      local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL>      (dDelta); break;
+        switch (master.reg_fn_diff) {
+          case reg_fn_diff_t::ASYMPTOTIC: local_sum_costs += line_search_functor.operator()<reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
+          case reg_fn_diff_t::DELTA:      local_sum_costs += line_search_functor.operator()<reg_fn_diff_t::DELTA>      (dDelta); break;
         }
 
         return dDelta;

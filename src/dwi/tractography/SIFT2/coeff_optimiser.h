@@ -168,7 +168,7 @@ namespace MR {
 
 
       // TODO New coefficient optimiser based on Barzilai-Borwein gradient descent
-      template <reg_basis_t RegBasis, reg_fn_t RegFn>
+      template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
       class CoefficientOptimiserBBGD : public CoefficientOptimiserBase
       {
 

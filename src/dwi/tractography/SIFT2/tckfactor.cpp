@@ -91,7 +91,7 @@ namespace MR {
 
       namespace
       {
-        template <reg_basis_t RegBasis, reg_fn_t RegFn>
+        template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
         value_type calc_reg_absolute (TckFactor& master)
         {
           value_type result = value_type(0.0);
@@ -100,12 +100,12 @@ namespace MR {
           Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
           return result;
         }
-        template <reg_basis_t RegBasis>
+        template <reg_fn_diff_t RegFn>
         value_type calc_reg_differential (TckFactor& master)
         {
           value_type result = value_type(0.0);
           SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, master.num_tracks());
-          RegularisationCalculatorDifferential<RegBasis> worker (master, result);
+          RegularisationCalculatorDifferential<RegFn> worker (master, result);
           Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
           return result;
         }
@@ -117,17 +117,17 @@ namespace MR {
         switch (reg_basis_abs) {
           case reg_basis_t::STREAMLINE: {
             switch (reg_fn_abs) {
-              case reg_fn_t::COEFF:  unscaled = calc_reg_absolute<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>  (*this); break;
-              case reg_fn_t::FACTOR: unscaled = calc_reg_absolute<reg_basis_t::STREAMLINE, reg_fn_t::FACTOR> (*this); break;
-              case reg_fn_t::GAMMA:  unscaled = calc_reg_absolute<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>  (*this); break;
+              case reg_fn_abs_t::COEFF:  unscaled = calc_reg_absolute<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF>  (*this); break;
+              case reg_fn_abs_t::FACTOR: unscaled = calc_reg_absolute<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR> (*this); break;
+              case reg_fn_abs_t::GAMMA:  unscaled = calc_reg_absolute<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA>  (*this); break;
             }
             break;
           }
           case reg_basis_t::FIXEL: {
             switch (reg_fn_abs) {
-              case reg_fn_t::COEFF:  unscaled = calc_reg_absolute<reg_basis_t::FIXEL, reg_fn_t::COEFF>  (*this); break;
-              case reg_fn_t::FACTOR: unscaled = calc_reg_absolute<reg_basis_t::FIXEL, reg_fn_t::FACTOR> (*this); break;
-              case reg_fn_t::GAMMA:  unscaled = calc_reg_absolute<reg_basis_t::FIXEL, reg_fn_t::GAMMA>  (*this); break;
+              case reg_fn_abs_t::COEFF:  unscaled = calc_reg_absolute<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF>  (*this); break;
+              case reg_fn_abs_t::FACTOR: unscaled = calc_reg_absolute<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR> (*this); break;
+              case reg_fn_abs_t::GAMMA:  unscaled = calc_reg_absolute<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA>  (*this); break;
             }
             break;
           }
@@ -138,9 +138,9 @@ namespace MR {
       value_type TckFactor::calculate_regularisation<operation_mode_t::DIFFERENTIAL>()
       {
         value_type unscaled = value_type(0.0);
-        switch (reg_basis_abs) {
-          case reg_basis_t::STREAMLINE: unscaled = calc_reg_differential<reg_basis_t::STREAMLINE> (*this); break;
-          case reg_basis_t::FIXEL:      unscaled = calc_reg_differential<reg_basis_t::FIXEL>      (*this); break;
+        switch (reg_fn_diff) {
+          case reg_fn_diff_t::ASYMPTOTIC: unscaled = calc_reg_differential<reg_fn_diff_t::ASYMPTOTIC> (*this); break;
+          case reg_fn_diff_t::DELTA:      unscaled = calc_reg_differential<reg_fn_diff_t::DELTA>      (*this); break;
         }
         return unscaled * reg_multiplier_diff;
       }
@@ -665,18 +665,18 @@ namespace MR {
             case reg_basis_t::STREAMLINE: {
               switch (reg_fn_abs)
               {
-                case reg_fn_t::COEFF:  BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
-                case reg_fn_t::FACTOR: BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::FACTOR> (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
-                case reg_fn_t::GAMMA:  BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_abs_t::COEFF:  BBGD_update<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_abs_t::FACTOR: BBGD_update<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR> (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_abs_t::GAMMA:  BBGD_update<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
               }
             }
             break;
             case reg_basis_t::FIXEL: {
               switch (reg_fn_abs)
               {
-                case reg_fn_t::COEFF:  BBGD_update<reg_basis_t::FIXEL, reg_fn_t::COEFF>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
-                case reg_fn_t::FACTOR: BBGD_update<reg_basis_t::FIXEL, reg_fn_t::FACTOR> (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
-                case reg_fn_t::GAMMA:  BBGD_update<reg_basis_t::FIXEL, reg_fn_t::GAMMA>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_abs_t::COEFF:  BBGD_update<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_abs_t::FACTOR: BBGD_update<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR> (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
+                case reg_fn_abs_t::GAMMA:  BBGD_update<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA>  (gradients, step_size, step_stats, weight_stats, participating_streamlines, fixels_to_exclude, sum_costs); break;
               }
             }
             break;
@@ -1011,7 +1011,7 @@ namespace MR {
 
 
 
-      template <reg_basis_t RegBasis, reg_fn_t RegFn>
+      template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
       void TckFactor::BBGD_update (Eigen::Array<value_type, Eigen::Dynamic, 1>& gradients,
                                    const value_type step_size,
                                    StreamlineStats& step_stats,
@@ -1024,12 +1024,12 @@ namespace MR {
         CoefficientOptimiserBBGD<RegBasis, RegFn> worker (*this, gradients, step_size, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs);
         Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
       }
-      template void TckFactor::BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::COEFF> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
-      template void TckFactor::BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::FACTOR> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
-      template void TckFactor::BBGD_update<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
-      template void TckFactor::BBGD_update<reg_basis_t::FIXEL, reg_fn_t::COEFF> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
-      template void TckFactor::BBGD_update<reg_basis_t::FIXEL, reg_fn_t::FACTOR> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
-      template void TckFactor::BBGD_update<reg_basis_t::FIXEL, reg_fn_t::GAMMA> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+      template void TckFactor::BBGD_update<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+      template void TckFactor::BBGD_update<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+      template void TckFactor::BBGD_update<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+      template void TckFactor::BBGD_update<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+      template void TckFactor::BBGD_update<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
+      template void TckFactor::BBGD_update<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA> (Eigen::Array<value_type, Eigen::Dynamic, 1>&, const value_type, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
 
 
 

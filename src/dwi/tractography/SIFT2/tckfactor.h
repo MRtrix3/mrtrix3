@@ -152,8 +152,9 @@ namespace MR {
           TckFactor (const std::string& fd_path) :
               Model (fd_path),
               reg_basis_abs (reg_basis_t::FIXEL),
-              reg_basis_diff (reg_basis_t::STREAMLINE),
-              reg_fn_abs (reg_fn_t::GAMMA),
+              //reg_basis_diff (reg_basis_t::STREAMLINE),
+              reg_fn_abs (reg_fn_abs_t::GAMMA),
+              reg_fn_diff (reg_fn_diff_t::ASYMPTOTIC),
               reg_multiplier_abs (0.0),
               reg_multiplier_diff (0.0),
               reg_scaling (std::numeric_limits<value_type>::signaling_NaN()),
@@ -180,8 +181,9 @@ namespace MR {
 
 
           void set_reg_basis_abs   (const reg_basis_t i) { reg_basis_abs = i; }
-          void set_reg_basis_diff  (const reg_basis_t i) { reg_basis_diff = i; }
-          void set_reg_fn_abs      (const reg_fn_t i)    { reg_fn_abs = i; }
+          //void set_reg_basis_diff  (const reg_basis_t i) { reg_basis_diff = i; }
+          void set_reg_fn_abs      (const reg_fn_abs_t i) { reg_fn_abs = i; }
+          void set_reg_fn_diff     (const reg_fn_diff_t i) { reg_fn_diff = i; }
           void set_reg_lambda_abs  (const value_type i)  { assert (std::isfinite (reg_scaling)); reg_multiplier_abs = i * reg_scaling; }
           void set_reg_lambda_diff (const value_type i)  { assert (std::isfinite (reg_scaling)); reg_multiplier_diff = i * reg_scaling; }
           void set_min_iters       (const int i) { min_iters = i; }
@@ -254,8 +256,10 @@ namespace MR {
           Eigen::Array<bool, Eigen::Dynamic, 1> mask_absolute;
           Eigen::Array<bool, Eigen::Dynamic, 1> mask_differential;
 
-          reg_basis_t reg_basis_abs, reg_basis_diff;
-          reg_fn_t reg_fn_abs;
+          reg_basis_t reg_basis_abs;
+          //reg_basis_t reg_basis_diff;
+          reg_fn_abs_t reg_fn_abs;
+          reg_fn_diff_t reg_fn_diff;
           value_type reg_multiplier_abs, reg_multiplier_diff;
           value_type reg_scaling;
           size_t min_iters, max_iters;
@@ -275,15 +279,15 @@ namespace MR {
           //friend class CoefficientOptimiserQLS;
           friend class CoefficientOptimiserIterative;
           friend class DeltaOptimiserIterative;
-          template <reg_basis_t RegBasis, reg_fn_t RegFn>
+          template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
           friend class CoefficientOptimiserBBGD;
           friend class FixelUpdaterBase;
           friend class FixelUpdaterAbsolute;
           friend class FixelUpdaterDifferential;
           friend class RegularisationCalculatorBase;
-          template <reg_basis_t RegBasis, reg_fn_t RegFn>
+          template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
           friend class RegularisationCalculatorAbsolute;
-          template <reg_basis_t RegBasis>
+          template <reg_fn_diff_t RegFn>
           friend class RegularisationCalculatorDifferential;
 
           // For when multiple threads are trying to write their final information back
@@ -302,7 +306,7 @@ namespace MR {
 
 
 
-          template <reg_basis_t RegBasis, reg_fn_t RegFn>
+          template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
           void BBGD_update (Eigen::Array<value_type, Eigen::Dynamic, 1>& gradients,
                             const value_type step_size,
                             StreamlineStats& step_stats,

@@ -62,7 +62,7 @@ namespace MR {
 
 
 
-      template <reg_basis_t RegBasis, reg_fn_t RegFn>
+      template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
       class RegularisationCalculatorAbsolute : public RegularisationCalculatorBase
       {
         public:
@@ -74,7 +74,7 @@ namespace MR {
 
 
 
-      template <reg_basis_t RegBasis>
+      template <reg_fn_diff_t RegFn>
       class RegularisationCalculatorDifferential : public RegularisationCalculatorBase
       {
         public:

@@ -35,7 +35,8 @@ namespace MR
 
 
       const char* reg_basis_choices[] = { "streamline", "fixel", nullptr };
-      const char* reg_fn_choices[] = { "coefficient", "factor", "gamma", nullptr };
+      const char* reg_fn_choices_abs[] = { "coefficient", "factor", "gamma", nullptr };
+      const char* reg_fn_choices_diff[] = { "asymptotic", "delta", nullptr };
 
 
       OptionGroup RegularisationOptions = OptionGroup ("Options relating to SIFT2 algorithm regularisation")
@@ -52,16 +53,24 @@ namespace MR
                               "coefficient (quadratically penalise difference of exponential coefficients to zero / fixel mean); "
                               "factor (quadratically penalise difference of streamline weights to one / fixel mean); "
                               "gamma (penalises coefficient if down-reulating, factor if up-regulating) (default)")
-        + Argument ("choice").type_choice(reg_fn_choices)
+        + Argument ("choice").type_choice(reg_fn_choices_abs)
 
       + Option ("reg_strength_abs", "modulate strength of applied regularisation when optimising absolute weights "
                                     "(default: " + str(regularisation_strength_abs_default, 2) + ")")
         + Argument ("value").type_float (0.0)
 
-      + Option ("reg_basis_diff", "The basis upon which regularisation is applied when optimising differential weights; "
-                                  "options are: "
-                                  "streamline (regularisation is applied independently to each streamline) (default), "
-                                  "fixel (regularisation drives those streamlines traversing each fixel toward a common value)")
+      // TODO Will need to derive alternative versions of differential mode regularisation
+      //   for the scenario where a mean delta per fixel is available
+      // + Option ("reg_basis_diff", "The basis upon which regularisation is applied when optimising differential weights; "
+      //                             "options are: "
+      //                             "streamline (regularisation is applied independently to each streamline) (default), "
+      //                             "fixel (regularisation drives those streamlines traversing each fixel toward a common value)")
+      //   + Argument ("choice").type_choice(reg_basis_choices)
+
+      + Option ("reg_fn_diff", "The form of the regularisation function when optimising differential weights; "
+                               "options are: "
+                               "asymptotic (regularisation expression specifically tailored to differential mode) (default); "
+                               "delta (quadratically penalise delta factor)")
         + Argument ("choice").type_choice(reg_basis_choices)
 
       + Option ("reg_strength_diff", "modulate strength of applied regularisation when optimising differential weights "

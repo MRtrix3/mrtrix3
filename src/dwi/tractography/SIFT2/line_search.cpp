@@ -111,9 +111,8 @@ namespace MR {
                                             const value_type weighting_factor,
                                             const value_type delta) :
           BaseType (in, fixel),
-          delta_TD (fixel.delta_TD() - (length * weighting_factor * delta)),
-          // TODO Am I confident that this is what should be used?
-          ddeltaTD_dddelta ((fixel.orig_TD() - length * weighting_factor) * weighting_factor),
+          delta_TD (fixel.delta_TD()), // Note: Contribution from this streamline _not_ subtracted here
+          ddeltaTD_dddelta (fixel.orig_TD() * weighting_factor),
           mean_delta (fixel.mean_delta()),
           delta_FD (fixel.delta_FD()) { }
 

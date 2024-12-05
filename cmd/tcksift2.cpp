@@ -276,7 +276,7 @@ void run ()
       tckfactor.set_reg_basis_abs (reg_basis_t (int(opt[0][0])));
     opt = get_options ("reg_fn_abs");
     if (opt.size())
-      tckfactor.set_reg_fn_abs (reg_fn_t (int(opt[0][0])));
+      tckfactor.set_reg_fn_abs (reg_fn_abs_t (int(opt[0][0])));
     tckfactor.set_reg_lambda_abs (get_option_value("reg_strength_abs", SIFT2::regularisation_strength_abs_default));
 
     opt = get_options ("min_iters");
@@ -341,9 +341,12 @@ void run ()
     opt = get_options("init_deltas");
     if (opt.empty()) {
 
-      opt = get_options ("reg_basis_diff");
+      //opt = get_options ("reg_basis_diff");
+      //if (opt.size())
+      //  tckfactor.set_reg_basis_diff (reg_basis_t (int(opt[0][0])));
+      opt = get_options("reg_fn_diff");
       if (opt.size())
-        tckfactor.set_reg_basis_diff (reg_basis_t (int(opt[0][0])));
+        tckfactor.set_reg_fn_diff(reg_fn_diff_t(int(opt[0][0])));
       tckfactor.set_reg_lambda_diff (get_option_value("reg_strength_diff", SIFT2::regularisation_strength_diff_default));
       opt = get_options ("min_delta");
       if (opt.size())
