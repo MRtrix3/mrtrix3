@@ -147,15 +147,15 @@ const OptionGroup SIFT2DiffOption = OptionGroup ("Options specific to operating 
     + Argument ("in_diff", "input fixel data file containing fibre density half-differences").type_image_in()
     + Argument ("out_delta", "output text file containing delta weighting factor per streamline").type_file_out()
 
-  + Option ("min_delta", "minimum delta weight for an individual streamline "
+  + Option ("min_delta", "minimum delta coefficient for an individual streamline "
                          "(default: " + str(SIFT2_MIN_DELTA_DEFAULT, 2) + ")")
-    + Argument ("delta").type_float (-std::numeric_limits<default_type>::infinity(), 0.0)
+    + Argument ("delta").type_float (-1.0, 0.0)
 
-  + Option ("max_delta", "maximum delta weight for an individual streamline "
+  + Option ("max_delta", "maximum delta coefficient for an individual streamline "
                          "(default: " + str(SIFT2_MAX_DELTA_DEFAULT, 2) + ")")
-    + Argument ("delta").type_float (0.0, std::numeric_limits<default_type>::infinity())
+    + Argument ("delta").type_float (0.0, 1.0)
 
-  + Option ("max_delta_step", "maximum change to a streamline's delta weight in a single iteration "
+  + Option ("max_delta_step", "maximum change to a streamline's delta coefficient in a single iteration "
                               "(default: " + str(SIFT2_MAX_DELTA_STEP_DEFAULT, 2) + ")")
     + Argument ("step").type_float (0.0);
 
