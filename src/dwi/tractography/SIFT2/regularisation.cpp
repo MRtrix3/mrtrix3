@@ -70,7 +70,7 @@ namespace MR
       + Option ("reg_fn_diff", "The form of the regularisation function when optimising differential weights; "
                                "options are: "
                                "asymptotic (regularisation expression specifically tailored to differential mode) (default); "
-                               "delta (quadratically penalise delta factor)")
+                               "delta (quadratically penalise delta coefficient)")
         + Argument ("choice").type_choice(reg_basis_choices)
 
       + Option ("reg_strength_diff", "modulate strength of applied regularisation when optimising differential weights "

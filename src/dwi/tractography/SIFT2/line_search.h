@@ -181,12 +181,11 @@ namespace MR {
           {
             public:
             using BaseType = LineSearchFunctorBase::FixelBase;
-            Fixel (const SIFT::Track_fixel_contribution&, const TckFactor::Fixel, const value_type, const value_type);
-            value_type delta_TD, ddeltaTD_dddelta, mean_delta, delta_FD;
+            Fixel (const SIFT::Track_fixel_contribution&, const TckFactor::Fixel, const DifferentialWCF &);
+            value_type differential_TD, ddiffTD_dddelta, mean_deltacoeff, differential_FD;
           };
 
-          const value_type weighting_factor;
-          const value_type delta;
+          const DifferentialWCF base_dWCF;
           vector<Fixel> fixels;
 
       };
@@ -198,9 +197,9 @@ namespace MR {
 
 
       template <reg_fn_diff_t RegFn>
-      CostAndDerivatives LineSearchFunctorDifferential::get (const value_type ddelta) const
+      CostAndDerivatives LineSearchFunctorDifferential::get (const value_type ddeltacoeff) const
       {
-        const value_type deltaplusddelta = delta + ddelta;
+        const DifferentialWCF dWCF (DifferentialWCF::from_deltacoeff(base_dWCF.absolute(), base_dWCF.delta_coeff() + ddeltacoeff));
         CostAndDerivatives data_result;
 
         for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
@@ -209,21 +208,21 @@ namespace MR {
           // Note different expression to absolute version
           // cost = frac * weight * diff^2
           // diff = (u * (dTD + (ddeltaTD_ddelta*ddelta)) - dFD
-          const value_type diff = (mu * (i->delta_TD + (i->ddeltaTD_dddelta*ddelta))) - i->delta_FD;
+          const value_type diff = (mu * (i->differential_TD + (i->ddiffTD_dddelta*ddeltacoeff))) - i->differential_FD;
 
           // TODO Should fractional attribution of the fixel cost function be modulated by absolute streamline weighting factor?
           data_result.cost += i->cost_frac * i->weight * Math::pow2 (diff);
 
-          data_result.first_deriv += 2.0 * i->cost_frac * i->weight * mu * i->ddeltaTD_dddelta * diff;
+          data_result.first_deriv += 2.0 * i->cost_frac * i->weight * mu * i->ddiffTD_dddelta * diff;
 
-          data_result.second_deriv += 2.0 * i->cost_frac * i->weight * Math::pow2(mu) * Math::pow2(i->ddeltaTD_dddelta);
+          data_result.second_deriv += 2.0 * i->cost_frac * i->weight * Math::pow2(mu) * Math::pow2(i->ddiffTD_dddelta);
 
           // data_result.third_deriv = 0.0
 
         }
 
         CostAndDerivatives reg_result;
-        SIFT2::dxreg_ddeltax<RegFn> (reg_result, deltaplusddelta, reg_multiplier_streamline);
+        SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, reg_multiplier_streamline);
 
         return CostAndDerivatives(data_result, reg_result);
       }
@@ -233,12 +232,12 @@ namespace MR {
 
 
       template <reg_fn_diff_t RegFn>
-      LineSearchFunctorDifferential::value_type LineSearchFunctorDifferential::operator() (const value_type ddelta) const
+      LineSearchFunctorDifferential::value_type LineSearchFunctorDifferential::operator() (const value_type ddeltacoeff) const
       {
-        const value_type deltaplusddelta = delta + ddelta;
+        const value_type deltaplusddelta = base_dWCF.delta_coeff() + ddeltacoeff;
         value_type cf_data = value_type(0.0);
         for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
-          cf_data += i->cost_frac * i->weight * Math::pow2 ((mu * (i->delta_TD + i->ddeltaTD_dddelta*ddelta)) - i->delta_FD);
+          cf_data += i->cost_frac * i->weight * Math::pow2 ((mu * (i->differential_TD + i->ddiffTD_dddelta*ddeltacoeff)) - i->differential_FD);
         const value_type cf_reg = reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta);
         return (cf_data + cf_reg);
       }

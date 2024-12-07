@@ -68,6 +68,7 @@ namespace MR
                              Thread::batch (Tractography::Streamline<>()),
                              Thread::multi (worker));
         }
+        update_dynamic_mu();
 
         if (!contributions.back()) {
           track_t num_tracks = 0, max_index = 0;
@@ -122,6 +123,7 @@ namespace MR
             TD_sum += fixel.weight() * fixel.td();
           }
         }
+        update_dynamic_mu();
 
         INFO (str(exclude_untracked_count) + " fixels had weight reset to zero due to not being tracked");
         INFO (str(below_fd_threshold_count) + " fixels had weight reset to zero due to FD being below threshold");

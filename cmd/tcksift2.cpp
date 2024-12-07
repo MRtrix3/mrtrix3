@@ -58,7 +58,9 @@ const OptionGroup SIFT2IterationOption = OptionGroup ("Options for controlling i
   + Option ("max_iters", "maximum number of iterations to run before terminating program")
     + Argument ("count").type_integer (0)
 
-  + Option ("min_cf_decrease", "minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue "
+  + Option ("min_cf_decrease", "minimum decrease in the cost function "
+                               "(as a fraction of the initial value) "
+                               "that must occur each iteration for the algorithm to continue "
                                "(default: " + str(SIFT2_MIN_CF_DECREASE_DEFAULT, 2) + ")")
     + Argument ("frac").type_float (0.0, 1.0);
 
@@ -71,28 +73,48 @@ const OptionGroup SIFT2IterationOption = OptionGroup ("Options for controlling i
 
 const OptionGroup SIFT2InitOption = OptionGroup ("Options for initialising / constraining the SIFT2 model")
 
-  + Option ("init_coeffs", "initialise the set of per-streamline coefficients for commencement of absolute mode optimisation")
+  + Option ("in_mu", "utilise some fixed value of proportionality coefficient mu "
+                     "rather than deriving from the input image data / tractogram")
+    + Argument("value").type_float(0.0)
+
+  + Option ("init_coeffs", "initialise the set of per-streamline coefficients "
+                           "for commencement of absolute mode optimisation")
     + Argument ("file").type_file_in()
 
-  + Option ("init_factors", "initialise the set of per-streamline weighting factors for commencement of absolute mode optimisation")
+  + Option ("init_factors", "initialise the set of per-streamline weighting factors "
+                            "for commencement of absolute mode optimisation")
     + Argument ("file").type_file_in()
 
-  + Option ("in_coeffs", "provide the set of per-streamline coefficients for absolute mode; do not perform any subsequent optimisation of such")
+  + Option ("in_coeffs", "provide the set of per-streamline coefficients for absolute mode; "
+                         "do not perform any subsequent optimisation of such")
     + Argument ("file").type_file_in()
 
-  + Option ("in_factors", "provide the set of per-streamline weighting factors for absolute mode; do not perform any subsequent optimisation of such")
+  + Option ("in_factors", "provide the set of per-streamline weighting factors for absolute mode; "
+                          "do not perform any subsequent optimisation of such")
     + Argument ("file").type_file_in()
 
-  + Option ("init_deltas", "initialise the set of per-streamline delta weights for commencement of differential mode optimisation")
+  + Option ("init_deltacoeffs", "initialise the set of per-streamline delta coefficients "
+                                "for commencement of differential mode optimisation")
     + Argument ("file").type_file_in()
 
-  + Option ("in_deltas", "provide the set of per-streamline delta weights for differential mode; do not perform any subsequent optimisation of such")
+  + Option ("init_deltafactors", "initialise the set of per-streamline delta factors "
+                                "for commencement of differential mode optimisation")
     + Argument ("file").type_file_in()
 
-  + Option ("mask_absolute", "provide a binary mask controlling which streamlines can be optimised vs. must retain their default value in absolute mode")
+  + Option ("in_deltacoeffs", "provide the set of per-streamline delta coefficients for differential mode; "
+                              "do not perform any subsequent optimisation of such")
     + Argument ("file").type_file_in()
 
-  + Option ("mask_differential", "provide a binary mask controlling which streamlines can be optimised vs. must retain their default value in differential mode")
+  + Option ("in_deltafactors", "provide the set of per-streamline delta factors for differential mode; "
+                              "do not perform any subsequent optimisation of such")
+    + Argument ("file").type_file_in()
+
+  + Option ("mask_absolute", "provide a binary mask controlling which streamlines can be optimised "
+                             "vs. must retain their default value in absolute mode")
+    + Argument ("file").type_file_in()
+
+  + Option ("mask_differential", "provide a binary mask controlling which streamlines can be optimised "
+                                 "vs. must retain their default value in differential mode")
     + Argument ("file").type_file_in();
 
 
@@ -145,18 +167,18 @@ const OptionGroup SIFT2DiffOption = OptionGroup ("Options specific to operating 
 
   + Option ("differential", "Estimate a set of differential weighting factors to fit fixel-wise FD differences")
     + Argument ("in_diff", "input fixel data file containing fibre density half-differences").type_image_in()
-    + Argument ("out_delta", "output text file containing delta weighting factor per streamline").type_file_out()
+    + Argument ("out_deltafactor", "output text file containing delta weighting factor per streamline").type_file_out()
 
-  + Option ("min_delta", "minimum delta coefficient for an individual streamline "
-                         "(default: " + str(SIFT2_MIN_DELTA_DEFAULT, 2) + ")")
-    + Argument ("delta").type_float (-1.0, 0.0)
+  + Option ("min_deltacoeff", "minimum delta coefficient for an individual streamline "
+                         "(default: " + str(SIFT2_MIN_DELTACOEFF_DEFAULT, 2) + ")")
+    + Argument ("value").type_float (-1.0, 0.0)
 
-  + Option ("max_delta", "maximum delta coefficient for an individual streamline "
-                         "(default: " + str(SIFT2_MAX_DELTA_DEFAULT, 2) + ")")
-    + Argument ("delta").type_float (0.0, 1.0)
+  + Option ("max_deltacoeff", "maximum delta coefficient for an individual streamline "
+                         "(default: " + str(SIFT2_MAX_DELTACOEFF_DEFAULT, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("max_delta_step", "maximum change to a streamline's delta coefficient in a single iteration "
-                              "(default: " + str(SIFT2_MAX_DELTA_STEP_DEFAULT, 2) + ")")
+  + Option ("max_deltacoeff_step", "maximum change to a streamline's delta coefficient in a single iteration "
+                              "(default: " + str(SIFT2_MAX_DELTACOEFF_STEP_DEFAULT, 2) + ")")
     + Argument ("step").type_float (0.0);
 
 
@@ -214,8 +236,18 @@ void run ()
     throw Exception ("Options -min_factor and -min_coeff are mutually exclusive");
   if (get_options("max_factor").size() && get_options("max_coeff").size())
     throw Exception ("Options -max_factor and -max_coeff are mutually exclusive");
-  if (get_options ("linear").size() + get_options("init_coeffs").size() + get_options("init_factors").size() + get_options ("in_coeffs").size() + get_options("in_factors").size() > 1)
+  if (get_options ("linear").size()
+      + get_options("init_coeffs").size()
+      + get_options("init_factors").size()
+      + get_options ("in_coeffs").size()
+      + get_options("in_factors").size() > 1)
     throw Exception ("Options -linear, -init_coeffs, -init_factors, -in_coeffs and -in_factors are mutually exclusive");
+  if (get_options("init_deltacoeffs").size()
+      + get_options("init_deltafactors").size()
+      + get_options ("in_deltacoeffs").size()
+      + get_options("in_deltafactors").size() > 1)
+    throw Exception ("Options -init_deltacoeffs, -init_deltafactors, -in_deltacoeffs and -in_deltafactors are mutually exclusive");
+
 
   if (Path::has_suffix (argument[2], ".tck"))
     throw Exception ("Output of tcksift2 command should be a text file, not a tracks file");
@@ -225,6 +257,10 @@ void run ()
   if (App::get_options("fd_scale_gm").size())
     tckfactor.scale_FDs_by_GM();
 
+  auto opt = get_options("in_mu");
+  if (opt.size())
+    tckfactor.set_fixed_mu(opt[0][0]);
+
   std::string debug_path = get_option_value<std::string> ("output_debug", "");
   if (debug_path.size())
     tckfactor.initialise_debug_image_output (debug_path);
@@ -233,13 +269,14 @@ void run ()
   tckfactor.store_orig_TDs();
   tckfactor.exclude_fixels (get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
   tckfactor.calibrate_regularisation();
+  tckfactor.save_naive_cf();
 
   if (debug_path.size()) {
     tckfactor.output_TD_images (debug_path, "origTD_fixel.mif", "trackcount_fixel.mif");
     tckfactor.output_all_debug_images (debug_path, "before");
   }
 
-  auto opt = get_options ("out_mu");
+  opt = get_options ("out_mu");
   if (opt.size()) {
     File::OFStream out_mu (opt[0][0]);
     out_mu << tckfactor.mu();
@@ -253,6 +290,14 @@ void run ()
       tckfactor.set_csv_path (opt[0][0]);
     }
   }
+
+  // Applicable to both absolute and differential modes
+  opt = get_options ("min_iters");
+  if (opt.size())
+    tckfactor.set_min_iters (int(opt[0][0]));
+  opt = get_options ("max_iters");
+  if (opt.size())
+    tckfactor.set_max_iters (int(opt[0][0]));
 
   if (get_options ("linear").size()) {
 
@@ -282,12 +327,6 @@ void run ()
       tckfactor.set_reg_fn_abs (reg_fn_abs_t (int(opt[0][0])));
     tckfactor.set_reg_lambda_abs (get_option_value("reg_strength_abs", SIFT2::regularisation_strength_abs_default));
 
-    opt = get_options ("min_iters");
-    if (opt.size())
-      tckfactor.set_min_iters (int(opt[0][0]));
-    opt = get_options ("max_iters");
-    if (opt.size())
-      tckfactor.set_max_iters (int(opt[0][0]));
     opt = get_options ("min_factor");
     if (opt.size())
       tckfactor.set_min_factor (value_type(opt[0][0]));
@@ -341,8 +380,7 @@ void run ()
     tckfactor.import_differential_data (opt[0][0]);
     const std::string output_delta_path = opt[0][1];
 
-    opt = get_options("init_deltas");
-    if (opt.empty()) {
+    if (get_options("in_deltacoeffs").empty() && get_options("in_deltafactors").empty()) {
 
       //opt = get_options ("reg_basis_diff");
       //if (opt.size())
@@ -351,19 +389,24 @@ void run ()
       if (opt.size())
         tckfactor.set_reg_fn_diff(reg_fn_diff_t(int(opt[0][0])));
       tckfactor.set_reg_lambda_diff (get_option_value("reg_strength_diff", SIFT2::regularisation_strength_diff_default));
-      opt = get_options ("min_delta");
+      opt = get_options ("min_deltacoeff");
       if (opt.size())
-        tckfactor.set_min_delta (value_type(opt[0][0]));
-      opt = get_options ("max_delta");
+        tckfactor.set_min_deltacoeff (value_type(opt[0][0]));
+      opt = get_options ("max_deltacoeff");
       if (opt.size())
-        tckfactor.set_max_delta (value_type(opt[0][0]));
-      opt = get_options ("max_delta_step");
+        tckfactor.set_max_deltacoeff (value_type(opt[0][0]));
+      opt = get_options ("max_deltacoeff_step");
       if (opt.size())
-        tckfactor.set_max_delta_step (value_type(opt[0][0]));
+        tckfactor.set_max_deltacoeff_step (value_type(opt[0][0]));
 
-      opt = get_options ("init_deltas");
+      opt = get_options ("init_deltafactors");
       if (!opt.empty()) {
-        tckfactor.set_deltas (opt[0][0]);
+        tckfactor.set_deltafactors (opt[0][0]);
+        tckfactor.enforce_limits<operation_mode_t::DIFFERENTIAL>();
+      }
+      opt = get_options ("init_deltacoeffs");
+      if (!opt.empty()) {
+        tckfactor.set_deltacoeffs (opt[0][0]);
         tckfactor.enforce_limits<operation_mode_t::DIFFERENTIAL>();
       }
       opt = get_options("mask_differential");
@@ -376,9 +419,16 @@ void run ()
       tckfactor.estimate_weights<operation_mode_t::DIFFERENTIAL>();
 
     } else {
-      tckfactor.set_deltas (opt[0][0]);
       if (!get_options("mask_differential").empty()) {
         WARN("-mask_differential option ignored, as no optimisation in differential mode is taking place");
+      }
+      opt = get_options("in_deltacoeffs");
+      if (opt.empty()) {
+        opt = get_options("in_deltafactors");
+        assert (!opt.empty());
+        tckfactor.set_deltafactors (opt[0][0]);
+      } else {
+        tckfactor.set_deltacoeffs (opt[0][0]);
       }
     }
 
@@ -391,11 +441,11 @@ void run ()
 
   } else {
     // TODO Could alternatively use presence of these to imply engagement of differential mode
-    if (!get_options("init_deltas").empty()) {
-      WARN("Option -init_deltas ignored; differential mode not active");
+    if (!get_options("init_deltacoeffs").empty()) {
+      WARN("Option -init_deltacoeffs ignored; differential mode not active");
     }
-    if (!get_options("in_deltas").empty()) {
-      WARN("Option -in_deltas ignored; differential mode not active");
+    if (!get_options("in_deltacoeffs").empty()) {
+      WARN("Option -in_deltacoeffs ignored; differential mode not active");
     }
   }
 

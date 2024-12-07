@@ -77,6 +77,10 @@ namespace MR {
           ~FixelUpdaterDifferential();
 
           bool operator() (const SIFT::TrackIndexRange& range) final;
+
+        private:
+          vector<value_type> local_sum_deltacoeffs;
+
       };
 
 

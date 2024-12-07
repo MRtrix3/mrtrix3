@@ -67,6 +67,8 @@ namespace MR {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+          if (this_contribution.get_total_contribution() == 0.0f)
+            continue;
           const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
           value_type streamline_sum = value_type(0.0);
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
@@ -84,6 +86,8 @@ namespace MR {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+          if (this_contribution.get_total_contribution() == 0.0f)
+            continue;
           const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
           value_type streamline_sum = value_type(0.0);
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
@@ -102,6 +106,8 @@ namespace MR {
           const value_type coefficient = master.coefficients[track_index];
           WeightingCoeffAndFactor wcf = WeightingCoeffAndFactor::from_coeff (coefficient);
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+          if (this_contribution.get_total_contribution() == 0.0f)
+            continue;
           const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
           value_type streamline_sum = value_type(0.0);
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
@@ -123,17 +129,17 @@ namespace MR {
       bool RegularisationCalculatorDifferential<reg_fn_diff_t::ASYMPTOTIC>::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
-          const value_type deltacoeff = master.deltas[track_index];
+          const value_type deltacoeff = master.deltacoeffs[track_index];
           local_sum += reg_asymptotic (deltacoeff);
         }
         return true;
       }
       template <>
-      bool RegularisationCalculatorDifferential<reg_fn_diff_t::DELTA>::operator() (const SIFT::TrackIndexRange& range)
+      bool RegularisationCalculatorDifferential<reg_fn_diff_t::DELTACOEFF>::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
-          const value_type deltacoeff = master.deltas[track_index];
-          local_sum += reg_delta (deltacoeff);
+          const value_type deltacoeff = master.deltacoeffs[track_index];
+          local_sum += reg_deltacoeff (deltacoeff);
         }
         return true;
       }

@@ -55,7 +55,8 @@ namespace MR {
             fixels.col(mean_coeff_column).setZero();
             break;
           case operation_mode_t::DIFFERENTIAL:
-            fixels.col(delta_td_column).setZero();
+            fixels.col(differential_td_column).setZero();
+            fixels.col(mean_deltacoeff_column).setZero();
             break;
           default:
             assert (false);
@@ -70,7 +71,7 @@ namespace MR {
         //   Fixel fixel (*this, i);
         //   switch (Mode) {
         //     case operation_mode_t::ABSOLUTE: fixel.normalise_mean_coeff(); break;
-        //     case operation_mode_t::DIFFERENTIAL: fixel.normalise_mean_delta(); break;
+        //     case operation_mode_t::DIFFERENTIAL: fixel.normalise_mean_deltacoeff(); break;
         //   }
         // }
         // No normalisation of a mean parameter required for differential mode
@@ -79,6 +80,13 @@ namespace MR {
             Fixel fixel (*this, i);
             fixel.normalise_mean_coeff();
           }
+        } else if (Mode == operation_mode_t::DIFFERENTIAL) {
+          for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
+            Fixel fixel (*this, i);
+            fixel.normalise_mean_deltacoeff();
+          }
+        } else {
+          assert (false);
         }
       }
       template void TckFactor::update_fixels<operation_mode_t::ABSOLUTE>();
@@ -95,18 +103,22 @@ namespace MR {
         value_type calc_reg_absolute (TckFactor& master)
         {
           value_type result = value_type(0.0);
-          SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, master.num_tracks());
-          RegularisationCalculatorAbsolute<RegBasis, RegFn> worker (master, result);
-          Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
+          {
+            SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, master.num_tracks());
+            RegularisationCalculatorAbsolute<RegBasis, RegFn> worker (master, result);
+            Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
+          }
           return result;
         }
         template <reg_fn_diff_t RegFn>
         value_type calc_reg_differential (TckFactor& master)
         {
           value_type result = value_type(0.0);
-          SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, master.num_tracks());
-          RegularisationCalculatorDifferential<RegFn> worker (master, result);
-          Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
+          {
+            SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, master.num_tracks());
+            RegularisationCalculatorDifferential<RegFn> worker (master, result);
+            Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
+          }
           return result;
         }
       }
@@ -132,6 +144,8 @@ namespace MR {
             break;
           }
         }
+        assert (std::isfinite(unscaled));
+        assert (std::isfinite(reg_multiplier_abs));
         return unscaled * reg_multiplier_abs;
       }
       template <>
@@ -140,8 +154,10 @@ namespace MR {
         value_type unscaled = value_type(0.0);
         switch (reg_fn_diff) {
           case reg_fn_diff_t::ASYMPTOTIC: unscaled = calc_reg_differential<reg_fn_diff_t::ASYMPTOTIC> (*this); break;
-          case reg_fn_diff_t::DELTA:      unscaled = calc_reg_differential<reg_fn_diff_t::DELTA>      (*this); break;
+          case reg_fn_diff_t::DELTACOEFF: unscaled = calc_reg_differential<reg_fn_diff_t::DELTACOEFF> (*this); break;
         }
+        assert (std::isfinite(unscaled));
+        assert (std::isfinite(reg_multiplier_diff));
         return unscaled * reg_multiplier_diff;
       }
 
@@ -227,34 +243,88 @@ namespace MR {
 
 
 
-      void TckFactor::set_deltas (const std::string &path) {
-        deltas = load_vector<value_type> (path);
-        if (deltas.size() != contributions.size())
-          throw Exception ("Number of entries in input deltas file \"" + path + "\" (" + str(coefficients.size()) + ")"
-                           + "does not match number of streamlines read (" + str(contributions.size()) + ")");
+      void TckFactor::set_deltacoeffs (const std::string &path) {
+        deltacoeffs = load_vector<value_type> (path);
+        if (deltacoeffs.size() != contributions.size())
+          throw Exception (std::string("Number of entries in input delta coefficients file")
+                           + " \"" + path + "\" (" + str(coefficients.size()) + ")"
+                           + " does not match number of streamlines read"
+                           + " (" + str(contributions.size()) + ")");
         if (mask_differential.size() == 0)
-          mask_differential = Eigen::Array<bool, Eigen::Dynamic, 1>::Ones(deltas.size());
+          mask_differential = Eigen::Array<bool, Eigen::Dynamic, 1>::Ones(deltacoeffs.size());
         SIFT::track_t inclusion_count = 0;
         SIFT::track_t exclusion_count = 0;
-        for (SIFT::track_t i = 0; i != deltas.size(); ++i) {
-          if (deltas[i] == -std::numeric_limits<value_type>::infinity() || deltas[i] == std::numeric_limits<value_type>::infinity())
-            throw Exception("Input delta weights file \"" + path + "\" contains infinity; check derivation");
-          if (deltas[i] > value_type(1))
-            throw Exception("Input delta weights file \"" + path + "\" contains values greater than 1.0; check derivation");
-          if (deltas[i] < value_type(-1))
-            throw Exception("Input delta weights file \"" + path + "\" contains values less than -1.0; check derivation");
-          if (std::isnan(deltas[i])) {
+        for (SIFT::track_t i = 0; i != deltacoeffs.size(); ++i) {
+          if (deltacoeffs[i] == -std::numeric_limits<value_type>::infinity()
+              || deltacoeffs[i] == std::numeric_limits<value_type>::infinity())
+            throw Exception("Input delta coefficients file \"" + path + "\" contains infinity; "
+                            "check derivation");
+          if (deltacoeffs[i] > value_type(1))
+            throw Exception("Input delta coefficients file \"" + path + "\" contains values greater than 1.0; "
+                            "check derivation");
+          if (deltacoeffs[i] < value_type(-1))
+            throw Exception("Input delta coefficients file \"" + path + "\" contains values less than -1.0; "
+                            "check derivation");
+          if (std::isnan(deltacoeffs[i])) {
             if (mask_differential[i])
               ++exclusion_count;
             mask_differential[i] = false;
+            // Interpret NaN -> Removal of streamline
+            deltacoeffs[i] = -1.0;
           } else {
             ++inclusion_count;
           }
         }
         if (exclusion_count > 0) {
-          INFO(str(exclusion_count) + " streamlines excluded from differential mode optimisation due to NaN delta weights imported from \"" + path + "\"");
+          INFO(str(exclusion_count) + " streamlines excluded from differential mode optimisation "
+               "due to NaN delta coefficients imported from \"" + path + "\"");
           INFO(str(inclusion_count) + " remaining streamlines will participate in optimisation");
         }
+        update_fixels<operation_mode_t::DIFFERENTIAL>();
+      }
+
+      void TckFactor::set_deltafactors (const std::string &path) {
+        deltacoeffs = load_vector<value_type> (path);
+        if (deltacoeffs.size() != contributions.size())
+          throw Exception (std::string("Number of entries in input delta factors file")
+                           + " \"" + path + "\" (" + str(coefficients.size()) + ")"
+                           + " does not match number of streamlines read"
+                           + " (" + str(contributions.size()) + ")");
+        if (mask_differential.size() == 0)
+          mask_differential = Eigen::Array<bool, Eigen::Dynamic, 1>::Ones(deltacoeffs.size());
+        SIFT::track_t inclusion_count = 0;
+        SIFT::track_t exclusion_count = 0;
+        for (SIFT::track_t i = 0; i != deltacoeffs.size(); ++i) {
+          if (deltacoeffs[i] == -std::numeric_limits<value_type>::infinity()
+              || deltacoeffs[i] == std::numeric_limits<value_type>::infinity())
+            throw Exception("Input delta factors file \"" + path + "\" contains infinity; "
+                            "check derivation");
+          auto WCF (WeightingCoeffAndFactor::from_coeff(coefficients[i]));
+          if (std::abs(deltacoeffs[i]) > WCF.factor())
+            throw Exception("Input delta coefficients file \"" + path + "\" "
+                            "contains values greater in magnitude that absolute mode factor; "
+                            "check derivation");
+          if (deltacoeffs[i] < value_type(-1))
+            throw Exception("Input delta coefficients file \"" + path + "\" contains values less than -1.0; "
+                            "check derivation");
+          if (std::isnan(deltacoeffs[i])) {
+            if (mask_differential[i])
+              ++exclusion_count;
+            mask_differential[i] = false;
+            // Interpret NaN -> Removal of streamline
+            deltacoeffs[i] = -1.0;
+          } else {
+            ++inclusion_count;
+            // Transform from "delta factor" to "delta coefficient"
+            deltacoeffs[i] /= WCF.factor();
+          }
+        }
+        if (exclusion_count > 0) {
+          INFO(str(exclusion_count) + " streamlines excluded from differential mode optimisation "
+               "due to NaN delta factors imported from \"" + path + "\"");
+          INFO(str(inclusion_count) + " remaining streamlines will participate in optimisation");
+        }
+
         update_fixels<operation_mode_t::DIFFERENTIAL>();
       }
 
@@ -288,20 +358,21 @@ namespace MR {
       template <>
       void TckFactor::enforce_limits<operation_mode_t::DIFFERENTIAL>()
       {
-        if (min_delta == -std::numeric_limits<value_type>::infinity() && max_delta == std::numeric_limits<value_type>::infinity())
+        if (min_deltacoeff == -std::numeric_limits<value_type>::infinity() && max_deltacoeff == std::numeric_limits<value_type>::infinity())
           return;
         SIFT::track_t clamped_count = 0;
         for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-          if (coefficients[i] < -min_delta) {
-            coefficients[i] = -min_delta;
+          if (coefficients[i] < -min_deltacoeff) {
+            coefficients[i] = -min_deltacoeff;
             ++clamped_count;
-          } else if (coefficients[i] > max_delta) {
-            coefficients[i] = max_delta;
+          } else if (coefficients[i] > max_deltacoeff) {
+            coefficients[i] = max_deltacoeff;
             ++clamped_count;
           }
         }
         if (clamped_count) {
-          INFO (str(clamped_count) + " streamlines had their initial delta weights reduced in magnitude due to exceeding the maximum permissible");
+          INFO (str(clamped_count) + " streamlines had their initial delta coefficients reduced in magnitude "
+                "due to exceeding the maximum permissible");
         }
       }
 
@@ -329,10 +400,11 @@ namespace MR {
 
       void TckFactor::import_differential_data (const std::string& path)
       {
-        fixels.conservativeResizeLike (data_matrix_type::Zero (nfixels(), 9));
+        fixels.conservativeResizeLike (data_matrix_type::Zero (nfixels(), 10));
         Image<float> diff_fd_image (Image<float>::open (path));
         MR::Fixel::check_data_file (diff_fd_image, nfixels());
-        fixels.col(delta_fd_column) = diff_fd_image.row(0);
+        fixels.col(differential_fd_column) = diff_fd_image.row(0);
+        deltacoeffs = Eigen::Array<value_type, Eigen::Dynamic, 1>::Zero(num_tracks());
       }
 
 
@@ -353,31 +425,38 @@ namespace MR {
 
         const value_type fixed_mu = mu();
         const value_type cf = calc_cost_function();
-        SIFT::track_t excluded_count = 0, zero_TD_count = 0;
+        SIFT::track_t low_TD_count = 0, zero_TD_count = 0, nonfinite_FD_count = 0;
         value_type zero_TD_cf_sum = 0.0, excluded_cf_sum = 0.0;
         for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
           Fixel fixel (*this, i);
           if (fixel.weight()) {
-            if (!fixel.orig_TD()) {
+            if (!std::isfinite(fixel.fd())) {
+              fixel.exclude();
+              ++nonfinite_FD_count;
+            } else if (!fixel.orig_TD()) {
               ++zero_TD_count;
               zero_TD_cf_sum += fixel.get_cost (fixed_mu);
             } else if ((fixed_mu * fixel.orig_TD() < min_td_frac * fixel.fd()) || (fixel.count() < 2)) {
               fixel.exclude();
-              ++excluded_count;
+              ++low_TD_count;
               excluded_cf_sum += fixel.get_cost (fixed_mu);
             }
           }
+        }
+        if (nonfinite_FD_count) {
+          WARN(str(nonfinite_FD_count) + " fixels have non-finite FD values; "
+               "model weights of these fixels set to zero");
         }
         if (zero_TD_count) {
           INFO (str(zero_TD_count) + " fixels have no attributed streamlines; "
                 "these account for " + str(100.0 * zero_TD_cf_sum / cf) + "\% of the initial cost function");
         }
-        if (excluded_count) {
-          INFO (str(excluded_count) + " of " + str(fixels.size()) + " fixels were tracked, "
+        if (low_TD_count) {
+          INFO (str(low_TD_count) + " of " + str(fixels.size()) + " fixels were tracked, "
                 "but have been excluded from optimisation due to inadequate reconstruction; "
                 "these contribute " + str (100.0 * excluded_cf_sum / cf) + "\% of the initial cost function");
         } else {
-          INFO ("No fixels were excluded from optimisation due to poor reconstruction");
+          INFO ("No fixels needed to be excluded from optimisation due to poor reconstruction");
         }
       }
 
@@ -386,13 +465,17 @@ namespace MR {
       void TckFactor::calibrate_regularisation()
       {
         assert (num_tracks());
-        // value_type A = 0.0;
-        // for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
-        //   Fixel fixel (*this, i);
-        //   A += fixel.weight() * Math::pow2 (fixel.fd());
-        // }
-        // A /= value_type(num_tracks());
-        reg_scaling = fixels.col(model_weight_column).matrix().dot(fixels.col(fd_column).square().matrix()) / value_type(num_tracks());
+        value_type A = 0.0;
+        for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
+          Fixel fixel (*this, i);
+          if (fixel.weight())
+            A += fixel.weight() * Math::pow2 (fixel.fd());
+        }
+        reg_scaling = A / value_type(num_tracks());
+        // Cannot use one-liner as some fixels may contain NaN values
+        // TODO Consider substituting NaNs with 0.0 at time of import
+        //reg_scaling = fixels.col(model_weight_column).matrix().dot(fixels.col(fd_column).square().matrix()) / value_type(num_tracks());
+        assert (std::isfinite(reg_scaling));
         INFO ("Constant A scaling regularisation term to match data term is " + str(reg_scaling));
       }
 
@@ -418,6 +501,7 @@ namespace MR {
           }
           TD_sum += streamline_weight * tck_cont.get_total_contribution();
         }
+        update_dynamic_mu();
 
         VAR (calc_cost_function());
 
@@ -428,12 +512,14 @@ namespace MR {
           for (int i = -1000; i != 1000; ++i) {
             const value_type factor = std::pow (10.0, value_type(i) / 1000.0);
             TD_sum = factor * actual_TD_sum;
+            update_dynamic_mu();
             out << str(factor) << "," << str(calc_cost_function()) << "\n";
           }
           out << "\n";
         }
 
         TD_sum = actual_TD_sum;
+        update_dynamic_mu();
       }
 
 
@@ -505,9 +591,18 @@ namespace MR {
         const value_type current_mu = mu();
         value_type cost = value_type(0);
         for (size_t i = 0; i != nfixels(); ++i)
-          cost += Fixel (*this, i).delta_cost (current_mu);
+          cost += Fixel (*this, i).differential_cost (current_mu);
         return cost;
       }
+
+
+
+
+      void TckFactor::save_naive_cf()
+      {
+        naive_cf = calc_cost_function();
+      }
+
 
 
 
@@ -545,18 +640,22 @@ namespace MR {
             cf_data = calc_cost_function();
             break;
           case operation_mode_t::DIFFERENTIAL:
-            allocate_vector (deltas, num_tracks());
+            allocate_vector (deltacoeffs, num_tracks());
             allocate_mask (mask_differential, num_tracks());
             cf_data = calc_cost_function_differential();
             break;
         }
+        assert(std::isfinite(cf_data));
 
-        // Need to include regularisation in this calculation in case the weighting coefficients have been initialised to something other than zero
+        // Need to include regularisation in this calculation
+        //   in case the weighting coefficients have been initialised to something other than zero
         value_type cf_reg = calculate_regularisation<Mode>();
+        assert(std::isfinite(cf_reg));
         const value_type init_cf = cf_data + cf_reg;
         value_type new_cf = init_cf;
         value_type prev_cf = init_cf;
-        const value_type required_cf_change = -min_cf_decrease_percentage * init_cf;
+        assert (std::isfinite(naive_cf));
+        const value_type required_cf_change = -min_cf_decrease_percentage * naive_cf;
 
         Eigen::Array<bool, Eigen::Dynamic, 1> &mask (Mode == operation_mode_t::ABSOLUTE ? mask_absolute : mask_differential);
         SIFT::track_t participating_streamlines = 0;
@@ -735,10 +834,12 @@ namespace MR {
             case operation_mode_t::ABSOLUTE:     cf_data = calc_cost_function(); break;
             case operation_mode_t::DIFFERENTIAL: cf_data = calc_cost_function_differential(); break;
           }
+          assert (std::isfinite(cf_data));
 
           // Calculate the cost of regularisation, given the updates to both the
           //   streamline weighting coefficients and the new fixel mean coefficients
           cf_reg = calculate_regularisation<Mode>();
+          assert (std::isfinite(cf_reg));
           new_cf = cf_data + cf_reg;
 
           if (!csv_path.empty()) {
@@ -900,19 +1001,19 @@ namespace MR {
 
       void TckFactor::output_deltacoeffs (const std::string& path) const
       {
-        save_vector(deltas, path);
+        save_vector(deltacoeffs, path);
       }
 
       void TckFactor::output_deltaweights (const std::string& path) const
       {
-        if (size_t(deltas.size()) != contributions.size())
+        if (size_t(deltacoeffs.size()) != contributions.size())
           throw Exception ("Cannot output differential weighting factors if they have not first been estimated!");
         try {
-          decltype(deltas) weights (deltas.size());
+          decltype(deltacoeffs) weights (deltacoeffs.size());
           for (SIFT::track_t i = 0; i != num_tracks(); ++i)
             weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
                          0.0 :
-                         std::exp (coefficients[i]) * deltas[i];
+                         std::exp (coefficients[i]) * deltacoeffs[i];
           save_vector (weights, path);
         } catch (...) {
           WARN ("Unable to assign memory for output differential factor file: \"" + Path::basename(path) + "\" not created");
@@ -927,18 +1028,18 @@ namespace MR {
         vector<value_type> stdevs (nfixels(), 0.0);
         vector<value_type> maxs   (nfixels(), -std::numeric_limits<value_type>::infinity());
         {
-          ProgressBar progress ("Generating delta weight statistic images", num_tracks());
+          ProgressBar progress ("Generating delta coefficient statistic images", num_tracks());
           for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
             const value_type weighting_factor = WeightingCoeffAndFactor::from_coeff (coefficients[i]).factor();
-            const value_type delta = deltas.size() ? deltas[i] : value_type(0);
+            const value_type deltacoeff = deltacoeffs.size() ? deltacoeffs[i] : value_type(0);
             const SIFT::TrackContribution& this_contribution (*contributions[i]);
             for (size_t j = 0; j != this_contribution.dim(); ++j) {
               const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
               const Fixel fixel (*this, fixel_index);
-              const value_type mean_delta = fixel.mean_delta();
-              mins  [fixel_index] = std::min (mins[fixel_index], delta);
-              stdevs[fixel_index] += weighting_factor * Math::pow2 (delta - mean_delta);
-              maxs  [fixel_index] = std::max (maxs[fixel_index], delta);
+              const value_type mean_deltacoeff = fixel.mean_deltacoeff();
+              mins  [fixel_index] = std::min (mins[fixel_index], deltacoeff);
+              stdevs[fixel_index] += weighting_factor * Math::pow2 (deltacoeff - mean_deltacoeff);
+              maxs  [fixel_index] = std::max (maxs[fixel_index], deltacoeff);
             }
             ++progress;
           }
@@ -965,12 +1066,12 @@ namespace MR {
           const MR::Fixel::index_type index = min_fimage.index(0);
           const Fixel fixel (*this, index);
           min_fimage.value() = mins[index];
-          mean_fimage.value() = fixel.mean_delta();
+          mean_fimage.value() = fixel.mean_deltacoeff();
           stdev_fimage.value() = stdevs[index];
           max_fimage.value() = maxs[index];
-          delta_fimage.value() = fixel.delta_TD();
-          diff_fimage.value() = fixel.delta_diff(current_mu);
-          cost_fimage.value() = fixel.delta_cost(current_mu);
+          delta_fimage.value() = fixel.differential_TD();
+          diff_fimage.value() = fixel.differential_diff(current_mu);
+          cost_fimage.value() = fixel.differential_cost(current_mu);
         }
 
         IndexImage index (*this);
@@ -983,10 +1084,10 @@ namespace MR {
           sum = maxabsdiff = diff = cost = value_type(0);
           for (auto lf : index.value()) {
             Fixel fixel (*this, lf);
-            sum += fixel.delta_TD();
-            maxabsdiff = std::max (maxabsdiff, std::abs(fixel.delta_diff(current_mu)));
-            diff += fixel.delta_diff(current_mu);
-            cost += fixel.delta_cost(current_mu);
+            sum += fixel.differential_TD();
+            maxabsdiff = std::max (maxabsdiff, std::abs(fixel.differential_diff(current_mu)));
+            diff += fixel.differential_diff(current_mu);
+            cost += fixel.differential_cost(current_mu);
           }
           sum_vimage.value() = sum * current_mu;
           maxabsdiff_vimage.value() = maxabsdiff;
@@ -999,7 +1100,7 @@ namespace MR {
         scatter << "#Delta fibre density,Delta track density (unscaled),Delta track density (scaled),Weight,\n";
         for (size_t i = 0; i != nfixels(); ++i) {
           const Fixel fixel (*this, i);
-          scatter << str (fixel.delta_FD()) << "," << str (fixel.delta_TD()) << "," << str (fixel.delta_TD() * current_mu) << "," << str (fixel.weight()) << ",\n";
+          scatter << str (fixel.differential_FD()) << "," << str (fixel.differential_TD()) << "," << str (fixel.differential_TD() * current_mu) << "," << str (fixel.weight()) << ",\n";
         }
 
       }

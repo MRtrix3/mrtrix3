@@ -41,9 +41,9 @@
 #define SIFT2_MIN_COEFF_DEFAULT (-std::numeric_limits<SIFT::value_type>::infinity())
 #define SIFT2_MAX_COEFF_DEFAULT (std::numeric_limits<SIFT::value_type>::infinity())
 #define SIFT2_MAX_COEFF_STEP_DEFAULT 1.0
-#define SIFT2_MIN_DELTA_DEFAULT -1.0
-#define SIFT2_MAX_DELTA_DEFAULT 1.0
-#define SIFT2_MAX_DELTA_STEP_DEFAULT 0.1
+#define SIFT2_MIN_DELTACOEFF_DEFAULT -1.0
+#define SIFT2_MAX_DELTACOEFF_DEFAULT 1.0
+#define SIFT2_MAX_DELTACOEFF_STEP_DEFAULT 0.1
 #define SIFT2_MIN_CF_DECREASE_DEFAULT 2.5e-5
 
 
@@ -92,12 +92,10 @@ namespace MR {
           //   whether or not a fixel influences the optimisation, not the calculation of mu / cost function
           static const ssize_t exclude_column = 6;
 
-          // TODO Additional columns for differential version
-          static const ssize_t delta_fd_column = 7;
-          static const ssize_t delta_td_column = 8;
-          // TODO Is this even required?
-          // Or can it just be calculated as delta_TD() / TD()?
-          //static const ssize_t mean_delta_td_column = 9;
+          // Additional columns for differential version
+          static const ssize_t differential_fd_column = 7;
+          static const ssize_t differential_td_column = 8;
+          static const ssize_t mean_deltacoeff_column = 9;
 
           class Fixel : public SIFT::Model::FixelBase
           {
@@ -130,17 +128,20 @@ namespace MR {
 
 
               // TODO New functions for differential fit
-              value_type delta_TD() const { return (*this)[delta_td_column]; }
-              void add_to_delta_TD (const value_type delta_td, const value_type length, const value_type weight) { (*this)[delta_td_column] += delta_td * length * weight; }
-              void add_to_delta_TD (const value_type i) { (*this)[delta_td_column] += i; }
-              //void clear_mean_delta() { (*this)[mean_delta_td_column] = 0.0; }
-              //void normalise_mean_delta() { if (td()) (*this)[mean_delta_td_column] /= td(); if (count() < 2) clear_mean_delta(); }
-              value_type mean_delta() const { return delta_TD() / td(); }
-              value_type delta_FD() const { return (*this)[delta_fd_column]; }
+              value_type differential_TD() const { return (*this)[differential_td_column]; }
+              void add_to_differential_TD (const value_type differential_td, const value_type length, const value_type weight) { (*this)[differential_td_column] += differential_td * length * weight; }
+              void add_to_differential_TD (const value_type i) { (*this)[differential_td_column] += i; }
+              void clear_mean_deltacoeff() { (*this)[mean_deltacoeff_column] = 0.0; }
+              void add_to_mean_deltacoeff (const value_type i) { (*this)[mean_deltacoeff_column] += i; }
+              void normalise_mean_deltacoeff() { if (td()) (*this)[mean_deltacoeff_column] /= td(); if (count() < 2) clear_mean_deltacoeff(); }
+              value_type mean_deltacoeff() const { return (*this)[mean_deltacoeff_column]; }
+              // TODO Re-attempt using the below function as a substitute for mean deltacoeff
+              //value_type mean_deltacoeff() const { return differential_TD() / td(); }
+              value_type differential_FD() const { return (*this)[differential_fd_column]; }
 
-              value_type delta_diff (const value_type mu) const { return (mu * delta_TD()) - delta_FD(); }
-              value_type delta_cost_unweighted (const value_type mu) const { return Math::pow2 (delta_diff(mu)); }
-              value_type delta_cost (const value_type mu) const { return weight() * delta_cost_unweighted(mu); }
+              value_type differential_diff (const value_type mu) const { return (mu * differential_TD()) - differential_FD(); }
+              value_type differential_cost_unweighted (const value_type mu) const { return Math::pow2 (differential_diff(mu)); }
+              value_type differential_cost (const value_type mu) const { return weight() > value_type(0) ? weight() * differential_cost_unweighted(mu) : value_type(0); }
 
           };
 
@@ -163,11 +164,12 @@ namespace MR {
               min_coeff (SIFT2_MIN_COEFF_DEFAULT),
               max_coeff (SIFT2_MAX_COEFF_DEFAULT),
               max_coeff_step (SIFT2_MAX_COEFF_STEP_DEFAULT),
-              min_delta (SIFT2_MIN_DELTA_DEFAULT),
-              max_delta (SIFT2_MAX_DELTA_DEFAULT),
-              max_delta_step (SIFT2_MAX_DELTA_STEP_DEFAULT),
+              min_deltacoeff (SIFT2_MIN_DELTACOEFF_DEFAULT),
+              max_deltacoeff (SIFT2_MAX_DELTACOEFF_DEFAULT),
+              max_deltacoeff_step (SIFT2_MAX_DELTACOEFF_STEP_DEFAULT),
               min_cf_decrease_percentage (SIFT2_MIN_CF_DECREASE_DEFAULT),
-              data_scale_term (0.0)
+              data_scale_term (0.0),
+              naive_cf (std::numeric_limits<value_type>::signaling_NaN())
           {
             // Expand data matrix to include additional columns necessary for new fixel class
             // TODO More robust way to define new number of columns
@@ -193,16 +195,18 @@ namespace MR {
           void set_max_factor      (const value_type i) { max_coeff = std::log(i); }
           void set_max_coeff       (const value_type i) { max_coeff = i; }
           void set_max_coeff_step  (const value_type i) { max_coeff_step = i; }
-          void set_min_delta       (const value_type i) { assert (i >= -1.0); min_delta = i; }
-          void set_max_delta       (const value_type i) { assert (i <= 1.0); max_delta = i; }
-          void set_max_delta_step  (const value_type i) { assert (i > 0.0); assert (i <= 2.0); max_delta_step = i; }
-          void set_min_cf_decrease (const value_type i) { min_cf_decrease_percentage = i; }
+          void set_min_deltacoeff      (const value_type i) { assert (i >= -1.0); min_deltacoeff = i; }
+          void set_max_deltacoeff      (const value_type i) { assert (i <= 1.0); max_deltacoeff = i; }
+          void set_max_deltacoeff_step (const value_type i) { assert (i > 0.0); assert (i <= 2.0); max_deltacoeff_step = i; }
+          void set_min_cf_decrease     (const value_type i) { min_cf_decrease_percentage = i; }
+          void set_fixed_mu            (const value_type i) { fixed_mu = i; }
 
           void set_csv_path (const std::string& path);
 
           void set_coefficients (const std::string& path);
           void set_factors (const std::string& path);
-          void set_deltas (const std::string &path);
+          void set_deltacoeffs (const std::string &path);
+          void set_deltafactors (const std::string &path);
           // This should only be called if coefficients have been loaded from the command-line,
           //   and there is to be subsequent optimisation performed based on such;
           //   these limits should otherwise be being enforced by whatever code is responsible for the optimisation
@@ -232,6 +236,8 @@ namespace MR {
 
           value_type calc_cost_function_differential();
 
+          void save_naive_cf();
+
           template <operation_mode_t Mode>
           void estimate_weights();
 
@@ -249,7 +255,7 @@ namespace MR {
 
         private:
           Eigen::Array<value_type, Eigen::Dynamic, 1> coefficients;
-          Eigen::Array<value_type, Eigen::Dynamic, 1> deltas;
+          Eigen::Array<value_type, Eigen::Dynamic, 1> deltacoeffs;
 
           // TODO Preclude specific streamlines from having their contributions modified by the optimiser
           // TODO If there is any multi-threading process that attempts to update this,
@@ -265,11 +271,12 @@ namespace MR {
           value_type reg_scaling;
           size_t min_iters, max_iters;
           value_type min_coeff, max_coeff, max_coeff_step;
-          value_type min_delta, max_delta, max_delta_step;
+          value_type min_deltacoeff, max_deltacoeff, max_deltacoeff_step;
           value_type min_cf_decrease_percentage;
           std::string csv_path;
 
           value_type data_scale_term;
+          value_type naive_cf;
 
 
           friend class LineSearchFunctorBase;
@@ -297,9 +304,11 @@ namespace MR {
           void indicate_progress() { if (App::log_level) fprintf (stderr, "."); }
 
 
-
+        public:
           template <operation_mode_t Mode>
           void update_fixels();
+
+        private:
           template <operation_mode_t Mode>
           value_type calculate_regularisation();
           // TODO Implement entropy calculation for differential mode (based on absolute values)

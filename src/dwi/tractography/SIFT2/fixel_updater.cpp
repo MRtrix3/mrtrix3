@@ -81,7 +81,8 @@ namespace MR {
 
 
       FixelUpdaterDifferential::FixelUpdaterDifferential (TckFactor& tckfactor) :
-          FixelUpdaterBase (tckfactor) { }
+          FixelUpdaterBase (tckfactor),
+          local_sum_deltacoeffs (tckfactor.nfixels(), 0.0) { }
 
 
 
@@ -91,7 +92,8 @@ namespace MR {
         std::lock_guard<std::mutex> lock (master.mutex);
         for (MR::Fixel::index_type i = 0; i != master.nfixels(); ++i) {
           TckFactor::Fixel fixel (master, i);
-          fixel.add_to_delta_TD (local_sum_contributions[i]);
+          fixel.add_to_differential_TD (local_sum_contributions[i]);
+          fixel.add_to_mean_deltacoeff(local_sum_deltacoeffs[i]);
         }
       }
 
@@ -100,13 +102,13 @@ namespace MR {
       bool FixelUpdaterDifferential::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
-          const value_type weighting_factor (WeightingCoeffAndFactor::from_coeff (master.coefficients[track_index]).factor());
-          const value_type delta (master.deltas[track_index]);
+          const DifferentialWCF dWCF(DifferentialWCF::from_coeffs(master.coefficients[track_index], master.deltacoeffs[track_index]));
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
             const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
             const float length = this_contribution[j].get_length();
-            local_sum_contributions[fixel_index] += weighting_factor * length * delta;
+            local_sum_contributions[fixel_index] += dWCF.factor() * length * dWCF.delta_coeff();
+            local_sum_deltacoeffs[fixel_index] += length * dWCF.delta_coeff();
           }
         }
         return true;

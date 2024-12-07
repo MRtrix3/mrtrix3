@@ -50,6 +50,8 @@ namespace MR
             fixels (nfixels(), 4),
             FD_sum (0.0),
             TD_sum (0.0),
+            dynamic_mu (std::numeric_limits<value_type>::signaling_NaN()),
+            fixed_mu (std::numeric_limits<value_type>::signaling_NaN()),
             dummy_dixelmask (have_fixel_masks() ?
                              Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic>() :
                              Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic>::Zero (1, 1))
@@ -65,11 +67,26 @@ namespace MR
           MR::Fixel::check_data_file (fd_image, nfixels());
           if (fd_image.size(1) != 1)
             throw Exception ("Input fibre density fixel data file must be 1D");
+          MR::Fixel::index_type nonfinite_count = 0;
           for (auto l = MR::Loop(0) (fd_image); l; ++l) {
             FixelBase fixel ((*this)[fd_image.index(0)]);
-            fixel.set_fd(fd_image.value());
-            FD_sum += fixel.fd() * fixel.weight();
+            const value_type fd = fd_image.value();
+            fixel.set_fd(fd);
+            if (std::isnan(fd)) {
+              fixel.set_weight(0.0);
+              ++nonfinite_count;
+            } else if (!std::isfinite(fd)) {
+              throw Exception ("Input fibre density fixel data file \"" + fd_path + "\" contains infinite values; "
+                               "check derivation");
+            } else {
+              FD_sum += fd * fixel.weight();
+            }
           }
+          if (nonfinite_count) {
+            WARN(str(nonfinite_count) + " fixels with non-zero model weights but NaN fibre density values; "
+                 "fixels omitted from analysis mask");
+          }
+
         }
 
 
@@ -100,7 +117,8 @@ namespace MR
               Thread::batch (Mapping::Set<Mapping::Fixel>()),
               *this);
 
-          INFO ("Proportionality coefficient after streamline mapping is " + str (mu()));
+          update_dynamic_mu();
+          INFO ("Proportionality coefficient after streamline mapping is " + str (dynamic_mu));
 
           tractogram_path = path;
         }
@@ -120,10 +138,13 @@ namespace MR
             const value_type multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
             for (auto f : value()) {
               FixelBase fixel ((*this)[f]);
-              fixel.set_fd(fixel.fd() * multiplier);
-              FD_sum += fixel.weight() * fixel.fd();
+              if (fixel.weight()) {
+                fixel.set_fd(fixel.fd() * multiplier);
+                FD_sum += fixel.weight() * fixel.fd();
+              }
             }
           }
+          update_dynamic_mu();
         }
 
 

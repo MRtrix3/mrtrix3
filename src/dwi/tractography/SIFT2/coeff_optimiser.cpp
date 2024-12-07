@@ -487,7 +487,7 @@ namespace MR {
       DeltaOptimiserIterative::DeltaOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& delta_stats, value_type& sum_costs) :
           master (tckfactor),
           mu (tckfactor.mu()),
-#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+#ifdef SIFT2_DIFFERENTIAL_OPTIMISER_DEBUG
           total (0),
           failed (0),
           wrong_dir (0),
@@ -506,7 +506,7 @@ namespace MR {
       DeltaOptimiserIterative::~DeltaOptimiserIterative()
       {
         std::lock_guard<std::mutex> lock (master.mutex);
-#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+#ifdef SIFT2_DIFFERENTIAL_OPTIMISER_DEBUG
         fprintf (stderr, "%ld of %ld initial searches failed, %ld in wrong direction, %ld steps truncated, %ld deltas truncated\n", failed, total, wrong_dir, step_truncated, delta_truncated);
 #endif
         step_stats += local_stats_steps;
@@ -531,40 +531,40 @@ namespace MR {
           ++total;
 #endif
 
-          if (dDelta >= master.max_delta_step) {
-            dDelta = master.max_delta_step;
+          if (dDelta >= master.max_deltacoeff_step) {
+            dDelta = master.max_deltacoeff_step;
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
             ++step_truncated;
 #endif
-          } else if (dDelta <= -master.max_delta_step) {
-            dDelta = -master.max_delta_step;
+          } else if (dDelta <= -master.max_deltacoeff_step) {
+            dDelta = -master.max_deltacoeff_step;
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
             ++step_truncated;
 #endif
           }
 
-          const value_type old_delta = master.deltas[track_index];
-          value_type new_delta = old_delta + dDelta;
-          if (new_delta < master.min_delta) {
-            new_delta = master.min_delta;
-            dDelta = master.min_delta - old_delta;
+          const value_type old_deltacoeff = master.deltacoeffs[track_index];
+          value_type new_deltacoeff = old_deltacoeff + dDelta;
+          if (new_deltacoeff < master.min_deltacoeff) {
+            new_deltacoeff = master.min_deltacoeff;
+            dDelta = master.min_deltacoeff - old_deltacoeff;
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
             ++delta_truncated;
 #endif
-          } else if (new_delta > master.max_delta) {
-            //new_delta = do_fixel_exclusion (track_index);
-            new_delta = master.max_delta;
-            dDelta = master.max_delta - old_delta;
+          } else if (new_deltacoeff > master.max_deltacoeff) {
+            //new_deltacoeff = do_fixel_exclusion (track_index);
+            new_deltacoeff = master.max_deltacoeff;
+            dDelta = master.max_deltacoeff - old_deltacoeff;
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
             ++delta_truncated;
 #endif
           }
 
-          master.deltas[track_index] = new_delta;
+          master.deltacoeffs[track_index] = new_deltacoeff;
 
           // Update the stats
           local_stats_steps += dDelta;
-          local_stats_deltas += new_delta;
+          local_stats_deltas += new_deltacoeff;
 
         }
 
@@ -586,7 +586,7 @@ namespace MR {
         do {
           switch (master.reg_fn_diff) {
             case reg_fn_diff_t::ASYMPTOTIC: cost_and_derivatives = line_search_functor.get<reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
-            case reg_fn_diff_t::DELTA:      cost_and_derivatives = line_search_functor.get<reg_fn_diff_t::DELTA>      (dDelta); break;
+            case reg_fn_diff_t::DELTACOEFF: cost_and_derivatives = line_search_functor.get<reg_fn_diff_t::DELTACOEFF> (dDelta); break;
           }
 
           // Newton update
@@ -602,16 +602,16 @@ namespace MR {
           if (!std::isfinite (change))
             change = 0.0;
 
-          if (change > master.max_delta_step)
-            change = master.max_delta_step;
-          else if (change < -master.max_delta_step)
-            change = -master.max_delta_step;
+          if (change > master.max_deltacoeff_step)
+            change = master.max_deltacoeff_step;
+          else if (change < -master.max_deltacoeff_step)
+            change = -master.max_deltacoeff_step;
 
-          if (dDelta >= master.max_delta_step && change > 0.0) {
-            dDelta = master.max_delta_step;
+          if (dDelta >= master.max_deltacoeff_step && change > 0.0) {
+            dDelta = master.max_deltacoeff_step;
             change = 0.0;
-          } else if (dDelta <= -master.max_delta_step && change < 0.0) {
-            dDelta = -master.max_delta_step;
+          } else if (dDelta <= -master.max_deltacoeff_step && change < 0.0) {
+            dDelta = -master.max_deltacoeff_step;
             change = 0.0;
           } else {
             dDelta += change;
@@ -619,13 +619,13 @@ namespace MR {
 
         } while ((++iter < 100) && (abs (change) > 0.001));
 
-#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+#ifdef SIFT2_DIFFERENTIAL_OPTIMISER_DEBUG
         iter_count += iter;
 #endif
 
         switch (master.reg_fn_diff) {
           case reg_fn_diff_t::ASYMPTOTIC: local_sum_costs += line_search_functor.operator()<reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
-          case reg_fn_diff_t::DELTA:      local_sum_costs += line_search_functor.operator()<reg_fn_diff_t::DELTA>      (dDelta); break;
+          case reg_fn_diff_t::DELTACOEFF: local_sum_costs += line_search_functor.operator()<reg_fn_diff_t::DELTACOEFF> (dDelta); break;
         }
 
         return dDelta;

@@ -89,8 +89,7 @@ namespace MR {
 
       LineSearchFunctorDifferential::LineSearchFunctorDifferential (const SIFT::track_t index, TckFactor& tckfactor) :
           LineSearchFunctorBase (index, tckfactor),
-          weighting_factor (WeightingCoeffAndFactor::from_coeff (tckfactor.coefficients[index]).factor()),
-          delta (tckfactor.deltas[index])
+          base_dWCF(DifferentialWCF::from_coeffs(tckfactor.coefficients[index], tckfactor.deltacoeffs[index]))
       {
         reg_multiplier_streamline = tckfactor.reg_multiplier_diff;
         reg_multiplier_fixel = tckfactor.reg_multiplier_diff / tckfactor.contributions[track_index]->get_total_contribution();
@@ -98,7 +97,7 @@ namespace MR {
         for (size_t i = 0; i != track_contribution.dim(); ++i) {
           const TckFactor::Fixel fixel (tckfactor, track_contribution[i].get_fixel_index());
           if (!fixel.excluded())
-            fixels.push_back (Fixel (track_contribution[i], fixel, weighting_factor, delta));
+            fixels.push_back (Fixel (track_contribution[i], fixel, base_dWCF));
         }
       }
 
@@ -107,14 +106,13 @@ namespace MR {
 
 
       LineSearchFunctorDifferential::Fixel::Fixel (const SIFT::Track_fixel_contribution& in,
-                                            const TckFactor::Fixel fixel,
-                                            const value_type weighting_factor,
-                                            const value_type delta) :
+                                                   const TckFactor::Fixel fixel,
+                                                   const DifferentialWCF &dWCF) :
           BaseType (in, fixel),
-          delta_TD (fixel.delta_TD()), // Note: Contribution from this streamline _not_ subtracted here
-          ddeltaTD_dddelta (fixel.orig_TD() * weighting_factor),
-          mean_delta (fixel.mean_delta()),
-          delta_FD (fixel.delta_FD()) { }
+          differential_TD (fixel.differential_TD()), // Note: Contribution from this streamline intentially _not_ subtracted here
+          ddiffTD_dddelta (fixel.orig_TD() * dWCF.factor()),
+          mean_deltacoeff (fixel.mean_deltacoeff()),
+          differential_FD (fixel.differential_FD()) { }
 
 
 

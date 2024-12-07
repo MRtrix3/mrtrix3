@@ -69,6 +69,34 @@ namespace MR {
 
 
 
+      class DifferentialWCF : public WeightingCoeffAndFactor {
+        public:
+          static DifferentialWCF from_deltacoeff(const WeightingCoeffAndFactor &abs, const value_type delta_coeff) {
+            return DifferentialWCF(abs, delta_coeff, coeff2factor(abs, delta_coeff));
+          }
+          static DifferentialWCF from_coeffs(const value_type abs_coeff, const value_type delta_coeff) {
+            const WeightingCoeffAndFactor abs (WeightingCoeffAndFactor::from_coeff(abs_coeff));
+            return DifferentialWCF(abs, delta_coeff, coeff2factor(abs, delta_coeff));
+          }
+
+          value_type delta_coeff() const { return _delta_coeff; }
+          value_type delta_factor() const { return _delta_factor; }
+          WeightingCoeffAndFactor absolute() const { return WeightingCoeffAndFactor(*this); }
+        private:
+          const value_type _delta_coeff, _delta_factor;
+          DifferentialWCF (const WeightingCoeffAndFactor &abs, const value_type delta_coeff, const value_type delta_factor) :
+              WeightingCoeffAndFactor(abs),
+              _delta_coeff(delta_coeff),
+              _delta_factor(delta_factor) { }
+          static value_type coeff2factor(const WeightingCoeffAndFactor &abs, const value_type delta_coeff) {
+            return (delta_coeff * abs.factor());
+          }
+
+      };
+
+
+
+
 
 
       }
