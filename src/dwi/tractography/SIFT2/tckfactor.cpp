@@ -67,14 +67,6 @@ namespace MR {
           Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
         }
         // // Scale the fixel mean coefficient terms (each streamline in the fixel is weighted by its length)
-        // for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
-        //   Fixel fixel (*this, i);
-        //   switch (Mode) {
-        //     case operation_mode_t::ABSOLUTE: fixel.normalise_mean_coeff(); break;
-        //     case operation_mode_t::DIFFERENTIAL: fixel.normalise_mean_deltacoeff(); break;
-        //   }
-        // }
-        // No normalisation of a mean parameter required for differential mode
         if (Mode == operation_mode_t::ABSOLUTE) {
           for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
             Fixel fixel (*this, i);
@@ -110,13 +102,13 @@ namespace MR {
           }
           return result;
         }
-        template <reg_fn_diff_t RegFn>
+        template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
         value_type calc_reg_differential (TckFactor& master)
         {
           value_type result = value_type(0.0);
           {
             SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, master.num_tracks());
-            RegularisationCalculatorDifferential<RegFn> worker (master, result);
+            RegularisationCalculatorDifferential<RegBasis, RegFn> worker (master, result);
             Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
           }
           return result;
@@ -152,9 +144,21 @@ namespace MR {
       value_type TckFactor::calculate_regularisation<operation_mode_t::DIFFERENTIAL>()
       {
         value_type unscaled = value_type(0.0);
-        switch (reg_fn_diff) {
-          case reg_fn_diff_t::ASYMPTOTIC: unscaled = calc_reg_differential<reg_fn_diff_t::ASYMPTOTIC> (*this); break;
-          case reg_fn_diff_t::DELTACOEFF: unscaled = calc_reg_differential<reg_fn_diff_t::DELTACOEFF> (*this); break;
+        switch (reg_basis_diff) {
+          case reg_basis_t::STREAMLINE: {
+            switch (reg_fn_diff) {
+              case reg_fn_diff_t::ASYMPTOTIC: unscaled = calc_reg_differential<reg_basis_t::STREAMLINE, reg_fn_diff_t::ASYMPTOTIC> (*this); break;
+              case reg_fn_diff_t::DELTACOEFF: unscaled = calc_reg_differential<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF> (*this); break;
+            }
+            break;
+          }
+          case reg_basis_t::FIXEL: {
+            switch (reg_fn_diff) {
+              case reg_fn_diff_t::ASYMPTOTIC: unscaled = calc_reg_differential<reg_basis_t::FIXEL, reg_fn_diff_t::ASYMPTOTIC> (*this); break;
+              case reg_fn_diff_t::DELTACOEFF: unscaled = calc_reg_differential<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF> (*this); break;
+            }
+            break;
+          }
         }
         assert (std::isfinite(unscaled));
         assert (std::isfinite(reg_multiplier_diff));

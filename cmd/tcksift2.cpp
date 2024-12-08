@@ -382,9 +382,9 @@ void run ()
 
     if (get_options("in_deltacoeffs").empty() && get_options("in_deltafactors").empty()) {
 
-      //opt = get_options ("reg_basis_diff");
-      //if (opt.size())
-      //  tckfactor.set_reg_basis_diff (reg_basis_t (int(opt[0][0])));
+      opt = get_options ("reg_basis_diff");
+      if (opt.size())
+        tckfactor.set_reg_basis_diff (reg_basis_t (int(opt[0][0])));
       opt = get_options("reg_fn_diff");
       if (opt.size())
         tckfactor.set_reg_fn_diff(reg_fn_diff_t(int(opt[0][0])));

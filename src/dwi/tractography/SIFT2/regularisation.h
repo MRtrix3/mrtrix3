@@ -238,49 +238,12 @@ namespace MR
 
 
 
-      FORCE_INLINE void dxregcoeff_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier)
-      {
-        result.cost         += multiplier * Math::pow2 (WCF.coeff());
-        result.first_deriv  += multiplier * value_type(2.0) * WCF.coeff();
-        result.second_deriv += multiplier * value_type(2.0);
-      }
-      FORCE_INLINE void dxregcoeff_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref)
-      {
-        result.cost         += multiplier * Math::pow2 (WCF.coeff() - ref.coeff());
-        result.first_deriv  += multiplier * value_type(2) * (WCF.coeff() - ref.coeff());
-        result.second_deriv += multiplier * value_type(2);
-      }
-
-      FORCE_INLINE void dxregfactor_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier)
-      {
-        const value_type double_factor = value_type(2) * WCF.factor();
-        result.cost         += multiplier * Math::pow2 (WCF.factor() - value_type(1.0));
-        result.first_deriv  += multiplier * double_factor * (WCF.factor() - value_type(1.0));
-        result.second_deriv += multiplier * double_factor * (double_factor - value_type(1.0));
-        result.third_deriv  += multiplier * double_factor * ((value_type(4) * WCF.factor()) - value_type(1.0));
-      }
-      FORCE_INLINE void dxregfactor_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref)
-      {
-        result.cost         += multiplier * Math::pow2 (WCF.factor() - ref.factor());
-        result.first_deriv  += multiplier * value_type(2) * WCF.factor() * (WCF.factor() - ref.factor());
-        result.second_deriv += multiplier * value_type(2) * WCF.factor() * ((value_type(2)*WCF.factor()) - ref.factor());
-        result.third_deriv  += multiplier * value_type(2) * WCF.factor() * ((value_type(4)*WCF.factor()) - ref.factor());
-      }
-
-      FORCE_INLINE void dxreggamma_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier)
-      {
-        if (WCF.coeff() <= value_type(0.0))
-          dxregcoeff_dcoeffx (result, WCF, multiplier);
-        else
-          dxregfactor_dcoeffx (result, WCF, multiplier);
-      }
-      FORCE_INLINE void dxreggamma_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref)
-      {
-        if (WCF.coeff() <= ref.coeff())
-          dxregcoeff_dcoeffx (result, WCF, multiplier, ref);
-        else
-          dxregfactor_dcoeffx (result, WCF, multiplier, ref);
-      }
+      void dxregcoeff_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier);
+      void dxregcoeff_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref);
+      void dxregfactor_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier);
+      void dxregfactor_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref);
+      void dxreggamma_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier);
+      void dxreggamma_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref);
 
 
 
@@ -302,75 +265,139 @@ namespace MR
 
 
       // Regularisation functions specific to differential mode
+      namespace {
+        value_type transformed_deltacoeff(const value_type deltacoeff, const value_type ref) {
+          return deltacoeff <= ref
+                 ? ((value_type(1) + deltacoeff) / (value_type(1) + ref)) - 1
+                 : ((value_type(1) + deltacoeff) / (value_type(1) - ref)) + 1;
+        }
+      }
       FORCE_INLINE value_type reg_asymptotic (const value_type deltacoeff)
       {
         return (value_type(-1) - (value_type(-1) /                                                 //
                                   ((deltacoeff - value_type(1)) * (deltacoeff + value_type(1))))); //
       }
+      FORCE_INLINE value_type reg_asymptotic (const value_type deltacoeff, const value_type ref)
+      {
+        return reg_asymptotic(transformed_deltacoeff(deltacoeff, ref));
+      }
       FORCE_INLINE value_type reg_asymptotic (const DifferentialWCF &dWCF)
       {
         return reg_asymptotic(dWCF.delta_coeff());
       }
+      FORCE_INLINE value_type reg_asymptotic (const DifferentialWCF &dWCF, const value_type ref)
+      {
+        return reg_asymptotic(dWCF.delta_coeff(), ref);
+      }
+      FORCE_INLINE value_type dregasymptotic_ddeltacoeff (const value_type deltacoeff)
+      {
+        return (value_type(2) * deltacoeff /                                                        //
+                (Math::pow2(deltacoeff - value_type(1)) * Math::pow2(deltacoeff + value_type(1)))); //
+      }
       FORCE_INLINE value_type dregasymptotic_ddeltacoeff (const DifferentialWCF &dWCF)
       {
-        return (value_type(2) * dWCF.delta_coeff() /                                                                //
-                (Math::pow2(dWCF.delta_coeff() - value_type(1)) * Math::pow2(dWCF.delta_coeff() + value_type(1)))); //
+        return dregasymptotic_ddeltacoeff(dWCF.delta_coeff());
+      }
+      FORCE_INLINE value_type dregasymptotic_ddeltacoeff (const value_type deltacoeff, const value_type ref)
+      {
+        const value_type X = transformed_deltacoeff(deltacoeff, ref);
+        const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
+                                                           ? value_type(1) + ref   //
+                                                           : value_type(1) - ref); //
+        return dregasymptotic_ddeltacoeff(X) * dX_ddeltacoeff;
+      }
+      FORCE_INLINE value_type dregasymptotic_ddeltacoeff (const DifferentialWCF &dWCF, const value_type ref)
+      {
+        return dregasymptotic_ddeltacoeff (dWCF.delta_coeff(), ref);
+      }
+      FORCE_INLINE value_type d2regasymptotic_ddeltacoeff2 (const value_type deltacoeff)
+      {
+        return (value_type(-2) * ((value_type(3) * Math::pow2(deltacoeff)) + value_type(1)) /       //
+                (Math::pow3(deltacoeff - value_type(1)) * Math::pow3(deltacoeff + value_type(1)))); //
       }
       FORCE_INLINE value_type d2regasymptotic_ddeltacoeff2 (const DifferentialWCF &dWCF)
       {
-        return (value_type(-2) * ((value_type(3) * Math::pow2(dWCF.delta_coeff())) + value_type(1)) /               //
-                (Math::pow3(dWCF.delta_coeff() - value_type(1)) * Math::pow3(dWCF.delta_coeff() + value_type(1)))); //
+        return d2regasymptotic_ddeltacoeff2(dWCF.delta_coeff());
+      }
+      FORCE_INLINE value_type d2regasymptotic_ddeltacoeff2 (const value_type deltacoeff, const value_type ref)
+      {
+        const value_type X = transformed_deltacoeff(deltacoeff, ref);
+        const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
+                                                           ? value_type(1) + ref   //
+                                                           : value_type(1) - ref); //
+        return d2regasymptotic_ddeltacoeff2(X) * Math::pow2(dX_ddeltacoeff);
+      }
+      FORCE_INLINE value_type d2regasymptotic_ddeltacoeff2 (const DifferentialWCF &dWCF, const value_type ref)
+      {
+        return d2regasymptotic_ddeltacoeff2(dWCF.delta_coeff(), ref);
+      }
+      FORCE_INLINE value_type d3regasymptotic_ddeltacoeff3 (const value_type deltacoeff)
+      {
+        return (value_type(24) * deltacoeff * (Math::pow2(deltacoeff) + value_type(1)) /            //
+                (Math::pow4(deltacoeff - value_type(1)) * Math::pow4(deltacoeff + value_type(1)))); //
       }
       FORCE_INLINE value_type d3regasymptotic_ddeltacoeff3 (const DifferentialWCF &dWCF)
       {
-        return (value_type(24) * dWCF.delta_coeff() * (Math::pow2(dWCF.delta_coeff()) + value_type(1)) /            //
-                (Math::pow4(dWCF.delta_coeff() - value_type(1)) * Math::pow4(dWCF.delta_coeff() + value_type(1)))); //
+        return d3regasymptotic_ddeltacoeff3(dWCF.delta_coeff());
+      }
+      FORCE_INLINE value_type d3regasymptotic_ddeltacoeff3 (const value_type deltacoeff, const value_type ref)
+      {
+        const value_type X = transformed_deltacoeff(deltacoeff, ref);
+        const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
+                                                           ? value_type(1) + ref   //
+                                                           : value_type(1) - ref); //
+        return d3regasymptotic_ddeltacoeff3(X) * Math::pow3(dX_ddeltacoeff);
+      }
+      FORCE_INLINE value_type d3regasymptotic_ddeltacoeff3 (const DifferentialWCF &dWCF, const value_type ref)
+      {
+        return d3regasymptotic_ddeltacoeff3(dWCF.delta_coeff(), ref);
       }
 
       FORCE_INLINE value_type reg_deltacoeff (const value_type deltacoeff) {
         return Math::pow2(deltacoeff);
       }
+      FORCE_INLINE value_type reg_deltacoeff (const value_type deltacoeff, const value_type ref) {
+        return Math::pow2((deltacoeff - ref) / (deltacoeff <= ref        //
+                                                ? value_type(1) + ref    //
+                                                : value_type(1) - ref)); //
+      }
       FORCE_INLINE value_type reg_deltacoeff (const DifferentialWCF &dWCF) {
         return reg_deltacoeff(dWCF.delta_coeff());
+      }
+      FORCE_INLINE value_type reg_deltacoeff (const DifferentialWCF &dWCF, const value_type ref) {
+        return reg_deltacoeff(dWCF.delta_coeff(), ref);
       }
       FORCE_INLINE value_type dregdeltacoeff_ddeltacoeff (const DifferentialWCF &dWCF) {
         return value_type(2) * dWCF.delta_coeff();
       }
+      FORCE_INLINE value_type dregdeltacoeff_ddeltacoeff (const DifferentialWCF &dWCF, const value_type ref) {
+        return value_type(2) * (dWCF.delta_coeff() - ref) / Math::pow2(dWCF.delta_coeff() <= ref //
+                                                                       ? value_type(1) + ref     //
+                                                                       : value_type(1) - ref);   //
+      }
       FORCE_INLINE value_type d2regadeltacoeff_ddeltacoeff2 (const DifferentialWCF &dWCF) {
         return value_type(2);
       }
+      FORCE_INLINE value_type d2regadeltacoeff_ddeltacoeff2 (const DifferentialWCF &dWCF, const value_type ref) {
+        return value_type(2) / Math::pow2(dWCF.delta_coeff() <= ref
+                                           ? value_type(1) + ref
+                                           : value_type(1) - ref);
+      }
       FORCE_INLINE value_type d3regdeltacoeff_ddeltacoeff3 (const DifferentialWCF &dWCF) {
+        return value_type(0);
+      }
+      FORCE_INLINE value_type d3regdeltacoeff_ddeltacoeff3 (const DifferentialWCF &dWCF, const value_type ref) {
         return value_type(0);
       }
 
 
 
-      FORCE_INLINE void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier)
-      {
-        const value_type dminus1 = dWCF.delta_coeff() - value_type(1);
-        const value_type dplus1 = dWCF.delta_coeff() + value_type(1);
-        const value_type dminus1_pow2 = Math::pow2(dminus1);
-        const value_type dplus1_pow2 = Math::pow2(dplus1);
-        const value_type dminus1_pow3 = dminus1_pow2 * dminus1;
-        const value_type dplus1_pow3 = dplus1_pow2 * dplus1;
-        const value_type dminus1_pow4 = dminus1_pow3 * dminus1;
-        const value_type dplus1_pow4 = dplus1_pow3 * dplus1;
-        result.cost         += multiplier * (value_type(-1) - (value_type(1) / //
-                                             (dminus1 * dplus1)));             //
-        result.first_deriv  += multiplier * (value_type(2) * dWCF.delta_coeff() / //
-                                             (dminus1_pow2 * dplus1_pow2));       //
-        result.second_deriv += multiplier * (value_type(-2) * ((value_type(3) * Math::pow2(dWCF.delta_coeff())) + value_type(1)) / //
-                                             (dminus1_pow3 * dplus1_pow3));                                                        //
-        result.third_deriv  += multiplier * (value_type(24) * dWCF.delta_coeff() * (Math::pow2(dWCF.delta_coeff()) + value_type(1)) / //
-                                             (dminus1_pow4 * dplus1_pow4));                                                           //
-      }
-
-      FORCE_INLINE void dxregdeltacoeff_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier)
-      {
-        result.cost += multiplier * Math::pow2(dWCF.delta_coeff());
-        result.first_deriv += multiplier * value_type(2) * dWCF.delta_coeff();
-        result.second_deriv += multiplier * value_type(2);
-      }
+      void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const value_type deltacoeff, const value_type multiplier);
+      void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier);
+      void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const value_type deltacoeff, const value_type multiplier, const value_type ref);
+      void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref);
+      void dxregdeltacoeff_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier);
+      void dxregdeltacoeff_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref);
 
 
 
@@ -384,12 +411,26 @@ namespace MR
       template <> FORCE_INLINE value_type reg<reg_fn_diff_t::ASYMPTOTIC> (const DifferentialWCF &dWCF) { return reg_asymptotic (dWCF); }
       template <> FORCE_INLINE value_type reg<reg_fn_diff_t::DELTACOEFF> (const DifferentialWCF &dWCF) { return reg_deltacoeff (dWCF); }
 
+      template <reg_fn_diff_t T>
+      value_type reg (const value_type deltacoeff, const value_type ref);
+      template <> FORCE_INLINE value_type reg<reg_fn_diff_t::ASYMPTOTIC> (const value_type deltacoeff, const value_type ref) { return reg_asymptotic (deltacoeff, ref); }
+      template <> FORCE_INLINE value_type reg<reg_fn_diff_t::DELTACOEFF> (const value_type deltacoeff, const value_type ref) { return reg_deltacoeff (deltacoeff, ref); }
+
+      template <reg_fn_diff_t T>
+      value_type reg (const DifferentialWCF &dWCF, const value_type ref);
+      template <> FORCE_INLINE value_type reg<reg_fn_diff_t::ASYMPTOTIC> (const DifferentialWCF &dWCF, const value_type ref) { return reg_asymptotic (dWCF, ref); }
+      template <> FORCE_INLINE value_type reg<reg_fn_diff_t::DELTACOEFF> (const DifferentialWCF &dWCF, const value_type ref) { return reg_deltacoeff (dWCF, ref); }
+
 
       template <reg_fn_diff_t T>
       void dxreg_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier);
       template <> FORCE_INLINE void dxreg_ddeltacoeffx<reg_fn_diff_t::ASYMPTOTIC> (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier) { dxregasymptotic_ddeltacoeffx (result, dWCF, multiplier); }
       template <> FORCE_INLINE void dxreg_ddeltacoeffx<reg_fn_diff_t::DELTACOEFF> (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier) { dxregdeltacoeff_ddeltacoeffx (result, dWCF, multiplier); }
 
+      template <reg_fn_diff_t T>
+      void dxreg_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref);
+      template <> FORCE_INLINE void dxreg_ddeltacoeffx<reg_fn_diff_t::ASYMPTOTIC> (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref) { dxregasymptotic_ddeltacoeffx (result, dWCF, multiplier, ref); }
+      template <> FORCE_INLINE void dxreg_ddeltacoeffx<reg_fn_diff_t::DELTACOEFF> (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref) { dxregdeltacoeff_ddeltacoeffx (result, dWCF, multiplier, ref); }
 
 
 

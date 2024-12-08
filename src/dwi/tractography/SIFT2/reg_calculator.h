@@ -74,7 +74,7 @@ namespace MR {
 
 
 
-      template <reg_fn_diff_t RegFn>
+      template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
       class RegularisationCalculatorDifferential : public RegularisationCalculatorBase
       {
         public:

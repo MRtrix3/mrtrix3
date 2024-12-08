@@ -126,8 +126,10 @@ namespace MR {
 
         if (RegBasis == reg_basis_t::STREAMLINE)
           SIFT2::dxreg_dcoeffx<RegFn> (reg_result, WCF, reg_multiplier_streamline);
-        else
+        else if (RegBasis == reg_basis_t::FIXEL)
           reg_result *= reg_multiplier_fixel;
+        else
+          assert (false);
 
         return CostAndDerivatives(data_result, reg_result);
       }
@@ -170,9 +172,9 @@ namespace MR {
           LineSearchFunctorDifferential (const SIFT::track_t, TckFactor&);
 
           // TODO Re-establish regularisation by fixel rather than by streamline
-          template <reg_fn_diff_t RegFn>
+          template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
           CostAndDerivatives get (const value_type) const;
-          template <reg_fn_diff_t RegFN>
+          template <reg_basis_t RegBasis, reg_fn_diff_t RegFN>
           value_type operator() (const value_type) const;
 
         protected:
@@ -196,33 +198,35 @@ namespace MR {
 
 
 
-      template <reg_fn_diff_t RegFn>
+      template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
       CostAndDerivatives LineSearchFunctorDifferential::get (const value_type ddeltacoeff) const
       {
         const DifferentialWCF dWCF (DifferentialWCF::from_deltacoeff(base_dWCF.absolute(), base_dWCF.delta_coeff() + ddeltacoeff));
-        CostAndDerivatives data_result;
+        CostAndDerivatives data_result, reg_result;
 
         for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
 
           // Get the data cost terms into here directly
           // Note different expression to absolute version
-          // cost = frac * weight * diff^2
-          // diff = (u * (dTD + (ddeltaTD_ddelta*ddelta)) - dFD
           const value_type diff = (mu * (i->differential_TD + (i->ddiffTD_dddelta*ddeltacoeff))) - i->differential_FD;
 
           // TODO Should fractional attribution of the fixel cost function be modulated by absolute streamline weighting factor?
           data_result.cost += i->cost_frac * i->weight * Math::pow2 (diff);
-
           data_result.first_deriv += 2.0 * i->cost_frac * i->weight * mu * i->ddiffTD_dddelta * diff;
-
           data_result.second_deriv += 2.0 * i->cost_frac * i->weight * Math::pow2(mu) * Math::pow2(i->ddiffTD_dddelta);
-
           // data_result.third_deriv = 0.0
+
+          if (RegBasis == reg_basis_t::FIXEL)
+            SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, i->SL_eff, i->mean_deltacoeff);
 
         }
 
-        CostAndDerivatives reg_result;
-        SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, reg_multiplier_streamline);
+        if (RegBasis == reg_basis_t::STREAMLINE)
+          SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, reg_multiplier_streamline);
+        else if (RegBasis == reg_basis_t::FIXEL)
+          reg_result *= reg_multiplier_fixel;
+        else
+          assert (false);
 
         return CostAndDerivatives(data_result, reg_result);
       }
@@ -231,14 +235,21 @@ namespace MR {
 
 
 
-      template <reg_fn_diff_t RegFn>
+      template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
       LineSearchFunctorDifferential::value_type LineSearchFunctorDifferential::operator() (const value_type ddeltacoeff) const
       {
         const value_type deltaplusddelta = base_dWCF.delta_coeff() + ddeltacoeff;
         value_type cf_data = value_type(0.0);
-        for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
+        value_type cf_reg (RegBasis == reg_basis_t::STREAMLINE ?
+                           reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta) :
+                           value_type(0.0));
+        for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
           cf_data += i->cost_frac * i->weight * Math::pow2 ((mu * (i->differential_TD + i->ddiffTD_dddelta*ddeltacoeff)) - i->differential_FD);
-        const value_type cf_reg = reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta);
+          if (RegBasis == reg_basis_t::FIXEL)
+            cf_reg += i->SL_eff * SIFT2::reg<RegFn> (deltaplusddelta, i->mean_deltacoeff);
+        }
+        if (RegBasis == reg_basis_t::FIXEL)
+          cf_reg *= reg_multiplier_fixel;
         return (cf_data + cf_reg);
       }
 

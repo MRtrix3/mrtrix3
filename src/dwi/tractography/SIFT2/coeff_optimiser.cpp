@@ -584,9 +584,19 @@ namespace MR {
         size_t iter = 0;
         CostAndDerivatives cost_and_derivatives;
         do {
-          switch (master.reg_fn_diff) {
-            case reg_fn_diff_t::ASYMPTOTIC: cost_and_derivatives = line_search_functor.get<reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
-            case reg_fn_diff_t::DELTACOEFF: cost_and_derivatives = line_search_functor.get<reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+          switch (master.reg_basis_diff) {
+            case reg_basis_t::STREAMLINE:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::ASYMPTOTIC: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
+                case reg_fn_diff_t::DELTACOEFF: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+              }
+              break;
+            case reg_basis_t::FIXEL:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::ASYMPTOTIC: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
+                case reg_fn_diff_t::DELTACOEFF: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+              }
+              break;
           }
 
           // Newton update
@@ -623,9 +633,20 @@ namespace MR {
         iter_count += iter;
 #endif
 
-        switch (master.reg_fn_diff) {
-          case reg_fn_diff_t::ASYMPTOTIC: local_sum_costs += line_search_functor.operator()<reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
-          case reg_fn_diff_t::DELTACOEFF: local_sum_costs += line_search_functor.operator()<reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+        switch (master.reg_basis_diff) {
+          case reg_basis_t::STREAMLINE:
+            switch (master.reg_fn_diff) {
+              case reg_fn_diff_t::ASYMPTOTIC: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
+              case reg_fn_diff_t::DELTACOEFF: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+            }
+            break;
+          case reg_basis_t::FIXEL:
+            switch (master.reg_fn_diff) {
+              case reg_fn_diff_t::ASYMPTOTIC: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
+              case reg_fn_diff_t::DELTACOEFF: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+            }
+            break;
+
         }
 
         return dDelta;
