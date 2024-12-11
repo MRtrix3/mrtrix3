@@ -54,9 +54,14 @@ namespace MR
         Tractography::Properties properties;
         Tractography::Reader<> file (path, properties);
 
-        const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+        const auto count_it = properties.find("count");
+        if (count_it == properties.end())
+          throw Exception ("Cannot map streamlines: "
+                           "header of track file " + Path::basename(path) + " does not report streamline count");
+        const track_t count = to<track_t>(count_it->second);
         if (!count)
-          throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
+          throw Exception ("Cannot map streamlines: "
+                           "header of track file " + Path::basename(path) + " reports zero streamlines");
 
         contributions.assign (count, nullptr);
         TD_sum = 0.0;
