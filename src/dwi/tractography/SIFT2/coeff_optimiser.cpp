@@ -578,6 +578,7 @@ namespace MR {
       value_type DeltaOptimiserIterative::operator() (const SIFT::track_t track_index) const
       {
         LineSearchFunctorDifferential line_search_functor (track_index, master);
+        const value_type delta = master.deltacoeffs[track_index];
 
         value_type dDelta = 0.0;
         value_type change = 0.0;
@@ -623,11 +624,34 @@ namespace MR {
           } else if (dDelta <= -master.max_deltacoeff_step && change < 0.0) {
             dDelta = -master.max_deltacoeff_step;
             change = 0.0;
-          } else {
+          // Additional conditions for differential mode
+          // For the asymptotic regulariser in particular,
+          //   delta + dDelta + change cannot be permitted outside of range (-1, +1);
+          // for the deltacoeff optimiser,
+          //   delta + dDelta + change cannot be permitted outside of range [-1, +1]
+          // TODO This is still in danger of having rounding errors,
+          //   as dDelta is passed from this functor up to the calling function
+          //   before it is added to deltacoeffs.
+          //   It may be better to have this functor return both the change and the new value?
+          } else if (master.reg_fn_diff == reg_fn_diff_t::ASYMPTOTIC) {
+            if (delta + dDelta + change >= 1.0)
+              change = 0.5 * (1.0 - (delta + dDelta));
+            else if (delta + dDelta + change <= -1.0)
+              change = -0.5 * (1.0 + (delta + dDelta));
             dDelta += change;
+          } else {
+            if (delta + dDelta + change >= 1.0) {
+              change = 1.0 - (delta + dDelta);
+              dDelta = 1.0 - delta;
+            } else if (delta + dDelta + change <= -1.0) {
+              change = -1.0 - (delta + dDelta);
+              dDelta = -1.0 - delta;
+            } else {
+              dDelta += change;
+            }
           }
 
-        } while ((++iter < 100) && (abs (change) > 0.001));
+        } while ((++iter < 100) && (abs (change) > 1e-4));
 
 #ifdef SIFT2_DIFFERENTIAL_OPTIMISER_DEBUG
         iter_count += iter;
