@@ -47,7 +47,7 @@ namespace MR
         ModelBase::ModelBase (const std::string& fd_path) :
             MR::Fixel::Dataset (Path::dirname (fd_path)),
             // TODO More robust way to define initial number of columns
-            fixels (nfixels(), 4),
+            fixels (decltype(fixels)::Zero(nfixels(), 4)),
             FD_sum (0.0),
             TD_sum (0.0),
             dynamic_mu (std::numeric_limits<value_type>::signaling_NaN()),
