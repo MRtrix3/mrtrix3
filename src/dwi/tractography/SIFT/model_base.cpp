@@ -47,7 +47,11 @@ namespace MR
         ModelBase::ModelBase (const std::string& fd_path) :
             MR::Fixel::Dataset (Path::dirname (fd_path)),
             // TODO More robust way to define initial number of columns
-            fixels (decltype(fixels)::Zero(nfixels(), 4)),
+#ifndef NDEBUG
+            fixels (nfixels(), 4),
+#else
+            fixels (decltype(fixels)::Constant(nfixels(), 4, std::numeric_limits<value_type>::signaling_NaN())),
+#endif
             FD_sum (0.0),
             TD_sum (0.0),
             dynamic_mu (std::numeric_limits<value_type>::signaling_NaN()),
@@ -102,6 +106,9 @@ namespace MR
           const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
           if (!count)
             throw Exception ("Cannot map streamlines: track file \"" + Path::basename(path) + "\" is empty");
+
+          fixels.col(td_column).setZero();
+          fixels.col(track_count_column).setZero();
 
           Mapping::TrackLoader loader (file, count);
           // The base class is used _both_:

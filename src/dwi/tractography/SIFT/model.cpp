@@ -63,6 +63,8 @@ namespace MR
           throw Exception ("Cannot map streamlines: "
                            "header of track file " + Path::basename(path) + " reports zero streamlines");
 
+        fixels.col(td_column).setZero();
+        fixels.col(track_count_column).setZero();
         contributions.assign (count, nullptr);
         TD_sum = 0.0;
 

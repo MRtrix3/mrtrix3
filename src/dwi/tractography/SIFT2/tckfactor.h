@@ -173,7 +173,12 @@ namespace MR {
           {
             // Expand data matrix to include additional columns necessary for new fixel class
             // TODO More robust way to define new number of columns
-            fixels.conservativeResizeLike(data_matrix_type::Zero(nfixels(), 7));
+#ifndef NDEBUG
+            fixels.conservativeResize(nfixels(), 7);
+#else
+            fixels.conservativeResizeLike(data_matrix_type::Constant(nfixels(), 7, std::numeric_limits<value_type>::signaling_NaN()));
+#endif
+            fixels.col(exclude_column).setZero();
           }
 
           TckFactor (const TckFactor& that) = delete;
