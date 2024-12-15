@@ -274,7 +274,7 @@ namespace MR
       }
       FORCE_INLINE value_type reg_asymptotic (const value_type deltacoeff)
       {
-        return (value_type(-1) - (value_type(-1) /                                                 //
+        return (value_type(-1) - (value_type(1) /                                                  //
                                   ((deltacoeff - value_type(1)) * (deltacoeff + value_type(1))))); //
       }
       FORCE_INLINE value_type reg_asymptotic (const value_type deltacoeff, const value_type ref)
