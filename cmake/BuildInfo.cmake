@@ -1,7 +1,8 @@
 function(mrtrix_print_build_instructions)
     set(message_list "\n")
+    file(RELATIVE_PATH relative_build_path "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
     list(APPEND message_list "MRtrix3 has been successfully configured for compilation.")
-    list(APPEND message_list "To build MRtrix3, run 'cmake --build .' from the build directory.")
+    list(APPEND message_list "To build it, run 'cmake --build ${relative_build_path}'")
 
     list(APPEND message_list "To reconfigure the project, run CMake again with the same arguments.")
     list(APPEND message_list "If reconfiguration fails, remove the CMakeCache.txt file in the build "
