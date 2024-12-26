@@ -182,13 +182,7 @@ jobs:
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
 
     - name: install build dependencies
-      run: sudo apt-get install python2 clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
-
-    - name: check configure with Python 2
-      run: python2 ./configure || { cat configure.log; false; }
-
-    - name: check build with Python 2
-      run: python2 ./build -dryrun || { cat build.log; false; }
+      run: sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
 
     - name: check configure with Python 3
       run: python3 ./configure || { cat configure.log; false; }
