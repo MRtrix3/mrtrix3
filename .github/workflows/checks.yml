@@ -27,7 +27,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev python3-distutils
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
 
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }

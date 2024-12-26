@@ -16,7 +16,10 @@
 # note: deal with these warnings properly when we drop support for Python 2:
 # pylint: disable=consider-using-f-string
 
-from distutils.spawn import find_executable
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, path, run
 

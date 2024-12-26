@@ -119,7 +119,7 @@ def copy(src, dst, follow_symlinks=True):
   return dst
 
 
-def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
+def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True): #pylint: disable=too-many-positional-arguments
   from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
   if max_rot is None:
     max_rot = 2 * math.pi
@@ -385,7 +385,7 @@ class Input(object):
         copy files into folders in current working directory. modifies _local_ims and  _local_msk
 
       """
-  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''):
+  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''): #pylint: disable=too-many-positional-arguments
     self.contrasts = contrasts
 
     self.uid = uid

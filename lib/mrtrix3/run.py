@@ -24,7 +24,7 @@ from mrtrix3.utils import STRING_TYPES
 try:
   from shutil import which as find_executable
 except ImportError:
-  from distutils.spawn import find_executable
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 

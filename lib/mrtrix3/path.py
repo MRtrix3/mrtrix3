@@ -31,7 +31,7 @@ except ImportError:
 try:
   from shutil import which as find_executable
 except ImportError:
-  from distutils.spawn import find_executable
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 
 from mrtrix3 import CONFIG
 from mrtrix3.utils import STRING_TYPES

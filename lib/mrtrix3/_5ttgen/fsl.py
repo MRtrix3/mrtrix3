@@ -14,7 +14,10 @@
 # For more details, see http://www.mrtrix.org/.
 
 import math, os
-from distutils.spawn import find_executable
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run, utils
 

@@ -606,7 +606,7 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
 
 
 
-def compile_test (name, cflags, ldflags, code, on_success='ok', on_failure='not found'):
+def compile_test (name, cflags, ldflags, code, on_success='ok', on_failure='not found'): #pylint: disable=too-many-positional-arguments
   """Tests whether the code given compiles, links, and runs.
 
   This returns True if successful, and False for any type of failure.  It will
@@ -635,7 +635,7 @@ def compile_test (name, cflags, ldflags, code, on_success='ok', on_failure='not 
 
 
 
-def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cflags_hint=None, ldflags_env=None, ldflags_hint=None, on_success='ok'):
+def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cflags_hint=None, ldflags_env=None, ldflags_hint=None, on_success='ok'): #pylint: disable=too-many-positional-arguments
   """Checks whether the code given compiles, links, and runs.
 
   This is intended to check for required dependencies, and will cause
