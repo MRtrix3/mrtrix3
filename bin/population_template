@@ -923,7 +923,7 @@ def execute(): #pylint: disable=unused-variable
 
   if use_masks:
     path.make_dir('mask_transformed')
-  write_log = (app.VERBOSITY >= 2)
+  write_log = app.VERBOSITY >= 2
   if write_log:
     path.make_dir('log')
 

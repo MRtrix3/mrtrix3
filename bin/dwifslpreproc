@@ -115,7 +115,11 @@ def execute(): #pylint: disable=unused-variable
   if not fsl_path:
     raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  if not pe_design == 'None':
+  if pe_design == 'None':
+    topup_config_path = None
+    topup_cmd = None
+    applytopup_cmd = None
+  else:
     topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
     if not os.path.isfile(topup_config_path):
       raise MRtrixError('Could not find necessary default config file for FSL topup command (expected location: ' + topup_config_path + ')')
@@ -513,7 +517,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Deal with the phase-encoding of the images to be fed to topup (if applicable)
-  do_topup = (not pe_design == 'None')
+  do_topup = pe_design != 'None'
   overwrite_se_epi_pe_scheme = False
   se_epi_path = 'se_epi.mif'
   dwi_permvols_preeddy_option = ''
