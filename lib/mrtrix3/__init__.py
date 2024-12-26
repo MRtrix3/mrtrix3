@@ -21,7 +21,7 @@ from collections import namedtuple
 try:
   from shlex import quote
 except ImportError:
-  from pipes import quote
+  from pipes import quote #pylint: disable=deprecated-module
 from mrtrix3._version import __version__
 
 

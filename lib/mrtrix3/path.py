@@ -26,7 +26,7 @@ import ctypes, errno, inspect, os, random, string, subprocess, time
 try:
   from shlex import quote
 except ImportError:
-  from pipes import quote
+  from pipes import quote #pylint: disable=deprecated-module
 # Distutils removed in 3.12, but shutil.which not available in 2.7
 try:
   from shutil import which as find_executable
