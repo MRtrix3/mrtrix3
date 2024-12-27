@@ -347,7 +347,7 @@ namespace MR
         if (data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
           finish (data);
         } else {
-          uint8_t scratch[row_bytes * height];
+          VLA(scratch, uint8_t, row_bytes * height);
           // Convert from "data" into "scratch"
           // This may include changes to fundamental type, changes to bit depth, changes to endianness
           uint8_t* in_ptr = data, *out_ptr = scratch;

@@ -16,6 +16,8 @@
 
 #include "gui/mrview/mode/lightbox.h"
 
+#include "types.h"
+
 namespace MR
 {
   namespace GUI
@@ -259,7 +261,7 @@ namespace MR
             gl::EnableVertexAttribArray (0);
             gl::VertexAttribPointer (0, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-            GLfloat data[num_points];
+            VLA(data, GLfloat, num_points);
 
             // Grid line stride
             float x_inc = 2.f / n_cols;

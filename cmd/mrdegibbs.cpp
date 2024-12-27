@@ -20,6 +20,7 @@
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
+#include "types.h"
 #include "algo/threaded_loop.h"
 #include <numeric>
 
@@ -208,15 +209,15 @@ class ComputeSlice
         const int numlines = eig.cols();
         shifted.resize (n, 2*nsh+1);
 
-        int shifts [2*nsh+1];
+        vector<int> shifts(2*nsh+1);
         shifts[0] = 0;
         for (int j = 0; j < nsh; j++) {
           shifts[j+1] = j+1;
           shifts[1+nsh+j] = -(j+1);
         }
 
-        double TV1arr[2*nsh+1];
-        double TV2arr[2*nsh+1];
+        vector<double> TV1arr(2*nsh+1);
+        vector<double> TV2arr(2*nsh+1);
 
         for (int k = 0; k < numlines; k++) {
           shifted.col(0) = eig.col(k);
