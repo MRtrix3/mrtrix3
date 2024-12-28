@@ -155,7 +155,7 @@ namespace MR {
               reg_basis_abs (reg_basis_t::FIXEL),
               reg_basis_diff (reg_basis_t::STREAMLINE),
               reg_fn_abs (reg_fn_abs_t::GAMMA),
-              reg_fn_diff (reg_fn_diff_t::ASYMPTOTIC),
+              reg_fn_diff (reg_fn_diff_t::DUALINVBARR),
               reg_multiplier_abs (0.0),
               reg_multiplier_diff (0.0),
               reg_scaling (std::numeric_limits<value_type>::signaling_NaN()),

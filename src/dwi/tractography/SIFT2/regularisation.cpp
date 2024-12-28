@@ -36,7 +36,7 @@ namespace MR
 
       const char* reg_basis_choices[] = { "streamline", "fixel", nullptr };
       const char* reg_fn_choices_abs[] = { "coefficient", "factor", "gamma", nullptr };
-      const char* reg_fn_choices_diff[] = { "asymptotic", "delta", nullptr };
+      const char* reg_fn_choices_diff[] = { "delta", "dualinvbarr", nullptr };
 
 
       OptionGroup RegularisationOptions = OptionGroup ("Options relating to SIFT2 algorithm regularisation")
@@ -67,8 +67,9 @@ namespace MR
 
       + Option ("reg_fn_diff", "The form of the regularisation function when optimising differential weights; "
                                "options are: "
-                               "asymptotic (regularisation expression specifically tailored to differential mode) (default); "
-                               "delta (quadratically penalise delta coefficient)")
+                               "delta (quadratically penalise delta coefficient); "
+                               "dualinvbarr (\"dual inverse barrier\"; "
+                                   "regularisation expression specifically tailored to differential mode) (default)")
         + Argument ("choice").type_choice(reg_fn_choices_diff)
 
       + Option ("reg_strength_diff", "modulate strength of applied regularisation when optimising differential weights "
@@ -129,8 +130,17 @@ namespace MR
 
 
 
-      void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const value_type deltacoeff, const value_type multiplier)
+      void dxregdualinvbarr_ddeltacoeffx (CostAndDerivatives& result, const value_type deltacoeff, const value_type multiplier)
       {
+        if (multiplier == value_type(0))
+          return;
+        if (reg_dualinvbarr_out_of_bounds(deltacoeff)) {
+          result.cost = std::numeric_limits<value_type>::infinity();
+          result.first_deriv = std::numeric_limits<value_type>::quiet_NaN();
+          result.second_deriv = std::numeric_limits<value_type>::quiet_NaN();
+          result.third_deriv = std::numeric_limits<value_type>::quiet_NaN();
+          return;
+        }
         const value_type dminus1 = deltacoeff - value_type(1);
         const value_type dplus1 = deltacoeff + value_type(1);
         const value_type dminus1_pow2 = Math::pow2(dminus1);
@@ -148,13 +158,21 @@ namespace MR
         result.third_deriv  += multiplier * (value_type(24) * deltacoeff * (Math::pow2(deltacoeff) + value_type(1)) / //
                                              (dminus1_pow4 * dplus1_pow4));                                           //
       }
-      void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier)
+      void dxregdualinvbarr_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier)
       {
-        dxregasymptotic_ddeltacoeffx (result, dWCF.delta_coeff(), multiplier);
+        dxregdualinvbarr_ddeltacoeffx (result, dWCF.delta_coeff(), multiplier);
       }
 
-      void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const value_type deltacoeff, const value_type multiplier, const value_type ref)
+      void dxregdualinvbarr_ddeltacoeffx (CostAndDerivatives& result, const value_type deltacoeff, const value_type multiplier, const value_type ref)
       {
+        if (multiplier == value_type(0))
+          return;
+        if (reg_dualinvbarr_out_of_bounds(deltacoeff)) {
+          result.cost = std::numeric_limits<value_type>::infinity();
+          result.first_deriv = std::numeric_limits<value_type>::quiet_NaN();
+          result.second_deriv = std::numeric_limits<value_type>::quiet_NaN();
+          result.third_deriv = std::numeric_limits<value_type>::quiet_NaN();
+        }
         const value_type X = transformed_deltacoeff(deltacoeff, ref);
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
                                                            ? value_type(1) + ref   //
@@ -162,16 +180,16 @@ namespace MR
         const value_type d2X_ddeltacoeff2 = Math::pow2(dX_ddeltacoeff);
         const value_type d3X_ddeltacoeff3 = dX_ddeltacoeff * d2X_ddeltacoeff2;
         CostAndDerivatives temp;
-        dxregasymptotic_ddeltacoeffx(temp, X, value_type(1));
+        dxregdualinvbarr_ddeltacoeffx(temp, X, value_type(1));
         result.cost         += multiplier * temp.cost;
         result.first_deriv  += multiplier * temp.first_deriv * dX_ddeltacoeff;
         result.second_deriv += multiplier * temp.second_deriv * d2X_ddeltacoeff2;
         result.third_deriv  += multiplier * temp.third_deriv * d3X_ddeltacoeff3;
       }
 
-      void dxregasymptotic_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref)
+      void dxregdualinvbarr_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref)
       {
-        dxregasymptotic_ddeltacoeffx(result, dWCF.delta_coeff(), multiplier, ref);
+        dxregdualinvbarr_ddeltacoeffx(result, dWCF.delta_coeff(), multiplier, ref);
       }
 
       void dxregdeltacoeff_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier)

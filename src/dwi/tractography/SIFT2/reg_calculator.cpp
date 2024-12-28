@@ -126,15 +126,6 @@ namespace MR {
 
 
       template <>
-      bool RegularisationCalculatorDifferential<reg_basis_t::STREAMLINE, reg_fn_diff_t::ASYMPTOTIC>::operator() (const SIFT::TrackIndexRange& range)
-      {
-        for (auto track_index : range) {
-          const value_type deltacoeff = master.deltacoeffs[track_index];
-          local_sum += reg_asymptotic (deltacoeff);
-        }
-        return true;
-      }
-      template <>
       bool RegularisationCalculatorDifferential<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF>::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
@@ -144,21 +135,11 @@ namespace MR {
         return true;
       }
       template <>
-      bool RegularisationCalculatorDifferential<reg_basis_t::FIXEL, reg_fn_diff_t::ASYMPTOTIC>::operator() (const SIFT::TrackIndexRange& range)
+      bool RegularisationCalculatorDifferential<reg_basis_t::STREAMLINE, reg_fn_diff_t::DUALINVBARR>::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
           const value_type deltacoeff = master.deltacoeffs[track_index];
-          const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
-          if (this_contribution.get_total_contribution() == 0.0f)
-            continue;
-          const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
-          value_type streamline_sum = value_type(0.0);
-          for (size_t j = 0; j != this_contribution.dim(); ++j) {
-            const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
-            const value_type fixel_coeff_cost = SIFT2::reg_asymptotic (deltacoeff, fixel.mean_deltacoeff());
-            streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
-          }
-          local_sum += streamline_sum;
+          local_sum += reg_dualinvbarr (deltacoeff);
         }
         return true;
       }
@@ -175,6 +156,25 @@ namespace MR {
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
             const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
             const value_type fixel_coeff_cost = SIFT2::reg_deltacoeff (deltacoeff, fixel.mean_deltacoeff());
+            streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
+          }
+          local_sum += streamline_sum;
+        }
+        return true;
+      }
+      template <>
+      bool RegularisationCalculatorDifferential<reg_basis_t::FIXEL, reg_fn_diff_t::DUALINVBARR>::operator() (const SIFT::TrackIndexRange& range)
+      {
+        for (auto track_index : range) {
+          const value_type deltacoeff = master.deltacoeffs[track_index];
+          const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+          if (this_contribution.get_total_contribution() == 0.0f)
+            continue;
+          const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
+          value_type streamline_sum = value_type(0.0);
+          for (size_t j = 0; j != this_contribution.dim(); ++j) {
+            const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
+            const value_type fixel_coeff_cost = SIFT2::reg_dualinvbarr (deltacoeff, fixel.mean_deltacoeff());
             streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
           }
           local_sum += streamline_sum;

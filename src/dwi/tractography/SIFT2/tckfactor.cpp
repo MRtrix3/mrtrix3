@@ -147,15 +147,15 @@ namespace MR {
         switch (reg_basis_diff) {
           case reg_basis_t::STREAMLINE: {
             switch (reg_fn_diff) {
-              case reg_fn_diff_t::ASYMPTOTIC: unscaled = calc_reg_differential<reg_basis_t::STREAMLINE, reg_fn_diff_t::ASYMPTOTIC> (*this); break;
-              case reg_fn_diff_t::DELTACOEFF: unscaled = calc_reg_differential<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF> (*this); break;
+              case reg_fn_diff_t::DELTACOEFF:  unscaled = calc_reg_differential<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF>  (*this); break;
+              case reg_fn_diff_t::DUALINVBARR: unscaled = calc_reg_differential<reg_basis_t::STREAMLINE, reg_fn_diff_t::DUALINVBARR> (*this); break;
             }
             break;
           }
           case reg_basis_t::FIXEL: {
             switch (reg_fn_diff) {
-              case reg_fn_diff_t::ASYMPTOTIC: unscaled = calc_reg_differential<reg_basis_t::FIXEL, reg_fn_diff_t::ASYMPTOTIC> (*this); break;
-              case reg_fn_diff_t::DELTACOEFF: unscaled = calc_reg_differential<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF> (*this); break;
+              case reg_fn_diff_t::DELTACOEFF:  unscaled = calc_reg_differential<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF>  (*this); break;
+              case reg_fn_diff_t::DUALINVBARR: unscaled = calc_reg_differential<reg_basis_t::FIXEL, reg_fn_diff_t::DUALINVBARR> (*this); break;
             }
             break;
           }

@@ -588,14 +588,14 @@ namespace MR {
           switch (master.reg_basis_diff) {
             case reg_basis_t::STREAMLINE:
               switch (master.reg_fn_diff) {
-                case reg_fn_diff_t::ASYMPTOTIC: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
-                case reg_fn_diff_t::DELTACOEFF: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+                case reg_fn_diff_t::DELTACOEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF>  (dDelta); break;
+                case reg_fn_diff_t::DUALINVBARR: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_diff_t::DUALINVBARR> (dDelta); break;
               }
               break;
             case reg_basis_t::FIXEL:
               switch (master.reg_fn_diff) {
-                case reg_fn_diff_t::ASYMPTOTIC: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
-                case reg_fn_diff_t::DELTACOEFF: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+                case reg_fn_diff_t::DELTACOEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF>  (dDelta); break;
+                case reg_fn_diff_t::DUALINVBARR: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_diff_t::DUALINVBARR> (dDelta); break;
               }
               break;
           }
@@ -633,7 +633,7 @@ namespace MR {
           //   as dDelta is passed from this functor up to the calling function
           //   before it is added to deltacoeffs.
           //   It may be better to have this functor return both the change and the new value?
-          } else if (master.reg_fn_diff == reg_fn_diff_t::ASYMPTOTIC) {
+          } else if (master.reg_fn_diff == reg_fn_diff_t::DUALINVBARR) {
             if (delta + dDelta + change >= 1.0)
               change = 0.5 * (1.0 - (delta + dDelta));
             else if (delta + dDelta + change <= -1.0)
@@ -660,14 +660,14 @@ namespace MR {
         switch (master.reg_basis_diff) {
           case reg_basis_t::STREAMLINE:
             switch (master.reg_fn_diff) {
-              case reg_fn_diff_t::ASYMPTOTIC: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
-              case reg_fn_diff_t::DELTACOEFF: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+              case reg_fn_diff_t::DELTACOEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF>  (dDelta); break;
+              case reg_fn_diff_t::DUALINVBARR: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DUALINVBARR> (dDelta); break;
             }
             break;
           case reg_basis_t::FIXEL:
             switch (master.reg_fn_diff) {
-              case reg_fn_diff_t::ASYMPTOTIC: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::ASYMPTOTIC> (dDelta); break;
-              case reg_fn_diff_t::DELTACOEFF: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF> (dDelta); break;
+              case reg_fn_diff_t::DELTACOEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF>  (dDelta); break;
+              case reg_fn_diff_t::DUALINVBARR: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DUALINVBARR> (dDelta); break;
             }
             break;
 
