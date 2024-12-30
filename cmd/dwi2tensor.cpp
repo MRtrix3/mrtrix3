@@ -149,7 +149,7 @@ class Processor { MEMALIGN(Processor)
           work.setZero();
           work.selfadjointView<Eigen::Lower>().rankUpdate (b.transpose()*w.asDiagonal());
           p = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(b.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
-          if (maxit > 1)
+          if (it < maxit)
             w = (b*p).array().exp();
         }
 
