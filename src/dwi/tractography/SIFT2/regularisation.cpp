@@ -149,8 +149,8 @@ namespace MR
         const value_type dplus1_pow3 = dplus1_pow2 * dplus1;
         const value_type dminus1_pow4 = dminus1_pow3 * dminus1;
         const value_type dplus1_pow4 = dplus1_pow3 * dplus1;
-        result.cost         += multiplier * (value_type(-1) - (value_type(1) / //
-                                             (dminus1 * dplus1)));             //
+        result.cost         += multiplier * (value_type(-1) - (value_type(1) /       //
+                                                               (dminus1 * dplus1))); //
         result.first_deriv  += multiplier * (value_type(2) * deltacoeff /   //
                                              (dminus1_pow2 * dplus1_pow2)); //
         result.second_deriv += multiplier * (value_type(-2) * ((value_type(3) * Math::pow2(deltacoeff)) + value_type(1)) / //
@@ -177,14 +177,14 @@ namespace MR
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
                                                            ? value_type(1) + ref   //
                                                            : value_type(1) - ref); //
-        const value_type d2X_ddeltacoeff2 = Math::pow2(dX_ddeltacoeff);
-        const value_type d3X_ddeltacoeff3 = dX_ddeltacoeff * d2X_ddeltacoeff2;
+        const value_type dX_ddeltacoeff_sq = Math::pow2(dX_ddeltacoeff);
+        const value_type dX_ddeltacoeff_cub = dX_ddeltacoeff * dX_ddeltacoeff_sq;
         CostAndDerivatives temp;
         dxregdualinvbarr_ddeltacoeffx(temp, X, value_type(1));
         result.cost         += multiplier * temp.cost;
         result.first_deriv  += multiplier * temp.first_deriv * dX_ddeltacoeff;
-        result.second_deriv += multiplier * temp.second_deriv * d2X_ddeltacoeff2;
-        result.third_deriv  += multiplier * temp.third_deriv * d3X_ddeltacoeff3;
+        result.second_deriv += multiplier * temp.second_deriv * dX_ddeltacoeff_sq;
+        result.third_deriv  += multiplier * temp.third_deriv * dX_ddeltacoeff_cub;
       }
 
       void dxregdualinvbarr_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref)

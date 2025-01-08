@@ -305,8 +305,8 @@ namespace MR
       namespace {
         value_type transformed_deltacoeff(const value_type deltacoeff, const value_type ref) {
           return deltacoeff <= ref
-                 ? ((value_type(1) + deltacoeff) / (value_type(1) + ref)) - 1
-                 : ((value_type(1) + deltacoeff) / (value_type(1) - ref)) + 1;
+                 ? ((deltacoeff + value_type(1)) / (value_type(1) + ref)) - 1
+                 : ((deltacoeff - value_type(1)) / (value_type(1) - ref)) + 1;
         }
       }
       FORCE_INLINE bool reg_dualinvbarr_out_of_bounds(const value_type deltacoeff) {

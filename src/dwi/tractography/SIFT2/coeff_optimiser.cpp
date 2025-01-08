@@ -651,7 +651,7 @@ namespace MR {
             }
           }
 
-        } while ((++iter < 100) && (abs (change) > 1e-4));
+        } while ((++iter < 100) && (abs (change) > 1e-5));
 
 #ifdef SIFT2_DIFFERENTIAL_OPTIMISER_DEBUG
         iter_count += iter;

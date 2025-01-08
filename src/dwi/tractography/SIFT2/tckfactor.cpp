@@ -117,6 +117,8 @@ namespace MR {
       template <>
       value_type TckFactor::calculate_regularisation<operation_mode_t::ABSOLUTE>()
       {
+        if (reg_multiplier_abs == 0.0)
+          return 0.0;
         value_type unscaled = value_type(0.0);
         switch (reg_basis_abs) {
           case reg_basis_t::STREAMLINE: {
@@ -143,6 +145,8 @@ namespace MR {
       template <>
       value_type TckFactor::calculate_regularisation<operation_mode_t::DIFFERENTIAL>()
       {
+        if (reg_multiplier_diff == 0.0)
+          return 0.0;
         value_type unscaled = value_type(0.0);
         switch (reg_basis_diff) {
           case reg_basis_t::STREAMLINE: {
@@ -615,16 +619,6 @@ namespace MR {
       template <operation_mode_t Mode>
       void TckFactor::estimate_weights()
       {
-        auto allocate_vector = [] (Eigen::Array<value_type, Eigen::Dynamic, 1>& vector, const ssize_t size)
-        {
-          if (vector.size() == 0) {
-            try {
-              vector = Eigen::Array<value_type, Eigen::Dynamic, 1>::Zero (size);
-            } catch (...) {
-              throw Exception ("Error assigning memory for streamline weights vector");
-            }
-          }
-        };
         auto allocate_mask = [] (Eigen::Array<bool, Eigen::Dynamic, 1>& mask, const ssize_t size)
         {
           if (mask.size() == 0) {
@@ -635,17 +629,32 @@ namespace MR {
             }
           }
         };
+        auto allocate_vector = [] (Eigen::Array<value_type, Eigen::Dynamic, 1>& vector, const ssize_t size)
+        {
+          if (vector.size() == 0) {
+            try {
+              vector = Eigen::Array<value_type, Eigen::Dynamic, 1>::Zero (size);
+            } catch (...) {
+              throw Exception ("Error assigning memory for streamline weights vector");
+            }
+          }
+        };
 
         value_type cf_data;
         switch (Mode) {
           case operation_mode_t::ABSOLUTE:
-            allocate_vector (coefficients, num_tracks());
             allocate_mask (mask_absolute, num_tracks());
+            allocate_vector (coefficients, num_tracks());
             cf_data = calc_cost_function();
             break;
           case operation_mode_t::DIFFERENTIAL:
-            allocate_vector (deltacoeffs, num_tracks());
             allocate_mask (mask_differential, num_tracks());
+            if (reg_fn_diff == reg_fn_diff_t::DUALINVBARR && reg_multiplier_diff > 0.0 && deltacoeffs.size()) {
+              if ((deltacoeffs.abs() * mask_differential.cast<value_type>()).maxCoeff() >= -1.0)
+                throw Exception("Impermissible initialisation: delta coefficients outside (-1.0, 1.0) range "
+                                "that are not masked from optimisation while using \"dualinvbarr\" regularisation");
+            }
+            allocate_vector (deltacoeffs, num_tracks());
             cf_data = calc_cost_function_differential();
             break;
         }

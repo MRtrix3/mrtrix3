@@ -139,6 +139,10 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type deltacoeff = master.deltacoeffs[track_index];
+          if (std::abs(deltacoeff) == 1.0) {
+            assert(!master.mask_differential[track_index]);
+            continue;
+          }
           local_sum += reg_dualinvbarr (deltacoeff);
         }
         return true;
@@ -167,6 +171,10 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type deltacoeff = master.deltacoeffs[track_index];
+          if (std::abs(deltacoeff) == 1.0) {
+            assert(!master.mask_differential[track_index]);
+            continue;
+          }
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           if (this_contribution.get_total_contribution() == 0.0f)
             continue;
