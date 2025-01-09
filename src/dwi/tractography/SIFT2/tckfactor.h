@@ -318,6 +318,8 @@ namespace MR {
           value_type calculate_regularisation();
           // TODO Implement entropy calculation for differential mode (based on absolute values)
           value_type calculate_entropy() const;
+          value_type calculate_forward_KL_divergence() const;
+          value_type calculate_reverse_KL_divergence() const;
 
 
 

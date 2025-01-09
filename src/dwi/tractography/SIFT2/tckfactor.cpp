@@ -891,6 +891,14 @@ namespace MR {
         const size_t equiv_N = std::round (std::pow (2.0, H_after));
         INFO ("Entropy decreased from " + str(H_before, 6) + " to " + str(H_after, 6) + "; "
               + "this is equivalent to " + str(equiv_N) + " equally-weighted streamlines");
+        // Also report KL divergence
+        // For SIFT2 as currently implemented, all weights are positive,
+        //   so typical derivation is applicable;
+        //   for any method that can yield zeroes,
+        //   the inverse operation would need to be utilised
+        INFO ("Relative entropy (KL divergence):");
+        INFO ("Forward: " + str(calculate_forward_KL_divergence()));
+        INFO ("Reverse: " + str(calculate_reverse_KL_divergence()));
        }
 
 
@@ -1136,6 +1144,31 @@ namespace MR {
           H += P * logP;
         }
         return -1.0 * H;
+      }
+
+
+      value_type TckFactor::calculate_forward_KL_divergence() const
+      {
+        double cumulative_sum(0);
+        const double P = 1.0 / coefficients.size();
+        for (SIFT::track_t i = 0; i != coefficients.size(); ++i) {
+          if (std::isfinite(coefficients[i]))
+            cumulative_sum += std::log(P / std::exp(coefficients[i]));
+        }
+        return cumulative_sum * P;
+      }
+
+      value_type TckFactor::calculate_reverse_KL_divergence() const
+      {
+        double cumulative_sum(0);
+        const double Q = 1.0 / coefficients.size();
+        for (SIFT::track_t i = 0; i != coefficients.size(); ++i) {
+          if (std::isfinite(coefficients[i])) {
+            const double P = std::exp(coefficients[i]);
+            cumulative_sum += P * std::log(P / Q);
+          }
+        }
+        return cumulative_sum;
       }
 
 
