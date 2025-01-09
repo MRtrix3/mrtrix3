@@ -650,7 +650,7 @@ namespace MR {
           case operation_mode_t::DIFFERENTIAL:
             allocate_mask (mask_differential, num_tracks());
             if (reg_fn_diff == reg_fn_diff_t::DUALINVBARR && reg_multiplier_diff > 0.0 && deltacoeffs.size()) {
-              if ((deltacoeffs.abs() * mask_differential.cast<value_type>()).maxCoeff() >= -1.0)
+              if ((deltacoeffs.abs() * mask_differential.cast<value_type>()).maxCoeff() >= 1.0)
                 throw Exception("Impermissible initialisation: delta coefficients outside (-1.0, 1.0) range "
                                 "that are not masked from optimisation while using \"dualinvbarr\" regularisation");
             }
