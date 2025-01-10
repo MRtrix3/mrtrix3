@@ -366,15 +366,15 @@ namespace MR {
       template <>
       void TckFactor::enforce_limits<operation_mode_t::DIFFERENTIAL>()
       {
-        if (min_deltacoeff == -std::numeric_limits<value_type>::infinity() && max_deltacoeff == std::numeric_limits<value_type>::infinity())
+        if (min_deltacoeff == -1.0 && max_deltacoeff == 1.0)
           return;
         SIFT::track_t clamped_count = 0;
         for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-          if (coefficients[i] < -min_deltacoeff) {
-            coefficients[i] = -min_deltacoeff;
+          if (deltacoeffs[i] < -min_deltacoeff) {
+            deltacoeffs[i] = -min_deltacoeff;
             ++clamped_count;
-          } else if (coefficients[i] > max_deltacoeff) {
-            coefficients[i] = max_deltacoeff;
+          } else if (deltacoeffs[i] > max_deltacoeff) {
+            deltacoeffs[i] = max_deltacoeff;
             ++clamped_count;
           }
         }
@@ -686,9 +686,39 @@ namespace MR {
 
         Eigen::Array<bool, Eigen::Dynamic, 1> &mask (Mode == operation_mode_t::ABSOLUTE ? mask_absolute : mask_differential);
         SIFT::track_t participating_streamlines = 0;
-        for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-          if (contributions[i] && contributions[i]->dim() && std::isfinite (coefficients[i]) && mask[i])
-            ++participating_streamlines;
+        if (Mode == operation_mode_t::ABSOLUTE) {
+          for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
+            if (contributions[i] && contributions[i]->dim() && std::isfinite (coefficients[i]) && mask[i]) {
+              ++participating_streamlines;
+            } else {
+              mask[i] = false;
+            }
+          }
+        } else {
+          for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
+            if (!mask[i])
+              continue;
+            if (!contributions[i] || contributions[i]->dim() == 0 || !std::isfinite(coefficients[i])) {
+              mask[i] = false;
+              continue;
+            }
+            if (std::abs (deltacoeffs[i]) < value_type(1)) {
+              ++participating_streamlines;
+              continue;
+            }
+            if (std::abs(deltacoeffs[i]) == value_type(1) && \
+                (reg_multiplier_diff == value_type(0) || reg_fn_diff != reg_fn_diff_t::DUALINVBARR)) {
+              ++participating_streamlines;
+            } else {
+              mask[i] = false;
+            }
+          }
+        }
+        if (!participating_streamlines) {
+          WARN(std::string("No streamlines available to participate in ")
+               + (Mode == operation_mode_t::ABSOLUTE ? "absolute" : "differential")
+               + " mode based on initialisation");
+          return;
         }
 
         unsigned int iter = 0;
@@ -1045,10 +1075,10 @@ namespace MR {
           throw Exception ("Cannot output differential weighting factors if they have not first been estimated!");
         try {
           decltype(deltacoeffs) weights (deltacoeffs.size());
-          for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
-                         0.0 :
-                         std::exp (coefficients[i]) * deltacoeffs[i];
+          for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
+            DifferentialWCF dWCF(DifferentialWCF::from_coeffs(coefficients[i], deltacoeffs[i]));
+            weights[i] = dWCF.delta_factor();
+          }
           save_vector (weights, path);
         } catch (...) {
           WARN ("Unable to assign memory for output differential factor file: \"" + Path::basename(path) + "\" not created");
