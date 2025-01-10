@@ -265,10 +265,20 @@ namespace MR
 
 
       // Regularisation functions specific to differential mode
+      FORCE_INLINE bool reg_delta_out_of_bounds(const value_type deltacoeff) {
+        return (std::abs(deltacoeff) > value_type(1));
+      }
+      FORCE_INLINE bool reg_delta_out_of_bounds(const DifferentialWCF &dWCF) {
+        return reg_delta_out_of_bounds(dWCF.delta_coeff());
+      }
       FORCE_INLINE value_type reg_deltacoeff (const value_type deltacoeff) {
+        if (reg_delta_out_of_bounds(deltacoeff))
+          return std::numeric_limits<value_type>::infinity();
         return Math::pow2(deltacoeff);
       }
       FORCE_INLINE value_type reg_deltacoeff (const value_type deltacoeff, const value_type ref) {
+        if (reg_delta_out_of_bounds(deltacoeff))
+          return std::numeric_limits<value_type>::infinity();
         return Math::pow2((deltacoeff - ref) / (deltacoeff <= ref        //
                                                 ? value_type(1) + ref    //
                                                 : value_type(1) - ref)); //
@@ -280,25 +290,37 @@ namespace MR
         return reg_deltacoeff(dWCF.delta_coeff(), ref);
       }
       FORCE_INLINE value_type dregdeltacoeff_ddeltacoeff (const DifferentialWCF &dWCF) {
+        if (reg_delta_out_of_bounds(dWCF))
+          return std::numeric_limits<value_type>::signaling_NaN();
         return value_type(2) * dWCF.delta_coeff();
       }
       FORCE_INLINE value_type dregdeltacoeff_ddeltacoeff (const DifferentialWCF &dWCF, const value_type ref) {
+        if (reg_delta_out_of_bounds(dWCF))
+          return std::numeric_limits<value_type>::signaling_NaN();
         return value_type(2) * (dWCF.delta_coeff() - ref) / Math::pow2(dWCF.delta_coeff() <= ref //
                                                                        ? value_type(1) + ref     //
                                                                        : value_type(1) - ref);   //
       }
       FORCE_INLINE value_type d2regadeltacoeff_ddeltacoeff2 (const DifferentialWCF &dWCF) {
+        if (reg_delta_out_of_bounds(dWCF))
+          return std::numeric_limits<value_type>::signaling_NaN();
         return value_type(2);
       }
       FORCE_INLINE value_type d2regadeltacoeff_ddeltacoeff2 (const DifferentialWCF &dWCF, const value_type ref) {
+        if (reg_delta_out_of_bounds(dWCF))
+          return std::numeric_limits<value_type>::signaling_NaN();
         return value_type(2) / Math::pow2(dWCF.delta_coeff() <= ref
                                            ? value_type(1) + ref
                                            : value_type(1) - ref);
       }
       FORCE_INLINE value_type d3regdeltacoeff_ddeltacoeff3 (const DifferentialWCF &dWCF) {
+        if (reg_delta_out_of_bounds(dWCF))
+          return std::numeric_limits<value_type>::signaling_NaN();
         return value_type(0);
       }
       FORCE_INLINE value_type d3regdeltacoeff_ddeltacoeff3 (const DifferentialWCF &dWCF, const value_type ref) {
+        if (reg_delta_out_of_bounds(dWCF))
+          return std::numeric_limits<value_type>::signaling_NaN();
         return value_type(0);
       }
 
@@ -334,7 +356,7 @@ namespace MR
       FORCE_INLINE value_type dregdualinvbarr_ddeltacoeff (const value_type deltacoeff)
       {
         if (reg_dualinvbarr_out_of_bounds(deltacoeff))
-          return std::numeric_limits<value_type>::quiet_NaN();
+          return std::numeric_limits<value_type>::signaling_NaN();
         return (value_type(2) * deltacoeff /                                                        //
                 (Math::pow2(deltacoeff - value_type(1)) * Math::pow2(deltacoeff + value_type(1)))); //
       }
@@ -345,7 +367,7 @@ namespace MR
       FORCE_INLINE value_type dregdualinvbarr_ddeltacoeff (const value_type deltacoeff, const value_type ref)
       {
         if (reg_dualinvbarr_out_of_bounds(deltacoeff))
-          return std::numeric_limits<value_type>::quiet_NaN();
+          return std::numeric_limits<value_type>::signaling_NaN();
         const value_type X = transformed_deltacoeff(deltacoeff, ref);
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
                                                            ? value_type(1) + ref   //
@@ -359,7 +381,7 @@ namespace MR
       FORCE_INLINE value_type d2regdualinvbarr_ddeltacoeff2 (const value_type deltacoeff)
       {
         if (reg_dualinvbarr_out_of_bounds(deltacoeff))
-          return std::numeric_limits<value_type>::quiet_NaN();
+          return std::numeric_limits<value_type>::signaling_NaN();
         return (value_type(-2) * ((value_type(3) * Math::pow2(deltacoeff)) + value_type(1)) /       //
                 (Math::pow3(deltacoeff - value_type(1)) * Math::pow3(deltacoeff + value_type(1)))); //
       }
@@ -370,7 +392,7 @@ namespace MR
       FORCE_INLINE value_type d2regdualinvbarr_ddeltacoeff2 (const value_type deltacoeff, const value_type ref)
       {
         if (reg_dualinvbarr_out_of_bounds(deltacoeff))
-          return std::numeric_limits<value_type>::quiet_NaN();
+          return std::numeric_limits<value_type>::signaling_NaN();
         const value_type X = transformed_deltacoeff(deltacoeff, ref);
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
                                                            ? value_type(1) + ref   //
@@ -384,7 +406,7 @@ namespace MR
       FORCE_INLINE value_type d3regdualinvbarr_ddeltacoeff3 (const value_type deltacoeff)
       {
         if (reg_dualinvbarr_out_of_bounds(deltacoeff))
-          return std::numeric_limits<value_type>::quiet_NaN();
+          return std::numeric_limits<value_type>::signaling_NaN();
         return (value_type(24) * deltacoeff * (Math::pow2(deltacoeff) + value_type(1)) /            //
                 (Math::pow4(deltacoeff - value_type(1)) * Math::pow4(deltacoeff + value_type(1)))); //
       }
@@ -395,7 +417,7 @@ namespace MR
       FORCE_INLINE value_type d3regdualinvbarr_ddeltacoeff3 (const value_type deltacoeff, const value_type ref)
       {
         if (reg_dualinvbarr_out_of_bounds(deltacoeff))
-          return std::numeric_limits<value_type>::quiet_NaN();
+          return std::numeric_limits<value_type>::signaling_NaN();
         const value_type X = transformed_deltacoeff(deltacoeff, ref);
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
                                                            ? value_type(1) + ref   //

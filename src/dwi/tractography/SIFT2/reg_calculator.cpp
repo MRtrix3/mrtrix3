@@ -36,7 +36,9 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
-          local_sum += reg_coeff (coefficient);
+          const value_type increment = reg_coeff (coefficient);
+          assert (std::isfinite(increment));
+          local_sum += increment;
         }
         return true;
       }
@@ -45,7 +47,9 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
-          local_sum += reg_factor (coefficient);
+          const value_type increment = reg_factor (WeightingCoeffAndFactor::from_coeff (coefficient).factor());
+          assert(std::isfinite(increment));
+          local_sum += increment;
         }
         return true;
       }
@@ -54,7 +58,9 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
-          local_sum += reg_gamma (WeightingCoeffAndFactor::from_coeff (coefficient));
+          const value_type increment = reg_gamma (WeightingCoeffAndFactor::from_coeff (coefficient));
+          assert(std::isfinite(increment));
+          local_sum += increment;
         }
         return true;
       }
@@ -76,6 +82,7 @@ namespace MR {
             const value_type fixel_coeff_cost = SIFT2::reg_coeff (coefficient, fixel.mean_coeff());
             streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
           }
+          assert(std::isfinite(streamline_sum));
           local_sum += streamline_sum;
         }
         return true;
@@ -95,6 +102,7 @@ namespace MR {
             const value_type fixel_coeff_cost = SIFT2::reg_factor (coefficient, fixel.mean_coeff());
             streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
           }
+          assert(std::isfinite(streamline_sum));
           local_sum += streamline_sum;
         }
         return true;
@@ -108,13 +116,15 @@ namespace MR {
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           if (this_contribution.get_total_contribution() == 0.0f)
             continue;
-          const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
-          value_type streamline_sum = value_type(0.0);
+          const value_type contribution_multiplier = value_type(1) / this_contribution.get_total_contribution();
+          value_type streamline_sum = value_type(0);
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
             const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
             const value_type fixel_coeff_cost = SIFT2::reg_gamma (wcf, WeightingCoeffAndFactor::from_coeff (fixel.mean_coeff()));
+            assert(std::isfinite(fixel_coeff_cost));
             streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
           }
+          assert(std::isfinite(streamline_sum));
           local_sum += streamline_sum;
         }
         return true;
@@ -130,7 +140,9 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type deltacoeff = master.deltacoeffs[track_index];
-          local_sum += reg_deltacoeff (deltacoeff);
+          const value_type increment = reg_deltacoeff (deltacoeff);
+          assert(std::isfinite(increment));
+          local_sum += increment;
         }
         return true;
       }
@@ -143,7 +155,9 @@ namespace MR {
             assert(!master.mask_differential[track_index]);
             continue;
           }
-          local_sum += reg_dualinvbarr (deltacoeff);
+          const value_type increment = reg_dualinvbarr (deltacoeff);
+          assert(std::isfinite(increment));
+          local_sum += increment;
         }
         return true;
       }
@@ -162,6 +176,7 @@ namespace MR {
             const value_type fixel_coeff_cost = SIFT2::reg_deltacoeff (deltacoeff, fixel.mean_deltacoeff());
             streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
           }
+          assert(std::isfinite(streamline_sum));
           local_sum += streamline_sum;
         }
         return true;
@@ -185,6 +200,7 @@ namespace MR {
             const value_type fixel_coeff_cost = SIFT2::reg_dualinvbarr (deltacoeff, fixel.mean_deltacoeff());
             streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
           }
+          assert(std::isfinite(streamline_sum));
           local_sum += streamline_sum;
         }
         return true;

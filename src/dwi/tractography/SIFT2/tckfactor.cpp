@@ -641,9 +641,12 @@ namespace MR {
         };
 
         value_type cf_data;
+        bool nonzero_init_regularisation = false;
         switch (Mode) {
           case operation_mode_t::ABSOLUTE:
             allocate_mask (mask_absolute, num_tracks());
+            if (coefficients.size() == 0)
+              nonzero_init_regularisation = true;
             allocate_vector (coefficients, num_tracks());
             cf_data = calc_cost_function();
             break;
@@ -654,6 +657,8 @@ namespace MR {
                 throw Exception("Impermissible initialisation: delta coefficients outside (-1.0, 1.0) range "
                                 "that are not masked from optimisation while using \"dualinvbarr\" regularisation");
             }
+            if (deltacoeffs.size() == 0)
+              nonzero_init_regularisation = true;
             allocate_vector (deltacoeffs, num_tracks());
             cf_data = calc_cost_function_differential();
             break;
@@ -662,6 +667,15 @@ namespace MR {
 
         // Need to include regularisation in this calculation
         //   in case the weighting coefficients have been initialised to something other than zero
+        if (nonzero_init_regularisation) {
+          update_fixels<Mode>();
+        } else if (Mode == operation_mode_t::ABSOLUTE) {
+          fixels.col(mean_coeff_column).setZero();
+        } else if (Mode == operation_mode_t::DIFFERENTIAL) {
+          fixels.col(mean_deltacoeff_column).setZero();
+        } else {
+          assert (false);
+        }
         value_type cf_reg = calculate_regularisation<Mode>();
         assert(std::isfinite(cf_reg));
         const value_type init_cf = cf_data + cf_reg;
@@ -1079,18 +1093,18 @@ namespace MR {
         Image<float> mean_fimage  (Image<float>::create (Path::join (dirpath, prefix + "_delta_mean.mif"), H));
         Image<float> stdev_fimage (Image<float>::create (Path::join (dirpath, prefix + "_delta_stdev.mif"), H));
         Image<float> max_fimage   (Image<float>::create (Path::join (dirpath, prefix + "_delta_max.mif"), H));
-        Image<float> delta_fimage (Image<float>::create (Path::join (dirpath, prefix + "_delta_fixel.mif"), H));
+        Image<float> TD_fimage    (Image<float>::create (Path::join (dirpath, prefix + "_delta_TD_fixel.mif"), H));
         Image<float> diff_fimage  (Image<float>::create (Path::join (dirpath, prefix + "_delta_diff_fixel.mif"), H));
         Image<float> cost_fimage  (Image<float>::create (Path::join (dirpath, prefix + "_delta_cost_fixel.mif"), H));
         const value_type current_mu = mu();
-        for (auto l = Loop(0) (min_fimage, mean_fimage, stdev_fimage, max_fimage, delta_fimage, diff_fimage, cost_fimage); l; ++l) {
+        for (auto l = Loop(0) (min_fimage, mean_fimage, stdev_fimage, max_fimage, TD_fimage, diff_fimage, cost_fimage); l; ++l) {
           const MR::Fixel::index_type index = min_fimage.index(0);
           const Fixel fixel (*this, index);
           min_fimage.value() = mins[index];
           mean_fimage.value() = fixel.mean_deltacoeff();
           stdev_fimage.value() = stdevs[index];
           max_fimage.value() = maxs[index];
-          delta_fimage.value() = fixel.differential_TD();
+          TD_fimage.value() = fixel.differential_TD();
           diff_fimage.value() = fixel.differential_diff(current_mu);
           cost_fimage.value() = fixel.differential_cost(current_mu);
         }
