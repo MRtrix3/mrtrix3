@@ -580,6 +580,25 @@ namespace MR {
         LineSearchFunctorDifferential line_search_functor (track_index, master);
         const value_type delta = master.deltacoeffs[track_index];
 
+        auto get_cost = [&](const value_type dDelta) {
+          switch (master.reg_basis_diff) {
+            case reg_basis_t::STREAMLINE:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::DELTACOEFF:  return line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF>  (dDelta);
+                case reg_fn_diff_t::DUALINVBARR: return line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DUALINVBARR> (dDelta);
+              }
+            case reg_basis_t::FIXEL:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::DELTACOEFF:  return line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF>  (dDelta);
+                case reg_fn_diff_t::DUALINVBARR: return line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DUALINVBARR> (dDelta);
+              }
+            default:
+              assert (false);
+              return value_type(0);
+          }
+        };
+        value_type prev_cost = get_cost(value_type(0));
+
         value_type dDelta = 0.0;
         value_type change = 0.0;
         size_t iter = 0;
@@ -625,19 +644,33 @@ namespace MR {
             dDelta = -master.max_deltacoeff_step;
             change = 0.0;
           // Additional conditions for differential mode
-          // For the asymptotic regulariser in particular,
+          // For the dual inverse barrier regulariser in particular,
           //   delta + dDelta + change cannot be permitted outside of range (-1, +1);
-          // for the deltacoeff optimiser,
+          // for the deltacoeff regularisation,
           //   delta + dDelta + change cannot be permitted outside of range [-1, +1]
           // TODO This is still in danger of having rounding errors,
           //   as dDelta is passed from this functor up to the calling function
           //   before it is added to deltacoeffs.
           //   It may be better to have this functor return both the change and the new value?
           } else if (master.reg_fn_diff == reg_fn_diff_t::DUALINVBARR) {
-            if (delta + dDelta + change >= 1.0)
+            value_type new_cost = std::numeric_limits<value_type>::signaling_NaN();
+            if (delta + dDelta + change >= 1.0) {
               change = 0.5 * (1.0 - (delta + dDelta));
-            else if (delta + dDelta + change <= -1.0)
+              new_cost = get_cost(delta + change);
+            } else if (delta + dDelta + change <= -1.0) {
               change = -0.5 * (1.0 + (delta + dDelta));
+              new_cost = get_cost(delta + change);
+            } else {
+              // If cost explodes, eg. due to getting close to the inverse barrier,
+              //   split the difference
+              new_cost = get_cost(delta + change);
+              if (new_cost > prev_cost) {
+                change *= 0.5;
+                prev_cost = get_cost(delta + change);
+              } else {
+                prev_cost = new_cost;
+              }
+            }
             dDelta += change;
           } else {
             if (delta + dDelta + change >= 1.0) {
