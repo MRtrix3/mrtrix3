@@ -14,7 +14,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import os
-import argparse 
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, run
 
@@ -30,26 +29,26 @@ def usage(base_parser, subparsers):  #pylint: disable=unused-variable
                      is_external=True)
   parser.add_description('This algorithm accepts either:')
   parser.add_description('1. A 3D segmentation image from Deep Atropos with labels:')
-  parser.add_description('   - 0: Background - 1: CSF - 2: Gray Matter - 3: White Matter - 4: Deep Gray Matter - 5: Brain Stem - 6: Cerebellum')
+  parser.add_description('0: Background, 1: CSF, 2: Gray Matter, 3: White Matter, 4: Deep Gray Matter, 5: Brain Stem, 6: Cerebellum')
   parser.add_description('2. A 4D probability image (dimensions [x,y,z,7]) containing probability maps for each tissue class in the same order as above')
   parser.add_description('To generate these input images using antspynet\'s deep_atropos function:')
   parser.add_description('1. Install required packages: pip install antspynet nibabel')
   parser.add_description('2. Use Python commands:')
-  parser.add_description('   # Load the T1-weighted image')
-  parser.add_description('   >>> import ants, antspynet')
-  parser.add_description('   >>> import nibabel as nib')
-  parser.add_description('   >>> import numpy as np')
-  parser.add_description('   >>> t1_image = ants.image_read(\'input_t1.nii.gz\')')
-  parser.add_description('   # Run Deep Atropos segmentation')
-  parser.add_description('   >>> segments = antspynet.deep_atropos(t1_image)')
-  parser.add_description('   # Save the segmentation')
-  parser.add_description('   >>> ants.image_write(segments[\'segmentation_image\'], \'segmentation.nii.gz\')')
-  parser.add_description('   # Stack and save probability maps')
-  parser.add_description('   >>> prob_maps = np.stack([np.array(img.numpy()) for img in segments[\'probability_images\']], axis=-1)')
-  parser.add_description('   >>> nib.save(nib.Nifti1Image(prob_maps, t1_image.affine), \'probabilities.nii.gz\')')
+  parser.add_description('>>> # Load the T1-weighted image')
+  parser.add_description('>>> import ants, antspynet')
+  parser.add_description('>>> import nibabel as nib')
+  parser.add_description('>>> import numpy as np')
+  parser.add_description('>>> t1_image = ants.image_read(\'input_t1.nii.gz\')')
+  parser.add_description('>>> # Run Deep Atropos segmentation')
+  parser.add_description('>>> segments = antspynet.deep_atropos(t1_image)')
+  parser.add_description('>>> # Save the segmentation')
+  parser.add_description('>>> ants.image_write(segments[\'segmentation_image\'], \'segmentation.nii.gz\')')
+  parser.add_description('>>> # Stack and save probability maps')
+  parser.add_description('>>> prob_maps = np.stack([np.array(img.numpy()) for img in segments[\'probability_images\']], axis=-1)')
+  parser.add_description('>>> nib.save(nib.Nifti1Image(prob_maps, t1_image.affine), \'probabilities.nii.gz\')')
   parser.add_description('The generated files can then be used with MRtrix3:')
-  parser.add_description('   5ttgen deep_atropos segmentation.nii.gz 5tt.mif')
-  parser.add_description('   5ttgen deep_atropos probabilities.nii.gz 5tt.mif')
+  parser.add_description('5ttgen deep_atropos segmentation.nii.gz 5tt.mif')
+  parser.add_description('5ttgen deep_atropos probabilities.nii.gz 5tt.mif')
   parser.add_argument('input',
     type=app.Parser.ImageIn(),
     help='The input Deep Atropos segmentation image')
