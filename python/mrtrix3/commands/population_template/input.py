@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,7 +63,7 @@ class Input: # pylint: disable=unused-variable
         copy files into folders in current working directory. modifies _local_ims and  _local_msk
 
       """
-  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''):
+  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''): # pylint: disable=too-many-positional-arguments
     self.contrasts = contrasts
 
     self.uid = uid
