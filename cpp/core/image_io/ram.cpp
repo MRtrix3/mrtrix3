@@ -30,11 +30,4 @@ void RAM::load(const Header &header, size_t) {
   addresses[0].reset(new uint8_t[bytes_per_segment]);
 }
 
-void RAM::unload(const Header &header) {
-  if (!addresses.empty()) {
-    DEBUG("deleting RAM buffer for image \"" + header.name() + "\"...");
-    addresses[0].reset();
-  }
-}
-
 } // namespace MR::ImageIO

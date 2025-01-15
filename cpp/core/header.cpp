@@ -726,11 +726,12 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   Header result(headers[0]);
 
   if (axis_to_concat >= result.ndim()) {
+    Stride::symbolise (result);
     result.ndim() = axis_to_concat + 1;
     result.size(axis_to_concat) = 1;
+    result.stride(axis_to_concat) = axis_to_concat+1;
+    Stride::actualise (result);
   }
-
-  result.stride(axis_to_concat) = result.ndim() + 1;
 
   for (size_t axis = 0; axis != result.ndim(); ++axis) {
     if (axis != axis_to_concat && result.size(axis) <= 1) {

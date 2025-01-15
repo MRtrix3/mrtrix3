@@ -47,6 +47,7 @@ public:
   void load(uint8_t *);
 
 private:
+  FILE *infile;
   png_structp png_ptr;
   png_infop info_ptr;
   png_uint_32 width, height;
@@ -72,6 +73,7 @@ private:
   int color_type, bit_depth;
   std::string filename;
   DataType data_type;
+  default_type multiplier;
   FILE *outfile;
 
   static void error_handler(png_struct_def *, const char *);
@@ -84,22 +86,10 @@ private:
 template <typename T>
 void Writer::fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, const size_t num_elements) {
   auto fetch_func = __set_fetch_function<default_type>(data_type);
-  default_type multiplier = 1.0;
-  switch (data_type() & DataType::Type) {
-  case DataType::Float32:
-    multiplier = std::numeric_limits<uint8_t>::max();
-    break;
-  case DataType::Float64:
-    multiplier = std::numeric_limits<uint16_t>::max();
-    break;
-  }
-  for (size_t i = 0; i != num_elements; ++i) {
-    Raw::store_BE<T>(std::min(default_type(std::numeric_limits<T>::max()),
-                              std::max(0.0, std::round(multiplier * fetch_func(in_ptr, 0)))),
-                     out_ptr);
-    in_ptr += data_type.bytes();
-    out_ptr += sizeof(T);
-  }
+  for (size_t i = 0; i != num_elements; ++i)
+    Raw::store_BE<T> (std::min (default_type(std::numeric_limits<T>::max()),                                //
+                                std::max (0.0, std::round(multiplier * fetch_func (in_ptr, i, 0.0, 1.0)))), //
+                      out_ptr, i);                                                                          //
 };
 
 } // namespace MR::File::PNG
