@@ -26,7 +26,7 @@ public:
 
 protected:
   virtual void load(const Header &, size_t);
-  virtual void unload(const Header &) { }
+  virtual void unload(const Header &) {}
 };
 
 } // namespace MR::ImageIO

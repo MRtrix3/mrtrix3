@@ -54,8 +54,8 @@ bool Pipe::check(Header &H, size_t num_axes) const {
     return false;
 
   if (isatty(STDOUT_FILENO))
-    throw Exception ("cannot create output piped image: "                                //
-                     "no command connected at other end of pipe to receive that image"); //
+    throw Exception("cannot create output piped image: "                                //
+                    "no command connected at other end of pipe to receive that image"); //
 
   H.name() = File::create_tempfile(0, "mif");
 
