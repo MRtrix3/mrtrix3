@@ -25,19 +25,18 @@
 namespace MR::ImageIO {
 
 void PNG::load(const Header &header, size_t) {
-  DEBUG (std::string("loading PNG image") + (files.size() > 1 ? "s" : "") + " \"" + header.name() + "\"");
-  segsize = header.datatype().bytes() * voxel_count(header) * files.size();
-  addresses.resize(1);
-  segsize = (header.datatype().bits() * voxel_count (header) + 7) / 8;
-  addresses[0].reset (new uint8_t[segsize]);
+  DEBUG(std::string("loading PNG image") + (files.size() > 1 ? "s" : "") + " \"" + header.name() + "\"");
+  segsize = (header.datatype().bits() * voxel_count(header) + 7) / 8;
+  addresses[0].reset(new uint8_t[segsize]);
   if (is_new) {
     memset(addresses[0].get(), 0x00, segsize);
   } else {
-    const size_t slice_bytes = (header.datatype().bits() *                     //
-                                header.size(0) *                               //
-                                header.size(1) *                               //
-                                (header.ndim() == 4 ? header.size(3) : 1) + 7) //
-                               / 8;                                            //
+    const size_t slice_bytes = (header.datatype().bits() *                    //
+                                    header.size(0) *                          //
+                                    header.size(1) *                          //
+                                    (header.ndim() == 4 ? header.size(3) : 1) //
+                                + 7)                                          //
+                               / 8;                                           //
     for (size_t i = 0; i != files.size(); ++i) {
       File::PNG::Reader png(files[i].name);
       if (png.get_width() != header.size(0) || png.get_height() != header.size(1) ||
@@ -59,12 +58,17 @@ void PNG::load(const Header &header, size_t) {
 }
 
 void PNG::unload(const Header &header) {
-  assert (addresses.size() == 1);
+  assert(addresses.size() == 1);
   if (writable) {
-    const size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) * (header.ndim() == 4 ? header.size(3) : 1) + 7) / 8;
+    const size_t slice_bytes = (header.datatype().bits() *                    //
+                                    header.size(0) *                          //
+                                    header.size(1) *                          //
+                                    (header.ndim() == 4 ? header.size(3) : 1) //
+                                + 7)                                          //
+                               / 8;                                           //
     for (size_t i = 0; i != files.size(); i++) {
-      File::PNG::Writer png (header, files[i].name);
-      png.save (addresses[0].get() + (i * slice_bytes));
+      File::PNG::Writer png(header, files[i].name);
+      png.save(addresses[0].get() + (i * slice_bytes));
     }
   }
   delete[] addresses[0].release();

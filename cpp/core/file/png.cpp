@@ -30,7 +30,7 @@
 namespace MR::File::PNG {
 
 Reader::Reader(const std::string &filename)
-    : infile (fopen(filename.c_str(), "rb")),
+    : infile(fopen(filename.c_str(), "rb")),
       png_ptr(NULL),
       info_ptr(NULL),
       width(0),
@@ -148,7 +148,7 @@ Writer::Writer(const Header &H, const std::string &filename)
       bit_depth(0),
       filename(filename),
       data_type(H.datatype()),
-      multiplier (1.0),
+      multiplier(1.0),
       outfile(NULL) {
   if (Path::exists(filename) && !App::overwrite_files)
     throw Exception("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
@@ -162,8 +162,8 @@ Writer::Writer(const Header &H, const std::string &filename)
   }
   outfile = fopen(filename.c_str(), "wb");
   if (!outfile)
-    throw Exception ("Unable to open PNG file for writing for image \"" + filename + "\": " //
-                     + strerror (errno));                                                   //
+    throw Exception("Unable to open PNG file for writing for image \"" + filename + "\": " //
+                    + strerror(errno));                                                    //
   png_init_io(png_ptr, outfile);
   png_set_compression_level(png_ptr, Z_DEFAULT_COMPRESSION);
   switch (H.ndim()) {
@@ -216,14 +216,14 @@ Writer::Writer(const Header &H, const std::string &filename)
     break;
   case DataType::Float32:
     bit_depth = 8;
-    multiplier = std::numeric_limits<uint8_t>::infinity(); break;
+    multiplier = std::numeric_limits<uint8_t>::infinity();
     break;
   case DataType::UInt16:
   case DataType::UInt32:
   case DataType::UInt64:
   case DataType::Float64:
     bit_depth = 16;
-    multiplier = std::numeric_limits<uint16_t>::infinity(); break;
+    multiplier = std::numeric_limits<uint16_t>::infinity();
     break;
   }
   // Detect cases where one axis has a size of 1, and hence represents the image plane
