@@ -56,6 +56,4 @@ void VariableScaling::load(const Header &header, size_t) {
   }
 }
 
-void VariableScaling::unload(const Header &header) {}
-
 } // namespace MR::ImageIO
