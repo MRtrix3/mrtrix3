@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
+
 #include "command.h"
 #include "image.h"
 #include "types.h"
@@ -135,8 +137,8 @@ void run ()
 
   auto opt = get_options ("out_mu");
   if (opt.size()) {
-    File::OFStream out_mu (opt[0][0]);
-    out_mu << sifter.mu();
+    const std::array<SIFT::ModelBase::value_type, 1> mu ({sifter.mu()});
+    save_vector(mu, opt[0][0]);
   }
 
 }

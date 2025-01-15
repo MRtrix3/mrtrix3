@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
+
 #include "command.h"
 #include "exception.h"
 #include "image.h"
@@ -278,8 +280,8 @@ void run ()
 
   opt = get_options ("out_mu");
   if (opt.size()) {
-    File::OFStream out_mu (opt[0][0]);
-    out_mu << tckfactor.mu();
+    const std::array<SIFT::ModelBase::value_type, 1> mu ({tckfactor.mu()});
+    save_vector(mu, opt[0][0]);
   }
 
   opt = get_options ("csv");
