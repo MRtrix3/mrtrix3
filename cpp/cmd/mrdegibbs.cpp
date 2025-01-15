@@ -51,11 +51,19 @@ void usage() {
       " you should run denoising before this command to not alter the noise structure,"
       " which would impact on dwidenoise's performance."
 
+    + "For best results, any form of filtering performed by the scanner should be disabled,"
+      " whether performed in the image domain or k-space."
+      " This includes elliptic filtering and other filters "
+      " that are often applied to reduce Gibbs ringing artifacts."
+      " While this method can still safely be applied to such data,"
+      " some residual ringing artefacts may still be present in the output."
+
     + "Note that this method is designed to work on images acquired with full k-space coverage."
-      " Running this method on partial Fourier ('half-scan')"
-      " or filtered data may not remove all ringing artefacts."
-      " Users are encouraged to acquired full-Fourier data where possible,"
-      " and disable any form of filtering on the scanner.";
+      " If this method is executed on data acquired with partial Fourier (eg. \"half-scan\") acceleration,"
+      " it may not fully remove all ringing artifacts,"
+      " and you may observe residuals of the original artifact in the partial Fourier direction."
+      " Nonetheless, application of the method is still considered safe and worthwhile."
+      " Users are however encouraged to acquired full-Fourier data where possible.";
 
 
   ARGUMENTS

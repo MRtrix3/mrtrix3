@@ -41,7 +41,7 @@ def copy(src, dst, follow_symlinks=True): # pylint: disable=unused-variable
 
 
 
-def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True): # pylint: disable=unused-variable,too-many-positional-arguments
+def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True): # pylint: disable=unused-variable, too-many-arguments
   if max_rot is None:
     max_rot = 2 * math.pi
 
@@ -53,8 +53,9 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
   data = utils.load_keyval(f'{transformation}decomp')
   run.function(os.remove, f'{transformation}decomp')
   scaling = [float(value) for value in data['scaling']]
-  if any(a < 0 for a in scaling) or any(a > (1 + max_scaling) for a in scaling) or any(
-      a < (1 - max_scaling) for a in scaling):
+  if any(a < 0 for a in scaling) or \
+      any(a > (1 + max_scaling) for a in scaling) or \
+      any(a < (1 - max_scaling) for a in scaling):
     app.warn(f'large scaling ({scaling})) in {transformation}')
     good = False
   shear = [float(value) for value in data['shear']]
@@ -115,10 +116,10 @@ def aggregate(inputs, output, contrast_idx, mode, force=True): # pylint: disable
   elif mode == 'weighted_mean':
     weights = [inp.aggregation_weight for inp in inputs]
     assert not any(w is None for w in weights), weights
-    wsum = sum(float(w) for w in weights)
-    cmd = ['mrcalc']
+    wsum = sum(map(float, weights))
     if wsum <= 0:
       raise MRtrixError('the sum of aggregetion weights has to be positive')
+    cmd = ['mrcalc']
     for weight, imagepath in zip(weights, images):
       if float(weight) != 0:
         cmd += [imagepath, weight, '-mult'] + (['-add'] if len(cmd) > 1 else [])
@@ -273,16 +274,14 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
   if f_agg_weight:
     try:
       with open(f_agg_weight, 'r', encoding='utf-8') as fweights:
-        agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in csv.reader(fweights, delimiter=',', quotechar='#'))
+        agg_weights = dict((row[0].strip(), row[1].strip()) for row in csv.reader(fweights, delimiter=',', quotechar='#'))
     except UnicodeDecodeError:
       with open(f_agg_weight, 'r', encoding='utf-8') as fweights:
         reader = csv.reader(fweights.read().decode('utf-8', errors='replace'), delimiter=',', quotechar='#')
-        agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in reader)
+        agg_weights = dict((row[0].strip(), row[1].strip()) for row in reader)
     pref = '^' + re.escape(get_common_prefix(list(agg_weights.keys())))
     suff = re.escape(get_common_postfix(list(agg_weights.keys()))) + '$'
-    for key in agg_weights.keys():
-      agg_weights[re.sub(suff, '', re.sub(pref, '', key))] = agg_weights.pop(key).strip()
-
+    agg_weights = {re.sub(suff, '', re.sub(pref, '', item[0])):item[1] for item in agg_weights.items()}
     for inp in inputs:
       if inp.uid not in agg_weights:
         raise MRtrixError(f'aggregation weight not found for {inp.uid}')

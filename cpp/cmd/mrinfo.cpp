@@ -51,7 +51,7 @@ const OptionGroup FieldExportOptions = OptionGroup ("Options for exporting image
 
 void usage() {
 
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au)"
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)"
            " and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Display image header information,"
