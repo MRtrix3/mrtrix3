@@ -187,6 +187,8 @@ std::string underline(const std::string &text, bool ignore_whitespace = false) {
 
 const char *argtype_description(ArgType type) {
   switch (type) {
+  case Boolean:
+    return ("boolean");
   case Integer:
     return ("integer");
   case Float:
@@ -449,6 +451,9 @@ std::string Argument::usage() const {
   switch (type) {
   case Undefined:
     assert(0);
+    break;
+  case Boolean:
+    stream << "BOOL";
     break;
   case Integer: {
     const auto int_range = std::get<IntRange>(limits);

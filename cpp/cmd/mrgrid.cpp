@@ -150,7 +150,7 @@ void usage() {
                     " to match the specified reference image grid."
                     " This operation ignores differences in image transformation"
                     " between input and reference image.")
-      + Argument ("reference image").type_image_in()
+      + Argument ("reference_image").type_image_in()
 
     + Option ("uniform", "pad or crop the input image"
                          " by a uniform number of voxels on all sides")

@@ -160,7 +160,6 @@ bool PNG::check(Header &H, size_t num_axes) const {
       axis_to_zero = 1;
     } else if (H.size(0) == 1) {
       axis_to_zero = 0;
-      width_axis = 1;
     } else {
       // If image is 3D, and all three axes have size greater than one, and we
       //   haven't used the square-bracket notation, we can't export genuine 3D data
@@ -184,8 +183,6 @@ bool PNG::check(Header &H, size_t num_axes) const {
     if (axis < 0)
       throw Exception("Cannot export 4D image to PNG format if all three spatial axes have size greater than 1 and "
                       "square-bracket notation is not used");
-    if (!axis_to_zero)
-      width_axis = 1;
     break;
   default:
     throw Exception("Cannot generate PNG file(s) from image with more than 4 axes");

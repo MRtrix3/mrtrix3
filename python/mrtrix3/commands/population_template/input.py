@@ -63,7 +63,7 @@ class Input: # pylint: disable=unused-variable
         copy files into folders in current working directory. modifies _local_ims and  _local_msk
 
       """
-  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''): # pylint: disable=too-many-positional-arguments
+  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''): # pylint: disable=too-many-arguments
     self.contrasts = contrasts
 
     self.uid = uid
