@@ -216,14 +216,16 @@ Writer::Writer(const Header &H, const std::string &filename)
     break;
   case DataType::Float32:
     bit_depth = 8;
-    multiplier = std::numeric_limits<uint8_t>::infinity();
+    multiplier = std::numeric_limits<uint8_t>::max();
     break;
   case DataType::UInt16:
   case DataType::UInt32:
   case DataType::UInt64:
+    bit_depth = 16;
+    break;
   case DataType::Float64:
     bit_depth = 16;
-    multiplier = std::numeric_limits<uint16_t>::infinity();
+    multiplier = std::numeric_limits<uint16_t>::max();
     break;
   }
   // Detect cases where one axis has a size of 1, and hence represents the image plane
