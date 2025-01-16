@@ -85,14 +85,14 @@ private:
 
 template <typename T>
 void Writer::fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, const size_t num_elements) {
-  auto fetch_func = __set_fetch_function<default_type>(data_type);
+  std::function<default_type(const void *, size_t, default_type, default_type)> fetch_func;
+  std::function<void(default_type, void *, size_t, default_type, default_type)> store_func;
+  __set_fetch_store_scale_functions<default_type>(fetch_func, store_func, data_type);
   for (size_t i = 0; i != num_elements; ++i) {
-    Raw::store_BE<T>(std::min(default_type(std::numeric_limits<T>::max()),                    //
-                              std::max(0.0, std::round(multiplier * fetch_func(in_ptr, 0)))), //
-                     out_ptr,                                                                 //
-                     i);                                                                      //
-    in_ptr += data_type.bytes();
-    out_ptr += sizeof(T);
+    Raw::store_BE<T>(std::min(default_type(std::numeric_limits<T>::max()),                              //
+                              std::max(0.0, std::round(multiplier * fetch_func(in_ptr, i, 0.0, 1.0)))), //
+                     out_ptr,                                                                           //
+                     i);                                                                                //
   }
 };
 
