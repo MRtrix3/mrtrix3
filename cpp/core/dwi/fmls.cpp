@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -78,7 +78,7 @@ void load_fmls_thresholds(Segmenter &segmenter) {
     }
   }
 
-  opt = get_options("fmls_merge_ratio");
+  opt = get_options("fmls_lobe_merge_ratio");
   if (!opt.empty())
     segmenter.set_lobe_merge_ratio(default_type(opt[0][0]));
 }
