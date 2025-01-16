@@ -20,6 +20,8 @@
 #include <xmmintrin.h>
 #endif
 
+#define hello 0;
+
 #include "app.h"
 #include "executable_version.h"
 #include "mrtrix.h"
