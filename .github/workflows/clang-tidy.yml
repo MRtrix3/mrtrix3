@@ -9,7 +9,10 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install dependencies
-      run: sudo apt install qt6-base-dev libqt6opengl6-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+      run: |
+        sudo apt update
+        sudo apt install qt6-base-dev libqt6opengl6-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+
 
     - name: Run CMake
       run: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
