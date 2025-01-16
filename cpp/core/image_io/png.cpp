@@ -25,7 +25,9 @@
 namespace MR::ImageIO {
 
 void PNG::load(const Header &header, size_t) {
-  DEBUG(std::string("loading PNG image") + (files.size() > 1 ? "s" : "") + " \"" + header.name() + "\"");
+  DEBUG(std::string("loading PNG ")               //
+        + (files.size() > 1 ? "images" : "image") //
+        + " \"" + header.name() + "\"");          //
   segsize = (header.datatype().bits() * voxel_count(header) + 7) / 8;
   addresses.resize(1);
   addresses[0].reset(new uint8_t[segsize]);

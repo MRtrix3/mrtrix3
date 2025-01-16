@@ -90,7 +90,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy
+         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
