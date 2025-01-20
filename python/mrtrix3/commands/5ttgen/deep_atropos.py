@@ -22,33 +22,42 @@ def usage(base_parser, subparsers):  #pylint: disable=unused-variable
   parser.set_author('Lucius S. Fekonja (lucius.fekonja[at]charite.de) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate the 5TT image based on a Deep Atropos segmentation or probabilities image')
   parser.add_citation('Use of the ANTsX ecosystem should be accompanied by the following citation:\n'
-                     'N.J. Tustison, P.A. Cook, A.J. Holbrook, H.J. Johnson, J. Muschelli, G.A. Devenyi, J.T. Duda, S.R. Das, '
-                     'N.C. Cullen, D.L. Gillen, M.A. Yassa, J.R. Stone, J.C. Gee, and B.B. Avants. '
-                     'The ANTsX ecosystem for quantitative biological and medical imaging. '
-                     'Scientific Reports, 11(1):9068 (2021), pp. 1-13.',
-                     is_external=True)
-  parser.add_description('This algorithm accepts either:')
-  parser.add_description('1. A 3D segmentation image from Deep Atropos with labels:')
-  parser.add_description('0: Background, 1: CSF, 2: Gray Matter, 3: White Matter, 4: Deep Gray Matter, 5: Brain Stem, 6: Cerebellum')
-  parser.add_description('2. A 4D probability image (dimensions [x,y,z,7]) containing probability maps for each tissue class in the same order as above')
-  parser.add_description('To generate these input images using antspynet\'s deep_atropos function:')
-  parser.add_description('1. Install required packages: pip install antspynet nibabel')
-  parser.add_description('2. Use Python commands:')
-  parser.add_description('>>> # Load the T1-weighted image')
-  parser.add_description('>>> import ants, antspynet')
-  parser.add_description('>>> import nibabel as nib')
-  parser.add_description('>>> import numpy as np')
-  parser.add_description('>>> t1_image = ants.image_read(\'input_t1.nii.gz\')')
-  parser.add_description('>>> # Run Deep Atropos segmentation')
-  parser.add_description('>>> segments = antspynet.deep_atropos(t1_image)')
-  parser.add_description('>>> # Save the segmentation')
-  parser.add_description('>>> ants.image_write(segments[\'segmentation_image\'], \'segmentation.nii.gz\')')
-  parser.add_description('>>> # Stack and save probability maps')
-  parser.add_description('>>> prob_maps = np.stack([np.array(img.numpy()) for img in segments[\'probability_images\']], axis=-1)')
-  parser.add_description('>>> nib.save(nib.Nifti1Image(prob_maps, t1_image.affine), \'probabilities.nii.gz\')')
-  parser.add_description('The generated files can then be used with MRtrix3:')
-  parser.add_description('5ttgen deep_atropos segmentation.nii.gz 5tt.mif')
-  parser.add_description('5ttgen deep_atropos probabilities.nii.gz 5tt.mif')
+                      'N.J. Tustison, P.A. Cook, A.J. Holbrook, H.J. Johnson, J. Muschelli, G.A. Devenyi, J.T. Duda, S.R. Das, '
+                      'N.C. Cullen, D.L. Gillen, M.A. Yassa, J.R. Stone, J.C. Gee, and B.B. Avants. '
+                      'The ANTsX ecosystem for quantitative biological and medical imaging. '
+                      'Scientific Reports, 11(1):9068 (2021), pp. 1-13.',
+                      is_external=True)
+  parser.add_description('This algorithm can accept the outputs of Deep Atropos in one of two forms. '
+                         'The "segmentation image" is a 3D image, of integer datatype, '
+                         'with indices mapping to discrete tissue classes as follows: '
+                         '0: Background; 1: CSF; 2: Gray Matter; 3: White Matter; 4: Deep Gray Matter; 5: Brain Stem; 6: Cerebellum. '
+                         'The "probabilities images" are a set of seven 3D volumes, '
+                         'each corresponding to the posterior probability of one of the seven tissue classes above. '
+                         'These can be provided as input to this command by concatenating into a 4D image series with 7 volumes '
+                         '(the order of which must match that above).')
+  parser.add_description('The example usages provided in this help page, '
+                         'which include execution of Deep Atropos itself within a Python environment, '
+                         'require that "ants" and "antspynet" be installed via Python\'s "pip"; '
+                         'use of the "probability images" also requires that nibabel and numpy be installed.')
+  parser.add_example_usage('To utilise the "segmentation" image',
+                           'python3 -c \'import ants, antspynet; '
+                                        't1w = ants.image_read(\'T1w.nii.gz\'); '
+                                        'result = antspynet.deep_atropos(t1w); '
+                                        'ants.image_write\'result[\'segmentation_image\'], \'segmentation.nii.gz\')\'; '
+                           '5ttgen deep_atropos segmentation.nii.gz 5tt_segmentation.mif',
+                           'Because the input segmentation here is an integer image, '
+                           'where each voxel just contains an index corresponding to the maximal tissue class, '
+                           'the output 5TT image will not possess any fractional partial volumes; '
+                           'it will just contain the value 1.0 in whichever 5TT volume corresponds to the singular assigned tissue class.')
+  parser.add_example_usage('To utilise the "probability images"',
+                           'python3 -c \'import ants, antspynet, nibabel, numpy; '
+                                        't1w = ants.image_read(\'T1w.nii.gz\'); '
+                                        'result = antspynet.deep_atropos(t1w); '
+                                        'prob_maps = numpy.stack([numpy.array(img.numpy()) for img in result[\'probability_images\']], axis=-1); '
+                                        'nibabel.save(nib.Nifti1Image(prob_maps, t1w.affine), \'probabilities.nii.gz\')\'; '
+                           '5ttgen deep_atropos probabilities.nii.gz 5tt_probabilities.mif',
+                           'In this use case, the poerior probabilities of these tissue classes are interpreted as partial volume fractions '
+                           'and imported into the derivative 5TT image appropriately.')
   parser.add_argument('input',
     type=app.Parser.ImageIn(),
     help='The input Deep Atropos segmentation image')
