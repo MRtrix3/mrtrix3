@@ -122,13 +122,13 @@ Example usages
 
 -   *To utilise the "segmentation" image*::
 
-        $ python3 -c 'import ants, antspynet; t1w = ants.image_read('T1w.nii.gz'); result = antspynet.deep_atropos(t1w); ants.image_write'result['segmentation_image'], 'segmentation.nii.gz')'; 5ttgen deep_atropos segmentation.nii.gz 5tt_segmentation.mif
+        $ python3 -c "import ants, antspynet; t1w = ants.image_read('T1w.nii.gz'); result = antspynet.deep_atropos(t1w); ants.image_write(result['segmentation_image'], 'segmentation.nii.gz')"; 5ttgen deep_atropos segmentation.nii.gz 5tt_segmentation.mif
 
     Because the input segmentation here is an integer image, where each voxel just contains an index corresponding to the maximal tissue class, the output 5TT image will not possess any fractional partial volumes; it will just contain the value 1.0 in whichever 5TT volume corresponds to the singular assigned tissue class.
 
 -   *To utilise the "probability images"*::
 
-        $ python3 -c 'import ants, antspynet, nibabel, numpy; t1w = ants.image_read('T1w.nii.gz'); result = antspynet.deep_atropos(t1w); prob_maps = numpy.stack([numpy.array(img.numpy()) for img in result['probability_images']], axis=-1); nibabel.save(nib.Nifti1Image(prob_maps, t1w.affine), 'probabilities.nii.gz')'; 5ttgen deep_atropos probabilities.nii.gz 5tt_probabilities.mif
+        $ python3 -c "import ants, antspynet, nibabel, numpy; inpath = 'T1w.nii.gz'; t1w_ants = ants.image_read(inpath); t1w_nib = nibabel.load(inpath); result = antspynet.deep_atropos(t1w_ants); prob_maps = numpy.stack([numpy.array(img.numpy()) for img in result['probability_images']], axis=-1); nibabel.save(nibabel.Nifti1Image(prob_maps, t1w_nib.affine), 'probabilities.nii.gz')"; 5ttgen deep_atropos probabilities.nii.gz 5tt_probabilities.mif
 
     In this use case, the poerior probabilities of these tissue classes are interpreted as partial volume fractions and imported into the derivative 5TT image appropriately.
 
