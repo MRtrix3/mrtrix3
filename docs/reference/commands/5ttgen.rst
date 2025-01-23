@@ -130,7 +130,7 @@ Example usages
 
         $ python3 -c "import ants, antspynet, nibabel, numpy; inpath = 'T1w.nii.gz'; t1w_ants = ants.image_read(inpath); t1w_nib = nibabel.load(inpath); result = antspynet.deep_atropos(t1w_ants); prob_maps = numpy.stack([numpy.array(img.numpy()) for img in result['probability_images']], axis=-1); nibabel.save(nibabel.Nifti1Image(prob_maps, t1w_nib.affine), 'probabilities.nii.gz')"; 5ttgen deep_atropos probabilities.nii.gz 5tt_probabilities.mif
 
-    In this use case, the poerior probabilities of these tissue classes are interpreted as partial volume fractions and imported into the derivative 5TT image appropriately.
+    In this use case, the posterior probabilities of these tissue classes are interpreted as partial volume fractions and imported into the derivative 5TT image appropriately.
 
 Options
 -------
