@@ -43,7 +43,6 @@ namespace MR
 
 
 
-
         ModelBase::ModelBase (const std::string& fd_path) :
             MR::Fixel::Dataset (Path::dirname (fd_path)),
             // TODO More robust way to define initial number of columns
@@ -116,7 +115,9 @@ namespace MR
           //   - To provide the target fixels
           Mapping::TrackMapperBase mapper (*this, *this);
           mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (*this, properties, 0.1));
-          mapper.set_use_precise_mapping (true);
+          mapper.set_algorithm (App::get_options("blur_streamlines").empty()
+                                ? Mapping::algorithm_t::PRECISE
+                                : Mapping::algorithm_t::BLURRED);
           Thread::run_queue (
               loader,
               Thread::batch (Tractography::Streamline<float>()),

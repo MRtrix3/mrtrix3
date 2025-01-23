@@ -150,12 +150,15 @@ const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-vo
       "(If omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer (1)
 
+  + Option ("ends_only",
+      "only map the streamline endpoints to the image")
+
   + Option ("precise",
       "use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel "
       "(these lengths are then taken into account during TWI calculation)")
 
-  + Option ("ends_only",
-      "only map the streamline endpoints to the image");
+  + Mapping::BlurStreamlinesOption;
+
 
 
 
@@ -194,8 +197,6 @@ DESCRIPTION
     "or not a template image is provided using the -template option. If -template is used "
     "in conjunction with -vox, the image axes and FoV will still match that of the template "
     "image, but the spatial resolution will differ."
-
-  +
 
   + "Note: if you run into limitations with RAM usage, try writing the output image "
     "as a .mif file or .mih / .dat file pair to a local hard drive: this will allow "
@@ -283,12 +284,16 @@ MapWriterBase* make_writer (Header& H, const std::string& name, const vox_stat_t
 
 
 
-DataType determine_datatype (const DataType current_dt, const contrast_t contrast, const DataType default_dt, const bool precise)
+DataType determine_datatype (const DataType current_dt, const contrast_t contrast, const DataType default_dt, const algorithm_t mapping_algorithm)
 {
   if (current_dt == DataType::Undefined) {
     return default_dt;
-  } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
-    WARN ("Cannot use non-floating-point datatype with " + str(Mapping::contrasts[contrast]) + " contrast" + (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
+  } else if ((default_dt.is_floating_point() || mapping_algorithm == algorithm_t::BLURRED || mapping_algorithm == algorithm_t::PRECISE) \
+             && !current_dt.is_floating_point()) {
+    WARN ("Cannot use non-floating-point datatype with " + str(Mapping::contrasts[contrast]) + " contrast"
+          + (mapping_algorithm == algorithm_t::BLURRED ? " and blurred mapping" : "")
+          + (mapping_algorithm == algorithm_t::PRECISE ? " and precise mapping" : "")
+          + "; defaulting to " + str(default_dt.specifier()));
     return default_dt;
   } else {
     return current_dt;
@@ -496,31 +501,41 @@ void run () {
     output_header.keyval()["twi_backtrack"] = "1";
 
 
-  // Figure out how the streamlines will be mapped
-  const bool precise = get_options ("precise").size();
-  output_header.keyval()["precise_mapping"] = precise ? "1" : "0";
-  const bool ends_only = get_options ("ends_only").size();
-  if (ends_only) {
-    if (precise)
-      throw Exception ("Options -precise and -ends_only are mutually exclusive");
-    output_header.keyval()["endpoints_only"] = "1";
+  // Figure out algorithm by which streamlines will be mapped to the image
+  algorithm_t mapping_algorithm = algorithm_t::NEAREST;
+  const auto opt_blurred = get_options("blur_streamlines");
+  const auto opt_endsonly = get_options("ends_only");
+  const auto opt_precise = get_options("precise");
+  if (opt_blurred.size() + opt_endsonly.size() + opt_precise.size() > 1)
+    throw Exception("Can only specify one of: -blur_streamlines, -ends_only, -precise");
+  if (!opt_blurred.empty()) {
+    mapping_algorithm = algorithm_t::BLURRED;
+    output_header.keyval()["twi_mappingalgorithm"] = "blurred_streamlines";
+  }
+  if (!opt_endsonly.empty()) {
+    mapping_algorithm = algorithm_t::ENDPOINTS;
+    output_header.keyval()["twi_mappingalgorithm"] = "endpoints_only";
+  }
+  if (!opt_precise.empty()) {
+    mapping_algorithm = algorithm_t::PRECISE;
+    output_header.keyval()["twi_mappingalgorithm"] = "precise";
   }
 
   size_t upsample_ratio = 1;
   opt = get_options ("upsample");
   if (opt.size()) {
-    if (ends_only) {
+    if (mapping_algorithm == algorithm_t::ENDPOINTS) {
       WARN ("cannot use upsampling if only streamline endpoints are to be mapped");
     } else {
       upsample_ratio = opt[0][0];
       INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
     }
-  } else if (!ends_only) {
+  } else if (mapping_algorithm != algorithm_t::ENDPOINTS) {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
     try {
-      upsample_ratio = determine_upsample_ratio (target_grid, properties, (precise ? 0.1 : 0.333));
+      upsample_ratio = determine_upsample_ratio (target_grid, properties, (mapping_algorithm == algorithm_t::NEAREST ? (1.0 / 3.0) : 0.1));
       INFO ("track upsampling ratio automatically set to " + str(upsample_ratio));
     } catch (Exception& e) {
       e.push_back ("Try using -upsample option to explicitly set the streamline upsampling ratio;");
@@ -551,9 +566,12 @@ void run () {
   }
 
   DataType default_datatype = DataType::Float32;
-  if ((writer_type == GREYSCALE || writer_type == DIXEL || writer_type == FIXEL) && !have_weights && ((!precise && contrast == TDI) || contrast == SCALAR_MAP_COUNT))
+  if ((writer_type == GREYSCALE || writer_type == DIXEL || writer_type == FIXEL) \
+      && !have_weights \
+      && ((contrast == TDI && (mapping_algorithm == algorithm_t::ENDPOINTS || mapping_algorithm == algorithm_t::NEAREST)) || contrast == SCALAR_MAP_COUNT))
     default_datatype = DataType::UInt32;
-  output_header.datatype() = determine_datatype (output_header.datatype(), contrast, default_datatype, precise);
+
+  output_header.datatype() = determine_datatype (output_header.datatype(), contrast, default_datatype, mapping_algorithm);
   output_header.datatype().set_byte_order_native();
 
 
@@ -618,8 +636,7 @@ void run () {
   std::unique_ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (target_grid, contrast)) : (new TrackMapperTWI (target_grid, contrast, stat_tck)));
   mapper->set_upsample_ratio      (upsample_ratio);
   mapper->set_map_zero            (map_zero);
-  mapper->set_use_precise_mapping (precise);
-  mapper->set_map_ends_only       (ends_only);
+  mapper->set_algorithm           (mapping_algorithm);
   if (writer_type == DIXEL)
     mapper->create_dixel_plugin (*dirs);
   if (writer_type == TOD)

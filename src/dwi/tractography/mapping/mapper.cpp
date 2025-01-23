@@ -25,7 +25,7 @@ namespace Mapping {
 
 
 
-void TrackMapperBase::voxelise (const Streamline<>& tck, Set<Voxel>& voxels) const
+void TrackMapperBase::voxelise_nearest (const Streamline<>& tck, Set<Voxel>& voxels) const
 {
   Eigen::Vector3i vox;
   for (const auto& i : tck) {

@@ -199,7 +199,9 @@ namespace MR
           fixel_counts (master.nfixels(), 0)
       {
         mapper.set_upsample_ratio (upsample_ratio);
-        mapper.set_use_precise_mapping (true);
+        mapper.set_algorithm (App::get_options("blur_streamlines").empty()
+                              ? Mapping::algorithm_t::PRECISE
+                              : Mapping::algorithm_t::BLURRED);
       }
 
 

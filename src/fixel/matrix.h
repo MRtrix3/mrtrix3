@@ -159,7 +159,8 @@ namespace MR
           const std::string& track_filename,
           Image<fixel_index_type>& index_image,
           Image<bool>& fixel_mask,
-          const float angular_threshold);
+          const float angular_threshold,
+          const bool blur_streamlines);
 
 
 

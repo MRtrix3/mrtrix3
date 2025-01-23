@@ -138,7 +138,7 @@ class SamplerNonPrecise
         statistic (statistic)
     {
       if (mapper)
-        mapper->set_use_precise_mapping (false);
+        mapper->set_algorithm (DWI::Tractography::Mapping::algorithm_t::NEAREST);
     }
 
     bool operator() (DWI::Tractography::Streamline<value_type>& tck, std::pair<size_t, value_type>& out)
@@ -231,7 +231,7 @@ class SamplerPrecise
         statistic (statistic)
     {
       assert (statistic != stat_tck::NONE);
-      mapper->set_use_precise_mapping (true);
+      mapper->set_algorithm (DWI::Tractography::Mapping::algorithm_t::PRECISE);
     }
 
     bool operator() (DWI::Tractography::Streamline<value_type>& tck, std::pair<size_t, value_type>& out)
@@ -482,7 +482,8 @@ void run ()
       throw Exception ("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
     DWI::Tractography::Reader<value_type> tdi_reader (argument[0], properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper (H);
-    mapper.set_use_precise_mapping (interp == interp_type::PRECISE);
+    if (interp == interp_type::PRECISE)
+      mapper.set_algorithm (DWI::Tractography::Mapping::algorithm_t::PRECISE);
     tdi = Image<value_type>::scratch (H, "TDI scratch image");
     TDI tdi_fill (tdi, num_tracks);
     Thread::run_queue (tdi_reader,
