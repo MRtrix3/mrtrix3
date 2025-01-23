@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify default operation of "5ttgen deep_atropos"
+#   where the input is the concatenation of tissue probability images
+# Outcome is compared to that generated using a prior software version
+5ttgen deep_atropos 5ttgen/deep_atropos/probability_images.nii.gz tmp.mif -force
+testing_diff_image tmp.mif 5ttgen/deep_atropos/fromprob_default.mif.gz
