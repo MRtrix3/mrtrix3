@@ -211,7 +211,10 @@ void usage ()
   OPTIONS
 
   + SIFT::SIFTModelWeightsOption
+
   + SIFT::SIFTModelOption
+  + Mapping::BlurStreamlinesOption
+
   + SIFT::SIFTOutputOption
 
   + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")

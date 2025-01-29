@@ -67,7 +67,10 @@ void usage ()
     + Argument ("counts").type_sequence_int()
 
   + SIFTModelWeightsOption
+
   + SIFTModelOption
+  + Mapping::BlurStreamlinesOption
+
   + SIFTOutputOption
 
   + Option ("out_selection", "output a text file containing the binary selection of streamlines")

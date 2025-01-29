@@ -43,9 +43,7 @@ const OptionGroup SIFTModelOption = OptionGroup ("Options affecting the SIFT mod
 
   + Option ("fd_thresh", "fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount "
                          "(streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)")
-    + Argument ("value").type_float (0.0, 2.0 * Math::pi)
-
-  + Mapping::BlurStreamlinesOption;
+    + Argument ("value").type_float (0.0, 2.0 * Math::pi);
 
 
 
