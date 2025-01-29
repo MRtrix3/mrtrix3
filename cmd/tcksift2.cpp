@@ -300,6 +300,10 @@ void run ()
   opt = get_options ("max_iters");
   if (opt.size())
     tckfactor.set_max_iters (int(opt[0][0]));
+  opt = get_options ("streamline_groups");
+  if (!opt.empty())
+    tckfactor.set_streamline_groups (opt[0][0]);
+
 
   if (get_options ("linear").size()) {
 

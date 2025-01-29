@@ -56,7 +56,7 @@ namespace MR
       // Ideally, for computational performance, these would be templated out,
       //   since they may be involved in derivative calculations in deep line search loops
 
-      enum reg_basis_t { STREAMLINE, FIXEL };
+      enum reg_basis_t { STREAMLINE, FIXEL, GROUP };
       enum reg_fn_abs_t { COEFF, FACTOR, GAMMA };
       enum reg_fn_diff_t { DELTACOEFF, DUALINVBARR };
 

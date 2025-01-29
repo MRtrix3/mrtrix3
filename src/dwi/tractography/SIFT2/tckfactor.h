@@ -152,6 +152,7 @@ namespace MR {
 
           TckFactor (const std::string& fd_path) :
               Model (fd_path),
+              num_streamline_groups (0),
               reg_basis_abs (reg_basis_t::FIXEL),
               reg_basis_diff (reg_basis_t::STREAMLINE),
               reg_fn_abs (reg_fn_abs_t::GAMMA),
@@ -207,6 +208,7 @@ namespace MR {
           void set_fixed_mu            (const value_type i) { fixed_mu = i; }
 
           void set_csv_path (const std::string& path);
+          void set_streamline_groups (const std::string &path);
 
           void set_coefficients (const std::string& path);
           void set_factors (const std::string& path);
@@ -262,11 +264,18 @@ namespace MR {
           Eigen::Array<value_type, Eigen::Dynamic, 1> coefficients;
           Eigen::Array<value_type, Eigen::Dynamic, 1> deltacoeffs;
 
-          // TODO Preclude specific streamlines from having their contributions modified by the optimiser
+          // Preclude specific streamlines from having their contributions modified by the optimiser
           // TODO If there is any multi-threading process that attempts to update this,
           //   a race condition is going to occur
           Eigen::Array<bool, Eigen::Dynamic, 1> mask_absolute;
           Eigen::Array<bool, Eigen::Dynamic, 1> mask_differential;
+
+          // TODO Requisite data for applying regularisation to streamline groups (such as connectome edges)
+          Eigen::Array<SIFT::track_t, Eigen::Dynamic, 1> streamline2group;
+          SIFT::track_t num_streamline_groups;
+          Eigen::Array<value_type, Eigen::Dynamic, 1> group_TDs;
+          Eigen::Array<value_type, Eigen::Dynamic, 1> group_means_absolute;
+          Eigen::Array<value_type, Eigen::Dynamic, 1> group_means_differential;
 
           reg_basis_t reg_basis_abs;
           reg_basis_t reg_basis_diff;
@@ -314,6 +323,9 @@ namespace MR {
           void update_fixels();
 
         private:
+          template <operation_mode_t Mode>
+          void update_groups();
+
           template <operation_mode_t Mode>
           value_type calculate_regularisation();
           // TODO Implement entropy calculation for differential mode (based on absolute values)

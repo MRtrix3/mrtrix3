@@ -24,6 +24,8 @@
 #include "fixel/legacy/image.h"
 #include "fixel/legacy/keys.h"
 
+#include "connectome/mat2vec.h"
+
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
 #include "dwi/tractography/SIFT2/reg_calculator.h"
@@ -88,6 +90,28 @@ namespace MR {
 
 
 
+      template <>
+      void TckFactor::update_groups<operation_mode_t::ABSOLUTE>()
+      {
+        group_means_absolute.setZero();
+        for (SIFT::track_t i = 0; i != contributions.size(); ++i)
+          group_means_absolute[streamline2group[i]] += coefficients[i] * contributions[i]->get_total_contribution();
+        group_means_absolute /= group_TDs;
+      }
+
+      template <>
+      void TckFactor::update_groups<operation_mode_t::DIFFERENTIAL>()
+      {
+        group_means_differential.setZero();
+        for (SIFT::track_t i = 0; i != contributions.size(); ++i)
+          group_means_differential[streamline2group[i]] += deltacoeffs[i] * contributions[i]->get_total_contribution();
+        group_means_differential /= group_TDs;
+      }
+
+
+
+
+
 
       namespace
       {
@@ -137,6 +161,14 @@ namespace MR {
             }
             break;
           }
+          case reg_basis_t::GROUP: {
+            switch (reg_fn_abs) {
+              case reg_fn_abs_t::COEFF:  unscaled = calc_reg_absolute<reg_basis_t::GROUP, reg_fn_abs_t::COEFF>  (*this); break;
+              case reg_fn_abs_t::FACTOR: unscaled = calc_reg_absolute<reg_basis_t::GROUP, reg_fn_abs_t::FACTOR> (*this); break;
+              case reg_fn_abs_t::GAMMA:  unscaled = calc_reg_absolute<reg_basis_t::GROUP, reg_fn_abs_t::GAMMA>  (*this); break;
+            }
+            break;
+          }
         }
         assert (std::isfinite(unscaled));
         assert (std::isfinite(reg_multiplier_abs));
@@ -163,6 +195,13 @@ namespace MR {
             }
             break;
           }
+          case reg_basis_t::GROUP: {
+            switch (reg_fn_diff) {
+              case reg_fn_diff_t::DELTACOEFF:  unscaled = calc_reg_differential<reg_basis_t::GROUP, reg_fn_diff_t::DELTACOEFF>  (*this); break;
+              case reg_fn_diff_t::DUALINVBARR: unscaled = calc_reg_differential<reg_basis_t::GROUP, reg_fn_diff_t::DUALINVBARR> (*this); break;
+            }
+            break;
+          }
         }
         assert (std::isfinite(unscaled));
         assert (std::isfinite(reg_multiplier_diff));
@@ -176,6 +215,53 @@ namespace MR {
         csv_path = path;
         File::OFStream csv_out (path);
         csv_out << "Iteration,Cost_data,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_mean,Step_mean_abs,Step_var,Step_max,Coeff_min,Coeff_mean,Coeff_mean_abs,Coeff_var,Coeff_max,Coeff_norm,\n";
+      }
+
+
+
+      void TckFactor::set_streamline_groups (const std::string &path)
+      {
+        Eigen::Array<SIFT::track_t, Eigen::Dynamic, Eigen::Dynamic> data;
+        try {
+          data = load_matrix<SIFT::track_t>(path);
+        } catch (Exception &e) {
+          throw Exception(e, "Unable to read file \"" + path + "\" as streamline-to-group assignments");
+        }
+        if (data.rows() != contributions.size())
+          throw Exception ("Number of entries in streamline-to-group assignments file \"" + path + "\" (" + str(data.rows()) + ") "
+                           "does not match number of streamlines in tractogram (" + str(contributions.size()) + ")");
+        switch (data.cols()) {
+          case 1: {
+            const SIFT::track_t min_coeff = data.minCoeff();
+            switch (min_coeff) {
+              case 0:
+                streamline2group = data;
+                num_streamline_groups = data.maxCoeff() + 1;
+                break;
+              case 1:
+                streamline2group = data - 1;
+                num_streamline_groups = data.maxCoeff();
+                break;
+              default:
+                throw Exception("Unexpected data assigning streamlines to groups");
+            }
+          } break;
+          case 2: {
+            Connectome::Mat2Vec mat2vec(data.maxCoeff() + 1);
+            streamline2group.resize(data.rows());
+            for (SIFT::track_t i = 0; i != data.rows(); ++i)
+              streamline2group[i] = mat2vec(data(i,0), data(i,1));
+            num_streamline_groups = mat2vec.vec_size();
+          } break;
+          default:
+            throw Exception("File containing streamline-to-group assignments must contain either one or two columns; "
+                            "found " + str(data.cols()));
+        }
+        // Pre-compute the total track density per group
+        //   to expedite normalisation of group means
+        group_TDs = Eigen::Array<value_type, Eigen::Dynamic, 1>::Zero(num_streamline_groups);
+        for (SIFT::track_t i = 0; i != contributions.size(); ++i)
+          group_TDs[streamline2group[i]] += contributions[i]->get_total_contribution();
       }
 
 
@@ -649,6 +735,8 @@ namespace MR {
               nonzero_init_regularisation = true;
             allocate_vector (coefficients, num_tracks());
             cf_data = calc_cost_function();
+            if (reg_basis_abs == reg_basis_t::GROUP)
+              allocate_vector (group_means_absolute, num_streamline_groups);
             break;
           case operation_mode_t::DIFFERENTIAL:
             allocate_mask (mask_differential, num_tracks());
@@ -661,6 +749,8 @@ namespace MR {
               nonzero_init_regularisation = true;
             allocate_vector (deltacoeffs, num_tracks());
             cf_data = calc_cost_function_differential();
+            if (reg_basis_diff == reg_basis_t::GROUP)
+              allocate_vector (group_means_differential, num_streamline_groups);
             break;
         }
         assert(std::isfinite(cf_data));
@@ -884,6 +974,15 @@ namespace MR {
           // Re-calculate per-fixel TD and mean coefficient
           update_fixels<Mode>();
           indicate_progress();
+
+          // If necessary, update mean coefficient per streamline group
+          if (Mode == operation_mode_t::ABSOLUTE && reg_basis_abs == reg_basis_t::GROUP) {
+            update_groups<operation_mode_t::ABSOLUTE>();
+            indicate_progress();
+          } else if (Mode == operation_mode_t::DIFFERENTIAL && reg_basis_diff == reg_basis_t::GROUP) {
+            update_groups<operation_mode_t::DIFFERENTIAL>();
+            indicate_progress();
+          }
 
           // TODO Template this out
           // (SIFT1 code would need to become aware of "absolute" vs "differential" modes)
