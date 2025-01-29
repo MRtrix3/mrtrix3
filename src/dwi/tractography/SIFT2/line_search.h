@@ -51,7 +51,7 @@ namespace MR {
         protected:
           const SIFT::track_t track_index;
           const value_type mu;
-          value_type reg_multiplier_streamline;
+          value_type reg_multiplier_streamline; // Also used for streamline-group-wise regularisation
           value_type reg_multiplier_fixel;
 
 
@@ -92,6 +92,7 @@ namespace MR {
           };
 
           const value_type Fs;
+          const WeightingCoeffAndFactor group_mean;
           vector<Fixel> fixels;
 
       };
@@ -124,12 +125,17 @@ namespace MR {
 
         }
 
-        if (RegBasis == reg_basis_t::STREAMLINE)
-          SIFT2::dxreg_dcoeffx<RegFn> (reg_result, WCF, reg_multiplier_streamline);
-        else if (RegBasis == reg_basis_t::FIXEL)
-          reg_result *= reg_multiplier_fixel;
-        else
-          assert (false);
+        switch (RegBasis) {
+          case reg_basis_t::STREAMLINE:
+            SIFT2::dxreg_dcoeffx<RegFn> (reg_result, WCF, reg_multiplier_streamline);
+            break;
+          case reg_basis_t::FIXEL:
+            reg_result *= reg_multiplier_fixel;
+            break;
+          case reg_basis_t::GROUP:
+            SIFT2::dxreg_dcoeffx<RegFn> (reg_result, WCF, reg_multiplier_streamline, group_mean);
+            break;
+        }
 
         return CostAndDerivatives(data_result, reg_result);
       }
@@ -141,17 +147,24 @@ namespace MR {
       LineSearchFunctorAbsolute::value_type LineSearchFunctorAbsolute::operator() (const value_type dFs) const
       {
         const WeightingCoeffAndFactor WCF (WeightingCoeffAndFactor::from_coeff (Fs+dFs));
-        value_type cf_data = value_type(0.0);
-        value_type cf_reg (RegBasis == reg_basis_t::STREAMLINE ?
-                           reg_multiplier_streamline * SIFT2::reg<RegFn> (WCF) :
-                           value_type(0.0));
+        value_type cf_data (value_type(0));
+        value_type cf_reg (value_type(0));
         for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
           cf_data += i->cost_frac * i->weight * Math::pow2 ((mu * (i->TD + (i->length * WCF.factor()) + (i->dTD_dFs*dFs))) - i->FD);
           if (RegBasis == reg_basis_t::FIXEL)
             cf_reg += i->SL_eff * SIFT2::reg<RegFn> (WCF, i->WCF);
         }
-        if (RegBasis == reg_basis_t::FIXEL)
-          cf_reg *= reg_multiplier_fixel;
+        switch (RegBasis) {
+          case reg_basis_t::STREAMLINE:
+            cf_reg = reg_multiplier_streamline * SIFT2::reg<RegFn> (WCF);
+            break;
+          case reg_basis_t::FIXEL:
+            cf_reg *= reg_multiplier_fixel;
+            break;
+          case reg_basis_t::GROUP:
+            cf_reg = reg_multiplier_streamline * SIFT2::reg<RegFn> (WCF, group_mean);
+            break;
+        }
         return (cf_data + cf_reg);
       }
 
@@ -188,6 +201,7 @@ namespace MR {
           };
 
           const DifferentialWCF base_dWCF;
+          const value_type group_mean;
           vector<Fixel> fixels;
 
       };
@@ -221,12 +235,17 @@ namespace MR {
 
         }
 
-        if (RegBasis == reg_basis_t::STREAMLINE)
-          SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, reg_multiplier_streamline);
-        else if (RegBasis == reg_basis_t::FIXEL)
-          reg_result *= reg_multiplier_fixel;
-        else
-          assert (false);
+        switch (RegBasis) {
+          case reg_basis_t::STREAMLINE:
+            SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, reg_multiplier_streamline);
+            break;
+          case reg_basis_t::FIXEL:
+            reg_result *= reg_multiplier_fixel;
+            break;
+          case reg_basis_t::GROUP:
+            SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, reg_multiplier_streamline, group_mean);
+            break;
+        }
 
         return CostAndDerivatives(data_result, reg_result);
       }
@@ -239,7 +258,7 @@ namespace MR {
       LineSearchFunctorDifferential::value_type LineSearchFunctorDifferential::operator() (const value_type ddeltacoeff) const
       {
         const value_type deltaplusddelta = base_dWCF.delta_coeff() + ddeltacoeff;
-        value_type cf_data = value_type(0.0);
+        value_type cf_data (value_type(0));
         value_type cf_reg (RegBasis == reg_basis_t::STREAMLINE ?
                            reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta) :
                            value_type(0.0));
@@ -248,8 +267,17 @@ namespace MR {
           if (RegBasis == reg_basis_t::FIXEL)
             cf_reg += i->SL_eff * SIFT2::reg<RegFn> (deltaplusddelta, i->mean_deltacoeff);
         }
-        if (RegBasis == reg_basis_t::FIXEL)
-          cf_reg *= reg_multiplier_fixel;
+        switch (RegBasis) {
+          case reg_basis_t::STREAMLINE:
+            cf_reg = reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta);
+            break;
+          case reg_basis_t::FIXEL:
+            cf_reg *= reg_multiplier_fixel;
+            break;
+          case reg_basis_t::GROUP:
+            cf_reg = reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta, group_mean);
+            break;
+        }
         return (cf_data + cf_reg);
       }
 

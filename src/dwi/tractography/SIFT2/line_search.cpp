@@ -33,7 +33,7 @@ namespace MR {
         track_index (index),
         mu (tckfactor.mu()),
         reg_multiplier_streamline (std::numeric_limits<value_type>::signaling_NaN()),
-        reg_multiplier_fixel (std::numeric_limits<value_type>::signaling_NaN()) { }
+        reg_multiplier_fixel (std::numeric_limits<value_type>::signaling_NaN()) {}
 
 
 
@@ -42,7 +42,10 @@ namespace MR {
 
       LineSearchFunctorAbsolute::LineSearchFunctorAbsolute (const SIFT::track_t index, TckFactor& tckfactor) :
           LineSearchFunctorBase (index, tckfactor),
-          Fs (tckfactor.coefficients[track_index])
+          Fs (tckfactor.coefficients[track_index]),
+          group_mean (WeightingCoeffAndFactor::from_coeff (tckfactor.reg_basis_abs == reg_basis_t::GROUP ?
+                                                           tckfactor.group_means_absolute[tckfactor.streamline2group[index]] :
+                                                           std::numeric_limits<value_type>::quiet_NaN()))
       {
         reg_multiplier_streamline = tckfactor.reg_multiplier_abs;
         reg_multiplier_fixel = tckfactor.reg_multiplier_abs / tckfactor.contributions[track_index]->get_total_contribution();
@@ -89,7 +92,10 @@ namespace MR {
 
       LineSearchFunctorDifferential::LineSearchFunctorDifferential (const SIFT::track_t index, TckFactor& tckfactor) :
           LineSearchFunctorBase (index, tckfactor),
-          base_dWCF(DifferentialWCF::from_coeffs(tckfactor.coefficients[index], tckfactor.deltacoeffs[index]))
+          base_dWCF(DifferentialWCF::from_coeffs(tckfactor.coefficients[index], tckfactor.deltacoeffs[index])),
+          group_mean (tckfactor.reg_basis_diff == reg_basis_t::GROUP ?
+                      tckfactor.group_means_differential[tckfactor.streamline2group[index]] :
+                      std::numeric_limits<value_type>::signaling_NaN())
       {
         reg_multiplier_streamline = tckfactor.reg_multiplier_diff;
         reg_multiplier_fixel = tckfactor.reg_multiplier_diff / tckfactor.contributions[track_index]->get_total_contribution();
