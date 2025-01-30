@@ -60,6 +60,26 @@ void usage ()
 
   // TODO Should data_in be a directions file if angle is the metric of interest?
 
+  EXAMPLES
+  + Example("Replicate the behaviour of the fixelcorrespondence command from MRtrix version 3.0.x",
+            "fixelcorrespondence subject/fd.mif template/fd.mif fixelmapping -algorithm nearest; "
+            "fixel2fixel subject/fd.mif fixelmapping sum fd_template subject.mif -no_implicit_weights",
+            "To reproduce the behaviour of the 3.0.x version of the fixelcorrespondence command "
+            "requires two explicit modifications to the default behaviours "
+            "of both the new fixelcorrespondence command and command fixel2fixel. "
+            "When running the new fixelcorrespondence command, "
+            "matching algorithm 'nearest' must be used; "
+            "this simply chooses for each template fixel the nearest subject fixel, "
+            "provided that it is within some maximal angular distance. "
+            "However if multiple template fixels were to select the same subject fixel, "
+            "the entirety of the fibre density in that fixel would be projected to both template fixels. "
+            "Under the default behaviour of command fixel2fixel, "
+            "the fibre density of that subject fixel would instead be split between those two template fixels. "
+            "Option -no_implicit_weights disables that behaviour, "
+            "thereby manifesting the same (potentially undesirable) behaviour of the earlier software. "
+            "Note that this example is provided for understanding and backwards compatibility "
+            "and should not be interpreted as explicit advocacy for its use.");
+
   ARGUMENTS
   + Argument ("data_in", "the source fixel data file").type_image_in()
   + Argument ("correspondence", "the directory containing the fixel-fixel correspondence mapping").type_directory_in()
@@ -72,6 +92,8 @@ void usage ()
 
   + Option ("weighted", "specify fixel data file containing weights to use during aggregation of multiple source fixels")
     + Argument ("weights_in").type_image_in()
+
+  + Option ("no_implicit_weights", "disable implicit scaling of contributions of those source fixels that map to multiple template fixels")
 
   + OptionGroup ("Options relating to filling data values for specific fixels")
   + Option ("fill", "value for output fixels to which no input fixels are mapped "
@@ -149,10 +171,15 @@ class Functor
         }
       }
       implicit_weights = Image<float>::scratch (input_data, "Implicit weights for source fixels based on multiple objective target fixels");
-      for (auto l = Loop(0) (implicit_weights); l; ++l)
-        implicit_weights.value() = objectives_per_source_fixel[implicit_weights.index(0)] ?
-                                   1.0f / float(objectives_per_source_fixel[implicit_weights.index(0)]) :
-                                   0.0f;
+      if (get_options("no_implicit_weights").empty()) {
+        for (auto l = Loop(0) (implicit_weights); l; ++l)
+          implicit_weights.value() = objectives_per_source_fixel[implicit_weights.index(0)] ?
+                                     1.0f / float(objectives_per_source_fixel[implicit_weights.index(0)]) :
+                                     0.0f;
+      } else {
+        for (auto l = Loop(0) (implicit_weights); l; ++l)
+          implicit_weights.value() = 1.0f;
+      }
     }
 
 
