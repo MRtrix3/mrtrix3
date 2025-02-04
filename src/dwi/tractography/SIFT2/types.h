@@ -45,11 +45,19 @@ namespace MR {
         public:
           static WeightingCoeffAndFactor from_coeff (const value_type coeff)
           {
-            assert (std::isfinite (coeff));
+            if (std::isnan(coeff))
+              return WeightingCoeffAndFactor (coeff, coeff);
+            if (coeff == -std::numeric_limits<value_type>::infinity())
+              return WeightingCoeffAndFactor (coeff, value_type(0));
+            assert (std::isfinite(coeff)); // Catch any positive infinities
             return WeightingCoeffAndFactor (coeff, std::exp (coeff));
           }
           static WeightingCoeffAndFactor from_factor (const value_type factor)
           {
+            if (std::isnan(factor))
+              return WeightingCoeffAndFactor (factor, factor);
+            if (factor == value_type(0))
+              return WeightingCoeffAndFactor (-std::numeric_limits<value_type>::infinity(), value_type(0));
             assert (std::isfinite (factor) && factor > value_type(0));
             return WeightingCoeffAndFactor (std::log (factor), factor);
           }
