@@ -735,8 +735,11 @@ namespace MR {
               nonzero_init_regularisation = true;
             allocate_vector (coefficients, num_tracks());
             cf_data = calc_cost_function();
-            if (reg_basis_abs == reg_basis_t::GROUP)
+            if (reg_basis_abs == reg_basis_t::GROUP) {
+              if (streamline2group.size() == 0)
+                throw Exception("Cannot regularise by streamline group as no grouping information provided");
               allocate_vector (group_means_absolute, num_streamline_groups);
+            }
             break;
           case operation_mode_t::DIFFERENTIAL:
             allocate_mask (mask_differential, num_tracks());
@@ -749,8 +752,11 @@ namespace MR {
               nonzero_init_regularisation = true;
             allocate_vector (deltacoeffs, num_tracks());
             cf_data = calc_cost_function_differential();
-            if (reg_basis_diff == reg_basis_t::GROUP)
+            if (reg_basis_diff == reg_basis_t::GROUP) {
+              if (streamline2group.size() == 0)
+                throw Exception("Cannot regularise by streamline group as no grouping information provided");
               allocate_vector (group_means_differential, num_streamline_groups);
+            }
             break;
         }
         assert(std::isfinite(cf_data));
