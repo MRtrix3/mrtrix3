@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2023 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -163,6 +163,9 @@ def execute(): #pylint: disable=unused-variable
 
           grad_option = ' -fslgrad ' + grad_path + ' bvals'
 
+        else:
+          assert False
+
         # Run the tracking experiment
         run.command('tckgen -algorithm tensor_det data.mif' + grad_option + ' -seed_image mask.mif -mask mask.mif' + number_option + ' -minlength 0 -downsample 5 tracks' + suffix + '.tck')
 
@@ -202,6 +205,8 @@ def execute(): #pylint: disable=unused-variable
       grad_import_option = ' -grad grad' + suffix + '.b'
     elif best[3] == 'image':
       grad_import_option = ' -fslgrad bvecs' + suffix + ' bvals'
+    else:
+      assert False
     run.command('mrinfo data.mif' + grad_import_option + grad_export_option, force=app.FORCE_OVERWRITE)
 
 

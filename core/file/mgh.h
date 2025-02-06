@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 
 #include "header.h"
 #include "raw.h"
+#include "types.h"
 #include "file/gz.h"
 #include "file/nifti_utils.h"
 
@@ -378,7 +379,7 @@ namespace MR
             const int64_t fend = in.tellg();
             const int64_t empty_space_len = len - (fend - fstart);
             if (empty_space_len > 0) {
-              char buffer[empty_space_len];
+              VLA(buffer, char, empty_space_len);
               in.read (buffer, empty_space_len);
             }
 
@@ -806,7 +807,7 @@ namespace MR
             const int64_t fend = out.tellp();
             const int64_t extra_space_len = len - (fend - fstart);
             if (extra_space_len > 0) {
-              char buffer[extra_space_len];
+              VLA(buffer, char, extra_space_len);
               memset (buffer, 0x00, extra_space_len);
               out.write (buffer, extra_space_len);
             }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -105,7 +105,7 @@ namespace MR {
             }
             std::cerr << "? ";
             std::cin >> buf;
-            if (buf[0] == 'q' || buf[0] == 'Q')
+            if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
               throw CancelException();
             if (isdigit (buf[0])) {
               int n = to<int>(buf) - 1;
@@ -145,7 +145,7 @@ namespace MR {
             }
             std::cerr << "? ";
             std::cin >> buf;
-            if (buf[0] == 'q' || buf[0] == 'Q')
+            if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
               throw CancelException();
             if (isdigit (buf[0])) {
               int n = to<int>(buf) - 1;
@@ -188,7 +188,7 @@ namespace MR {
             }
             std::cerr << "? ";
             std::cin >> buf;
-            if (buf[0] == 'q' || buf[0] == 'Q')
+            if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
               throw CancelException();
             if (isdigit (buf[0])) {
               vector<uint32_t> seq;

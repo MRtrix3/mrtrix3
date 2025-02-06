@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2023 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -59,7 +59,7 @@ CMDLINE = None
 
 
 _DEFAULT_COPYRIGHT = \
-'''Copyright (c) 2008-2023 the MRtrix3 contributors.
+'''Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -293,8 +293,7 @@ def make_scratch_dir(): #pylint: disable=unused-variable
   if CONTINUE_OPTION:
     debug('Skipping scratch directory creation due to use of -continue option')
     return
-  if SCRATCH_DIR:
-    raise Exception('Cannot use multiple scratch directories')
+  assert not SCRATCH_DIR, 'Cannot use multiple scratch directories'
   if hasattr(ARGS, 'scratch') and ARGS.scratch:
     dir_path = os.path.abspath(ARGS.scratch)
   else:
@@ -320,8 +319,7 @@ def make_scratch_dir(): #pylint: disable=unused-variable
 
 
 def goto_scratch_dir(): #pylint: disable=unused-variable
-  if not SCRATCH_DIR:
-    raise Exception('No scratch directory location set')
+  assert SCRATCH_DIR, 'No scratch directory location set'
   if VERBOSITY:
     console('Changing to scratch directory (' + SCRATCH_DIR + ')')
   os.chdir(SCRATCH_DIR)
@@ -632,15 +630,13 @@ class Parser(argparse.ArgumentParser):
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flag_mutually_exclusive_options(self, options, required=False): #pylint: disable=unused-variable
-    if not isinstance(options, list) or not isinstance(options[0], utils.STRING_TYPES):
-      raise Exception('Parser.flagMutuallyExclusiveOptions() only accepts a list of strings')
+    assert isinstance(options, list) and isinstance(options[0], utils.STRING_TYPES), \
+        'Parser.flagMutuallyExclusiveOptions() only accepts a list of strings'
     self._mutually_exclusive_option_groups.append( (options, required) )
 
   def parse_args(self):
-    if not self._author:
-      raise Exception('Script author MUST be set in script\'s usage() function')
-    if not self._synopsis:
-      raise Exception('Script synopsis MUST be set in script\'s usage() function')
+    assert self._author, 'Script author MUST be set in script\'s usage() function'
+    assert self._synopsis, 'Script synopsis MUST be set in script\'s usage() function'
     if '-version' in sys.argv:
       self.print_version()
       sys.exit(0)
