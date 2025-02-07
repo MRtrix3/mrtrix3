@@ -158,6 +158,10 @@ namespace MR {
             }
             return;
           case 0x0020U:
+            for (const auto& p : item.parents)
+              if (p.group == 0x2005)
+                return; // ignore if nested within Philips private sequence
+
             switch (item.element) {
               case 0x000EU:
                 ignore_series_num = item.is_in_series_ref_sequence();
