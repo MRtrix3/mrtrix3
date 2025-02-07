@@ -20,6 +20,7 @@
 #include "app.h"
 #include "header.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 #include "dwi/directions/predefined.h"

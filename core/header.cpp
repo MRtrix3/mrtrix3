@@ -21,6 +21,7 @@
 
 #include "app.h"
 #include "axes.h"
+#include "math/math.h"
 #include "mrtrix.h"
 #include "phase_encoding.h"
 #include "stride.h"
@@ -128,12 +129,21 @@ namespace MR
         }
       } else {
         auto it = keyval().find (item.first);
-        if (it == keyval().end() || it->second == item.second)
+        if (it == keyval().end() || it->second == item.second) {
           new_keyval.insert (item);
-        else if (item.first == "SliceTiming")
+        } else if (item.first == "SliceTiming") {
           new_keyval["SliceTiming"] = resolve_slice_timing (item.second, it->second);
-        else
+        } else if (item.first == "dw_scheme") {
+          try {
+            auto scheme = DWI::resolve_DW_scheme (parse_matrix (item.second), parse_matrix (it->second));
+            DWI::set_DW_scheme (new_keyval, scheme);
+          } catch (Exception& e) {
+            WARN("Error merging DW gradient tables between headers");
+            new_keyval["dw_scheme"] = "variable";
+          }
+        } else {
           new_keyval[item.first] = "variable";
+        }
       }
     }
     std::swap (keyval_, new_keyval);
