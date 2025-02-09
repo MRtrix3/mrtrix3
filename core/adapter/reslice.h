@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,12 +51,23 @@ namespace MR
         return value_type(std::round (sum*norm));
       }
 
-      template <typename value_type>
-      typename std::enable_if<std::is_floating_point<value_type>::value, value_type>::type
-      inline normalise (const default_type sum, const default_type norm)
+      // Standard implementation for floating point (either real or complex)
+      template <typename value_type, typename summing_type>
+      typename std::enable_if<!std::is_same<value_type, bool>::value && !std::is_integral<value_type>::value, value_type>::type
+      inline normalise (const summing_type sum, const default_type norm)
       {
-        return (sum * norm);
+        return value_type (sum * norm);
       }
+
+      // If summing complex numbers, use double precision complex;
+      //   otherwise, use double precision real
+      template <typename value_type> struct summing_type { NOMEMALIGN
+        using type = double;
+      };
+      template <typename value_type> struct summing_type<is_complex<value_type>> { NOMEMALIGN
+        using type = std::complex<double>;
+      };
+
     }
 
 
@@ -113,7 +124,6 @@ namespace MR
       public:
 
         using value_type = typename ImageType::value_type;
-
 
         template <class HeaderType>
           Reslice (const ImageType& original,
@@ -195,7 +205,7 @@ namespace MR
           using namespace Eigen;
           if (oversampling) {
             Vector3d d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
-            default_type sum (0.0);
+            typename summing_type<value_type>::type sum (0);
             Vector3d s;
             for (uint32_t z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
