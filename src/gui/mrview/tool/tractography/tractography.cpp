@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -564,11 +564,12 @@ namespace MR
               colour[2] = rng();
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
             tractogram->set_color_type (TrackColourType::Manual);
-            tractogram->set_colour (colour);
+            QColor c (colour[0]*255.0f, colour[1]*255.0f, colour[2]*255.0f);
+            tractogram->set_colour (c);
             if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
               tractogram->set_threshold_type (TrackThresholdType::None);
             if (!i)
-              colour_button->setColor (QColor (colour[0]*255.0f, colour[1]*255.0f, colour[2]*255.0f));
+              colour_button->setColor (c);
           }
           colour_combobox->blockSignals (true);
           colour_combobox->setCurrentIndex (2);
@@ -584,13 +585,12 @@ namespace MR
         {
           QColor color;
           color = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
-          float colour[] = {float(color.redF()), float(color.greenF()), float(color.blueF())};
           if (color.isValid()) {
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
               Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
               tractogram->set_color_type (TrackColourType::Manual);
-              tractogram->set_colour (colour);
+              tractogram->set_colour (color);
               if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
                 tractogram->set_threshold_type (TrackThresholdType::None);
             }
@@ -599,7 +599,7 @@ namespace MR
             colour_combobox->clearError();
             colour_combobox->blockSignals (false);
             colour_button->setEnabled (true);
-            colour_button->setColor (QColor (colour[0]*255.0f, colour[1]*255.0f, colour[2]*255.0f));
+            colour_button->setColor (color);
             update_scalar_options();
           }
           window().updateGL();
@@ -668,9 +668,8 @@ namespace MR
           const QColor color = colour_button->color();
           if (color.isValid()) {
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-            float c[3] = { color.red()/255.0f, color.green()/255.0f, color.blue()/255.0f };
             for (int i = 0; i < indices.size(); ++i)
-              tractogram_list_model->get_tractogram (indices[i])->set_colour (c);
+              tractogram_list_model->get_tractogram (indices[i])->set_colour (color);
             colour_combobox->blockSignals (true);
             colour_combobox->setCurrentIndex (3); // In case it was on random
             colour_combobox->clearError();
@@ -717,7 +716,7 @@ namespace MR
           const Tractogram* first_tractogram = tractogram_list_model->get_tractogram (indices[0]);
 
           TrackColourType color_type = first_tractogram->get_color_type();
-          Eigen::Array3f color = first_tractogram->colour;
+          QColor color (first_tractogram->colour[0], first_tractogram->colour[1], first_tractogram->colour[2]);
           TrackGeometryType geom_type = first_tractogram->get_geometry_type();
           bool color_type_consistent = true, geometry_type_consistent = true;
           float mean_thickness = first_tractogram->line_thickness;
@@ -743,7 +742,7 @@ namespace MR
               case TrackColourType::Manual:
                 colour_combobox->setCurrentIndex (3);
                 colour_button->setEnabled (true);
-                colour_button->setColor (QColor (color[0]*255.0f, color[1]*255.0f, color[2]*255.0f));
+                colour_button->setColor (color);
                 break;
               case TrackColourType::ScalarFile:
                 colour_combobox->setCurrentIndex (4);
@@ -988,16 +987,10 @@ namespace MR
               const float max_value = std::max ({ values[0], values[1], values[2] });
               if (std::min ({ values[0], values[1], values[2] }) < 0.0 || max_value > 255)
                 throw Exception ("values provided to -tractogram.colour must be either between 0.0 and 1.0, or between 0 and 255");
-              const float multiplier = max_value <= 1.0 ? 1.0 : 1.0/255.0;
+              const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
 
               //input need to be a float *
-              float colour_input[3] = {
-                multiplier * float (values[0]),
-                multiplier * float (values[1]),
-                multiplier * float (values[2])
-              };
-
-              QColor colour (int(values[0]*255.0), int(values[1]*255.0), int(values[2]*255.0));
+              QColor colour (multiplier*values[0], multiplier*values[1], multiplier*values[2]);
 
               QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
 
@@ -1008,7 +1001,7 @@ namespace MR
 
               // set the color
               tractogram->set_color_type (TrackColourType::Manual);
-              tractogram->set_colour (colour_input);
+              tractogram->set_colour (colour);
 
               // update_color_type_gui
               colour_combobox->setCurrentIndex (3);

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2023 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,10 @@
 
 
 import itertools, json, math, os, shutil, sys
-from distutils.spawn import find_executable
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 
 
 
@@ -115,7 +118,11 @@ def execute(): #pylint: disable=unused-variable
   if not fsl_path:
     raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  if not pe_design == 'None':
+  if pe_design == 'None':
+    topup_config_path = None
+    topup_cmd = None
+    applytopup_cmd = None
+  else:
     topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
     if not os.path.isfile(topup_config_path):
       raise MRtrixError('Could not find necessary default config file for FSL topup command (expected location: ' + topup_config_path + ')')
@@ -476,7 +483,7 @@ def execute(): #pylint: disable=unused-variable
         overwrite_dwi_pe_scheme = True
     if manual_trt:
       # Compare manual specification to that read from the header
-      if not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
+      if len(dwi_pe_scheme[0]) == 4 and app.ARGS.readout_time is not None and not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
         app.warn('User-defined total readout time does not match what is stored in DWI image header; proceeding with user specification')
         overwrite_dwi_pe_scheme = True
     if overwrite_dwi_pe_scheme:
@@ -513,7 +520,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Deal with the phase-encoding of the images to be fed to topup (if applicable)
-  do_topup = (not pe_design == 'None')
+  do_topup = pe_design != 'None'
   overwrite_se_epi_pe_scheme = False
   se_epi_path = 'se_epi.mif'
   dwi_permvols_preeddy_option = ''
@@ -549,7 +556,7 @@ def execute(): #pylint: disable=unused-variable
             app.warn('User-defined phase-encoding direction design does not match what is stored in SE EPI image header; proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
         if manual_trt:
-          if not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
+          if len(se_epi_pe_scheme[0]) == 4 and not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
             app.warn('User-defined total readout time does not match what is stored in SE EPI image header; proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
         if overwrite_se_epi_pe_scheme:

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -70,16 +70,16 @@ namespace MR
       }
 
       H.size(0) = png.get_width();
-      H.stride(0) = -3;
+      H.stride(0) = -2;
 
       H.size(1) = png.get_height();
-      H.stride(1) = -4;
+      H.stride(1) = -3;
 
       H.size(2) = 1;
-      H.stride(2) = 1;
+      H.stride(2) = 4;
 
       if (H.ndim() == 4)
-        H.stride(3) = 2;
+        H.stride(3) = 1;
 
       H.spacing (0) = H.spacing (1) = H.spacing (2) = 1.0;
       H.transform().setIdentity();
@@ -132,14 +132,14 @@ namespace MR
       if (H.ndim() == 4 && H.size(3) > 4)
         throw Exception ("A 4D image written to PNG must have between one and four volumes (requested: " + str(H.size(3)) + ")");
 
-      // TODO After looping over axes via square-bracket notation,
+      // After looping over axes via square-bracket notation,
       //   there needs to be at least two axes with size greater than one
-      size_t unity_axes = 0;
+      size_t nonunity_axes = 0;
       for (size_t axis = 0; axis != H.ndim(); ++axis) {
-        if (H.size (axis) == 1)
-          ++unity_axes;
+        if (H.size (axis) > 1)
+          ++nonunity_axes;
       }
-      if (unity_axes - (H.ndim() - num_axes) < 2)
+      if (nonunity_axes - (H.ndim() - num_axes) < 2)
         throw Exception ("Too few (non-unity) image axes to support PNG export");
 
       // For 4D images, can support:
@@ -149,7 +149,7 @@ namespace MR
       // - 4 volumes (save as RGBA)
       // This needs to be compatible with NameParser used in Header::create():
       //   "num_axes" subtracts from H.ndim() however many instances of [] there are
-      size_t width_axis = 0, axis_to_zero = 3;
+      size_t axis_to_zero = 3;
       if (H.ndim() - num_axes > 1)
         throw Exception ("Cannot nominate more than one axis using square-bracket notation for PNG format");
       switch (num_axes) {
@@ -170,7 +170,6 @@ namespace MR
             axis_to_zero = 1;
           } else if (H.size(0) == 1) {
             axis_to_zero = 0;
-            width_axis = 1;
           } else {
             // If image is 3D, and all three axes have size greater than one, and we
             //   haven't used the square-bracket notation, we can't export genuine 3D data
@@ -192,8 +191,6 @@ namespace MR
           }
           if (axis < 0)
             throw Exception ("Cannot export 4D image to PNG format if all three spatial axes have size greater than 1 and square-bracket notation is not used");
-          if (!axis_to_zero)
-            width_axis = 1;
           break;
         default:
           throw Exception ("Cannot generate PNG file(s) from image with more than 4 axes");
@@ -209,7 +206,7 @@ namespace MR
       H.stride(1) = -3;
       H.spacing(1) = 1.0;
       if (H.ndim() > 2) {
-        H.stride(2) = 4;
+        H.stride(2) = -4;
         H.spacing(2) = 1.0;
       }
       if (H.ndim() > 3) {
@@ -223,9 +220,10 @@ namespace MR
 
       H.transform().setIdentity();
 
-      if (H.datatype() == DataType::Bit && H.size (width_axis) % 8) {
-        WARN ("Cannot write bitwise PNG image with width not a factor of 8; will instead write with 8-bit depth");
+      if (H.datatype() == DataType::Bit) {
+        WARN ("Cannot write bitwise PNG images; will instead write with 8-bit depth");
         H.datatype() = DataType::UInt8;
+        H.intensity_scale() = 1.0 / 255.0;
       }
 
       return true;

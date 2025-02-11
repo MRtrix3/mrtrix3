@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,17 +29,14 @@ namespace MR
 
     void PNG::load (const Header& header, size_t)
     {
-      segsize = header.datatype().bytes() * voxel_count (header) * files.size();
+      DEBUG (std::string("loading PNG image") + (files.size() > 1 ? "s" : "") + " \"" + header.name() + "\"");
       addresses.resize (1);
-      addresses[0].reset (new uint8_t [segsize]);
+      segsize = (header.datatype().bits() * voxel_count (header) + 7) / 8;
+      addresses[0].reset (new uint8_t[segsize]);
       if (is_new) {
         memset (addresses[0].get(), 0x00, segsize);
-        DEBUG ("allocated memory for PNG image \"" + header.name() + "\"");
       } else {
-        DEBUG (std::string("loading PNG image") + (files.size() > 1 ? "s" : "") + " \"" + header.name() + "\"");
-        size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) + 7) / 8;
-        if (header.ndim() == 4)
-          slice_bytes *= header.size (3);
+        const size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) * (header.ndim() == 4 ? header.size(3) : 1) + 7) / 8;
         for (size_t i = 0; i != files.size(); ++i) {
           File::PNG::Reader png (files[i].name);
           if (png.get_width() != header.size(0) ||
@@ -59,19 +56,15 @@ namespace MR
 
     void PNG::unload (const Header& header)
     {
-      if (addresses.size()) {
-        if (writable) {
-          size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) + 7) / 8;
-          if (header.ndim() == 4)
-            slice_bytes *= header.size (3);
-          for (size_t i = 0; i != files.size(); i++) {
-            File::PNG::Writer png (header, files[i].name);
-            png.save (addresses[0].get() + (i * slice_bytes));
-          }
+      assert (addresses.size() == 1);
+      if (writable) {
+        const size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) * (header.ndim() == 4 ? header.size(3) : 1) + 7) / 8;
+        for (size_t i = 0; i != files.size(); i++) {
+          File::PNG::Writer png (header, files[i].name);
+          png.save (addresses[0].get() + (i * slice_bytes));
         }
-        DEBUG ("deleting buffer for PNG image \"" + header.name() + "\"...");
-        addresses[0].release();
       }
+      delete[] addresses[0].release();
     }
 
   }

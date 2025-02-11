@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,6 +38,7 @@ namespace MR
 
 
       Reader::Reader (const std::string& filename) :
+          infile (fopen (filename.c_str(), "rb")),
           png_ptr (NULL),
           info_ptr (NULL),
           width (0),
@@ -46,7 +47,6 @@ namespace MR
           color_type (0),
           channels (0)
       {
-        FILE* infile = fopen (filename.c_str(), "rb");
         unsigned char sig[8];
         if (fread (sig, 1, 8, infile) < 8)
           throw Exception ("error reading from PNG file \"" + filename + "\"");
@@ -130,6 +130,10 @@ namespace MR
           png_ptr = NULL;
           info_ptr = NULL;
         }
+        if (infile) {
+          fclose(infile);
+          infile = NULL;
+        }
       }
 
 
@@ -183,6 +187,7 @@ namespace MR
           bit_depth (0),
           filename (filename),
           data_type (H.datatype()),
+          multiplier (1.0),
           outfile (NULL)
       {
         if (Path::exists (filename) && !App::overwrite_files)
@@ -196,6 +201,8 @@ namespace MR
           throw Exception ("Unable to set jump buffer for PNG structure for image \"" + filename + "\"");
         }
         outfile = fopen (filename.c_str(), "wb");
+        if (!outfile)
+          throw Exception ("Unable to open PNG file for writing for image \"" + filename + "\": " + strerror (errno));
         png_init_io (png_ptr, outfile);
         png_set_compression_level (png_ptr, Z_DEFAULT_COMPRESSION);
         switch (H.ndim()) {
@@ -231,17 +238,23 @@ namespace MR
             png_destroy_write_struct (&png_ptr, &info_ptr);
             throw Exception ("Undefined data type in image \"" + H.name() + "\" for PNG writer");
           case DataType::Bit:
-            bit_depth = 1;
+            assert (false);
             break;
           case DataType::UInt8:
+            bit_depth = 8;
+            break;
           case DataType::Float32:
             bit_depth = 8;
+            multiplier = std::numeric_limits<uint8_t>::max(); break;
             break;
           case DataType::UInt16:
           case DataType::UInt32:
           case DataType::UInt64:
+            bit_depth = 16;
+            break;
           case DataType::Float64:
             bit_depth = 16;
+            multiplier = std::numeric_limits<uint16_t>::max(); break;
             break;
         }
         // Detect cases where one axis has a size of 1, and hence represents the image plane
@@ -302,6 +315,10 @@ namespace MR
           png_ptr = NULL;
           info_ptr = NULL;
         }
+        if (outfile) {
+          fclose(outfile);
+          outfile = NULL;
+        }
       }
 
 
@@ -323,13 +340,14 @@ namespace MR
             row_pointers[row] = to_write + row * row_bytes;
           png_write_image (png_ptr, row_pointers);
           png_write_end (png_ptr, info_ptr);
+          delete [] row_pointers;
         };
 
 
-        if (bit_depth == 1 || data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
+        if (data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
           finish (data);
         } else {
-          uint8_t scratch[row_bytes * height];
+          VLA(scratch, uint8_t, row_bytes * height);
           // Convert from "data" into "scratch"
           // This may include changes to fundamental type, changes to bit depth, changes to endianness
           uint8_t* in_ptr = data, *out_ptr = scratch;

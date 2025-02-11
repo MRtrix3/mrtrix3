@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -64,7 +64,7 @@ namespace MR
         return false;
 
       if (isatty (STDOUT_FILENO))
-        throw Exception ("attempt to pipe image to standard output (this will leave temporary files behind)");
+        throw Exception ("cannot create output piped image: no command connected at other end of pipe to receive that image");
 
       H.name() = File::create_tempfile (0, "mif");
 

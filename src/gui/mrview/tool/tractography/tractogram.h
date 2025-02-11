@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -69,8 +69,6 @@ namespace MR
             TrackThresholdType get_threshold_type() const { return threshold_type; }
             TrackGeometryType get_geometry_type() const { return geometry_type; }
 
-            void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
-
             float get_threshold_rate() const {
               switch (threshold_type) {
                 case TrackThresholdType::None: return NaN;
@@ -90,7 +88,6 @@ namespace MR
             bool scalarfile_by_direction;
             bool show_colour_bar;
             bool should_update_stride;
-            Eigen::Array3f colour;
             float original_fov;
             float line_thickness;
             std::string intensity_scalar_filename;

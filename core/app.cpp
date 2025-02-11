@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ namespace MR
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2023 the MRtrix3 contributors.\n"
+       "Copyright (c) 2008-2025 the MRtrix3 contributors.\n"
        "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -128,7 +128,7 @@ namespace MR
       inline void get_matches (vector<const Option*>& candidates, const OptionGroup& group, const std::string& stub)
       {
         for (size_t i = 0; i < group.size(); ++i) {
-          if (stub.compare (0, stub.size(), group[i].id, stub.size()) == 0)
+          if (stub.compare (0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
             candidates.push_back (&group[i]);
         }
       }
@@ -212,6 +212,8 @@ namespace MR
     const char* argtype_description (ArgType type)
     {
       switch (type) {
+        case Boolean:
+          return ("boolean");
         case Integer:
           return ("integer");
         case Float:
@@ -502,6 +504,9 @@ namespace MR
       switch (type) {
         case Undefined:
           assert (0);
+          break;
+        case Boolean:
+          stream << "BOOL";
           break;
         case Integer:
           stream << "INT " << limits.i.min << " " << limits.i.max;
@@ -1071,12 +1076,11 @@ namespace MR
         throw 0;
       }
 
-      size_t num_args_required = 0, num_command_arguments = 0;
+      size_t num_args_required = 0;
       size_t num_optional_arguments = 0;
 
       ArgFlags flags = None;
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-        ++num_command_arguments;
         if (ARGUMENTS[i].flags) {
           if (flags && flags != ARGUMENTS[i].flags)
             throw Exception ("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in command-line syntax");
