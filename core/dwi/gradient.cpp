@@ -167,6 +167,38 @@ namespace MR
       grad.leftCols<3>().transpose() = header.transform().rotation() * G.transpose();
       grad.col(3) = bvals.row(0);
 
+      // Substitute NaNs with b=0 volumes
+      ssize_t nans_present_bvecs = false;
+      ssize_t nans_present_bvals = false;
+      ssize_t nan_linecount = 0;
+      for (ssize_t n = 0; n != grad.rows(); ++n) {
+        bool zero_row = false;
+        if (std::isnan(grad(n, 3))) {
+          if (grad.block<1,3>(n, 0).squaredNorm() > 0.0)
+            throw Exception("Corrupt content in bvecs/bvals data (" + bvecs_path + " & " + bvals_path + ") "
+                            "(NaN present in bval but valid direction in bvec)");
+          nans_present_bvals = true;
+          zero_row = true;
+        }
+        if (grad.block<1,3>(n, 0).hasNaN()) {
+          if (grad(n, 3) > 0.0)
+            throw Exception("Corrupt content in bvecs/bvals data (" + bvecs_path + " & " + bvals_path + ") "
+                            "(NaN bvec direction but non-zero value in bval)");
+          nans_present_bvecs = true;
+          zero_row = true;
+        }
+        if (zero_row) {
+          grad.block<1,4>(n, 0).setZero();
+          ++nan_linecount;
+        }
+      }
+      if (nan_linecount > 0) {
+        WARN(str(nan_linecount) + " row" + (nan_linecount > 1 ? "s" : "") + " with NaN values detected in "
+             + (nans_present_bvecs ? "bvecs file " + bvecs_path + (nans_present_bvals ? " and" : "") : "")
+             + (nans_present_bvals ? "bvals file " + bvals_path : "")
+             + "; these have been interpreted as b=0 volumes by MRtrix");
+      }
+
       return grad;
     }
 
@@ -177,6 +209,8 @@ namespace MR
     void save_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
       const auto grad = parse_DW_scheme (header);
+
+      size_t bval_zeroed_count = 0;
 
       // rotate vectors from scanner space to image space
       Eigen::MatrixXd G = grad.leftCols<3>() * header.transform().rotation();
@@ -191,7 +225,12 @@ namespace MR
         bvecs(0,n) = header.stride(order[0]) > 0 ? G(n,order[0]) : -G(n,order[0]);
         bvecs(1,n) = header.stride(order[1]) > 0 ? G(n,order[1]) : -G(n,order[1]);
         bvecs(2,n) = header.stride(order[2]) > 0 ? G(n,order[2]) : -G(n,order[2]);
-        bvals(0,n) = grad(n,3);
+        if (!G.row(n).squaredNorm() && grad(n, 3) && grad(n, 3) <= MR::DWI::bzero_threshold()) {
+          ++bval_zeroed_count;
+          bvals(0,n) = 0.0;
+        } else {
+          bvals(0,n) = grad(n,3);
+        }
       }
 
       // bvecs format actually assumes a LHS coordinate system even if image is
@@ -199,6 +238,11 @@ namespace MR
       // transform have negative determinant:
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
+
+      if (bval_zeroed_count) {
+        WARN("For image \"" + header.name() + "\", " + str(bval_zeroed_count) + " volumes had zero gradient direction vector, but 0.0 < b-value <= BZeroThreshold; "
+             "these are clamped to zero in bvals file \"" + bvals_path + "\" for compatibility with external software");
+      }
 
       save_matrix (bvecs, bvecs_path, KeyValues(), false);
       save_matrix (bvals, bvals_path, KeyValues(), false);
