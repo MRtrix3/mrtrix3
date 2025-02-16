@@ -122,9 +122,10 @@ public:
   struct FloatRange {
     default_type min, max;
   };
+  struct VoidRange {};
 
   //! a structure to store the various parameters of the Argument
-  using Limits = std::variant<std::vector<std::string>, IntRange, FloatRange>;
+  using Limits = std::variant<std::vector<std::string>, IntRange, FloatRange, VoidRange>;
   Limits limits;
 
   operator bool() const { return id.empty(); }
@@ -279,6 +280,7 @@ public:
   Argument &type_various() {
     assert(type == Undefined);
     type = Various;
+    limits = VoidRange();
     return *this;
   }
 
