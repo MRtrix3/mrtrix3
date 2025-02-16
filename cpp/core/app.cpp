@@ -1296,30 +1296,32 @@ int64_t App::ParsedArgument::as_int() const {
     }
     return static_cast<int>(std::distance(choices.begin(), it));
   }
-  assert(0);
-  return (0);
+
+  assert(arg->type == Various);
+  return to<int64_t>(p);
 }
 
 default_type App::ParsedArgument::as_float() const {
-  assert(arg->type == Float);
+  assert(arg->type == Float || arg->type == Various);
   const default_type retval = to<default_type>(p);
-  const auto range = std::get<Argument::FloatRange>(arg->limits);
-  if (retval < range.min || retval > range.max) {
-    std::string msg("value supplied for ");
-    if (opt)
-      msg += std::string("option \"") + opt->id;
-    else
-      msg += std::string("argument \"") + arg->id;
-    msg += "\" is out of bounds (valid range: " + str(range.min) + " to " + str(range.max) +
-           ", value supplied: " + str(retval) + ")";
-    throw Exception(msg);
+  if (arg->type == Float) {
+    const auto range = std::get<Argument::FloatRange>(arg->limits);
+    if (retval < range.min || retval > range.max) {
+      std::string msg("value supplied for ");
+      if (opt)
+        msg += std::string("option \"") + opt->id;
+      else
+        msg += std::string("argument \"") + arg->id;
+      msg += "\" is out of bounds (valid range: " + str(range.min) + " to " + str(range.max) +
+             ", value supplied: " + str(retval) + ")";
+      throw Exception(msg);
+    }
   }
-
   return retval;
 }
 
 std::vector<int32_t> ParsedArgument::as_sequence_int() const {
-  assert(arg->type == IntSeq);
+  assert(arg->type == IntSeq || arg->type == Various);
   try {
     return parse_ints<int32_t>(p);
   } catch (Exception &e) {
@@ -1329,7 +1331,7 @@ std::vector<int32_t> ParsedArgument::as_sequence_int() const {
 }
 
 std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
-  assert(arg->type == IntSeq);
+  assert(arg->type == IntSeq || arg->type == Various);
   try {
     return parse_ints<uint32_t>(p);
   } catch (Exception &e) {
@@ -1339,7 +1341,7 @@ std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
 }
 
 std::vector<default_type> ParsedArgument::as_sequence_float() const {
-  assert(arg->type == FloatSeq);
+  assert(arg->type == FloatSeq || arg->type == Various);
   try {
     return parse_floats(p);
   } catch (Exception &e) {
