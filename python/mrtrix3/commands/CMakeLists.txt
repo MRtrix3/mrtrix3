@@ -113,8 +113,8 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
     list(APPEND ALL_PYTHON_COMMAND_TARGETS "${CMD_TARGET}")
 endforeach()
 
-add_custom_target(PythonCommands ALL)
-add_dependencies(PythonCommands ${ALL_PYTHON_COMMAND_TARGETS})
+add_custom_target(MRtrixPythonCommands ALL)
+add_dependencies(MRtrixPythonCommands ${ALL_PYTHON_COMMAND_TARGETS})
 
 # We need to generate a list of MRtrix3 commands:
 # function run.command() does different things if it is executing an MRtrix3 command vs. an external command,
@@ -136,6 +136,6 @@ install(
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/mrtrix3/commands/"
 )
 
-add_custom_target(PythonCommandsSources
+add_custom_target(MRtrixPythonCommandsSources
     SOURCES ${PYTHON_ALL_COMMANDS_FILES}
 )
