@@ -33,6 +33,7 @@ set(MRTRIX_DEPENDENCIES_DIR "" CACHE PATH
     - Half https://half.sourceforge.net/ (version 2.1.0 in zip format)\n \
     - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n"
 )
+option(MRTRIX_BUILD_CPP_COMMANDS "Build the C++ commands" ON)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)

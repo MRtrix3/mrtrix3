@@ -29,7 +29,9 @@ if(MINGW AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(mrtrix-common INTERFACE -Wa,-mbig-obj)
 endif()
 
-add_subdirectory(cmd)
+if(MRTRIX_BUILD_CPP_COMMANDS)
+  add_subdirectory(cmd)
+endif()
 add_subdirectory(core)
 
 if(MRTRIX_BUILD_GUI)
