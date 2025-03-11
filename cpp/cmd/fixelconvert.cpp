@@ -78,8 +78,8 @@ void usage() {
              " to indicate which fixel data files should be used as the source(s) of this information.");
 
   ARGUMENTS
-  + Argument ("fixel_in",  "the input fixel file / directory.").type_various()
-  + Argument ("fixel_out", "the output fixel file / directory.").type_various();
+  + Argument ("fixel_in",  "the input fixel file / directory.").type_directory_in().type_image_in()
+  + Argument ("fixel_out", "the output fixel file / directory.").type_directory_out().type_image_out();
 
   OPTIONS
   + OptionGroup ("Options for converting from old to new format")

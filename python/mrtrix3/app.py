@@ -847,16 +847,6 @@ class Parser(argparse.ArgumentParser):
     def _metavar():
       return 'trackfile'
 
-  class Various(CustomTypeBase):
-    def __call__(self, input_value):
-      return input_value
-    @staticmethod
-    def _legacytypestring():
-      return 'VARIOUS'
-    @staticmethod
-    def _metavar():
-      return 'spec'
-
 
 
 
@@ -927,7 +917,6 @@ class Parser(argparse.ArgumentParser):
                                   metavar='/path/to/scratch/',
                                   help='manually specify an existing directory in which to generate the scratch directory.')
       script_options.add_argument('-continue',
-                                  type=Parser.Various(),
                                   nargs=2,
                                   dest='cont',
                                   metavar=('ScratchDir', 'LastFile'),

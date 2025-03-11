@@ -185,45 +185,6 @@ std::string underline(const std::string &text, bool ignore_whitespace = false) {
 
 } // namespace
 
-const char *argtype_description(ArgType type) {
-  switch (type) {
-  case Boolean:
-    return ("boolean");
-  case Integer:
-    return ("integer");
-  case Float:
-    return ("float");
-  case Text:
-    return ("string");
-  case ArgFileIn:
-    return ("file in");
-  case ArgFileOut:
-    return ("file out");
-  case ArgDirectoryIn:
-    return ("directory in");
-  case ArgDirectoryOut:
-    return ("directory out");
-  case ImageIn:
-    return ("image in");
-  case ImageOut:
-    return ("image out");
-  case Choice:
-    return ("choice");
-  case IntSeq:
-    return ("int seq");
-  case FloatSeq:
-    return ("float seq");
-  case TracksIn:
-    return ("tracks in");
-  case TracksOut:
-    return ("tracks out");
-  case Various:
-    return ("various");
-  default:
-    return ("undefined");
-  }
-}
-
 std::string help_head(int format) {
   if (!format) {
     return std::string(NAME) + ": " +
@@ -445,71 +406,42 @@ std::string OptionList::syntax(int format) const {
 
 std::string Argument::usage() const {
   std::ostringstream stream;
-  stream << "ARGUMENT " << id << " " << (flags & Optional ? '1' : '0') << " " << (flags & AllowMultiple ? '1' : '0')
-         << " ";
+  stream << "ARGUMENT " << id                           //
+         << " " << (flags & Optional ? '1' : '0')       //
+         << " " << (flags & AllowMultiple ? '1' : '0'); //
 
-  switch (type) {
-  case Undefined:
-    assert(0);
-    break;
-  case Boolean:
-    stream << "BOOL";
-    break;
-  case Integer: {
-    const auto int_range = std::get<IntRange>(limits);
-    stream << "INT " << int_range.min << " " << int_range.max;
-    break;
-  }
-  case Float: {
-    const auto float_range = std::get<FloatRange>(this->limits);
-    stream << "FLOAT " << float_range.min << " " << float_range.max;
-    break;
-  }
-  case Text:
-    stream << "TEXT";
-    break;
-  case ArgFileIn:
-    stream << "FILEIN";
-    break;
-  case ArgFileOut:
-    stream << "FILEOUT";
-    break;
-  case ArgDirectoryIn:
-    stream << "DIRIN";
-    break;
-  case ArgDirectoryOut:
-    stream << "DIROUT";
-    break;
-  case Choice: {
-    stream << "CHOICE";
-    const auto &choices = std::get<std::vector<std::string>>(limits);
+  if (types & Text)
+    stream << " TEXT";
+  if (types & Boolean)
+    stream << " BOOL";
+  if (types & Integer)
+    stream << " INT " << int_limits.min() << " " << int_limits.max();
+  if (types & Float)
+    stream << " FLOAT " << float_limits.min() << " " << float_limits.max();
+  if (types & ArgFileIn)
+    stream << " FILEIN";
+  if (types & ArgFileOut)
+    stream << " FILEOUT";
+  if (types & ArgDirectoryIn)
+    stream << " DIRIN";
+  if (types & ArgDirectoryOut)
+    stream << " DIROUT";
+  if (types & ImageIn)
+    stream << " IMAGEIN";
+  if (types & ImageOut)
+    stream << " IMAGEOUT";
+  if (types & IntSeq)
+    stream << " ISEQ";
+  if (types & FloatSeq)
+    stream << " FSEQ";
+  if (types & TracksIn)
+    stream << " TRACKSIN";
+  if (types & TracksOut)
+    stream << " TRACKSOUT";
+  if (types & Choice) {
+    stream << " CHOICE";
     for (const std::string &p : choices)
       stream << " " << p;
-    break;
-  }
-  case ImageIn:
-    stream << "IMAGEIN";
-    break;
-  case ImageOut:
-    stream << "IMAGEOUT";
-    break;
-  case IntSeq:
-    stream << "ISEQ";
-    break;
-  case FloatSeq:
-    stream << "FSEQ";
-    break;
-  case TracksIn:
-    stream << "TRACKSIN";
-    break;
-  case TracksOut:
-    stream << "TRACKSOUT";
-    break;
-  case Various:
-    stream << "VARIOUS";
-    break;
-  default:
-    assert(0);
   }
   stream << "\n";
   if (!desc.empty())
@@ -973,7 +905,7 @@ void parse() {
   size_t num_args_required = 0;
   size_t num_optional_arguments = 0;
 
-  ArgFlags flags = None;
+  ArgModifierFlags flags = None;
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
     if (ARGUMENTS[i].flags) {
       if (flags && flags != ARGUMENTS[i].flags)
@@ -1076,61 +1008,62 @@ void parse() {
   // check for the existence of all specified input files (including optional ones that have been provided)
   // if necessary, also check for pre-existence of any output files with known paths
   //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
+  // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
     const std::string text = std::string(i);
-    if (i.arg->type == ArgFileIn || i.arg->type == TracksIn) {
+    if (i.arg->types == ArgFileIn || i.arg->types == TracksIn) {
       if (!Path::exists(text))
         throw Exception("required input file \"" + text + "\" not found");
       if (!Path::is_file(text))
         throw Exception("required input \"" + text + "\" is not a file");
     }
-    if (i.arg->type == ArgDirectoryIn) {
+    if (i.arg->types == ArgDirectoryIn) {
       if (!Path::exists(text))
         throw Exception("required input directory \"" + text + "\" not found");
       if (!Path::is_dir(text))
         throw Exception("required input \"" + text + "\" is not a directory");
     }
-    if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
+    if (i.arg->types == ArgFileOut || i.arg->types == TracksOut) {
       if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
         throw Exception("output path \"" + std::string(i) +
                         "\" is not a valid file path (ends with directory path separator)");
       check_overwrite(text);
     }
-    if (i.arg->type == ArgDirectoryOut)
+    if (i.arg->types == ArgDirectoryOut)
       check_overwrite(text);
-    if (i.arg->type == TracksIn && !Path::has_suffix(text, ".tck"))
+    if (i.arg->types == TracksIn && !Path::has_suffix(text, ".tck"))
       throw Exception("input file \"" + text + "\" is not a valid track file");
-    if (i.arg->type == TracksOut && !Path::has_suffix(text, ".tck"))
+    if (i.arg->types == TracksOut && !Path::has_suffix(text, ".tck"))
       throw Exception("output track file \"" + text + "\" must use the .tck suffix");
   }
   for (const auto &i : option) {
     for (size_t j = 0; j != i.opt->size(); ++j) {
       const Argument &arg = i.opt->operator[](j);
       const std::string text = std::string(i.args[j]);
-      if (arg.type == ArgFileIn || arg.type == TracksIn) {
+      if (arg.types == ArgFileIn || arg.types == TracksIn) {
         if (!Path::exists(text))
           throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
         if (!Path::is_file(text))
           throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
       }
-      if (arg.type == ArgDirectoryIn) {
+      if (arg.types == ArgDirectoryIn) {
         if (!Path::exists(text))
           throw Exception("input directory \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
         if (!Path::is_dir(text))
           throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
       }
-      if (arg.type == ArgFileOut || arg.type == TracksOut) {
+      if (arg.types == ArgFileOut || arg.types == TracksOut) {
         if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
           throw Exception("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) +
                           "\" is not a valid file path (ends with directory path separator)");
         check_overwrite(text);
       }
-      if (arg.type == ArgDirectoryOut)
+      if (arg.types == ArgDirectoryOut)
         check_overwrite(text);
-      if (arg.type == TracksIn && !Path::has_suffix(text, ".tck"))
+      if (arg.types == TracksIn && !Path::has_suffix(text, ".tck"))
         throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
                         "\" is not a valid track file");
-      if (arg.type == TracksOut && !Path::has_suffix(text, ".tck"))
+      if (arg.types == TracksOut && !Path::has_suffix(text, ".tck"))
         throw Exception("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
                         "\" must use the .tck suffix");
     }
@@ -1205,13 +1138,38 @@ const std::vector<ParsedOption> get_options(const std::string &name) {
 }
 
 int64_t App::ParsedArgument::as_int() const {
-  if (arg->type == Integer) {
 
-    // Check to see if there are any alpha characters in here
-    // - If a single character at the end, use as integer multiplier
-    //   - Unless there's a dot point before the multiplier; in which case,
-    //     parse the number as a float, multiply, then cast to integer
-    // - If a single 'e' or 'E' in the middle, parse as float and convert to integer
+  std::string as_choice_msg;
+
+  if (arg->types & Choice) {
+    std::string selection = lowercase(p);
+    auto it = std::find(arg->choices.begin(), arg->choices.end(), selection);
+    if (it == arg->choices.end()) {
+      std::string msg = std::string("unexpected value supplied for ");
+      if (opt != nullptr)
+        msg += std::string("option \"") + opt->id;
+      else
+        msg += std::string("argument \"") + arg->id;
+      msg += std::string("\" ");
+      as_choice_msg = std::string("received \"" + std::string(p) + "\"; ");
+      as_choice_msg += std::string("valid choices are: ") + join(arg->choices, ", ");
+      msg += "(" + as_choice_msg + ")";
+      if (!(arg->types & Integer))
+        throw Exception(msg);
+    } else {
+      return static_cast<int>(std::distance(arg->choices.begin(), it));
+    }
+  }
+
+  assert(arg->types & Integer);
+
+  // Check to see if there are any alpha characters in here
+  // - If a single character at the end, use as integer multiplier
+  //   - Unless there's a dot point before the multiplier; in which case,
+  //     parse the number as a float, multiply, then cast to integer
+  // - If a single 'e' or 'E' in the middle, parse as float and convert to integer
+  std::string as_int_msg;
+  try {
     size_t alpha_count = 0;
     bool alpha_is_last = false;
     bool contains_dotpoint = false;
@@ -1228,7 +1186,7 @@ int64_t App::ParsedArgument::as_int() const {
         contains_dotpoint = true;
     }
     if (alpha_count > 1)
-      throw Exception("error converting string " + str(p) + " to integer: too many letters");
+      throw Exception("too many letters");
     int64_t retval = 0;
     if (alpha_count) {
       if (alpha_is_last) {
@@ -1254,7 +1212,7 @@ int64_t App::ParsedArgument::as_int() const {
           multiplier = 1000000000000;
           break;
         default:
-          throw Exception("error converting string " + str(p) + " to integer: unexpected postfix \'" + postfix + "\'");
+          throw Exception(std::string("unexpected postfix \'") + postfix + "\'");
         }
         if (contains_dotpoint) {
           const default_type prefix = to<default_type>(num);
@@ -1266,57 +1224,57 @@ int64_t App::ParsedArgument::as_int() const {
         const default_type as_float = to<default_type>(p);
         retval = std::round(as_float);
       } else {
-        throw Exception("error converting string " + str(p) + " to integer: unexpected character");
+        throw Exception("unexpected character");
       }
     } else {
       retval = to<int64_t>(p);
     }
 
-    const auto range = std::get<Argument::IntRange>(arg->limits);
-    if (retval < range.min || retval > range.max) {
-      std::string msg("value supplied for ");
-      if (opt)
-        msg += std::string("option \"") + opt->id;
-      else
-        msg += std::string("argument \"") + arg->id;
-      msg += "\" is out of bounds (valid range: " + str(range.min) + " to " + str(range.max) +
-             ", value supplied: " + str(retval) + ")";
-      throw Exception(msg);
-    }
+    if (retval < arg->int_limits.min() || retval > arg->int_limits.max())
+      throw Exception(std::string("out of bounds")                     //
+                      + " (valid range: " + str(arg->int_limits.min()) //
+                      + " to " + str(arg->int_limits.max()) + ";"      //
+                      + " value supplied: " + str(retval) + ")");      //
     return retval;
+  } catch (Exception &e_int) {
+    as_int_msg = e_int[0];
+    if (!(arg->types & Choice))
+      throw Exception("unable to parse string " + str(p) + " supplied for " +
+                      (opt ? std::string("option \"") + opt->id : std::string("argument \"") + arg->id) +
+                      " as integer: " + as_int_msg);
   }
 
-  if (arg->type == Choice) {
-    std::string selection = lowercase(p);
-    const auto &choices = std::get<std::vector<std::string>>(arg->limits);
-    auto it = std::find(choices.begin(), choices.end(), selection);
-    if (it == choices.end()) {
-      std::string msg = std::string("unexpected value supplied for ");
-      if (opt != nullptr)
-        msg += std::string("option \"") + opt->id;
-      else
-        msg += std::string("argument \"") + arg->id;
-      msg += std::string("\" (received \"" + std::string(p) + "\"; valid choices are: ") + join(choices, ", ") + ")";
-      throw Exception(msg);
-    }
-    return static_cast<int>(std::distance(choices.begin(), it));
-  }
-  assert(0);
-  return (0);
+  Exception full_msg(std::string("Unable to interpret value supplied for ") +
+                     (opt ? std::string("option \"") + opt->id : std::string("argument \"") + arg->id) +
+                     " as either integer or choice selection");
+  full_msg.push_back("Error when interpreted as choice selection:");
+  full_msg.push_back(as_choice_msg);
+  full_msg.push_back("Error when interpreted as integer:");
+  full_msg.push_back(as_int_msg);
+  throw full_msg;
+}
+
+uint64_t App::ParsedArgument::as_uint() const {
+  const int64_t signed_value = as_int();
+  if (signed_value < 0)
+    throw Exception("Attempting to interpret negative user-specified value (" //
+                    + str(signed_value)                                       //
+                    + " as unsigned integer");                                //
+  return uint64_t(signed_value);
 }
 
 default_type App::ParsedArgument::as_float() const {
-  assert(arg->type == Float);
+  assert(arg->types & Float);
   const default_type retval = to<default_type>(p);
-  const auto range = std::get<Argument::FloatRange>(arg->limits);
-  if (retval < range.min || retval > range.max) {
+  if (retval < arg->float_limits.min() || retval > arg->float_limits.max()) {
     std::string msg("value supplied for ");
     if (opt)
       msg += std::string("option \"") + opt->id;
     else
       msg += std::string("argument \"") + arg->id;
-    msg += "\" is out of bounds (valid range: " + str(range.min) + " to " + str(range.max) +
-           ", value supplied: " + str(retval) + ")";
+    msg += "\" is out of bounds";
+    msg += " (valid range: " + str(arg->float_limits.min()) + " to " + str(arg->float_limits.max()) + ";";
+    msg += " value supplied: " + str(retval) + ")";
     throw Exception(msg);
   }
 
@@ -1324,7 +1282,7 @@ default_type App::ParsedArgument::as_float() const {
 }
 
 std::vector<int32_t> ParsedArgument::as_sequence_int() const {
-  assert(arg->type == IntSeq);
+  assert(arg->types & IntSeq);
   try {
     return parse_ints<int32_t>(p);
   } catch (Exception &e) {
@@ -1334,7 +1292,7 @@ std::vector<int32_t> ParsedArgument::as_sequence_int() const {
 }
 
 std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
-  assert(arg->type == IntSeq);
+  assert(arg->types & IntSeq);
   try {
     return parse_ints<uint32_t>(p);
   } catch (Exception &e) {
@@ -1344,7 +1302,7 @@ std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
 }
 
 std::vector<default_type> ParsedArgument::as_sequence_float() const {
-  assert(arg->type == FloatSeq);
+  assert(arg->types & FloatSeq);
   try {
     return parse_floats(p);
   } catch (Exception &e) {
@@ -1383,10 +1341,7 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
     const auto &p = arguments[i];
     if (!is_dash(p))
       continue;
-    if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
-      continue;
-    if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
-        (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+    if ((*option)[i].types & (ImageIn | ImageOut | Integer | Float | IntSeq | FloatSeq))
       continue;
     WARN(std::string("Value \"") + arguments[i] + "\" is being used as " +
          ((option->size() == 1) ? "the expected argument "

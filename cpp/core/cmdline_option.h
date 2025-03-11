@@ -39,32 +39,38 @@ namespace MR::App {
  * \ref command_line_parsing page.
  * */
 
-//! \cond skip
-enum ArgType {
-  Undefined,
-  Text,
-  Boolean,
-  Integer,
-  Float,
-  ArgFileIn,
-  ArgFileOut,
-  ArgDirectoryIn,
-  ArgDirectoryOut,
-  Choice,
-  ImageIn,
-  ImageOut,
-  IntSeq,
-  FloatSeq,
-  TracksIn,
-  TracksOut,
-  Various
-};
+using ArgTypeFlags = int;
+constexpr ArgTypeFlags Undefined = 0;
+constexpr ArgTypeFlags Text = 0x0001;
+constexpr ArgTypeFlags Boolean = 0x0002;
+constexpr ArgTypeFlags Integer = 0x0004;
+constexpr ArgTypeFlags Float = 0x0008;
+constexpr ArgTypeFlags ArgFileIn = 0x0010;
+constexpr ArgTypeFlags ArgFileOut = 0x0020;
+constexpr ArgTypeFlags ArgDirectoryIn = 0x0040;
+constexpr ArgTypeFlags ArgDirectoryOut = 0x0080;
+constexpr ArgTypeFlags ImageIn = 0x0100;
+constexpr ArgTypeFlags ImageOut = 0x0200;
+constexpr ArgTypeFlags IntSeq = 0x0400;
+constexpr ArgTypeFlags FloatSeq = 0x0800;
+constexpr ArgTypeFlags TracksIn = 0x1000;
+constexpr ArgTypeFlags TracksOut = 0x2000;
+constexpr ArgTypeFlags Choice = 0x4000;
 
-using ArgFlags = int;
-constexpr ArgFlags None = 0;
-constexpr ArgFlags Optional = 0x1;
-constexpr ArgFlags AllowMultiple = 0x2;
+using ArgModifierFlags = int;
+constexpr ArgModifierFlags None = 0;
+constexpr ArgModifierFlags Optional = 0x1;
+constexpr ArgModifierFlags AllowMultiple = 0x2;
 //! \endcond
+
+namespace {
+template <typename T> typename std::enable_if<std::is_integral<T>::type, T>::type void_rangemax() {
+  return std::numeric_limits<T>::max();
+}
+template <typename T> typename std::enable_if<std::is_floating_point<T>::type, T>::type void_rangemax() {
+  return std::numeric_limits<T>::infinity();
+}
+} // namespace
 
 //! \addtogroup CmdParse
 // @{
@@ -105,27 +111,39 @@ public:
    * and description. If default arguments are used, the object corresponds
    * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
   Argument(std::string name, std::string description = std::string())
-      : id(std::move(name)), desc(std::move(description)), type(Undefined), flags(None) {}
+      : id(std::move(name)), desc(std::move(description)), types(Undefined), flags(None) {}
 
   //! the argument name
   std::string id;
   //! the argument description
   std::string desc;
-  //! the argument type
-  ArgType type;
+  //! the argument type(s)
+  ArgTypeFlags types;
   //! the argument flags (AllowMultiple & Optional)
-  ArgFlags flags;
+  ArgModifierFlags flags;
 
-  struct IntRange {
-    int64_t min, max;
-  };
-  struct FloatRange {
-    default_type min, max;
-  };
+  std::vector<std::string> choices;
 
-  //! a structure to store the various parameters of the Argument
-  using Limits = std::variant<std::vector<std::string>, IntRange, FloatRange>;
-  Limits limits;
+  template <typename T> class ScalarRange {
+  public:
+    ScalarRange() : _min(T(0)), _max(T(0)) {}
+    operator bool() const { return _min != T(0) || _max != T(0); }
+    void set(T i) {
+      _min = i;
+      _max = void_rangemax<T>();
+    }
+    void set(T i, T j) {
+      _min = i;
+      _max = j;
+    }
+    T min() const { return _min; }
+    T max() const { return _max; }
+
+  private:
+    T _min, _max;
+  };
+  ScalarRange<int64_t> int_limits;
+  ScalarRange<default_type> float_limits;
 
   operator bool() const { return id.empty(); }
 
@@ -154,22 +172,19 @@ public:
 
   //! specifies that the argument should be a text string
   Argument &type_text() {
-    assert(type == Undefined);
-    type = Text;
+    types |= Text;
     return *this;
   }
 
   //! specifies that the argument should be an input image
   Argument &type_image_in() {
-    assert(type == Undefined);
-    type = ImageIn;
+    types |= ImageIn;
     return *this;
   }
 
   //! specifies that the argument should be an output image
   Argument &type_image_out() {
-    assert(type == Undefined);
-    type = ImageOut;
+    types = ImageOut;
     return *this;
   }
 
@@ -177,17 +192,15 @@ public:
   /*! if desired, a range of allowed values can be specified. */
   Argument &type_integer(const int64_t min = std::numeric_limits<int64_t>::min(),
                          const int64_t max = std::numeric_limits<int64_t>::max()) {
-    assert(type == Undefined);
-    type = Integer;
-    limits = IntRange{min, max};
+    types |= Integer;
+    int_limits.set(min, max);
     return *this;
   }
 
   //! specifies that the argument should be a boolean
   /*! Valid responses are 0,no,false or any non-zero integer, yes, true. */
   Argument &type_bool() {
-    assert(type == Undefined);
-    type = Boolean;
+    types |= Boolean;
     return *this;
   }
 
@@ -195,9 +208,8 @@ public:
   /*! if desired, a range of allowed values can be specified. */
   Argument &type_float(const default_type min = -std::numeric_limits<default_type>::infinity(),
                        const default_type max = std::numeric_limits<default_type>::infinity()) {
-    assert(type == Undefined);
-    type = Float;
-    limits = FloatRange{min, max};
+    types |= Float;
+    float_limits.set(min, max);
     return *this;
   }
 
@@ -212,78 +224,71 @@ public:
    *     .type_choice (mode_list);
    * \endcode
    * \note Each string in the list must be supplied in \b lowercase. */
-  Argument &type_choice(const std::vector<std::string> &choices) {
-    assert(type == Undefined);
-    type = Choice;
-    limits = choices;
+  Argument &type_choice(const std::vector<std::string> &c) {
+    types |= Choice;
+    choices = c;
     return *this;
   }
 
   //! specifies that the argument should be an input file
   Argument &type_file_in() {
-    assert(type == Undefined);
-    type = ArgFileIn;
+    types |= ArgFileIn;
     return *this;
   }
 
   //! specifies that the argument should be an output file
   Argument &type_file_out() {
-    assert(type == Undefined);
-    type = ArgFileOut;
+    types |= ArgFileOut;
     return *this;
   }
 
   //! specifies that the argument should be an input directory
   Argument &type_directory_in() {
-    assert(type == Undefined);
-    type = ArgDirectoryIn;
+    types |= ArgDirectoryIn;
     return *this;
   }
 
   //! specifies that the argument should be an output directory
   Argument &type_directory_out() {
-    assert(type == Undefined);
-    type = ArgDirectoryOut;
+    types |= ArgDirectoryOut;
     return *this;
   }
 
   //! specifies that the argument should be a sequence of comma-separated integer values
   Argument &type_sequence_int() {
-    assert(type == Undefined);
-    type = IntSeq;
+    types |= IntSeq;
     return *this;
   }
 
   //! specifies that the argument should be a sequence of comma-separated floating-point values.
   Argument &type_sequence_float() {
-    assert(type == Undefined);
-    type = FloatSeq;
+    types |= FloatSeq;
     return *this;
   }
 
   //! specifies that the argument should be an input tracks file
   Argument &type_tracks_in() {
-    assert(type == Undefined);
-    type = TracksIn;
+    types |= TracksIn;
     return *this;
   }
 
   //! specifies that the argument should be an output tracks file
   Argument &type_tracks_out() {
-    assert(type == Undefined);
-    type = TracksOut;
-    return *this;
-  }
-
-  //! specifies that the argument could be one of various types
-  Argument &type_various() {
-    assert(type == Undefined);
-    type = Various;
+    types |= TracksOut;
     return *this;
   }
 
   std::string syntax(int format) const;
   std::string usage() const;
+
+  // According to how many different unique types can this argument be interpreted?
+  ssize_t num_types() const {
+    int data = types;
+    ssize_t count;
+    for (count = 0; data; ++count)
+      data &= data - 1;
+    return count;
+  }
 };
 
 //! A class to specify a command-line option
@@ -341,7 +346,7 @@ public:
   //! the option description
   std::string desc;
   //! option flags (AllowMultiple and/or Optional)
-  ArgFlags flags;
+  ArgModifierFlags flags;
 
   //! specifies that the option is required
   /*! An option specified as required must be supplied on the command line.

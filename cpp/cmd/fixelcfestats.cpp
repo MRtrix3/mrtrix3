@@ -119,7 +119,7 @@ void usage() {
 
   // .type_various() rather than .type_directory_in() to catch people trying to
   //   pass a track file, and give a more informative error message
-  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_various ()
+  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_directory_in().type_tracks_in()
 
   + Argument ("out_fixel_directory", "the output directory where results will be saved."
                                      " Will be created if it does not exist").type_text();

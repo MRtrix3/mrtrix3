@@ -45,7 +45,7 @@ Verify operation of the C++ command-line interface & parser
 
 + **-tracks_out output**<br>an output tractogram
 
-+ **-various spec**<br>an argument that could accept one of various forms
++ **-any spec**<br>an argument that could accept any of the various forms
 
 + **-nargs_two first second**<br>A command-line option that accepts two arguments
 
