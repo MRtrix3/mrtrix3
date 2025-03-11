@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,7 +77,7 @@ OptionGroup __standard_options =
 // clang-format on
 
 std::string AUTHOR{};
-std::string COPYRIGHT = "Copyright (c) 2008-2024 the MRtrix3 contributors.\n"
+std::string COPYRIGHT = "Copyright (c) 2008-2025 the MRtrix3 contributors.\n"
                         "\n"
                         "This Source Code Form is subject to the terms of the Mozilla Public\n"
                         "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -187,6 +187,8 @@ std::string underline(const std::string &text, bool ignore_whitespace = false) {
 
 const char *argtype_description(ArgType type) {
   switch (type) {
+  case Boolean:
+    return ("boolean");
   case Integer:
     return ("integer");
   case Float:
@@ -449,6 +451,9 @@ std::string Argument::usage() const {
   switch (type) {
   case Undefined:
     assert(0);
+    break;
+  case Boolean:
+    stream << "BOOL";
     break;
   case Integer: {
     const auto int_range = std::get<IntRange>(limits);
