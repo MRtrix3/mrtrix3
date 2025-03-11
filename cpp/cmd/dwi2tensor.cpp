@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -295,7 +295,6 @@ void run() {
   Header header(dwi);
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
-  DWI::stash_DW_scheme(header, grad);
   PhaseEncoding::clear_scheme(header);
 
   Image<value_type> predict;
@@ -303,6 +302,7 @@ void run() {
   if (!opt.empty())
     predict = Image<value_type>::create(opt[0][0], header);
 
+  DWI::stash_DW_scheme(header, grad);
   header.size(3) = 6;
   auto dt = Image<value_type>::create(argument[1], header);
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -491,7 +491,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   if shared.get_scratch_dir():
     with shared.lock:
       with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf-8') as outfile:
-        outfile.write(cmdstring + '\n')
+        outfile.write(' '.join(cmdsplit) + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
 
