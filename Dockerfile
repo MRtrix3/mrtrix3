@@ -2,59 +2,37 @@ ARG MAKE_JOBS="1"
 ARG DEBIAN_FRONTEND="noninteractive"
 
 FROM python:3.8-slim AS base
-FROM buildpack-deps:buster AS base-builder
+FROM buildpack-deps:bookworm AS base-builder
 
 FROM base-builder AS mrtrix3-builder
 
 # Git commitish from which to build MRtrix3.
-ARG MRTRIX3_GIT_COMMITISH="master"
-# Command-line arguments for `./configure`
-ARG MRTRIX3_CONFIGURE_FLAGS=""
-# Command-line arguments for `./build`
-ARG MRTRIX3_BUILD_FLAGS="-persistent -nopaginate"
+ARG MRTRIX3_GIT_COMMITISH="dev"
 
 RUN apt-get -qq update \
     && apt-get install -yq --no-install-recommends \
+        cmake \
+        git \
         libeigen3-dev \
         libfftw3-dev \
         libgl1-mesa-dev \
         libpng-dev \
         libqt5opengl5-dev \
         libqt5svg5-dev \
-        qt5-default \
+        ninja-build \
+        qt5-qmake \
+        qtbase5-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone, build, and install MRtrix3.
 ARG MAKE_JOBS
-WORKDIR /opt/mrtrix3
+WORKDIR /src/mrtrix3
 RUN git clone -b $MRTRIX3_GIT_COMMITISH --depth 1 https://github.com/MRtrix3/mrtrix3.git . \
-    && ./configure $MRTRIX3_CONFIGURE_FLAGS \
-    && NUMBER_OF_PROCESSORS=$MAKE_JOBS ./build $MRTRIX3_BUILD_FLAGS \
-    && rm -rf tmp
-
-# Download minified ART ACPCdetect (V2.0).
-FROM base-builder as acpcdetect-installer
-WORKDIR /opt/art
-RUN curl -fsSL https://osf.io/73h5s/download \
-    | tar xz --strip-components 1
-
-# Download minified ANTs (2.3.4-2).
-FROM base-builder as ants-installer
-WORKDIR /opt/ants
-RUN curl -fsSL https://osf.io/yswa4/download \
-    | tar xz --strip-components 1
-
-# Download FreeSurfer files.
-FROM base-builder as freesurfer-installer
-WORKDIR /opt/freesurfer
-RUN curl -fsSLO https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/distribution/FreeSurferColorLUT.txt
-
-# Download minified FSL (6.0.4-2)
-FROM base-builder as fsl-installer
-WORKDIR /opt/fsl
-RUN curl -fsSL https://osf.io/dtep4/download \
-    | tar xz --strip-components 1
+    && cmake -B/tmp/build -GNinja -DCMAKE_INSTALL_PREFIX=/opt/mrtrix3 \
+        -DMRTRIX_USE_QT5=ON -DMRTRIX_BUILD_TESTS=OFF \
+    && cmake --build /tmp/build \
+    && cmake --install /tmp/build
 
 # Build final image.
 FROM base AS final
@@ -65,36 +43,41 @@ RUN apt-get -qq update \
         binutils \
         dc \
         less \
-        libfftw3-3 \
+        libfftw3-dev \
         libgl1-mesa-glx \
-        libgomp1 \
-        liblapack3 \
         libpng16-16 \
         libqt5core5a \
         libqt5gui5 \
         libqt5network5 \
         libqt5svg5 \
         libqt5widgets5 \
-        libquadmath0 \
-        python3-distutils \
+        python3 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=acpcdetect-installer /opt/art /opt/art
-COPY --from=ants-installer /opt/ants /opt/ants
-COPY --from=freesurfer-installer /opt/freesurfer /opt/freesurfer
-COPY --from=fsl-installer /opt/fsl /opt/fsl
 COPY --from=mrtrix3-builder /opt/mrtrix3 /opt/mrtrix3
+COPY --from=mrtrix3-builder /src/mrtrix3 /src/mrtrix3
 
-ENV ANTSPATH="/opt/ants/bin" \
-    ARTHOME="/opt/art" \
-    FREESURFER_HOME="/opt/freesurfer" \
-    FSLDIR="/opt/fsl" \
-    FSLOUTPUTTYPE="NIFTI_GZ" \
-    FSLMULTIFILEQUIT="TRUE" \
-    FSLTCLSH="/opt/fsl/bin/fsltclsh" \
-    FSLWISH="/opt/fsl/bin/fslwish" \
-    LD_LIBRARY_PATH="/opt/fsl/lib:$LD_LIBRARY_PATH" \
-    PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:$PATH"
+# - Set up softlinks corresponding to any potentially invoked 
+#   external neuroimaging software commands
+# - Create FSL FIRST data directory
+#   so that "5ttgen fsl" script proceeds to point of attempting to run FSL executable
+#   so that the appropriate error message is produced.
+# - Create empty FreeSurferColorLUT.txt so that 5ttgen hsvs proceeds beyond point
+#   of merely checking for existence of that file
+WORKDIR /opt/thirdparty
+COPY thirdparty/commands.txt /opt/thirdparty/commands.txt
+COPY thirdparty/error.sh /opt/thirdparty/error.sh
+RUN xargs --arg-file=commands.txt -n1 ln -s error.sh \
+    && mkdir -p data/first/models_336_bin \
+    && touch FreeSurferColorLUT.txt
+WORKDIR /
+
+ENV ANTSPATH=/opt/thirdparty \
+    ARTHOME=/opt/thirdparty \
+    FREESURFER_HOME=/opt/thirdparty \
+    FSLDIR=/opt/thirdparty \
+    FSLOUTPUTTYPE=NIFTI \
+    PATH="/opt/mrtrix3/bin:/opt/thirdparty:$PATH"
 
 # Fix "Singularity container cannot load libQt5Core.so.5" on CentOS 7
 RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5 \
