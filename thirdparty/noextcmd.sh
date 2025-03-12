@@ -23,11 +23,15 @@ echo "You are attempting to execute from within the MRtrix3 container" \
      "If you require this specific functionality," \
      "you may consider one of the following options:"
 echo "- Configuring for running MRtrix3 a native environment" \
-     "that incorporates not only MRtrix3 but also other neuroimaging packages;"
-echo "- Utilising an alternative container" \
-     "within which is installed both MRtrix3 and other neuroimaging packages" \
-     "(for which there will hopefully be a supported solution in the future)."
+     "that incorporates not only MRtrix3 but also other neuroimaging packages."
+echo "- Utilising the alternative container \"mrtrix3_with3p\"," \
+     "within which is installed both MRtrix3 and the third-party neuroimaging software package " \
+     "from which the required command originates: " \
+     "https://github.com/MRtrix3/mrtrix3-with3p"
+echo "- Utilising any other alternative container environment" \
+     "that encompasses multiple nr=euroimaging software packages" \
+     "including both MRtrix3 and the required third-party dependency."
 echo "For more information please see:"
-echo "https://mrtrix.readthedocs.io/en/latest/installation/using_containers.html"
+echo "https://mrtrix.readthedocs.io/en/latest/installation/third_party_software.html"
 
 exit 1

@@ -9,16 +9,24 @@ of all *MRtrix3* commands (including those that possess dependencies on
 other neuroimaging software packages) without necessitating any software
 installation on the user system.
 
-FSL registration
-----------------
+Third-party neuroimaging software
+---------------------------------
 
-The *MRtrix3* containers include within them a subset of those commands
-that are part of `FSL <https://www.fmrib.ox.ac.uk/fsl>`_, as they are
-utilised within specific *MRtrix3* Python scripts. Obtaining the FSL
-software typically necessitates `registration <https://fsl.fmrib.ox.ac.uk/fsldownloads_registration>`_.
-We therefore request that any users of *MRtrix3* containers who have not
-previously registered as a user of the FSL software complete that process,
-as recognition of utilisation of their software.
+There are several *MRtrix3* commands that make use of software tools
+that are provided as part of third-party neuroimaging software packages.
+While the *MRtrix3* containers for versions ``3.0.3`` -- ``3.0.x``
+embedded these third-party dependencies within the *MRtrix3* container,
+from version ``3.1.0`` onwards this is no longer the case.
+These containers now contain *exclusively* *MRtrix3* commands only.
+Any attempt to run within these containers an *MRtrix3* command
+that invokes a third-party neuroimaging software tool will fail.
+More information on this topic can be found on the
+:ref:`third-party software page<third-party-software>`,
+including information on the alternative container
+":ref:`MRtrix3_with3p
+<https://github.com/MRtrix3/mrtrix3-with3p>`__",
+which includes both *MRtrix3* and the set of third-party neuroimaging
+software tools that are utilised by at least one *MRtrix3* command.
 
 Using Docker
 ------------
@@ -105,6 +113,13 @@ The following basic usage has been shown to work on Linux::
 
     singularity run -B /run MRtrix3.sif mrview
 
+<<<<<<< Updated upstream
+=======
+If you have NVidia graphics drivers, you may need to instead use the `--nv` option::
+
+    singularity run --nv /run MRtrix3.sif mrview
+
+>>>>>>> Stashed changes
 If you wish to utilise a *clean environment* when executing ``mrview``,
 you will likely find that it is necessary to explicitly set the ``DISPLAY``
 and ``XDG_RUNTIME_DIR`` environment variables. This could be done in a

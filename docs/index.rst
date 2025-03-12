@@ -148,6 +148,7 @@ Table of Contents
    installation/deployment
    installation/hpc_clusters_install
    installation/using_containers
+   installation/third_party_software
 
 .. toctree::
    :maxdepth: 1
