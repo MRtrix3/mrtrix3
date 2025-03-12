@@ -2,7 +2,7 @@
 # Multiple tests for the C++ binary command-line interface
 
 # Test using all options at once
-trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT \
+trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT; \
     mkdir -p tmp-dirin/ \
     && touch tmp-filein.txt \
     && touch tmp-tracksin.tck \
@@ -28,7 +28,7 @@ trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT \
         -any my_any
 
 # Run previous with different option/argument orders
-trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT \
+trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT; \
     mkdir -p tmp-dirin/ \
     && touch tmp-filein.txt \
     && touch tmp-tracksin.tck \
@@ -52,7 +52,7 @@ trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT \
         -tracks_out tmp-tracksout.tck \
         -any my_any \
         -flag
-trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT \
+trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT; \
     mkdir -p tmp-dirin/ \
     && touch tmp-filein.txt \
     && touch tmp-tracksin.tck \
@@ -76,7 +76,7 @@ trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT \
         -any my_any \
         -flag \
         -text my_text
-trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT \
+trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT; \
     mkdir -p tmp-dirin/ \
     && touch tmp-filein.txt \
     && touch tmp-tracksin.tck \
