@@ -54,7 +54,7 @@ WORKING_DIR = os.getcwd()
 CMDLINE = None
 
 
-
+# This is auto-populated by script "update_copyright"
 _DEFAULT_COPYRIGHT = \
 '''Copyright (c) 2008-2025 the MRtrix3 contributors.
 
