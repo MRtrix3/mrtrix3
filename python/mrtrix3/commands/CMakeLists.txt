@@ -120,7 +120,7 @@ add_dependencies(MRtrixPythonCommands ${ALL_PYTHON_COMMAND_TARGETS})
 # function run.command() does different things if it is executing an MRtrix3 command vs. an external command,
 # but unlike prior software versions we cannot simply interrogate the contents of the bin/ directory at runtime
 add_custom_target(MakePythonCommandsInit ALL)
-add_dependencies(MakePythonCommandsInit PythonCommands)
+add_dependencies(MakePythonCommandsInit MRtrixPythonCommands)
 add_custom_command(
     TARGET MakePythonCommandsInit
     COMMAND ${CMAKE_COMMAND}
