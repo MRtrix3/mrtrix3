@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,8 +56,9 @@ def execute(): #pylint: disable=unused-variable
     try:
       run.command('hd-bet -i bzero.nii')
       return OUTPUT_IMAGE_PATH
-    except run.MRtrixCmdError as e_gpu: #pylint: disable=unused-variable
+    except run.MRtrixCmdError as exc: #pylint: disable=unused-variable
       app.warn('HD-BET failed when running on GPU; attempting on CPU')
+      e_gpu = exc
   try:
     run.command('hd-bet -i bzero.nii -device cpu -mode fast -tta 0')
     return OUTPUT_IMAGE_PATH
