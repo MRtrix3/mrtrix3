@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -119,6 +119,14 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' but will not actually execute those commands.'
                             ' It can therefore be used to verify that the script is receiving the intended set of inputs,'
                             ' and that the text substitutions on those inputs lead to the intended command strings.')
+  cmdline.add_example_usage('Utilising shell operators within the command substitution',
+                            'for_each * : tensor2metric IN/dwi.mif - "|" tensor2metric - -fa IN/fa.mif',
+                            'In this example, if the double-quotes were NOT placed around the pipe operator,'
+                            ' then the shell would take the sum total output of the for_each script'
+                            ' and pipe that to a single invocation of the tensor2metric command.'
+                            ' Since in this example it is instead desired for the pipe operator to be'
+                            ' a part of the command string that is executed multiple times by the for_each script,'
+                            ' it must be escaped using double-quotes.')
   cmdline.add_argument('inputs',
                        nargs='+',
                        help='Each of the inputs for which processing should be run')
@@ -297,7 +305,7 @@ def execute(): #pylint: disable=unused-variable
 
   def progress_string():
     success_count = sum(1 if job.returncode is not None else 0 for job in jobs)
-    fail_count = sum(1 if job.returncode else 0 for job in jobs)
+    fail_count = sum(bool(job.returncode) for job in jobs)
     threading_message = f'across {app.NUM_THREADS} threads' if parallel else 'sequentially'
     fail_message = f' ({fail_count} errors)' if fail_count else ''
     return f'{success_count}/{len(jobs)} jobs completed {threading_message}{fail_message}'
@@ -348,7 +356,7 @@ def execute(): #pylint: disable=unused-variable
   progress.done()
 
   assert all(job.returncode is not None for job in jobs)
-  fail_count = sum(1 if job.returncode else 0 for job in jobs)
+  fail_count = sum(bool(job.returncode) for job in jobs)
   if fail_count:
     app.warn(f'{fail_count} of {len(jobs)} jobs did not complete successfully')
     if fail_count > 1:

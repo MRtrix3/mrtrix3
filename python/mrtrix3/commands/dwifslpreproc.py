@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@
 
 
 
-import glob, itertools, json, math, os, shutil, sys, shlex
+import glob, itertools, json, math, os, shlex, shutil, sys
 
 
 
@@ -306,7 +306,11 @@ def execute(): #pylint: disable=unused-variable
   if not fsl_path:
     raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  if not pe_design == 'None':
+  if pe_design == 'None':
+    topup_config_path = None
+    topup_cmd = None
+    applytopup_cmd = None
+  else:
     topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
     if not os.path.isfile(topup_config_path):
       raise MRtrixError(f'Could not find necessary default config file for FSL topup command '
@@ -755,7 +759,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Deal with the phase-encoding of the images to be fed to topup (if applicable)
-  execute_topup = (not pe_design == 'None') and not topup_file_userpath
+  execute_topup = pe_design != 'None' and not topup_file_userpath
   overwrite_se_epi_pe_scheme = False
   se_epi_path = 'se_epi.mif'
   dwi_permvols_preeddy_option = ''
