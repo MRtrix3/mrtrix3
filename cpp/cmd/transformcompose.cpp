@@ -92,7 +92,7 @@ void usage() {
   + Argument ("output", "the output file"
                         " (may be a linear transformation text file,"
                         " or a deformation warp field image,"
-                        " depending on usage)").type_various();
+                        " depending on usage)").type_file_out().type_image_out();
 
   OPTIONS
   + Option ("template", "define the output grid defined by a template image")

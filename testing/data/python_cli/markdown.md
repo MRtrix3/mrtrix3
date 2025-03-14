@@ -44,7 +44,7 @@ Test operation of the Python command-line interface
 
 + **--tracks_out trackfile**<br>An output tractogram
 
-+ **--various spec**<br>An option that accepts various types of content
++ **--custom custom**<br>An option with custom type
 
 #### Complex interfaces; nargs, metavar, etc.
 
@@ -112,7 +112,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
