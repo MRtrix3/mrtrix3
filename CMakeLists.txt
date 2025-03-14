@@ -73,6 +73,12 @@ file(RELATIVE_PATH relDir
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
 include(BuildType)
+include(LinkerSetup)
+include(FindFFTW)
+include(ECMEnableSanitizers)
+include(Dependencies)
+include(CompilerCache)
+use_compiler_cache()
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
     message(WARNING
