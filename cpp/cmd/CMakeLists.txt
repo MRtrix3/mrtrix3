@@ -9,6 +9,8 @@ foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
 
+add_custom_target(MRtrixCppCommands)
+
 if(MRTRIX_USE_PCH)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp CONTENT "int main(){}")
     add_executable(pch_cmd ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp)
@@ -29,6 +31,7 @@ function(add_cmd CMD_SRC IS_GUI)
     # Extract the filename without an extension (NAME_WE)
     get_filename_component(CMD_NAME ${CMD_SRC} NAME_WE)
     add_executable(${CMD_NAME} ${CMD_SRC})
+    add_dependencies(MRtrixCppCommands ${CMD_NAME})
     target_link_libraries(${CMD_NAME} PRIVATE
         $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::core>
         mrtrix::executable-version
