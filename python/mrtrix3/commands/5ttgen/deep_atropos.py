@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,8 +21,7 @@ def usage(base_parser, subparsers):  #pylint: disable=unused-variable
   parser = subparsers.add_parser('deep_atropos', parents=[base_parser])
   parser.set_author('Lucius S. Fekonja (lucius.fekonja[at]charite.de) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate the 5TT image based on a Deep Atropos segmentation or probabilities image')
-  parser.add_citation('Use of the ANTsX ecosystem should be accompanied by the following citation:\n'
-                      'N.J. Tustison, P.A. Cook, A.J. Holbrook, H.J. Johnson, J. Muschelli, G.A. Devenyi, J.T. Duda, S.R. Das, '
+  parser.add_citation('N.J. Tustison, P.A. Cook, A.J. Holbrook, H.J. Johnson, J. Muschelli, G.A. Devenyi, J.T. Duda, S.R. Das, '
                       'N.C. Cullen, D.L. Gillen, M.A. Yassa, J.R. Stone, J.C. Gee, and B.B. Avants. '
                       'The ANTsX ecosystem for quantitative biological and medical imaging. '
                       'Scientific Reports, 11(1):9068 (2021), pp. 1-13.',
