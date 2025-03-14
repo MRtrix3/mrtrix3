@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -366,7 +366,7 @@ def execute(): #pylint: disable=unused-variable
 
   if use_masks:
     os.mkdir('mask_transformed')
-  write_log = (app.VERBOSITY >= 2)
+  write_log = app.VERBOSITY >= 2
   if write_log:
     os.mkdir('log')
 
