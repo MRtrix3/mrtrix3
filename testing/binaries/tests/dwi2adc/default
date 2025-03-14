@@ -1,5 +1,18 @@
 #!/bin/bash
 # Basic test of default operation of dwi2adc command
-# COmpares output to that generated from a prior software version
-dwi2adc dwi2adc/in.mif - | \
+# Compares output to that generated from a prior software version
+#
+# Note that in the pre-generated reference output test data,
+#   dwi2adc created a single output image,
+#   where the first volume was S(0) and the second volume was ADC.
+# The updated interface involves writing a compulsory ADC image,
+#   and an optional S(0) volume written to a different image
+#   using explicit command-line option -szero.
+# In order to test the output of this command against the pre-existing reference
+#   without necessitating the re-generation of reference test data,
+#   these are explicitly concatenated before comparing to the reference data
+
+dwi2adc dwi2adc/in.mif tmp_adc.mif -szero tmp_szero.mif -force
+
+mrcat tmp_szero.mif tmp_adc.mif -axis 3 - | \
 testing_diff_image - dwi2adc/out.mif -frac 1e-5
