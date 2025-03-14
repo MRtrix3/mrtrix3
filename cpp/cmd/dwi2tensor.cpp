@@ -212,7 +212,7 @@ public:
         x = llt.compute(work.selfadjointView<Eigen::Lower>())
                 .solve(A.transpose() * w.asDiagonal() * w.asDiagonal() * dwi);
       }
-      if (maxit > 1)
+      if (it < maxit)
         w = (A * x).array().exp() * notnan.array();
     }
 
