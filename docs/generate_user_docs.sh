@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -79,7 +79,7 @@ echo "
 " > $table_file
 
 cmdlist=""
-for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp"`; do
+for n in `find "${mrtrix_root}"/cpp/cmd/ -name "*.cpp"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
 for n in `ls "${mrtrix_root}"/python/mrtrix3/commands/ --ignore=__init__.py* --ignore=CMakeLists.txt`; do
