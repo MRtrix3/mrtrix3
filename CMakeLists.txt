@@ -73,6 +73,7 @@ file(RELATIVE_PATH relDir
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
 include(BuildType)
+include(BuildInfo)
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
     message(WARNING
@@ -125,3 +126,5 @@ add_custom_target(Github SOURCES
     .github/workflows/package-windows-msys2.yml
     .github/workflows/clang-tidy.yml
 )
+
+mrtrix_print_build_instructions()
