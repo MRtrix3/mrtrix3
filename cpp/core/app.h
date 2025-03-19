@@ -51,8 +51,6 @@ extern std::vector<std::string> raw_arguments_list;
 extern const char *project_version;
 extern const char *project_build_date;
 
-const char *argtype_description(ArgType type);
-
 std::string help_head(int format);
 std::string help_synopsis(int format);
 std::string help_tail(int format);
@@ -141,10 +139,16 @@ class ParsedArgument {
 public:
   operator std::string() const { return p; }
 
-  const std::string &as_text() const { return p; }
-  bool as_bool() const { return to<bool>(p); }
+  const std::string &as_text() const {
+    assert(arg->types | Text);
+    return p;
+  }
+  bool as_bool() const {
+    assert(arg->types | Boolean);
+    return to<bool>(p);
+  }
   int64_t as_int() const;
-  uint64_t as_uint() const { return uint64_t(as_int()); }
+  uint64_t as_uint() const;
   default_type as_float() const;
 
   std::vector<int32_t> as_sequence_int() const;

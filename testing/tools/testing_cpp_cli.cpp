@@ -87,8 +87,20 @@ void usage() {
   + Option("tracks_out", "an output tractogram")
     + Argument("output").type_tracks_out()
 
-  + Option("various", "an argument that could accept one of various forms")
-    + Argument("spec").type_various()
+  + Option("any", "an argument that could accept any of the various forms")
+    + Argument("spec").type_text()
+                      .type_bool()
+                      .type_integer()
+                      .type_float()
+                      .type_sequence_int()
+                      .type_sequence_float()
+                      .type_choice(choices)
+                      .type_file_in()
+                      .type_file_out()
+                      .type_directory_in()
+                      .type_directory_out()
+                      .type_tracks_in()
+                      .type_tracks_out()
 
   + Option("nargs_two", "A command-line option that accepts two arguments")
     + Argument("first").type_text()
@@ -157,9 +169,9 @@ void run() {
   if (!opt.empty())
     CONSOLE("-tracks_out: " + str(opt[0][0]));
 
-  opt = get_options("various");
+  opt = get_options("any");
   if (!opt.empty())
-    CONSOLE("-various: " + str(opt[0][0]));
+    CONSOLE("-any: " + str(opt[0][0]));
   opt = get_options("nargs_two");
   if (!opt.empty())
     CONSOLE("-nargs_two: [" + str(opt[0][0]) + " " + str(opt[0][1]) + "]");
