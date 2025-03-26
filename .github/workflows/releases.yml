@@ -67,7 +67,7 @@ jobs:
           echo "output_name=mrtrix3-macos-$commit_sha-$date" >> $GITHUB_OUTPUT
 
       - name: Install deps
-        run: brew install numpy cmake qt eigen pkg-config fftw libpng ninja
+        run: brew install numpy cmake qt pkg-config libpng ninja
 
       - name: Run build
         run: |
