@@ -5,6 +5,7 @@ Checks: >
   concurrency-*,
   cppcoreguidelines-*,
   misc-*,
+  -misc-non-private-member-variables-in-classes,
   performance-*,
   portability-*,
   readability-*,
