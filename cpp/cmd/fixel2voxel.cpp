@@ -443,7 +443,7 @@ void run() {
   if (in_data.size(2) != 1)
     throw Exception("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
 
-  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(input_fix_path));
   auto in_index_image = in_index_header.get_image<typename FixelIndexType::value_type>();
 
   Image<float> in_directions;

@@ -274,7 +274,8 @@ void run() {
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back(Math::Stats::CohortDataImport());
-    extra_columns[i].initialise<SubjectFixelImport>(opt[i][0]);
+    const std::filesystem::path path{opt[i][0]};
+    extra_columns[i].initialise<SubjectFixelImport>(path);
     // Check for non-finite values in mask fixels only
     // Can't use generic allFinite() function; need to populate matrix data
     if (!nans_in_columns) {
