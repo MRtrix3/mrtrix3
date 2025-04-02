@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ namespace MR
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2024 the MRtrix3 contributors.\n"
+       "Copyright (c) 2008-2025 the MRtrix3 contributors.\n"
        "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -212,6 +212,8 @@ namespace MR
     const char* argtype_description (ArgType type)
     {
       switch (type) {
+        case Boolean:
+          return ("boolean");
         case Integer:
           return ("integer");
         case Float:
@@ -502,6 +504,9 @@ namespace MR
       switch (type) {
         case Undefined:
           assert (0);
+          break;
+        case Boolean:
+          stream << "BOOL";
           break;
         case Integer:
           stream << "INT " << limits.i.min << " " << limits.i.max;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -96,12 +96,21 @@ namespace MR
         }
       } else {
         auto it = keyval().find (item.first);
-        if (it == keyval().end() || it->second == item.second)
+        if (it == keyval().end() || it->second == item.second) {
           new_keyval.insert (item);
-        else if (item.first == "SliceTiming")
+        } else if (item.first == "SliceTiming") {
           new_keyval["SliceTiming"] = Metadata::SliceEncoding::resolve_slice_timing (item.second, it->second);
-        else
+        } else if (item.first == "dw_scheme") {
+          try {
+            auto scheme = DWI::resolve_DW_scheme (parse_matrix (item.second), parse_matrix (it->second));
+            DWI::set_DW_scheme (new_keyval, scheme);
+          } catch (Exception& e) {
+            WARN("Error merging DW gradient tables between headers");
+            new_keyval["dw_scheme"] = "variable";
+          }
+        } else {
           new_keyval[item.first] = "variable";
+        }
       }
     }
     std::swap (keyval_, new_keyval);
@@ -730,11 +739,12 @@ namespace MR
     Header result (headers[0]);
 
     if (axis_to_concat >= result.ndim()) {
+      Stride::symbolise (result);
       result.ndim() = axis_to_concat + 1;
       result.size(axis_to_concat) = 1;
+      result.stride(axis_to_concat) = axis_to_concat+1;
+      Stride::actualise (result);
     }
-
-    result.stride (axis_to_concat) = result.ndim()+1;
 
     for (size_t axis = 0; axis != result.ndim(); ++axis) {
       if (axis != axis_to_concat && result.size (axis) <= 1) {

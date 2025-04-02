@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@ from collections import namedtuple
 try:
   from shlex import quote
 except ImportError:
-  from pipes import quote
+  from pipes import quote #pylint: disable=deprecated-module
 from mrtrix3._version import __version__
 
 

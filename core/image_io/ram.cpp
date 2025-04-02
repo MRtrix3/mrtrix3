@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,14 +35,6 @@ namespace MR
       addresses.push_back (new uint8_t [bytes_per_segment]);
     }
 
-
-    void RAM::unload (const Header& header)
-    {
-      if (addresses.size()) {
-        DEBUG ("deleting RAM buffer for image \"" + header.name() + "\"...");
-        delete [] addresses[0];
-      }
-    }
 
   }
 }

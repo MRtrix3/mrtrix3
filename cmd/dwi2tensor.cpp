@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -149,7 +149,7 @@ class Processor { MEMALIGN(Processor)
           work.setZero();
           work.selfadjointView<Eigen::Lower>().rankUpdate (b.transpose()*w.asDiagonal());
           p = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(b.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
-          if (maxit > 1)
+          if (it < maxit)
             w = (b*p).array().exp();
         }
 
@@ -220,7 +220,6 @@ void run ()
   Header header_out (header_in);
   header_out.datatype() = DataType::Float32;
   header_out.ndim() = 4;
-  DWI::stash_DW_scheme (header_out, grad);
   Metadata::PhaseEncoding::clear_scheme (header_out.keyval());
 
   Image<value_type> predict;
@@ -228,6 +227,7 @@ void run ()
   if (opt.size())
     predict = Image<value_type>::create (opt[0][0], header_out);
 
+  DWI::stash_DW_scheme (header_out, grad);
   header_out.size(3) = 6;
   auto dt = Image<value_type>::create (argument[1], header_out);
 

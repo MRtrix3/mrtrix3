@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -70,8 +70,10 @@ void run ()
     Surface::Algo::image2mesh_blocky (input, mesh);
 
   } else {
+
     auto input = Image<float>::open (argument[0]);
-    const default_type threshold = get_option_value ("threshold", Filter::estimate_optimal_threshold (input));
+    auto opt = get_options("threshold");
+    const default_type threshold = opt.empty() ? Filter::estimate_optimal_threshold (input) : opt[0][0];
     Surface::Algo::image2mesh_mc (input, mesh, threshold);
 
   }

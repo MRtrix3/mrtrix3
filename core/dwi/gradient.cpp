@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,8 @@
  */
 
 #include "dwi/gradient.h"
+#include "file/config.h"
 #include "file/nifti_utils.h"
-#include "dwi/shells.h"
 
 namespace MR
 {
@@ -82,6 +82,17 @@ namespace MR
       "vectors are close to unit norm). This option allows the user to "
       "control this operation and override MRrtix3's automatic detection."
     );
+
+
+
+//CONF option: BZeroThreshold
+//CONF default: 10.0
+//CONF Specifies the b-value threshold for determining those image
+//CONF volumes that correspond to b=0.
+    default_type bzero_threshold () {
+      static const default_type value = File::Config::get_float ("BZeroThreshold", DWI_BZERO_THREHSOLD_DEFAULT);
+      return value;
+    }
 
 
 
