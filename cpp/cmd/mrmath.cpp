@@ -14,8 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <limits>
-
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "dwi/gradient.h"
@@ -28,6 +26,7 @@
 #include "phase_encoding.h"
 #include "progressbar.h"
 
+#include <filesystem>
 #include <limits>
 
 using namespace MR;
@@ -333,9 +332,10 @@ protected:
 };
 
 void run() {
+  const std::filesystem::path first_input_image_path{argument[0]};
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
+  const std::filesystem::path output_path{argument.back()};
 
   auto opt = get_options("axis");
   if (!opt.empty()) {
@@ -344,8 +344,7 @@ void run() {
       throw Exception("Option -axis only applies if a single input image is used");
 
     const size_t axis = opt[0][0];
-
-    auto image_in = Header::open(argument[0]).get_image<value_type>().with_direct_io(axis);
+    auto image_in = Header::open(first_input_image_path).get_image<value_type>().with_direct_io(axis);
 
     if (axis >= image_in.ndim())
       throw Exception("Cannot perform operation along axis " + str(axis) + "; image only has " + str(image_in.ndim()) +
@@ -422,7 +421,7 @@ void run() {
     std::vector<Header> headers_in(num_inputs);
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in[0] = Header::open(argument[0]);
+    headers_in[0] = Header::open(first_input_image_path);
     Header header(headers_in[0]);
     header.datatype() = DataType::from_command_line(DataType::Float32);
 
@@ -434,19 +433,20 @@ void run() {
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
-      const std::string path = argument[i];
+      const std::filesystem::path path{argument[i]};
       // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception("Image " + path + " has fewer axes than first imput image " + header.name());
+        throw Exception("Image " + path.string() + " has fewer axes than first imput image " + header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
-          throw Exception("Dimensions of image " + path + " do not match those of first input image " + header.name());
+          throw Exception("Dimensions of image " + path.string() + " do not match those of first input image " +
+                          header.name());
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
         if (temp.size(axis) != 1)
-          throw Exception("Image " + path + " has axis with non-unary dimension beyond first input image " +
+          throw Exception("Image " + path.string() + " has axis with non-unary dimension beyond first input image " +
                           header.name());
       }
       header.merge_keyval(temp);

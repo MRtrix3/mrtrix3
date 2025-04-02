@@ -32,6 +32,8 @@
 #include "dwi/tractography/editing/receiver.h"
 #include "dwi/tractography/editing/worker.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::DWI;
@@ -125,9 +127,8 @@ void erase_if_present(Tractography::Properties &p, const std::string s) {
 }
 
 void run() {
-
+  const std::filesystem::path output_path{argument.back()};
   const size_t num_inputs = argument.size() - 1;
-  const std::string output_path = argument[num_inputs];
 
   // Make sure configuration is sensible
   if (!get_options("tck_weights_in").empty() && num_inputs > 1)
@@ -139,11 +140,11 @@ void run() {
   std::vector<std::string> input_file_list;
 
   for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
-
-    input_file_list.push_back(argument[file_index]);
+    const std::filesystem::path input_path{argument[file_index]};
+    input_file_list.push_back(input_path);
 
     Properties p;
-    Reader<float>(argument[file_index], p);
+    Reader<float>(input_path, p);
 
     for (const auto &i : p.comments) {
       bool present = false;

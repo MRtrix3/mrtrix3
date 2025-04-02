@@ -22,6 +22,7 @@
 #include "phase_encoding.h"
 #include "progressbar.h"
 
+#include <filesystem>
 using namespace MR;
 using namespace App;
 
@@ -72,7 +73,10 @@ void usage() {
 // clang-format off
 
 void run() {
-  auto input_image = Image<float>::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
+  auto input_image = Image<float>::open(input_path);
   if (input_image.ndim() < 4)
     throw Exception("Epected input image to contain more than three dimensions");
   auto grad = DWI::get_DW_scheme(input_image);
@@ -157,7 +161,7 @@ void run() {
     PhaseEncoding::set_scheme(header, new_scheme);
   }
 
-  auto output_image = Image<float>::create(argument[1], header);
+  auto output_image = Image<float>::create(output_path, header);
   DWI::export_grad_commandline(header);
 
   auto input_volumes = Adapter::make<Adapter::Extract1D>(input_image, 3, volumes);

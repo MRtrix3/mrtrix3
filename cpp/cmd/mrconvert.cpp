@@ -28,6 +28,8 @@
 #include "transform.h"
 #include "types.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -372,7 +374,10 @@ void extract(Header &header_in,
 }
 
 void run() {
-  Header header_in = Header::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
+  Header header_in = Header::open(input_path);
   Eigen::MatrixXd dw_scheme;
   try {
     dw_scheme = DWI::get_DW_scheme(header_in, DWI::get_cmdline_bvalue_scaling_behaviour());
@@ -522,15 +527,15 @@ void run() {
     case DataType::UInt16:
     case DataType::UInt32:
       if (header_out.datatype().is_signed())
-        extract<int32_t>(header_in, header_out, pos, argument[1]);
+        extract<int32_t>(header_in, header_out, pos, output_path);
       else
-        extract<uint32_t>(header_in, header_out, pos, argument[1]);
+        extract<uint32_t>(header_in, header_out, pos, output_path);
       break;
     case DataType::UInt64:
       if (header_out.datatype().is_signed())
-        extract<int64_t>(header_in, header_out, pos, argument[1]);
+        extract<int64_t>(header_in, header_out, pos, output_path);
       else
-        extract<uint64_t>(header_in, header_out, pos, argument[1]);
+        extract<uint64_t>(header_in, header_out, pos, output_path);
       break;
     case DataType::Undefined:
       throw Exception("invalid output image data type");
@@ -538,12 +543,12 @@ void run() {
     }
   } else {
     if (header_out.datatype().is_complex())
-      extract<cdouble>(header_in, header_out, pos, argument[1]);
+      extract<cdouble>(header_in, header_out, pos, output_path);
     else
-      extract<double>(header_in, header_out, pos, argument[1]);
+      extract<double>(header_in, header_out, pos, output_path);
   }
 
   opt = get_options("json_export");
   if (!opt.empty())
-    File::JSON::save(header_out, opt[0][0], argument[1]);
+    File::JSON::save(header_out, opt[0][0], output_path);
 }

@@ -409,7 +409,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   GL::assert_context_is_current();
 }
 
-void BaseFixel::load_image(const std::string &filename) {
+void BaseFixel::load_image(const std::filesystem::path &filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -424,7 +424,7 @@ void BaseFixel::load_image(const std::string &filename) {
   set_threshold_type_index(0);
 
   size_t colour_index(0);
-  const auto initial_col_key = std::find(colour_types.begin(), colour_types.end(), Path::basename(filename));
+  const auto initial_col_key = std::find(colour_types.begin(), colour_types.end(), filename.filename().string());
   if (initial_col_key != colour_types.end())
     colour_index = std::distance(colour_types.begin(), initial_col_key);
 

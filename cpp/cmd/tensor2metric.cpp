@@ -23,6 +23,7 @@
 #include "image.h"
 #include "progressbar.h"
 #include <Eigen/Eigenvalues>
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -382,7 +383,9 @@ private:
 };
 
 void run() {
-  auto dt_img = Image<value_type>::open(argument[0]);
+  const std::filesystem::path input_image_path{argument[0]};
+
+  auto dt_img = Image<value_type>::open(input_image_path);
   Header header(dt_img);
   if (header.ndim() != 4 || header.size(3) != 6) {
     throw Exception("input tensor image is not a valid tensor.");

@@ -18,6 +18,8 @@
 #include "connectome/enhance.h"
 #include "file/matrix.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace MR::Connectome;
 using namespace MR::Math;
@@ -45,10 +47,12 @@ void usage() {
 // clang-format on
 
 void run() {
-  MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
-  MR::Connectome::check(connectome);
+  const std::filesystem::path input_path{argument[0]};
   const int op = argument[1];
-  const std::string &output_path = argument[2];
+  const std::filesystem::path output_path{argument[2]};
+
+  MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(input_path);
+  MR::Connectome::check(connectome);
 
   INFO("Applying \'" + str(operations[op]) + "\' transformation to the input connectome.");
 

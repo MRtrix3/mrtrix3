@@ -32,6 +32,8 @@
 
 #include "surface/mesh_multi.h"
 
+#include <filesystem>
+
 namespace MR::GUI::MRView::Tool {
 
 Connectome::Connectome(Dock *parent)
@@ -862,7 +864,8 @@ bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("connectome.init")) {
     try {
       initialise(opt[0]);
-      image_button->setText(QString::fromStdString(Path::basename(opt[0])));
+      const std::filesystem::path path{opt[0]};
+      image_button->setText(QString::fromStdString(path.filename()));
       load_properties();
       enable_all(true);
     } catch (Exception &e) {
@@ -884,14 +887,14 @@ bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
 }
 
 void Connectome::image_open_slot() {
-  const std::string path = Dialog::File::get_image(this, "Select connectome parcellation image", &current_folder);
+  const std::filesystem::path path = Dialog::File::get_image(this, "Select connectome parcellation image", &current_folder);
   if (path.empty())
     return;
 
   // Read in the image file, do the necessary conversions e.g. to mesh, store the number of nodes, ...
   try {
     initialise(path);
-    image_button->setText(QString::fromStdString(Path::basename(path)));
+    image_button->setText(QString::fromStdString(path.filename()));
     load_properties();
     enable_all(true);
   } catch (Exception &e) {
@@ -2242,7 +2245,7 @@ void Connectome::edge_alpha_parameter_slot() {
 }
 
 void Connectome::lut_open_slot() {
-  const std::string path = Dialog::File::get_file(this, std::string("Select lookup table file"));
+  const std::filesystem::path path = Dialog::File::get_file(this, std::string("Select lookup table file"));
   if (path.empty())
     return;
   if (!lut.empty()) {
@@ -2253,7 +2256,7 @@ void Connectome::lut_open_slot() {
   }
   try {
     lut.load(path);
-    lut_button->setText(QString::fromStdString(Path::basename(path)));
+    lut_button->setText(QString::fromStdString(path.filename()));
   } catch (Exception &e) {
     e.display();
     return;
@@ -2535,7 +2538,7 @@ void Connectome::add_matrices(const std::vector<std::string> &list) {
       MR::Connectome::matrix_type matrix = File::Matrix::load_matrix<default_type>(list[i]);
       MR::Connectome::to_upper(matrix);
       if (matrix.rows() != num_nodes())
-        throw Exception("Matrix file \"" + Path::basename(list[i]) + "\" is incorrect size");
+        throw Exception("Matrix file \"" + std::filesystem::path(list[i]).filename().string() + "\" is incorrect size");
       FileDataVector temp;
       mat2vec->M2V(matrix, temp);
       temp.calc_stats();
@@ -2896,7 +2899,7 @@ void Connectome::draw_edges(const Projection &projection) {
 }
 
 bool Connectome::import_vector_file(FileDataVector &data, const std::string &attribute) {
-  const std::string path = Dialog::File::get_file(
+  const std::filesystem::path path = Dialog::File::get_file(
       this, "Select vector file to determine " + attribute, "Data files (*.csv)", &current_folder);
   if (path.empty())
     return false;
@@ -2908,10 +2911,10 @@ bool Connectome::import_vector_file(FileDataVector &data, const std::string &att
     if (data.size() != num_nodes()) {
       // Restore data in case user is trying to change from one file to another
       data = std::move(prev_data);
-      throw Exception("File " + Path::basename(path) + " contains " + str(numel) + " elements, but connectome has " +
+      throw Exception("File " + path.filename().string() + " contains " + str(numel) + " elements, but connectome has " +
                       str(num_nodes()) + " nodes");
     }
-    data.set_name(Path::basename(path));
+    data.set_name(path.filename());
     return true;
   } catch (Exception &e) {
     e.display();
@@ -2921,7 +2924,7 @@ bool Connectome::import_vector_file(FileDataVector &data, const std::string &att
 }
 
 bool Connectome::import_matrix_file(FileDataVector &data, const std::string &attribute) {
-  const std::string path = Dialog::File::get_file(
+  const std::filesystem::path path = Dialog::File::get_file(
       this, "Select matrix file to determine " + attribute, "Data files (*.csv)", &current_folder);
   if (path.empty())
     return false;
@@ -2930,14 +2933,14 @@ bool Connectome::import_matrix_file(FileDataVector &data, const std::string &att
     temp = File::Matrix::load_matrix<default_type>(path);
     MR::Connectome::to_upper(temp);
     if (temp.rows() != num_nodes())
-      throw Exception("Matrix file \"" + Path::basename(path) + "\" is incorrect size");
+      throw Exception("Matrix file \"" + path.filename().string() + "\" is incorrect size");
   } catch (Exception &e) {
     e.display();
     return false;
   }
   mat2vec->M2V(temp, data);
   data.calc_stats();
-  data.set_name(Path::basename(path));
+  data.set_name(path.filename());
   return true;
 }
 
@@ -4015,7 +4018,7 @@ void Connectome::get_meshes() {
 
 void Connectome::get_exemplars() {
   // Request exemplar track file path from user
-  const std::string path =
+  const std::filesystem::path path =
       GUI::Dialog::File::get_file(this,
                                   "Select track file resulting from running connectome2tck -exemplars",
                                   "Track files (*.tck)",
@@ -4026,7 +4029,7 @@ void Connectome::get_exemplars() {
   MR::DWI::Tractography::Reader<float> reader(path, properties);
   const size_t num_tracks = to<size_t>(properties["count"]);
   if (num_tracks != num_edges())
-    throw Exception("Track file " + Path::basename(path) + " contains " + str(num_tracks) +
+    throw Exception("Track file " + path.filename().string() + " contains " + str(num_tracks) +
                     " streamlines; connectome expects " + str(num_edges()) + " exemplars");
   ProgressBar progress("Importing connection exemplars", num_edges());
   MR::DWI::Tractography::Streamline<float> tck;

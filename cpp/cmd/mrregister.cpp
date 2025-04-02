@@ -36,6 +36,8 @@
 #include "registration/transform/rigid.h"
 #include "transform.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -139,7 +141,6 @@ void usage() {
 using value_type = double;
 
 void run() {
-
   std::vector<Header> input1, input2;
   const size_t n_images = argument.size() / 2;
   { // parse arguments and load input headers
@@ -150,15 +151,15 @@ void run() {
       throw Exception("unexpected number of input images. arguments:" + err);
     }
 
-    bool is1 = true;
-    for (const auto &arg : argument) {
-      if (is1)
-        input1.push_back(Header::open(str(arg)));
+    for (auto i = 0; i < argument.size(); ++i) {
+      const std::filesystem::path input_path{argument[i]};
+      if (i % 2 == 0)
+        input1.push_back(Header::open(input_path));
       else
-        input2.push_back(Header::open(str(arg)));
-      is1 = !is1;
+        input2.push_back(Header::open(input_path));
     }
   }
+
   assert(input1.size() == n_images);
   if (input1.size() != input2.size())
     throw Exception("require same number of input images for image 1 and image 2");
@@ -214,8 +215,10 @@ void run() {
 
   Eigen::MatrixXd directions_cartesian;
   auto opt = get_options("directions");
-  if (!opt.empty())
-    directions_cartesian = Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(opt[0][0])).transpose();
+  if (!opt.empty()) {
+    const std::filesystem::path directions_path{opt[0][0]};
+    directions_cartesian = Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(directions_path)).transpose();
+  }
 
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
@@ -303,8 +306,9 @@ void run() {
     if (opt.size() != n_images)
       WARN("number of -transformed images lower than number of contrasts");
     for (size_t c = 0; c < opt.size(); c++) {
-      Registration::check_image_output(opt[c][0], input2[c]);
-      im1_transformed_paths.push_back(opt[c][0]);
+      const std::filesystem::path output_path{opt[c][0]};
+      Registration::check_image_output(output_path, input2[c]);
+      im1_transformed_paths.push_back(output_path);
       INFO(input1[c].name() + ", transformed to space of image2, will be written to " + im1_transformed_paths[c]);
     }
   }
@@ -318,12 +322,14 @@ void run() {
     if (opt.size() != n_images)
       WARN("number of -transformed_midway images lower than number of contrasts");
     for (size_t c = 0; c < opt.size(); c++) {
-      Registration::check_image_output(opt[c][0], input2[c]);
-      input1_midway_transformed_paths.push_back(opt[c][0]);
+      const std::filesystem::path first_output_path{opt[c][0]};
+      const std::filesystem::path second_output_path{opt[c][1]};
+      Registration::check_image_output(first_output_path, input2[c]);
+      input1_midway_transformed_paths.push_back(first_output_path);
       INFO(input1[c].name() + ", transformed to midway space, will be written to " +
            input1_midway_transformed_paths[c]);
-      Registration::check_image_output(opt[c][1], input1[c]);
-      input2_midway_transformed_paths.push_back(opt[c][1]);
+      Registration::check_image_output(second_output_path, input1[c]);
+      input2_midway_transformed_paths.push_back(second_output_path);
       INFO(input2[c].name() + ", transformed to midway space, will be written to " +
            input2_midway_transformed_paths[c]);
     }
@@ -332,14 +338,16 @@ void run() {
   opt = get_options("mask1");
   Image<value_type> im1_mask;
   if (!opt.empty()) {
-    im1_mask = Image<value_type>::open(opt[0][0]);
+    const std::filesystem::path mask_path1{opt[0][0]};
+    im1_mask = Image<value_type>::open(mask_path1);
     check_dimensions(input1[0], im1_mask, 0, 3);
   }
 
   opt = get_options("mask2");
   Image<value_type> im2_mask;
   if (!opt.empty()) {
-    im2_mask = Image<value_type>::open(opt[0][0]);
+    const std::filesystem::path mask_path2{opt[0][0]};
+    im2_mask = Image<value_type>::open(mask_path2);
     check_dimensions(input2[0], im2_mask, 0, 3);
   }
 
@@ -372,7 +380,8 @@ void run() {
   if (!opt.empty()) {
     init_rigid_matrix_set = true;
     Eigen::Vector3d centre;
-    transform_type rigid_transform = File::Matrix::load_transform(opt[0][0], centre);
+    const std::filesystem::path rigid_init_matrix_path{opt[0][0]};
+    transform_type rigid_transform = File::Matrix::load_transform(rigid_init_matrix_path, centre);
     rigid.set_transform(rigid_transform);
     if (!std::isfinite(centre(0))) {
       rigid_registration.set_init_translation_type(Registration::Transform::Init::set_centre_mass);
@@ -475,7 +484,8 @@ void run() {
   if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the -rigid_log option has been set when no rigid registration is requested");
-    linear_logstream.open(opt[0][0]);
+    const std::filesystem::path log_path{opt[0][0]};
+    linear_logstream.open(log_path);
     rigid_registration.set_log_stream(linear_logstream.rdbuf());
   }
 
@@ -507,7 +517,8 @@ void run() {
 
     init_affine_matrix_set = true;
     Eigen::Vector3d centre;
-    transform_type affine_transform = File::Matrix::load_transform(opt[0][0], centre);
+    const std::filesystem::path affine_matrix_path{opt[0][0]};
+    transform_type affine_transform = File::Matrix::load_transform(affine_matrix_path, centre);
     affine.set_transform(affine_transform);
     if (!std::isfinite(centre(0))) {
       affine_registration.set_init_translation_type(Registration::Transform::Init::set_centre_mass);
@@ -614,7 +625,8 @@ void run() {
   if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the -affine_log option has been set when no rigid registration is requested");
-    linear_logstream.open(opt[0][0]);
+    const std::filesystem::path log_path{opt[0][0]};
+    linear_logstream.open(log_path);
     affine_registration.set_log_stream(linear_logstream.rdbuf());
   }
 
@@ -654,11 +666,11 @@ void run() {
   }
 
   opt = get_options("nl_warp_full");
-  std::string warp_full_filename;
+  std::filesystem::path warp_full_filename;
   if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp_full_filename = std::string(opt[0][0]);
+    warp_full_filename = opt[0][0];
     if (!Path::is_mrtrix_image(warp_full_filename) && //
         !(Path::has_suffix(warp_full_filename, {".nii", ".nii.gz"}) &&
           File::Config::get_bool("NIfTIAutoSaveJSON", false))) {
@@ -670,21 +682,21 @@ void run() {
   opt = get_options("nl_init");
   const bool nonlinear_init = !opt.empty();
   if (nonlinear_init) {
-
+    const std::filesystem::path nl_init_filename{opt[0][0]};
     if (!do_nonlinear)
       throw Exception(
           "the non linear initialisation option -nl_init cannot be used when no non linear registration is requested");
 
-    if (!Path::is_mrtrix_image(opt[0][0]) &&                    //
-        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&   //
-          File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
+    if (!Path::is_mrtrix_image(nl_init_filename) &&                  //
+        !(Path::has_suffix(nl_init_filename, {".nii", ".nii.gz"}) && //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&      //
           Path::exists(File::NIfTI::get_json_path(opt[0][0])))) {
       WARN("nl_init input requires warp_full in original .mif/.mih file format"
            " or in NIfTI file format with associated JSON."
            " Converting to other file formats may remove linear transformations stored in the image header.");
     }
 
-    Image<default_type> input_warps = Image<default_type>::open(opt[0][0]);
+    Image<default_type> input_warps = Image<default_type>::open(nl_init_filename);
     if (input_warps.ndim() != 5)
       throw Exception("non-linear initialisation input is not 5D."
                       " Input must be from previous non-linear output");

@@ -23,6 +23,8 @@
 #include "memory.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -90,7 +92,7 @@ protected:
 };
 
 void run() {
-  if (!(argument.size() & size_t(1U)))
+  if (argument.size() % 2 != 0)
     throw Exception("unexpected number of arguments");
 
   std::vector<Image<value_type>> inputs((argument.size() - 1) / 2);
@@ -98,12 +100,14 @@ void run() {
 
   size_t lmax = 0;
   for (size_t n = 0; n < inputs.size(); ++n) {
-    inputs[n] = Image<value_type>::open(argument[2 * n]);
+    const std::filesystem::path input_path(argument[2 * n]);
+    inputs[n] = Image<value_type>::open(input_path);
     Math::SH::check(inputs[n]);
     if (inputs[n].ndim() > 4 && inputs[n].size(4) > 1)
       throw Exception("input ODF contains more than 4 dimensions");
 
-    responses[n] = File::Matrix::load_matrix(argument[2 * n + 1]);
+    const std::filesystem::path response_path(argument[2 * n + 1]);
+    responses[n] = File::Matrix::load_matrix(response_path);
     responses[n].conservativeResizeLike(
         Eigen::MatrixXd::Zero(responses[n].rows(), Math::ZSH::NforL(Math::SH::LforN(inputs[n].size(3)))));
     lmax = std::max(Math::ZSH::LforN(responses[n].cols()), lmax);
@@ -128,7 +132,8 @@ void run() {
   Stride::set_from_command_line(header, Stride::contiguous_along_axis(3, header));
   header.datatype() = DataType::from_command_line(DataType::Float32);
 
-  auto output = Image<value_type>::create(argument[argument.size() - 1], header);
+  const std::filesystem::path output_path(argument[argument.size() - 1]);
+  auto output = Image<value_type>::create(output_path, header);
 
   SConvFunctor sconv(responses, inputs);
   ThreadedLoop("performing spherical convolution", inputs[0], 0, 3).run(sconv, output);

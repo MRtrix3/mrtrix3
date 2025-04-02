@@ -22,6 +22,8 @@
 #include "progressbar.h"
 #include "types.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace MR::DWI::Tractography;
 using namespace App;
@@ -43,9 +45,12 @@ void usage() {
 typedef float value_type;
 
 void run() {
+  const std::filesystem::path input_tsf_path{argument[0]};
+  const std::filesystem::path input_tck_path{argument[1]};
+
   Properties tsf_properties, tck_properties;
-  ScalarReader<value_type> tsf_reader(argument[0], tsf_properties);
-  Reader<value_type> tck_reader(argument[1], tck_properties);
+  ScalarReader<value_type> tsf_reader(input_tsf_path, tsf_properties);
+  Reader<value_type> tck_reader(input_tck_path, tck_properties);
   size_t error_count = 0;
 
   Properties::const_iterator tsf_count_field = tsf_properties.find("count");

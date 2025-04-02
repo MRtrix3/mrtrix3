@@ -21,6 +21,7 @@
 #include "image.h"
 #include "transform.h"
 #include <algorithm>
+#include <filesystem>
 #include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
@@ -176,17 +177,22 @@ void parse_itk_trafo(const std::string &itk_file,
 }
 
 void run() {
+  const std::filesystem::path output_path{argument.back()};
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
 
   switch (op) {
   case 0: { // flirt_import
     if (num_inputs != 3)
       throw Exception("flirt_import requires 3 inputs");
-    transform_type transform = File::Matrix::load_transform(argument[0]);
-    auto src_header = Header::open(argument[1]);  // -in
-    auto dest_header = Header::open(argument[2]); // -ref
+    const std::filesystem::path first_input_path{argument[0]};
+    const std::filesystem::path second_input_path{argument[1]};
+    const std::filesystem::path third_input_path{argument[2]};
+
+    transform_type transform = File::Matrix::load_transform(first_input_path);
+
+    auto src_header = Header::open(second_input_path);  // -in
+    auto dest_header = Header::open(third_input_path); // -ref
 
     if (transform.matrix().topLeftCorner<3, 3>().determinant() == float(0.0))
       WARN("Transformation matrix determinant is zero.");
@@ -205,10 +211,10 @@ void run() {
   case 1: { // ITK import
     if (num_inputs != 1)
       throw Exception("itk_import requires 1 input, " + str(num_inputs) + " provided.");
-
+    const std::filesystem::path input_path{argument[0]};
     transform_type transform;
     Eigen::Vector3d centre_of_rotation(3);
-    parse_itk_trafo(argument[0], transform, centre_of_rotation);
+    parse_itk_trafo(input_path, transform, centre_of_rotation);
     INFO("Centre of rotation:\n" + str(centre_of_rotation.transpose()));
 
     // rejig translation to correct for centre of rotation
