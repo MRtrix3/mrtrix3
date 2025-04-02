@@ -151,7 +151,7 @@ void run()
     Metadata::PhaseEncoding::set_scheme (header_out.keyval(), new_scheme);
   }
 
-  auto input_image = Image<float>::open (argument[0]);
+  auto input_image = header_in.get_image<float>();
   auto output_image = Image<float>::create (argument[1], header_out);
   DWI::export_grad_commandline (header_out);
 

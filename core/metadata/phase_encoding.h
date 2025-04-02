@@ -68,7 +68,7 @@ namespace MR {
        *  if one is present. The key-value dictionary is not in all use cases
        *  the "keyval" member of the Header class.
        */
-      Eigen::MatrixXd parse_scheme(const KeyValues&, const Header&);
+      scheme_type parse_scheme(const KeyValues&, const Header&);
 
       //! get a phase encoding matrix
       /*! get a valid phase-encoding matrix, either from files specified at
@@ -76,7 +76,7 @@ namespace MR {
        *  (ie. NOT from .json; that is handled elsewhere),
        *  or from the contents of the image header.
        */
-      Eigen::MatrixXd get_scheme(const Header&);
+      scheme_type get_scheme(const Header&);
 
       //! Convert a phase-encoding scheme into the EDDY config / indices format
       void scheme2eddy(const scheme_type& PE, Eigen::MatrixXd& config, Eigen::Array<int, Eigen::Dynamic, 1>& indices);

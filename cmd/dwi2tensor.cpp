@@ -248,7 +248,7 @@ void run ()
 
   Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, dkt.valid());
 
-  auto dwi = Header::open (argument[0]).get_image<value_type>();
+  auto dwi = header_in.get_image<value_type>();
   ThreadedLoop("computing tensors", dwi, 0, 3).run (processor (b, ols, iter, mask, b0, dkt, predict), dwi, dt);
 }
 
