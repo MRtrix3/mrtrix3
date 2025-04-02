@@ -188,8 +188,7 @@ private:
 } // namespace
 
 #define FIXEL_MATRIX_GENERATE_SHARED                                                                                   \
-
-  const auto fixel_dir_path = std::filesystem::path{index_image.name())}.parent_path();                                \
+  const auto fixel_dir_path = std::filesystem::path{index_image.name()}.parent_path();                                \
   auto directions_image = Fixel::find_directions_header(fixel_dir_path)                                                \
                               .template get_image<default_type>()                                                      \
                               .with_direct_io({+2, +1});                                                               \

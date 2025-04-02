@@ -158,7 +158,8 @@ void convert_old2new() {
   opt = get_options("template");
   if (!opt.empty()) {
     Fixel::check_fixel_directory(opt[0][0]);
-    template_index_image = Fixel::find_index_header(opt[0][0]).get_image<index_type>();
+    const std::filesystem::path fixel_directory_path(opt[0][0]);
+    template_index_image = Fixel::find_index_header(fixel_directory_path).get_image<index_type>();
     check_dimensions(index_image, template_index_image);
     template_directions_image = Fixel::find_directions_header(opt[0][0]).get_image<float>();
   }
