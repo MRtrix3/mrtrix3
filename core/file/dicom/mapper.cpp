@@ -17,10 +17,9 @@
 #include <algorithm>
 
 #include "header.h"
-#include "phase_encoding.h"
-#include "image_io/null.h"
 #include "image_io/default.h"
 #include "image_io/mosaic.h"
+#include "image_io/null.h"
 #include "image_io/variable_scaling.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/image.h"
@@ -28,6 +27,7 @@
 #include "file/dicom/study.h"
 #include "file/dicom/patient.h"
 #include "file/dicom/tree.h"
+#include "metadata/phase_encoding.h"
 
 namespace MR {
   namespace File {
@@ -288,7 +288,7 @@ namespace MR {
         }
 
         try {
-          PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
+          Metadata::PhaseEncoding::set_scheme (H.keyval(), Frame::get_PE_scheme (frames, dim[1]));
         } catch (Exception& e) {
           e.display (3);
           WARN ("Malformed phase encoding information; ignored");

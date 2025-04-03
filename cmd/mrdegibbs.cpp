@@ -22,6 +22,7 @@
 #include "progressbar.h"
 #include "types.h"
 #include "algo/threaded_loop.h"
+#include "metadata/bids.h"
 #include <numeric>
 
 using namespace MR;
@@ -338,7 +339,7 @@ void run ()
   auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     try {
-      const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+      const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot = Metadata::BIDS::axisid2vector (slice_encoding_it->second);
       vector<size_t> auto_slice_axes = { 0, 0 };
       if (slice_encoding_axis_onehot[0])
         auto_slice_axes = { 1, 2 };
