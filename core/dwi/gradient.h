@@ -27,7 +27,7 @@
 #include "math/SH.h"
 
 
-#define DWI_BZERO_THREHSOLD_DEFAULT 10.0
+#define DWI_BZERO_THRESHOLD_DEFAULT 10.0
 
 namespace MR
 {
