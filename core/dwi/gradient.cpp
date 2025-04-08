@@ -15,8 +15,8 @@
  */
 
 #include "dwi/gradient.h"
+#include "file/config.h"
 #include "file/nifti_utils.h"
-#include "dwi/shells.h"
 
 namespace MR
 {
@@ -85,6 +85,17 @@ namespace MR
 
 
 
+//CONF option: BZeroThreshold
+//CONF default: 10.0
+//CONF Specifies the b-value threshold for determining those image
+//CONF volumes that correspond to b=0.
+    default_type bzero_threshold () {
+      static const default_type value = File::Config::get_float ("BZeroThreshold", DWI_BZERO_THREHSOLD_DEFAULT);
+      return value;
+    }
+
+
+
     BValueScalingBehaviour get_cmdline_bvalue_scaling_behaviour ()
     {
       auto opt = App::get_options ("bvalue_scaling");
@@ -115,6 +126,8 @@ namespace MR
 
     Eigen::MatrixXd load_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
+      assert (header.realignment().orig_transform().matrix().allFinite());
+
       Eigen::MatrixXd bvals, bvecs;
       try {
         bvals = load_matrix<> (bvals_path);
@@ -144,27 +157,12 @@ namespace MR
         throw Exception ("bvecs and bvals files must have same number of diffusion directions as DW-image (gradients: " + str(bvecs.cols()) + ", image: " + str(num_volumes) + ")");
 
       // bvecs format actually assumes a LHS coordinate system even if image is
-      // stored using RHS - x axis is flipped to make linear 3x3 part of
+      // stored using RHS; first axis is flipped to make linear 3x3 part of
       // transform have negative determinant:
-      vector<size_t> order;
-      auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
-      if (adjusted_transform.linear().determinant() > 0.0)
-        bvecs.row(0) = -bvecs.row(0);
-
-      // account for the fact that bvecs are specified wrt original image axes,
-      // which may have been re-ordered and/or inverted by MRtrix to match the
-      // expected anatomical frame of reference:
-      Eigen::MatrixXd G (bvecs.cols(), 3);
-      for (ssize_t n = 0; n < G.rows(); ++n) {
-        G(n,order[0]) = header.stride(order[0]) > 0 ? bvecs(0,n) : -bvecs(0,n);
-        G(n,order[1]) = header.stride(order[1]) > 0 ? bvecs(1,n) : -bvecs(1,n);
-        G(n,order[2]) = header.stride(order[2]) > 0 ? bvecs(2,n) : -bvecs(2,n);
-      }
-
-      // rotate gradients into scanner coordinate system:
-      Eigen::MatrixXd grad (G.rows(), 4);
-
-      grad.leftCols<3>().transpose() = header.transform().rotation() * G.transpose();
+      if (header.realignment().orig_transform().linear().determinant() > 0.0)
+        bvecs.row(0) *= -1.0;
+      Eigen::MatrixXd grad(bvecs.cols(), 4);
+      grad.leftCols<3>().transpose() = header.realignment().orig_transform().linear() * bvecs;
       grad.col(3) = bvals.row(0);
 
       return grad;
@@ -172,36 +170,18 @@ namespace MR
 
 
 
-
-
-    void save_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
-    {
-      const auto grad = parse_DW_scheme (header);
-
-      // rotate vectors from scanner space to image space
-      Eigen::MatrixXd G = grad.leftCols<3>() * header.transform().rotation();
-
-      // deal with FSL requiring gradient directions to coincide with data strides
-      // also transpose matrices in preparation for file output
-      vector<size_t> order;
-      auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
-      Eigen::MatrixXd bvecs (3, grad.rows());
-      Eigen::MatrixXd bvals (1, grad.rows());
-      for (ssize_t n = 0; n < G.rows(); ++n) {
-        bvecs(0,n) = header.stride(order[0]) > 0 ? G(n,order[0]) : -G(n,order[0]);
-        bvecs(1,n) = header.stride(order[1]) > 0 ? G(n,order[1]) : -G(n,order[1]);
-        bvecs(2,n) = header.stride(order[2]) > 0 ? G(n,order[2]) : -G(n,order[2]);
-        bvals(0,n) = grad(n,3);
-      }
-
+    void save_bvecs_bvals(const Header &header, const std::string &bvecs_path, const std::string &bvals_path) {
+      const auto grad = parse_DW_scheme(header);
+      Axes::permutations_type order;
+      const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
+      Eigen::MatrixXd bvecs = adjusted_transform.inverse().linear() * grad.leftCols<3>().transpose();
       // bvecs format actually assumes a LHS coordinate system even if image is
-      // stored using RHS - x axis is flipped to make linear 3x3 part of
+      // stored using RHS; first axis is flipped to make linear 3x3 part of
       // transform have negative determinant:
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
-
       save_matrix (bvecs, bvecs_path, KeyValues(), false);
-      save_matrix (bvals, bvals_path, KeyValues(), false);
+      save_matrix (grad.col(3).transpose(), bvals_path, KeyValues(), false);
     }
 
 
@@ -290,6 +270,7 @@ namespace MR
                 "(maximum scaling factor = " + str(max_scaling_factor) + ")");
           }
         }
+        assert (grad.allFinite());
 
         // write the scheme as interpreted back into the header if:
         // - vector normalisation effect is large, regardless of whether or not b-value scaling was applied

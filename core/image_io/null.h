@@ -14,35 +14,25 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __file_json_utils_h__
-#define __file_json_utils_h__
+#ifndef __image_io_null_h__
+#define __image_io_null_h__
 
-#include "file/json.h"
-#include "file/key_value.h"
+#include "image_io/base.h"
 
-namespace MR
-{
-  class Header;
+namespace MR {
+  namespace ImageIO {
 
-  namespace File
-  {
-    namespace JSON
-    {
+    class Null : public Base {
+      NOMEMALIGN
+      public:
+        Null(const Header &header) : Base(header) {}
 
-      void load (Header& H, const std::string& path);
-      void save (const Header& H, const std::string& json_path, const std::string& image_path);
+      protected:
+        virtual void load(const Header &, size_t);
+        virtual void unload(const Header &);
+    };
 
-      KeyValues read (const nlohmann::json& json);
-      void read (const nlohmann::json& json, Header& header);
-
-      void write (const KeyValues& keyval, nlohmann::json& json);
-      void write (const Header& header,
-                  nlohmann::json& json,
-                  const std::string& image_path);
-
-    }
-  }
-}
+  } // namespace ImageIO
+} // namespace MR
 
 #endif
-
