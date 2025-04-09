@@ -62,7 +62,7 @@ void Font::initGL(bool with_shadow) {
     tex_width += metric.horizontalAdvance(QChar(c)) + 2;
 #endif
 
-  QImage pixmap(max_font_width, font_height, QImage::Format_ARGB32);
+  QImage pixmap(max_font_width, font_height, QImage::Format_ARGB32_Premultiplied);
   const GLubyte *pix_data = pixmap.bits();
 
   VLA(tex_data, float, 2 * tex_width * font_height);
