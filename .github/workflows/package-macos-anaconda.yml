@@ -27,7 +27,7 @@ jobs:
           { echo "CONDA_BUILD_SYSROOT:"; echo "  - /opt/MacOSX10.11.sdk        # [osx]"; } > conda_build_config.yaml
 
       - name: build package
-        run: sudo CONDA="$CONDA" ./run.sh ${GITHUB_REF#refs/*/} ${GITHUB_REPOSITORY%/*} conda-macos
+        run: CONDA="$CONDA" ./run.sh ${GITHUB_REF#refs/*/} ${GITHUB_REPOSITORY%/*} conda-macos
 
       #    - name: upload package
       #      run: $CONDA/bin/anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload -u MRtrix3 $(sudo $CONDA/bin/conda build conda-build/ --output)
