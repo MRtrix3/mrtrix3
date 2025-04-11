@@ -44,5 +44,5 @@ jobs:
       - name: Upload package to GitHub Release
         uses: AButler/upload-release-assets@v2.0
         with:
-          files: "*.tar.xz"
+          files: "*.tar.zst"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
