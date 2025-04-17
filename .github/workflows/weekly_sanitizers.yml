@@ -31,7 +31,7 @@ jobs:
          sudo apt-get install clang llvm qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.3
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
