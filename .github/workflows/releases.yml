@@ -67,7 +67,7 @@ jobs:
           echo "output_name=mrtrix3-macos-$commit_sha-$date" >> $GITHUB_OUTPUT
 
       - name: Install deps
-        run: brew install numpy cmake qt eigen pkg-config fftw libpng ninja
+        run: brew install numpy cmake qt pkg-config libpng ninja
 
       - name: Run build
         run: |
@@ -128,7 +128,7 @@ jobs:
         run: |
           cd packaging/mingw
           ./run.sh ${{ steps.envs.outputs.commit_sha }} mrtrix3
-          mv mingw*.tar.zst ../../../${{ steps.envs.outputs.output_name }}.tar.zst
+          mv mingw*.tar.zst ../../${{ steps.envs.outputs.output_name }}.tar.zst
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
