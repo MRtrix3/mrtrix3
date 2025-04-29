@@ -26,6 +26,8 @@
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -226,8 +228,9 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_path{argument[1]};
+  auto header_in = Header::open(input_path.string());
 
-  auto header_in = Header::open(argument[1]);
   Header header_out(header_in);
   header_out.ndim() = 4;
   header_out.datatype() = DataType::Float32;

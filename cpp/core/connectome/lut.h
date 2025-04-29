@@ -24,6 +24,8 @@
 
 #include "connectome/connectome.h"
 
+#include <filesystem>
+
 namespace MR::Connectome {
 
 // Class for storing any useful information regarding a parcellation node that
@@ -78,7 +80,7 @@ public:
 private:
   bool exclusive;
 
-  file_format guess_file_format(const std::string &);
+  file_format guess_file_format(const std::filesystem::path &);
 
   void parse_line_basic(const std::string &);
   void parse_line_freesurfer(const std::string &);

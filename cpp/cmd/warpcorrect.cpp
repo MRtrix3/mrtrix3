@@ -17,6 +17,7 @@
 #include "command.h"
 #include "image.h"
 #include "registration/warp/helpers.h"
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -82,10 +83,13 @@ protected:
 };
 
 void run() {
-  auto input = Image<value_type>::open(argument[0]).with_direct_io(3);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
+  auto input = Image<value_type>::open(input_path).with_direct_io(3);
   Registration::Warp::check_warp(input);
 
-  auto output = Image<value_type>::create(argument[1], input);
+  auto output = Image<value_type>::create(output_path, input);
 
   Eigen::Matrix<value_type, 3, 1> oob_vector = Eigen::Matrix<value_type, 3, 1>::Zero();
   auto opt = get_options("marker");

@@ -23,6 +23,8 @@
 #include "opengl/shader.h"
 #include "projection.h"
 
+#include <filesystem>
+
 namespace MR {
 class ProgressBar;
 
@@ -67,7 +69,7 @@ public:
 
   virtual void request_render_colourbar(DisplayableVisitor &) {}
 
-  const std::string &get_filename() const { return filename; }
+  const std::filesystem::path &get_filename() const { return filename; }
 
   float scaling_min() const { return display_midpoint - 0.5f * display_range; }
 
@@ -268,7 +270,7 @@ signals:
   void scalingChanged();
 
 protected:
-  std::string filename;
+  std::filesystem::path filename;
   float value_min, value_max;
   uint32_t flags_;
 

@@ -135,7 +135,7 @@ void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname
         && fname[0] != PATH_SEPARATORS[1]
 #endif
     )
-      fname = Path::join(Path::dirname(H.name()), fname);
+      fname = Path::join(std::filesystem::path(H.name()).parent_path(), fname);
   }
 }
 

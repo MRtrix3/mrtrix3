@@ -18,10 +18,10 @@
 
 #include <cassert>
 #include <cstdint>
+#include <filesystem>
 #include <iostream>
 
 #include "file/entry.h"
-#include "types.h"
 
 namespace MR::File {
 
@@ -51,7 +51,7 @@ public:
   MMap(const Entry &entry, bool readwrite = false, bool preload = true, int64_t mapped_size = -1);
   ~MMap();
 
-  std::string name() const { return Entry::name; }
+  std::filesystem::path name() const { return Entry::name; }
   int64_t size() const { return msize; }
   uint8_t *address() { return first; }
   const uint8_t *address() const { return first; }

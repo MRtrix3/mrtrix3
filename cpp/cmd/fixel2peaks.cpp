@@ -25,6 +25,8 @@
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -61,17 +63,21 @@ void usage() {
 
 void run() {
   Header index_header, directions_header, data_header;
+  const std::filesystem::path input_path(argument[0]);
+  const auto input_dirname = input_path.parent_path();
+  const std::filesystem::path output_path(argument[1]);
+
   try {
-    Header input_header = Header::open(argument[0]);
+    Header input_header = Header::open(input_path);
     if (Fixel::is_index_image(input_header)) {
       index_header = std::move(input_header);
-      directions_header = Fixel::find_directions_header(Path::dirname(argument[0]));
+      directions_header = Fixel::find_directions_header(input_dirname);
     } else if (Fixel::is_directions_file(input_header)) {
-      index_header = Fixel::find_index_header(Path::dirname(argument[0]));
+      index_header = Fixel::find_index_header(input_dirname);
       directions_header = std::move(input_header);
     } else if (Fixel::is_data_file(input_header)) {
-      index_header = Fixel::find_index_header(Path::dirname(argument[0]));
-      directions_header = Fixel::find_directions_header(Path::dirname(argument[0]));
+      index_header = Fixel::find_index_header(input_dirname);
+      directions_header = Fixel::find_directions_header(input_dirname);
       data_header = std::move(input_header);
       Fixel::check_fixel_size(index_header, data_header);
     } else {
@@ -79,12 +85,12 @@ void run() {
     }
   } catch (Exception &e_asimage) {
     try {
-      if (!Path::is_dir(argument[0]))
+      if (!Path::is_dir(input_path))
         throw Exception("Input path is not a directory");
-      index_header = Fixel::find_index_header(argument[0]);
-      directions_header = Fixel::find_directions_header(argument[0]);
+      index_header = Fixel::find_index_header(input_path);
+      directions_header = Fixel::find_directions_header(input_path);
     } catch (Exception &e_asdir) {
-      Exception e("Could not locate fixel data based on input string \"" + argument[0] + "\"");
+      Exception e("Could not locate fixel data based on input string \"" + input_path.string() + "\"");
       e.push_back("Error when interpreting as image: ");
       for (size_t i = 0; i != e_asimage.num(); ++i)
         e.push_back("  " + e_asimage[i]);
@@ -115,8 +121,8 @@ void run() {
   out_header.datatype() = DataType::Float32;
   out_header.datatype().set_byte_order_native();
   out_header.size(3) = 3 * max_fixel_count;
-  out_header.name() = std::string(argument[1]);
-  Image<float> out_image(Image<float>::create(argument[1], out_header));
+  out_header.name() = output_path.string();
+  Image<float> out_image(Image<float>::create(output_path, out_header));
 
   const float fill = !get_options("nan").empty() ? NaN : 0.0F;
 

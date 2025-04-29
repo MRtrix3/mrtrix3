@@ -26,6 +26,8 @@
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -61,12 +63,15 @@ void usage() {
 // clang-format on
 
 void run() {
-  auto in_data_image = Fixel::open_fixel_data_file<float>(argument[0]);
+  const std::filesystem::path fixel_input_path{argument[0]};
+  const std::filesystem::path sh_output_path{argument[1]};
 
-  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  auto in_data_image = Fixel::open_fixel_data_file<float>(fixel_input_path);
+
+  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(fixel_input_path));
   auto in_index_image = in_index_header.get_image<index_type>();
   auto in_directions_image =
-      Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io();
+      Fixel::find_directions_header(Fixel::get_fixel_directory(fixel_input_path)).get_image<float>().with_direct_io();
 
   size_t lmax = 8;
   auto opt = get_options("lmax");
@@ -81,7 +86,7 @@ void run() {
   out_header.ndim() = 4;
   out_header.size(3) = n_sh_coeff;
 
-  auto sh_image = Image<float>::create(argument[1], out_header);
+  auto sh_image = Image<float>::create(sh_output_path, out_header);
   std::vector<default_type> sh_values;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> apsf_values;
 

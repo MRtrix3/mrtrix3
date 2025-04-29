@@ -22,6 +22,8 @@
 #include "ordered_thread_queue.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace MR::DWI;
 using namespace App;
@@ -109,12 +111,16 @@ protected:
 };
 
 void run() {
-  Loader loader(argument[0]);
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_image_path{argument[1]};
+  const std::filesystem::path output_tracks_path{argument[2]};
 
-  auto data = Image<value_type>::open(argument[1]).with_direct_io(3);
+  Loader loader(input_tracks_path);
+
+  auto data = Image<value_type>::open(input_image_path).with_direct_io(3);
   Warper warper(data);
 
-  Writer writer(argument[2], loader.properties);
+  Writer writer(output_tracks_path, loader.properties);
 
   Thread::run_ordered_queue(
       loader, Thread::batch(TrackType(), 1024), Thread::multi(warper), Thread::batch(TrackType(), 1024), writer);

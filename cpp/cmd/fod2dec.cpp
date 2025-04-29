@@ -26,6 +26,8 @@
 #include "math/sphere.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -220,8 +222,10 @@ public:
 };
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
 
-  auto fod_hdr = Header::open(argument[0]);
+  auto fod_hdr = Header::open(input_path);
   Math::SH::check(fod_hdr);
 
   auto mask_hdr = Header();
@@ -305,7 +309,7 @@ void run() {
     out_hdr.ndim() = 4;
     out_hdr.size(3) = 3;
     Stride::set(out_hdr, Stride::contiguous_along_axis(3, out_hdr));
-    out_img = Image<value_type>::create(argument[1], out_hdr);
+    out_img = Image<value_type>::create(output_path, out_hdr);
 
     if (needtoslice)
       Filter::reslice<Interp::Cubic>(dec_img, out_img, Adapter::NoTransform, Adapter::AutoOverSample, UNIT);

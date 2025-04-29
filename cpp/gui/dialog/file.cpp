@@ -44,18 +44,18 @@ std::string get_folder(QWidget *parent, const std::string &caption, std::string 
   return new_folder;
 }
 
-std::string get_file(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
+std::filesystem::path get_file(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
   QString qstring = QFileDialog::getOpenFileName(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
 
-  std::string filename;
+  std::filesystem::path filepath;
   if (qstring.size()) {
-    filename = qstring.toUtf8().data();
-    std::string new_folder = Path::dirname(filename);
+    filepath = qstring.toUtf8().data();
+    std::filesystem::path new_folder = filepath.parent_path();
     if (folder)
       *folder = new_folder;
   }
-  return filename;
+  return filepath;
 }
 
 std::vector<std::string>
@@ -67,7 +67,7 @@ get_files(QWidget *parent, const std::string &caption, const std::string &filter
   if (!qlist.empty()) {
     for (int n = 0; n < qlist.size(); ++n)
       list.push_back(qlist[n].toUtf8().data());
-    std::string new_folder = Path::dirname(list[0]);
+    std::filesystem::path new_folder = std::filesystem::path{list[0]}.parent_path();
     if (folder)
       *folder = new_folder;
   }
@@ -109,10 +109,10 @@ std::string get_save_name(QWidget *parent,
   QString qstring = QFileDialog::getSaveFileName(
       parent, qstr(caption), selection, qstr(filter), 0, FILE_DIALOG_OPTIONS | QFileDialog::DontConfirmOverwrite);
 
-  std::string filename;
+  std::filesystem::path filename;
   if (qstring.size()) {
     filename = qstring.toUtf8().data();
-    std::string new_folder = Path::dirname(filename);
+    std::filesystem::path new_folder = filename.parent_path();
     if (folder)
       *folder = new_folder;
   }
