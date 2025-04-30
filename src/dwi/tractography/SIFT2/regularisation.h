@@ -67,6 +67,8 @@ namespace MR
       extern App::OptionGroup RegularisationOptions;
 
       constexpr default_type regularisation_strength_abs_default = 0.1;
+      // TODO Consider reducing default to 0.01 for differential:
+      //   data are bounded and so over-regularising to preclude outliers not so crucial
       constexpr default_type regularisation_strength_diff_default = 0.1;
 
 
@@ -273,12 +275,12 @@ namespace MR
       }
       FORCE_INLINE value_type reg_deltacoeff (const value_type deltacoeff) {
         if (reg_delta_out_of_bounds(deltacoeff))
-          return std::numeric_limits<value_type>::infinity();
+          return std::numeric_limits<value_type>::signaling_NaN();
         return Math::pow2(deltacoeff);
       }
       FORCE_INLINE value_type reg_deltacoeff (const value_type deltacoeff, const value_type ref) {
         if (reg_delta_out_of_bounds(deltacoeff))
-          return std::numeric_limits<value_type>::infinity();
+          return std::numeric_limits<value_type>::signaling_NaN();
         return Math::pow2((deltacoeff - ref) / (deltacoeff <= ref        //
                                                 ? value_type(1) + ref    //
                                                 : value_type(1) - ref)); //
@@ -326,18 +328,21 @@ namespace MR
 
       namespace {
         value_type transformed_deltacoeff(const value_type deltacoeff, const value_type ref) {
+          assert (std::abs(ref) < value_type(1));
           return deltacoeff <= ref
-                 ? ((deltacoeff + value_type(1)) / (value_type(1) + ref)) - 1
-                 : ((deltacoeff - value_type(1)) / (value_type(1) - ref)) + 1;
+                 ? ((deltacoeff + value_type(1)) / (value_type(1) + ref)) - value_type(1)
+                 : ((deltacoeff - value_type(1)) / (value_type(1) - ref)) + value_type(1);
         }
       }
-      FORCE_INLINE bool reg_dualinvbarr_out_of_bounds(const value_type deltacoeff) {
-        return (deltacoeff <= value_type(-1) || deltacoeff >= value_type(1));
-      }
+      // FORCE_INLINE bool reg_dualinvbarr_out_of_bounds(const value_type deltacoeff) {
+      //   return (std::abs(deltacoeff) >= value_type(1));
+      // }
       FORCE_INLINE value_type reg_dualinvbarr (const value_type deltacoeff)
       {
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff))
+        if (std::abs(deltacoeff) == value_type(1))
           return std::numeric_limits<value_type>::infinity();
+        if (std::abs(deltacoeff) > value_type(1))
+          return std::numeric_limits<value_type>::signaling_NaN();
         return (value_type(-1) - (value_type(1) /                                                  //
                                   ((deltacoeff - value_type(1)) * (deltacoeff + value_type(1))))); //
       }
@@ -355,7 +360,9 @@ namespace MR
       }
       FORCE_INLINE value_type dregdualinvbarr_ddeltacoeff (const value_type deltacoeff)
       {
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff))
+        if (std::abs(deltacoeff) == value_type(1))
+          return std::numeric_limits<value_type>::infinity();
+        if (std::abs(deltacoeff) > value_type(1))
           return std::numeric_limits<value_type>::signaling_NaN();
         return (value_type(2) * deltacoeff /                                                        //
                 (Math::pow2(deltacoeff - value_type(1)) * Math::pow2(deltacoeff + value_type(1)))); //
@@ -366,7 +373,9 @@ namespace MR
       }
       FORCE_INLINE value_type dregdualinvbarr_ddeltacoeff (const value_type deltacoeff, const value_type ref)
       {
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff))
+        if (std::abs(deltacoeff) == value_type(1))
+          return std::numeric_limits<value_type>::infinity();
+        if (std::abs(deltacoeff) > value_type(1))
           return std::numeric_limits<value_type>::signaling_NaN();
         const value_type X = transformed_deltacoeff(deltacoeff, ref);
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
@@ -380,7 +389,9 @@ namespace MR
       }
       FORCE_INLINE value_type d2regdualinvbarr_ddeltacoeff2 (const value_type deltacoeff)
       {
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff))
+        if (std::abs(deltacoeff) == value_type(1))
+          return std::numeric_limits<value_type>::infinity();
+        if (std::abs(deltacoeff) > value_type(1))
           return std::numeric_limits<value_type>::signaling_NaN();
         return (value_type(-2) * ((value_type(3) * Math::pow2(deltacoeff)) + value_type(1)) /       //
                 (Math::pow3(deltacoeff - value_type(1)) * Math::pow3(deltacoeff + value_type(1)))); //
@@ -391,7 +402,9 @@ namespace MR
       }
       FORCE_INLINE value_type d2regdualinvbarr_ddeltacoeff2 (const value_type deltacoeff, const value_type ref)
       {
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff))
+        if (std::abs(deltacoeff) == value_type(1))
+          return std::numeric_limits<value_type>::infinity();
+        if (std::abs(deltacoeff) > value_type(1))
           return std::numeric_limits<value_type>::signaling_NaN();
         const value_type X = transformed_deltacoeff(deltacoeff, ref);
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
@@ -405,7 +418,9 @@ namespace MR
       }
       FORCE_INLINE value_type d3regdualinvbarr_ddeltacoeff3 (const value_type deltacoeff)
       {
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff))
+        if (std::abs(deltacoeff) == value_type(1))
+          return std::numeric_limits<value_type>::infinity();
+        if (std::abs(deltacoeff) > value_type(1))
           return std::numeric_limits<value_type>::signaling_NaN();
         return (value_type(24) * deltacoeff * (Math::pow2(deltacoeff) + value_type(1)) /            //
                 (Math::pow4(deltacoeff - value_type(1)) * Math::pow4(deltacoeff + value_type(1)))); //
@@ -416,7 +431,9 @@ namespace MR
       }
       FORCE_INLINE value_type d3regdualinvbarr_ddeltacoeff3 (const value_type deltacoeff, const value_type ref)
       {
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff))
+        if (std::abs(deltacoeff) == value_type(1))
+          return std::numeric_limits<value_type>::infinity();
+        if (std::abs(deltacoeff) > value_type(1))
           return std::numeric_limits<value_type>::signaling_NaN();
         const value_type X = transformed_deltacoeff(deltacoeff, ref);
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //

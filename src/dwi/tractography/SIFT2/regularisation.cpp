@@ -141,11 +141,13 @@ namespace MR
       {
         if (multiplier == value_type(0))
           return;
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff)) {
-          result.cost = std::numeric_limits<value_type>::infinity();
-          result.first_deriv = std::numeric_limits<value_type>::quiet_NaN();
-          result.second_deriv = std::numeric_limits<value_type>::quiet_NaN();
-          result.third_deriv = std::numeric_limits<value_type>::quiet_NaN();
+        if (std::abs(deltacoeff) >= value_type(1)) {
+          result.cost = std::abs(deltacoeff) == value_type(1)
+                        ? std::numeric_limits<value_type>::infinity()
+                        : std::numeric_limits<value_type>::signaling_NaN();
+          result.first_deriv = std::numeric_limits<value_type>::signaling_NaN();
+          result.second_deriv = std::numeric_limits<value_type>::signaling_NaN();
+          result.third_deriv = std::numeric_limits<value_type>::signaling_NaN();
           return;
         }
         const value_type dminus1 = deltacoeff - value_type(1);
@@ -174,11 +176,14 @@ namespace MR
       {
         if (multiplier == value_type(0))
           return;
-        if (reg_dualinvbarr_out_of_bounds(deltacoeff)) {
-          result.cost = std::numeric_limits<value_type>::infinity();
-          result.first_deriv = std::numeric_limits<value_type>::quiet_NaN();
-          result.second_deriv = std::numeric_limits<value_type>::quiet_NaN();
-          result.third_deriv = std::numeric_limits<value_type>::quiet_NaN();
+        if (std::abs(deltacoeff) >= value_type(1)) {
+          result.cost = std::abs(deltacoeff) == value_type(1)
+                        ? std::numeric_limits<value_type>::infinity()
+                        : std::numeric_limits<value_type>::signaling_NaN();
+          result.first_deriv = std::numeric_limits<value_type>::signaling_NaN();
+          result.second_deriv = std::numeric_limits<value_type>::signaling_NaN();
+          result.third_deriv = std::numeric_limits<value_type>::signaling_NaN();
+          return;
         }
         const value_type X = transformed_deltacoeff(deltacoeff, ref);
         const value_type dX_ddeltacoeff = value_type(1) / (deltacoeff <= ref       //
@@ -187,11 +192,11 @@ namespace MR
         const value_type dX_ddeltacoeff_sq = Math::pow2(dX_ddeltacoeff);
         const value_type dX_ddeltacoeff_cub = dX_ddeltacoeff * dX_ddeltacoeff_sq;
         CostAndDerivatives temp;
-        dxregdualinvbarr_ddeltacoeffx(temp, X, value_type(1));
-        result.cost         += multiplier * temp.cost;
-        result.first_deriv  += multiplier * temp.first_deriv * dX_ddeltacoeff;
-        result.second_deriv += multiplier * temp.second_deriv * dX_ddeltacoeff_sq;
-        result.third_deriv  += multiplier * temp.third_deriv * dX_ddeltacoeff_cub;
+        dxregdualinvbarr_ddeltacoeffx(temp, X, multiplier);
+        result.cost         += temp.cost;
+        result.first_deriv  += temp.first_deriv * dX_ddeltacoeff;
+        result.second_deriv += temp.second_deriv * dX_ddeltacoeff_sq;
+        result.third_deriv  += temp.third_deriv * dX_ddeltacoeff_cub;
       }
 
       void dxregdualinvbarr_ddeltacoeffx (CostAndDerivatives& result, const DifferentialWCF &dWCF, const value_type multiplier, const value_type ref)

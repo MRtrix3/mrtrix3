@@ -67,6 +67,11 @@ namespace MR {
           value_type cost, first_deriv, second_deriv, third_deriv;
         };
 
+        FORCE_INLINE std::ostream &operator<<(std::ostream &stream, const CostAndDerivatives &data) {
+          stream << "[" << data.cost << ", " << data.first_deriv << ", " << data.second_deriv << ", " << data.third_deriv << "]";
+          return stream;
+        }
+
 
 
       }

@@ -92,6 +92,7 @@ namespace MR {
 
       LineSearchFunctorDifferential::LineSearchFunctorDifferential (const SIFT::track_t index, TckFactor& tckfactor) :
           LineSearchFunctorBase (index, tckfactor),
+          // verbose (index == STREAMLINE_OF_INTEREST),
           base_dWCF(DifferentialWCF::from_coeffs(tckfactor.coefficients[index], tckfactor.deltacoeffs[index])),
           group_mean (tckfactor.reg_basis_diff == reg_basis_t::GROUP ?
                       tckfactor.group_means_differential[tckfactor.streamline2group[index]] :

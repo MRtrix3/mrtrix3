@@ -33,6 +33,10 @@
 //#define SIFT2_COEFF_OPTIMISER_DEBUG
 //#define SIFT2_DELTA_OPTIMISER_DEBUG
 
+// Used to get highly verbose information about one specific problematic streamline
+//#define STREAMLINE_OF_INTEREST 15868
+
+
 
 namespace MR {
   namespace DWI {
@@ -203,8 +207,7 @@ namespace MR {
 
 
 
-      // TODO Create a new class to deal with optimisation of the delta weights
-      // Note that at least for now, this will NOT inherit from CoefficientOptimiserBase
+      // At least for now, this does NOT inherit from CoefficientOptimiserBase
       class DeltaOptimiserIterative
       {
         public:
@@ -223,8 +226,9 @@ namespace MR {
 
           value_type operator() (const SIFT::track_t) const;
 
-#ifdef SIFT2_COEFF_OPTIMISER_DEBUG
-          size_t total, failed, wrong_dir, step_truncated, delta_truncated;
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+          size_t total;
+          mutable size_t step_truncated, delta_truncated;
 #endif
       };
 

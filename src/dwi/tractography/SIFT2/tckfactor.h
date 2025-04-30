@@ -133,7 +133,7 @@ namespace MR {
               void add_to_differential_TD (const value_type i) { (*this)[differential_td_column] += i; }
               void clear_mean_deltacoeff() { (*this)[mean_deltacoeff_column] = 0.0; }
               void add_to_mean_deltacoeff (const value_type i) { (*this)[mean_deltacoeff_column] += i; }
-              void normalise_mean_deltacoeff() { if (td()) (*this)[mean_deltacoeff_column] /= td(); if (count() < 2) clear_mean_deltacoeff(); }
+              void normalise_mean_deltacoeff() { if (orig_TD()) (*this)[mean_deltacoeff_column] /= orig_TD(); if (count() < 2) clear_mean_deltacoeff(); }
               value_type mean_deltacoeff() const { return (*this)[mean_deltacoeff_column]; }
               // TODO Re-attempt using the below function as a substitute for mean deltacoeff
               //value_type mean_deltacoeff() const { return differential_TD() / td(); }
@@ -214,6 +214,10 @@ namespace MR {
           void set_factors (const std::string& path);
           void set_deltacoeffs (const std::string &path);
           void set_deltafactors (const std::string &path);
+
+          reg_basis_t get_reg_basis_abs() const { return reg_basis_abs; }
+          reg_basis_t get_reg_basis_diff() const { return reg_basis_diff; }
+
           // This should only be called if coefficients have been loaded from the command-line,
           //   and there is to be subsequent optimisation performed based on such;
           //   these limits should otherwise be being enforced by whatever code is responsible for the optimisation

@@ -184,11 +184,14 @@ namespace MR {
         public:
           LineSearchFunctorDifferential (const SIFT::track_t, TckFactor&);
 
-          // TODO Re-establish regularisation by fixel rather than by streamline
           template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
           CostAndDerivatives get (const value_type) const;
-          template <reg_basis_t RegBasis, reg_fn_diff_t RegFN>
+          // template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
+          // CostAndDerivatives get_verbose (const value_type) const;
+          template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
           value_type operator() (const value_type) const;
+          // template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
+          // value_type cost_verbose (const value_type) const;
 
         protected:
 
@@ -200,6 +203,7 @@ namespace MR {
             value_type differential_TD, ddiffTD_dddelta, mean_deltacoeff, differential_FD;
           };
 
+          // bool verbose;
           const DifferentialWCF base_dWCF;
           const value_type group_mean;
           vector<Fixel> fixels;
@@ -215,6 +219,8 @@ namespace MR {
       template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
       CostAndDerivatives LineSearchFunctorDifferential::get (const value_type ddeltacoeff) const
       {
+//         if (verbose)
+//           return get_verbose<RegBasis, RegFn>(ddeltacoeff);
         const DifferentialWCF dWCF (DifferentialWCF::from_deltacoeff(base_dWCF.absolute(), base_dWCF.delta_coeff() + ddeltacoeff));
         CostAndDerivatives data_result, reg_result;
 
@@ -250,6 +256,57 @@ namespace MR {
         return CostAndDerivatives(data_result, reg_result);
       }
 
+/*
+      template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
+      CostAndDerivatives LineSearchFunctorDifferential::get_verbose (const value_type ddeltacoeff) const
+      {
+        std::cerr << "New get() call for streamline of interest\n";
+        std::cerr << "Baseline delta coeff: " << base_dWCF.delta_coeff() << "\n";
+        std::cerr << "Candidate change: " << ddeltacoeff << "\n";
+        const DifferentialWCF dWCF (DifferentialWCF::from_deltacoeff(base_dWCF.absolute(), base_dWCF.delta_coeff() + ddeltacoeff));
+        std::cerr << "Modified delta coeff: " << dWCF.delta_coeff() << "\n";
+        CostAndDerivatives data_result, reg_result;
+
+        for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+
+          // Get the data cost terms into here directly
+          // Note different expression to absolute version
+          const value_type diff = (mu * (i->differential_TD + (i->ddiffTD_dddelta*ddeltacoeff))) - i->differential_FD;
+
+          CostAndDerivatives this_data_result;
+          this_data_result.cost += i->cost_frac * i->weight * Math::pow2 (diff);
+          this_data_result.first_deriv += 2.0 * i->cost_frac * i->weight * mu * i->ddiffTD_dddelta * diff;
+          this_data_result.second_deriv += 2.0 * i->cost_frac * i->weight * Math::pow2(mu) * Math::pow2(i->ddiffTD_dddelta);
+          // data_result.third_deriv = 0.0
+          std::cerr << "Fixel data term (" << i->index << "): Frac=" << i->cost_frac << "; weight=" << i->weight << "; cost=" << this_data_result.cost << "\n";
+          data_result += this_data_result;
+
+          CostAndDerivatives this_reg_result;
+          if (RegBasis == reg_basis_t::FIXEL) {
+            SIFT2::dxreg_ddeltacoeffx<RegFn> (this_reg_result, dWCF, i->SL_eff, i->mean_deltacoeff);
+            std::cerr << "Fixel reg term (" << i->index << "): mean=" << i->mean_deltacoeff << "; cost=" << this_reg_result.cost << "\n";
+            reg_result += this_reg_result;
+          }
+
+        }
+
+        switch (RegBasis) {
+          case reg_basis_t::STREAMLINE:
+            SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, reg_multiplier_streamline);
+            break;
+          case reg_basis_t::FIXEL:
+            reg_result *= reg_multiplier_fixel;
+            break;
+          case reg_basis_t::GROUP:
+            SIFT2::dxreg_ddeltacoeffx<RegFn> (reg_result, dWCF, reg_multiplier_streamline, group_mean);
+            break;
+        }
+
+        const CostAndDerivatives result(data_result, reg_result);
+        std::cerr << "Final result: " << result << "\n";
+        return result;
+      }
+*/
 
 
 
@@ -257,6 +314,8 @@ namespace MR {
       template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
       LineSearchFunctorDifferential::value_type LineSearchFunctorDifferential::operator() (const value_type ddeltacoeff) const
       {
+//         if (verbose)
+//           return cost_verbose<RegBasis, RegFn>(ddeltacoeff);
         const value_type deltaplusddelta = base_dWCF.delta_coeff() + ddeltacoeff;
         value_type cf_data (value_type(0));
         value_type cf_reg (RegBasis == reg_basis_t::STREAMLINE ?
@@ -281,6 +340,45 @@ namespace MR {
         return (cf_data + cf_reg);
       }
 
+/*
+      template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
+      LineSearchFunctorDifferential::value_type LineSearchFunctorDifferential::cost_verbose (const value_type ddeltacoeff) const
+      {
+        std::cerr << "New get() call for streamline of interest\n";
+        std::cerr << "Baseline delta coeff: " << base_dWCF.delta_coeff() << "\n";
+        std::cerr << "Candidate change: " << ddeltacoeff << "\n";
+        const value_type deltaplusddelta = base_dWCF.delta_coeff() + ddeltacoeff;
+        std::cerr << "New delta coeff: " << deltaplusddelta << "\n";
+        value_type cf_data (value_type(0));
+        value_type cf_reg (RegBasis == reg_basis_t::STREAMLINE ?
+                           reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta) :
+                           value_type(0.0));
+        for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+          const value_type this_cf_data = i->cost_frac * i->weight * Math::pow2 ((mu * (i->differential_TD + i->ddiffTD_dddelta*ddeltacoeff)) - i->differential_FD);
+          std::cerr << "Fixel data term (" << i->index << "): Frac=" << i->cost_frac << "; weight=" << i->weight << "; cost=" << this_cf_data << "\n";
+          cf_data += this_cf_data;
+          if (RegBasis == reg_basis_t::FIXEL) {
+            const value_type this_cf_reg = i->SL_eff * SIFT2::reg<RegFn> (deltaplusddelta, i->mean_deltacoeff);
+            std::cerr << "Fixel reg term (" << i->index << "): mean=" << i->mean_deltacoeff << "; cost=" << this_cf_reg << "\n";
+            cf_reg += this_cf_reg;
+          }
+        }
+        switch (RegBasis) {
+          case reg_basis_t::STREAMLINE:
+            cf_reg = reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta);
+            break;
+          case reg_basis_t::FIXEL:
+            cf_reg *= reg_multiplier_fixel;
+            break;
+          case reg_basis_t::GROUP:
+            cf_reg = reg_multiplier_streamline * SIFT2::reg<RegFn> (deltaplusddelta, group_mean);
+            break;
+        }
+        const value_type result = cf_data + cf_reg;
+        std::cerr << "Final result: " << result << "\n";
+        return result;
+      }
+*/
 
 
 
