@@ -304,8 +304,11 @@ void run ()
   if (opt.size())
     tckfactor.set_max_iters (int(opt[0][0]));
   opt = get_options ("streamline_groups");
-  if (!opt.empty())
+  bool groups_provided_not_used = false;
+  if (!opt.empty()) {
     tckfactor.set_streamline_groups (opt[0][0]);
+    groups_provided_not_used = true;
+  }
 
 
   if (get_options ("linear").size()) {
@@ -331,6 +334,8 @@ void run ()
     opt = get_options ("reg_basis_abs");
     if (opt.size())
       tckfactor.set_reg_basis_abs (reg_basis_t (int(opt[0][0])));
+    if (tckfactor.get_reg_basis_abs() == reg_basis_t::GROUP)
+      groups_provided_not_used = false;
     opt = get_options ("reg_fn_abs");
     if (opt.size())
       tckfactor.set_reg_fn_abs (reg_fn_abs_t (int(opt[0][0])));
@@ -394,6 +399,8 @@ void run ()
       opt = get_options ("reg_basis_diff");
       if (opt.size())
         tckfactor.set_reg_basis_diff (reg_basis_t (int(opt[0][0])));
+      if (tckfactor.get_reg_basis_diff() == reg_basis_t::GROUP)
+        groups_provided_not_used = false;
       opt = get_options("reg_fn_diff");
       if (opt.size())
         tckfactor.set_reg_fn_diff(reg_fn_diff_t(int(opt[0][0])));
@@ -456,6 +463,11 @@ void run ()
     if (!get_options("in_deltacoeffs").empty()) {
       WARN("Option -in_deltacoeffs ignored; differential mode not active");
     }
+  }
+
+  if (groups_provided_not_used) {
+    WARN("Streamline groups were provided, "
+         "but no streamline-group-wise regularisation was utilised");
   }
 
 }
