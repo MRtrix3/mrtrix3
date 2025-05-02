@@ -111,7 +111,8 @@ namespace MR {
               void store_orig_TD() { (*this)[orig_td_column] = td(); }
               void add_to_mean_coeff (const value_type i) { (*this)[mean_coeff_column] += i; }
               void clear_mean_coeff() { (*this)[mean_coeff_column] = 0.0; }
-              void normalise_mean_coeff() { if (orig_TD()) (*this)[mean_coeff_column] /= orig_TD(); if (count() < 2) clear_mean_coeff(); }
+              //void normalise_mean_coeff() { if (orig_TD()) (*this)[mean_coeff_column] /= orig_TD(); if (count() < 2) clear_mean_coeff(); }
+              void normalise_mean_coeff(const value_type norm) { (*this)[mean_coeff_column] = norm ? (*this)[mean_coeff_column] /= norm : value_type(0); }
               void exclude() { (*this)[exclude_column] = 1.0; }
 
               value_type orig_TD()    const { return (*this)[orig_td_column]; }
@@ -133,7 +134,8 @@ namespace MR {
               void add_to_differential_TD (const value_type i) { (*this)[differential_td_column] += i; }
               void clear_mean_deltacoeff() { (*this)[mean_deltacoeff_column] = 0.0; }
               void add_to_mean_deltacoeff (const value_type i) { (*this)[mean_deltacoeff_column] += i; }
-              void normalise_mean_deltacoeff() { if (orig_TD()) (*this)[mean_deltacoeff_column] /= orig_TD(); if (count() < 2) clear_mean_deltacoeff(); }
+              //void normalise_mean_deltacoeff() { if (orig_TD()) (*this)[mean_deltacoeff_column] /= orig_TD(); if (count() < 2) clear_mean_deltacoeff(); }
+              void normalise_mean_deltacoeff(const value_type norm) { (*this)[mean_deltacoeff_column] = norm ? (*this)[mean_deltacoeff_column] / norm : value_type(0); }
               value_type mean_deltacoeff() const { return (*this)[mean_deltacoeff_column]; }
               // TODO Re-attempt using the below function as a substitute for mean deltacoeff
               //value_type mean_deltacoeff() const { return differential_TD() / td(); }
@@ -277,7 +279,6 @@ namespace MR {
           // TODO Requisite data for applying regularisation to streamline groups (such as connectome edges)
           Eigen::Array<SIFT::track_t, Eigen::Dynamic, 1> streamline2group;
           SIFT::track_t num_streamline_groups;
-          Eigen::Array<value_type, Eigen::Dynamic, 1> group_TDs;
           Eigen::Array<value_type, Eigen::Dynamic, 1> group_means_absolute;
           Eigen::Array<value_type, Eigen::Dynamic, 1> group_means_differential;
 

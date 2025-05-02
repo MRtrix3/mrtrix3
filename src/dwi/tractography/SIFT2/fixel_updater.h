@@ -40,15 +40,23 @@ namespace MR {
         public:
           using value_type = SIFT::value_type;
 
-          FixelUpdaterBase (TckFactor&);
+          FixelUpdaterBase (TckFactor&, vector<value_type> &);
+          virtual ~FixelUpdaterBase();
 
           virtual bool operator() (const SIFT::TrackIndexRange& range) = 0;
 
         protected:
           TckFactor& master;
+          vector<value_type> &sum_normalisation;
 
           // Each thread needs a local copy of these
           vector<value_type> local_sum_contributions;
+          // Previously, each fixel's "orig_TD" was used to normalise the sum of weighting parameters within each fixel
+          // However in the scenario where some streamlines have invalid values
+          //   (not in terms of being omitted from the optimisation mask,
+          //    but having eg. absolute coefficient of -inf or deltacoeff of +-1),
+          //   the normalisation needs to be performed treating these as entirely absent
+          vector<value_type> local_sum_normalisation;
       };
 
 
@@ -57,7 +65,7 @@ namespace MR {
       {
 
         public:
-          FixelUpdaterAbsolute (TckFactor&);
+          FixelUpdaterAbsolute (TckFactor&, vector<value_type> &);
           ~FixelUpdaterAbsolute();
 
           bool operator() (const SIFT::TrackIndexRange& range) final;
@@ -73,7 +81,7 @@ namespace MR {
       class FixelUpdaterDifferential : public FixelUpdaterBase
       {
         public:
-          FixelUpdaterDifferential (TckFactor&);
+          FixelUpdaterDifferential (TckFactor&, vector<value_type> &);
           ~FixelUpdaterDifferential();
 
           bool operator() (const SIFT::TrackIndexRange& range) final;

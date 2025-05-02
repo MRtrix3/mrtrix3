@@ -31,9 +31,21 @@ namespace MR {
 
 
 
-      FixelUpdaterBase::FixelUpdaterBase (TckFactor& tckfactor) :
+      FixelUpdaterBase::FixelUpdaterBase (TckFactor& tckfactor, vector<value_type> &sum_normalisation) :
           master (tckfactor),
-          local_sum_contributions (tckfactor.nfixels(), 0.0) { }
+          sum_normalisation (sum_normalisation),
+          local_sum_contributions (tckfactor.nfixels(), 0.0),
+          local_sum_normalisation (tckfactor.nfixels(), value_type(0))
+      {
+        assert(*std::min_element(sum_normalisation.begin(), sum_normalisation.end()) == value_type(0)
+          && *std::max_elements(sum_normalisation.begin(), sum_normalisation.end()) == value_type(0));
+      }
+
+      FixelUpdaterBase::~FixelUpdaterBase() {
+        std::lock_guard<std::mutex> lock (master.mutex);
+        for (MR::Fixel::index_type i = 0; i != master.nfixels(); ++i)
+          sum_normalisation[i] += local_sum_normalisation[i];
+      }
 
 
 
@@ -41,8 +53,8 @@ namespace MR {
 
 
 
-      FixelUpdaterAbsolute::FixelUpdaterAbsolute (TckFactor& tckfactor) :
-          FixelUpdaterBase (tckfactor),
+      FixelUpdaterAbsolute::FixelUpdaterAbsolute (TckFactor& tckfactor, vector<value_type> &sum_normalisation) :
+          FixelUpdaterBase (tckfactor, sum_normalisation),
           local_sum_coeffs (tckfactor.nfixels(), 0.0),
           local_counts     (tckfactor.nfixels(), 0) { }
 
@@ -63,11 +75,15 @@ namespace MR {
       bool FixelUpdaterAbsolute::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
-          const WeightingCoeffAndFactor WCF (WeightingCoeffAndFactor::from_coeff (master.coefficients[track_index]));
+          const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
+          const WeightingCoeffAndFactor WCF (WeightingCoeffAndFactor::from_coeff (coefficient));
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
             const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
             const float length = this_contribution[j].get_length();
+            local_sum_normalisation[fixel_index] += length;
             local_sum_contributions[fixel_index] += length * WCF.factor();
             local_sum_coeffs       [fixel_index] += length * WCF.coeff();
             local_counts           [fixel_index]++;
@@ -80,8 +96,8 @@ namespace MR {
 
 
 
-      FixelUpdaterDifferential::FixelUpdaterDifferential (TckFactor& tckfactor) :
-          FixelUpdaterBase (tckfactor),
+      FixelUpdaterDifferential::FixelUpdaterDifferential (TckFactor& tckfactor, vector<value_type> &sum_normalisation) :
+          FixelUpdaterBase (tckfactor, sum_normalisation),
           local_sum_deltacoeffs (tckfactor.nfixels(), 0.0) { }
 
 
@@ -102,11 +118,18 @@ namespace MR {
       bool FixelUpdaterDifferential::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
-          const DifferentialWCF dWCF(DifferentialWCF::from_coeffs(master.coefficients[track_index], master.deltacoeffs[track_index]));
+          const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
+          const value_type deltacoeff = master.deltacoeffs[track_index];
+          if (deltacoeff == value_type(-1) && !master.mask_differential[track_index])
+            continue;
+          const DifferentialWCF dWCF(DifferentialWCF::from_coeffs(coefficient, master.deltacoeffs[track_index]));
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
             const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
             const float length = this_contribution[j].get_length();
+            local_sum_normalisation[fixel_index] += length;
             local_sum_contributions[fixel_index] += dWCF.factor() * length * dWCF.delta_coeff();
             local_sum_deltacoeffs[fixel_index] += length * dWCF.delta_coeff();
           }

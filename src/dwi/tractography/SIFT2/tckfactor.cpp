@@ -63,21 +63,22 @@ namespace MR {
           default:
             assert (false);
         }
+        vector<value_type> sum_normalisation(nfixels(), value_type(0));
         {
           SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
-          typename FixelUpdaterSelector<Mode>::type worker (*this);
+          typename FixelUpdaterSelector<Mode>::type worker (*this, sum_normalisation);
           Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
         }
         // // Scale the fixel mean coefficient terms (each streamline in the fixel is weighted by its length)
         if (Mode == operation_mode_t::ABSOLUTE) {
           for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
             Fixel fixel (*this, i);
-            fixel.normalise_mean_coeff();
+            fixel.normalise_mean_coeff(sum_normalisation[i]);
           }
         } else if (Mode == operation_mode_t::DIFFERENTIAL) {
           for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
             Fixel fixel (*this, i);
-            fixel.normalise_mean_deltacoeff();
+            fixel.normalise_mean_deltacoeff(sum_normalisation[i]);
           }
         } else {
           assert (false);
@@ -94,18 +95,35 @@ namespace MR {
       void TckFactor::update_groups<operation_mode_t::ABSOLUTE>()
       {
         group_means_absolute.setZero();
-        for (SIFT::track_t i = 0; i != contributions.size(); ++i)
-          group_means_absolute[streamline2group[i]] += coefficients[i] * contributions[i]->get_total_contribution();
-        group_means_absolute /= group_TDs;
+        Eigen::Array<value_type, Eigen::Dynamic, 1> group_means_normalisation (Eigen::Array<value_type, Eigen::Dynamic, 1>::Zero(num_streamline_groups));
+        for (SIFT::track_t i = 0; i != contributions.size(); ++i) {
+          const value_type coefficient = coefficients[i];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
+          const SIFT::track_t group = streamline2group[i];
+          group_means_absolute[group] += coefficient * contributions[i]->get_total_contribution();
+          group_means_normalisation[group] += contributions[i]->get_total_contribution();
+        }
+        group_means_absolute /= group_means_normalisation;
       }
 
       template <>
       void TckFactor::update_groups<operation_mode_t::DIFFERENTIAL>()
       {
         group_means_differential.setZero();
-        for (SIFT::track_t i = 0; i != contributions.size(); ++i)
-          group_means_differential[streamline2group[i]] += deltacoeffs[i] * contributions[i]->get_total_contribution();
-        group_means_differential /= group_TDs;
+        Eigen::Array<value_type, Eigen::Dynamic, 1> group_means_normalisation (Eigen::Array<value_type, Eigen::Dynamic, 1>::Zero(num_streamline_groups));
+        for (SIFT::track_t i = 0; i != contributions.size(); ++i) {
+          const value_type coefficient = coefficients[i];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
+          const value_type deltacoeff = deltacoeffs[i];
+          if (deltacoeff == value_type(-1) && !mask_differential[i])
+            continue;
+          const SIFT::track_t group = streamline2group[i];
+          group_means_differential[group] += deltacoeff * contributions[i]->get_total_contribution();
+          group_means_normalisation[group] += contributions[i]->get_total_contribution();
+        }
+        group_means_differential /= group_means_normalisation;
       }
 
 
@@ -257,11 +275,6 @@ namespace MR {
             throw Exception("File containing streamline-to-group assignments must contain either one or two columns; "
                             "found " + str(data.cols()));
         }
-        // Pre-compute the total track density per group
-        //   to expedite normalisation of group means
-        group_TDs = Eigen::Array<value_type, Eigen::Dynamic, 1>::Zero(num_streamline_groups);
-        for (SIFT::track_t i = 0; i != contributions.size(); ++i)
-          group_TDs[streamline2group[i]] += contributions[i]->get_total_contribution();
       }
 
 
@@ -667,13 +680,16 @@ namespace MR {
 
         fixels.col(td_column).setZero();
         fixels.col(mean_coeff_column).setZero();
+        // This isn't used here as we don't interrogate fixel mean coefficients at all;
+        //   it's just become a requisite component for the interface to FixelUpdaterAbsolute
+        vector<value_type> mean_coeff_norm(nfixels(), value_type(0));
         {
           SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
-          FixelUpdaterAbsolute worker (*this);
+          FixelUpdaterAbsolute worker (*this, mean_coeff_norm);
           Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
         }
 
-        CONSOLE ("Cost function after linear optimisation is " + str(calc_cost_function()) + ")");
+        CONSOLE ("Cost function data term after linear optimisation is " + str(calc_cost_function()) + ")");
 
       }
 

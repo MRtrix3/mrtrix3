@@ -36,6 +36,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           const value_type increment = reg_coeff (coefficient);
           assert (std::isfinite(increment));
           local_sum += increment;
@@ -47,6 +49,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           const value_type increment = reg_factor (WeightingCoeffAndFactor::from_coeff (coefficient).factor());
           assert(std::isfinite(increment));
           local_sum += increment;
@@ -58,6 +62,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           const value_type increment = reg_gamma (WeightingCoeffAndFactor::from_coeff (coefficient));
           assert(std::isfinite(increment));
           local_sum += increment;
@@ -72,6 +78,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           if (this_contribution.get_total_contribution() == 0.0f)
             continue;
@@ -92,6 +100,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           if (this_contribution.get_total_contribution() == 0.0f)
             continue;
@@ -112,6 +122,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           WeightingCoeffAndFactor wcf = WeightingCoeffAndFactor::from_coeff (coefficient);
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           if (this_contribution.get_total_contribution() == 0.0f)
@@ -137,6 +149,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           const value_type group_mean = master.group_means_absolute[master.streamline2group[track_index]];
           const value_type increment = reg_coeff (coefficient, group_mean);
           assert (std::isfinite(increment));
@@ -149,6 +163,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           const value_type group_mean = master.group_means_absolute[master.streamline2group[track_index]];
           const value_type increment = reg_factor (WeightingCoeffAndFactor::from_coeff (coefficient).factor(), WeightingCoeffAndFactor::from_coeff (group_mean).factor());
           assert(std::isfinite(increment));
@@ -161,6 +177,8 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
+          if (coefficient == -std::numeric_limits<value_type>::infinity())
+            continue;
           const value_type group_mean = master.group_means_absolute[master.streamline2group[track_index]];
           const value_type increment = reg_gamma (WeightingCoeffAndFactor::from_coeff (coefficient), WeightingCoeffAndFactor::from_coeff (group_mean));
           assert(std::isfinite(increment));
@@ -190,7 +208,7 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type deltacoeff = master.deltacoeffs[track_index];
-          if (std::abs(deltacoeff) == 1.0) {
+          if (std::abs(deltacoeff) == value_type(1)) {
             assert(!master.mask_differential[track_index]);
             continue;
           }
@@ -228,7 +246,7 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type deltacoeff = master.deltacoeffs[track_index];
-          if (std::abs(deltacoeff) == 1.0) {
+          if (std::abs(deltacoeff) == value_type(1)) {
             assert(!master.mask_differential[track_index]);
             continue;
           }
@@ -267,7 +285,7 @@ namespace MR {
       {
         for (auto track_index : range) {
           const value_type deltacoeff = master.deltacoeffs[track_index];
-          if (std::abs(deltacoeff) == 1.0) {
+          if (std::abs(deltacoeff) == value_type(1)) {
             assert(!master.mask_differential[track_index]);
             continue;
           }
