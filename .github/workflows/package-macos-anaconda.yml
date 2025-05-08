@@ -15,7 +15,7 @@ jobs:
           miniconda-version: "latest"
 
       - name: Install conda-build
-        run: conda install -y conda-build
+        run: conda install -c conda-forge -y conda-build
 
       - name: fetch MacOSX 10.11 SDK
         run: curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/MacOSX10.11.sdk/MacOSX10.11.sdk.tar.xz | sudo tar xf - -C /opt/
@@ -35,5 +35,5 @@ jobs:
       - name: Upload package to GitHub Release
         uses: AButler/upload-release-assets@v2.0
         with:
-          files: "*.conda"
+          files: "*.conda*"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
