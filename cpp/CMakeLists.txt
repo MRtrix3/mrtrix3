@@ -35,3 +35,7 @@ add_subdirectory(core)
 if(MRTRIX_BUILD_GUI)
     add_subdirectory(gui)
 endif()
+
+if(MRTRIX_BUILD_GPU)
+    add_subdirectory(gpu)
+endif()
