@@ -29,20 +29,21 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
   for (size_t i = 0; i < list.size(); ++i) {
     try {
       auto header = std::make_unique<MR::Header>(MR::Header::open(list[i]));
+      const auto header_basename = std::filesystem::path{header->name()}.filename().string();
       switch (type) {
       case odf_type_t::SH:
         Math::SH::check(*header);
         break;
       case odf_type_t::TENSOR:
         if (header->ndim() != 4)
-          throw Exception("Image \"" + Path::basename(header->name()) + "\" is not 4D; not a tensor image");
+          throw Exception("Image \"" + header_basename + "\" is not 4D; not a tensor image");
         if (header->size(3) != 6)
-          throw Exception("Image \"" + Path::basename(header->name()) +
+          throw Exception("Image \"" + header_basename +
                           "\" does not contain 6 volumes; not a tensor image");
         break;
       case odf_type_t::DIXEL:
         if (header->ndim() != 4)
-          throw Exception("Image \"" + Path::basename(header->name()) +
+          throw Exception("Image \"" + header_basename +
                           "\" is not 4D; cannot contain direction amplitudes");
         break;
       }

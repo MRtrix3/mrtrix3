@@ -33,6 +33,8 @@
 #include "stats/permtest.h"
 #include "stats/tfce.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Math::Stats;
@@ -168,6 +170,11 @@ private:
 std::shared_ptr<Voxel2Vector> SubjectVoxelImport::v2v = nullptr;
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path design_matrix_path{argument[1]};
+  const std::filesystem::path contrast_matrix_path{argument[2]};
+  const std::filesystem::path mask_path{argument[3]};
+  const std::filesystem::path output_path{argument[4]};
 
   const value_type cluster_forming_threshold = get_option_value("threshold", NaN);
   const value_type tfce_dh = get_option_value("tfce_dh", DEFAULT_TFCE_DH);
@@ -179,7 +186,7 @@ void run() {
   const default_type empirical_skew = get_option_value("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   // Load analysis mask and compute adjacency
-  auto mask_header = Header::open(argument[3]);
+  auto mask_header = Header::open(mask_path);
   check_effective_dimensionality(mask_header, 3);
   auto mask_image = mask_header.get_image<bool>();
   std::shared_ptr<Voxel2Vector> v2v = std::make_shared<Voxel2Vector>(mask_image, mask_header);
@@ -191,7 +198,7 @@ void run() {
 
   // Read file names and check files exist
   CohortDataImport importer;
-  importer.initialise<SubjectVoxelImport>(argument[0]);
+  importer.initialise<SubjectVoxelImport>(input_path);
   for (index_type i = 0; i != importer.size(); ++i) {
     if (!dimensions_match(dynamic_cast<SubjectVoxelImport *>(importer[i].get())->header(), mask_header))
       throw Exception("Image file \"" + importer[i]->name() + "\" does not match analysis mask");
@@ -199,7 +206,7 @@ void run() {
   CONSOLE("Number of inputs: " + str(importer.size()));
 
   // Load design matrix
-  const matrix_type design = File::Matrix::load_matrix<value_type>(argument[1]);
+  const matrix_type design = File::Matrix::load_matrix<value_type>(design_matrix_path);
   if (index_type(design.rows()) != importer.size())
     throw Exception("Number of input files does not match number of rows in design matrix");
 
@@ -211,7 +218,8 @@ void run() {
   auto opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back(CohortDataImport());
-    extra_columns[i].initialise<SubjectVoxelImport>(opt[i][0]);
+    const std::filesystem::path path(opt[i][0]);
+    extra_columns[i].initialise<SubjectVoxelImport>(path);
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }
@@ -233,7 +241,7 @@ void run() {
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(argument[2]);
+  const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(contrast_matrix_path);
   const index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception(
@@ -273,7 +281,7 @@ void run() {
     output_header.keyval()["threshold"] = str(cluster_forming_threshold);
   }
 
-  const std::string prefix(argument[4]);
+  const std::string prefix(output_path);
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&](const index_type i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };

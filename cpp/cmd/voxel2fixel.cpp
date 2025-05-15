@@ -23,6 +23,8 @@
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -53,13 +55,15 @@ void usage() {
 // clang-format on
 
 void run() {
-  auto scalar = Image<float>::open(argument[0]);
-  std::string input_fixel_directory = argument[1];
+  const std::filesystem::path input_image_path{argument[0]};
+  const std::filesystem::path input_fixel_directory{argument[1]};
+  const std::filesystem::path output_fixel_directory{argument[2]};
+
+  auto scalar = Image<float>::open(input_image_path);
   Fixel::check_fixel_directory(input_fixel_directory);
   auto input_fixel_index = Fixel::find_index_header(input_fixel_directory).get_image<index_type>();
   check_dimensions(scalar, input_fixel_index, 0, 3);
 
-  std::string output_fixel_directory = argument[2];
   if (input_fixel_directory != output_fixel_directory) {
     ProgressBar progress("copying fixel index and directions file into output directory");
     progress++;

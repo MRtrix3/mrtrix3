@@ -38,6 +38,7 @@
 #include "registration/transform/reorient.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/helpers.h"
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -279,7 +280,10 @@ void apply_linear_jacobian(Image<float> &image, transform_type trafo) {
 }
 
 void run() {
-  auto input_header = Header::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
+  auto input_header = Header::open(input_path);
   Header output_header(input_header);
   output_header.datatype() = DataType::from_command_line(DataType::from<float>());
   Stride::set_from_command_line(output_header);
@@ -630,7 +634,7 @@ void run() {
 
     if (interp == 0) // nearest
       output_header.datatype() = DataType::from_command_line(input_header.datatype());
-    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create(output_path, output_header).with_direct_io();
 
     switch (interp) {
     case 0:
@@ -672,7 +676,7 @@ void run() {
       output_header.transform() = warp.transform();
     }
 
-    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create(output_path, output_header).with_direct_io();
 
     if (warp.ndim() == 5) {
       Image<default_type> warp_deform;
@@ -727,7 +731,7 @@ void run() {
       output_header.transform() = linear_transform;
     else
       output_header.transform() = linear_transform.inverse() * output_header.transform();
-    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create(output_path, output_header).with_direct_io();
     copy_with_progress(input, output);
 
     if (fod_reorientation || modulate_jac) {

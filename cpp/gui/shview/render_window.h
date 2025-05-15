@@ -40,7 +40,7 @@ class Window : public QMainWindow {
 public:
   Window(bool is_response_coefs);
   ~Window();
-  void set_values(const std::string &filename);
+  void set_values(const std::filesystem::path &filename);
 
 protected slots:
   void open_slot();

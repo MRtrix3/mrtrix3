@@ -24,6 +24,7 @@
 #include "transform.h"
 #include <Eigen/Geometry>
 #include <algorithm>
+#include <filesystem>
 #include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
@@ -181,20 +182,22 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
 void run() {
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
+  const std::filesystem::path output_path {argument.back()};
 
   switch (op) {
   case 0: { // invert
     if (num_inputs != 1)
       throw Exception("invert requires 1 input");
-    transform_type input = File::Matrix::load_transform(argument[0]);
+    const std::filesystem::path input_path{argument[0]};
+    transform_type input = File::Matrix::load_transform(input_path);
     File::Matrix::save_transform(input.inverse(), output_path);
     break;
   }
   case 1: { // half
     if (num_inputs != 1)
       throw Exception("half requires 1 input");
-    Eigen::Transform<default_type, 3, Eigen::Projective> input = File::Matrix::load_transform(argument[0]);
+    const std::filesystem::path input_path{argument[0]};
+    Eigen::Transform<default_type, 3, Eigen::Projective> input = File::Matrix::load_transform(input_path);
     transform_type output;
     Eigen::Matrix<default_type, 4, 4> half = input.matrix().sqrt();
     output.matrix() = half.topLeftCorner(3, 4);
@@ -204,7 +207,8 @@ void run() {
   case 2: { // rigid
     if (num_inputs != 1)
       throw Exception("rigid requires 1 input");
-    transform_type input = File::Matrix::load_transform(argument[0]);
+    const std::filesystem::path input_path{argument[0]};
+    transform_type input = File::Matrix::load_transform(input_path);
     transform_type output(input);
     output.linear() = input.rotation();
     File::Matrix::save_transform(output, output_path);
@@ -213,8 +217,11 @@ void run() {
   case 3: { // header
     if (num_inputs != 2)
       throw Exception("header requires 2 inputs");
-    auto orig_header = Header::open(argument[0]);
-    auto modified_header = Header::open(argument[1]);
+    const std::filesystem::path first_input_path{argument[0]};
+    const std::filesystem::path second_input_path{argument[1]};
+
+    auto orig_header = Header::open(first_input_path);
+    auto modified_header = Header::open(second_input_path);
 
     transform_type forward_transform =
         Transform(modified_header).voxel2scanner * Transform(orig_header).voxel2scanner.inverse();
@@ -229,8 +236,9 @@ void run() {
     Eigen::MatrixXd Min;
     std::vector<Eigen::MatrixXd> matrices;
     for (size_t i = 0; i < num_inputs; i++) {
-      DEBUG(str(argument[i]));
-      Tin = File::Matrix::load_transform(argument[i]);
+      const std::filesystem::path input_path{argument[i]};
+      DEBUG(input_path);
+      Tin = File::Matrix::load_transform(input_path);
       matrices.push_back(Tin.matrix());
     }
 
@@ -243,9 +251,12 @@ void run() {
   case 5: { // interpolate
     if (num_inputs != 3)
       throw Exception("interpolation requires 3 inputs");
-    transform_type transform1 = File::Matrix::load_transform(argument[0]);
-    transform_type transform2 = File::Matrix::load_transform(argument[1]);
-    default_type t = parse_floats(argument[2])[0];
+    const std::filesystem::path first_input_path{argument[0]};
+    const std::filesystem::path second_input_path{argument[1]};
+    const std::filesystem::path third_input_path{argument[2]};
+    transform_type transform1 = File::Matrix::load_transform(first_input_path);
+    transform_type transform2 = File::Matrix::load_transform(second_input_path);
+    default_type t = parse_floats(third_input_path)[0];
 
     transform_type transform_out;
 
@@ -282,7 +293,8 @@ void run() {
   case 6: { // decompose
     if (num_inputs != 1)
       throw Exception("decomposition requires 1 input");
-    transform_type transform = File::Matrix::load_transform(argument[0]);
+    const std::filesystem::path input_path{argument[0]};
+    transform_type transform = File::Matrix::load_transform(input_path);
 
     Eigen::MatrixXd M = transform.linear();
     Eigen::Matrix3d R = transform.rotation();
@@ -325,8 +337,10 @@ void run() {
   case 8: { // align_vertices_rigid and align_vertices_rigid_scale
     if (num_inputs != 2)
       throw Exception("align_vertices_rigid requires 2 inputs");
-    const Eigen::MatrixXd target_vertices = File::Matrix::load_matrix(argument[0]);
-    const Eigen::MatrixXd moving_vertices = File::Matrix::load_matrix(argument[1]);
+    const std::filesystem::path first_input_path{argument[0]};
+    const std::filesystem::path second_input_path{argument[1]};
+    const Eigen::MatrixXd target_vertices = File::Matrix::load_matrix(first_input_path);
+    const Eigen::MatrixXd moving_vertices = File::Matrix::load_matrix(second_input_path);
     const transform_type T = align_corresponding_vertices(moving_vertices, target_vertices, op == 8);
     File::Matrix::save_transform(T, output_path);
     break;

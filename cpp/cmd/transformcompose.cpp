@@ -20,6 +20,8 @@
 #include "image.h"
 #include "interp/linear.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -104,13 +106,16 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path output_path{argument.back()};
+
   std::vector<std::unique_ptr<TransformBase>> transform_list;
   std::unique_ptr<Header> template_header;
 
   for (size_t i = 0; i < argument.size() - 1; ++i) {
+    const std::filesystem::path input_path{argument[i]};
     try {
-      template_header.reset(new Header(Header::open(argument[i])));
-      auto image = Image<default_type>::open(argument[i]);
+      template_header.reset(new Header(Header::open(input_path)));
+      auto image = Image<default_type>::open(input_path);
 
       if (image.ndim() != 4)
         throw Exception("input warp is not a 4D image");
@@ -126,7 +131,7 @@ void run() {
         std::unique_ptr<TransformBase> transform(new Linear(File::Matrix::load_transform(argument[i])));
         transform_list.push_back(std::move(transform));
       } catch (Exception &E) {
-        throw Exception("error reading input file: " + str(argument[i]) +
+        throw Exception("error reading input file: " + input_path.string() +
                         ". Does not appear to be a 4D warp image or 4x4 linear transform.");
       }
     }
@@ -155,7 +160,7 @@ void run() {
       index--;
       progress++;
     }
-    File::Matrix::save_transform(composed, argument[argument.size() - 1]);
+    File::Matrix::save_transform(composed, output_path);
 
   } else {
     Header output_header(*template_header);
@@ -163,7 +168,7 @@ void run() {
     output_header.size(3) = 3;
     output_header.datatype() = DataType::Float32;
 
-    Image<float> output = Image<value_type>::create(argument[argument.size() - 1], output_header);
+    Image<float> output = Image<value_type>::create(output_path, output_header);
 
     Transform template_transform(output);
     for (auto i = Loop("composing transformations", output, 0, 3)(output); i; ++i) {

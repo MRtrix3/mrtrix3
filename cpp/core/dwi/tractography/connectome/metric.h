@@ -99,14 +99,14 @@ public:
       node_volumes[index]++;
     }
   }
-  void set_scale_file(const std::string &path, const bool i = true) {
+  void set_scale_file(const std::filesystem::path &path, const bool i = true) {
     scale_by_file = i;
     if (!i) {
       file_path.clear();
       file_values.resize(0);
       return;
     }
-    file_path = Path::basename(path);
+    file_path = path.filename();
     file_values = File::Matrix::load_vector(path);
   }
 

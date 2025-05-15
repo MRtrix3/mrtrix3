@@ -20,6 +20,8 @@
 #include "fixel/helpers.h"
 #include "image.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -63,9 +65,12 @@ std::vector<Eigen::Vector3d> get(Image<float> &data) {
 }
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
   std::string dataname = get_option_value<std::string>("dataname", "");
 
-  auto input_header = Header::open(argument[0]);
+  auto input_header = Header::open(input_path);
   Peaks::check(input_header);
   auto input_directions = input_header.get_image<float>();
   uint32_t nfixels = 0;
@@ -93,10 +98,10 @@ void run() {
          " will create additional fixel data file \"" + dataname + "\""); //
   }
 
-  Fixel::check_fixel_directory(argument[1], true, true);
+  Fixel::check_fixel_directory(output_path, true, true);
 
   // Easiest if we first make the index image
-  const std::string index_path = Path::join(argument[1], "index.mif");
+  const std::string index_path = Path::join(output_path, "index.mif");
   Header index_header(input_header);
   index_header.name() = index_path;
   index_header.datatype() = DataType::UInt32;
@@ -108,12 +113,12 @@ void run() {
   Header directions_header = Fixel::directions_header_from_index(index_header);
   directions_header.datatype() = DataType::Float32;
   directions_header.datatype().set_byte_order_native();
-  auto directions_image = Image<float>::create(Path::join(argument[1], "directions.mif"), directions_header);
+  auto directions_image = Image<float>::create(Path::join(output_path, "directions.mif"), directions_header);
 
   Image<float> amplitudes_image;
   if (!dataname.empty()) {
     Header amplitudes_header = Fixel::data_header_from_index(index_header);
-    amplitudes_image = Image<float>::create(Path::join(argument[1], dataname), amplitudes_header);
+    amplitudes_image = Image<float>::create(Path::join(output_path, dataname), amplitudes_header);
   }
 
   uint32_t output_index = 0;

@@ -61,7 +61,7 @@ void LUT::load(const std::string &path) {
   }
 }
 
-LUT::file_format LUT::guess_file_format(const std::string &path) {
+LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
 
   class Column {
   public:
@@ -130,7 +130,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       auto split_by_quotes = split(line, "\"\'", false);
       if (!(split_by_quotes.size() % 2))
         throw Exception("Line " + str(line_counter) +                     //
-                        " of LUT file \"" + Path::basename(path) + "\"" + //
+                        " of LUT file \"" + path.filename().string() + "\"" + //
                         " contains an odd number of quotation marks," +   //
                         " and hence cannot be properly split up according to quotation marks");
       decltype(split_by_quotes) entries;
@@ -152,7 +152,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       }
       if (!entries.empty()) {
         if (!columns.empty() && entries.size() != columns.size()) {
-          Exception E("Inconsistent number of columns in LUT file \"" + Path::basename(path) + "\"");
+          Exception E("Inconsistent number of columns in LUT file \"" + path.filename().string() + "\"");
           E.push_back("Initial file contents contain " + str(columns.size()) + " columns," + //
                       " but line " + str(line_counter) + " contains " + str(entries.size()) + " entries:");
           E.push_back("\"" + line + "\"");
@@ -168,21 +168,21 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
 
   // Make an assessment of the LUT format
   if (columns.size() == 2 && columns[0].is_integer() && !columns[1].is_numeric()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains 1 integer, 1 string per line:"
           " Basic format");
     return LUT_BASIC;
   }
   if (columns.size() == 6 && columns[0].is_integer() && !columns[1].is_numeric() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_8bit() && columns[5].is_8bit()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains 1 integer, 1 string, then 4 8-bit integers per line:"
           " Freesurfer format");
     return LUT_FREESURFER;
   }
   if (columns.size() == 3 && !columns[0].is_numeric() && !columns[1].is_numeric() &&
       columns[0].mean_length() < columns[1].mean_length() && columns[2].is_integer()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains 2 strings (shorter first), then an integer per line:"
           " AAL format");
     return LUT_AAL;
@@ -190,7 +190,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
   if (columns.size() == 8 && columns[0].is_integer() && columns[1].is_8bit() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_unary_range_float() && columns[5].is_integer() && columns[6].is_integer() &&
       !columns[7].is_numeric()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains an integer, 3 8-bit integers, a float, two integers, and a string per line:"
           " ITKSNAP format");
     return LUT_ITKSNAP;
@@ -198,7 +198,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
   if (columns.size() == 7 && columns[0].is_integer() && !columns[1].is_numeric() && !columns[2].is_numeric() &&
       columns[1].mean_length() < columns[2].mean_length() && columns[3].is_8bit() && columns[4].is_8bit() &&
       columns[5].is_8bit() && columns[6].is_8bit()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per line:"
           " MRtrix format");
     return LUT_MRTRIX;
@@ -208,7 +208,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
   for (auto c : columns)
     format_string += std::string(c) + " ";
   format_string += "]";
-  Exception e("LUT file \"" + Path::basename(path) + "\" in unrecognized format:");
+  Exception e("LUT file \"" + path.filename().string() + "\" in unrecognized format:");
   e.push_back(format_string);
   throw e;
   return LUT_NONE;

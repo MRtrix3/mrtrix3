@@ -21,6 +21,8 @@
 #include "phase_encoding.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -84,6 +86,8 @@ template <typename value_type> void write(std::vector<Header> &in, const size_t 
 }
 
 void run() {
+  const std::filesystem::path output_path{argument.back()};
+
   const size_t num_images = argument.size() - 1;
   if (num_images == 1) {
     CONSOLE("Only one input image provided; no concatenation to occur");
@@ -92,7 +96,8 @@ void run() {
   std::vector<Header> headers;
   ssize_t max_axis_nonunity = 0;
   for (size_t i = 0; i != num_images; ++i) {
-    Header H = Header::open(argument[i]);
+    const std::filesystem::path input_path{argument[i]};
+    Header H = Header::open(input_path);
     ssize_t a;
     for (a = ssize_t(H.ndim()) - 1; a >= 0 && H.size(a) <= 1; a--)
       ;
@@ -102,7 +107,7 @@ void run() {
   const size_t axis = get_option_value("axis", std::max(size_t(3), size_t(std::max(ssize_t(0), max_axis_nonunity))));
 
   Header header_out = concatenate(headers, axis, true);
-  header_out.name() = std::string(argument[num_images]);
+  header_out.name() = std::string(output_path);
   header_out.datatype() = DataType::from_command_line(header_out.datatype());
 
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 &&

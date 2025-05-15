@@ -19,6 +19,7 @@
 #include <QString>
 
 #include "gui.h"
+#include <filesystem>
 
 namespace MR::GUI::MRView::Tool {
 
@@ -30,12 +31,12 @@ public:
   FileDataVector(const FileDataVector &);
   FileDataVector(FileDataVector &&);
   FileDataVector(const size_t);
-  FileDataVector(const std::string &);
+  FileDataVector(const std::filesystem::path &);
 
   FileDataVector &operator=(const FileDataVector &);
   FileDataVector &operator=(FileDataVector &&);
 
-  FileDataVector &load(const std::string &);
+  FileDataVector &load(const std::filesystem::path &filePath);
   FileDataVector &clear();
 
   const QString &get_name() const { return name; }

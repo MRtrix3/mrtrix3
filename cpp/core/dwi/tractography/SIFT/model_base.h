@@ -110,7 +110,7 @@ public:
   void perform_FOD_segmentation(Image<float> &);
   void scale_FDs_by_GM();
 
-  void map_streamlines(const std::string &);
+  void map_streamlines(const std::filesystem::path &);
 
   virtual bool operator()(const FMLS::FOD_lobes &in);
   virtual bool operator()(const Mapping::SetDixel &in);
@@ -181,13 +181,13 @@ template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
   }
 }
 
-template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::string &path) {
+template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::filesystem::path &path) {
   Tractography::Properties properties;
   Tractography::Reader<> file(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
-    throw Exception("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
+    throw Exception("Cannot map streamlines: track file " + path.filename().string() + " is empty");
 
   Mapping::TrackLoader loader(file, count);
   Mapping::TrackMapperBase mapper(Fixel_map<Fixel>::header(), dirs);
