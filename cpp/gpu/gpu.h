@@ -159,9 +159,9 @@ struct ComputeContext {
         for (const auto& region : srcMemoryRegions) totalBytes += region.size_bytes();
 
         auto buffer = innerNewEmptyBuffer(totalBytes);
-        size_t offset = 0;
+        uint64_t offset = 0;
         for (const auto& region : srcMemoryRegions) {
-            innerWriteToBuffer(buffer, region.data(), region.size_bytes(), uint32_t(offset));
+            innerWriteToBuffer(buffer, region.data(), region.size_bytes(), offset);
             offset += region.size_bytes();
         }
         return Buffer<T>{ std::move(buffer) };
@@ -180,12 +180,12 @@ struct ComputeContext {
     }
 
     template<typename T>
-    void writeToBuffer(const Buffer<T>& buffer, tcb::span<T> dstMemoryRegion, uint32_t offset = 0) const {
-        return writeToBuffer(buffer, dstMemoryRegion.data(), dstMemoryRegion.size_bytes(), offset);
+    void writeToBuffer(const Buffer<T>& buffer, tcb::span<const T> srcMemoryRegion, uint64_t offset = 0) const {
+      return writeToBuffer(buffer, srcMemoryRegion.data(), srcMemoryRegion.size_bytes(), offset * sizeof(T));
     }
 
     template<typename T>
-    void writeToBuffer(const Buffer<T>& buffer, const void* data, size_t size, uint32_t bytesOffset = 0) const {
+    void writeToBuffer(const Buffer<T>& buffer, const void* data, size_t size, uint64_t bytesOffset = 0) const {
         return innerWriteToBuffer(buffer.wgpuHandle, data, size, bytesOffset);
     }
 
@@ -209,7 +209,7 @@ private:
     wgpu::Buffer innerNewEmptyBuffer(size_t byteSize) const;
     wgpu::Buffer innerNewBufferFromHostMemory(const void* srcMemory, size_t srcByteSize) const;
     void innerDownloadBuffer(const wgpu::Buffer& buffer, void* dstMemory, size_t dstByteSize) const;
-    void innerWriteToBuffer(const wgpu::Buffer& buffer, const void* data, size_t size, uint32_t dstByteSize) const;
+    void innerWriteToBuffer(const wgpu::Buffer& buffer, const void* data, size_t srcByteSize, uint64_t offset) const;
 
     wgpu::Instance instance;
     wgpu::Adapter adapter;
