@@ -217,9 +217,9 @@ void ComputeContext::innerDownloadBuffer(const wgpu::Buffer &buffer, void *dstMe
     }
 }
 
-void ComputeContext::innerWriteToBuffer(const wgpu::Buffer &buffer, const void *data, size_t size, uint32_t dstByteSize) const
+void ComputeContext::innerWriteToBuffer(const wgpu::Buffer &buffer, const void *data, size_t srcByteSize, uint64_t offset) const
 {
-    device.GetQueue().WriteBuffer(buffer, dstByteSize, data, size);
+    device.GetQueue().WriteBuffer(buffer, offset, data, srcByteSize);
 }
 
 
