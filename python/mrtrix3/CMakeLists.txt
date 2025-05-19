@@ -19,6 +19,7 @@ endif()
 add_custom_target(${PYTHON_API_TARGET_NAME} ALL)
 add_custom_command(
     TARGET ${PYTHON_API_TARGET_NAME}
+    POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/lib/mrtrix3
 )
 
@@ -33,8 +34,8 @@ foreach(PYTHON_LIB_FILE ${PYTHON_LIB_FILES})
     set(DST_LIB_FILE ${PROJECT_BINARY_DIR}/lib/mrtrix3/${LIB_FILE_NAME})
     add_custom_command(
         TARGET ${PYTHON_API_TARGET_NAME}
+        POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E ${PYTHON_API_FUNCTION_NAME} ${PYTHON_LIB_FILE} ${DST_LIB_FILE}
-        DEPENDS ${LIB_FILE}
     )
     list(APPEND PYTHON_BUILD_FILES ${DST_LIB_FILE})
 endforeach()
@@ -48,6 +49,7 @@ add_custom_target(MakePythonVersionFile ALL)
 add_dependencies(MakePythonVersionFile ${PYTHON_API_TARGET_NAME})
 add_custom_command(
     TARGET MakePythonVersionFile
+    POST_BUILD
     COMMAND ${CMAKE_COMMAND}
         -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
