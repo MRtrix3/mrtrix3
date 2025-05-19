@@ -46,7 +46,7 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
     )
 
     set(CMD_TARGET "${CMDNAME}")
-    add_custom_target(${CMD_TARGET})
+    add_custom_target(${CMD_TARGET} DEPENDS ${CMD_PY_FILES})
     add_dependencies(${CMD_TARGET}
         ${PYTHON_API_TARGET_NAME}
         MakePythonCommandsDir
@@ -80,7 +80,6 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
             POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E ${PYTHON_COMMANDS_FUNCTION_NAME}
                     "${PY_FILE}" "${DST_BUILDPATH}"
-            DEPENDS "${PY_FILE}"
             COMMENT "Copying Python script for ${CMDNAME}"
         )
 
