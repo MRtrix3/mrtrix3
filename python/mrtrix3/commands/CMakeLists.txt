@@ -62,6 +62,7 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
             get_filename_component(DIRNAME "${REL_PATH}" DIRECTORY)
             add_custom_command(
                 TARGET  ${CMD_TARGET}
+                POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E make_directory
                         "${PROJECT_BINARY_DIR}/lib/mrtrix3/commands/${DIRNAME}"
                 COMMENT "Creating directory for Python command ${CMDNAME}"
@@ -76,6 +77,7 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
 
         add_custom_command(
             TARGET  ${CMD_TARGET}
+            POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E ${PYTHON_COMMANDS_FUNCTION_NAME}
                     "${PY_FILE}" "${DST_BUILDPATH}"
             DEPENDS "${PY_FILE}"
@@ -93,6 +95,7 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
     # Create stub Python launcher for the command
     add_custom_command(
         TARGET  ${CMD_TARGET}
+        POST_BUILD
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         COMMAND ${CMAKE_COMMAND}
             -DCMDNAME=${CMDNAME}
@@ -123,6 +126,7 @@ add_custom_target(MakePythonCommandsInit ALL)
 add_dependencies(MakePythonCommandsInit MRtrixPythonCommands)
 add_custom_command(
     TARGET MakePythonCommandsInit
+    POST_BUILD
     COMMAND ${CMAKE_COMMAND}
     -D DST=${PYTHON_COMMANDS_INIT_FILE}
     -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/__init__.py.in
