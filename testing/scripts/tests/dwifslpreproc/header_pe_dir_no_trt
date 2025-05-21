@@ -1,0 +1,16 @@
+# Test scenario where:
+#   - The image header contains phase encoding information,
+#     but only the phase encoding direction, not the readout time
+#   - The user specifies a total readout time at the command-line
+# Prior to #2722, this would cause an unhandled exception,
+#   due to attempting to read from the absent fourth column of the phase encoding table
+
+mrconvert BIDS/sub-04/dwi/sub-04_dwi.nii.gz \
+    -fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
+    -json_import BIDS/sub-04/dwi/sub-04_dwi.json tmp-sub-04_dwi.mif \
+    -strides 0,0,0,1 \
+    -clear_property TotalReadoutTime \
+    -force
+
+dwifslpreproc tmp-sub-04_trt-none ../tmp/dwifslpreproc/no_trt_header.mif \
+    -pe_dir ap -readout_time 0.1 -force

@@ -14,22 +14,24 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#pragma once
+#ifndef __image_io_null_h__
+#define __image_io_null_h__
 
-#include <string>
-
-#include "types.h"
+#include "image_io/base.h"
 
 namespace MR {
-class Header;
+namespace ImageIO {
+
+class Null : public Base {
+public:
+  Null(const Header &header) : Base(header) {}
+
+protected:
+  virtual void load(const Header &, size_t);
+  virtual void unload(const Header &);
+};
+
+} // namespace ImageIO
 } // namespace MR
 
-namespace MR::Metadata::SliceEncoding {
-
-void transform_for_image_load(KeyValues &keyval, const Header &H);
-
-void transform_for_nifti_write(KeyValues &keyval, const Header &H);
-
-std::string resolve_slice_timing(const std::string &one, const std::string &two);
-
-} // namespace MR::Metadata::SliceEncoding
+#endif

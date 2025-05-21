@@ -14,22 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#pragma once
-
-#include <string>
-
-#include "types.h"
+#include "image_io/null.h"
+#include "header.h"
 
 namespace MR {
-class Header;
+namespace ImageIO {
+
+void Null::load(const Header &header, size_t) {
+  throw Exception("No suitable handler to access data in \"" + header.name() + "\"");
+}
+
+void Null::unload(const Header &header) {
+  throw Exception("No suitable handler to access data in \"" + header.name() + "\"");
+}
+
+} // namespace ImageIO
 } // namespace MR
-
-namespace MR::Metadata::SliceEncoding {
-
-void transform_for_image_load(KeyValues &keyval, const Header &H);
-
-void transform_for_nifti_write(KeyValues &keyval, const Header &H);
-
-std::string resolve_slice_timing(const std::string &one, const std::string &two);
-
-} // namespace MR::Metadata::SliceEncoding

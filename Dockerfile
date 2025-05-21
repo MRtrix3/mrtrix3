@@ -7,7 +7,7 @@ FROM buildpack-deps:bookworm AS base-builder
 FROM base-builder AS mrtrix3-builder
 
 # Git commitish from which to build MRtrix3.
-ARG MRTRIX3_GIT_COMMITISH="master"
+ARG MRTRIX3_GIT_COMMITISH="3.0.5"
 # Command-line arguments for `./configure`
 ARG MRTRIX3_CONFIGURE_FLAGS=""
 # Command-line arguments for `./build`
@@ -22,6 +22,7 @@ RUN apt-get -qq update \
         libqt5opengl5-dev \
         libqt5svg5-dev \
         libtiff5-dev \
+        python3 \
         qtbase5-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*

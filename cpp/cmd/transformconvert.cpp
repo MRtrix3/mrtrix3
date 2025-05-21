@@ -68,8 +68,7 @@ transform_type get_flirt_transform(const Header &header) {
   const transform_type ondisk_transform = header.realignment().orig_transform();
   if (ondisk_transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
     return ondisk_transform;
-  transform_type coord_switch;
-  coord_switch.setIdentity();
+  transform_type coord_switch(transform_type::Identity());
   coord_switch(0, 0) = -1.0f;
   coord_switch(0, 3) =
       (header.size(header.realignment().permutation(0)) - 1) * header.spacing(header.realignment().permutation(0));
