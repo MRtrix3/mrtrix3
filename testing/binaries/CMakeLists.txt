@@ -1,7 +1,5 @@
 find_program(BASH bash)
 
-set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
-
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
@@ -23,7 +21,7 @@ function(add_bash_binary_test file_path)
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/${file_path}"
         PREFIX "${folder_name}"
-        WORKING_DIRECTORY ${DATA_DIR}
+        WORKING_DIRECTORY ${BINARY_DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         LABELS "binary;${folder_name};${extra_labels}"
     )
@@ -56,6 +54,16 @@ add_bash_binary_test(dirgen/cartesian)
 add_bash_binary_test(dirgen/default)
 add_bash_binary_test(dirgen/power)
 add_bash_binary_test(dirgen/unipolar)
+
+add_bash_binary_test(dirmerge/onesubset)
+add_bash_binary_test(dirmerge/twosubsets)
+add_bash_binary_test(dirmerge/foursubsets)
+add_bash_binary_test(dirmerge/onesubset_firstisfirst)
+add_bash_binary_test(dirmerge/twosubsets_firstisfirst)
+add_bash_binary_test(dirmerge/foursubsets_firstisfirst)
+
+add_bash_binary_test(dirrotate/default)
+add_bash_binary_test(dirrotate/onerotation)
 
 add_bash_binary_test(dwi2adc/default)
 
@@ -188,10 +196,12 @@ add_bash_binary_test(mraverageheader/min_nearest)
 add_bash_binary_test(mraverageheader/min_projection)
 add_bash_binary_test(mraverageheader/padding)
 
+add_bash_binary_test(mrcalc/calc_mode)
 add_bash_binary_test(mrcalc/expression_1)
 add_bash_binary_test(mrcalc/expression_2)
 add_bash_binary_test(mrcalc/expression_3)
 add_bash_binary_test(mrcalc/expression_4)
+add_bash_binary_test(mrcalc/expression_5)
 
 add_bash_binary_test(mrcat/axis)
 add_bash_binary_test(mrcat/single_input)

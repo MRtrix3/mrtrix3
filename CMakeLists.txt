@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET 11.00 CACHE STRING "")
 project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    message(WARNING "It is recommended to use the Ninja generator to build MRtrix3. "
+                    "To use it, run cmake with -G Ninja or set the CMAKE_GENERATOR "
+                    "environment variable to Ninja.")
+endif()
 
 include(GNUInstallDirs)
 
@@ -15,6 +22,17 @@ option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
 option(MRTRIX_STRIP_CONDA "Strip ananconda/mininconda from PATH to avoid conflicts" ON)
 option(MRTRIX_USE_PCH "Use precompiled headers" ON)
+option(MRTRIX_PYTHON_SOFTLINK "Build directory softlink to Python source code rather than copying" ON)
+option(MRTRIX_BUILD_STATIC "Build MRtrix's library statically" OFF)
+option(MRTRIX_USE_LLD "Use lld as the linker" OFF)
+
+set(MRTRIX_DEPENDENCIES_DIR "" CACHE PATH
+    "An optional local directory containing all thirdparty dependencies:\n \
+    - Eigen3 https://gitlab.com/libeigen/eigen (version 3.4.0 in .tar.gz format)\n \
+    - Json for Modern C++ https://github.com/nlohmann/json (version 3.11.3 in .tar.xz format)\n \
+    - Half https://half.sourceforge.net/ (version 2.1.0 in zip format)\n \
+    - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n"
+)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)
@@ -55,11 +73,12 @@ file(RELATIVE_PATH relDir
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
 include(BuildType)
+include(BuildInfo)
 include(LinkerSetup)
 include(FindFFTW)
-include(CompilerCache)
 include(ECMEnableSanitizers)
-
+include(Dependencies)
+include(CompilerCache)
 use_compiler_cache()
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
@@ -67,32 +86,6 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE
         "pre-commit git hook for clang-format not found!\n"
         "Please install pre-commit (e.g. using `apt install pre-commit` or `pip install pre-commit`) "
         "and then run `pre-commit install` from the ${CMAKE_CURRENT_SOURCE_DIR} directory.")
-endif()
-
-
-add_compile_definitions(
-    MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
-    $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
-    $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOSX>
-    $<$<PLATFORM_ID:FreeBSD>:MRTRIX_FREEBSD>
-)
-
-if(MRTRIX_STL_DEBUGGING AND $<NOT:$<CONFIG:Debug>>)
-    if(MSVC)
-        add_compile_definitions(_ITERATOR_DEBUG_LEVEL=1)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(_LIBCPP_DEBUG)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        add_compile_options(_GLIBCXX_DEBUG _GLIBCXX_DEBUG_PEDANTIC)
-    endif()
-endif()
-
-if(MRTRIX_WARNINGS_AS_ERRORS)
-    if (MSVC)
-        add_compile_options(/WX)
-    else()
-        add_compile_options(-Werror)
-    endif()
 endif()
 
 
@@ -118,11 +111,9 @@ if(COMPILER_PATH MATCHES "fsl/bin" OR LINKER_PATH MATCHES "fsl/bin")
     )
 endif()
 
-add_subdirectory(cmd)
-add_subdirectory(core)
+add_subdirectory(cpp)
 add_subdirectory(python)
 add_subdirectory(share)
-add_subdirectory(src)
 
 if(PROJECT_IS_TOP_LEVEL AND MRTRIX_BUILD_TESTS)
     add_subdirectory(testing)
@@ -141,3 +132,5 @@ add_custom_target(Github SOURCES
     .github/workflows/package-windows-msys2.yml
     .github/workflows/clang-tidy.yml
 )
+
+mrtrix_print_build_instructions()

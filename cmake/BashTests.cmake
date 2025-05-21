@@ -6,7 +6,7 @@ function(add_bash_test)
         message(FATAL_ERROR "bash not found")
     endif()
 
-    set(singleValueArgs FILE_PATH PREFIX WORKING_DIRECTORY)
+    set(singleValueArgs FILE_PATH PREFIX WORKING_DIRECTORY ENVIRONMENT)
     set(multiValueArgs EXEC_DIRECTORIES LABELS)
     cmake_parse_arguments(
         ARG
@@ -20,6 +20,7 @@ function(add_bash_test)
     set(prefix ${ARG_PREFIX})
     set(working_directory ${ARG_WORKING_DIRECTORY})
     set(exec_directories ${ARG_EXEC_DIRECTORIES})
+    set(environment ${ARG_ENVIRONMENT})
     set(labels ${ARG_LABELS})
 
     # Regenerate tests when the test script changes
@@ -47,11 +48,11 @@ function(add_bash_test)
     )
     set_tests_properties(${test_name}
         PROPERTIES
-        ENVIRONMENT "PATH=${exec_directories}"
+        ENVIRONMENT "PATH=${exec_directories};${environment}"
     )
     if(labels)
         set_tests_properties(${test_name} PROPERTIES LABELS "${labels}")
     endif()
 
-    message(VERBOSE "Add bash tests commands for ${test_name}: ${line}")
+    message(VERBOSE "Added bash test command ${test_name}")
 endfunction()
