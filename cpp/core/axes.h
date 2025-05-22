@@ -16,25 +16,30 @@
 
 #pragma once
 
-#include <string>
+#include <array>
 
 #include "types.h"
 
 namespace MR::Axes {
 
-//! convert axis directions between formats
-/*! these helper functions convert the definition of
- *  phase-encoding direction between a 3-vector (e.g.
- *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
- */
-std::string dir2id(const Eigen::Vector3d &);
-Eigen::Vector3d id2dir(const std::string &);
+using permutations_type = std::array<size_t, 3>;
+using flips_type = std::array<bool, 3>;
+class Shuffle {
+public:
+  Shuffle() : permutations({0, 1, 2}), flips({false, false, false}) {}
+  operator bool() const {
+    return (permutations[0] != 0 || permutations[1] != 1 || permutations[2] != 2 || //
+            flips[0] || flips[1] || flips[2]);
+  }
+  permutations_type permutations;
+  flips_type flips;
+};
 
 //! determine the axis permutations and flips necessary to make an image
 //!   appear approximately axial
-void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip);
+Shuffle get_shuffle_to_make_RAS(const transform_type &T);
 
 //! determine which vectors of a 3x3 transform are closest to the three axis indices
-std::array<size_t, 3> closest(const Eigen::Matrix3d &M);
+permutations_type closest(const Eigen::Matrix3d &M);
 
 } // namespace MR::Axes
