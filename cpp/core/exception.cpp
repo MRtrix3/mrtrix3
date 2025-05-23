@@ -86,6 +86,13 @@ void cmdline_print_func(const std::string &msg) {
 #endif
 }
 
+const char *Exception::what() const noexcept {
+  if (description.empty()) {
+    return "MR::Exception (no specific message)";
+  }
+  return description.back().c_str();
+}
+
 void (*print)(const std::string &msg) = cmdline_print_func;
 void (*report_to_user_func)(const std::string &msg, int type) = cmdline_report_to_user_func;
 void (*Exception::display_func)(const Exception &E, int log_level) = display_exception_cmdline;

@@ -16,15 +16,16 @@
 
 #pragma once
 
-#include <cerrno>
-#include <iostream>
-#include <string>
-
 #include "types.h"
 
 #ifdef MRTRIX_AS_R_LIBRARY
 #include "wrap_r.h"
 #endif
+
+#include <cerrno>
+#include <exception>
+#include <iostream>
+#include <string>
 
 namespace MR {
 namespace App {
@@ -78,7 +79,7 @@ extern void (*report_to_user_func)(const std::string &msg, int type);
   if (MR::App::log_level >= 3)                                                                                         \
   ::MR::report_to_user_func(msg, 3)
 
-class Exception {
+class Exception : public std::exception {
 public:
   Exception() {}
 
@@ -86,6 +87,8 @@ public:
   Exception(const Exception &previous_exception, const std::string &msg) : description(previous_exception.description) {
     description.push_back(msg);
   }
+
+  const char *what() const noexcept override;
 
   void display(int log_level = 0) const { display_func(*this, log_level); }
 
