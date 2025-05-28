@@ -65,7 +65,7 @@ namespace MR
           properties["method"] = "TensorDet";
 
           try {
-            auto grad = DWI::get_DW_scheme (source);
+            auto grad = DWI::get_DW_scheme (source_header);
             auto bmat_double = grad2bmatrix<double> (grad);
             binv = Math::pinv (bmat_double).cast<float>();
             bmat = bmat_double.cast<float>();

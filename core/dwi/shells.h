@@ -57,8 +57,6 @@ namespace MR
     extern const App::OptionGroup ShellsOption;
 
 
-
-
     class Shell
     { NOMEMALIGN
 
@@ -76,7 +74,6 @@ namespace MR
         default_type get_max()   const { return max; }
 
         bool is_bzero() const { return (mean <= MR::DWI::bzero_threshold()); }
-
 
         bool operator< (const Shell& rhs) const { return (mean < rhs.mean); }
 
