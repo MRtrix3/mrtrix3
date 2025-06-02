@@ -22,6 +22,7 @@ RUN apt-get -qq update \
         libqt5opengl5-dev \
         libqt5svg5-dev \
         libtiff5-dev \
+        python3 \
         qtbase5-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
