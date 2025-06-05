@@ -236,9 +236,13 @@ namespace MR
 
     void clear_DW_scheme (Header& header)
     {
-      auto it = header.keyval().find ("dw_scheme");
-      if (it != header.keyval().end())
-        header.keyval().erase (it);
+      clear_DW_scheme (header.keyval());
+    }
+    void clear_DW_scheme (KeyValues& kv)
+    {
+      auto it = kv.find ("dw_scheme");
+      if (it != kv.end())
+        kv.erase (it);
     }
 
 
