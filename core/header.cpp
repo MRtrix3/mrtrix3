@@ -71,7 +71,7 @@ namespace MR
 
 
 
-  void Header::merge_keyval (const KeyValues& in)
+  void Header::merge_keyval (const KeyValues& in, const bool suppress_warnings)
   {
     std::map<std::string, std::string> new_keyval;
     std::set<std::string> unique_comments;
@@ -105,7 +105,9 @@ namespace MR
             auto scheme = DWI::resolve_DW_scheme (parse_matrix (item.second), parse_matrix (it->second));
             DWI::set_DW_scheme (new_keyval, scheme);
           } catch (Exception& e) {
-            WARN("Error merging DW gradient tables between headers");
+            if (!suppress_warnings) {
+              WARN("Error merging DW gradient tables between headers");
+            }
             new_keyval["dw_scheme"] = "variable";
           }
         } else {
@@ -799,7 +801,7 @@ namespace MR
       }
 
       // Resolve key-value pairs
-      result.merge_keyval (H.keyval());
+      result.merge_keyval (H.keyval(), true);
 
       // Resolve discrepancies in datatype;
       //   also throw an exception if such mismatch is not permitted
