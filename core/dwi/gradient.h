@@ -257,6 +257,7 @@ namespace MR
 
     //! clear any DW gradient encoding scheme from the header
     void clear_DW_scheme (Header&);
+    void clear_DW_scheme (KeyValues&);
 
 
 
