@@ -43,8 +43,8 @@ set(SCRIPT_DATA_DIR
     ${CMAKE_CURRENT_BINARY_DIR}/scripts_data/src/ScriptsTestData
 )
 
-add_subdirectory(binaries)
+add_subdirectory(cpp)
 add_subdirectory(lib)
-add_subdirectory(scripts)
+add_subdirectory(python)
 add_subdirectory(tools)
 add_subdirectory(unit_tests)
