@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "header.h"
 #include "image.h"
 #include "math/constrained_least_squares.h"
 #include "transform.h"
@@ -28,7 +29,7 @@ namespace MR::DWI::Tractography::GT {
 
 class ExternalEnergyComputer : public EnergyComputer {
 public:
-  ExternalEnergyComputer(Stats &stat, const Image<float> &dwimage, const Properties &props);
+  ExternalEnergyComputer(Stats &stat, Header &dwimage, const Properties &props);
 
   Image<float> &getTOD() { return tod; }
   Image<float> &getFiso() { return fiso; }
