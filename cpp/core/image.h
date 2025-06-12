@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <numeric>
 #include <utility>
 #define IMAGE_H
@@ -36,6 +37,26 @@
 namespace MR {
 
 constexpr int SpatiallyContiguous = -1;
+
+/*!
+ * Specifies how a provided symbolic Stride::List should be interpreted by
+ * Image::with_direct_io() when determining the target memory layout.
+ */
+enum class StrideInterpretation : uint8_t {
+  /*!
+   * The provided Stride::List is reconciled with the current
+   * image's layout using Stride::get_nearest_match. This handles
+   * partial lists and may preserve original stride signs if ranks match.
+   */
+  NearestMatch,
+  /*!
+   * The provided Stride::List is taken as the exact target symbolic layout,
+   * including its signs. The caller is responsible for ensuring the list
+   * is a valid and complete symbolic representation. This bypasses
+   * Stride::get_nearest_match's reconciliation for rank/sign.
+   */
+  Exact
+};
 
 template <typename ValueType> class Image : public ImageBase<Image<ValueType>, ValueType> {
 public:
@@ -149,7 +170,9 @@ public:
    * \endcode
    * \note this invalidate the invoking Image - do not use the original
    * image in subsequent code.*/
-  Image with_direct_io(Stride::List with_strides = Stride::List());
+
+  Image with_direct_io(Stride::List with_strides = Stride::List(),
+                       StrideInterpretation strideInterpretation = StrideInterpretation::NearestMatch);
 
   //! return a new Image using direct IO
   /*!
@@ -357,7 +380,9 @@ template <typename ValueType> Image<ValueType>::~Image() {
   }
 }
 
-template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(Stride::List with_strides) {
+template <typename ValueType>
+Image<ValueType> Image<ValueType>::with_direct_io(Stride::List with_strides,
+                                                  StrideInterpretation strideInterpretation) {
   if (buffer->data_buffer)
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
   if (!buffer->get_io())
@@ -367,7 +392,10 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 
   bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
   if (!with_strides.empty()) {
-    auto new_strides = Stride::get_actual(Stride::get_nearest_match(*this, with_strides), *this);
+    auto new_strides = Stride::get_actual(strideInterpretation == StrideInterpretation::NearestMatch
+                                              ? Stride::get_nearest_match(*this, with_strides)
+                                              : with_strides,
+                                          *this);
     preload |= (new_strides != Stride::get(*this));
     with_strides = new_strides;
   } else
