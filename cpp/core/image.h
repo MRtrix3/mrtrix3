@@ -184,17 +184,6 @@ public:
                                    : Stride::contiguous_along_axis(axis, *buffer));
   }
 
-  //! return new Image with data preloaded into RAM using a canonical axes order layout.
-  /*!
-   * This layout ensures that axis 0 is the most contiguous (fastest varying),
-   * followed by axis 1, then axis 2, and so on, up to the highest dimension.
-   * All axes involved in this ordering will have positive effective strides.
-   * This is a common packed layout suitable for interoperability with GPU APIs
-   * (where axis 0 often maps to width, axis 1 to height, axis
-   * 2 to depth).
-   */
-  Image with_canonical_axes_order_layout() const;
-
   //! return RAM address of current voxel
   /*! \note this will only work if image access is direct (i.e. for a
    * scratch image, with preloading, or when the data type is native and
@@ -407,12 +396,6 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
   }
 
   return Image(buffer, with_strides);
-}
-
-template <typename ValueType> Image<ValueType> Image<ValueType>::with_canonical_axes_order_layout() const {
-  std::vector<ssize_t> strides(ndim());
-  std::iota(strides.begin(), strides.end(), static_cast<ssize_t>(1));
-  return with_direct_io(strides);
 }
 
 template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(std::string filename, bool) const {
