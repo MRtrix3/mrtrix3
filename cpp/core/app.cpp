@@ -1380,7 +1380,7 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
     : opt(option), args(arguments), index(i) {
   for (size_t i = 0; i != option->size(); ++i) {
     const auto &p = arguments[i];
-    if (!is_dash(p))
+    if (!starts_with_dash(p))
       continue;
     if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
       continue;
