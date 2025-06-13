@@ -900,9 +900,6 @@ void sort_arguments(const std::vector<std::string> &arguments) {
 
       std::vector<std::string> option_args;
       std::copy_n(it + 1, opt->size(), std::back_inserter(option_args));
-      std::transform(option_args.begin(), option_args.end(), option_args.begin(), [](std::string_view arg) {
-        return is_dash(arg) ? arg : without_leading_dash(arg);
-      });
       option.push_back(ParsedOption(opt, option_args, index));
       it += opt->size();
     } else {
