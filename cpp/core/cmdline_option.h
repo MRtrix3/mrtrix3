@@ -127,7 +127,7 @@ public:
   using Limits = std::variant<std::vector<std::string>, IntRange, FloatRange>;
   Limits limits;
 
-  operator bool() const { return id.empty(); }
+  operator bool() const { return !id.empty(); }
 
   //! specifies that the argument is optional
   /*! For example:
@@ -334,7 +334,7 @@ public:
     push_back(arg);
     return *this;
   }
-  operator bool() const { return id.empty(); }
+  operator bool() const { return !id.empty(); }
 
   //! the option name
   std::string id;

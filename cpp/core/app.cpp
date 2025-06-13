@@ -900,9 +900,6 @@ void sort_arguments(const std::vector<std::string> &arguments) {
 
       std::vector<std::string> option_args;
       std::copy_n(it + 1, opt->size(), std::back_inserter(option_args));
-      std::transform(option_args.begin(), option_args.end(), option_args.begin(), [](std::string_view arg) {
-        return is_dash(arg) ? arg : without_leading_dash(arg);
-      });
       option.push_back(ParsedOption(opt, option_args, index));
       it += opt->size();
     } else {
@@ -1383,7 +1380,7 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
     : opt(option), args(arguments), index(i) {
   for (size_t i = 0; i != option->size(); ++i) {
     const auto &p = arguments[i];
-    if (!is_dash(p))
+    if (!starts_with_dash(p))
       continue;
     if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
       continue;
