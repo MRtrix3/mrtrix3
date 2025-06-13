@@ -40,6 +40,12 @@ testing_cpp_cli -bool 2
 ! testing_cpp_cli -int_seq Not,An,Int,Seq
 ! testing_cpp_cli -float_seq Not,A,Float,Seq
 
+# Verify correct parsing of option arguments that begin with a dash.
+testing_cpp_cli -int_unbound -123 2>&1 | grep "int_unbound: -123"
+testing_cpp_cli -text "-a-b-c" 2>&1 | grep "text: -a-b-c"
+testing_cpp_cli -file_out - 2>&1 | grep "file_out: -"
+testing_cpp_cli -int_seq -1,-1,-1,5 2>&1 | grep "int_seq: \[-1,-1,-1,5\]" # Ensure the brackets are escaped for grep
+
 # Options requiring arguments should fail if no argument is provided
 ! testing_cpp_cli -choice
 ! testing_cpp_cli -text
@@ -88,4 +94,3 @@ rm -f tmp-tracksin.tck && ! testing_cpp_cli -tracks_in tmp-tracksin.tck
 trap "rm -f tmp-filein.txt" EXIT; touch tmp-filein.txt && ! testing_cpp_cli -tracks_in tmp-filein.txt
 trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && ! testing_cpp_cli -tracks_out tmp-tracksout.tck
 trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && testing_cpp_cli -tracks_out tmp-tracksout.tck -force
-
