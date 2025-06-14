@@ -37,6 +37,8 @@
 #include "dwi/tractography/mapping/gaussian/mapper.h"
 #include "dwi/tractography/mapping/gaussian/voxel.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -258,9 +260,11 @@ DataType determine_datatype(const DataType current_dt,
 }
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path output_image_path{argument[1]};
 
   Tractography::Properties properties;
-  Tractography::Reader<float> file(argument[0], properties);
+  Tractography::Reader<float> file(input_tracks_path, properties);
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
@@ -289,7 +293,7 @@ void run() {
   } else {
     if (voxel_size.empty())
       throw Exception("please specify a template image and/or the desired voxel size");
-    generate_header(header, argument[0], voxel_size);
+    generate_header(header, input_tracks_path, voxel_size);
   }
 
   if (header.ndim() > 3) {
@@ -298,7 +302,7 @@ void run() {
   }
 
   add_line(header.keyval()["comments"], "track-weighted image");
-  header.keyval()["tck_source"] = std::string(argument[0]);
+  header.keyval()["tck_source"] = std::string(input_tracks_path);
 
   opt = get_options("contrast");
   const contrast_t contrast = !opt.empty() ? contrast_t(int(opt[0][0])) : TDI;
@@ -620,7 +624,7 @@ void run() {
         throw Exception(
             "If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
-    const std::string assoc_image(opt[0][0]);
+    const std::filesystem::path assoc_image(opt[0][0]);
     if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
       mapper->add_scalar_image(assoc_image);
       if (backtrack)
@@ -628,15 +632,15 @@ void run() {
     } else {
       mapper->add_fod_image(assoc_image);
     }
-    header.keyval()["twi_assoc_image"] = Path::basename(assoc_image);
+    header.keyval()["twi_assoc_image"] = assoc_image.filename();
   } else if (contrast == VECTOR_FILE) {
     opt = get_options("vector_file");
     if (opt.empty())
       throw Exception(
           "If using 'vector_file' contrast, must provide the relevant data file using the -vector_file option");
-    const std::string path(opt[0][0]);
+    const std::filesystem::path path(opt[0][0]);
     mapper->add_vector_data(path);
-    header.keyval()["twi_vector_file"] = Path::basename(path);
+    header.keyval()["twi_vector_file"] = path.filename();
   }
 
   std::unique_ptr<MapWriterBase> writer;
@@ -644,16 +648,16 @@ void run() {
   case UNDEFINED:
     throw Exception("Invalid TWI writer image dimensionality");
   case GREYSCALE:
-    writer.reset(make_writer(header, argument[1], stat_vox, GREYSCALE));
+    writer.reset(make_writer(header, output_image_path, stat_vox, GREYSCALE));
     break;
   case DEC:
-    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, DEC));
+    writer.reset(new MapWriter<float>(header, output_image_path, stat_vox, DEC));
     break;
   case DIXEL:
-    writer.reset(make_writer(header, argument[1], stat_vox, DIXEL));
+    writer.reset(make_writer(header, output_image_path, stat_vox, DIXEL));
     break;
   case TOD:
-    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, TOD));
+    writer.reset(new MapWriter<float>(header, output_image_path, stat_vox, TOD));
     break;
   }
 

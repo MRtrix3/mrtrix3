@@ -26,6 +26,8 @@
 
 #include "dwi/tractography/ACT/act.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -54,15 +56,15 @@ void run() {
 
   size_t major_error_count = 0, minor_error_count = 0;
   for (size_t i = 0; i != argument.size(); ++i) {
-
-    auto in = Image<float>::open(argument[i]);
+    const std::filesystem::path inPath{argument[i]};
+    auto in = Image<float>::open(inPath);
 
     Image<bool> voxels;
     Header H_out(in);
     H_out.ndim() = 3;
     H_out.datatype() = DataType::Bit;
     if (!voxels_prefix.empty())
-      voxels = Image<bool>::scratch(H_out, "Scratch image for " + argument[i]);
+      voxels = Image<bool>::scratch(H_out, "Scratch image for " + inPath.string());
 
     try {
 
@@ -104,21 +106,21 @@ void run() {
       }
 
       if (voxel_error_sum == 1) {
-        INFO("Image \"" + argument[i] +
+        INFO("Image \"" + inPath.string() +
              "\" contains just one isolated voxel with non-unity sum of partial volume fractions");
       } else if (voxel_error_sum) {
-        WARN("Image \"" + argument[i] + "\" contains " + str(voxel_error_sum) +
+        WARN("Image \"" + inPath.string() + "\" contains " + str(voxel_error_sum) +
              " brain voxels with non-unity sum of partial volume fractions");
         if (!voxel_error_abs)
           ++minor_error_count;
       } else if (!voxel_error_abs) {
-        INFO("Image \"" + argument[i] + "\" conforms to 5TT format");
+        INFO("Image \"" + inPath.string() + "\" conforms to 5TT format");
       }
 
       if ((voxel_error_sum || voxel_error_abs) && voxels.valid()) {
         std::string path = voxels_prefix;
         if (argument.size() > 1) {
-          path += Path::basename(argument[i]);
+          path += inPath.filename();
         } else {
           bool has_extension = false;
           for (auto p = MR::Formats::known_extensions; *p; ++p) {

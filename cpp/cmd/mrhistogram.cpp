@@ -19,6 +19,8 @@
 #include "header.h"
 #include "image.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -84,8 +86,10 @@ template <class Functor> void run_volume(Functor &functor, Image<float> &data, I
 }
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
 
-  auto header = Header::open(argument[0]);
+  auto header = Header::open(input_path);
   if (header.ndim() > 4)
     throw Exception("mrhistogram is not designed to handle images greater than 4D");
   if (header.datatype().is_complex())
@@ -99,17 +103,19 @@ void run() {
   auto opt = get_options("mask");
   Image<bool> mask;
   if (!opt.empty()) {
-    mask = Image<bool>::open(opt[0][0]);
+    const std::filesystem::path mask_path{opt[0][0]};
+    mask = Image<bool>::open(mask_path);
     check_dimensions(mask, header, 0, 3);
   }
 
-  File::OFStream output(argument[1]);
+  File::OFStream output(output_path);
   output << "# " << App::command_history_string << "\n";
 
   Algo::Histogram::Calibrator calibrator(nbins_user, ignorezero);
   opt = get_options("template");
   if (!opt.empty()) {
-    calibrator.from_file(opt[0][0]);
+    const std::filesystem::path template_path{opt[0][0]};
+    calibrator.from_file(template_path);
   } else {
     for (auto v = Volume_loop(data); v; ++v)
       run_volume(calibrator, data, mask);

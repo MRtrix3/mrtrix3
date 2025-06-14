@@ -30,6 +30,8 @@
 #include "fixel/legacy/image.h"
 #include "fixel/legacy/keys.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -156,7 +158,8 @@ void convert_old2new() {
   opt = get_options("template");
   if (!opt.empty()) {
     Fixel::check_fixel_directory(opt[0][0]);
-    template_index_image = Fixel::find_index_header(opt[0][0]).get_image<index_type>();
+    const std::filesystem::path fixel_directory_path(opt[0][0]);
+    template_index_image = Fixel::find_index_header(fixel_directory_path).get_image<index_type>();
     check_dimensions(index_image, template_index_image);
     template_directions_image = Fixel::find_directions_header(opt[0][0]).get_image<float>();
   }
@@ -208,8 +211,8 @@ void convert_new2old() {
   auto opt = get_options("value");
   if (opt.empty())
     throw Exception("for converting from new to old formats, option -value is compulsory");
-  const std::string value_path = opt[0][0];
-  const std::string size_path = get_option_value<std::string>("in_size", "");
+  const std::filesystem::path value_path{opt[0][0]};
+  const std::filesystem::path size_path{get_option_value<std::string>("in_size", "")};
 
   Header H_index = Fixel::find_index_header(input_fixel_directory);
   Header H_dirs = Fixel::find_directions_header(input_fixel_directory);
@@ -217,9 +220,10 @@ void convert_new2old() {
   size_t size_index = H_data.size(), value_index = H_data.size();
 
   for (size_t i = 0; i != H_data.size(); ++i) {
-    if (Path::basename(H_data[i].name()) == Path::basename(value_path))
+    const std::filesystem::path path{H_data[i].name()};
+    if (path.filename() == value_path.filename())
       value_index = i;
-    if (Path::basename(H_data[i].name()) == Path::basename(size_path))
+    if (path.filename() == size_path.filename())
       size_index = i;
   }
   if (value_index == H_data.size())
@@ -266,14 +270,17 @@ bool is_old_format(const std::string &path) {
 }
 
 void run() {
+  const std::filesystem::path input_path(argument[0]);
+  const std::filesystem::path output_path(argument[1]);
+
   // Detect in which direction the conversion is occurring
-  if (is_old_format(argument[0])) {
-    if (is_old_format(argument[1]))
+  if (is_old_format(input_path)) {
+    if (is_old_format(output_path))
       throw Exception("fixelconvert can only be used to convert between old and new fixel formats; NOT to convert "
                       "images within the old format");
     convert_old2new();
   } else {
-    if (!is_old_format(argument[1]))
+    if (!is_old_format(output_path))
       throw Exception("fixelconvert can only be used to convert between old and new fixel formats; NOT to convert "
                       "within the new format");
     convert_new2old();

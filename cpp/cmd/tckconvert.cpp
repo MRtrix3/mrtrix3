@@ -22,6 +22,7 @@
 #include "file/ofstream.h"
 #include "raw.h"
 #include <cstdio>
+#include <filesystem>
 #include <sstream>
 
 using namespace MR;
@@ -678,35 +679,38 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_track_path{argument[0]};
+  const std::filesystem::path output_track_path{argument[1]};
+
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
-  if (Path::has_suffix(argument[0], ".tck")) {
-    reader.reset(new Reader<float>(argument[0], properties));
-  } else if (Path::has_suffix(argument[0], ".txt")) {
-    reader.reset(new ASCIIReader(argument[0]));
-  } else if (Path::has_suffix(argument[0], ".vtk")) {
-    reader.reset(new VTKReader(argument[0]));
+  if (Path::has_suffix(input_track_path, ".tck")) {
+    reader.reset(new Reader<float>(input_track_path, properties));
+  } else if (Path::has_suffix(input_track_path, ".txt")) {
+    reader.reset(new ASCIIReader(input_track_path));
+  } else if (Path::has_suffix(input_track_path, ".vtk")) {
+    reader.reset(new VTKReader(input_track_path));
   } else {
     throw Exception("Unsupported input file type.");
   }
 
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
-  if (Path::has_suffix(argument[1], ".tck")) {
-    writer.reset(new Writer<float>(argument[1], properties));
-  } else if (Path::has_suffix(argument[1], ".vtk")) {
+  if (Path::has_suffix(output_track_path, ".tck")) {
+    writer.reset(new Writer<float>(output_track_path, properties));
+  } else if (Path::has_suffix(output_track_path, ".vtk")) {
     auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(argument[1], write_ascii));
-  } else if (Path::has_suffix(argument[1], ".ply")) {
+    writer.reset(new VTKWriter(output_track_path, write_ascii));
+  } else if (Path::has_suffix(output_track_path, ".ply")) {
     const int increment = get_option_value("increment", DEFAULT_PLY_INCREMENT);
     const float radius = get_option_value("radius", DEFAULT_PLY_RADIUS);
     const int sides = get_option_value("sides", DEFAULT_PLY_SIDES);
-    writer.reset(new PLYWriter(argument[1], increment, radius, sides));
-  } else if (Path::has_suffix(argument[1], ".rib")) {
-    writer.reset(new RibWriter(argument[1]));
-  } else if (Path::has_suffix(argument[1], ".txt")) {
-    writer.reset(new ASCIIWriter(argument[1]));
+    writer.reset(new PLYWriter(output_track_path, increment, radius, sides));
+  } else if (Path::has_suffix(output_track_path, ".rib")) {
+    writer.reset(new RibWriter(output_track_path));
+  } else if (Path::has_suffix(output_track_path, ".txt")) {
+    writer.reset(new ASCIIWriter(output_track_path));
   } else {
     throw Exception("Unsupported output file type.");
   }

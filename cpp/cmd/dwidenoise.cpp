@@ -20,6 +20,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -303,7 +305,10 @@ void process_image(Header &data,
 }
 
 void run() {
-  auto dwi = Header::open(argument[0]);
+  const std::filesystem::path input_path(argument[0]);
+  const std::filesystem::path output_path(argument[1]);
+
+  auto dwi = Header::open(input_path);
 
   if (dwi.ndim() != 4 || dwi.size(3) <= 1)
     throw Exception("input image must be 4-dimensional");
@@ -311,7 +316,8 @@ void run() {
   Image<bool> mask;
   auto opt = get_options("mask");
   if (!opt.empty()) {
-    mask = Image<bool>::open(opt[0][0]);
+    const std::filesystem::path mask_path(opt[0][0]);
+    mask = Image<bool>::open(mask_path);
     check_dimensions(mask, dwi, 0, 3);
   }
 
@@ -370,19 +376,19 @@ void run() {
   switch (prec) {
   case 0:
     INFO("select real float32 for processing");
-    process_image<float>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<float>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case 1:
     INFO("select real float64 for processing");
-    process_image<double>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<double>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case 2:
     INFO("select complex float32 for processing");
-    process_image<cfloat>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<cfloat>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case 3:
     INFO("select complex float64 for processing");
-    process_image<cdouble>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<cdouble>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   }
 }

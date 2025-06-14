@@ -19,6 +19,8 @@
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -43,12 +45,15 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
+
   bool invert = !get_options("invert").empty();
   float threshold = argument[1];
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::ScalarReader<value_type> reader(argument[0], properties);
-  DWI::Tractography::ScalarWriter<value_type> writer(argument[2], properties);
+  DWI::Tractography::ScalarReader<value_type> reader(input_path, properties);
+  DWI::Tractography::ScalarWriter<value_type> writer(output_path, properties);
 
   DWI::Tractography::TrackScalar<value_type> tck_scalar;
   while (reader(tck_scalar)) {

@@ -29,6 +29,8 @@
 #include "header.h"
 #include "image_io/sparse.h"
 
+#include <filesystem>
+
 namespace MR::Formats {
 
 // extensions are:
@@ -136,8 +138,8 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
 
   } else {
 
-    image_path = Path::basename(H.name().substr(0, H.name().size() - 4) + ".dat");
-    sparse_path = Path::basename(H.name().substr(0, H.name().size() - 4) + ".sdat");
+    image_path = std::filesystem::path(H.name().substr(0, H.name().size() - 4) + ".dat").filename();
+    sparse_path = std::filesystem::path(H.name().substr(0, H.name().size() - 4) + ".sdat").filename();
 
     out << "file: " << image_path << "\nsparse_file: " << sparse_path << "\nEND\n";
 

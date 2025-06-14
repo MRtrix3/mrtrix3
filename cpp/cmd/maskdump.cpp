@@ -19,6 +19,8 @@
 #include "file/matrix.h"
 #include "image.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -41,6 +43,8 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+
   auto H = Header::open(argument[0]);
   if (H.datatype() != DataType::Bit)
     WARN("Input is not a genuine boolean mask image");
@@ -58,8 +62,9 @@ void run() {
   for (size_t row = 0; row != locations.size(); ++row)
     prettyprint.row(row) = std::move(locations[row]);
   INFO("Printing locations of " + str(prettyprint.rows()) + " non-zero voxels");
-  if (argument.size() == 2)
-    File::Matrix::save_matrix(prettyprint, argument[1]);
-  else
+  if (argument.size() == 2) {
+    const std::filesystem::path output_path{argument[1]};
+    File::Matrix::save_matrix(prettyprint, output_path);
+  } else
     std::cout << prettyprint;
 }

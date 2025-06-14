@@ -36,7 +36,7 @@ public:
   template <class Template>
   BufferScratchDump(const Template &info, const std::string &label) : Image::BufferScratch<value_type>(info, label) {}
 
-  void dump_to_file(const std::string &, const Image::Header &) const;
+  void dump_to_file(const std::filesystem::path &, const Image::Header &) const;
 
 private:
   // Helper function to get the underlying data pointer
@@ -50,16 +50,18 @@ template <> inline const char *BufferScratchDump<bool>::get_data_ptr() const {
 }
 
 template <typename value_type>
-void BufferScratchDump<value_type>::dump_to_file(const std::string &path, const Header &H) const {
+void BufferScratchDump<value_type>::dump_to_file(const std::filesystem::path &path, const Header &H) const {
 
   if (!Path::has_suffix(path, ".mih") && !Path::has_suffix(path, ".mif"))
     throw Exception("Can only perform direct dump to file for .mih / .mif files");
 
   const bool single_file = Path::has_suffix(path, ".mif");
 
-  std::string dat_path;
-  if (!single_file)
-    dat_path = Path::basename(path.substr(0, path.size() - 4) + ".dat");
+  std::filesystem::path dat_path;
+  if (!single_file) {
+    dat_path = path;
+    dat_path.replace_extension(".dat");
+  }
   const int64_t dat_size = Image::footprint(*this);
 
   File::OFStream out_header(path, std::ios::out | std::ios::binary);

@@ -25,7 +25,7 @@ extern const std::string image_filter_string;
 void check_overwrite_files_func(const std::string &name);
 
 std::string get_folder(QWidget *parent, const std::string &caption, std::string *folder = nullptr);
-std::string get_file(QWidget *parent,
+std::filesystem::path get_file(QWidget *parent,
                      const std::string &caption,
                      const std::string &filter = std::string(),
                      std::string *folder = nullptr);

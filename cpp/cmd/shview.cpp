@@ -25,6 +25,8 @@
 #include "shview/icons.h"
 #include "shview/render_window.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -52,9 +54,10 @@ void usage() {
 
 void run() {
   GUI::DWI::Window window(!get_options("response").empty());
+  const std::filesystem::path coefficients_path{argument[0]};
 
   if (!argument.empty())
-    window.set_values(std::string(argument[0]));
+    window.set_values(coefficients_path);
 
   window.show();
 

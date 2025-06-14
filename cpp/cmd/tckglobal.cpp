@@ -31,6 +31,8 @@
 #include "dwi/tractography/GT/mhsampler.h"
 #include "dwi/tractography/GT/particlegrid.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -233,13 +235,16 @@ private:
 void run() {
 
   using namespace DWI::Tractography::GT;
+  const std::filesystem::path input_source_path{argument[0]};
+  const std::filesystem::path input_response_path{argument[1]};
+  const std::filesystem::path output_tracks_path{argument[2]};
 
   // Inputs -----------------------------------------------------------------------------
 
-  auto dwi = Image<float>::open(argument[0]).with_direct_io(3);
+  auto dwi = Image<float>::open(input_source_path).with_direct_io(3);
 
   Properties properties;
-  properties.resp_WM = File::Matrix::load_matrix<float>(argument[1]);
+  properties.resp_WM = File::Matrix::load_matrix<float>(input_response_path);
   double wmscale2 = (properties.resp_WM(0, 0) * properties.resp_WM(0, 0)) / M_4PI;
 
   Eigen::VectorXf riso;
@@ -358,7 +363,7 @@ void run() {
   ftfileprops.comments.push_back("T0 = " + std::to_string((long double)t0));
   ftfileprops.comments.push_back("T1 = " + std::to_string((long double)t1));
 
-  MR::DWI::Tractography::Writer<float> writer(argument[2], ftfileprops);
+  MR::DWI::Tractography::Writer<float> writer(output_tracks_path, ftfileprops);
   pgrid.exportTracks(writer);
 
   // Save fiso, tod and eext

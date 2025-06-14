@@ -29,6 +29,8 @@
 #include "progressbar.h"
 #include "signal_handler.h"
 
+#include <filesystem>
+
 #define MRTRIX_HELP_COMMAND "less -X"
 
 #define HELP_WIDTH 80
@@ -1149,7 +1151,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
   terminal_use_colour = !ProgressBar::set_update_method();
 
   raw_arguments_list = std::vector<std::string>(cmdline_argv, cmdline_argv + cmdline_argc);
-  NAME = Path::basename(raw_arguments_list.front());
+  NAME = std::filesystem::path(raw_arguments_list.front()).filename();
   raw_arguments_list.erase(raw_arguments_list.begin());
 
 #ifdef MRTRIX_WINDOWS

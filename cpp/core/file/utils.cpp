@@ -160,8 +160,8 @@ void resize(const std::string &filename, int64_t size) {
     throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
 }
 
-bool is_tempfile(const std::string &name, const char *suffix) {
-  if (Path::basename(name).compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
+bool is_tempfile(const std::filesystem::path &name, const char *suffix) {
+  if (name.filename().string().compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
     return false;
   if (suffix != nullptr)
     if (!Path::has_suffix(name, suffix))

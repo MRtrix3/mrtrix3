@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -242,6 +243,8 @@ void header2json(const Header &header, nlohmann::json &json) {
 }
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+
   auto check_option_group = [](const App::OptionGroup &g) {
     for (auto o : g)
       if (!get_options(o.id).empty())
@@ -333,7 +336,7 @@ void run() {
     PhaseEncoding::export_commandline(header);
 
     if (json_keyval)
-      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
+      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::string("") : input_path.string()));
 
     if (json_all)
       header2json(header, *json_all);

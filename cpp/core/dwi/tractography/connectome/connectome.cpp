@@ -121,7 +121,8 @@ void setup_metric(Metric &metric, Image<node_t> &nodes_data) {
   auto opt = get_options("scale_file");
   if (!opt.empty()) {
     try {
-      metric.set_scale_file(opt[0][0]);
+      const std::filesystem::path path(opt[0][0]);
+      metric.set_scale_file(path);
     } catch (Exception &e) {
       throw Exception(e,
                       "-scale_file option expects a file containing a list of numbers (one for each streamline); "

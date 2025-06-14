@@ -32,6 +32,8 @@
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -434,11 +436,14 @@ public:
 };
 
 void run() {
+  const std::filesystem::path input_fix_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
+
   auto in_data = Fixel::open_fixel_data_file<typename FixelDataType::value_type>(argument[0]);
   if (in_data.size(2) != 1)
     throw Exception("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
 
-  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(input_fix_path));
   auto in_index_image = in_index_header.get_image<typename FixelIndexType::value_type>();
 
   Image<float> in_directions;
@@ -503,7 +508,7 @@ void run() {
     }
   }
 
-  auto out = Image<float>::create(argument[2], H_out);
+  auto out = Image<float>::create(output_path, H_out);
 
   auto loop = ThreadedLoop("converting sparse fixel data to scalar image", in_index_image, 0, 3);
 

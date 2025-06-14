@@ -35,6 +35,8 @@
 #include "thread_queue.h"
 #include "transform.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -200,7 +202,14 @@ private:
 };
 
 void run() {
-  if (Path::has_suffix(argument[4], ".tck"))
+  const std::filesystem::path input_fixel_directory{argument[0]};
+  const std::filesystem::path subjects_path{argument[1]};
+  const std::filesystem::path design_matrix_path{argument[2]};
+  const std::filesystem::path contrast_matrix_path{argument[3]};
+  const std::filesystem::path connectivity_matrix_path{argument[4]};
+  const std::filesystem::path output_fixel_directory{argument[5]};
+
+  if (Path::has_suffix(connectivity_matrix_path, ".tck"))
     throw Exception("This version of fixelcfestats requires as input not a track file, but a "
                     "pre-calculated fixel-fixel connectivity matrix; in addition, input fixel "
                     "data must be pre-smoothed. Please check command / pipeline documentation "
@@ -215,7 +224,6 @@ void run() {
   const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
   const default_type empirical_skew = get_option_value("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
-  const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header(input_fixel_directory);
   auto index_image = index_header.get_image<Fixel::index_type>();
 
@@ -247,7 +255,7 @@ void run() {
   // Read file names and check files exist
   // Preference for finding files relative to input template fixel directory
   Math::Stats::CohortDataImport importer;
-  importer.initialise<SubjectFixelImport>(argument[1], input_fixel_directory);
+  importer.initialise<SubjectFixelImport>(subjects_path, input_fixel_directory);
   for (Math::Stats::index_type i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match(index_header, dynamic_cast<SubjectFixelImport *>(importer[i].get())->header()))
       throw Exception("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
@@ -255,7 +263,7 @@ void run() {
   CONSOLE("Number of inputs: " + str(importer.size()));
 
   // Load design matrix:
-  const matrix_type design = File::Matrix::load_matrix(argument[2]);
+  const matrix_type design = File::Matrix::load_matrix(design_matrix_path);
   if (size_t(design.rows()) != importer.size())
     throw Exception("Number of input files does not match number of rows in design matrix");
 
@@ -266,7 +274,8 @@ void run() {
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back(Math::Stats::CohortDataImport());
-    extra_columns[i].initialise<SubjectFixelImport>(opt[i][0]);
+    const std::filesystem::path path{opt[i][0]};
+    extra_columns[i].initialise<SubjectFixelImport>(path);
     // Check for non-finite values in mask fixels only
     // Can't use generic allFinite() function; need to populate matrix data
     if (!nans_in_columns) {
@@ -303,7 +312,7 @@ void run() {
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const std::vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(argument[3]);
+  const std::vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(contrast_matrix_path);
   const Math::Stats::index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception(
@@ -313,9 +322,8 @@ void run() {
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
   // Load fixel-fixel connectivity matrix
-  Fixel::Matrix::Reader matrix(argument[4], mask);
+  Fixel::Matrix::Reader matrix(connectivity_matrix_path, mask);
 
-  const std::string output_fixel_directory = argument[5];
   Fixel::copy_index_and_directions_file(input_fixel_directory, output_fixel_directory);
 
   // Do we still want to check whether or not there are any disconnected fixels?

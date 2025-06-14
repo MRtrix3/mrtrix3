@@ -21,6 +21,8 @@
 #include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -57,8 +59,11 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
+
   const bool displacement = !get_options("displacement").empty();
-  Header header_in(Header::open(argument[0]));
+  Header header_in(Header::open(input_path));
   Registration::Warp::check_warp(header_in);
   Header header_out(header_in);
   auto opt = get_options("template");
@@ -75,7 +80,7 @@ void run() {
   }
 
   Image<default_type> image_in(header_in.get_image<default_type>());
-  Image<default_type> image_out(Image<default_type>::create(argument[1], header_out));
+  Image<default_type> image_out(Image<default_type>::create(output_path, header_out));
 
   if (displacement) {
     Registration::Warp::invert_displacement(image_in, image_out);

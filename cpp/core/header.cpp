@@ -316,7 +316,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
         break;
 
     if (!*format_handler) {
-      const std::string basename = Path::basename(image_name);
+      const std::string basename = std::filesystem::path(image_name).filename();
       const size_t extension_index = basename.find_last_of(".");
       if (extension_index == std::string::npos)
         throw Exception("unknown format for image \"" + image_name + "\" (no file extension specified)");

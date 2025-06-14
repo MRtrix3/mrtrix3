@@ -251,7 +251,7 @@ ROI::~ROI() {
     if (!roi->saved) {
       if (QMessageBox::question(&window(),
                                 tr("ROI not saved"),
-                                qstr("Image " + roi->get_filename() + " has been modified. Do you want to save it?"),
+                                qstr("Image " + roi->get_filename().string() + " has been modified. Do you want to save it?"),
                                 QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
         save(roi);
     }
@@ -363,7 +363,7 @@ void ROI::close_slot() {
     size_t ret =
         QMessageBox::warning(this,
                              tr("ROI not saved"),
-                             qstr("ROI " + roi->get_filename() + " has been modified. Do you want to save it?"),
+                             qstr("ROI " + roi->get_filename().string() + " has been modified. Do you want to save it?"),
                              QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
                              QMessageBox::Save);
     if (ret == QMessageBox::Cancel)

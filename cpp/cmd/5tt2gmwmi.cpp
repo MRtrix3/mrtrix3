@@ -25,6 +25,8 @@
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -36,19 +38,19 @@ void usage() {
   SYNOPSIS = "Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface";
 
   REFERENCES
-    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-      "Anatomically-constrained tractography:"
-      " Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
-      "NeuroImage, 2012, 62, 1924-1938";
+      + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+        "Anatomically-constrained tractography:"
+        " Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+        "NeuroImage, 2012, 62, 1924-1938";
 
   ARGUMENTS
-    + Argument ("5tt_in", "the input 5TT segmented anatomical image").type_image_in()
-    + Argument ("mask_out", "the output mask image").type_image_out();
+      + Argument ("5tt_in", "the input 5TT segmented anatomical image").type_image_in()
+      + Argument ("mask_out", "the output mask image").type_image_out();
 
   OPTIONS
-    + Option("mask_in", "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. "
-                        "If no input mask is provided, "
-                        "the output will be a whole-brain mask image calculated using the anatomical image only.")
+      + Option("mask_in", "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. "
+                          "If no input mask is provided, "
+                          "the output will be a whole-brain mask image calculated using the anatomical image only.")
       + Argument ("image", "the input mask image").type_image_in();
 
 }
@@ -107,8 +109,11 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_path{argument.front()};
+  const std::filesystem::path output_path{argument.begin()[1]};
 
-  auto input = Image<float>::open(argument[0]);
+  auto input = Image<float>::open(input_path);
+
   DWI::Tractography::ACT::verify_5TT_image(input);
   check_3D_nonunity(input);
 
@@ -132,7 +137,7 @@ void run() {
     H = input;
     H.ndim() = 3;
   }
-  auto output = Image<float>::create(argument[1], H);
+  auto output = Image<float>::create(output_path, H);
 
   ThreadedLoop("Generating GMWMI seed mask", input, 0, 3).run(Processor(mask), input, output);
 }

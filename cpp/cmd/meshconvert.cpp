@@ -20,6 +20,8 @@
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Surface;
@@ -50,15 +52,17 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
 
   // Read in the mesh data
   MeshMulti meshes;
   try {
-    MR::Surface::Mesh mesh(argument[0]);
+    MR::Surface::Mesh mesh(input_path);
     meshes.push_back(mesh);
   } catch (Exception &e) {
     try {
-      meshes.load(argument[0]);
+      meshes.load(output_path);
     } catch (...) {
       throw e;
     }
@@ -94,7 +98,7 @@ void run() {
 
   // Create the output file
   if (meshes.size() == 1)
-    meshes[0].save(argument[1], !get_options("binary").empty());
+    meshes[0].save(output_path, !get_options("binary").empty());
   else
-    meshes.save(argument[1]);
+    meshes.save(output_path);
 }

@@ -31,6 +31,8 @@
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Surface;
@@ -54,8 +56,10 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_node_path{argument[0]};
+  const std::filesystem::path output_mesh_path{argument[1]};
 
-  Header labels_header = Header::open(argument[0]);
+  Header labels_header = Header::open(input_node_path);
   Connectome::check(labels_header);
   check_3D_nonunity(labels_header);
   auto labels = labels_header.get_image<uint32_t>();
@@ -133,5 +137,5 @@ void run() {
     Thread::run_queue(loader, size_t(), Thread::multi(worker));
   }
 
-  meshes.save(argument[1]);
+  meshes.save(output_mesh_path);
 }

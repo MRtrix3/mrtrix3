@@ -31,6 +31,8 @@
 
 #include "file/path.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace MR::DWI;
 using namespace MR::DWI::FMLS;
@@ -271,7 +273,10 @@ void Segmented_FOD_receiver::commit() {
 }
 
 void run() {
-  Header H = Header::open(argument[0]);
+  const std::filesystem::path input_image_path{argument[0]};
+  const std::filesystem::path output_directory{argument[1]};
+
+  Header H = Header::open(input_image_path);
   Math::SH::check(H);
   auto fod_data = H.get_image<float>();
 
@@ -280,7 +285,7 @@ void run() {
 
   Segmented_FOD_receiver receiver(H, maxnum, dir_as_peak);
 
-  auto &fixel_directory_path = argument[1];
+  auto &fixel_directory_path = output_directory;
   receiver.set_fixel_directory_output(fixel_directory_path);
 
   std::string file_extension(".mif");
