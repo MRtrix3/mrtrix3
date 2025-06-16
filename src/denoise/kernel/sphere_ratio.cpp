@@ -46,16 +46,45 @@ Data SphereRatio::operator()(const Voxel::index_type &pos) const {
 }
 
 default_type SphereRatio::compute_max_radius(const Header &voxel_grid, const default_type min_ratio) const {
-  const size_t num_volumes = voxel_grid.size(3);
+  size_t values_per_voxel = voxel_grid.size(3);
+  for (size_t axis = 4; axis != voxel_grid.ndim(); ++axis)
+    values_per_voxel *= voxel_grid.size(axis);
   const default_type voxel_volume = voxel_grid.spacing(0) * voxel_grid.spacing(1) * voxel_grid.spacing(2);
-  const default_type sphere_volume = 8.0 * num_volumes * min_ratio * voxel_volume;
+  // Consider the worst case scenario, where the corner of the FoV is being processed;
+  //   we do not want to run out of elements in our lookup table before reaching our desired # voxels
+  // Define a sphere for which the volume is eight times that of what would be required
+  //   for processing a voxel in the middle of the FoV;
+  //   only one of the eight octants will have valid image data
+  const default_type sphere_volume = 8.0 * values_per_voxel * min_ratio * voxel_volume;
   const default_type approx_radius = std::sqrt(sphere_volume * 0.75 / Math::pi);
   const Voxel::index_type half_extents({ssize_t(std::ceil(approx_radius / voxel_grid.spacing(0))),   //
                                         ssize_t(std::ceil(approx_radius / voxel_grid.spacing(1))),   //
                                         ssize_t(std::ceil(approx_radius / voxel_grid.spacing(2)))}); //
-  return std::max({half_extents[0] * voxel_grid.spacing(0),
-                   half_extents[1] * voxel_grid.spacing(1),
-                   half_extents[2] * voxel_grid.spacing(2)});
+  default_type max_radius = std::max({half_extents[0] * voxel_grid.spacing(0),                       //
+                                      half_extents[1] * voxel_grid.spacing(1),                       //
+                                      half_extents[2] * voxel_grid.spacing(2)});                     //
+  DEBUG("Calibrating maximal radius for building aspect ratio spherical denoising kernel:");
+  std::string dim_string = str(voxel_grid.size(0));
+  for (size_t axis = 1; axis != voxel_grid.ndim(); ++axis)
+    dim_string += "x" + str(voxel_grid.size(axis));
+  DEBUG("  Image dimensions: " + dim_string);
+  DEBUG("  Values per voxel: " + str(values_per_voxel));
+  std::string spacing_string = str(voxel_grid.spacing(0));
+  for (size_t axis = 1; axis != 3; ++axis)
+    spacing_string += "x" + str(voxel_grid.spacing(axis));
+  DEBUG("  Voxel spacing: " + spacing_string + "mm");
+  DEBUG("  Voxel volume: " + str(voxel_volume) + "mm^3");
+  DEBUG("  Maximal sphere volume: " + str(sphere_volume));
+  DEBUG("  Approximate radius: " + str(approx_radius));
+  std::string halfextent_string = str(half_extents[0]);
+  for (size_t axis = 1; axis != 3; ++axis)
+    halfextent_string += "," + str(half_extents[axis]);
+  DEBUG("  Half-extents: [" + halfextent_string + "]");
+  std::string maxradius_string = str(half_extents[0] * voxel_grid.spacing(0));
+  for (size_t axis = 1; axis != 3; ++axis)
+    maxradius_string += "," + str(half_extents[axis] * voxel_grid.spacing(axis));
+  DEBUG("  Maximum radius = max(" + maxradius_string + ") = " + str(max_radius));
+  return max_radius;
 }
 
 } // namespace MR::Denoise::Kernel

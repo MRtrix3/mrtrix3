@@ -54,31 +54,38 @@ SphereBase::Shared::Shared(const Header &voxel_grid,
   }
   std::sort(data.begin(), data.end());
   DEBUG("Spherical searchlight construction:");
-  DEBUG("Voxel spacing: ["                   //
+  DEBUG("  Voxel spacing: ["                 //
         + str(voxel_grid.spacing(0)) + ","   //
         + str(voxel_grid.spacing(1)) + ","   //
         + str(voxel_grid.spacing(2)) + "]"); //
-  DEBUG("Maximum nominated radius: " + str(max_radius));
-  DEBUG("Halfvoxel offsets: ["              //
+  DEBUG("  Maximum nominated radius: " + str(max_radius));
+  DEBUG("  Halfvoxel offsets: ["            //
         + str(halfvoxel_offsets[0]) + ","   //
         + str(halfvoxel_offsets[1]) + ","   //
         + str(halfvoxel_offsets[2]) + "]"); //
-  DEBUG("Bounding box for search: ["        //
+  DEBUG("  Bounding box for search: ["      //
         "[" +
         str(bounding_box(0, 0)) + " " + str(bounding_box(0, 1)) + "] " +       //
         "[" + str(bounding_box(1, 0)) + " " + str(bounding_box(1, 1)) + "] " + //
         "[" + str(bounding_box(2, 0)) + " " + str(bounding_box(2, 1)) + "]]"); //
-  DEBUG("First element: " + str(data.front().index.transpose()) + " @ " + str(data.front().distance()));
-  DEBUG("Last element: " + str(data.back().index.transpose()) + " @ " + str(data.back().distance()));
-  DEBUG("Number of elements: " + str(data.size()));
-  const size_t voxel_count = voxel_grid.size(0) * voxel_grid.size(1) * voxel_grid.size(2);
-  if (data.size() > voxel_count) {
-    WARN(std::string("Spherical sliding window larger than input image ")                          //
-         + "(" + str(data.size()) + " > "                                                          //
-         + str(voxel_grid.size(0)) + "x" + str(voxel_grid.size(1)) + "x" + str(voxel_grid.size(2)) //
-         + "=" + str(voxel_count) + "); "                                                          //
-         + "operation likely to be equivalent to running PCA on entire image");                    //
-  }
+  DEBUG("  First element: " + str(data.front().index.transpose()) + " @ " + str(data.front().distance()));
+  DEBUG("  Last element: " + str(data.back().index.transpose()) + " @ " + str(data.back().distance()));
+  DEBUG("  Number of elements: " + str(data.size()));
+  /*
+    // Warning is omitted:
+    //   just because the search table itself is exceptionally large,
+    //   does not mean that that number of voxels may be going into the PCA;
+    //   computation of the maximal required radius for constructing the lookup table is intentionally pessimistic,
+    //   and many of these offsets will be outside of the FoV.
+    const size_t voxel_count = voxel_grid.size(0) * voxel_grid.size(1) * voxel_grid.size(2);
+    if (data.size() > voxel_count) {
+      WARN(std::string("Spherical sliding window larger than input image ")                          //
+           + "(" + str(data.size()) + " > "                                                          //
+           + str(voxel_grid.size(0)) + "x" + str(voxel_grid.size(1)) + "x" + str(voxel_grid.size(2)) //
+           + "=" + str(voxel_count) + "); "                                                          //
+           + "operation likely to be equivalent to running PCA on entire image");                    //
+    }
+  */
 }
 
 } // namespace MR::Denoise::Kernel
