@@ -199,6 +199,24 @@ public:
     return window;
   }
 
+  static Image<double> window_gaussian(const Header &header,                  //
+                                       const std::vector<size_t> &inner_axes, //
+                                       const default_type sigma) {            //
+    Image<double> window =
+        Image<double>::scratch(make_window_header(header, inner_axes), "Scratch Gaussian filter window");
+    for (auto l = Loop(window)(window); l; ++l)
+      window.value() = 1.0;
+    for (auto axis : inner_axes) {
+      const size_t N = header.size(axis);
+      Eigen::Array<double, Eigen::Dynamic, 1> window1d(N);
+      for (size_t n = 0; n != N; ++n)
+        window1d[n] = std::exp(-0.5 * Math::pow2(n / (sigma * N)));
+      window1d *= 1.0 / window1d.sum();
+      apply_window1D(window, window1d, axis, inner_axes);
+    }
+    return window;
+  }
+
 protected:
   Image<double> window;
   std::vector<size_t> inner_axes;
