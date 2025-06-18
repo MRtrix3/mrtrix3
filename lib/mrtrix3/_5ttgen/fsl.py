@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2023 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,10 @@
 # For more details, see http://www.mrtrix.org/.
 
 import math, os
-from distutils.spawn import find_executable
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run, utils
 
@@ -188,8 +191,8 @@ def execute(): #pylint: disable=unused-variable
   first_verbosity_option = ''
   if app.VERBOSITY == 3:
     first_verbosity_option = ' -v'
-  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_brain_extracted_option + first_debug_option + first_verbosity_option)
-  fsl.check_first('first', sgm_structures)
+  first_stdout = run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_brain_extracted_option + first_debug_option + first_verbosity_option).stdout
+  fsl.check_first('first', structures=sgm_structures, first_stdout=first_stdout)
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]

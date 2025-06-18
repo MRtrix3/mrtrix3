@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -588,7 +588,7 @@ void run ()
 
     if (interp == 0)
       output_header.datatype() = DataType::from_command_line (input_header.datatype());
-    auto output = Image<float>::create (argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create (argument[1], output_header);
 
     switch (interp) {
       case 0:
@@ -630,7 +630,7 @@ void run ()
       add_line (output_header.keyval()["comments"], std::string ("resliced using warp image \"" + warp.name() + "\""));
     }
 
-    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create(argument[1], output_header);
 
     if (warp.ndim() == 5) {
       Image<default_type> warp_deform;
@@ -684,7 +684,7 @@ void run ()
       output_header.transform() = linear_transform;
     else
       output_header.transform() = linear_transform.inverse() * output_header.transform();
-    auto output = Image<float>::create (argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create (argument[1], output_header);
     copy_with_progress (input, output);
 
     if (fod_reorientation || modulate_jac) {

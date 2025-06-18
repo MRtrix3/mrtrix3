@@ -23,7 +23,7 @@ Description
 -----------
 
 The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.4/concepts/spherical_harmonics.html
+https://mrtrix.readthedocs.io/en/3.0.5/concepts/spherical_harmonics.html
 
 Example usages
 --------------
@@ -130,7 +130,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2023 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,11 @@
 # For more details, see http://www.mrtrix.org/.
 
 import os
-from distutils.spawn import find_executable
+import subprocess
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 from mrtrix3 import MRtrixError
 
 
@@ -26,21 +30,73 @@ _SUFFIX = ''
 
 # Functions that may be useful for scripts that interface with FMRIB FSL tools
 
-# FSL's run_first_all script can be difficult to wrap, since it does not provide
-#   a meaningful return code, and may run via SGE, which then requires waiting for
-#   the output files to appear.
-def check_first(prefix, structures): #pylint: disable=unused-variable
+# FSL's run_first_all script can be difficult to wrap, since:
+#   - It may or may not run via SGE or SLURM, and therefore execution control will
+#     return to Python even though those jobs have not yet executed / completed
+#   - The return code of run_first_all may be a job ID that can possibly be used
+#     to query whether or not jobs have completed
+#   - Sometimes a subset of the segmentation jobs may fail; when this happens,
+#     ideally the script should report an outright failure and raise an MRtrixError;
+#     but in some circumstances, it's possible that the requisite files may appear
+#     later because eg. they are being executed via SGE
+# This function attempts to provide a unified interface for querying whether or not
+#   FIRST was successful, taking all of these into account
+def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=unused-variable
   from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
+  job_id = None
+  if first_stdout:
+    try:
+      job_id = int(first_stdout.rstrip().splitlines()[-1])
+    except ValueError:
+      app.debug('Unable to convert FIRST stdout contents to integer job ID')
+  execution_verified = False
+  if job_id:
+    # Eventually modify on dev to reflect Python3 prerequisite
+    # Create dummy fsl_sub job, use to monitor for completion
+    flag_file = path.name_temporary('txt')
+    try:
+      with subprocess.Popen(['fsl_sub',
+                             '-j', str(job_id),
+                             '-T', '1',
+                             'touch', flag_file],
+                            stdout=subprocess.PIPE) as proc:
+        (fslsub_stdout, _) = proc.communicate()
+        returncode = proc.returncode
+      if returncode:
+        app.debug('fsl_sub executed successfully, but returned error code ' + str(returncode))
+      else:
+        app.debug('fsl_sub successfully executed; awaiting completion flag')
+        path.wait_for(flag_file)
+        execution_verified = True
+        app.debug('Flag file identified indicating completion of all run_first_all tasks')
+      try:
+        flag_jobid = int(fslsub_stdout.rstrip().splitlines()[-1])
+        app.cleanup(['touch.' + stream + str(flag_jobid) for stream in ['o', 'e']])
+      except ValueError:
+        app.debug('Unable to parse Job ID for fsl_sub "touch" job; could not erase stream files')
+    except OSError:
+      app.debug('Unable to execute fsl_sub to check status of FIRST execution')
+    finally:
+      app.cleanup(flag_file)
+  if not structures:
+    app.warn('No way to verify up-front whether FSL FIRST was successful due to no knowledge of set of structures to be segmented')
+    app.warn('Execution will continue, but script may subsequently fail if an expected structure was not segmented successfully')
+    return
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
-  existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
-  if existing_file_count != len(vtk_files):
-    if 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
-      app.console('FSL FIRST job may have been run via SGE; awaiting completion')
-      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
-      path.wait_for(vtk_files)
-    else:
-      app.DO_CLEANUP = False
-      raise MRtrixError('FSL FIRST has failed; ' + ('only ' if existing_file_count else '') + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.to_scratch('first.logs', False) + ')')
+  existing_file_count = sum(os.path.exists(filename) for filename in vtk_files)
+  if existing_file_count == len(vtk_files):
+    app.debug('All ' + str(existing_file_count) + ' expected FIRST .vtk files found')
+    return
+  if not execution_verified and 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
+    app.console('FSL FIRST job PID not found, but job may nevertheless complete later via SGE')
+    app.console('Script will wait to see if the expected .vtk files are generated later')
+    app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
+    path.wait_for(vtk_files)
+    return
+  app.DO_CLEANUP = False
+  raise MRtrixError('FSL FIRST has failed; '
+                    + ('only ' if existing_file_count else '') + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully '
+                    + '(check ' + path.to_scratch('first.logs', False) + ')')
 
 
 

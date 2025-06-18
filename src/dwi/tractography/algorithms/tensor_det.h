@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,7 +65,7 @@ namespace MR
           properties["method"] = "TensorDet";
 
           try {
-            auto grad = DWI::get_DW_scheme (source);
+            auto grad = DWI::get_DW_scheme (source_header);
             auto bmat_double = grad2bmatrix<double> (grad);
             binv = Math::pinv (bmat_double).cast<float>();
             bmat = bmat_double.cast<float>();

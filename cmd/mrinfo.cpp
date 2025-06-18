@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,12 +19,13 @@
 
 #include "command.h"
 #include "header.h"
-#include "phase_encoding.h"
 #include "types.h"
 #include "file/json.h"
 #include "file/json_utils.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "image_io/pipe.h"
+#include "metadata/phase_encoding.h"
 
 
 using namespace MR;
@@ -52,7 +53,7 @@ const OptionGroup FieldExportOptions = OptionGroup ("Options for exporting image
 void usage ()
 {
 
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Display image header information, or extract specific information from the header";
 
@@ -106,7 +107,7 @@ void usage ()
     +   Option ("shell_sizes", "list the number of volumes in each shell")
     +   Option ("shell_indices", "list the image volumes attributed to each b-value shell")
 
-    + PhaseEncoding::ExportOptions
+    + Metadata::PhaseEncoding::ExportOptions
     +   Option ("petable", "print the phase encoding table")
 
     + OptionGroup ("Handling of piped images")
@@ -251,7 +252,7 @@ void run ()
     ImageIO::Pipe::delete_piped_images = false;
 
   const bool export_grad = check_option_group (GradExportOptions);
-  const bool export_pe   = check_option_group (PhaseEncoding::ExportOptions);
+  const bool export_pe   = check_option_group (Metadata::PhaseEncoding::ExportOptions);
 
   if (export_grad && argument.size() > 1)
     throw Exception ("can only export DW gradient table to file if a single input image is provided");
@@ -300,7 +301,7 @@ void run ()
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
-    if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
+    if (petable)    std::cout << Metadata::PhaseEncoding::get_scheme (header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties (header, properties[n][0]);
@@ -319,7 +320,7 @@ void run ()
     }
 
     DWI::export_grad_commandline (header);
-    PhaseEncoding::export_commandline (header);
+    Metadata::PhaseEncoding::export_commandline (header);
 
     if (json_keyval)
       File::JSON::write (header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -182,7 +182,6 @@ UNARY_OP (atanh, "atanh (%1)", NORMAL, "inverse hyperbolic tangent", { return st
 #include "command.h"
 #include "image.h"
 #include "memory.h"
-#include "phase_encoding.h"
 #include "math/rng.h"
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
@@ -731,7 +730,7 @@ void get_header (const StackEntry& entry, Header& header)
       header.spacing(n) = entry.image->spacing(n);
   }
 
-  header.merge_keyval (*entry.image);
+  header.merge_keyval (entry.image->keyval());
 }
 
 
@@ -911,6 +910,7 @@ void run () {
       else if (opt->is ("nthreads")) ++n;
       else if (opt->is ("force") || opt->is ("info") || opt->is ("debug") || opt->is ("quiet"))
         continue;
+      else if (opt->is ("config")) n+=2;
 
 #define SECTION 3
 #include "mrcalc.cpp"
