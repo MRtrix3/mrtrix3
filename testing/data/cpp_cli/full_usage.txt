@@ -6,7 +6,7 @@ a text input
 ARGUMENT spec 0 0 TEXT
 OPTION bool 1 0
 a boolean input
-ARGUMENT value 0 0 
+ARGUMENT value 0 0 BOOL
 OPTION int_unbound 1 0
 an integer input (unbounded)
 ARGUMENT value 0 0 INT -9223372036854775808 9223372036854775807

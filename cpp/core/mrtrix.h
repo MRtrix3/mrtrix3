@@ -106,6 +106,9 @@ size_t char_is_dash(const char *arg);
 //! match whole string to a dash or any Unicode character that looks like one
 bool is_dash(std::string_view arg);
 
+//! match a dash or any Unicode character that looks like one at the start of a string
+bool starts_with_dash(std::string_view arg);
+
 //! returns string without leading dashes
 std::string_view without_leading_dash(std::string_view arg);
 
