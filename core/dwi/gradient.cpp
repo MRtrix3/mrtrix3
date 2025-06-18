@@ -211,7 +211,7 @@ namespace MR
       Eigen::VectorXd bvals = grad.col(3);
       size_t bval_zeroed_count = 0;
       for (ssize_t n = 0; n < bvals.size(); ++n) {
-        if (bvecs.row(n).squaredNorm() > 0.0 && bvals[n] && bvals[n] <= MR::DWI::bzero_threshold()) {
+        if (bvecs.col(n).squaredNorm() > 0.0 && bvals[n] && bvals[n] <= MR::DWI::bzero_threshold()) {
           ++bval_zeroed_count;
           bvals[n] = 0.0;
         }
