@@ -588,7 +588,7 @@ namespace MR
         strides.resize (3);
         auto order = Stride::order (strides);
         Axes::Shuffle result;
-        result.permutations = {ssize_t(order[0]), ssize_t(order[1]), ssize_t(order[2])};
+        result.permutations = {order[0], order[1], order[2]};
         result.flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
         return result;
       }

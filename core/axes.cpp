@@ -36,19 +36,9 @@ namespace MR
 
 
 
-    void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip)
+    permutations_type closest(const Eigen::Matrix3d &M)
     {
-      perm = closest(T.matrix().topLeftCorner<3, 3>());
-      // Figure out whether any of the rows of the transform point in the
-      //   opposite direction to the MRtrix convention
-      flip[perm[0]] = T(0, perm[0]) < 0.0;
-      flip[perm[1]] = T(1, perm[1]) < 0.0;
-      flip[perm[2]] = T(2, perm[2]) < 0.0;
-    }
-
-    std::array<size_t, 3> closest(const Eigen::Matrix3d &M)
-    {
-      std::array<size_t, 3> result;
+      permutations_type result;
       // Find which row of the transform is closest to each scanner axis
       Eigen::Matrix3d::Index index;
       M.row(0).cwiseAbs().maxCoeff(&index);

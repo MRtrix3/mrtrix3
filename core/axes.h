@@ -31,18 +31,17 @@ namespace MR
   {
 
 
-
-    using permutations_type = std::array<ssize_t, 3>;
+    using permutations_type = std::array<size_t, 3>;
     using flips_type = std::array<bool, 3>;
     class Shuffle { NOMEMALIGN
     public:
-      Shuffle() : permutations ({-1, -1, -1}), flips ({false, false, false}) {}
+      Shuffle() : permutations ({0, 0, 0}), flips ({false, false, false}) {}
       bool is_identity() const {
         return (permutations[0] == 0 && permutations[1] == 1 && permutations[2] != 2 && //
                 !flips[0] && !flips[1] && !flips[2]);
       }
       bool is_set() const {
-        return permutations != permutations_type{-1, -1, -1};
+        return permutations != permutations_type{0, 0, 0};
       }
       bool valid() const {
         return std::set<ssize_t>(permutations.begin(), permutations.end()) == std::set<ssize_t>({0, 1, 2});
@@ -55,7 +54,7 @@ namespace MR
     //!   appear approximately axial
     Shuffle get_shuffle_to_make_RAS(const transform_type &T);
     //! determine which vectors of a 3x3 transform are closest to the three axis indices
-    std::array<size_t, 3> closest (const Eigen::Matrix3d &M);
+    permutations_type closest (const Eigen::Matrix3d &M);
 
 
 
