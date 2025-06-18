@@ -1,0 +1,5 @@
+mrinfo dwi.mif -export_grad_fsl tmp.bvec tmp.bval -force && sed -i"" "s/^0/NaN/" tmp.bval && mrinfo dwi.mif -fslgrad tmp.bvec tmp.bval
+mrinfo dwi.mif -export_grad_fsl tmp.bvec tmp.bval -force && sed -i"" "s/^0/NaN/" tmp.bvec && mrinfo dwi.mif -fslgrad tmp.bvec tmp.bval
+mrinfo dwi.mif -export_grad_fsl tmp.bvec tmp.bval -force && sed -i"" "3 s/^0/1/" tmp.bvec && sed -i"" "s/^0/NaN/" tmp.bval && if [[ $(mrinfo dwi.mif -fslgrad tmp.bvec tmp.bval) ]]; then exit 1; else exit 0; fi
+mrinfo dwi.mif -export_grad_fsl tmp.bvec tmp.bval -force && sed -i"" "s/^0/NaN/" tmp.bvec && sed -i"" "s/^0/3000/" tmp.bval && if [[ $(mrinfo dwi.mif -fslgrad tmp.bvec tmp.bval) ]]; then exit 1; else exit 0; fi
+
