@@ -9,7 +9,7 @@ set(UNIT_TESTS_CPP_SRCS
     parse_ints_tests.cpp
     # sh_precomputer.cpp
     # shuffle.cpp
-    # to.cpp
+    to_tests.cpp
 )
 
 set(UNIT_TESTS_BASH_SRCS
