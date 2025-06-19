@@ -101,12 +101,16 @@ namespace MR
         } else if (item.first == "SliceTiming") {
           new_keyval["SliceTiming"] = Metadata::SliceEncoding::resolve_slice_timing (item.second, it->second);
         } else if (item.first == "dw_scheme") {
-          try {
-            auto scheme = DWI::resolve_DW_scheme (parse_matrix (item.second), parse_matrix (it->second));
-            DWI::set_DW_scheme (new_keyval, scheme);
-          } catch (Exception& e) {
-            WARN("Error merging DW gradient tables between headers");
+          if (item.second == "variable" || it->second == "variable") {
             new_keyval["dw_scheme"] = "variable";
+          } else {
+            try {
+              auto scheme = DWI::resolve_DW_scheme (parse_matrix (item.second), parse_matrix (it->second));
+              DWI::set_DW_scheme (new_keyval, scheme);
+            } catch (Exception& e) {
+              WARN("Unable to merge inconsistent DW gradient tables between headers");
+              new_keyval["dw_scheme"] = "variable";
+            }
           }
         } else {
           new_keyval[item.first] = "variable";
@@ -758,14 +762,25 @@ namespace MR
       }
     }
 
+    // Need an enum to track what we're going to do with these fields,
+    //   rather than relying exclusively on Header::merge_keyval()
+    enum class scheme_manip_t { ABSENT, MERGE, CONCAT, ERASE };
     Eigen::MatrixXd dw_scheme, pe_scheme;
+    scheme_manip_t dwscheme_manip = scheme_manip_t::MERGE;
+    scheme_manip_t pescheme_manip = scheme_manip_t::MERGE;
     if (axis_to_concat == 3) {
       try {
         dw_scheme = DWI::get_DW_scheme (result);
-      } catch (Exception&) { }
+        dwscheme_manip = scheme_manip_t::CONCAT;
+      } catch (Exception&) {
+        dwscheme_manip = scheme_manip_t::ABSENT;
+      }
       try {
         pe_scheme = Metadata::PhaseEncoding::get_scheme (result);
-      } catch (Exception&) { }
+        pescheme_manip = pe_scheme.rows() == 0 ? scheme_manip_t::ABSENT : scheme_manip_t::CONCAT;
+      } catch (Exception&) {
+        pescheme_manip = scheme_manip_t::ERASE;
+      }
     }
 
     for (size_t i = 1; i != headers.size(); ++i) {
@@ -782,24 +797,69 @@ namespace MR
       // Expand the image along the axis of concatenation
       result.size (axis_to_concat) += H.ndim() <= axis_to_concat ? 1 : H.size (axis_to_concat);
 
-      // Concatenate 4D schemes if necessary
       if (axis_to_concat == 3) {
-        try {
-          const auto extra_dw = DWI::parse_DW_scheme (H);
-          concat_scheme (dw_scheme, extra_dw);
-        } catch (Exception&) {
-          dw_scheme.resize (0, 0);
-        }
-        try {
-          const auto extra_pe = Metadata::PhaseEncoding::get_scheme (H);
-          concat_scheme (pe_scheme, extra_pe);
-        } catch (Exception&) {
-          pe_scheme.resize (0, 0);
-        }
-      }
 
-      // Resolve key-value pairs
-      result.merge_keyval (H.keyval());
+        // Create a local copy of the key-value data
+        //   in case we need to apply modifications prior to the key-value merge operation
+        KeyValues kv (H.keyval());
+
+        // Generate local copies of any schemes
+        Eigen::MatrixXd extra_dw, extra_pe;
+        try {
+          extra_dw = DWI::parse_DW_scheme (H);
+        } catch (Exception &) {}
+        try {
+          extra_pe = Metadata::PhaseEncoding::get_scheme (H);
+        } catch (Exception &) {}
+
+        switch (dwscheme_manip) {
+          case scheme_manip_t::ABSENT:
+            if (extra_dw.rows() > 0)
+              dwscheme_manip = scheme_manip_t::ERASE;
+            break;
+          case scheme_manip_t::MERGE:
+            assert(false);
+            throw Exception("Logic error in header key-value merge of DW scheme");
+          case scheme_manip_t::CONCAT:
+            if (extra_dw.rows() == 0) {
+              dw_scheme.resize (0, 0);
+              dwscheme_manip = scheme_manip_t::ERASE;
+            } else {
+              concat_scheme (dw_scheme, extra_dw);
+            }
+            break;
+          case scheme_manip_t::ERASE:
+            break;
+        }
+
+        switch (pescheme_manip) {
+          case scheme_manip_t::ABSENT:
+            if (extra_pe.rows() > 0)
+              pescheme_manip = scheme_manip_t::ERASE;
+            break;
+          case scheme_manip_t::MERGE:
+            assert(false);
+            throw Exception("Logic error in header key-value merge of PE scheme");
+          case scheme_manip_t::CONCAT:
+            if (extra_pe.rows() == 0) {
+              pe_scheme.resize (0, 0);
+              pescheme_manip = scheme_manip_t::ERASE;
+            } else {
+              concat_scheme (pe_scheme, extra_pe);
+            }
+            break;
+          case scheme_manip_t::ERASE:
+            break;
+        }
+
+        // Merge with modified key-value contents where these schemes have been removed
+        DWI::clear_DW_scheme(kv);
+        Metadata::PhaseEncoding::clear_scheme(kv);
+        result.merge_keyval(kv);
+
+      } else { // Axis of concatenation is not 3; can do a straight merge
+        result.merge_keyval (H.keyval());
+      }
 
       // Resolve discrepancies in datatype;
       //   also throw an exception if such mismatch is not permitted
@@ -813,10 +873,33 @@ namespace MR
         result.datatype() = (result.datatype()() & DataType::Attributes) + (H.datatype()() & DataType::Type);
     }
 
-    if (axis_to_concat == 3) {
-      DWI::set_DW_scheme (result, dw_scheme);
-      Metadata::PhaseEncoding::set_scheme (result.keyval(), pe_scheme);
+    // If manually concatenating these data along axis 3,
+    //   need to finalise after the last header has been processed
+    switch (dwscheme_manip) {
+      case scheme_manip_t::ABSENT:
+      case scheme_manip_t::MERGE:
+        break;
+      case scheme_manip_t::CONCAT:
+        DWI::set_DW_scheme(result, dw_scheme);
+        break;
+      case scheme_manip_t::ERASE:
+        WARN("Erasing diffusion gradient table: could not reconstruct across concatenated image headers");
+        DWI::clear_DW_scheme(result);
+        break;
     }
+    switch (pescheme_manip) {
+      case scheme_manip_t::ABSENT:
+      case scheme_manip_t::MERGE:
+        break;
+      case scheme_manip_t::CONCAT:
+        Metadata::PhaseEncoding::set_scheme (result.keyval(), pe_scheme);
+        break;
+      case scheme_manip_t::ERASE:
+        WARN("Erasing phase encoding information: could not reconstruct across concatenated image headers");
+        Metadata::PhaseEncoding::clear_scheme(result.keyval());
+        break;
+    }
+
     return result;
   }
 
