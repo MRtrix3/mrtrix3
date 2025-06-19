@@ -6,7 +6,7 @@ set(UNIT_TESTS_CPP_SRCS
     # icls.cpp
     # ordered_include.cpp
     # ordered_queue.cpp
-    # parse_ints.cpp
+    parse_ints_tests.cpp
     # sh_precomputer.cpp
     # shuffle.cpp
     # to.cpp
