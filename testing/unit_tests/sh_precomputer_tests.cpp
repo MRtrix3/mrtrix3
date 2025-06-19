@@ -14,37 +14,35 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <sstream>
-
-#include "command.h"
+#include "gtest/gtest.h"
 #include "math/SH.h"
 
-using namespace MR;
-using namespace App;
+#include <Eigen/Core>
+#include <cstddef>
 
-// clang-format off
-void usage() {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
-  SYNOPSIS = "Test the accuracy of the spherical harmonic precomputer";
-  REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
-}
-// clang-format on
+using namespace MR;
 
 using value_type = float;
 using coefs_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;
 using dir_type = Eigen::Matrix<value_type, 3, 1>;
 
-void run() {
+class SphericalHarmonicPrecomputerTest : public ::testing::Test {};
+
+TEST_F(SphericalHarmonicPrecomputerTest, Accuracy) {
   using namespace Math::SH;
 
   const int lmax = 8;
+  const float tolerance = 1e-3F;
 
-  coefs_type coefs = coefs_type::Random(NforL(lmax));
-  PrecomputedAL<value_type> precomputer(lmax);
+  const coefs_type coefs = coefs_type::Random(static_cast<Eigen::Index>(NforL(lmax)));
+  const PrecomputedAL<value_type> precomputer(lmax);
 
   for (size_t n = 0; n < 10000; ++n) {
     dir_type direction = dir_type::Random().normalized();
-    if (std::abs(value(coefs, direction, lmax) - precomputer.value(coefs, direction)) > 1e-3)
-      throw Exception("difference exceeds tolerance");
+    const value_type val_standard = value(coefs, direction, lmax);
+    const value_type val_precomputed = precomputer.value(coefs, direction);
+    ASSERT_NEAR(val_standard, val_precomputed, tolerance)
+        << "Difference exceeds tolerance at iteration " << n
+        << " for direction (" << direction.x() << ", " << direction.y() << ", " << direction.z() << ")";
   }
 }
