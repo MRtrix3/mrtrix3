@@ -2,7 +2,7 @@ include(GoogleTest)
 
 set(UNIT_TESTS_CPP_SRCS
     bitset_tests.cpp
-    # erfinv.cpp
+    erfinv_tests.cpp
     # icls.cpp
     # ordered_include.cpp
     # ordered_queue.cpp
