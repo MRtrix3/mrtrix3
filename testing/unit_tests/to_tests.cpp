@@ -20,6 +20,7 @@
 #include "mrtrix.h"
 
 #include <complex>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -260,7 +261,7 @@ class ToBoolTest : public ::testing::Test {};
 TEST_F(ToBoolTest, StringToBoolConversion) {
   for (size_t i = 0; i < kInputStrings.size(); ++i) {
     const std::string &input_string = kInputStrings[i];
-    bool expect_success = expectedBoolResults[i];
+    const bool expect_success = expectedBoolResults[i];
 
     if (expect_success) {
       EXPECT_NO_THROW(MR::to<bool>(input_string)) << "Input: \"" << input_string << "\" to bool should succeed.";
@@ -276,7 +277,7 @@ class ToIntTest : public ::testing::Test {};
 TEST_F(ToIntTest, StringToIntConversion) {
   for (size_t i = 0; i < kInputStrings.size(); ++i) {
     const std::string &input_string = kInputStrings[i];
-    bool expect_success = expectedIntResults[i];
+    const bool expect_success = expectedIntResults[i];
 
     if (expect_success) {
       EXPECT_NO_THROW(MR::to<int>(input_string)) << "Input: \"" << input_string << "\" to int should succeed.";
@@ -291,7 +292,7 @@ class ToFloatTest : public ::testing::Test {};
 TEST_F(ToFloatTest, StringToFloatConversion) {
   for (size_t i = 0; i < kInputStrings.size(); ++i) {
     const std::string &input_string = kInputStrings[i];
-    bool expect_success = expectedFloatResults[i];
+    const bool expect_success = expectedFloatResults[i];
 
     if (expect_success) {
       EXPECT_NO_THROW(MR::to<float>(input_string)) << "Input: \"" << input_string << "\" to float should succeed.";
@@ -307,7 +308,7 @@ class ToComplexFloatTest : public ::testing::Test {};
 TEST_F(ToComplexFloatTest, StringToComplexFloatConversion) {
   for (size_t i = 0; i < kInputStrings.size(); ++i) {
     const std::string &input_string = kInputStrings[i];
-    bool expect_success = expectedComplexResults[i];
+    const bool expect_success = expectedComplexResults[i];
 
     if (expect_success) {
       EXPECT_NO_THROW(MR::to<std::complex<float>>(input_string))

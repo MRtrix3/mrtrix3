@@ -30,10 +30,7 @@ using namespace MR;
 struct ParseIntsParam {
   std::string input_str;
   std::vector<int> expected_values;
-  enum class ExceptionPolicy : uint8_t{
-    Expected,
-    NotExpected
-  };
+  enum class ExceptionPolicy : uint8_t { Expected, NotExpected };
   ExceptionPolicy exception_policy = ExceptionPolicy::NotExpected;
 
   friend std::ostream &operator<<(std::ostream &os, const ParseIntsParam &p) {
@@ -44,7 +41,7 @@ struct ParseIntsParam {
 
 class ParseIntsTest : public ::testing::Test {};
 
-const std::array<ParseIntsParam, 20> parse_ints_test_cases {{
+const std::array<ParseIntsParam, 20> parse_ints_test_cases{{
     {"1", {1}},
     {"1,3,4", {1, 3, 4}},
     {"5:9", {5, 6, 7, 8, 9}},

@@ -5,7 +5,7 @@ set(UNIT_TESTS_CPP_SRCS
     erfinv_tests.cpp
     # icls.cpp
     # ordered_include.cpp
-    # ordered_queue.cpp
+    ordered_queue_tests.cpp
     parse_ints_tests.cpp
     sh_precomputer_tests.cpp
     # shuffle.cpp
