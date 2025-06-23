@@ -31,7 +31,7 @@ public:
            1.0e-9;
   }
 
-  static double current_time() const {
+  static double current_time() {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch())
                .count() *
            1.0e-9;
