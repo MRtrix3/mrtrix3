@@ -25,13 +25,13 @@ public:
   Timer() { start(); }
 
   void start() { from = std::chrono::high_resolution_clock::now(); }
-  double elapsed() {
+  double elapsed() const {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - from)
                .count() *
            1.0e-9;
   }
 
-  static double current_time() {
+  static double current_time() const {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch())
                .count() *
            1.0e-9;
