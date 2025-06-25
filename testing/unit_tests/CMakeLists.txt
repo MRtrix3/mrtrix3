@@ -60,7 +60,6 @@ set_target_properties(mrtrix-unit-tests PROPERTIES
 target_link_libraries(mrtrix-unit-tests PRIVATE
     mrtrix::core
     mrtrix::executable-version
-    GTest::gtest
     GTest::gtest_main
     Threads::Threads
 )
