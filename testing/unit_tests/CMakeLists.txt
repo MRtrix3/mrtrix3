@@ -39,7 +39,7 @@ endif()
 find_package(Python3
     COMPONENTS NumPy
 )
-find_package(Threads REQUIRED))
+find_package(Threads REQUIRED)
 
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
