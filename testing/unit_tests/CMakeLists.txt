@@ -39,6 +39,7 @@ endif()
 find_package(Python3
     COMPONENTS NumPy
 )
+find_package(Threads REQUIRED))
 
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
@@ -61,6 +62,7 @@ target_link_libraries(mrtrix-unit-tests PRIVATE
     mrtrix::executable-version
     GTest::gtest
     GTest::gtest_main
+    Threads::Threads
 )
 target_compile_definitions(mrtrix-unit-tests PRIVATE
     GTEST_DONT_DEFINE_FAIL
