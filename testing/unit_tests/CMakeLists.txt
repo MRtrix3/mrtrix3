@@ -50,7 +50,6 @@ dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 
 
 add_executable(mrtrix-unit-tests
-    # To avoid conflicts with MRtrix's FAIL macro in exception.h
     ${UNIT_TESTS_CPP_SRCS}
 )
 set_target_properties(mrtrix-unit-tests PROPERTIES
@@ -64,6 +63,7 @@ target_link_libraries(mrtrix-unit-tests PRIVATE
     Threads::Threads
 )
 target_compile_definitions(mrtrix-unit-tests PRIVATE
+    # To avoid conflicts with MRtrix's FAIL macro in exception.h
     GTEST_DONT_DEFINE_FAIL
 )
 gtest_discover_tests(mrtrix-unit-tests
