@@ -1,4 +1,11 @@
 include(GoogleTest)
+# STL Debug flags like _GLIBCXX_DEBUG change the ABI for a target,
+# this can cause issues when linking against gtest. To avoid this,
+# we build gtest with the same flags as the mrtrix::common library.
+target_compile_definitions(gtest PRIVATE
+    $<TARGET_PROPERTY:mrtrix::common,INTERFACE_COMPILE_DEFINITIONS>
+)
+
 
 set(UNIT_TESTS_CPP_SRCS
     bitset_tests.cpp
@@ -59,6 +66,7 @@ set_target_properties(mrtrix-unit-tests PROPERTIES
 target_link_libraries(mrtrix-unit-tests PRIVATE
     mrtrix::core
     mrtrix::executable-version
+    mrtrix::common
     GTest::gtest_main
     Threads::Threads
 )
