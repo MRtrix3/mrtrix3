@@ -14,21 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-#include "debug.h"
+#include "exception.h"
 #include "math/constrained_least_squares.h"
-#include "mrtrix.h"
+#include <cstddef>
+
+#include <Eigen/Core>
+#include <gtest/gtest.h>
 
 using namespace MR;
-using namespace App;
-
-// clang-format off
-void usage() {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
-  SYNOPSIS = "Test the constrained least-squares solver";
-  REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
-}
-// clang-format on
 
 using matrix_type = Eigen::MatrixXd;
 using vector_type = Eigen::VectorXd;
@@ -39,8 +32,7 @@ const size_t num_ineq = 290;
 const size_t num_eq = 10;
 
 // random test data generated in Matlab:
-
-double problem_matrix_data[] = {
+std::array problem_matrix_data = {
     0.814723686393179,   0.905791937075619,   0.126986816293506,    0.913375856139019,    0.63235924622541,
     0.0975404049994095,  0.278498218867048,   0.546881519204984,    0.957506835434298,    0.964888535199277,
     0.157613081677548,   0.970592781760616,   0.957166948242946,    0.485375648722841,    0.8002804688888,
@@ -1041,7 +1033,7 @@ double problem_matrix_data[] = {
     0.0848224596308363,  0.298132851184017,   0.91712935887688,     0.470518192745995,    0.269467553234544,
     0.76297047694478,    0.772172105182967,   0.0212996241096677,   0.879986192497539,    0.798170184137338,
     0.324165238549624,   0.669044416639185,   0.29629386335108,     0.92995204367677,     0.281960434914488};
-double inequality_constraint_matrix_data[] = {
+std::array inequality_constraint_matrix_data = {
     0.130651597357995,   0.0513557326803022,   0.627506476971335,    0.0290875518506981,   0.136194609644932,
     0.694555598689595,   0.515678957454232,    0.542582420314772,    0.808483508969732,    0.793686029689862,
     0.501867087038036,   0.276632057868203,    0.119664941102955,    0.886597760157759,    0.970288991112123,
@@ -3942,7 +3934,7 @@ double inequality_constraint_matrix_data[] = {
     0.898779900812044,   0.959210169820479,    0.844525897262394,    0.380965269011838,    0.0896018520718789,
     0.732737407850429,   0.682573594018766,    0.435168828529941,    0.143203771582761,    0.307105332011133,
     0.680316594528726,   0.503945045580246,    0.734657144040491,    0.648020233562405,    0.0678309914104192};
-double equality_constraint_matrix_data[] = {
+std::array equality_constraint_matrix_data = {
     0.0722903243316734,  0.814575295907754,   0.884313548710428,   0.370244622006705,  0.80034477029127,
     0.810674714668735,   0.178550443583786,   0.694293686193437,   0.660977176617282,  0.990062543598768,
     0.383514752132963,   0.730505181481838,   0.0761992894283375,  0.0746261574044129, 0.534884979602282,
@@ -4044,7 +4036,7 @@ double equality_constraint_matrix_data[] = {
     0.421714971604656,   0.558692031556859,   0.300660109775817,   0.735579040615798,  0.340174651164455,
     0.0446923134250257,  0.408185331322768,   0.32218135106595,    0.358314252710203,  0.0542195484063197};
 
-double problem_vector_data[] = {
+std::array problem_vector_data = {
     0.168879971344252, 0.745166604030062,  0.477134351507709,   0.653444541099485, 0.966575933053896,
     0.313027488227721, 0.0764394578120781, 0.791415146963651,   0.365383979290258, 0.585099389225412,
     0.183336706183362, 0.0769189422460057, 0.153662766530705,   0.826875990170966, 0.300956742633309,
@@ -4065,7 +4057,7 @@ double problem_vector_data[] = {
     0.857890771063757, 0.904728919137344,  0.29201988504298,    0.725869758147902, 0.339445804371305,
     0.272681226854142, 0.170274589896562,  0.664018225811431,   0.535851657583605, 0.829109418219232,
     0.26736208064657,  0.176155780622799,  0.431186366407187,   0.475655037798496, 0.78522090790695};
-double inequality_constraint_vector_data[] = {
+std::array inequality_constraint_vector_data = {
     1.252928412204,      -1.25147139522053,   -0.0824761930753967, 0.131336920725672,   0.420950869682912,
     1.44300974811023,    1.047174283506,      -0.987304116732754,  -0.960288626601099,  1.02221051237135,
     0.628662270317025,   0.180160276648956,   -0.0441304226145965, 0.592770298774949,   -0.467291664235938,
@@ -4124,20 +4116,20 @@ double inequality_constraint_vector_data[] = {
     1.22319299868122,    -0.49643606582539,   1.39752374677927,    1.78979005837436,    -1.00097170655804,
     0.565648363778986,   0.989216878601791,   0.340109855342457,   -0.924325043255378,  -1.3363390293427,
     1.22564671102823,    0.371191271151444,   -1.57898493764431,   -1.12456780781909,   1.02336977822904};
-double equality_constraint_vector_data[] = {0.748507645380094,
-                                            0.0797376003902225,
-                                            0.292543038806435,
-                                            0.416568365953175,
-                                            0.69978170374644,
-                                            0.229094331408131,
-                                            0.79898259841103,
-                                            0.760793310432207,
-                                            0.340752818464625,
-                                            0.23103188813534};
+std::array equality_constraint_vector_data = {0.748507645380094,
+                                              0.0797376003902225,
+                                              0.292543038806435,
+                                              0.416568365953175,
+                                              0.69978170374644,
+                                              0.229094331408131,
+                                              0.79898259841103,
+                                              0.760793310432207,
+                                              0.340752818464625,
+                                              0.23103188813534};
 
 // solutions obtained using Matlab's quadprog():
 
-double solution_data[] = {
+std::array solution_data = {
     -1.54947234325176,  0.259545183049741, 0.0374022489950132, 0.77750547958476,    -1.25801450662183,
     -1.88154867343434,  1.70994092666898,  0.625506965990297,  0.931598738873324,   -1.19672348208534,
     -0.288791641313397, 0.522679073901326, 0.441398936352697,  0.122831357359872,   0.429275688092712,
@@ -4148,7 +4140,7 @@ double solution_data[] = {
     0.259308649374783,  0.399062481995456, 0.410063542023687,  -0.0657370575432304, -1.26854315037399,
     -0.893961712559284, 0.445506586037936, -0.866067527224422, -0.421977537544534,  0.113013912336643,
     0.0582328718205902, 0.612082712005026, 0.428693628945845,  1.16944645740358,    1.65533762500153};
-double solution_no_eq_data[] = {
+std::array solution_no_eq_data = {
     0.100557011294565,   0.0774609022426853,  0.0511825083173843,  -0.166122333116954, 0.577774848029813,
     0.167095709499533,   -0.140736741762911,  1.05265237884383,    0.12834718765109,   0.365896008127372,
     0.111271087791453,   0.0153667809055645,  -0.246807732095477,  -0.139250571454491, 0.236124574799001,
@@ -4159,7 +4151,7 @@ double solution_no_eq_data[] = {
     0.0209427776415292,  0.175058502358357,   0.235111094823552,   0.0365209820095678, -0.40125271484762,
     -0.12199466629301,   0.43519716876162,    -0.482182232688658,  0.163890165749847,  0.123599044673034,
     -0.0856983578508494, -0.507111670952678,  -0.586611374955362,  0.145341396041547,  0.0243483540569064};
-double solution_zero_data[] = {
+std::array solution_zero_data = {
     -0.0909876170384021, 0.0905047474180401,  0.0912146643146082,  -0.00500809444016724, -0.125019239792976,
     -0.112066412721407,  0.0554789408971033,  -0.0833658981061983, -0.0238835978767787,  -0.105887031589131,
     0.0526796937321079,  0.201284689770002,   0.0721764896728619,  -0.0379460881753516,  0.0977677810157743,
@@ -4170,7 +4162,7 @@ double solution_zero_data[] = {
     0.0858754522332255,  -0.0199266124840442, 0.0975342988386541,  -0.0351693406381735,  0.0705218609687235,
     -0.212481180391147,  0.0566695604659621,  -0.0632125543048537, -0.115779248671975,   -0.0521777434064297,
     0.207261330706659,   0.0500968164510367,  0.0858132816924573,  0.177238850106903,    0.0818369263626538};
-double solution_no_eq_zero_data[] = {
+std::array solution_no_eq_zero_data = {
     -0.00837671700845143, -0.0367253309698206, 0.0104643387030714,  0.0147362006591086,   0.0632112096198801,
     0.117805099714431,    -0.129446802361635,  0.122637558342626,   -0.0601966399354118,  0.087670298742532,
     -0.00856905269483837, 0.0838674363561341,  0.0262661237496275,  -0.0490305030097515,  0.12607905876157,
@@ -4182,60 +4174,71 @@ double solution_no_eq_zero_data[] = {
     0.0240887321065743,   -0.097566176239216,  0.172403189514966,   0.0101764577015725,   -0.0283474768894243,
     0.188454428558924,    0.0209083311843356,  -0.0866098351808266, -0.0835625666816506,  -0.104878298319644};
 
-void run() {
-
-  matrix_type problem_matrix = Eigen::Map<matrix_type>(problem_matrix_data, num_sig, num_coef);
-  matrix_type inequality_constraint_matrix =
-      Eigen::Map<matrix_type>(inequality_constraint_matrix_data, num_ineq, num_coef);
-  matrix_type equality_constraint_matrix = Eigen::Map<matrix_type>(equality_constraint_matrix_data, num_eq, num_coef);
-  vector_type problem_vector = Eigen::Map<vector_type>(problem_vector_data, num_sig);
-  vector_type inequality_constraint_vector = Eigen::Map<vector_type>(inequality_constraint_vector_data, num_ineq);
-  vector_type equality_constraint_vector = Eigen::Map<vector_type>(equality_constraint_vector_data, num_eq);
-  vector_type solution = Eigen::Map<vector_type>(solution_data, num_coef);
-  vector_type solution_no_eq = Eigen::Map<vector_type>(solution_no_eq_data, num_coef);
-  vector_type solution_zero = Eigen::Map<vector_type>(solution_zero_data, num_coef);
-  vector_type solution_no_eq_zero = Eigen::Map<vector_type>(solution_no_eq_zero_data, num_coef);
-
-  {
-    vector_type x;
-    Math::ICLS::Problem<double> problem(problem_matrix,
-                                        inequality_constraint_matrix,
-                                        equality_constraint_matrix,
-                                        inequality_constraint_vector,
-                                        equality_constraint_vector);
-    Math::ICLS::Solver<double> solve(problem);
-    solve(x, problem_vector);
-    if (!x.isApprox(solution, 1.0e-6))
-      throw Exception("ICLS solver test failed at test 1");
+class ICLSSolverTest : public ::testing::Test {
+protected:
+  void SetUp() override {
+    problem_matrix = Eigen::Map<matrix_type>(problem_matrix_data.data(), num_sig, num_coef);
+    inequality_constraint_matrix =
+        Eigen::Map<matrix_type>(inequality_constraint_matrix_data.data(), num_ineq, num_coef);
+    equality_constraint_matrix = Eigen::Map<matrix_type>(equality_constraint_matrix_data.data(), num_eq, num_coef);
+    problem_vector = Eigen::Map<vector_type>(problem_vector_data.data(), num_sig);
+    inequality_constraint_vector = Eigen::Map<vector_type>(inequality_constraint_vector_data.data(), num_ineq);
+    equality_constraint_vector = Eigen::Map<vector_type>(equality_constraint_vector_data.data(), num_eq);
+    solution = Eigen::Map<vector_type>(solution_data.data(), num_coef);
+    solution_no_eq = Eigen::Map<vector_type>(solution_no_eq_data.data(), num_coef);
+    solution_zero = Eigen::Map<vector_type>(solution_zero_data.data(), num_coef);
+    solution_no_eq_zero = Eigen::Map<vector_type>(solution_no_eq_zero_data.data(), num_coef);
   }
 
-  {
-    vector_type x;
-    Math::ICLS::Problem<double> problem(problem_matrix, inequality_constraint_matrix, equality_constraint_matrix);
-    Math::ICLS::Solver<double> solve(problem);
-    solve(x, problem_vector);
-    if (!x.isApprox(solution_zero, 1.0e-6))
-      throw Exception("ICLS solver test failed at test 2");
-  }
+  matrix_type problem_matrix;
+  matrix_type inequality_constraint_matrix;
+  matrix_type equality_constraint_matrix;
+  vector_type problem_vector;
+  vector_type inequality_constraint_vector;
+  vector_type equality_constraint_vector;
+  vector_type solution;
+  vector_type solution_no_eq;
+  vector_type solution_zero;
+  vector_type solution_no_eq_zero;
+};
 
-  {
-    vector_type x;
-    Math::ICLS::Problem<double> problem(problem_matrix, inequality_constraint_matrix, inequality_constraint_vector);
-    Math::ICLS::Solver<double> solve(problem);
-    solve(x, problem_vector);
-    if (!x.isApprox(solution_no_eq, 1.0e-6))
-      throw Exception("ICLS solver test failed at test 3");
-  }
+TEST_F(ICLSSolverTest, FullProblem) {
+  vector_type x;
+  const Math::ICLS::Problem<double> problem(problem_matrix,
+                                            inequality_constraint_matrix,
+                                            equality_constraint_matrix,
+                                            inequality_constraint_vector,
+                                            equality_constraint_vector);
+  Math::ICLS::Solver<double> solve(problem);
+  solve(x, problem_vector);
+  ASSERT_TRUE(x.isApprox(solution, 1.0e-6));
+}
 
-  {
-    vector_type x;
-    Math::ICLS::Problem<double> problem(problem_matrix, inequality_constraint_matrix);
-    Math::ICLS::Solver<double> solve(problem);
-    solve(x, problem_vector);
-    if (!x.isApprox(solution_no_eq_zero, 1.0e-6))
-      throw Exception("ICLS solver test failed at test 4");
-  }
+TEST_F(ICLSSolverTest, ZeroConstraintVectors) {
+  vector_type x;
+  const Math::ICLS::Problem<double> problem(problem_matrix, inequality_constraint_matrix, equality_constraint_matrix);
+  Math::ICLS::Solver<double> solve(problem);
+  solve(x, problem_vector);
+  ASSERT_TRUE(x.isApprox(solution_zero, 1.0e-6));
+}
 
+TEST_F(ICLSSolverTest, InequalityOnly) {
+  vector_type x;
+  const Math::ICLS::Problem<double> problem(problem_matrix, inequality_constraint_matrix, inequality_constraint_vector);
+  Math::ICLS::Solver<double> solve(problem);
+  solve(x, problem_vector);
+  ASSERT_TRUE(x.isApprox(solution_no_eq, 1.0e-6));
+}
+
+TEST_F(ICLSSolverTest, InequalityOnlyZeroVector) {
+  vector_type x;
+  const Math::ICLS::Problem<double> problem(problem_matrix, inequality_constraint_matrix);
+  Math::ICLS::Solver<double> solve(problem);
+  solve(x, problem_vector);
+  ASSERT_TRUE(x.isApprox(solution_no_eq_zero, 1.0e-6));
+}
+
+TEST_F(ICLSSolverTest, CombinedConstraints) {
   matrix_type constraint_matrix(inequality_constraint_matrix.rows() + equality_constraint_matrix.rows(),
                                 inequality_constraint_matrix.cols());
   constraint_matrix.topRows(inequality_constraint_matrix.rows()) = inequality_constraint_matrix;
@@ -4245,15 +4248,10 @@ void run() {
   constraint_vector.head(inequality_constraint_vector.rows()) = inequality_constraint_vector;
   constraint_vector.tail(equality_constraint_vector.rows()) = equality_constraint_vector;
 
-  {
-    vector_type x;
-    Math::ICLS::Problem<double> problem(
-        problem_matrix, constraint_matrix, constraint_vector, equality_constraint_vector.size());
-    Math::ICLS::Solver<double> solve(problem);
-    solve(x, problem_vector);
-    if (!x.isApprox(solution, 1.0e-6))
-      throw Exception("ICLS solver test failed at test 4");
-  }
-
-  CONSOLE("All tests passed OK");
+  vector_type x;
+  const Math::ICLS::Problem<double> problem(
+      problem_matrix, constraint_matrix, constraint_vector, equality_constraint_vector.size());
+  Math::ICLS::Solver<double> solve(problem);
+  solve(x, problem_vector);
+  ASSERT_TRUE(x.isApprox(solution, 1.0e-6));
 }

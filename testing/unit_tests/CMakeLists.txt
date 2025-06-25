@@ -3,12 +3,12 @@ include(GoogleTest)
 set(UNIT_TESTS_CPP_SRCS
     bitset_tests.cpp
     erfinv_tests.cpp
-    # icls.cpp
-    # ordered_include.cpp
+    icls_tests.cpp
     ordered_queue_tests.cpp
     parse_ints_tests.cpp
+    roi_tests.cpp
     sh_precomputer_tests.cpp
-    # shuffle.cpp
+    shuffle_tests.cpp
     to_tests.cpp
 )
 

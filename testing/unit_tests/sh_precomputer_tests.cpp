@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gtest/gtest.h"
 #include "math/SH.h"
+#include "gtest/gtest.h"
 
 #include <Eigen/Core>
 #include <cstddef>
@@ -42,7 +42,7 @@ TEST_F(SphericalHarmonicPrecomputerTest, Accuracy) {
     const value_type val_standard = value(coefs, direction, lmax);
     const value_type val_precomputed = precomputer.value(coefs, direction);
     ASSERT_NEAR(val_standard, val_precomputed, tolerance)
-        << "Difference exceeds tolerance at iteration " << n
-        << " for direction (" << direction.x() << ", " << direction.y() << ", " << direction.z() << ")";
+        << "Difference exceeds tolerance at iteration " << n << " for direction (" << direction.x() << ", "
+        << direction.y() << ", " << direction.z() << ")";
   }
 }
