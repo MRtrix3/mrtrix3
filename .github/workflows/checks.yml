@@ -58,7 +58,7 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -117,7 +117,7 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -172,7 +172,7 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -244,7 +244,7 @@ jobs:
         run: cmake --build build
 
       - name: unit tests
-        run: cd build && ctest -L unittest --output-on-failure
+        run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
       - name: binary tests
         run: cd build && ctest -L binary --output-on-failure

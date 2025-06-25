@@ -1,13 +1,22 @@
+include(GoogleTest)
+# STL Debug flags like _GLIBCXX_DEBUG change the ABI for a target,
+# this can cause issues when linking against gtest. To avoid this,
+# we build gtest with the same flags as the mrtrix::common library.
+target_compile_definitions(gtest PRIVATE
+    $<TARGET_PROPERTY:mrtrix::common,INTERFACE_COMPILE_DEFINITIONS>
+)
+
+
 set(UNIT_TESTS_CPP_SRCS
-    bitset.cpp
-    erfinv.cpp
-    icls.cpp
-    ordered_include.cpp
-    ordered_queue.cpp
-    parse_ints.cpp
-    sh_precomputer.cpp
-    shuffle.cpp
-    to.cpp
+    bitset_tests.cpp
+    erfinv_tests.cpp
+    icls_tests.cpp
+    ordered_queue_tests.cpp
+    parse_ints_tests.cpp
+    roi_tests.cpp
+    sh_precomputer_tests.cpp
+    shuffle_tests.cpp
+    to_tests.cpp
 )
 
 set(UNIT_TESTS_BASH_SRCS
@@ -37,6 +46,7 @@ endif()
 find_package(Python3
     COMPONENTS NumPy
 )
+find_package(Threads REQUIRED)
 
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
@@ -45,24 +55,28 @@ list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/testing/tools)
 list(APPEND EXEC_DIRS "$ENV{PATH}")
 dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 
-function(add_cpp_unit_test FILE_SRC)
-    get_filename_component(NAME ${FILE_SRC} NAME_WE)
-    add_executable(${NAME} ${FILE_SRC})
-    target_link_libraries(${NAME} PRIVATE
-        mrtrix::core
-        mrtrix::executable-version
-        mrtrix::tests-lib
-    )
-    set_target_properties(${NAME} PROPERTIES
-        LINK_DEPENDS_NO_SHARED true
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
-    )
-    add_test(
-        NAME unittest_${NAME}
-        COMMAND ${BASH} -c "$<TARGET_FILE:${NAME}>"
-    )
-    set_tests_properties(unittest_${NAME} PROPERTIES LABELS "unittest")
-endfunction()
+
+add_executable(mrtrix-unit-tests
+    ${UNIT_TESTS_CPP_SRCS}
+)
+set_target_properties(mrtrix-unit-tests PROPERTIES
+    LINK_DEPENDS_NO_SHARED true
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
+)
+target_link_libraries(mrtrix-unit-tests PRIVATE
+    mrtrix::core
+    mrtrix::executable-version
+    mrtrix::common
+    GTest::gtest_main
+    Threads::Threads
+)
+target_compile_definitions(mrtrix-unit-tests PRIVATE
+    # To avoid conflicts with MRtrix's FAIL macro in exception.h
+    GTEST_DONT_DEFINE_FAIL
+)
+gtest_discover_tests(mrtrix-unit-tests
+    PROPERTIES LABELS "unittest"
+)
 
 include(BashTests)
 function (add_bash_unit_test FILE_SRC)
@@ -76,10 +90,6 @@ function (add_bash_unit_test FILE_SRC)
         LABELS "unittest;${NAME}"
     )
 endfunction()
-
-foreach(UNIT_TEST ${UNIT_TESTS_CPP_SRCS})
-    add_cpp_unit_test(${UNIT_TEST})
-endforeach()
 
 foreach(UNIT_TEST ${UNIT_TESTS_BASH_SRCS})
     add_bash_unit_test(${UNIT_TEST})
