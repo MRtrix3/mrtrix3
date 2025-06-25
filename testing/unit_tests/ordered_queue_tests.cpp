@@ -16,12 +16,15 @@
 
 #include "gtest/gtest.h"
 
+#include "exception.h"
 #include "ordered_thread_queue.h"
+#include "thread.h"
 #include "thread_queue.h"
 #include "timer.h"
 
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 
 using namespace MR;
@@ -103,7 +106,7 @@ protected:
   void TearDown() override { std::cerr << "\n"; }
 
   enum class OrderEnforcement : uint8_t { Enforce, DoNotEnforce };
-  void PerformChecksAndLog(const MR::Timer &timer, const SinkFunctor &sink, OrderEnforcement enforce_order) const {
+  static void PerformChecksAndLog(const MR::Timer &timer, const SinkFunctor &sink, OrderEnforcement enforce_order) {
 
     ASSERT_EQ(sink.items_received_count, kDefaultSampleSize)
         << ": Sample size mismatch. Expected " << kDefaultSampleSize << ", got " << sink.items_received_count << ".";

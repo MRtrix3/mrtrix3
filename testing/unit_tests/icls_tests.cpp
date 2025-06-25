@@ -16,10 +16,12 @@
 
 #include "exception.h"
 #include "math/constrained_least_squares.h"
-#include <cstddef>
 
-#include <Eigen/Core>
 #include <gtest/gtest.h>
+#include <Eigen/Core>
+
+#include <cstddef>
+#include <vector>
 
 using namespace MR;
 
