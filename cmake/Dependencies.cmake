@@ -99,18 +99,20 @@ else()
     endif()
 endif()
 
-# Google Test
-set(googletest_version 1.17.0)
-if(MRTRIX_LOCAL_DEPENDENCIES)
-    set(googletest_url ${MRTRIX_DEPENDENCIES_DIR}/googletest-${googletest_version}.tar.gz)
-else()
-    set(googletest_url "https://github.com/google/googletest/releases/download/v${googletest_version}/googletest-${googletest_version}.tar.gz")
-endif()
+if(MRTRIX_BUILD_TESTS)
+    # Google Test
+    set(googletest_version 1.17.0)
+    if(MRTRIX_LOCAL_DEPENDENCIES)
+        set(googletest_url ${MRTRIX_DEPENDENCIES_DIR}/googletest-${googletest_version}.tar.gz)
+    else()
+        set(googletest_url "https://github.com/google/googletest/releases/download/v${googletest_version}/googletest-${googletest_version}.tar.gz")
+    endif()
 
-FetchContent_Declare(
-    googletest
-    DOWNLOAD_EXTRACT_TIMESTAMP ON
-    URL ${googletest_url}
-)
-FetchContent_MakeAvailable(googletest)
+    FetchContent_Declare(
+        googletest
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        URL ${googletest_url}
+    )
+    FetchContent_MakeAvailable(googletest)
+endif()
 
