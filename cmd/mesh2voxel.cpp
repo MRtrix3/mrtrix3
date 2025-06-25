@@ -62,6 +62,7 @@ void run ()
   // Get the template image
   Header template_header = Header::open (argument[1]);
   check_3D_nonunity (template_header);
+  template_header.ndim() = 3;
 
   // Ensure that a floating-point representation is used for the output image,
   //   as is required for representing partial volumes
