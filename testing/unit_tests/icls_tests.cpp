@@ -17,8 +17,8 @@
 #include "exception.h"
 #include "math/constrained_least_squares.h"
 
-#include <gtest/gtest.h>
 #include <Eigen/Core>
+#include <gtest/gtest.h>
 
 #include <cstddef>
 #include <vector>
