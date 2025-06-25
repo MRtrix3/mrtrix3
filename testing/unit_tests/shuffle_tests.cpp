@@ -51,6 +51,8 @@ struct ShufflerParams {
   bool test_uniqueness;
 };
 
+void PrintTo(const ShufflerParams &params, ::std::ostream *os) { *os << "{" << params.name << "}"; }
+
 std::vector<ShufflerParams> GetShufflerTestParams() {
   std::vector<ShufflerParams> all_params;
 
