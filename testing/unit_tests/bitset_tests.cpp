@@ -167,9 +167,10 @@ TEST_P(BitSetParamTest, BitAccessAndProgressiveModification) {
 
       EXPECT_EQ(data.count(), expected_true_bits_count)
           << "Count mismatch after flipping " << num_distinct_bits_now_value_to_set << " distinct bits (0 to "
-          << index_to_toggle << "). " << "Initial fill was: " << initial_fill_value
-          << ", target bit value is: " << value_to_set << ". Data: " << MR::str(data)
-          << ". Expected true_bits_count: " << expected_true_bits_count << ". Flipped index: " << index_to_toggle;
+          << index_to_toggle << "). "
+          << "Initial fill was: " << initial_fill_value << ", target bit value is: " << value_to_set
+          << ". Data: " << MR::str(data) << ". Expected true_bits_count: " << expected_true_bits_count
+          << ". Flipped index: " << index_to_toggle;
     }
 
     if (value_to_set) {
