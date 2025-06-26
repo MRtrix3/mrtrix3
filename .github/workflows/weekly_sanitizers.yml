@@ -1,0 +1,62 @@
+name: Sanitizers checks
+
+on:
+  workflow_dispatch:
+  # Run this every Sunday at midnight
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  linux-clang-build:
+    runs-on: ubuntu-latest
+
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+
+    strategy:
+        fail-fast: false
+        matrix:
+            sanitizer: [address, thread, undefined]
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+        ref: dev
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install clang llvm qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.16.3'
+
+    - name: Print CMake version
+      run: cmake --version
+
+    - name: configure
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=RelWithDebInfo
+        -D MRTRIX_BUILD_TESTS=ON
+        -D ECM_ENABLE_SANITIZERS=${{ matrix.sanitizer }}
+        -D CMAKE_C_COMPILER=clang
+        -D CMAKE_CXX_COMPILER=clang++
+
+    - name: build
+      run: cmake --build build
+
+    - name: binary tests
+      run: cd build && ctest -L binary --output-on-failure
+
+    - name: unit tests
+      run: cd build && ctest -L unittest --output-on-failure

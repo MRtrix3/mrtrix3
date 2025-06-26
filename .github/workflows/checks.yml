@@ -8,6 +8,10 @@ on:
       types: [checks_requested]
       branches: [master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   linux-clang-build:
     runs-on: ubuntu-latest
@@ -25,10 +29,10 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-distutils python3-numpy
+         sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
@@ -86,10 +90,10 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy
+         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
@@ -141,12 +145,12 @@ jobs:
          brew install numpy
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
-        cmakeVersion: '3.21.0'
+        cmakeVersion: '3.22.0'
 
     - name: Print CMake version
       run: cmake --version
@@ -158,6 +162,7 @@ jobs:
         -B build
         -G Ninja
         -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_FIND_FRAMEWORK=LAST
         -D MRTRIX_BUILD_TESTS=ON
         -D MRTRIX_STL_DEBUGGING=ON
         -D MRTRIX_USE_PCH=OFF
@@ -217,7 +222,7 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
 
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.4
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: export sccache to msys2 shell
         run: |
