@@ -176,16 +176,16 @@ template <typename F> void Estimate<F>::operator()(Image<F> &dwi) {
     assign_pos_of(ss_index).to(exports.voxelcount);
     exports.voxelcount.value() = n;
   }
-  if (exports.patchcount.valid()) {
+  if (exports.patchcount.valid() || exports.saving_eigenspectra()) {
     std::lock_guard<std::mutex> lock(Estimate<F>::mutex);
-    for (const auto &v : patch.voxels) {
-      assign_pos_of(v.index).to(exports.patchcount);
-      exports.patchcount.value() = exports.patchcount.value() + 1;
+    if (exports.patchcount.valid()) {
+      for (const auto &v : patch.voxels) {
+        assign_pos_of(v.index).to(exports.patchcount);
+        exports.patchcount.value() = exports.patchcount.value() + 1;
+      }
     }
-  }
-  if (exports.saving_eigenspectra()) {
-    std::lock_guard<std::mutex> lock(Estimate<F>::mutex);
-    exports.add_eigenspectrum(s);
+    if (exports.saving_eigenspectra())
+      exports.add_eigenspectrum(s);
   }
 }
 
