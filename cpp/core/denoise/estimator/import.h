@@ -37,7 +37,7 @@ public:
                     const ssize_t n,                              //
                     const ssize_t rp,                             //
                     const Eigen::Vector3d &pos) const final {     //
-    assert(s.size() == r);
+    assert(s.size() == std::min(m, n));
     const ssize_t qnz = dimlong_nonzero(m, n, rp);
     const ssize_t rz = rank_zero(m, n, rp);
     const ssize_t rnz = rank_nonzero(m, n, rp);

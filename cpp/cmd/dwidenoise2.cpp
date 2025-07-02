@@ -149,15 +149,15 @@ void usage() {
 
   OPTIONS
   + OptionGroup("Options for modifying PCA computations")
+  + Option("iterative",
+           "EXPERIMENTAL; perform iterative refinement of noise level estimation"
+           " prior to final denoising step")
+
   + datatype_option
   + Estimator::estimator_denoise_options
   + Kernel::options
   + subsample_option
   + precondition_options(true)
-
-  + Option("iterative",
-           "EXPERIMENTAL; perform iterative refinement of noise level estimation"
-           " prior to final denoising step")
 
   + OptionGroup("Options that affect reconstruction of the output image series")
   + Option("filter",
@@ -201,6 +201,13 @@ void usage() {
   + Option("eigenspectra",
            "Output a matrix containing the spectra of eigenvalues across patches")
     + Argument("file").type_file_out()
+  + Option("residual_statistics",
+           "export images containing statistics of the residuals between input and denoised data,"
+          " with image paths in order representing: mean, variance, maxabs")
+    + Argument("mean_image").type_image_out()
+    + Argument("variance_image").type_image_out()
+    + Argument("maxabs_image").type_image_out()
+
 
   + OptionGroup("Options for debugging the operation of sliding window kernels")
   + Option("max_dist",
@@ -234,6 +241,19 @@ const std::vector<Iterative::Iteration> default_iterations({{{8, 8, 8}, 16.0, fa
                                                             {{4, 4, 4}, 4.0, false},   //
                                                             {{2, 2, 2}, 1.0, true},    //
                                                             {{2, 2, 2}, 1.0, false}}); //
+
+// TODO Improve this
+template <typename T>
+typename std::enable_if<std::is_same<T, cfloat>::value, default_type>::type modulus(const cfloat in) {
+  return Math::pow2(in.real()) + Math::pow2(in.imag());
+}
+template <typename T>
+typename std::enable_if<std::is_same<T, cdouble>::value, default_type>::type modulus(const cdouble in) {
+  return Math::pow2(in.real()) + Math::pow2(in.imag());
+}
+template <typename T> typename std::enable_if<!is_complex<T>::value, default_type>::type modulus(const T in) {
+  return Math::pow2(in);
+}
 
 template <typename T>
 void run(Header &dwi,
@@ -302,7 +322,7 @@ void run(Header &dwi,
                 final_exports,
                 preconditioner.null_rank());
 
-  Image<T> output = Image<T>::create(output_name, dwi);
+  Image<T> output = Image<T>::create(output_name, preconditioner.header());
   Image<T> output_preconditioned;
   opt = get_options("preconditioned_output");
   if (!opt.empty())
@@ -375,6 +395,39 @@ void run(Header &dwi,
                                                                     double(final_exports.noise_out.index(2))}));
       final_exports.noise_out.value() *= vst_interp.value();
     }
+  }
+
+  opt = get_options("residual_statistics");
+  if (!opt.empty()) {
+    Header H_resstats_complex(dwi);
+    if (dwi.datatype().is_integer()) {
+      H_resstats_complex.datatype() = DataType::Float32;
+      H_resstats_complex.datatype().set_byte_order_native();
+    }
+    H_resstats_complex.ndim() = 3;
+    Header H_resstats_real(H_resstats_complex);
+    H_resstats_real.datatype() = DataType::Float32;
+    H_resstats_real.datatype().set_byte_order_native();
+    Image<T> residuals_mean = Image<T>::create(opt[0][0], H_resstats_complex);
+    Image<T> residuals_m2 = Image<T>::scratch(H_resstats_complex);
+    Image<float> residuals_std = Image<float>::create(opt[0][1], H_resstats_real);
+    Image<float> residuals_maxabs = Image<float>::create(opt[0][2], H_resstats_real);
+    size_t num_volumes = dwi.size(3);
+    for (size_t axis = 4; axis != dwi.ndim(); ++axis)
+      num_volumes *= dwi.size(axis);
+    size_t count = 0;
+    for (auto l = Loop("Computing statistics of denoising residuals", dwi)(input, output); l; ++l) {
+      assign_pos_of(input, 0, 3).to(residuals_mean, residuals_m2, residuals_maxabs);
+      const T diff = T(output.value()) - T(input.value());
+      count++;
+      const T delta = diff - T(residuals_mean.value());
+      residuals_mean.value() += T(delta / default_type(count));
+      const T delta2 = diff - T(residuals_mean.value());
+      residuals_m2.value() += delta * delta2;
+      residuals_maxabs.value() = std::max(default_type(residuals_maxabs.value()), default_type(std::abs(diff)));
+    }
+    for (auto l = Loop(H_resstats_real)(residuals_m2, residuals_std); l; ++l)
+      residuals_std.value() = std::sqrt(std::abs(T(residuals_m2.value())) / count);
   }
 }
 
