@@ -34,12 +34,14 @@ List of MRtrix3 commands
     commands/dwi2adc
     commands/dwi2fod
     commands/dwi2mask
+    commands/dwi2noise
     commands/dwi2response
     commands/dwi2tensor
     commands/dwibiascorrect
     commands/dwibiasnormmask
     commands/dwicat
     commands/dwidenoise
+    commands/dwidenoise2
     commands/dwiextract
     commands/dwifslpreproc
     commands/dwigradcheck
@@ -167,12 +169,14 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`dwi2adc`, "Calculate ADC and/or IVIM parameters."
     |cpp.png|, :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
     |python.png|, :ref:`dwi2mask`, "Generate a binary mask from DWI data"
+    |cpp.png|, :ref:`dwi2noise`, "Noise level estimation using Marchenko-Pastur PCA"
     |python.png|, :ref:`dwi2response`, "Estimate response function(s) for spherical deconvolution"
     |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     |python.png|, :ref:`dwibiascorrect`, "Perform B1 field inhomogeneity correction for a DWI volume series"
     |python.png|, :ref:`dwibiasnormmask`, "Perform a combination of bias field correction, intensity normalisation, and mask derivation, for DWI data"
     |python.png|, :ref:`dwicat`, "Concatenating multiple DWI series accounting for differential intensity scaling"
     |cpp.png|, :ref:`dwidenoise`, "dMRI noise level estimation and denoising using Marchenko-Pastur PCA"
+    |cpp.png|, :ref:`dwidenoise2`, "Improved dMRI denoising using Marchenko-Pastur PCA"
     |cpp.png|, :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
     |python.png|, :ref:`dwifslpreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
