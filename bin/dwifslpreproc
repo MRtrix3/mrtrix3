@@ -823,9 +823,9 @@ def execute(): #pylint: disable=unused-variable
     # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
     #   details may vary between volumes
     if dwi_manual_pe_scheme:
-      run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + ' - | mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+      run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + ' - | mrconvert - dummy.nii -strides -1,+2,+3,+4 -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
     else:
-      run.command('mrinfo ' + dwi_path + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+      run.command('mrconvert ' + dwi_path + ' dummy.nii -strides -1,+2,+3,+4 -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
 
 
     # Update: Call applytopup separately for each unique phase-encoding
