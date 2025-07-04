@@ -13,5 +13,6 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -readability-braces-around-statements,
   -readability-identifier-length,
+  -readability-function-cognitive-complexity,
   -readability-magic-numbers,
 HeaderFilterRegex: '*.(h|hpp)'
