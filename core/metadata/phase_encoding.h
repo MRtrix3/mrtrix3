@@ -117,6 +117,8 @@ namespace MR {
         }
 
         if (Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
+          WARN("External phase encoding table \"" + path + "\" for image \"" + header.name() + "\""
+               " may not be suitable for FSL topup; consider use of -eport_pe_topup instead");
           save_table(transform_for_nifti_write(PE, header), path, true);
         } else {
           save_table(PE, path, true);
@@ -131,6 +133,7 @@ namespace MR {
           throw Exception(e, "Cannot export phase-encoding table to file \"" + path + "\"");
         }
 
+        // TODO Should this check be in place?
         if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"}))
           throw Exception("Only export phase encoding table to FSL topup format"
                           " in conjunction with MGH / NIfTI format images");
