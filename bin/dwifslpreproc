@@ -805,7 +805,7 @@ def execute(): #pylint: disable=unused-variable
 
 
     # Do the conversion in preparation for topup
-    run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + se_epi_manual_pe_table_option + ' -strides -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+    run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + se_epi_manual_pe_table_option + ' -strides -1,+2,+3,+4 -export_pe_topup topup_datain.txt')
     app.cleanup(se_epi_path)
 
     # Run topup
