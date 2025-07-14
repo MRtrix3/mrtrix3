@@ -118,7 +118,7 @@ namespace MR {
 
         if (Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
           WARN("External phase encoding table \"" + path + "\" for image \"" + header.name() + "\""
-               " may not be suitable for FSL topup; consider use of -eport_pe_topup instead");
+               " may not be suitable for FSL topup; consider use of -export_pe_topup instead");
           save_table(transform_for_nifti_write(PE, header), path, true);
         } else {
           save_table(PE, path, true);
