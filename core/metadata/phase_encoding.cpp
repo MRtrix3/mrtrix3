@@ -27,8 +27,6 @@ namespace MR {
       using namespace App;
       const OptionGroup ImportOptions =
         OptionGroup("Options for importing phase-encode tables")
-        + Option("import_pe_table", "import a phase-encoding table from file")
-          + Argument("file").type_file_in()
         + Option("import_pe_topup", "import a phase-encoding table intended for FSL TOPUP from file")
           + Argument("file").type_file_in()
         + Option("import_pe_eddy", "import phase-encoding information from an EDDY-style config / index file pair")
@@ -46,8 +44,6 @@ namespace MR {
 
       const OptionGroup ExportOptions =
         OptionGroup("Options for exporting phase-encode tables")
-        + Option("export_pe_table", "export phase-encoding table to file")
-          + Argument("file").type_file_out()
         + Option("export_pe_topup", "export phase-encoding table to a file intended for FSL topup")
           + Argument("file").type_file_out()
         + Option("export_pe_eddy", "export phase-encoding information to an EDDY-style config / index file pair")
@@ -184,18 +180,15 @@ namespace MR {
         DEBUG("searching for suitable phase encoding data...");
         using namespace App;
 
-        const auto opt_table = get_options("import_pe_table");
         const auto opt_topup = get_options("import_pe_topup");
         const auto opt_eddy = get_options("import_pe_eddy");
-        if (opt_table.size() + opt_topup.size() + opt_eddy.size() > 1)
+        if (opt_topup.size() + opt_eddy.size() > 1)
           throw Exception("Cannot specify more than one command-line option"
                           " for importing phase encoding information from external file(s)");
 
         scheme_type result;
         try {
-          if (!opt_table.empty())
-            result = load_table(opt_table[0][0], header);
-          else if (!opt_topup.empty())
+          if (!opt_topup.empty())
             result = load_topup(opt_topup[0][0], header);
           else if (!opt_eddy.empty())
             result = load_eddy(opt_eddy[0][0], opt_eddy[0][1], header);
@@ -351,29 +344,13 @@ namespace MR {
 
         auto scheme = parse_scheme(header.keyval(), header);
 
-        auto opt = get_options("export_pe_table");
-        if (!opt.empty())
-          save_table(check(scheme), header, opt[0][0]);
-
-        opt = get_options("export_pe_topup");
+        auto opt = get_options("export_pe_topup");
         if (!opt.empty())
           save_topup(check(scheme), header, opt[0][0]);
 
         opt = get_options("export_pe_eddy");
         if (!opt.empty())
           save_eddy(check(scheme), header, opt[0][0], opt[0][1]);
-      }
-
-
-
-      scheme_type load_table(const std::string& path, const Header& header) {
-        const scheme_type PE = load_matrix(path);
-        check(PE, header);
-        // As with JSON import, need to query the header to discover if the
-        //   strides / transform were modified on image load to make the image
-        //   data appear approximately axial, in which case we need to apply the
-        //   same transforms to the phase encoding data on load
-        return transform_for_image_load(PE, header);
       }
 
 
