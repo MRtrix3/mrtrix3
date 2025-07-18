@@ -410,7 +410,7 @@ void run ()
   auto opt = get_options("json_import");
   if (!opt.empty())
     File::JSON::load(header_in, opt[0][0]);
-  if (!get_options("import_pe_table").empty() || !get_options("import_pe_eddy").empty())
+  if (!get_options("import_pe_table").empty() || !get_options("import_pe_topup").empty() || !get_options("import_pe_eddy").empty())
     Metadata::PhaseEncoding::set_scheme(header_in.keyval(), Metadata::PhaseEncoding::get_scheme(header_in));
 
   Header header_out (header_in);

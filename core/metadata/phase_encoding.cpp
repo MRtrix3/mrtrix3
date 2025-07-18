@@ -27,7 +27,7 @@ namespace MR {
       using namespace App;
       const OptionGroup ImportOptions =
         OptionGroup("Options for importing phase-encode tables")
-        + Option("import_pe_table", "import a phase-encoding table from file")
+        + Option("import_pe_topup", "import a phase-encoding table intended for FSL TOPUP from file")
           + Argument("file").type_file_in()
         + Option("import_pe_eddy", "import phase-encoding information from an EDDY-style config / index file pair")
           + Argument("config").type_file_in()
@@ -44,11 +44,13 @@ namespace MR {
 
       const OptionGroup ExportOptions =
         OptionGroup("Options for exporting phase-encode tables")
-        + Option("export_pe_table", "export phase-encoding table to file")
+        + Option("export_pe_topup", "export phase-encoding table to a file intended for FSL topup")
           + Argument("file").type_file_out()
         + Option("export_pe_eddy", "export phase-encoding information to an EDDY-style config / index file pair")
           + Argument("config").type_file_out()
           + Argument("indices").type_file_out();
+
+
 
       void check(const scheme_type& PE) {
         if (PE.rows() == 0)
@@ -177,21 +179,20 @@ namespace MR {
       scheme_type get_scheme(const Header& header) {
         DEBUG("searching for suitable phase encoding data...");
         using namespace App;
-        scheme_type result;
 
+        const auto opt_topup = get_options("import_pe_topup");
+        const auto opt_eddy = get_options("import_pe_eddy");
+        if (opt_topup.size() + opt_eddy.size() > 1)
+          throw Exception("Cannot specify more than one command-line option"
+                          " for importing phase encoding information from external file(s)");
+
+        scheme_type result;
         try {
-          const auto opt_table = get_options("import_pe_table");
-          if (!opt_table.empty())
-            result = load(opt_table[0][0], header);
-          const auto opt_eddy = get_options("import_pe_eddy");
-          if (!opt_eddy.empty()) {
-            if (!opt_table.empty())
-              throw Exception("Phase encoding table can be provided"
-                              " using either -import_pe_table or -import_pe_eddy option,"
-                              " but NOT both");
+          if (!opt_topup.empty())
+            result = load_topup(opt_topup[0][0], header);
+          else if (!opt_eddy.empty())
             result = load_eddy(opt_eddy[0][0], opt_eddy[0][1], header);
-          }
-          if (opt_table.empty() && opt_eddy.empty())
+          else
             result = parse_scheme(header.keyval(), header);
         } catch (Exception &e) {
           throw Exception(e, "error importing phase encoding table for image \"" + header.name() + "\"");
@@ -207,6 +208,10 @@ namespace MR {
 
         return result;
       }
+
+
+
+
 
 
 
@@ -284,7 +289,7 @@ namespace MR {
 
 
 
-      void scheme2eddy(const scheme_type& PE, Eigen::MatrixXd& config, Eigen::Array<int, Eigen::Dynamic, 1>& indices) {
+      void topup2eddy(const scheme_type& PE, Eigen::MatrixXd& config, Eigen::Array<int, Eigen::Dynamic, 1>& indices) {
         try {
           check(PE);
         } catch (Exception& e) {
@@ -315,7 +320,7 @@ namespace MR {
 
 
 
-      scheme_type eddy2scheme(const Eigen::MatrixXd& config, const Eigen::Array<int, Eigen::Dynamic, 1>& indices) {
+      scheme_type eddy2topup(const Eigen::MatrixXd& config, const Eigen::Array<int, Eigen::Dynamic, 1>& indices) {
         if (config.cols() != 4)
           throw Exception("Expected 4 columns in EDDY-format phase-encoding config file");
         scheme_type result(indices.size(), 4);
@@ -328,6 +333,8 @@ namespace MR {
         return result;
       }
 
+
+
       void export_commandline(const Header& header) {
         auto check = [&](const scheme_type& m) -> const scheme_type & {
           if (m.rows() == 0)
@@ -337,9 +344,9 @@ namespace MR {
 
         auto scheme = parse_scheme(header.keyval(), header);
 
-        auto opt = get_options("export_pe_table");
+        auto opt = get_options("export_pe_topup");
         if (!opt.empty())
-          save(check(scheme), header, opt[0][0]);
+          save_topup(check(scheme), header, opt[0][0]);
 
         opt = get_options("export_pe_eddy");
         if (!opt.empty())
@@ -348,13 +355,14 @@ namespace MR {
 
 
 
-      scheme_type load(const std::string& path, const Header& header) {
-        const scheme_type PE = load_matrix(path);
+      scheme_type load_topup(const std::string& path, const Header& header) {
+        scheme_type PE = load_matrix(path);
         check(PE, header);
-        // As with JSON import, need to query the header to discover if the
-        //   strides / transform were modified on image load to make the image
-        //   data appear approximately axial, in which case we need to apply the
-        //   same transforms to the phase encoding data on load
+        // Flip of first image axis based on determinant of image transform
+        //   applies to however the image was stored on disk,
+        //   before any interpretation by MRtrix3
+        if (header.realignment().orig_transform().linear().determinant() > 0.0)
+          PE.col(0) *= -1;
         return transform_for_image_load(PE, header);
       }
 
@@ -363,15 +371,19 @@ namespace MR {
       scheme_type load_eddy(const std::string& config_path, const std::string& index_path, const Header& header) {
         const Eigen::MatrixXd config = load_matrix(config_path);
         const Eigen::Array<int, Eigen::Dynamic, 1> indices = load_vector<int>(index_path);
-        const scheme_type PE = eddy2scheme(config, indices);
+        scheme_type PE = eddy2topup(config, indices);
         check(PE, header);
+        if (header.realignment().orig_transform().linear().determinant() > 0.0)
+          PE.col(0) *= -1;
         return transform_for_image_load(PE, header);
       }
 
 
 
-      void save(const scheme_type& PE, const std::string& path) {
+      void save_table(const scheme_type& PE, const std::string& path, const bool write_command_history) {
         File::OFStream out(path);
+        if (write_command_history)
+          out << "# " << App::command_history_string << "\n";
         for (ssize_t row = 0; row != PE.rows(); ++row) {
           // Write phase-encode direction as integers; other information as floating-point
           out << PE.template block<1, 3>(row, 0).template cast<int>();

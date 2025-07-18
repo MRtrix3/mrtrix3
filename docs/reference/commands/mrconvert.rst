@@ -147,14 +147,14 @@ DW gradient table export options
 Options for importing phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-import_pe_table file** import a phase-encoding table from file
+-  **-import_pe_topup file** import a phase-encoding table intended for FSL TOPUP from file
 
 -  **-import_pe_eddy config indices** import phase-encoding information from an EDDY-style config / index file pair
 
 Options for exporting phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-export_pe_table file** export phase-encoding table to file
+-  **-export_pe_topup file** export phase-encoding table to a file intended for FSL topup
 
 -  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
 

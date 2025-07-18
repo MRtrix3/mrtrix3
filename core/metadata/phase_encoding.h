@@ -78,11 +78,11 @@ namespace MR {
        */
       scheme_type get_scheme(const Header&);
 
-      //! Convert a phase-encoding scheme into the EDDY config / indices format
-      void scheme2eddy(const scheme_type& PE, Eigen::MatrixXd& config, Eigen::Array<int, Eigen::Dynamic, 1>& indices);
+      //! Convert a phase-encoding scheme in TOPUP format into the EDDY config / indices format
+      void topup2eddy(const scheme_type& PE, Eigen::MatrixXd& config, Eigen::Array<int, Eigen::Dynamic, 1>& indices);
 
-      //! Convert phase-encoding infor from the EDDY config / indices format into a standard scheme
-      scheme_type eddy2scheme(const Eigen::MatrixXd&, const Eigen::Array<int, Eigen::Dynamic, 1>&);
+      //! Convert phase-encoding infor from the EDDY config / indices format into a TOPUP format scheme
+      scheme_type eddy2topup(const Eigen::MatrixXd&, const Eigen::Array<int, Eigen::Dynamic, 1>&);
 
       //! Modifies a phase encoding scheme if being imported alongside a non-RAS image
       //  and internal header realignment is performed
@@ -93,10 +93,10 @@ namespace MR {
       void transform_for_nifti_write(KeyValues& keyval, const Header& H);
       scheme_type transform_for_nifti_write(const scheme_type& pe_scheme, const Header& H);
 
-      void save(const scheme_type& PE, const std::string& path);
+      void save_table(const scheme_type& PE, const std::string& path, bool write_command_history);
 
       template <class HeaderType>
-      void save(const HeaderType &header, const std::string &path) {
+      void save_table(const HeaderType &header, const std::string &path) {
         const scheme_type scheme = get_scheme(header);
         if (scheme.rows() == 0)
           throw Exception ("No phase encoding scheme in header of image \"" + header.name() + "\" to save");
@@ -105,10 +105,11 @@ namespace MR {
 
       //! Save a phase-encoding scheme associated with an image to file
       // Note that because the output table requires permutation / sign flipping
-      //   only if the output target image is a NIfTI, the output file name must have
-      //   already been set
+      //   only if the output target image is a NIfTI,
+      //   for this function to operate as intended it is necessary for it to be executed
+      //   after having set the output file name in the image header
       template <class HeaderType>
-      void save(const scheme_type &PE, const HeaderType &header, const std::string &path) {
+      void save_table(const scheme_type &PE, const HeaderType &header, const std::string &path) {
         try {
           check(PE, header);
         } catch (Exception &e) {
@@ -116,10 +117,35 @@ namespace MR {
         }
 
         if (Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
-          save(transform_for_nifti_write(PE, header), path);
+          WARN("External phase encoding table \"" + path + "\" for image \"" + header.name() + "\""
+               " may not be suitable for FSL topup; consider use of -export_pe_topup instead");
+          save_table(transform_for_nifti_write(PE, header), path, true);
         } else {
-          save(PE, path);
+          save_table(PE, path, true);
         }
+      }
+
+      template <class HeaderType>
+      void save_topup(const scheme_type &PE, const HeaderType &header, const std::string &path) {
+        try {
+          check(PE, header);
+        } catch (Exception &e) {
+          throw Exception(e, "Cannot export phase-encoding table to file \"" + path + "\"");
+        }
+
+        // TODO Should this check be in place?
+        if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"}))
+          throw Exception("Only export phase encoding table to FSL topup format"
+                          " in conjunction with MGH / NIfTI format images");
+
+        scheme_type table = transform_for_nifti_write(PE, header);
+        // The flipping of first axis based on the determinant of the image header transform
+        //   applies to what is stored on disk
+        Axes::permutations_type order;
+        const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
+        if (adjusted_transform.linear().determinant() > 0.0)
+          table.col(0) *= -1.0;
+        save_table(table, path, false);
       }
 
       //! Save a phase-encoding scheme to EDDY format config / index files
@@ -128,9 +154,17 @@ namespace MR {
                      const HeaderType& header,
                      const std::string& config_path,
                      const std::string& index_path) {
+        if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"}))
+          throw Exception("Only export phase encoding table to FSL eddy format"
+                          " in conjunction with MGH / NIfTI format images");
+        scheme_type table = transform_for_nifti_write(PE, header);
+        Axes::permutations_type order;
+        const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
+        if (adjusted_transform.linear().determinant() > 0.0)
+          table.col(0) *= -1.0;
         Eigen::MatrixXd config;
         Eigen::Array<int, Eigen::Dynamic, 1> indices;
-        scheme2eddy(transform_for_nifti_write(PE, header), config, indices);
+        topup2eddy(table, config, indices);
         save_matrix(config, config_path, KeyValues(), false);
         save_vector(indices, index_path, KeyValues(), false);
       }
@@ -139,7 +173,10 @@ namespace MR {
       void export_commandline(const Header&);
 
       //! Load a phase-encoding scheme from a matrix text file
-      scheme_type load(const std::string& path, const Header& header);
+      scheme_type load_table(const std::string& path, const Header& header);
+
+      //! Load a phase-encoding scheme from a FSL topup format text file
+      scheme_type load_topup(const std::string& path, const Header& header);
 
       //! Load a phase-encoding scheme from an EDDY-format config / indices file pair
       scheme_type load_eddy(const std::string& config_path, const std::string& index_path, const Header& header);
