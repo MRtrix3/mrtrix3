@@ -18,13 +18,12 @@
 
 #include "algo/threaded_loop.h"
 #include "axes.h"
+#include "degibbs/degibbs.h"
 #include "degibbs/unring1d.h"
 #include "image.h"
 #include "progressbar.h"
 
 namespace MR::Degibbs {
-
-typedef cdouble value_type;
 
 class Unring2D {
 public:
@@ -54,15 +53,15 @@ public:
     col_FFT(slice);
 
     for (int k = 0; k < slice.cols(); k++) {
-      double ck = (1.0 + cos(2.0 * Math::pi * (double(k) / slice.cols()))) * 0.5;
+      const real_type ck = (1.0 + cos(2.0 * Math::pi * (real_type(k) / slice.cols()))) * 0.5;
       for (int j = 0; j < slice.rows(); j++) {
-        double cj = (1.0 + cos(2.0 * Math::pi * (double(j) / slice.rows()))) * 0.5;
+        const real_type cj = (1.0 + cos(2.0 * Math::pi * (real_type(j) / slice.rows()))) * 0.5;
 
         if (ck + cj != 0.0) {
           slice2(j, k) = slice(j, k) * cj / (ck + cj);
           slice(j, k) *= ck / (ck + cj);
         } else
-          slice(j, k) = slice2(j, k) = cdouble(0.0, 0.0);
+          slice(j, k) = slice2(j, k) = complex_type(0.0, 0.0);
       }
     }
 
@@ -80,7 +79,7 @@ public:
 private:
   Math::FFT1D row_fft, col_fft, row_ifft, col_ifft;
   Unring1D unring1d_row, unring1d_col;
-  Eigen::MatrixXcd slice2;
+  Eigen::Matrix<complex_type, Eigen::Dynamic, Eigen::Dynamic> slice2;
 
   template <typename fft_obj, typename Derived> FORCE_INLINE void FFT(fft_obj &fft, Eigen::MatrixBase<Derived> &M) {
     assert(fft.size() == size_t(M.cols()));
@@ -111,8 +110,8 @@ public:
                   const int &nsh,
                   const int &minW,
                   const int &maxW,
-                  Image<value_type> &in,
-                  Image<value_type> &out)
+                  Image<complex_type> &in,
+                  Image<complex_type> &out)
       : outer_axes(outer_axes),
         slice_axes(slice_axes),
         in(in),
@@ -137,8 +136,8 @@ public:
 protected:
   const std::vector<size_t> &outer_axes;
   const std::vector<size_t> &slice_axes;
-  Image<value_type> in, out;
-  Eigen::MatrixXcd slice;
+  Image<complex_type> in, out;
+  Eigen::Matrix<complex_type, Eigen::Dynamic, Eigen::Dynamic> slice;
   Unring2D unring2d;
 };
 
