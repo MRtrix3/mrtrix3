@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,6 @@
 
 #include "memory.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 #include "filter/base.h"
 #include "filter/connected_components.h"
@@ -29,6 +28,8 @@
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
+#include "metadata/phase_encoding.h"
 
 
 namespace MR
@@ -46,8 +47,9 @@ namespace MR
      *
      * Typical usage:
      * \code
+     * auto header = Header::open (argument[0]);
+     * auto grad = DWI::get_DW_scheme (header);
      * auto input = Image<value_type>::open (argument[0]);
-     * auto grad = DWI::get_DW_scheme (input);
      * Filter::DWIBrainMask dwi_brain_mask_filter (input, grad);
      * auto output = Image<bool>::create (argument[1], dwi_brain_mask_filter);
      * dwi_brain_mask_filter (input, output);
@@ -64,7 +66,7 @@ namespace MR
             grad (grad)
         {
           DWI::stash_DW_scheme (*this, grad);
-          PhaseEncoding::clear_scheme (*this);
+          Metadata::PhaseEncoding::clear_scheme (keyval());
           axes_.resize(3);
           datatype_ = DataType::Bit;
         }

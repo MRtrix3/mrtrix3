@@ -100,7 +100,6 @@ of the last echo, in the train; this is consistent with BIDS, and is sometimes
 referred to as the "FSL definition", since it is consistent with relevant
 calculations performed within FSL tools. It should be defined in seconds.
 
-
 Variable phase encoding
 .......................
 
@@ -118,6 +117,13 @@ number is the total readout time. The direction is specified as a unit direction
 the image coordinate system; for instance, a phase encoding direction of A>>P would
 be encoded as ``[ 0 -1 0 ]``.
 
+Note that while this format closely resembles the interface by which the FSL
+software is provided with phase encoding information, particularly the ``topup``
+command, there is a subtle distinction relating to the way in which the FSL
+software interprets image data. The contents of this field should therefore *not*
+be interfaced with directly if the goal is to pass data to/from the FSL software;
+the ``-import_pe_topup`` and ``-export_pe_topup`` options should instead be used
+(see manipulation_of_phase_encoding_data_ below).
 
 .. _non_axial_acquisitions:
 
@@ -216,6 +222,8 @@ becomes more complex at both read and write stages, each in their own complex wa
    of axes within the file.
 
 
+.. _manipulation_of_phase_encoding_data:
+
 Manipulation of phase encoding data
 -----------------------------------
 
@@ -278,10 +286,24 @@ to manipulate this information:
    if all volumes in the image have the same phase encoding direction and total
    readout time, these options will still import / export these data in table format.
 
+-  The ``-import_pe_topup`` and ``-export_pe_topup`` options can be used to
+   import/export the phase encoding information in the format required by FSL's
+   ``topup`` tool. While this may look identical to the phase encoding table as stored
+   in the ``pe_scheme`` header entry and passed using the ``-import_pe_table`` and
+   ``-export_pe_table``, the two are not always equivalent.
+   Data interfaced using this option considers the possible flipping of the first image
+   axis that occurs when the FSL software interprets image data for images with
+   a transform with a positive determinant, just as occurs in the "``bvecs``" format
+   for handling diffusion gradient tables. These options should therefore be used instead
+   of the ``-import_pe_table`` and ``-export_pe_table`` options if the relevant text
+   file involves interfacing with the FSL software.
+
 -  The ``-import_pe_eddy`` and ``-export_pe_eddy`` options can be used to
    import/export the phase encoding information in the format required by FSL's
    ``eddy`` tool. The `FSL documentation page <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide#A--acqp>`_
-   describes this format in more detail.
+   describes this format in more detail. This format takes into account the possible
+   flipping of the first image axis in the same way as do the ``-import_pe_topup`` and
+   ``-export_pe_topup`` options.
 
 -  The ``-json_import`` and ``-json_export`` options can be used to import/export
    *all* header key-value entries from/to an external JSON file. This may be useful

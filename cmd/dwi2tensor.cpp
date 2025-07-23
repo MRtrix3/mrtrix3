@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,12 +15,12 @@
  */
 
 #include "command.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 #include "image.h"
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "metadata/phase_encoding.h"
 
 using namespace MR;
 using namespace App;
@@ -149,7 +149,7 @@ class Processor { MEMALIGN(Processor)
           work.setZero();
           work.selfadjointView<Eigen::Lower>().rankUpdate (b.transpose()*w.asDiagonal());
           p = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(b.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
-          if (maxit > 1)
+          if (it < maxit)
             w = (b*p).array().exp();
         }
 
@@ -202,14 +202,14 @@ inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen:
 
 void run ()
 {
-  auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_DW_scheme (dwi);
+  auto header_in = Header::open (argument[0]);
+  auto grad = DWI::get_DW_scheme (header_in);
 
   Image<bool> mask;
   auto opt = get_options ("mask");
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
-    check_dimensions (dwi, mask, 0, 3);
+    check_dimensions (header_in, mask, 0, 3);
   }
 
   bool ols = get_options ("ols").size();
@@ -217,37 +217,38 @@ void run ()
   // depending on whether first (initialisation) loop should be considered an iteration
   auto iter = get_option_value ("iter", DEFAULT_NITER);
 
-  Header header (dwi);
-  header.datatype() = DataType::Float32;
-  header.ndim() = 4;
-  DWI::stash_DW_scheme (header, grad);
-  PhaseEncoding::clear_scheme (header);
+  Header header_out (header_in);
+  header_out.datatype() = DataType::Float32;
+  header_out.ndim() = 4;
+  Metadata::PhaseEncoding::clear_scheme (header_out.keyval());
 
   Image<value_type> predict;
   opt = get_options ("predicted_signal");
   if (opt.size())
-    predict = Image<value_type>::create (opt[0][0], header);
+    predict = Image<value_type>::create (opt[0][0], header_out);
 
-  header.size(3) = 6;
-  auto dt = Image<value_type>::create (argument[1], header);
+  DWI::stash_DW_scheme (header_out, grad);
+  header_out.size(3) = 6;
+  auto dt = Image<value_type>::create (argument[1], header_out);
 
   Image<value_type> b0;
   opt = get_options ("b0");
   if (opt.size()) {
-    header.ndim() = 3;
-    b0 = Image<value_type>::create (opt[0][0], header);
+    header_out.ndim() = 3;
+    b0 = Image<value_type>::create (opt[0][0], header_out);
   }
 
   Image<value_type> dkt;
   opt = get_options ("dkt");
   if (opt.size()) {
-    header.ndim() = 4;
-    header.size(3) = 15;
-    dkt = Image<value_type>::create (opt[0][0], header);
+    header_out.ndim() = 4;
+    header_out.size(3) = 15;
+    dkt = Image<value_type>::create (opt[0][0], header_out);
   }
 
-  Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, opt.size()>0);
+  Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, dkt.valid());
 
+  auto dwi = header_in.get_image<value_type>();
   ThreadedLoop("computing tensors", dwi, 0, 3).run (processor (b, ols, iter, mask, b0, dkt, predict), dwi, dt);
 }
 

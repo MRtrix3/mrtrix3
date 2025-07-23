@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,9 @@
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
+#include "types.h"
 #include "algo/threaded_loop.h"
+#include "metadata/bids.h"
 #include <numeric>
 
 using namespace MR;
@@ -42,11 +44,17 @@ void usage ()
     "you should run denoising before this command to not alter the noise structure, "
     "which would impact on dwidenoise's performance."
 
+    + "For best results, any form of filtering performed by the scanner should be disabled, whether "
+    "performed in the image domain or k-space. This includes elliptic filtering and other filters that "
+    "are often applied to reduce Gibbs ringing artifacts. While this method can still safely be applied "
+    "to such data, some residual ringing artefacts may still be present in the output."
+
     + "Note that this method is designed to work on images acquired with full k-space coverage. "
-    "Running this method on partial Fourier ('half-scan') data may lead to suboptimal and/or biased "
-    "results, as noted in the original reference below. There is currently no means of dealing with this; "
-    "users should exercise caution when using this method on partial Fourier data, and inspect its output "
-    "for any obvious artefacts. ";
+    "If this method is executed on data acquired with partial Fourier (eg. \"half-scan\") acceleration, "
+    "it may not fully remove all ringing artifacts, "
+    "and you may observe residuals of the original artifact in the partial Fourier direction. "
+    "Nonetheless, application of the method is still considered safe and worthwhile. "
+    "Users are however encouraged to acquired full-Fourier data where possible.";
 
 
   ARGUMENTS
@@ -202,15 +210,15 @@ class ComputeSlice
         const int numlines = eig.cols();
         shifted.resize (n, 2*nsh+1);
 
-        int shifts [2*nsh+1];
+        vector<int> shifts(2*nsh+1);
         shifts[0] = 0;
         for (int j = 0; j < nsh; j++) {
           shifts[j+1] = j+1;
           shifts[1+nsh+j] = -(j+1);
         }
 
-        double TV1arr[2*nsh+1];
-        double TV2arr[2*nsh+1];
+        vector<double> TV1arr(2*nsh+1);
+        vector<double> TV2arr(2*nsh+1);
 
         for (int k = 0; k < numlines; k++) {
           shifted.col(0) = eig.col(k);
@@ -331,7 +339,7 @@ void run ()
   auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     try {
-      const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+      const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot = Metadata::BIDS::axisid2vector (slice_encoding_it->second);
       vector<size_t> auto_slice_axes = { 0, 0 };
       if (slice_encoding_axis_onehot[0])
         auto_slice_axes = { 1, 2 };

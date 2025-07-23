@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -387,7 +387,7 @@ namespace MR
 
           bool is_BE = H.datatype().is_big_endian();
 
-          vector<size_t> axes;
+          Axes::permutations_type axes;
           auto M = File::NIfTI::adjust_transform (H, axes);
 
 
@@ -582,24 +582,25 @@ namespace MR
 
 
 
-      void axes_on_write (const Header& H, vector<size_t>& order, vector<bool>& flip)
+      Axes::Shuffle axes_on_write (const Header& H)
       {
         Stride::List strides = Stride::get (H);
         strides.resize (3);
-        order = Stride::order (strides);
-        flip = { strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0 };
+        auto order = Stride::order (strides);
+        Axes::Shuffle result;
+        result.permutations = {ssize_t(order[0]), ssize_t(order[1]), ssize_t(order[2])};
+        result.flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
+        return result;
       }
 
 
 
 
-      transform_type adjust_transform (const Header& H, vector<size_t>& axes)
+      transform_type adjust_transform (const Header& H, Axes::permutations_type& axes)
       {
-        vector<bool> flip;
-        axes_on_write (H, axes, flip);
-
-        if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
-            !flip[0] && !flip[1] && !flip[2])
+        const Axes::Shuffle shuffle = axes_on_write(H);
+        axes = shuffle.permutations;
+        if (shuffle.is_identity())
           return H.transform();
 
         const auto& M_in = H.transform().matrix();
@@ -611,7 +612,7 @@ namespace MR
 
         auto translation = M_out.col(3);
         for (size_t i = 0; i < 3; ++i) {
-          if (flip[i]) {
+          if (shuffle.flips[i]) {
             auto length = default_type (H.size (axes[i])-1) * H.spacing (axes[i]);
             auto axis = M_out.col(i);
             axis = -axis;

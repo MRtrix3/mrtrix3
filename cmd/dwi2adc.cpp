@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,11 @@
 
 #include "command.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 #include "algo/threaded_copy.h"
-#include "math/least_squares.h"
 #include "dwi/gradient.h"
+#include "math/least_squares.h"
+#include "metadata/phase_encoding.h"
 
 
 using namespace MR;
@@ -80,11 +80,11 @@ class DWI2ADC { MEMALIGN(DWI2ADC)
 
 
 void run () {
-  auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_DW_scheme (dwi);
+  auto header_in = Header::open (argument[0]);
+  auto grad = DWI::get_DW_scheme (header_in);
 
   size_t dwi_axis = 3;
-  while (dwi.size (dwi_axis) < 2)
+  while (header_in.size (dwi_axis) < 2)
     ++dwi_axis;
   INFO ("assuming DW images are stored along axis " + str (dwi_axis));
 
@@ -96,14 +96,15 @@ void run () {
 
   auto binv = Math::pinv (b);
 
-  Header header (dwi);
-  header.datatype() = DataType::Float32;
-  DWI::stash_DW_scheme (header, grad);
-  PhaseEncoding::clear_scheme (header);
-  header.ndim() = 4;
-  header.size(3) = 2;
+  Header header_out (header_in);
+  header_out.datatype() = DataType::Float32;
+  DWI::stash_DW_scheme (header_out, grad);
+  Metadata::PhaseEncoding::clear_scheme (header_out.keyval());
+  header_out.ndim() = 4;
+  header_out.size(3) = 2;
 
-  auto adc = Image<value_type>::create (argument[1], header);
+  auto dwi = header_in.get_image<value_type>();
+  auto adc = Image<value_type>::create (argument[1], header_out);
 
   ThreadedLoop ("computing ADC values", dwi, 0, 3)
     .run (DWI2ADC (binv, dwi_axis), dwi, adc);

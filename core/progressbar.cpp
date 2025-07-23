@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -188,7 +188,7 @@ namespace MR
       // unable to determine nature of stderr; assuming socket
       stderr_to_file = false;
     else
-      stderr_to_file = S_ISREG (buf.st_mode);
+      stderr_to_file = S_ISREG (buf.st_mode) || S_ISFIFO (buf.st_mode);
 
 
 

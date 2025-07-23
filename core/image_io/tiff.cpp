@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,15 +61,6 @@ namespace MR
         } while (tif.read_directory() != 0);
       }
 
-    }
-
-
-    void TIFF::unload (const Header& header)
-    {
-      if (addresses.size()) {
-        DEBUG ("deleting buffer for TIFF image \"" + header.name() + "\"...");
-        addresses[0].release();
-      }
     }
 
   }
