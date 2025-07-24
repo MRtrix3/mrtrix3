@@ -403,8 +403,8 @@ def execute(): #pylint: disable=unused-variable
       try:
         topup_input_movpar = app.Parser.FileIn()(f'{topup_file_userpath}_movpar.txt')
         topup_input_fieldcoef = app.Parser.ImageIn()(find_fieldcoef(topup_file_userpath))
-      except argparse.ArgumentTypeError as e:
-        raise argparse.ArgumentTypeError(f'Unable to find topup files from user specification "{topup_file_userpath}"') from e
+      except argparse.ArgumentTypeError as exc:
+        raise argparse.ArgumentTypeError(f'Unable to find topup files from user specification "{topup_file_userpath}"') from exc
 
 
 
