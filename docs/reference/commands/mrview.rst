@@ -152,7 +152,7 @@ Tractography tool options
 
 -  **-tractography.tsf_range RangeMin,RangeMax** *(multiple uses permitted)* Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
--  **-tractography.tsf_thresh ThresholdMin,ThesholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
+-  **-tractography.tsf_thresh ThresholdMin,ThresholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
 -  **-tractography.tsf_colourmap index** *(multiple uses permitted)* Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.
 
