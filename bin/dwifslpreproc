@@ -29,6 +29,9 @@ except ImportError:
   from distutils.spawn import find_executable # pylint: disable=deprecated-module
 
 
+STRIDES_OPTION_FSL_COMPAT_3D = ' -strides -1,+2,+3'
+STRIDES_OPTION_FSL_COMPAT_4D = ' -strides -1,+2,+3,+4'
+
 
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
@@ -805,7 +808,7 @@ def execute(): #pylint: disable=unused-variable
 
 
     # Do the conversion in preparation for topup
-    run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + se_epi_manual_pe_table_option + ' -strides -1,+2,+3,+4 -export_pe_topup topup_datain.txt')
+    run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + se_epi_manual_pe_table_option + STRIDES_OPTION_FSL_COMPAT_4D + ' -export_pe_topup topup_datain.txt')
     app.cleanup(se_epi_path)
 
     # Run topup
@@ -822,11 +825,13 @@ def execute(): #pylint: disable=unused-variable
     # Apply the warp field to the input image series to get an initial corrected volume estimate
     # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
     #   details may vary between volumes
-    if dwi_manual_pe_scheme:
-      run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + ' -strides -1,+2,+3,+4 - | mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
-    else:
-      run.command('mrconvert ' + dwi_path + ' -strides -1,+2,+3,+4 - | mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+    run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + STRIDES_OPTION_FSL_COMPAT_4D + ' - | '
+                'mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
 
+    applytopup_config = matrix.load_matrix('applytopup_config.txt')
+    if any(row[2] for row in applytopup_config):
+      app.warn('Phase encoding on third spatial axis detected in input to applytopup; '
+               'applytopup may ignore this, leading to imperfect eddy brain mask')
 
     # Update: Call applytopup separately for each unique phase-encoding
     # This should be the most compatible option with more complex phase-encoding acquisition designs,
@@ -841,12 +846,12 @@ def execute(): #pylint: disable=unused-variable
     app.debug('applytopup_indices: ' + str(applytopup_indices))
     app.debug('applytopup_volumegroups: ' + str(applytopup_volumegroups))
     for index, group in enumerate(applytopup_volumegroups):
-      prefix = os.path.splitext(dwi_path)[0] + '_pe_' + str(index)
+      prefix = os.path.splitext(dwi_path)[0] + '_pe' + str(index+1)
       input_path = prefix + '.nii'
       json_path = prefix + '.json'
       temp_path = prefix + '_applytopup.nii'
       output_path = prefix + '_applytopup.mif'
-      run.command('mrconvert ' + dwi_path + ' ' + input_path + ' -coord 3 ' + ','.join(str(value) for value in group) + ' -strides -1,+2,+3,+4 -json_export ' + json_path)
+      run.command('mrconvert ' + dwi_path + ' ' + input_path + ' -coord 3 ' + ','.join(str(value) for value in group) + STRIDES_OPTION_FSL_COMPAT_4D + ' -json_export ' + json_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index+1) + ' --topup=field --out=' + temp_path + ' --method=jac')
       app.cleanup(input_path)
       temp_path = fsl.find_image(temp_path)
@@ -859,9 +864,9 @@ def execute(): #pylint: disable=unused-variable
     # Use the initial corrected volumes to derive a brain mask for eddy
     if not app.ARGS.eddy_mask:
       if len(applytopup_image_list) == 1:
-        run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+        run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32' + STRIDES_OPTION_FSL_COMPAT_3D)
       else:
-        run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+        run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32' + STRIDES_OPTION_FSL_COMPAT_3D)
 
     app.cleanup(applytopup_image_list)
 
@@ -871,7 +876,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Generate a processing mask for eddy based on the uncorrected input DWIs
     if not app.ARGS.eddy_mask:
-      run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+      run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32' + STRIDES_OPTION_FSL_COMPAT_3D)
 
 
   # Use user supplied mask for eddy instead of one derived from the images using dwi2mask
@@ -922,7 +927,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Prepare input data for eddy
-  run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permvols_preeddy_option + ' eddy_in.nii -strides -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
+  run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permvols_preeddy_option + ' eddy_in.nii' + STRIDES_OPTION_FSL_COMPAT_4D + ' -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
   app.cleanup(dwi_path)
 
   # Run eddy
@@ -1091,7 +1096,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Get the axis strides from the input series, so the output image can be modified to match
-  stride_option = ' -strides ' + ','.join([str(i) for i in dwi_header.strides()])
+  stride_restore_option = ' -strides ' + ','.join([str(i) for i in dwi_header.strides()])
 
 
   # Determine whether or not volume recombination should be performed
@@ -1123,7 +1128,7 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup(fsl.find_image('field_map'))
 
     # Convert the resulting volume to the output image, and re-insert the diffusion encoding
-    run.command('mrconvert ' + eddy_output_image_path + ' result.mif' + dwi_permvols_posteddy_option + dwi_post_eddy_crop_option + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
+    run.command('mrconvert ' + eddy_output_image_path + ' result.mif' + dwi_permvols_posteddy_option + dwi_post_eddy_crop_option + stride_restore_option + ' -fslgrad ' + bvecs_path + ' bvals')
     app.cleanup(eddy_output_image_path)
 
   else:
@@ -1286,7 +1291,7 @@ def execute(): #pylint: disable=unused-variable
                        'mrconvert', '-', 'result.mif', '-fslgrad', 'bvecs_combined', 'bvals_combined']
     if dwi_post_eddy_crop_option:
       combine_command.extend(dwi_post_eddy_crop_option.strip().split(' '))
-    combine_command.extend(stride_option.strip().split(' '))
+    combine_command.extend(stride_restore_option.strip().split(' '))
     run.command(combine_command)
     app.cleanup(combined_image_list)
 
