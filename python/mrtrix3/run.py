@@ -514,7 +514,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   fnstring = f'{fn_to_execute.__module__}.{fn_to_execute.__name__}' \
              f'({", ".join([quoted(a) if isinstance(a, str) else str(a) for a in args])}' \
              f'{", " if (args and kwargs) else ""}' \
-             f'{", ".join([format_keyval(key, value) for key, value in kwargs.items()])}'
+             f'{", ".join([format_keyval(key, value) for key, value in kwargs.items()])})'
 
   if shared.get_continue():
     if shared.trigger_continue(args) or shared.trigger_continue(kwargs.values()):
