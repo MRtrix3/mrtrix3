@@ -15,7 +15,7 @@
 
 
 
-import glob, itertools, json, math, os, shlex, shutil, sys
+import argparse, glob, itertools, json, math, os, shlex, shutil, sys
 
 
 
@@ -389,19 +389,23 @@ def execute(): #pylint: disable=unused-variable
 
     if os.path.isfile(topup_file_userpath):
       if topup_file_userpath.endswith('_movpar.txt'):
-        topup_input_movpar = app.Parser.FileIn(topup_file_userpath)
-        topup_input_fieldcoef = app.Parser.ImageIn(find_fieldcoef(topup_file_userpath[:-len('_movpar.txt')]))
+        topup_input_movpar = app.Parser.FileIn()(topup_file_userpath)
+        topup_input_fieldcoef = app.Parser.ImageIn()(find_fieldcoef(topup_file_userpath[:-len('_movpar.txt')]))
       elif any(str(topup_file_userpath).endswith(postfix) for postfix in ('_fieldcoef.nii', '_fieldcoef.nii.gz')):
-        topup_input_fieldcoef = app.Parser.ImageIn(topup_file_userpath)
+        topup_input_fieldcoef = app.Parser.ImageIn()(topup_file_userpath)
         topup_input_movpar = topup_file_userpath[:-len('.gz')] if topup_file_userpath.endswith('.gz') else topup_file_userpath
-        topup_input_movpar = app.Parser.FileIn(topup_input_movpar[:-len('_fieldcoef.nii')] + '_movpar.txt')
+        topup_input_movpar = app.Parser.FileIn()(topup_input_movpar[:-len('_fieldcoef.nii')] + '_movpar.txt')
       else:
         raise MRtrixError(f'Unrecognised file "{topup_file_userpath}" specified as pre-calculated topup susceptibility field')
     else:
       if topup_file_userpath[-1] == '_':
         topup_file_userpath = topup_file_userpath[:-1]
-      topup_input_movpar = app.Parser.FileIn(f'{topup_file_userpath}_movpar.txt')
-      topup_input_fieldcoef = app.Parser.ImageIn(find_fieldcoef(topup_file_userpath))
+      try:
+        topup_input_movpar = app.Parser.FileIn()(f'{topup_file_userpath}_movpar.txt')
+        topup_input_fieldcoef = app.Parser.ImageIn()(find_fieldcoef(topup_file_userpath))
+      except argparse.ArgumentTypeError as exc:
+        raise argparse.ArgumentTypeError(f'Unable to find topup files from user specification "{topup_file_userpath}"') from exc
+
 
 
   # Convert all input images into MRtrix format and store in scratch directory first
