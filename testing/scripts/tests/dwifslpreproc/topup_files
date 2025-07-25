@@ -1,0 +1,46 @@
+#!/bin/bash
+# Ensure that the -topup_files for dwifslpreproc works for all intended use cases
+
+mrconvert BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp-sub-04_dwi.mif -force \
+    -fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
+    -json_import BIDS/sub-04/dwi/sub-04_dwi.json \
+    -strides 0,0,0,1
+
+mrcat \
+    BIDS/sub-04/fmap/sub-04_dir-1_epi.nii.gz \
+    BIDS/sub-04/fmap/sub-04_dir-2_epi.nii.gz \
+    -axis 3 - | \
+mrconvert - tmp-sub-04_epi.nii \
+    -strides -1,+2,+3,+4 -force
+
+echo $'0 -1 0 0.1\n0 1 0 0.1\n' | \
+tee tmp-sub-04_epi.txt
+
+topupcmd="topup --imain=tmp-sub-04_epi.nii --datain=tmp-sub-04_epi.txt --config=${FSLDIR}/etc/flirtsch/b02b0_2.cnf --out=tmp-out"
+echo $topupcmd
+$topupcmd
+
+#topup \
+#    --imain=tmp-sub-04_epi.nii \
+#    --datain=tmp-sub-04_epi.txt \
+#    --config=${FSLDIR}/etc/flirtsch/b02b0_2.cnf \
+#    --out=tmp-out
+
+# Different strings that could possibly be provided by the user at the command-line
+dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force \
+    -topup_files tmp-out -debug
+testing_diff_header tmp.mif dwifslpreproc/rpepair_default.mif.gz
+
+dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force \
+    -topup_files tmp-out_ -debug
+testing_diff_header tmp.mif dwifslpreproc/rpepair_default.mif.gz
+
+dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force \
+    -topup_files tmp-out_fieldcoef.nii.gz -debug
+testing_diff_header tmp.mif dwifslpreproc/rpepair_default.mif.gz
+
+dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force \
+    -topup_files tmp-out_movpar.txt -debug
+testing_diff_header tmp.mif dwifslpreproc/rpepair_default.mif.gz
+
+
