@@ -36,8 +36,8 @@ public:
     assert(data.cols() == 1);
     assert(fft.size() == size_t(data.size()));
 
-    real_type TV1arr[2 * nsh + 1];
-    real_type TV2arr[2 * nsh + 1];
+    VLA(TV1arr, real_type, 2 * nsh + 1);
+    VLA(TV2arr, real_type, 2 * nsh + 1);
 
     const int n = fft.size();
     const int maxn = (n & 1) ? (n - 1) / 2 : n / 2 - 1;
