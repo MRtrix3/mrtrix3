@@ -20,7 +20,7 @@
 
 namespace MR::Degibbs {
 
-typedef double real_type;
-typedef std::complex<real_type> complex_type;
+using real_type = double;
+using complex_type = std::complex<real_type>;
 
 } // namespace MR::Degibbs
