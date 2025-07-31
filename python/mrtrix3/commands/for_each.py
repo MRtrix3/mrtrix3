@@ -304,11 +304,13 @@ def execute(): #pylint: disable=unused-variable
   parallel = app.NUM_THREADS is not None and app.NUM_THREADS > 1
 
   def progress_string():
-    success_count = sum(1 if job.returncode is not None else 0 for job in jobs)
-    fail_count = sum(bool(job.returncode) for job in jobs)
     threading_message = f'across {app.NUM_THREADS} threads' if parallel else 'sequentially'
-    fail_message = f' ({fail_count} errors)' if fail_count else ''
-    return f'{success_count}/{len(jobs)} jobs completed {threading_message}{fail_message}'
+    if sys.stderr.isatty():
+      success_count = sum(1 if job.returncode is not None else 0 for job in jobs)
+      fail_count = sum(bool(job.returncode) for job in jobs)
+      fail_message = f' ({fail_count} errors)' if fail_count else ''
+      return f'{success_count}/{len(jobs)} jobs completed {threading_message}{fail_message}'
+    return f'Running {len(jobs)} jobs {threading_message}'
 
   progress = app.ProgressBar(progress_string(), len(jobs))
 
