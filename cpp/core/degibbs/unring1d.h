@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "degibbs/degibbs.h"
 #include "math/fft.h"
 
 namespace MR::Degibbs {
@@ -35,8 +36,8 @@ public:
     assert(data.cols() == 1);
     assert(fft.size() == size_t(data.size()));
 
-    double TV1arr[2 * nsh + 1];
-    double TV2arr[2 * nsh + 1];
+    VLA(TV1arr, real_type, 2 * nsh + 1);
+    VLA(TV2arr, real_type, 2 * nsh + 1);
 
     const int n = fft.size();
     const int maxn = (n & 1) ? (n - 1) / 2 : n / 2 - 1;
@@ -50,13 +51,13 @@ public:
 
     // apply shifts and iFFT each line:
     for (int j = 1; j < 2 * nsh + 1; j++) {
-      double phi = Math::pi * double(shifts[j]) / double(n * nsh);
-      cdouble u(std::cos(phi), std::sin(phi));
-      cdouble e(1.0, 0.0);
+      const real_type phi = Math::pi * real_type(shifts[j]) / double(n * nsh);
+      const complex_type u(std::cos(phi), std::sin(phi));
+      complex_type e(1.0, 0.0);
       fft[0] = data[0];
 
       if (!(n & 1))
-        fft[n / 2] = cdouble(0.0, 0.0);
+        fft[n / 2] = complex_type(0.0, 0.0);
 
       for (int l = 0; l < maxn; l++) {
         e = u * e;
@@ -83,7 +84,7 @@ public:
     }
 
     for (int l = 0; l < n; ++l) {
-      double minTV = std::numeric_limits<double>::max();
+      real_type minTV = std::numeric_limits<real_type>::max();
       int minidx = 0;
       for (int j = 0; j < 2 * nsh + 1; ++j) {
 
@@ -107,18 +108,18 @@ public:
         TV2arr[j] -= abs(shifted((l + minW + n) % n, j).imag() - shifted((l + (minW + 1) + n) % n, j).imag());
       }
 
-      double a0r = shifted((l - 1 + n) % n, minidx).real();
-      double a1r = shifted(l, minidx).real();
-      double a2r = shifted((l + 1 + n) % n, minidx).real();
-      double a0i = shifted((l - 1 + n) % n, minidx).imag();
-      double a1i = shifted(l, minidx).imag();
-      double a2i = shifted((l + 1 + n) % n, minidx).imag();
-      double s = double(shifts[minidx]) / (2.0 * nsh);
+      const real_type a0r = shifted((l - 1 + n) % n, minidx).real();
+      const real_type a1r = shifted(l, minidx).real();
+      const real_type a2r = shifted((l + 1 + n) % n, minidx).real();
+      const real_type a0i = shifted((l - 1 + n) % n, minidx).imag();
+      const real_type a1i = shifted(l, minidx).imag();
+      const real_type a2i = shifted((l + 1 + n) % n, minidx).imag();
+      const real_type s = real_type(shifts[minidx]) / (2.0 * nsh);
 
       if (s > 0.0)
-        data(l) = cdouble(a1r * (1.0 - s) + a0r * s, a1i * (1.0 - s) + a0i * s);
+        data(l) = complex_type(a1r * (1.0 - s) + a0r * s, a1i * (1.0 - s) + a0i * s);
       else
-        data(l) = cdouble(a1r * (1.0 + s) - a2r * s, a1i * (1.0 + s) - a2i * s);
+        data(l) = complex_type(a1r * (1.0 + s) - a2r * s, a1i * (1.0 + s) - a2i * s);
     }
   }
 
@@ -128,7 +129,7 @@ public:
 
 private:
   Math::FFT1D &fft;
-  Eigen::MatrixXcd shifted;
+  Eigen::Matrix<complex_type, Eigen::Dynamic, Eigen::Dynamic> shifted;
   std::vector<int> shifts;
 };
 
