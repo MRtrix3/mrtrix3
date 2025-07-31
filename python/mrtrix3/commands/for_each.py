@@ -381,7 +381,7 @@ def execute(): #pylint: disable=unused-variable
 
   if app.VERBOSITY > 1:
     if any(job.outputtext for job in jobs):
-      sys.stderr.write('{app.EXE_NAME}:\n')
+      sys.stderr.write(f'{app.EXEC_NAME}:\n')
       for job in jobs:
         if job.outputtext:
           app.console(f'Output of command for input "{job.sub_in}":')
@@ -389,7 +389,7 @@ def execute(): #pylint: disable=unused-variable
             sys.stderr.write(f'{" " * (len(app.EXEC_NAME)+2)}{line}\n')
         else:
           app.console(f'No output from command for input "{job.sub_in}"')
-        sys.stderr.write('{app.EXE_NAME}:\n')
+        sys.stderr.write(f'{app.EXEC_NAME}:\n')
     else:
       app.console('No output from command for any inputs')
 
