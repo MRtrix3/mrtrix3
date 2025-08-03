@@ -134,7 +134,7 @@ def inplace_nan_mask(images, masks): # pylint: disable=unused-variable
   assert len(images) == len(masks), (len(images), len(masks))
   for imagepath, maskpath in zip(images, masks):
     target_dir = os.path.split(imagepath)[0]
-    masked = os.path.join(target_dir, f'__{os.path.split(image)[1]}')
+    masked = os.path.join(target_dir, f'__{os.path.split(imagepath)[1]}')
     run.command(f'mrcalc {maskpath} {imagepath} nan -if {masked}', force=True)
     run.function(shutil.move, masked, imagepath)
 
