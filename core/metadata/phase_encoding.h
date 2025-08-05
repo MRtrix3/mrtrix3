@@ -134,6 +134,7 @@ namespace MR {
         }
 
         // TODO Should this check be in place?
+        // TODO Consider decreasing to warning?
         if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"}))
           throw Exception("Only export phase encoding table to FSL topup format"
                           " in conjunction with MGH / NIfTI format images");

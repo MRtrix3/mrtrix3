@@ -316,3 +316,16 @@ to manipulate this information:
 
 -  The ``-set_property`` option may be useful to *override* these header entries if
    they are deemed incorrect by some other source of information.
+
+.. note:: The formatting of the data provided as input / output to / from the
+   ``-import_pe_table`` / ``-import_pe_topup``
+   and ``-export_pe_table`` / ``-export_pe_topup`` options are *identical*.
+   This means that it is not possible to determine
+   which of the two conventions a particular file conforms to
+   based only on its contents
+   (while *MRtrix3* will write the command history string as a comment at the header file
+   *only* for the "table" format,
+   not for the "topup" format,
+   this information should not be relied upon as a marker of convention).
+   It is therefore up to user / developer diligence
+   as to which option is appropriate in any given situation.

@@ -506,7 +506,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
   import_dwi_pe_table_option = ''
   if dwi_manual_pe_scheme:
-    phaseencoding.save('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
+    phaseencoding.save_table('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
     import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 
@@ -744,7 +744,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required when setting up the topup call
   se_epi_manual_pe_table_option = ''
   if se_epi_manual_pe_scheme:
-    phaseencoding.save('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
+    phaseencoding.save_table('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
     se_epi_manual_pe_table_option = ' -import_pe_table se_epi_manual_pe_scheme.txt'
 
 
@@ -825,8 +825,10 @@ def execute(): #pylint: disable=unused-variable
     # Apply the warp field to the input image series to get an initial corrected volume estimate
     # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
     #   details may vary between volumes
-    run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + STRIDES_OPTION_FSL_COMPAT_4D + ' - | '
-                'mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+    run.command('mrconvert ' + dwi_path + ' applytopup_in.nii'
+                + import_dwi_pe_table_option
+                + STRIDES_OPTION_FSL_COMPAT_4D +
+                + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
 
     applytopup_config = matrix.load_matrix('applytopup_config.txt')
     if any(row[2] for row in applytopup_config):
@@ -846,12 +848,12 @@ def execute(): #pylint: disable=unused-variable
     app.debug('applytopup_indices: ' + str(applytopup_indices))
     app.debug('applytopup_volumegroups: ' + str(applytopup_volumegroups))
     for index, group in enumerate(applytopup_volumegroups):
-      prefix = os.path.splitext(dwi_path)[0] + '_pe' + str(index+1)
+      prefix = 'applytopup_in_pe' + str(index+1)
       input_path = prefix + '.nii'
       json_path = prefix + '.json'
       temp_path = prefix + '_applytopup.nii'
       output_path = prefix + '_applytopup.mif'
-      run.command('mrconvert ' + dwi_path + ' ' + input_path + ' -coord 3 ' + ','.join(str(value) for value in group) + STRIDES_OPTION_FSL_COMPAT_4D + ' -json_export ' + json_path)
+      run.command('mrconvert applytopup_in.nii ' + input_path + ' -coord 3 ' + ','.join(str(value) for value in group) + STRIDES_OPTION_FSL_COMPAT_4D + ' -json_export ' + json_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index+1) + ' --topup=field --out=' + temp_path + ' --method=jac')
       app.cleanup(input_path)
       temp_path = fsl.find_image(temp_path)
@@ -860,6 +862,7 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup(temp_path)
       applytopup_image_list.append(output_path)
       index += 1
+    app.cleanup('applytopup_in.nii')
 
     # Use the initial corrected volumes to derive a brain mask for eddy
     if not app.ARGS.eddy_mask:
