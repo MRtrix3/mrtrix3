@@ -827,7 +827,7 @@ def execute(): #pylint: disable=unused-variable
     #   details may vary between volumes
     run.command('mrconvert ' + dwi_path + ' applytopup_in.nii'
                 + import_dwi_pe_table_option
-                + STRIDES_OPTION_FSL_COMPAT_4D +
+                + STRIDES_OPTION_FSL_COMPAT_4D
                 + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
 
     applytopup_config = matrix.load_matrix('applytopup_config.txt')
