@@ -123,6 +123,8 @@ if(COMPILER_PATH MATCHES "fsl/bin" OR LINKER_PATH MATCHES "fsl/bin")
     )
 endif()
 
+add_custom_target(MRtrixCppCommands)
+
 add_subdirectory(cpp)
 add_subdirectory(python)
 add_subdirectory(share)
