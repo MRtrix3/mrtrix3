@@ -2,6 +2,14 @@
 # Inputs:
 #   - CMDNAME: Name of the command
 #   - OUTPUT_DIR: Directory in which to create the executable
+#   - EXTERNAL_PROJECT_COMMAND: Boolean indicating whether the command is part of an MRtrix3 external project
+
+set(PYTHON_LIB_PATH  "os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, 'lib'))")
+
+# For external projects the python library sources are located in ../lib/mrtrix3/lib
+if(EXTERNAL_PROJECT_COMMAND)
+    set(PYTHON_LIB_PATH "os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, 'lib', 'mrtrix3', 'lib'))")
+endif()
 
 set(BINPATH_CONTENTS
     "#!/usr/bin/env python3\n"
@@ -11,7 +19,7 @@ set(BINPATH_CONTENTS
     "import os\n"
     "import sys\n"
     "\n"
-    "mrtrix_lib_path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, 'lib'))\n"
+    "mrtrix_lib_path = ${PYTHON_LIB_PATH}\n"
     "sys.path.insert(0, mrtrix_lib_path)\n"
     "from mrtrix3.app import _execute\n"
     "\n"

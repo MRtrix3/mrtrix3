@@ -1,6 +1,6 @@
 set(ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
-if(EXISTS ${ROOT_DIR}/.git)
+if(EXISTS ${ROOT_DIR}/.git AND PROJECT_IS_TOP_LEVEL)
     if(GIT_EXECUTABLE)
         message(VERBOSE "Git found: ${GIT_EXECUTABLE}")
         # Get tag
