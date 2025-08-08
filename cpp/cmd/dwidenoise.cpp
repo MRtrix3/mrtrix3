@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "denoise/denoise.h"
 #include "image.h"
 
 #include <Eigen/Dense>
@@ -32,7 +33,7 @@ void usage() {
   SYNOPSIS = "dMRI noise level estimation and denoising using Marchenko-Pastur PCA";
 
   DESCRIPTION
-  + "DWI data denoising and noise map estimation"
+  + "DWI data noise map estimation and denoising"
     " by exploiting data redundancy in the PCA domain"
     " using the prior knowledge that the eigenspectrum of random covariance matrices"
     " is described by the universal Marchenko-Pastur (MP) distribution."
@@ -42,14 +43,9 @@ void usage() {
     " and later improved in Cordero-Grande et al. (2019)."
     " This noise level estimate then determines the optimal cut-off for PCA denoising."
 
-  + "Important note:"
-    " image denoising must be performed as the first step of the image processing pipeline."
-    " The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
+  + Denoise::first_step_description
 
-  + "Note that this function does not correct for non-Gaussian noise biases"
-    " present in magnitude-reconstructed MRI images."
-    " If available, including the MRI phase data can reduce such non-Gaussian biases,"
-    " and the command now supports complex input data.";
+  + Denoise::non_gaussian_noise_description;
 
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)"
            " and Jelle Veraart (jelle.veraart@nyumc.org)"

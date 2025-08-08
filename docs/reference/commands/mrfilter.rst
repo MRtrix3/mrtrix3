@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-The available filters are: fft, gradient, median, smooth, normalise, zclean.
+The available filters are: demodulate, fft, gradient, median, smooth, normalise, zclean.
 
 Each filter has its own unique set of optional parameters.
 
@@ -31,10 +31,18 @@ For 4D images, each 3D volume is processed independently.
 Options
 -------
 
-Options for FFT filter
-^^^^^^^^^^^^^^^^^^^^^^
+Options applicable to demodulate / FFT / k-space filters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-axes list** the axes along which to apply the Fourier Transform. By default, the transform is applied along the three spatial axes. Provide as a comma-separate list of axis indices.
+
+Options applicable to demodulate filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-linear** only demodulate based on a linear phase ramp, rather than a filtered k-space
+
+Options for FFT filter
+^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-inverse** apply the inverse FFT
 
@@ -52,6 +60,13 @@ Options for gradient filter
 -  **-magnitude** output the gradient magnitude, rather than the default x,y,z components
 
 -  **-scanner** define the gradient with respect to the scanner coordinate frame of reference.
+
+Options for k-space filtering
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-window name** specify the shape of the k-space window filter; options are: tukey (no default; must be specified for "kspace" operation)
+
+-  **-strength value** modulate the strength of the chosen filter (exact interpretation & defaultmay depend on the exact filter chosen)
 
 Options for median filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
