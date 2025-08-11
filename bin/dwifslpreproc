@@ -828,7 +828,9 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrconvert ' + dwi_path + ' applytopup_in.nii'
                 + import_dwi_pe_table_option
                 + STRIDES_OPTION_FSL_COMPAT_4D
-                + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+                + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt'
+                + ' -export_grad_fsl applytopup_in.bvec applytopup_in.bval'
+                + ' -json_export applytopup_in.json')
 
     applytopup_config = matrix.load_matrix('applytopup_config.txt')
     if any(row[2] for row in applytopup_config):
@@ -851,18 +853,33 @@ def execute(): #pylint: disable=unused-variable
       prefix = 'applytopup_in_pe' + str(index+1)
       input_path = prefix + '.nii'
       json_path = prefix + '.json'
+      bvec_path = prefix + '.bvec'
+      bval_path = prefix + '.bval'
       temp_path = prefix + '_applytopup.nii'
       output_path = prefix + '_applytopup.mif'
-      run.command('mrconvert applytopup_in.nii ' + input_path + ' -coord 3 ' + ','.join(str(value) for value in group) + STRIDES_OPTION_FSL_COMPAT_4D + ' -json_export ' + json_path)
+      run.command('mrconvert applytopup_in.nii ' + input_path
+                  + ' -json_import applytopup_in.json'
+                  + ' -fslgrad applytopup_in.bvec applytopup_in.bval'
+                  + ' -coord 3 ' + ','.join(str(value) for value in group)
+                  + STRIDES_OPTION_FSL_COMPAT_4D
+                  + ' -json_export ' + json_path
+                  + ' -export_grad_fsl ' + bvec_path + ' ' + bval_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index+1) + ' --topup=field --out=' + temp_path + ' --method=jac')
       app.cleanup(input_path)
       temp_path = fsl.find_image(temp_path)
-      run.command('mrconvert ' + temp_path + ' ' + output_path + ' -json_import ' + json_path)
+      run.command('mrconvert ' + temp_path + ' ' + output_path
+                  + ' -json_import ' + json_path
+                  + ' -fslgrad ' + bvec_path + ' ' + bval_path)
       app.cleanup(json_path)
       app.cleanup(temp_path)
+      app.cleanup(bvec_path)
+      app.cleanup(bval_path)
       applytopup_image_list.append(output_path)
       index += 1
     app.cleanup('applytopup_in.nii')
+    app.cleanup('applytopup_in.json')
+    app.cleanup('applytopup_in.bvec')
+    app.cleanup('applytopup_in.bval')
 
     # Use the initial corrected volumes to derive a brain mask for eddy
     if not app.ARGS.eddy_mask:
