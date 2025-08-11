@@ -304,11 +304,13 @@ def execute(): #pylint: disable=unused-variable
   parallel = app.NUM_THREADS is not None and app.NUM_THREADS > 1
 
   def progress_string():
-    success_count = sum(1 if job.returncode is not None else 0 for job in jobs)
-    fail_count = sum(bool(job.returncode) for job in jobs)
     threading_message = f'across {app.NUM_THREADS} threads' if parallel else 'sequentially'
-    fail_message = f' ({fail_count} errors)' if fail_count else ''
-    return f'{success_count}/{len(jobs)} jobs completed {threading_message}{fail_message}'
+    if sys.stderr.isatty():
+      success_count = sum(1 if job.returncode is not None else 0 for job in jobs)
+      fail_count = sum(bool(job.returncode) for job in jobs)
+      fail_message = f' ({fail_count} errors)' if fail_count else ''
+      return f'{success_count}/{len(jobs)} jobs completed {threading_message}{fail_message}'
+    return f'Running {len(jobs)} jobs {threading_message}'
 
   progress = app.ProgressBar(progress_string(), len(jobs))
 
@@ -379,7 +381,7 @@ def execute(): #pylint: disable=unused-variable
 
   if app.VERBOSITY > 1:
     if any(job.outputtext for job in jobs):
-      sys.stderr.write('{app.EXE_NAME}:\n')
+      sys.stderr.write(f'{app.EXEC_NAME}:\n')
       for job in jobs:
         if job.outputtext:
           app.console(f'Output of command for input "{job.sub_in}":')
@@ -387,7 +389,7 @@ def execute(): #pylint: disable=unused-variable
             sys.stderr.write(f'{" " * (len(app.EXEC_NAME)+2)}{line}\n')
         else:
           app.console(f'No output from command for input "{job.sub_in}"')
-        sys.stderr.write('{app.EXE_NAME}:\n')
+        sys.stderr.write(f'{app.EXEC_NAME}:\n')
     else:
       app.console('No output from command for any inputs')
 

@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import math, os, re, shutil
+import math, os, re, shutil, sys
 
 
 POSTFIXES = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB' ]
@@ -79,7 +79,11 @@ def execute(): #pylint: disable=unused-variable
       dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in items])
       subdirlist[:] = list(set(subdirlist)-items)
   def print_msg():
-    return f'Searching{print_search_dir} (found {len(files_to_delete)} files, {len(dirs_to_delete)} directories)'
+    result = f'Searching{print_search_dir}'
+    if sys.stderr.isatty():
+      result += f' (found {len(files_to_delete)} files,' \
+                f' {len(dirs_to_delete)} directories)'
+    return result
   progress = app.ProgressBar(print_msg)
   for dirname, subdirlist, filelist in os.walk(root_dir):
     file_search(file_regex)

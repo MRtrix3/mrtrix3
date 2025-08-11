@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import math, os, shutil
+import math, os, shutil, sys
 
 DWIBIASCORRECT_MAX_ITERS = 2
 LMAXES_MULTI = [4,0,0]
@@ -265,7 +265,12 @@ def execute(): #pylint: disable=unused-variable
   total_scaling_factor = 1.0
 
   def msg():
-    return f'Iteration {iteration}; {step} step; previous Dice coefficient {prev_dice_coefficient}'
+    if sys.stderr.isatty():
+      result = f'Iteration {iteration}; {step} step'
+      if iteration:
+        result += '; previous Dice coefficient {prev_dice_coefficient}'
+      return result
+    return 'Running iterative optimisation'
   progress = app.ProgressBar(msg)
 
   iteration = 1
