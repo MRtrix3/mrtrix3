@@ -290,20 +290,16 @@ to manipulate this information:
    import/export the phase encoding information in the format required by FSL's
    ``topup`` tool. While this may look identical to the phase encoding table as stored
    in the ``pe_scheme`` header entry and passed using the ``-import_pe_table`` and
-   ``-export_pe_table``, the two are not always equivalent.
-   Data interfaced using this option considers the possible flipping of the first image
-   axis that occurs when the FSL software interprets image data for images with
-   a transform with a positive determinant, just as occurs in the "``bvecs``" format
-   for handling diffusion gradient tables. These options should therefore be used instead
-   of the ``-import_pe_table`` and ``-export_pe_table`` options if the relevant text
-   file involves interfacing with the FSL software.
+   ``-export_pe_table``, the two are not always equivalent;
+   see reference_axes_for_phase_encoding_directions_ below.
 
 -  The ``-import_pe_eddy`` and ``-export_pe_eddy`` options can be used to
    import/export the phase encoding information in the format required by FSL's
    ``eddy`` tool. The `FSL documentation page <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide#A--acqp>`_
    describes this format in more detail. This format takes into account the possible
    flipping of the first image axis in the same way as do the ``-import_pe_topup`` and
-   ``-export_pe_topup`` options.
+   ``-export_pe_topup`` options as described in
+   reference_axes_for_phase_encoding_directions_ below.
 
 -  The ``-json_import`` and ``-json_export`` options can be used to import/export
    *all* header key-value entries from/to an external JSON file. This may be useful
@@ -317,15 +313,99 @@ to manipulate this information:
 -  The ``-set_property`` option may be useful to *override* these header entries if
    they are deemed incorrect by some other source of information.
 
-.. note:: The formatting of the data provided as input / output to / from the
-   ``-import_pe_table`` / ``-import_pe_topup``
-   and ``-export_pe_table`` / ``-export_pe_topup`` options are *identical*.
-   This means that it is not possible to determine
-   which of the two conventions a particular file conforms to
-   based only on its contents
-   (while *MRtrix3* will write the command history string as a comment at the header file
-   *only* for the "table" format,
-   not for the "topup" format,
-   this information should not be relied upon as a marker of convention).
-   It is therefore up to user / developer diligence
-   as to which option is appropriate in any given situation.
+Reference axes for phase encoding directions
+--------------------------------------------
+
+Whether a phase encoding direction is encoded via BIDS field ``PhaseEncodingDirection``
+or using the *MRtrix3*-specific metadata key ``pe_scheme``,
+these directions are defined with respect to the image axes as-is.
+This is however *not* the case for the FSL software:
+similarly to the ``bvecs`` / ``bvals`` format for diffusion gradient tables,
+FSL uses as the basis for interpretation of phase encoding directions
+its own internal coordinate system.
+This system is *sometimes*, but *not always*,
+equivalent to the image axes as encoded by the image header transform.
+This equivalence depends on the "*handedness*" of that transform:
+
+-  A "*left-handed*" coordinate system
+   is one where if the positive direction of the first image axis
+   is indicated with one's left thumb,
+   and the positive direction of the second image axis
+   is indicated with one's left index finger,
+   then the direction of the left middle finger
+   when placed at right angles to the first two
+   indicates the positive direction of the third image axis.
+   Mathemtically, it is stated that the *determinant* of the transform is *negative*.
+   In this circumstance,
+   the phase encoding directions encoded by the file formats
+   here attributed to the "`topup`" and "`eddy`" commands
+   *do* correspond to the image axes as stored on disk.
+
+-  The converse situation is an image with a "*right-handed*" coordinate system /
+   a positive determinant.
+   Notably, the "RAS" (right-anterior-superior) coordinate system
+   used both by the NIfTI image format and the *MRtrix3* software
+   is intrinsically right-handed.
+   When FSL reads such an image,
+   it performs an internal re-interpretation
+   that is equivalent to having flipped the image along the first axis.
+
+.. note:: It is the handedness of the image transform that is *stored on disk*
+   that matters here,
+   *not* *MRtrix3*s *interpretation* of those data:
+   in the absence of use of "RealignTransform: false" in an MRtrix config file
+   or the use of command-line option "``-config RealignTransform false``",
+   *MRtrix3* will interpret *every* image as right-handed,
+   as it *explicitly* alters its interpretation of the image data
+   in order for this to be the case.
+
+This is consequential in the definition of phase encoding directions
+within external metadata files.
+If an image has a *left*-handed transform,
+then the image axes as stored and the FSL interepretation of those image axes
+are equivalent,
+and therefore the BIDS / *MRtrix3* and FSL interpretation of phase encoding directions
+are also equivalent.
+For an image with a *right*-handed transform this is however not the case.
+FSL's re-interpretation of such images,
+in a manner equivalent to having flipped the first image axis,
+is *not* reflected in its interpretation of phase encoding metadata.
+As such, phase encoding directions
+defined in metadata text files intended for interfacing with FSL
+need to be defined with respect to *how FSL will interpret the image*
+rather than the image itself.
+
+This distinction is the reason why,
+from version 3.0.8 of the *MRtrix3* software,
+there are separate command-line options ``-import_pe_topup`` and ``-export_pe_topup``
+in contrast to ``-import_pe_table`` and ``-export_pe_table``.
+The appropriate command-line option needs to be chosen
+based on which of these interpretations should be applied.
+This in turn may in turn depend on where those data have come from
+or the reason for which the data are being exported to text file.
+
+Unfortunately, it is *not* possible to determine
+which of these two conventions a given metadata file conforms to
+based exclusively on the context of the text file.
+In both scenarios,
+the corresponding text file contains four columns,
+with the first three columns providing a one-hot encoding of phase encoding direction
+and the fourth column providing the total readout time.
+It is only the *interpretation* of the stored phase encoding direction
+that differs between the two conventions.
+Ensuring that such metadata are appropriately *generated* and *interpreted*,
+both by *MRtrix3* and other neuroimaging softwares,
+is up to the diligence of the user.
+
+(While it is true that *MRtrix3* will write a comment at the head of the text file
+providing the string of the command used to generate that file
+*only* for the ``-export_pe_table`` option and *not* for the ``-export_pe_topup`` option,
+the presence of such content should *not* be interpreted on its own as a robust marker
+of which set of references axes should be used
+in interpretation of the contained phase encoding data)
+
+Options ``-import_pe_eddy` and ``-export_pe_eddy``
+involve storing the phase encoding information in a slightly different format,
+but the interpretation of the phase encoding directions contained within
+have the same confound with respect to image transform handedness
+as does the format interfaced by the ``-import_pe_topup`` and ``-export_pe_topup`` options.

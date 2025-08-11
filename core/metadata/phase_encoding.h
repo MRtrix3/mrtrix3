@@ -27,6 +27,7 @@
 #include "header.h"
 #include "metadata/bids.h"
 #include "types.h"
+#include "version.h"
 
 namespace MR {
   namespace Metadata {
@@ -118,7 +119,8 @@ namespace MR {
 
         if (Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
           WARN("External phase encoding table \"" + path + "\" for image \"" + header.name() + "\""
-               " may not be suitable for FSL topup; consider use of -export_pe_topup instead");
+               " may not be suitable for FSL topup; consider use of -export_pe_topup instead"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
           save_table(transform_for_nifti_write(PE, header), path, true);
         } else {
           save_table(PE, path, true);
@@ -133,11 +135,11 @@ namespace MR {
           throw Exception(e, "Cannot export phase-encoding table to file \"" + path + "\"");
         }
 
-        // TODO Should this check be in place?
-        // TODO Consider decreasing to warning?
-        if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"}))
-          throw Exception("Only export phase encoding table to FSL topup format"
-                          " in conjunction with MGH / NIfTI format images");
+        if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
+          WARN("Beware use of -export_pe_topup in conjunction image format other than MGH / NIfTI;"
+               " -export_pe_table may be more suitable"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
+        }
 
         scheme_type table = transform_for_nifti_write(PE, header);
         // The flipping of first axis based on the determinant of the image header transform
@@ -155,9 +157,12 @@ namespace MR {
                      const HeaderType& header,
                      const std::string& config_path,
                      const std::string& index_path) {
-        if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"}))
-          throw Exception("Only export phase encoding table to FSL eddy format"
-                          " in conjunction with MGH / NIfTI format images");
+        if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
+          WARN("Exporting phase encoding table to FSL eddy format"
+               " in conjunction with format other than MGH / NIfTI"
+               " risks erroneous interpretation due to possible flipping of first image axis"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
+        }
         scheme_type table = transform_for_nifti_write(PE, header);
         Axes::permutations_type order;
         const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);

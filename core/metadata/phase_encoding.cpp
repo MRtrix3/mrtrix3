@@ -227,8 +227,13 @@ namespace MR {
         try {
           pe_scheme = parse_scheme(keyval, H);
         } catch (Exception& e) {
-          WARN("Unable to conform phase encoding information to image realignment "
-               " for image \"" + H.name() + "\"; erasing");
+          if ((keyval.find("PhaseEncodingDirection") != keyval.end()
+              && keyval["PhaseEncodingDirection"] != "variable")
+              || (keyval.find("pe_scheme") != keyval.end()
+              && keyval["pe_scheme"] != "variable")) {
+            WARN("Unable to conform phase encoding information to image realignment"
+                 " for image \"" + H.name() + "\"; erasing");
+          }
           clear_scheme(keyval);
           return;
         }
@@ -367,6 +372,13 @@ namespace MR {
 
 
       scheme_type load_table(const std::string& path, const Header& header) {
+        if (Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+          WARN("Note use of -import_pe_table in conjunction with MGH / NIfTI image"
+               " interprets phase encoding directions as being strictly with respect to image axes,"
+               " not with respect to the FSL internal convention;"
+               " consider if -import_pe_topup is more appropriate for your use case"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
+        }
         const scheme_type PE = load_matrix(path);
         check(PE, header);
         // As with JSON import, need to query the header to discover if the
@@ -379,6 +391,12 @@ namespace MR {
 
 
       scheme_type load_topup(const std::string& path, const Header& header) {
+        if (!Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+          WARN("Loading FSL topup format phase encoding information"
+               " accompanying image \"" + header.name() + "\" that is not MGH / NIfTI format"
+               " may be erroneous due to possible flipping of first image axis"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
+        }
         scheme_type PE = load_matrix(path);
         check(PE, header);
         // Flip of first image axis based on determinant of image transform
@@ -392,6 +410,12 @@ namespace MR {
 
 
       scheme_type load_eddy(const std::string& config_path, const std::string& index_path, const Header& header) {
+        if (!Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+          WARN("Loading FSL eddy format phase encoding information"
+               " accompanying image \"" + header.name() + "\" that is not MGH / NIfTI format"
+               " may be erroneous due to possible flipping of first image axis"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
+        }
         const Eigen::MatrixXd config = load_matrix(config_path);
         const Eigen::Array<int, Eigen::Dynamic, 1> indices = load_vector<int>(index_path);
         scheme_type PE = eddy2topup(config, indices);
