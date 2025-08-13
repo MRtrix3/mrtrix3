@@ -30,6 +30,8 @@ namespace App {
 class OptionGroup;
 }
 
+// TODO Move some to metadata
+
 namespace DWI {
 
 App::OptionGroup GradImportOptions();
