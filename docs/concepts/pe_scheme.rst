@@ -313,6 +313,8 @@ to manipulate this information:
 -  The ``-set_property`` option may be useful to *override* these header entries if
    they are deemed incorrect by some other source of information.
 
+.. _reference_axes_for_phase_encoding_directions:
+
 Reference axes for phase encoding directions
 --------------------------------------------
 
