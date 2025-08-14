@@ -108,7 +108,7 @@ namespace MR
               auto scheme = DWI::resolve_DW_scheme (parse_matrix (item.second), parse_matrix (it->second));
               DWI::set_DW_scheme (new_keyval, scheme);
             } catch (Exception& e) {
-              WARN("Unable to merge inconsistent DW gradient tables between headers");
+              INFO("Unable to merge inconsistent DW gradient tables between headers");
               new_keyval["dw_scheme"] = "variable";
             }
           }
@@ -342,7 +342,8 @@ namespace MR
       }
       parser.calculate_padding (Pdim);
 
-
+      // FIXME This fails to appropriately assign rows of these schemes to images
+      //   if splitting 4D image into 2D images
       const bool split_4d_schemes = (parser.ndim() == 1 && template_header.ndim() == 4);
       Eigen::MatrixXd dw_scheme, pe_scheme;
       try {
