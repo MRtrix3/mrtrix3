@@ -16,7 +16,15 @@
 import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
-
+import re
+import typing as ty
+from keyword import kwlist as PYTHON_KEYWORDS
+try:
+  import black.parsing
+except ImportError:
+  HAVE_BLACK = False
+else:
+  HAVE_BLACK = True
 
 
 # These global constants can / should be accessed directly by scripts:
