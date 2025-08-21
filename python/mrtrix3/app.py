@@ -745,6 +745,20 @@ class Parser(argparse.ArgumentParser):
     @staticmethod
     def _metavar():
       return 'values'
+    
+
+  # Would you mind if this is defined here instead of in commands.population_template.usage
+  # makes it much easiery to import and include in instance checks for pydra auto-gen??
+  class SequenceDirectoryOut(CustomTypeBase):
+    def __call__(self, input_value):
+      return [Parser.make_userpath_object(Parser._UserDirOutPathExtras, item) # pylint: disable=protected-access \
+              for item in input_value.split(',')]
+    @staticmethod
+    def _legacytypestring():
+      return 'SEQDIROUT'
+    @staticmethod
+    def _metavar():
+      return 'directory_list'        
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
