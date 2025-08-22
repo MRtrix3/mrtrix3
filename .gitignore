@@ -11,16 +11,8 @@
 *.img
 *.hdr
 *.rste
+/python/lib/mrtrix3/_version.py
 *.venv
-config
-build.*
-/configure.log
-/build.log
-/core/version.cpp
-/src/exec_version.cpp
-/src/project_version.h
-/lib/mrtrix3/_version.py
-/test/src/project_version.h
 /scripts/mrtrix_bash_completion
 /dev/
 /compiled_docs/
@@ -45,19 +37,3 @@ build/
 CMakeLists.txt.user
 testing/data/tmp*
 testing/data/*-tmp-*
-*.venv
-/interfaces/pydra/src/pydra/tasks/mrtrix3/*
-_version.py
-version.cpp
-exec_version.cpp
-__pycache__
-.DS_Store
-
-# Pydra related ignores
-
-_version.py
-/interfaces/pydra/src/pydra/tasks/mrtrix3/v3_0
-/interfaces/pydra/**/dist/**
-.pytest_cache
-/build*
-/install
