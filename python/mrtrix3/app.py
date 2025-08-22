@@ -156,7 +156,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   elif sys.argv[-1] == '__print_usage_rst__':
     CMDLINE.print_usage_rst()
     sys.exit(0)
-  elif sys.argv[-1] == '__print_usage_pydra__':
+  elif sys.argv[-1] == '__print_pydra_code__':
     CMDLINE.print_usage_pydra()
     sys.exit(0)
 

@@ -898,8 +898,7 @@ std::string pydra_usage() {
       "return", "True",   "try",    "while",   "with",     "yield",    "container", "image", "container_xargs"};
 
   // Add import lines
-  std::string s =
-      std::string("# Auto-generated from MRtrix C++ command with '__print_usage_pydra__' secret option\n\n");
+  std::string s = std::string("# Auto-generated from MRtrix C++ command with '__print_pydra_code__' secret option\n\n");
   s += "import typing as ty \n";
   s += "from pathlib import Path  # noqa: F401\n";
   s += "from fileformats.generic import File, Directory  # noqa: F401\n";
@@ -1346,7 +1345,7 @@ void parse_special_options() {
     print(restructured_text_usage());
     throw 0;
   }
-  if (raw_arguments_list.front() == "__print_usage_pydra__") {
+  if (raw_arguments_list.front() == "__print_pydra_code__") {
     print(pydra_usage());
     throw 0;
   }
