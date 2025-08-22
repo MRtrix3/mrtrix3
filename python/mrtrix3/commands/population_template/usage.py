@@ -32,16 +32,7 @@ from . import AGGREGATION_MODES, \
               REGISTRATION_MODES
 
 
-class SequenceDirectoryOut(app.Parser.CustomTypeBase):
-  def __call__(self, input_value):
-    return [app.Parser.make_userpath_object(app.Parser._UserDirOutPathExtras, item) # pylint: disable=protected-access \
-            for item in input_value.split(',')]
-  @staticmethod
-  def _legacytypestring():
-    return 'SEQDIROUT'
-  @staticmethod
-  def _metavar():
-    return 'directory_list'
+
 
 
 
@@ -230,7 +221,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='Output a directory containing warps from each input to the template.'
                             ' If the folder does not exist it will be created')
   options.add_argument('-transformed_dir',
-                       type=SequenceDirectoryOut(),
+                       type=app.Parser.SequenceDirectoryOut(),
                        help='Output a directory containing the input images transformed to the template.'
                             ' If the folder does not exist it will be created.'
                             ' For multi-contrast registration,'
