@@ -847,7 +847,7 @@ std::string restructured_text_usage() {
   return s;
 }
 
-std::string pydra_usage() {
+std::string pydra_code() {
 
   std::string CMD_PREFIXES[] = {"Fivett", "Afd",    "Amp",       "Connectome", "Dcm",   "Dir",    "Dwi",   "Fixel",
                                 "Fod",    "Label",  "Mask",      "Mesh",       "Mr",    "Mt",     "Peaks", "Sh",
@@ -1346,7 +1346,7 @@ void parse_special_options() {
     throw 0;
   }
   if (raw_arguments_list.front() == "__print_pydra_code__") {
-    print(pydra_usage());
+    print(pydra_code());
     throw 0;
   }
   if (raw_arguments_list.front() == "__print_synopsis__") {
