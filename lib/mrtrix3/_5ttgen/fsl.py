@@ -78,7 +78,7 @@ def execute(): #pylint: disable=unused-variable
   fsl_suffix = fsl.suffix()
 
   if not app.ARGS.mask and not app.ARGS.premasked and not find_executable('dc'):
-    app.warn('Unix command "dc" not found; FSL script "standard_space_roi" may fail')
+    app.warn('Unix command "dc" not found; FSL commands may fail')
 
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
   if app.ARGS.sgm_amyg_hipp:

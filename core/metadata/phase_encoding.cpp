@@ -27,6 +27,8 @@ namespace MR {
       using namespace App;
       const OptionGroup ImportOptions =
         OptionGroup("Options for importing phase-encode tables")
+        + Option("import_pe_table", "import a phase-encoding table from file")
+          + Argument("file").type_file_in()
         + Option("import_pe_topup", "import a phase-encoding table intended for FSL TOPUP from file")
           + Argument("file").type_file_in()
         + Option("import_pe_eddy", "import phase-encoding information from an EDDY-style config / index file pair")
@@ -44,6 +46,8 @@ namespace MR {
 
       const OptionGroup ExportOptions =
         OptionGroup("Options for exporting phase-encode tables")
+        + Option("export_pe_table", "export phase-encoding table to file")
+          + Argument("file").type_file_out()
         + Option("export_pe_topup", "export phase-encoding table to a file intended for FSL topup")
           + Argument("file").type_file_out()
         + Option("export_pe_eddy", "export phase-encoding information to an EDDY-style config / index file pair")
@@ -180,15 +184,18 @@ namespace MR {
         DEBUG("searching for suitable phase encoding data...");
         using namespace App;
 
+        const auto opt_table = get_options("import_pe_table");
         const auto opt_topup = get_options("import_pe_topup");
         const auto opt_eddy = get_options("import_pe_eddy");
-        if (opt_topup.size() + opt_eddy.size() > 1)
+        if (opt_table.size() + opt_topup.size() + opt_eddy.size() > 1)
           throw Exception("Cannot specify more than one command-line option"
                           " for importing phase encoding information from external file(s)");
 
         scheme_type result;
         try {
-          if (!opt_topup.empty())
+          if (!opt_table.empty())
+            result = load_table(opt_table[0][0], header);
+          else if (!opt_topup.empty())
             result = load_topup(opt_topup[0][0], header);
           else if (!opt_eddy.empty())
             result = load_eddy(opt_eddy[0][0], opt_eddy[0][1], header);
@@ -220,8 +227,13 @@ namespace MR {
         try {
           pe_scheme = parse_scheme(keyval, H);
         } catch (Exception& e) {
-          WARN("Unable to conform phase encoding information to image realignment "
-               " for image \"" + H.name() + "\"; erasing");
+          if ((keyval.find("PhaseEncodingDirection") != keyval.end()
+              && keyval["PhaseEncodingDirection"] != "variable")
+              || (keyval.find("pe_scheme") != keyval.end()
+              && keyval["pe_scheme"] != "variable")) {
+            WARN("Unable to conform phase encoding information to image realignment"
+                 " for image \"" + H.name() + "\"; erasing");
+          }
           clear_scheme(keyval);
           return;
         }
@@ -344,7 +356,11 @@ namespace MR {
 
         auto scheme = parse_scheme(header.keyval(), header);
 
-        auto opt = get_options("export_pe_topup");
+        auto opt = get_options("export_pe_table");
+        if (!opt.empty())
+          save_table(check(scheme), header, opt[0][0]);
+
+        opt = get_options("export_pe_topup");
         if (!opt.empty())
           save_topup(check(scheme), header, opt[0][0]);
 
@@ -355,7 +371,32 @@ namespace MR {
 
 
 
+      scheme_type load_table(const std::string& path, const Header& header) {
+        if (Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+          WARN("Note use of -import_pe_table in conjunction with MGH / NIfTI image"
+               " interprets phase encoding directions as being strictly with respect to image axes,"
+               " not with respect to the FSL internal convention;"
+               " consider if -import_pe_topup is more appropriate for your use case"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
+        }
+        const scheme_type PE = load_matrix(path);
+        check(PE, header);
+        // As with JSON import, need to query the header to discover if the
+        //   strides / transform were modified on image load to make the image
+        //   data appear approximately axial, in which case we need to apply the
+        //   same transforms to the phase encoding data on load
+        return transform_for_image_load(PE, header);
+      }
+
+
+
       scheme_type load_topup(const std::string& path, const Header& header) {
+        if (!Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+          WARN("Loading FSL topup format phase encoding information"
+               " accompanying image \"" + header.name() + "\" that is not MGH / NIfTI format"
+               " may be erroneous due to possible flipping of first image axis"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
+        }
         scheme_type PE = load_matrix(path);
         check(PE, header);
         // Flip of first image axis based on determinant of image transform
@@ -369,6 +410,12 @@ namespace MR {
 
 
       scheme_type load_eddy(const std::string& config_path, const std::string& index_path, const Header& header) {
+        if (!Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+          WARN("Loading FSL eddy format phase encoding information"
+               " accompanying image \"" + header.name() + "\" that is not MGH / NIfTI format"
+               " may be erroneous due to possible flipping of first image axis"
+               " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)");
+        }
         const Eigen::MatrixXd config = load_matrix(config_path);
         const Eigen::Array<int, Eigen::Dynamic, 1> indices = load_vector<int>(index_path);
         scheme_type PE = eddy2topup(config, indices);

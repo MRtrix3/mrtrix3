@@ -11,4 +11,4 @@ mrcat mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/
 mrcat mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih - -axis 0 | testing_diff_header -keyval - mrcat/one_axis0.mif
 ! mrcat tmp-[].mif -axis 3 tmp.mif -force 2>&1 | grep "Unable to merge inconsistent DW gradient tables between headers"
 ! mrcat rpesplit1.mif rpesplit2.mif -axis 3 tmp.mif -force 2>&1 | grep "Unable to merge inconsistent DW gradient tables between headers"
-mrconvert rpesplit1.mif -coord 3 0:9 - | mrcat - rpesplit2.mif -axis 2 - 2>&1 | grep "Unable to merge inconsistent DW gradient tables between headers"
+mrconvert rpesplit1.mif -coord 3 0:9 - | mrcat - rpesplit2.mif -axis 2 - -info 2>&1 | grep "Unable to merge inconsistent DW gradient tables between headers"
