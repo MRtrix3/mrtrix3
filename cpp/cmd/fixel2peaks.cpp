@@ -47,8 +47,8 @@ void usage() {
   + Fixel::format_description;
 
   ARGUMENTS
-  + Argument ("in",  "the input fixel information").type_various ()
-  + Argument ("out", "the output peaks image").type_image_out ();
+  + Argument ("in",  "the input fixel information").type_directory_in().type_image_in()
+  + Argument ("out", "the output peaks image").type_image_out();
 
   OPTIONS
   + Option ("number", "maximum number of fixels in each voxel"

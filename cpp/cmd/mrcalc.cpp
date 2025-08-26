@@ -403,7 +403,7 @@ ARGUMENTS
   + Argument ("operand", "an input image,"
                          " intensity value,"
                          " or special keyword"
-                         " (see Description)").type_various().allow_multiple();
+                         " (see Description)").type_image_in().type_image_out().type_float().type_text().allow_multiple();
 
 OPTIONS
 
