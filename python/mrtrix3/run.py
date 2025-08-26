@@ -124,10 +124,9 @@ class Shared:
     for entry in entries:
       # It's possible that the file might be defined in a '--option=XXX' style argument
       #   It's also possible that the filename in the command string has the file extension omitted
-      if entry.startswith('--') and '=' in entry:
-        totest = entry.split('=')[1]
-      else:
-        totest = entry
+      totest = entry.split('=')[1] \
+          if isinstance(entry, str) and entry.startswith('--') and '=' in entry \
+          else entry
       if totest in [ self._last_file, os.path.splitext(self._last_file)[0] ]:
         self._last_file = ''
         return True
