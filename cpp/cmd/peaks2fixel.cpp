@@ -34,7 +34,7 @@ void usage() {
   + Fixel::format_description;
 
   ARGUMENTS
-  + Argument ("directions", "the input directions image;"
+  + Argument ("fibre_directions", "the input directions image;"
                             " each volume corresponds to the x, y & z"
                             " component of each direction vector in turn.").type_image_in()
 
