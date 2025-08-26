@@ -97,7 +97,7 @@ namespace MR
               loader,
               Thread::batch (Tractography::Streamline<float>()),
               Thread::multi (mapper),
-              Thread::batch (Mapping::SetFixel()),
+              Thread::batch (Mapping::Set<Mapping::Fixel>()),
               *this);
 
           INFO ("Proportionality coefficient after streamline mapping is " + str (mu()));
@@ -128,7 +128,7 @@ namespace MR
 
 
 
-        bool ModelBase::operator() (const Mapping::SetFixel& in)
+        bool ModelBase::operator() (const Mapping::Set<Mapping::Fixel>& in)
         {
           value_type total_contribution = 0.0;
           for (const auto& i : in) {

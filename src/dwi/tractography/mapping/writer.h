@@ -39,14 +39,14 @@ namespace MR {
       namespace Mapping {
 
 
-
-        enum writer_dim { UNDEFINED, GREYSCALE, DEC, DIXEL, TOD };
+        // TODO Can we rename "greyscale" to "Voxel"?
+        enum writer_dim { UNDEFINED, GREYSCALE, DEC, DIXEL, TOD, FIXEL };
         extern const char* writer_dims[];
 
 
 
         class MapWriterBase
-        { 
+        {
 
           public:
             MapWriterBase (const Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
@@ -68,15 +68,17 @@ namespace MR {
 
 
 
-            virtual bool operator() (const SetVoxel&)    { return false; }
-            virtual bool operator() (const SetVoxelDEC&) { return false; }
-            virtual bool operator() (const SetDixel&)    { return false; }
-            virtual bool operator() (const SetVoxelTOD&) { return false; }
+            virtual bool operator() (const Set<Voxel>&)    { return false; }
+            virtual bool operator() (const Set<VoxelDEC>&) { return false; }
+            virtual bool operator() (const Set<Dixel>&)    { return false; }
+            virtual bool operator() (const Set<VoxelTOD>&) { return false; }
+            virtual bool operator() (const Set<Fixel>&) { return false; }
 
-            virtual bool operator() (const Gaussian::SetVoxel&)    { return false; }
-            virtual bool operator() (const Gaussian::SetVoxelDEC&) { return false; }
-            virtual bool operator() (const Gaussian::SetDixel&)    { return false; }
-            virtual bool operator() (const Gaussian::SetVoxelTOD&) { return false; }
+            virtual bool operator() (const Set<Gaussian::Voxel>&)    { return false; }
+            virtual bool operator() (const Set<Gaussian::VoxelDEC>&) { return false; }
+            virtual bool operator() (const Set<Gaussian::Dixel>&)    { return false; }
+            virtual bool operator() (const Set<Gaussian::VoxelTOD>&) { return false; }
+            virtual bool operator() (const Set<Gaussian::Fixel>&)    { return false; }
 
 
           protected:
@@ -100,7 +102,7 @@ namespace MR {
 
         template <typename value_type>
           class MapWriter : public MapWriterBase
-        { 
+        {
 
           public:
           MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
@@ -119,7 +121,7 @@ namespace MR {
                 buffer.zero();
               } */
 
-            } else { // Greyscale and dixel
+            } else { // Greyscale, dixel and fixel
 
               if (voxel_statistic == V_MIN) {
                 for (auto l = loop (buffer); l; ++l )
@@ -152,13 +154,12 @@ namespace MR {
 
           void finalise () override {
 
-            auto loop = Loop (buffer, 0, 3);
             switch (voxel_statistic) {
 
               case V_SUM:
                 if (type == DEC) {
                   assert (counts);
-                  for (auto l = loop (buffer, *counts); l; ++l) {
+                  for (auto l = Loop(buffer, 0, 3) (buffer, *counts); l; ++l) {
                     const float total_weight = counts->value();
                     if (total_weight) {
                       auto value = get_dec();
@@ -172,22 +173,22 @@ namespace MR {
                 break;
 
               case V_MIN:
-                for (auto l = loop (buffer); l; ++l ) {
+                for (auto l = Loop (buffer, 0, 3) (buffer); l; ++l ) {
                   if (buffer.value() == std::numeric_limits<value_type>::max())
                     buffer.value() = value_type(0);
                 }
                 break;
 
               case V_MEAN:
-                if (type == GREYSCALE) {
+                if (type == GREYSCALE || type == FIXEL) {
                   assert (counts);
-                  for (auto l = loop (buffer, *counts); l; ++l) {
+                  for (auto l = Loop (buffer) (buffer, *counts); l; ++l) {
                     if (counts->value())
                       buffer.value() /= value_type(counts->value());
                   }
                 }
                 else if (type == DEC) {
-                  for (auto l = loop (buffer); l; ++l) {
+                  for (auto l = Loop (buffer, 0, 3) (buffer); l; ++l) {
                     auto value = get_dec();
                     if (value.squaredNorm())
                       set_dec (value.normalized());
@@ -195,7 +196,7 @@ namespace MR {
                 }
                 else if (type == TOD) {
                   assert (counts);
-                  for (auto l = loop (buffer, *counts); l; ++l) {
+                  for (auto l = Loop (buffer, 0, 3) (buffer, *counts); l; ++l) {
                     if (counts->value()) {
                       VoxelTOD::vector_type value;
                       get_tod (value);
@@ -203,7 +204,7 @@ namespace MR {
                       set_tod (value);
                     }
                   }
-                } else { // Dixel
+                } else if (type == DIXEL) {
                   assert (counts);
                   // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
                   //   rather than a per-dixel mean?
@@ -211,16 +212,13 @@ namespace MR {
                     if (counts->value())
                       buffer.value() /= default_type(counts->value());
                   }
+                } else {
+                  assert (false);
                 }
                 break;
 
               case V_MAX:
-                if (type == GREYSCALE) {
-                  for (auto l = loop (buffer); l; ++l) {
-                    if (buffer.value() == -std::numeric_limits<value_type>::max())
-                      buffer.value() = value_type(0);
-                  }
-                } else if (type == DIXEL) {
+                if (type == GREYSCALE || type == DIXEL || type == FIXEL) {
                   for (auto l = Loop (buffer) (buffer); l; ++l) {
                     if (buffer.value() == -std::numeric_limits<value_type>::max())
                       buffer.value() = value_type(0);
@@ -237,15 +235,17 @@ namespace MR {
           }
 
 
-          bool operator() (const SetVoxel& in)    override { receive_greyscale (in); return true; }
-          bool operator() (const SetVoxelDEC& in) override { receive_dec       (in); return true; }
-          bool operator() (const SetDixel& in)    override { receive_dixel     (in); return true; }
-          bool operator() (const SetVoxelTOD& in) override { receive_tod       (in); return true; }
+          bool operator() (const Set<Voxel>& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const Set<VoxelDEC>& in) override { receive_dec       (in); return true; }
+          bool operator() (const Set<Dixel>& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const Set<VoxelTOD>& in) override { receive_tod       (in); return true; }
+          bool operator() (const Set<Fixel>& in)    override { receive_fixel     (in); return true; }
 
-          bool operator() (const Gaussian::SetVoxel& in)    override { receive_greyscale (in); return true; }
-          bool operator() (const Gaussian::SetVoxelDEC& in) override { receive_dec       (in); return true; }
-          bool operator() (const Gaussian::SetDixel& in)    override { receive_dixel     (in); return true; }
-          bool operator() (const Gaussian::SetVoxelTOD& in) override { receive_tod       (in); return true; }
+          bool operator() (const Set<Gaussian::Voxel>& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const Set<Gaussian::VoxelDEC>& in) override { receive_dec       (in); return true; }
+          bool operator() (const Set<Gaussian::Dixel>& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const Set<Gaussian::VoxelTOD>& in) override { receive_tod       (in); return true; }
+          bool operator() (const Set<Gaussian::Fixel>& in)    override { receive_fixel     (in); return true; }
 
 
           private:
@@ -257,6 +257,7 @@ namespace MR {
           template <class Cont> void receive_dec       (const Cont&);
           template <class Cont> void receive_dixel     (const Cont&);
           template <class Cont> void receive_tod       (const Cont&);
+          template <class Cont> void receive_fixel     (const Cont&);
 
           // Partially specialized template function to shut up modern compilers
           //   regarding using multiplication in a boolean context
@@ -266,26 +267,27 @@ namespace MR {
           //   For the standard SetVoxel classes, this is a single value 'factor' for the set as
           //     stored in SetVoxelExtras
           //   For the Gaussian SetVoxel classes, there is a factor per mapped element
-          default_type get_factor (const Voxel&    element, const SetVoxel&    set) const { return set.factor; }
-          default_type get_factor (const VoxelDEC& element, const SetVoxelDEC& set) const { return set.factor; }
-          default_type get_factor (const Dixel&    element, const SetDixel&    set) const { return set.factor; }
-          default_type get_factor (const VoxelTOD& element, const SetVoxelTOD& set) const { return set.factor; }
-          default_type get_factor (const Gaussian::Voxel&    element, const Gaussian::SetVoxel&    set) const { return element.get_factor(); }
-          default_type get_factor (const Gaussian::VoxelDEC& element, const Gaussian::SetVoxelDEC& set) const { return element.get_factor(); }
-          default_type get_factor (const Gaussian::Dixel&    element, const Gaussian::SetDixel&    set) const { return element.get_factor(); }
-          default_type get_factor (const Gaussian::VoxelTOD& element, const Gaussian::SetVoxelTOD& set) const { return element.get_factor(); }
+          default_type get_factor (const Voxel&    element, const Set<Voxel>&    set) const { return set.factor; }
+          default_type get_factor (const VoxelDEC& element, const Set<VoxelDEC>& set) const { return set.factor; }
+          default_type get_factor (const Dixel&    element, const Set<Dixel>&    set) const { return set.factor; }
+          default_type get_factor (const VoxelTOD& element, const Set<VoxelTOD>& set) const { return set.factor; }
+          default_type get_factor (const Fixel&    element, const Set<Fixel>&    set) const { return set.factor; }
+          default_type get_factor (const Gaussian::Voxel&    element, const Set<Gaussian::Voxel>&    set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::VoxelDEC& element, const Set<Gaussian::VoxelDEC>& set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::Dixel&    element, const Set<Gaussian::Dixel>&    set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::VoxelTOD& element, const Set<Gaussian::VoxelTOD>& set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::Fixel&    element, const Set<Gaussian::Fixel>&    set) const { return element.get_factor(); }
 
 
           // Convenience functions for Directionally-Encoded Colour processing
           Eigen::Vector3d get_dec ();
-          void           set_dec (const Eigen::Vector3d&);
+          void            set_dec (const Eigen::Vector3d&);
 
           // Convenience functions for Track Orientation Distribution processing
           void get_tod (      VoxelTOD::vector_type&);
           void set_tod (const VoxelTOD::vector_type&);
 
         };
-
 
 
 
@@ -433,6 +435,33 @@ namespace MR {
                   break;
                 default:
                   throw Exception ("Unknown / unhandled voxel statistic in MapWriter::receive_tod()");
+              }
+            }
+          }
+
+
+
+        template <typename value_type>
+          template <class Cont>
+          void MapWriter<value_type>::receive_fixel (const Cont& in)
+          {
+            assert (MapWriterBase::type == FIXEL);
+            for (const auto& i : in) {
+              buffer.index(0) = MR::Fixel::index_type(i);
+              const default_type factor = get_factor (i, in);
+              const default_type weight = in.weight * i.get_length();
+              switch (voxel_statistic) {
+                case V_SUM:  add (weight, factor); break;
+                case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
+                case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
+                case V_MEAN:
+                             add (weight, factor);
+                             assert (counts);
+                             counts->index(0) = MR::Fixel::index_type(i);
+                             counts->value() += weight;
+                             break;
+                default:
+                             throw Exception ("Unknown / unhandled voxel statistic in MapWriter::receive_fixel()");
               }
             }
           }

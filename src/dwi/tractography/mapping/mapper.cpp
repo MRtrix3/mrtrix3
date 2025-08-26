@@ -25,7 +25,7 @@ namespace Mapping {
 
 
 
-void TrackMapperBase::voxelise (const Streamline<>& tck, SetVoxel& voxels) const
+void TrackMapperBase::voxelise (const Streamline<>& tck, Set<Voxel>& voxels) const
 {
   Eigen::Vector3i vox;
   for (const auto& i : tck) {
@@ -39,7 +39,7 @@ void TrackMapperBase::voxelise (const Streamline<>& tck, SetVoxel& voxels) const
 
 
 
-void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) const
+void TrackMapperTWI::set_factor (const Streamline<>& tck, SetExtras& out) const
 {
 
   size_t count = 0;

@@ -94,8 +94,8 @@ namespace MR {
             void gaussian_smooth_factors (const Streamline<>&) const;
 
             // Overload corresponding functions in TrackMapperTWI
-            void set_factor (const Streamline<>& tck, SetVoxelExtras& out) const;
-            bool preprocess (const Streamline<>& tck, SetVoxelExtras& out) const { set_factor (tck, out); return true; }
+            void set_factor (const Streamline<>& tck, SetExtras& out) const;
+            bool preprocess (const Streamline<>& tck, SetExtras& out) const { set_factor (tck, out); return true; }
 
             // Three versions of voxelise() function, just as in base class: difference is that here the
             //   corresponding TWI factor for each voxel mapping must be determined and passed to add_to_set()
@@ -103,10 +103,11 @@ namespace MR {
             template <class Cont> void voxelise_precise (const Streamline<>&, Cont&) const;
             template <class Cont> void voxelise_ends    (const Streamline<>&, Cont&) const;
 
-            inline void add_to_set (SetVoxel&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
-            inline void add_to_set (SetVoxelDEC&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
-            inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
-            inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
+            inline void add_to_set (Set<Voxel>&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
+            inline void add_to_set (Set<VoxelDEC>&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
+            inline void add_to_set (Set<Dixel>&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
+            inline void add_to_set (Set<VoxelTOD>&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
+            inline void add_to_set (Set<Fixel>&,    const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
 
             // Convenience function to convert from streamline position index to a linear-interpolated
             //   factor value (TrackMapperTWI member field factors[] only contains one entry per pre-upsampled point)
@@ -256,25 +257,38 @@ namespace MR {
 
 
 
-          inline void TrackMapper::add_to_set (SetVoxel&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
+          inline void TrackMapper::add_to_set (Set<Voxel>&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
           {
-            out.insert (v, l, f);
+            const Voxel voxel (v, l, f);
+            out.insert (voxel);
           }
-          inline void TrackMapper::add_to_set (SetVoxelDEC& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
+          inline void TrackMapper::add_to_set (Set<VoxelDEC>& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
           {
-            out.insert (v, d, l, f);
+            const VoxelDEC voxel (v, d, l, f);
+            out.insert (voxel);
           }
-          inline void TrackMapper::add_to_set (SetDixel&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
+          inline void TrackMapper::add_to_set (Set<Dixel>&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
           {
             assert (dixel_plugin);
             const size_t bin = (*dixel_plugin) (d);
-            out.insert (v, bin, l, f);
+            const Dixel dixel (v, bin, l, f);
+            out.insert (dixel);
           }
-          inline void TrackMapper::add_to_set (SetVoxelTOD& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
+          inline void TrackMapper::add_to_set (Set<VoxelTOD>& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
           {
             assert (tod_plugin);
             (*tod_plugin) (d);
-            out.insert (v, (*tod_plugin)(), l, f);
+            const VoxelTOD voxel (v, (*tod_plugin)(), l, f);
+            out.insert (voxel);
+          }
+          inline void TrackMapper::add_to_set (Set<Fixel>&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
+          {
+            assert (fixel_plugin);
+            const MR::Fixel::index_type fixel_index = (*fixel_plugin) (v, d);
+            if (fixel_index != fixel_plugin->nfixels()) {
+              const Fixel fixel (fixel_index, l, f);
+              out.insert (fixel);
+            }
           }
 
 

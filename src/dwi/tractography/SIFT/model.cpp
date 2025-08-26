@@ -221,7 +221,7 @@ namespace MR
 
         try {
 
-          Mapping::SetFixel fixels;
+          Mapping::Set<Mapping::Fixel> fixels;
           mapper (in, fixels);
 
           vector<Track_fixel_contribution> masked_contributions;
