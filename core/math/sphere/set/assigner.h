@@ -39,6 +39,8 @@ namespace MR {
             initialise();
           }
 
+          Assigner() : resolution (0) { }
+
           index_type operator() (const Eigen::Vector3d& dir) const;
           index_type operator() (const Eigen::Vector3d& dir, const index_type guess) const;
 

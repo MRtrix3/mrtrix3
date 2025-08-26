@@ -31,6 +31,7 @@ namespace MR
       {
 
 
+      using value_type = double;
       using track_t = unsigned int;
       using voxel_t = unsigned int;
 

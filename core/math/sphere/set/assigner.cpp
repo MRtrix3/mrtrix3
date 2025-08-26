@@ -51,7 +51,7 @@ namespace MR {
         default_type max_dot_product = abs (dir.dot ((*this)[guess]));
         do {
           previous = result;
-          for (const auto& i : adjacency[previous]) {
+          for (const auto& i : adjacency(previous)) {
             const default_type this_dot_product = abs (dir.dot ((*this)[i]));
             if (this_dot_product > max_dot_product) {
               result = i;

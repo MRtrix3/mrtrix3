@@ -62,8 +62,9 @@ namespace MR
 
       bool MT_gradient_vector_sorter::Sorter::operator() (const TrackIndexRange& in, VecItType& out) const
       {
-        VecItType start      (data.begin() + in.first);
-        VecItType from_end   (data.begin() + in.second);
+        const auto indices = in();
+        VecItType start      (data.begin() + indices.first);
+        VecItType from_end   (data.begin() + indices.second);
         VecItType from_start (start);
         for (; from_start < from_end; ++from_start) {
           if (from_start->get_gradient_per_unit_length() >= 0.0) {

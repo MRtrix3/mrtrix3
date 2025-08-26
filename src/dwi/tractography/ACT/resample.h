@@ -14,18 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_proc_mask_h__
-#define __dwi_tractography_sift_proc_mask_h__
+#ifndef __dwi_tractography_act_resample_h__
+#define __dwi_tractography_act_resample_h__
 
-#include "cmdline_option.h"
+
 #include "image.h"
-
-#include "algo/iterator.h"
+#include "types.h"
 #include "interp/linear.h"
 
-#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
-
 
 
 namespace MR
@@ -34,36 +31,29 @@ namespace MR
   {
     namespace Tractography
     {
-      namespace SIFT
+      namespace ACT
       {
 
 
-        extern const App::OptionGroup SIFTModelProcMaskOption;
 
-
-        void initialise_processing_mask (Image<float>&, Image<float>&, Image<float>&);
-
-
-        // Private functor for performing ACT image regridding
         class ResampleFunctor
-        { 
+        {
 
             using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
 
           public:
-            ResampleFunctor (Image<float>&, Image<float>&, Image<float>&);
+            ResampleFunctor (Image<float>&, Image<float>&);
             ResampleFunctor (const ResampleFunctor&);
 
             void operator() (const Iterator&);
 
           private:
-            Image<float> dwi;
             std::shared_ptr<transform_type> voxel2scanner;
             Interp::Linear<Image<float>> interp_anat;
             Image<float> out;
 
             // Helper function for doing the regridding
-            ACT::Tissues ACT2pve (const Iterator&);
+            Tissues ACT2pve (const Iterator&);
         };
 
 

@@ -22,6 +22,8 @@
 #include <string>
 #include <cstdint>
 
+#include "image.h"
+
 namespace MR
 {
   namespace Fixel
@@ -34,6 +36,10 @@ namespace MR
     extern const char* format_description;
 
     using index_type = uint32_t;
+
+    using index_image_type = Image<index_type>;
+    using directions_image_type = Image<float>;
+    using dixelmasks_image_type = Image<bool>;
 
     const std::string n_fixels_key ("nfixels");
     const std::initializer_list <const std::string> supported_sparse_formats { ".mif", ".nii", ".mif.gz" , ".nii.gz" };

@@ -23,6 +23,8 @@
 
 #include "math/math.h"
 
+#include "dwi/tractography/SIFT/types.h"
+
 
 namespace MR {
   namespace DWI {
@@ -32,29 +34,31 @@ namespace MR {
 
 
       class StreamlineStats
-      { 
+      {
 
         public:
+          using value_type = SIFT::value_type;
+
           StreamlineStats();
           StreamlineStats (const StreamlineStats&);
 
-          StreamlineStats& operator+= (const double);
+          StreamlineStats& operator+= (const value_type);
           StreamlineStats& operator+= (const StreamlineStats&);
 
           void normalise();
 
-          double get_min()      const { return min; }
-          double get_max()      const { return max; }
-          double get_mean()     const { return mean; }
-          double get_mean_abs() const { return mean_abs; }
-          double get_var()      const { return var; }
+          value_type get_min()      const { return min; }
+          value_type get_max()      const { return max; }
+          value_type get_mean()     const { return mean; }
+          value_type get_mean_abs() const { return mean_abs; }
+          value_type get_var()      const { return var; }
 
           unsigned int get_count()   const { return count; }
           unsigned int get_nonzero() const { return nonzero; }
 
         private:
-          double min, max;
-          double mean, mean_abs, var;
+          value_type min, max;
+          value_type mean, mean_abs, var;
           unsigned int count, nonzero;
 
       };

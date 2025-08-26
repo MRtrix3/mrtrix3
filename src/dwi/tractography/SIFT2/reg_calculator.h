@@ -34,10 +34,12 @@ namespace MR {
 
 
       class RegularisationCalculator
-      { 
+      {
 
         public:
-          RegularisationCalculator (TckFactor&, double&, double&);
+          using value_type = SIFT::value_type;
+
+          RegularisationCalculator (TckFactor&, value_type&, value_type&);
           ~RegularisationCalculator();
 
           bool operator() (const SIFT::TrackIndexRange& range);
@@ -45,11 +47,11 @@ namespace MR {
 
         private:
           TckFactor& master;
-          double& cf_reg_tik;
-          double& cf_reg_tv;
+          value_type& cf_reg_tik;
+          value_type& cf_reg_tv;
 
           // Each thread needs a local copy of these
-          double tikhonov_sum, tv_sum;
+          value_type tikhonov_sum, tv_sum;
 
       };
 

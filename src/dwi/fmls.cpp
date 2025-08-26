@@ -141,7 +141,7 @@ namespace MR {
         auto can_add = [&] (const default_type amplitude, const index_type dixel_index, const uint32_t lobe_index) -> bool {
           return (((amplitude <= 0.0) && out[lobe_index].is_negative())
                   || ((amplitude > 0.0) && !out[lobe_index].is_negative()))
-                  && (dirs.adjacency (out[lobe_index].get_mask(), dixel_index));
+                  && (dirs.adjacent (out[lobe_index].get_mask(), dixel_index));
         };
 
         vector<index_type> retrospective_assignments;
@@ -201,7 +201,7 @@ namespace MR {
           for (uint32_t l = 0; l != out.size(); ++l) {
             if (can_add (amplitude, i, l)) {
               default_type abs_adj_amplitude = 0.0;
-              for (auto d : dirs.adjacency[i])
+              for (auto d : dirs.adjacency(i))
                 abs_adj_amplitude = std::max (abs_adj_amplitude, abs(out[l].get_values()[d]));
               assert (abs_adj_amplitude > 0.0);
               if (abs_adj_amplitude > max_abs_adj_amplitude) {
@@ -259,8 +259,6 @@ namespace MR {
 
         std::sort (out.begin(), out.end(), [] (const FOD_lobe& a, const FOD_lobe& b) { return (a.get_integral() > b.get_integral()); } );
 
-        // If omitting some number of fixels, should be doing that before the LUT is constructed;
-        //   would also be necessary if dilating the LUT
         if (max_num_fixels && out.size() > max_num_fixels)
           out.erase (out.begin() + max_num_fixels, out.end());
 

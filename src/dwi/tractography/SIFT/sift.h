@@ -31,6 +31,9 @@ extern const App::OptionGroup SIFTOutputOption;
 extern const App::OptionGroup SIFTTermOption;
 
 
+using value_type = double;
+
+
 }
 }
 }

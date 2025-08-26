@@ -24,7 +24,6 @@
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
-
 #include "dwi/tractography/SIFT2/streamline_stats.h"
 
 
@@ -43,9 +42,11 @@ namespace MR {
 
 
       class CoefficientOptimiserBase
-      { 
+      {
         public:
-          CoefficientOptimiserBase (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
+          using value_type = SIFT::value_type;
+
+          CoefficientOptimiserBase (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
           CoefficientOptimiserBase (const CoefficientOptimiserBase&);
           virtual ~CoefficientOptimiserBase();
 
@@ -54,9 +55,9 @@ namespace MR {
 
         protected:
           TckFactor& master;
-          const double mu;
+          const value_type mu;
 
-          virtual double get_coeff_change (const SIFT::track_t) const = 0;
+          virtual value_type get_coeff_change (const SIFT::track_t) const = 0;
 
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
@@ -69,17 +70,17 @@ namespace MR {
           StreamlineStats& coefficient_stats;
           unsigned int& nonzero_streamlines;
           BitSet& fixels_to_exclude;
-          double& sum_costs;
+          value_type& sum_costs;
 
           StreamlineStats local_stats_steps, local_stats_coefficients;
           size_t local_nonzero_count;
           BitSet local_to_exclude;
 
         protected:
-          mutable double local_sum_costs;
+          mutable value_type local_sum_costs;
 
         private:
-          double do_fixel_exclusion (const SIFT::track_t);
+          value_type do_fixel_exclusion (const SIFT::track_t);
 
       };
 
@@ -92,15 +93,15 @@ namespace MR {
 
       // Golden Section Search within the permitted range
       class CoefficientOptimiserGSS : public CoefficientOptimiserBase
-      { 
+      {
 
         public:
-          CoefficientOptimiserGSS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
+          CoefficientOptimiserGSS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
           CoefficientOptimiserGSS (const CoefficientOptimiserGSS&);
           ~CoefficientOptimiserGSS() { }
 
         private:
-          double get_coeff_change (const SIFT::track_t) const;
+          value_type get_coeff_change (const SIFT::track_t) const;
 
       };
 
@@ -112,17 +113,17 @@ namespace MR {
       // Does not requre derivatives; only needs 3 seed points (two extremities and 0.0)
       // Note however if that these extremities are large, the initial CF evaluation may be NAN!
       class CoefficientOptimiserQLS : public CoefficientOptimiserBase
-      { 
+      {
 
         public:
-          CoefficientOptimiserQLS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
+          CoefficientOptimiserQLS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
           CoefficientOptimiserQLS (const CoefficientOptimiserQLS&);
           ~CoefficientOptimiserQLS() { }
 
         private:
-          Math::QuadraticLineSearch<double> qls;
+          Math::QuadraticLineSearch<value_type> qls;
 
-          double get_coeff_change (const SIFT::track_t) const;
+          value_type get_coeff_change (const SIFT::track_t) const;
 
       };
 
@@ -132,15 +133,15 @@ namespace MR {
       // Coefficient optimiser based on iterative root-finding Newton / Halley
       // Early exit if outside the permitted coefficient step range and moving further away
       class CoefficientOptimiserIterative : public CoefficientOptimiserBase
-      { 
+      {
 
         public:
-          CoefficientOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
+          CoefficientOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, value_type&);
           CoefficientOptimiserIterative (const CoefficientOptimiserIterative&);
           ~CoefficientOptimiserIterative();
 
         private:
-          double get_coeff_change (const SIFT::track_t) const;
+          value_type get_coeff_change (const SIFT::track_t) const;
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
           mutable uint64_t iter_count;
