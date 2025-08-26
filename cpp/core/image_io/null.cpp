@@ -14,25 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#pragma once
-
-#include "file/key_value.h"
-#include <nlohmann/json.hpp>
+#include "image_io/null.h"
+#include "header.h"
 
 namespace MR {
-class Header;
+namespace ImageIO {
 
-namespace File::JSON {
+void Null::load(const Header &header, size_t) {
+  throw Exception("No suitable handler to access data in \"" + header.name() + "\"");
+}
 
-void load(Header &H, const std::string &path);
-void save(const Header &H, const std::string &json_path, const std::string &image_path);
+void Null::unload(const Header &header) {
+  throw Exception("No suitable handler to access data in \"" + header.name() + "\"");
+}
 
-KeyValues read(const nlohmann::json &json);
-void read(const nlohmann::json &json, Header &header);
-
-void write(const KeyValues &keyval, nlohmann::json &json);
-void write(const Header &header, nlohmann::json &json, const std::string &image_path);
-
-} // namespace File::JSON
-
+} // namespace ImageIO
 } // namespace MR

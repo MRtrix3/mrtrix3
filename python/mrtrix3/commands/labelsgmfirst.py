@@ -119,8 +119,8 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.premasked:
     first_input_is_brain_extracted = ' -b'
   structures_string = ','.join(structure_map.keys())
-  run.command(f'{first_cmd} -m none -s {structures_string} -i T1.nii {first_input_is_brain_extracted} -o first')
-  fsl.check_first('first', structure_map.keys())
+  first_stdout = run.command(f'{first_cmd} -m none -s {structures_string} -i T1.nii {first_input_is_brain_extracted} -o first').stdout
+  fsl.check_first('first', structures=structure_map.keys(), first_stdout=first_stdout)
 
   # Generate an empty image that will be used to construct the new SGM nodes
   run.command('mrcalc parc.mif 0 -min sgm.mif')

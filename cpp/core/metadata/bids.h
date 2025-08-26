@@ -16,23 +16,18 @@
 
 #pragma once
 
-#include "file/key_value.h"
-#include <nlohmann/json.hpp>
+#include <Eigen/Dense>
+#include <string>
 
-namespace MR {
-class Header;
+namespace MR::Metadata::BIDS {
 
-namespace File::JSON {
+//! convert axis directions between formats
+/*! these helper functions convert the definition of
+ *  phase-encoding direction between a 3-vector (e.g.
+ *  [0 1 0] ) and a BIDS NIfTI axis identifier (e.g. 'i-')
+ */
+using axis_vector_type = Eigen::Matrix<int, 3, 1>;
+std::string vector2axisid(const axis_vector_type &);
+axis_vector_type axisid2vector(const std::string &);
 
-void load(Header &H, const std::string &path);
-void save(const Header &H, const std::string &json_path, const std::string &image_path);
-
-KeyValues read(const nlohmann::json &json);
-void read(const nlohmann::json &json, Header &header);
-
-void write(const KeyValues &keyval, nlohmann::json &json);
-void write(const Header &header, nlohmann::json &json, const std::string &image_path);
-
-} // namespace File::JSON
-
-} // namespace MR
+} // namespace MR::Metadata::BIDS

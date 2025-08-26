@@ -29,8 +29,8 @@ class Header;
 namespace File::NIfTI {
 extern bool right_left_warning_issued;
 
-void axes_on_write(const Header &H, std::vector<size_t> &order, std::array<bool, 3> &flip);
-transform_type adjust_transform(const Header &H, std::vector<size_t> &order);
+Axes::Shuffle axes_on_write(const Header &H);
+transform_type adjust_transform(const Header &H, Axes::permutations_type &order);
 
 bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std::string> &suffixes);
 

@@ -542,7 +542,7 @@ template <class Output> void write_header(const Header &H, Output &out) {
   if (ndim > 4)
     throw Exception("MGH file format does not support images of more than 4 dimensions");
 
-  std::vector<size_t> axes;
+  Axes::permutations_type axes;
   auto M = File::NIfTI::adjust_transform(H, axes);
 
   store<int32_t>(1, out);                                // version

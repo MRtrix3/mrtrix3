@@ -58,7 +58,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('-white_stem',
                       action='store_true',
                       default=None,
-                      help='Classify the brainstem as white matter')
+                      help='Classify the brainstem as white matter; '
+                           'streamlines will not be permitted to terminate within this region')
   parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. '
                       'Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. '
                       'In Proc OHBM 2020')
@@ -579,8 +580,8 @@ def execute(): #pylint: disable=unused-variable
       from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value and 'Amygdala' not in value }
     if thalami_method != 'first':
       from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
-    run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first'])
-    fsl.check_first('first', from_first.keys())
+    first_stdout = run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first']).stdout
+    fsl.check_first('first', structures=from_first.keys(), first_stdout=first_stdout)
     app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))
     for key, value in from_first.items():

@@ -192,6 +192,7 @@ add_bash_script_test(dwicat/whitespace)
 
 add_bash_script_test(dwifslpreproc/axis_padding)
 add_bash_script_test(dwifslpreproc/eddyqc)
+add_bash_script_test(dwifslpreproc/header_pe_dir_no_trt)
 add_bash_script_test(dwifslpreproc/permuted_volumes)
 add_bash_script_test(dwifslpreproc/piping)
 add_bash_script_test(dwifslpreproc/rpeall)
