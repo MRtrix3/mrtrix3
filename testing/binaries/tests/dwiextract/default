@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic test verifying operation of command under default usage
+# Ensure that output matches that generated using a prior software version
+dwiextract dwi.mif - | \
+testing_diff_image - dwiextract/out1.mif

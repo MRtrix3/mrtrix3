@@ -15,7 +15,7 @@ Usage
 
     dwibiascorrect algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ants, fsl, mtnorm
+-  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: ants, fsl, mtnorm
 
 Description
 -----------
@@ -29,25 +29,25 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Manually provide a mask image for bias field estimation
+- **-mask image** Manually provide an input mask image for bias field estimation
 
-- **-bias image** Output the estimated bias field
+- **-bias image** Output an image containing the estimated bias field
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -120,34 +120,34 @@ Options
 Options for ANTs N4BiasFieldCorrection command
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-ants.b [100,3]** N4BiasFieldCorrection option -b. [initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.
+- **-ants_b [100,3]** N4BiasFieldCorrection option -b: [initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.
 
-- **-ants.c [1000,0.0]** N4BiasFieldCorrection option -c. [numberOfIterations,convergenceThreshold]
+- **-ants_c [1000,0.0]** N4BiasFieldCorrection option -c: [numberOfIterations,convergenceThreshold]
 
-- **-ants.s 4** N4BiasFieldCorrection option -s. shrink-factor applied to spatial dimensions
+- **-ants_s 4** N4BiasFieldCorrection option -s: shrink-factor applied to spatial dimensions
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Manually provide a mask image for bias field estimation
+- **-mask image** Manually provide an input mask image for bias field estimation
 
-- **-bias image** Output the estimated bias field
+- **-bias image** Output an image containing the estimated bias field
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -204,7 +204,7 @@ dwibiascorrect fsl
 Synopsis
 --------
 
-Perform DWI bias field correction using the 'fast' command as provided in FSL
+Perform DWI bias field correction using the "fast" command as provided in FSL
 
 Usage
 -----
@@ -219,7 +219,7 @@ Usage
 Description
 -----------
 
-The FSL 'fast' command only estimates the bias field within a brain mask, and cannot extrapolate this smoothly-varying field beyond the defined mask. As such, this algorithm by necessity introduces a hard masking of the input DWI. Since this attribute may interfere with the purpose of using the command (e.g. correction of a bias field is commonly used to improve brain mask estimation), use of this particular algorithm is generally not recommended.
+The FSL "fast" command only estimates the bias field within a brain mask, and cannot extrapolate this smoothly-varying field beyond the defined mask. As such, this algorithm by necessity introduces a hard masking of the input DWI. Since this attribute may interfere with the purpose of using the command (e.g. correction of a bias field is commonly used to improve brain mask estimation), use of this particular algorithm is generally not recommended.
 
 Options
 -------
@@ -227,25 +227,25 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Manually provide a mask image for bias field estimation
+- **-mask image** Manually provide an input mask image for bias field estimation
 
-- **-bias image** Output the estimated bias field
+- **-bias image** Output an image containing the estimated bias field
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -336,25 +336,25 @@ Options specific to the "mtnorm" algorithm
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Manually provide a mask image for bias field estimation
+- **-mask image** Manually provide an input mask image for bias field estimation
 
-- **-bias image** Output the estimated bias field
+- **-bias image** Output an image containing the estimated bias field
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^

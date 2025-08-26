@@ -43,7 +43,6 @@ sudo apt install cmake \
     libeigen3-dev \
     zlib1g-dev \
     libfftw3-dev \
-    libtiff5-dev \
     libpng-dev
 
 if ! command -v clang++-17 &> /dev/null
@@ -68,7 +67,7 @@ cmake -B $build_dir -S $source_dir \
     -DCMAKE_INSTALL_PREFIX=$install_dir \
     -DCMAKE_EXE_LINKER_FLAGS="-Wl,--as-needed" \
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
-    
+        
 cmake --build $build_dir
 cmake --install $build_dir
 

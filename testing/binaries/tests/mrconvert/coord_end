@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify use of the -coord option making use of the "end" specifier
+# This is cross-checked against the multi-file numbered image support
+mrconvert dwi.mif -coord 3 0:2:end tmp1.mif -force
+
+rm -f tmp-*.mif
+mrconvert dwi.mif tmp-[].mif -force
+mrconvert tmp-[0:2:66].mif tmp2.mif -force
+
+testing_diff_header -keyval tmp1.mif tmp2.mif
+testing_diff_image tmp1.mif tmp2.mif

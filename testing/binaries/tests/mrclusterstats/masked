@@ -1,0 +1,23 @@
+#!/bin/bash
+# Ensure that when the command is run with a reduced analysis mask,
+#   the results match those generated with an earlier version of the software
+# Note that in this case,
+#   all voxels in the analysis mask "SIFT_phantom/upper.mif"
+#   have a synthetically introduced effect
+rm -rf tmp/
+mkdir tmp/
+
+mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt mrclusterstats/contrast.txt SIFT_phantom/upper.mif tmp/
+
+testing_diff_image tmp/abs_effect.mif mrclusterstats/masked/abs_effect.mif
+testing_diff_image tmp/beta0.mif mrclusterstats/masked/beta0.mif
+testing_diff_image tmp/beta1.mif mrclusterstats/masked/beta1.mif
+testing_diff_image tmp/std_dev.mif mrclusterstats/masked/std_dev.mif
+testing_diff_image tmp/std_effect.mif mrclusterstats/masked/std_effect.mif
+testing_diff_image tmp/tvalue.mif mrclusterstats/masked/tvalue.mif
+
+# Make sure that the statistical significance mask
+#   matches what was synthetically introduced in the data
+mrcalc tmp/fwe_1mpvalue.mif 0.95 -gt - | \
+testing_diff_image - SIFT_phantom/upper.mif
+

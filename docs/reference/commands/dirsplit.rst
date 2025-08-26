@@ -21,7 +21,7 @@ Usage
 Options
 -------
 
--  **-permutations num** number of permutations to try (default: 100000000)
+-  **-number num** number of permutations to try (default: 100000000)
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
 

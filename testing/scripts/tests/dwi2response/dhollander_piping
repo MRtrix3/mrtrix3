@@ -1,0 +1,19 @@
+#!/bin/bash
+# Verify successful execution of "dwi2response dhollander"
+#   where image pipes are used
+
+# Input image, and output voxel selection, are piped
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-strides 0,0,0,1 \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+dwi2response dhollander - tmp_wm.txt tmp_gm.txt tmp_csf.txt -force \
+-voxels - | \
+testing_diff_image - dwi2response/dhollander/default.mif.gz
+
+# Brain mask is piped
+mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz - | \
+dwi2response dhollander BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_wm.txt tmp_gm.txt tmp_csf.txt -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-voxels tmp.mif \
+-mask -
+testing_diff_image tmp.mif dwi2response/dhollander/masked.mif.gz

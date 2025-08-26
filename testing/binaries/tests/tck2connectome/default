@@ -1,0 +1,8 @@
+#!/bin/bash
+# Test default operation of tck2connectome command
+# In addition to the connectome matrix itself
+#   (as the number of streamlines per edge),
+#   also export and check the table of assignments of streamlines to parcels
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp1.csv -out_assignments tmp2.csv -force
+testing_diff_matrix tmp1.csv tck2connectome/out.csv
+testing_diff_matrix tmp2.csv tck2connectome/assignments.csv

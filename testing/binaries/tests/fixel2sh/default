@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic test verifying default operation of command
+# Ensure that output matches that generated using a prior software version
+fixel2sh fixel_image/afd.mif - | \
+testing_diff_image - fixel2sh/out.mif -voxel 1e-5
