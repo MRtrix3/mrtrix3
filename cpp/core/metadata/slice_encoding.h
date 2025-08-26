@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,23 +16,20 @@
 
 #pragma once
 
-#include "file/key_value.h"
-#include <nlohmann/json.hpp>
+#include <string>
+
+#include "types.h"
 
 namespace MR {
 class Header;
-
-namespace File::JSON {
-
-void load(Header &H, const std::string &path);
-void save(const Header &H, const std::string &json_path, const std::string &image_path);
-
-KeyValues read(const nlohmann::json &json);
-void read(const nlohmann::json &json, Header &header);
-
-void write(const KeyValues &keyval, nlohmann::json &json);
-void write(const Header &header, nlohmann::json &json, const std::string &image_path);
-
-} // namespace File::JSON
-
 } // namespace MR
+
+namespace MR::Metadata::SliceEncoding {
+
+void transform_for_image_load(KeyValues &keyval, const Header &H);
+
+void transform_for_nifti_write(KeyValues &keyval, const Header &H);
+
+std::string resolve_slice_timing(const std::string &one, const std::string &two);
+
+} // namespace MR::Metadata::SliceEncoding
