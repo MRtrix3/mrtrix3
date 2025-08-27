@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    peaks2fixel [ options ]  directions fixels
+    peaks2fixel [ options ]  fibre_directions fixels
 
 -  *directions*: the input directions image; each volume corresponds to the x, y & z component of each direction vector in turn.
 -  *fixels*: the output fixel directory.

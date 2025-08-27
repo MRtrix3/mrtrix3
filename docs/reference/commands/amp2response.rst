@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    amp2response [ options ]  amps mask directions response
+    amp2response [ options ]  amps mask fibre_directions response
 
 -  *amps*: the amplitudes image
 -  *mask*: the mask containing the voxels from which to estimate the response function
