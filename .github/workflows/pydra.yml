@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  generate-tasks:
+  generate-pydra:
     runs-on: ubuntu-latest
 
     env:
@@ -73,9 +73,9 @@ jobs:
       run: git clone https://github.com/nipype/pydra-tasks-mrtrix3
 
     - name: Install pydra-tasks-mrtrix3 and fileformats packages
-      run: pip install -e ./pydra-tasks-mrtrix3 -e ./pydra-tasks-mrtrix3/related-packages/fileformats -e ./pydra-tasks-mrtrix3/related-packages/fileformats-extras
+      run: pip install -e ./pydra-tasks-mrtrix3[dev] -e ./pydra-tasks-mrtrix3/related-packages/fileformats -e ./pydra-tasks-mrtrix3/related-packages/fileformats-extras
 
-    - name: Generate task packages
+    - name: Generate Pydra task packages
       run: python3 pydra-tasks-mrtrix3/generate.py /opt/mrtrix3/bin pydra-tasks-mrtrix3 3.1.0
 
     - name: Generate Pydra code
