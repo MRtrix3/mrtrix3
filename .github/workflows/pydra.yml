@@ -1,0 +1,84 @@
+name: Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [ master, dev]
+    merge_group:
+      types: [checks_requested]
+      branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate-tasks:
+    runs-on: ubuntu-latest
+
+    env:
+      QT_SELECT: qt6
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+
+    - name: Get latest version
+      run: echo "MRTRIX3_VERSION=$(git fetch --tags && git describe --tags --abbrev=0)" >> $GITHUB_ENV
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.16.3'
+
+    - name: Print CMake version
+      run: cmake --version
+
+    - name: Make installation dir
+      run: |
+        sudo mkdir -p /opt/mrtrix3
+        sudo chown $USER /opt/mrtrix3
+
+    - name: configure
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
+        -D CMAKE_C_COMPILER=clang
+        -D CMAKE_CXX_COMPILER=clang++
+        -D CMAKE_INSTALL_PREFIX=/opt/mrtrix3
+
+    - name: Build MRtrix3
+      run: cmake --build build
+
+    - name: Install MRtrix3
+      run: cmake --install build
+
+    - name: Clone pydra-tasks-mrtrix3
+      run: git clone https://github.com/nipype/pydra-tasks-mrtrix3
+
+    - name: Install pydra-tasks-mrtrix3 and fileformats packages
+      run: pip install -e ./pydra-tasks-mrtrix3 -e ./pydra-tasks-mrtrix3/related-packages/fileformats -e ./pydra-tasks-mrtrix3/related-packages/fileformats-extras
+
+    - name: Generate task packages
+      run: python3 pydra-tasks-mrtrix3/generate.py /opt/mrtrix3/bin pydra-tasks-mrtrix3 3.1.0
+
+    - name: Generate Pydra code
+      run: python3 -c "import pydra.tasks.mrtrix3.v3_1"
+
+
