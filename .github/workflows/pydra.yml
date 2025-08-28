@@ -73,12 +73,13 @@ jobs:
       run: git clone https://github.com/nipype/pydra-tasks-mrtrix3
 
     - name: Install pydra-tasks-mrtrix3 and fileformats packages
-      run: pip install -e ./pydra-tasks-mrtrix3[dev] -e ./pydra-tasks-mrtrix3/related-packages/fileformats -e ./pydra-tasks-mrtrix3/related-packages/fileformats-extras
+      run: pip install -e ./pydra-tasks-mrtrix3[test,dev] -e ./pydra-tasks-mrtrix3/related-packages/fileformats -e ./pydra-tasks-mrtrix3/related-packages/fileformats-extras
 
     - name: Generate Pydra task packages
       run: python3 pydra-tasks-mrtrix3/generate.py /opt/mrtrix3/bin pydra-tasks-mrtrix3 3.1.0
 
-    - name: Generate Pydra code
-      run: python3 -c "import pydra.tasks.mrtrix3.v3_1"
+    - name: Test with pytest
+      run: pytest -sv pydra-tasks-mrtrix3/pydra/tasks/mrtrix3 --cov pydra.tasks.mrtrix3 --cov-report xml
+
 
 
