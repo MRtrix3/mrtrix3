@@ -13,11 +13,9 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
-import re
-import typing as ty
 from keyword import kwlist as PYTHON_KEYWORDS
 try:
   import black.parsing
