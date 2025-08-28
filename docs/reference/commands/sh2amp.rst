@@ -16,7 +16,7 @@ Usage
     sh2amp [ options ]  input fibre_directions output
 
 -  *input*: the input spherical harmonic (SH) coefficients image
--  *directions*: the set of directions along which the SH functions will be sampled
+-  *fibre_directions*: the set of directions along which the SH functions will be sampled
 -  *output*: the output amplitudes image
 
 Description

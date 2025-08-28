@@ -15,7 +15,7 @@ Usage
 
     peaks2amp [ options ]  fibre_directions amplitudes
 
--  *directions*: the input directions image. Each volume corresponds to the x, y & z component of each direction vector in turn.
+-  *fibre_directions*: the input directions image. Each volume corresponds to the x, y & z component of each direction vector in turn.
 -  *amplitudes*: the output amplitudes image.
 
 Options
