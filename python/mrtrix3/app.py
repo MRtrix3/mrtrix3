@@ -14,9 +14,9 @@
 # For more details, see http://www.mrtrix.org/.
 
 import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
+from keyword import kwlist as PYTHON_KEYWORDS
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
-from keyword import kwlist as PYTHON_KEYWORDS
 try:
   import black.parsing
 except ImportError:
@@ -747,7 +747,7 @@ class Parser(argparse.ArgumentParser):
     @staticmethod
     def _metavar():
       return 'values'
-    
+
 
   # Would you mind if this is defined here instead of in commands.population_template.usage
   # makes it much easiery to import and include in instance checks for pydra auto-gen??
@@ -760,7 +760,7 @@ class Parser(argparse.ArgumentParser):
       return 'SEQDIROUT'
     @staticmethod
     def _metavar():
-      return 'directory_list'        
+      return 'directory_list'
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
@@ -1580,10 +1580,10 @@ class Parser(argparse.ArgumentParser):
       return escaped
 
     def is_output(arg_option) -> bool:
-      tp = arg_option.type
-      if isinstance(tp, (Parser.FileOut, Parser.DirectoryOut, Parser.ImageOut, Parser.SequenceDirectoryOut)):
+      typ = arg_option.type
+      if isinstance(typ, (Parser.FileOut, Parser.DirectoryOut, Parser.ImageOut, Parser.SequenceDirectoryOut)):
         return True
-      return hasattr(tp, "_legacytypestring") and tp._legacytypestring().endswith("OUT")
+      return hasattr(typ, "_legacytypestring") and typ._legacytypestring().endswith("OUT")
 
     inputs = []
     outputs = []
