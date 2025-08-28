@@ -67,7 +67,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("input", "the input spherical harmonic (SH) coefficients image").type_image_in()
-    + Argument ("directions", "the set of directions along which the SH functions will be sampled").type_file_in()
+    + Argument ("fibre_directions", "the set of directions along which the SH functions will be sampled").type_file_in()
     + Argument ("output", "the output amplitudes image").type_image_out();
 
   OPTIONS
