@@ -586,6 +586,7 @@ class ProgressBar: #pylint: disable=unused-variable
 #   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
 #   automated self-documentation.
 
+# pylint: disable=too-many-public-methods
 class Parser(argparse.ArgumentParser):
 
   # Function that will create a new class,
