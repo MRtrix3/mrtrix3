@@ -90,6 +90,18 @@ namespace MR
         }
 
         template <class ImageType>
+        typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, void>::type set (ImageType& image, const size_t index, const default_type value)
+        {
+          assert (image.index(0) == index);
+          image.value() = value;
+        }
+        template <class DataType>
+        typename std::enable_if<!is_pure_image<typename std::remove_reference<DataType>::type>::value, void>::type set (DataType& data, const size_t index, const default_type value)
+        {
+          data[index] = value;
+        }
+
+        template <class ImageType>
         typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, void>::type set_index (ImageType& image, const size_t index)
         {
           image.index(0) = index;
@@ -128,7 +140,7 @@ namespace MR
 
 
 
-      
+
 
 
       template <class InputType, class OutputType>
@@ -137,9 +149,16 @@ namespace MR
         zero (enhanced_stats);
         vector<default_type> connected_stats;
         for (size_t fixel = 0; fixel < matrix.size(); ++fixel) {
+          set_index (enhanced_stats, fixel);
           const default_type stat = get(stats, fixel);
-          if (stat < dh)
+          if (!std::isfinite(stat)) {
+            set (enhanced_stats, fixel, stat);
             continue;
+          }
+          if (stat < dh) {
+            set (enhanced_stats, fixel, 0.0);
+            continue;
+          }
           auto connections = matrix[fixel];
           // Need to re-normalise based on the value of the power C
           if (C != 1.0) {
@@ -170,7 +189,6 @@ namespace MR
             for (size_t ih = old_size; ih != h_pow_H.size(); ++ih)
               h_pow_H[ih] = std::pow (dh*(ih+1), H);
           }
-          set_index (enhanced_stats, fixel);
           for (size_t cluster_index = 0; cluster_index != extents.size(); ++cluster_index)
             increment (enhanced_stats, fixel, std::pow (extents[cluster_index], E) * h_pow_H[cluster_index]);
           if (normalise)
