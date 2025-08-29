@@ -29,10 +29,10 @@ While many algorithms exist, the following appear to perform well in a wide
 range of scenarios, based on experience and testing from both developers and
 the `MRtrix3 community <http://community.mrtrix.org>`__:
 
-**Single-tissue CSD:** If you intend to perform (single-tissue)
-:ref:`constrained_spherical_deconvolution` (e.g. via ``dwi2fod csd``),
-the tournier_ algorithm is a convenient and reliable way to estimate
-the single-fibre white matter response function:
+**Single-shell, single-tissue CSD:** If you intend to perform the original
+single-shell single-tissue :ref:`constrained_spherical_deconvolution`
+(e.g. via ``dwi2fod csd``), the tournier_ algorithm is a convenient and
+reliable way to estimate the single-fibre white matter response function:
 
 .. code-block:: console
 
@@ -52,6 +52,12 @@ CSF response functions:
    dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
 
 Other options include the msmt_5tt_ algorithm.
+
+Note that the multi-tissue CSD algorithm is still applicable to
+"single-shell" DWI data. A common strategy with such data is to estimate
+three tissue response functions (using an algorithm such as `dwi2response dhollander`),
+but to then use only a subset of those response functions for the deconvolution
+itself; see :ref:`msmt_with_single_shell_data`.
 
 Checking the results
 ^^^^^^^^^^^^^^^^^^^^
