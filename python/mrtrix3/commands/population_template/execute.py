@@ -283,7 +283,7 @@ def execute(): #pylint: disable=unused-variable
   if n_contrasts > 1:
     for cid in range(n_contrasts):
       app.console(f'\tcontrast "{cns.suff[cid]}": {cns.names[cid]}, '
-                  f'objective weight: {",".join(map(str, cns.mc_weight_initial_alignment[cid]))}')
+                  f'objective weight: {cns.mc_weight_initial_alignment[cid]}')
 
   if dolinear:
     app.console('-' * 60)
@@ -293,9 +293,9 @@ def execute(): #pylint: disable=unused-variable
       for cid in range(n_contrasts):
         msg = f'\tcontrast "{cns.suff[cid]}": {cns.names[cid]}'
         if 'rigid' in linear_type:
-          msg += f', objective weight rigid: {",".join(map(str, cns.mc_weight_rigid[cid]))}'
+          msg += f', objective weight rigid: {cns.mc_weight_rigid[cid]}'
         if 'affine' in linear_type:
-          msg += f', objective weight affine: {",".join(map(str, cns.mc_weight_affine[cid]))}'
+          msg += f', objective weight affine: {cns.mc_weight_affine[cid]}'
         app.console(msg)
 
     if do_fod_registration:
@@ -329,7 +329,7 @@ def execute(): #pylint: disable=unused-variable
     if n_contrasts > 1:
       for cid in range(n_contrasts):
         app.console(f'\tcontrast "{cns.suff[cid]}": {cns.names[cid]}, '
-                    f'objective weight: {",".join(map(str, cns.mc_weight_nl[cid]))}')
+                    f'objective weight: {cns.mc_weight_nl[cid]}')
 
     if do_fod_registration:
       if len(nl_scales) != len(nl_lmax):
@@ -482,9 +482,9 @@ def execute(): #pylint: disable=unused-variable
             else:
               run.command(f'mrconvert {cns.templates[cid]} robust/template.mif')
           if n_contrasts > 1:
-            cmd = ['mrcalc', inp.ims_path[cid], ','.join(map(str, cns.mc_weight_initial_alignment[cid])), '-mult']
+            cmd = ['mrcalc', inp.ims_path[cid], str(cns.mc_weight_initial_alignment[cid]), '-mult']
             for cid in range(1, n_contrasts):
-              cmd += [inp.ims_path[cid], ','.join(map(str, cns.mc_weight_initial_alignment[cid])), '-mult', '-add']
+              cmd += [inp.ims_path[cid], str(cns.mc_weight_initial_alignment[cid]), '-mult', '-add']
             contrast_weight_option = ''
             run.command(' '.join(cmd) + ' - | ' \
                         f'mrfilter - zclean -zlower 3 -zupper 3 robust/image_{inp.uid}.mif '

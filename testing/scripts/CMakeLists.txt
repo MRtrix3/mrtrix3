@@ -202,6 +202,7 @@ add_bash_script_test(dwifslpreproc/rpeheader_rpepair)
 add_bash_script_test(dwifslpreproc/rpenone_default)
 add_bash_script_test(dwifslpreproc/rpepair_alignseepi)
 add_bash_script_test(dwifslpreproc/rpepair_default)
+add_bash_script_test(dwifslpreproc/topup_files)
 add_bash_script_test(dwifslpreproc/whitespace)
 
 add_bash_script_test(dwigradcheck/default)
