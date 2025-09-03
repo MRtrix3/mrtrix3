@@ -1455,7 +1455,7 @@ def execute(): #pylint: disable=unused-variable
       bvals_combined.append(new_bval)
 
     if nans_present_bvecs:
-      app.warn(f'FSL "eddy"\'s rotated bvecs contained'
+      app.warn('FSL "eddy"\'s rotated bvecs contained'
                + (f'{nans_present_bvecs} entries with NaN values;'
                   'these have been read as zero-length vectors,'
                   'and will be saved as b=0 volumes'

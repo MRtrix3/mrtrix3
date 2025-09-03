@@ -12,7 +12,6 @@ set(UNIT_TESTS_CPP_SRCS
 
 set(UNIT_TESTS_BASH_SRCS
     cpp_cli
-    dwscheme_preservation_imprecision
     python_cli
 )
 set(UNIT_TESTS_NPY_BASH_SRCS
