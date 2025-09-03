@@ -155,7 +155,7 @@ scheme_type parse_scheme(const KeyValues &keyval, const Header &header) {
       if (it_time != keyval.end()) {
         try {
           row[3] = to<default_type>(it_time->second);
-        } catch (Execption &e) {
+        } catch (Exception &e) {
           throw Exception(e, "Error adding readout time to phase encoding table");
         }
       }
@@ -319,7 +319,7 @@ void export_commandline(const Header &header) {
 
   auto opt = get_options("export_pe_table");
   if (!opt.empty())
-    __save(check(scheme), header, opt[0][0]);
+    save(check(scheme), header, opt[0][0]);
 
   opt = get_options("export_pe_eddy");
   if (!opt.empty())

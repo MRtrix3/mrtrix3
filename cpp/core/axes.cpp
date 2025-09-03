@@ -30,7 +30,7 @@ Shuffle get_shuffle_to_make_RAS(const transform_type &T) {
 }
 
 permutations_type closest(const Eigen::Matrix3d &M) {
-  permutations_type result{3, 3, 3};
+  permutations_type result;
   // Find which row of the transform is closest to each scanner axis
   Eigen::Matrix3d::Index index(0);
   M.row(0).cwiseAbs().maxCoeff(&index);
@@ -39,7 +39,7 @@ permutations_type closest(const Eigen::Matrix3d &M) {
   result[1] = index;
   M.row(2).cwiseAbs().maxCoeff(&index);
   result[2] = index;
-  assert(result[0] < 3 && result[1] < 3 && result[2] < 3);
+  assert(result.valid());
 
   // Disambiguate permutations
   auto not_any_of = [](size_t a, size_t b) -> size_t {
@@ -57,8 +57,7 @@ permutations_type closest(const Eigen::Matrix3d &M) {
     result[2] = not_any_of(result[0], result[1]);
   if (result[1] == result[2])
     result[2] = not_any_of(result[0], result[1]);
-  assert(result[0] != result[1] && result[1] != result[2] && result[2] != result[0]);
-  assert(*std::min_element(result.begin(), result.end()) == 0);
+  assert(result.valid());
 
   return result;
 }

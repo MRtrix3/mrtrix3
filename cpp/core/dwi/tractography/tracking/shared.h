@@ -42,6 +42,7 @@ public:
 
   virtual ~SharedBase();
 
+  Header source_header;
   Image<float> source;
   Properties &properties;
   Eigen::Vector3f init_dir;

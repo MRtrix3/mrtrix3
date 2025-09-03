@@ -550,7 +550,9 @@ Axes::Shuffle axes_on_write(const Header &H) {
   strides.resize(3);
   auto order = Stride::order(strides);
   Axes::Shuffle result;
-  result.permutations = {order[0], order[1], order[2]};
+  result.permutations[0] = order[0];
+  result.permutations[1] = order[1];
+  result.permutations[2] = order[2];
   result.flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
   return result;
 }

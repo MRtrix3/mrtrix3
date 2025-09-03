@@ -20,17 +20,17 @@ namespace MR::DWI::Tractography::GT {
 
 ParticleGrid::ParticleGrid(const Header &H) {
   DEBUG("Initialise particle grid.");
-  dims[0] = Math::ceil<size_t>(image.size(0) * image.spacing(0) / (2.0 * Particle::L));
-  dims[1] = Math::ceil<size_t>(image.size(1) * image.spacing(1) / (2.0 * Particle::L));
-  dims[2] = Math::ceil<size_t>(image.size(2) * image.spacing(2) / (2.0 * Particle::L));
+  dims[0] = Math::ceil<size_t>(H.size(0) * H.spacing(0) / (2.0 * Particle::L));
+  dims[1] = Math::ceil<size_t>(H.size(1) * H.spacing(1) / (2.0 * Particle::L));
+  dims[2] = Math::ceil<size_t>(H.size(2) * H.spacing(2) / (2.0 * Particle::L));
   grid.resize(dims[0] * dims[1] * dims[2]);
 
   // Initialise scanner-to-grid transform
   Eigen::DiagonalMatrix<default_type, 3> newspacing(2.0 * Particle::L, 2.0 * Particle::L, 2.0 * Particle::L);
-  Eigen::Vector3d shift(image.spacing(0) / 2.0 - Particle::L,  //
-                        image.spacing(1) / 2.0 - Particle::L,  //
-                        image.spacing(2) / 2.0 - Particle::L); //
-  T_s2g = image.transform() * newspacing;
+  Eigen::Vector3d shift(H.spacing(0) / 2.0 - Particle::L,  //
+                        H.spacing(1) / 2.0 - Particle::L,  //
+                        H.spacing(2) / 2.0 - Particle::L); //
+  T_s2g = H.transform() * newspacing;
   T_s2g = T_s2g.inverse().translate(shift);
 }
 

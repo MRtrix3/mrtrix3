@@ -75,7 +75,7 @@ void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
     return;
 
   const Axes::Shuffle shuffle = File::NIfTI::axes_on_write(H);
-  if (!shuffle) {
+  if (shuffle.is_identity()) {
     INFO("No need to transform slice encoding information for NIfTI image write:"
          " image is already RAS");
     return;

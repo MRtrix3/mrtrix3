@@ -183,7 +183,7 @@ protected:
 };
 
 void run() {
-  Header header_in(Haeder::open(argument[0]));
+  Header header_in(Header::open(argument[0]));
   Header header_out(header_in);
   header_out.datatype() = DataType::Float32;
 
@@ -232,6 +232,7 @@ void run() {
   Stride::set_from_command_line(header_out);
 
   Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
+  auto amp = header_in.get_image<value_type>().with_direct_io(3);
   auto SH = Image<value_type>::create(argument[1], header_out);
 
   opt = get_options("rician");

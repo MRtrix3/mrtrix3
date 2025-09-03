@@ -17,26 +17,34 @@
 #pragma once
 
 #include <array>
+#include <limits>
 #include <set>
 
 #include "types.h"
 
+// TODO Rename to "SpatialAxes"?
 namespace MR::Axes {
 
 // TODO Change to 8-bit integer & define invalid value
-using permutations_type = std::array<size_t, 3>;
+class permutations_type : public std::array<uint8_t, 3> {
+public:
+  using BaseType = std::array<uint8_t, 3>;
+  permutations_type()
+      : std::array<uint8_t, 3>{std::numeric_limits<uint8_t>::max(),
+                               std::numeric_limits<uint8_t>::max(),
+                               std::numeric_limits<uint8_t>::max()} {}
+  bool is_identity() const { return ((*this)[0] == 0 && (*this)[1] == 1 && (*this)[2] == 2); }
+  bool valid() const { return (std::set<ssize_t>(begin(), end()) == std::set<ssize_t>({0, 1, 2})); }
+};
 using flips_type = std::array<bool, 3>;
 class Shuffle {
 public:
-  Shuffle() : permutations({-1, -1, -1}), flips({false, false, false}) {}
+  Shuffle() : permutations(), flips({false, false, false}) {}
   bool is_identity() const {
-    return (permutations[0] == 0 && permutations[1] == 1 && permutations[2] != 2 && //
+    return (permutations.is_identity() && //
             !flips[0] && !flips[1] && !flips[2]);
   }
-  bool is_set() const { return permutations != permutations_type{-1, -1, -1}; }
-  bool valid() const {
-    return std::set<ssize_t>(permutations.begin(), permutations.end()) == std::set<ssize_t>({0, 1, 2});
-  }
+  bool valid() const { return permutations.valid(); }
   permutations_type permutations;
   flips_type flips;
 };

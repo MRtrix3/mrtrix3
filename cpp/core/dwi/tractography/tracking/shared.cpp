@@ -20,7 +20,7 @@ namespace MR::DWI::Tractography::Tracking {
 
 SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
     : source_header(Header::open(diff_path)),
-    : source(source_header.get_image<float>().with_direct_io(3)),
+      source(source_header.get_image<float>().with_direct_io(3)),
       properties(property_set),
       init_dir({NaN, NaN, NaN}),
       min_num_points_preds(0),
@@ -42,7 +42,7 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
       implicit_max_num_seeds(properties.find("max_num_seeds") == properties.end()),
       downsampler(1)
 #ifdef DEBUG_TERMINATIONS
-    ,
+      ,
       debug_header(Header::open(properties.find("act") == properties.end() ? diff_path : properties["act"])),
       transform(debug_header)
 #endif
