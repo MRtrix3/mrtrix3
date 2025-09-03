@@ -25,7 +25,7 @@ Description
 This script greatly simplifies various forms of batch processing by enabling the execution of a command (or set of commands) independently for each of a set of inputs.
 
 More information on use of the for_each command can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.4/tips_and_tricks/batch_processing_with_foreach.html
+https://mrtrix.readthedocs.io/en/3.0.5/tips_and_tricks/batch_processing_with_foreach.html
 
 The way that this batch processing capability is achieved is by providing basic text substitutions, which simplify the formation of valid command strings based on the unique components of the input strings on which the script is instructed to execute. This does however mean that the items to be passed as inputs to the for_each command (e.g. file / directory names) MUST NOT contain any instances of these substitution strings, as otherwise those paths will be corrupted during the course of the substitution.
 

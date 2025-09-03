@@ -25,7 +25,7 @@ Description
 This command will reconstruct the global white matter fibre tractogram that best explains the input DWI data, using a multi-tissue spherical convolution model.
 
 A more thorough description of the operation of global tractography in MRtrix3 can be found in the online documentation:  |br|
-https://mrtrix.readthedocs.io/en/3.0.4/quantitative_structural_connectivity/global_tractography.html
+https://mrtrix.readthedocs.io/en/3.0.5/quantitative_structural_connectivity/global_tractography.html
 
 Example usages
 --------------
