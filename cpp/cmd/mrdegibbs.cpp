@@ -160,8 +160,10 @@ void run() {
   auto slice_encoding_it = header.keyval().find("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     if (mode == 1) {
-      WARN("running 3D volume-wise unringing, but image header contains \"SliceEncodingDirection\" field");
-      WARN("If data were acquired using multi-slice encoding, run in default 2D mode.");
+      WARN("running 3D volume-wise unringing,"                            //
+           " but image header contains \"SliceEncodingDirection\" field;" //
+           " if data were acquired using multi-slice encoding,"           //
+           " run in default 2D mode.");                                   //
     } else {
       try {
         const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot =

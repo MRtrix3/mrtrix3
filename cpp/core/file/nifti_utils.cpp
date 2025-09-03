@@ -558,8 +558,7 @@ Axes::Shuffle axes_on_write(const Header &H) {
 transform_type adjust_transform(const Header &H, Axes::permutations_type &axes) {
   const Axes::Shuffle shuffle = axes_on_write(H);
   axes = shuffle.permutations;
-
-  if (!shuffle)
+  if (shuffle.is_identity())
     return H.transform();
 
   const auto &M_in = H.transform().matrix();

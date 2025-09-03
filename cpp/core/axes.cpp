@@ -20,7 +20,7 @@ namespace MR::Axes {
 
 Shuffle get_shuffle_to_make_RAS(const transform_type &T) {
   Shuffle result;
-  result.permutations = closest(T.matrix().topLeftCorner<3, 3>());
+  result.permutations = closest(T.linear());
   // Figure out whether any of the rows of the transform point in the
   //   opposite direction to the MRtrix convention
   result.flips[result.permutations[0]] = T(0, result.permutations[0]) < 0.0;
@@ -58,6 +58,7 @@ permutations_type closest(const Eigen::Matrix3d &M) {
   if (result[1] == result[2])
     result[2] = not_any_of(result[0], result[1]);
   assert(result[0] != result[1] && result[1] != result[2] && result[2] != result[0]);
+  assert(*std::min_element(result.begin(), result.end()) == 0);
 
   return result;
 }

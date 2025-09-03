@@ -16,6 +16,8 @@
 
 #include "metadata/phase_encoding.h"
 
+#include "exception.h"
+
 namespace MR::Metadata::PhaseEncoding {
 
 // clang-format off
@@ -65,8 +67,10 @@ void check(const scheme_type &PE, const Header &header) {
   check(PE);
   const ssize_t num_volumes = (header.ndim() > 3) ? header.size(3) : 1;
   if (num_volumes != PE.rows())
-    throw Exception("Number of volumes in image \"" + header.name() + "\" (" + str(num_volumes) +
-                    ") does not match that in phase encoding table (" + str(PE.rows()) + ")");
+    throw Exception("Number of volumes in image \"" + header.name() + "\"" //
+                    + " (" + str(num_volumes) + ")"                        //
+                    + " does not match that in phase encoding table"       //
+                    + " (" + str(PE.rows()) + ")");                        //
 }
 
 namespace {
@@ -140,9 +144,21 @@ scheme_type parse_scheme(const KeyValues &keyval, const Header &header) {
       const auto it_time = keyval.find("TotalReadoutTime");
       const size_t cols = it_time == keyval.end() ? 3 : 4;
       Eigen::Matrix<default_type, Eigen::Dynamic, 1> row(cols);
-      row.head(3) = BIDS::axisid2vector(it_dir->second).cast<default_type>();
-      if (it_time != keyval.end())
-        row[3] = to<default_type>(it_time->second);
+      try {
+        row.head(3) = BIDS::axisid2vector(it_dir->second).cast<default_type>();
+      } catch (Exception &e) {
+        throw Exception(                                               //
+            e,                                                         //
+            std::string("malformed phase encoding direction")          //
+                + " associated with image \"" + header.name() + "\""); //
+      }
+      if (it_time != keyval.end()) {
+        try {
+          row[3] = to<default_type>(it_time->second);
+        } catch (Execption &e) {
+          throw Exception(e, "Error adding readout time to phase encoding table");
+        }
+      }
       PE.resize((header.ndim() > 3) ? header.size(3) : 1, cols);
       PE.rowwise() = row.transpose();
     }
@@ -162,9 +178,9 @@ scheme_type get_scheme(const Header &header) {
     const auto opt_eddy = get_options("import_pe_eddy");
     if (!opt_eddy.empty()) {
       if (!opt_table.empty())
-        throw Exception("Phase encoding table can be provided"
-                        " using either -import_pe_table or -import_pe_eddy option,"
-                        " but NOT both");
+        throw Exception("Phase encoding table can be provided"                      //
+                        " using either -import_pe_table or -import_pe_eddy option," //
+                        " but NOT both");                                           //
       result = load_eddy(opt_eddy[0][0], opt_eddy[0][1], header);
     }
     if (opt_table.empty() && opt_eddy.empty())
@@ -173,7 +189,7 @@ scheme_type get_scheme(const Header &header) {
     throw Exception(e, "error importing phase encoding table for image \"" + header.name() + "\"");
   }
 
-  if (!result.rows())
+  if (result.rows() == 0)
     return result;
 
   if (result.cols() < 3)
@@ -185,12 +201,20 @@ scheme_type get_scheme(const Header &header) {
 }
 
 void transform_for_image_load(KeyValues &keyval, const Header &H) {
-  scheme_type pe_scheme = parse_scheme(keyval, H);
-  if (!pe_scheme.rows()) {
+  scheme_type pe_scheme;
+  try {
+    pe_scheme = parse_scheme(keyval, H);
+  } catch (Exception &e) {
+    WARN(std::string("Unable to conform phase encoding information to image realignment ") //
+         + " for image \"" + H.name() + "\"; erasing");                                    //
+    clear_scheme(keyval);
+    return;
+  }
+  if (pe_scheme.rows() == 0) {
     DEBUG("No phase encoding information found for transformation with load of image \"" + H.name() + "\"");
     return;
   }
-  if (!H.realignment()) {
+  if (H.realignment().is_identity()) {
     INFO("No transformation of phase encoding data for load of image \"" + H.name() + "\" required");
     return;
   }
@@ -199,7 +223,7 @@ void transform_for_image_load(KeyValues &keyval, const Header &H) {
 }
 
 scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header &H) {
-  if (!H.realignment())
+  if (H.realignment().is_identity())
     return pe_scheme;
   scheme_type result(pe_scheme.rows(), pe_scheme.cols());
   for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
@@ -212,7 +236,7 @@ scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header 
 
 void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
   scheme_type pe_scheme = parse_scheme(keyval, H);
-  if (!pe_scheme.rows()) {
+  if (pe_scheme.rows() == 0) {
     DEBUG("No phase encoding information found for transformation with save of NIfTI image \"" + H.name() + "\"");
     return;
   }
@@ -220,10 +244,10 @@ void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
 }
 
 scheme_type transform_for_nifti_write(const scheme_type &pe_scheme, const Header &H) {
-  if (!pe_scheme.rows())
+  if (pe_scheme.rows() == 0)
     return pe_scheme;
   Axes::Shuffle shuffle = File::NIfTI::axes_on_write(H);
-  if (!shuffle) {
+  if (shuffle.is_identity()) {
     INFO("No transformation of phase encoding data required for export to file:"
          " output image will be RAS");
     return pe_scheme;
@@ -286,7 +310,7 @@ scheme_type eddy2scheme(const Eigen::MatrixXd &config, const Eigen::Array<int, E
 
 void export_commandline(const Header &header) {
   auto check = [&](const scheme_type &m) -> const scheme_type & {
-    if (!m.rows())
+    if (m.rows() == 0)
       throw Exception("no phase-encoding information found within image \"" + header.name() + "\"");
     return m;
   };
@@ -295,7 +319,7 @@ void export_commandline(const Header &header) {
 
   auto opt = get_options("export_pe_table");
   if (!opt.empty())
-    save(check(scheme), header, opt[0][0]);
+    __save(check(scheme), header, opt[0][0]);
 
   opt = get_options("export_pe_eddy");
   if (!opt.empty())

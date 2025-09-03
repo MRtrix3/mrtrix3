@@ -205,11 +205,11 @@ def execute(): #pylint: disable=unused-variable
   first_brain_extracted_option = ['-b'] if app.ARGS.premasked else []
   first_debug_option = [] if app.DO_CLEANUP else ['-d']
   first_verbosity_option = ['-v'] if app.VERBOSITY == 3 else []
-  run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_input, '-o', 'first']
-              + first_brain_extracted_option
-              + first_debug_option
-              + first_verbosity_option)
-  fsl.check_first('first', sgm_structures)
+  first_stdout = run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_input, '-o', 'first']
+                             + first_brain_extracted_option
+                             + first_debug_option
+                             + first_verbosity_option).stdout
+  fsl.check_first('first', structures=sgm_structures, first_stdout=first_stdout)
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]

@@ -144,11 +144,11 @@ private:
 };
 
 void run() {
-  auto dwi = Header::open(argument[0]).get_image<value_type>();
-  auto grad = DWI::get_DW_scheme(dwi);
+  auto header_in = Header::open(argument[0]);
+  auto grad = DWI::get_DW_scheme(header_in);
 
   size_t dwi_axis = 3;
-  while (dwi.size(dwi_axis) < 2)
+  while (header_in.size(dwi_axis) < 2)
     ++dwi_axis;
   INFO("assuming DW images are stored along axis " + str(dwi_axis));
 
@@ -156,14 +156,15 @@ void run() {
   bool ivim = opt.size();
   int bmin = get_option_value("cutoff", 120);
 
-  Header header(dwi);
-  header.datatype() = DataType::Float32;
-  DWI::stash_DW_scheme(header, grad);
-  Metadata::PhaseEncoding::clear_scheme(header.keyval());
-  header.ndim() = 4;
-  header.size(3) = ivim ? 4 : 2;
+  Header header_out(header_in);
+  header_out.datatype() = DataType::Float32;
+  DWI::stash_DW_scheme(header_out, grad);
+  Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
+  header_out.ndim() = 4;
+  header_out.size(3) = ivim ? 4 : 2;
 
-  auto adc = Image<value_type>::create(argument[1], header);
+  auto dwi = header_in.get_image<value_type>();
+  auto adc = Image<value_type>::create(argument[1], header_out);
 
   ThreadedLoop("computing ADC values", dwi, 0, 3).run(DWI2ADC(grad.col(3), dwi_axis, ivim, bmin), dwi, adc);
 }

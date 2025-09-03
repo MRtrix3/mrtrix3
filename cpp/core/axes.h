@@ -17,19 +17,25 @@
 #pragma once
 
 #include <array>
+#include <set>
 
 #include "types.h"
 
 namespace MR::Axes {
 
+// TODO Change to 8-bit integer & define invalid value
 using permutations_type = std::array<size_t, 3>;
 using flips_type = std::array<bool, 3>;
 class Shuffle {
 public:
-  Shuffle() : permutations({0, 1, 2}), flips({false, false, false}) {}
-  operator bool() const {
-    return (permutations[0] != 0 || permutations[1] != 1 || permutations[2] != 2 || //
-            flips[0] || flips[1] || flips[2]);
+  Shuffle() : permutations({-1, -1, -1}), flips({false, false, false}) {}
+  bool is_identity() const {
+    return (permutations[0] == 0 && permutations[1] == 1 && permutations[2] != 2 && //
+            !flips[0] && !flips[1] && !flips[2]);
+  }
+  bool is_set() const { return permutations != permutations_type{-1, -1, -1}; }
+  bool valid() const {
+    return std::set<ssize_t>(permutations.begin(), permutations.end()) == std::set<ssize_t>({0, 1, 2});
   }
   permutations_type permutations;
   flips_type flips;

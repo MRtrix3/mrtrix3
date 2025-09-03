@@ -29,32 +29,41 @@ void transform_for_image_load(KeyValues &keyval, const Header &header) {
   auto slice_encoding_it = keyval.find("SliceEncodingDirection");
   auto slice_timing_it = keyval.find("SliceTiming");
   if (!(slice_encoding_it == keyval.end() && slice_timing_it == keyval.end())) {
-    if (!header.realignment()) {
+    if (header.realignment().is_identity()) {
       INFO("No transformation of slice encoding direction for load of image \"" + header.name() + "\" required");
       return;
     }
-    const Metadata::BIDS::axis_vector_type orig_dir(slice_encoding_it == keyval.end()                                //
-                                                        ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
-                                                        : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
+    Metadata::BIDS::axis_vector_type orig_dir = Metadata::BIDS::axis_vector_type({0, 0, 1});
+    if (slice_encoding_it != keyval.end()) {
+      try {
+        orig_dir = Metadata::BIDS::axisid2vector(slice_encoding_it->second);
+      } catch (Exception &e) {
+        INFO(std::string("Unable to conform slice encoding direction")      //
+             + " \"" + slice_encoding_it->second + "\""                     //
+             + " to image realignment for image \"" + header.name() + "\";" //
+             + " erasing");                                                 //
+        clear(keyval);
+        return;
+      }
+    }
     const Metadata::BIDS::axis_vector_type new_dir = header.realignment().applied_transform() * orig_dir;
     if (slice_encoding_it != keyval.end()) {
       slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
-      INFO("Slice encoding direction has been modified"                               //
-           " to conform to MRtrix3 internal header transform realignment of image \"" //
-           + header.name() + "\"");                                                   //
+      INFO(std::string("Slice encoding direction has been modified")        //
+           + " to conform to MRtrix3 internal header transform realignment" //
+           + " of image \"" + header.name() + "\"");                        //
     } else if ((new_dir * -1).dot(orig_dir) == 1) {
       auto slice_timing = parse_floats(slice_timing_it->second);
       std::reverse(slice_timing.begin(), slice_timing.end());
       slice_timing_it->second = join(slice_timing, ",");
-      INFO("Slice timing vector reversed to conform to MRtrix3 internal transform realignment"
+      INFO("Slice timing vector reversed to conform to MRtrix3 internal transform realignment" //
            " of image \"" +
-           header.name() + "\"");
+           header.name() + "\""); //
     } else {
       keyval["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
-      WARN("Slice encoding direction of image \""                                                            //
-           + header.name()                                                                                   //
-           + "\" inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field" //
-             " after MRtrix3 internal transform realignment");                                               //
+      WARN("Slice encoding direction of image \"" + header.name() + "\""                                   //
+           + " inferred to be \"k\" in order to preserve interpretation of existing \"SliceTiming\" field" //
+           + " after MRtrix3 internal transform realignment");                                             //
     }
   }
 }
@@ -72,9 +81,10 @@ void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
     return;
   }
 
-  const Metadata::BIDS::axis_vector_type orig_dir(slice_encoding_it == keyval.end()                                //
-                                                      ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
-                                                      : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
+  const Metadata::BIDS::axis_vector_type                                        //
+      orig_dir(slice_encoding_it == keyval.end()                                //
+                   ? Metadata::BIDS::axis_vector_type({0, 0, 1})                //
+                   : Metadata::BIDS::axisid2vector(slice_encoding_it->second)); //
   Metadata::BIDS::axis_vector_type new_dir;
   for (size_t axis = 0; axis != 3; ++axis)
     new_dir[axis] = shuffle.flips[axis] ? -orig_dir[shuffle.permutations[axis]] : orig_dir[shuffle.permutations[axis]];
@@ -122,6 +132,16 @@ std::string resolve_slice_timing(const std::string &one, const std::string &two)
     }
   }
   return one;
+}
+
+void clear(KeyValues &keyval) {
+  auto erase = [](KeyValues &keyval, const std::string &s) {
+    auto it = keyval.find(s);
+    if (it != keyval.end())
+      keyval.erase(it);
+  };
+  erase(keyval, "SliceEncodingDirection");
+  erase(keyval, "SliceTiming");
 }
 
 } // namespace MR::Metadata::SliceEncoding

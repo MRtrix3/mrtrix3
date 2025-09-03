@@ -19,6 +19,7 @@
 
 #include "command.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "file/json_utils.h"
 #include "header.h"
 #include "image_io/pipe.h"

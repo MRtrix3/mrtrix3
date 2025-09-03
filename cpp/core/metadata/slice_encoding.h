@@ -32,4 +32,6 @@ void transform_for_nifti_write(KeyValues &keyval, const Header &H);
 
 std::string resolve_slice_timing(const std::string &one, const std::string &two);
 
+void clear(KeyValues &);
+
 } // namespace MR::Metadata::SliceEncoding

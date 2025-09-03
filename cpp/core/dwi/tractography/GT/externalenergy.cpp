@@ -24,10 +24,10 @@
 
 namespace MR::DWI::Tractography::GT {
 
-ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwimage, const Properties &props)
+ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, const Properties &props)
     : EnergyComputer(stat),
-      dwi(dwimage.get_image<float>()),
-      T(Transform(dwimage).scanner2voxel),
+      dwi(dwiheader.get_image<float>().with_direct_io(3)),
+      T(Transform(dwiheader).scanner2voxel),
       lmax(props.Lmax),
       ncols(Math::SH::NforL(lmax)),
       nf(props.resp_ISO.size()),
@@ -37,7 +37,7 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwimage, con
   DEBUG("Initialise computation of external energy.");
 
   // Create images --------------------------------------------------------------
-  Header header(dwimage);
+  Header header(dwiheader);
   header.datatype() = DataType::Float32;
   header.size(3) = ncols;
   tod = Image<float>::scratch(header, "TOD image");
@@ -53,7 +53,7 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwimage, con
   eext = Image<float>::scratch(header, "external energy");
 
   // Set kernel matrices --------------------------------------------------------
-  auto grad = DWI::get_DW_scheme(dwimage);
+  auto grad = DWI::get_DW_scheme(dwiheader);
   nrows = grad.rows();
   DWI::Shells shells(grad);
 

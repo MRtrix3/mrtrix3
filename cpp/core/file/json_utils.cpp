@@ -60,10 +60,8 @@ KeyValues read(const nlohmann::json &json) {
   for (auto i = json.cbegin(); i != json.cend(); ++i) {
     if (i->is_boolean()) {
       result.insert(std::make_pair(i.key(), i.value() ? "true" : "false"));
-    } else if (i->is_number_integer()) {
-      result.insert(std::make_pair(i.key(), str<int>(i.value())));
-    } else if (i->is_number_float()) {
-      result.insert(std::make_pair(i.key(), str<float>(i.value())));
+    } else if (i->is_number_integer() || i->is_number_float()) {
+      result.insert(std::make_pair(i.key(), i->dump()));
     } else if (i->is_string()) {
       const std::string s = unquote(i.value());
       result.insert(std::make_pair(i.key(), s));
@@ -211,12 +209,12 @@ void write(const KeyValues &keyval, nlohmann::json &json) {
 void write(const Header &header, nlohmann::json &json, const std::string &image_path) {
   Header H_adj(header);
   H_adj.name() = image_path;
+  if (!App::get_options("export_grad_fsl").empty() || !App::get_options("export_grad_mrtrix").empty())
+    DWI::clear_DW_scheme(H_adj);
   if (!Path::has_suffix(image_path, {".nii", ".nii.gz", ".img"})) {
     write(H_adj.keyval(), json);
     return;
   }
-  if (App::get_options("export_grad_fsl").size())
-    DWI::clear_DW_scheme(H_adj);
   Metadata::PhaseEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
   Metadata::SliceEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
   write(H_adj.keyval(), json);

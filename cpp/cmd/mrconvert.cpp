@@ -298,9 +298,9 @@ void permute_slice_direction(Header &H, const std::vector<int> &axes) {
     const axis_vector_type orig_dir({0, 0, 1});
     const axis_vector_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
     slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
-    WARN("Header field \"SliceEncodingDirection\" inferred to be \"k\" in input image"
-         " and then transformed according to axis permutation"
-         " in order to preserve validity of existing header field \"SliceTiming\"");
+    WARN("Header field \"SliceEncodingDirection\" inferred to be \"k\" in input image" //
+         " and then transformed according to axis permutation"                         //
+         " in order to preserve validity of existing header field \"SliceTiming\"");   //
     return;
   }
   const axis_vector_type orig_dir = Metadata::BIDS::axisid2vector(slice_encoding_it->second);
@@ -474,8 +474,8 @@ void run() {
         const auto grad = DWI::parse_DW_scheme(header_out);
         if (grad.rows()) {
           if ((ssize_t)grad.rows() != header_in.size(3)) {
-            WARN("Diffusion encoding of input file does not match number of image volumes; omitting gradient "
-                 "information from output image");
+            WARN("Diffusion encoding of input file does not match number of image volumes;" //
+                 " omitting gradient information from output image");                       //
             DWI::clear_DW_scheme(header_out);
           } else {
             Eigen::MatrixXd extract_grad(pos[3].size(), grad.cols());
@@ -494,8 +494,8 @@ void run() {
             Metadata::PhaseEncoding::set_scheme(header_out.keyval(), extract_scheme);
           }
         } catch (...) {
-          WARN("Phase encoding scheme of input file does not match number of image volumes;"
-               " omitting information from output image");
+          WARN("Phase encoding scheme of input file does not match number of image volumes;" //
+               " omitting information from output image");                                   //
           Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
         }
       }

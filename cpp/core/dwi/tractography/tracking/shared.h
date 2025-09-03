@@ -60,7 +60,9 @@ public:
   bool is_act() const { return bool(act_shared_additions); }
   const ACT::ACT_Shared_additions &act() const { return *act_shared_additions; }
 
-  float vox() const { return std::pow(source.spacing(0) * source.spacing(1) * source.spacing(2), float(1.0 / 3.0)); }
+  float vox() const {
+    return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), float(1.0 / 3.0));
+  }
 
   void set_step_and_angle(const float stepsize, const float angle, bool is_higher_order);
   void set_num_points();

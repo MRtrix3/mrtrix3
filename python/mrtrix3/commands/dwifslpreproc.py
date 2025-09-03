@@ -1455,14 +1455,14 @@ def execute(): #pylint: disable=unused-variable
       bvals_combined.append(new_bval)
 
     if nans_present_bvecs:
-      app.warn('FSL "eddy"\'s rotated bvecs contained '
-               + (str(nans_present_bvecs) + ' entries with NaN values; '
-                      'these have been read as zero-length vectors, '
-                      'and will be saved as b=0 volumes'
+      app.warn(f'FSL "eddy"\'s rotated bvecs contained'
+               + (f'{nans_present_bvecs} entries with NaN values;'
+                  'these have been read as zero-length vectors,'
+                  'and will be saved as b=0 volumes'
                   if nans_present_bvecs > 1
                   else 'an entry with NaN values; '
-                      'this has been read as a zero-length vector, '
-                      'and will be saved as a b=0 volume')
+                       'this has been read as a zero-length vector, '
+                       'and will be saved as a b=0 volume')
                + ' in the output series')
     bvecs_combined = matrix.transpose(bvecs_combined_transpose)
     matrix.save_matrix('bvecs_combined', bvecs_combined, add_to_command_history=False)

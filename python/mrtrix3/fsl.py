@@ -58,7 +58,7 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
         (fslsub_stdout, _) = proc.communicate()
         returncode = proc.returncode
       if returncode:
-        app.debug('fsl_sub executed successfully, but returned error code ' + str(returncode))
+        app.debug(f'fsl_sub executed successfully, but returned error code {returncode}')
       else:
         app.debug('fsl_sub successfully executed; awaiting completion flag')
         path.wait_for(flag_file)
@@ -74,18 +74,23 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
     finally:
       app.cleanup(flag_file)
   if not structures:
-    app.warn('No way to verify up-front whether FSL FIRST was successful due to no knowledge of set of structures to be segmented')
-    app.warn('Execution will continue, but script may subsequently fail if an expected structure was not segmented successfully')
+    app.warn('No way to verify up-front whether FSL FIRST was successful'
+             ' due to no knowledge of set of structures to be segmented;'
+             ' execution will continue,'
+             'but script may subsequently fail'
+             ' if an expected structure was not segmented successfully')
     return
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
   existing_file_count = sum(os.path.exists(filename) for filename in vtk_files)
   if existing_file_count == len(vtk_files):
-    app.debug('All ' + str(existing_file_count) + ' expected FIRST .vtk files found')
+    app.debug(f'All {existing_file_count} expected FIRST .vtk files found')
     return
   if not execution_verified and 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
-    app.console('FSL FIRST job PID not found, but job may nevertheless complete later via SGE')
+    app.console('FSL FIRST job PID not found,'
+                ' but job may nevertheless complete later via SGE')
     app.console('Script will wait to see if the expected .vtk files are generated later')
-    app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
+    app.console('(note however that FIRST may fail silently,'
+                ' and hence this script may hang indefinitely)')
     path.wait_for(vtk_files)
     return
   app.DO_CLEANUP = False

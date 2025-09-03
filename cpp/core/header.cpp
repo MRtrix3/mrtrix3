@@ -26,6 +26,7 @@
 #include "formats/list.h"
 #include "image_io/default.h"
 #include "image_io/scratch.h"
+#include "math/math.h"
 #include "metadata/phase_encoding.h"
 #include "metadata/slice_encoding.h"
 #include "mrtrix.h"
@@ -88,12 +89,21 @@ void Header::merge_keyval(const KeyValues &in) {
       }
     } else {
       auto it = keyval().find(item.first);
-      if (it == keyval().end() || it->second == item.second)
+      if (it == keyval().end() || it->second == item.second) {
         new_keyval.insert(item);
-      else if (item.first == "SliceTiming")
+      } else if (item.first == "SliceTiming") {
         new_keyval["SliceTiming"] = Metadata::SliceEncoding::resolve_slice_timing(item.second, it->second);
-      else
+      } else if (item.first == "dw_scheme") {
+        try {
+          auto scheme = DWI::resolve_DW_scheme(parse_matrix(item.second), parse_matrix(it->second));
+          DWI::set_DW_scheme(new_keyval, scheme);
+        } catch (Exception &e) {
+          WARN("Error merging DW gradient tables between headers");
+          new_keyval["dw_scheme"] = "variable";
+        }
+      } else {
         new_keyval[item.first] = "variable";
+      }
     }
   }
   std::swap(keyval_, new_keyval);
@@ -591,7 +601,7 @@ void Header::realign_transform() {
   realignment_.shuffle_ = Axes::get_shuffle_to_make_RAS(transform());
 
   // check if image is already near-axial, return if true:
-  if (!realignment_)
+  if (realignment_.is_identity())
     return;
 
   auto M(transform());
@@ -630,9 +640,9 @@ void Header::realign_transform() {
   transform() = std::move(M);
 
   // switch axes to match:
-  Axis a[] = {axes_[realignment_.permutation(0)],  //
-              axes_[realignment_.permutation(1)],  //
-              axes_[realignment_.permutation(2)]}; //
+  const std::array<Axis, 3> a = {axes_[realignment_.permutation(0)],  //
+                                 axes_[realignment_.permutation(1)],  //
+                                 axes_[realignment_.permutation(2)]}; //
   axes_[0] = a[0];
   axes_[1] = a[1];
   axes_[2] = a[2];

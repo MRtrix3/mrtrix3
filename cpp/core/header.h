@@ -54,7 +54,10 @@ public:
   };
 
   Header()
-      : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)), format_(nullptr), offset_(0.0), scale_(1.0) {}
+      : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)), //
+        format_(nullptr),                                             //
+        offset_(0.0),                                                 //
+        scale_(1.0) {}                                                //
 
   explicit Header(Header &&H) noexcept
       : axes_(std::move(H.axes_)),
@@ -103,7 +106,9 @@ public:
   Header(const HeaderType &original) : Header(static_cast<const Header &>(original)) {}
 
   //! copy constructor from type of class other than Header
-  /*! This copies all relevant parameters over from \a original. */
+  /*! This copies all relevant parameters over from \a original.
+   * Note that information about transform realignment on image load will not be available.
+   */
   template <class HeaderType,
             typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void *>::type = nullptr>
   Header(const HeaderType &original)
@@ -206,13 +211,14 @@ public:
     using applied_transform_type = Eigen::Matrix<int, 3, 3>;
     Realignment();
     Realignment(Header &);
-    operator bool() const { return bool(shuffle_); }
-    const std::array<size_t, 3> &permutations() const { return shuffle_.permutations; }
+    bool is_identity() const { return shuffle_.is_identity(); }
+    bool valid() const { return shuffle_.valid(); }
+    const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
     size_t permutation(const size_t axis) const {
       assert(axis < 3);
       return shuffle_.permutations[axis];
     }
-    const std::array<bool, 3> &flips() const { return shuffle_.flips; }
+    const Axes::flips_type &flips() const { return shuffle_.flips; }
     bool flip(const size_t axis) const {
       assert(axis < 3);
       return shuffle_.flips[axis];
