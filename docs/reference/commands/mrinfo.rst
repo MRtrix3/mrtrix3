@@ -93,6 +93,8 @@ Options for exporting phase-encode tables
 
 -  **-export_pe_table file** export phase-encoding table to file
 
+-  **-export_pe_topup file** export phase-encoding table to file intended for FSL topup
+
 -  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
 
 -  **-petable** print the phase encoding table

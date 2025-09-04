@@ -25,7 +25,7 @@
 #include "math/sphere.h"
 #include "types.h"
 
-#define DWI_BZERO_THREHSOLD_DEFAULT 10.0
+#define DWI_BZERO_THRESHOLD_DEFAULT 10.0
 
 namespace MR {
 namespace App {
@@ -219,6 +219,7 @@ Eigen::MatrixXd get_raw_DW_scheme(const Header &header);
 
 //! clear any DW gradient encoding scheme from the header
 void clear_DW_scheme(Header &);
+void clear_DW_scheme(KeyValues &);
 
 //! 'stash' the DW gradient table
 /*! Store the _used_ DW gradient table to Header::keyval() key

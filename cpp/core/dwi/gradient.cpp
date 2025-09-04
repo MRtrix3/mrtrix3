@@ -88,7 +88,7 @@ const char *const bvalue_scaling_description(
 // CONF Specifies the b-value threshold for determining those image
 // CONF volumes that correspond to b=0.
 default_type bzero_threshold() {
-  static const default_type value = File::Config::get_float("BZeroThreshold", DWI_BZERO_THREHSOLD_DEFAULT);
+  static const default_type value = File::Config::get_float("BZeroThreshold", DWI_BZERO_THRESHOLD_DEFAULT);
   return value;
 }
 
@@ -221,7 +221,7 @@ void save_bvecs_bvals(const Header &header, const std::string &bvecs_path, const
   Eigen::VectorXd bvals = grad.col(3);
   size_t bval_zeroed_count = 0;
   for (ssize_t n = 0; n < bvals.size(); ++n) {
-    if (bvecs.row(n).squaredNorm() > 0.0 && bvals[n] && bvals[n] <= bzero_threshold()) {
+    if (bvecs.col(n).squaredNorm() > 0.0 && bvals[n] && bvals[n] <= bzero_threshold()) {
       ++bval_zeroed_count;
       bvals[n] = 0.0;
     }
@@ -245,10 +245,11 @@ void save_bvecs_bvals(const Header &header, const std::string &bvecs_path, const
   File::Matrix::save_vector(bvals, bvals_path, KeyValues(), false);
 }
 
-void clear_DW_scheme(Header &header) {
-  auto it = header.keyval().find("dw_scheme");
-  if (it != header.keyval().end())
-    header.keyval().erase(it);
+void clear_DW_scheme(Header &header) { clear_DW_scheme(header.keyval()); }
+void clear_DW_scheme(KeyValues &kv) {
+  auto it = kv.find("dw_scheme");
+  if (it != kv.end())
+    kv.erase(it);
 }
 
 Eigen::MatrixXd get_raw_DW_scheme(const Header &header) {

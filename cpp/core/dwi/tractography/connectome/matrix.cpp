@@ -34,8 +34,6 @@ const App::Option EdgeStatisticOption
       App::Argument("statistic").type_choice(statistics);
 
 template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in) {
-  assert(in.get_first_node() < mat2vec->mat_size());
-  assert(in.get_second_node() < mat2vec->mat_size());
   assert(assignments_lists.empty());
   if (is_vector()) {
     assert(assignments_pairs.empty());
@@ -52,6 +50,8 @@ template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in
       }
     }
   } else {
+    assert(in.get_first_node() < mat2vec->mat_size());
+    assert(in.get_second_node() < mat2vec->mat_size());
     assert(assignments_single.empty());
     apply_data(in.get_first_node(), in.get_second_node(), in.get_factor(), in.get_weight());
     inc_count(in.get_first_node(), in.get_second_node(), in.get_weight());

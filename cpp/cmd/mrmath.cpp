@@ -439,7 +439,7 @@ void run() {
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception("Image " + path + " has fewer axes than first imput image " + header.name());
+        throw Exception("Image " + path + " has fewer axes than first input image " + header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
           throw Exception("Dimensions of image " + path + " do not match those of first input image " + header.name());
