@@ -26,8 +26,10 @@
 #include "formats/list.h"
 #include "image_io/default.h"
 #include "image_io/scratch.h"
+#include "math/math.h"
+#include "metadata/phase_encoding.h"
+#include "metadata/slice_encoding.h"
 #include "mrtrix.h"
-#include "phase_encoding.h"
 #include "stride.h"
 #include "transform.h"
 
@@ -63,38 +65,7 @@ void Header::check(const Header &H) const {
     throw Exception("scaling coefficients differ between image files for \"" + name() + "\"");
 }
 
-namespace {
-std::string resolve_slice_timing(const std::string &one, const std::string &two) {
-  if (one == "variable" || two == "variable")
-    return "variable";
-  std::vector<std::string> one_split = split(one, ",");
-  std::vector<std::string> two_split = split(two, ",");
-  if (one_split.size() != two_split.size()) {
-    DEBUG("Slice timing vectors of inequal length");
-    return "invalid";
-  }
-  // Siemens CSA reports with 2.5ms precision = 0.0025s
-  // Allow slice times to vary by 1.5x this amount, but no more
-  for (size_t i = 0; i != one_split.size(); ++i) {
-    default_type f_one, f_two;
-    try {
-      f_one = to<default_type>(one_split[i]);
-      f_two = to<default_type>(two_split[i]);
-    } catch (Exception &e) {
-      DEBUG("Error converting slice timing vector to floating-point");
-      return "invalid";
-    }
-    const default_type diff = abs(f_two - f_one);
-    if (diff > 0.00375) {
-      DEBUG("Supra-threshold difference of " + str(diff) + "s in slice times");
-      return "variable";
-    }
-  }
-  return one;
-}
-} // namespace
-
-void Header::merge_keyval(const Header &H) {
+void Header::merge_keyval(const KeyValues &in) {
   std::map<std::string, std::string> new_keyval;
   std::set<std::string> unique_comments;
   for (const auto &item : keyval()) {
@@ -107,7 +78,7 @@ void Header::merge_keyval(const Header &H) {
       new_keyval.insert(item);
     }
   }
-  for (const auto &item : H.keyval()) {
+  for (const auto &item : in) {
     if (item.first == "comments") {
       const auto comments = split_lines(item.second);
       for (const auto &c : comments) {
@@ -118,12 +89,21 @@ void Header::merge_keyval(const Header &H) {
       }
     } else {
       auto it = keyval().find(item.first);
-      if (it == keyval().end() || it->second == item.second)
+      if (it == keyval().end() || it->second == item.second) {
         new_keyval.insert(item);
-      else if (item.first == "SliceTiming")
-        new_keyval["SliceTiming"] = resolve_slice_timing(item.second, it->second);
-      else
+      } else if (item.first == "SliceTiming") {
+        new_keyval["SliceTiming"] = Metadata::SliceEncoding::resolve_slice_timing(item.second, it->second);
+      } else if (item.first == "dw_scheme") {
+        try {
+          auto scheme = DWI::resolve_DW_scheme(parse_matrix(item.second), parse_matrix(it->second));
+          DWI::set_DW_scheme(new_keyval, scheme);
+        } catch (Exception &e) {
+          WARN("Error merging DW gradient tables between headers");
+          new_keyval["dw_scheme"] = "variable";
+        }
+      } else {
         new_keyval[item.first] = "variable";
+      }
     }
   }
   std::swap(keyval_, new_keyval);
@@ -247,8 +227,7 @@ Header Header::open(const std::string &image_name) {
     } // End branching for [] notation
 
     H.sanitise();
-    if (do_realign_transform)
-      H.realign_transform();
+    H.realign_transform();
   } catch (CancelException &e) {
     throw;
   } catch (Exception &E) {
@@ -349,9 +328,9 @@ Header Header::create(const std::string &image_name, const Header &template_head
       DWI::clear_DW_scheme(H);
     }
     try {
-      pe_scheme = PhaseEncoding::parse_scheme(template_header);
+      pe_scheme = Metadata::PhaseEncoding::parse_scheme(template_header.keyval(), template_header);
     } catch (Exception &) {
-      PhaseEncoding::clear_scheme(H);
+      Metadata::PhaseEncoding::clear_scheme(H.keyval());
     }
     if (split_4d_schemes) {
       try {
@@ -362,11 +341,11 @@ Header Header::create(const std::string &image_name, const Header &template_head
         DWI::clear_DW_scheme(H);
       }
       try {
-        PhaseEncoding::check(pe_scheme, template_header);
-        PhaseEncoding::set_scheme(H, pe_scheme.row(0));
+        Metadata::PhaseEncoding::check(pe_scheme, template_header);
+        Metadata::PhaseEncoding::set_scheme(H.keyval(), pe_scheme.row(0));
       } catch (Exception &) {
         pe_scheme.resize(0, 0);
-        PhaseEncoding::clear_scheme(H);
+        Metadata::PhaseEncoding::clear_scheme(H.keyval());
       }
     }
 
@@ -400,7 +379,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
         if (dw_scheme.rows())
           DWI::set_DW_scheme(header, dw_scheme.row(counter));
         if (pe_scheme.rows())
-          PhaseEncoding::set_scheme(header, pe_scheme.row(counter));
+          Metadata::PhaseEncoding::set_scheme(header.keyval(), pe_scheme.row(counter));
       }
       std::shared_ptr<ImageIO::Base> io_handler((*format_handler)->create(header));
       assert(io_handler);
@@ -431,7 +410,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
 
     if (split_4d_schemes) {
       DWI::set_DW_scheme(H, dw_scheme);
-      PhaseEncoding::set_scheme(H, pe_scheme);
+      Metadata::PhaseEncoding::set_scheme(H.keyval(), pe_scheme);
     }
     H.io->set_image_is_new(true);
     H.io->set_readwrite(true);
@@ -610,12 +589,19 @@ void Header::sanitise_transform() {
 }
 
 void Header::realign_transform() {
+  realignment_.orig_transform_ = transform();
+  realignment_.applied_transform_ = Realignment::applied_transform_type::Identity();
+  realignment_.orig_strides_ = Stride::get(*this);
+  realignment_.orig_keyval_ = keyval();
+
+  if (!do_realign_transform)
+    return;
+
   // find which row of the transform is closest to each scanner axis:
-  Axes::get_shuffle_to_make_axial(transform(), realign_perm_, realign_flip_);
+  realignment_.shuffle_ = Axes::get_shuffle_to_make_RAS(transform());
 
   // check if image is already near-axial, return if true:
-  if (realign_perm_[0] == 0 && realign_perm_[1] == 1 && realign_perm_[2] == 2 && !realign_flip_[0] &&
-      !realign_flip_[1] && !realign_flip_[2])
+  if (realignment_.is_identity())
     return;
 
   auto M(transform());
@@ -623,22 +609,30 @@ void Header::realign_transform() {
 
   // modify translation vector:
   for (size_t i = 0; i < 3; ++i) {
-    if (realign_flip_[i]) {
+    if (realignment_.flip(i)) {
       const default_type length = (size(i) - 1) * spacing(i);
       auto axis = M.matrix().col(i);
       for (size_t n = 0; n < 3; ++n) {
         axis[n] = -axis[n];
         translation[n] -= length * axis[n];
       }
+      realignment_.applied_transform_.row(i) *= -1.0;
     }
   }
 
   // switch and/or invert rows if needed:
   for (size_t i = 0; i < 3; ++i) {
-    auto row = M.matrix().row(i).head<3>();
-    row = Eigen::RowVector3d(row[realign_perm_[0]], row[realign_perm_[1]], row[realign_perm_[2]]);
+    auto row_transform = M.matrix().row(i).head<3>();
+    row_transform = Eigen::RowVector3d(row_transform[realignment_.permutation(0)],
+                                       row_transform[realignment_.permutation(1)],
+                                       row_transform[realignment_.permutation(2)]);
 
-    if (realign_flip_[i])
+    auto col_applied = realignment_.applied_transform_.matrix().col(i);
+    col_applied = Eigen::RowVector3i(col_applied[realignment_.permutation(0)],
+                                     col_applied[realignment_.permutation(1)],
+                                     col_applied[realignment_.permutation(2)]);
+
+    if (realignment_.flip(i))
       stride(i) = -stride(i);
   }
 
@@ -646,42 +640,17 @@ void Header::realign_transform() {
   transform() = std::move(M);
 
   // switch axes to match:
-  Axis a[] = {axes_[realign_perm_[0]], axes_[realign_perm_[1]], axes_[realign_perm_[2]]};
+  const std::array<Axis, 3> a = {axes_[realignment_.permutation(0)],  //
+                                 axes_[realignment_.permutation(1)],  //
+                                 axes_[realignment_.permutation(2)]}; //
   axes_[0] = a[0];
   axes_[1] = a[1];
   axes_[2] = a[2];
 
   INFO("Axes and transform of image \"" + name() + "\" altered to approximate RAS coordinate system");
 
-  // If there's any phase encoding direction information present in the
-  //   header, it's necessary here to update it according to the
-  //   flips / permutations that have taken place
-  auto pe_scheme = PhaseEncoding::get_scheme(*this);
-  if (pe_scheme.rows()) {
-    for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-      Eigen::VectorXd new_line(pe_scheme.row(row));
-      for (ssize_t axis = 0; axis != 3; ++axis) {
-        new_line[axis] = pe_scheme(row, realign_perm_[axis]);
-        if (new_line[axis] && realign_flip_[realign_perm_[axis]])
-          new_line[axis] = -new_line[axis];
-      }
-      pe_scheme.row(row) = new_line;
-    }
-    PhaseEncoding::set_scheme(*this, pe_scheme);
-    INFO("Phase encoding scheme modified to conform to MRtrix3 internal header transform realignment");
-  }
-
-  // If there's any slice encoding direction information present in the
-  //   header, that's also necessary to update here
-  auto slice_encoding_it = keyval().find("SliceEncodingDirection");
-  if (slice_encoding_it != keyval().end()) {
-    const Eigen::Vector3d orig_dir(Axes::id2dir(slice_encoding_it->second));
-    Eigen::Vector3d new_dir;
-    for (size_t axis = 0; axis != 3; ++axis)
-      new_dir[axis] = orig_dir[realign_perm_[axis]] * (realign_flip_[realign_perm_[axis]] ? -1.0 : 1.0);
-    slice_encoding_it->second = Axes::dir2id(new_dir);
-    INFO("Slice encoding direction has been modified to conform to MRtrix3 internal header transform realignment");
-  }
+  Metadata::PhaseEncoding::transform_for_image_load(keyval(), *this);
+  Metadata::SliceEncoding::transform_for_image_load(keyval(), *this);
 }
 
 Header
@@ -752,7 +721,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     } catch (Exception &) {
     }
     try {
-      pe_scheme = PhaseEncoding::get_scheme(result);
+      pe_scheme = Metadata::PhaseEncoding::get_scheme(result);
     } catch (Exception &) {
     }
   }
@@ -781,7 +750,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
         dw_scheme.resize(0, 0);
       }
       try {
-        const auto extra_pe = PhaseEncoding::get_scheme(H);
+        const auto extra_pe = Metadata::PhaseEncoding::get_scheme(H);
         concat_scheme(pe_scheme, extra_pe);
       } catch (Exception &) {
         pe_scheme.resize(0, 0);
@@ -789,7 +758,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     }
 
     // Resolve key-value pairs
-    result.merge_keyval(H);
+    result.merge_keyval(H.keyval());
 
     // Resolve discrepancies in datatype;
     //   also throw an exception if such mismatch is not permitted
@@ -805,9 +774,13 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
 
   if (axis_to_concat == 3) {
     DWI::set_DW_scheme(result, dw_scheme);
-    PhaseEncoding::set_scheme(result, pe_scheme);
+    Metadata::PhaseEncoding::set_scheme(result.keyval(), pe_scheme);
   }
   return result;
+}
+
+Header::Realignment::Realignment() : applied_transform_(applied_transform_type::Identity()), orig_keyval_() {
+  orig_transform_.matrix().fill(std::numeric_limits<default_type>::quiet_NaN());
 }
 
 } // namespace MR

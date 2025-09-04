@@ -19,6 +19,7 @@
 #include "app.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "file/matrix.h"
 #include "header.h"
 #include "math/SH.h"

@@ -20,6 +20,7 @@
 #include <limits>
 
 #include "app.h"
+#include "dwi/gradient.h"
 #include "file/config.h"
 #include "misc/bitset.h"
 #include "types.h"
@@ -34,13 +35,6 @@
 // Default number of volumes necessary for a shell to be retained
 //   (note: only applies if function reject_small_shells() is called explicitly)
 #define DWI_SHELLS_MIN_DIRECTIONS 6
-// Default b-value threshold for a shell to be classified as "b=0"
-#define DWI_SHELLS_BZERO_THREHSOLD 10.0
-
-// CONF option: BZeroThreshold
-// CONF default: 10.0
-// CONF Specifies the b-value threshold for determining those image
-// CONF volumes that correspond to b=0.
 
 // CONF option: BValueEpsilon
 // CONF default: 80.0
@@ -57,11 +51,6 @@ namespace DWI {
 
 extern const App::OptionGroup ShellsOption;
 
-FORCE_INLINE default_type bzero_threshold() {
-  static const default_type value = File::Config::get_float("BZeroThreshold", DWI_SHELLS_BZERO_THREHSOLD);
-  return value;
-}
-
 class Shell {
 
 public:
@@ -76,7 +65,7 @@ public:
   default_type get_min() const { return min; }
   default_type get_max() const { return max; }
 
-  bool is_bzero() const { return (mean < bzero_threshold()); }
+  bool is_bzero() const { return (mean < MR::DWI::bzero_threshold()); }
 
   bool operator<(const Shell &rhs) const { return (mean < rhs.mean); }
 

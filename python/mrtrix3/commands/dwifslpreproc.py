@@ -724,7 +724,9 @@ def execute(): #pylint: disable=unused-variable
         overwrite_dwi_pe_scheme = True
     if manual_trt:
       # Compare manual specification to that read from the header
-      if not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
+      if len(dwi_pe_scheme[0]) == 4 \
+          and app.ARGS.readout_time is not None \
+          and not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
         app.warn('User-defined total readout time does not match what is stored in DWI image header; '
                  'proceeding with user specification')
         overwrite_dwi_pe_scheme = True
@@ -801,7 +803,8 @@ def execute(): #pylint: disable=unused-variable
                      'proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
         if manual_trt:
-          if not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
+          if len(se_epi_pe_scheme[0]) == 4 \
+              and not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
             app.warn('User-defined total readout time does not match what is stored in SE EPI image header; '
                      'proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
@@ -1416,31 +1419,51 @@ def execute(): #pylint: disable=unused-variable
     bvecs = matrix.load_matrix(bvecs_path)
     bvecs_combined_transpose = [ ]
     bvals_combined = [ ]
+    nans_present_bvecs = 0
 
     for pair in volume_pairs:
       bvec_mean = [ 0.5*(bvecs[0][pair[0]] + bvecs[0][pair[1]]),
                     0.5*(bvecs[1][pair[0]] + bvecs[1][pair[1]]),
                     0.5*(bvecs[2][pair[0]] + bvecs[2][pair[1]]) ]
-      norm2 = matrix.dot(bvec_mean, bvec_mean)
-
-      # If one diffusion sensitisation gradient direction is reversed with respect to
-      #   the other, still want to enable their recombination; but need to explicitly
-      #   account for this when averaging the two directions
-      if norm2 < 0.5:
-        bvec_mean = [ 0.5*(bvecs[0][pair[0]] - bvecs[0][pair[1]]),
-                      0.5*(bvecs[1][pair[0]] - bvecs[1][pair[1]]),
-                      0.5*(bvecs[2][pair[0]] - bvecs[2][pair[1]]) ]
+      if any(math.isnan(value) for value in bvec_mean):
+        nans_present_bvecs += 1
+        new_bvec = [0.0, 0.0, 0.0]
+        new_bval = 0.0
+      else:
         norm2 = matrix.dot(bvec_mean, bvec_mean)
 
-      # Occasionally a b=0 volume can have a zero vector
-      if norm2:
-        factor = 1.0 / math.sqrt(norm2)
-        new_vec = [ bvec_mean[0]*factor, bvec_mean[1]*factor, bvec_mean[2]*factor ]
-      else:
-        new_vec = [ 0.0, 0.0, 0.0 ]
-      bvecs_combined_transpose.append(new_vec)
-      bvals_combined.append(0.5 * (grad[pair[0]][3] + grad[pair[1]][3]))
+        # If one diffusion sensitisation gradient direction is reversed with respect to
+        #   the other, still want to enable their recombination; but need to explicitly
+        #   account for this when averaging the two directions
+        if norm2 < 0.5:
+          bvec_mean = [ 0.5*(bvecs[0][pair[0]] - bvecs[0][pair[1]]),
+                        0.5*(bvecs[1][pair[0]] - bvecs[1][pair[1]]),
+                        0.5*(bvecs[2][pair[0]] - bvecs[2][pair[1]]) ]
+          norm2 = matrix.dot(bvec_mean, bvec_mean)
 
+        # Occasionally a b=0 volume can have a zero vector
+        if norm2:
+          factor = 1.0 / math.sqrt(norm2)
+          new_bvec = [ bvec_mean[0]*factor, bvec_mean[1]*factor, bvec_mean[2]*factor ]
+        else:
+          new_bvec = [ 0.0, 0.0, 0.0 ]
+
+        new_bval = 0.5 * (grad[pair[0]][3] + grad[pair[1]][3])
+      # End check for NaN values in bvec
+
+      bvecs_combined_transpose.append(new_bvec)
+      bvals_combined.append(new_bval)
+
+    if nans_present_bvecs:
+      app.warn('FSL "eddy"\'s rotated bvecs contained'
+               + (f'{nans_present_bvecs} entries with NaN values;'
+                  'these have been read as zero-length vectors,'
+                  'and will be saved as b=0 volumes'
+                  if nans_present_bvecs > 1
+                  else 'an entry with NaN values; '
+                       'this has been read as a zero-length vector, '
+                       'and will be saved as a b=0 volume')
+               + ' in the output series')
     bvecs_combined = matrix.transpose(bvecs_combined_transpose)
     matrix.save_matrix('bvecs_combined', bvecs_combined, add_to_command_history=False)
     matrix.save_vector('bvals_combined', bvals_combined, add_to_command_history=False)

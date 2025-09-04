@@ -202,6 +202,7 @@ add_bash_binary_test(mrcalc/expression_2)
 add_bash_binary_test(mrcalc/expression_3)
 add_bash_binary_test(mrcalc/expression_4)
 add_bash_binary_test(mrcalc/expression_5)
+add_bash_binary_test(mrcalc/dwscheme_preservation_imprecision)
 
 add_bash_binary_test(mrcat/axis)
 add_bash_binary_test(mrcat/single_input)
