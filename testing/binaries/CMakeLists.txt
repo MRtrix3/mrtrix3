@@ -283,6 +283,8 @@ add_bash_binary_test(mrhistogram/bins)
 add_bash_binary_test(mrhistogram/default)
 add_bash_binary_test(mrhistogram/masked)
 
+add_bash_binary_test(mrinfo/bvec_bval_nan)
+
 add_bash_binary_test(mrmath/multiimage_median)
 add_bash_binary_test(mrmath/singleimage_mean)
 add_bash_binary_test(mrmath/singleimage_norm)
