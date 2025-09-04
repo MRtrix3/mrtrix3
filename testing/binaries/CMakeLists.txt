@@ -205,6 +205,7 @@ add_bash_binary_test(mrcalc/expression_5)
 add_bash_binary_test(mrcalc/dwscheme_preservation_imprecision)
 
 add_bash_binary_test(mrcat/axis)
+add_bash_binary_test(mrcat/dwscheme_merge)
 add_bash_binary_test(mrcat/single_input)
 add_bash_binary_test(mrcat/singlevoxel)
 
@@ -281,6 +282,8 @@ add_bash_binary_test(mrhistogram/allvolumes)
 add_bash_binary_test(mrhistogram/bins)
 add_bash_binary_test(mrhistogram/default)
 add_bash_binary_test(mrhistogram/masked)
+
+add_bash_binary_test(mrinfo/bvec_bval_nan)
 
 add_bash_binary_test(mrmath/multiimage_median)
 add_bash_binary_test(mrmath/singleimage_mean)

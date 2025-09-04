@@ -80,14 +80,27 @@ void usage() {
       " includes appropriate diffusion gradient vector reorientation)"
 
     + "The -dwgrad, -export_* and -shell_* options"
-    " provide (information about) the diffusion weighting gradient table"
-    " after it has been processed by the MRtrix3 back-end"
-    " (vectors normalised,"
-    " b-values scaled by the square of the vector norm,"
-    " depending on the -bvalue_scaling option)."
-    " To see the raw gradient table information as stored in the image header,"
-    " i.e. without MRtrix3 back-end processing,"
-    " use \"-property dw_scheme\"."
+      " provide (information about) the diffusion weighting gradient table"
+      " after it has been processed by the MRtrix3 back-end"
+      " (vectors normalised,"
+      " b-values scaled by the square of the vector norm,"
+      " depending on the -bvalue_scaling option)."
+      " To see the raw gradient table information as stored in the image header,"
+      " i.e. without MRtrix3 back-end processing,"
+      " use \"-property dw_scheme\"."
+
+    + "The -petable option exports the MRtrix3 internal representation"
+      " of the phase encoding table,"
+      " regardless of whether the relevant metadata are stored"
+      " in the BIDS fields \"PhaseEncodingDirection\""
+      " and \"TotalReadoutTime\" or the MRtrix3-specific \"pe_scheme\"."
+      " The contents of this query should however *not* be provided to FSL tools:"
+      " despite the contents being of the same format,"
+      " the phase encoding directions may be erroneously interpreted."
+      " If extracting phase encoding information to interface with FSL tools,"
+      " use the -export_pe_topup or -export_pe_eddy options."
+      " More information can be found on this issue at:"
+      " https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html"
 
     + DWI::bvalue_scaling_description;
 
@@ -122,7 +135,9 @@ void usage() {
       + Option ("shell_indices", "list the image volumes attributed to each b-value shell")
 
     + Metadata::PhaseEncoding::ExportOptions
-      + Option ("petable", "print the phase encoding table")
+      + Option ("petable", "print the MRtrix internal representation"
+                           " of the phase encoding table"
+                           " (see Description)")
 
     + OptionGroup ("Handling of piped images")
       + Option ("nodelete", "don't delete temporary images"

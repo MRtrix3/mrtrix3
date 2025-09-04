@@ -92,7 +92,7 @@ def execute(): #pylint: disable=unused-variable
                 preserve_pipes=True)
   elif not app.ARGS.premasked and not shutil.which('dc'):
     app.warn('Unix command "dc" not found; '
-             'FSL script "standard_space_roi" may fail')
+             'FSL commands may fail')
   if app.ARGS.t2:
     if not image.match('input.mif', app.ARGS.t2):
       raise MRtrixError('Provided T2w image does not match input T1w image')

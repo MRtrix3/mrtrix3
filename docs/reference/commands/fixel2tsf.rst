@@ -25,7 +25,7 @@ Description
 This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.
 
 Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.5/fixel_based_analysis/fixel_directory_format.html
+https://mrtrix.readthedocs.io/en/3.0.7/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
