@@ -23,7 +23,7 @@ Description
 Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.
 
 Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. More information on mask derivation from DWI data can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.5/dwi_preprocessing/masking.html
+https://mrtrix.readthedocs.io/en/3.0.7/dwi_preprocessing/masking.html
 
 Options
 -------
