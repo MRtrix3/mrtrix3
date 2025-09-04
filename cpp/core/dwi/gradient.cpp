@@ -221,7 +221,7 @@ void save_bvecs_bvals(const Header &header, const std::string &bvecs_path, const
   Eigen::VectorXd bvals = grad.col(3);
   size_t bval_zeroed_count = 0;
   for (ssize_t n = 0; n < bvals.size(); ++n) {
-    if (bvecs.col(n).squaredNorm() > 0.0 && bvals[n] && bvals[n] <= bzero_threshold()) {
+    if (bvecs.col(n).squaredNorm() > 0.0 && bvals[n] > 0.0 && bvals[n] <= bzero_threshold()) {
       ++bval_zeroed_count;
       bvals[n] = 0.0;
     }

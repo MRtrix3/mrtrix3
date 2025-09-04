@@ -763,7 +763,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
       KeyValues kv(H.keyval());
 
       // Generate local copies of any schemes
-      Eigen::MatrixXd extra_dw, extra_pe;
+      Eigen::MatrixXd extra_dw;
+      Eigen::MatrixXd extra_pe;
       try {
         extra_dw = DWI::parse_DW_scheme(H);
       } catch (Exception &) {
