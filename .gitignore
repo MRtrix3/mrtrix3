@@ -12,11 +12,13 @@
 *.hdr
 *.rste
 /python/lib/mrtrix3/_version.py
+*.venv
 /scripts/mrtrix_bash_completion
 /dev/
 /compiled_docs/
 /.vscode/
 .cproject
+.DS_store
 .idea
 .project
 .settings
