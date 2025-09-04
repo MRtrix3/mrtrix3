@@ -28,7 +28,7 @@ namespace MR {
     namespace Tractography {
       namespace GT {
 
-        ExternalEnergyComputer::ExternalEnergyComputer(Stats& stat, Header& dwiheader, const Properties& props)
+        ExternalEnergyComputer::ExternalEnergyComputer(Stats& stat, Header &dwiheader, const Properties& props)
           : EnergyComputer(stat),
             dwi(dwiheader.get_image<float>().with_direct_io(3)),
             T(Transform(dwiheader).scanner2voxel),
