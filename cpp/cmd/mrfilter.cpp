@@ -18,6 +18,7 @@
 
 #include "command.h"
 #include "filter/base.h"
+#include "filter/demodulate.h"
 #include "filter/gradient.h"
 #include "filter/median.h"
 #include "filter/normalise.h"
@@ -25,13 +26,23 @@
 #include "filter/zclean.h"
 #include "image.h"
 #include "math/fft.h"
+#include "metadata/bids.h"
 
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> filters = {"fft", "gradient", "median", "smooth", "normalise", "zclean"};
+const std::vector<std::string> filters = {"demodulate", "fft", "gradient", "median", "smooth", "normalise", "zclean"};
 
 // clang-format off
+const OptionGroup DemodulateOption = OptionGroup ("Options for demodulate filter")
+  + Option ("axes", "the axes along which to demodulate;"
+                    " by default, this will be chosen based on the presence / content"
+                    " of header field SliceEncodingDirection:"
+                    " two spatial axes if present, three spatial axes if absent")
+    + Argument ("list").type_sequence_int()
+  + Option ("linear", "demodulate using only a linear phase ramp,"
+                      " rather than the default non-linear phase map");
+
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
   + Option ("axes", "the axes along which to apply the Fourier Transform."
                     " By default, the transform is applied along the three spatial axes."
@@ -116,7 +127,7 @@ void usage() {
 
   DESCRIPTION
   + "The available filters are:"
-    " fft, gradient, median, smooth, normalise, zclean."
+    " demodulate, fft, gradient, median, smooth, normalise, zclean."
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
@@ -126,6 +137,7 @@ void usage() {
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
+  + DemodulateOption
   + FFTOption
   + GradientOption
   + MedianOption
@@ -143,8 +155,45 @@ void run() {
 
   switch (filter_index) {
 
-  // FFT
+  // Phase demodulation
   case 0: {
+
+    Header H = Header::open(argument[0]);
+    if (!H.datatype().is_complex())
+      throw Exception("Phase demodulation filter applicable to complex images only");
+
+    std::vector<size_t> axes;
+    auto opt = get_options("axes");
+    if (!opt.empty()) {
+      axes = parse_ints<size_t>(opt[0][0]);
+      for (const auto axis : axes)
+        if (axis >= H.ndim())
+          throw Exception("axis provided with -axes option is out of range");
+    } else {
+      auto slice_encoding_direction_it = H.keyval().find("SliceEncodingDirection");
+      if (slice_encoding_direction_it == H.keyval().end()) {
+        axes = {0, 1, 2};
+      } else {
+        auto slice_encoding_direction_onehot = Metadata::BIDS::axisid2vector(slice_encoding_direction_it->second);
+        axes.reserve(2);
+        for (size_t axis = 0; axis != 3; ++axis) {
+          if (slice_encoding_direction_onehot[axis] == 0)
+            axes.push_back(axis);
+        }
+      }
+    }
+    INFO("Selected axes for demodulation: " + join(axes, ","));
+
+    auto input = H.get_image<cdouble>();
+    Filter::Demodulate filter(input, axes, !get_options("linear").empty());
+    auto output = Image<cdouble>::create(argument[2], H);
+    filter(input, output, false);
+
+    break;
+  }
+
+  // FFT
+  case 1: {
     // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
     //   convert between cfloat and cdouble...
     auto input = Image<cdouble>::open(argument[0]);
@@ -195,7 +244,7 @@ void run() {
   }
 
   // Gradient
-  case 1: {
+  case 2: {
     auto input = Image<float>::open(argument[0]);
     Filter::Gradient filter(input, !get_options("magnitude").empty());
 
@@ -224,7 +273,7 @@ void run() {
   }
 
   // Median
-  case 2: {
+  case 3: {
     auto input = Image<float>::open(argument[0]);
     Filter::Median filter(input);
 
@@ -241,7 +290,7 @@ void run() {
   }
 
   // Smooth
-  case 3: {
+  case 4: {
     auto input = Image<float>::open(argument[0]);
     Filter::Smooth filter(input);
 
@@ -272,7 +321,7 @@ void run() {
   }
 
   // Normalisation
-  case 4: {
+  case 5: {
     auto input = Image<float>::open(argument[0]);
     Filter::Normalise filter(input);
 
@@ -289,7 +338,7 @@ void run() {
   }
 
   // Zclean
-  case 5: {
+  case 6: {
     auto input = Image<float>::open(argument[0]);
     Filter::ZClean filter(input);
 

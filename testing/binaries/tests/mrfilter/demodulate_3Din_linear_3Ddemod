@@ -1,0 +1,16 @@
+#!/bin/bash
+# Evaluate the operation of the "demodulate" filter when:
+# - Input is a *3D* image series
+# - Using *linear* phase map estimation
+# - Phase map is to be estimated based on the *3D volume*
+#   (even though this is inappropriate for the image data)
+mrfilter \
+    $(mrconvert mrfilter/demodulate/in.mif.gz -coord 3 0 -axes 0,1,2 -) \
+     demodulate \
+    -linear \
+    -axes 0,1,2 \
+    - | \
+testing_diff_image \
+    - \
+    $(mrconvert mrfilter/demodulate/linear_3Ddemod.mif.gz -coord 3 0 -axes 0,1,2 -) \
+    -frac 1e-6
