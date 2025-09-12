@@ -15,11 +15,21 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+from mrtrix3 import app
+
 CHOICES = ('One', 'Two', 'Three')
 
-def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+class Custom(app.Parser.CustomTypeBase):
+    def __call__(self, input_value):
+      return input_value
+    @staticmethod
+    def _legacytypestring():
+      return 'CUSTOM'
+    @staticmethod
+    def _metavar():
+      return 'custom'
 
+def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Test operation of the Python command-line interface')
 
@@ -123,15 +133,13 @@ def usage(cmdline): #pylint: disable=unused-variable
   custom.add_argument('-tracks_out',
                       type=app.Parser.TracksOut(),
                       help='An output tractogram')
-  custom.add_argument('-various',
-                      type=app.Parser.Various(),
-                      help='An option that accepts various types of content')
+  custom.add_argument('-custom',
+                      type=Custom(),
+                      help='An option with custom type')
 
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-
   for key in vars(app.ARGS):
     value = getattr(app.ARGS, key)
     if value is not None:
