@@ -1,0 +1,6 @@
+#!/bin/bash
+# Basic evaluation of the operation of the "smooth" filter,
+#   using entirely default settings
+# Outcome is compared against the output generated using a prior software version
+mrfilter dwi.mif smooth - | \
+testing_diff_image - mrfilter/out1.mif -frac 1e-5

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify operation of command when fixel data file is provided as input
+# In this use case, where a fixel-wise quantitative parameter is available,
+#   the output 3-vectors have their norms modulated by that parameter
+fixel2peaks fixel_image/afd.mif - | \
+testing_diff_peaks - fixel2peaks/withdata.mif 1e-6
