@@ -32,6 +32,8 @@ Options
 
 -  **-matrix file** provide a fixel-fixel connectivity matrix for filtering operations that require it
 
+-  **-mask image** constrain the filter to operate within a specified binary fixel mask
+
 Parameters for the Connectivity-based Fixel Enhancement (CFE) algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -58,8 +60,6 @@ Options specific to the "smooth" filter
 -  **-fwhm value** the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (default = 10mm)
 
 -  **-minweight value** apply a minimum threshold to smoothing weights (default = 0.01)
-
--  **-mask image** only perform smoothing within a specified binary fixel mask
 
 Standard options
 ^^^^^^^^^^^^^^^^

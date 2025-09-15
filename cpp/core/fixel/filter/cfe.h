@@ -58,7 +58,7 @@ protected:
   mutable std::vector<value_type> h_pow_H;
 
   // Override Stats::EnhancerBase functor
-  void operator()(in_column_type, out_column_type) const override;
+  void operator()(in_column_type stats, out_column_type enhanced_stats) const override;
 
   // TODO Templated implementation that is compatible with both fixel data files and matrix data
   template <class InputType, class OutputType> void run(InputType, OutputType) const;

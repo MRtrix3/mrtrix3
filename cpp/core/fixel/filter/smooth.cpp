@@ -102,7 +102,7 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
           }
         }
       }
-      if (sum_weights) {
+      if (sum_weights != 0.0) {
         output.value() /= sum_weights;
       } else {
         // Provide unsmoothed value if disconnected / excluded from mask
