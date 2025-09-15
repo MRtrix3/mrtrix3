@@ -130,6 +130,9 @@ void run() {
       throw Exception("File \"" + argument[0] + "\" is not a valid fixel data file" + //
                       " (does not match corresponding index image)");                 //
 
+    Image<index_type> index_image = index_header.get_image<index_type>();
+    const size_t nfixels = Fixel::get_number_of_fixels(index_image);
+
     auto opt = get_options("mask");
     Image<bool> mask;
     if (!opt.empty()) {
@@ -149,15 +152,12 @@ void run() {
     }
 
     opt = get_options("matrix");
-    Fixel::Matrix::Reader matrix(opt[0][0]);
+    Fixel::Matrix::Reader matrix(opt[0][0], mask);
 
-    Image<index_type> index_image = index_header.get_image<index_type>();
-    const size_t nfixels = Fixel::get_number_of_fixels(index_image);
     if (nfixels != matrix.size())
-      throw Exception("Number of fixels in input (" + str(nfixels) +
-                      ")" //
-                      " does not match number of fixels in connectivity matrix (" +
-                      str(matrix.size()) + ")"); //
+      throw Exception("Number of fixels in input (" + str(nfixels) + ")" +        //
+                      " does not match number of fixels in connectivity matrix" + //
+                      " (" + str(matrix.size()) + ")");                           //
 
     switch (int(argument[1])) {
     case 0: {
@@ -166,7 +166,7 @@ void run() {
       const value_type cfe_h = get_option_value("cfe_h", Fixel::Filter::cfe_default_h);
       const value_type cfe_c = get_option_value("cfe_c", Fixel::Filter::cfe_default_c);
       const bool cfe_legacy = get_options("cfe_legacy").size();
-      filter.reset(new Fixel::Filter::CFE(matrix, mask, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
+      filter.reset(new Fixel::Filter::CFE(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
       option_list.erase("cfe_dh");
       option_list.erase("cfe_e");
       option_list.erase("cfe_h");
@@ -187,7 +187,7 @@ void run() {
     case 2: {
       const float fwhm = get_option_value("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
       const float threshold = get_option_value("minweight", float(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT));
-      filter.reset(new Fixel::Filter::Smooth(index_image, matrix, mask, fwhm, threshold));
+      filter.reset(new Fixel::Filter::Smooth(index_image, matrix, fwhm, threshold));
       option_list.erase("fwhm");
       option_list.erase("minweight");
     } break;
@@ -198,7 +198,7 @@ void run() {
 
   for (const auto &i : option_list) {
     if (!get_options(i).empty())
-      WARN("Option -" + i + " ignored; not relevant to " + filters[int(argument[1])] + " filter");
+      WARN("Option -" + i + " ignored: not relevant to " + filters[int(argument[1])] + " filter");
   }
 
   if (single_file.valid()) {

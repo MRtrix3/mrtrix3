@@ -118,7 +118,7 @@ normalise_cfe(DataType &data, const size_t index, const default_type multiplier)
 
 template <class InputType, class OutputType> void CFE::run(InputType stats, OutputType enhanced_stats) const {
   zero(enhanced_stats);
-  vector<default_type> connected_stats;
+  std::vector<default_type> connected_stats;
   for (size_t fixel = 0; fixel < matrix.size(); ++fixel) {
     set_index(enhanced_stats, fixel);
     const default_type stat = get(stats, fixel);
@@ -144,8 +144,8 @@ template <class InputType, class OutputType> void CFE::run(InputType stats, Outp
     //   divide statistic by dh to determine the number of cluster sizes that should
     //   be incremented, and dynamically increment all cluster sizes for that
     //   particular connected fixel
-    vector<Fixel::Matrix::connectivity_value_type> extents(std::floor(stat / dh),
-                                                           Fixel::Matrix::connectivity_value_type(0));
+    std::vector<Fixel::Matrix::connectivity_value_type> extents(std::floor(stat / dh),
+                                                                Fixel::Matrix::connectivity_value_type(0));
     for (const auto &connection : connections) {
       const default_type connection_stat = get(stats, connection.index());
       if (connection_stat > dh) {
