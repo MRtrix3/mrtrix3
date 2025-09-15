@@ -130,8 +130,12 @@ add_bash_binary_test(fixelcorrespondence/default)
 
 add_bash_binary_test(fixelcrop/default)
 
+add_bash_binary_test(fixelfilter/cfe_default)
+add_bash_binary_test(fixelfilter/cfe_masked)
+add_bash_binary_test(fixelfilter/cfe_nan)
 add_bash_binary_test(fixelfilter/smooth_inputdir)
 add_bash_binary_test(fixelfilter/smooth_inputfile)
+add_bash_binary_test(fixelfilter/smooth_masked)
 
 add_bash_binary_test(fixelreorient/default)
 
