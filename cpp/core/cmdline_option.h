@@ -64,10 +64,10 @@ constexpr ArgModifierFlags AllowMultiple = 0x2;
 //! \endcond
 
 namespace {
-template <typename T> typename std::enable_if<std::is_integral<T>::type, T>::type void_rangemax() {
+template <typename T> typename std::enable_if<std::is_integral<T>::value, T>::type void_rangemax() {
   return std::numeric_limits<T>::max();
 }
-template <typename T> typename std::enable_if<std::is_floating_point<T>::type, T>::type void_rangemax() {
+template <typename T> typename std::enable_if<std::is_floating_point<T>::value, T>::type void_rangemax() {
   return std::numeric_limits<T>::infinity();
 }
 } // namespace
@@ -184,7 +184,7 @@ public:
 
   //! specifies that the argument should be an output image
   Argument &type_image_out() {
-    types = ImageOut;
+    types |= ImageOut;
     return *this;
   }
 

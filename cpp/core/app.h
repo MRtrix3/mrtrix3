@@ -140,11 +140,11 @@ public:
   operator std::string() const { return p; }
 
   const std::string &as_text() const {
-    assert(arg->types | Text);
+    assert(arg->types & Text);
     return p;
   }
   bool as_bool() const {
-    assert(arg->types | Boolean);
+    assert(arg->types & Boolean);
     return to<bool>(p);
   }
   int64_t as_int() const;

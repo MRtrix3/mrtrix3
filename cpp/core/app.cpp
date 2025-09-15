@@ -1011,61 +1011,67 @@ void parse() {
   // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
     const std::string text = std::string(i);
-    if (i.arg->types == ArgFileIn || i.arg->types == TracksIn) {
+    if (!(i.arg->types & ~(ArgFileIn | TracksIn))) {
       if (!Path::exists(text))
         throw Exception("required input file \"" + text + "\" not found");
       if (!Path::is_file(text))
         throw Exception("required input \"" + text + "\" is not a file");
     }
-    if (i.arg->types == ArgDirectoryIn) {
+    if (!(i.arg->types & ~ArgDirectoryIn)) {
       if (!Path::exists(text))
         throw Exception("required input directory \"" + text + "\" not found");
       if (!Path::is_dir(text))
         throw Exception("required input \"" + text + "\" is not a directory");
     }
-    if (i.arg->types == ArgFileOut || i.arg->types == TracksOut) {
+    if (!(i.arg->types & ~(ArgFileOut | TracksOut))) {
       if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
         throw Exception("output path \"" + std::string(i) +
                         "\" is not a valid file path (ends with directory path separator)");
-      check_overwrite(text);
     }
-    if (i.arg->types == ArgDirectoryOut)
+    if (!(i.arg->types & ~(ArgFileOut | ArgDirectoryOut | TracksOut)))
       check_overwrite(text);
-    if (i.arg->types == TracksIn && !Path::has_suffix(text, ".tck"))
-      throw Exception("input file \"" + text + "\" is not a valid track file");
-    if (i.arg->types == TracksOut && !Path::has_suffix(text, ".tck"))
-      throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+    if (!(i.arg->types & ~TracksIn)) {
+      if (!Path::has_suffix(text, ".tck"))
+        throw Exception("input file \"" + text + "\" is not a valid track file");
+    }
+    if (!(i.arg->types & ~TracksOut)) {
+      if (!Path::has_suffix(text, ".tck"))
+        throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+    }
   }
   for (const auto &i : option) {
     for (size_t j = 0; j != i.opt->size(); ++j) {
       const Argument &arg = i.opt->operator[](j);
       const std::string text = std::string(i.args[j]);
-      if (arg.types == ArgFileIn || arg.types == TracksIn) {
+      if (!(arg.types & ~(ArgFileIn | TracksIn))) {
         if (!Path::exists(text))
           throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
         if (!Path::is_file(text))
           throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
       }
-      if (arg.types == ArgDirectoryIn) {
+      if (!(arg.types & ~ArgDirectoryIn)) {
         if (!Path::exists(text))
           throw Exception("input directory \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
         if (!Path::is_dir(text))
           throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
       }
-      if (arg.types == ArgFileOut || arg.types == TracksOut) {
+      if (!(arg.types & ~(ArgFileOut | TracksOut))) {
         if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
           throw Exception("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) +
                           "\" is not a valid file path (ends with directory path separator)");
-        check_overwrite(text);
       }
-      if (arg.types == ArgDirectoryOut)
+      if (!(arg.types & ~(ArgFileOut | ArgDirectoryOut | TracksOut)))
         check_overwrite(text);
-      if (arg.types == TracksIn && !Path::has_suffix(text, ".tck"))
-        throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
-                        "\" is not a valid track file");
-      if (arg.types == TracksOut && !Path::has_suffix(text, ".tck"))
-        throw Exception("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
-                        "\" must use the .tck suffix");
+      if (!(arg.types & ~TracksIn)) {
+        if (!Path::has_suffix(text, ".tck"))
+          throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+                          "\" is not a valid track file");
+        if (!(arg.types & ~TracksOut)) {
+          if (!Path::has_suffix(text, ".tck"))
+            throw Exception("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+                            "\" must use the .tck suffix");
+        }
+      }
     }
   }
 
