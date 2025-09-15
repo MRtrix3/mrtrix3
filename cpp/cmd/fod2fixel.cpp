@@ -14,22 +14,18 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
+
 #include "command.h"
-#include "progressbar.h"
-
-#include "image.h"
-
-#include "fixel/fixel.h"
-#include "fixel/helpers.h"
-
-#include "math/SH.h"
-
-#include "thread_queue.h"
-
 #include "dwi/directions/set.h"
 #include "dwi/fmls.h"
-
 #include "file/path.h"
+#include "fixel/fixel.h"
+#include "fixel/helpers.h"
+#include "image.h"
+#include "math/SH.h"
+#include "progressbar.h"
+#include "thread_queue.h"
 
 using namespace MR;
 using namespace MR::DWI;
@@ -106,6 +102,7 @@ void usage() {
 
 }
 // clang-format on
+
 class Segmented_FOD_receiver {
 
 public:
