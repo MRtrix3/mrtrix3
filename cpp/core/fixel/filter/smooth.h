@@ -45,9 +45,6 @@ namespace MR::Fixel::Filter {
 
 class Smooth : public Base {
 
-  // TODO Fixel mask handling is deferred to Matrix::Reader;
-  //   can remove from here entirely I think
-
 public:
   Smooth(Image<index_type> index_image,
          const Matrix::Reader &matrix,
@@ -55,11 +52,11 @@ public:
          const float smoothing_threshold = DEFAULT_FIXEL_SMOOTHING_MINWEIGHT);
 
   void set_fwhm(const float fwhm);
+  void set_threshold(const float t) { threshold = t; }
 
   void operator()(Image<float> &input, Image<float> &output) const override;
 
 protected:
-  Image<bool> mask_image;
   Matrix::Reader matrix;
   std::vector<Eigen::Vector3f> fixel_positions;
   float stdev, gaussian_const1, gaussian_const2, threshold;

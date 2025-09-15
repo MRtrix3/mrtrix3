@@ -135,20 +135,20 @@ void run() {
 
     auto opt = get_options("mask");
     Image<bool> mask;
-    if (!opt.empty()) {
-      mask = Image<bool>::open(opt[0][0]);
-      MR::Fixel::check_data_file(mask);
-      if (mask.size(1) != 1)
-        throw Exception("Fixel mask must be a 1D image");
-      if (size_t(mask.size(0)) != nfixels)
-        throw Exception("Number of fixels in mask image (" + str(mask.size(0)) + ")" + //
-                        " does not match number of fixels in index image" +            //
-                        " (" + str(nfixels) + ")");                                    //
-    } else {
+    if (opt.empty()) {
       mask = Image<bool>::scratch(MR::Fixel::data_header_from_index(index_image), "scratch true-filled fixel mask");
       for (auto l = Loop(0)(mask); l; ++l)
         mask.value() = true;
       mask.reset();
+    } else {
+      mask = Image<bool>::open(opt[0][0]);
+      MR::Fixel::check_data_file(mask);
+      if (mask.size(1) != 1)
+        throw Exception("Fixel mask must be a 1D fixel data file");
+      if (size_t(mask.size(0)) != nfixels)
+        throw Exception("Number of fixels in mask image (" + str(mask.size(0)) + ")" + //
+                        " does not match number of fixels in index image" +            //
+                        " (" + str(nfixels) + ")");                                    //
     }
 
     opt = get_options("matrix");

@@ -27,7 +27,7 @@ Smooth::Smooth(Image<index_type> index_image,
                const Matrix::Reader &matrix,
                const float smoothing_fwhm,
                const float smoothing_threshold)
-    : mask_image(mask_image), matrix(matrix), threshold(smoothing_threshold) {
+    : matrix(matrix), threshold(smoothing_threshold) {
   set_fwhm(smoothing_fwhm);
   // For smoothing, we need to be able to quickly
   //   calculate the distance between any pair of fixels
@@ -88,6 +88,7 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
       const Eigen::Vector3f &pos(master.fixel_positions[fixel]);
       const auto connectivity = matrix[fixel];
       default_type sum_weights(0.0);
+      output.index(0) = fixel;
       output.value() = 0.0;
       for (const auto &c : connectivity) {
         input.index(0) = c.index();
