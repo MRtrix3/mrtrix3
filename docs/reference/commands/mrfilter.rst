@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-The available filters are: fft, gradient, median, smooth, normalise, zclean.
+The available filters are: demodulate, fft, gradient, median, smooth, normalise, zclean.
 
 Each filter has its own unique set of optional parameters.
 
@@ -30,6 +30,13 @@ For 4D images, each 3D volume is processed independently.
 
 Options
 -------
+
+Options for demodulate filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-axes list** the axes along which to demodulate; by default, this will be chosen based on the presence / content of header field SliceEncodingDirection: two spatial axes if present, three spatial axes if absent
+
+-  **-linear** demodulate using only a linear phase ramp, rather than the default non-linear phase map
 
 Options for FFT filter
 ^^^^^^^^^^^^^^^^^^^^^^
