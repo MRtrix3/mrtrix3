@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify "flirt_import" operation
+# Outcome is compared to that generated using a prior software version
+transformconvert moving2templateFSL.txt moving.mif.gz template.mif.gz flirt_import tmp.txt -force
+testing_diff_matrix tmp.txt transformconvert/out.txt -abs 1e-3

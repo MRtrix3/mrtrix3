@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify "regrid" operation when resampling onto a new anisotropic voxel grid,
+#   where that grid is defined based on the output voxel spacing using command-line option "-vox"
+# Outcome is compared against that generated using obsolete command mrresize,
+#   whichi was a component of an earlier version of the software prior to creation of the mrgrid command
+mrgrid dwi.mif regrid -vox 1.5,2.6,1.8 -datatype float32 - | \
+testing_diff_image - mrresize/out8.mif -voxel 1e-5

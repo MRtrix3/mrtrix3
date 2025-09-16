@@ -84,7 +84,7 @@ Example usages
 
         $ mrconvert with_scaling.mif without_scaling.mif -scaling 0.0,1.0
 
-    This command-line option alters the parameters stored within the image header that provide a linear mapping from raw intensity values stored in the image data to some other scale. Where the raw data stored in a particular voxel is I, the value within that voxel is interpreted as: value = offset + (scale x I).  To adjust this scaling, the relevant parameters must be provided as a comma-separated 2-vector of floating-point values, in the format "offset,scale" (no quotation marks). This particular example sets the offset to zero and the scale to one, which equates to no rescaling of the raw intensity data.
+    This command-line option alters the parameters stored within the image header that provide a linear mapping from raw intensity values stored in the image data to some other scale. Where the raw data stored in a particular voxel is I, the value within that voxel is interpreted as: value = offset + (scale x I). To adjust this scaling, the relevant parameters must be provided as a comma-separated 2-vector of floating-point values, in the format "offset,scale" (no quotation marks). This particular example sets the offset to zero and the scale to one, which equates to no rescaling of the raw intensity data.
 
 Options
 -------
@@ -126,16 +126,16 @@ Stride options
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices are: float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
--  **-bvalue_scaling mode** enable or disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption). Valid choices are yes/no, true/false, 0/1 (default: automatic).
+-  **-bvalue_scaling mode** enable or disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption). Valid choices are: yes/no, true/false, 0/1 (default: automatic).
 
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -149,12 +149,16 @@ Options for importing phase-encode tables
 
 -  **-import_pe_table file** import a phase-encoding table from file
 
+-  **-import_pe_topup file** import a phase-encoding table intended for FSL topup from file
+
 -  **-import_pe_eddy config indices** import phase-encoding information from an EDDY-style config / index file pair
 
 Options for exporting phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-export_pe_table file** export phase-encoding table to file
+
+-  **-export_pe_topup file** export phase-encoding table to file intended for FSL topup
 
 -  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
 
@@ -188,7 +192,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

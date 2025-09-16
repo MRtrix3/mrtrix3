@@ -16,8 +16,8 @@ Usage
     fixelreorient [ options ]  fixel_in warp fixel_out
 
 -  *fixel_in*: the input fixel directory
--  *warp*: a 4D deformation field used to perform reorientation. Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, then re-normalising the vector representing the fixel direction
--  *fixel_out*: the output fixel directory. If the the input and output directories are the same, the existing directions file will be replaced (providing the -force option is supplied). If a new directory is supplied then the fixel directions and all other fixel data will be copied to the new directory.
+-  *warp*: a 4D deformation field used to perform reorientation.
+-  *fixel_out*: the output fixel directory. If the the input and output directories are the same, the existing directions file will be replaced (providing the -force option is supplied). If a new directory is supplied, then the fixel directions and all other fixel data will be copied to the new directory.
 
 Description
 -----------
@@ -25,7 +25,7 @@ Description
 Reorientation is performed by transforming the vector representing the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, then re-normalising the vector.
 
 Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+https://mrtrix.readthedocs.io/en/3.0.7/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
@@ -60,7 +60,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

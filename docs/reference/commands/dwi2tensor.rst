@@ -27,7 +27,7 @@ By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted 
 
 * The -iter option controls the number of iterations of the IWLS prodedure. If this is set to zero, then the output model parameters will be those resulting from the first fitting step only: either WLS by default, or OLS if the -ols option is used in conjunction with -iter 0.
 
-By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted using unconstrained optimization. This can result in unexpected diffusion parameters, e.g. parameters that represent negative apparent diffusivities or negative apparent kurtoses, or parameters that correspond to non-monotonic decay of the predicted signal. By supplying the -constrain option, constrained optimization is performed instead and such physically implausible parameters can be avoided. Depending on the presence  of the -dkt option, the -constrain option will enforce the following constraints:
+By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted using unconstrained optimization. This can result in unexpected diffusion parameters, e.g. parameters that represent negative apparent diffusivities or negative apparent kurtoses, or parameters that correspond to non-monotonic decay of the predicted signal. By supplying the -constrain option, constrained optimization is performed instead and such physically implausible parameters can be avoided. Depending on the presence of the -dkt option, the -constrain option will enforce the following constraints:
 
 * Non-negative apparent diffusivity (always).
 
@@ -66,7 +66,7 @@ Options
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
@@ -101,7 +101,7 @@ References based on fitting algorithm used:
   Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
 
 * any of above with constraints: |br|
-  Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. Optimal experimental design and estimation for q-space trajectory imaging. Human Brain Mapping, In press
+  Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. Optimal experimental design and estimation for q-space trajectory imaging. Human Brain Mapping, 2023, 44, 1793-1809
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
@@ -111,7 +111,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

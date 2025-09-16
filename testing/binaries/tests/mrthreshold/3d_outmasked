@@ -1,0 +1,12 @@
+#!/bin/bash
+# This test validates operation of the -out_masked command-line option
+# As described in the command documentation,
+#   when the -mask command-line option is used,
+#   that does not preclude voxels outside of that mask being present in the output binary image;
+#   it only prevents those voxels from contributing to threshold determination.
+# The -out_masked option provides a convenient interface by which to obtain an image
+#   where voxels absent from the input to the -mask option are also absent from the output.
+mrcalc mrthreshold/3d_masked.mif mask.mif -mult tmp.mif -force
+
+mrthreshold dwi_mean.mif -mask mask.mif -out_masked - | \
+testing_diff_image - tmp.mif

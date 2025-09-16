@@ -21,17 +21,11 @@ Usage
 Description
 -----------
 
-The threshold value to be applied can be determined in one of a number of ways:
-
-- If no relevant command-line option is used, the command will automatically determine an optimal threshold;
-
-- The -abs option provides the threshold value explicitly;
-
-- The -percentile, -top and -bottom options enable more fine-grained control over how the threshold value is determined.
+The threshold value to be applied can be determined in one of a number of ways: if no relevant command-line option is used, the command will automatically determine an optimal threshold; the -abs option provides the threshold value explicitly; the -percentile, -top and -bottom options enable more fine-grained control over how the threshold value is determined.
 
 The -mask option only influences those image values that contribute toward the determination of the threshold value; once the threshold is determined, it is applied to the entire image, irrespective of use of the -mask option. If you wish for the voxels outside of the specified mask to additionally be excluded from the output mask, this can be achieved by providing the -out_masked option.
 
-The four operators available through the "-comparison" option ("lt", "le", "ge" and "gt") correspond to "less-than" (<), "less-than-or-equal" (<=), "greater-than-or-equal" (>=) and "greater-than" (>). This offers fine-grained control over how the thresholding operation will behave in the presence of values equivalent to the threshold. By default, the command will select voxels with values greater than or equal to the determined threshold ("ge"); unless the -bottom option is used, in which case after a threshold is determined from the relevant lowest-valued image voxels, those voxels with values less than or equal to that threshold ("le") are selected. This provides more fine-grained control than the -invert option; the latter is provided for backwards compatibility, but is equivalent to selection of the opposite comparison within this selection.
+The four operators available through the "-comparison" option ("lt", "le", "ge" and "gt") correspond to: "less-than" (<), "less-than-or-equal" (<=), "greater-than-or-equal" (>=), and "greater-than" (>). This offers fine-grained control over how the thresholding operation will behave in the presence of values equivalent to the threshold. By default,  the command will select voxels with values greater than or equal to the determined threshold ("ge"); unless the -bottom option is used, in which case after a threshold is determined from the relevant lowest-valued image voxels, those voxels with values less than or equal to that threshold ("le") are selected. This provides more fine-grained control than the -invert option; the latter is provided for backwards compatibility, but is equivalent to selection of the opposite comparison within this selection.
 
 If no output image path is specified, the command will instead write to standard output the determined threshold value.
 
@@ -102,7 +96,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
