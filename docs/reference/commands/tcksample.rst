@@ -26,6 +26,8 @@ By default, the value of the underlying image at each point along the track is w
 
 In the circumstance where a per-streamline statistic is requested, the input image can be 4D rather than 3D; in that circumstance, each volume will be sampled independently, and the output (whether in .npy or text format) will be a matrix, with one row per streamline and one column per metric.
 
+If the input image is 4D, and the number of volumes corresponds to an antipodally symmetric spherical harmonics function, then the -sh option must be specified, indicating whether the input image should be interpreted as such a function or whether the input volumes should be sampled individually.
+
 Options
 -------
 
@@ -36,6 +38,8 @@ Options
 -  **-precise** use the precise mechanism for mapping streamlines to voxels (obviates the need for trilinear interpolation) (only applicable if some per-streamline statistic is requested)
 
 -  **-use_tdi_fraction** each streamline is assigned a fraction of the image intensity in each voxel based on the fraction of the track density contributed by that streamline (this is only appropriate for processing a whole-brain tractogram, and images for which the quantiative parameter is additive)
+
+-  **-sh value** Interpret a 4D image input as representing coefficients of a spherical harmonic function, and sample the amplitudes of that function along the streamline
 
 Standard options
 ^^^^^^^^^^^^^^^^
