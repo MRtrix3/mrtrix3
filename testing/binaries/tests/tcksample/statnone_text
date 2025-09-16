@@ -1,8 +1,0 @@
-#!/bin/bash
-# Ensure that command runs successfully when no track-size statistic is specified,
-#   and the output is a text file
-# The "testing_diff_matrix" command cannot be used to verify the output of this invocation,
-#   as the content is not a regular matrix
-#   (different number of vertices per streamline = different number of columns per row);
-#   this test therefore just ensures that the command completes without error
-tcksample tracks.tck tcksample/fa.mif tmp.txt -force

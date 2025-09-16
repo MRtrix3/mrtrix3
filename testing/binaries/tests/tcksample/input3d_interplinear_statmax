@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify command operation when using:
+# - A *3D* input image
+# - *Linear* interpolation
+# - The *maximum* track-wise statistic
+# Outcome is verified against that generated using a prior software version
+tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck max -force
+testing_diff_matrix tmp.csv tcksample/input3d_interplinear_statmax.csv -frac 1e-5

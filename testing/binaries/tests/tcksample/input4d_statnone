@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify that command *does not* execute if attempting to combine:
+# - A *4D* input image
+# - *No* track-wise statistic (ie. save one value per vertex)
+# This does work as:
+# - For text files, would need to decide on a format
+#   by which to store for each streamline multiple values per vertex
+#   (could theoretically be done, but no motivation to do so)
+# - The Track Scalar File (TSF) format does not support multiple values per vertex
+mrcat tcksample/fa.mif tcksample/adc.mif -axis 3 - | \
+    tcksample tracks.tck - tmp.csv -force 2>&1 | \
+    grep "Cannot export per\\-vertex values for more than one contrast$"
+
+mrcat tcksample/fa.mif tcksample/adc.mif -axis 3 - | \
+    tcksample tracks.tck - tmp.tsf -force 2>&1 | \
+    grep "Cannot export per\\-vertex values for more than one contrast$"

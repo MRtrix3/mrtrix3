@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify command operation when using:
+# - A *Spherical Harmonics (SH)* input image
+# - *Precise* streamline-to-voxel mapping mechanism
+# More lneient threshold found to be necessary to pass tests on MacOS
+tcksample tracks.tck fod.mif tmp.csv -sh true -precise -stat_tck mean -force
+testing_diff_matrix tmp.csv tcksample/inputsh_precise_statmean.csv -frac 5e-5
