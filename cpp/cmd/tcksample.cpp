@@ -183,7 +183,7 @@ public:
     out.index = tck.get_index();
     DWI::Tractography::TrackScalar<value_type> values;
     (*this)(tck, values);
-    vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck) : vector<value_type>());
+    std::vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck) : std::vector<value_type>());
     out.value = compute_statistic(values, weights);
     return true;
   }
@@ -193,7 +193,7 @@ public:
     out.index = tck.get_index();
     matrix_type values;
     (*this)(tck, values);
-    vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck) : vector<value_type>());
+    std::vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck) : std::vector<value_type>());
     out.values.resize(interp.size(3));
     for (size_t i = 0; i != interp.size(3); ++i)
       out.values[i] = compute_statistic(values.col(i), weights);
@@ -226,7 +226,7 @@ private:
   }
 
   template <class VectorType>
-  value_type compute_statistic(const VectorType &data, const vector<value_type> &weights) const {
+  value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
     switch (statistic()) {
     case stat_tck::MEAN: {
       value_type integral = value_type(0), sum_weights = value_type(0);
@@ -240,7 +240,7 @@ private:
     }
     case stat_tck::MEDIAN: {
       // Don't bother with a weighted median here
-      vector<value_type> finite_data;
+      std::vector<value_type> finite_data;
       finite_data.reserve(data.size());
       for (size_t i = 0; i != data.size(); ++i) {
         if (!std::isnan(data[i]))
