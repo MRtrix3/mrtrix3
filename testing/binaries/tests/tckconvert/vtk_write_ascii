@@ -1,0 +1,10 @@
+#!/bin/bash
+# Test writing of streamlines in ASCII .vtk format
+# Outcomes is compared to an ASCII VTK file generated using a prior software version
+tckconvert -ascii tracks.tck tmp.vtk -force
+awk '/POINTS/{s=1;next}/LINES/{s=0}s' tmp.vtk > tmppoints1.txt
+awk '/POINTS/{s=1;next}/LINES/{s=0}s' tckconvert/out0.vtk > tmppoints2.txt
+awk '/LINES/,0' tmp.vtk > tmplines1.txt
+awk '/LINES/,0' tckconvert/out0.vtk > tmplines2.txt
+testing_diff_matrix tmppoints1.txt tmppoints2.txt -abs 1e-4
+diff tmplines1.txt tmplines2.txt

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Ensure that when an image known to be stored using the _old_ SH convention
+#   is explicitly requested to be stored using the _old_ SH convention,
+#   no change to image intensities is applied
+mrconvert shbasis/old.mif tmp.mif -force
+shbasis tmp.mif -convert old
+testing_diff_image tmp.mif shbasis/old.mif -frac 1e-5

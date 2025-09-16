@@ -375,44 +375,71 @@ these are:
 
 - Explicit VR Big Endian (``1.2.840.10008.1.2.2``)
 
-Any other transfer syntax will be flagged as unsupported, and *MRtrix3* will be
-unable to read the data, providing an error message similar to this:
+Any other transfer syntax will be flagged as unsupported. When this occurs,
+whether or not the *MRtrix3* command can proceed will depend on whether that
+command requires access to the underlying image data:
+
+- If *only header information* is required, then the command will be able to proceed,
+  albeit with a warning issued:
 
 .. code-block:: console
 
-    $ mrinfo DICOM
-    mrinfo: [done] scanning DICOM folder "DICOM"
-    mrinfo: [ERROR] unable to read DICOM images in "DICOM":
-    mrinfo: [ERROR]   unsupported transfer syntax found in DICOM data
-    mrinfo: [ERROR]   consider using third-party tools to convert your data to standard uncompressed encoding
-    mrinfo: [ERROR] See the MRtrix3 documentation on DICOM handling for details:
-    mrinfo: [ERROR]    http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax
-    mrinfo: [ERROR] error opening image "DICOM"
+    $ mrinfo DICOM/
+    mrinfo: [done] scanning folder "DICOM/" for DICOM data
+    mrinfo: [100%] Reading DICOM series "SeriesDescription"
+    mrinfo: [WARNING] unable to read DICOM images in "DICOM/":
+    mrinfo: [WARNING] unsupported transfer syntax found in DICOM data
+    mrinfo: [WARNING] consider using third-party tools to convert your data to standard uncompressed encoding
+    mrinfo: [WARNING] See the MRtrix3 documentation on DICOM handling for details:
+    mrinfo: [WARNING]   http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax
+    ************************************************
+    Image name:          "SURNAME^FIRSTNAME [MR] SeriesDescription"
+    ************************************************
+      Dimensions:        96 x 96 x 60 x 7
+      Voxel size:        2.5 x 2.5 x 2.5 x ?
+      Data strides:      [ -1 -2 3 4 ]
+      ....
 
-Thankfully, other tools exist that should be able to convert the data to a
-format that *MRtrix3* (and other DICOM tools) will read. The `dcmtk
-<http://dicom.offis.de/dcmtk.php.en>`__ DICOM toolkit in particular provides
-the ``dcmdjpeg`` command to decompress data stored using JPEG transfer syntax.
-On Linux, a directory of such files can be decompressed as follows (amend the
-various ``PATH`` as required for your system):
+- If however a command requires *access to the underlying image intensities*,
+  then *MRtrix3* will be unable to read from such:
+
 
 .. code-block:: console
+
+    $ mrconvert DICOM/ data.mif
+    mrconvert: [done] scanning folder "DICOM/" for DICOM data
+    mrconvert: [100%] Reading DICOM series "SeriesDescription"
+    mrconvert: [WARNING] unable to read DICOM images in "DICOM/":
+    mrconvert: [WARNING] unsupported transfer syntax found in DICOM data
+    mrconvert: [WARNING] consider using third-party tools to convert your data to standard uncompressed encoding
+    mrconvert: [WARNING] See the MRtrix3 documentation on DICOM handling for details:
+    mrconvert: [WARNING]   http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax
+    mrconvert: [ERROR] No suitable handler to access data in "SURNAME^FIRSTNAME [MR] SeriesDescription"
+
+  Thankfully, other tools exist that should be able to convert the data to a
+  format that *MRtrix3* (and other DICOM tools) will read. The `dcmtk
+  <http://dicom.offis.de/dcmtk.php.en>`__ DICOM toolkit in particular provides
+  the ``dcmdjpeg`` command to decompress data stored using JPEG transfer syntax.
+  On Linux, a directory of such files can be decompressed as follows (amend the
+  various ``PATH`` as required for your system):
+
+  .. code-block:: console
     
-    $ export PATH=/opt/dcmtk/bin:$PATH
-    $ export DCMDICTPATH=/opt/dcmtk/share/dcmtk/dicom.dic
+      $ export PATH=/opt/dcmtk/bin:$PATH
+      $ export DCMDICTPATH=/opt/dcmtk/share/dcmtk/dicom.dic
 
-    $ for img in dcmdir/*
-    > do
-    >     dcmdjpeg $img ${img}.tmp
-    >     mv ${img}.tmp $img
-    > done
+      $ for img in dcmdir/*
+      > do
+      >     dcmdjpeg $img ${img}.tmp
+      >     mv ${img}.tmp $img
+      > done
 
-*MRtrix3* commands should now be able to read the directory successfully:
+  *MRtrix3* commands should now be able to read the directory successfully:
 
-.. code-block:: console
+  .. code-block:: console
 
-    $ mrinfo dcmdir
-    mrinfo: [done] scanning DICOM folder "data/driss/t1"
-    mrinfo: [100%] reading DICOM series "AX FSPGR 3D ASSET  C+"
-    ...
+      $ mrinfo dcmdir
+      mrinfo: [done] scanning DICOM folder "data/driss/t1"
+      mrinfo: [100%] reading DICOM series "AX FSPGR 3D ASSET  C+"
+      ...
 

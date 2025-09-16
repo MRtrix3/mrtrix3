@@ -21,11 +21,19 @@ Usage
 Description
 -----------
 
-By default, the diffusion tensor (and optionally its kurtosis) is fitted to the log-signal in two steps: firstly, using weighted least-squares (WLS) with weights based on the empirical signal intensities; secondly, by further iterated weighted least-squares (IWLS) with weights determined by the signal predictions from the previous iteration (by default, 2 iterations will be performed). This behaviour can be altered in two ways:
+By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted to the log-signal in two steps: firstly, using weighted least-squares (WLS) with weights based on the empirical signal intensities; secondly, by further iterated weighted least-squares (IWLS) with weights determined by the signal predictions from the previous iteration (by default, 2 iterations will be performed). This behaviour can be altered in two ways:
 
 * The -ols option will cause the first fitting step to be performed using ordinary least-squares (OLS); that is, all measurements contribute equally to the fit, instead of the default behaviour of weighting based on the empirical signal intensities.
 
 * The -iter option controls the number of iterations of the IWLS prodedure. If this is set to zero, then the output model parameters will be those resulting from the first fitting step only: either WLS by default, or OLS if the -ols option is used in conjunction with -iter 0.
+
+By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted using unconstrained optimization. This can result in unexpected diffusion parameters, e.g. parameters that represent negative apparent diffusivities or negative apparent kurtoses, or parameters that correspond to non-monotonic decay of the predicted signal. By supplying the -constrain option, constrained optimization is performed instead and such physically implausible parameters can be avoided. Depending on the presence of the -dkt option, the -constrain option will enforce the following constraints:
+
+* Non-negative apparent diffusivity (always).
+
+* Non-negative apparent kurtosis (when the -dkt option is provided).
+
+* Monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided).
 
 The tensor coefficients are stored in the output image as follows: |br|
 volumes 0-5: D11, D22, D33, D12, D13, D23
@@ -41,20 +49,24 @@ Options
 
 -  **-ols** perform initial fit using an ordinary least-squares (OLS) fit (see Description).
 
+-  **-iter integer** number of iterative reweightings for IWLS algorithm (default: 2) (see Description).
+
+-  **-constrain** constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).
+
+-  **-directions file** specify the directions along which to apply the constraints (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
+
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
 -  **-b0 image** the output b0 image.
 
 -  **-dkt image** the output dkt image.
 
--  **-iter integer** number of iterative reweightings for IWLS algorithm (default: 2) (see Description).
-
 -  **-predicted_signal image** the predicted dwi image.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
@@ -88,6 +100,9 @@ References based on fitting algorithm used:
 * IWLS: |br|
   Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
 
+* any of above with constraints: |br|
+  Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. Optimal experimental design and estimation for q-space trajectory imaging. Human Brain Mapping, 2023, 44, 1793-1809
+
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
@@ -96,7 +111,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

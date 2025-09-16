@@ -38,7 +38,7 @@ Options affecting the SIFT model
 
 -  **-make_null_lobes** add an additional FOD lobe to each voxel, with zero integral, that covers all directions with zero / negative FOD amplitudes
 
--  **-remove_untracked** remove FOD lobes that do not have any streamline density attributed to them; this improves filtering slightly, at the expense of longer computation time (and you can no longer do quantitative comparisons between reconstructions if this is enabled)
+-  **-remove_untracked** remove FOD lobes that do not have any streamline density attributed to them; this improves filtering slightly, at the expense of longer computation time (and you can no longer trivially do quantitative comparisons between reconstructions if this is enabled)
 
 -  **-fd_thresh value** fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount (streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)
 
@@ -49,7 +49,7 @@ Options to make SIFT provide additional output files
 
 -  **-out_mu file** output the final value of SIFT proportionality coefficient mu to a text file
 
--  **-output_debug** provide various output images for assessing & debugging performance etc.
+-  **-output_debug dirpath** write to a directory various output images for assessing & debugging performance etc.
 
 -  **-out_coeffs path** output text file containing the weighting coefficient for each streamline
 
@@ -69,13 +69,13 @@ Options for controlling the SIFT2 optimisation algorithm
 
 -  **-max_iters count** maximum number of iterations to run before terminating program
 
--  **-min_factor factor** minimum weighting factor for an individual streamline; if the factor falls below this number the streamline will be rejected entirely (factor set to zero) (default: 0)
+-  **-min_factor factor** minimum weighting factor for an individual streamline; if the factor falls below this number, the streamline will be rejected entirely (factor set to zero) (default: 0)
 
--  **-min_coeff coeff** minimum weighting coefficient for an individual streamline; similar to the '-min_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). Note that the -min_factor and -min_coeff options are mutually exclusive - you can only provide one. (default: -inf)
+-  **-min_coeff coeff** minimum weighting coefficient for an individual streamline; similar to the '-min_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). Note that the -min_factor and -min_coeff options are mutually exclusive; you can only provide one. (default: -inf)
 
 -  **-max_factor factor** maximum weighting factor that can be assigned to any one streamline (default: inf)
 
--  **-max_coeff coeff** maximum weighting coefficient for an individual streamline; similar to the '-max_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). Note that the -max_factor and -max_coeff options are mutually exclusive - you can only provide one. (default: inf)
+-  **-max_coeff coeff** maximum weighting coefficient for an individual streamline; similar to the '-max_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). Note that the -max_factor and -max_coeff options are mutually exclusive; you can only provide one. (default: inf)
 
 -  **-max_coeff_step step** maximum change to a streamline's weighting coefficient in a single iteration (default: 1)
 
@@ -118,7 +118,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

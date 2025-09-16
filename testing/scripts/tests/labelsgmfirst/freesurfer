@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation where the input parcellation image comes directly from FreeSurfer,
+#   with parcel indices defined by lookup table FreeSurferColorLUT.txt
+labelsgmfirst BIDS/sub-01/anat/aparc+aseg.mgz BIDS/sub-01/anat/sub-01_T1w.nii.gz labelsgmfirst/FreeSurferColorLUT.txt tmp.mif -force
+testing_diff_header tmp.mif labelsgmfirst/freesurfer.mif.gz

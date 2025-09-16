@@ -24,11 +24,14 @@ Description
 This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.
 
 More information on use of the dwifslpreproc command can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.3/dwi_preprocessing/dwifslpreproc.html
+https://mrtrix.readthedocs.io/en/3.0.7/dwi_preprocessing/dwifslpreproc.html
 
-Note that the MRtrix3 command dwi2mask will automatically be called to derive a processing mask for the FSL command "eddy", which determines which voxels contribute to the estimation of geometric distortion parameters and possibly also the classification of outlier slices. If FSL command "topup" is used to estimate a susceptibility field, then dwi2mask will be executed on the resuts of running FSL command "applytopup" to the input DWIs; otherwise it will be executed directly on the input DWIs. Alternatively, the -eddy_mask option can be specified in order to manually provide such a processing mask. More information on mask derivation from DWI data can be found at: https://mrtrix.readthedocs.io/en/3.0.3/dwi_preprocessing/masking.html
+Note that the MRtrix3 command dwi2mask will automatically be called to derive a processing mask for the FSL command "eddy", which determines which voxels contribute to the estimation of geometric distortion parameters and possibly also the classification of outlier slices. If FSL command "topup" is used to estimate a susceptibility field, then dwi2mask will be executed on the resuts of running FSL command "applytopup" to the input DWIs; otherwise it will be executed directly on the input DWIs. Alternatively, the -eddy_mask option can be specified in order to manually provide such a processing mask. More information on mask derivation from DWI data can be found at: 
+https://mrtrix.readthedocs.io/en/3.0.7/dwi_preprocessing/masking.html
 
-The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; (eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide
+The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: 
+(topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; 
+(eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide
 
 The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.
 
@@ -59,7 +62,7 @@ Example usages
 
         $ mrcat DWI_*.mif DWI_all.mif -axis 3; mrcat b0_*.mif b0_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_header -se_epi b0_all.mif -align_seepi
 
-    With this usage, the relevant phase encoding information is determined entirely based on the contents of the relevant image headers, and dwifslpreproc prepares all metadata for the executed FSL commands accordingly. This can therefore be used if the particular DWI acquisition strategy used does not correspond to one of the simple examples as described in the prior examples. This usage is predicated on the headers of the input files containing appropriately-named key-value fields such that MRtrix3 tools identify them as such. In some cases, conversion from DICOM using MRtrix3 commands will automatically extract and embed this information; however this is not true for all scanner vendors and/or software versions. In the latter case it may be possible to manually provide these metadata; either using the -json_import command-line option of dwifslpreproc, or the -json_import or one of the -import_pe_* command-line options of MRtrix3's mrconvert command (and saving in .mif format) prior to running dwifslpreproc.
+    With this usage, the relevant phase encoding information is determined entirely based on the contents of the relevant image headers, and dwifslpreproc prepares all metadata for the executed FSL commands accordingly.  This can therefore be used if the particular DWI acquisition strategy used does not correspond to one of the simple examples as described in the prior examples. This usage is predicated on the headers of the input files containing appropriately-named key-value fields such that MRtrix3 tools identify them as such. In some cases, conversion from DICOM using MRtrix3 commands will automatically extract and embed this information; however this is not true for all scanner vendors and/or software versions. In the latter case it may be possible to manually provide these metadata; either using the -json_import command-line option of dwifslpreproc, or the -json_import or one of the -import_pe_* command-line options of MRtrix3's mrconvert command (and saving in .mif format) prior to running dwifslpreproc.
 
 Options
 -------
@@ -80,7 +83,7 @@ Options for specifying the acquisition phase-encoding design; note that one of t
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -112,7 +115,7 @@ Options for achieving correction of susceptibility distortions
 
 - **-se_epi image** Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
 
-- **-align_seepi** Achieve alignment between the SE-EPI images used for inhomogeneity field estimation, and the DWIs (more information in Description section)
+- **-align_seepi** Achieve alignment between the SE-EPI images used for inhomogeneity field estimation and the DWIs (more information in Description section)
 
 - **-topup_options " TopupOptions"** Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)
 
@@ -130,9 +133,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -178,7 +181,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
