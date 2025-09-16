@@ -702,55 +702,6 @@ private:
   std::unique_ptr<DWI::Tractography::ScalarWriter<value_type>> tsf;
 };
 
-/*
-template <class InterpType>
-void execute_nostat (DWI::Tractography::Reader<value_type>& reader,
-                     const DWI::Tractography::Properties& properties,
-                     const size_t num_tracks,
-                     Image<value_type>& image,
-                     const bool sample_sh,
-                     const std::string& path)
-{
-  SamplerNonPrecise<InterpType> sampler (image, sample_sh, stat_tck::NONE, Image<value_type>());
-  Receiver_PerVertex receiver (path, num_tracks, properties);
-  Thread::run_ordered_queue (reader,
-                             Thread::batch (DWI::Tractography::Streamline<value_type>()),
-                             Thread::multi (sampler),
-                             Thread::batch (DWI::Tractography::TrackScalar<value_type>()),
-                             receiver);
-}
-
-template <class SamplerType>
-void execute (DWI::Tractography::Reader<value_type>& reader,
-              const size_t num_tracks,
-              Image<value_type>& image,
-              const bool sample_sh,
-              const stat_tck statistic,
-              Image<value_type>& tdi,
-              const std::string& path)
-{
-  SamplerType sampler (image, sample_sh, statistic, tdi);
-  const size_t num_metrics = image.ndim() == 4 && !sample_sh ? image.size(3) : 1;
-  if (num_metrics == 1) {
-    Receiver_OnePerStreamline receiver (num_tracks);
-    Thread::run_ordered_queue (reader,
-                              Thread::batch (DWI::Tractography::Streamline<value_type>()),
-                              Thread::multi (sampler),
-                              Thread::batch (OnePerStreamline()),
-                              receiver);
-    receiver.save (path);
-  } else {
-    Receiver_ManyPerStreamline receiver (num_tracks, num_metrics);
-    Thread::run_ordered_queue (reader,
-                              Thread::batch (DWI::Tractography::Streamline<value_type>()),
-                              Thread::multi (sampler),
-                              Thread::batch (ManyPerStreamline()),
-                              receiver);
-    receiver.save (path);
-  }
-}
-*/
-
 template <class SamplerType, class ReceiverType>
 void execute(DWI::Tractography::Reader<value_type> &reader, SamplerType &sampler, ReceiverType &receiver) {
   if (receiver.ordered())
@@ -829,73 +780,6 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
     execute(reader, image, interp, contrast, statistic, tdi, receiver);
   }
 }
-
-/*
-template <class ReceiverType>
-void execute (DWI::Tractography::Reader<value_type>& reader,
-              std::shared_ptr<SamplerBase> sampler,
-              ReceiverType& receiver)
-{
-  if (receiver.ordered())
-    Thread::run_ordered_queue (reader,
-                               Thread::batch (DWI::Tractography::Streamline<value_type>()),
-                               Thread::multi (*sampler),
-                               Thread::batch (typename ReceiverType::InputType()),
-                               receiver);
-  else
-    Thread::run_queue (reader,
-                       Thread::batch (DWI::Tractography::Streamline<value_type>()),
-                       Thread::multi (*sampler),
-                       Thread::batch (typename ReceiverType::InputType()),
-                       receiver);
-}
-
-void execute (DWI::Tractography::Reader<value_type>& reader,
-              DWI::Tractography::Properties& properties,
-              const size_t num_tracks,
-              std::shared_ptr<SamplerBase> sampler,
-              const std::string& path)
-{
-  if (sampler->statistic() == stat_tck::NONE) {
-    Receiver_PerVertex receiver (properties, num_tracks, path);
-    execute(reader, sampler, receiver);
-  } else if (sampler->num_contrasts() == 1) {
-    Receiver_OnePerStreamline receiver (num_tracks, path);
-    execute(reader, sampler, receiver);
-  } else {
-    Receiver_ManyPerStreamline receiver (num_tracks, sampler->num_contrasts(), path);
-    execute(reader, sampler, receiver);
-  }
-}
-
-std::shared_ptr<SamplerBase> make_sampler(Image<value_type>& image,
-                                          const interp_type interp,
-                                          const contrast_type contrast,
-                                          const stat_tck statistic,
-                                          Image<value_type>& tdi)
-{
-  switch (contrast) {
-    case contrast_type::SCALAR:
-      switch (interp) {
-        case interp_type::NEAREST:
-          return std::make_shared<SamplerNonPreciseScalar<Interp::Nearest<Image<value_type>>>> (image, statistic);
-        case interp_type::LINEAR:
-          return std::make_shared<SamplerNonPreciseScalar<Interp::Linear<Image<value_type>>>> (image, statistic);
-        case interp_type::PRECISE:
-          return std::make_shared<SamplerPreciseScalar> (image, statistic, tdi);
-      }
-    case contrast_type::SH:
-      switch (interp) {
-        case interp_type::NEAREST:
-          return std::make_shared<SamplerNonPreciseSH<Interp::Nearest<Image<value_type>>>> (image, statistic);
-        case interp_type::LINEAR:
-          return std::make_shared<SamplerNonPreciseSH<Interp::Linear<Image<value_type>>>> (image, statistic);
-        case interp_type::PRECISE:
-          return std::make_shared<SamplerPreciseSH> (image, statistic);
-      }
-  }
-}
-*/
 
 void run() {
   DWI::Tractography::Properties properties;
@@ -988,28 +872,5 @@ void run() {
 
   auto image = H.get_image<value_type>();
 
-  // std::shared_ptr<SamplerBase> sampler = make_sampler(image, interp, contrast, statistic, tdi);
-  // execute(reader, properties, num_tracks, sampler, argument[2]);
   execute(reader, properties, num_tracks, image, interp, contrast, statistic, tdi, argument[2]);
-
-  /*
-    if (statistic == stat_tck::NONE) {
-      switch (interp) {
-        case interp_type::NEAREST:
-          execute_nostat<Interp::Nearest<Image<value_type>>> (reader, properties, num_tracks, image, sample_sh,
-    argument[2]); break; case interp_type::LINEAR: execute_nostat<Interp::Linear<Image<value_type>>> (reader,
-    properties, num_tracks, image, sample_sh, argument[2]); break; case interp_type::PRECISE: throw Exception
-    ("Precise streamline mapping may only be used with per-streamline statistics");
-      }
-    } else {
-      switch (interp) {
-        case interp_type::NEAREST:
-          execute<SamplerNonPrecise<Interp::Nearest<Image<value_type>>>> (reader, num_tracks, image, sample_sh,
-    statistic, tdi, argument[2]); break; case interp_type::LINEAR:
-          execute<SamplerNonPrecise<Interp::Linear<Image<value_type>>>> (reader, num_tracks, image, sample_sh,
-    statistic, tdi, argument[2]); break; case interp_type::PRECISE: execute<SamplerPrecise> (reader, num_tracks,
-    image, sample_sh, statistic, tdi, argument[2]); break;
-      }
-    }
-  */
 }
