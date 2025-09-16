@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify command operation when using:
+# - A *4D* input image
+# - The *precise* streamline-to-voxel mapping mechanism is used
+# - A track-wise statistic *is* used
+#   (compulsory given the use of -precise)
+# Outcome is verified against that generated using a prior software version
+mrcat tcksample/fa.mif tcksample/adc.mif -axis 3 - | \
+    tcksample tracks.tck - tmp.csv -stat_tck mean -precise -force
+
+testing_diff_matrix tmp.csv tcksample/input4d_precise_statmean.csv -frac 1e-5

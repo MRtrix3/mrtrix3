@@ -813,24 +813,20 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
              const size_t num_tracks,
              Image<value_type> &image,
              const interp_type interp,
-             const bool sample_sh,
+             const contrast_type contrast,
              const stat_tck statistic,
              Image<value_type> &tdi,
              const std::string &path) {
-  const size_t num_metrics = image.ndim() == 4 && !sample_sh ? image.size(3) : 1;
+  const size_t num_metrics = image.ndim() == 4 && contrast == contrast_type::SCALAR ? image.size(3) : 1;
   if (statistic == stat_tck::NONE) {
-    if (num_metrics != 1)
-      throw Exception("Cannot export per-vertex values for more than one contrast");
-    if (interp == interp_type::PRECISE)
-      throw Exception("Cannot combine per-vertex values with precise mapping mechanism");
     Receiver_PerVertex receiver(properties, num_tracks, path);
-    execute(reader, image, interp, sample_sh, statistic, tdi, receiver);
+    execute(reader, image, interp, contrast, statistic, tdi, receiver);
   } else if (num_metrics == 1) {
     Receiver_OnePerStreamline receiver(num_tracks, path);
-    execute(reader, image, interp, sample_sh, statistic, tdi, receiver);
+    execute(reader, image, interp, contrast, statistic, tdi, receiver);
   } else {
     Receiver_ManyPerStreamline receiver(num_tracks, num_metrics, path);
-    execute(reader, image, interp, sample_sh, statistic, tdi, receiver);
+    execute(reader, image, interp, contrast, statistic, tdi, receiver);
   }
 }
 
@@ -913,12 +909,12 @@ void run() {
     if (plausibly_SH) {
       // clang-format off
       throw Exception(
-          std::string("Input image coupld plausibly be interpreted as spherical harmonics; " //
-                      "must specify the -sh option to inform command"                        //
-                      " whether to interpret image in this way") +                           //
-          ((H.ndim() == 4 && H.size(3) == 1) ?                                               //
-               " this may be due to being a 4D image with 1 volume rather than a 3D image" : //
-               ""));                                                                         //
+          std::string("Input image could plausibly be interpreted as spherical harmonics; " //
+                      "must specify the -sh option to inform command"                       //
+                      " whether to interpret image in this way") +                          //
+          ((H.ndim() == 4 && H.size(3) == 1) ?                                              //
+               " (this is due to being a 4D image with 1 volume rather than a 3D image)" :  //
+               ""));                                                                        //
       // clang-format on
     }
   } else if (plausibly_SH) {
@@ -944,9 +940,20 @@ void run() {
 
   opt = get_options("stat_tck");
   const stat_tck statistic = opt.empty() ? stat_tck::NONE : stat_tck(int(opt[0][0]));
-  if (H.ndim() == 4 && H.size(3) != 1 && statistic != stat_tck::NONE) {
+
+  size_t num_metrics = 1;
+  if (H.ndim() == 4 && H.size(3) > 1 && contrast == contrast_type::SCALAR) {
+    if (statistic == stat_tck::NONE)
+      throw Exception("Cannot export per-vertex values for more than one contrast");
+    num_metrics = H.size(3);
     INFO("Input image is 4D; output will be 2D matrix");
-  } else if (H.ndim() != 3) {
+  } else if (H.ndim() > 4) {
+    throw Exception("Input image is of unsupported dimensionality");
+  }
+
+  if (contrast == contrast_type::SCALAR && H.ndim() == 4 && H.size(3) != 1 && statistic != stat_tck::NONE) {
+    INFO("Input image is 4D; output will be 2D matrix");
+  } else if (H.ndim() > 4) {
     throw Exception("Input image is of unsupported dimensionality");
   }
 
@@ -955,10 +962,9 @@ void run() {
   if (nointerp && precise)
     throw Exception("Options -nointerp and -precise are mutually exclusive");
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
-  const size_t num_tracks = properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]);
-
   if (statistic == stat_tck::NONE && interp == interp_type::PRECISE)
-    throw Exception("Precise streamline mapping may only be used with per-streamline statistics");
+    throw Exception("Cannot combine per-vertex values with precise mapping mechanism");
+  const size_t num_tracks = properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]);
 
   Image<value_type> tdi;
   if (get_options("use_tdi_fraction").size()) {
@@ -966,9 +972,11 @@ void run() {
       throw Exception("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
     if (contrast == contrast_type::SH)
       throw Exception("Cannot use -use_tdi_fraction option in conjunction with SH function sampling");
+    if (interp != interp_type::PRECISE)
+      throw Exception("-use_tdi_fraction can only be used in conjunction with precise mapping");
     DWI::Tractography::Reader<value_type> tdi_reader(argument[0], properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper(H);
-    mapper.set_use_precise_mapping(interp == interp_type::PRECISE);
+    mapper.set_use_precise_mapping(true);
     tdi = Image<value_type>::scratch(H, "TDI scratch image");
     TDI tdi_fill(tdi, num_tracks);
     Thread::run_queue(tdi_reader,

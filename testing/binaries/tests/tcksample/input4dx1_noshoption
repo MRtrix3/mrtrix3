@@ -1,0 +1,14 @@
+#!/bin/bash
+# Ensure that command yields an appropriate error message
+#   if the input image is a 4D image with 1 volume,
+#   and the -sh option is not specified
+# This case is ambiguous because it is not possible to determine
+#   whether to interpret the image intensities as a singular scalar contrast,
+#   or as an SH decomposition with lmax=0;
+#   these two interpretations would result in the output data differing
+#   by a factor of sqrt(4pi).
+# Extended regular expressions was found to be necessary
+#   in order to match the round brackets within the error string
+mrconvert afdtotal.mif -axes 0,1,2,-1 - | \
+    tcksample tracks.tck - tmp.tsf -force 2>&1 | \
+    grep -E "Input image could plausibly be interpreted as spherical harmonics; must specify the \\-sh option to inform command whether to interpret image in this way \\(this is due to being a 4D image with 1 volume rather than a 3D image\\)$"
