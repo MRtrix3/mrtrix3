@@ -40,8 +40,8 @@ using namespace App;
 
 enum stat_tck { MEAN, MEDIAN, MIN, MAX, NONE };
 const char* statistics[] = { "mean", "median", "min", "max", nullptr };
-
 enum interp_type { NEAREST, LINEAR, PRECISE };
+enum contrast_type { SCALAR, SH };
 
 
 void usage ()
@@ -117,11 +117,11 @@ using vector_type = Eigen::VectorXf;
 using matrix_type = Eigen::MatrixXf;
 
 
-struct Statistic3D { NOMEMALIGN
+struct OnePerStreamline { NOMEMALIGN
   value_type value;
   size_t index;
 };
-struct Statistics4D { MEMALIGN(Statistics4D)
+struct ManyPerStreamline { MEMALIGN(ManyPerStreamline)
   vector_type values;
   size_t index;
 };
@@ -153,114 +153,94 @@ class TDI { MEMALIGN(TDI)
 
 
 
-// TODO Consider moving SH to be a template rather than a boolean member requiring code branching
-template <class Interp>
-class SamplerNonPrecise
-{ MEMALIGN (SamplerNonPrecise<Interp>)
+class SamplerBase
+{ MEMALIGN(SamplerBase)
+
   public:
-    SamplerNonPrecise (Image<value_type>& image, const bool sample_sh, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
-        interp (image),
-        mapper (precalc_tdi.valid() ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
-        tdi (precalc_tdi),
-        statistic (statistic)
+    SamplerBase(const contrast_type contrast, const stat_tck statistic) :
+        _contrast (contrast),
+        _statistic (statistic) { }
+    virtual ~SamplerBase() { }
+
+    // Note: While these are shown as virtual,
+    //   in the current implementation these are not executed using inheritance,
+    //   due to the combination of wanting these classes to execute in multiple threads
+    //   but also the functors not being const
+    virtual bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                             DWI::Tractography::TrackScalar<value_type>& out) = 0;
+    virtual bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                             OnePerStreamline& out) = 0;
+    virtual bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                             ManyPerStreamline& out) = 0;
+
+    virtual size_t num_contrasts() const = 0;
+    contrast_type contrast() const { return _contrast; }
+    stat_tck statistic() const { return _statistic; }
+
+  protected:
+    const contrast_type _contrast;
+    const stat_tck _statistic;
+
+};
+
+
+
+template <class Interp>
+class SamplerNonPreciseBase : public SamplerBase
+{ MEMALIGN (SamplerNonPreciseBase<Interp>)
+  public:
+    using BaseType = SamplerBase;
+    SamplerNonPreciseBase (Image<value_type>& image,
+                           const contrast_type contrast,
+                           const stat_tck statistic) :
+        BaseType (contrast, statistic),
+        interp (image) { }
+    virtual ~SamplerNonPreciseBase() { }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     OnePerStreamline& out) override
     {
-      if (mapper)
-        mapper->set_use_precise_mapping (false);
-      if (sample_sh) {
-        sh_precomputer = std::make_shared<Math::SH::PrecomputedAL<default_type>>();
-        sh_precomputer->init(Math::SH::LforN(image.size(3)));
-        sh_coeffs.resize(image.size(3));
-      }
+      assert (statistic() != stat_tck::NONE);
+      out.index = tck.get_index();
+      DWI::Tractography::TrackScalar<value_type> values;
+      (*this) (tck, values);
+      vector<value_type> weights (statistic() == stat_tck::MEAN ?
+                                  compute_weights (tck) :
+                                  vector<value_type>());
+      out.value = compute_statistic (values, weights);
+      return true;
     }
 
-    bool operator() (const DWI::Tractography::Streamline<value_type>& tck, Statistics4D& out)
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     ManyPerStreamline& out) override
     {
-      assert (statistic != stat_tck::NONE);
+      assert (statistic() != stat_tck::NONE);
       out.index = tck.get_index();
       matrix_type values;
       (*this) (tck, values);
-      vector<value_type> weights (statistic == stat_tck::MEAN ? compute_weights (tck) : vector<value_type>());
+      vector<value_type> weights (statistic() == stat_tck::MEAN ?
+                                  compute_weights (tck) :
+                                  vector<value_type>());
       out.values.resize (interp.size(3));
       for (size_t i = 0; i != interp.size(3); ++i)
         out.values[i] = compute_statistic (values.col(i), weights);
       return true;
     }
 
-    bool operator() (const DWI::Tractography::Streamline<value_type>& tck, Statistic3D& out)
-    {
-      assert (statistic != stat_tck::NONE);
-      out.index = tck.get_index();
-      DWI::Tractography::TrackScalar<value_type> values;
-      (*this) (tck, values);
-      vector<value_type> weights (statistic == stat_tck::MEAN ? compute_weights (tck) : vector<value_type>());
-      out.value = compute_statistic (values, weights);
-      return true;
-    }
+  protected:
+    Interp interp;
 
-    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
-                     DWI::Tractography::TrackScalar<value_type>& out)
-    {
-      out.set_index (tck.get_index());
-      out.resize (tck.size());
-      if (sh_precomputer) {
-        for (size_t i = 0; i != tck.size(); ++i) {
-          if (interp.scanner (tck[i])) {
-            for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
-              sh_coeffs[interp.index(3)] = interp.value();
-            const Eigen::Vector3f dir = (tck[(i == ssize_t(tck.size()-1)) ? i : (i+1)] - tck[i ? (i-1) : 0]).normalized();
-            out[i] = sh_precomputer->value (sh_coeffs, dir);
-          } else {
-            out[i] = std::numeric_limits<value_type>::quiet_NaN();
-          }
-        }
-      } else {
-        for (size_t i = 0; i != tck.size(); ++i) {
-          if (interp.scanner (tck[i]))
-            out[i] = interp.value();
-          else
-            out[i] = std::numeric_limits<value_type>::quiet_NaN();
-        }
-      }
-      return true;
-    }
+    virtual bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                             DWI::Tractography::TrackScalar<value_type>& out) override = 0;
 
-    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
-                     matrix_type& out)
-    {
-      assert (interp.ndim() == 4);
-      assert (!sh_precomputer);
-      out.resize (tck.size(), interp.size(3));
-      for (size_t i = 0; i != tck.size(); ++i) {
-        if (interp.scanner (tck[i])) {
-          for (auto l = Loop(3) (interp); l; ++l)
-            out(i, ssize_t(interp.index(3))) = value_type(interp.value());
-        } else {
-          out.row(i).setConstant (std::numeric_limits<value_type>::quiet_NaN());
-        }
-      }
-      return true;
-    }
+    virtual bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                             matrix_type& out) = 0;
 
   private:
-    Interp interp;
-    std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
-    std::shared_ptr<Math::SH::PrecomputedAL<default_type>> sh_precomputer;
-    vector_type sh_coeffs;
-    Image<value_type> tdi;
-    const stat_tck statistic;
-
-    value_type get_tdi_multiplier (const DWI::Tractography::Mapping::Voxel& v)
-    {
-      if (!tdi.valid())
-        return value_type(1);
-      assign_pos_of (v).to (tdi);
-      assert (!is_out_of_bounds (tdi));
-      return v.get_length() / tdi.value();
-    }
 
     // Take distance between points into account in mean calculation
     //   (Should help down-weight endpoints)
-    vector<value_type> compute_weights (const DWI::Tractography::Streamline<value_type>& tck)
+    vector<value_type> compute_weights (const DWI::Tractography::Streamline<value_type>& tck) const
     {
       vector<value_type> weights;
       weights.reserve (tck.size());
@@ -275,11 +255,10 @@ class SamplerNonPrecise
       return weights;
     }
 
-
     template <class VectorType>
     value_type compute_statistic (const VectorType& data, const vector<value_type>& weights) const
     {
-      switch (statistic) {
+      switch (statistic()) {
         case stat_tck::MEAN: {
           value_type integral = value_type(0), sum_weights = value_type(0);
           for (size_t i = 0; i != data.size(); ++i) {
@@ -288,7 +267,9 @@ class SamplerNonPrecise
               sum_weights += weights[i];
             }
           }
-          return sum_weights ? (integral / sum_weights) : std::numeric_limits<value_type>::quiet_NaN();
+          return sum_weights ?
+                 (integral / sum_weights) :
+                 std::numeric_limits<value_type>::quiet_NaN();
         }
         case stat_tck::MEDIAN: {
           // Don't bother with a weighted median here
@@ -298,7 +279,9 @@ class SamplerNonPrecise
             if (!std::isnan (data[i]))
               finite_data.push_back (data[i]);
           }
-          return finite_data.size() ? Math::median (finite_data) : std::numeric_limits<value_type>::quiet_NaN();
+          return finite_data.size() ?
+                 Math::median (finite_data) :
+                 std::numeric_limits<value_type>::quiet_NaN();
         }
         break;
         case stat_tck::MIN: {
@@ -310,7 +293,9 @@ class SamplerNonPrecise
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
+          return cast_to_nan ?
+                 std::numeric_limits<value_type>::quiet_NaN() :
+                 value;
         }
         break;
         case stat_tck::MAX: {
@@ -322,86 +307,48 @@ class SamplerNonPrecise
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
+          return cast_to_nan ?
+                 std::numeric_limits<value_type>::quiet_NaN() :
+                 value;
         }
         break;
-        default: assert (0); return std::numeric_limits<value_type>::signaling_NaN();
+        default:
+          assert (0);
+          return std::numeric_limits<value_type>::signaling_NaN();
       }
     }
-
-
 
 };
 
 
 
-class SamplerPrecise
-{ MEMALIGN (SamplerPrecise)
+class SamplerPreciseBase : public SamplerBase
+{ MEMALIGN (SamplerPreciseBase)
   public:
-    SamplerPrecise (Image<value_type>& image, const bool sample_sh, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
+    using BaseType = SamplerBase;
+    SamplerPreciseBase (Image<value_type>& image,
+                        const contrast_type contrast,
+                        const stat_tck statistic) :
+        BaseType (contrast, statistic),
         image (image),
-        mapper (new DWI::Tractography::Mapping::TrackMapperBase (image)),
-        tdi (precalc_tdi),
-        statistic (statistic)
+        mapper (new DWI::Tractography::Mapping::TrackMapperBase (image))
     {
       assert (statistic != stat_tck::NONE);
       mapper->set_use_precise_mapping (true);
-      if (sample_sh) {
-        sh_precomputer = std::make_shared<Math::SH::PrecomputedAL<default_type>>();
-        sh_precomputer->init(Math::SH::LforN(image.size(3)));
-        sh_coeffs.resize(image.size(3));
-      }
     }
+    virtual ~SamplerPreciseBase() { }
 
-    bool operator() (DWI::Tractography::Streamline<value_type>& tck, Statistics4D& out)
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     DWI::Tractography::TrackScalar<value_type>& out) override
     {
-      assert (!sh_precomputer);
-      out.index = tck.get_index();
-      DWI::Tractography::Mapping::SetVoxel voxels;
-      (*mapper) (tck, voxels);
-      out.values.resize (image.size(3));
-      vector<ValueLength> data;
-      for (auto l = Loop(3) (image); l; ++l) {
-        data = sample_scalar (voxels);
-        out.values[image.index(3)] = compute_statistic (data);
-      }
-      return true;
+      throw Exception ("Implementation error: No meaningful implementation"
+                       " for combining per-vertex output with precise mapping");
+      return false;
     }
 
-    bool operator() (DWI::Tractography::Streamline<value_type>& tck, Statistic3D& out)
-    {
-      out.index = tck.get_index();
-      vector<ValueLength> data;
-      if (sh_precomputer) {
-        DWI::Tractography::Mapping::SetVoxelDir intersections;
-        (*mapper) (tck, intersections);
-        data = sample_SH (intersections);
-      } else {
-        DWI::Tractography::Mapping::SetVoxel voxels;
-        (*mapper) (tck, voxels);
-        data = sample_scalar (voxels);
-      }
-      out.value = compute_statistic (data);
-      return true;
-    }
-
-
-  private:
+  protected:
     Image<value_type> image;
     std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
-    std::shared_ptr<Math::SH::PrecomputedAL<default_type>> sh_precomputer;
-    vector_type sh_coeffs;
-    Image<value_type> tdi;
-    const stat_tck statistic;
-
-    value_type get_tdi_multiplier (const DWI::Tractography::Mapping::Voxel& v)
-    {
-      if (!tdi.valid())
-        return value_type(1);
-      assign_pos_of (v).to (tdi);
-      assert (!is_out_of_bounds (tdi));
-      return v.get_length() / tdi.value();
-    }
 
     class ValueLength {
       public:
@@ -413,33 +360,11 @@ class SamplerPrecise
         float length;
     };
 
-    vector<ValueLength> sample_scalar (const DWI::Tractography::Mapping::SetVoxel& voxels)
-    {
-      vector<ValueLength> data;
-      for (const auto& v : voxels) {
-        assign_pos_of (v, 0, 3).to (image);
-        data.emplace_back(ValueLength(image.value() * get_tdi_multiplier (v), v.get_length()));
-      }
-      return data;
-    }
-
-    vector<ValueLength> sample_SH (const DWI::Tractography::Mapping::SetVoxelDir& intersections)
-    {
-      assert (!tdi.valid());
-      vector<ValueLength> data;
-      for (const auto& i : intersections) {
-        assign_pos_of(i, 0, 3).to (image);
-        sh_coeffs = image.row(3);
-        data.emplace_back(ValueLength(sh_precomputer->value(sh_coeffs, i.get_dir()), i.get_length()));
-      }
-      return data;
-    }
-
     value_type compute_statistic (vector<ValueLength>& data) const
     {
       if (!data.size())
         return std::numeric_limits<value_type>::quiet_NaN();
-      switch (statistic) {
+      switch (statistic()) {
         case stat_tck::MEAN: {
           value_type integral = value_type(0), sum_lengths = value_type(0);
           for (const auto& v : data) {
@@ -507,11 +432,300 @@ class SamplerPrecise
 
 
 
+class SamplerPreciseScalar : public SamplerPreciseBase
+{ MEMALIGN (SamplerPreciseScalar)
+  public:
+    using BaseType = SamplerPreciseBase;
+    using SamplerPreciseBase::ValueLength;
+    SamplerPreciseScalar (Image<value_type>& image,
+                          const stat_tck statistic,
+                          const Image<value_type>& precalc_tdi) :
+        BaseType (image, contrast_type::SCALAR, statistic),
+        tdi (precalc_tdi) { }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     DWI::Tractography::TrackScalar<value_type>& out) override
+    {
+      throw Exception ("Implementation error: No meaningful implementation"
+                       "for combining per-vertex output with vertex-wise output");
+      return false;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     OnePerStreamline& out) override
+    {
+      out.index = tck.get_index();
+      vector<ValueLength> data;
+      DWI::Tractography::Mapping::SetVoxel voxels;
+      (*mapper) (tck, voxels);
+      data = sample (voxels);
+      out.value = compute_statistic (data);
+      return true;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     ManyPerStreamline& out) override
+    {
+      out.index = tck.get_index();
+      DWI::Tractography::Mapping::SetVoxel voxels;
+      (*mapper) (tck, voxels);
+      out.values.resize (image.size(3));
+      vector<ValueLength> data;
+      for (auto l = Loop(3) (image); l; ++l) {
+        data = sample (voxels);
+        out.values[image.index(3)] = compute_statistic (data);
+      }
+      return true;
+    }
+
+    size_t num_contrasts() const override
+    {
+      return BaseType::image.ndim() == 4 ?
+             BaseType::image.size(3) :
+             1;
+    }
+
+
+  private:
+    Image<value_type> tdi;
+
+    value_type get_tdi_multiplier (const DWI::Tractography::Mapping::Voxel& v)
+    {
+      if (!tdi.valid())
+        return value_type(1);
+      assign_pos_of (v).to (tdi);
+      assert (!is_out_of_bounds (tdi));
+      return v.get_length() / tdi.value();
+    }
+
+    vector<ValueLength> sample (const DWI::Tractography::Mapping::SetVoxel& voxels)
+    {
+      vector<ValueLength> data;
+      for (const auto& v : voxels) {
+        assign_pos_of (v, 0, 3).to (image);
+        data.emplace_back(ValueLength(image.value() * get_tdi_multiplier (v), v.get_length()));
+      }
+      return data;
+    }
+
+};
+
+
+
+template <class Interp>
+class SamplerNonPreciseScalar : public SamplerNonPreciseBase<Interp>
+{ MEMALIGN (SamplerNonPreciseScalar<Interp>)
+  public:
+    using BaseType = SamplerNonPreciseBase<Interp>;
+    using BaseType::interp;
+    SamplerNonPreciseScalar (Image<value_type>& image, const stat_tck statistic) :
+        BaseType (image, contrast_type::SCALAR, statistic) { }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     DWI::Tractography::TrackScalar<value_type>& out) override
+    {
+      out.set_index (tck.get_index());
+      out.resize (tck.size());
+      for (size_t i = 0; i != tck.size(); ++i) {
+        if (interp.scanner (tck[i]))
+          out[i] = interp.value();
+        else
+          out[i] = std::numeric_limits<value_type>::quiet_NaN();
+      }
+      return true;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     OnePerStreamline& out) override
+    {
+      return (*this).BaseType::operator()(tck, out);
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     ManyPerStreamline& out) override
+    {
+      return (*this).BaseType::operator()(tck, out);
+    }
+
+    size_t num_contrasts() const override
+    {
+      return BaseType::interp.ndim() == 4 ?
+             BaseType::interp.size(3) :
+             1;
+    }
+
+  protected:
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     matrix_type& out) override
+    {
+      assert (interp.ndim() == 4);
+      out.resize (tck.size(), interp.size(3));
+      for (size_t i = 0; i != tck.size(); ++i) {
+        if (interp.scanner (tck[i])) {
+          for (auto l = Loop(3) (interp); l; ++l)
+            out(i, ssize_t(interp.index(3))) = value_type(interp.value());
+        } else {
+          out.row(i).setConstant (std::numeric_limits<value_type>::quiet_NaN());
+        }
+      }
+      return true;
+    }
+
+};
+
+
+
+template <class Interp>
+class SamplerNonPreciseSH : public SamplerNonPreciseBase<Interp>
+{ MEMALIGN(SamplerNonPreciseSH<Interp>)
+  public:
+    using BaseType = SamplerNonPreciseBase<Interp>;
+    using BaseType::interp;
+    SamplerNonPreciseSH (Image<value_type>& image, const stat_tck statistic) :
+        BaseType (image, contrast_type::SH, statistic),
+        sh_precomputer (std::make_shared<Math::SH::PrecomputedAL<default_type>>()),
+        sh_coeffs (image.size(3))
+    {
+      Math::SH::check (image);
+      sh_precomputer->init(Math::SH::LforN(image.size(3)));
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     DWI::Tractography::TrackScalar<value_type>& out) override
+    {
+      out.set_index (tck.get_index());
+      out.resize (tck.size());
+      switch (tck.size()) {
+        case 0: return true;
+        case 1: out[0] = std::numeric_limits<value_type>::quiet_NaN(); return true;
+        default: break;
+      }
+      for (size_t i = 0; i != tck.size(); ++i) {
+        if (interp.scanner (tck[i])) {
+          for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
+            sh_coeffs[interp.index(3)] = interp.value();
+          const Eigen::Vector3f dir = (tck[(i == ssize_t(tck.size()-1)) ? i : (i+1)]
+                                       - tck[i ? (i-1) : 0]).normalized();
+          out[i] = sh_precomputer->value (sh_coeffs, dir);
+        } else {
+          out[i] = std::numeric_limits<value_type>::quiet_NaN();
+        }
+      }
+      return true;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     OnePerStreamline& out) override
+    {
+      return (*this).BaseType::operator()(tck, out);
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     ManyPerStreamline& out) override
+    {
+      return (*this).BaseType::operator()(tck, out);
+    }
+
+    size_t num_contrasts() const override { return 1; }
+
+  protected:
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     matrix_type& out) override
+    {
+      throw Exception ("Implementation error:"
+                       "No support for sampling multiple SH contrasts");
+      return false;
+    }
+
+  private:
+    std::shared_ptr<Math::SH::PrecomputedAL<default_type>> sh_precomputer;
+    vector_type sh_coeffs;
+
+};
+
+class SamplerPreciseSH : public SamplerPreciseBase
+{ MEMALIGN (SamplerPreciseSH)
+  public:
+    using BaseType = SamplerPreciseBase;
+    using SamplerPreciseBase::ValueLength;
+    SamplerPreciseSH (Image<value_type>& image, const stat_tck statistic) :
+        BaseType (image, contrast_type::SH, statistic),
+        sh_precomputer (std::make_shared<Math::SH::PrecomputedAL<default_type>>()),
+        sh_coeffs (image.size(3))
+    {
+      assert (statistic != stat_tck::NONE);
+      sh_precomputer->init(Math::SH::LforN(image.size(3)));
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     DWI::Tractography::TrackScalar<value_type>& out) override
+    {
+      throw Exception ("Implementation error: No meaningful implementation"
+                       "for combining per-vertex output with precise mapping");
+      return false;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     OnePerStreamline& out) override
+    {
+      out.index = tck.get_index();
+      vector<ValueLength> data;
+      DWI::Tractography::Mapping::SetVoxelDir intersections;
+      (*mapper) (tck, intersections);
+      data = sample (intersections);
+      out.value = compute_statistic (data);
+      return true;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     ManyPerStreamline& out) override
+    {
+      throw Exception ("Implementation error:"
+                       " Unable to sample multiple SH contrasts");
+      return false;
+    }
+
+    size_t num_contrasts() const override { return 1; }
+
+  private:
+    std::shared_ptr<Math::SH::PrecomputedAL<default_type>> sh_precomputer;
+    vector_type sh_coeffs;
+
+    vector<ValueLength> sample (const DWI::Tractography::Mapping::SetVoxelDir& intersections)
+    {
+      vector<ValueLength> data;
+      for (const auto& i : intersections) {
+        assign_pos_of(i, 0, 3).to (image);
+        sh_coeffs = image.row(3);
+        data.emplace_back(ValueLength(sh_precomputer->value(sh_coeffs, i.get_dir()), i.get_length()));
+      }
+      return data;
+    }
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class ReceiverBase { MEMALIGN(ReceiverBase)
   public:
-    ReceiverBase (const size_t num_tracks) :
+    ReceiverBase (const size_t num_tracks, const bool ordered, const std::string& path) :
         received (0),
+        path (path),
         expected (num_tracks),
+        process_ordered (ordered),
         progress ("Sampling values underlying streamlines", num_tracks) { }
 
     ReceiverBase (const ReceiverBase&) = delete;
@@ -521,6 +735,8 @@ class ReceiverBase { MEMALIGN(ReceiverBase)
         WARN ("Track file reports " + str(expected) + " tracks, but contains " + str(received));
     }
 
+    bool ordered() const { return process_ordered; }
+
   protected:
     void operator++ () {
       ++received;
@@ -529,21 +745,29 @@ class ReceiverBase { MEMALIGN(ReceiverBase)
 
     size_t received;
 
+  protected:
+    const std::string path;
+
   private:
     const size_t expected;
+    const bool process_ordered;
     ProgressBar progress;
 
 };
 
 
-class Receiver_Statistic3D : private ReceiverBase { MEMALIGN(Receiver_Statistic3D)
+class Receiver_OnePerStreamline : public ReceiverBase { MEMALIGN(Receiver_OnePerStreamline)
   public:
-    Receiver_Statistic3D (const size_t num_tracks) :
-        ReceiverBase (num_tracks),
+    using InputType = OnePerStreamline;
+    Receiver_OnePerStreamline (const size_t num_tracks, const std::string& path) :
+        ReceiverBase (num_tracks, false, path),
         data (vector_type::Zero (num_tracks)) { }
-    Receiver_Statistic3D (const Receiver_Statistic3D&) = delete;
+    Receiver_OnePerStreamline (const Receiver_OnePerStreamline&) = delete;
+    ~Receiver_OnePerStreamline() {
+      MR::save_vector (data, path);
+    }
 
-    bool operator() (Statistic3D& in) {
+    bool operator() (InputType& in) {
       if (in.index >= size_t(data.size()))
         data.conservativeResizeLike (vector_type::Zero (in.index + 1));
       data[in.index] = in.value;
@@ -560,14 +784,18 @@ class Receiver_Statistic3D : private ReceiverBase { MEMALIGN(Receiver_Statistic3
 };
 
 
-class Receiver_Statistics4D : private ReceiverBase { MEMALIGN(Receiver_Statistics4D)
+class Receiver_ManyPerStreamline : public ReceiverBase { MEMALIGN(Receiver_ManyPerStreamline)
   public:
-    Receiver_Statistics4D (const size_t num_tracks, const size_t num_metrics) :
-        ReceiverBase (num_tracks),
+    using InputType = ManyPerStreamline;
+    Receiver_ManyPerStreamline (const size_t num_tracks, const size_t num_metrics, const std::string& path) :
+        ReceiverBase (num_tracks, false, path),
         data (matrix_type::Zero (num_tracks, num_metrics)) { }
-    Receiver_Statistics4D (const Receiver_Statistics4D&) = delete;
+    Receiver_ManyPerStreamline (const Receiver_ManyPerStreamline&) = delete;
+    ~Receiver_ManyPerStreamline() {
+      MR::save_matrix (data, path);
+    }
 
-    bool operator() (Statistics4D& in) {
+    bool operator() (InputType& in) {
       // TODO Chance that this will be prohibitively slow if count is not indicated in track file header
       if (in.index >= size_t(data.rows()))
         data.conservativeResizeLike (matrix_type::Zero (in.index + 1, data.cols()));
@@ -576,22 +804,19 @@ class Receiver_Statistics4D : private ReceiverBase { MEMALIGN(Receiver_Statistic
       return true;
     }
 
-    void save (const std::string& path) {
-      MR::save_matrix (data, path);
-    }
-
   private:
     matrix_type data;
 };
 
 
 
-class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatistic)
+class Receiver_PerVertex : public ReceiverBase { MEMALIGN(Receiver_PerVertex)
   public:
-    Receiver_NoStatistic (const std::string& path,
-                          const size_t num_tracks,
-                          const DWI::Tractography::Properties& properties) :
-        ReceiverBase (num_tracks)
+    using InputType = DWI::Tractography::TrackScalar<value_type>;
+    Receiver_PerVertex (const DWI::Tractography::Properties& properties,
+                        const size_t num_tracks,
+                        const std::string& path) :
+        ReceiverBase (num_tracks, true, path)
     {
       if (Path::has_suffix (path, ".tsf")) {
         tsf.reset (new DWI::Tractography::ScalarWriter<value_type> (path, properties));
@@ -600,9 +825,9 @@ class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatisti
         (*ascii) << "# " << App::command_history_string << "\n";
       }
     }
-    Receiver_NoStatistic (const Receiver_NoStatistic&) = delete;
+    Receiver_PerVertex (const Receiver_PerVertex&) = delete;
 
-    bool operator() (const DWI::Tractography::TrackScalar<value_type>& in)
+    bool operator() (const InputType& in)
     {
       // Requires preservation of order
       assert (in.get_index() == ReceiverBase::received);
@@ -628,7 +853,7 @@ class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatisti
 
 
 
-
+/*
 template <class InterpType>
 void execute_nostat (DWI::Tractography::Reader<value_type>& reader,
                      const DWI::Tractography::Properties& properties,
@@ -638,7 +863,7 @@ void execute_nostat (DWI::Tractography::Reader<value_type>& reader,
                      const std::string& path)
 {
   SamplerNonPrecise<InterpType> sampler (image, sample_sh, stat_tck::NONE, Image<value_type>());
-  Receiver_NoStatistic receiver (path, num_tracks, properties);
+  Receiver_PerVertex receiver (path, num_tracks, properties);
   Thread::run_ordered_queue (reader,
                              Thread::batch (DWI::Tractography::Streamline<value_type>()),
                              Thread::multi (sampler),
@@ -658,24 +883,187 @@ void execute (DWI::Tractography::Reader<value_type>& reader,
   SamplerType sampler (image, sample_sh, statistic, tdi);
   const size_t num_metrics = image.ndim() == 4 && !sample_sh ? image.size(3) : 1;
   if (num_metrics == 1) {
-    Receiver_Statistic3D receiver (num_tracks);
+    Receiver_OnePerStreamline receiver (num_tracks);
     Thread::run_ordered_queue (reader,
                               Thread::batch (DWI::Tractography::Streamline<value_type>()),
                               Thread::multi (sampler),
-                              Thread::batch (Statistic3D()),
+                              Thread::batch (OnePerStreamline()),
                               receiver);
     receiver.save (path);
   } else {
-    Receiver_Statistics4D receiver (num_tracks, num_metrics);
+    Receiver_ManyPerStreamline receiver (num_tracks, num_metrics);
     Thread::run_ordered_queue (reader,
                               Thread::batch (DWI::Tractography::Streamline<value_type>()),
                               Thread::multi (sampler),
-                              Thread::batch (Statistics4D()),
+                              Thread::batch (ManyPerStreamline()),
                               receiver);
     receiver.save (path);
   }
 }
+*/
 
+
+
+template <class SamplerType, class ReceiverType>
+void execute (DWI::Tractography::Reader<value_type>& reader,
+              SamplerType& sampler,
+              ReceiverType& receiver)
+{
+  if (receiver.ordered())
+    Thread::run_ordered_queue (reader,
+                               Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                               Thread::multi (sampler),
+                               Thread::batch (typename ReceiverType::InputType()),
+                               receiver);
+  else
+    Thread::run_queue (reader,
+                       Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                       Thread::multi (sampler),
+                       Thread::batch (typename ReceiverType::InputType()),
+                       receiver);
+}
+
+
+template <class ReceiverType>
+void execute (DWI::Tractography::Reader<value_type>& reader,
+              Image<value_type>& image,
+              const interp_type interp,
+              const bool sample_sh,
+              const stat_tck statistic,
+              Image<value_type>& tdi,
+              ReceiverType& receiver)
+{
+  if (sample_sh) {
+    switch (interp) {
+      case interp_type::NEAREST: {
+        SamplerNonPreciseSH<Interp::Nearest<Image<value_type>>> sampler (image, statistic);
+        execute (reader, sampler, receiver);
+       } break;
+      case interp_type::LINEAR: {
+        SamplerNonPreciseSH<Interp::Linear<Image<value_type>>> sampler (image, statistic);
+        execute (reader, sampler, receiver);
+      } break;
+      case interp_type::PRECISE: {
+        SamplerPreciseSH sampler (image, statistic);
+        execute (reader, sampler, receiver);
+      } break;
+    }
+  } else {
+    switch (interp) {
+      case interp_type::NEAREST: {
+        SamplerNonPreciseScalar<Interp::Nearest<Image<value_type>>> sampler (image, statistic);
+        execute (reader, sampler, receiver);
+       } break;
+      case interp_type::LINEAR: {
+        SamplerNonPreciseScalar<Interp::Linear<Image<value_type>>> sampler (image, statistic);
+        execute (reader, sampler, receiver);
+      } break;
+      case interp_type::PRECISE: {
+        SamplerPreciseScalar sampler (image, statistic, tdi);
+        execute (reader, sampler, receiver);
+      } break;
+    }
+  }
+}
+
+
+
+void execute (DWI::Tractography::Reader<value_type>& reader,
+              DWI::Tractography::Properties& properties,
+              const size_t num_tracks,
+              Image<value_type>& image,
+              const interp_type interp,
+              const bool sample_sh,
+              const stat_tck statistic,
+              Image<value_type>& tdi,
+              const std::string& path)
+{
+  const size_t num_metrics = image.ndim() == 4 && !sample_sh ? image.size(3) : 1;
+  if (statistic == stat_tck::NONE) {
+    if (num_metrics != 1)
+      throw Exception ("Cannot export per-vertex values for more than one contrast");
+    if (interp == interp_type::PRECISE)
+      throw Exception ("Cannot combine per-vertex values with precise mapping mechanism");
+    Receiver_PerVertex receiver (properties, num_tracks, path);
+    execute(reader, image, interp, sample_sh, statistic, tdi, receiver);
+  } else if (num_metrics == 1) {
+    Receiver_OnePerStreamline receiver (num_tracks, path);
+    execute(reader, image, interp, sample_sh, statistic, tdi, receiver);
+  } else {
+    Receiver_ManyPerStreamline receiver (num_tracks, num_metrics, path);
+    execute(reader, image, interp, sample_sh, statistic, tdi, receiver);
+  }
+}
+
+
+
+
+/*
+template <class ReceiverType>
+void execute (DWI::Tractography::Reader<value_type>& reader,
+              std::shared_ptr<SamplerBase> sampler,
+              ReceiverType& receiver)
+{
+  if (receiver.ordered())
+    Thread::run_ordered_queue (reader,
+                               Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                               Thread::multi (*sampler),
+                               Thread::batch (typename ReceiverType::InputType()),
+                               receiver);
+  else
+    Thread::run_queue (reader,
+                       Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                       Thread::multi (*sampler),
+                       Thread::batch (typename ReceiverType::InputType()),
+                       receiver);
+}
+
+void execute (DWI::Tractography::Reader<value_type>& reader,
+              DWI::Tractography::Properties& properties,
+              const size_t num_tracks,
+              std::shared_ptr<SamplerBase> sampler,
+              const std::string& path)
+{
+  if (sampler->statistic() == stat_tck::NONE) {
+    Receiver_PerVertex receiver (properties, num_tracks, path);
+    execute(reader, sampler, receiver);
+  } else if (sampler->num_contrasts() == 1) {
+    Receiver_OnePerStreamline receiver (num_tracks, path);
+    execute(reader, sampler, receiver);
+  } else {
+    Receiver_ManyPerStreamline receiver (num_tracks, sampler->num_contrasts(), path);
+    execute(reader, sampler, receiver);
+  }
+}
+
+std::shared_ptr<SamplerBase> make_sampler(Image<value_type>& image,
+                                          const interp_type interp,
+                                          const contrast_type contrast,
+                                          const stat_tck statistic,
+                                          Image<value_type>& tdi)
+{
+  switch (contrast) {
+    case contrast_type::SCALAR:
+      switch (interp) {
+        case interp_type::NEAREST:
+          return std::make_shared<SamplerNonPreciseScalar<Interp::Nearest<Image<value_type>>>> (image, statistic);
+        case interp_type::LINEAR:
+          return std::make_shared<SamplerNonPreciseScalar<Interp::Linear<Image<value_type>>>> (image, statistic);
+        case interp_type::PRECISE:
+          return std::make_shared<SamplerPreciseScalar> (image, statistic, tdi);
+      }
+    case contrast_type::SH:
+      switch (interp) {
+        case interp_type::NEAREST:
+          return std::make_shared<SamplerNonPreciseSH<Interp::Nearest<Image<value_type>>>> (image, statistic);
+        case interp_type::LINEAR:
+          return std::make_shared<SamplerNonPreciseSH<Interp::Linear<Image<value_type>>>> (image, statistic);
+        case interp_type::PRECISE:
+          return std::make_shared<SamplerPreciseSH> (image, statistic);
+      }
+  }
+}
+*/
 
 
 void run ()
@@ -686,14 +1074,14 @@ void run ()
   auto H = Header::open (argument[1]);
   const bool plausibly_SH = H.ndim() > 3 && Math::SH::NforL(Math::SH::LforN(H.size(3))) == H.size(3);
   auto opt = get_options ("sh");
-  bool sample_sh = false;
+  contrast_type contrast (contrast_type::SCALAR);
   if (opt.size()) {
     if (plausibly_SH) {
       if (bool(opt[0][0])) {
         DEBUG("User specified -sh true, "
               "and image can be interpreted as spherical harmonics; "
               "spherical harmonics sampling will be used");
-        sample_sh = true;
+        contrast = contrast_type::SH;
       } else {
         DEBUG("User specified -sh false, "
               "so even though image could be reasonably interpreted as spherical harmonics, "
@@ -727,7 +1115,7 @@ void run ()
   const bool nointerp = get_options ("nointerp").size();
   const bool precise = get_options ("precise").size();
   if (nointerp && precise)
-    throw Exception ("Option -nointerp and -precise are mutually exclusive");
+    throw Exception ("Options -nointerp and -precise are mutually exclusive");
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
   const size_t num_tracks = properties.find("count") == properties.end() ?
                             0 :
@@ -740,7 +1128,7 @@ void run ()
   if (get_options ("use_tdi_fraction").size()) {
     if (statistic == stat_tck::NONE)
       throw Exception ("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
-    if (sample_sh)
+    if (contrast == contrast_type::SH)
       throw Exception ("Cannot use -use_tdi_fraction option in conjunction with SH function sampling");
     DWI::Tractography::Reader<value_type> tdi_reader (argument[0], properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper (H);
@@ -755,6 +1143,12 @@ void run ()
   }
 
   auto image = H.get_image<value_type>();
+
+  // std::shared_ptr<SamplerBase> sampler = make_sampler(image, interp, contrast, statistic, tdi);
+  // execute(reader, properties, num_tracks, sampler, argument[2]);
+  execute(reader, properties, num_tracks, image, interp, contrast, statistic, tdi, argument[2]);
+
+/*
   if (statistic == stat_tck::NONE) {
     switch (interp) {
       case interp_type::NEAREST:
@@ -779,5 +1173,6 @@ void run ()
         break;
     }
   }
+*/
 }
 
