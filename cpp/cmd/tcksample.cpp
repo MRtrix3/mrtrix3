@@ -149,6 +149,7 @@ public:
   SamplerBase(const contrast_type contrast, const stat_tck statistic) //
       : _contrast(contrast),                                          //
         _statistic(statistic) {}                                      //
+  SamplerBase(const SamplerBase &that) = default;
   virtual ~SamplerBase() {}
 
   // Note: While these are shown as virtual,
@@ -176,14 +177,16 @@ public:
   using BaseType = SamplerBase;
   SamplerNonPreciseBase(Image<value_type> &image, const contrast_type contrast, const stat_tck statistic)
       : BaseType(contrast, statistic), interp(image) {}
-  virtual ~SamplerNonPreciseBase() {}
+  SamplerNonPreciseBase(const SamplerNonPreciseBase &that) = default;
+  virtual ~SamplerNonPreciseBase() = default;
 
   bool operator()(const DWI::Tractography::Streamline<value_type> &tck, OnePerStreamline &out) override {
     assert(statistic() != stat_tck::NONE);
     out.index = tck.get_index();
     DWI::Tractography::TrackScalar<value_type> values;
     (*this)(tck, values);
-    std::vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck) : std::vector<value_type>());
+    const std::vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck)
+                                                                        : std::vector<value_type>());
     out.value = compute_statistic(values, weights);
     return true;
   }
@@ -193,7 +196,8 @@ public:
     out.index = tck.get_index();
     matrix_type values;
     (*this)(tck, values);
-    std::vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck) : std::vector<value_type>());
+    const std::vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck)
+                                                                        : std::vector<value_type>());
     out.values.resize(interp.size(3));
     for (size_t i = 0; i != interp.size(3); ++i)
       out.values[i] = compute_statistic(values.col(i), weights);
@@ -203,8 +207,8 @@ public:
 protected:
   Interp interp;
 
-  virtual bool operator()(const DWI::Tractography::Streamline<value_type> &tck,
-                          DWI::Tractography::TrackScalar<value_type> &out) override = 0;
+  bool operator()(const DWI::Tractography::Streamline<value_type> &tck,
+                  DWI::Tractography::TrackScalar<value_type> &out) override = 0;
 
   virtual bool operator()(const DWI::Tractography::Streamline<value_type> &tck, matrix_type &out) = 0;
 
@@ -216,7 +220,7 @@ private:
     weights.reserve(tck.size());
     for (size_t i = 0; i != tck.size(); ++i) {
       value_type length = value_type(0);
-      if (i)
+      if (i > 0)
         length += (tck[i] - tck[i - 1]).norm();
       if (i < tck.size() - 1)
         length += (tck[i + 1] - tck[i]).norm();
@@ -229,14 +233,15 @@ private:
   value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
     switch (statistic()) {
     case stat_tck::MEAN: {
-      value_type integral = value_type(0), sum_weights = value_type(0);
+      value_type integral = value_type(0);
+      value_type sum_weights = value_type(0);
       for (size_t i = 0; i != data.size(); ++i) {
         if (!std::isnan(data[i])) {
           integral += data[i] * weights[i];
           sum_weights += weights[i];
         }
       }
-      return sum_weights ? (integral / sum_weights) : std::numeric_limits<value_type>::quiet_NaN();
+      return sum_weights > value_type(0) ? (integral / sum_weights) : std::numeric_limits<value_type>::quiet_NaN();
     }
     case stat_tck::MEDIAN: {
       // Don't bother with a weighted median here
@@ -246,7 +251,7 @@ private:
         if (!std::isnan(data[i]))
           finite_data.push_back(data[i]);
       }
-      return finite_data.size() ? Math::median(finite_data) : std::numeric_limits<value_type>::quiet_NaN();
+      return finite_data.empty() ? std::numeric_limits<value_type>::quiet_NaN() : Math::median(finite_data);
     } break;
     case stat_tck::MIN: {
       value_type value = std::numeric_limits<value_type>::infinity();
@@ -285,10 +290,11 @@ public:
     assert(statistic != stat_tck::NONE);
     mapper->set_use_precise_mapping(true);
   }
-  virtual ~SamplerPreciseBase() {}
+  SamplerPreciseBase(const SamplerPreciseBase &that) = default;
+  virtual ~SamplerPreciseBase() = default;
 
-  bool operator()(const DWI::Tractography::Streamline<value_type> &tck,
-                  DWI::Tractography::TrackScalar<value_type> &out) override {
+  bool operator()(const DWI::Tractography::Streamline<value_type> & /*tck*/,
+                  DWI::Tractography::TrackScalar<value_type> & /*out*/) override {
     throw Exception("Implementation error: No meaningful implementation"
                     " for combining per-vertex output with precise mapping");
     return false;
@@ -307,18 +313,19 @@ protected:
   };
 
   value_type compute_statistic(std::vector<ValueLength> &data) const {
-    if (!data.size())
+    if (data.empty())
       return std::numeric_limits<value_type>::quiet_NaN();
     switch (statistic()) {
     case stat_tck::MEAN: {
-      value_type integral = value_type(0), sum_lengths = value_type(0);
+      value_type integral = value_type(0);
+      value_type sum_lengths = value_type(0);
       for (const auto &v : data) {
         if (std::isfinite(v.value)) {
           integral += v.length * v.value;
           sum_lengths += v.length;
         }
       }
-      return sum_lengths ? (integral / sum_lengths) : std::numeric_limits<value_type>::quiet_NaN();
+      return sum_lengths > value_type(0) ? (integral / sum_lengths) : std::numeric_limits<value_type>::quiet_NaN();
     }
     case stat_tck::MEDIAN: {
       std::sort(data.begin(), data.end());
@@ -374,9 +381,10 @@ public:
   using SamplerPreciseBase::ValueLength;
   SamplerPreciseScalar(Image<value_type> &image, const stat_tck statistic, const Image<value_type> &precalc_tdi)
       : BaseType(image, contrast_type::SCALAR, statistic), tdi(precalc_tdi) {}
+  SamplerPreciseScalar(const SamplerPreciseScalar &that) = default;
 
-  bool operator()(const DWI::Tractography::Streamline<value_type> &tck,
-                  DWI::Tractography::TrackScalar<value_type> &out) override {
+  bool operator()(const DWI::Tractography::Streamline<value_type> & /*tck*/,
+                  DWI::Tractography::TrackScalar<value_type> & /*out*/) override {
     throw Exception("Implementation error: No meaningful implementation"
                     "for combining per-vertex output with vertex-wise output");
     return false;
@@ -434,6 +442,7 @@ public:
   using BaseType::interp;
   SamplerNonPreciseScalar(Image<value_type> &image, const stat_tck statistic)
       : BaseType(image, contrast_type::SCALAR, statistic) {}
+  SamplerNonPreciseScalar(const SamplerNonPreciseScalar &that) = default;
 
   bool operator()(const DWI::Tractography::Streamline<value_type> &tck,
                   DWI::Tractography::TrackScalar<value_type> &out) override {
@@ -485,6 +494,7 @@ public:
     Math::SH::check(image);
     sh_precomputer->init(Math::SH::LforN(image.size(3)));
   }
+  SamplerNonPreciseSH(const SamplerNonPreciseSH &that) = default;
 
   bool operator()(const DWI::Tractography::Streamline<value_type> &tck,
                   DWI::Tractography::TrackScalar<value_type> &out) override {
@@ -504,7 +514,7 @@ public:
         for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
           sh_coeffs[interp.index(3)] = interp.value();
         const Eigen::Vector3f dir =
-            (tck[(i == ssize_t(tck.size() - 1)) ? i : (i + 1)] - tck[i ? (i - 1) : 0]).normalized();
+            (tck[(i == ssize_t(tck.size() - 1)) ? i : (i + 1)] - tck[i > 0 ? (i - 1) : 0]).normalized();
         out[i] = sh_precomputer->value(sh_coeffs, dir);
       } else {
         out[i] = std::numeric_limits<value_type>::quiet_NaN();
@@ -524,7 +534,7 @@ public:
   size_t num_contrasts() const override { return 1; }
 
 protected:
-  bool operator()(const DWI::Tractography::Streamline<value_type> &tck, matrix_type &out) override {
+  bool operator()(const DWI::Tractography::Streamline<value_type> & /*tck*/, matrix_type & /*out*/) override {
     throw Exception("Implementation error:"
                     "No support for sampling multiple SH contrasts");
     return false;
@@ -546,9 +556,10 @@ public:
     assert(statistic != stat_tck::NONE);
     sh_precomputer->init(Math::SH::LforN(image.size(3)));
   }
+  SamplerPreciseSH(const SamplerPreciseSH &that) = default;
 
-  bool operator()(const DWI::Tractography::Streamline<value_type> &tck,
-                  DWI::Tractography::TrackScalar<value_type> &out) override {
+  bool operator()(const DWI::Tractography::Streamline<value_type> & /*tck*/,
+                  DWI::Tractography::TrackScalar<value_type> & /*out*/) override {
     throw Exception("Implementation error: No meaningful implementation"
                     "for combining per-vertex output with precise mapping");
     return false;
@@ -612,8 +623,6 @@ protected:
   }
 
   size_t received;
-
-protected:
   const std::string path;
 
 private:
