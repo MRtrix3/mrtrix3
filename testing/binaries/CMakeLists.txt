@@ -130,8 +130,12 @@ add_bash_binary_test(fixelcorrespondence/default)
 
 add_bash_binary_test(fixelcrop/default)
 
+add_bash_binary_test(fixelfilter/cfe_default)
+add_bash_binary_test(fixelfilter/cfe_masked)
+add_bash_binary_test(fixelfilter/cfe_nan)
 add_bash_binary_test(fixelfilter/smooth_inputdir)
 add_bash_binary_test(fixelfilter/smooth_inputfile)
+add_bash_binary_test(fixelfilter/smooth_masked)
 
 add_bash_binary_test(fixelreorient/default)
 
@@ -196,13 +200,16 @@ add_bash_binary_test(mraverageheader/min_nearest)
 add_bash_binary_test(mraverageheader/min_projection)
 add_bash_binary_test(mraverageheader/padding)
 
+add_bash_binary_test(mrcalc/calc_mode)
 add_bash_binary_test(mrcalc/expression_1)
 add_bash_binary_test(mrcalc/expression_2)
 add_bash_binary_test(mrcalc/expression_3)
 add_bash_binary_test(mrcalc/expression_4)
 add_bash_binary_test(mrcalc/expression_5)
+add_bash_binary_test(mrcalc/dwscheme_preservation_imprecision)
 
 add_bash_binary_test(mrcat/axis)
+add_bash_binary_test(mrcat/dwscheme_merge)
 add_bash_binary_test(mrcat/single_input)
 add_bash_binary_test(mrcat/singlevoxel)
 
@@ -241,6 +248,14 @@ add_bash_binary_test(mrconvert/strides)
 
 add_bash_binary_test(mrdegibbs/default)
 
+add_bash_binary_test(mrfilter/demodulate_3Din_linear_2Ddemod)
+add_bash_binary_test(mrfilter/demodulate_3Din_linear_3Ddemod)
+add_bash_binary_test(mrfilter/demodulate_3Din_nonlinear_2Ddemod)
+add_bash_binary_test(mrfilter/demodulate_3Din_nonlinear_3Ddemod)
+add_bash_binary_test(mrfilter/demodulate_4Din_linear_2Ddemod)
+add_bash_binary_test(mrfilter/demodulate_4Din_linear_3Ddemod)
+add_bash_binary_test(mrfilter/demodulate_4Din_nonlinear_2Ddemod)
+add_bash_binary_test(mrfilter/demodulate_4Din_nonlinear_3Ddemod)
 add_bash_binary_test(mrfilter/gradient_default)
 add_bash_binary_test(mrfilter/gradient_magnitude)
 add_bash_binary_test(mrfilter/gradient_scanner)
@@ -279,6 +294,8 @@ add_bash_binary_test(mrhistogram/allvolumes)
 add_bash_binary_test(mrhistogram/bins)
 add_bash_binary_test(mrhistogram/default)
 add_bash_binary_test(mrhistogram/masked)
+
+add_bash_binary_test(mrinfo/bvec_bval_nan)
 
 add_bash_binary_test(mrmath/multiimage_median)
 add_bash_binary_test(mrmath/singleimage_mean)
