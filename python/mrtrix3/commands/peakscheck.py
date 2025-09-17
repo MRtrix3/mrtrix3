@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 # Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
