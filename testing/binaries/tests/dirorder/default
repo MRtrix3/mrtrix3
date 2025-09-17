@@ -1,0 +1,20 @@
+#!/bin/bash
+# Verify basic operation of command
+# Input dataset has had the volumes ordered
+#   according to the magnitude of their Z-component,
+#   which is highly sub-optimal if the acquisition is truncated.
+# After dirorder the statistical properties of a truncated set should be improved.
+# This is captured based on the lmax=4 SH transformation condition number
+#   of just the first half of the 40 directions:
+# - Original set: 4.7
+# - Ordered set: 12.6
+# - Result of dirorder: ~3
+# - 1.0 is ideal
+
+dirorder dirorder/original.txt -cartesian tmp.txt -force
+
+rm -f tmp2.txt
+sed '/^#/d' tmp.txt | \
+    head -n20 > tmp2.txt
+
+(( $(echo $(dirstat tmp2.txt -output SH4) "< 4" | bc) ))
