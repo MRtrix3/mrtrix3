@@ -26,7 +26,7 @@ The intent of this command is to reorder a set of gradient directions such that 
 Options
 -------
 
--  **-skip num** preserve some number of directions in their position at the start of the set
+-  **-preserve num** preserve some number of directions in their position at the start of the set
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
 
