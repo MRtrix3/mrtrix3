@@ -46,6 +46,8 @@ namespace MR {
           normalization = 1.0;
           
           Point_t ep = p->getEndPoint(alpha0);
+          if (pGrid.isoutofbounds(ep))
+            return;
           size_t x, y, z;
           pGrid.pos2xyz(ep, x, y, z);
           

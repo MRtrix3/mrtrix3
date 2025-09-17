@@ -88,6 +88,13 @@ namespace MR {
           }
 
         public:
+          inline bool isoutofbounds(const Point_t& pos) const
+          {
+            Point_t gpos = T_s2g.cast<float>() * pos;
+            return (gpos[0] <= -0.5) || (gpos[1] <= -0.5) || (gpos[2] <= -0.5) ||
+                   (gpos[0] >= dims[0]-0.5) || (gpos[1] >= dims[1]-0.5) || (gpos[2] >= dims[2]-0.5);
+          }
+          
           inline void pos2xyz(const Point_t& pos, size_t& x, size_t& y, size_t& z) const
           {
             Point_t gpos = T_s2g.cast<float>() * pos;
