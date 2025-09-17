@@ -50,8 +50,12 @@ add_bash_binary_test(connectomeedit/upper_triangular_from_symmetric)
 add_bash_binary_test(connectomeedit/upper_triangular_from_upper_triangular)
 add_bash_binary_test(connectomeedit/zero_diagonal)
 
+add_bash_binary_test(dirflip/default)
+add_bash_binary_test(dirflip/preserve)
+
 add_bash_binary_test(dirgen/cartesian)
 add_bash_binary_test(dirgen/default)
+add_bash_binary_test(dirgen/fixed)
 add_bash_binary_test(dirgen/power)
 add_bash_binary_test(dirgen/unipolar)
 
@@ -61,6 +65,9 @@ add_bash_binary_test(dirmerge/foursubsets)
 add_bash_binary_test(dirmerge/onesubset_firstisfirst)
 add_bash_binary_test(dirmerge/twosubsets_firstisfirst)
 add_bash_binary_test(dirmerge/foursubsets_firstisfirst)
+
+add_bash_binary_test(dirorder/default)
+add_bash_binary_test(dirorder/preserve)
 
 add_bash_binary_test(dirrotate/default)
 add_bash_binary_test(dirrotate/onerotation)
