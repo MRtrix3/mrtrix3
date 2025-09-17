@@ -19,7 +19,7 @@ import itertools
 import os
 import sys
 
-from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
+from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError #pylint: disable=no-name-in-module
 from mrtrix3 import app, image, run #pylint: disable=no-name-in-module
 
 
@@ -99,7 +99,8 @@ def usage(cmdline): #pylint: disable=unused-variable
                        default=DEFAULT_FORMAT,
                        help='The format in which peak orientations are specified;'
                             f' one of: {",".join(FORMATS)}')
-  # TODO Add -in_reference option, which would control which variant is considered the default for the purpose of command return code
+  # TODO Add -in_reference option,
+  #   which would control which variant is considered the default for the purpose of command return code
   cmdline.add_argument('-noshuffle',
                        action='store_true',
                        help='Do not evaluate possibility of requiring shuffles of axes or angles;'
@@ -429,8 +430,10 @@ def execute(): #pylint: disable=unused-variable
   for v in variants:
     app.debug(f'{v}')
 
-  progress = app.ProgressBar(f'Testing peaks orientation alterations'
-                             ' (0 of {len(variants)})',
+  progress = app.ProgressBar('Testing peaks orientation alterations'
+                             + (f' (0 of {len(variants)})'
+                                if sys.stderr.isatty()
+                                else f' ({len(variants)} variants)'),
                              len(variants))
   meanlength_default = None
   for variant_index, variant in enumerate(variants):
@@ -512,6 +515,7 @@ def execute(): #pylint: disable=unused-variable
       delimiter = ','
       quote = '"'
     with open(app.ARGS.out_table, 'w') as f:
+      f.write(f'# command_history: {COMMAND_HISTORY_STRING}\n')
       f.write(f'{quote}Mean length{quote}{delimiter}'
               f'{quote}Operation 1 type{quote}{delimiter}{quote}Operation 1 parameters{quote}{delimiter}'
               f'{quote}Operation 2 type{quote}{delimiter}{quote}Operation 2 parameters{quote}{delimiter}'
