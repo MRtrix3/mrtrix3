@@ -355,6 +355,17 @@ add_bash_binary_test(peaks2amp/default)
 
 add_bash_binary_test(peaks2fixel/default)
 
+add_bash_binary_test(peaksconvert/default_to_fsl3vector)
+add_bash_binary_test(peaksconvert/default_to_ijk3vector)
+add_bash_binary_test(peaksconvert/default_to_spherical)
+add_bash_binary_test(peaksconvert/default_to_unit3vector)
+add_bash_binary_test(peaksconvert/default_to_unitspherical)
+add_bash_binary_test(peaksconvert/fsl3vector_to_default)
+add_bash_binary_test(peaksconvert/ijk3vector_to_default)
+add_bash_binary_test(peaksconvert/passthrough)
+add_bash_binary_test(peaksconvert/spherical_to_default)
+add_bash_binary_test(peaksconvert/unitspherical_to_default)
+
 add_bash_binary_test(sh2amp/default)
 add_bash_binary_test(sh2amp/grad)
 add_bash_binary_test(sh2amp/msmt)
