@@ -72,14 +72,14 @@ namespace MR
 
       elevation_slider = new QSlider (Qt::Horizontal);
       elevation_slider->setRange (0,1000);
-      elevation_slider->setSliderPosition (int ( (1000.0/Math::pi) *acos (-info.lightpos[1]/Eigen::Map<Eigen::Matrix<float, 3, 1>>(info.lightpos).norm())));
+      elevation_slider->setSliderPosition (int ( (1000.0/Math::pi) *acos (info.lightpos[2]/Eigen::Map<Eigen::Matrix<float, 3, 1>>(info.lightpos).norm())));
       connect (elevation_slider, SIGNAL (valueChanged (int)), this, SLOT (light_position_slot()));
       grid_layout->addWidget (new QLabel ("Light elevation"), 4, 0);
       grid_layout->addWidget (elevation_slider, 4, 1);
 
       azimuth_slider = new QSlider (Qt::Horizontal);
       azimuth_slider->setRange (-1000,1000);
-      azimuth_slider->setSliderPosition (int ( (1000.0/Math::pi) * atan2 (info.lightpos[0], info.lightpos[2])));
+      azimuth_slider->setSliderPosition (int ( (1000.0/Math::pi) * atan2 (info.lightpos[0], info.lightpos[1])));
       connect (azimuth_slider, SIGNAL (valueChanged (int)), this, SLOT (light_position_slot()));
       grid_layout->addWidget (new QLabel ("Light azimuth"), 5, 0);
       grid_layout->addWidget (azimuth_slider, 5, 1);
@@ -118,9 +118,9 @@ namespace MR
     {
       float elevation = elevation_slider->value() * (Math::pi/1000.0);
       float azimuth = azimuth_slider->value() * (Math::pi/1000.0);
-      info.lightpos[2] = sin (elevation) * cos (azimuth);
-      info.lightpos[0] = sin (elevation) * sin (azimuth);
-      info.lightpos[1] = -cos (elevation);
+      info.lightpos[0] = sin (elevation) * cos (azimuth);
+      info.lightpos[1] = sin (elevation) * sin (azimuth);
+      info.lightpos[2] = cos (elevation);
       info.update();
     }
 
