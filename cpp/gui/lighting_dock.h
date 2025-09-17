@@ -28,7 +28,7 @@ public:
 
 protected:
   GL::Lighting &info;
-  QSlider *elevation_slider, *azimuth_slider;
+  QSlider *inclination_slider, *azimuth_slider;
 
 protected slots:
   void ambient_intensity_slot(int value);

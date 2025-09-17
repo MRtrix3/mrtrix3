@@ -158,22 +158,22 @@ public:
       auto R = gen_rotation_matrix(fibre_dir);
       rotated_dirs_cartesian.transpose() = R * S.dirs.transpose();
 
-      // Convert directions from Euclidean space to azimuth/elevation pairs
-      Eigen::MatrixXd rotated_dirs_azel = Math::Sphere::cartesian2spherical(rotated_dirs_cartesian);
+      // Convert directions from Euclidean space to azimuth/inclination pairs
+      Eigen::MatrixXd rotated_dirs_azin = Math::Sphere::cartesian2spherical(rotated_dirs_cartesian);
 
-      // Constrain elevations to between 0 and pi/2
-      for (ssize_t i = 0; i != rotated_dirs_azel.rows(); ++i) {
-        if (rotated_dirs_azel(i, 1) > Math::pi_2) {
-          if (rotated_dirs_azel(i, 0) > Math::pi)
-            rotated_dirs_azel(i, 0) -= Math::pi;
+      // Constrain inclinations to between 0 and pi/2
+      for (ssize_t i = 0; i != rotated_dirs_azin.rows(); ++i) {
+        if (rotated_dirs_azin(i, 1) > Math::pi_2) {
+          if (rotated_dirs_azin(i, 0) > Math::pi)
+            rotated_dirs_azin(i, 0) -= Math::pi;
           else
-            rotated_dirs_azel(i, 0) += Math::pi;
-          rotated_dirs_azel(i, 1) = Math::pi - rotated_dirs_azel(i, 1);
+            rotated_dirs_azin(i, 0) += Math::pi;
+          rotated_dirs_azin(i, 1) = Math::pi - rotated_dirs_azin(i, 1);
         }
       }
 
       // Generate the ZSH -> amplitude transform
-      transform = Math::ZSH::init_amp_transform<default_type>(rotated_dirs_azel.col(1), S.lmax);
+      transform = Math::ZSH::init_amp_transform<default_type>(rotated_dirs_azin.col(1), S.lmax);
 
       // Grab the image data
       for (size_t i = 0; i != S.volumes.size(); ++i) {
@@ -201,14 +201,14 @@ void run() {
   auto header = Header::open(argument[0]);
 
   // May be dealing with multiple shells
-  std::vector<Eigen::MatrixXd> dirs_azel;
+  std::vector<Eigen::MatrixXd> dirs_azin;
   std::vector<std::vector<size_t>> volumes;
   std::unique_ptr<DWI::Shells> shells;
 
   auto opt = get_options("directions");
   if (!opt.empty()) {
-    dirs_azel.push_back(File::Matrix::load_matrix(opt[0][0]));
-    volumes.push_back(all_volumes(dirs_azel.size()));
+    dirs_azin.push_back(File::Matrix::load_matrix(opt[0][0]));
+    volumes.push_back(all_volumes(dirs_azin.size()));
   } else {
     auto hit = header.keyval().find("directions");
     if (hit != header.keyval().end()) {
@@ -222,15 +222,15 @@ void run() {
         directions(i / 2, 0) = dir_vector[i];
         directions(i / 2, 1) = dir_vector[i + 1];
       }
-      dirs_azel.push_back(std::move(directions));
-      volumes.push_back(all_volumes(dirs_azel.size()));
+      dirs_azin.push_back(std::move(directions));
+      volumes.push_back(all_volumes(dirs_azin.size()));
     } else {
       auto grad = DWI::get_DW_scheme(header);
       shells.reset(new DWI::Shells(grad));
       shells->select_shells(false, false, false);
       for (size_t i = 0; i != shells->count(); ++i) {
         volumes.push_back((*shells)[i].get_volumes());
-        dirs_azel.push_back(DWI::gen_direction_matrix(grad, volumes.back()));
+        dirs_azin.push_back(DWI::gen_direction_matrix(grad, volumes.back()));
       }
     }
   }
@@ -239,14 +239,14 @@ void run() {
   uint32_t max_lmax = 0;
   opt = get_options("lmax");
   if (!get_options("isotropic").empty()) {
-    for (size_t i = 0; i != dirs_azel.size(); ++i)
+    for (size_t i = 0; i != dirs_azin.size(); ++i)
       lmax.push_back(0);
     max_lmax = 0;
   } else if (!opt.empty()) {
     lmax = parse_ints<uint32_t>(opt[0][0]);
-    if (lmax.size() != dirs_azel.size())
+    if (lmax.size() != dirs_azin.size())
       throw Exception("Number of lmax\'s specified (" + str(lmax.size()) +
-                      ") does not match number of b-value shells (" + str(dirs_azel.size()) + ")");
+                      ") does not match number of b-value shells (" + str(dirs_azin.size()) + ")");
     for (auto i : lmax) {
       if (i % 2)
         throw Exception("Values specified for lmax must be even");
@@ -265,7 +265,7 @@ void run() {
     //   lmax is effectively unconstrained. Therefore generate response at
     //   lmax=10 regardless of number of input volumes.
     // - UNLESS it's b=0, in which case force lmax=0
-    for (size_t i = 0; i != dirs_azel.size(); ++i) {
+    for (size_t i = 0; i != dirs_azin.size(); ++i) {
       if (!i && shells && shells->smallest().is_bzero())
         lmax.push_back(0);
       else
@@ -297,13 +297,13 @@ void run() {
   CONSOLE(std::string("estimating response function using ") + (use_ols ? "ordinary" : "constrained") +
           " least-squares from " + str(num_voxels) + " voxels");
 
-  Eigen::MatrixXd responses(dirs_azel.size(), Math::ZSH::NforL(max_lmax));
+  Eigen::MatrixXd responses(dirs_azin.size(), Math::ZSH::NforL(max_lmax));
 
-  for (size_t shell_index = 0; shell_index != dirs_azel.size(); ++shell_index) {
+  for (size_t shell_index = 0; shell_index != dirs_azin.size(); ++shell_index) {
 
     // check the ZSH -> amplitude transform upfront:
     {
-      auto transform = Math::ZSH::init_amp_transform<default_type>(dirs_azel[shell_index].col(1), lmax[shell_index]);
+      auto transform = Math::ZSH::init_amp_transform<default_type>(dirs_azin[shell_index].col(1), lmax[shell_index]);
       if (!transform.allFinite()) {
         Exception e("Unable to construct A2SH transformation for shell b=" +
                     str(int(std::round((*shells)[shell_index].get_mean()))) + ";");
@@ -314,7 +314,7 @@ void run() {
       }
     }
 
-    auto dirs_cartesian = Math::Sphere::spherical2cartesian(dirs_azel[shell_index]);
+    auto dirs_cartesian = Math::Sphere::spherical2cartesian(dirs_azin[shell_index]);
 
     Accumulator::Shared shared(lmax[shell_index], volumes[shell_index], dirs_cartesian);
     ThreadedLoop(image, 0, 3).run(Accumulator(shared), image, dir_image, mask);

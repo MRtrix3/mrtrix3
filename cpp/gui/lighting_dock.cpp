@@ -64,13 +64,13 @@ LightingSettings::LightingSettings(QWidget *parent, GL::Lighting &lighting) : QF
   grid_layout->addWidget(new QLabel("Specular exponent"), 3, 0);
   grid_layout->addWidget(slider, 3, 1);
 
-  elevation_slider = new QSlider(Qt::Horizontal);
-  elevation_slider->setRange(0, 1000);
-  elevation_slider->setSliderPosition(int(
+  inclination_slider = new QSlider(Qt::Horizontal);
+  inclination_slider->setRange(0, 1000);
+  inclination_slider->setSliderPosition(int(
       (1000.0 / Math::pi) * acos(-info.lightpos[1] / Eigen::Map<Eigen::Matrix<float, 3, 1>>(info.lightpos).norm())));
-  connect(elevation_slider, SIGNAL(valueChanged(int)), this, SLOT(light_position_slot()));
-  grid_layout->addWidget(new QLabel("Light elevation"), 4, 0);
-  grid_layout->addWidget(elevation_slider, 4, 1);
+  connect(inclination_slider, SIGNAL(valueChanged(int)), this, SLOT(light_position_slot()));
+  grid_layout->addWidget(new QLabel("Light inclination"), 4, 0);
+  grid_layout->addWidget(inclination_slider, 4, 1);
 
   azimuth_slider = new QSlider(Qt::Horizontal);
   azimuth_slider->setRange(-1000, 1000);
@@ -105,11 +105,11 @@ void LightingSettings::shine_slot(int value) {
 }
 
 void LightingSettings::light_position_slot() {
-  float elevation = elevation_slider->value() * (Math::pi / 1000.0);
-  float azimuth = azimuth_slider->value() * (Math::pi / 1000.0);
-  info.lightpos[2] = sin(elevation) * cos(azimuth);
-  info.lightpos[0] = sin(elevation) * sin(azimuth);
-  info.lightpos[1] = -cos(elevation);
+  const float inclination = inclination_slider->value() * (Math::pi / 1000.0);
+  const float azimuth = azimuth_slider->value() * (Math::pi / 1000.0);
+  info.lightpos[2] = sin(inclination) * cos(azimuth);
+  info.lightpos[0] = sin(inclination) * sin(azimuth);
+  info.lightpos[1] = -cos(inclination);
   info.update();
 }
 

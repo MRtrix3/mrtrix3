@@ -86,13 +86,13 @@ void load_fmls_thresholds(Segmenter &segmenter) {
 IntegrationWeights::IntegrationWeights(const DWI::Directions::Set &dirs) : data(dirs.size()) {
   // Calibrate weights
   const size_t calibration_lmax = Math::SH::LforN(dirs.size()) + 2;
-  Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs(dirs.size(), 2);
+  Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in_pairs(dirs.size(), 2);
   for (size_t row = 0; row != dirs.size(); ++row) {
     const auto d = dirs.get_dir(row);
-    az_el_pairs(row, 0) = std::atan2(d[1], d[0]);
-    az_el_pairs(row, 1) = std::acos(d[2]);
+    az_in_pairs(row, 0) = std::atan2(d[1], d[0]);
+    az_in_pairs(row, 1) = std::acos(d[2]);
   }
-  auto calibration_SH2A = Math::SH::init_transform(az_el_pairs, calibration_lmax);
+  auto calibration_SH2A = Math::SH::init_transform(az_in_pairs, calibration_lmax);
   const size_t num_basis_fns = calibration_SH2A.cols();
 
   // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi) should produce a value of 4pi
@@ -125,13 +125,13 @@ Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const siz
       create_null_lobe(false),
       create_lookup_table(true),
       dilate_lookup_table(false) {
-  Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs(dirs.size(), 2);
+  Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in_pairs(dirs.size(), 2);
   for (size_t row = 0; row != dirs.size(); ++row) {
     const auto d = dirs.get_dir(row);
-    az_el_pairs(row, 0) = std::atan2(d[1], d[0]);
-    az_el_pairs(row, 1) = std::acos(d[2]);
+    az_in_pairs(row, 0) = std::atan2(d[1], d[0]);
+    az_in_pairs(row, 1) = std::acos(d[2]);
   }
-  transform.reset(new Math::SH::Transform<default_type>(az_el_pairs, lmax));
+  transform.reset(new Math::SH::Transform<default_type>(az_in_pairs, lmax));
   weights.reset(new IntegrationWeights(dirs));
 }
 
