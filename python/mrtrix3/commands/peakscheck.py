@@ -34,9 +34,6 @@ THREEVECTOR_OPERATION_SETS = ([],
                               ['euclidean_transform', 'euclidean_shuffle'])
 
 # - 'convert' here refers specifically to a spherical to cartesian conversion
-# - TODO For now, going to have all possible combinations of "transform" and "convert";
-#   while these could ideally be combined in a single step in many instances,
-#   as a first pass it may be preferable to just evaluate all possibilities with individualised operations
 SPHERICAL_OPERATION_SETS = (['convert'],
                             ['convert', 'euclidean_shuffle'],
                             ['convert', 'euclidean_transform'],
@@ -48,12 +45,6 @@ SPHERICAL_OPERATION_SETS = (['convert'],
                             ['spherical_shuffle', 'spherical_transform', 'convert'],
                             ['spherical_transform', 'convert', 'euclidean_shuffle'],
                             ['spherical_transform', 'spherical_shuffle', 'convert'])
-
-# TODO Current framework may omit situation where an XYZ2<something> transform has been erroneously applied,
-#   which would therefore necessitate *two* <something>2XYZ transforms to be applied to get into XYZ reference space
-
-SPHERICAL_SWAPS = (False, True)
-SPHERICAL_EL2INC = (False, True)
 
 DEFAULT_NUMBER = 10000
 DEFAULT_THRESHOLD = 0.95
@@ -99,8 +90,6 @@ def usage(cmdline): #pylint: disable=unused-variable
                        default=DEFAULT_FORMAT,
                        help='The format in which peak orientations are specified;'
                             f' one of: {",".join(FORMATS)}')
-  # TODO Add -in_reference option,
-  #   which would control which variant is considered the default for the purpose of command return code
   cmdline.add_argument('-noshuffle',
                        action='store_true',
                        help='Do not evaluate possibility of requiring shuffles of axes or angles;'
@@ -127,8 +116,8 @@ class Operation:
     assert False
   def prettyparams(self):
     assert False
-  def cmd(self, nfixels, in_path, out_path):
-    assert False
+  #def cmd(self, nfixels, in_path, out_path):
+  #  assert False
 
 class EuclideanShuffle(Operation):
   @staticmethod
@@ -403,7 +392,6 @@ def execute(): #pylint: disable=unused-variable
                               SphericalTransform(is_unit, 'fsl')]
   all_spherical2cartesian = [Spherical2Cartesian(is_unit),]
 
-  # TODO Add capabilities to restrict set of variants to be evaluated
   variants = []
   for operation_set in operation_sets:
     if app.ARGS.noshuffle and any('shuffle' in item for item in operation_set):
@@ -427,8 +415,8 @@ def execute(): #pylint: disable=unused-variable
     for variant in itertools.product(*operations_list):
       variants.append(Variant(list(variant)))
   app.debug(f'Complete list of variants for {app.ARGS.in_format} input format:')
-  for v in variants:
-    app.debug(f'{v}')
+  for variant in variants:
+    app.debug(f'{variant}')
 
   progress = app.ProgressBar('Testing peaks orientation alterations'
                              + (f' (0 of {len(variants)})'
@@ -465,13 +453,12 @@ def execute(): #pylint: disable=unused-variable
                  '-config', 'RealignTransform', 'false',
                  track_file_path]
                 + number_option)
-    # TODO Would prefer nicer logic
     if imagepath != 'data.mif':
       app.cleanup(imagepath)
 
     # Get the mean track length & add to the database
     mean_length = float(run.command(['tckstats', track_file_path, '-output', 'mean', '-ignorezero']).stdout)
-    variants[variant_index].mean_length = mean_length
+    variant.mean_length = mean_length
     app.cleanup(track_file_path)
 
     # Save result if this is the unmodified empirical gradient table
@@ -514,17 +501,17 @@ def execute(): #pylint: disable=unused-variable
     else:
       delimiter = ','
       quote = '"'
-    with open(app.ARGS.out_table, 'w') as f:
-      f.write(f'# command_history: {COMMAND_HISTORY_STRING}\n')
-      f.write(f'{quote}Mean length{quote}{delimiter}'
-              f'{quote}Operation 1 type{quote}{delimiter}{quote}Operation 1 parameters{quote}{delimiter}'
-              f'{quote}Operation 2 type{quote}{delimiter}{quote}Operation 2 parameters{quote}{delimiter}'
-              f'{quote}Operation 3 type{quote}{delimiter}{quote}Operation 3 parameters{quote}{delimiter}\n')
-      for v in variants:
-        f.write(f'{v.mean_length}')
-        for operation in v.operations:
-          f.write(f'{delimiter}{quote}{operation.prettytype()}{quote}{delimiter}{quote}{operation.prettyparams()}{quote}')
-        f.write('\n')
+    with open(app.ARGS.out_table, 'w', encoding='utf-8') as outfile:
+      outfile.write(f'# command_history: {COMMAND_HISTORY_STRING}\n')
+      outfile.write(f'{quote}Mean length{quote}{delimiter}'
+                    f'{quote}Operation 1 type{quote}{delimiter}{quote}Operation 1 parameters{quote}{delimiter}'
+                    f'{quote}Operation 2 type{quote}{delimiter}{quote}Operation 2 parameters{quote}{delimiter}'
+                    f'{quote}Operation 3 type{quote}{delimiter}{quote}Operation 3 parameters{quote}{delimiter}\n')
+      for variant in variants:
+        outfile.write(f'{variant.mean_length}')
+        for operation in variant.operations:
+          outfile.write(f'{delimiter}{quote}{operation.prettytype()}{quote}{delimiter}{quote}{operation.prettyparams()}{quote}')
+        outfile.write('\n')
 
   if meanlength_ratio < app.ARGS.threshold:
     raise MRtrixError('Streamline tractography indicates possibly incorrect interpretation of peak orientations')
