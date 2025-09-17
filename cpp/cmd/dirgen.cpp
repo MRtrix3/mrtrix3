@@ -75,6 +75,10 @@ void usage() {
                           " (default: " + str(DEFAULT_RESTARTS) + ").")
       + Argument ("num").type_integer (1, std::numeric_limits<int>::max())
 
+    + Option ("fixed", "specify a fixed direction (comm-separateed floats)"
+                       " that will always be included at the start of the scheme").allow_multiple()
+      + Argument ("direction").type_sequence_float()
+
     + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model"
                           " rather than the bipolar model normally assumed in DWI")
 
@@ -97,12 +101,12 @@ public:
 
 class Energy {
 public:
-  Energy(ProgressBar &progress)
-      : progress(progress),
-        ndirs(to<int>(argument[0])),
-        bipolar(get_options("unipolar").empty()),
-        power(0),
-        directions(3 * ndirs) {}
+  Energy(ProgressBar &progress, const size_t ndirs) //
+      : progress(progress),                         //
+        ndirs(ndirs),                               //
+        bipolar(get_options("unipolar").empty()),   //
+        power(0),                                   //
+        directions(3 * ndirs) {}                    //
 
 // Non-optimised compilation can't handle recursive inline functions
 #ifdef __OPTIMIZE__
@@ -119,7 +123,9 @@ public:
   // at higher power.
   double init(Eigen::VectorXd &x) {
     Math::RNG::Normal<double> rng;
-    for (size_t n = 0; n < ndirs; ++n) {
+    for (size_t n = 0; n != fixed_directions.size(); ++n)
+      x.segment(3 * n, 3) = fixed_directions[n];
+    for (size_t n = fixed_directions.size(); n < ndirs; ++n) {
       auto d = x.segment(3 * n, 3);
       d[0] = rng();
       d[1] = rng();
@@ -161,8 +167,11 @@ public:
       }
     }
 
+    // don't move those directions that are to remain fixed
+    g.segment(0, 3 * fixed_directions.size()).setZero();
+
     // constrain gradients to lie tangent to unit sphere:
-    for (size_t n = 0; n < ndirs; ++n)
+    for (size_t n = fixed_directions.size(); n < ndirs; ++n)
       g.segment(3 * n, 3) -= x.segment(3 * n, 3).dot(g.segment(3 * n, 3)) * x.segment(3 * n, 3);
 
     return E;
@@ -210,6 +219,7 @@ public:
   static size_t niter;
   static double best_E;
   static Eigen::VectorXd best_directions;
+  static std::vector<Eigen::Vector3d> fixed_directions;
 
 protected:
   ProgressBar &progress;
@@ -230,21 +240,42 @@ std::mutex Energy::mutex;
 std::atomic<size_t> Energy::current_start(0);
 double Energy::best_E = std::numeric_limits<double>::infinity();
 Eigen::VectorXd Energy::best_directions;
+std::vector<Eigen::Vector3d> Energy::fixed_directions;
 
 void run() {
   Energy::restarts = get_option_value("restarts", DEFAULT_RESTARTS);
   Energy::target_power = get_option_value("power", DEFAULT_POWER);
   Energy::niter = get_option_value("niter", DEFAULT_NITER);
 
+  auto opt = get_options("fixed");
+  for (size_t i = 0; i != opt.size(); ++i) {
+    auto value = parse_floats(opt[i][0]);
+    switch (value.size()) {
+    case 2: {
+      Eigen::Vector3d xyz;
+      Math::Sphere::spherical2cartesian(Eigen::Map<Eigen::Vector2d>(value.data()), xyz);
+      Energy::fixed_directions.push_back(xyz);
+    } break;
+    case 3:
+      Energy::fixed_directions.push_back(Eigen::Map<Eigen::Vector3d>(value.data()).normalized());
+      break;
+    default:
+      throw Exception("Fixed directions must be either spherical or cartesian directions"
+                      " (comma-separated 2- or 3-vectors)");
+    }
+  }
+  const size_t ndirs = argument[0];
+  if (Energy::fixed_directions.size() >= ndirs)
+    throw Exception("No directions left to optimise after fixed directions specified");
+
   {
     ProgressBar progress("Optimising directions up to power " + str(Energy::target_power) + " (" +
                          str(Energy::restarts) + " restarts)");
-    Energy energy_functor(progress);
+    Energy energy_functor(progress, ndirs);
     auto threads = Thread::run(Thread::multi(energy_functor), "energy function");
   }
 
   CONSOLE("final energy = " + str(Energy::best_E));
-  size_t ndirs = Energy::best_directions.size() / 3;
   Eigen::MatrixXd directions_matrix(ndirs, 3);
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row(n) = Energy::best_directions.segment(3 * n, 3);

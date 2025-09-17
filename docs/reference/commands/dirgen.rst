@@ -32,6 +32,8 @@ Options
 
 -  **-restarts num** specify the number of restarts to perform (default: 10).
 
+-  **-fixed direction** *(multiple uses permitted)* specify a fixed direction (comm-separateed floats) that will always be included at the start of the scheme
+
 -  **-unipolar** optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
