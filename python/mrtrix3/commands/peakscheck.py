@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,7 @@ import os
 import sys
 
 from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
-from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module
+from mrtrix3 import app, image, run #pylint: disable=no-name-in-module
 
 
 
@@ -55,13 +55,6 @@ SPHERICAL_OPERATION_SETS = (['convert'],
 SPHERICAL_SWAPS = (False, True)
 SPHERICAL_EL2INC = (False, True)
 
-# TODO Ideally, rather than considering these two as independent,
-#   only do one;
-#   but if bvec and ijk are equivalent,
-#   or if a combination of ijk transform and flipping first element is performed,
-#   then variant names should reflect this
-INPUT_REFERENCES = ('bvec', 'ijk')
-
 DEFAULT_NUMBER = 10000
 DEFAULT_THRESHOLD = 0.95
 
@@ -73,35 +66,57 @@ DEFAULT_FORMAT = '3vector'
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientations of an image containing discrete fibre orientations')
-  cmdline.add_description('MRtrix3 expects "peaks" images to be stored'
-                          ' using the real / scanner space axes as reference.'
-                          ' There are three possible sources of error in this interpretation:'
-                          ' 1. There may be erroneous axis flips and/or permutations,'
-                          ' but within the real / scanner space reference.'
-                          ' 2. The image data may provide fibre orientations'
-                          ' with reference to the image axes rather than real / scanner space.'
-                          ' Here there are two additional possibilities:'
-                          ' 2a. There may be requisite axis permutations / flips'
-                          ' to be applied to the image data *before* transforming them to real / scanner space.'
-                          ' 2b. There may be requisite axis permutations / flips'
-                          ' to be applied to the image data *after* transforming them to real / scanner space.')
-  cmdline.add_argument('input', type=app.Parser.ImageIn(), help='The input fibre orientations image to be checked')
-  cmdline.add_argument('-mask', type=app.Parser.ImageIn(), help='Provide a mask image within which to seed & constrain tracking')
-  cmdline.add_argument('-number', type=app.Parser.Int(1), default=DEFAULT_NUMBER, help='Set the number of tracks to generate for each test')
-  cmdline.add_argument('-threshold', type=app.Parser.Float(0.0, 1.0), default=DEFAULT_THRESHOLD, help='Modulate thresold on the ratio of empirical to maximal mean length to issue an error')
-  cmdline.add_argument('-in_format', choices=FORMATS, default=DEFAULT_FORMAT, help='The format in which peak orientations are specified; one of: ' + ','.join(FORMATS))
+  cmdline.add_description(
+      'MRtrix3 expects "peaks" images to be stored'
+      ' using the real / scanner space axes as reference.'
+      ' There are three possible sources of error in this interpretation:'
+      ' 1. There may be erroneous axis flips and/or permutations,'
+      ' but within the real / scanner space reference.'
+      ' 2. The image data may provide fibre orientations'
+      ' with reference to the image axes rather than real / scanner space.'
+      ' Here there are two additional possibilities:'
+      ' 2a. There may be requisite axis permutations / flips'
+      ' to be applied to the image data *before* transforming them to real / scanner space.'
+      ' 2b. There may be requisite axis permutations / flips'
+      ' to be applied to the image data *after* transforming them to real / scanner space.')
+  cmdline.add_argument('input',
+                       type=app.Parser.ImageIn(),
+                       help='The input fibre orientations image to be checked')
+  cmdline.add_argument('-mask',
+                       type=app.Parser.ImageIn(),
+                       help='Provide a mask image within which to seed & constrain tracking')
+  cmdline.add_argument('-number',
+                       type=app.Parser.Int(1),
+                       default=DEFAULT_NUMBER,
+                       help='Set the number of tracks to generate for each test')
+  cmdline.add_argument('-threshold',
+                       type=app.Parser.Float(0.0, 1.0),
+                       default=DEFAULT_THRESHOLD,
+                       help='Modulate thresold on the ratio of empirical to maximal mean length'
+                            ' to issue an error')
+  cmdline.add_argument('-in_format',
+                       choices=FORMATS,
+                       default=DEFAULT_FORMAT,
+                       help='The format in which peak orientations are specified;'
+                            f' one of: {",".join(FORMATS)}')
   # TODO Add -in_reference option, which would control which variant is considered the default for the purpose of command return code
   cmdline.add_argument('-noshuffle',
                        action='store_true',
                        help='Do not evaluate possibility of requiring shuffles of axes or angles;'
-                            ' only consider prospective transforms from alternative reference frames to real / scanner space')
+                            ' only consider prospective transforms'
+                            ' from alternative reference frames to real / scanner space')
   cmdline.add_argument('-notransform',
                        action='store_true',
-                       help='Do not evaluate possibility of requiring transform of peak orientations from image to real / scanner space;'
+                       help='Do not evaluate possibility of requiring transform of peak orientations'
+                            ' from image to real / scanner space;'
                             ' only consider prospective shuffles of axes or angles')
   cmdline.flag_mutually_exclusive_options(['noshuffle', 'notransform'])
-  cmdline.add_argument('-all', action='store_true', help='Print table containing all results to standard output')
-  cmdline.add_argument('-out_table', type=app.Parser.FileOut(), help='Write text file with table containing all results')
+  cmdline.add_argument('-all',
+                       action='store_true',
+                       help='Print table containing all results to standard output')
+  cmdline.add_argument('-out_table',
+                       type=app.Parser.FileOut(),
+                       help='Write text file with table containing all results')
 
 
 
@@ -121,7 +136,7 @@ class EuclideanShuffle(Operation):
   def __init__(self, flip, permutations):
     self.flip = flip
     self.permutations = permutations
-  def __format__(self, fmt):
+  def __format__(self, _):
     if self.no_flip():
       assert not self.no_permutations()
       return f'perm{"".join(map(str, self.permutations))}'
@@ -180,11 +195,11 @@ class EuclideanTransform(Operation):
     return 'Euclidean reference axis change'
   def __init__(self, reference):
     self.reference = reference
-  def __format__(self, fmt):
+  def __format__(self, _):
     return f'euctrans{self.reference}2xyz'
   def prettyparams(self):
     return f'{self.reference} to xyz'
-  def cmd(self, nfixels, in_path, out_path):
+  def cmd(self, _, in_path, out_path):
     run.command(['peaksconvert', in_path, out_path,
                  '-in_reference', self.reference,
                  '-in_format', '3vector',
@@ -200,7 +215,7 @@ class SphericalShuffle(Operation):
     self.is_unit = is_unit
     self.swap = swap
     self.el2in = el2in
-  def __format__(self, fmt):
+  def __format__(self, _):
     if self.swap:
       if self.el2in:
         return 'swapandel2in'
@@ -261,11 +276,11 @@ class SphericalTransform(Operation):
   def __init__(self, is_unit, reference):
     self.is_unit = is_unit
     self.reference = reference
-  def __format__(self, fmt):
+  def __format__(self, _):
     return f'sphtrans{self.reference}2xyz'
   def prettyparams(self):
     return f'{self.reference} to xyz'
-  def cmd(self, nfixels, in_path, out_path):
+  def cmd(self, _, in_path, out_path):
     run.command(['peaksconvert', in_path, out_path,
                  '-in_reference', self.reference,
                  '-in_format', 'unitspherical' if self.is_unit else 'spherical',
@@ -279,11 +294,11 @@ class Spherical2Cartesian(Operation):
     return 'Spherical-to-cartesian transformation'
   def __init__(self, is_unit):
     self.is_unit = is_unit
-  def __format__(self, fmt):
+  def __format__(self, _):
     return 'sph2cart'
   def prettyparams(self):
     return 'N/A'
-  def cmd(self, nfixels, in_path, out_path):
+  def cmd(self, _, in_path, out_path):
     run.command(['peaksconvert', in_path, out_path,
                  '-in_format', 'unitspherical' if self.is_unit else 'spherical',
                  '-out_format', 'unit3vector' if self.is_unit else '3vector',
@@ -296,7 +311,7 @@ class Variant():
     assert isinstance(operations, list)
     assert all(isinstance(item, Operation) for item in operations)
     self.operations = operations
-  def __format__(self, fmt):
+  def __format__(self, _):
     if not self.operations:
       return 'none'
     return '_'.join(f'{item}' for item in self.operations)
@@ -322,17 +337,20 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.in_format in ('unit3vector', '3vector'):
     num_fixels = num_volumes // 3
     if 3 * num_fixels != num_volumes:
-      raise MRtrixError(f'Number of input volumes ({num_volumes}) not a valid peaks image:'
+      raise MRtrixError(f'Number of input volumes ({num_volumes})'
+                        ' not a valid peaks image:'
                         ' must be a multiple of 3')
   elif app.ARGS.in_format == 'spherical':
     num_fixels = num_volumes // 3
     if 3 * num_fixels != num_volumes:
-      raise MRtrixError(f'Number of input volumes ({num_volumes}) not a valid spherical coordinates image:'
+      raise MRtrixError(f'Number of input volumes ({num_volumes})'
+                        ' not a valid spherical coordinates image:'
                         ' must be a multiple of 3')
   elif app.ARGS.in_format == 'unitspherical':
     num_fixels = num_volumes // 2
     if 2 * num_fixels != num_volumes:
-      raise MRtrixError(f'Number of input volumes ({num_volumes}) not a valid unit spherical coordinates image:'
+      raise MRtrixError(f'Number of input volumes ({num_volumes})'
+                        ' not a valid unit spherical coordinates image:'
                         ' must be a multiple of 2')
   else:
     assert False
@@ -345,10 +363,14 @@ def execute(): #pylint: disable=unused-variable
   # Therefore, we'd actually prefer to *not* have contiguous memory across volumes
   # Also, in order for subsequent reference transforms to be valid,
   #   we need for the strides to not be modified by MRtrix3 at the load stage
-  run.command(f'mrconvert {app.ARGS.input} data.mif -datatype float32 -config RealignTransform false')
+  run.command(f'mrconvert {app.ARGS.input} data.mif'
+              ' -datatype float32'
+              ' -config RealignTransform false')
 
   if app.ARGS.mask:
-    run.command(f'mrconvert {app.ARGS.mask} mask.mif -datatype bit -config RealignTransform false')
+    run.command(f'mrconvert {app.ARGS.mask} mask.mif'
+                ' -datatype bit'
+                ' -config RealignTransform false')
 
   # Generate a brain mask if we weren't provided with one
   if not app.ARGS.mask:
@@ -372,12 +394,12 @@ def execute(): #pylint: disable=unused-variable
         continue
       all_euclidean_shuffles.append(EuclideanShuffle(flip, permutation))
   all_euclidean_transforms = [EuclideanTransform('ijk'),
-                              EuclideanTransform('bvec')]
+                              EuclideanTransform('fsl')]
   all_spherical_shuffles = [SphericalShuffle(is_unit, True, False),
                             SphericalShuffle(is_unit, False, True),
                             SphericalShuffle(is_unit, True, True)]
   all_spherical_transforms = [SphericalTransform(is_unit, 'ijk'),
-                              SphericalTransform(is_unit, 'bvec')]
+                              SphericalTransform(is_unit, 'fsl')]
   all_spherical2cartesian = [Spherical2Cartesian(is_unit),]
 
   # TODO Add capabilities to restrict set of variants to be evaluated
@@ -407,11 +429,14 @@ def execute(): #pylint: disable=unused-variable
   for v in variants:
     app.debug(f'{v}')
 
-  progress = app.ProgressBar(f'Testing peaks orientation alterations (0 of {len(variants)})', len(variants))
+  progress = app.ProgressBar(f'Testing peaks orientation alterations'
+                             ' (0 of {len(variants)})',
+                             len(variants))
   meanlength_default = None
   for variant_index, variant in enumerate(variants):
 
-    # For each variant, we now have to construct and execute the sequential set of commands necessary
+    # For each variant,
+    #   we now have to construct and execute the sequential set of commands necessary
     tmppath = None
     imagepath = 'data.mif'
     for operation_index, operation in enumerate(variant.operations):
@@ -452,7 +477,8 @@ def execute(): #pylint: disable=unused-variable
       meanlength_default = mean_length
 
     # Increment the progress bar
-    progress.increment(f'Testing peaks orientation alterations ({variant_index+1} of {len(variants)})')
+    progress.increment('Testing peaks orientation alterations'
+                       f' ({variant_index+1} of {len(variants)})')
 
   progress.done()
 
@@ -463,10 +489,12 @@ def execute(): #pylint: disable=unused-variable
 
   if sorted_variants[0].is_default():
     meanlength_ratio = 1.0
-    app.console('Absence of manipulation of peaks orientations resulted in the maximal mean length')
+    app.console('Absence of manipulation of peaks orientations'
+                ' resulted in the maximal mean length')
   else:
     meanlength_ratio = meanlength_default / meanlength_max
-    app.console(f'Ratio of mean length of empirical data to mean length of best candidate: {meanlength_ratio:.3f}')
+    app.console('Ratio of mean length of empirical data to mean length of best candidate:'
+                f' {meanlength_ratio:.3f}')
 
   # Provide a printout of the mean streamline length of each orientation manipulation
   if app.ARGS.all:
@@ -495,4 +523,4 @@ def execute(): #pylint: disable=unused-variable
         f.write('\n')
 
   if meanlength_ratio < app.ARGS.threshold:
-    raise MRtrixError('Streamline tractography indicates possibly incorrect gradient table')
+    raise MRtrixError('Streamline tractography indicates possibly incorrect interpretation of peak orientations')

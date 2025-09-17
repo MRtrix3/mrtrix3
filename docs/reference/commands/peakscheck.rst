@@ -27,11 +27,11 @@ Options
 
 - **-mask image** Provide a mask image within which to seed & constrain tracking
 
-- **-number** Set the number of tracks to generate for each test
+- **-number value** Set the number of tracks to generate for each test
 
-- **-threshold** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
+- **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
 
-- **-in_format** The format in which peak orientations are specified; one of: spherical,unitspherical,3vector,unit3vector
+- **-in_format choice** The format in which peak orientations are specified; one of: spherical,unitspherical,3vector,unit3vector
 
 - **-noshuffle** Do not evaluate possibility of requiring shuffles of axes or angles; only consider prospective transforms from alternative reference frames to real / scanner space
 
@@ -39,16 +39,16 @@ Options
 
 - **-all** Print table containing all results to standard output
 
-- **-out_table** Write text file with table containing all results
+- **-out_table file** Write text file with table containing all results
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -80,7 +80,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

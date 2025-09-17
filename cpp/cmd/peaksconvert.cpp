@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,8 +32,8 @@ using namespace App;
 
 const std::vector<std::string> formats = {"unitspherical", "spherical", "unit3vector", "3vector"};
 enum class format_t { UNITSPHERICAL, SPHERICAL, UNITTHREEVECTOR, THREEVECTOR };
-const std::vector<std::string> references = {"xyz", "ijk", "bvec"};
-enum class reference_t { XYZ, IJK, BVEC };
+const std::vector<std::string> references = {"xyz", "ijk", "fsl"};
+enum class reference_t { XYZ, IJK, FSL };
 
 using transform_linear_type = Eigen::Matrix<default_type, 3, 3>;
 
@@ -50,7 +50,48 @@ void usage() {
     "as the MRtrix convention (3-vectors defined with respect to RAS scanner space axes) "
     "will be assumed to apply to both cases. "
     "This behaviour is only modulated by explicitly providing command-line options "
-    "that give additional information about the format or convention of either image.";
+    "that give additional information about the format or reference"
+    " of either input or output images."
+
+  + "For -in_format and -out_format options,"
+    " the choices are:"
+    " - \"unitspherical\": Each orientation is represented using 2 sequential volumes"
+      " encoded as azimuth and inclination angles in radians;"
+    " - \"spherical\": Each orientation and associated value"
+      " is represented using 3 sequential volumes,"
+      " with associated value (\"radius\") first,"
+      " followed by aximuth and inclination angles in radians;"
+    " - \"unit3vector\": Each orientation is represented using 3 sequential volumes"
+      " encoded as three dot products with respect to three orthogonal reference axes;"
+    " - \"3vector\": Each orientation and associated non-negative value"
+      " is represented using 3 sequential volumes,"
+      " with the norm of that 3-vector encoding the associated value"
+      " and the unit-normalised vector encoding the three dot products"
+      " with respect to three orthogonal reference axes."
+    " The default behaviour throughout MRtrix3"
+    " is to interpret data as either \"unit3vector\" or \"3vector\""
+    " depending upon the context and/or presence of non-unit norm vectors in the data."
+
+  + "For -in_reference and -out_reference options,"
+    " the choices are:"
+    " - \"xyz\": Directions are defined with respect to \"real space\" / \"scanner space\","
+      " which is independent of the transform stored within the image header,"
+      " with the assumption that the positive direction of the first axis is that closest to anatomical right,"
+      " the positive direction of the second axis is that closest to anatomical anterior,"
+      " and the positive direction of the third axis is that closest to anatomical superior"
+      " (so-called \"RAS+\");"
+    " - \"ijk\": Directions are defined with respect to the image axes"
+      " as represented on the file system;"
+    " - \"fsl\": Directions are defined with respect to the internal convention adopted by the FSL software,"
+      " which is equivalent to \"ijk\" for images with a negative header transform determinant"
+      " (so-called \"left-handed\" coordinate systems)"
+      " but for images with a positive header transform determinant"
+      " (which is the case for the \"RAS+\" convention adopted for both NIfTI and MRtrix3)"
+      " the interpretation is equivalent to being with respect to the image axes"
+      " after flipping the first image axis."
+    " The default interpretation in MRtrix3,"
+    " including for this command in the absence of use of one of the command-line options,"
+    " is \"xyz\".";
 
   ARGUMENTS
   + Argument ("input", "the input directions image").type_image_in()
@@ -58,19 +99,20 @@ void usage() {
 
   OPTIONS
   + OptionGroup ("Options providing information about the input image")
-  + Option ("in_format", "specify the format in which the input directions are specified")
+  + Option ("in_format", "specify the format in which the input directions are specified"
+                         " (see Description)")
     + Argument("choice").type_choice(formats)
   + Option ("in_reference", "specify the reference axes against which the input directions are specified"
-                            " (assumed to be real / scanner space if omitted)")
+                            " (see Description)")
     + Argument("choice").type_choice(references)
   // TODO Add option to import amplitudes to fuse with unit orientations / overwrite existing values
 
   + OptionGroup ("Options providing information about the output image")
   + Option ("out_format", "specify the format in which the output directions will be specified"
-                          " (will default to 3-vectors if omitted)")
+                          " (see Description)")
     + Argument("choice").type_choice(formats)
   + Option ("out_reference", "specify the reference axes against which the output directions will be specified"
-                             " (defaults to real / scanner space if omitted)")
+                             " (see Description)")
     + Argument("choice").type_choice(references);
   // TODO Implement -fill
   //+ Option ("fill", "specify value to be inserted into output image in the absence of valid information")
@@ -109,7 +151,7 @@ reference_t reference_from_option(const std::string &option_name) {
   case 1:
     return reference_t::IJK;
   case 2:
-    return reference_t::BVEC;
+    return reference_t::FSL;
   default:
     throw Exception("Unsupported input to option -" + option_name);
   }
@@ -198,54 +240,54 @@ private:
   default_type radius;
 
   static transform_linear_type in_ijk2xyz;
-  static bool in_bvec_flipi;
-  static default_type in_bvec_imultiplier;
-  static Eigen::Vector3d in_bvec2ijk;
+  static bool in_fsl_flipi;
+  static default_type in_fsl_imultiplier;
+  static Eigen::Vector3d in_fsl2ijk;
 
   static transform_linear_type out_ijk2xyz;
   static transform_linear_type out_xyz2ijk;
-  static bool out_bvec_flipi;
-  static default_type out_bvec_imultiplier;
-  static Eigen::Vector3d out_ijk2bvec;
+  static bool out_fsl_flipi;
+  static default_type out_fsl_imultiplier;
+  static Eigen::Vector3d out_ijk2fsl;
 };
 
 transform_linear_type Fixel::in_ijk2xyz =
     transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
-bool Fixel::in_bvec_flipi = false;
-default_type Fixel::in_bvec_imultiplier = std::numeric_limits<default_type>::signaling_NaN();
-Eigen::Vector3d Fixel::in_bvec2ijk = Eigen::Vector3d::Constant(std::numeric_limits<default_type>::signaling_NaN());
+bool Fixel::in_fsl_flipi = false;
+default_type Fixel::in_fsl_imultiplier = std::numeric_limits<default_type>::signaling_NaN();
+Eigen::Vector3d Fixel::in_fsl2ijk = Eigen::Vector3d::Constant(std::numeric_limits<default_type>::signaling_NaN());
 transform_linear_type Fixel::out_ijk2xyz =
     transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
 transform_linear_type Fixel::out_xyz2ijk =
     transform_linear_type::Constant(std::numeric_limits<default_type>::signaling_NaN());
-bool Fixel::out_bvec_flipi = false;
-default_type Fixel::out_bvec_imultiplier = std::numeric_limits<default_type>::signaling_NaN();
-Eigen::Vector3d Fixel::out_ijk2bvec = Eigen::Vector3d::Constant(std::numeric_limits<default_type>::signaling_NaN());
+bool Fixel::out_fsl_flipi = false;
+default_type Fixel::out_fsl_imultiplier = std::numeric_limits<default_type>::signaling_NaN();
+Eigen::Vector3d Fixel::out_ijk2fsl = Eigen::Vector3d::Constant(std::numeric_limits<default_type>::signaling_NaN());
 
 void Fixel::set_input_transforms(const Header &H) {
   in_ijk2xyz = H.realignment().orig_transform().linear();
-  in_bvec_flipi = in_ijk2xyz.determinant() > 0.0;
-  in_bvec_imultiplier = in_bvec_flipi ? -1.0 : 1.0;
-  in_bvec2ijk = {in_bvec_imultiplier, 1.0, 1.0};
+  in_fsl_flipi = in_ijk2xyz.determinant() > 0.0;
+  in_fsl_imultiplier = in_fsl_flipi ? -1.0 : 1.0;
+  in_fsl2ijk = {in_fsl_imultiplier, 1.0, 1.0};
   DEBUG("Input transform configured based on image \"" + H.name() + "\":");
   DEBUG("IJK-to-XYZ transform:\n" + str(in_ijk2xyz));
-  DEBUG("bvec: flip " + str(in_bvec_flipi) + ", "                      //
-        + "i component multiplier " + str(in_bvec_imultiplier) + ", "  //
-        + "vector multiplier [" + str(in_bvec2ijk.transpose()) + "]"); //
+  DEBUG("FSL: flip " + str(in_fsl_flipi) + ", "                       //
+        + "i component multiplier " + str(in_fsl_imultiplier) + ", "  //
+        + "vector multiplier [" + str(in_fsl2ijk.transpose()) + "]"); //
 }
 
 void Fixel::set_output_transforms(const Header &H) {
   out_ijk2xyz = H.transform().linear();
   out_xyz2ijk = H.transform().inverse().linear();
-  out_bvec_flipi = out_ijk2xyz.determinant() > 0.0;
-  out_bvec_imultiplier = out_bvec_flipi ? -1.0 : 1.0;
-  out_ijk2bvec = {out_bvec_imultiplier, 1.0, 1.0};
+  out_fsl_flipi = out_ijk2xyz.determinant() > 0.0;
+  out_fsl_imultiplier = out_fsl_flipi ? -1.0 : 1.0;
+  out_ijk2fsl = {out_fsl_imultiplier, 1.0, 1.0};
   DEBUG("Output transform configured based on image \"" + H.name() + "\":");
   DEBUG("IJK-to-XYZ transform:\n" + str(out_ijk2xyz));
   DEBUG("XYZ-to-IJK transform:\n" + str(out_xyz2ijk));
-  DEBUG("bvec: flip " + str(out_bvec_flipi) + ", "                      //
-        + "i component multiplier " + str(out_bvec_imultiplier) + ", "  //
-        + "vector multiplier [" + str(out_ijk2bvec.transpose()) + "]"); //
+  DEBUG("FSL: flip " + str(out_fsl_flipi) + ", "                       //
+        + "i component multiplier " + str(out_fsl_imultiplier) + ", "  //
+        + "vector multiplier [" + str(out_ijk2fsl.transpose()) + "]"); //
 }
 
 template <> Fixel Fixel::from<UnitSpherical, reference_t::XYZ>(const UnitSpherical &in) {
@@ -262,10 +304,10 @@ template <> Fixel Fixel::from<UnitSpherical, reference_t::IJK>(const UnitSpheric
   return Fixel(in_ijk2xyz * unit_threevector_ijk);
 }
 
-template <> Fixel Fixel::from<UnitSpherical, reference_t::BVEC>(const UnitSpherical &in) {
-  const Eigen::Matrix<default_type, 2, 1> az_in_bvec({in.azimuth, in.inclination});
+template <> Fixel Fixel::from<UnitSpherical, reference_t::FSL>(const UnitSpherical &in) {
+  const Eigen::Matrix<default_type, 2, 1> az_in_fsl({in.azimuth, in.inclination});
   const Eigen::Matrix<default_type, 2, 1> az_in_ijk(
-      {in_bvec_flipi ? Math::pi - az_in_bvec[0] : az_in_bvec[0], az_in_bvec[1]});
+      {in_fsl_flipi ? Math::pi - az_in_fsl[0] : az_in_fsl[0], az_in_fsl[1]});
   Eigen::Vector3d unit_threevector_ijk;
   Math::Sphere::spherical2cartesian(az_in_ijk, unit_threevector_ijk);
   return Fixel(in_ijk2xyz * unit_threevector_ijk);
@@ -285,10 +327,10 @@ template <> Fixel Fixel::from<Spherical, reference_t::IJK>(const Spherical &in) 
   return Fixel(in_ijk2xyz * unit_threevector_ijk, r_az_in_ijk[0]);
 }
 
-template <> Fixel Fixel::from<Spherical, reference_t::BVEC>(const Spherical &in) {
-  const Eigen::Matrix<default_type, 3, 1> r_az_in_bvec({in.radius, in.azimuth, in.inclination});
+template <> Fixel Fixel::from<Spherical, reference_t::FSL>(const Spherical &in) {
+  const Eigen::Matrix<default_type, 3, 1> r_az_in_fsl({in.radius, in.azimuth, in.inclination});
   const Eigen::Matrix<default_type, 3, 1> r_az_in_ijk(
-      {r_az_in_bvec[0], in_bvec_flipi ? Math::pi - r_az_in_bvec[1] : r_az_in_bvec[1], r_az_in_bvec[2]});
+      {r_az_in_fsl[0], in_fsl_flipi ? Math::pi - r_az_in_fsl[1] : r_az_in_fsl[1], r_az_in_fsl[2]});
   Eigen::Vector3d unit_threevector_ijk;
   Math::Sphere::spherical2cartesian(r_az_in_ijk.tail<2>(), unit_threevector_ijk);
   return Fixel(in_ijk2xyz * unit_threevector_ijk, r_az_in_ijk[0]);
@@ -299,8 +341,8 @@ template <> Fixel Fixel::from<UnitThreeVector, reference_t::XYZ>(const UnitThree
 template <> Fixel Fixel::from<UnitThreeVector, reference_t::IJK>(const UnitThreeVector &in) {
   return Fixel(in_ijk2xyz * in());
 }
-template <> Fixel Fixel::from<UnitThreeVector, reference_t::BVEC>(const UnitThreeVector &in) {
-  return Fixel(in_ijk2xyz * (in().cwiseProduct(in_bvec2ijk)));
+template <> Fixel Fixel::from<UnitThreeVector, reference_t::FSL>(const UnitThreeVector &in) {
+  return Fixel(in_ijk2xyz * (in().cwiseProduct(in_fsl2ijk)));
 }
 
 template <> Fixel Fixel::from<ThreeVector, reference_t::XYZ>(const ThreeVector &in) {
@@ -311,8 +353,8 @@ template <> Fixel Fixel::from<ThreeVector, reference_t::IJK>(const ThreeVector &
   return Fixel(in_ijk2xyz * in.normalized(), in.radius());
 }
 
-template <> Fixel Fixel::from<ThreeVector, reference_t::BVEC>(const ThreeVector &in) {
-  return Fixel(in_ijk2xyz * (in.normalized().cwiseProduct(in_bvec2ijk)), in.radius());
+template <> Fixel Fixel::from<ThreeVector, reference_t::FSL>(const ThreeVector &in) {
+  return Fixel(in_ijk2xyz * (in.normalized().cwiseProduct(in_fsl2ijk)), in.radius());
 }
 
 template <> UnitSpherical Fixel::to<UnitSpherical, reference_t::XYZ>() const {
@@ -328,10 +370,10 @@ template <> UnitSpherical Fixel::to<UnitSpherical, reference_t::IJK>() const {
   return UnitSpherical({azimuth, inclination});
 }
 
-template <> UnitSpherical Fixel::to<UnitSpherical, reference_t::BVEC>() const {
+template <> UnitSpherical Fixel::to<UnitSpherical, reference_t::FSL>() const {
   default_type azimuth =
       std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)), unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
-  if (out_bvec_flipi)
+  if (out_fsl_flipi)
     azimuth = Math::pi - azimuth;
   const default_type inclination = std::acos(unit_threevector_xyz.dot(out_ijk2xyz.col(2)));
   return UnitSpherical({azimuth, inclination});
@@ -351,10 +393,10 @@ template <> Spherical Fixel::to<Spherical, reference_t::IJK>() const {
   return Spherical({radius, azimuth, inclination});
 }
 
-template <> Spherical Fixel::to<Spherical, reference_t::BVEC>() const {
+template <> Spherical Fixel::to<Spherical, reference_t::FSL>() const {
   default_type azimuth =
       std::atan2(unit_threevector_xyz.dot(out_ijk2xyz.col(1)), unit_threevector_xyz.dot(out_ijk2xyz.col(0)));
-  if (out_bvec_flipi)
+  if (out_fsl_flipi)
     azimuth = Math::pi - azimuth;
   const default_type inclination = std::acos(unit_threevector_xyz.dot(out_ijk2xyz.col(2)));
   return Spherical({radius, azimuth, inclination});
@@ -368,8 +410,8 @@ template <> UnitThreeVector Fixel::to<UnitThreeVector, reference_t::IJK>() const
   return UnitThreeVector(out_xyz2ijk * unit_threevector_xyz);
 }
 
-template <> UnitThreeVector Fixel::to<UnitThreeVector, reference_t::BVEC>() const {
-  return UnitThreeVector((out_xyz2ijk * unit_threevector_xyz).cwiseProduct(out_ijk2bvec));
+template <> UnitThreeVector Fixel::to<UnitThreeVector, reference_t::FSL>() const {
+  return UnitThreeVector((out_xyz2ijk * unit_threevector_xyz).cwiseProduct(out_ijk2fsl));
 }
 
 template <> ThreeVector Fixel::to<ThreeVector, reference_t::XYZ>() const {
@@ -380,8 +422,8 @@ template <> ThreeVector Fixel::to<ThreeVector, reference_t::IJK>() const {
   return ThreeVector(out_xyz2ijk * unit_threevector_xyz * radius);
 }
 
-template <> ThreeVector Fixel::to<ThreeVector, reference_t::BVEC>() const {
-  return ThreeVector((out_xyz2ijk * unit_threevector_xyz).cwiseProduct(out_ijk2bvec) * radius);
+template <> ThreeVector Fixel::to<ThreeVector, reference_t::FSL>() const {
+  return ThreeVector((out_xyz2ijk * unit_threevector_xyz).cwiseProduct(out_ijk2fsl) * radius);
 }
 
 template <class FixelType> class FixelImage : public Adapter::Base<FixelImage<FixelType>, Image<float>> {
@@ -450,8 +492,8 @@ void run(reference_t in_reference, FixelImage<InFixelType> &in_fixel_image, Fixe
   case reference_t::IJK:
     run<reference_t::IJK, InFixelType, out_reference, OutFixelType>(in_fixel_image, out_fixel_image);
     return;
-  case reference_t::BVEC:
-    run<reference_t::BVEC, InFixelType, out_reference, OutFixelType>(in_fixel_image, out_fixel_image);
+  case reference_t::FSL:
+    run<reference_t::FSL, InFixelType, out_reference, OutFixelType>(in_fixel_image, out_fixel_image);
     return;
   }
 }
@@ -500,8 +542,8 @@ void run(format_t in_format,
   case reference_t::IJK:
     run<reference_t::IJK, OutFixelType>(in_format, in_reference, input_image, out_fixel_image);
     return;
-  case reference_t::BVEC:
-    run<reference_t::BVEC, OutFixelType>(in_format, in_reference, input_image, out_fixel_image);
+  case reference_t::FSL:
+    run<reference_t::FSL, OutFixelType>(in_format, in_reference, input_image, out_fixel_image);
     return;
   }
 }
