@@ -160,14 +160,15 @@ size_t volumes_per_fixel(format_t format) { return format == format_t::UNITSPHER
 
 template <size_t NumElements> class FormatBase {
 public:
-  FormatBase(Eigen::Matrix<default_type, NumElements, 1>) {}
+  FormatBase(const Eigen::Matrix<default_type, NumElements, 1> & /* unused */) {}
+  virtual ~FormatBase() = default;
   virtual Eigen::Matrix<default_type, NumElements, 1> operator()() const = 0;
   static size_t num_elements() { return NumElements; }
 };
 
 class UnitSpherical : public FormatBase<2> {
 public:
-  UnitSpherical(Eigen::Matrix<default_type, 2, 1> in) : FormatBase(in), azimuth(in[0]), inclination(in[1]) {}
+  UnitSpherical(const Eigen::Matrix<default_type, 2, 1> &in) : FormatBase(in), azimuth(in[0]), inclination(in[1]) {}
   Eigen::Matrix<default_type, 2, 1> operator()() const override { return {azimuth, inclination}; }
   default_type azimuth, inclination;
   friend std::ostream &operator<<(std::ostream &stream, const UnitSpherical &in) {
@@ -178,7 +179,8 @@ public:
 
 class Spherical : public FormatBase<3> {
 public:
-  Spherical(Eigen::Matrix<default_type, 3, 1> in) : FormatBase(in), radius(in[0]), azimuth(in[1]), inclination(in[2]) {}
+  Spherical(const Eigen::Matrix<default_type, 3, 1> &in)
+      : FormatBase(in), radius(in[0]), azimuth(in[1]), inclination(in[2]) {}
   Eigen::Matrix<default_type, 3, 1> operator()() const override { return {radius, azimuth, inclination}; }
   default_type radius, azimuth, inclination;
   friend std::ostream &operator<<(std::ostream &stream, const Spherical &in) {
@@ -189,7 +191,7 @@ public:
 
 class UnitThreeVector : public FormatBase<3> {
 public:
-  UnitThreeVector(Eigen::Matrix<default_type, 3, 1> in) : FormatBase(in), unitthreevector(in) {
+  UnitThreeVector(const Eigen::Matrix<default_type, 3, 1> &in) : FormatBase(in), unitthreevector(in) {
     unitthreevector.normalize();
   }
   Eigen::Matrix<default_type, 3, 1> operator()() const override { return unitthreevector; }
@@ -202,7 +204,7 @@ public:
 
 class ThreeVector : public FormatBase<3> {
 public:
-  ThreeVector(Eigen::Matrix<default_type, 3, 1> in) : FormatBase(in), threevector(in) {}
+  ThreeVector(const Eigen::Matrix<default_type, 3, 1> &in) : FormatBase(in), threevector(in) {}
   Eigen::Matrix<default_type, 3, 1> operator()() const override { return threevector; }
   Eigen::Matrix<default_type, 3, 1> normalized() const { return threevector.normalized(); }
   default_type radius() const { return threevector.norm(); }
