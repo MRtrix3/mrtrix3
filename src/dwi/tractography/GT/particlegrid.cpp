@@ -25,18 +25,20 @@ namespace MR {
         ParticleGrid::ParticleGrid(const Header& H)
         {
           DEBUG("Initialise particle grid.");
-          dims[0] = Math::ceil<size_t>( H.size(0) * H.spacing(0) / (2.0*Particle::L) );
-          dims[1] = Math::ceil<size_t>( H.size(1) * H.spacing(1) / (2.0*Particle::L) );
-          dims[2] = Math::ceil<size_t>( H.size(2) * H.spacing(2) / (2.0*Particle::L) );
+          // define (isotropic) grid spacing
+          default_type vox = std::min({H.spacing(0), H.spacing(1), H.spacing(2)});
+          default_type grid_spacing = std::max(2.0 * Particle::L, vox);
+
+          // set grid dimensions
+          dims[0] = Math::ceil<size_t>( (H.size(0)-1) * H.spacing(0) / grid_spacing ) + 1;
+          dims[1] = Math::ceil<size_t>( (H.size(1)-1) * H.spacing(1) / grid_spacing ) + 1;
+          dims[2] = Math::ceil<size_t>( (H.size(2)-1) * H.spacing(2) / grid_spacing ) + 1;
           grid.resize(dims[0]*dims[1]*dims[2]);
 
           // Initialise scanner-to-grid transform
-          Eigen::DiagonalMatrix<default_type, 3> newspacing (2.0*Particle::L, 2.0*Particle::L, 2.0*Particle::L);
-          Eigen::Vector3d shift (H.spacing(0)/2.0 - Particle::L,
-                                 H.spacing(1)/2.0 - Particle::L,
-                                 H.spacing(2)/2.0 - Particle::L);
-          T_s2g = H.transform() * newspacing;
-          T_s2g = T_s2g.inverse().translate(shift);
+          Eigen::DiagonalMatrix<default_type, 3> newspacing (grid_spacing, grid_spacing, grid_spacing);
+          transform_type T_g2s = H.transform() * newspacing;
+          T_s2g = T_g2s.inverse();
         }
 
 
