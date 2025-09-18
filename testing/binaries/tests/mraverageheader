@@ -1,5 +1,0 @@
-mraverageheader moving.mif.gz template.mif.gz - | testing_diff_header - mraverageheader/mean_projection.mif.gz
-mraverageheader moving.mif.gz template.mif.gz -spacing min_projection - | testing_diff_header - mraverageheader/min_projection.mif.gz
-mraverageheader moving.mif.gz template.mif.gz -spacing mean_nearest - | testing_diff_header - mraverageheader/mean_nearest.mif.gz
-mraverageheader moving.mif.gz template.mif.gz -spacing min_nearest - | testing_diff_header - mraverageheader/min_nearest.mif.gz
-mraverageheader moving.mif.gz template.mif.gz -spacing mean_nearest -padding 1 - | testing_diff_header - mraverageheader/padding.mif.gz

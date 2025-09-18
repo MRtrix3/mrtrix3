@@ -1,0 +1,16 @@
+#!/bin/bash
+# This test replicates certain behaviours of the mrcolour command
+#   using alternative MRtrix3 commands,
+#   and makes sure that the same result is obtained using both approaches.
+# - The minimum value is forced to 0.0 in both approaches
+# - The maximum value is determined from the data,
+#   and intensities are rescaled such that this maps to 1.0 in the output image
+# - The "gray" colourmap simply applies the same intensities to three consecutive volumes,
+#   such that the image looks gray if read as an RGB image
+mrcolour dwi_mean.mif gray tmp-mrcolour.mif -lower 0.0 -force
+
+MAX=$(mrstats dwi_mean.mif -output max)
+mrcalc dwi_mean.mif $MAX -div tmp-dwimeannorm.mif -force
+mrcat tmp-dwimeannorm.mif tmp-dwimeannorm.mif tmp-dwimeannorm.mif -axis 3 tmp-manual.mif -force
+
+testing_diff_image tmp-mrcolour.mif tmp-manual.mif -abs 1e-5

@@ -7,7 +7,11 @@ on:
     merge_group:
       types: [checks_requested]
       branches: [master]
-      
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   linux-clang-build:
     runs-on: ubuntu-latest
@@ -25,11 +29,11 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
-    
+      uses: mozilla-actions/sccache-action@v0.0.9
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
@@ -54,10 +58,20 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin --output-on-failure
+      run: cd build && ctest -L binary --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
+
+    - name: check command documentation
+      run: ./docs/generate_user_docs.sh --build-dir build && git diff --exit-code docs/
+
+
+
+
 
   linux-gcc-build:
 
@@ -76,16 +90,16 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
-    
+      uses: mozilla-actions/sccache-action@v0.0.9
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
         cmakeVersion: '3.16.3'
-    
+
     - name: Print CMake version
       run: cmake --version
 
@@ -103,17 +117,19 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin --output-on-failure
+      run: cd build && ctest -L binary --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
 
   macos-build:
 
     runs-on: macos-latest
 
     env:
-      PACKAGES: "qt eigen pkg-config fftw libpng ninja cmake"
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
 
@@ -124,17 +140,17 @@ jobs:
 
     - name: install dependencies
       run: |
-         brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
-         brew install $PACKAGES || brew install $PACKAGES
+         brew bundle --file=${{ github.workspace }}/.brewfile
          brew link --force qt
+         brew install numpy
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
-  
+      uses: mozilla-actions/sccache-action@v0.0.9
+
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
-        cmakeVersion: '3.21.0'
+        cmakeVersion: '3.22.0'
 
     - name: Print CMake version
       run: cmake --version
@@ -146,21 +162,27 @@ jobs:
         -B build
         -G Ninja
         -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_FIND_FRAMEWORK=LAST
         -D MRTRIX_BUILD_TESTS=ON
         -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_USE_PCH=OFF
         -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin --output-on-failure
+      run: cd build && ctest -L binary --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
 
-    - name: check command documentation
-      run: ./docs/generate_user_docs.sh --build-dir ./build && git diff --exit-code docs/
+
+
+
 
   windows-build:
 
@@ -191,10 +213,8 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-bc
             ${{env.MINGW_PACKAGE_PREFIX}}-cmake
             ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
-            ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
             ${{env.MINGW_PACKAGE_PREFIX}}-fftw
             ${{env.MINGW_PACKAGE_PREFIX}}-gcc
-            ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
             ${{env.MINGW_PACKAGE_PREFIX}}-ninja
             ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
             ${{env.MINGW_PACKAGE_PREFIX}}-qt6-base
@@ -202,13 +222,13 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
 
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.4
-      
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: export sccache to msys2 shell
         run: |
           export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
           echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
-      
+
       - name: configure
         run: >
             cmake
@@ -222,12 +242,15 @@ jobs:
 
       - name: build
         run: cmake --build build
-      
+
       - name: unit tests
-        run: cd build && ctest -R unit --output-on-failure
-  
+        run: cd build && ctest -L unittest --output-on-failure
+
       - name: binary tests
-        run: cd build && ctest -R bin --output-on-failure
+        run: cd build && ctest -L binary --output-on-failure
+#
+#      - name: limited script tests
+#        run: cd build && ctest -L pythonci --output-on-failure
 
   secondary-checks:
     runs-on: ubuntu-latest
@@ -237,7 +260,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    
+
     - name: install dependencies
       run: |
         sudo apt-get update
@@ -248,7 +271,6 @@ jobs:
 
     - name: pylint
       run: |
-         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./python/lib/mrtrix3/_version.py
          ./run_pylint || { cat pylint.log; false; }
 
     - name: check copyright headers
@@ -264,4 +286,4 @@ jobs:
         extensions: 'h,cpp'
         clangFormatVersion: 16
         # Ignore third party headers
-        exclude: './core/file/json.h ./core/file/nifti1.h ./core/file/nifti2.h'
+        exclude: './thirdparty ./_deps'

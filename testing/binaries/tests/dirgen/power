@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify operation of "-power" command-line option
+# This should slightly change the statistical properties of the generated set
+# As with other dirgen tests,
+#   it is not possible to directly compare the output of the command to a pre-generated set;
+#   instead compare its statistical properties to those of a pre-generated set
+dirgen 30 tmp.txt -power 16 -force
+
+dirstat tmp.txt | \
+grep 'nearest-neighbour angles:' | \
+head -n 1 | \
+awk '{ print $5$8 "," $10 }' | \
+tr ',' ' ' > tmp_stats.txt
+
+testing_diff_matrix tmp_stats.txt dirgen/stats_30_pow16.txt -abs 2.0

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -108,7 +108,7 @@ void run() {
   DWI::Tractography::Reader<> reader1(argument[0], properties1);
   DWI::Tractography::Reader<> reader2(argument[1], properties2);
 
-  if (get_options("unordered").size()) {
+  if (!get_options("unordered").empty()) {
 
     std::vector<DWI::Tractography::Streamline<>> ref_list;
     DWI::Tractography::Streamline<> tck;

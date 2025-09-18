@@ -1,0 +1,13 @@
+
+#!/bin/bash
+# Verify "interpolate" operation
+# Here, the validations are that:
+#   - When interpolation between transforms A and B is done with interpolation coefficient 1.0,
+#     the result is equivalent to transform B
+#   - When interpolation between transforms A and B is done with interpolation coefficient 0.0,
+#     the result is equivalent to transform A
+transformcalc moving2templateFSL.txt moving2template.txt 1.0 interpolate tmp.txt -force
+testing_diff_matrix tmp.txt moving2template.txt -abs 1e-3
+
+transformcalc moving2templateFSL.txt moving2template.txt 0.0 interpolate tmp.txt -force
+testing_diff_matrix tmp.txt moving2templateFSL.txt -abs 1e-3

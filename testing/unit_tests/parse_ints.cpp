@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -69,12 +69,12 @@ void run() {
         failures.push_back("\"" + std::string(t.str) + "\" to " + str(t.result) + " failed (produced " +
                            str(parse_ints<int>(t.str)) + ")");
     } catch (Exception &e) {
-      if (t.result.size())
+      if (!t.result.empty())
         failures.push_back("\"" + std::string(t.str) + "\" to " + str(t.result) + " failed: " + e[0]);
     }
   }
 
-  if (failures.size()) {
+  if (!failures.empty()) {
     Exception e(str(failures.size()) + " of " + str(sizeof(tests) / sizeof(Test)) + " tests failed:");
     for (const auto &s : failures)
       e.push_back(s);

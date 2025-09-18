@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,7 +41,7 @@ void run() {
   auto in2 = Header::open(argument[1]);
 
   check_headers(in1, in2);
-  if (get_options("keyval").size())
+  if (!get_options("keyval").empty())
     check_keyvals(in1, in2);
 
   CONSOLE("headers checked OK");

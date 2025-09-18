@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify correct operation when using a combination of -include and -mask
+tckedit tckedit/in.tck -include SIFT_phantom/upper.mif -mask tckedit/mask.mif tmp.tck -force
+testing_diff_tck tmp.tck tckedit/maskupper.tck
+
+tckedit tckedit/in.tck -include SIFT_phantom/lower.mif -mask tckedit/mask.mif tmp.tck -force
+testing_diff_tck tmp.tck tckedit/masklower.tck
+
+tckedit tckedit/in.tck -include SIFT_phantom/upper.mif -mask tckedit/mask.mif -inverse tmp.tck -force
+testing_diff_tck tmp.tck tckedit/invmaskupper.tck
+
+tckedit tckedit/in.tck -include SIFT_phantom/lower.mif -mask tckedit/mask.mif -inverse tmp.tck -force
+testing_diff_tck tmp.tck tckedit/invmasklower.tck

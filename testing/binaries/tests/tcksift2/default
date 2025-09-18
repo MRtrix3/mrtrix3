@@ -1,0 +1,24 @@
+#!/bin/bash
+# Verify operation of the SIFT2 algorithm on a phantom with known structure & reconstruction density bias
+# Based on the difference in lengths of the two bundles,
+#   and the use of homogeneous seeding during tractogram construction,
+#   the longer bundle presents more volume from which to seed
+#   and therefore contains a larger number of streamlines in the tractogram.
+# It is expected that when the per-streamline weights calculated by SIFT2
+#   are used to modulate the contribution of each streamline to a density map,
+#   the densities of the long and short bundles should be comparable to one another
+#
+# The test is run twice, once using multi-threading and once single-threaded
+rm -rf tmp/
+
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp.csv -output_debug tmp/ -csv tmp.csv -force
+tckmap SIFT_phantom/tracks.tck -template SIFT_phantom/mask.mif -precise -tck_weights_in tmp.csv tmp.mif -force
+mrstats tmp.mif -mask SIFT_phantom/upper.mif -output mean > tmp1.txt
+mrstats tmp.mif -mask SIFT_phantom/lower.mif -output mean > tmp2.txt
+testing_diff_matrix tmp1.txt tmp2.txt -abs 50
+
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp.csv -force -nthreads 0
+tckmap SIFT_phantom/tracks.tck -template SIFT_phantom/mask.mif -precise -tck_weights_in tmp.csv tmp.mif -force
+mrstats tmp.mif -mask SIFT_phantom/upper.mif -output mean > tmp1.txt
+mrstats tmp.mif -mask SIFT_phantom/lower.mif -output mean > tmp2.txt
+testing_diff_matrix tmp1.txt tmp2.txt -abs 50

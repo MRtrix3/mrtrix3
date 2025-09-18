@@ -39,9 +39,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -73,7 +73,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Lena Dorfschmidt (ld548@cam.ac.uk) and Jakub Vohryzek (jakub.vohryzek@queens.ox.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

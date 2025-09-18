@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,7 +42,7 @@ function prepend {
 # Generating documentation for all commands
 
 mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
-export PATH=$build_dir/bin:${mrtrix_root}/python/bin:"$PATH"
+export PATH=$build_dir/bin:$PATH
 dirpath=${mrtrix_root}'/docs/reference/commands'
 export LC_ALL=C
 
@@ -79,11 +79,11 @@ echo "
 " > $table_file
 
 cmdlist=""
-for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp"`; do
+for n in `find "${mrtrix_root}"/cpp/cmd/ -name "*.cpp"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
-for n in `find "${mrtrix_root}"/python/bin/ -type f -print0 | xargs -0 grep -l "import mrtrix3"`; do
-  cmdlist=$cmdlist$'\n'`basename $n`
+for n in `ls "${mrtrix_root}"/python/mrtrix3/commands/ --ignore=__init__.py* --ignore=CMakeLists.txt`; do
+  cmdlist=$cmdlist$'\n'`basename $n .py`
 done
 
 for n in `echo "$cmdlist" | sort`; do

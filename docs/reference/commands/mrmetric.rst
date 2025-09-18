@@ -26,7 +26,7 @@ Currently only the mean squared difference is fully implemented.
 Options
 -------
 
--  **-space iteration method** Image "space" in which the metric will be computed. Options are: voxel (default): per voxel; image1: scanner space of image 1; image2: scanner space of image 2; average: scanner space of the average affine transformation of image 1 and 2
+-  **-space iteration method** Image "space" in which the metric will be computed. Options are: voxel: per voxel; image1: scanner space of image 1; image2: scanner space of image 2; average: scanner space of the average affine transformation of image 1 and 2; default: voxel.
 
 -  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: linear).
 
@@ -70,7 +70,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
