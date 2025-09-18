@@ -55,14 +55,14 @@ inline size_t LforN(int N) { return N ? 2 * std::floor<size_t>((std::sqrt(float(
 //! form the SH->amplitudes matrix
 /*! This computes the matrix \a SHT mapping spherical harmonic
  * coefficients up to maximum harmonic degree \a lmax onto directions \a
- * dirs (in spherical coordinates, with columns [ azimuth elevation ]). */
+ * dirs (in spherical coordinates, with columns [ azimuth inclination ]). */
 template <class MatrixType>
 Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> init_transform(const MatrixType &dirs,
                                                                                           const int lmax) {
   using namespace Eigen;
   using value_type = typename MatrixType::Scalar;
   if (dirs.cols() != 2)
-    throw Exception("direction matrix should have 2 columns: [ azimuth elevation ]");
+    throw Exception("direction matrix should have 2 columns: [ azimuth inclination ]");
   Matrix<value_type, Dynamic, Dynamic> SHT(dirs.rows(), NforL(lmax));
   Matrix<value_type, Dynamic, 1, 0, 64> AL(lmax + 1);
   for (ssize_t i = 0; i < dirs.rows(); i++) {
@@ -183,19 +183,19 @@ protected:
 
 template <class VectorType>
 inline typename VectorType::Scalar value(const VectorType &coefs,
-                                         typename VectorType::Scalar cos_elevation,
+                                         typename VectorType::Scalar cos_inclination,
                                          typename VectorType::Scalar cos_azimuth,
                                          typename VectorType::Scalar sin_azimuth,
                                          int lmax) {
   using value_type = typename VectorType::Scalar;
   value_type amplitude = 0.0;
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);
-  Legendre::Plm_sph(AL, lmax, 0, cos_elevation);
+  Legendre::Plm_sph(AL, lmax, 0, cos_inclination);
   for (int l = 0; l <= lmax; l += 2)
     amplitude += AL[l] * coefs[index(l, 0)];
   value_type c0(1.0), s0(0.0);
   for (int m = 1; m <= lmax; m++) {
-    Legendre::Plm_sph(AL, lmax, m, cos_elevation);
+    Legendre::Plm_sph(AL, lmax, m, cos_inclination);
     value_type c = c0 * cos_azimuth - s0 * sin_azimuth; // std::cos(m*azimuth)
     value_type s = s0 * cos_azimuth + c0 * sin_azimuth; // std::sin(m*azimuth)
     for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
@@ -208,10 +208,10 @@ inline typename VectorType::Scalar value(const VectorType &coefs,
 
 template <class VectorType>
 inline typename VectorType::Scalar value(const VectorType &coefs,
-                                         typename VectorType::Scalar cos_elevation,
+                                         typename VectorType::Scalar cos_inclination,
                                          typename VectorType::Scalar azimuth,
                                          int lmax) {
-  return value(coefs, cos_elevation, std::cos(azimuth), std::sin(azimuth), lmax);
+  return value(coefs, cos_inclination, std::cos(azimuth), std::sin(azimuth), lmax);
 }
 
 template <class VectorType1, class VectorType2>
@@ -353,8 +353,8 @@ public:
     }
   }
 
-  void set(PrecomputedFraction<ValueType> &f, const ValueType elevation) const {
-    f.f2 = elevation / inc;
+  void set(PrecomputedFraction<ValueType> &f, const ValueType inclination) const {
+    f.f2 = inclination / inc;
     int i = int(f.f2);
     if (i < 0) {
       i = 0;
@@ -475,7 +475,7 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
 template <class VectorType>
 inline void derivatives(const VectorType &sh,
                         const int lmax,
-                        const typename VectorType::Scalar elevation,
+                        const typename VectorType::Scalar inclination,
                         const typename VectorType::Scalar azimuth,
                         typename VectorType::Scalar &amplitude,
                         typename VectorType::Scalar &dSH_del,
@@ -489,21 +489,21 @@ inline void derivatives(const VectorType &sh,
   }
 
   using value_type = typename VectorType::Scalar;
-  value_type sel = std::sin(elevation);
-  value_type cel = std::cos(elevation);
-  bool atpole = sel < 1e-4;
+  const value_type sin_incl = std::sin(inclination);
+  const value_type cos_incl = std::cos(inclination);
+  bool atpole = sin_incl < 1e-4;
 
   dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
   VLA_MAX(AL, value_type, NforL_mpos(lmax), 64);
 
   if (precomputer) {
     PrecomputedFraction<value_type> f;
-    precomputer->set(f, elevation);
+    precomputer->set(f, inclination);
     precomputer->get(AL, f);
   } else {
     Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> buf(lmax + 1);
     for (int m = 0; m <= lmax; m++) {
-      Legendre::Plm_sph(buf, lmax, m, cel);
+      Legendre::Plm_sph(buf, lmax, m, cos_incl);
       for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
         AL[index_mpos(l, m)] = buf[l];
     }
@@ -555,9 +555,9 @@ inline void derivatives(const VectorType &sh,
   }
 
   if (!atpole) {
-    dSH_daz /= sel;
-    d2SH_deldaz /= sel;
-    d2SH_daz2 /= sel * sel;
+    dSH_daz /= sin_incl;
+    d2SH_deldaz /= sin_incl;
+    d2SH_daz2 /= sin_incl * sin_incl;
   }
 }
 

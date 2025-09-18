@@ -21,8 +21,6 @@
 #include "raw.h"
 #include "types.h"
 
-#include <array>
-
 namespace MR {
 class Header;
 

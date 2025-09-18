@@ -63,7 +63,7 @@ template <class MatrixType> inline void check_DW_scheme(const Header &header, co
 }
 
 /*! \brief convert the DW encoding matrix in \a grad into a
- * azimuth/elevation direction set, using only the DWI volumes as per \a
+ * azimuth/inclination direction set, using only the DWI volumes as per \a
  * dwi */
 template <class MatrixType, class IndexVectorType>
 inline Eigen::MatrixXd gen_direction_matrix(const MatrixType &grad, const IndexVectorType &dwi) {

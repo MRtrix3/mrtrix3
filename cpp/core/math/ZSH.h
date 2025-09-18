@@ -40,10 +40,10 @@ inline size_t index(int l) { return (l / 2); }
 //! returns the largest \e lmax given \a N parameters
 inline size_t LforN(int N) { return (2 * (N - 1)); }
 
-//! form the ZSH->amplitudes matrix for a set of elevation angles
+//! form the ZSH->amplitudes matrix for a set of inclination angles
 /*! This computes the matrix \a ZSHT mapping zonal spherical harmonic
  * coefficients up to maximum harmonic degree \a lmax onto amplitudes on
- * a set of elevations stored in a vector */
+ * a set of inclinations stored in a vector */
 template <typename value_type, class VectorType>
 Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> init_amp_transform(const VectorType &els, const size_t lmax) {
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> ZSHT;
@@ -57,10 +57,10 @@ Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> init_amp_transform(con
   return ZSHT;
 }
 
-//! form the ZSH->derivatives matrix for a set of elevation angles
+//! form the ZSH->derivatives matrix for a set of inclination angles
 /*! This computes the matrix \a ZSHT mapping zonal spherical harmonic
  * coefficients up to maximum harmonic degree \a lmax onto derivatives
- * with respect to elevation angle, for a set of elevations stored in
+ * with respect to inclination angle, for a set of inclinations stored in
  * a vector */
 template <typename value_type, class VectorType>
 Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> init_deriv_transform(const VectorType &els,
@@ -83,8 +83,8 @@ public:
 
   template <class MatrixType>
   Transform(const MatrixType &dirs, const size_t lmax)
-      : ZSHT(init_amp_transform(dirs.col(1), lmax)), // Elevation angles are second column of aximuth/elevation matrix
-        iZSHT(pinv(ZSHT)) {}
+      // inclination angles are second column of azimuth/inclination matrix
+      : ZSHT(init_amp_transform(dirs.col(1), lmax)), iZSHT(pinv(ZSHT)) {}
 
   template <class VectorType1, class VectorType2> void A2ZSH(VectorType1 &zsh, const VectorType2 &amplitudes) const {
     zsh.noalias() = iZSHT * amplitudes;
@@ -105,10 +105,10 @@ protected:
 
 template <class VectorType>
 inline typename VectorType::Scalar
-value(const VectorType &coefs, typename VectorType::Scalar elevation, const size_t lmax) {
+value(const VectorType &coefs, typename VectorType::Scalar inclination, const size_t lmax) {
   using value_type = typename VectorType::Scalar;
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);
-  Legendre::Plm_sph(AL, lmax, 0, std::cos(elevation));
+  Legendre::Plm_sph(AL, lmax, 0, std::cos(inclination));
   value_type amplitude = 0.0;
   for (size_t l = 0; l <= lmax; l += 2)
     amplitude += AL[l] * coefs[index(l)];
@@ -117,10 +117,10 @@ value(const VectorType &coefs, typename VectorType::Scalar elevation, const size
 
 template <class VectorType>
 inline typename VectorType::Scalar
-derivative(const VectorType &coefs, const typename VectorType::Scalar elevation, const size_t lmax) {
+derivative(const VectorType &coefs, const typename VectorType::Scalar inclination, const size_t lmax) {
   using value_type = typename VectorType::Scalar;
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);
-  Legendre::Plm_sph(AL, lmax, 1, std::cos(elevation));
+  Legendre::Plm_sph(AL, lmax, 1, std::cos(inclination));
   value_type dZSH_del = 0.0;
   for (size_t l = 2; l <= lmax; l += 2)
     dZSH_del += AL[l] * coefs[index(l)] * sqrt(value_type(l * (l + 1)));
