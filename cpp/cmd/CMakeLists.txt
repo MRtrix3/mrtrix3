@@ -9,7 +9,6 @@ foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
 
-add_custom_target(MRtrixCppCommands)
 
 if(MRTRIX_USE_PCH)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp CONTENT "int main(){}")
@@ -50,8 +49,8 @@ function(add_cmd CMD_SRC IS_GUI)
     endif ()
 
     install(TARGETS ${CMD_NAME}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION ${MRTRIX_INSTALL_BINDIR}
+        BUNDLE DESTINATION ${MRTRIX_INSTALL_BINDIR}
     )
 endfunction()
 
