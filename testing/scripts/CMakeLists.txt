@@ -256,6 +256,7 @@ add_bash_script_test(peakscheck/mask)
 add_bash_script_test(peakscheck/noshuffle "pythonci")
 add_bash_script_test(peakscheck/notransform "pythonci")
 add_bash_script_test(peakscheck/out_table)
+add_bash_script_test(peakscheck/reference)
 add_bash_script_test(peakscheck/spherical)
 add_bash_script_test(peakscheck/spherical_permutation)
 

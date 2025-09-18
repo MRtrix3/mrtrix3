@@ -31,7 +31,9 @@ Options
 
 - **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
 
-- **-in_format choice** The format in which peak orientations are specified; one of: spherical,unitspherical,3vector,unit3vector
+- **-format choice** The format in which peak orientations are specified; one of: spherical,unitspherical,3vector,unit3vector
+
+- **-reference choice** The a priori expected references axes against which the input orientations are defined; one of: xyz,ijk,fsl
 
 - **-noshuffle** Do not evaluate possibility of requiring shuffles of axes or angles; only consider prospective transforms from alternative reference frames to real / scanner space
 

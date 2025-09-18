@@ -49,7 +49,11 @@ DEFAULT_THRESHOLD = 0.95
 
 FORMATS = ('spherical', 'unitspherical', '3vector', 'unit3vector')
 DEFAULT_FORMAT = '3vector'
+REFERENCES = ('xyz', 'ijk', 'fsl')
+DEFAULT_REFERENCE = 'xyz'
 
+NO_REALIGN_OPTIONSTR = '-config RealignTransform false'
+NO_REALIGN_OPTIONLIST = ['-config', 'RealignTransform', 'false']
 
 
 def usage(cmdline): #pylint: disable=unused-variable
@@ -83,11 +87,16 @@ def usage(cmdline): #pylint: disable=unused-variable
                        default=DEFAULT_THRESHOLD,
                        help='Modulate thresold on the ratio of empirical to maximal mean length'
                             ' to issue an error')
-  cmdline.add_argument('-in_format',
+  cmdline.add_argument('-format',
                        choices=FORMATS,
                        default=DEFAULT_FORMAT,
                        help='The format in which peak orientations are specified;'
                             f' one of: {",".join(FORMATS)}')
+  cmdline.add_argument('-reference',
+                       choices=REFERENCES,
+                       default=DEFAULT_REFERENCE,
+                       help='The a priori expected references axes against which the input orientations are defined;'
+                            f' one of: {",".join(REFERENCES)}')
   cmdline.add_argument('-noshuffle',
                        action='store_true',
                        help='Do not evaluate possibility of requiring shuffles of axes or angles;'
@@ -162,18 +171,18 @@ class EuclideanShuffle(Operation):
       temppath = f'{os.path.splitext(in_path)[0]}_{flip_string}{in_volume_index}_{out_volume_index}.mif'
       cmd = ['mrconvert', in_path,
              '-coord', '3', f'{in_volume_index}',
-             '-axes', '0,1,2',
-             '-config', 'RealignTransform', 'false']
+             '-axes', '0,1,2'] \
+            + NO_REALIGN_OPTIONLIST
       if flip:
-        cmd.extend(['-', '|', 'mrcalc', '-', '-1.0', '-mult',
-                    '-config', 'RealignTransform', 'false'])
+        cmd.extend(['-', '|', 'mrcalc', '-', '-1.0', '-mult']
+                   + NO_REALIGN_OPTIONLIST)
       cmd.append(temppath)
       run.command(cmd)
       volume_list[out_volume_index] = temppath
     assert all(item is not None for item in volume_list)
     run.command(['mrcat', volume_list, out_path,
-                 '-axis', '3',
-                 '-config', 'RealignTransform', 'false'])
+                 '-axis', '3']
+                + NO_REALIGN_OPTIONLIST)
     for item in volume_list:
       os.remove(item)
 
@@ -192,8 +201,8 @@ class EuclideanTransform(Operation):
                  '-in_reference', self.reference,
                  '-in_format', '3vector',
                  '-out_reference', 'xyz',
-                 '-out_format', '3vector',
-                 '-config', 'RealignTransform', 'false'])
+                 '-out_format', '3vector']
+                + NO_REALIGN_OPTIONLIST)
 
 class SphericalShuffle(Operation):
   @staticmethod
@@ -241,19 +250,19 @@ class SphericalShuffle(Operation):
       temppath = f'{os.path.splitext(in_path)[0]}_{in_volume_index}{"el2in" if self.el2in else ""}_{out_volume_index}.mif'
       cmd = ['mrconvert', in_path,
              '-coord', '3', f'{in_volume_index}',
-             '-axes', '0,1,2',
-             '-config', 'RealignTransform', 'false']
+             '-axes', '0,1,2'] \
+            + NO_REALIGN_OPTIONLIST
       # Do we need to apply the elevation->inclination transform?
       if self.el2in and out_component == self.volsperfixel() - 1:
-        cmd.extend(['-', '|', 'mrcalc', '0.5', 'pi', '-mult', '-', '-sub',
-                    '-config', 'RealignTransform', 'false'])
+        cmd.extend(['-', '|', 'mrcalc', '0.5', 'pi', '-mult', '-', '-sub']
+                   + NO_REALIGN_OPTIONLIST)
       cmd.append(temppath)
       run.command(cmd)
       volume_list[out_volume_index] = temppath
     assert all(item is not None for item in volume_list)
     run.command(['mrcat', volume_list, out_path,
-                 '-axis', '3',
-                 '-config', 'RealignTransform', 'false'])
+                 '-axis', '3']
+                + NO_REALIGN_OPTIONLIST)
     for item in volume_list:
       os.remove(item)
 
@@ -273,8 +282,8 @@ class SphericalTransform(Operation):
                  '-in_reference', self.reference,
                  '-in_format', 'unitspherical' if self.is_unit else 'spherical',
                  '-out_reference', 'xyz',
-                 '-out_format', 'unitspherical' if self.is_unit else 'spherical',
-                 '-config', 'RealignTransform', 'false'])
+                 '-out_format', 'unitspherical' if self.is_unit else 'spherical']
+                + NO_REALIGN_OPTIONLIST)
 
 class Spherical2Cartesian(Operation):
   @staticmethod
@@ -289,8 +298,8 @@ class Spherical2Cartesian(Operation):
   def cmd(self, _, in_path, out_path):
     run.command(['peaksconvert', in_path, out_path,
                  '-in_format', 'unitspherical' if self.is_unit else 'spherical',
-                 '-out_format', 'unit3vector' if self.is_unit else '3vector',
-                 '-config', 'RealignTransform', 'false'])
+                 '-out_format', 'unit3vector' if self.is_unit else '3vector']
+                + NO_REALIGN_OPTIONLIST)
 
 
 
@@ -303,10 +312,21 @@ class Variant():
     if not self.operations:
       return 'none'
     return '_'.join(f'{item}' for item in self.operations)
-  def is_default(self):
-    if not self.operations:
+  def is_expected(self, expected_reference):
+    if expected_reference == 'xyz':
+      if not self.operations:
+        return True
+      return len(self.operations) == 1 and isinstance(self.operations[0], Spherical2Cartesian)
+    if len(self.operations) == 1 \
+        and isinstance(self.operations[0], EuclideanTransform) \
+        and self.operations[0].reference == expected_reference:
       return True
-    return len(self.operations) == 1 and isinstance(self.operations[0], Spherical2Cartesian)
+    if len(self.operations) == 2 \
+        and isinstance(self.operations[0], SphericalTransform) \
+        and self.operations[0].reference == expected_reference \
+        and isinstance(self.operations[1], Spherical2Cartesian):
+      return True
+    return False
 
 def sort_key(item):
   assert item.mean_length is not None
@@ -322,19 +342,19 @@ def execute(): #pylint: disable=unused-variable
   if min(image_dimensions) == 1:
     raise MRtrixError('Cannot perform tractography on an image with a unity dimension')
   num_volumes = image_dimensions[3]
-  if app.ARGS.in_format in ('unit3vector', '3vector'):
+  if app.ARGS.format in ('unit3vector', '3vector'):
     num_fixels = num_volumes // 3
     if 3 * num_fixels != num_volumes:
       raise MRtrixError(f'Number of input volumes ({num_volumes})'
                         ' not a valid peaks image:'
                         ' must be a multiple of 3')
-  elif app.ARGS.in_format == 'spherical':
+  elif app.ARGS.format == 'spherical':
     num_fixels = num_volumes // 3
     if 3 * num_fixels != num_volumes:
       raise MRtrixError(f'Number of input volumes ({num_volumes})'
                         ' not a valid spherical coordinates image:'
                         ' must be a multiple of 3')
-  elif app.ARGS.in_format == 'unitspherical':
+  elif app.ARGS.format == 'unitspherical':
     num_fixels = num_volumes // 2
     if 2 * num_fixels != num_volumes:
       raise MRtrixError(f'Number of input volumes ({num_volumes})'
@@ -343,7 +363,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     assert False
 
-  is_unit = app.ARGS.in_format in ('unitspherical', 'unit3vector')
+  is_unit = app.ARGS.format in ('unitspherical', 'unit3vector')
 
   app.activate_scratch_dir()
 
@@ -353,24 +373,24 @@ def execute(): #pylint: disable=unused-variable
   #   we need for the strides to not be modified by MRtrix3 at the load stage
   run.command(f'mrconvert {app.ARGS.input} data.mif'
               ' -datatype float32'
-              ' -config RealignTransform false')
+              f' {NO_REALIGN_OPTIONSTR}')
 
   if app.ARGS.mask:
     run.command(f'mrconvert {app.ARGS.mask} mask.mif'
                 ' -datatype bit'
-                ' -config RealignTransform false')
+                f' {NO_REALIGN_OPTIONSTR}')
 
   # Generate a brain mask if we weren't provided with one
   if not app.ARGS.mask:
-    run.command('mrcalc data.mif -abs - -config RealignTransform false | '
-                'mrmath - max -axis 3 - -config RealignTransform false | '
-                'mrthreshold - mask.mif -abs 0.0 -comparison gt -config RealignTransform false')
+    run.command(f'mrcalc data.mif -abs - {NO_REALIGN_OPTIONSTR} | '
+                f'mrmath - max -axis 3 - {NO_REALIGN_OPTIONSTR} | '
+                f'mrthreshold - mask.mif -abs 0.0 -comparison gt {NO_REALIGN_OPTIONSTR}')
 
   # How many tracks are we going to generate?
   number_option = ['-select', str(app.ARGS.number)]
 
   operation_sets = THREEVECTOR_OPERATION_SETS \
-                   if app.ARGS.in_format in ('unit3vector', '3vector') \
+                   if app.ARGS.format in ('unit3vector', '3vector') \
                    else SPHERICAL_OPERATION_SETS
 
   # To facilitate looping in order to generate all possible variants,
@@ -412,7 +432,7 @@ def execute(): #pylint: disable=unused-variable
         assert False
     for variant in itertools.product(*operations_list):
       variants.append(Variant(list(variant)))
-  app.debug(f'Complete list of variants for {app.ARGS.in_format} input format:')
+  app.debug(f'Complete list of variants for {app.ARGS.format} input format:')
   for variant in variants:
     app.debug(f'{variant}')
 
@@ -448,8 +468,8 @@ def execute(): #pylint: disable=unused-variable
                  '-mask', 'mask.mif',
                  '-minlength', '0',
                  '-downsample', '5',
-                 '-config', 'RealignTransform', 'false',
                  track_file_path]
+                + NO_REALIGN_OPTIONLIST
                 + number_option)
     if imagepath != 'data.mif':
       app.cleanup(imagepath)
@@ -460,7 +480,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(track_file_path)
 
     # Save result if this is the unmodified empirical gradient table
-    if variant.is_default():
+    if variant.is_expected(app.ARGS.reference):
       assert meanlength_default is None
       meanlength_default = mean_length
 
@@ -475,7 +495,7 @@ def execute(): #pylint: disable=unused-variable
   sorted_variants.sort(reverse=True, key=sort_key)
   meanlength_max = sorted_variants[0].mean_length
 
-  if sorted_variants[0].is_default():
+  if sorted_variants[0].is_expected(app.ARGS.reference):
     meanlength_ratio = 1.0
     app.console('Absence of manipulation of peaks orientations'
                 ' resulted in the maximal mean length')
