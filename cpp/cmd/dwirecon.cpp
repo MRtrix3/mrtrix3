@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -94,8 +94,8 @@ void usage() {
     " but opposite phase encoding direction,"
     " and explicitly combine each pair into a single output volume,"
     " where the contribution of each image in the pair to the output image intensity"
-    " is modulated by the relative Jacobians of the two distorted images:"
-    " out = ((in_1 * jacobian_1^2) + (in_2 * jacobian_2^2)) / (jacobian_1^2 + jacobian_2^2)."
+    " is modulated by the relative Jacobian determinants of the two distorted images:"
+    " out = ((in_1 * jacdet_1^2) + (in_2 * jacdet_2^2)) / (jacdet_1^2 + jacdet_2^2)."
 
   + "The \"combine_predicted\" operation is intended for DWI acquisition designs"
     " where the diffusion gradient table is split between different phase encoding directions. "
@@ -106,9 +106,9 @@ void usage() {
     " that did not experience such compression. "
     "The output signal intensity is determined by the expression:"
     " out = (weight * empirical) + ((1.0 - weight) * predicted),"
-    " where weight = max(0, min(1, jacobian^exponent));"
+    " where weight = max(0, min(1, jacdet^exponent));"
     " in this way,"
-    " where the Jacobian for a volume is 1 or greater"
+    " where the determinant of the Jacobian for a volume is 1 or greater"
     " (ie. signal was expanded in the acquired image data)"
     " the empirical intensity is preserved exactly,"
     " whereas where it is less than 1"
@@ -202,7 +202,7 @@ std::pair<size_t, default_type> get_pe_axis_and_polarity(const Eigen::Block<sche
 //   where each desired diffusion sensitisation
 //   has been acquired with > 2 phase encoding directions,
 //   and one wishes for all of those volumes to be combined into a single output volume,
-//   with weights determined by their respective Jacobians
+//   with weights determined by their respective Jacobian determinants
 void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const scheme_type &pe_in, Header &header_out) {
 
   if (grad_in.rows() % 2)
@@ -391,14 +391,14 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
 
   if (field_image.valid()) {
 
-    // std::vector<Image<float>> jacobian_images;
+    // std::vector<Image<float>> jacdet_images;
     std::vector<Image<float>> weight_images;
     {
       // Need to calculate the "weight" to be applied to each phase encoding group during volume recombination
-      // This is based on the Jacobian of the field along the phase encoding direction,
+      // This is based on the determinant of the Jacobian of the field along the phase encoding direction,
       //   scaled by the total readout time
       ProgressBar progress("Computing phase encoding group weighting images", pe_config.rows() + 1);
-      // Apply a little smoothing to the field image before computing Jacobians;
+      // Apply a little smoothing to the field image before computing Jacobian determinants;
       //   this is to be consistent with prior dwifslpreproc code,
       //   which directly invoked "mrfilter gradient"
       // Allow smoothing filter to use internal default
@@ -408,19 +408,19 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       ++progress;
       Adapter::Gradient1D<Image<float>> gradient(smoothed_field);
       for (size_t pe_index = 0; pe_index != pe_config.rows(); ++pe_index) {
-        // Image<float> jacobian_image =
-        //     Image<float>::scratch(field_image, "Scratch Jacobian image for PE index " + str(pe_index));
+        // Image<float> jacdet_image =
+        //     Image<float>::scratch(field_image, "Scratch Jacobian determinant image for PE index " + str(pe_index));
         Image<float> weight_image =
             Image<float>::scratch(field_image, "Scratch weight image for PE index " + str(pe_index));
         const auto pe_axis_and_multiplier = get_pe_axis_and_polarity(pe_config.block<1, 3>(pe_index, 0));
         gradient.set_axis(pe_axis_and_multiplier.first);
         const default_type multiplier = pe_axis_and_multiplier.second * pe_config(pe_index, 3);
-        for (auto l = Loop(gradient)(gradient, /*jacobian_image,*/ weight_image); l; ++l) {
-          const default_type jacobian = std::max(0.0, 1.0 + (gradient.value() * multiplier));
-          // jacobian_image.value() = jacobian;
-          weight_image.value() = Math::pow2(jacobian);
+        for (auto l = Loop(gradient)(gradient, /*jacdet_image,*/ weight_image); l; ++l) {
+          const default_type jacdet = std::max(0.0, 1.0 + (gradient.value() * multiplier));
+          // jacdet_image.value() = jacdet;
+          weight_image.value() = Math::pow2(jacdet);
         }
-        // jacobian_images.push_back(std::move(jacobian_image));
+        // jacdet_images.push_back(std::move(jacdet_image));
         weight_images.push_back(std::move(weight_image));
         ++progress;
       }
@@ -502,20 +502,20 @@ void run_combine_predicted(Image<float> &dwi_in,
     }
   }
 
-  // Apply a little smoothing to the field image before computing Jacobians;
+  // Apply a little smoothing to the field image before computing Jacobian determinants;
   //   this is to be consistent with prior dwifslpreproc code,
   //   which directly invoked "mrfilter gradient"
   // Allow smoothing filter to use internal default
   Image<float> smoothed_field = Image<float>::scratch(field_image, "Smoothed field offset image");
-  std::vector<Image<float>> jacobian_images;
+  std::vector<Image<float>> jacdet_images;
   {
-    ProgressBar progress("Calculating phase encoding group Jacobians", pe_config.rows() + 1);
+    ProgressBar progress("Calculating phase encoding group Jacobian determinants", pe_config.rows() + 1);
     Filter::Smooth smoothing_filter(field_image);
     smoothing_filter(field_image, smoothed_field);
     ++progress;
     Adapter::Gradient1D<Image<float>> gradient(smoothed_field);
 
-    // Immediately generate Jacobian images for each phase encoding group;
+    // Immediately generate Jacobian determinant images for each phase encoding group;
     //   these can then be used for both:
     //   - Computing the weight to be attributed to the empirical data in output data generation
     //   - Construction of weighted SH fit
@@ -523,11 +523,11 @@ void run_combine_predicted(Image<float> &dwi_in,
       const auto pe_axis_and_multiplier = get_pe_axis_and_polarity(pe_config.block<1, 3>(pe_index, 0));
       gradient.set_axis(pe_axis_and_multiplier.first);
       const default_type multiplier = pe_axis_and_multiplier.second * pe_config(pe_index, 3);
-      Image<float> jacobian_image =
-          Image<float>::scratch(field_image, "Jacobian image for phase encoding group " + str(pe_index));
-      for (auto l = Loop(gradient)(gradient, jacobian_image); l; ++l)
-        jacobian_image.value() = std::max(0.0, 1.0 + (gradient.value() * multiplier));
-      jacobian_images.push_back(std::move(jacobian_image));
+      Image<float> jacdet_image =
+          Image<float>::scratch(field_image, "Jacobian determinant image for phase encoding group " + str(pe_index));
+      for (auto l = Loop(gradient)(gradient, jacdet_image); l; ++l)
+        jacdet_image.value() = std::max(0.0, 1.0 + (gradient.value() * multiplier));
+      jacdet_images.push_back(std::move(jacdet_image));
       ++progress;
     }
   }
@@ -635,11 +635,11 @@ void run_combine_predicted(Image<float> &dwi_in,
         source2target = SH2target * source2SH;
 
         // Now we are ready to loop over the image
-        Image<float> jacobian(jacobian_images[pe_index]);
-        for (auto l = Loop(jacobian)(jacobian, dwi_in, dwi_out); l; ++l) {
+        Image<float> jacdet(jacdet_images[pe_index]);
+        for (auto l = Loop(jacdet)(jacdet, dwi_in, dwi_out); l; ++l) {
           // How much weight are we attributing to the empirical data?
           // (if 1.0, we don't need to bother generating predictions)
-          default_type empirical_weight = std::max(0.0, std::min(1.0, default_type(jacobian.value())));
+          default_type empirical_weight = std::max(0.0, std::min(1.0, default_type(jacdet.value())));
           if (empirical_weight == 1.0) {
             for (const auto volume : target_volumes) {
               dwi_in.index(3) = dwi_out.index(3) = volume;
@@ -670,26 +670,26 @@ void run_combine_predicted(Image<float> &dwi_in,
         //   therefore multiple phase encoding groups contributing to predictions
 
         data_vector_type source_weights(source_volumes.size());
-        data_vector_type jacobians(pe_config.rows());
+        data_vector_type jacdets(pe_config.rows());
 
         // Build part of the requisite data for the A2SH transform in this voxel
         //   (the directions are the same for every voxel;
-        //   the weights, which are influenced by the Jacobians, are not)
+        //   the weights, which are influenced by the Jacobian determinants, are not)
         for (size_t source_index = 0; source_index != source_volumes.size(); ++source_index)
           Math::Sphere::cartesian2spherical(grad_in.block<1, 3>(source_volumes[source_index], 0),
                                             source_dirset.row(source_index));
 
         for (auto l = Loop(dwi_in, 0, 3)(dwi_in, dwi_out); l; ++l) {
 
-          // We may need access to Jacobians for all phase encoding groups
-          for (size_t jacobian_index = 0; jacobian_index != pe_config.rows(); ++jacobian_index) {
-            assign_pos_of(dwi_in, 0, 3).to(jacobian_images[jacobian_index]);
-            jacobians[jacobian_index] = jacobian_images[jacobian_index].value();
+          // We may need access to Jacobian determinants for all phase encoding groups
+          for (size_t jacdet_index = 0; jacdet_index != pe_config.rows(); ++jacdet_index) {
+            assign_pos_of(dwi_in, 0, 3).to(jacdet_images[jacdet_index]);
+            jacdets[jacdet_index] = jacdet_images[jacdet_index].value();
           }
 
           // If using exclusively empirical data,
           //   make that determination as soon as possible to avoid unnecessary computation
-          default_type empirical_weight = std::max(0.0, std::min(1.0, jacobians[pe_index]));
+          default_type empirical_weight = std::max(0.0, std::min(1.0, jacdets[pe_index]));
           if (empirical_weight == 1.0) {
             for (const auto volume : target_volumes) {
               dwi_in.index(3) = dwi_out.index(3) = volume;
@@ -705,7 +705,7 @@ void run_combine_predicted(Image<float> &dwi_in,
             // This would need to deal with the prospect of an exponent of -inf / +inf
             //   (or be a separate command-line option)
             for (size_t source_index = 0; source_index != source_volumes.size(); ++source_index) {
-              source_weights[source_index] = std::max(0.0, jacobians[pe_indices[source_volumes[source_index]]]);
+              source_weights[source_index] = std::max(0.0, jacdets[pe_indices[source_volumes[source_index]]]);
               dwi_in.index(3) = source_volumes[source_index];
               source_data[source_index] = dwi_in.value();
             }
