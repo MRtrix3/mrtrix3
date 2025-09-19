@@ -34,9 +34,23 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> operations = {"combine_pairs", "combine_predicted", "leave_one_out"};
+// Other future operations that might be applicable here:
+// - "leave-one-out": Predict each intensity based on all observations excluding that one
+// - SHARD recon
+const std::vector<std::string> operations = {"combine_pairs", "combine_predicted"};
 
 // clang-format off
+const OptionGroup common_options = OptionGroup("Options common to multiple operations")
+  + Option("field", "provide a B0 field offset image in Hz")
+      + Argument("image").type_image_in();
+
+const OptionGroup combinepredicted_options = OptionGroup("Options specific to \"combine_predicted\" operation")
+  + Option("lmax", "set the maximal spherical harmonic degrees to use"
+                   " (one for each b-value)"
+                   " during signal reconstruction")
+      + Argument("value").type_sequence_int();
+  // TODO Add option to modulate weight of contributions between empirical and predicted signal
+
 void usage() {
 
   AUTHOR = "Robert E. Smith (fobert.smith@florey.edu.au)";
@@ -64,11 +78,6 @@ void usage() {
     " where the contribution of each image in the pair to the output image intensity"
     " is modulated by the relative Jacobians of the two distorted images."
 
-  + "The \"leave_one_out\" operation derives an estimate for the DWI signal intensity"
-    " for each sample based on all other samples in that voxel,"
-    " and generates the output image based on all such estimates."
-    " NOTE: NOT YET IMPLEMENTED"
-
   + "The \"combine_predicted\" operation is intended for DWI acquisition designs"
     " where the diffusion gradient table is split between different phase encoding directions."
     " Here, where there is greater uncertainty in what the DWI signal should look like"
@@ -87,23 +96,20 @@ void usage() {
     + Argument ("output", "the output DWI series").type_image_out();
 
   OPTIONS
-    + Option("field", "provide a B0 field offset image in Hz")
-      + Argument("image").type_image_in()
+    + common_options
 
-    + Option("lmax", "set the maximal spherical harmonic degrees to use (one for each b-value) during signal reconstruction")
-      + Argument("value").type_sequence_int()
+    + combinepredicted_options
 
     // TODO Give capability to provide this information from the command-line,
     //   rather than relying on internal heuristics to achieve the pairing;
     //   calculations made prior to motion correction may be more robust
-    + Option("volume_pairs", "provide a text file specifying the volume indices that are paired and should therefore be combined")
-      + Argument("file").type_file_in()
+    //+ Option("volume_pairs", "provide a text file specifying the volume indices that are paired and should therefore be combined")
+    //  + Argument("file").type_file_in()
 
     // TODO Add option to utilise proximity of samples in weighted fit
 
     // TODO Appropriate to have other command-line options to specify the phase encoding design?
     + Metadata::PhaseEncoding::ImportOptions
-    + Metadata::PhaseEncoding::ExportOptions
     + DWI::GradImportOptions()
     + DWI::GradExportOptions();
 
@@ -156,7 +162,7 @@ std::vector<int> get_vol2shell(const DWI::Shells &shells, const size_t volume_co
 // Find:
 //   - Which image axis the gradient is to be computed along
 //   - Whether the sign needs to be negated
-std::pair<size_t, default_type> get_pe_axis_and_sign(const Eigen::Block<scheme_type, 1, 3> pe_dir) {
+std::pair<size_t, default_type> get_pe_axis_and_polarity(const Eigen::Block<scheme_type, 1, 3> pe_dir) {
   for (size_t axis_index = 0; axis_index != 3; ++axis_index) {
     if (pe_dir[axis_index] != 0)
       return std::make_pair(axis_index, pe_dir[axis_index] > 0 ? 1.0 : -1.0);
@@ -184,7 +190,9 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
 
   scheme_type pe_config;
   Eigen::Array<int, Eigen::Dynamic, 1> pe_indices;
-  PhaseEncoding::scheme2eddy(pe_in, pe_config, pe_indices);
+  // Even though the function is called "topup2eddy()",
+  //   we can nevertheless use it here to arrange volumes into groups
+  Metadata::PhaseEncoding::topup2eddy(pe_in, pe_config, pe_indices);
   if (pe_config.rows() % 2)
     throw Exception("Cannot perform explicit volume recombination based on phase encoding pairs:"
                     " number of unique phase encodings is odd");
@@ -352,7 +360,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
             Image<float>::scratch(field_image, "Scratch Jacobian image for PE index " + str(pe_index));
         Image<float> weight_image =
             Image<float>::scratch(field_image, "Scratch weight image for PE index " + str(pe_index));
-        const auto pe_axis_and_multiplier = get_pe_axis_and_sign(pe_config.block<1, 3>(pe_index, 0));
+        const auto pe_axis_and_multiplier = get_pe_axis_and_polarity(pe_config.block<1, 3>(pe_index, 0));
         gradient.set_axis(pe_axis_and_multiplier.first);
         const default_type multiplier = pe_axis_and_multiplier.second * pe_config(pe_index, 3);
         for (auto l = Loop(gradient)(gradient, jacobian_image, weight_image); l; ++l) {
@@ -412,7 +420,9 @@ void run_combine_predicted(Image<float> &dwi_in,
 
   scheme_type pe_config;
   Eigen::Array<int, Eigen::Dynamic, 1> pe_indices;
-  Metadata::PhaseEncoding::scheme2eddy(pe_in, pe_config, pe_indices);
+  // Even though the function is called "topup2eddy()",
+  //   we can nevertheless use it to perform the arrangement of volumes into groups
+  Metadata::PhaseEncoding::topup2eddy(pe_in, pe_config, pe_indices);
   // The FSL topup / eddy format indexes from one;
   //   change to starting from zero for internal array indexing
   pe_indices -= 1;
@@ -487,7 +497,7 @@ void run_combine_predicted(Image<float> &dwi_in,
     //   - Computing the weight to be attributed to the empirical data in output data generation
     //   - Construction of weighted SH fit
     for (size_t pe_index = 0; pe_index != pe_config.rows(); ++pe_index) {
-      const auto pe_axis_and_multiplier = get_pe_axis_and_sign(pe_config.block<1, 3>(pe_index, 0));
+      const auto pe_axis_and_multiplier = get_pe_axis_and_polarity(pe_config.block<1, 3>(pe_index, 0));
       gradient.set_axis(pe_axis_and_multiplier.first);
       const default_type multiplier = pe_axis_and_multiplier.second * pe_config(pe_index, 3);
       Image<float> jacobian_image =
@@ -514,6 +524,7 @@ void run_combine_predicted(Image<float> &dwi_in,
     //   then (1.0 - value) will be the weighting fraction with which
     //   the predictions from other phase encoding groups will contribute
     // TODO Consider making this more preservative; eg. sqrt(jacobian)
+    //   (or offer it as a command-line option)
     // TODO Also here for now we are assuming that from a single A2SH transformation (per shell),
     //   we can then do a single SH2A transformation
     //   to get all of the amplitudes of interest for this phase encoding
@@ -669,7 +680,7 @@ void run_combine_predicted(Image<float> &dwi_in,
           }
 
           // If using exclusively empirical data,
-          //   make that determination as soon as posibble to avoid unnecessary computation
+          //   make that determination as soon as possible to avoid unnecessary computation
           const default_type empirical_weight = std::max(0.0, std::min(1.0, jacobians[pe_index]));
           if (empirical_weight == 1.0) {
             for (const auto volume : target_volumes) {
@@ -711,7 +722,7 @@ void run() {
 
   auto dwi_in = Header::open(argument[0]).get_image<float>();
   auto grad_in = DWI::get_DW_scheme(dwi_in);
-  auto pe_in = PhaseEncoding::get_scheme(dwi_in);
+  auto pe_in = Metadata::PhaseEncoding::get_scheme(dwi_in);
 
   Header header_out(dwi_in);
   header_out.datatype() = DataType::Float32;
@@ -722,15 +733,12 @@ void run() {
 
   case 0:
     run_combine_pairs(dwi_in, grad_in, pe_in, header_out);
-    PhaseEncoding::clear_scheme(header_out);
+    Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
     break;
 
   case 1:
     run_combine_predicted(dwi_in, grad_in, pe_in, header_out);
     break;
-
-  case 2:
-    throw Exception("leave_one_out operation not yet implemented");
 
   default: // no others yet implemented
     assert(false);
