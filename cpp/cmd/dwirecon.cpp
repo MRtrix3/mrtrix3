@@ -243,8 +243,10 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       const auto pe_second = pe_config.row(pe_second_index);
       // Phase encoding same axis but reversed direction
       // and
-      // Equal total readout time
-      if (((pe_second.head(3) + pe_first.head(3)).squaredNorm() == 0) && (pe_second[3] && pe_first[3])) {
+      // Equal total readout time (if present)
+      if (((pe_second.head(3) + pe_first.head(3)).squaredNorm() == 0) &&                     //
+          (pe_config.cols() == 3 ||                                                          //
+           std::abs(pe_second[3] - pe_first[3]) < Metadata::PhaseEncoding::trt_tolerance)) { //
         peindex2paired[pe_first_index] = pe_second_index;
         peindex2paired[pe_second_index] = pe_first_index;
         pe_pairs.push_back(std::make_pair(pe_first_index, pe_second_index));
