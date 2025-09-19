@@ -38,18 +38,26 @@ using namespace App;
 // - "leave-one-out": Predict each intensity based on all observations excluding that one
 // - SHARD recon
 const std::vector<std::string> operations = {"combine_pairs", "combine_predicted"};
+constexpr default_type default_combinepredicted_exponent = 1.0;
 
 // clang-format off
 const OptionGroup common_options = OptionGroup("Options common to multiple operations")
   + Option("field", "provide a B0 field offset image in Hz")
       + Argument("image").type_image_in();
+  // TODO Another option that may be applicable to multiple operations
+  //   (though only "combine_predicted" for now):
+  //   weighted SH fit,
+  //   with weights determined by proximity to any given observation
 
 const OptionGroup combinepredicted_options = OptionGroup("Options specific to \"combine_predicted\" operation")
   + Option("lmax", "set the maximal spherical harmonic degrees to use"
                    " (one for each b-value)"
                    " during signal reconstruction")
-      + Argument("value").type_sequence_int();
-  // TODO Add option to modulate weight of contributions between empirical and predicted signal
+      + Argument("value").type_sequence_int()
+  + Option("exponent", "set the exponent modulating relative contributions"
+                       " between empirical and predicted signal"
+                       " (see Description)")
+      + Argument("value").type_float();
 
 void usage() {
 
@@ -76,18 +84,30 @@ void usage() {
     " but opposite phase encoding direction,"
     " and explicitly combine each pair into a single output volume,"
     " where the contribution of each image in the pair to the output image intensity"
-    " is modulated by the relative Jacobians of the two distorted images."
+    " is modulated by the relative Jacobians of the two distorted images:"
+    " out = ((in_1 * jacobian_1^2) + (in_2 * jacobian_2^2)) / (jacobian_1^2 + jacobian_2^2)."
 
   + "The \"combine_predicted\" operation is intended for DWI acquisition designs"
-    " where the diffusion gradient table is split between different phase encoding directions."
-    " Here, where there is greater uncertainty in what the DWI signal should look like"
+    " where the diffusion gradient table is split between different phase encoding directions. "
+    "Here, where there is greater uncertainty in what the DWI signal should look like"
     " due to susceptibility-driven signal compression in the acquired image data,"
     " the reconstructed image will be moreso influenced by the signal intensity"
     " that is estimated from those volumes with different phase encoding"
-    " that did not experience such compression."
-    " This is intended to act as a surrogate for weighted model fitting"
-    " where the downstream model is not yet compatible with taking user-specified"
-    " weights into account.";
+    " that did not experience such compression. "
+    "The output signal intensity is determined by the expression:"
+    " out = (weight * empirical) + ((1.0 - weight) * predicted),"
+    " where weight = max(0, min(1, jacobian^exponent));"
+    " in this way,"
+    " where the Jacobian for a volume is 1 or greater"
+    " (ie. signal was expanded in the acquired image data)"
+    " the empirical intensity is preserved exactly,"
+    " whereas where it is less than 1"
+    " (ie. signal was compressed in the acquired image data,"
+    " leading to a loss of spatial contrast),"
+    " the empirical data are aggregated with that predicted"
+    " from groups of volumes with alternative phase encoding directions,"
+    " with the relative contributions influenced by the value of command-line option -exponent"
+    " (which has a default value of 1.0).";
 
   ARGUMENTS
     + Argument ("input", "the input DWI series").type_image_in()
@@ -105,8 +125,6 @@ void usage() {
     //   calculations made prior to motion correction may be more robust
     //+ Option("volume_pairs", "provide a text file specifying the volume indices that are paired and should therefore be combined")
     //  + Argument("file").type_file_in()
-
-    // TODO Add option to utilise proximity of samples in weighted fit
 
     // TODO Appropriate to have other command-line options to specify the phase encoding design?
     + Metadata::PhaseEncoding::ImportOptions
@@ -181,7 +199,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
     throw Exception("Cannot perform explicit volume recombination based on phase encoding pairs:"
                     " number of volumes is odd");
 
-  const std::vector<std::string> invalid_options{"lmax"};
+  const std::vector<std::string> invalid_options{"exponent", "lmax"};
   for (const auto opt : invalid_options)
     if (!get_options(opt).empty())
       throw Exception("-" + opt + " option not supported for \"combine_pairs\" operation");
@@ -250,7 +268,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
   //   in the scenario of considerable subject rotation between phase encoding directions
   // Just increasing the dot product threshold wouldn't be optimal in this case
   // Better would be to find, for each volume, the most suitable corresponding volume,
-  //   and then make sure that there are no duplicates in that pairing
+  //   and then make sure that the pairing is bijective
   std::vector<std::pair<size_t, size_t>> volume_pairs;
   volume_pairs.reserve(grad_in.rows() / 2);
   std::vector<int> in2outindex(grad_in.rows(), -1);
@@ -335,11 +353,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
 
   if (field_image.valid()) {
 
-    // TODO For now, going to compute and store both the jacobians and the weights;
-    //   partly to be consistent with prior dwifslpreprpc code,
-    //   partly because exporting these data might be of some utility
-    // Could later remove explicit storage of Jacobians
-    std::vector<Image<float>> jacobian_images;
+    // std::vector<Image<float>> jacobian_images;
     std::vector<Image<float>> weight_images;
     {
       // Need to calculate the "weight" to be applied to each phase encoding group during volume recombination
@@ -356,19 +370,19 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       ++progress;
       Adapter::Gradient1D<Image<float>> gradient(smoothed_field);
       for (size_t pe_index = 0; pe_index != pe_config.rows(); ++pe_index) {
-        Image<float> jacobian_image =
-            Image<float>::scratch(field_image, "Scratch Jacobian image for PE index " + str(pe_index));
+        // Image<float> jacobian_image =
+        //     Image<float>::scratch(field_image, "Scratch Jacobian image for PE index " + str(pe_index));
         Image<float> weight_image =
             Image<float>::scratch(field_image, "Scratch weight image for PE index " + str(pe_index));
         const auto pe_axis_and_multiplier = get_pe_axis_and_polarity(pe_config.block<1, 3>(pe_index, 0));
         gradient.set_axis(pe_axis_and_multiplier.first);
         const default_type multiplier = pe_axis_and_multiplier.second * pe_config(pe_index, 3);
-        for (auto l = Loop(gradient)(gradient, jacobian_image, weight_image); l; ++l) {
+        for (auto l = Loop(gradient)(gradient, /*jacobian_image,*/ weight_image); l; ++l) {
           const default_type jacobian = std::max(0.0, 1.0 + (gradient.value() * multiplier));
-          jacobian_image.value() = jacobian;
+          // jacobian_image.value() = jacobian;
           weight_image.value() = Math::pow2(jacobian);
         }
-        jacobian_images.push_back(std::move(jacobian_image));
+        // jacobian_images.push_back(std::move(jacobian_image));
         weight_images.push_back(std::move(weight_image));
         ++progress;
       }
@@ -417,6 +431,7 @@ void run_combine_predicted(Image<float> &dwi_in,
       throw Exception("-" + opt + " option not supported for \"combine_predicted\" operation");
 
   Image<float> field_image = get_field_image(dwi_in, "combine_predicted", true);
+  const default_type exponent = get_option_value("exponent", default_combinepredicted_exponent);
 
   scheme_type pe_config;
   Eigen::Array<int, Eigen::Dynamic, 1> pe_indices;
@@ -467,21 +482,6 @@ void run_combine_predicted(Image<float> &dwi_in,
     //   there is at least one volume present within at least one phase encoding block
     //   which therefore means that estimates can be generated in all circumstances
 
-    // TODO Novel from here
-    // - For each phase encoding group,
-    //     generate a 4D image,
-    //     where the value in each volume corresponds to the weight to be applied
-    //     to the reconstructed intensity from that phase encoding group
-    //   Here, I think I want to split the expression into two groups:
-    //     1. The weight to attribute to the empirical signal itself
-    //        vs. the sum of reconstructed estimates
-    //     2. The relative weights to apply to predictions from the other phase encoding groups
-    //   In both cases, derivation should be comparable to Skare 2010
-    //
-    // TODO Ideally, rather than each other phase encoding group contirbuting its own estimate,
-    //   all other phase encoding groups would contribute in a weighted manner to a single estimate
-    // This will require definition of a weighted SH fit,
-    //   which was already a prospective addition as something to mimic properties of the GP predictor
     //
     // TODO There may be a better alternative expression for weighting empirical data vs. predictions
     // Currently, expression is:
@@ -514,23 +514,6 @@ void run_combine_predicted(Image<float> &dwi_in,
   ProgressBar progress("Reconstructing volumes combining empirical and predicted intensities",
                        pe_config.rows() * shells.count());
   for (size_t pe_index = 0; pe_index != pe_config.rows(); ++pe_index) {
-
-    // For the empirical data within this phase encoding group,
-    //   the jacobian is used directly as the weighted fraction by which
-    //   the empirical input intensities will contribute to the output intensities
-    // If the jacobian is 1.0 or greater,
-    //   then the empirical data will be used as-is
-    // If between 0.0 and 1.0,
-    //   then (1.0 - value) will be the weighting fraction with which
-    //   the predictions from other phase encoding groups will contribute
-    // TODO Consider making this more preservative; eg. sqrt(jacobian)
-    //   (or offer it as a command-line option)
-    // TODO Also here for now we are assuming that from a single A2SH transformation (per shell),
-    //   we can then do a single SH2A transformation
-    //   to get all of the amplitudes of interest for this phase encoding
-    //   group (per shell); in the future want to explore the prospect
-    //   of additionally weighting by proximity to sample of interest,
-    //   in which case there will be one A->SH->A transformation _per output volume_
 
     // Branch depending on how many other phase encoding groups there are:
     //  - If only one other, then just construct the A->SH->A transform for that one group;
@@ -633,13 +616,15 @@ void run_combine_predicted(Image<float> &dwi_in,
         for (auto l = Loop(jacobian)(jacobian, dwi_in, dwi_out); l; ++l) {
           // How much weight are we attributing to the empirical data?
           // (if 1.0, we don't need to bother generating predictions)
-          const default_type empirical_weight = std::max(0.0, std::min(1.0, default_type(jacobian.value())));
+          default_type empirical_weight = std::max(0.0, std::min(1.0, default_type(jacobian.value())));
           if (empirical_weight == 1.0) {
             for (const auto volume : target_volumes) {
               dwi_in.index(3) = dwi_out.index(3) = volume;
               dwi_out.value() = dwi_in.value();
             }
           } else {
+            // Clamp here is only to deal with the prospect of "-exponent -inf"
+            empirical_weight = std::min(1.0, std::pow(empirical_weight, exponent));
             // Grab the input data for generating the predictions
             for (size_t source_index = 0; source_index != source_volumes.size(); ++source_index) {
               dwi_in.index(3) = source_volumes[source_index];
@@ -681,17 +666,23 @@ void run_combine_predicted(Image<float> &dwi_in,
 
           // If using exclusively empirical data,
           //   make that determination as soon as possible to avoid unnecessary computation
-          const default_type empirical_weight = std::max(0.0, std::min(1.0, jacobians[pe_index]));
+          default_type empirical_weight = std::max(0.0, std::min(1.0, jacobians[pe_index]));
           if (empirical_weight == 1.0) {
             for (const auto volume : target_volumes) {
               dwi_in.index(3) = dwi_out.index(3) = volume;
               dwi_out.value() = dwi_in.value();
             }
           } else {
+            empirical_weight = std::min(1.0, std::pow(empirical_weight, exponent));
             // Build the rest of the requisite data for the A2SH transform in this voxel
             // Also grab the input data while we're looping
+            // Should the relative contributions from the other phase encoding groups
+            //   be modulated by a similar expression
+            //   to how the weight ascribed to the empirical data is determined?
+            // This would need to deal with the prospect of an exponent of -inf / +inf
+            //   (or be a separate command-line option)
             for (size_t source_index = 0; source_index != source_volumes.size(); ++source_index) {
-              source_weights[source_index] = jacobians[pe_indices[source_volumes[source_index]]];
+              source_weights[source_index] = std::max(0.0, jacobians[pe_indices[source_volumes[source_index]]]);
               dwi_in.index(3) = source_volumes[source_index];
               source_data[source_index] = dwi_in.value();
             }
