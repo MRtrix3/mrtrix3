@@ -39,6 +39,7 @@ using namespace App;
 // - SHARD recon
 const std::vector<std::string> operations = {"combine_pairs", "combine_predicted"};
 constexpr default_type default_combinepredicted_exponent = 1.0;
+constexpr default_type default_combinepairs_threshold = 0.999;
 
 // clang-format off
 const OptionGroup common_options = OptionGroup("Options common to multiple operations")
@@ -48,6 +49,12 @@ const OptionGroup common_options = OptionGroup("Options common to multiple opera
   //   (though only "combine_predicted" for now):
   //   weighted SH fit,
   //   with weights determined by proximity to any given observation
+
+const OptionGroup combinepairs_options = OptionGroup("Options specific to \"combine_pairs\" operation")
+  + Option("threshold", "threshold to apply to dot products of diffusion sensitisation directions"
+                        "in establishing corresponding reversed phase encoding pairs"
+                       " (default: " + str(default_combinepairs_threshold) + ")")
+      + Argument("value").type_float();
 
 const OptionGroup combinepredicted_options = OptionGroup("Options specific to \"combine_predicted\" operation")
   + Option("lmax", "set the maximal spherical harmonic degrees to use"
@@ -117,7 +124,7 @@ void usage() {
 
   OPTIONS
     + common_options
-
+    + combinepairs_options
     + combinepredicted_options
 
     // TODO Give capability to provide this information from the command-line,
@@ -205,6 +212,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       throw Exception("-" + opt + " option not supported for \"combine_pairs\" operation");
 
   Image<float> field_image = get_field_image(dwi_in, "combine_pairs", false);
+  const default_type dp_threshold = get_option_value("threshold", default_combinepairs_threshold);
 
   scheme_type pe_config;
   Eigen::Array<int, Eigen::Dynamic, 1> pe_indices;
@@ -244,9 +252,8 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       }
     }
     if (pe_second_index == pe_config.rows())
-      throw Exception("Unable to find corresponding reversed phase encoding volumes for:" //
-                      " [" +
-                      str(pe_first.transpose()) + "]");
+      throw Exception(std::string("Unable to find corresponding reversed phase encoding volumes") + //
+                      " for: [" + str(pe_first.transpose()) + "]");                                 //
   }
   assert(*std::min_element(peindex2paired.begin(), peindex2paired.end()) == 0);
 
@@ -268,7 +275,12 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
   //   in the scenario of considerable subject rotation between phase encoding directions
   // Just increasing the dot product threshold wouldn't be optimal in this case
   // Better would be to find, for each volume, the most suitable corresponding volume,
-  //   and then make sure that the pairing is bijective
+  //   and then make sure that the pairing is bijective;
+  //   possibly also make sure that the most dissimilar paired volumes
+  //   are closer than the most similar unpaired volumes
+  // TODO An additional command-line option could deal with the case
+  //   where such bijective correspondence can't be achieved from the data,
+  //   but it can instead be asserted that their order within each PE group is fixed
   std::vector<std::pair<size_t, size_t>> volume_pairs;
   volume_pairs.reserve(grad_in.rows() / 2);
   std::vector<int> in2outindex(grad_in.rows(), -1);
@@ -307,7 +319,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
           // One is zero, the other is not; therefore not a match
           if (second_dir.squaredNorm() == 0.0)
             continue;
-          if (std::abs(first_dir.dot(second_dir)) < 0.999)
+          if (std::abs(first_dir.dot(second_dir)) < dp_threshold)
             continue;
           // One is zero, the other is not; therefore not a match
         } else if (second_dir.squaredNorm() > 0.0) {
@@ -454,7 +466,7 @@ void run_combine_predicted(Image<float> &dwi_in,
     for (size_t shell_index = 0; shell_index != shells.count(); ++shell_index) {
       if (lmax_user[shell_index] % 2)
         throw Exception("-lmax values must be even numbers");
-      // TODO Technically this is a weak constraint:
+      // Technically this is a weak constraint:
       //   user-requested lmax may not be possible once excluding a phase encoding group
       if (lmax_user[shell_index] > Math::SH::NforL(shells[shell_index].count()))
         throw Exception("Requested lmax=" + str(lmax_user[shell_index]) +                                  //
@@ -476,21 +488,6 @@ void run_combine_predicted(Image<float> &dwi_in,
     smoothing_filter(field_image, smoothed_field);
     ++progress;
     Adapter::Gradient1D<Image<float>> gradient(smoothed_field);
-
-    // TODO Perform check to ensure that within any phase encoding group,
-    //   for each shell within that group,
-    //   there is at least one volume present within at least one phase encoding block
-    //   which therefore means that estimates can be generated in all circumstances
-
-    //
-    // TODO There may be a better alternative expression for weighting empirical data vs. predictions
-    // Currently, expression is:
-    // - If Jacobian >= 1.0, use empirical data
-    // - Otherwise, use (Jacobian * empirical) * ((1-Jacobian) * prediction)
-    // This however fails to consider that the prediction could itself be of poor quality
-    //   if it (hypothetically) also has a small Jacobian
-    // This would only be relevant for fairly non-standard acquisitions,
-    //   so might put this off for now
 
     // Immediately generate Jacobian images for each phase encoding group;
     //   these can then be used for both:
@@ -538,7 +535,7 @@ void run_combine_predicted(Image<float> &dwi_in,
     // Among other things,
     //   this would remove the complications of checking whether a user-requested lmax is sensible,
     //   since it currently doesn't consider that SH transforms are computed while omitting data
-    // It would however arguably place greater priority on:
+    // It would however arguably place greater development priority on:
     // - Use of leave-one-out
     // - Weighting samples by proximity
 
