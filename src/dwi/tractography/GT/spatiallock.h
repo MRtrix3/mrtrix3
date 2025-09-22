@@ -62,6 +62,10 @@ namespace MR {
           { NOMEMALIGN
           public:
             Guard(SpatialLock& l) : lock(l), idx(-1) { }
+            Guard(const Guard&) = delete;
+            Guard& operator= (const Guard&) = delete;
+            Guard(Guard&& other) noexcept = delete;
+            Guard& operator= (Guard&&) = delete;
 
             ~Guard() {
               if (idx >= 0)
