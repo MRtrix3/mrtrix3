@@ -105,7 +105,7 @@ namespace MR {
           }
           
         protected:
-          std::mutex mutex;
+          mutable std::mutex mutex;
           deque<Particle> pool;
           std::stack<Particle*, deque<Particle*> > avail;
           Math::RNG rng;
