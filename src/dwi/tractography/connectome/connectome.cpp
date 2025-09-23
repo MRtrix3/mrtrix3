@@ -37,6 +37,19 @@ const char* modes[] = { "assignment_end_voxels", "assignment_radial_search", "as
 
 
 
+const std::string tck2nodes_description
+  = "The default mechanism by which streamlines are ascribed to connectome parcels"
+    " is the \"radial search\" algorithm as described in reference (Smith et al., 2015),"
+    " with a default maximal search distance of " + str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm."
+    " For each streamline endpoint,"
+    " if there is no voxel with a non-zero parcel index"
+    " whose centre is closer to the streamline endpoint than the maximal search distance,"
+    " then that streamline endpoint will not be assigned to any parcel,"
+    " and the streamline will be omitted from the connectome matrix"
+    " (unless the -keep_unassigned option is specified)."
+    " The maximal search distance can be modified using the -assignment_radial_search option,"
+    " or an alternative algorithm can be activated using one of the other -assignment_* options.";
+
 const OptionGroup AssignmentOptions = OptionGroup ("Structural connectome streamline assignment option")
 
   + Option ("assignment_end_voxels", "use a simple voxel lookup value at each streamline endpoint")
