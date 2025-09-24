@@ -196,7 +196,10 @@ public:
 class IncludeROIVisitation {
 public:
   IncludeROIVisitation(const ROIUnorderedSet &unordered, const ROIOrderedSet &ordered)
-      : unordered(unordered), ordered(ordered), visited(unordered.size()), state(ordered.size()) {}
+      : unordered(unordered),
+        ordered(ordered),
+        visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(unordered.size())),
+        state(ordered.size()) {}
 
   IncludeROIVisitation(const IncludeROIVisitation &) = default;
   IncludeROIVisitation &operator=(const IncludeROIVisitation &) = delete;
