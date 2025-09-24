@@ -1178,7 +1178,7 @@ def execute(): #pylint: disable=unused-variable
       run.command(['dwi2mask', dwi2mask_algo, dwi2mask_in_path, '-', '|',
                    'maskfilter', '-', 'dilate', '-', '|',
                    'mrconvert', '-', 'eddy_mask.nii', '-datatype', 'float32']
-                   + STRIDES_OPTION_FSL_COMPAT_3D.split(' '))
+                   + STRIDES_OPTION_FSL_COMPAT_3D.strip().split(' '))
       if len(applytopup_image_list) > 1:
         app.cleanup(dwi2mask_in_path)
 
@@ -1193,7 +1193,7 @@ def execute(): #pylint: disable=unused-variable
       run.command(['dwi2mask', dwi2mask_algo, dwi_path, '-', '|',
                    'maskfilter', '-', 'dilate', '-', '|',
                    'mrconvert', '-', 'eddy_mask.nii', '-datatype', 'float32']
-                   + STRIDES_OPTION_FSL_COMPAT_3D.split(' '))
+                   + STRIDES_OPTION_FSL_COMPAT_3D.strip().split(' '))
 
   # Use user supplied mask for eddy instead of one derived from the images using dwi2mask
   if app.ARGS.eddy_mask:
