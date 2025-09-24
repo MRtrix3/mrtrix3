@@ -36,7 +36,9 @@ Example usages
 
 -   *Calculate the transformation matrix from an original image and an image with modified header*::
 
-        $ transformcalc mov mapmovhdr header output
+        $ transformcalc original.mif modified.mif header output
+
+    This transformation can be used for instance: mrtransform original_too.mif -linear output modified_too.mif
 
 -   *Calculate the average affine matrix of a set of input matrices*::
 
