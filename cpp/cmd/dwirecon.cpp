@@ -318,14 +318,19 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
           const size_t second_volume = shell.get_volumes()[col];
           if (pe_indices[second_volume] != pe_second_index)
             continue;
-          dp_matrix(row, col) = dp_matrix(col, row) =
+          const default_type dot_product =
               std::abs(grad_in.block<1, 3>(first_volume, 0).dot(grad_in.block<1, 3>(second_volume, 0)));
+          dp_matrix(row, col) = dot_product;
+          dp_matrix(col, row) = dot_product;
         }
       }
       // Establish bijection
       default_type min_closest_dp = 1.0;
       default_type max_nonclosest_dp = -1.0;
+      Eigen::Array<bool, Eigen::Dynamic, 1> assigned(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(shell.size()));
       for (size_t col = 0; col != shell.size(); ++col) {
+        if (assigned[col])
+          continue;
         ssize_t row;
         const default_type this_closest_dp = dp_matrix.col(col).maxCoeff(&row);
         if (this_closest_dp < 0.0)
@@ -335,11 +340,22 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
           continue;
         ssize_t min_col;
         dp_matrix.col(row).maxCoeff(&min_col);
-        if (min_col != col)
-          throw Exception(std::string("Ambiguity in establishing reversed phase encoding volumes") + //
-                          "for shell b=" + str(int(std::round(shell.get_mean()))));                  //
+        if (min_col != col) {
+          DEBUG(std::string("Debugging information for reversed phase encoding volume pairing") + //
+                " for b=" + str(int(std::round(shell.get_mean()))));                              //
+          DEBUG("Dot product matrix:");
+          DEBUG("\n" + str(dp_matrix.cast<float>()));
+          DEBUG("Column " + str(col) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[col], 0)) + //
+                " closest to row " + str(row) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[row], 0)));
+          DEBUG("Row " + str(row) + " is however closest" + //
+                " to column " + str(min_col) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[min_col], 0)));
+          throw Exception(std::string("Ambiguity in establishing reversed phase encoding volume pairs") + //
+                          " for shell b=" + str(int(std::round(shell.get_mean()))));                      //
+        }
         volume_pairs.push_back(std::make_pair(shell.get_volumes()[col], shell.get_volumes()[row]));
         min_closest_dp = std::min(min_closest_dp, this_closest_dp);
+        assigned[row] = true;
+        assigned[col] = true;
         // Ensure that there are no two unmatched volumes
         //   that are closer than any two matched volumes
         dp_matrix(row, col) = dp_matrix(col, row) = -1.0;
@@ -349,6 +365,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         WARN("Potential ambiguity in reversed phase encoding volume correspondence;"
              "recommend checking manually");
       }
+      assert(assigned.all());
     }
   }
 

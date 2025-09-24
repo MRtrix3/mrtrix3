@@ -1,0 +1,33 @@
+# Verify operation of "dwirecon" command for:
+# - "combine_predicted" option:
+#   each volume undergoes a weighted mean with a prediction generated
+#   from volumes with phase encodings other than that used for acquisition of that volume
+# - *Two* input phase encoding directions
+#
+# Two different possible orderings / arrangements of the diffusion gradeient table
+# from across the two phase encoding directions are specified:
+# 1. First half of volumes are acquired with A>>P,
+#    second half (including duplicate of the middle b=0) acquired with P>>A
+mrcat \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:13 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 13:end -) \
+    -axis 3 \
+    - | \
+dwirecon - combine_predicted \
+    -field dwirecon/field.mif \
+    - | \
+testing_diff_image - dwirecon/combine_predicted/rpepair1.mif
+
+# 2. Volumes are interleaved between the two phase encoding directions
+mrcat \
+    dwirecon/LR_preproc.mif \
+    dwirecon/RL_preproc.mif \
+    -axis 3 \
+    - | \
+mrconvert - \
+    -coord 3 0,29,2,31,4,33,6,35,8,37,10,39,12,41,14,43,16,45,18,47,20,49,22,51,24,53,24,55 \
+    - | \
+dwirecon - combine_predicted \
+    -field dwirecon/field.mif \
+    - | \
+testing_diff_image - dwirecon/combine_predicted/rpepair2.mif

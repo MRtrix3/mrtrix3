@@ -1,0 +1,32 @@
+# Verify operation of "dwirecon" command for:
+# - "combine_predicted" option:
+#   each volume undergoes a weighted mean with a prediction generated
+#   from volumes with phase encodings other than that used for acquisition of that volume
+# - *Four* input phase encoding directions
+
+mrcat \
+    $(mrconvert dwirecon/AP_preproc.mif -coord 3 0:7 -) \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 8:13 -) \
+    $(mrconvert dwirecon/PA_preproc.mif -coord 3 13:20 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 21:27 -) \
+    -axis 3 \
+    - | \
+dwirecon - combine_predicted \
+    -field dwirecon/field.mif \
+    - | \
+testing_diff_image - dwirecon/combine_predicted/pequad1.mif
+
+mrcat \
+    dwirecon/AP_preproc.mif \
+    dwirecon/LR_preproc.mif \
+    dwirecon/PA_preproc.mif \
+    dwirecon/RL_preproc.mif \
+    -axis 3 \
+    - | \
+mrconvert - \
+    -coord 3 0,29,58,87,4,33,62,91,8,37,66,95,12,41,70,99,16,45,74,103,20,49,78,107,24,53,82,111 \
+    - | \
+dwirecon - combine_predicted \
+    -field dwirecon/field.mif \
+    - | \
+testing_diff_image - dwirecon/combine_predicted/pequad2.mif
