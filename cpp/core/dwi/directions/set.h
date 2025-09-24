@@ -76,18 +76,11 @@ public:
   bool adjacent(const index_type one, const index_type two) const {
     assert(one < size());
     assert(two < size());
-    for (const auto &i : adj_dirs[one]) {
-      if (i == two)
-        return true;
-    }
-    return false;
+    return std::any_of(adj_dirs[one].begin(), adj_dirs[one].end(), [&](index_type i) { return i == two; });
   }
   bool adjacent(const mask_type &mask, const index_type i) const {
-    for (const auto &j : adj_dirs[i]) {
-      if (mask[j])
-        return true;
-    }
-    return false;
+    assert(mask.size() == size());
+    return std::any_of(adj_dirs[i].begin(), adj_dirs[i].end(), [&](index_type j) { return mask[j]; });
   }
 
   index_type get_min_linkage(const index_type one, const index_type two) const;

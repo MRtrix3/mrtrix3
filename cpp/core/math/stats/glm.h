@@ -354,14 +354,14 @@ protected:
   const std::vector<CohortDataImport> &importers;
   const bool nans_in_data, nans_in_columns;
 
-  void get_mask(const index_type ie, element_mask_type &, const matrix_type &extra_columns) const;
+  void get_mask(const index_type ie, element_mask_type &mask, const matrix_type &extra_columns) const;
   void apply_mask(const element_mask_type &mask,
                   matrix_type::ConstColXpr data,
                   const matrix_type &shuffling_matrix,
                   const matrix_type &extra_column_data,
                   matrix_type &Mfull_masked,
                   matrix_type &shuffling_matrix_masked,
-                  vector_type &y_masked) const;
+                  vector_type &data_masked) const;
 };
 
 /** \addtogroup Statistics

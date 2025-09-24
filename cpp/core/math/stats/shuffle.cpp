@@ -608,7 +608,7 @@ void Shuffler::generate_random_signflips(const index_type num_signflips,
   signflips.reserve(num_signflips);
   index_type s = 0;
   if (include_default) {
-    FlipSigns default_labelling(FlipSigns::Zero(num_rows));
+    const FlipSigns default_labelling(FlipSigns::Zero(num_rows));
     signflips.push_back(default_labelling);
     ++s;
   }
