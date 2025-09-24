@@ -18,6 +18,7 @@
 
 #include <cstdint>
 
+#include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
 #include "file/matrix.h"
 #include "math/math.h"
@@ -25,8 +26,6 @@
 #include "types.h"
 
 namespace MR::DWI::Directions {
-
-using index_type = unsigned int;
 
 class Set {
 
@@ -74,11 +73,18 @@ public:
     assert(i < size());
     return adj_dirs[i];
   }
-  bool dirs_are_adjacent(const index_type one, const index_type two) const {
+  bool adjacent(const index_type one, const index_type two) const {
     assert(one < size());
     assert(two < size());
     for (const auto &i : adj_dirs[one]) {
       if (i == two)
+        return true;
+    }
+    return false;
+  }
+  bool adjacent(const mask_type &mask, const index_type i) const {
+    for (const auto &j : adj_dirs[i]) {
+      if (mask[j])
         return true;
     }
     return false;

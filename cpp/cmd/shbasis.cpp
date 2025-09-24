@@ -25,7 +25,6 @@
 
 #include "algo/loop.h"
 #include "math/SH.h"
-#include "misc/bitset.h"
 
 using namespace MR;
 using namespace App;
@@ -94,7 +93,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
   const size_t lmax = Math::SH::LforN(N);
 
   // Flag which volumes are m==0 and which are not
-  BitSet mzero_terms(N, false);
+  std::vector<bool> mzero_terms(N, false);
   for (size_t l = 2; l <= lmax; l += 2)
     mzero_terms[Math::SH::index(l, 0)] = true;
 

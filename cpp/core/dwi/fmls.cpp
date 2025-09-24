@@ -168,8 +168,10 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
     std::vector<uint32_t> adj_lobes;
     for (uint32_t l = 0; l != out.size(); ++l) {
-      if ((((i.first <= 0.0) && out[l].is_negative()) || ((i.first > 0.0) && !out[l].is_negative())) &&
-          (out[l].get_mask().is_adjacent(i.second))) {
+      if ((((i.first <= 0.0) &&                           //
+            out[l].is_negative()) ||                      //
+           ((i.first > 0.0) && !out[l].is_negative())) && //
+          (dirs.adjacent(out[l].get_mask(), i.second))) {
 
         adj_lobes.push_back(l);
       }
@@ -181,7 +183,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
     } else if (adj_lobes.size() == 1) {
 
-      out[adj_lobes.front()].add(i.second, i.first, (*weights)[i.second]);
+      out[adj_lobes.front()].add(i.second, dirs[i.second], i.first, (*weights)[i.second]);
 
     } else {
 
@@ -193,7 +195,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
         std::sort(adj_lobes.begin(), adj_lobes.end());
         for (size_t j = 1; j != adj_lobes.size(); ++j)
           out[adj_lobes[0]].merge(out[adj_lobes[j]]);
-        out[adj_lobes[0]].add(i.second, i.first, (*weights)[i.second]);
+        out[adj_lobes[0]].add(i.second, dirs[i.second], i.first, (*weights)[i.second]);
         for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
           bool modified = false;
           for (size_t k = 1; k != adj_lobes.size(); ++k) {
@@ -226,7 +228,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
   }
 
   for (const auto &i : retrospective_assignments)
-    out[i.second].add(i.first, values[i.first], (*weights)[i.first]);
+    out[i.second].add(i.first, dirs[i.first], values[i.first], (*weights)[i.first]);
 
   for (auto i = out.begin(); i != out.end();) { // Empty increment
 
@@ -284,21 +286,20 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
     size_t index = 0;
     for (auto i = out.begin(); i != out.end(); ++i, ++index) {
-      const DWI::Directions::Mask &this_mask(i->get_mask());
       for (size_t d = 0; d != dirs.size(); ++d) {
-        if (this_mask[d])
+        if (i->get_mask()[d])
           out.lut[d] = index;
       }
     }
 
     if (dilate_lookup_table && !out.empty()) {
 
-      DWI::Directions::Mask processed(dirs);
+      Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(dirs.size()));
       for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-        processed |= i->get_mask();
+        processed = processed || i->get_mask();
 
       NON_POD_VLA(new_assignments, std::vector<uint32_t>, dirs.size());
-      while (!processed.full()) {
+      while (!processed.all()) {
 
         for (index_type dir = 0; dir != dirs.size(); ++dir) {
           if (!processed[dir]) {
@@ -339,9 +340,12 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
   }
 
   if (create_null_lobe) {
-    DWI::Directions::Mask null_mask(dirs, true);
+    mask_type nonnull_mask(mask_type::Zero(dirs.size()));
     for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-      null_mask &= i->get_mask();
+      nonnull_mask = nonnull_mask || i->get_mask();
+    // Invert all elements in mask
+    const mask_type null_mask =
+        (Eigen::Array<uint8_t, Eigen::Dynamic, 1>::Ones(dirs.size()) - nonnull_mask.cast<uint8_t>()).cast<bool>();
     out.push_back(FOD_lobe(null_mask));
   }
 

@@ -351,7 +351,7 @@ void Shuffler::initialise(const error_t error_types,
       if (nshuffles == max_shuffles) {
         generate_all_signflips(rows, eb_whole);
         assert(signflips.size() == max_num_signflips);
-        std::vector<BitSet> duplicated_signflips;
+        std::vector<FlipSigns> duplicated_signflips;
         duplicated_signflips.reserve(max_shuffles);
         for (index_type i = 0; i != max_num_permutations; ++i)
           duplicated_signflips.insert(duplicated_signflips.end(), signflips.begin(), signflips.end());
@@ -590,9 +590,10 @@ void Shuffler::load_permutations(const std::string &filename) {
   }
 }
 
-bool Shuffler::is_duplicate(const BitSet &sign) const {
+bool Shuffler::is_duplicate(const FlipSigns &sign) const {
   for (const auto &s : signflips) {
-    if (sign == s)
+    // No array equivalence operator in Eigen
+    if (sign.isApprox(s))
       return true;
   }
   return false;
@@ -607,7 +608,7 @@ void Shuffler::generate_random_signflips(const index_type num_signflips,
   signflips.reserve(num_signflips);
   index_type s = 0;
   if (include_default) {
-    BitSet default_labelling(num_rows, false);
+    FlipSigns default_labelling(FlipSigns::Zero(num_rows));
     signflips.push_back(default_labelling);
     ++s;
   }
@@ -615,7 +616,7 @@ void Shuffler::generate_random_signflips(const index_type num_signflips,
   std::mt19937 generator(rd());
   std::uniform_int_distribution<> distribution(0, 1);
 
-  BitSet rows_to_flip(num_rows);
+  FlipSigns rows_to_flip(FlipSigns::Zero(num_rows));
 
   // Whole-block sign-flipping
   if (block_indices.size()) {
@@ -651,8 +652,8 @@ void Shuffler::generate_all_signflips(const index_type num_rows, const index_arr
   if (block_indices.size()) {
     const auto blocks = indices2blocks(block_indices);
 
-    auto write = [&](const BitSet &data) {
-      BitSet temp(num_rows);
+    auto write = [&](const FlipSigns &data) {
+      FlipSigns temp(FlipSigns::Zero(num_rows));
       for (index_type ib = 0; ib != blocks.size(); ++ib) {
         if (data[ib]) {
           for (const auto i : blocks[ib])
@@ -662,7 +663,7 @@ void Shuffler::generate_all_signflips(const index_type num_rows, const index_arr
       signflips.push_back(std::move(temp));
     };
 
-    BitSet temp(blocks.size());
+    FlipSigns temp(FlipSigns::Zero(blocks.size()));
     write(temp);
     do {
       index_type ib = 0;
@@ -679,9 +680,9 @@ void Shuffler::generate_all_signflips(const index_type num_rows, const index_arr
 
   // Unrestricted sign-flipping
   signflips.reserve(size_t(1) << num_rows);
-  BitSet temp(num_rows, false);
+  FlipSigns temp(FlipSigns::Zero(num_rows));
   signflips.push_back(temp);
-  while (!temp.full()) {
+  while (!temp.all()) {
     index_type last_zero_index;
     for (last_zero_index = num_rows - 1; temp[last_zero_index]; --last_zero_index)
       ;

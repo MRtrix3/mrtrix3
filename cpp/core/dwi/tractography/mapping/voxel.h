@@ -18,9 +18,8 @@
 
 #include <set>
 
+#include "dwi/directions/directions.h"
 #include "image.h"
-
-#include "dwi/directions/set.h"
 
 namespace MR::DWI::Tractography::Mapping {
 

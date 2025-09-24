@@ -16,31 +16,11 @@
 
 #pragma once
 
-#include <fstream>
-
-#include "misc/bitset.h"
-
-#include "dwi/directions/set.h"
+#include <Eigen/Dense>
 
 namespace MR::DWI::Directions {
 
-class Mask : public BitSet {
-
-public:
-  Mask(const Set &master, const bool allocator = false) : BitSet(master.size(), allocator), dirs(&master) {}
-
-  Mask(const Mask &that) : BitSet(that), dirs(that.dirs) {}
-
-  const Set &get_dirs() const { return *dirs; }
-
-  void erode(const size_t iterations = 1);
-  void dilate(const size_t iterations = 1);
-
-  bool is_adjacent(const size_t) const;
-  size_t get_min_linkage(const Mask &);
-
-private:
-  const Set *dirs;
-};
+using index_type = unsigned int;
+using mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
 } // namespace MR::DWI::Directions
