@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -542,7 +542,7 @@ template <class Output> void write_header(const Header &H, Output &out) {
   if (ndim > 4)
     throw Exception("MGH file format does not support images of more than 4 dimensions");
 
-  std::vector<size_t> axes;
+  Axes::permutations_type axes;
   auto M = File::NIfTI::adjust_transform(H, axes);
 
   store<int32_t>(1, out);                                // version

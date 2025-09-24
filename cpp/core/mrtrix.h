@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -105,6 +105,9 @@ size_t char_is_dash(const char *arg);
 
 //! match whole string to a dash or any Unicode character that looks like one
 bool is_dash(std::string_view arg);
+
+//! match a dash or any Unicode character that looks like one at the start of a string
+bool starts_with_dash(std::string_view arg);
 
 //! returns string without leading dashes
 std::string_view without_leading_dash(std::string_view arg);

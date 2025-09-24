@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,8 @@
 namespace MR::DWI::Tractography::Tracking {
 
 SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
-    : source(Image<float>::open(diff_path).with_direct_io(3)),
+    : source_header(Header::open(diff_path)),
+      source(source_header.get_image<float>().with_direct_io(3)),
       properties(property_set),
       init_dir({NaN, NaN, NaN}),
       min_num_points_preds(0),
@@ -54,7 +55,7 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
   properties.set(rk4, "rk4");
   properties.set(stop_on_all_include, "stop_on_all_include");
 
-  properties["source"] = source.name();
+  properties["source"] = source_header.name();
 
   max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
   properties.set(max_num_seeds, "max_num_seeds");

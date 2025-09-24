@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@
 #include "dwi/gradient.h"
 #include "image.h"
 #include "math/least_squares.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
 using namespace MR;
@@ -46,14 +46,15 @@ void usage ()
     "fraction and the pseudo-diffusion coefficient. IVIM assumes a bi-exponential "
     "model: S(b) = S(0) * ((1-f) * exp(-D * b) + f * exp(-D' * b)). This command "
     "adopts a 2-stage fitting strategy, in which the ADC is first estimated based on "
-    "the DWI data with b > cutoff, and the other parameters are estimated subsequently."
-
+    "the DWI data with b > cutoff, and the other parameters are estimated subsequently. "
+    "The output consists of 4 volumes, respectively S(0), D, f, and D'."
+    
   + "Note that this command ignores the gradient orientation entirely. "
     "If a conventional DWI series is provided as input, "
     "all volumes will contribute equally toward the model fit "
     "irrespective of direction of diffusion sensitisation; "
-    "DWI data should therefore ideally consist of isotropically-distributed gradient directions.";
-    "The approach can alternative be applied to mean DWI (trace-weighted) images.";
+    "DWI data should therefore ideally consist of isotropically-distributed gradient directions."
+    "The approach can alternatively be applied to mean DWI (trace-weighted) images.";
 
   ARGUMENTS
     + Argument ("input", "the input image").type_image_in()
@@ -182,7 +183,6 @@ private:
 void run() {
   auto H_in = Header::open(argument[0]);
   auto grad = DWI::get_DW_scheme(H_in);
-
   size_t dwi_axis = 3;
   while (H_in.size(dwi_axis) < 2)
     ++dwi_axis;
@@ -193,7 +193,7 @@ void run() {
   H_out.datatype().set_byte_order_native();
   H_out.ndim() = 3;
   DWI::stash_DW_scheme(H_out, grad);
-  PhaseEncoding::clear_scheme(H_out);
+  Metadata::PhaseEncoding::clear_scheme(H_out.keyval());
 
   DWI2ADC functor(H_out, grad.col(3), dwi_axis);
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 11.00 CACHE STRING "")
-project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
+project(mrtrix3 LANGUAGES CXX VERSION 3.0.7)
 
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
     message(WARNING "It is recommended to use the Ninja generator to build MRtrix3. "
@@ -31,7 +31,8 @@ set(MRTRIX_DEPENDENCIES_DIR "" CACHE PATH
     - Eigen3 https://gitlab.com/libeigen/eigen (version 3.4.0 in .tar.gz format)\n \
     - Json for Modern C++ https://github.com/nlohmann/json (version 3.11.3 in .tar.xz format)\n \
     - Half https://half.sourceforge.net/ (version 2.1.0 in zip format)\n \
-    - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n"
+    - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n
+    - Google Test https://github.com/google/googletest (version 1.17.0 in .tar.gz format). Only required for tests.\n)"
 )
 
 if(MRTRIX_BUILD_TESTS)
@@ -73,6 +74,13 @@ file(RELATIVE_PATH relDir
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
 include(BuildType)
+include(BuildInfo)
+include(LinkerSetup)
+include(FindFFTW)
+include(ECMEnableSanitizers)
+include(Dependencies)
+include(CompilerCache)
+use_compiler_cache()
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
     message(WARNING
@@ -125,3 +133,5 @@ add_custom_target(Github SOURCES
     .github/workflows/package-windows-msys2.yml
     .github/workflows/clang-tidy.yml
 )
+
+mrtrix_print_build_instructions()
