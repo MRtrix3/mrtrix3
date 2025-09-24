@@ -21,7 +21,7 @@
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
 using namespace MR;
@@ -183,8 +183,9 @@ protected:
 };
 
 void run() {
-  auto amp = Image<value_type>::open(argument[0]).with_direct_io(3);
-  Header header(amp);
+  Header header_in(Header::open(argument[0]));
+  Header header_out(header_in);
+  header_out.datatype() = DataType::Float32;
 
   std::vector<size_t> bzeros, dwis;
   Eigen::MatrixXd dirs;
@@ -194,8 +195,8 @@ void run() {
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical(dirs);
   } else {
-    auto hit = header.keyval().find("directions");
-    if (hit != header.keyval().end()) {
+    auto hit = header_in.keyval().find("directions");
+    if (hit != header_in.keyval().end()) {
       std::vector<default_type> dir_vector;
       for (auto line : split_lines(hit->second)) {
         auto v = parse_floats(line);
@@ -206,20 +207,20 @@ void run() {
         dirs(i / 2, 0) = dir_vector[i];
         dirs(i / 2, 1) = dir_vector[i + 1];
       }
-      header.keyval()["basis_directions"] = hit->second;
-      header.keyval().erase(hit);
+      header_out.keyval()["basis_directions"] = hit->second;
+      header_out.keyval().erase(hit);
     } else {
-      auto grad = DWI::get_DW_scheme(amp);
+      auto grad = DWI::get_DW_scheme(header_in);
       DWI::Shells shells(grad);
       shells.select_shells(true, false, false);
       if (shells.smallest().is_bzero())
         bzeros = shells.smallest().get_volumes();
       dwis = shells.largest().get_volumes();
       dirs = DWI::gen_direction_matrix(grad, dwis);
-      DWI::stash_DW_scheme(header, grad);
+      DWI::stash_DW_scheme(header_out, grad);
     }
   }
-  PhaseEncoding::clear_scheme(header);
+  Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
 
   auto sh2amp = DWI::compute_SH2amp_mapping(dirs, true, 8);
 
@@ -227,11 +228,12 @@ void run() {
   if (normalise && bzeros.empty())
     throw Exception("the normalise option is only available if the input data contains b=0 images.");
 
-  header.size(3) = sh2amp.cols();
-  Stride::set_from_command_line(header);
-  auto SH = Image<value_type>::create(argument[1], header);
+  header_out.size(3) = sh2amp.cols();
+  Stride::set_from_command_line(header_out);
 
   Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
+  auto amp = header_in.get_image<value_type>().with_direct_io(3);
+  auto SH = Image<value_type>::create(argument[1], header_out);
 
   opt = get_options("rician");
   if (!opt.empty()) {

@@ -443,11 +443,11 @@ void run() {
   if (fod_reorientation && (linear || warp.valid() || template_header.valid()) && is_possible_fod_image) {
     CONSOLE("performing apodised PSF reorientation");
 
-    Eigen::MatrixXd directions_az_el;
+    Eigen::MatrixXd directions_az_in;
     opt = get_options("directions");
-    directions_az_el =
+    directions_az_in =
         opt.empty() ? DWI::Directions::electrostatic_repulsion_300() : File::Matrix::load_matrix(opt[0][0]);
-    Math::Sphere::spherical2cartesian(directions_az_el, directions_cartesian);
+    Math::Sphere::spherical2cartesian(directions_az_in, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis(3, input_header);
@@ -544,12 +544,12 @@ void run() {
             throw Exception("Inconsistent number of columns in \"directions\" field");
           }
           if (result.cols() == 2) {
-            Eigen::Matrix<default_type, 2, 1> azel(v.data());
+            Eigen::Matrix<default_type, 2, 1> azin(v.data());
             Eigen::Vector3d dir;
-            Math::Sphere::spherical2cartesian(azel, dir);
+            Math::Sphere::spherical2cartesian(azin, dir);
             dir = rotation * dir;
-            Math::Sphere::cartesian2spherical(dir, azel);
-            result.row(l) = azel;
+            Math::Sphere::cartesian2spherical(dir, azin);
+            result.row(l) = azin;
           } else {
             const Eigen::Vector3d dir = rotation * Eigen::Vector3d(v.data());
             result.row(l) = dir;
@@ -630,7 +630,7 @@ void run() {
 
     if (interp == 0) // nearest
       output_header.datatype() = DataType::from_command_line(input_header.datatype());
-    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create(argument[1], output_header);
 
     switch (interp) {
     case 0:
@@ -672,7 +672,7 @@ void run() {
       output_header.transform() = warp.transform();
     }
 
-    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create(argument[1], output_header);
 
     if (warp.ndim() == 5) {
       Image<default_type> warp_deform;
@@ -727,7 +727,7 @@ void run() {
       output_header.transform() = linear_transform;
     else
       output_header.transform() = linear_transform.inverse() * output_header.transform();
-    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
+    auto output = Image<float>::create(argument[1], output_header);
     copy_with_progress(input, output);
 
     if (fod_reorientation || modulate_jac) {

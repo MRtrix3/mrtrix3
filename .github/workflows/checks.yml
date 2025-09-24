@@ -32,7 +32,7 @@ jobs:
          sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
@@ -58,7 +58,7 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -93,7 +93,7 @@ jobs:
          sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
@@ -117,7 +117,7 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -145,12 +145,12 @@ jobs:
          brew install numpy
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
-        cmakeVersion: '3.21.0'
+        cmakeVersion: '3.22.0'
 
     - name: Print CMake version
       run: cmake --version
@@ -172,7 +172,7 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -222,7 +222,7 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
 
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.4
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: export sccache to msys2 shell
         run: |
@@ -244,7 +244,7 @@ jobs:
         run: cmake --build build
 
       - name: unit tests
-        run: cd build && ctest -L unittest --output-on-failure
+        run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
       - name: binary tests
         run: cd build && ctest -L binary --output-on-failure

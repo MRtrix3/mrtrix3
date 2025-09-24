@@ -26,7 +26,7 @@ Peaks of the spherical harmonic function in each voxel are located by commencing
 Within the output image, each successive triplet of volumes encodes the x, y & z components of a 3-vector; their directions in 3D space encode the orientation of the identified peaks, while the norm of each vector encodes the magnitude of the peaks.
 
 The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.4/concepts/spherical_harmonics.html
+https://mrtrix.readthedocs.io/en/3.0.7/concepts/spherical_harmonics.html
 
 Options
 -------

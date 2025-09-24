@@ -65,6 +65,20 @@ testing_python_cli -bool 2
 ! testing_python_cli -int_seq Not,An,Int,Seq
 ! testing_python_cli -float_seq Not,A,Float,Seq
 
+# Verify correct parsing of option arguments that begin with a dash.
+testing_python_cli -int_unbound -123 2>&1 | grep "int_unbound: -123"
+! testing_python_cli -int_unbound --1
+testing_python_cli -float_unbound -1.5 2>&1 | grep "float_unbound: -1.5"
+! testing_python_cli -float_unbound --1.5
+#testing_python_cli -file_out - 2>&1 | grep "file_out: -"
+! testing_python_cli -int_seq --1,1
+! testing_python_cli -float_seq --1.5,1.5
+# Following tests currently *not* working due to argparse
+#testing_python_cli -float_seq -1.5,1.5 2>&1 | grep "float_seq: \[-1.5,1.5\]"
+#testing_python_cli -string_explicit "-a-b-c" 2>&1 | grep "string: -a-b-c"
+#testing_python_cli -string_implicit "-a-b-c" 2>&1 | grep "string: -a-b-c"
+#testing_python_cli -int_seq -1,-1,-1,5 2>&1 | grep "int_seq: \[-1,-1,-1,5\]"
+
 # Tests relating to filesystem paths:
 # - Ensure that absent inputs result in appropriate error
 # - Ensure that pre-existing output paths are handled accordingly

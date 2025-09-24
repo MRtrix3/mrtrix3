@@ -102,6 +102,7 @@ template <class ImageType> void image2mesh_blocky(const ImageType &input_image, 
               const auto existing = vox2vertindex.find(voxels[in_vertex]);
               if (existing == vox2vertindex.end()) {
                 triangle_vertices[out_vertex] = vertices.size();
+                vox2vertindex.insert(std::make_pair(voxels[in_vertex], vertices.size()));
                 Eigen::Vector3d pos_voxelspace(default_type(voxels[in_vertex][0]) - 0.5,
                                                default_type(voxels[in_vertex][1]) - 0.5,
                                                default_type(voxels[in_vertex][2]) - 0.5);

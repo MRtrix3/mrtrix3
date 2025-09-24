@@ -14,4 +14,4 @@
 # For more details, see http://www.mrtrix.org/.
 
 # pylint: disable=unused-variable
-ALGORITHMS = ['freesurfer', 'fsl', 'gif', 'hsvs']
+ALGORITHMS = ['deep_atropos', 'freesurfer', 'fsl', 'gif', 'hsvs']

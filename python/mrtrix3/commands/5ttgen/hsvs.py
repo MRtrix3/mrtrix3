@@ -41,6 +41,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('output',
                       type=app.Parser.ImageOut(),
                       help='The output 5TT image')
+  parser.add_argument('-freesurfer_lut',
+                      type=app.Parser.FileIn(),
+                      help='Manually provide the path to the FreeSurfer lookup table file')
   parser.add_argument('-template',
                       type=app.Parser.ImageIn(),
                       help='Provide an image that will form the template for the generated 5TT image')
@@ -55,7 +58,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('-white_stem',
                       action='store_true',
                       default=None,
-                      help='Classify the brainstem as white matter')
+                      help='Classify the brainstem as white matter; '
+                           'streamlines will not be permitted to terminate within this region')
   parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. '
                       'Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. '
                       'In Proc OHBM 2020')
@@ -84,6 +88,21 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Model-based automatic detection of the anterior and posterior commissures on MRI scans. '
                       'NeuroImage, 2009, 46(3), 677-682',
                       condition='If ACPCDetect is installed',
+                      is_external=True)
+  parser.add_citation('Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. '
+                      'A Bayesian model of shape and appearance for subcortical brain segmentation. '
+                      'NeuroImage, 2011, 56, 907-922',
+                      condition='If FSL FIRST is used for subcortical structures',
+                      is_external=True)
+  parser.add_citation('Zhang, Y.; Brady, M. & Smith, S. '
+                      'Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. '
+                      'IEEE Transactions on Medical Imaging, 2001, 20, 45-57',
+                      condition='If FSL is installed',
+                      is_external=True)
+  parser.add_citation('Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. '
+                      'Advances in functional and structural MR image analysis and implementation as FSL. '
+                      'NeuroImage, 2004, 23, S208-S219',
+                      condition='If FSL is installed',
                       is_external=True)
 
 
@@ -319,11 +338,14 @@ def execute(): #pylint: disable=unused-variable
       app.console('Neither hippocampal subfields module output nor FSL FIRST detected; '
                   'FreeSurfer aseg will be used for hippocampi segmentation')
 
+  freesurfer_lut_file = app.ARGS.freesurfer_lut
   if hippocampi_method == 'subfields':
-    if 'FREESURFER_HOME' not in os.environ:
-      raise MRtrixError('FREESURFER_HOME environment variable not set; '
-                        'required for use of hippocampal subfields module')
-    freesurfer_lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
+    if not freesurfer_lut_file:
+      if 'FREESURFER_HOME' not in os.environ:
+        raise MRtrixError('If using hippocampal subfields module output,'
+                          'either need to use -freesurfer_lut option to provide path to FreeSurfer lookup table file,'
+                          'or FREESURFER_HOME environment variable needs to be set in order for script to find it')
+      freesurfer_lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
     check_file(freesurfer_lut_file)
     hipp_lut_file = os.path.join(path.shared_data_path(), '5ttgen', 'hsvs', 'HippSubfields.txt')
     check_file(hipp_lut_file)
@@ -487,6 +509,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   if hippocampi_method == 'subfields':
+    assert freesurfer_lut_file is not None
     progress = app.ProgressBar('Using detected FreeSurfer hippocampal subfields module output',
                                64 if hipp_subfield_has_amyg else 32)
 
@@ -557,8 +580,8 @@ def execute(): #pylint: disable=unused-variable
       from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value and 'Amygdala' not in value }
     if thalami_method != 'first':
       from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
-    run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first'])
-    fsl.check_first('first', from_first.keys())
+    first_stdout = run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first']).stdout
+    fsl.check_first('first', structures=from_first.keys(), first_stdout=first_stdout)
     app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))
     for key, value in from_first.items():
@@ -650,7 +673,7 @@ def execute(): #pylint: disable=unused-variable
   #   Generate one 'pial-like' surface containing the GM and WM of the cerebellum,
   #   and another with just the WM
   if not have_fast:
-    progress = app.ProgressBar('Adding FreeSurfer cerebellar segmentations directly', 6)
+    progress = app.ProgressBar('Adding FreeSurfer cerebellar segmentations directly', 12)
     for hemi in [ 'Left-', 'Right-' ]:
       wm_index = [ index for index, tissue, name in CEREBELLUM_ASEG if name.startswith(hemi) and 'White' in name ][0]
       gm_index = [ index for index, tissue, name in CEREBELLUM_ASEG if name.startswith(hemi) and 'Cortex' in name ][0]

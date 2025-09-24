@@ -1013,7 +1013,8 @@ class Parser(argparse.ArgumentParser):
             ' from neuroimaging software other than MRtrix3.')
     console('PLEASE ENSURE that any non-MRtrix3 software,'
             ' as well as any research methods they provide,'
-            ' are recognised and cited appropriately.')
+            ' are recognised and cited appropriately,'
+            ' and that any relevant software usage licenses are not violated.')
     console('Consult the help page (-help option) for more information.')
     console('')
 

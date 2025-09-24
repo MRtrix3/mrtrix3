@@ -238,6 +238,8 @@ bool is_dash(std::string_view arg) {
   return nbytes != 0 && nbytes == arg.size();
 }
 
+bool starts_with_dash(std::string_view arg) { return char_is_dash(arg.data()) != 0U; }
+
 std::string_view without_leading_dash(std::string_view arg) {
   size_t nbytes = char_is_dash(arg.data());
   while (nbytes > 0) {

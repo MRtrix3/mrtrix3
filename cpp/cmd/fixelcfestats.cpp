@@ -17,7 +17,7 @@
 #include "algo/loop.h"
 #include "command.h"
 #include "file/matrix.h"
-#include "fixel/filter/smooth.h"
+#include "fixel/filter/cfe.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/index_remapper.h"
@@ -29,7 +29,6 @@
 #include "math/stats/shuffle.h"
 #include "math/stats/typedefs.h"
 #include "progressbar.h"
-#include "stats/cfe.h"
 #include "stats/enhance.h"
 #include "stats/permtest.h"
 #include "thread_queue.h"
@@ -45,14 +44,6 @@ using Math::Stats::value_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
-#define DEFAULT_ANGLE_THRESHOLD 45.0
-#define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
-#define DEFAULT_SMOOTHING_FWHM 10.0
-
-#define DEFAULT_CFE_DH 0.1
-#define DEFAULT_CFE_E 2.0
-#define DEFAULT_CFE_H 3.0
-#define DEFAULT_CFE_C 0.5
 #define DEFAULT_EMPIRICAL_SKEW 1.0 // TODO Update from experience
 
 // clang-format off
@@ -130,25 +121,7 @@ void usage() {
 
   + Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
 
-  + OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement algorithm")
-
-  + Option ("cfe_dh", "the height increment used in the cfe integration"
-                      " (default: " + str(DEFAULT_CFE_DH, 2) + ")")
-    + Argument ("value").type_float (0.001, 1.0)
-
-  + Option ("cfe_e", "cfe extent exponent"
-                     " (default: " + str(DEFAULT_CFE_E, 2) + ")")
-    + Argument ("value").type_float(0.0, 100.0)
-
-  + Option ("cfe_h", "cfe height exponent"
-                     " (default: " + str(DEFAULT_CFE_H, 2) + ")")
-    + Argument ("value").type_float(0.0, 100.0)
-
-  + Option ("cfe_c", "cfe connectivity exponent"
-                     " (default: " + str(DEFAULT_CFE_C, 2) + ")")
-    + Argument ("value").type_float(0.0, 100.0)
-
-  + Option ("cfe_legacy", "use the legacy (non-normalised) form of the cfe equation")
+  + Fixel::Filter::cfe_options
 
   + Math::Stats::GLM::glm_options ("fixel");
 
@@ -198,10 +171,10 @@ private:
 };
 
 void run() {
-  const value_type cfe_dh = get_option_value("cfe_dh", DEFAULT_CFE_DH);
-  const value_type cfe_h = get_option_value("cfe_h", DEFAULT_CFE_H);
-  const value_type cfe_e = get_option_value("cfe_e", DEFAULT_CFE_E);
-  const value_type cfe_c = get_option_value("cfe_c", DEFAULT_CFE_C);
+  const value_type cfe_dh = get_option_value("cfe_dh", Fixel::Filter::cfe_default_dh);
+  const value_type cfe_e = get_option_value("cfe_e", Fixel::Filter::cfe_default_e);
+  const value_type cfe_h = get_option_value("cfe_h", Fixel::Filter::cfe_default_h);
+  const value_type cfe_c = get_option_value("cfe_c", Fixel::Filter::cfe_default_c);
   const bool cfe_legacy = !get_options("cfe_legacy").empty();
 
   const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
@@ -218,15 +191,38 @@ void run() {
   auto opt = get_options("mask");
   Fixel::index_type mask_fixels = 0;
   if (!opt.empty()) {
-    mask = Image<bool>::open(opt[0][0]);
-    Fixel::check_data_file(mask);
-    if (!Fixel::fixels_match(index_header, mask))
-      throw Exception("Mask image provided using -mask option does not match fixel template");
-    for (auto l = Loop(0)(mask); l; ++l) {
-      if (mask.value())
-        ++mask_fixels;
+    Header mask_header = Header::open(opt[0][0]);
+    try {
+      Fixel::check_data_file(mask_header);
+      if (!Fixel::fixels_match(index_header, mask_header))
+        throw Exception("Mask image provided using -mask option does not match fixel template");
+      mask = mask_header.get_image<bool>();
+      for (auto l = Loop(0)(mask); l; ++l) {
+        if (mask.value())
+          ++mask_fixels;
+      }
+    } catch (Exception &e) {
+      if (dimensions_match(index_header, mask_header, 0, 3) &&
+          (mask_header.ndim() == 3 || (mask_header.ndim() == 4 && mask_header.size(3) == 1))) {
+        CONSOLE("Converting voxel mask \"" + mask_header.name() + "\" to fixel mask");
+        Image<bool> voxel_mask = mask_header.get_image<bool>();
+        mask_header = Fixel::data_header_from_index(index_header);
+        mask = Image<bool>::scratch(mask_header, "Fixel mask calculated from user-provided voxel mask");
+        for (auto l = Fixel::Loop(index_image)(index_image); l; ++l) {
+          assign_pos_of(index_image, 0, 3).to(voxel_mask);
+          if (voxel_mask.value()) {
+            for (size_t i = 0; i != l.num_fixels; ++i) {
+              mask.index(0) = l.offset + i;
+              mask.value() = true;
+              ++mask_fixels;
+            }
+          }
+        }
+      } else {
+        throw e;
+      }
+      CONSOLE("Number of fixels in mask: " + str(mask_fixels));
     }
-    CONSOLE("Number of fixels in mask: " + str(mask_fixels));
   } else {
     Header fixel_mask_header = Fixel::data_header_from_index(index_header);
     fixel_mask_header.datatype() = DataType::Bit;
@@ -325,11 +321,11 @@ void run() {
       ++num_unconnected_fixels;
   }
   if (num_unconnected_fixels) {
-    WARN("A total of " + str(num_unconnected_fixels) + " fixels " +
-         (mask_fixels == num_fixels ? "" : "in the provided mask ") +
-         "do not possess any streamlines-based connectivity; "
-         "these will not be enhanced by CFE, and hence cannot be "
-         "tested for statistical significance");
+    WARN("A total of " + str(num_unconnected_fixels) + " fixels " +   //
+         (mask_fixels == num_fixels ? "" : "in the provided mask ") + //
+         "do not possess any streamlines-based connectivity; "        //
+         "these will not be enhanced by CFE,"                         //
+         " and hence cannot be tested for statistical significance"); //
   }
 
   Header output_header(dynamic_cast<SubjectFixelImport *>(importer[0].get())->header());
@@ -437,7 +433,8 @@ void run() {
   }
 
   // Construct the class for performing fixel-based statistical enhancement
-  std::shared_ptr<Stats::EnhancerBase> cfe_integrator(new Stats::CFE(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
+  std::shared_ptr<Stats::EnhancerBase> cfe_integrator(
+      new Fixel::Filter::CFE(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;

@@ -1,10 +1,3 @@
-include(LinkerSetup)
-include(FindFFTW)
-include(ECMEnableSanitizers)
-include(Dependencies)
-include(CompilerCache)
-use_compiler_cache()
-
 add_library(mrtrix-common INTERFACE)
 add_library(mrtrix::common ALIAS mrtrix-common)
 target_compile_definitions(mrtrix-common INTERFACE
@@ -38,4 +31,7 @@ endif()
 
 add_subdirectory(cmd)
 add_subdirectory(core)
-add_subdirectory(gui)
+
+if(MRTRIX_BUILD_GUI)
+    add_subdirectory(gui)
+endif()

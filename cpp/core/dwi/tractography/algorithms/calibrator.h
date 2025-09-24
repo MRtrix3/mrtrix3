@@ -53,8 +53,8 @@ FORCE_INLINE std::vector<Eigen::Vector3f> direction_grid(float max_angle, float 
 namespace {
 class Pair {
 public:
-  Pair(float elevation, float amplitude) : el(elevation), amp(amplitude) {}
-  float el, amp;
+  Pair(float inclination, float amplitude) : incl(inclination), amp(amplitude) {}
+  float incl, amp;
 };
 } // namespace
 
@@ -64,24 +64,24 @@ template <class Method> void calibrate(Method &method) {
   const float max_angle = std::isfinite(method.S.max_angle_ho) ? method.S.max_angle_ho : method.S.max_angle_1o;
 
   std::vector<Pair> amps;
-  for (float el = 0.0; el < max_angle; el += 0.001) {
-    amps.push_back(Pair(el, calibrate_func(el)));
+  for (float incl = 0.0; incl < max_angle; incl += 0.001) {
+    amps.push_back(Pair(incl, calibrate_func(incl)));
     if (!std::isfinite(amps.back().amp) || amps.back().amp <= 0.0)
       break;
   }
-  float zero = amps.back().el;
+  float zero = amps.back().incl;
 
   float N_min = Inf, theta_min = NaN, ratio = NaN;
   for (size_t i = 1; i < amps.size(); ++i) {
     float N = Math::pow2(max_angle);
     float Ns = N * (1.0 + amps[0].amp / amps[i].amp) / (2.0 * Math::pow2(zero));
-    auto dirs = direction_grid(max_angle + amps[i].el, sqrt3 * amps[i].el);
+    auto dirs = direction_grid(max_angle + amps[i].incl, sqrt3 * amps[i].incl);
     N = Ns + dirs.size();
-    // std::cout << amps[i].el << " " << amps[i].amp << " " << Ns << " " << dirs.size() << " " << Ns+dirs.size() <<
+    // std::cout << amps[i].incl << " " << amps[i].amp << " " << Ns << " " << dirs.size() << " " << Ns+dirs.size() <<
     // "\n";
     if (N > 0.0 && N < N_min) {
       N_min = N;
-      theta_min = amps[i].el;
+      theta_min = amps[i].incl;
       ratio = amps[0].amp / amps[i].amp;
     }
   }

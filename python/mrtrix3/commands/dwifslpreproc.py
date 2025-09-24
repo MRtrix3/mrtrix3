@@ -15,8 +15,11 @@
 
 
 
-import glob, itertools, json, math, os, shlex, shutil, sys
+import argparse, glob, itertools, json, math, os, shlex, shutil, sys
 
+
+STRIDES_OPTION_FSL_COMPAT_3D = ' -strides -1,+2,+3'
+STRIDES_OPTION_FSL_COMPAT_4D = ' -strides -1,+2,+3,+4'
 
 
 def usage(cmdline): #pylint: disable=unused-variable
@@ -389,19 +392,23 @@ def execute(): #pylint: disable=unused-variable
 
     if os.path.isfile(topup_file_userpath):
       if topup_file_userpath.endswith('_movpar.txt'):
-        topup_input_movpar = app.Parser.FileIn(topup_file_userpath)
-        topup_input_fieldcoef = app.Parser.ImageIn(find_fieldcoef(topup_file_userpath[:-len('_movpar.txt')]))
+        topup_input_movpar = app.Parser.FileIn()(topup_file_userpath)
+        topup_input_fieldcoef = app.Parser.ImageIn()(find_fieldcoef(topup_file_userpath[:-len('_movpar.txt')]))
       elif any(str(topup_file_userpath).endswith(postfix) for postfix in ('_fieldcoef.nii', '_fieldcoef.nii.gz')):
-        topup_input_fieldcoef = app.Parser.ImageIn(topup_file_userpath)
+        topup_input_fieldcoef = app.Parser.ImageIn()(topup_file_userpath)
         topup_input_movpar = topup_file_userpath[:-len('.gz')] if topup_file_userpath.endswith('.gz') else topup_file_userpath
-        topup_input_movpar = app.Parser.FileIn(topup_input_movpar[:-len('_fieldcoef.nii')] + '_movpar.txt')
+        topup_input_movpar = app.Parser.FileIn()(topup_input_movpar[:-len('_fieldcoef.nii')] + '_movpar.txt')
       else:
         raise MRtrixError(f'Unrecognised file "{topup_file_userpath}" specified as pre-calculated topup susceptibility field')
     else:
       if topup_file_userpath[-1] == '_':
         topup_file_userpath = topup_file_userpath[:-1]
-      topup_input_movpar = app.Parser.FileIn(f'{topup_file_userpath}_movpar.txt')
-      topup_input_fieldcoef = app.Parser.ImageIn(find_fieldcoef(topup_file_userpath))
+      try:
+        topup_input_movpar = app.Parser.FileIn()(f'{topup_file_userpath}_movpar.txt')
+        topup_input_fieldcoef = app.Parser.ImageIn()(find_fieldcoef(topup_file_userpath))
+      except argparse.ArgumentTypeError as exc:
+        raise argparse.ArgumentTypeError(f'Unable to find topup files from user specification "{topup_file_userpath}"') from exc
+
 
 
   # Convert all input images into MRtrix format and store in scratch directory first
@@ -720,7 +727,9 @@ def execute(): #pylint: disable=unused-variable
         overwrite_dwi_pe_scheme = True
     if manual_trt:
       # Compare manual specification to that read from the header
-      if not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
+      if len(dwi_pe_scheme[0]) == 4 \
+          and app.ARGS.readout_time is not None \
+          and not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
         app.warn('User-defined total readout time does not match what is stored in DWI image header; '
                  'proceeding with user specification')
         overwrite_dwi_pe_scheme = True
@@ -742,7 +751,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
   import_dwi_pe_table_option = ''
   if dwi_manual_pe_scheme:
-    phaseencoding.save('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
+    phaseencoding.save_table('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
     import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 
@@ -797,7 +806,8 @@ def execute(): #pylint: disable=unused-variable
                      'proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
         if manual_trt:
-          if not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
+          if len(se_epi_pe_scheme[0]) == 4 \
+              and not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
             app.warn('User-defined total readout time does not match what is stored in SE EPI image header; '
                      'proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
@@ -1004,7 +1014,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required when setting up the topup call
   se_epi_manual_pe_table_option = ''
   if se_epi_manual_pe_scheme:
-    phaseencoding.save('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
+    phaseencoding.save_table('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
     se_epi_manual_pe_table_option = ' -import_pe_table se_epi_manual_pe_scheme.txt'
 
 
@@ -1071,7 +1081,10 @@ def execute(): #pylint: disable=unused-variable
 
 
     # Do the conversion in preparation for topup
-    run.command(f'mrconvert {se_epi_path} topup_in.nii {se_epi_manual_pe_table_option} -strides -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+    run.command(f'mrconvert {se_epi_path} topup_in.nii'
+                f'{se_epi_manual_pe_table_option}'
+                f'{STRIDES_OPTION_FSL_COMPAT_4D}'
+                f' -export_pe_topup topup_datain.txt')
     app.cleanup(se_epi_path)
 
     # Run topup
@@ -1092,13 +1105,19 @@ def execute(): #pylint: disable=unused-variable
     # Apply the warp field to the input image series to get an initial corrected volume estimate
     # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
     #   details may vary between volumes
-    if dwi_manual_pe_scheme:
-      run.command(f'mrconvert {dwi_path} {import_dwi_pe_table_option} - | '
-                  f'mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
-    else:
-      run.command(f'mrinfo {dwi_path} -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+    run.command(f'mrconvert {dwi_path} applytopup_in.nii'
+                f'{import_dwi_pe_table_option}'
+                f'{STRIDES_OPTION_FSL_COMPAT_4D}'
+                ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt'
+                ' -export_grad_fsl applytopup_in.bvec applytopup_in.bval'
+                ' -json_export applytopup_in.json')
 
-    # Call applytopup separately for each unique phase-encoding
+    applytopup_config = matrix.load_matrix('applytopup_config.txt')
+    if any(row[2] for row in applytopup_config):
+      app.warn('Phase encoding on third spatial axis detected in input to applytopup; '
+               'applytopup may ignore this, leading to imperfect eddy brain mask')
+
+    # Update: Call applytopup separately for each unique phase-encoding
     # This should be the most compatible option with more complex phase-encoding acquisition designs,
     #   since we don't need to worry about applytopup performing volume recombination
     # Plus, recombination doesn't need to be optimal; we're only using this to derive a brain mask
@@ -1111,37 +1130,57 @@ def execute(): #pylint: disable=unused-variable
     app.debug(f'applytopup_indices: {applytopup_indices}')
     app.debug(f'applytopup_volumegroups: {applytopup_volumegroups}')
     for index, group in enumerate(applytopup_volumegroups):
-      prefix = f'{os.path.splitext(dwi_path)[0]}_pe{index}'
+      prefix = f'applytopup_in_pe{index+1}'
       input_path = f'{prefix}.nii'
       json_path = f'{prefix}.json'
+      bvec_path = f'{prefix}.bvec'
+      bval_path = f'{prefix}.bval'
       temp_path = f'{prefix}_applytopup.nii'
       output_path = f'{prefix}_applytopup.mif'
-      volumes = ','.join(map(str, group))
-      run.command(f'mrconvert {dwi_path} {input_path} -coord 3 {volumes} -strides -1,+2,+3,+4 -json_export {json_path}')
-      run.command(f'{applytopup_cmd} --imain={input_path} --datain=applytopup_config.txt --inindex={index+1} --topup=field --out={temp_path} --method=jac')
+      run.command(f'mrconvert applytopup_in.nii {input_path}'
+                  ' -json_import applytopup_in.json'
+                  ' -fslgrad applytopup_in.bvec applytopup_in.bval'
+                  f' -coord 3 {",".join(map(str, group))}'
+                  f'{STRIDES_OPTION_FSL_COMPAT_4D}'
+                  f' -json_export {json_path}'
+                  f' -export_grad_fsl {bvec_path} {bval_path}')
+      run.command(f'{applytopup_cmd}'
+                  f' --imain={input_path}'
+                  ' --datain=applytopup_config.txt'
+                  f' --inindex={index+1}'
+                  ' --topup=field'
+                  f' --out={temp_path}'
+                  f' --method=jac')
       app.cleanup(input_path)
       temp_path = fsl.find_image(temp_path)
-      run.command(f'mrconvert {temp_path} {output_path} -json_import {json_path}')
+      run.command(f'mrconvert {temp_path} {output_path}'
+                  f' -json_import {json_path}'
+                  f' -fslgrad {bvec_path} {bval_path}')
       app.cleanup(json_path)
       app.cleanup(temp_path)
+      app.cleanup(bvec_path)
+      app.cleanup(bval_path)
       applytopup_image_list.append(output_path)
       index += 1
+    app.cleanup('applytopup_in.nii')
+    app.cleanup('applytopup_in.json')
+    app.cleanup('applytopup_in.bvec')
+    app.cleanup('applytopup_in.bval')
 
     # Use the initial corrected volumes to derive a brain mask for eddy
     if not app.ARGS.eddy_mask:
 
-      dwi2mask_out_path = 'dwi2mask_out.mif'
       if len(applytopup_image_list) == 1:
         dwi2mask_in_path = applytopup_image_list[0]
       else:
         dwi2mask_in_path = 'dwi2mask_in.mif'
         run.command(['mrcat', applytopup_image_list, dwi2mask_in_path, '-axis', '3'])
-      run.command(['dwi2mask', dwi2mask_algo, dwi2mask_in_path, dwi2mask_out_path])
-      run.command(f'maskfilter {dwi2mask_out_path} dilate - | '
-                  f'mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+      run.command(['dwi2mask', dwi2mask_algo, dwi2mask_in_path, '-', '|',
+                   'maskfilter', '-', 'dilate', '-', '|',
+                   'mrconvert', '-', 'eddy_mask.nii', '-datatype', 'float32']
+                   + STRIDES_OPTION_FSL_COMPAT_3D.split(' '))
       if len(applytopup_image_list) > 1:
         app.cleanup(dwi2mask_in_path)
-      app.cleanup(dwi2mask_out_path)
 
     app.cleanup(applytopup_image_list)
 
@@ -1151,12 +1190,10 @@ def execute(): #pylint: disable=unused-variable
 
     # Generate a processing mask for eddy based on the uncorrected input DWIs
     if not app.ARGS.eddy_mask:
-      dwi2mask_out_path = 'dwi2mask_out.mif'
-      run.command(['dwi2mask', dwi2mask_algo, dwi_path, dwi2mask_out_path])
-      run.command(f'maskfilter {dwi2mask_out_path} dilate - | '
-                  f'mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
-      app.cleanup(dwi2mask_out_path)
-
+      run.command(['dwi2mask', dwi2mask_algo, dwi_path, '-', '|',
+                   'maskfilter', '-', 'dilate', '-', '|',
+                   'mrconvert', '-', 'eddy_mask.nii', '-datatype', 'float32']
+                   + STRIDES_OPTION_FSL_COMPAT_3D.split(' '))
 
   # Use user supplied mask for eddy instead of one derived from the images using dwi2mask
   if app.ARGS.eddy_mask:
@@ -1206,8 +1243,9 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Prepare input data for eddy
-  run.command(f'mrconvert {dwi_path} {import_dwi_pe_table_option} {dwi_permvols_preeddy_option} eddy_in.nii '
-              f'-strides -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
+  run.command(f'mrconvert {dwi_path} {import_dwi_pe_table_option} {dwi_permvols_preeddy_option} eddy_in.nii'
+              ' -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt'
+              f' {STRIDES_OPTION_FSL_COMPAT_4D}')
   app.cleanup(dwi_path)
 
   # Run eddy
@@ -1361,7 +1399,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Get the axis strides from the input series, so the output image can be modified to match
-  stride_option = ' -strides ' + ','.join([str(i) for i in dwi_header.strides()])
+  stride_restore_option = ' -strides ' + ','.join([str(i) for i in dwi_header.strides()])
 
 
   # Determine whether or not volume recombination should be performed
@@ -1393,8 +1431,9 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup(fsl.find_image('field_map'))
 
     # Convert the resulting volume to the output image, and re-insert the diffusion encoding
-    run.command(f'mrconvert {eddy_output_image_path} result.mif '
-                f'{dwi_permvols_posteddy_option} {dwi_post_eddy_crop_option} {stride_option} -fslgrad {bvecs_path} bvals')
+    run.command(f'mrconvert {eddy_output_image_path} result.mif'
+                f'{dwi_permvols_posteddy_option}{dwi_post_eddy_crop_option}{stride_restore_option}'
+                f' -fslgrad {bvecs_path} bvals')
     app.cleanup(eddy_output_image_path)
 
   else:
@@ -1412,31 +1451,51 @@ def execute(): #pylint: disable=unused-variable
     bvecs = matrix.load_matrix(bvecs_path)
     bvecs_combined_transpose = [ ]
     bvals_combined = [ ]
+    nans_present_bvecs = 0
 
     for pair in volume_pairs:
       bvec_mean = [ 0.5*(bvecs[0][pair[0]] + bvecs[0][pair[1]]),
                     0.5*(bvecs[1][pair[0]] + bvecs[1][pair[1]]),
                     0.5*(bvecs[2][pair[0]] + bvecs[2][pair[1]]) ]
-      norm2 = matrix.dot(bvec_mean, bvec_mean)
-
-      # If one diffusion sensitisation gradient direction is reversed with respect to
-      #   the other, still want to enable their recombination; but need to explicitly
-      #   account for this when averaging the two directions
-      if norm2 < 0.5:
-        bvec_mean = [ 0.5*(bvecs[0][pair[0]] - bvecs[0][pair[1]]),
-                      0.5*(bvecs[1][pair[0]] - bvecs[1][pair[1]]),
-                      0.5*(bvecs[2][pair[0]] - bvecs[2][pair[1]]) ]
+      if any(math.isnan(value) for value in bvec_mean):
+        nans_present_bvecs += 1
+        new_bvec = [0.0, 0.0, 0.0]
+        new_bval = 0.0
+      else:
         norm2 = matrix.dot(bvec_mean, bvec_mean)
 
-      # Occasionally a b=0 volume can have a zero vector
-      if norm2:
-        factor = 1.0 / math.sqrt(norm2)
-        new_vec = [ bvec_mean[0]*factor, bvec_mean[1]*factor, bvec_mean[2]*factor ]
-      else:
-        new_vec = [ 0.0, 0.0, 0.0 ]
-      bvecs_combined_transpose.append(new_vec)
-      bvals_combined.append(0.5 * (grad[pair[0]][3] + grad[pair[1]][3]))
+        # If one diffusion sensitisation gradient direction is reversed with respect to
+        #   the other, still want to enable their recombination; but need to explicitly
+        #   account for this when averaging the two directions
+        if norm2 < 0.5:
+          bvec_mean = [ 0.5*(bvecs[0][pair[0]] - bvecs[0][pair[1]]),
+                        0.5*(bvecs[1][pair[0]] - bvecs[1][pair[1]]),
+                        0.5*(bvecs[2][pair[0]] - bvecs[2][pair[1]]) ]
+          norm2 = matrix.dot(bvec_mean, bvec_mean)
 
+        # Occasionally a b=0 volume can have a zero vector
+        if norm2:
+          factor = 1.0 / math.sqrt(norm2)
+          new_bvec = [ bvec_mean[0]*factor, bvec_mean[1]*factor, bvec_mean[2]*factor ]
+        else:
+          new_bvec = [ 0.0, 0.0, 0.0 ]
+
+        new_bval = 0.5 * (grad[pair[0]][3] + grad[pair[1]][3])
+      # End check for NaN values in bvec
+
+      bvecs_combined_transpose.append(new_bvec)
+      bvals_combined.append(new_bval)
+
+    if nans_present_bvecs:
+      app.warn('FSL "eddy"\'s rotated bvecs contained'
+               + (f'{nans_present_bvecs} entries with NaN values;'
+                  'these have been read as zero-length vectors,'
+                  'and will be saved as b=0 volumes'
+                  if nans_present_bvecs > 1
+                  else 'an entry with NaN values; '
+                       'this has been read as a zero-length vector, '
+                       'and will be saved as a b=0 volume')
+               + ' in the output series')
     bvecs_combined = matrix.transpose(bvecs_combined_transpose)
     matrix.save_matrix('bvecs_combined', bvecs_combined, add_to_command_history=False)
     matrix.save_vector('bvals_combined', bvals_combined, add_to_command_history=False)
@@ -1542,7 +1601,7 @@ def execute(): #pylint: disable=unused-variable
                        'mrconvert', '-', 'result.mif', '-fslgrad', 'bvecs_combined', 'bvals_combined']
     if dwi_post_eddy_crop_option:
       combine_command.extend(dwi_post_eddy_crop_option.strip().split(' '))
-    combine_command.extend(stride_option.strip().split(' '))
+    combine_command.extend(stride_restore_option.strip().split(' '))
     run.command(combine_command)
     app.cleanup(combined_image_list)
 

@@ -92,7 +92,7 @@ def execute(): #pylint: disable=unused-variable
                 preserve_pipes=True)
   elif not app.ARGS.premasked and not shutil.which('dc'):
     app.warn('Unix command "dc" not found; '
-             'FSL script "standard_space_roi" may fail')
+             'FSL commands may fail')
   if app.ARGS.t2:
     if not image.match('input.mif', app.ARGS.t2):
       raise MRtrixError('Provided T2w image does not match input T1w image')
@@ -205,11 +205,11 @@ def execute(): #pylint: disable=unused-variable
   first_brain_extracted_option = ['-b'] if app.ARGS.premasked else []
   first_debug_option = [] if app.DO_CLEANUP else ['-d']
   first_verbosity_option = ['-v'] if app.VERBOSITY == 3 else []
-  run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_input, '-o', 'first']
-              + first_brain_extracted_option
-              + first_debug_option
-              + first_verbosity_option)
-  fsl.check_first('first', sgm_structures)
+  first_stdout = run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_input, '-o', 'first']
+                             + first_brain_extracted_option
+                             + first_debug_option
+                             + first_verbosity_option).stdout
+  fsl.check_first('first', structures=sgm_structures, first_stdout=first_stdout)
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
