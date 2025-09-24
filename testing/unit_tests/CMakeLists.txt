@@ -8,7 +8,6 @@ target_compile_definitions(gtest PRIVATE
 
 
 set(UNIT_TESTS_CPP_SRCS
-    bitset_tests.cpp
     erfinv_tests.cpp
     icls_tests.cpp
     ordered_queue_tests.cpp

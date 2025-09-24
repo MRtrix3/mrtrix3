@@ -20,7 +20,6 @@
 #include <set>
 
 #include "math/rng.h"
-#include "misc/bitset.h"
 
 namespace MR::DWI::Directions {
 
@@ -212,7 +211,7 @@ void Set::initialise_adjacency() {
   std::vector<Plane> hull;
 
   // Speedup: Only test those directions that have not yet been incorporated into any plane
-  BitSet assigned(vertices.size());
+  std::vector<bool> assigned(vertices.size(), false);
   assigned[base_plane.indices[0]] = true;
   assigned[base_plane.indices[1]] = true;
   assigned[base_plane.indices[2]] = true;

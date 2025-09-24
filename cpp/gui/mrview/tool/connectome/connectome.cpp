@@ -3717,7 +3717,7 @@ void Connectome::calculate_edge_alphas() {
 }
 
 void Connectome::node_selection_changed(const std::vector<node_t> &list) {
-  selected_nodes.clear();
+  selected_nodes.assign(selected_nodes.size(), false);
   selected_node_count = list.size();
   for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
     selected_nodes[*n] = true;

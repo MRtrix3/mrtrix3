@@ -20,7 +20,6 @@
 
 #include "algo/loop.h"
 #include "fixel/helpers.h"
-#include "misc/bitset.h"
 #include "types.h"
 
 namespace MR::Fixel::Filter {
@@ -46,7 +45,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
   for (auto l = Loop(0)(output); l; ++l)
     output.value() = 0.0f;
 
-  BitSet processed(input.size(0));
+  std::vector<bool> processed(input.size(0), false);
   using IndexAndSize = std::pair<size_t, size_t>;
   std::vector<IndexAndSize> cluster_sizes;
   for (index_type seed = 0; seed != input.size(0); ++seed) {

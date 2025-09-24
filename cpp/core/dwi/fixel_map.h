@@ -17,7 +17,6 @@
 #pragma once
 
 #include "algo/loop.h"
-#include "dwi/directions/mask.h"
 #include "dwi/fmls.h"
 #include "header.h"
 #include "image.h"

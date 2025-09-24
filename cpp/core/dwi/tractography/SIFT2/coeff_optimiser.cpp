@@ -26,7 +26,7 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(TckFactor &tckfactor,
                                                    StreamlineStats &step_stats,
                                                    StreamlineStats &coefficient_stats,
                                                    unsigned int &nonzero_streamlines,
-                                                   BitSet &fixels_to_exclude,
+                                                   fixel_mask_type &fixels_to_exclude,
                                                    double &sum_costs)
     : master(tckfactor),
       mu(tckfactor.mu()),
@@ -45,7 +45,7 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(TckFactor &tckfactor,
       local_stats_steps(),
       local_stats_coefficients(),
       local_nonzero_count(0),
-      local_to_exclude(fixels_to_exclude.size()),
+      local_to_exclude(fixel_mask_type::Zero(fixels_to_exclude.size())),
       local_sum_costs(0.0) {
 }
 
@@ -67,7 +67,7 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(const CoefficientOptimiserBas
       local_stats_steps(),
       local_stats_coefficients(),
       local_nonzero_count(0),
-      local_to_exclude(fixels_to_exclude.size()),
+      local_to_exclude(fixel_mask_type::Zero(that.fixels_to_exclude.size())),
       local_sum_costs(0.0) {
 }
 
@@ -86,7 +86,7 @@ CoefficientOptimiserBase::~CoefficientOptimiserBase() {
   step_stats += local_stats_steps;
   coefficient_stats += local_stats_coefficients;
   nonzero_streamlines += local_nonzero_count;
-  fixels_to_exclude |= local_to_exclude;
+  fixels_to_exclude = fixels_to_exclude || local_to_exclude;
   sum_costs += local_sum_costs;
 }
 
@@ -209,7 +209,7 @@ CoefficientOptimiserGSS::CoefficientOptimiserGSS(TckFactor &tckfactor,
                                                  StreamlineStats &step_stats,
                                                  StreamlineStats &coefficient_stats,
                                                  unsigned int &nonzero_streamlines,
-                                                 BitSet &fixels_to_exclude,
+                                                 fixel_mask_type &fixels_to_exclude,
                                                  double &sum_costs)
     : CoefficientOptimiserBase(
           tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) {}
@@ -239,7 +239,7 @@ CoefficientOptimiserQLS::CoefficientOptimiserQLS(TckFactor &tckfactor,
                                                  StreamlineStats &step_stats,
                                                  StreamlineStats &coefficient_stats,
                                                  unsigned int &nonzero_streamlines,
-                                                 BitSet &fixels_to_exclude,
+                                                 fixel_mask_type &fixels_to_exclude,
                                                  double &sum_costs)
     : CoefficientOptimiserBase(
           tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
@@ -285,7 +285,7 @@ CoefficientOptimiserIterative::CoefficientOptimiserIterative(TckFactor &tckfacto
                                                              StreamlineStats &step_stats,
                                                              StreamlineStats &coefficient_stats,
                                                              unsigned int &nonzero_streamlines,
-                                                             BitSet &fixels_to_exclude,
+                                                             fixel_mask_type &fixels_to_exclude,
                                                              double &sum_costs)
     : CoefficientOptimiserBase(
           tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs)
