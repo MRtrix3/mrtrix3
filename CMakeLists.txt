@@ -34,6 +34,7 @@ set(MRTRIX_DEPENDENCIES_DIR "" CACHE PATH
     - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n
     - Google Test https://github.com/google/googletest (version 1.17.0 in .tar.gz format). Only required for tests.\n)"
 )
+option(MRTRIX_BUILD_CPP_COMMANDS "Build the C++ commands" ON)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)
@@ -47,6 +48,17 @@ if(MRTRIX_USE_QT5)
 else()
     set(QT_MAJOR_VERSION 6)
 endif()
+
+# If MRTRIX_SUBPROJECT_INSTALL_PREFIX is set, it will be used as the install prefix
+# for all targets in this project. This is useful when MRtrix3 is built as a
+# subproject of another project (e.g. via add_subdirectory or FetchContent).
+if(NOT DEFINED MRTRIX_SUBPROJECT_INSTALL_PREFIX)
+    set(MRTRIX_SUBPROJECT_INSTALL_PREFIX "")
+endif()
+set(MRTRIX_INSTALL_BINDIR ${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "" FORCE)
+set(MRTRIX_INSTALL_LIBDIR ${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "" FORCE)
+set(MRTRIX_INSTALL_INCLUDEDIR ${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR} CACHE INTERNAL "" FORCE)
+set(MRTRIX_INSTALL_DATADIR ${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR} CACHE INTERNAL "" FORCE)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -67,8 +79,8 @@ else()
 endif()
 
 file(RELATIVE_PATH relDir
-    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${MRTRIX_INSTALL_BINDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${MRTRIX_INSTALL_LIBDIR}
 )
 
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
@@ -111,6 +123,8 @@ if(COMPILER_PATH MATCHES "fsl/bin" OR LINKER_PATH MATCHES "fsl/bin")
         "See https://github.com/MRtrix3/mrtrix3/wiki/Building-from-source#compilation-failure-due-to-not-using-system-compiler."
     )
 endif()
+
+add_custom_target(MRtrixCppCommands)
 
 add_subdirectory(cpp)
 add_subdirectory(python)
