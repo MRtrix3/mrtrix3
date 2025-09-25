@@ -11,6 +11,10 @@ endforeach(CMD)
 
 add_custom_target(MRtrixCppCommands)
 
+if(NOT MRTRIX_BUILD_GPU)
+    list(REMOVE_ITEM HEADLESS_CMD_SRCS "test_gpu.cpp")
+endif()
+
 if(MRTRIX_USE_PCH)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp CONTENT "int main(){}")
     add_executable(pch_cmd ${CMAKE_CURRENT_BINARY_DIR}/pch_cmd.cpp)
@@ -60,6 +64,17 @@ foreach(CMD ${HEADLESS_CMD_SRCS})
     add_cmd(${CMD} FALSE)
 endforeach(CMD)
 
+if(MRTRIX_BUILD_GPU)
+    add_custom_command(
+        TARGET test_gpu POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${PROJECT_SOURCE_DIR}/cpp/gpu/shaders
+        $<TARGET_FILE_DIR:test_gpu>/shaders
+        COMMENT "Symlinking shaders directory"
+    )
+    target_link_libraries(test_gpu PRIVATE mrtrix-gpu-lib)
+endif()
+
 # For the set of commands that take the longest to compile,
 # we try to start their compilation as soon as possible by adding them as dependencies
 # of a generated dummy file (which Ninja prioritises during compilation).
@@ -73,3 +88,5 @@ if(MRTRIX_BUILD_GUI)
         add_cmd(${CMD} TRUE)
     endforeach(CMD)
 endif()
+
+
