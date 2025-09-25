@@ -135,11 +135,13 @@ protected:
         del_image.value() = 0;
 
     Dilate dilation_filter(del_image);
-    dilation_filter.set_npass(ss + 1);
-    dilation_filter(del_image, del_image);
-
-    for (auto l = Loop(0, 3)(input, largest_image, del_image); l; ++l)
-      largest_image.value() = del_image.value() ? 0 : input.value();
+    for (size_t iter = 0; iter <= ss; ++iter) {
+      dilation_filter(del_image, del_image);
+      for (auto l = Loop(0, 3)(input, largest_image, del_image); l; ++l) {
+        del_image.value() = input.value() ? del_image.value() : 0;
+        largest_image.value() = del_image.value() ? 0 : input.value();
+      }
+    }
 
     for (auto l = Loop(0, 3)(largest_image, output); l; ++l)
       output.value() = largest_image.value();
