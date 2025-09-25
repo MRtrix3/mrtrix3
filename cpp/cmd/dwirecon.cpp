@@ -35,6 +35,8 @@
 using namespace MR;
 using namespace App;
 
+constexpr default_type condition_number_product_threshold = 1000.0;
+
 // Other future operations that might be applicable here:
 // - "leave-one-out": Predict each intensity based on all observations excluding that one
 // - SHARD recon
@@ -62,7 +64,13 @@ const OptionGroup combinepredicted_options = OptionGroup("Options specific to \"
   + Option("exponent", "set the exponent modulating relative contributions"
                        " between empirical and predicted signal"
                        " (see Description)")
-      + Argument("value").type_float();
+      + Argument("value").type_float()
+  + Option("weights", "export an image encoding, for each intensity sample,"
+                      "how much the output was weighted by the empirical data vs. prediction")
+      + Argument("image").type_image_out()
+  + Option("predicted", "export an image containing the predictions generated"
+                        " excluding each volume's own phase encoding group")
+      + Argument("image").type_image_out();
 
 void usage() {
 
@@ -141,7 +149,7 @@ using data_vector_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
 // Shared functions //
 //////////////////////
 
-Image<float> get_field_image(const Image<float> dwi_in, const std::string &operation, const bool compulsory) {
+Image<float> get_field_image(const Image<float> &dwi_in, const std::string &operation, const bool compulsory) {
 
   auto opt = get_options("field");
   Image<float> field_image;
@@ -200,12 +208,12 @@ std::pair<size_t, default_type> get_pe_axis_and_polarity(const Eigen::Block<sche
 // For now this is considered out of scope
 void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const scheme_type &pe_in, Header &header_out) {
 
-  if (grad_in.rows() % 2)
+  if (grad_in.rows() % 2 != 0)
     throw Exception("Cannot perform explicit volume recombination based on phase encoding pairs:"
                     " number of volumes is odd");
 
   const std::vector<std::string> invalid_options{"exponent", "lmax"};
-  for (const auto opt : invalid_options)
+  for (const auto &opt : invalid_options)
     if (!get_options(opt).empty())
       throw Exception("-" + opt + " option not supported for \"combine_pairs\" operation");
 
@@ -216,7 +224,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
   // Even though the function is called "topup2eddy()",
   //   we can nevertheless use it here to arrange volumes into groups
   Metadata::PhaseEncoding::topup2eddy(pe_in, pe_config, pe_indices);
-  if (pe_config.rows() % 2)
+  if (pe_config.rows() % 2 != 0)
     throw Exception("Cannot perform explicit volume recombination based on phase encoding pairs:"
                     " number of unique phase encodings is odd");
   // The FSL topup / eddy format indexes from one;
@@ -236,7 +244,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       if (peindex2paired[pe_first_index] >= 0)
         continue;
       const auto pe_first = pe_config.row(pe_first_index);
-      size_t pe_second_index;
+      size_t pe_second_index = 0;
       for (pe_second_index = pe_first_index + 1; pe_second_index != pe_config.rows(); ++pe_second_index) {
         const auto pe_second = pe_config.row(pe_second_index);
         // Phase encoding same axis but reversed direction
@@ -258,7 +266,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
     assert(*std::min_element(peindex2paired.begin(), peindex2paired.end()) == 0);
   }
 
-  DWI::Shells shells(grad_in);
+  const DWI::Shells shells(grad_in);
   const std::vector<int> vol2shell = get_vol2shell(shells, grad_in.rows());
   DEBUG("grad_in:\n" + str(grad_in));
   std::stringstream ss_vol2shell;
@@ -558,6 +566,9 @@ void run_combine_predicted(Image<float> &dwi_in,
   // The FSL topup / eddy format indexes from one;
   //   change to starting from zero for internal array indexing
   pe_indices -= 1;
+  if (pe_config.rows() == 1)
+    throw Exception("Cannot combine empirical with predicted intensities"
+                    " in the absence of phase encoding contrast");
 
   DWI::Shells shells(grad_in);
   const std::vector<int> vol2shell = get_vol2shell(shells, grad_in.rows());
@@ -585,9 +596,9 @@ void run_combine_predicted(Image<float> &dwi_in,
   //   this is to be consistent with prior dwifslpreproc code,
   //   which directly invoked "mrfilter gradient"
   // Allow smoothing filter to use internal default
-  Image<float> smoothed_field = Image<float>::scratch(field_image, "Smoothed field offset image");
   std::vector<Image<float>> jacdet_images;
   {
+    Image<float> smoothed_field = Image<float>::scratch(field_image, "Smoothed field offset image");
     ProgressBar progress("Calculating phase encoding group Jacobian determinants", pe_config.rows() + 1);
     Filter::Smooth smoothing_filter(field_image);
     smoothing_filter(field_image, smoothed_field);
@@ -612,6 +623,15 @@ void run_combine_predicted(Image<float> &dwi_in,
   }
 
   Image<float> dwi_out = Image<float>::create(header_out.name(), header_out);
+
+  opt = get_options("weights");
+  Image<float> weights_image;
+  if (!opt.empty())
+    weights_image = Image<float>::create(opt[0][0], header_out);
+  opt = get_options("predicted");
+  Image<float> predicted_image;
+  if (!opt.empty())
+    predicted_image = Image<float>::create(opt[0][0], header_out);
 
   ProgressBar progress("Reconstructing volumes combining empirical and predicted intensities",
                        pe_config.rows() * shells.count());
@@ -682,7 +702,6 @@ void run_combine_predicted(Image<float> &dwi_in,
                           " for shell b=" + str<int>(shells[shell_index].get_mean()) +
                           " exceeds what can be predicted from data after phase encoding group exclusion");
       }
-      DEBUG("Reconstruction will use lmax=" + str(lmax));
 
       // Generate the direction set for the target data
       spherical_scheme_type target_dirset(target_volumes.size(), 2);
@@ -690,7 +709,11 @@ void run_combine_predicted(Image<float> &dwi_in,
         Math::Sphere::cartesian2spherical(grad_in.block<1, 3>(target_volumes[target_index], 0),
                                           target_dirset.row(target_index));
       // Generate the transformation from SH to the target data
-      const sh_transform_type SH2target = Math::SH::init_transform(target_dirset, lmax);
+      sh_transform_type SH2target = Math::SH::init_transform(target_dirset, lmax);
+      DEBUG("PE index " + str(pe_index) + ", shell index " + str(shell_index) + ":" + //
+            " SH to target transform initialised" +                                   //
+            " of size " + str(SH2target.rows()) + "x" + str(SH2target.cols()) +       //
+            " with condition number " + str(Math::condition_number(SH2target)));      //
 
       spherical_scheme_type source_dirset(source_volumes.size(), 2);
       data_vector_type source_data(source_volumes.size());
@@ -707,8 +730,42 @@ void run_combine_predicted(Image<float> &dwi_in,
         // Generate the transformation from the source data to spherical harmonics
         // For now, weighting all samples equally
         source2SH = Math::pinv(Math::SH::init_transform(source_dirset, lmax));
+
+        default_type condition_number_product = Math::condition_number(SH2target) * Math::condition_number(source2SH);
+        if (condition_number_product > condition_number_product_threshold) {
+          // If this is highly ill-conditioned,
+          //   then the reconstructed output data can be very noisy...
+          if (lmax_user.empty()) {
+            do {
+              assert(lmax > 0);
+              lmax -= 2;
+              SH2target = Math::SH::init_transform(target_dirset, lmax);
+              source2SH = Math::pinv(Math::SH::init_transform(source_dirset, lmax));
+              condition_number_product = Math::condition_number(SH2target) * Math::condition_number(source2SH);
+            } while (condition_number_product > condition_number_product_threshold);
+            WARN("lmax of predictor for phase encoding group " + str(pe_index) + "," +      //
+                 " shell b=" + str(shells[shell_index].get_mean()) +                        //
+                 " decreased from " + str(lmax_data) + " to " + str(lmax) +                 //
+                 " to improve problem conditioning");                                       //
+            DEBUG("PE index " + str(pe_index) + ", shell index " + str(shell_index) + ":" + //
+                  " SH to target transform RE-initialised" +                                //
+                  " of size " + str(SH2target.rows()) + "x" + str(SH2target.cols()) +       //
+                  " with condition number " + str(Math::condition_number(SH2target)));      //
+          } else {
+            WARN("Conditioning of predictor for phase encoding group " + str(pe_index) + "," + //
+                 " shell b=" + str(shells[shell_index].get_mean()) + " is poor;" +             //
+                 " combined image may be noisy in expanded regions");                          //
+          }
+        }
+        DEBUG("PE index " + str(pe_index) + ", shell index " + str(shell_index) + ":" + //
+              " source data to SH transform initialised" +                              //
+              " of size " + str(source2SH.rows()) + "x" + str(source2SH.cols()) +       //
+              " with condition number " + str(Math::condition_number(source2SH)));      //
         // Compose transformation from source data to target data
         source2target = SH2target * source2SH;
+        DEBUG("PE index " + str(pe_index) + ", shell index " + str(shell_index) + ":" +   //
+              " source data to target data transform initialised" +                       //
+              " of size " + str(source2target.rows()) + "x" + str(source2target.cols())); //
 
         // Now we are ready to loop over the image
         Image<float> jacdet(jacdet_images[pe_index]);
@@ -721,6 +778,7 @@ void run_combine_predicted(Image<float> &dwi_in,
               dwi_in.index(3) = dwi_out.index(3) = volume;
               dwi_out.value() = dwi_in.value();
             }
+            predicted_data.fill(std::numeric_limits<default_type>::quiet_NaN());
           } else {
             // Clamp here is only to deal with the prospect of "-exponent -inf"
             empirical_weight = std::min(1.0, std::pow(empirical_weight, exponent));
@@ -731,11 +789,26 @@ void run_combine_predicted(Image<float> &dwi_in,
             }
             // Generate the predictions
             predicted_data.noalias() = source2target * source_data;
+            assert(predicted_data.size() == target_volumes.size());
             // Write these to the output image
             for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
               dwi_in.index(3) = dwi_out.index(3) = target_volumes[target_index];
               dwi_out.value() =
                   (empirical_weight * dwi_in.value()) + ((1.0 - empirical_weight) * predicted_data[target_index]);
+            }
+          }
+          if (weights_image.valid()) {
+            assign_pos_of(dwi_out, 0, 3).to(weights_image);
+            for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
+              weights_image.index(3) = target_volumes[target_index];
+              weights_image.value() = empirical_weight;
+            }
+          }
+          if (predicted_image.valid()) {
+            assign_pos_of(dwi_out, 0, 3).to(predicted_image);
+            for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
+              predicted_image.index(3) = target_volumes[target_index];
+              predicted_image.value() = predicted_data[target_index];
             }
           }
         }
@@ -771,6 +844,7 @@ void run_combine_predicted(Image<float> &dwi_in,
               dwi_in.index(3) = dwi_out.index(3) = volume;
               dwi_out.value() = dwi_in.value();
             }
+            predicted_data.fill(std::numeric_limits<default_type>::quiet_NaN());
           } else {
             empirical_weight = std::min(1.0, std::pow(empirical_weight, exponent));
             // Build the rest of the requisite data for the A2SH transform in this voxel
@@ -796,6 +870,20 @@ void run_combine_predicted(Image<float> &dwi_in,
               dwi_in.index(3) = dwi_out.index(3) = target_volumes[target_index];
               dwi_out.value() =
                   (empirical_weight * dwi_in.value()) + ((1.0 - empirical_weight) * predicted_data[target_index]);
+            }
+          }
+          if (weights_image.valid()) {
+            assign_pos_of(dwi_out, 0, 3).to(weights_image);
+            for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
+              weights_image.index(3) = target_volumes[target_index];
+              weights_image.value() = empirical_weight;
+            }
+          }
+          if (predicted_image.valid()) {
+            assign_pos_of(dwi_out, 0, 3).to(predicted_image);
+            for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
+              predicted_image.index(3) = target_volumes[target_index];
+              predicted_image.value() = predicted_data[target_index];
             }
           }
         }
@@ -827,6 +915,12 @@ void run() {
     break;
 
   case 1:
+    // TODO Diagnose errors with predictions
+    // Getting very wacky results in test data
+    // Consider adding command-line options to save:
+    // - Fraction of each sample that comes from its own empirical data vs. prediction
+    // - The predicted intensity generated there
+    // Also throw in a bunch of assertions to make sure that the prediction generation is working
     run_combine_predicted(dwi_in, grad_in, pe_in, header_out);
     break;
 

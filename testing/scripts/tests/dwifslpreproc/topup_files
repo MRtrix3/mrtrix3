@@ -37,6 +37,8 @@ mrcat \
         -json_import BIDS/sub-05/dwi/sub-05_acq-2_dwi.json \
         -coord 3 0) \
     -axis 3 \
+    - | \
+mrconvert - \
     tmp-sub-05_epi.nii \
     -strides -1,+2,+3,+4 \
     -force

@@ -16,10 +16,14 @@
 
 
 import argparse, glob, itertools, json, os, shlex, shutil, sys
+from enum import Enum
 
 
 STRIDES_OPTION_FSL_COMPAT_3D = ' -strides -1,+2,+3'
 STRIDES_OPTION_FSL_COMPAT_4D = ' -strides -1,+2,+3,+4'
+
+
+PEDesign = Enum('PEDesign', ['Single', 'RPEb0', 'SplitRPE', 'AllRPE', 'InferFromHeader'])
 
 
 def usage(cmdline): #pylint: disable=unused-variable
@@ -97,6 +101,29 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' phase encoding direction but identical total readout time.'
                             ' Use of the -align_seepi option is advocated as long as its use is valid'
                             ' (more information in the Description section).')
+  cmdline.add_example_usage('DWI gradient table split equally between two opposed phase encoding directions'
+                            'mrcat DWI_AP.mif DWI_PA.mif DWI_in.mif -axis 3;'
+                            ' dwifslpreproc DWI_in.mif DWI_out.mif -rpe_split -pe_dir ap -readout_time 0.72',
+                            'Here the diffusion gradient table is presumed to have been split into two equally-sized halves,'
+                            ' with the FIRST HALF of the volumes acquired with the phase encoding direction'
+                            ' indicated using the -pe_dir option,'
+                            ' and the SECOND HALF acquired with the opposite phase encoding direction.'
+                            ' The number of volumes in the two halves must be identical'
+                            ' (where this is specifically violated, see use of -rpe_header option elsewhere);'
+                            ' however it is not a single set of diffusion sensitisations'
+                            ' that has been acquired in two repeats'
+                            ' (see use of -rpe_all option elsewhere);'
+                            ' rather each of the two halves contains a unique set of diffusion sensitisations,'
+                            ' each of which is reasonably well distributed independently'
+                            ' but that form a more dense and optimal set upon their concatenation.'
+                            ' For data acquired in this way,'
+                            ' the output DWIs will be constructed from a weighted combination'
+                            ' of the empirical data and the intensities predicted from other volumes,'
+                            ' in order to restore spatial contrast in highly geometrically compressed regions.'
+                            ' In the absence of use of the -se_epi option'
+                            ' (which is recommended in this instance),'
+                            ' the b=0 volumes will be extracted from these two halves of the input data'
+                            ' and used to estimate the susceptibility distortion field.')
   cmdline.add_example_usage('All DWI directions & b-values are acquired twice,'
                             ' with the phase encoding direction of the second acquisition protocol'
                             ' being reversed with respect to the first',
@@ -266,6 +293,10 @@ def usage(cmdline): #pylint: disable=unused-variable
                                 ' (typically b=0 volumes)'
                                 ' will be provided for use in inhomogeneity field estimation only'
                                 ' (using the -se_epi option)')
+  rpe_options.add_argument('-rpe_split',
+                           action='store_true',
+                           default=None,
+                           help='Specify that input DWIs were split sequentially between two phase encoding directions')
   rpe_options.add_argument('-rpe_all',
                            action='store_true',
                            default=None,
@@ -275,7 +306,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                            default=None,
                            help='Specify that the phase-encoding information can be found in the image header(s),'
                                 ' and that this is the information that the script should use')
-  cmdline.flag_mutually_exclusive_options( [ 'rpe_none', 'rpe_pair', 'rpe_all', 'rpe_header' ], True )
+  cmdline.flag_mutually_exclusive_options( [ 'rpe_none', 'rpe_pair', 'rpe_split', 'rpe_all', 'rpe_header' ], True )
   cmdline.flag_mutually_exclusive_options( [ 'rpe_none', 'se_epi' ], False ) # May still technically provide -se_epi even with -rpe_all
   cmdline.flag_mutually_exclusive_options( [ 'rpe_pair', 'topup_files'] ) # Would involve two separate sources of inhomogeneity field information
   cmdline.flag_mutually_exclusive_options( [ 'se_epi', 'topup_files'] ) # Would involve two separate sources of inhomogeneity field information
@@ -296,18 +327,19 @@ def execute(): #pylint: disable=unused-variable
 
   image.check_3d_nonunity(app.ARGS.input)
 
-  pe_design = ''
   if app.ARGS.rpe_none:
-    pe_design = 'None'
+    pe_design = PEDesign.Single
   elif app.ARGS.rpe_pair:
-    pe_design = 'Pair'
+    pe_design = PEDesign.RPEb0
     if not app.ARGS.se_epi:
       raise MRtrixError('If using the -rpe_pair option, '
                         'the -se_epi option must be used to provide the spin-echo EPI data to be used by topup')
+  elif app.ARGS.rpe_split:
+    pe_design = PEDesign.SplitRPE
   elif app.ARGS.rpe_all:
-    pe_design = 'All'
+    pe_design = PEDesign.AllRPE
   elif app.ARGS.rpe_header:
-    pe_design = 'Header'
+    pe_design = PEDesign.InferFromHeader
   else:
     raise MRtrixError('Must explicitly specify phase-encoding acquisition design (even if none)')
 
@@ -321,7 +353,7 @@ def execute(): #pylint: disable=unused-variable
   if not fsl_path:
     raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  if pe_design == 'None':
+  if pe_design is PEDesign.Single:
     topup_config_path = None
     topup_cmd = None
     applytopup_cmd = None
@@ -384,7 +416,7 @@ def execute(): #pylint: disable=unused-variable
     topup_files_userpath = app.ARGS.topup_files
   topup_input_fieldimage = app.ARGS.topup_field
 
-  execute_applytopup = pe_design != 'None' or topup_files_userpath
+  execute_applytopup = pe_design is not PEDesign.Single or topup_files_userpath
   if execute_applytopup:
     applytopup_cmd = fsl.exe_name('applytopup')
 
@@ -599,20 +631,19 @@ def execute(): #pylint: disable=unused-variable
       trt = auto_trt
       dwi_auto_trt_warning = True
 
-    # Still construct the manual PE scheme even with 'None' or 'Pair':
+    # Still construct the manual PE scheme even with 'Single' or 'RPEb0':
     #   there may be information in the header that we need to compare against
-    if pe_design == 'None':
+    if pe_design is PEDesign.Single:
       line = list(manual_pe_dir)
       line.append(trt)
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
-      app.debug(f'Manual DWI PE scheme for "None" PE design: {dwi_manual_pe_scheme}')
+      app.debug(f'Manual DWI PE scheme for "Single" PE design: {dwi_manual_pe_scheme}')
 
-    # With 'Pair', also need to construct the manual scheme for SE EPIs
-    elif pe_design == 'Pair':
-      line = list(manual_pe_dir)
-      line.append(trt)
+    # With 'RPEb0', also need to construct the manual scheme for SE EPIs
+    elif pe_design is PEDesign.RPEb0:
+      line = list(manual_pe_dir) + [ trt ]
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
-      app.debug(f'Manual DWI PE scheme for "Pair" PE design: {dwi_manual_pe_scheme}')
+      app.debug(f'Manual DWI PE scheme for "RPEb0" PE design: {dwi_manual_pe_scheme}')
       if len(se_epi_header.size()) != 4:
         raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must be a 4D image')
       se_epi_num_volumes = se_epi_header.size()[3]
@@ -621,10 +652,19 @@ def execute(): #pylint: disable=unused-variable
       # Assume that first half of volumes have same direction as series;
       #   second half have the opposite direction
       se_epi_manual_pe_scheme = [ line ] * int(se_epi_num_volumes/2)
-      line = [ (-i if i else 0.0) for i in manual_pe_dir ]
-      line.append(trt)
+      line = [ (-i if i else 0.0) for i in manual_pe_dir ] + [ trt ]
       se_epi_manual_pe_scheme.extend( [ line ] * int(se_epi_num_volumes/2) )
-      app.debug(f'Manual SEEPI PE scheme for "Pair" PE design: {se_epi_manual_pe_scheme}')
+      app.debug(f'Manual SEEPI PE scheme for "RPEb0" PE design: {se_epi_manual_pe_scheme}')
+
+    # Construct the manual scheme for DWIs and SE EPIs for -rpe_split
+    elif pe_design is PEDesign.SplitRPE:
+      if dwi_num_volumes%2:
+        raise MRtrixError('If using -rpe_split option, input image must have an even number of volumes')
+      line = list(manual_pe_dir) + [ trt ]
+      dwi_manual_pe_scheme = [ line ] * int(dwi_num_volumes / 2)
+      line = [ (-i if i else 0.0) for i in manual_pe_dir ] + [ trt ]
+      dwi_manual_pe_scheme.extend([ line ] * int(dwi_num_volumes / 2))
+      app.debug(f'Manual DWI PE scheme for "SplitRPE" PE design: {dwi_manual_pe_scheme}')
 
     # If -rpe_all, need to scan through grad and figure out the pairings
     # This will be required if relying on user-specified phase encode direction
@@ -635,7 +675,9 @@ def execute(): #pylint: disable=unused-variable
     #   arbitrary ordering of those pairs, since b=0 volumes would then be matched
     #   despite having the same phase-encoding direction. Instead, explicitly enforce
     #   that volumes must be matched between the first and second halves of the DWI data.
-    elif pe_design == 'All':
+    elif pe_design is PEDesign.AllRPE:
+      if dwi_num_volumes%2:
+        raise MRtrixError('If using -rpe_split option, input image must have an even number of volumes')
       # Construct manual PE scheme here:
       #   Regardless of whether or not there's a scheme in the header, need to have it:
       #   if there's one in the header, want to compare to the manually-generated one
@@ -646,12 +688,13 @@ def execute(): #pylint: disable=unused-variable
           line = [ (-i if i else 0.0) for i in line ]
         line.append(trt)
         dwi_manual_pe_scheme.append(line)
-      app.debug(f'Manual DWI PE scheme for "All" PE design: {dwi_manual_pe_scheme}')
+      app.debug(f'Manual DWI PE scheme for "AllRPE" PE design: {dwi_manual_pe_scheme}')
 
   else: # No manual phase encode direction defined
 
-    if not pe_design == 'Header':
-      raise MRtrixError('If not using -rpe_header, phase encoding direction must be provided using the -pe_dir option')
+    if pe_design is not PEDesign.InferFromHeader:
+      raise MRtrixError('If not using -rpe_header,'
+                        ' phase encoding direction must be provided using the -pe_dir option')
 
 
 
@@ -697,7 +740,7 @@ def execute(): #pylint: disable=unused-variable
       dwi_manual_pe_scheme = None # To guarantee that these generated data are never used
   else:
     # Nothing in the header; rely entirely on user specification
-    if pe_design == 'Header':
+    if pe_design is PEDesign.InferFromHeader:
       raise MRtrixError('No phase encoding information found in DWI image header')
     if not manual_pe_dir:
       raise MRtrixError('No phase encoding information provided either in header or at command-line')
@@ -727,7 +770,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Deal with the phase-encoding of the images to be fed to topup (if applicable)
-  execute_topup = pe_design != 'None' and not topup_files_userpath
+  execute_topup = pe_design is not PEDesign.Single and not topup_files_userpath
   overwrite_se_epi_pe_scheme = False
   se_epi_path = 'se_epi.mif'
   dwi_permvols_preeddy_option = ''
@@ -750,7 +793,7 @@ def execute(): #pylint: disable=unused-variable
     # Any pair of these may conflict, and any one could be absent
 
     # Have to switch here based on phase-encoding acquisition design
-    if pe_design == 'Pair':
+    if pe_design is PEDesign.RPEb0:
       # Criteria:
       #   * If present in own header, ignore DWI header entirely -
       #     - If also provided at command-line, look for conflict & report
@@ -778,7 +821,7 @@ def execute(): #pylint: disable=unused-variable
         overwrite_se_epi_pe_scheme = True
         se_epi_pe_scheme = se_epi_manual_pe_scheme
 
-    elif pe_design == 'All':
+    elif pe_design in (PEDesign.SplitRPE, PEDesign.AllRPE):
       # Criteria:
       #   * If present in own header:
       #     - Nothing to do
@@ -786,10 +829,10 @@ def execute(): #pylint: disable=unused-variable
       #     - Don't have enough information to proceed
       #     - Is this too harsh? (e.g. Have rules by which it may be inferred from the DWI header / command-line)
       if not se_epi_pe_scheme:
-        raise MRtrixError('If explicitly including SE EPI images when using -rpe_all option, '
+        raise MRtrixError('If explicitly including SE EPI images when using -rpe_all or -rpe_split option, '
                           'they must come with their own associated phase-encoding information in the image header')
 
-    elif pe_design == 'Header':
+    elif pe_design is PEDesign.InferFromHeader:
       # Criteria:
       #   * If present in own header:
       #       Nothing to do (-pe_dir option is mutually exclusive)
@@ -913,9 +956,11 @@ def execute(): #pylint: disable=unused-variable
 
     # Completed checking for presence of -se_epi option
 
-  elif not pe_design == 'None' and not topup_files_userpath: # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
+  elif pe_design is not PEDesign.Single and not topup_files_userpath: # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
-    # If using 'All' or 'Header', and haven't been given any topup images, need to extract the b=0 volumes from the series,
+    # If using 'SplitRPE' or 'AllRPE' or 'InferFromHeader',
+    #   and haven't been given any topup images,
+    #   need to extract the b=0 volumes from the series,
     #   preserving phase-encoding information while doing so
     # Preferably also make sure that there's some phase-encoding contrast in there...
     # With -rpe_all, need to write inferred phase-encoding to file and import before using dwiextract so that the phase-encoding
@@ -928,9 +973,10 @@ def execute(): #pylint: disable=unused-variable
     #   PhaseEncodingDirection and TotalReadoutTime rather than pe_scheme
     # In this scenario, we will be unable to run topup, or volume recombination
     if 'pe_scheme' not in se_epi_header.keyval():
-      if pe_design == 'All':
+      if pe_design in (PEDesign.SplitRPE, PEDesign.AllRPE):
         raise MRtrixError('DWI header indicates no phase encoding contrast between b=0 images; '
                           'cannot proceed with volume recombination-based pre-processing')
+      assert pe_design is PEDesign.InferFromHeader
       app.warn('DWI header indicates no phase encoding contrast between b=0 images; '
                'proceeding without inhomogeneity field estimation')
       execute_topup = False
@@ -1149,10 +1195,10 @@ def execute(): #pylint: disable=unused-variable
 
     # Generate a processing mask for eddy based on the uncorrected input DWIs
     if not app.ARGS.eddy_mask:
-      run.command(['dwi2mask', dwi2mask_algo, dwi_path, '-', '|',
-                   'maskfilter', '-', 'dilate', '-', '|',
-                   'mrconvert', '-', 'eddy_mask.nii', '-datatype', 'float32']
-                   + STRIDES_OPTION_FSL_COMPAT_3D.strip().split(' '))
+      run.command(f'dwi2mask {dwi2mask_algo} {dwi_path} - | '
+                   'maskfilter - dilate - | '
+                   'mrconvert - eddy_mask.nii -datatype float32'
+                   f'{STRIDES_OPTION_FSL_COMPAT_3D}')
 
   # Use user supplied mask for eddy instead of one derived from the images using dwi2mask
   if app.ARGS.eddy_mask:
@@ -1175,7 +1221,10 @@ def execute(): #pylint: disable=unused-variable
       #   acquired to last slice (group) acquired
       if sum(slice_encoding_direction) < 0:
         slice_timing = reversed(slice_timing)
-      slice_groups = [ [ x[0] for x in g ] for _, g in itertools.groupby(sorted(enumerate(slice_timing), key=lambda x:x[1]), key=lambda x:x[1]) ] #pylint: disable=unused-variable
+      slice_groups = [ [ x[0] for x in g ]
+                       for _, g in itertools.groupby(sorted(enumerate(slice_timing),
+                                                            key=lambda x:x[1]),
+                                                     key=lambda x:x[1]) ] #pylint: disable=unused-variable
       app.debug(f'Slice timing: {slice_timing}')
       app.debug(f'Resulting slice groups: {slice_groups}')
     # Variable slice_groups may have already been defined in the correct format.
@@ -1204,7 +1253,7 @@ def execute(): #pylint: disable=unused-variable
   # Prepare input data for eddy
   run.command(f'mrconvert {dwi_path} {import_dwi_pe_table_option} {dwi_permvols_preeddy_option} eddy_in.nii'
               ' -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt'
-              f' {STRIDES_OPTION_FSL_COMPAT_4D}')
+              f'{STRIDES_OPTION_FSL_COMPAT_4D}')
   app.cleanup(dwi_path)
 
   # Run eddy
@@ -1368,7 +1417,8 @@ def execute(): #pylint: disable=unused-variable
 
   # Do we need to attempt dwirecon?
   done_dwirecon = False
-  if pe_design in ('All', 'Header') and (execute_topup or topup_files_userpath):
+  if pe_design in (PEDesign.SplitRPE, PEDesign.AllRPE, PEDesign.InferFromHeader) \
+      and (execute_topup or topup_files_userpath):
 
     # Field map image may have been either:
     # 1. Provided by the user; or
@@ -1402,24 +1452,48 @@ def execute(): #pylint: disable=unused-variable
     else:
       field_map_image = None
 
-    if pe_design == 'Header':
-      app.console('Attempting explicit volume recombination based on input data')
-    try:
-      run.command('dwirecon dwi_post_eddy.mif combine_pairs'
-                  + (f' -field {field_map_image}' if field_map_image else '')
-                  + ' - | '
-                  + 'mrconvert - result.mif'
-                  + f'{dwi_post_eddy_crop_option}{stride_restore_option}')
-      if not field_map_image:
-        app.warn('Explicit volume recombination done without access to field map image;'
-                 ' aggregation will be a naive unweighted mean'
-                 ' (if you have used -topup_files, recommend also using -topup_field)')
-      done_dwirecon = True
-    except run.MRtrixCmdError:
-      if pe_design == 'All':
-        raise
-      app.console('Unable to perform explicit volume recombination based on input data;'
-                  ' pre-processed input volumes will propagate to output image individually')
+    # Change execution of dwirecon depending on "All" (combine_pairs) vs. "Split" (combine_predicted)
+    # For "InferFromHeader", rather than interrogating the gradient table earlier
+    #   (which might require re-implementation of some of the code within dwirecon in Python),
+    #   instead just try to run dwirecon in that mode,
+    #   and detect its failure if the input data do not conform to such.
+    if pe_design is PEDesign.InferFromHeader:
+      app.console('Attempting explicit paired volume recombination based on input data')
+    if pe_design in (PEDesign.AllRPE, PEDesign.InferFromHeader):
+      try:
+        run.command('dwirecon dwi_post_eddy.mif combine_pairs'
+                    + (f' -field {field_map_image}' if field_map_image else '')
+                    + ' - | '
+                    + 'mrconvert - result.mif'
+                    + f'{dwi_post_eddy_crop_option}{stride_restore_option}')
+        if not field_map_image:
+          app.warn('Explicit volume recombination done without access to field map image;'
+                  ' aggregation will be a naive unweighted mean'
+                  ' (if you have used -topup_files, recommend also using -topup_field)')
+        done_dwirecon = True
+      except run.MRtrixCmdError:
+        if pe_design is PEDesign.AllRPE:
+          raise
+        assert pe_design is PEDesign.InferFromHeader
+        app.console('Unable to perform explicit paired volume recombination based on input data')
+    if pe_design is PEDesign.SplitRPE or (pe_design is PEDesign.InferFromHeader and not done_dwirecon):
+      assert field_map_image is not None
+      if pe_design is PEDesign.InferFromHeader:
+        app.console('Attempting combination of empirical and predicted image data')
+      try:
+        run.command('dwirecon dwi_post_eddy.mif combine_predicted'
+                    + f' -field {field_map_image}'
+                    + ' - | '
+                    + 'mrconvert - result.mif'
+                    + f'{dwi_post_eddy_crop_option}{stride_restore_option}')
+        done_dwirecon = True
+      except run.MRtrixCmdError:
+        if pe_design is PEDesign.SplitRPE:
+          raise
+        assert pe_design is PEDesign.InferFromHeader
+        app.console('Unable to perform combination of empirical and predicted image data;'
+                    ' image volumes will propagate from eddy to output image unmodified')
+    app.cleanup(field_map_image)
 
   if not done_dwirecon:
     run.command('mrconvert dwi_post_eddy.mif result.mif'
@@ -1428,8 +1502,6 @@ def execute(): #pylint: disable=unused-variable
   app.cleanup('dwi_post_eddy.mif')
   if execute_topup:
     app.cleanup('topup_in.nii')
-    app.cleanup(field_map_image)
-
 
   # Grab any relevant files that eddy has created, and copy them to the requested directory
   if eddyqc_path:
