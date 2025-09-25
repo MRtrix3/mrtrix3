@@ -104,6 +104,7 @@ add_bash_binary_test(dwirecon/combinepairs_reordered)
 add_bash_binary_test(dwirecon/combinepairs_rpepair)
 add_bash_binary_test(dwirecon/combinepairs_unbalanced)
 add_bash_binary_test(dwirecon/combinepredicted_exponent)
+add_bash_binary_test(dwirecon/combinepredicted_lmax)
 add_bash_binary_test(dwirecon/combinepredicted_pequad)
 add_bash_binary_test(dwirecon/combinepredicted_rpepair)
 

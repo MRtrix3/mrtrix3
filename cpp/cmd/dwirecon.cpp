@@ -15,6 +15,7 @@
  */
 
 #include <limits>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -44,20 +45,14 @@ constexpr default_type default_combinepredicted_exponent = 1.0;
 const OptionGroup common_options = OptionGroup("Options common to multiple operations")
   + Option("field", "provide a B0 field offset image in Hz")
       + Argument("image").type_image_in();
-  // TODO Another option that may be applicable to multiple operations
-  //   (though only "combine_predicted" for now):
-  //   weighted SH fit,
-  //   with weights determined by proximity to any given observation
 
-//const OptionGroup combinepairs_options = OptionGroup("Options specific to \"combine_pairs\" operation")
-// TODO Give capability to provide this information from the command-line,
-    //   rather than relying on internal heuristics to achieve the pairing;
-    //   calculations made prior to motion correction may be more robust
-    //+ Option("volume_pairs", "provide a text file specifying the volume indices that are paired and should therefore be combined")
-    //  + Argument("file").type_file_in()
-// TODO An additional command-line option could deal with the case
-//   where such bijective correspondence can't be achieved from the data,
-//   but it can instead be asserted that their order within each PE group is fixed
+const OptionGroup combinepairs_options = OptionGroup("Options specific to \"combine_pairs\" operation")
+  + Option("pairs_in", "provide a text file specifying the volume indices"
+                       " that should be considered paired and therefore combined")
+      + Argument("file").type_file_in()
+  + Option("pairs_out", "output a text file encoding which input volumes were combined"
+                        " in production of the output volumes")
+      + Argument("file").type_file_out();
 
 const OptionGroup combinepredicted_options = OptionGroup("Options specific to \"combine_predicted\" operation")
   + Option("lmax", "set the maximal spherical harmonic degrees to use"
@@ -71,7 +66,7 @@ const OptionGroup combinepredicted_options = OptionGroup("Options specific to \"
 
 void usage() {
 
-  AUTHOR = "Robert E. Smith (fobert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Perform reconstruction of DWI data from an input DWI series";
 
@@ -127,10 +122,9 @@ void usage() {
 
   OPTIONS
     + common_options
-    //+ combinepairs_options
+    + combinepairs_options
     + combinepredicted_options
 
-    // TODO Appropriate to have other command-line options to specify the phase encoding design?
     + Metadata::PhaseEncoding::ImportOptions
     + DWI::GradImportOptions()
     + DWI::GradExportOptions();
@@ -197,12 +191,13 @@ std::pair<size_t, default_type> get_pe_axis_and_polarity(const Eigen::Block<sche
 // Functions for individual operations //
 /////////////////////////////////////////
 
-// TODO Technically the restrictions on this could be relaxed a bit:
+// Technically the restrictions on this could be relaxed a bit:
 //   hypothetically one could have a dataset
 //   where each desired diffusion sensitisation
 //   has been acquired with > 2 phase encoding directions,
 //   and one wishes for all of those volumes to be combined into a single output volume,
 //   with weights determined by their respective Jacobian determinants
+// For now this is considered out of scope
 void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const scheme_type &pe_in, Header &header_out) {
 
   if (grad_in.rows() % 2)
@@ -273,108 +268,162 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
 
   std::vector<std::pair<size_t, size_t>> volume_pairs;
   volume_pairs.reserve(grad_in.rows() / 2);
-  for (size_t shell_index = 0; shell_index != shells.size(); ++shell_index) {
-    const DWI::Shell &shell(shells[shell_index]);
-    if (shell.is_bzero()) {
-      // b==0 shell
-      // For each volume in turn,
-      //   just find the first unallocated volume in the reversed phase encoding group
-      std::vector<bool> used(shell.size(), false);
-      for (size_t first_index = 0; first_index != shell.size(); ++first_index) {
-        if (used[first_index])
-          continue;
-        const size_t first_volume = shell.get_volumes()[first_index];
-        // Which phase encoding group does this volume belong to?
-        const size_t pe_first_index = pe_indices[first_volume];
-        // Which phase encoding group must the paired volume therefore belong to?
-        const size_t pe_second_index = peindex2paired[pe_first_index];
-        size_t second_index = first_index + 1;
-        for (; second_index != shell.size(); ++second_index) {
-          if (used[second_index])
-            continue;
-          const size_t second_volume = shell.get_volumes()[second_index];
-          if (pe_indices[second_volume] != pe_second_index)
-            continue;
-          volume_pairs.push_back(std::make_pair(first_volume, second_volume));
-          used[first_index] = true;
-          used[second_index] = true;
-          break;
-        }
-        if (second_index == shell.size())
-          throw Exception(std::string("Unbalanced distribution of b=0 volumes") +    //
-                          " across reversed phase encoding directions" +             //
-                          " (no match found for volume " + str(first_volume) + ")"); //
-      }
-    } else {
-      // b!=0 shell
-      // Generate full similarity matrix
-      // Flag comparisons between volumes that do not belong to opposed phase encoding groups
-      Eigen::MatrixXd dp_matrix(Eigen::MatrixXd::Constant(shell.size(), shell.size(), -1.0));
-      for (size_t row = 0; row != shell.size(); ++row) {
-        const size_t first_volume = shell.get_volumes()[row];
-        const size_t pe_first_index = pe_indices[first_volume];
-        const size_t pe_second_index = peindex2paired[pe_first_index];
-        for (size_t col = row + 1; col != shell.size(); ++col) {
-          const size_t second_volume = shell.get_volumes()[col];
-          if (pe_indices[second_volume] != pe_second_index)
-            continue;
-          const default_type dot_product =
-              std::abs(grad_in.block<1, 3>(first_volume, 0).dot(grad_in.block<1, 3>(second_volume, 0)));
-          dp_matrix(row, col) = dot_product;
-          dp_matrix(col, row) = dot_product;
-        }
-      }
-      // Establish bijection
-      default_type min_closest_dp = 1.0;
-      default_type max_nonclosest_dp = -1.0;
-      Eigen::Array<bool, Eigen::Dynamic, 1> assigned(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(shell.size()));
-      for (size_t col = 0; col != shell.size(); ++col) {
-        if (assigned[col])
-          continue;
-        ssize_t row;
-        const default_type this_closest_dp = dp_matrix.col(col).maxCoeff(&row);
-        if (this_closest_dp < 0.0)
-          throw Exception(std::string("No reversed phase encoding volume found") + //
-                          " for volume " + str(shell.get_volumes()[col]));         //
-        if (col > row)
-          continue;
-        ssize_t min_col;
-        dp_matrix.col(row).maxCoeff(&min_col);
-        if (min_col != col) {
-          DEBUG(std::string("Debugging information for reversed phase encoding volume pairing") + //
-                " for b=" + str(int(std::round(shell.get_mean()))));                              //
-          DEBUG("Dot product matrix:");
-          DEBUG("\n" + str(dp_matrix.cast<float>()));
-          DEBUG("Column " + str(col) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[col], 0)) + //
-                " closest to row " + str(row) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[row], 0)));
-          DEBUG("Row " + str(row) + " is however closest" + //
-                " to column " + str(min_col) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[min_col], 0)));
-          throw Exception(std::string("Ambiguity in establishing reversed phase encoding volume pairs") + //
-                          " for shell b=" + str(int(std::round(shell.get_mean()))));                      //
-        }
-        volume_pairs.push_back(std::make_pair(shell.get_volumes()[col], shell.get_volumes()[row]));
-        min_closest_dp = std::min(min_closest_dp, this_closest_dp);
-        assigned[row] = true;
-        assigned[col] = true;
-        // Ensure that there are no two unmatched volumes
-        //   that are closer than any two matched volumes
-        dp_matrix(row, col) = dp_matrix(col, row) = -1.0;
-        max_nonclosest_dp = std::min({max_nonclosest_dp, dp_matrix.col(col).maxCoeff(), dp_matrix.col(row).maxCoeff()});
-      }
-      if (max_nonclosest_dp > min_closest_dp) {
-        WARN("Potential ambiguity in reversed phase encoding volume correspondence;"
-             "recommend checking manually");
-      }
-      assert(assigned.all());
-    }
-  }
 
-  // Arrange these volume pairs into a suitable order
-  //   in which to write them into the output image
-  auto sort_pairs = [](const std::pair<size_t, size_t> &one, const std::pair<size_t, size_t> &two) {
-    return std::min(one.first, one.second) < std::min(two.first, two.second);
-  };
-  std::sort(volume_pairs.begin(), volume_pairs.end(), sort_pairs);
+  auto opt = get_options("pairs_in");
+  if (opt.empty()) {
+
+    for (size_t shell_index = 0; shell_index != shells.size(); ++shell_index) {
+      const DWI::Shell &shell(shells[shell_index]);
+      if (shell.is_bzero()) {
+        // b==0 shell
+        // For each volume in turn,
+        //   just find the first unallocated volume in the reversed phase encoding group
+        std::vector<bool> used(shell.size(), false);
+        for (size_t first_index = 0; first_index != shell.size(); ++first_index) {
+          if (used[first_index])
+            continue;
+          const size_t first_volume = shell.get_volumes()[first_index];
+          // Which phase encoding group does this volume belong to?
+          const size_t pe_first_index = pe_indices[first_volume];
+          // Which phase encoding group must the paired volume therefore belong to?
+          const size_t pe_second_index = peindex2paired[pe_first_index];
+          size_t second_index = first_index + 1;
+          for (; second_index != shell.size(); ++second_index) {
+            if (used[second_index])
+              continue;
+            const size_t second_volume = shell.get_volumes()[second_index];
+            if (pe_indices[second_volume] != pe_second_index)
+              continue;
+            volume_pairs.push_back(std::make_pair(first_volume, second_volume));
+            used[first_index] = true;
+            used[second_index] = true;
+            break;
+          }
+          if (second_index == shell.size())
+            throw Exception(std::string("Unbalanced distribution of b=0 volumes") +    //
+                            " across reversed phase encoding directions" +             //
+                            " (no match found for volume " + str(first_volume) + ")"); //
+        }
+      } else {
+        // b!=0 shell
+        // Generate full similarity matrix
+        // Flag comparisons between volumes that do not belong to opposed phase encoding groups
+        Eigen::MatrixXd dp_matrix(Eigen::MatrixXd::Constant(shell.size(), shell.size(), -1.0));
+        for (size_t row = 0; row != shell.size(); ++row) {
+          const size_t first_volume = shell.get_volumes()[row];
+          const size_t pe_first_index = pe_indices[first_volume];
+          const size_t pe_second_index = peindex2paired[pe_first_index];
+          for (size_t col = row + 1; col != shell.size(); ++col) {
+            const size_t second_volume = shell.get_volumes()[col];
+            if (pe_indices[second_volume] != pe_second_index)
+              continue;
+            const default_type dot_product =
+                std::abs(grad_in.block<1, 3>(first_volume, 0).dot(grad_in.block<1, 3>(second_volume, 0)));
+            dp_matrix(row, col) = dot_product;
+            dp_matrix(col, row) = dot_product;
+          }
+        }
+        // Establish bijection
+        default_type min_closest_dp = 1.0;
+        default_type max_nonclosest_dp = -1.0;
+        Eigen::Array<bool, Eigen::Dynamic, 1> assigned(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(shell.size()));
+        for (size_t col = 0; col != shell.size(); ++col) {
+          if (assigned[col])
+            continue;
+          ssize_t row;
+          const default_type this_closest_dp = dp_matrix.col(col).maxCoeff(&row);
+          if (this_closest_dp < 0.0)
+            throw Exception(std::string("No reversed phase encoding volume found") + //
+                            " for volume " + str(shell.get_volumes()[col]));         //
+          if (col > row)
+            continue;
+          ssize_t min_col;
+          dp_matrix.col(row).maxCoeff(&min_col);
+          if (min_col != col) {
+            DEBUG(std::string("Debugging information for reversed phase encoding volume pairing") + //
+                  " for b=" + str(int(std::round(shell.get_mean()))));                              //
+            DEBUG("Dot product matrix:");
+            DEBUG("\n" + str(dp_matrix.cast<float>()));
+            DEBUG("Column " + str(col) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[col], 0)) + //
+                  " closest to row " + str(row) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[row], 0)));
+            DEBUG("Row " + str(row) + " is however closest" + //
+                  " to column " + str(min_col) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[min_col], 0)));
+            throw Exception(std::string("Ambiguity in establishing reversed phase encoding volume pairs") + //
+                            " for shell b=" + str(int(std::round(shell.get_mean()))));                      //
+          }
+          volume_pairs.push_back(std::make_pair(shell.get_volumes()[col], shell.get_volumes()[row]));
+          min_closest_dp = std::min(min_closest_dp, this_closest_dp);
+          assigned[row] = true;
+          assigned[col] = true;
+          // Ensure that there are no two unmatched volumes
+          //   that are closer than any two matched volumes
+          dp_matrix(row, col) = dp_matrix(col, row) = -1.0;
+          max_nonclosest_dp =
+              std::min({max_nonclosest_dp, dp_matrix.col(col).maxCoeff(), dp_matrix.col(row).maxCoeff()});
+        }
+        if (max_nonclosest_dp > min_closest_dp) {
+          WARN("Potential ambiguity in reversed phase encoding volume correspondence;"
+               " recommend checking manually");
+        }
+        assert(assigned.all());
+      }
+    }
+
+    // Arrange these volume pairs into a suitable order
+    //   in which to write them into the output image
+    auto sort_pairs = [](const std::pair<size_t, size_t> &one, const std::pair<size_t, size_t> &two) {
+      return std::min(one.first, one.second) < std::min(two.first, two.second);
+    };
+    std::sort(volume_pairs.begin(), volume_pairs.end(), sort_pairs);
+
+  } else {
+
+    // Read the pairings from file
+    const auto from_file = File::Matrix::load_matrix<int>(opt[0][0]);
+    // Do some sanity checks and issue warnings if the pairings look non-sensical
+    try {
+      if (from_file.cols() != 2)
+        throw Exception("Must contain exactly two columns");
+      if (from_file.minCoeff() < 0)
+        throw Exception("Cannot contain negative values");
+      if (from_file.minCoeff() != 0)
+        throw Exception("Volumes need to be indexed from zero");
+      if (from_file.maxCoeff() != grad_in.rows() - 1)
+        throw Exception("Maximal index present does not correspond to number of volumes");
+      if (from_file.rows() != grad_in.rows() / 2)
+        throw Exception("Number of rows is not half the number of input volumes");
+      // Make sure that every index appears exactly once
+      std::set<int> all;
+      for (ssize_t col = 0; col != 2; ++col) {
+        for (ssize_t row = 0; row != grad_in.rows(); ++row)
+          all.insert(from_file(row, col));
+      }
+      if (all.size() != grad_in.rows())
+        throw Exception("Duplicate indices present");
+    } catch (Exception &e) {
+      throw Exception(e,
+                      "Unable to interpret contents of file \"" + opt[0][0] + "\"" + //
+                          " as volume index pairs");                                 //
+    }
+    bool issue_unmatched_shells_warning = false;
+    bool issue_non_reversed_phase_encoding_warning = false;
+    for (ssize_t row = 0; row != from_file.rows(); ++row) {
+      if (vol2shell[from_file(row, 0)] != vol2shell[from_file(row, 1)])
+        issue_unmatched_shells_warning = true;
+      if (peindex2paired[pe_indices[from_file(row, 0)]] != pe_indices[from_file(row, 1)])
+        issue_non_reversed_phase_encoding_warning = true;
+      volume_pairs.push_back(std::make_pair(size_t(from_file(row, 0)), size_t(from_file(row, 1))));
+    }
+    if (issue_unmatched_shells_warning) {
+      WARN("User-specified volume pairings merging volumes from different shells");
+    }
+    if (issue_non_reversed_phase_encoding_warning) {
+      WARN("User-specified volume pairings merging volumes that are not reversed phase encoding pairs");
+    }
+
+    // Keep the volumes in the order specified by the user;
+    //   don't do a sort operation as occurs when these pairings are determined automatically
+  }
 
   // Populate data relating to the combination of these images
   //   arising from a prior algorithmic approach
@@ -472,15 +521,28 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       ++progress;
     }
   }
+
+  opt = get_options("pairs_out");
+  if (!opt.empty()) {
+    File::OFStream outfile(opt[0][0]);
+    const auto command_history_it = dwi_in.keyval().find("command_history");
+    if (command_history_it != dwi_in.keyval().end()) {
+      const auto prior_command_history = split_lines(command_history_it->second);
+      for (const auto &line : prior_command_history)
+        outfile << "# command_history: " << line << "\n";
+    }
+    outfile << "# command_history: " << App::command_history_string << "\n";
+    for (const auto &i : volume_pairs)
+      outfile << i.first << " " << i.second << "\n";
+  }
 }
 
-// TODO Identify code from combine_pairs that can be shared
 void run_combine_predicted(Image<float> &dwi_in,
                            const scheme_type &grad_in,
                            const scheme_type &pe_in,
                            Header &header_out) {
 
-  const std::vector<std::string> invalid_options{"volume_pairs"};
+  const std::vector<std::string> invalid_options{"pairs_in", "pairs_out"};
   for (const auto opt : invalid_options)
     if (!get_options(opt).empty())
       throw Exception("-" + opt + " option not supported for \"combine_predicted\" operation");
@@ -571,7 +633,7 @@ void run_combine_predicted(Image<float> &dwi_in,
     //     the source2SH transformation has to be recomputed in every voxel
     //     (and will therefore likely be considerably slower)
     //
-    // TODO Reconsider how predictions are generated:
+    // Hypothetical alternative generation of predictions:
     // Once a weighted fit is performed,
     //   the prediction could actually make use of information within the phase encoding group of interest,
     //   and this could nevertheless be integrated into generation of predictions
@@ -628,8 +690,6 @@ void run_combine_predicted(Image<float> &dwi_in,
         Math::Sphere::cartesian2spherical(grad_in.block<1, 3>(target_volumes[target_index], 0),
                                           target_dirset.row(target_index));
       // Generate the transformation from SH to the target data
-      // TODO Need to confirm behaviour when the lmax of the source data exceeds
-      //   what can actually be achieved for the target data in constructing the inverse transform
       const sh_transform_type SH2target = Math::SH::init_transform(target_dirset, lmax);
 
       spherical_scheme_type source_dirset(source_volumes.size(), 2);
@@ -645,8 +705,7 @@ void run_combine_predicted(Image<float> &dwi_in,
           Math::Sphere::cartesian2spherical(grad_in.block<1, 3>(source_volumes[source_index], 0),
                                             source_dirset.row(source_index));
         // Generate the transformation from the source data to spherical harmonics
-        // TODO For now, using the maximal spherical harmonic degree enabled by the source data
-        // TODO For now, weighting all samples equally
+        // For now, weighting all samples equally
         source2SH = Math::pinv(Math::SH::init_transform(source_dirset, lmax));
         // Compose transformation from source data to target data
         source2target = SH2target * source2SH;
@@ -763,8 +822,8 @@ void run() {
   switch (int(argument[1])) {
 
   case 0:
-    run_combine_pairs(dwi_in, grad_in, pe_in, header_out);
     Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
+    run_combine_pairs(dwi_in, grad_in, pe_in, header_out);
     break;
 
   case 1:
