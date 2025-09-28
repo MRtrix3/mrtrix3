@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -145,7 +145,7 @@ void run ()
     }
   }
 
-  const std::string vox_option_suggestion = get_options ("masks").size() ? (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") + " -masks option)") : " (suggest re-running using the -masks option to see voxels where tissue fractions do not sum to 1.0)";
+  const std::string vox_option_suggestion = get_options ("voxels").size() ? (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") + " -voxels option)") : " (suggest re-running using the -voxels option to see voxels where tissue fractions do not sum to 1.0)";
 
   if (major_error_count) {
     if (argument.size() > 1)

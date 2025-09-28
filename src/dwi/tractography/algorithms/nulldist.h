@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -76,7 +76,7 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() override { return uniform(rng); }
+      float get_metric (const Eigen::Vector3f&, const Eigen::Vector3f&) override { return uniform(rng); }
 
 
       protected:
@@ -156,7 +156,7 @@ namespace MR
         sample_idx = S.num_samples;
       }
 
-      float get_metric() override { return uniform(rng); }
+      float get_metric (const Eigen::Vector3f&, const Eigen::Vector3f&) override { return uniform(rng); }
 
 
       protected:

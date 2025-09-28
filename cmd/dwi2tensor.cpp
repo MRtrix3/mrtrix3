@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,12 +15,12 @@
  */
 
 #include "command.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 #include "image.h"
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "metadata/phase_encoding.h"
 
 using namespace MR;
 using namespace App;
@@ -111,7 +111,7 @@ template <class MASKType, class B0Type, class DKTType, class PredictType>
 class Processor { MEMALIGN(Processor)
   public:
     Processor (const Eigen::MatrixXd& b, const bool ols, const int iter,
-        MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image, PredictType* predict_image) :
+        const MASKType& mask_image, const B0Type& b0_image, const DKTType& dkt_image, const PredictType& predict_image) :
       mask_image (mask_image),
       b0_image (b0_image),
       dkt_image (dkt_image),
@@ -128,9 +128,9 @@ class Processor { MEMALIGN(Processor)
     template <class DWIType, class DTType>
       void operator() (DWIType& dwi_image, DTType& dt_image)
       {
-        if (mask_image) {
-          assign_pos_of (dwi_image, 0, 3).to (*mask_image);
-          if (!mask_image->value())
+        if (mask_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (mask_image);
+          if (!mask_image.value())
             return;
         }
 
@@ -149,7 +149,7 @@ class Processor { MEMALIGN(Processor)
           work.setZero();
           work.selfadjointView<Eigen::Lower>().rankUpdate (b.transpose()*w.asDiagonal());
           p = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(b.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
-          if (maxit > 1)
+          if (it < maxit)
             w = (b*p).array().exp();
         }
 
@@ -157,34 +157,34 @@ class Processor { MEMALIGN(Processor)
           dt_image.value() = p[dt_image.index(3)];
         }
 
-        if (b0_image) {
-          assign_pos_of (dwi_image, 0, 3).to (*b0_image);
-          b0_image->value() = exp(p[6]);
+        if (b0_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (b0_image);
+          b0_image.value() = exp(p[6]);
         }
 
-        if (dkt_image) {
-          assign_pos_of (dwi_image, 0, 3).to (*dkt_image);
+        if (dkt_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (dkt_image);
           double adc_sq = (p[0]+p[1]+p[2])*(p[0]+p[1]+p[2])/9.0;
-          for (auto l = Loop(3)(*dkt_image); l; ++l) {
-            dkt_image->value() = p[dkt_image->index(3)+7]/adc_sq;
+          for (auto l = Loop(3)(dkt_image); l; ++l) {
+            dkt_image.value() = p[dkt_image.index(3)+7]/adc_sq;
           }
         }
 
-        if (predict_image) {
-          assign_pos_of (dwi_image, 0, 3).to (*predict_image);
+        if (predict_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (predict_image);
           dwi = (b*p).array().exp();
-          for (auto l = Loop(3)(*predict_image); l; ++l) {
-            predict_image->value() = dwi[predict_image->index(3)];
+          for (auto l = Loop(3)(predict_image); l; ++l) {
+            predict_image.value() = dwi[predict_image.index(3)];
           }
         }
 
       }
 
   private:
-    copy_ptr<MASKType> mask_image;
-    copy_ptr<B0Type> b0_image;
-    copy_ptr<DKTType> dkt_image;
-    copy_ptr<PredictType> predict_image;
+    MASKType mask_image;
+    B0Type b0_image;
+    DKTType dkt_image;
+    PredictType predict_image;
     Eigen::VectorXd dwi;
     Eigen::VectorXd p;
     Eigen::VectorXd w;
@@ -196,20 +196,20 @@ class Processor { MEMALIGN(Processor)
 };
 
 template <class MASKType, class B0Type, class DKTType, class PredictType>
-inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen::MatrixXd& b, const bool ols, const int iter, MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image, PredictType* predict_image) {
+inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen::MatrixXd& b, const bool ols, const int iter, const MASKType& mask_image, const B0Type& b0_image, const DKTType& dkt_image, const PredictType& predict_image) {
   return { b, ols, iter, mask_image, b0_image, dkt_image, predict_image };
 }
 
 void run ()
 {
-  auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_DW_scheme (dwi);
+  auto header_in = Header::open (argument[0]);
+  auto grad = DWI::get_DW_scheme (header_in);
 
-  Image<bool>* mask = nullptr;
+  Image<bool> mask;
   auto opt = get_options ("mask");
   if (opt.size()) {
-    mask = new Image<bool> (Image<bool>::open (opt[0][0]));
-    check_dimensions (dwi, *mask, 0, 3);
+    mask = Image<bool>::open (opt[0][0]);
+    check_dimensions (header_in, mask, 0, 3);
   }
 
   bool ols = get_options ("ols").size();
@@ -217,37 +217,38 @@ void run ()
   // depending on whether first (initialisation) loop should be considered an iteration
   auto iter = get_option_value ("iter", DEFAULT_NITER);
 
-  Header header (dwi);
-  header.datatype() = DataType::Float32;
-  header.ndim() = 4;
-  DWI::stash_DW_scheme (header, grad);
-  PhaseEncoding::clear_scheme (header);
+  Header header_out (header_in);
+  header_out.datatype() = DataType::Float32;
+  header_out.ndim() = 4;
+  Metadata::PhaseEncoding::clear_scheme (header_out.keyval());
 
-  Image<value_type>* predict = nullptr;
+  Image<value_type> predict;
   opt = get_options ("predicted_signal");
   if (opt.size())
-    predict = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
+    predict = Image<value_type>::create (opt[0][0], header_out);
 
-  header.size(3) = 6;
-  auto dt = Image<value_type>::create (argument[1], header);
+  DWI::stash_DW_scheme (header_out, grad);
+  header_out.size(3) = 6;
+  auto dt = Image<value_type>::create (argument[1], header_out);
 
-  Image<value_type>* b0 = nullptr;
+  Image<value_type> b0;
   opt = get_options ("b0");
   if (opt.size()) {
-    header.ndim() = 3;
-    b0 = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
+    header_out.ndim() = 3;
+    b0 = Image<value_type>::create (opt[0][0], header_out);
   }
 
-  Image<value_type>* dkt = nullptr;
+  Image<value_type> dkt;
   opt = get_options ("dkt");
   if (opt.size()) {
-    header.ndim() = 4;
-    header.size(3) = 15;
-    dkt = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
+    header_out.ndim() = 4;
+    header_out.size(3) = 15;
+    dkt = Image<value_type>::create (opt[0][0], header_out);
   }
 
-  Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, opt.size()>0);
+  Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, dkt.valid());
 
+  auto dwi = header_in.get_image<value_type>();
   ThreadedLoop("computing tensors", dwi, 0, 3).run (processor (b, ols, iter, mask, b0, dkt, predict), dwi, dt);
 }
 

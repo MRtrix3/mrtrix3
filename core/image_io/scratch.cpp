@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,15 +35,6 @@ namespace MR
         memset (addresses[0].get(), 0, buffer_size);
       } catch (...) {
         throw Exception ("Error allocating memory for scratch buffer");
-      }
-    }
-
-
-    void Scratch::unload (const Header& header)
-    {
-      if (addresses.size()) {
-        DEBUG ("deleting scratch buffer for image \"" + header.name() + "\"...");
-        addresses[0].reset();
       }
     }
 

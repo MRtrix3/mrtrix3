@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,6 @@
 #include "command.h"
 #include "header.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "transform.h"
 #include "types.h"
 #include "algo/threaded_copy.h"
@@ -27,6 +26,7 @@
 #include "file/json_utils.h"
 #include "file/ofstream.h"
 #include "dwi/gradient.h"
+#include "metadata/phase_encoding.h"
 
 
 using namespace MR;
@@ -63,7 +63,7 @@ void usage ()
   + "The -vox option is used to change the size of the voxels in the output "
     "image as reported in the image header; note however that this does not "
     "re-sample the image based on a new voxel size (that is done using the "
-    "mrresize command)."
+    "mrgrid command)."
 
   + "By default, the intensity scaling parameters in the input image header "
     "are passed through to the output image header when writing to an integer "
@@ -224,8 +224,8 @@ void usage ()
 
   + DWI::GradExportOptions()
 
-    + PhaseEncoding::ImportOptions
-    + PhaseEncoding::ExportOptions;
+  + Metadata::PhaseEncoding::ImportOptions
+  + Metadata::PhaseEncoding::ExportOptions;
 }
 
 
@@ -258,7 +258,7 @@ void permute_DW_scheme (Header& H, const vector<int>& axes)
 
 void permute_PE_scheme (Header& H, const vector<int>& axes)
 {
-  auto in = PhaseEncoding::parse_scheme (H);
+  auto in = Metadata::PhaseEncoding::parse_scheme (H.keyval(), H);
   if (!in.rows())
     return;
 
@@ -271,19 +271,30 @@ void permute_PE_scheme (Header& H, const vector<int>& axes)
   for (int row = 0; row != in.rows(); ++row)
     out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * permute;
 
-  PhaseEncoding::set_scheme (H, out);
+  Metadata::PhaseEncoding::set_scheme (H.keyval(), out);
 }
 
 
 
 void permute_slice_direction (Header& H, const vector<int>& axes)
 {
-  auto it = H.keyval().find ("SliceEncodingDirection");
-  if (it == H.keyval().end())
+  using Metadata::BIDS::axis_vector_type;
+  auto slice_encoding_it = H.keyval().find("SliceEncodingDirection");
+  auto slice_timing_it = H.keyval().find("SliceTiming");
+  if (slice_encoding_it == H.keyval().end() && slice_timing_it == H.keyval().end())
     return;
-  const Eigen::Vector3 orig_dir = Axes::id2dir (it->second);
-  const Eigen::Vector3 new_dir (orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
-  it->second = Axes::dir2id (new_dir);
+  if (slice_encoding_it == H.keyval().end()) {
+    const axis_vector_type orig_dir({0, 0, 1});
+    const axis_vector_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+    slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
+    WARN("Header field \"SliceEncodingDirection\" inferred to be \"k\" in input image"
+         " and then transformed according to axis permutation"
+         " in order to preserve validity of existing header field \"SliceTiming\"");
+    return;
+  }
+  const axis_vector_type orig_dir = Metadata::BIDS::axisid2vector(slice_encoding_it->second);
+  const axis_vector_type new_dir(orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+  slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
 }
 
 
@@ -301,9 +312,9 @@ inline vector<int> set_header (Header& header, const ImageType& input)
   header.transform() = input.transform();
 
   auto opt = get_options ("axes");
-  vector<int> axes;
+  vector<int32_t> axes;
   if (opt.size()) {
-    axes = opt[0][0];
+    axes = parse_ints<int32_t> (opt[0][0]);
     header.ndim() = axes.size();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] >= static_cast<int> (input.ndim()))
@@ -352,7 +363,7 @@ void copy_permute (const InputType& in, Header& header_out, const std::string& o
   const auto axes = set_header (header_out, in);
   auto out = Image<T>::create (output_filename, header_out, add_to_command_history);
   DWI::export_grad_commandline (out);
-  PhaseEncoding::export_commandline (out);
+  Metadata::PhaseEncoding::export_commandline (out);
   auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
   threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 }
@@ -363,7 +374,7 @@ void copy_permute (const InputType& in, Header& header_out, const std::string& o
 
 
 template <typename T>
-void extract (Header& header_in, Header& header_out, const vector<vector<int>>& pos, const std::string& output_filename)
+void extract (Header& header_in, Header& header_out, const vector<vector<uint32_t>>& pos, const std::string& output_filename)
 {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
@@ -396,20 +407,16 @@ void run ()
     e.display (2);
   }
 
+  auto opt = get_options("json_import");
+  if (!opt.empty())
+    File::JSON::load(header_in, opt[0][0]);
+  if (!get_options("import_pe_table").empty() || !get_options("import_pe_topup").empty() || !get_options("import_pe_eddy").empty())
+    Metadata::PhaseEncoding::set_scheme(header_in.keyval(), Metadata::PhaseEncoding::get_scheme(header_in));
+
   Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
-
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
-
-  if (get_options ("import_pe_table").size() || get_options ("import_pe_eddy").size())
-    PhaseEncoding::set_scheme (header_out, PhaseEncoding::get_scheme (header_in));
-
-  auto opt = get_options ("json_import");
-  if (opt.size())
-    File::JSON::load (header_out, opt[0][0]);
-
-
 
   opt = get_options ("copy_properties");
   if (opt.size()) {
@@ -460,16 +467,16 @@ void run ()
 
 
   opt = get_options ("coord");
-  vector<vector<int>> pos;
+  vector<vector<uint32_t>> pos;
   if (opt.size()) {
-    pos.assign (header_in.ndim(), vector<int>());
+    pos.assign (header_in.ndim(), vector<uint32_t>());
     for (size_t n = 0; n < opt.size(); n++) {
-      int axis = opt[n][0];
-      if (axis >= (int)header_in.ndim())
+      size_t axis = opt[n][0];
+      if (axis >= header_in.ndim())
         throw Exception ("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-      pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
+      pos[axis] = parse_ints<uint32_t> (opt[n][1], header_in.size(axis)-1);
 
       auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*minval < 0)
@@ -494,16 +501,17 @@ void run ()
         }
         Eigen::MatrixXd pe_scheme;
         try {
-          pe_scheme = PhaseEncoding::get_scheme (header_in);
+          pe_scheme = Metadata::PhaseEncoding::get_scheme (header_in);
           if (pe_scheme.rows()) {
             Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
             for (size_t vol = 0; vol != pos[3].size(); ++vol)
               extract_scheme.row (vol) = pe_scheme.row (pos[3][vol]);
-            PhaseEncoding::set_scheme (header_out, extract_scheme);
+            Metadata::PhaseEncoding::set_scheme (header_out.keyval(), extract_scheme);
           }
         } catch (...) {
-          WARN ("Phase encoding scheme of input file does not match number of image volumes; omitting information from output image");
-          PhaseEncoding::set_scheme (header_out, Eigen::MatrixXd());
+          WARN ("Phase encoding scheme of input file does not match number of image volumes;"
+                " omitting information from output image");
+          Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
         }
       }
     }
@@ -511,7 +519,7 @@ void run ()
     for (size_t n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
         pos[n].resize (header_in.size (n));
-        for (size_t i = 0; i < pos[n].size(); i++)
+        for (uint32_t i = 0; i < uint32_t(pos[n].size()); i++)
           pos[n][i] = i;
       }
     }

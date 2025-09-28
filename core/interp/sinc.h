@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -92,7 +92,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          if ((out_of_bounds = Base<ImageType>::is_out_of_bounds (pos)))
+          if (Base<ImageType>::set_out_of_bounds (pos))
             return false;
           Sinc_x.set (*this, 0, pos[0]);
           Sinc_y.set (*this, 1, pos[1]);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,6 +81,7 @@ namespace MR
           using dim_type = typename Type<NiftiHeader>::dim_type;
           using code_type = typename Type<NiftiHeader>::code_type;
           using float_type = typename Type<NiftiHeader>::float_type;
+          using vox_offset_type = typename Type<NiftiHeader>::vox_offset_type;
 
           bool is_BE = false;
           if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
@@ -217,7 +218,7 @@ namespace MR
 
 
 
-          const int64_t data_offset = Raw::fetch_<float_type> (&NH.vox_offset, is_BE);
+          const int64_t data_offset = Raw::fetch_<vox_offset_type> (&NH.vox_offset, is_BE);
 
 
 
@@ -386,7 +387,7 @@ namespace MR
 
           bool is_BE = H.datatype().is_big_endian();
 
-          vector<size_t> axes;
+          Axes::permutations_type axes;
           auto M = File::NIfTI::adjust_transform (H, axes);
 
 
@@ -512,7 +513,7 @@ namespace MR
           Eigen::Quaterniond Q (R);
 
           if (Q.w() < 0.0)
-            Q.vec() = -Q.vec();
+            Q.coeffs() *= -1.0;
 
           if (R.isApprox (Q.matrix(), 1e-6)) {
             Raw::store<code_type> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
@@ -581,20 +582,25 @@ namespace MR
 
 
 
-
-
-
-
-
-      transform_type adjust_transform (const Header& H, vector<size_t>& axes)
+      Axes::Shuffle axes_on_write (const Header& H)
       {
         Stride::List strides = Stride::get (H);
         strides.resize (3);
-        axes = Stride::order (strides);
-        bool flip[] = { strides[axes[0]] < 0, strides[axes[1]] < 0, strides[axes[2]] < 0 };
+        auto order = Stride::order (strides);
+        Axes::Shuffle result;
+        result.permutations = {ssize_t(order[0]), ssize_t(order[1]), ssize_t(order[2])};
+        result.flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
+        return result;
+      }
 
-        if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
-            !flip[0] && !flip[1] && !flip[2])
+
+
+
+      transform_type adjust_transform (const Header& H, Axes::permutations_type& axes)
+      {
+        const Axes::Shuffle shuffle = axes_on_write(H);
+        axes = shuffle.permutations;
+        if (shuffle.is_identity())
           return H.transform();
 
         const auto& M_in = H.transform().matrix();
@@ -606,7 +612,7 @@ namespace MR
 
         auto translation = M_out.col(3);
         for (size_t i = 0; i < 3; ++i) {
-          if (flip[i]) {
+          if (shuffle.flips[i]) {
             auto length = default_type (H.size (axes[i])-1) * H.spacing (axes[i]);
             auto axis = M_out.col(i);
             axis = -axis;
@@ -694,7 +700,8 @@ namespace MR
             std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
             handler->files.push_back (File::Entry (H.name(), ( single_file ? data_offset : 0 )));
             return std::move (handler);
-          } catch (...) {
+          } catch (Exception& e) {
+            e.display();
             return std::unique_ptr<ImageIO::Base>();
           }
         }

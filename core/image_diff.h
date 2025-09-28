@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -112,33 +112,45 @@ namespace MR
   template <class HeaderType1, class HeaderType2>
     inline void check_keyvals (const HeaderType1& in1, const HeaderType2& in2)
     {
-      std::map<std::string, std::string>::const_iterator it1 = in1.keyval().begin(), it2 = in2.keyval().begin();
       const static std::set<std::string> reserved { "command_history", "mrtrix_version", "project_version" };
-      while (it1 != in1.keyval().end()) {
-        if (reserved.find (it1->first) != reserved.end()) {
+      auto it1 = in1.keyval().cbegin();
+      auto it2 = in2.keyval().cbegin();
+      Exception errors;
+      while (it1 != in1.keyval().end() || it2 != in2.keyval().end()) {
+        while (it1 != in1.keyval().end() && reserved.find (it1->first) != reserved.end())
           ++it1;
-          continue;
-        }
-        if (it2 != in2.keyval().end() && reserved.find (it2->first) != reserved.end()) {
+        while (it2 != in2.keyval().end() && reserved.find (it2->first) != reserved.end())
           ++it2;
-          continue;
+
+        if (it1 == in1.keyval().end() || it2 == in2.keyval().end())
+          break;
+
+        if (it1 == in1.keyval().end()) {
+          errors.push_back ("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() + "\"");
+          ++it2;
         }
-        if (it2 == in2.keyval().end())
-          throw Exception ("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() + "\"");
-        if (it1->first != it2->first) {
-          if (in2.keyval().find (it1->first) == in2.keyval().end())
-            throw Exception ("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() + "\"");
-          else
-            throw Exception ("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() + "\"");
+        else if (it2 == in2.keyval().end()) {
+          errors.push_back ("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() + "\"");
+          ++it1;
         }
-        if (it1->second != it2->second)
-          throw Exception ("Key \"" + it1->first + "\" has different values between images");
-        ++it1; ++it2;
+        else if (it1->first < it2->first) {
+          errors.push_back ("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() + "\"");
+          ++it1;
+        }
+        else if (it1->first > it2->first) {
+          errors.push_back ("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() + "\"");
+          ++it2;
+        }
+        else {
+          if (it1->second != it2->second)
+            errors.push_back ("Key \"" + it1->first + "\" has different values between images");
+          ++it1;
+          ++it2;
+        }
       }
-      while (it2 != in2.keyval().end() && reserved.find (it2->first) != reserved.end())
-        ++it2;
-      if (it2 != in2.keyval().end())
-        throw Exception ("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() + "\"");
+
+      if (errors.num() > 0)
+        throw errors;
     }
 
     //! check image headers are the same (dimensions, spacing & transform)
@@ -159,7 +171,8 @@ namespace MR
    template <class ImageType1, class ImageType2>
      inline bool images_match_abs (ImageType1& in1, ImageType2& in2, const double tol = 0.0)
      {
-       headers_match (in1, in2);
+       if (!headers_match (in1, in2))
+         return false;
        for (auto i = Loop (in1)(in1, in2); i; ++i)
          if (abs (cdouble (in1.value()) - cdouble (in2.value())) > tol)
            return false;

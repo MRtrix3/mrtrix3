@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -200,8 +200,7 @@ default_type calculate (Image<value_type>& in,
                         const default_type percentile,
                         const ssize_t bottom,
                         const ssize_t top,
-                        const bool ignore_zero,
-                        const bool to_cout)
+                        const bool ignore_zero)
 {
   if (std::isfinite (abs)) {
 
@@ -249,9 +248,6 @@ default_type calculate (Image<value_type>& in,
 
   } else { // No explicit mechanism option: do automatic thresholding
 
-    std::unique_ptr<LogLevelLatch> latch;
-    if (to_cout)
-      latch.reset (new LogLevelLatch (App::log_level - 1));
     if (max_axis < in.ndim()) {
 
       // Need to extract just the current 3D volume
@@ -302,14 +298,8 @@ void apply (Image<value_type>& in,
             const size_t max_axis,
             const value_type threshold,
             const operator_type comp,
-            const bool mask_out,
-            const bool to_cout)
+            const bool mask_out)
 {
-  if (to_cout) {
-    std::cout << threshold;
-    return;
-  }
-
   const T true_value = std::is_floating_point<T>::value ? 1.0 : true;
   const T false_value = std::is_floating_point<T>::value ? NaN : false;
 
@@ -335,7 +325,9 @@ void apply (Image<value_type>& in,
 
 
 
-
+// TODO Don't write directly to std::cout;
+//   will get hidden by /r of progress bar
+// Alternatively, withhold progress bar if writing to std::cout
 template <typename T>
 void execute (Image<value_type>& in,
               Image<bool>& mask,
@@ -363,19 +355,27 @@ void execute (Image<value_type>& in,
 
     // Do one volume at a time
     // If writing to cout, also add a newline between each volume
-    bool is_first_loop = true;
-    for (auto l = Loop("Determining and applying per-volume thresholds", 3, in.ndim()) (in); l; ++l) {
-      if (to_cout) {
+    if (to_cout) {
+      LogLevelLatch latch (App::log_level - 1);
+      bool is_first_loop = true;
+      for (auto l = Loop(3, in.ndim()) (in); l; ++l) {
         if (is_first_loop)
           is_first_loop = false;
         else
           std::cout << "\n";
+        const default_type threshold = calculate (in, mask, 3, abs, percentile, bottom, top, ignore_zero);
+        std::cout << threshold;
       }
-      LogLevelLatch latch (App::log_level - 1);
-      const default_type threshold = calculate (in, mask, 3, abs, percentile, bottom, top, ignore_zero, to_cout);
-      if (out.valid())
+
+    } else {
+
+      for (auto l = Loop("Determining and applying per-volume thresholds", 3, in.ndim()) (in); l; ++l) {
+        LogLevelLatch latch (App::log_level - 1);
+        const default_type threshold = calculate (in, mask, 3, abs, percentile, bottom, top, ignore_zero);
         assign_pos_of (in, 3).to (out);
-      apply (in, mask, out, 3, value_type(threshold), op, mask_out, to_cout);
+        apply (in, mask, out, 3, value_type(threshold), op, mask_out);
+      }
+
     }
 
     return;
@@ -385,8 +385,11 @@ void execute (Image<value_type>& in,
   }
 
   // Process whole input image as a single block
-  const default_type threshold = calculate (in, mask, in.ndim(), abs, percentile, bottom, top, ignore_zero, to_cout);
-  apply (in, mask, out, in.ndim(), value_type(threshold), op, mask_out, to_cout);
+  const default_type threshold = calculate (in, mask, in.ndim(), abs, percentile, bottom, top, ignore_zero);
+  if (to_cout)
+    std::cout << threshold;
+  else
+    apply (in, mask, out, in.ndim(), value_type(threshold), op, mask_out);
 
 }
 

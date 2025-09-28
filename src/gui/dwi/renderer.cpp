@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -623,14 +623,14 @@ namespace MR
                     if (I == i) {
 
                       // Invert a direction if required
-                      std::array<Eigen::Vector3, 3> d {{ dirs[i], dirs[j], dirs[k] }};
-                      const Eigen::Vector3 mean_dir ((d[0]+d[1]+d[2]).normalized());
+                      std::array<Eigen::Vector3d, 3> d {{ dirs[i], dirs[j], dirs[k] }};
+                      const Eigen::Vector3d mean_dir ((d[0]+d[1]+d[2]).normalized());
                       for (size_t v = 0; v != 3; ++v) {
                         if (d[v].dot (mean_dir) < 0.0)
                           d[v] = -d[v];
                       }
                       // Conform to right hand rule
-                      const Eigen::Vector3 normal (((d[1]-d[0]).cross (d[2]-d[1])).normalized());
+                      const Eigen::Vector3d normal (((d[1]-d[0]).cross (d[2]-d[1])).normalized());
                       if (normal.dot (mean_dir) < 0.0)
                         indices_data.push_back ( {{GLint(i), GLint(k), GLint(j)}} );
                       else

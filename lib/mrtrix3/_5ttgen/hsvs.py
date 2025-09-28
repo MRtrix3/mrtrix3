@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,10 +13,16 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding
+
 
 
 import glob, os, re
-from distutils.spawn import find_executable
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run
 
@@ -40,7 +46,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('-template', help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
   parser.add_argument('-thalami', choices=THALAMI_CHOICES, help='Select method to be used for thalamic segmentation; options are: ' + ','.join(THALAMI_CHOICES))
-  parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
+  parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter; streamlines will not be permitted to terminate within this region')
   parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. In Proc OHBM 2020')
   parser.add_citation('Fischl, B. Freesurfer. NeuroImage, 2012, 62(2), 774-781', is_external=True)
   parser.add_citation('Iglesias, J.E.; Augustinack, J.C.; Nguyen, K.; Player, C.M.; Player, A.; Wright, M.; Roy, N.; Frosch, M.P.; Mc Kee, A.C.; Wald, L.L.; Fischl, B.; and Van Leemput, K. A computational atlas of the hippocampal formation using ex vivo, ultra-high resolution MRI: Application to adaptive segmentation of in vivo MRI. NeuroImage, 2015, 115, 117-137', condition='If FreeSurfer hippocampal subfields module is utilised', is_external=True)
@@ -226,7 +232,7 @@ def execute(): #pylint: disable=unused-variable
       hipp_subfield_paired_images.append(lh_filename[1:])
   # Choose which of these image pairs we are going to use
   for code in [ '.CA.', '.FS60.' ]:
-    if any([ code in filename for filename in hipp_subfield_paired_images ]):
+    if any(code in filename for filename in hipp_subfield_paired_images):
       hipp_subfield_image_suffix = [ filename for filename in hipp_subfield_paired_images if code in filename ][0]
       have_hipp_subfields = True
       break
@@ -434,7 +440,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mesh2voxel ' + bs_smoothed_mesh_path + ' ' + template_image + ' brain_stem.mif')
   app.cleanup(bs_smoothed_mesh_path)
   progress.increment()
-  fourthventricle_zmin = min([ int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines() ])
+  fourthventricle_zmin = min(int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines())
   if fourthventricle_zmin:
     bs_cropmask_path = 'brain_stem_crop.mif'
     run.command('mredit brain_stem.mif - ' + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ]) + ' | '
@@ -512,8 +518,8 @@ def execute(): #pylint: disable=unused-variable
       from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value and 'Amygdala' not in value }
     if thalami_method != 'first':
       from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
-    run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first')
-    fsl.check_first('first', from_first.keys())
+    first_stdout = run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first').stdout
+    fsl.check_first('first', structures=from_first.keys(), first_stdout=first_stdout)
     app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))
     for key, value in from_first.items():

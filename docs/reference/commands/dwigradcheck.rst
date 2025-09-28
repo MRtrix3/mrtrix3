@@ -17,6 +17,11 @@ Usage
 
 -  *input*: The input DWI series to be checked
 
+Description
+-----------
+
+Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.
+
 Options
 -------
 
@@ -79,7 +84,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

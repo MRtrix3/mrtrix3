@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@
 namespace MR
 {
 
-  template<class T, class Deleter = std::default_delete<T>> 
+  template<class T, class Deleter = std::default_delete<T>>
     class copy_ptr : public std::unique_ptr<T, Deleter>
   { NOMEMALIGN
     public:
@@ -45,6 +45,8 @@ namespace MR
   struct compare_ptr_contents { NOMEMALIGN
     template <class X>
       bool operator() (const X& a, const X& b) const { return *a < *b; }
+    template <class X>
+      bool operator() (const std::shared_ptr<X>& a, const std::shared_ptr<X>& b) const { return *a < *b; }
   };
 
 }

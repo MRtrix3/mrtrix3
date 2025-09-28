@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,13 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from distutils.spawn import find_executable
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=consider-using-f-string
+
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, path, run
 

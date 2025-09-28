@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,6 +12,9 @@
 # See the Mozilla Public License v. 2.0 for more details.
 #
 # For more details, see http://www.mrtrix.org/.
+
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,consider-using-f-string
 
 import os, shutil
 from mrtrix3 import MRtrixError
@@ -45,6 +48,11 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 def needs_single_shell(): #pylint: disable=unused-variable
+  return True
+
+
+
+def supports_mask(): #pylint: disable=unused-variable
   return True
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,6 +48,9 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_example_usage('Testing the command string substitution',
                             'for_each -test * : mrconvert IN PRE.mif',
                             'By specifying the -test option, the script will print to the terminal the results of text substitutions for all of the specified inputs, but will not actually execute those commands. It can therefore be used to verify that the script is receiving the intended set of inputs, and that the text substitutions on those inputs lead to the intended command strings.')
+  cmdline.add_example_usage('Utilising shell operators within the command substitution',
+                            'for_each * : tensor2metric IN/dwi.mif - "|" tensor2metric - -fa IN/fa.mif',
+                            'In this example, if the double-quotes were NOT placed around the pipe operator, then the shell would take the sum total output of the for_each script and pipe that to a single invocation of the tensor2metric command. Since in this example it is instead desired for the pipe operator to be a part of the command string that is executed multiple times by the for_each script, it must be escaped using double-quotes.')
   cmdline.add_argument('inputs',   help='Each of the inputs for which processing should be run', nargs='+')
   cmdline.add_argument('colon',    help='Colon symbol (":") delimiting the for_each inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
   cmdline.add_argument('command',  help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
@@ -106,7 +109,6 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import ANSI, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, run #pylint: disable=no-name-in-module, import-outside-toplevel
-  global CMDSPLIT
 
   inputs = app.ARGS.inputs
   app.debug('All inputs: ' + str(inputs))
@@ -126,16 +128,20 @@ def execute(): #pylint: disable=unused-variable
           re_object = re.compile(exclude)
           regex_hits = [ ]
           for arg in inputs:
-            if re_object.search(arg).group():
+            search_result = re_object.search(arg)
+            if search_result and search_result.group():
               regex_hits.append(arg)
           if regex_hits:
+            app.debug('Inputs excluded via regex "' + exclude + '": ' + str(regex_hits))
             to_exclude.extend(regex_hits)
           else:
+            app.debug('Compiled exclude regex "' + exclude + '" had no hits')
             exclude_unmatched.append(exclude)
-        except Exception:
+        except re.error:
+          app.debug('Exclude string "' + exclude + '" did not compile as regex')
           exclude_unmatched.append(exclude)
     if exclude_unmatched:
-      app.warn('Item' + ('s' if len(exclude_unmatched) > 1 else '') + ' specified via -exclude did not appear in input list: ' + str('\'' + exclude_unmatched[0] + '\'' if len(exclude_unmatched) == 1 else exclude_unmatched))
+      app.warn('Item' + ('s' if len(exclude_unmatched) > 1 else '') + ' specified via -exclude did not result in item exclusion, whether by direct match or compilation as regex: ' + str('\'' + exclude_unmatched[0] + '\'' if len(exclude_unmatched) == 1 else exclude_unmatched))
     inputs = [ arg for arg in inputs if arg not in to_exclude ]
     if not inputs:
       raise MRtrixError('No inputs remaining after application of exclusion criteri' + ('on' if len(app.ARGS.exclude) == 1 else 'a'))
@@ -198,12 +204,12 @@ def execute(): #pylint: disable=unused-variable
   parallel = app.NUM_THREADS is not None and app.NUM_THREADS > 1
 
   def progress_string():
-    text = str(sum([ 1 if job.returncode is not None else 0 for job in jobs ])) + \
+    text = str(sum(1 if job.returncode is not None else 0 for job in jobs)) + \
         '/' + \
         str(len(jobs)) + \
         ' jobs completed ' + \
         ('across ' + str(app.NUM_THREADS) + ' threads' if parallel else 'sequentially')
-    fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
+    fail_count = sum(bool(job.returncode) for job in jobs)
     if fail_count:
       text += ' (' + str(fail_count) + ' errors)'
     return text
@@ -211,7 +217,6 @@ def execute(): #pylint: disable=unused-variable
   progress = app.ProgressBar(progress_string(), len(jobs))
 
   def execute_parallel():
-    global shared #pylint: disable=invalid-name
     while not shared.stop:
       my_job = shared.next(jobs)
       if not my_job:
@@ -254,8 +259,8 @@ def execute(): #pylint: disable=unused-variable
 
   progress.done()
 
-  assert all([ job.returncode is not None for job in jobs ])
-  fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
+  assert all(job.returncode is not None for job in jobs)
+  fail_count = sum(bool(job.returncode) for job in jobs)
   if fail_count:
     app.warn(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
     if fail_count > 1:

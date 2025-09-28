@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,36 +14,25 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_colourmap_menu_h__
-#define __gui_mrview_colourmap_menu_h__
+#ifndef __image_io_null_h__
+#define __image_io_null_h__
 
-#include "colourmap.h"
-#include "gui/opengl/gl.h"
+#include "image_io/base.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
+namespace MR {
+  namespace ImageIO {
 
+    class Null : public Base {
+      NOMEMALIGN
+      public:
+        Null(const Header &header) : Base(header) {}
 
+      protected:
+        virtual void load(const Header &, size_t);
+        virtual void unload(const Header &);
+    };
 
-      void create_colourmap_menu (QWidget* parent,
-                                  QActionGroup*& group,
-                                  QMenu* menu,
-                                  QAction** & actions,
-                                  bool create_shortcuts = false,
-                                  bool use_special = true);
-
-
-
-    }
-  }
-}
+  } // namespace ImageIO
+} // namespace MR
 
 #endif
-
-
-
-

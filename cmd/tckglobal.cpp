@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -218,8 +218,7 @@ void run ()
   using namespace DWI::Tractography::GT;
 
   // Inputs -----------------------------------------------------------------------------
-
-  auto dwi = Image<float>::open(argument[0]).with_direct_io(3);
+  Header header_in = Header::open (argument[0]);
 
   Properties properties;
   properties.resp_WM = load_matrix<float> (argument[1]);
@@ -237,7 +236,7 @@ void run ()
   opt = get_options("mask");
   if (opt.size()) {
     mask = Image<bool>::open(opt[0][0]);
-    check_dimensions(dwi, mask, 0, 3);
+    check_dimensions(header_in, mask, 0, 3);
   }
 
   // Parameters -------------------------------------------------------------------------
@@ -281,7 +280,7 @@ void run ()
     }
   }
 
-  uint64_t niter = get_option_value("niter", DEFAULT_NITER);
+  uint64_t niter = get_option_value<uint64_t>("niter", DEFAULT_NITER);
   double t0 = get_option_value("t0", DEFAULT_T0);
   double t1 = get_option_value("t1", DEFAULT_T1);
 
@@ -304,9 +303,10 @@ void run ()
   if (opt.size())
     stats.open_stream(opt[0][0]);
 
+  auto dwi = header_in.get_image<float>().with_direct_io(3);
   ParticleGrid pgrid (dwi);
 
-  ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, dwi, properties);
+  ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, header_in, properties);
   InternalEnergyComputer* Eint = new InternalEnergyComputer(stats, pgrid);
   Eint->setConnPot(cpot);
   EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, Eext, properties.lam_ext / ( wmscale2 * properties.weight*properties.weight));
@@ -345,14 +345,14 @@ void run ()
 
 
   // Save fiso, tod and eext
-  Header header (dwi);
-  header.datatype() = DataType::Float32;
+  Header header_out (dwi);
+  header_out.datatype() = DataType::Float32;
 
   opt = get_options("fod");
   if (opt.size()) {
     INFO("Saving fODF image to file");
-    header.size(3) = Math::SH::NforL(properties.Lmax);
-    auto fODF = Image<float>::create (opt[0][0], header);
+    header_out.size(3) = Math::SH::NforL(properties.Lmax);
+    auto fODF = Image<float>::create (opt[0][0], header_out);
     auto f = __copy_fod<float>(properties.Lmax, properties.weight, !get_options("noapo").size());
     ThreadedLoop(Eext->getTOD(), 0, 3).run(f, Eext->getTOD(), fODF);
   }
@@ -361,8 +361,8 @@ void run ()
   if (opt.size()) {
     if (properties.resp_ISO.size() > 0) {
       INFO("Saving isotropic fractions to file");
-      header.size(3) = properties.resp_ISO.size();
-      auto Fiso = Image<float>::create (opt[0][0], header);
+      header_out.size(3) = properties.resp_ISO.size();
+      auto Fiso = Image<float>::create (opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     }
     else {
@@ -373,8 +373,8 @@ void run ()
   opt = get_options("eext");
   if (opt.size()) {
     INFO("Saving external energy to file");
-    header.ndim() = 3;
-    auto EextI = Image<float>::create (opt[0][0], header);
+    header_out.ndim() = 3;
+    auto EextI = Image<float>::create (opt[0][0], header_out);
     threaded_copy(Eext->getEext(), EextI);
   }
 

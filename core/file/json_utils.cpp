@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,11 +20,15 @@
 #include "file/json_utils.h"
 #include "file/nifti_utils.h"
 
+#include "app.h"
 #include "axes.h"
+#include "dwi/gradient.h"
 #include "exception.h"
 #include "header.h"
+#include "metadata/bids.h"
+#include "metadata/phase_encoding.h"
+#include "metadata/slice_encoding.h"
 #include "mrtrix.h"
-#include "phase_encoding.h"
 #include "types.h"
 #include "file/ofstream.h"
 
@@ -48,7 +52,7 @@ namespace MR
         } catch (std::logic_error& e) {
           throw Exception ("Error parsing JSON file \"" + path + "\": " + e.what());
         }
-        read (json, H, true);
+        read (json, H);
       }
 
 
@@ -65,16 +69,14 @@ namespace MR
 
 
 
-      KeyValues read (const nlohmann::json& json, const KeyValues& preexisting)
+      KeyValues read (const nlohmann::json& json)
       {
         KeyValues result;
         for (auto i = json.cbegin(); i != json.cend(); ++i) {
           if (i->is_boolean()) {
             result.insert (std::make_pair (i.key(), i.value() ? "true" : "false"));
-          } else if (i->is_number_integer()) {
-            result.insert (std::make_pair (i.key(), str<int>(i.value())));
-          } else if (i->is_number_float()) {
-            result.insert (std::make_pair (i.key(), str<float>(i.value())));
+          } else if (i->is_number_integer() || i->is_number_float()) {
+            result.insert (std::make_pair (i.key(), i->dump()));
           } else if (i->is_string()) {
             const std::string s = unquote(i.value());
             result.insert (std::make_pair (i.key(), s));
@@ -120,66 +122,18 @@ namespace MR
               throw Exception ("JSON entry \"" + i.key() + "\" contains mixture of elements and arrays");
           }
         }
-        for (const auto& kv : preexisting) {
-          if (kv.first == "comments" && result.find ("comments") != result.end()) {
-            add_line (result["comments"], kv.second);
-          } else {
-            // Will not overwrite existing entries
-            result.insert (kv);
-          }
-        }
         return result;
       }
 
 
 
-      void read (const nlohmann::json& json, Header& header, const bool realign)
-      {
-        header.keyval() = read (json, header.keyval());
-        const bool do_realign = realign && Header::do_realign_transform;
-
-        // The corresponding header may have been rotated on image load prior to the JSON
-        //   being loaded. If this is the case, any fields that indicate an image axis
-        //   number / direction need to be correspondingly modified.
-        std::array<size_t, 3> perm;
-        std::array<bool, 3> flip;
-        header.realignment (perm, flip);
-        if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 && !flip[0] && !flip[1] && !flip[2])
-          return;
-
-        auto pe_scheme = PhaseEncoding::get_scheme (header);
-        if (pe_scheme.rows()) {
-          if (do_realign) {
-            for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-              Eigen::VectorXd new_line = pe_scheme.row (row);
-              for (ssize_t axis = 0; axis != 3; ++axis) {
-                new_line[axis] = pe_scheme(row, perm[axis]);
-                if (new_line[axis] && flip[perm[axis]])
-                  new_line[axis] = -new_line[axis];
-              }
-              pe_scheme.row (row) = new_line;
-            }
-            PhaseEncoding::set_scheme (header, pe_scheme);
-            INFO ("Phase encoding information read from JSON file modified to conform to prior MRtrix3 internal transform realignment of input image");
-          } else {
-            INFO ("Phase encoding information read from JSON file not modified");
-          }
-        }
-
-        auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
-        if (slice_encoding_it != header.keyval().end()) {
-          if (do_realign) {
-            const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
-            Eigen::Vector3 new_dir;
-            for (size_t axis = 0; axis != 3; ++axis)
-              new_dir[axis] = flip[perm[axis]] ? -orig_dir[perm[axis]] : orig_dir[perm[axis]];
-            slice_encoding_it->second = Axes::dir2id (new_dir);
-            INFO ("Slice encoding direction read from JSON file modified to conform to prior MRtrix3 internal transform realignment of input image");
-          } else {
-            INFO ("Slice encoding information read from JSON file not modified");
-          }
-        }
-
+      void read(const nlohmann::json &json, Header &header) {
+        KeyValues keyval = read(json);
+        // Reorientation based on image load should be applied
+        //   exclusively to metadata loaded via JSON; not anything pre-existing
+        Metadata::PhaseEncoding::transform_for_image_load(keyval, header);
+        Metadata::SliceEncoding::transform_for_image_load(keyval, header);
+        header.merge_keyval(keyval);
       }
 
 
@@ -279,42 +233,17 @@ namespace MR
       {
         Header H_adj (header);
         H_adj.name() = image_path;
+
+        if (!App::get_options("export_grad_fsl").empty() || !App::get_options("export_grad_mrtrix").empty())
+          DWI::clear_DW_scheme(H_adj);
+
         if (!Path::has_suffix (image_path, { ".nii", ".nii.gz", ".img" })) {
           write (H_adj.keyval(), json);
           return;
         }
 
-        vector<size_t> order;
-        File::NIfTI::adjust_transform (header, order);
-        if (!(order[0] != 0 || order[1] != 1 || order[2] != 2 || header.stride(0) < 0 || header.stride(1) < 0 || header.stride(2) < 0)) {
-          write (H_adj.keyval(), json);
-          return;
-        }
-
-        auto pe_scheme = PhaseEncoding::get_scheme (header);
-        if (pe_scheme.rows()) {
-          // Assume that image being written to disk is going to have its transform adjusted,
-          //   so modify the phase encoding scheme appropriately before writing to JSON
-          for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-            Eigen::VectorXd new_line = pe_scheme.row (row);
-            for (ssize_t axis = 0; axis != 3; ++axis)
-              new_line[axis] = pe_scheme(row, order[axis]) && header.stride (order[axis]) < 0 ?
-                               -pe_scheme(row, order[axis]) :
-                               pe_scheme(row, order[axis]);
-            pe_scheme.row (row) = new_line;
-          }
-          PhaseEncoding::set_scheme (H_adj, pe_scheme);
-          INFO ("Phase encoding information written to JSON file modified according to expected output NIfTI header transform realignment");
-        }
-        auto slice_encoding_it = H_adj.keyval().find ("SliceEncodingDirection");
-        if (slice_encoding_it != H_adj.keyval().end()) {
-          const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
-          Eigen::Vector3 new_dir;
-          for (size_t axis = 0; axis != 3; ++axis)
-            new_dir[axis] = header.stride (order[axis]) > 0 ? orig_dir[order[axis]] : -orig_dir[order[axis]];
-          slice_encoding_it->second = Axes::dir2id (new_dir);
-          INFO ("Slice encoding direction written to JSON file modified according to expected output NIfTI header transform realignment");
-        }
+        Metadata::PhaseEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
+        Metadata::SliceEncoding::transform_for_nifti_write(H_adj.keyval(), H_adj);
 
         write (H_adj.keyval(), json);
       }

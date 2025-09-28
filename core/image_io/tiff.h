@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,11 +30,11 @@ namespace MR
     class TIFF : public Base
     { MEMALIGN (TIFF)
       public:
-        TIFF (const Header& header) : Base (header) { } 
+        TIFF (const Header& header) : Base (header) { }
 
       protected:
         virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
+        virtual void unload (const Header&) { }
     };
 
   }

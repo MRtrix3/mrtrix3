@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,6 +58,7 @@
 
 6     Left-Cerebellum-Cortex
 
+7     Left-Thalamus
 7     Left-Thalamus-Proper
 7     Left-Caudate
 7     Left-Putamen
@@ -66,6 +67,7 @@
 7     Left-Amygdala
 7     Left-Accumbens-area
 
+8     Right-Thalamus
 8     Right-Thalamus-Proper
 8     Right-Caudate
 8     Right-Putamen

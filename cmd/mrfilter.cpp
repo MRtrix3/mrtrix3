@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -159,7 +159,7 @@ void run () {
 
       auto opt = get_options ("axes");
       if (opt.size())
-        filter.set_axes (opt[0][0]);
+        filter.set_axes (parse_ints<uint32_t> (opt[0][0]));
       filter.set_centre_zero (get_options ("centre_zero").size());
       Stride::set_from_command_line (filter);
       filter.set_message (std::string("applying FFT filter to image " + std::string(argument[0])));
@@ -215,7 +215,7 @@ void run () {
 
       auto opt = get_options ("extent");
       if (opt.size())
-        filter.set_extent (parse_ints (opt[0][0]));
+        filter.set_extent (parse_ints<uint32_t> (opt[0][0]));
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
       Stride::set_from_command_line (filter);
 
@@ -245,7 +245,7 @@ void run () {
       }
       opt = get_options ("extent");
       if (opt.size())
-        filter.set_extent (parse_ints (opt[0][0]));
+        filter.set_extent (parse_ints<uint32_t> (opt[0][0]));
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
       Stride::set_from_command_line (filter);
 
@@ -263,7 +263,7 @@ void run () {
 
       auto opt = get_options ("extent");
       if (opt.size())
-        filter.set_extent (parse_ints (opt[0][0]));
+        filter.set_extent (parse_ints<uint32_t> (opt[0][0]));
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
       Stride::set_from_command_line (filter);
 

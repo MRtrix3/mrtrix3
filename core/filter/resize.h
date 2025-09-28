@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -69,7 +69,7 @@ namespace MR
         ~Resize () { delete out_of_bounds_value; }
 
         void set_voxel_size (default_type size) {
-          vector <default_type> voxel_size (3, size);
+          vector<default_type> voxel_size (3, size);
           set_voxel_size (voxel_size);
         }
 
@@ -78,7 +78,7 @@ namespace MR
           if (voxel_size.size() != 3)
             throw Exception ("the voxel size must be defined using a value for all three dimensions.");
 
-          Eigen::Vector3 original_extent;
+          Eigen::Vector3d original_extent;
           for (size_t j = 0; j < 3; ++j) {
             if (voxel_size[j] <= 0.0)
               throw Exception ("the voxel size must be larger than zero");
@@ -93,7 +93,7 @@ namespace MR
         }
 
 
-        void set_size (const vector<int>& image_res) {
+        void set_size (const vector<uint32_t>& image_res) {
           if (image_res.size() != 3)
             throw Exception ("the image resolution must be defined for 3 spatial dimensions");
           vector<default_type> new_voxel_size (3);
@@ -123,7 +123,7 @@ namespace MR
           set_voxel_size (new_voxel_size);
         }
 
-        void set_oversample (vector<int> oversample) {
+        void set_oversample (vector<uint32_t> oversample) {
           if (oversample.size() == 1)
             oversample.resize (3, oversample[0]);
           else if (oversample.size() != 3 and oversample.size() != 0)
@@ -137,8 +137,6 @@ namespace MR
 
         void set_interp_type (int type) {
           interp_type = type;
-          if (interp_type == 0) // nearest
-            set_oversample (vector<int> (3, 1));
         }
 
         void set_transform (const transform_type& trafo) {
@@ -156,7 +154,7 @@ namespace MR
              *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
             switch (interp_type) {
             case 0:
-              // Prevent use of oversampling when using nearest-neighbour interpolation
+              // Use of oversampling is prevented in reslice adapter
               reslice <Interp::Nearest> (input, output, transformation, oversampling, oob);
               break;
             case 1:
@@ -177,7 +175,7 @@ namespace MR
       protected:
         int interp_type;
         transform_type transformation;
-        vector<int> oversampling;
+        vector<uint32_t> oversampling;
         default_type *out_of_bounds_value;
     };
     //! @}

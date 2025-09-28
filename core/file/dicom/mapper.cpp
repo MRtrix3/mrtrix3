@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,9 +17,9 @@
 #include <algorithm>
 
 #include "header.h"
-#include "phase_encoding.h"
 #include "image_io/default.h"
 #include "image_io/mosaic.h"
+#include "image_io/null.h"
 #include "image_io/variable_scaling.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/image.h"
@@ -27,6 +27,7 @@
 #include "file/dicom/study.h"
 #include "file/dicom/patient.h"
 #include "file/dicom/tree.h"
+#include "metadata/phase_encoding.h"
 
 namespace MR {
   namespace File {
@@ -35,6 +36,23 @@ namespace MR {
 
       std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, vector<std::shared_ptr<Series>>& series)
       {
+        //ENVVAR name: MRTRIX_PRESERVE_PHILIPS_ISO
+        //ENVVAR Do not remove the synthetic isotropically-weighted diffusion
+        //ENVVAR image often added at the end of the series on Philips
+        //ENVVAR scanners. By default, these images are removed from the series
+        //ENVVAR to prevent errors in downstream processing. If this
+        //ENVVAR environment variable is set, these images will be preserved in
+        //ENVVAR the output.
+        //ENVVAR
+        //ENVVAR Note that it can be difficult to ascertain which volume is the
+        //ENVVAR synthetic isotropically-weighed image, since its DW encoding
+        //ENVVAR will normally have been modified from its initial value
+        //ENVVAR (e.g. [ 0 0 0 1000 ] for a b=1000 acquisition) to b=0 due to
+        //ENVVAR b-value scaling.
+        bool preserve_philips_iso = ( getenv ("MRTRIX_PRESERVE_PHILIPS_ISO") != nullptr );
+
+
+
         assert (series.size() > 0);
         std::unique_ptr<MR::ImageIO::Base> io_handler;
 
@@ -51,6 +69,8 @@ namespace MR {
         // build up sorted list of frames:
         vector<Frame*> frames;
 
+        bool transfer_syntax_supported = true;
+
         // loop over series list:
         for (const auto& series_it : series) {
           try {
@@ -65,25 +85,26 @@ namespace MR {
 
           // loop over images in each series:
           for (auto image_it : *series_it) {
-            if (!image_it->transfer_syntax_supported) {
-              Exception E ("unsupported transfer syntax found in DICOM data");
-              E.push_back ("consider using third-party tools to convert your data to standard uncompressed encoding");
-              E.push_back ("See the MRtrix3 documentation on DICOM handling for details:");
-              E.push_back ("   http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax");
-              throw E;
-            }
+            if (!image_it->transfer_syntax_supported)
+              transfer_syntax_supported = false;
+
             // if multi-frame, loop over frames in image:
             if (image_it->frames.size()) {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
               for (auto frame_it : image_it->frames)
                 if (frame_it->image_type == series_it->image_type)
-                  frames.push_back (frame_it.get());
+                  if (!frame_it->is_philips_iso() || preserve_philips_iso)
+                    frames.push_back (frame_it.get());
             }
             // otherwise add image frame:
             else
-              frames.push_back (image_it.get());
+              if (!image_it->is_philips_iso() || preserve_philips_iso)
+                frames.push_back (image_it.get());
           }
         }
+
+        if (!frames.size())
+          throw Exception ("no DICOM frames found!");
 
         auto dim = Frame::count (frames);
 
@@ -186,9 +207,14 @@ namespace MR {
             H.keyval()["FlipAngle"] = join (frame.flip_angles, ",");
         }
 
-        size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
-        if (nchannels > 1)
-          INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
+        size_t nchannels = image.samples_per_pixel;
+        if (nchannels == 1 && !image.frames.size() && transfer_syntax_supported) {
+          // only guess number of samples per pixel if not explicitly set in
+          // DICOM and not using multi-frame:
+          nchannels = image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
+          if (nchannels > 1)
+            INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
+        }
 
         H.ndim() = 3 + (dim[0]*dim[2]>1) + (nchannels>1);
 
@@ -262,7 +288,7 @@ namespace MR {
         }
 
         try {
-          PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
+          Metadata::PhaseEncoding::set_scheme (H.keyval(), Frame::get_PE_scheme (frames, dim[1]));
         } catch (Exception& e) {
           e.display (3);
           WARN ("Malformed phase encoding information; ignored");
@@ -335,6 +361,17 @@ namespace MR {
           DEBUG ("No slice timing information obtained");
         }
 
+
+        if (!transfer_syntax_supported) {
+          WARN ("unsupported transfer syntax found in DICOM data");
+          WARN ("header information is accessible, but commands requiring access to image intensity data will fail");
+          WARN ("consider using third-party tools to convert your data to standard uncompressed encoding");
+          WARN ("See the MRtrix3 documentation on DICOM handling for details:");
+          WARN ("   http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax");
+
+          io_handler.reset (new MR::ImageIO::Null (H));
+          return io_handler;
+        }
 
         if (image.images_in_mosaic) {
 

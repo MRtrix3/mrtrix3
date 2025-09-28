@@ -3,9 +3,12 @@ name: checks
 on:
   pull_request:
     types: [opened, synchronize]
-    branches:
-      - master
-      - dev
+    branches: [ master, dev ]
+  merge_group:
+    types: [checks_requested]
+    branches: [ master ]
+
+
 
 
 
@@ -24,7 +27,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang-8 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev libpng-dev
 
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }
@@ -38,6 +41,8 @@ jobs:
     - name: binary tests
       run: ./run_tests binaries || { cat testing_binaries.log; false; }
 
+    - name: check command documentation
+      run: ./docs/generate_user_docs.sh && git diff --exit-code docs/
 
 
 
@@ -77,14 +82,15 @@ jobs:
 
     env:
       CFLAGS: -Werror
+      PACKAGES: "qt5 eigen pkg-config fftw libpng"
 
     steps:
     - uses: actions/checkout@v1
 
     - name: install dependencies
       run: |
-         brew update
-         brew install qt5 eigen pkg-config libtiff fftw libpng
+         brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
+         brew install $PACKAGES || brew install $PACKAGES
          brew link --force qt5
 
     - name: configure
@@ -98,9 +104,6 @@ jobs:
 
     - name: binary tests
       run: ./run_tests binaries || { cat testing_binaries.log; false; }
-
-    - name: check command documentation
-      run: ./docs/generate_user_docs.sh && git diff --exit-code docs/
 
 
 
@@ -160,34 +163,26 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install pylint pylint3 python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip
+         sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip
          pip3 install sphinx-notfound-page
 
 
     - name: check syntax
       run: ./check_syntax || { cat syntax.log; false; }
 
-    - name: pylint (Python 2)
-      run: |
-         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
-         PYTHON=python2 ./run_pylint || { cat pylint.log; false; }
-
     - name: pylint (Python 3)
       run: |
          echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
          PYTHON=python3 ./run_pylint || { cat pylint.log; false; }
 
+    - name: check copyright headers
+      run: ./update_copyright && git diff --exit-code
+
     - name: check building of documentation
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
 
     - name: install build dependencies
-      run: sudo apt-get install clang-8 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
-
-    - name: check configure with Python 2
-      run: python2 ./configure || { cat configure.log; false; }
-
-    - name: check build with Python 2
-      run: python2 ./build -dryrun || { cat build.log; false; }
+      run: sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
 
     - name: check configure with Python 3
       run: python3 ./configure || { cat configure.log; false; }

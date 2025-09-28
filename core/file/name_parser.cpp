@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,9 +26,9 @@ namespace MR
     namespace
     {
 
-      inline bool in_seq (const vector<int>& seq, int val)
+      inline bool in_seq (const vector<uint32_t>& seq, uint32_t val)
       {
-        if (seq.size() == 0) 
+        if (seq.size() == 0)
           return true;
         for (size_t i = 0; i < seq.size(); i++)
           if (seq[i] == val)
@@ -97,12 +97,12 @@ namespace MR
 
     std::ostream& operator<< (std::ostream& stream, const NameParser::Item& item)
     {
-      if (item.is_string()) 
+      if (item.is_string())
         stream << "\"" << item.string() << "\"";
       else {
-        if (item.sequence().size()) 
+        if (item.sequence().size())
           stream << item.sequence();
-        else 
+        else
           stream << "[ any ]";
       }
       return stream;
@@ -129,26 +129,26 @@ namespace MR
 
 
 
-    bool NameParser::match (const std::string& file_name, vector<int>& indices) const
+    bool NameParser::match (const std::string& file_name, vector<uint32_t>& indices) const
     {
-      int current = 0;
+      uint32_t current = 0;
       size_t num = 0;
       indices.resize (seq_index.size());
 
       for (size_t i = 0; i < array.size(); i++) {
         if (array[i].is_string()) {
-          if (file_name.substr (current, array[i].string().size()) != array[i].string()) 
+          if (file_name.substr (current, array[i].string().size()) != array[i].string())
             return false;
           current += array[i].string().size();
         }
         else {
-          int x = current;
+          uint32_t x = current;
           while (isdigit (file_name[current]))
             current++;
-          if (x == current) 
+          if (x == current)
             return false;
-          x = to<int> (file_name.substr (x, current-x));
-          if (!in_seq (array[i].sequence(), x)) 
+          x = to<uint32_t> (file_name.substr (x, current-x));
+          if (!in_seq (array[i].sequence(), x))
             return false;
           indices[num] = x;
           num++;
@@ -160,7 +160,7 @@ namespace MR
 
 
 
-    void NameParser::calculate_padding (const vector<int>& maxvals)
+    void NameParser::calculate_padding (const vector<uint32_t>& maxvals)
     {
       assert (maxvals.size() == seq_index.size());
       for (size_t n = 0; n < seq_index.size(); n++)
@@ -205,7 +205,7 @@ namespace MR
 
 
 
-    std::string NameParser::name (const vector<int>& indices)
+    std::string NameParser::name (const vector<uint32_t>& indices)
     {
       if (!seq_index.size())
         return Path::join (folder_name, array[0].string());
@@ -231,7 +231,7 @@ namespace MR
 
 
 
-    std::string NameParser::get_next_match (vector<int>& indices, bool return_seq_index)
+    std::string NameParser::get_next_match (vector<uint32_t>& indices, bool return_seq_index)
     {
       if (!folder)
         folder.reset (new Path::Dir (folder_name));
@@ -242,7 +242,7 @@ namespace MR
           if (return_seq_index) {
             for (size_t i = 0; i < ndim(); i++) {
               if (sequence (i).size()) {
-                size_t n = 0;
+                uint32_t n = 0;
                 while (indices[i] != sequence (i) [n]) n++;
                 indices[i] = n;
               }
@@ -267,18 +267,18 @@ namespace MR
 
 
 
-    vector<int> ParsedName::List::parse_scan_check (const std::string& specifier, size_t max_num_sequences)
+    vector<uint32_t> ParsedName::List::parse_scan_check (const std::string& specifier, size_t max_num_sequences)
     {
       NameParser parser;
       parser.parse (specifier);
 
       scan (parser);
       std::sort (list.begin(), list.end(), compare_ptr_contents());
-      vector<int> dim = count();
+      vector<uint32_t> dim = count();
 
       for (size_t n = 0; n < dim.size(); n++)
         if (parser.sequence (n).size())
-          if (dim[n] != (int) parser.sequence (n).size())
+          if (dim[n] != parser.sequence (n).size())
             throw Exception ("number of files found does not match specification \"" + specifier + "\"");
 
       return dim;
@@ -291,7 +291,7 @@ namespace MR
 
     void ParsedName::List::scan (NameParser& parser)
     {
-      vector<int> index;
+      vector<uint32_t> index;
       if (parser.ndim() == 0) {
         list.push_back (std::shared_ptr<ParsedName> (new ParsedName (parser.name (index), index)));
         return;
@@ -311,14 +311,14 @@ namespace MR
 
 
 
-    vector<int> ParsedName::List::count () const
+    vector<uint32_t> ParsedName::List::count () const
     {
       if (! list[0]->ndim()) {
-        if (size() == 1) return (vector<int>());
+        if (size() == 1) return (vector<uint32_t>());
         else throw Exception ("image number mismatch");
       }
 
-      vector<int> dim ( list[0]->ndim(), 0);
+      vector<uint32_t> dim ( list[0]->ndim(), 0);
       size_t current_entry = 0;
 
       count_dim (dim, current_entry, 0);
@@ -329,17 +329,17 @@ namespace MR
 
 
 
-    void ParsedName::List::count_dim (vector<int>& dim, size_t& current_entry, size_t current_dim) const
+    void ParsedName::List::count_dim (vector<uint32_t>& dim, size_t& current_entry, size_t current_dim) const
     {
-      int n;
+      uint32_t n;
       bool stop = false;
       std::shared_ptr<const ParsedName> first_entry ( list[current_entry]);
 
       for (n = 0; current_entry < size(); n++) {
         for (size_t d = 0; d < current_dim; d++)
-          if ( list[current_entry]->index (d) != first_entry->index (d)) 
+          if ( list[current_entry]->index (d) != first_entry->index (d))
             stop = true;
-        if (stop) 
+        if (stop)
           break;
 
         if (current_dim < list[0]->ndim()-1)
@@ -358,7 +358,7 @@ namespace MR
 
 
 
-    std::ostream& operator<< (std::ostream& stream, const ParsedName::List& list) 
+    std::ostream& operator<< (std::ostream& stream, const ParsedName::List& list)
     {
       stream << "parsed name list, size " << list.size() << ", counts " << list.count() << "\n";
       for (const auto& entry : list.list)

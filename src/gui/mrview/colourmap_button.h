@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,14 +30,15 @@ namespace MRView
 {
 
 class ColourMapButton;
+
 class ColourMapButtonObserver
 { NOMEMALIGN
 public:
-    virtual void selected_colourmap(size_t, const ColourMapButton&) {}
-    virtual void selected_custom_colour(const QColor&, const ColourMapButton&) {}
-    virtual void toggle_show_colour_bar(bool, const ColourMapButton&) {}
-    virtual void toggle_invert_colourmap(bool, const ColourMapButton&) {}
-    virtual void reset_colourmap(const ColourMapButton&) {}
+    virtual void selected_colourmap (size_t, const ColourMapButton&) {}
+    virtual void selected_custom_colour (const QColor&, const ColourMapButton&) {}
+    virtual void toggle_show_colour_bar (bool, const ColourMapButton&) {}
+    virtual void toggle_invert_colourmap (bool, const ColourMapButton&) {}
+    virtual void reset_colourmap (const ColourMapButton&) {}
 };
 
 
@@ -45,11 +46,13 @@ class ColourMapButton : public QToolButton
 { MEMALIGN(ColourMapButton)
     Q_OBJECT
 public:
-    ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
+    ColourMapButton (QWidget* parent, ColourMapButtonObserver& obs,
                     bool use_shortcuts = false,
                     bool use_special_colourmaps = true,
                     bool use_customise_state_items = true);
-    void set_colourmap_index(size_t index);
+    void set_colourmap_index (size_t index);
+    void set_scale_inverted (bool yesno);
+    void set_show_colourbar (bool yesno);
     void set_fixed_colour();
     vector<QAction*> colourmap_actions;
     void open_menu (const QPoint& p) { colourmap_menu->exec (p); }
@@ -68,6 +71,8 @@ private:
 
     QMenu* colourmap_menu;
     QAction* custom_colour_action;
+    QAction* invert_scale_action;
+    QAction* show_colour_bar_action;
 
     size_t fixed_colour_index;
 

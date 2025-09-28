@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -98,8 +98,8 @@ namespace MR
                   if (!mask.value())
                     return;
                 }
-                Eigen::Vector3 voxel_pos ((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
-                Eigen::Vector3 scanner_pos = transform.voxel2scanner * voxel_pos;
+                Eigen::Vector3d voxel_pos ((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
+                Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
 
                 default_type xc = scanner_pos[0] - centre[0];
                 default_type yc = scanner_pos[1] - centre[1];
@@ -165,8 +165,8 @@ namespace MR
 
           if (!mask.valid()) {
             for (auto i = Loop (0, 3)(image); i; ++i) {
-              Eigen::Vector3 voxel_pos ((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
-              Eigen::Vector3 scanner_pos = transform.voxel2scanner * voxel_pos;
+              Eigen::Vector3d voxel_pos ((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
+              Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
 
               default_type xc = scanner_pos[0] - centre[0];
               default_type yc = scanner_pos[1] - centre[1];
@@ -191,8 +191,8 @@ namespace MR
             for (auto i = Loop (0, 3)(image, mask); i; ++i) {
               if (mask.value() <= 0.0)
                 continue;
-              Eigen::Vector3 voxel_pos ((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
-              Eigen::Vector3 scanner_pos = transform.voxel2scanner * voxel_pos;
+              Eigen::Vector3d voxel_pos ((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
+              Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
               default_type val = image.value();
 
               default_type xc = scanner_pos[0] - centre[0];
@@ -272,7 +272,7 @@ namespace MR
 
         void get_centre_of_mass (Image<default_type>& im,
                                  Image<default_type>& mask,
-                                 Eigen::Vector3& centre_of_mass,
+                                 Eigen::Vector3d& centre_of_mass,
                                  const vector<MultiContrastSetting>& contrast_settings) {
           centre_of_mass.setZero();
           default_type mass (0.0);
@@ -326,8 +326,8 @@ namespace MR
           get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_of_mass, contrast_settings);
           get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_of_mass, contrast_settings);
 
-          Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
-          Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
+          Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
+          Eigen::Vector3d translation = im1_centre_of_mass - im2_centre_of_mass;
           transform.set_centre_without_transform_update (centre);
           transform.set_translation (translation);
 #ifdef DEBUG_INIT
@@ -375,8 +375,8 @@ namespace MR
           // Transform tra1;
           MR::Transform T1 (im1);
           MR::Transform T2 (im2);
-          Eigen::Vector3 c1 = T1.scanner2voxel * im1_centre_of_mass;
-          Eigen::Vector3 c2 = T2.scanner2voxel * im2_centre_of_mass;
+          Eigen::Vector3d c1 = T1.scanner2voxel * im1_centre_of_mass;
+          Eigen::Vector3d c2 = T2.scanner2voxel * im2_centre_of_mass;
           VEC(c1)
           VEC(c2)
           im1_moments.index(0) = std::round(c1[0]);
@@ -405,9 +405,9 @@ namespace MR
         void MomentsInitialiser::run () {
           if (!calculate_eigenvectors(im1, im2, mask1, mask2)) {
             WARN ("Image moments not successful. Using centre of mass instead.");
-            Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
+            Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
             transform.set_centre (centre);
-            Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
+            Eigen::Vector3d translation = im1_centre_of_mass - im2_centre_of_mass;
             transform.set_translation (translation);
             return;
           }
@@ -466,8 +466,8 @@ namespace MR
           assert(abs(A.determinant() - 1.0) < 0.0001);
           A = A.transpose().eval(); // A * im2_evec = im1_evec
 
-          Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
-          Eigen::Vector3 offset = im1_centre_of_mass - im2_centre_of_mass;
+          Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
+          Eigen::Vector3d offset = im1_centre_of_mass - im2_centre_of_mass;
           transform.set_centre_without_transform_update (centre);
 
           Eigen::Translation<default_type, 3> T_offset (offset), T_c2 (im2_centre_of_mass);
@@ -530,8 +530,8 @@ namespace MR
           Eigen::Matrix<default_type, 3, 1>& centre_of_mass) {
           // centre of mass is calculated using only the zeroth order
           // TODO multithread
-          Eigen::Vector3  voxel_pos = Eigen::Vector3::Zero();
-          Eigen::Vector3  scanner = Eigen::Vector3::Zero();
+          Eigen::Vector3d  voxel_pos = Eigen::Vector3d::Zero();
+          Eigen::Vector3d  scanner = Eigen::Vector3d::Zero();
           MR::Transform im_transform (im);
           default_type im_mass (0.0);
 

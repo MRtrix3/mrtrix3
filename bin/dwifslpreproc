@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,11 +17,20 @@
 
 # Script for performing DWI pre-processing using FSL 5.0 (onwards) tools eddy / topup / applytopup
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding
+
 
 
 import itertools, json, math, os, shutil, sys
-from distutils.spawn import find_executable
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
 
+
+STRIDES_OPTION_FSL_COMPAT_3D = ' -strides -1,+2,+3'
+STRIDES_OPTION_FSL_COMPAT_4D = ' -strides -1,+2,+3,+4'
 
 
 def usage(cmdline): #pylint: disable=unused-variable
@@ -31,7 +40,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_description('This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.')
   cmdline.add_description('The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; (eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide')
   cmdline.add_description('The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.')
-  cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to eddy is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
+  cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to topup is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
   cmdline.add_example_usage('A basic DWI acquisition, where all image volumes are acquired in a single protocol with fixed phase encoding',
                             'dwifslpreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55',
                             'Due to use of a single fixed phase encoding, no EPI distortion correction can be applied in this case.')
@@ -112,7 +121,11 @@ def execute(): #pylint: disable=unused-variable
   if not fsl_path:
     raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  if not pe_design == 'None':
+  if pe_design == 'None':
+    topup_config_path = None
+    topup_cmd = None
+    applytopup_cmd = None
+  else:
     topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
     if not os.path.isfile(topup_config_path):
       raise MRtrixError('Could not find necessary default config file for FSL topup command (expected location: ' + topup_config_path + ')')
@@ -141,7 +154,7 @@ def execute(): #pylint: disable=unused-variable
   if eddyqc_path:
     if os.path.exists(eddyqc_path):
       if os.path.isdir(eddyqc_path):
-        if any([ os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files ]):
+        if any(os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files):
           if app.FORCE_OVERWRITE:
             app.warn('Output eddy QC directory already contains relevant files; these will be overwritten on completion')
           else:
@@ -212,6 +225,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Deal with slice timing information for eddy slice-to-volume correction
+  slice_encoding_axis = 2
   eddy_mporder = any(s.startswith('--mporder') for s in eddy_manual_options)
   if eddy_mporder:
     if 'SliceEncodingDirection' in dwi_header.keyval():
@@ -223,6 +237,7 @@ def execute(): #pylint: disable=unused-variable
     else:
       app.console('No slice encoding direction information present; assuming third axis corresponds to slices')
       slice_encoding_direction = [0,0,1]
+    slice_encoding_axis = [ index for index, value in enumerate(slice_encoding_direction) if value ][0]
     slice_groups = [ ]
     slice_timing = [ ]
     # Since there's a chance that we may need to pad this info, we can't just copy this file
@@ -267,11 +282,11 @@ def execute(): #pylint: disable=unused-variable
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'unexpected data format')
       if isinstance(slice_timing[0], list):
-        if not all( [ len(entry) == 1 for entry in slice_timing ] ):
+        if not all(len(entry) == 1 for entry in slice_timing):
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'data do not appear to be 1D')
         slice_timing = [ entry[0] for entry in slice_timing ]
-      if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
+      if not all(isinstance(entry, float) for entry in slice_timing):
         try:
           slice_timing = [ float(entry) for entry in slice_timing ]
         except ValueError:
@@ -319,6 +334,9 @@ def execute(): #pylint: disable=unused-variable
 
   # Utilise the b-value clustering algorithm in src/dwi/shells.*
   shell_indices = [ [ int(i) for i in entry.split(',') ] for entry in image.mrinfo('dwi.mif', 'shell_indices').split(' ') ]
+  shell_bvalues = [ float(f) for f in image.mrinfo('dwi.mif', 'shell_bvalues').split(' ')]
+  bzero_threshold = float(CONFIG.get('BZeroThreshold', 10.0))
+
   # For each volume index, store the index of the shell to which it is attributed
   #   (this will make it much faster to determine whether or not two volumes belong to the same shell)
   vol2shell = [ -1 ] * dwi_num_volumes
@@ -329,9 +347,12 @@ def execute(): #pylint: disable=unused-variable
 
 
   def grads_match(one, two):
-    # Are the two volumes assigned to the same b-value shell?
+    # Are the two volumes assigned to different b-value shells?
     if vol2shell[one] != vol2shell[two]:
       return False
+    # Does this shell correspond to b=0?
+    if shell_bvalues[vol2shell[one]] <= bzero_threshold:
+      return True
     # Dot product between gradient directions
     # First, need to check for zero-norm vectors:
     # - If both are zero, skip this check
@@ -375,6 +396,8 @@ def execute(): #pylint: disable=unused-variable
       line.append(trt)
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
       app.debug('Manual DWI PE scheme for \'Pair\' PE design: ' + str(dwi_manual_pe_scheme))
+      if len(se_epi_header.size()) != 4:
+        raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must be a 4D image')
       se_epi_num_volumes = se_epi_header.size()[3]
       if se_epi_num_volumes%2:
         raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
@@ -463,7 +486,7 @@ def execute(): #pylint: disable=unused-variable
         overwrite_dwi_pe_scheme = True
     if manual_trt:
       # Compare manual specification to that read from the header
-      if not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
+      if len(dwi_pe_scheme[0]) == 4 and app.ARGS.readout_time is not None and not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
         app.warn('User-defined total readout time does not match what is stored in DWI image header; proceeding with user specification')
         overwrite_dwi_pe_scheme = True
     if overwrite_dwi_pe_scheme:
@@ -483,7 +506,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
   import_dwi_pe_table_option = ''
   if dwi_manual_pe_scheme:
-    phaseencoding.save('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
+    phaseencoding.save_table('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
     import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 
@@ -491,7 +514,6 @@ def execute(): #pylint: disable=unused-variable
   # This needs to occur at the outermost loop as it is pertinent information
   #   not only for the -align_seepi option, but also for when the -se_epi option
   #   is not provided at all, and the input to topup is extracted solely from the DWIs
-  bzero_threshold = float(CONFIG['BZeroThreshold']) if 'BZeroThreshold' in CONFIG else 10.0
   dwi_first_bzero_index = 0
   for line in grad:
     if line[3] <= bzero_threshold:
@@ -501,7 +523,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Deal with the phase-encoding of the images to be fed to topup (if applicable)
-  do_topup = (not pe_design == 'None')
+  do_topup = pe_design != 'None'
   overwrite_se_epi_pe_scheme = False
   se_epi_path = 'se_epi.mif'
   dwi_permvols_preeddy_option = ''
@@ -537,7 +559,7 @@ def execute(): #pylint: disable=unused-variable
             app.warn('User-defined phase-encoding direction design does not match what is stored in SE EPI image header; proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
         if manual_trt:
-          if not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
+          if len(se_epi_pe_scheme[0]) == 4 and not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
             app.warn('User-defined total readout time does not match what is stored in SE EPI image header; proceeding with user specification')
             overwrite_se_epi_pe_scheme = True
         if overwrite_se_epi_pe_scheme:
@@ -575,7 +597,7 @@ def execute(): #pylint: disable=unused-variable
           app.console('No phase-encoding contrast present in SE-EPI images; will examine again after combining with DWI b=0 images')
           new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_dwibzeros.mif'
           # Don't worry about trying to produce a balanced scheme here
-          run.command('dwiextract dwi.mif - -bzero | mrcat - se_epi.mif ' + new_se_epi_path + ' -axis 3')
+          run.command('dwiextract dwi.mif - -bzero | mrcat - ' + se_epi_path + ' ' + new_se_epi_path + ' -axis 3')
           se_epi_header = image.Header(new_se_epi_path)
           se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
           if se_epi_pe_scheme_has_contrast:
@@ -722,7 +744,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required when setting up the topup call
   se_epi_manual_pe_table_option = ''
   if se_epi_manual_pe_scheme:
-    phaseencoding.save('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
+    phaseencoding.save_table('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
     se_epi_manual_pe_table_option = ' -import_pe_table se_epi_manual_pe_scheme.txt'
 
 
@@ -732,6 +754,7 @@ def execute(): #pylint: disable=unused-variable
 
   eddy_in_topup_option = ''
   dwi_post_eddy_crop_option = ''
+  slice_padded = False
   dwi_path = 'dwi.mif'
   if do_topup:
 
@@ -758,32 +781,34 @@ def execute(): #pylint: disable=unused-variable
           app.cleanup(se_epi_path)
           se_epi_path = new_se_epi_path
           new_dwi_path = os.path.splitext(dwi_path)[0] + '_pad' + str(axis) + '.mif'
-          run.command('mrconvert ' + dwi_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' - | mrcat ' + dwi_path + ' - ' + new_dwi_path + ' -axis ' + str(axis))
+          run.command('mrconvert ' + dwi_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' -clear dw_scheme - | mrcat ' + dwi_path + ' - ' + new_dwi_path + ' -axis ' + str(axis))
           app.cleanup(dwi_path)
           dwi_path = new_dwi_path
           dwi_post_eddy_crop_option += ' -coord ' + str(axis) + ' 0:' + str(axis_size-1)
-          # If we are padding the slice axis, and performing slice-to-volume correction,
-          #   then we need to perform the corresponding padding to the slice timing
-          if eddy_mporder and slice_encoding_direction[axis]:
+          if axis == slice_encoding_axis:
+            slice_padded = True
             dwi_num_slices += 1
-            # At this point in the script, this information may be encoded either within
-            #   the slice timing vector (as imported from the image header), or as
-            #   slice groups (i.e. in the format expected by eddy). How these data are
-            #   stored affects how the padding is performed.
-            if slice_timing:
-              slice_timing.append(slice_timing[-1])
-            elif slice_groups:
-              # Can't edit in place when looping through the list
-              new_slice_groups = [ ]
-              for group in slice_groups:
-                if axis_size-1 in group:
-                  group.append(axis_size)
-                new_slice_groups.append(group)
-              slice_groups = new_slice_groups
+            # If we are padding the slice axis, and performing slice-to-volume correction,
+            #   then we need to perform the corresponding padding to the slice timing
+            if eddy_mporder:
+              # At this point in the script, this information may be encoded either within
+              #   the slice timing vector (as imported from the image header), or as
+              #   slice groups (i.e. in the format expected by eddy). How these data are
+              #   stored affects how the padding is performed.
+              if slice_timing:
+                slice_timing.append(slice_timing[-1])
+              elif slice_groups:
+                # Can't edit in place when looping through the list
+                new_slice_groups = [ ]
+                for group in slice_groups:
+                  if axis_size-1 in group:
+                    group.append(axis_size)
+                  new_slice_groups.append(group)
+                slice_groups = new_slice_groups
 
 
     # Do the conversion in preparation for topup
-    run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + se_epi_manual_pe_table_option + ' -strides -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+    run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + se_epi_manual_pe_table_option + STRIDES_OPTION_FSL_COMPAT_4D + ' -export_pe_topup topup_datain.txt')
     app.cleanup(se_epi_path)
 
     # Run topup
@@ -791,8 +816,8 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.topup_options:
       topup_manual_options = ' ' + app.ARGS.topup_options.strip()
     topup_output = run.command(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path + ' --verbose' + topup_manual_options)
-    with open('topup_output.txt', 'w') as topup_output_file:
-      topup_output_file.write(topup_output.stdout + '\n' + topup_output.stderr)
+    with open('topup_output.txt', 'wb') as topup_output_file:
+      topup_output_file.write((topup_output.stdout + '\n' + topup_output.stderr + '\n').encode('utf-8', errors='replace'))
     if app.VERBOSITY > 1:
       app.console('Output of topup command:')
       sys.stderr.write(topup_output.stdout + '\n' + topup_output.stderr + '\n')
@@ -800,11 +825,17 @@ def execute(): #pylint: disable=unused-variable
     # Apply the warp field to the input image series to get an initial corrected volume estimate
     # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
     #   details may vary between volumes
-    if dwi_manual_pe_scheme:
-      run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + ' - | mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
-    else:
-      run.command('mrinfo ' + dwi_path + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+    run.command('mrconvert ' + dwi_path + ' applytopup_in.nii'
+                + import_dwi_pe_table_option
+                + STRIDES_OPTION_FSL_COMPAT_4D
+                + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt'
+                + ' -export_grad_fsl applytopup_in.bvec applytopup_in.bval'
+                + ' -json_export applytopup_in.json')
 
+    applytopup_config = matrix.load_matrix('applytopup_config.txt')
+    if any(row[2] for row in applytopup_config):
+      app.warn('Phase encoding on third spatial axis detected in input to applytopup; '
+               'applytopup may ignore this, leading to imperfect eddy brain mask')
 
     # Update: Call applytopup separately for each unique phase-encoding
     # This should be the most compatible option with more complex phase-encoding acquisition designs,
@@ -813,28 +844,49 @@ def execute(): #pylint: disable=unused-variable
     applytopup_image_list = [ ]
     index = 1
     applytopup_config = matrix.load_matrix('applytopup_config.txt')
-    for line in applytopup_config:
-      prefix = os.path.splitext(dwi_path)[0] + '_pe_' + str(index)
+    applytopup_indices = matrix.load_vector('applytopup_indices.txt', dtype=int)
+    applytopup_volumegroups = [ [ index for index, value in enumerate(applytopup_indices) if value == group ] for group in range(1, len(applytopup_config)+1) ]
+    app.debug('applytopup_config: ' + str(applytopup_config))
+    app.debug('applytopup_indices: ' + str(applytopup_indices))
+    app.debug('applytopup_volumegroups: ' + str(applytopup_volumegroups))
+    for index, group in enumerate(applytopup_volumegroups):
+      prefix = 'applytopup_in_pe' + str(index+1)
       input_path = prefix + '.nii'
       json_path = prefix + '.json'
+      bvec_path = prefix + '.bvec'
+      bval_path = prefix + '.bval'
       temp_path = prefix + '_applytopup.nii'
       output_path = prefix + '_applytopup.mif'
-      run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(str(value) for value in line) + ' - | mrconvert - ' + input_path + ' -strides -1,+2,+3,+4 -json_export ' + json_path)
-      run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
+      run.command('mrconvert applytopup_in.nii ' + input_path
+                  + ' -json_import applytopup_in.json'
+                  + ' -fslgrad applytopup_in.bvec applytopup_in.bval'
+                  + ' -coord 3 ' + ','.join(str(value) for value in group)
+                  + STRIDES_OPTION_FSL_COMPAT_4D
+                  + ' -json_export ' + json_path
+                  + ' -export_grad_fsl ' + bvec_path + ' ' + bval_path)
+      run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index+1) + ' --topup=field --out=' + temp_path + ' --method=jac')
       app.cleanup(input_path)
       temp_path = fsl.find_image(temp_path)
-      run.command('mrconvert ' + temp_path + ' ' + output_path + ' -json_import ' + json_path)
+      run.command('mrconvert ' + temp_path + ' ' + output_path
+                  + ' -json_import ' + json_path
+                  + ' -fslgrad ' + bvec_path + ' ' + bval_path)
       app.cleanup(json_path)
       app.cleanup(temp_path)
+      app.cleanup(bvec_path)
+      app.cleanup(bval_path)
       applytopup_image_list.append(output_path)
       index += 1
+    app.cleanup('applytopup_in.nii')
+    app.cleanup('applytopup_in.json')
+    app.cleanup('applytopup_in.bvec')
+    app.cleanup('applytopup_in.bval')
 
     # Use the initial corrected volumes to derive a brain mask for eddy
     if not app.ARGS.eddy_mask:
       if len(applytopup_image_list) == 1:
-        run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+        run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32' + STRIDES_OPTION_FSL_COMPAT_3D)
       else:
-        run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+        run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32' + STRIDES_OPTION_FSL_COMPAT_3D)
 
     app.cleanup(applytopup_image_list)
 
@@ -844,7 +896,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Generate a processing mask for eddy based on the uncorrected input DWIs
     if not app.ARGS.eddy_mask:
-      run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+      run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32' + STRIDES_OPTION_FSL_COMPAT_3D)
 
 
   # Use user supplied mask for eddy instead of one derived from the images using dwi2mask
@@ -895,7 +947,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Prepare input data for eddy
-  run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permvols_preeddy_option + ' eddy_in.nii -strides -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
+  run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permvols_preeddy_option + ' eddy_in.nii' + STRIDES_OPTION_FSL_COMPAT_4D + ' -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
   app.cleanup(dwi_path)
 
   # Run eddy
@@ -907,17 +959,51 @@ def execute(): #pylint: disable=unused-variable
     # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
     try:
       eddy_output = run.command(eddy_cuda_cmd + ' ' + eddy_all_options)
-    except run.MRtrixCmdError as exception:
+    except run.MRtrixCmdError as exception_cuda:
       if not eddy_openmp_cmd:
         raise
-      with open('eddy_cuda_failure_output.txt', 'w') as eddy_output_file:
-        eddy_output_file.write(exception.stdout + '\n' + exception.stderr + '\n')
+      with open('eddy_cuda_failure_output.txt', 'wb') as eddy_output_file:
+        eddy_output_file.write(str(exception_cuda).encode('utf-8', errors='replace'))
       app.console('CUDA version of \'eddy\' was not successful; attempting OpenMP version')
-      eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
+      try:
+        eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
+      except run.MRtrixCmdError as exception_openmp:
+        with open('eddy_openmp_failure_output.txt', 'wb') as eddy_output_file:
+          eddy_output_file.write(str(exception_openmp).encode('utf-8', errors='replace'))
+        # Both have failed; want to combine error messages
+        eddy_cuda_header = ('=' * len(eddy_cuda_cmd)) \
+                           + '\n' \
+                           + eddy_cuda_cmd \
+                           + '\n' \
+                           + ('=' * len(eddy_cuda_cmd)) \
+                           + '\n'
+        eddy_openmp_header = ('=' * len(eddy_openmp_cmd)) \
+                             + '\n' \
+                             + eddy_openmp_cmd \
+                             + '\n' \
+                             + ('=' * len(eddy_openmp_cmd)) \
+                             + '\n'
+        exception_stdout = eddy_cuda_header \
+                           + exception_cuda.stdout \
+                           + '\n\n' \
+                           + eddy_openmp_header \
+                           + exception_openmp.stdout \
+                           + '\n\n'
+        exception_stderr = eddy_cuda_header \
+                           + exception_cuda.stderr \
+                           + '\n\n' \
+                           + eddy_openmp_header \
+                           + exception_openmp.stderr \
+                           + '\n\n'
+        raise run.MRtrixCmdError('eddy* ' + eddy_all_options,
+                                 1,
+                                 exception_stdout,
+                                 exception_stderr)
+
   else:
     eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
-  with open('eddy_output.txt', 'w') as eddy_output_file:
-    eddy_output_file.write(eddy_output.stdout + '\n' + eddy_output.stderr + '\n')
+  with open('eddy_output.txt', 'wb') as eddy_output_file:
+    eddy_output_file.write((eddy_output.stdout + '\n' + eddy_output.stderr + '\n').encode('utf-8', errors='replace'))
   if app.VERBOSITY > 1:
     app.console('Output of eddy command:')
     sys.stderr.write(eddy_output.stdout + '\n' + eddy_output.stderr + '\n')
@@ -935,36 +1021,89 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Run eddy qc tool QUAD if installed and one of -eddyqc_text or -eddyqc_all is specified
+  eddyqc_prefix = 'dwi_post_eddy'
   if eddyqc_path:
-    eddyqc_cmd = find_executable('eddy_quad')
-    if eddyqc_cmd:
-      # The eddy_quad script is not compatible with Python 2; try to explicitly invoke Python 3
-      if sys.version_info[0] == 2:
-        if find_executable('python3'):
-          eddyqc_cmd = 'python3 ' + eddyqc_cmd
-      else:
-        eddyqc_cmd = 'eddy_quad'
-      eddyqc_options = '-idx eddy_indices.txt -par eddy_config.txt -m eddy_mask.nii -b bvals'
-      if os.path.isfile('dwi_post_eddy.eddy_residuals'):
+    if find_executable('eddy_quad'):
+
+      eddyqc_mask = 'eddy_mask.nii'
+      eddyqc_fieldmap = fsl.find_image('field_map') if do_topup else None
+      eddyqc_slspec = 'slspec.txt' if eddy_mporder else None
+
+      # If there was any relevant padding applied, then we want to provide
+      #   the comprehensive set of files to EddyQC with that padding removed
+      if dwi_post_eddy_crop_option:
+        progress = app.ProgressBar('Removing image padding prior to running EddyQC', len(eddyqc_files) + 3)
+
+        for eddy_filename in eddyqc_files:
+          if os.path.isfile('dwi_post_eddy.' + eddy_filename):
+            if slice_padded and eddy_filename in [ 'eddy_outlier_map', 'eddy_outlier_n_sqr_stdev_map', 'eddy_outlier_n_stdev_map' ]:
+              with open('dwi_post_eddy.' + eddy_filename, 'r') as f_eddyfile:
+                eddy_data = f_eddyfile.readlines()
+              eddy_data_header = eddy_data[0]
+              eddy_data = eddy_data[1:]
+              for line in eddy_data:
+                line = ' '.join(line.strip().split(' ')[:-1])
+              with open('dwi_post_eddy_unpad.' + eddy_filename, 'w') as f_eddyfile:
+                f_eddyfile.write(eddy_data_header + '\n')
+                f_eddyfile.write('\n'.join(eddy_data) + '\n')
+            elif eddy_filename.endswith('.nii.gz'):
+              run.command('mrconvert dwi_post_eddy.' + eddy_filename + ' dwi_post_eddy_unpad.' + eddy_filename + dwi_post_eddy_crop_option)
+            else:
+              run.function(os.symlink, 'dwi_post_eddy.' + eddy_filename, 'dwi_post_eddy_unpad.' + eddy_filename)
+            app.cleanup('dwi_post_eddy.' + eddy_filename)
+          progress.increment()
+
+        if eddy_mporder and slice_padded:
+          app.debug('Current slice groups: ' + str(slice_groups))
+          app.debug('Slice encoding direction: ' + str(slice_encoding_direction))
+          # Remove padded slice from slice_groups, write new slspec
+          if sum(slice_encoding_direction) < 0:
+            slice_groups = [ [ index-1 for index in group if index ] for group in slice_groups ]
+          else:
+            slice_groups = [ [ index for index in group if index != dwi_num_slices-1 ] for group in slice_groups ]
+          eddyqc_slspec = 'slspec_unpad.txt'
+          app.debug('Slice groups after removal: ' + str(slice_groups))
+          try:
+            # After this removal, slspec should now be a square matrix
+            assert all(len(group) == len(slice_groups[0]) for group in slice_groups[1:])
+            matrix.save_matrix(eddyqc_slspec, slice_groups, add_to_command_history=False, fmt='%d')
+          except AssertionError:
+            matrix.save_numeric(eddyqc_slspec, slice_groups, add_to_command_history=False, fmt='%d')
+            raise
+
+        run.command('mrconvert eddy_mask.nii eddy_mask_unpad.nii' + dwi_post_eddy_crop_option)
+        eddyqc_mask = 'eddy_mask_unpad.nii'
+        progress.increment()
+        run.command('mrconvert ' + fsl.find_image('field_map') + ' field_map_unpad.nii' + dwi_post_eddy_crop_option)
+        eddyqc_fieldmap = 'field_map_unpad.nii'
+        progress.increment()
+        run.command('mrconvert ' + eddy_output_image_path + ' dwi_post_eddy_unpad.nii.gz' + dwi_post_eddy_crop_option)
+        eddyqc_prefix = 'dwi_post_eddy_unpad'
+        progress.done()
+
+      eddyqc_options = ' -idx eddy_indices.txt -par eddy_config.txt -b bvals -m ' + eddyqc_mask
+      if os.path.isfile(eddyqc_prefix + '.eddy_residuals.nii.gz'):
         eddyqc_options += ' -g ' + bvecs_path
       if do_topup:
-        eddyqc_options += ' -f ' + fsl.find_image('field_fieldcoef')
+        eddyqc_options += ' -f ' + eddyqc_fieldmap
       if eddy_mporder:
-        eddyqc_options += ' -s slspec.txt'
+        eddyqc_options += ' -s ' + eddyqc_slspec
       if app.VERBOSITY > 2:
         eddyqc_options += ' -v'
       try:
-        run.command(eddyqc_cmd + ' dwi_post_eddy ' + eddyqc_options)
+        run.command('eddy_quad ' + eddyqc_prefix + eddyqc_options)
       except run.MRtrixCmdError as exception:
-        app.warn('Error running automated eddy qc tool QUAD; data will not be provided')
+        with open('eddy_quad_failure_output.txt', 'wb') as eddy_quad_output_file:
+          eddy_quad_output_file.write(str(exception).encode('utf-8', errors='replace'))
         app.debug(str(exception))
+        app.warn('Error running automated EddyQC tool \'eddy_quad\'; QC data written to "' + eddyqc_path + '" will be files from "eddy" only')
         # Delete the directory if the script only made it partway through
         try:
-          shutil.rmtree('dwi_post_eddy.qc')
+          shutil.rmtree(eddyqc_prefix + '.qc')
         except OSError:
           pass
     else:
-      app.console('Command \'eddy_quad\' not found in PATH; not running automated eddy qc tool QUAD')
+      app.console('Command \'eddy_quad\' not found in PATH; skipping')
 
 
   # Have to retain these images until after eddyQC is run
@@ -977,7 +1116,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Get the axis strides from the input series, so the output image can be modified to match
-  stride_option = ' -strides ' + ','.join([str(i) for i in dwi_header.strides()])
+  stride_restore_option = ' -strides ' + ','.join([str(i) for i in dwi_header.strides()])
 
 
   # Determine whether or not volume recombination should be performed
@@ -1009,7 +1148,7 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup(fsl.find_image('field_map'))
 
     # Convert the resulting volume to the output image, and re-insert the diffusion encoding
-    run.command('mrconvert ' + eddy_output_image_path + ' result.mif' + dwi_permvols_posteddy_option + dwi_post_eddy_crop_option + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
+    run.command('mrconvert ' + eddy_output_image_path + ' result.mif' + dwi_permvols_posteddy_option + dwi_post_eddy_crop_option + stride_restore_option + ' -fslgrad ' + bvecs_path + ' bvals')
     app.cleanup(eddy_output_image_path)
 
   else:
@@ -1026,31 +1165,51 @@ def execute(): #pylint: disable=unused-variable
     bvecs = matrix.load_matrix(bvecs_path)
     bvecs_combined_transpose = [ ]
     bvals_combined = [ ]
+    nans_present_bvecs = 0
 
     for pair in volume_pairs:
       bvec_mean = [ 0.5*(bvecs[0][pair[0]] + bvecs[0][pair[1]]),
                     0.5*(bvecs[1][pair[0]] + bvecs[1][pair[1]]),
                     0.5*(bvecs[2][pair[0]] + bvecs[2][pair[1]]) ]
-      norm2 = matrix.dot(bvec_mean, bvec_mean)
-
-      # If one diffusion sensitisation gradient direction is reversed with respect to
-      #   the other, still want to enable their recombination; but need to explicitly
-      #   account for this when averaging the two directions
-      if norm2 < 0.5:
-        bvec_mean = [ 0.5*(bvecs[0][pair[0]] - bvecs[0][pair[1]]),
-                      0.5*(bvecs[1][pair[0]] - bvecs[1][pair[1]]),
-                      0.5*(bvecs[2][pair[0]] - bvecs[2][pair[1]]) ]
+      if any(math.isnan(value) for value in bvec_mean):
+        nans_present_bvecs += 1
+        new_bvec = [0.0, 0.0, 0.0]
+        new_bval = 0.0
+      else:
         norm2 = matrix.dot(bvec_mean, bvec_mean)
 
-      # Occasionally a b=0 volume can have a zero vector
-      if norm2:
-        factor = 1.0 / math.sqrt(norm2)
-        new_vec = [ bvec_mean[0]*factor, bvec_mean[1]*factor, bvec_mean[2]*factor ]
-      else:
-        new_vec = [ 0.0, 0.0, 0.0 ]
-      bvecs_combined_transpose.append(new_vec)
-      bvals_combined.append(0.5 * (grad[pair[0]][3] + grad[pair[1]][3]))
+        # If one diffusion sensitisation gradient direction is reversed with respect to
+        #   the other, still want to enable their recombination; but need to explicitly
+        #   account for this when averaging the two directions
+        if norm2 < 0.5:
+          bvec_mean = [ 0.5*(bvecs[0][pair[0]] - bvecs[0][pair[1]]),
+                        0.5*(bvecs[1][pair[0]] - bvecs[1][pair[1]]),
+                        0.5*(bvecs[2][pair[0]] - bvecs[2][pair[1]]) ]
+          norm2 = matrix.dot(bvec_mean, bvec_mean)
 
+        # Occasionally a b=0 volume can have a zero vector
+        if norm2:
+          factor = 1.0 / math.sqrt(norm2)
+          new_bvec = [ bvec_mean[0]*factor, bvec_mean[1]*factor, bvec_mean[2]*factor ]
+        else:
+          new_bvec = [ 0.0, 0.0, 0.0 ]
+
+        new_bval = 0.5 * (grad[pair[0]][3] + grad[pair[1]][3])
+      # End check for NaN values in bvec
+
+      bvecs_combined_transpose.append(new_bvec)
+      bvals_combined.append(new_bval)
+
+    if nans_present_bvecs:
+      app.warn('FSL "eddy"\'s rotated bvecs contained '
+               + (str(nans_present_bvecs) + ' entries with NaN values; '
+                      'these have been read as zero-length vectors, '
+                      'and will be saved as b=0 volumes'
+                  if nans_present_bvecs > 1
+                  else 'an entry with NaN values; '
+                      'this has been read as a zero-length vector, '
+                      'and will be saved as a b=0 volume')
+               + ' in the output series')
     bvecs_combined = matrix.transpose(bvecs_combined_transpose)
     matrix.save_matrix('bvecs_combined', bvecs_combined, add_to_command_history=False)
     matrix.save_vector('bvals_combined', bvals_combined, add_to_command_history=False)
@@ -1152,7 +1311,7 @@ def execute(): #pylint: disable=unused-variable
                        'mrconvert', '-', 'result.mif', '-fslgrad', 'bvecs_combined', 'bvals_combined']
     if dwi_post_eddy_crop_option:
       combine_command.extend(dwi_post_eddy_crop_option.strip().split(' '))
-    combine_command.extend(stride_option.strip().split(' '))
+    combine_command.extend(stride_restore_option.strip().split(' '))
     run.command(combine_command)
     app.cleanup(combined_image_list)
 
@@ -1164,16 +1323,23 @@ def execute(): #pylint: disable=unused-variable
     if not os.path.exists(eddyqc_path):
       run.function(os.makedirs, eddyqc_path)
     for filename in eddyqc_files:
-      if os.path.exists('dwi_post_eddy.' + filename):
-        run.function(shutil.copy, 'dwi_post_eddy.' + filename, os.path.join(eddyqc_path, filename))
+      if os.path.exists(eddyqc_prefix + '.' + filename):
+        # If this is an image, and axis padding was applied, want to undo the padding
+        if filename.endswith('.nii.gz') and dwi_post_eddy_crop_option:
+          run.command('mrconvert ' + eddyqc_prefix + '.' + filename + ' ' + path.quote(os.path.join(eddyqc_path, filename)) + dwi_post_eddy_crop_option)
+        else:
+          run.function(shutil.copy, eddyqc_prefix + '.' + filename, os.path.join(eddyqc_path, filename))
     # Also grab any files generated by the eddy qc tool QUAD
-    if os.path.isdir('dwi_post_eddy.qc'):
+    if os.path.isdir(eddyqc_prefix + '.qc'):
       if app.FORCE_OVERWRITE and os.path.exists(os.path.join(eddyqc_path, 'quad')):
-        run.function(shutil.rmtree(os.path.join(eddyqc_path, 'quad')))
-      run.function(shutil.copytree, 'dwi_post_eddy.qc', os.path.join(eddyqc_path, 'quad'))
+        run.function(shutil.rmtree, os.path.join(eddyqc_path, 'quad'))
+      run.function(shutil.copytree, eddyqc_prefix + '.qc', os.path.join(eddyqc_path, 'quad'))
     # Also grab the brain mask that was provided to eddy if -eddyqc_all was specified
     if app.ARGS.eddyqc_all:
-      run.function(shutil.copy, 'eddy_mask.nii', os.path.join(eddyqc_path, 'eddy_mask.nii'))
+      if dwi_post_eddy_crop_option:
+        run.command('mrconvert eddy_mask.nii ' + path.quote(os.path.join(eddyqc_path, 'eddy_mask.nii')) + dwi_post_eddy_crop_option)
+      else:
+        run.function(shutil.copy, 'eddy_mask.nii', os.path.join(eddyqc_path, 'eddy_mask.nii'))
       app.cleanup('eddy_mask.nii')
 
 

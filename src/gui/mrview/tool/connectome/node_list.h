@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,12 +52,12 @@ namespace MR
             QVariant headerData (int section, Qt::Orientation orientation, int role) const override;
 
             Qt::ItemFlags flags (const QModelIndex& index) const override {
-              if (!index.isValid()) return 0;
+              if (!index.isValid()) return {};
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
             QModelIndex parent (const QModelIndex&) const override {
-              return QModelIndex(); 
+              return {};
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const override;

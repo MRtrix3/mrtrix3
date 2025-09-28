@@ -28,7 +28,7 @@ by the following citation:
     processing and visualisation. NeuroImage, 202 (2019), pp. 116–37.
 
 
-.. TIP:: 
+.. TIP::
 
   Make sure to use the version of this documentation that matches your version
   of this software. You can select the version on the lower left of this page.
@@ -73,10 +73,10 @@ which will be invisible to the end-user. Specifically, *MRtrix3* features:
 -  a consistent :ref:`command-line interface <command-line-interface>`, with
    inline documentation for each command;
 
--  universal import/export capabilities when 
+-  universal import/export capabilities when
    :ref:`accessing image data <image_handling>` across all *MRtrix3* applications;
 
--  :ref:`multi_file_image_file_formats` to load multiple images as a 
+-  :ref:`multi_file_image_file_formats` to load multiple images as a
    single multi-dimensional dataset;
 
 -  efficient use of :ref:`unix_pipelines` for complex workflows;
@@ -118,7 +118,7 @@ section. These lists provide links to the help page (manual) for each
 executable, which can also be accessed by typing the :code:`-help` option after
 the executable name on the terminal.
 
-.. TIP:: 
+.. TIP::
 
   Some proficiency with the Unix command-line is required to make the best use
   of this software. There are many resources online to help you get
@@ -147,6 +147,7 @@ Table of Contents
    installation/build_from_source
    installation/deployment
    installation/hpc_clusters_install
+   installation/using_containers
 
 .. toctree::
    :maxdepth: 1
@@ -178,6 +179,7 @@ Table of Contents
 
    fixel_based_analysis/st_fibre_density_cross-section
    fixel_based_analysis/mt_fibre_density_cross-section
+   fixel_based_analysis/fixel_directory_format
    fixel_based_analysis/mitigating_brain_cropping
    fixel_based_analysis/computing_effect_size_wrt_controls
    fixel_based_analysis/displaying_results_with_streamlines
@@ -205,6 +207,7 @@ Table of Contents
    concepts/sh_basis_lmax
    concepts/fixels_dixels
    concepts/afd_connectivity
+   concepts/mrview_lock_axes/mrview_lock_axes
 
 .. toctree::
    :maxdepth: 1

@@ -1,1 +1,2 @@
-mesh2voxel meshconvert/in.vtk meshconvert/image.mif.gz - | testing_diff_image - mesh2voxel/out.mif.gz -abs 1.5e-3
+mesh2voxel meshconvert/in_ascii.vtk meshconvert/image.mif.gz - | testing_diff_image - mesh2voxel/out.mif.gz -abs 1.5e-3
+mrcat meshconvert/image.mif.gz meshconvert/image.mif.gz -axis 3 - | mesh2voxel meshconvert/in_ascii.vtk - - | testing_diff_image - mesh2voxel/out.mif.gz -abs 1.5e-3

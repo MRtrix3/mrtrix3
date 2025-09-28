@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,7 +65,7 @@ namespace MR {
             if (statistic == ENDS_CORR) {
 
               for (; index >= 0 && index < ssize_t(tck.size()); index += step) {
-                const Eigen::Vector3 p = interp.scanner2voxel * tck[index].cast<default_type>();
+                const Eigen::Vector3d p = interp.scanner2voxel * tck[index].cast<default_type>();
                 const Eigen::Array3i v ( { int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])) } );
                 if (!is_out_of_bounds (backtrack_mask, v)) {
                   assign_pos_of (v, 0, 3).to (backtrack_mask);
@@ -152,7 +152,7 @@ namespace MR {
                 if (interp.scanner (tck[index])) {
                   for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
                     sh_coeffs[interp.index(3)] = interp.value();
-                  const Eigen::Vector3 dir = (tck[(index == ssize_t(tck.size()-1)) ? index : (index+1)] - tck[index ? (index-1) : 0]).cast<default_type>().normalized();
+                  const Eigen::Vector3d dir = (tck[(index == ssize_t(tck.size()-1)) ? index : (index+1)] - tck[index ? (index-1) : 0]).cast<default_type>().normalized();
                   factors.push_back (precomputer->value (sh_coeffs, dir));
                 } else {
                   factors.push_back (NaN);
@@ -170,7 +170,7 @@ namespace MR {
                 for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
                   sh_coeffs[interp.index(3)] = interp.value();
                 // Get the FOD amplitude along the streamline tangent
-                const Eigen::Vector3 dir = (tck[(i == tck.size()-1) ? i : (i+1)] - tck[i ? (i-1) : 0]).cast<default_type>().normalized();
+                const Eigen::Vector3d dir = (tck[(i == tck.size()-1) ? i : (i+1)] - tck[i ? (i-1) : 0]).cast<default_type>().normalized();
                 factors.push_back (precomputer->value (sh_coeffs, dir));
               } else {
                 factors.push_back (NaN);

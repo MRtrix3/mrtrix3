@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,18 +75,16 @@ namespace MR
         //! Set the extent of smoothing kernel in voxels.
         //! This can be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 4 standard deviations)
-        void set_extent (const vector<int>& new_extent)
+        void set_extent (const vector<uint32_t>& new_extent)
         {
           if (new_extent.size() != 1 && new_extent.size() != 3)
             throw Exception ("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
           for (size_t i = 0; i < new_extent.size(); ++i) {
-            if (!(new_extent[i] & int (1)))
+            if (!(new_extent[i] & uint32_t(1)))
               throw Exception ("expected odd number for extent");
-            if (new_extent[i] < 0)
-              throw Exception ("the kernel extent must be positive");
           }
           if (new_extent.size() == 1)
-            for (unsigned int i = 0; i < 3; i++)
+            for (size_t i = 0; i < 3; i++)
               extent[i] = new_extent[0];
           else
             extent = new_extent;
@@ -183,7 +181,7 @@ namespace MR
         }
 
       protected:
-        vector<int> extent;
+        vector<uint32_t> extent;
         vector<default_type> stdev;
         const vector<size_t> stride_order;
         bool zero_boundary;

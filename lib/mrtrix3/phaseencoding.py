@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
 
 # Functions relating to handling phase encoding information
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,consider-using-f-string
 
 
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
@@ -30,7 +32,7 @@ def direction(string): #pylint: disable=unused-variable
     pe_axis = abs(int(string))
     if pe_axis > 2:
       raise MRtrixError('When specified as a number, phase encode axis must be either 0, 1 or 2 (positive or negative)')
-    reverse = (string.contains('-')) # Allow -0
+    reverse = string.contains('-') # Allow -0
     pe_dir = [0,0,0]
     if reverse:
       pe_dir[pe_axis] = -1
@@ -93,7 +95,7 @@ def get_scheme(arg): #pylint: disable=unused-variable
 
 
 # Save a phase-encoding scheme to file
-def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
+def save_table(filename, scheme, **kwargs): #pylint: disable=unused-variable
   from mrtrix3 import matrix #pylint: disable=import-outside-toplevel
   add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
   header = kwargs.pop('header', { })

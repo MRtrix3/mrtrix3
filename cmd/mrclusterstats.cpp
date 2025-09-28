@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -320,7 +320,7 @@ void run() {
       write_output (stdev.row(0), *v2v, prefix + "std_dev.mif", output_header);
     } else {
       for (size_t i = 0; i != num_vgs; ++i) {
-        write_output (stdev.row(i), *v2v, prefix + "std_dev.mif", output_header);
+        write_output (stdev.row(i), *v2v, prefix + "std_dev" + str(i) + ".mif", output_header);
         ++progress;
       }
     }
@@ -368,7 +368,7 @@ void run() {
 
   if (!get_options ("notest").size()) {
 
-    const bool fwe_strong = get_option_value ("strong", false);
+    const bool fwe_strong = get_options ("strong").size();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }

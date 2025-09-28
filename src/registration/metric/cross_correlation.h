@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,7 +39,7 @@ namespace MR
                                      const Iterator& iter,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
-              // const Eigen::Vector3 pos = Eigen::Vector3 (iter.index(0), iter.index(1), iter.index(2));
+              // const Eigen::Vector3d pos = Eigen::Vector3d (iter.index(0), iter.index(1), iter.index(2));
 
               assert (params.processed_mask.valid());
               assert (params.processed_image.valid());

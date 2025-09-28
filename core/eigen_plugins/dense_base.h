@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@ template <class ImageType> \
 inline Derived& operator ARG (const MR::Helper::ConstRow<ImageType>& row) { \
   this->resize (row.image.size(row.axis),1); \
   for (row.image.index(row.axis) = 0; row.image.index (row.axis) < row.image.size (row.axis); ++row.image.index (row.axis)) \
-    this->operator() (row.image.index (row.axis), 0) ARG row.image.value(); \
+    this->operator() (ssize_t (row.image.index (row.axis)), 0) ARG row.image.value(); \
   return derived(); \
 }
 

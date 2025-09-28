@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,9 +35,17 @@ namespace MR
   namespace SignalHandler {
 
     namespace {
+      std::vector<cleanup_function_type> cleanup_operations;
+
       std::vector<std::string> marked_files;
       std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
+      void delete_temporary_files ()
+      {
+        for (const auto& i : marked_files)
+          std::remove (i.c_str());
+        marked_files.clear();
+      }
 
 
 
@@ -48,9 +56,8 @@ namespace MR
 
           // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
           // Don't use File::remove: may throw an exception
-          for (const auto& i : marked_files)
-            std::remove (i.c_str());
-
+          for (auto func : cleanup_operations)
+            func();
 
           const char* sig = nullptr;
           const char* msg = nullptr;
@@ -90,6 +97,8 @@ namespace MR
 
     void init()
     {
+      on_signal (delete_temporary_files);
+
       //ENVVAR name: MRTRIX_NOSIGNALS
       //ENVVAR If this variable is set to any value, disable MRtrix3's custom
       //ENVVAR signal handlers. This may sometimes be useful when debugging.
@@ -116,21 +125,27 @@ namespace MR
     }
 
 
+    void on_signal (cleanup_function_type func)
+    {
+      cleanup_operations.push_back (func);
+      std::atexit (func);
+    }
 
 
-    void mark_file_for_deletion (const std::string& s)
+
+    void mark_file_for_deletion (const std::string& filename)
     {
       while (!flag.test_and_set());
-      marked_files.push_back (s);
+      marked_files.push_back (filename);
       flag.clear();
     }
 
-    void unmark_file_for_deletion (const std::string& s)
+    void unmark_file_for_deletion (const std::string& filename)
     {
       while (!flag.test_and_set());
       auto i = marked_files.begin();
       while (i != marked_files.end()) {
-        if (*i == s)
+        if (*i == filename)
           i = marked_files.erase (i);
         else
           ++i;

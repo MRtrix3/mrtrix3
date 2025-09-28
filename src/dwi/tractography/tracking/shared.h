@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,6 +56,7 @@ namespace MR
             virtual ~SharedBase();
 
 
+            Header source_header;
             Image<float> source;
             Properties& properties;
             Eigen::Vector3f init_dir;
@@ -76,7 +77,7 @@ namespace MR
 
             float vox () const
             {
-              return std::pow (source.spacing(0)*source.spacing(1)*source.spacing(2), float (1.0/3.0));
+              return std::pow (source_header.spacing(0)*source_header.spacing(1)*source_header.spacing(2), float (1.0/3.0));
             }
 
             void set_step_and_angle (const float stepsize, const float angle, bool is_higher_order);

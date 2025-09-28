@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,12 @@
 
 #include "command.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
-#include "dwi/gradient.h"
-#include "algo/loop.h"
 #include "adapter/extract.h"
+#include "algo/loop.h"
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
+#include "metadata/phase_encoding.h"
 
 
 using namespace MR;
@@ -54,8 +55,8 @@ void usage ()
     + DWI::GradImportOptions()
     + DWI::ShellsOption
     + DWI::GradExportOptions()
-    + PhaseEncoding::ImportOptions
-    + PhaseEncoding::SelectOptions
+    + Metadata::PhaseEncoding::ImportOptions
+    + Metadata::PhaseEncoding::SelectOptions
     + Stride::Options;
 }
 
@@ -66,12 +67,14 @@ void usage ()
 
 void run()
 {
-  auto input_image = Image<float>::open (argument[0]);
-  auto grad = DWI::get_DW_scheme (input_image);
+  auto header_in = Header::open (argument[0]);
+  if (header_in.ndim() < 4)
+    throw Exception ("Epected input image to contain more than three dimensions");
+  auto grad = DWI::get_DW_scheme (header_in);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  vector<int> volumes;
+  vector<uint32_t> volumes;
   bool bzero = get_options ("bzero").size();
   if (get_options ("shells").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
@@ -94,19 +97,19 @@ void run()
   } else {
     // "pe" option has been provided - need to initialise list of volumes
     //   to include all voxels, as the PE selection filters from this
-    for (int i = 0; i != grad.rows(); ++i)
+    for (uint32_t i = 0; i != grad.rows(); ++i)
       volumes.push_back (i);
   }
 
   auto opt = get_options ("pe");
-  const auto pe_scheme = PhaseEncoding::get_scheme (input_image);
+  const auto pe_scheme = Metadata::PhaseEncoding::get_scheme (header_in);
   if (opt.size()) {
     if (!pe_scheme.rows())
       throw Exception ("Cannot filter volumes by phase-encoding: No such information present");
     const auto filter = parse_floats (opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
       throw Exception ("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
-    vector<int> new_volumes;
+    vector<uint32_t> new_volumes;
     for (const auto i : volumes) {
       bool keep = true;
       for (size_t axis = 0; axis != 3; ++axis) {
@@ -132,24 +135,25 @@ void run()
 
   std::sort (volumes.begin(), volumes.end());
 
-  Header header (input_image);
-  Stride::set_from_command_line (header);
-  header.size (3) = volumes.size();
+  Header header_out (header_in);
+  Stride::set_from_command_line (header_out);
+  header_out.size (3) = volumes.size();
 
   Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
     new_grad.row (i) = grad.row (volumes[i]);
-  DWI::set_DW_scheme (header, new_grad);
+  DWI::set_DW_scheme (header_out, new_grad);
 
   if (pe_scheme.rows()) {
     Eigen::MatrixXd new_scheme (volumes.size(), pe_scheme.cols());
     for (size_t i = 0; i != volumes.size(); ++i)
       new_scheme.row(i) = pe_scheme.row (volumes[i]);
-    PhaseEncoding::set_scheme (header, new_scheme);
+    Metadata::PhaseEncoding::set_scheme (header_out.keyval(), new_scheme);
   }
 
-  auto output_image = Image<float>::create (argument[1], header);
-  DWI::export_grad_commandline (header);
+  auto input_image = header_in.get_image<float>();
+  auto output_image = Image<float>::create (argument[1], header_out);
+  DWI::export_grad_commandline (header_out);
 
   auto input_volumes = Adapter::make<Adapter::Extract1D> (input_image, 3, volumes);
   threaded_copy_with_progress_message ("extracting volumes", input_volumes, output_image);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,40 +25,40 @@ namespace MR
 
       QVariant TreeModel::data (const QModelIndex& index, int role) const
       {
-        if (!index.isValid()) return QVariant();
-        if (role != Qt::DisplayRole) return QVariant();
+        if (!index.isValid()) return {};
+        if (role != Qt::DisplayRole) return {};
         return static_cast<TreeItem*> (index.internalPointer())->data (index.column());
       }
 
       Qt::ItemFlags TreeModel::flags (const QModelIndex& index) const
       {
-        if (!index.isValid()) return 0;
+        if (!index.isValid()) return {};
         return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
       }
 
       QVariant TreeModel::headerData (int section, Qt::Orientation orientation, int role) const
       {
         if (orientation == Qt::Horizontal && role == Qt::DisplayRole) return rootItem->data (section);
-        return QVariant();
+        return {};
       }
 
       QModelIndex TreeModel::index (int row, int column, const QModelIndex& parent) const
       {
-        if (!hasIndex (row, column, parent)) return QModelIndex();
+        if (!hasIndex (row, column, parent)) return {};
         TreeItem* parentItem;
         if (!parent.isValid()) parentItem = rootItem;
         else parentItem = static_cast<TreeItem*> (parent.internalPointer());
         TreeItem* childItem = parentItem->child (row);
         if (childItem) return createIndex (row, column, childItem);
-        else return QModelIndex();
+        else return {};
       }
 
       QModelIndex TreeModel::parent (const QModelIndex& index) const
       {
-        if (!index.isValid()) return QModelIndex();
+        if (!index.isValid()) return {};
         TreeItem* childItem = static_cast<TreeItem*> (index.internalPointer());
         TreeItem* parentItem = childItem->parent();
-        if (parentItem == rootItem) return QModelIndex();
+        if (parentItem == rootItem) return {};
         return createIndex (parentItem->row(), 0, parentItem);
       }
 

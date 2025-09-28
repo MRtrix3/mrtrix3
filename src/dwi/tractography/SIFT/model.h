@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -113,7 +113,8 @@ namespace MR
                   mapper (i.header(), i.dirs),
                   mutex (new std::mutex),
                   TD_sum (0.0),
-                  fixel_TDs (master.fixels.size(), 0.0)
+                  fixel_TDs (master.fixels.size(), 0.0),
+                  fixel_counts (master.fixels.size(), 0)
               {
                 mapper.set_upsample_ratio (upsample_ratio);
                 mapper.set_use_precise_mapping (true);
@@ -123,7 +124,8 @@ namespace MR
                   mapper (that.mapper),
                   mutex (that.mutex),
                   TD_sum (0.0),
-                  fixel_TDs (master.fixels.size(), 0.0) { }
+                  fixel_TDs (master.fixels.size(), 0.0),
+                  fixel_counts (master.fixels.size(), 0) { }
               ~TrackMappingWorker();
               bool operator() (const Tractography::Streamline<>&);
             private:
@@ -132,6 +134,7 @@ namespace MR
               std::shared_ptr<std::mutex> mutex;
               double TD_sum;
               vector<double> fixel_TDs;
+              vector<track_t> fixel_counts;
           };
 
           class FixelRemapper
@@ -316,8 +319,26 @@ namespace MR
 
 
 
+      namespace {
+        // Split multi-threaded increment here based on whether or not the Fixel
+        //   template class does or does not possess member add_TD (const double, const track_t)
+        template <typename... Ts>
+        using void_t = void;
 
+        template <typename T, typename = void>
+        struct has_add_TD_function : std::false_type { NOMEMALIGN };
+        template <typename T>
+        struct has_add_TD_function<T, decltype (std::declval<T>().add_TD(0.0, 0))> : std::true_type { NOMEMALIGN };
 
+        template <typename FixelType>
+        typename std::enable_if<has_add_TD_function<FixelType>::value, void>::type increment (FixelType& fixel, const double length, const track_t count) {
+          fixel.add_TD (length, count);
+        }
+        template <typename FixelType>
+        typename std::enable_if<!has_add_TD_function<FixelType>::value, void>::type increment (FixelType& fixel, const double length, const track_t count) {
+          fixel += length;
+        }
+      }
 
       template <class Fixel>
       Model<Fixel>::TrackMappingWorker::~TrackMappingWorker()
@@ -325,7 +346,7 @@ namespace MR
         std::lock_guard<std::mutex> lock (*mutex);
         master.TD_sum += TD_sum;
         for (size_t i = 0; i != fixel_TDs.size(); ++i)
-          master.fixels[i] += fixel_TDs[i];
+          increment (master.fixels[i], fixel_TDs[i], fixel_counts[i]);
       }
 
 
@@ -362,8 +383,10 @@ namespace MR
           master.contributions[in.get_index()] = new TrackContribution (masked_contributions, total_contribution, total_length);
 
           TD_sum += total_contribution;
-          for (vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
+          for (vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i) {
             fixel_TDs [i->get_fixel_index()] += i->get_length();
+            ++fixel_counts [i->get_fixel_index()];
+          }
 
           return true;
 

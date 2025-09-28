@@ -35,7 +35,7 @@ Required dependencies:
    due to `deprecation of Python2 <https://www.python.org/doc/sunset-python-2/>`__);
 -  The `zlib <http://www.zlib.net/>`__ compression library;
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 (>= 3.3 recommended);
--  `Qt <http://www.qt.io/>`__ version >= 4.7 (>= 5.0 recommended) *[GUI components only]*;
+-  `Qt <http://www.qt.io/>`__ version >= 5.5 (but *not* Qt 6) *[GUI components only]*;
 
 and optionally:
 
@@ -113,7 +113,7 @@ packages:
 
 -  the Eigen template library (only consists of development header/include files);
 
--  Qt version >= 4.7 (>= 5.0 is recommended), its corresponding development
+-  Qt version >= 5.5, its corresponding development
    header/include files, and the executables required to compile the code.
    Note that this can be broken up into several packages, depending on how your
    distribution has chosen to distribute this. You will need to get
@@ -210,8 +210,6 @@ macOS
          `<http://download.qt.io/official_releases/qt/>`__
 
          You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
-         Note that you need to use at least Qt 5.1, since earlier versions
-         don't support OpenGL 3.3, though we advise you to use the latest version.
          You can choose to install it system-wide or just in your home folder,
          whichever suits; just remember where you installed it.
 

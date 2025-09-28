@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -170,13 +170,11 @@ void run ()
         properties.prior_rois.insert (i);
     }
 
-    size_t this_count = 0, this_total_count = 0;
+    size_t this_count = 0;
 
     for (const auto& i : p) {
       if (i.first == "count") {
         this_count = to<float> (i.second);
-      } else if (i.first == "total_count") {
-        this_total_count += to<float> (i.second);
       } else {
         auto existing = properties.find (i.first);
         if (existing == properties.end())
@@ -191,6 +189,11 @@ void run ()
   }
 
   DEBUG ("estimated number of input tracks: " + str(count));
+
+  // Remove keyval "total_count", as there is ambiguity about what _should_ be
+  //   contained in that field upon editing one or more existing tractograms
+  //   (it has a specific interpretation in the context of streamline generation only)
+  erase_if_present (properties, "total_count");
 
   load_rois (properties);
   properties.compare_stepsize_rois();

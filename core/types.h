@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -320,11 +320,6 @@ namespace std
     return stream;
   }
 
-}
-
-namespace Eigen {
-  using Vector3 = Matrix<MR::default_type, 3, 1>;
-  using Vector4 = Matrix<MR::default_type, 4, 1>;
 }
 
 #endif

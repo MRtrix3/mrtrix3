@@ -33,7 +33,7 @@ value pair. For example
 
 ::
 
-    Analyse.LeftToRight: false
+    AnalyseLeftToRight: false
     NumberOfThreads: 2
 
 .. NOTE::

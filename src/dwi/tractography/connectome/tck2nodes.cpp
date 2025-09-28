@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,8 +31,8 @@ namespace Connectome {
 
 node_t Tck2nodes_end_voxels::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
 {
-  const Eigen::Vector3 p ((end ? tck.back() : tck.front()).cast<default_type>());
-  const Eigen::Vector3 v_float (transform->scanner2voxel * p);
+  const Eigen::Vector3d p ((end ? tck.back() : tck.front()).cast<default_type>());
+  const Eigen::Vector3d v_float (transform->scanner2voxel * p);
   for (size_t axis = 0; axis != 3; ++axis)
     v.index(axis) = std::round (v_float[axis]);
   if (is_out_of_bounds (v))
@@ -72,14 +72,14 @@ node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, Ima
   default_type min_dist = max_dist;
   node_t node = 0;
 
-  const Eigen::Vector3 p = (end ? tck.back() : tck.front()).cast<default_type>();
-  const Eigen::Vector3 v_float = transform->scanner2voxel * p;
+  const Eigen::Vector3d p = (end ? tck.back() : tck.front()).cast<default_type>();
+  const Eigen::Vector3d v_float = transform->scanner2voxel * p;
   const voxel_type centre { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
 
   for (vector<voxel_type>::const_iterator offset = radial_search.begin(); offset != radial_search.end(); ++offset) {
 
     const voxel_type this_voxel (centre + *offset);
-    const Eigen::Vector3 p_voxel (transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
+    const Eigen::Vector3d p_voxel (transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
     const default_type dist ((p - p_voxel).norm());
 
     if (dist > min_dist + 2*max_add_dist)
@@ -112,7 +112,7 @@ node_t Tck2nodes_revsearch::select_node (const Tractography::Streamline<>& tck, 
   default_type dist = 0.0;
 
   for (int index = start_index; index != midpoint_index; index += step) {
-    const Eigen::Vector3 v_float = transform->scanner2voxel * tck[index].cast<default_type>();
+    const Eigen::Vector3d v_float = transform->scanner2voxel * tck[index].cast<default_type>();
     const voxel_type voxel { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
     assign_pos_of (voxel).to (v);
     if (!is_out_of_bounds (v)) {
@@ -137,15 +137,15 @@ node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& t
   // Start by defining the endpoint and the tangent at the endpoint
   const int index = end ? (tck.size() - 1) : 0;
   const int step  = end ? -1 : 1;
-  const Eigen::Vector3 p = tck[index].cast<default_type>();
-  Eigen::Vector3 t;
+  const Eigen::Vector3d p = tck[index].cast<default_type>();
+  Eigen::Vector3d t;
 
   // Heuristic for determining the tangent at the streamline endpoint
   if (tck.size() > 2) {
-    const Eigen::Vector3 second_last_step = (tck[index+step] - tck[index+2*step]).cast<default_type>();
-    const Eigen::Vector3 last_step = (tck[index] - tck[index+step]).cast<default_type>();
+    const Eigen::Vector3d second_last_step = (tck[index+step] - tck[index+2*step]).cast<default_type>();
+    const Eigen::Vector3d last_step = (tck[index] - tck[index+step]).cast<default_type>();
     const default_type length_ratio = last_step.norm() / second_last_step.norm();
-    const Eigen::Vector3 curvature (last_step - (second_last_step * length_ratio));
+    const Eigen::Vector3d curvature (last_step - (second_last_step * length_ratio));
     t = last_step + curvature;
   } else {
     t = (tck[index] - tck[index+step]).cast<default_type>();
@@ -159,7 +159,7 @@ node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& t
 
   // Voxel containing streamline endpoint not guaranteed to be appropriate
   // Should it be tested anyway? Probably
-  const Eigen::Vector3 vp (transform->scanner2voxel * p);
+  const Eigen::Vector3d vp (transform->scanner2voxel * p);
   const voxel_type voxel { int(std::round (vp[0])), int(std::round (vp[1])), int(std::round (vp[2])) };
   if (is_out_of_bounds (v, voxel))
     return 0;
@@ -203,11 +203,11 @@ node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& t
 
 
 
-default_type Tck2nodes_forwardsearch::get_cf (const Eigen::Vector3& p, const Eigen::Vector3& t, const voxel_type& v) const
+default_type Tck2nodes_forwardsearch::get_cf (const Eigen::Vector3d& p, const Eigen::Vector3d& t, const voxel_type& v) const
 {
-  const Eigen::Vector3 vfloat { default_type(v[0]), default_type(v[1]), default_type(v[2]) };
-  const Eigen::Vector3 vp (transform->voxel2scanner * vfloat);
-  Eigen::Vector3 offset (vp - p);
+  const Eigen::Vector3d vfloat { default_type(v[0]), default_type(v[1]), default_type(v[2]) };
+  const Eigen::Vector3d vp (transform->voxel2scanner * vfloat);
+  Eigen::Vector3d offset (vp - p);
   const default_type dist = offset.norm();
   offset.normalize();
   const default_type angle = std::acos (t.dot (offset));
@@ -234,7 +234,7 @@ void Tck2nodes_all_voxels::select_nodes (const Streamline<>& tck, Image<node_t>&
 {
   std::set<node_t> result;
   for (Streamline<>::const_iterator p = tck.begin(); p != tck.end(); ++p) {
-    const Eigen::Vector3 v_float = transform->scanner2voxel * p->cast<default_type>();
+    const Eigen::Vector3d v_float = transform->scanner2voxel * p->cast<default_type>();
     const voxel_type voxel (int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])));
     assign_pos_of (voxel).to (v);
     if (!is_out_of_bounds (v)) {

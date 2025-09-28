@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #include "gui/mrview/mode/lightbox.h"
+
+#include "types.h"
 
 namespace MR
 {
@@ -259,7 +261,7 @@ namespace MR
             gl::EnableVertexAttribArray (0);
             gl::VertexAttribPointer (0, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-            GLfloat data[num_points];
+            VLA(data, GLfloat, num_points);
 
             // Grid line stride
             float x_inc = 2.f / n_cols;

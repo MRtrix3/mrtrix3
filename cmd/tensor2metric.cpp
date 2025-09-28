@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -116,7 +116,7 @@ class Processor { MEMALIGN(Processor)
         Image<value_type>& cs_img,
         Image<value_type>& value_img,
         Image<value_type>& vector_img,
-        vector<int>& vals,
+        vector<uint32_t>& vals,
         int modulate) :
       mask_img (mask_img),
       adc_img (adc_img),
@@ -145,7 +145,7 @@ class Processor { MEMALIGN(Processor)
 
       /* input dt */
       Eigen::Matrix<double, 6, 1> dt;
-      for (auto l = Loop (3) (dt_img); l; ++l)
+      for (dt_img.index(3) = 0; dt_img.index(3) < 6; ++dt_img.index(3))
         dt[dt_img.index(3)] = dt_img.value();
 
       /* output adc */
@@ -260,7 +260,7 @@ class Processor { MEMALIGN(Processor)
     Image<value_type> cs_img;
     Image<value_type> value_img;
     Image<value_type> vector_img;
-    vector<int> vals;
+    vector<uint32_t> vals;
     int modulate;
 };
 
@@ -275,6 +275,9 @@ void run ()
 {
   auto dt_img = Image<value_type>::open (argument[0]);
   Header header (dt_img);
+  if (header.ndim() != 4 || header.size(3) !=6) {
+    throw Exception("input tensor image is not a valid tensor.");
+  }
 
   auto mask_img = Image<bool>();
   auto opt = get_options ("mask");
@@ -341,10 +344,10 @@ void run ()
     metric_count++;
   }
 
-  vector<int> vals = {1};
+  vector<uint32_t> vals = {1};
   opt = get_options ("num");
   if (opt.size()) {
-    vals = opt[0][0];
+    vals = parse_ints<uint32_t> (opt[0][0]);
     if (vals.empty())
       throw Exception ("invalid eigenvalue/eigenvector number specifier");
     for (size_t i = 0; i < vals.size(); ++i)

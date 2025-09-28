@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -82,7 +82,7 @@ void usage ()
 
 
 
-Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3& dir)
+Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3d& dir)
 {
   static Math::RNG::Normal<default_type> rng;
   // Generates a matrix that will rotate a unit vector into a new frame of reference,
@@ -91,11 +91,11 @@ Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3& dir
   // Here the other two axes are determined at random (but both are orthogonal to the FOD peak direction)
   Eigen::Matrix<default_type, 3, 3> R;
   R (2, 0) = dir[0]; R (2, 1) = dir[1]; R (2, 2) = dir[2];
-  Eigen::Vector3 vec2 (rng(), rng(), rng());
+  Eigen::Vector3d vec2 (rng(), rng(), rng());
   vec2 = dir.cross (vec2);
   vec2.normalize();
   R (0, 0) = vec2[0]; R (0, 1) = vec2[1]; R (0, 2) = vec2[2];
-  Eigen::Vector3 vec3 = dir.cross (vec2);
+  Eigen::Vector3d vec3 = dir.cross (vec2);
   vec3.normalize();
   R (1, 0) = vec3[0]; R (1, 1) = vec3[1]; R (1, 2) = vec3[2];
   return R;
@@ -155,7 +155,7 @@ class Accumulator { MEMALIGN(Accumulator)
         ++count;
 
         // Grab the fibre direction
-        Eigen::Vector3 fibre_dir;
+        Eigen::Vector3d fibre_dir;
         for (dir_image.index(3) = 0; dir_image.index(3) != 3; ++dir_image.index(3))
           fibre_dir[dir_image.index(3)] = dir_image.value();
         fibre_dir.normalize();
@@ -244,20 +244,18 @@ void run ()
     }
   }
 
-  vector<int> lmax;
-  int max_lmax = 0;
+  vector<uint32_t> lmax;
+  uint32_t max_lmax = 0;
   opt = get_options ("lmax");
   if (get_options("isotropic").size()) {
     for (size_t i = 0; i != dirs_azel.size(); ++i)
       lmax.push_back (0);
     max_lmax = 0;
   } else if (opt.size()) {
-    lmax = parse_ints (opt[0][0]);
+    lmax = parse_ints<uint32_t> (opt[0][0]);
     if (lmax.size() != dirs_azel.size())
       throw Exception ("Number of lmax\'s specified (" + str(lmax.size()) + ") does not match number of b-value shells (" + str(dirs_azel.size()) + ")");
     for (auto i : lmax) {
-      if (i < 0)
-        throw Exception ("Values specified for lmax must be non-negative");
       if (i%2)
         throw Exception ("Values specified for lmax must be even");
       max_lmax = std::max (max_lmax, i);

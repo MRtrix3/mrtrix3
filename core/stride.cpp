@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -91,7 +91,7 @@ namespace MR
       catch (Exception& E) {
         E.display (3);
         try {
-          auto tmp = parse_ints (opt[0][0]);
+          auto tmp = parse_ints<int> (opt[0][0]);
           for (auto x : tmp)
             strides.push_back (x);
         }

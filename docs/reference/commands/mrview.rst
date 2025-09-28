@@ -46,7 +46,7 @@ View options
 
 -  **-focus x,y,z or boolean** *(multiple uses permitted)* Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values or show or hide the focus cross hair using a boolean value as argument.
 
--  **-target x,y,z** Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
+-  **-target x,y,z** *(multiple uses permitted)* Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
 
 -  **-voxel x,y,z** *(multiple uses permitted)* Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
 
@@ -146,11 +146,15 @@ Tractography tool options
 
 -  **-tractography.lighting value** *(multiple uses permitted)* Toggle the use of lighting of tractogram geometry
 
+-  **-tractography.colour R,G,B** *(multiple uses permitted)* Specify a manual colour for the tractogram, as three comma-separated values
+
 -  **-tractography.tsf_load tsf** *(multiple uses permitted)* Load the specified tractography scalar file.
 
 -  **-tractography.tsf_range RangeMin,RangeMax** *(multiple uses permitted)* Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
--  **-tractography.tsf_thresh ThresholdMin,ThesholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
+-  **-tractography.tsf_thresh ThresholdMin,ThresholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
+
+-  **-tractography.tsf_colourmap index** *(multiple uses permitted)* Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.
 
 ODF tool options
 ^^^^^^^^^^^^^^^^
@@ -214,7 +218,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com), Dave Raffelt (david.raffelt@florey.edu.au), Robert E. Smith (robert.smith@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk), Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

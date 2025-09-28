@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,14 +63,14 @@ void usage ()
 
 transform_type get_flirt_transform (const Header& header) {
   vector<size_t> axes;
-  transform_type nifti_transform = File::NIfTI::adjust_transform (header, axes);
-  if (nifti_transform.matrix().topLeftCorner<3,3>().determinant() < 0.0)
-    return nifti_transform;
+  transform_type ondisk_transform = header.realignment().orig_transform();
+  if (ondisk_transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
+    return ondisk_transform;
   transform_type coord_switch;
   coord_switch.setIdentity();
   coord_switch(0,0) = -1.0f;
-  coord_switch(0,3) = (header.size(axes[0])-1) * header.spacing(axes[0]);
-  return nifti_transform * coord_switch;
+  coord_switch(0, 3) = default_type(header.size(header.realignment().permutation(0)) - 1) * header.spacing(header.realignment().permutation(0));
+  return ondisk_transform * coord_switch;
 }
 
 // transform_type parse_surfer_transform (const Header& header) {

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,16 +15,24 @@
 
 # Collection of convenience functions for manipulating filesystem paths
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,redundant-u-string-prefix,consider-using-f-string
+
 
 
 import ctypes, errno, inspect, os, random, string, subprocess, time
-from distutils.spawn import find_executable
 # Function can be used in isolation if potentially needing to place quotation marks around a
 #   filesystem path that is to be included as part of a command string
 try:
   from shlex import quote
 except ImportError:
-  from pipes import quote
+  from pipes import quote #pylint: disable=deprecated-module
+# Distutils removed in 3.12, but shutil.which not available in 2.7
+try:
+  from shutil import which as find_executable
+except ImportError:
+  from distutils.spawn import find_executable # pylint: disable=deprecated-module
+
 from mrtrix3 import CONFIG
 from mrtrix3.utils import STRING_TYPES
 
@@ -97,7 +105,8 @@ def make_temporary(suffix): #pylint: disable=unused-variable
       if is_directory:
         os.makedirs(temp_path)
       else:
-        open(temp_path, 'a').close()
+        with open(temp_path, 'a'):
+          pass
       app.debug(temp_path)
       return temp_path
     except OSError as exception:
@@ -208,7 +217,7 @@ def wait_for(paths): #pylint: disable=unused-variable
     # A fatal error will result in a non-zero code -> in_use() = False, so wait_for() can return
     return not subprocess.call(['fuser', '-s', path], shell=False, stdin=None, stdout=None, stderr=None)
 
-  def num_exit(data):
+  def num_exist(data):
     count = 0
     for entry in data:
       if os.path.exists(entry):
@@ -240,21 +249,25 @@ def wait_for(paths): #pylint: disable=unused-variable
   app.debug(str(paths))
 
   # Wait until all files exist
-  num_exist = num_exit(paths)
-  if num_exist != len(paths):
-    progress = app.ProgressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new items')), len(paths))
-    for _ in range(num_exist):
+  current_num_exist = num_exist(paths)
+  if current_num_exist != len(paths):
+    progress = app.ProgressBar('Waiting for creation of ' \
+                               + (('new item \"' + paths[0] + '\"') \
+                                  if len(paths) == 1 \
+                                  else (str(len(paths)) + ' new items')),
+                               len(paths))
+    for _ in range(current_num_exist):
       progress.increment()
     delay = 1.0/1024.0
-    while not num_exist == len(paths):
+    while not current_num_exist == len(paths):
       time.sleep(delay)
-      new_num_exist = num_exit(paths)
-      if new_num_exist == num_exist:
-        delay = max(60.0, delay*2.0)
-      elif new_num_exist > num_exist:
-        for _ in range(new_num_exist - num_exist):
+      new_num_exist = num_exist(paths)
+      if new_num_exist == current_num_exist:
+        delay = min(60.0, delay*2.0)
+      elif new_num_exist > current_num_exist:
+        for _ in range(new_num_exist - current_num_exist):
           progress.increment()
-        num_exist = new_num_exist
+        current_num_exist = new_num_exist
         delay = 1.0/1024.0
     progress.done()
   else:
@@ -271,28 +284,31 @@ def wait_for(paths): #pylint: disable=unused-variable
     return
 
   # Can we query the in-use status of any of these paths
-  num_in_use = num_in_use(paths)
-  if num_in_use is None:
+  current_num_in_use = num_in_use(paths)
+  if current_num_in_use is None:
     app.debug('Unable to test for finalization of new files')
     return
 
   # Wait until all files are not in use
-  if not num_in_use:
+  if not current_num_in_use:
     app.debug('Item' + ('s' if len(paths) > 1 else '') + ' immediately ready')
     return
 
-  progress = app.ProgressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new files')))
-  for _ in range(len(paths) - num_in_use):
+  progress = app.ProgressBar('Waiting for finalization of '
+                             + (('new file \"' + paths[0] + '\"') \
+                                if len(paths) == 1 \
+                                else (str(len(paths)) + ' new files')))
+  for _ in range(len(paths) - current_num_in_use):
     progress.increment()
   delay = 1.0/1024.0
-  while num_in_use:
+  while current_num_in_use:
     time.sleep(delay)
     new_num_in_use = num_in_use(paths)
-    if new_num_in_use == num_in_use:
-      delay = max(60.0, delay*2.0)
-    elif new_num_in_use < num_in_use:
-      for _ in range(num_in_use - new_num_in_use):
+    if new_num_in_use == current_num_in_use:
+      delay = min(60.0, delay*2.0)
+    elif new_num_in_use < current_num_in_use:
+      for _ in range(current_num_in_use - new_num_in_use):
         progress.increment()
-      num_in_use = new_num_in_use
+      current_num_in_use = new_num_in_use
       delay = 1.0/1024.0
   progress.done()

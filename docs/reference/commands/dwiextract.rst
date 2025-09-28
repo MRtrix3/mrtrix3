@@ -61,6 +61,8 @@ Options for importing phase-encode tables
 
 -  **-import_pe_table file** import a phase-encoding table from file
 
+-  **-import_pe_topup file** import a phase-encoding table intended for FSL TOPUP from file
+
 -  **-import_pe_eddy config indices** import phase-encoding information from an EDDY-style config / index file pair
 
 Options for selecting volumes based on phase-encoding
@@ -103,7 +105,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

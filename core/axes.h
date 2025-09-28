@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,8 @@
 #define __axes_h__
 
 
-#include <string>
+#include <array>
+#include <set>
 
 #include "types.h"
 
@@ -31,19 +32,31 @@ namespace MR
 
 
 
-    //! convert axis directions between formats
-    /*! these helper functions convert the definition of
-       *  phase-encoding direction between a 3-vector (e.g.
-       *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
-       */
-    std::string    dir2id (const Eigen::Vector3&);
-    Eigen::Vector3 id2dir (const std::string&);
-
-
+    using permutations_type = std::array<ssize_t, 3>;
+    using flips_type = std::array<bool, 3>;
+    class Shuffle { NOMEMALIGN
+    public:
+      Shuffle() : permutations ({-1, -1, -1}), flips ({false, false, false}) {}
+      bool is_identity() const {
+        return (permutations[0] == 0 && permutations[1] == 1 && permutations[2] == 2 && //
+                !flips[0] && !flips[1] && !flips[2]);
+      }
+      bool is_set() const {
+        return permutations != permutations_type{-1, -1, -1};
+      }
+      bool valid() const {
+        return std::set<ssize_t>(permutations.begin(), permutations.end()) == std::set<ssize_t>({0, 1, 2});
+      }
+      permutations_type permutations;
+      flips_type flips;
+    };
 
     //! determine the axis permutations and flips necessary to make an image
     //!   appear approximately axial
-    void get_permutation_to_make_axial (const transform_type& T, std::array<size_t, 3>& perm, std::array<bool, 3>& flip);
+    Shuffle get_shuffle_to_make_RAS(const transform_type &T);
+
+    //! determine which vectors of a 3x3 transform are closest to the three axis indices
+    permutations_type closest(const Eigen::Matrix3d &M);
 
 
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,10 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,consider-using-f-string
+
 import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
-import mrtrix3
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
 from ._version import __version__
@@ -43,7 +45,7 @@ EXEC_NAME = os.path.basename(sys.argv[0])
 FORCE_OVERWRITE = False #pylint: disable=unused-variable
 NUM_THREADS = None #pylint: disable=unused-variable
 SCRATCH_DIR = ''
-VERBOSITY = 0 if 'MRTRIX_QUIET' in mrtrix3.CONFIG else 1
+VERBOSITY = 0 if 'MRTRIX_QUIET' in os.environ else int(os.environ.get('MRTRIX_LOGLEVEL', '1'))
 WORKING_DIR = os.getcwd()
 
 
@@ -56,13 +58,14 @@ CMDLINE = None
 
 
 
-_DEFAULT_COPYRIGHT = '''Copyright (c) 2008-2019 the MRtrix3 contributors.
+_DEFAULT_COPYRIGHT = \
+'''Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Covered Software is provided under this License on an \"as is\"
+Covered Software is provided under this License on an "as is"
 basis, without warranty of any kind, either expressed, implied, or
 statutory, including, without limitation, warranties that the
 Covered Software is free of defects, merchantable, fit for a
@@ -108,7 +111,7 @@ else:
 # , rather than executing this function directly
 def _execute(module): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
-  global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
+  global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY
 
   # Set up signal handlers
   for sig in _SIGNALS:
@@ -186,7 +189,7 @@ def _execute(module): #pylint: disable=unused-variable
       pass
     run.shared.set_continue(ARGS.cont[1])
 
-  run.shared.verbosity = VERBOSITY
+  run.shared.set_verbosity(VERBOSITY)
   run.shared.set_num_threads(NUM_THREADS)
 
   CMDLINE.print_citation_warning()
@@ -268,7 +271,6 @@ def _execute(module): #pylint: disable=unused-variable
 
 
 def check_output_path(item): #pylint: disable=unused-variable
-  global ARGS, FORCE_OVERWRITE, WORKING_DIR
   if not item:
     return
   abspath = os.path.abspath(os.path.join(WORKING_DIR, item))
@@ -287,12 +289,11 @@ def check_output_path(item): #pylint: disable=unused-variable
 
 def make_scratch_dir(): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
-  global ARGS, CONTINUE_OPTION, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
+  global SCRATCH_DIR
   if CONTINUE_OPTION:
     debug('Skipping scratch directory creation due to use of -continue option')
     return
-  if SCRATCH_DIR:
-    raise Exception('Cannot use multiple scratch directories')
+  assert not SCRATCH_DIR, 'Cannot use multiple scratch directories'
   if hasattr(ARGS, 'scratch') and ARGS.scratch:
     dir_path = os.path.abspath(ARGS.scratch)
   else:
@@ -309,7 +310,8 @@ def make_scratch_dir(): #pylint: disable=unused-variable
     outfile.write(WORKING_DIR + '\n')
   with open(os.path.join(SCRATCH_DIR, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
-  open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w').close()
+  with open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w'):
+    pass
   # Also use this scratch directory for any piped images within run.command() calls,
   #   and for keeping a log of executed commands / functions
   run.shared.set_scratch_dir(SCRATCH_DIR)
@@ -317,9 +319,7 @@ def make_scratch_dir(): #pylint: disable=unused-variable
 
 
 def goto_scratch_dir(): #pylint: disable=unused-variable
-  global SCRATCH_DIR
-  if not SCRATCH_DIR:
-    raise Exception('No scratch directory location set')
+  assert SCRATCH_DIR, 'No scratch directory location set'
   if VERBOSITY:
     console('Changing to scratch directory (' + SCRATCH_DIR + ')')
   os.chdir(SCRATCH_DIR)
@@ -331,7 +331,6 @@ def goto_scratch_dir(): #pylint: disable=unused-variable
 #   all intermediates, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
 def cleanup(items): #pylint: disable=unused-variable
-  global DO_CLEANUP, VERBOSITY
   if not DO_CLEANUP:
     return
   if isinstance(items, list):
@@ -376,12 +375,10 @@ def cleanup(items): #pylint: disable=unused-variable
 
 # A set of functions and variables for printing various information at the command-line.
 def console(text): #pylint: disable=unused-variable
-  global VERBOSITY
   if VERBOSITY:
     sys.stderr.write(EXEC_NAME + ': ' + ANSI.console + text + ANSI.clear + '\n')
 
 def debug(text): #pylint: disable=unused-variable
-  global EXEC_NAME, VERBOSITY
   if VERBOSITY <= 2:
     return
   outer_frames = inspect.getouterframes(inspect.currentframe())
@@ -446,7 +443,6 @@ def var(*variables): #pylint: disable=unused-variable
     del calling_frame
 
 def warn(text): #pylint: disable=unused-variable
-  global EXEC_NAME
   sys.stderr.write(EXEC_NAME + ': ' + ANSI.warn + '[WARNING] ' + text + ANSI.clear + '\n')
 
 
@@ -468,7 +464,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
 
   def __init__(self, msg, target=0):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
-    global EXEC_NAME, VERBOSITY
+    global VERBOSITY
     if not (isinstance(msg, utils.STRING_TYPES) or callable(msg)):
       raise TypeError('app.ProgressBar must be constructed using either a string or a function')
     self.counter = 0
@@ -485,6 +481,8 @@ class ProgressBar(object): #pylint: disable=unused-variable
     self.wrapoff = '' if self.newline else ProgressBar.WRAPOFF
     self.wrapon = '' if self.newline else ProgressBar.WRAPON
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
+    if not self.orig_verbosity:
+      return
     if self.isatty:
       sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
@@ -516,12 +514,15 @@ class ProgressBar(object): #pylint: disable=unused-variable
 
   def done(self, msg=None):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
-    global EXEC_NAME, VERBOSITY
+    global VERBOSITY
     self.iscomplete = True
     if msg is not None:
       self.message = msg
     if self.multiplier:
       self.value = 100
+    VERBOSITY = run.shared.verbosity = self.orig_verbosity
+    if not self.orig_verbosity:
+      return
     if self.isatty:
       sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('100%' if self.multiplier else 'done') + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + ANSI.clear + ANSI.lineclear + '\n')
     else:
@@ -530,11 +531,12 @@ class ProgressBar(object): #pylint: disable=unused-variable
       else:
         sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)) + ']\n')
     sys.stderr.flush()
-    VERBOSITY = run.shared.verbosity = self.orig_verbosity
+
 
   def _update(self):
-    global EXEC_NAME
     assert not self.iscomplete
+    if not self.orig_verbosity:
+      return
     if self.isatty:
       sys.stderr.write(self.wrapoff + '\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
@@ -563,7 +565,6 @@ class Parser(argparse.ArgumentParser):
 
   # pylint: disable=protected-access
   def __init__(self, *args_in, **kwargs_in):
-    global _DEFAULT_COPYRIGHT
     self._author = None
     self._citation_list = [ ]
     self._copyright = _DEFAULT_COPYRIGHT
@@ -593,10 +594,10 @@ class Parser(argparse.ArgumentParser):
       script_options.add_argument('-nocleanup', action='store_true', help='do not delete intermediate files during script execution, and do not delete scratch directory at script completion.')
       script_options.add_argument('-scratch', metavar='/path/to/scratch/', help='manually specify the path in which to generate the scratch directory.')
       script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<ScratchDir>', '<LastFile>'), help='continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.')
-    module_file = inspect.getsourcefile(inspect.stack()[-1][0])
+    module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
-      process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE) #pylint: disable=consider-using-with
       self._git_version = process.communicate()[0]
       self._git_version = str(self._git_version.decode(errors='ignore')).strip() if process.returncode == 0 else 'unknown'
     except OSError:
@@ -629,15 +630,13 @@ class Parser(argparse.ArgumentParser):
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flag_mutually_exclusive_options(self, options, required=False): #pylint: disable=unused-variable
-    if not isinstance(options, list) or not isinstance(options[0], utils.STRING_TYPES):
-      raise Exception('Parser.flagMutuallyExclusiveOptions() only accepts a list of strings')
+    assert isinstance(options, list) and isinstance(options[0], utils.STRING_TYPES), \
+        'Parser.flagMutuallyExclusiveOptions() only accepts a list of strings'
     self._mutually_exclusive_option_groups.append( (options, required) )
 
   def parse_args(self):
-    if not self._author:
-      raise Exception('Script author MUST be set in script\'s usage() function')
-    if not self._synopsis:
-      raise Exception('Script synopsis MUST be set in script\'s usage() function')
+    assert self._author, 'Script author MUST be set in script\'s usage() function'
+    assert self._synopsis, 'Script synopsis MUST be set in script\'s usage() function'
     if '-version' in sys.argv:
       self.print_version()
       sys.exit(0)
@@ -651,7 +650,6 @@ class Parser(argparse.ArgumentParser):
   def print_citation_warning(self):
     # If a subparser has been invoked, the subparser's function should instead be called,
     #   since it might have had additional citations appended
-    global ARGS
     if self._subparsers:
       subparser = getattr(ARGS, self._subparsers._group_actions[0].dest)
       for alg in self._subparsers._group_actions[0].choices:
@@ -668,7 +666,7 @@ class Parser(argparse.ArgumentParser):
       console('')
 
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
-  def error(self, text):
+  def error(self, message):
     for entry in sys.argv:
       if '-help'.startswith(entry):
         self.print_help()
@@ -682,7 +680,7 @@ class Parser(argparse.ArgumentParser):
         if alg == sys.argv[1]:
           usage = self._subparsers._group_actions[0].choices[alg].format_usage()
           continue
-    sys.stderr.write('\nError: %s\n' % text)
+    sys.stderr.write('\nError: %s\n' % message)
     sys.stderr.write('Usage: ' + usage + '\n')
     sys.stderr.write('       (Run ' + self.prog + ' -help for more information)\n\n')
     sys.stderr.flush()
@@ -753,13 +751,15 @@ class Parser(argparse.ArgumentParser):
     text += '\n'
     text += bold('USAGE') + '\n'
     text += '\n'
-    usage = self.prog + ' [ options ]'
+    usage = self.prog + ' '
     # Compulsory subparser algorithm selection (if present)
     if self._subparsers:
-      usage += ' ' + self._subparsers._group_actions[0].dest + ' ...'
-    # Find compulsory input arguments
-    for arg in self._positionals._group_actions:
-      usage += ' ' + arg.dest
+      usage += self._subparsers._group_actions[0].dest + ' [ options ] ...'
+    else:
+      usage += '[ options ]'
+      # Find compulsory input arguments
+      for arg in self._positionals._group_actions:
+        usage += ' ' + arg.dest
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
@@ -811,7 +811,7 @@ class Parser(argparse.ArgumentParser):
         elif option.nargs:
           if isinstance(option.nargs, int):
             group_text += (' ' + option.dest.upper())*option.nargs
-          elif option.nargs == '+' or option.nargs == '*':
+          elif option.nargs in ('+', '*'):
             group_text += ' <space-separated list>'
           elif option.nargs == '?':
             group_text += ' <optional value>'
@@ -858,7 +858,7 @@ class Parser(argparse.ArgumentParser):
     command = CONFIG.get('HelpCommand', 'less -X')
     if command:
       try:
-        process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE)
+        process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE) #pylint: disable=consider-using-with
         process.communicate(text.encode())
       except:
         sys.stdout.write(text)
@@ -1083,7 +1083,7 @@ class Parser(argparse.ArgumentParser):
     sys.stdout.flush()
 
   def _get_ungrouped_options(self):
-    return next((group for group in self._action_groups if group.title == 'optional arguments'), None)
+    return next((group for group in self._action_groups if group.title in ( 'options', 'optional arguments') ), None)
 
   def _is_option_group(self, group):
     # * Don't display empty groups
@@ -1094,7 +1094,7 @@ class Parser(argparse.ArgumentParser):
            not (len(group._group_actions) == 1 and \
            isinstance(group._group_actions[0], argparse._SubParsersAction)) and \
            not group == self._positionals and \
-           group.title != 'optional arguments'
+           group.title not in ( 'options', 'optional arguments' )
 
 
 
@@ -1107,7 +1107,6 @@ def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
   cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
 def read_dwgrad_import_options(): #pylint: disable=unused-variable
   from mrtrix3 import path #pylint: disable=import-outside-toplevel
-  global ARGS
   assert ARGS
   if ARGS.grad:
     return ' -grad ' + path.from_user(ARGS.grad)
@@ -1122,7 +1121,6 @@ def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
   cmdline.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
 def read_dwgrad_export_options(): #pylint: disable=unused-variable
   from mrtrix3 import path #pylint: disable=import-outside-toplevel
-  global ARGS
   assert ARGS
   if ARGS.export_grad_mrtrix:
     check_output_path(path.from_user(ARGS.export_grad_mrtrix, False))
@@ -1141,7 +1139,7 @@ def read_dwgrad_export_options(): #pylint: disable=unused-variable
 # Handler function for dealing with system signals
 def handler(signum, _frame):
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
-  global _SIGNALS, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
+  global SCRATCH_DIR
   # Terminate any child processes in the run module
   try:
     run.shared.terminate(signum)
@@ -1164,9 +1162,12 @@ def handler(signum, _frame):
   if os.getcwd() != WORKING_DIR:
     os.chdir(WORKING_DIR)
   if SCRATCH_DIR:
-    try:
-      shutil.rmtree(SCRATCH_DIR)
-    except OSError:
-      pass
-    SCRATCH_DIR = ''
+    if DO_CLEANUP:
+      try:
+        shutil.rmtree(SCRATCH_DIR)
+      except OSError:
+        pass
+      SCRATCH_DIR = ''
+    else:
+      sys.stderr.write(EXEC_NAME + ': ' + ANSI.console + 'Scratch directory retained; location: ' + SCRATCH_DIR + ANSI.clear + '\n')
   os._exit(signum) # pylint: disable=protected-access

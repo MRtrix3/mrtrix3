@@ -1,4 +1,4 @@
-% Copyright (c) 2008-2019 the MRtrix3 contributors.
+% Copyright (c) 2008-2025 the MRtrix3 contributors.
 %
 % This Source Code Form is subject to the terms of the Mozilla Public
 % License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@
 
 function write_mrtrix_tsf (tsf, filename)
 
-% function: write_mrtrix_tsf (tracks, filename)
+% function: write_mrtrix_tsf (tsf, filename)
 %
 % writes the tsf data stored as a cell array in the 'data' field of the
 % tsf variable to the MRtrix format tsf 'filename'. All other fields
@@ -23,10 +23,10 @@ function write_mrtrix_tsf (tsf, filename)
 % expected to supplied as character arrays.
 
 assert(isfield(tsf, 'data'), ...
-  'input tracks variable does not contain required ''data'' field');
+  'input tsf variable does not contain required ''data'' field');
 
 assert(iscell(tsf.data), ...
-  'input tracks.data variable should be a cell array');
+  'input tsf.data variable should be a cell array');
 
 f = fopen (filename, 'w', 'ieee-le');
 assert(f ~= -1, 'error opening %s', filename);
@@ -38,7 +38,9 @@ for i=1:size(names)
   if strcmpi (names{i}, 'data'), continue; end
   if strcmpi (names{i}, 'count'), continue; end
   if strcmpi (names{i}, 'datatype'), continue; end
-  fprintf (f, '%s: %s\n', names{i}, getfield(tsf, names{i}));
+  if iscell  (tsf.(names{i}))
+      fprintf (f, '%s: %s\n', names{i}, strjoin(tsf.(names{i}), '\n'));
+  else fprintf (f, '%s: %s\n', names{i}, tsf.(names{i})); end
 end
 data_offset = ftell (f) + 20;
 data_offset=data_offset+mod((4-mod(data_offset,4)),4);
