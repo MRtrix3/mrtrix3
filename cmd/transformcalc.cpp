@@ -17,6 +17,7 @@
 #include <Eigen/Geometry>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <algorithm>
+#include "axes.h"
 #include "command.h"
 #include "math/math.h"
 #include "math/average_space.h"
@@ -67,9 +68,20 @@ void usage ()
              "")
 
   + Example ("Calculate the transformation matrix from an original image and an image with modified header",
-             "transformcalc original.mif modified.mif header output",
-             "This transformation can be used for instance: mrtransform original_too.mif -linear output modified_too.mif"
-             "")
+             "transformcalc original.mif modified.mif header output.txt",
+             "This transformation can be used for instance: mrtransform original_too.mif -linear output modified_too.mif. "
+             "The interpretation of the difference between two image header transforms, "
+             "and therefore the requisite transform to move between the two, "
+             "can be influenced by whether MRtrix is configured to automatically realign images "
+             "to approximately orient the three spatial axes sequentially along the Right-Anterior-Superior directions. "
+             "This behaviour is activate by default. "
+             "This however means that the result of this particular calculation "
+             "may not correspond with the header transforms as they are stored on the file system. "
+             "If the transform being sought is specifically the difference between two header transforms "
+             "as they are stored on the filesystem, "
+             "without the confound of MRtrix3 interpretation of such data, "
+             "then the transformcalc command can be run with option \"-config RealignTransform false\""
+             "to override the software default / any system or user configuration.")
 
   + Example ("Calculate the average affine matrix of a set of input matrices",
              "transformcalc input1.txt ... inputN.txt average matrix_out.txt",
@@ -203,26 +215,23 @@ void run ()
     case 3: { // header
       if (num_inputs != 2)
         throw Exception ("header requires 2 inputs");
-      // manual_realign: check if Header::do_realign_transform = false should potentially be set
-      const bool manual_realign = Header::do_realign_transform;
-      if (manual_realign) Header::do_realign_transform = false;
-      auto orig_header = Header::open (argument[0]);
-      auto modified_header = Header::open (argument[1]);
-      transform_type o_s2v = Transform(orig_header).scanner2voxel;
-      transform_type m_v2s = Transform(modified_header).voxel2scanner;
-      if (manual_realign) {
-        Header::do_realign_transform = true;
-        transform_type o_s2v_r = Transform(Header::open (argument[0])).scanner2voxel;
-        transform_type m_v2s_r = Transform(Header::open (argument[1])).voxel2scanner;
-        if (!o_s2v_r.matrix().isApprox(o_s2v.matrix()) || !m_v2s_r.matrix().isApprox(m_v2s.matrix())) {
-          WARN ("Automatic realignment of transform matrix into near-standard (RAS) coordinate system "
-            "and a large relative rotation between images might cause an image flip. Please verify the transformation and "
-             "rerun with '-config RealignTransform false' if needed.");
+      auto first_header = Header::open (argument[0]);
+      auto second_header = Header::open (argument[1]);
+      const transform_type transform = Transform(first_header).voxel2scanner * Transform(second_header).scanner2voxel;
+      if (Header::do_realign_transform) {
+        if (!first_header.realignment().is_identity() || !second_header.realignment().is_identity()) {
+          WARN("Computed transform between headers influenced by MRtrix3 internal image realignment;"
+               " if result is incorrect consider re-trying with \"-config RealignTransform false\"");
+          }
+      } else {
+        const Axes::Shuffle first_shuffle = Axes::get_shuffle_to_make_RAS(first_header.transform());
+        const Axes::Shuffle second_shuffle = Axes::get_shuffle_to_make_RAS(second_header.transform());
+        if (!first_shuffle.is_identity() || !second_shuffle.is_identity()) {
+          WARN("Computed transform between headers omits default MRtrix3 internal image realignment;"
+               " if result is incorrect consider re-trying with \"-config RealignTransform true\"");
         }
-        o_s2v = o_s2v_r;
-        m_v2s = m_v2s_r;
       }
-      save_transform ((m_v2s * o_s2v).inverse(), output_path);
+      save_transform (transform, output_path);
       break;
     }
     case 4: { // average

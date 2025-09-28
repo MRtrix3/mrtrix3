@@ -36,9 +36,9 @@ Example usages
 
 -   *Calculate the transformation matrix from an original image and an image with modified header*::
 
-        $ transformcalc original.mif modified.mif header output
+        $ transformcalc original.mif modified.mif header output.txt
 
-    This transformation can be used for instance: mrtransform original_too.mif -linear output modified_too.mif
+    This transformation can be used for instance: mrtransform original_too.mif -linear output modified_too.mif. The interpretation of the difference between two image header transforms, and therefore the requisite transform to move between the two, can be influenced by whether MRtrix is configured to automatically realign images to approximately orient the three spatial axes sequentially along the Right-Anterior-Superior directions. This behaviour is activate by default. This however means that the result of this particular calculation may not correspond with the header transforms as they are stored on the file system. If the transform being sought is specifically the difference between two header transforms as they are stored on the filesystem, without the confound of MRtrix3 interpretation of such data, then the transformcalc command can be run with option "-config RealignTransform false"to override the software default / any system or user configuration.
 
 -   *Calculate the average affine matrix of a set of input matrices*::
 
