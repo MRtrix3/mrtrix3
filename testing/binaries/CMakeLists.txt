@@ -378,10 +378,13 @@ add_bash_binary_test(sh2amp/grad)
 add_bash_binary_test(sh2amp/msmt)
 add_bash_binary_test(sh2amp/nonnegative)
 
+add_bash_binary_test(sh2metric/entropy)
+add_bash_binary_test(sh2metric/entropy_multiinput)
+add_bash_binary_test(sh2metric/entropy_normalised)
+add_bash_binary_test(sh2metric/power)
+
 add_bash_binary_test(sh2peaks/default)
 add_bash_binary_test(sh2peaks/fast)
-
-add_bash_binary_test(sh2power/default)
 
 add_bash_binary_test(sh2response/default)
 
