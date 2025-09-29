@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ using namespace App;
 
 constexpr size_t default_direction_set = 1281;
 
-std::vector<std::string> metrics = {"entropy", "power"};
+const std::vector<std::string> metrics = {"entropy", "power"};
 
 // clang-format off
 void usage() {
@@ -90,13 +90,13 @@ void run_entropy() {
     } else {
       if (!voxel_grids_match_in_scanner_space(header, H_out))
         throw Exception("All input SH images must have matching voxel grids");
-      H_out.merge_keyval(header);
+      H_out.merge_keyval(header.keyval());
     }
     SH_images.emplace_back(header.get_image<float>());
   }
   H_out.ndim() = 3;
 
-  DWI::Directions::Set dirs(default_direction_set);
+  const DWI::Directions::Set dirs(default_direction_set);
   Image<float> image_out(Image<float>::create(argument[argument.size() - 1], H_out));
   const bool normalise = !get_options("normalise").empty();
 
@@ -165,7 +165,7 @@ void run_entropy() {
           max_lmax = std::max(max_lmax, lmax);
         }
         if (normalise)
-          normalisation.initialise(SH_images.size(), dirs, transforms[max_lmax]);
+          normalisation.initialise(SH_images.size(), transforms[max_lmax]);
       }
       vector_type operator()(vector_type &SH_coefs) const {
         const size_t lmax = Math::SH::LforN(SH_coefs.size());
@@ -185,7 +185,7 @@ void run_entropy() {
         Normalisation()
             : lower(std::numeric_limits<default_type>::quiet_NaN()),
               upper(std::numeric_limits<default_type>::quiet_NaN()) {}
-        void initialise(const size_t num_images, const DWI::Directions::Set &dirs, const transform_type transform) {
+        void initialise(const size_t num_images, const transform_type &transform) {
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> delta_coefs;
           Math::SH::delta(
               delta_coefs, Eigen::Matrix<default_type, 3, 1>({0.0, 0.0, 1.0}), Math::SH::LforN(transform.cols()));
