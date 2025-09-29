@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -231,7 +231,7 @@ void compute_average_voxel2scanner(
       break;
     case avgspace_voxspacing_t::MIN_NEAREST:
     case avgspace_voxspacing_t::MEAN_NEAREST: {
-      std::array<size_t, 3> perm = Axes::closest(M);
+      const Axes::permutations_type perm = Axes::closest(M);
       for (size_t axis = 0; axis != 3; ++axis)
         rot_vox_size(axis, itrafo) = input_headers[itrafo].spacing(perm[axis]);
     } break;

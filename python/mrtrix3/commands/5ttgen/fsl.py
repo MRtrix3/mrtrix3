@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -105,8 +105,8 @@ def execute(): #pylint: disable=unused-variable
   else:
     try:
       fast_cmd = fsl.exe_name('fast')
-    except MRtrixError as e:
-      raise MRtrixError('FSL program "fast" is requisite if -fast_dir option is not used') from e
+    except MRtrixError as exc:
+      raise MRtrixError('FSL program "fast" is requisite if -fast_dir option is not used') from exc
 
   first_cmd = None
   first_object_files = []
@@ -116,8 +116,8 @@ def execute(): #pylint: disable=unused-variable
   else:
     try:
       first_cmd = fsl.exe_name('run_first_all')
-    except MRtrixError as e:
-      raise MRtrixError('FSL program "run_first_all" is requisite if -first_dir option is not used') from e
+    except MRtrixError as exc:
+      raise MRtrixError('FSL program "run_first_all" is requisite if -first_dir option is not used') from exc
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
   if not os.path.isdir(first_atlas_path):
@@ -134,7 +134,7 @@ def execute(): #pylint: disable=unused-variable
                 preserve_pipes=True)
   elif not app.ARGS.premasked and not shutil.which('dc'):
     app.warn('Unix command "dc" not found; '
-             'FSL script "standard_space_roi" may fail')
+             'FSL commands may fail')
   if app.ARGS.t2:
     if not image.match('input.mif', app.ARGS.t2):
       raise MRtrixError('Provided T2w image does not match input T1w image')
@@ -259,11 +259,11 @@ def execute(): #pylint: disable=unused-variable
     first_brain_extracted_option = ['-b'] if app.ARGS.premasked else []
     first_debug_option = [] if app.DO_CLEANUP else ['-d']
     first_verbosity_option = ['-v'] if app.VERBOSITY == 3 else []
-    run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_reference, '-o', 'first']
-                + first_brain_extracted_option
-                + first_debug_option
-                + first_verbosity_option)
-    fsl.check_first_output('first', sgm_structures)
+    first_stdout = run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_reference, '-o', 'first']
+                               + first_brain_extracted_option
+                               + first_debug_option
+                               + first_verbosity_option).stdout
+    fsl.check_first_output('first', structures=sgm_structures, first_stdout=first_stdout)
     first_object_files = [f'first-{struct}_first.vtk' for struct in sgm_structures]
 
   # Convert FIRST meshes to partial volume images

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -815,7 +815,7 @@ void Tractography::add_commandline_options(MR::App::OptionList &options) {
       + Option("tractography.tsf_thresh",
                "Set thresholds for the tractography scalar file."
                " Requires -tractography.tsf_load already provided.").allow_multiple()
-        + Argument("ThresholdMin,ThesholdMax").type_sequence_float()
+        + Argument("ThresholdMin,ThresholdMax").type_sequence_float()
 
       + Option("tractography.tsf_colourmap",
                "Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu."

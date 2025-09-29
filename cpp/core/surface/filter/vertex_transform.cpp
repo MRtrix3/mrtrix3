@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #include "surface/filter/vertex_transform.h"
 #include "file/nifti_utils.h"
 
+#include "axes.h"
 #include "exception.h"
 
 namespace MR::Surface::Filter {
@@ -82,14 +83,13 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
     break;
 
   case transform_t::FS2REAL:
-    std::vector<size_t> axes(3);
-    auto M = File::NIfTI::adjust_transform(header, axes);
+    auto M = header.realignment().orig_transform();
+    const Axes::permutations_type &axes = header.realignment().permutations();
     Eigen::Vector3d cras(3, 1);
     for (size_t i = 0; i < 3; i++) {
       cras[i] = M(i, 3);
-      for (size_t j = 0; j < 3; j++) {
+      for (size_t j = 0; j < 3; j++)
         cras[i] += 0.5 * header.size(axes[j]) * header.spacing(axes[j]) * M(i, j);
-      }
     }
     for (size_t i = 0; i != V; ++i) {
       vertices.push_back(in.vert(i) + cras);

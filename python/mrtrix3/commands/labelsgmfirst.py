@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -89,7 +89,7 @@ def execute(): #pylint: disable=unused-variable
   first_object_files = []
   if app.ARGS.first_dir:
     first_prefix = fsl.check_first_input(app.ARGS.first_dir, structure_map.keys())
-    first_object_files = [app.ARGS.first_dir / f'{first_prefix}{struct}_first.vtk' for struct in structure_map.keys()]
+    first_object_files = [app.ARGS.first_dir / f'{first_prefix}{struct}_first.vtk' for struct in structure_map]
   else:
     fsl_path = os.environ.get('FSLDIR', '')
     if not fsl_path:
@@ -131,8 +131,8 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.premasked:
       first_input_is_brain_extracted = ' -b'
     structures_string = ','.join(structure_map.keys())
-    run.command(f'{first_cmd} -m none -s {structures_string} -i T1.nii {first_input_is_brain_extracted} -o first')
-    fsl.check_first_output('first', structure_map.keys())
+    first_stdout = run.command(f'{first_cmd} -m none -s {structures_string} -i T1.nii {first_input_is_brain_extracted} -o first').stdout
+    fsl.check_first_output('first', structures=structure_map.keys(), first_stdout=first_stdout)
 
   # Generate an empty image that will be used to construct the new SGM nodes
   run.command('mrcalc parc.mif 0 -min sgm.mif')

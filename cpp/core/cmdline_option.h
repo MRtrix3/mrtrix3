@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -127,7 +127,7 @@ public:
   using Limits = std::variant<std::vector<std::string>, IntRange, FloatRange>;
   Limits limits;
 
-  operator bool() const { return id.empty(); }
+  operator bool() const { return !id.empty(); }
 
   //! specifies that the argument is optional
   /*! For example:
@@ -334,7 +334,7 @@ public:
     push_back(arg);
     return *this;
   }
-  operator bool() const { return id.empty(); }
+  operator bool() const { return !id.empty(); }
 
   //! the option name
   std::string id;

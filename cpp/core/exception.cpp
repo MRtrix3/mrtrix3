@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,6 +84,13 @@ void cmdline_print_func(const std::string &msg) {
 #else
   std::cout << msg;
 #endif
+}
+
+const char *Exception::what() const noexcept {
+  if (description.empty()) {
+    return "MR::Exception (no specific message)";
+  }
+  return description.back().c_str();
 }
 
 void (*print)(const std::string &msg) = cmdline_print_func;

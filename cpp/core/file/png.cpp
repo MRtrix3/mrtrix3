@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,8 +30,14 @@
 namespace MR::File::PNG {
 
 Reader::Reader(const std::string &filename)
-    : png_ptr(NULL), info_ptr(NULL), width(0), height(0), bit_depth(0), color_type(0), channels(0) {
-  FILE *infile = fopen(filename.c_str(), "rb");
+    : infile(fopen(filename.c_str(), "rb")),
+      png_ptr(NULL),
+      info_ptr(NULL),
+      width(0),
+      height(0),
+      bit_depth(0),
+      color_type(0),
+      channels(0) {
   unsigned char sig[8];
   if (fread(sig, 1, 8, infile) < 8)
     throw Exception("error reading from PNG file \"" + filename + "\"");
@@ -108,6 +114,10 @@ Reader::~Reader() {
     png_ptr = NULL;
     info_ptr = NULL;
   }
+  if (infile) {
+    fclose(infile);
+    infile = NULL;
+  }
 }
 
 void Reader::set_expand() {
@@ -138,6 +148,7 @@ Writer::Writer(const Header &H, const std::string &filename)
       bit_depth(0),
       filename(filename),
       data_type(H.datatype()),
+      multiplier(1.0),
       outfile(NULL) {
   if (Path::exists(filename) && !App::overwrite_files)
     throw Exception("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
@@ -150,6 +161,9 @@ Writer::Writer(const Header &H, const std::string &filename)
     throw Exception("Unable to set jump buffer for PNG structure for image \"" + filename + "\"");
   }
   outfile = fopen(filename.c_str(), "wb");
+  if (!outfile)
+    throw Exception("Unable to open PNG file for writing for image \"" + filename + "\": " //
+                    + strerror(errno));                                                    //
   png_init_io(png_ptr, outfile);
   png_set_compression_level(png_ptr, Z_DEFAULT_COMPRESSION);
   switch (H.ndim()) {
@@ -195,17 +209,23 @@ Writer::Writer(const Header &H, const std::string &filename)
     png_destroy_write_struct(&png_ptr, &info_ptr);
     throw Exception("Undefined data type in image \"" + H.name() + "\" for PNG writer");
   case DataType::Bit:
-    bit_depth = 1;
+    assert(false);
     break;
   case DataType::UInt8:
+    bit_depth = 8;
+    break;
   case DataType::Float32:
     bit_depth = 8;
+    multiplier = std::numeric_limits<uint8_t>::max();
     break;
   case DataType::UInt16:
   case DataType::UInt32:
   case DataType::UInt64:
+    bit_depth = 16;
+    break;
   case DataType::Float64:
     bit_depth = 16;
+    multiplier = std::numeric_limits<uint16_t>::max();
     break;
   }
   // Detect cases where one axis has a size of 1, and hence represents the image plane
@@ -270,6 +290,10 @@ Writer::~Writer() {
     png_ptr = NULL;
     info_ptr = NULL;
   }
+  if (outfile) {
+    fclose(outfile);
+    outfile = NULL;
+  }
 }
 
 void Writer::save(uint8_t *data) {
@@ -289,7 +313,7 @@ void Writer::save(uint8_t *data) {
     png_write_end(png_ptr, info_ptr);
   };
 
-  if (bit_depth == 1 || data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
+  if (data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
     finish(data);
   } else {
     uint8_t scratch[row_bytes * height];

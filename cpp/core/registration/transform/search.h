@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -138,7 +138,7 @@ public:
 
     if (!global_search) {
       gen_uniform_rotation_axes(local_search_directions, 180.0); // full sphere
-      az_el_to_cartesian();
+      az_in_to_cartesian();
     }
 
     size_t iteration(0);
@@ -281,26 +281,26 @@ private:
     const default_type golden_ratio((1.0 + std::sqrt(5.0)) / 2.0);
     const default_type golden_angle(2.0 * Math::pi * (1.0 - 1.0 / golden_ratio));
 
-    az_el.resize(n_dir, 2);
+    az_in.resize(n_dir, 2);
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> idx(n_dir);
     for (size_t i = 0; i < n_dir; ++i)
       idx(i) = i;
-    az_el.col(0) = idx * golden_angle;
+    az_in.col(0) = idx * golden_angle;
 
     // el(i) = acos (1-(1-cosd(max_cone_angle_deg))*i/(n_dir-1) )
     default_type a = (1.0 - std::cos(Math::pi / 180.0 * default_type(max_cone_angle_deg))) / (default_type(n_dir - 1));
-    az_el.col(1).array() = -a * idx.array() + 1.0;
+    az_in.col(1).array() = -a * idx.array() + 1.0;
     for (size_t i = 0; i < n_dir; ++i)
-      az_el(i, 1) = std::acos(az_el(i, 1));
+      az_in(i, 1) = std::acos(az_in(i, 1));
   }
 
-  // convert spherical coordinates (az_el) to cartesian coordinates (xyz)
-  FORCE_INLINE void az_el_to_cartesian() {
-    xyz.resize(az_el.rows(), 3);
-    Eigen::VectorXd el_sin = az_el.col(1).array().sin();
-    xyz.col(0).array() = el_sin.array() * az_el.col(0).array().cos();
-    xyz.col(1).array() = el_sin.array() * az_el.col(0).array().sin();
-    xyz.col(2).array() = az_el.col(1).array().cos();
+  // convert spherical coordinates (az_in) to cartesian coordinates (xyz)
+  FORCE_INLINE void az_in_to_cartesian() {
+    xyz.resize(az_in.rows(), 3);
+    Eigen::VectorXd sin_incl = az_in.col(1).array().sin();
+    xyz.col(0).array() = sin_incl.array() * az_in.col(0).array().cos();
+    xyz.col(1).array() = sin_incl.array() * az_in.col(0).array().sin();
+    xyz.col(2).array() = az_in.col(1).array().cos();
   }
 
   FORCE_INLINE void gen_local_quaternion() {
@@ -336,7 +336,7 @@ private:
   double translation_extent;
   size_t idx_angle, idx_dir;
   Registration::Transform::Rigid local_trafo;
-  Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
+  Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in;
   Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> overlap_it, cost_it;
   std::vector<transform_type> trafo_it;

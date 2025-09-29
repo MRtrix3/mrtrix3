@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,7 @@ void Font::initGL(bool with_shadow) {
     tex_width += metric.horizontalAdvance(QChar(c)) + 2;
 #endif
 
-  QImage pixmap(max_font_width, font_height, QImage::Format_ARGB32);
+  QImage pixmap(max_font_width, font_height, QImage::Format_ARGB32_Premultiplied);
   const GLubyte *pix_data = pixmap.bits();
 
   VLA(tex_data, float, 2 * tex_width * font_height);

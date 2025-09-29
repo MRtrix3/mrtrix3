@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,8 +17,10 @@
 #include <numeric>
 
 #include "command.h"
+#include "degibbs/degibbs.h"
 #include "degibbs/unring2d.h"
 #include "degibbs/unring3d.h"
+#include "metadata/bids.h"
 
 using namespace MR;
 using namespace App;
@@ -47,15 +49,27 @@ void usage() {
       " before any interpolation of any kind has taken place."
       " You should not run this command after any form of motion correction"
       " (e.g. not after dwifslpreproc)."
-      " Similarly, if you intend running dwidenoise,"
-      " you should run denoising before this command to not alter the noise structure,"
-      " which would impact on dwidenoise's performance."
+      " If however you intend to run a thermal denoising step (eg. dwidenoise),"
+      " you should do so before this command to not alter the noise structure,"
+      " which would impact on denoising performance."
+
+    + "For best results, any form of filtering performed by the scanner should be disabled,"
+      " whether performed in the image domain or k-space."
+      " This includes elliptic filtering and other filters "
+      " that are often applied to reduce Gibbs ringing artifacts."
+      " While this method can still safely be applied to such data,"
+      " some residual ringing artefacts may still be present in the output."
 
     + "Note that this method is designed to work on images acquired with full k-space coverage."
-      " Running this method on partial Fourier ('half-scan')"
-      " or filtered data may not remove all ringing artefacts."
-      " Users are encouraged to acquired full-Fourier data where possible,"
-      " and disable any form of filtering on the scanner.";
+      " If this method is executed on data acquired with partial Fourier (eg. \"half-scan\") acceleration,"
+      " it may not fully remove all ringing artifacts,"
+      " and you may observe residuals of the original artifact in the partial Fourier direction."
+      " Nonetheless, application of the method is still considered safe and worthwhile."
+      " Users are however encouraged to acquired full-Fourier data where possible."
+
+    + "As this method is based on utilisation of the Fourier shift theorem,"
+      " it operates best if it can be provided with complex-valued image data;"
+      " in this use case the output image will also be complex-valued.";
 
 
   ARGUMENTS
@@ -105,6 +119,9 @@ void usage() {
 }
 // clang-format on
 
+using MR::Degibbs::complex_type;
+using MR::Degibbs::real_type;
+
 void run() {
   const int nshifts = App::get_option_value("nshifts", 20);
   const int minW = App::get_option_value("minW", 1);
@@ -114,11 +131,11 @@ void run() {
     throw Exception("minW must be smaller than maxW");
 
   auto header = Header::open(argument[0]);
-  auto in = header.get_image<Degibbs::value_type>();
+  auto in = header.get_image<complex_type>();
 
   header.datatype() =
       DataType::from_command_line(header.datatype().is_complex() ? DataType::CFloat32 : DataType::Float32);
-  auto out = Image<Degibbs::value_type>::create(argument[1], header);
+  auto out = Image<complex_type>::create(argument[1], header);
 
   int mode = get_option_value("mode", 0);
 
@@ -143,11 +160,14 @@ void run() {
   auto slice_encoding_it = header.keyval().find("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     if (mode == 1) {
-      WARN("running 3D volume-wise unringing, but image header contains \"SliceEncodingDirection\" field");
-      WARN("If data were acquired using multi-slice encoding, run in default 2D mode.");
+      WARN("running 3D volume-wise unringing,"                            //
+           " but image header contains \"SliceEncodingDirection\" field;" //
+           " if data were acquired using multi-slice encoding,"           //
+           " run in default 2D mode.");                                   //
     } else {
       try {
-        const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir(slice_encoding_it->second);
+        const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot =
+            Metadata::BIDS::axisid2vector(slice_encoding_it->second);
         std::vector<size_t> auto_slice_axes = {0, 0};
         if (slice_encoding_axis_onehot[0])
           auto_slice_axes = {1, 2};

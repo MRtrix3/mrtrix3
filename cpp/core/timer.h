@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,7 @@ public:
   Timer() { start(); }
 
   void start() { from = std::chrono::high_resolution_clock::now(); }
-  double elapsed() {
+  double elapsed() const {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - from)
                .count() *
            1.0e-9;

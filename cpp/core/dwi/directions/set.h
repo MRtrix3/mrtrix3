@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,15 +36,15 @@ public:
 
     if (matrix.cols() != 2 && matrix.cols() != 3)
       throw Exception("Text file \"" + path +
-                      "\"does not contain directions as either azimuth-elevation pairs or XYZ triplets");
+                      "\"does not contain directions as either azimuth-inclination pairs or XYZ triplets");
 
     initialise(matrix);
   }
 
   explicit Set(const size_t d) : dir_mask_bytes(0), dir_mask_excess_bits(0), dir_mask_excess_bits_mask(0) {
-    Eigen::MatrixXd az_el_pairs;
-    load_predefined(az_el_pairs, d);
-    initialise(az_el_pairs);
+    Eigen::MatrixXd az_in_pairs;
+    load_predefined(az_in_pairs, d);
+    initialise(az_in_pairs);
   }
 
   Set(const Set &that) = default;
@@ -103,7 +103,7 @@ private:
 
   Set();
 
-  void load_predefined(Eigen::MatrixXd &az_el_pairs, const size_t);
+  void load_predefined(Eigen::MatrixXd &az_in_pairs, const size_t);
   template <class MatrixType> void initialise(const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic> &);
   void initialise_adjacency();
   void initialise_mask();
@@ -114,9 +114,11 @@ template <class MatrixType> void Set::initialise(const Eigen::Matrix<MatrixType,
   if (in.cols() == 2) {
     for (size_t i = 0; i != size(); ++i) {
       const default_type azimuth = in(i, 0);
-      const default_type elevation = in(i, 1);
-      const default_type sin_elevation = std::sin(elevation);
-      unit_vectors[i] = {std::cos(azimuth) * sin_elevation, std::sin(azimuth) * sin_elevation, std::cos(elevation)};
+      const default_type inclination = in(i, 1);
+      const default_type sin_inclination = std::sin(inclination);
+      unit_vectors[i] = {std::cos(azimuth) * sin_inclination, //
+                         std::sin(azimuth) * sin_inclination, //
+                         std::cos(inclination)};              //
     }
   } else if (in.cols() == 3) {
     for (size_t i = 0; i != size(); ++i)

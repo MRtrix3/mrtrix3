@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@
 
 #include "progressbar.h"
 #include "app.h"
+#include <thread>
+#include <utility>
 
 // MSYS2 supports VT100, and file redirection is handled explicitly so this can be used globally
 #define CLEAR_LINE_CODE "\033[0K"
@@ -155,7 +157,7 @@ bool ProgressBar::set_update_method() {
     // unable to determine nature of stderr; assuming socket
     stderr_to_file = false;
   else
-    stderr_to_file = S_ISREG(buf.st_mode);
+    stderr_to_file = S_ISREG(buf.st_mode) || S_ISFIFO(buf.st_mode);
 
   if (stderr_to_file) {
     ProgressBar::display_func = display_func_redirect;
@@ -166,6 +168,67 @@ bool ProgressBar::set_update_method() {
   }
 
   return stderr_to_file;
+}
+
+ProgressBar::ProgressBar(const std::string &text, size_t target, int log_level)
+    : first_time(true),
+      last_value(0),
+      show(std::this_thread::get_id() == ::MR::App::main_thread_ID && !progressbar_active &&
+           App::log_level >= log_level),
+      _text(text),
+      _ellipsis("..."),
+      _value(0),
+      current_val(0),
+      next_percent(0),
+      next_time(0.0),
+      _multiplier(0.0),
+      _text_has_been_modified(false) {
+  if (show) {
+    set_max(target);
+    progressbar_active = true;
+  }
+}
+
+ProgressBar::ProgressBar(ProgressBar &&other) noexcept
+    : show(other.show),
+      _text(std::move(other._text)),
+      _ellipsis(std::move(other._ellipsis)),
+      _value(other._value),
+      current_val(other.current_val),
+      next_percent(other.next_percent),
+      next_time(other.next_time),
+      _multiplier(other._multiplier),
+      timer(other.timer),
+      _text_has_been_modified(other._text_has_been_modified),
+      first_time(other.first_time),
+      last_value(other.last_value) {
+  other.show = false;
+}
+
+ProgressBar &MR::ProgressBar::operator=(ProgressBar &&other) noexcept {
+  if (this == &other) {
+    return *this;
+  }
+
+  // If the current object is managing an active progress bar, finish it.
+  if (show) {
+    done();
+  }
+
+  _text = std::move(other._text);
+  _ellipsis = std::move(other._ellipsis);
+  show = other.show;
+  _value = other._value;
+  current_val = other.current_val;
+  next_percent = other.next_percent;
+  next_time = other.next_time;
+  _multiplier = other._multiplier;
+  timer = other.timer;
+  _text_has_been_modified = other._text_has_been_modified;
+  first_time = other.first_time;
+  last_value = other.last_value;
+  other.show = false;
+  return *this;
 }
 
 } // namespace MR
