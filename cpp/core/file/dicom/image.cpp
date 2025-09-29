@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -153,6 +153,9 @@ void Image::parse_item(Element &item, const std::string &dirname) {
     }
     return;
   case 0x0020U:
+    for (const auto &p : item.parents)
+      if (p.group == 0x2005)
+        return; // ignore if nested within Philips private sequence
     switch (item.element) {
     case 0x000EU:
       ignore_series_num = item.is_in_series_ref_sequence();

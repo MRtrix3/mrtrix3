@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,7 +46,7 @@ void usage() {
       " If 5D, each set of coefficients along the 5th dimension is understood"
       " to correspond to a different shell."
     + "The directions can be provided as:\n"
-      "- a 2-column ASCII text file containing azimuth / elevation pairs"
+      "- a 2-column ASCII text file containing azimuth / inclination pairs"
       " (eg. as produced by dirgen)\n"
       "- a 3-column ASCII text file containing x, y, z Cartesian direction vectors"
       " (eg. as produced by dirgen -cart)\n"

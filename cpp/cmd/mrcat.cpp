@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,6 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 
 using namespace MR;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,31 +53,31 @@ index_type Set::get_min_linkage(const index_type one, const index_type two) cons
   return std::numeric_limits<index_type>::max();
 }
 
-void Set::load_predefined(Eigen::MatrixXd &az_el_pairs, const size_t i) {
+void Set::load_predefined(Eigen::MatrixXd &az_in_pairs, const size_t i) {
   switch (i) {
   case 60:
-    az_el_pairs = electrostatic_repulsion_60();
+    az_in_pairs = electrostatic_repulsion_60();
     return;
   case 129:
-    az_el_pairs = tesselation_129();
+    az_in_pairs = tesselation_129();
     return;
   case 300:
-    az_el_pairs = electrostatic_repulsion_300();
+    az_in_pairs = electrostatic_repulsion_300();
     return;
   case 321:
-    az_el_pairs = tesselation_321();
+    az_in_pairs = tesselation_321();
     return;
   case 469:
-    az_el_pairs = tesselation_469();
+    az_in_pairs = tesselation_469();
     return;
   case 513:
-    az_el_pairs = tesselation_513();
+    az_in_pairs = tesselation_513();
     return;
   case 1281:
-    az_el_pairs = tesselation_1281();
+    az_in_pairs = tesselation_1281();
     return;
   case 5000:
-    az_el_pairs = electrostatic_repulsion_5000();
+    az_in_pairs = electrostatic_repulsion_5000();
     return;
   default:
     throw Exception("No pre-defined data set of " + str(i) + " directions");
@@ -479,11 +479,11 @@ void FastLookupSet::initialise() {
 size_t FastLookupSet::dir2gridindex(const Eigen::Vector3d &p) const {
 
   const default_type azimuth = atan2(p[1], p[0]);
-  const default_type elevation = acos(p[2]);
+  const default_type inclination = acos(p[2]);
 
   const size_t azimuth_grid = std::floor((azimuth - az_begin) / az_grid_step);
-  const size_t elevation_grid = std::floor((elevation - el_begin) / el_grid_step);
-  const size_t index = (azimuth_grid * num_el_grids) + elevation_grid;
+  const size_t inclination_grid = std::floor((inclination - el_begin) / el_grid_step);
+  const size_t index = (azimuth_grid * num_el_grids) + inclination_grid;
 
   return index;
 }

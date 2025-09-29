@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -237,6 +237,8 @@ bool is_dash(std::string_view arg) {
   const size_t nbytes = char_is_dash(arg.data());
   return nbytes != 0 && nbytes == arg.size();
 }
+
+bool starts_with_dash(std::string_view arg) { return char_is_dash(arg.data()) != 0U; }
 
 std::string_view without_leading_dash(std::string_view arg) {
   size_t nbytes = char_is_dash(arg.data());

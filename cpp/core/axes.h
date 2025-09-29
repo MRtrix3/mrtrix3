@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,25 +16,44 @@
 
 #pragma once
 
-#include <string>
+#include <array>
+#include <limits>
+#include <set>
 
 #include "types.h"
 
+// TODO Rename to "SpatialAxes"?
 namespace MR::Axes {
 
-//! convert axis directions between formats
-/*! these helper functions convert the definition of
- *  phase-encoding direction between a 3-vector (e.g.
- *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
- */
-std::string dir2id(const Eigen::Vector3d &);
-Eigen::Vector3d id2dir(const std::string &);
+// TODO Change to 8-bit integer & define invalid value
+class permutations_type : public std::array<uint8_t, 3> {
+public:
+  using BaseType = std::array<uint8_t, 3>;
+  permutations_type()
+      : std::array<uint8_t, 3>{std::numeric_limits<uint8_t>::max(),
+                               std::numeric_limits<uint8_t>::max(),
+                               std::numeric_limits<uint8_t>::max()} {}
+  bool is_identity() const { return ((*this)[0] == 0 && (*this)[1] == 1 && (*this)[2] == 2); }
+  bool valid() const { return (std::set<ssize_t>(begin(), end()) == std::set<ssize_t>({0, 1, 2})); }
+};
+using flips_type = std::array<bool, 3>;
+class Shuffle {
+public:
+  Shuffle() : permutations(), flips({false, false, false}) {}
+  bool is_identity() const {
+    return (permutations.is_identity() && //
+            !flips[0] && !flips[1] && !flips[2]);
+  }
+  bool valid() const { return permutations.valid(); }
+  permutations_type permutations;
+  flips_type flips;
+};
 
 //! determine the axis permutations and flips necessary to make an image
 //!   appear approximately axial
-void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip);
+Shuffle get_shuffle_to_make_RAS(const transform_type &T);
 
 //! determine which vectors of a 3x3 transform are closest to the three axis indices
-std::array<size_t, 3> closest(const Eigen::Matrix3d &M);
+permutations_type closest(const Eigen::Matrix3d &M);
 
 } // namespace MR::Axes

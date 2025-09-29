@@ -19,6 +19,7 @@ RUN apt-get -qq update \
         libpng-dev \
         libqt5opengl5-dev \
         libqt5svg5-dev \
+        libtiff5-dev \
         ninja-build \
         qt5-qmake \
         qtbase5-dev \
@@ -43,7 +44,8 @@ RUN apt-get -qq update \
         binutils \
         dc \
         less \
-        libfftw3-dev \
+        libfftw3-single3 \
+        libfftw3-double3 \
         libgl1-mesa-glx \
         libpng16-16 \
         libqt5core5a \
@@ -51,7 +53,9 @@ RUN apt-get -qq update \
         libqt5network5 \
         libqt5svg5 \
         libqt5widgets5 \
-        python3 \
+        libquadmath0 \
+        libtiff5-dev \
+        procps \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=mrtrix3-builder /opt/mrtrix3 /opt/mrtrix3
@@ -83,5 +87,7 @@ ENV ANTSPATH=/opt/thirdparty \
 RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5 \
     && ldconfig \
     && apt-get purge -yq binutils
+
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 CMD ["/bin/bash"]

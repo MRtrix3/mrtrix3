@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,10 +18,12 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
 
 #include "app.h"
 #include "debug.h"
@@ -55,9 +57,11 @@ namespace MR {
 class ProgressBar {
 public:
   //! Create an unusable ProgressBar.
-  ProgressBar() : show(false) {}
+  explicit ProgressBar() = default;
   ProgressBar(const ProgressBar &p) = delete;
-  ProgressBar(ProgressBar &&p) = default;
+  ProgressBar &operator=(const ProgressBar &p) = delete;
+  ProgressBar(ProgressBar &&other) noexcept;
+  ProgressBar &operator=(ProgressBar &&other) noexcept;
 
   FORCE_INLINE ~ProgressBar() { done(); }
 
@@ -149,41 +153,22 @@ public:
   ;
   static void *data;
 
-  mutable bool first_time;
-  mutable size_t last_value;
+  mutable bool first_time = false;
+  mutable size_t last_value = 0;
 
 private:
-  const bool show;
+  bool show = false;
   std::string _text, _ellipsis;
-  size_t _value, current_val, next_percent;
-  double next_time;
-  float _multiplier;
+  size_t _value = 0, current_val = 0, next_percent = 0;
+  double next_time = 0.0;
+  float _multiplier = 0.0F;
   Timer timer;
-  bool _text_has_been_modified;
+  bool _text_has_been_modified = false;
 
   FORCE_INLINE void display_now() { display_func(*this); }
 
   static bool progressbar_active;
 };
-
-FORCE_INLINE ProgressBar::ProgressBar(const std::string &text, size_t target, int log_level)
-    : first_time(true),
-      last_value(0),
-      show(std::this_thread::get_id() == ::MR::App::main_thread_ID && !progressbar_active &&
-           App::log_level >= log_level),
-      _text(text),
-      _ellipsis("..."),
-      _value(0),
-      current_val(0),
-      next_percent(0),
-      next_time(0.0),
-      _multiplier(0.0),
-      _text_has_been_modified(false) {
-  if (show) {
-    set_max(target);
-    progressbar_active = true;
-  }
-}
 
 inline void ProgressBar::set_max(size_t target) {
   if (!show)

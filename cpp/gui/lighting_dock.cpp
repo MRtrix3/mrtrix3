@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -105,8 +105,8 @@ void LightingSettings::shine_slot(int value) {
 }
 
 void LightingSettings::light_position_slot() {
-  float elevation = elevation_slider->value() * (Math::pi / 1000.0);
-  float azimuth = azimuth_slider->value() * (Math::pi / 1000.0);
+  const float elevation = elevation_slider->value() * (Math::pi / 1000.0);
+  const float azimuth = azimuth_slider->value() * (Math::pi / 1000.0);
   info.lightpos[2] = sin(elevation) * cos(azimuth);
   info.lightpos[0] = sin(elevation) * sin(azimuth);
   info.lightpos[1] = -cos(elevation);

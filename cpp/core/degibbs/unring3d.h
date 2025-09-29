@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 
 #include "algo/threaded_loop.h"
 #include "axes.h"
+#include "degibbs/degibbs.h"
 #include "degibbs/unring1d.h"
 #include "image.h"
 #include "progressbar.h"
@@ -29,7 +30,7 @@ using ImageType = Image<cdouble>;
 namespace {
 
 // gives proper index according to fourier indices
-inline double indexshift(ssize_t n, ssize_t size) {
+inline real_type indexshift(ssize_t n, ssize_t size) {
   if (n > size / 2)
     n -= size;
   return n;
@@ -47,13 +48,17 @@ public:
   Filter(size_t axis) : axis(axis) {}
   void operator()(ImageType &in, ImageType &out) {
     // apply filter
-    const double x[3] = {1.0 + std::cos(2.0 * Math::pi * indexshift(in.index(0), in.size(0)) / in.size(0)),
-                         1.0 + std::cos(2.0 * Math::pi * indexshift(in.index(1), in.size(1)) / in.size(1)),
-                         1.0 + std::cos(2.0 * Math::pi * indexshift(in.index(2), in.size(2)) / in.size(2))};
-    const double w[3] = {x[1] * x[2], x[0] * x[2], x[0] * x[1]};
-    const double denom = w[0] + w[1] + w[2];
+    const std::array<real_type, 3> x = {
+        1.0 + std::cos(2.0 * Math::pi * indexshift(in.index(0), in.size(0)) / real_type(in.size(0))),
+        1.0 + std::cos(2.0 * Math::pi * indexshift(in.index(1), in.size(1)) / real_type(in.size(1))),
+        1.0 + std::cos(2.0 * Math::pi * indexshift(in.index(2), in.size(2)) / real_type(in.size(2)))};
+    const std::array<real_type, 3> w = {              //
+                                        x[1] * x[2],  //
+                                        x[0] * x[2],  //
+                                        x[0] * x[1]}; //
+    const real_type denom = w[0] + w[1] + w[2];
 
-    out.value() = cdouble(in.value()) * (denom ? w[axis] / denom : 0.0);
+    out.value() = complex_type(in.value()) * (denom == real_type(0) ? real_type(0) : (w[axis] / denom));
   }
 
 protected:
@@ -83,7 +88,7 @@ public:
     const int lsize = input.size(axis);
 
     // creating zero-centred shift array
-    double shift_ind[2 * num_shifts + 1];
+    VLA(shift_ind, real_type, 2 * num_shifts + 1);
     shift_ind[0] = 0;
     for (int j = 0; j < num_shifts; j++) {
       shift_ind[j + 1] = (j + 1) / (2.0 * num_shifts + 1.0);
@@ -91,12 +96,12 @@ public:
     }
 
     // applying shift and inverse fourier transform back line-by-line
-    const std::complex<double> j(0.0, 1.0);
+    const complex_type j(0.0, 1.0);
     for (int f = 0; f < 2 * num_shifts + 1; f++) {
       for (int n = 0; n < lsize; ++n)
-        ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n, lsize) * Math::pi * shift_ind[f] / double(lsize));
+        ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n, lsize) * Math::pi * shift_ind[f] / real_type(lsize));
       if (!(lsize & 1))
-        ifft[f][lsize / 2] = 0.0;
+        ifft[f][lsize / 2] = real_type(0);
       ifft[f].run();
     }
 
@@ -105,14 +110,14 @@ public:
 
       // calculating value for optimum shift
       const int optshift_ind = optimumshift(n, lsize);
-      const double shift = shift_ind[optshift_ind];
+      const real_type shift = shift_ind[optshift_ind];
 
       // calculating current, previous and next (real and imaginary) values
-      cdouble a0r = ifft[optshift_ind][wraparound(n - 1, lsize)];
-      cdouble a1r = ifft[optshift_ind][n];
-      cdouble a2r = ifft[optshift_ind][wraparound(n + 1, lsize)];
+      const complex_type a0r = ifft[optshift_ind][wraparound(n - 1, lsize)];
+      const complex_type a1r = ifft[optshift_ind][n];
+      const complex_type a2r = ifft[optshift_ind][wraparound(n + 1, lsize)];
 
-      const double scale = input.size(0) * input.size(1) * input.size(2) * lsize;
+      const real_type scale = input.size(0) * input.size(1) * input.size(2) * lsize;
 
       // interpolate particular ifft back to right place
       if (shift > 0.0)
@@ -132,11 +137,12 @@ protected:
 
   int optimumshift(int n, int lsize) {
     int ind = 0;
-    double opt_var = std::numeric_limits<double>::max();
+    real_type opt_var = std::numeric_limits<real_type>::max();
 
     // calculating oscillation measure for subsequent shifts
     for (int f = 0; f < 2 * num_shifts + 1; f++) {
-      double sum_left = 0.0, sum_right = 0.0;
+      real_type sum_left = 0.0;
+      real_type sum_right = 0.0;
 
       // calculating oscillation measure within given window
       for (int k = minW; k <= maxW; ++k) {
@@ -147,7 +153,7 @@ protected:
         sum_right += abs(ifft[f][wraparound(n + k, lsize)].imag() - ifft[f][wraparound(n + k + 1, lsize)].imag());
       }
 
-      double tot_var = std::min(sum_left, sum_right);
+      const real_type tot_var = std::min(sum_left, sum_right);
 
       if (tot_var < opt_var) {
         opt_var = tot_var;

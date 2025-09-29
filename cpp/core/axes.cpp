@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,69 +16,21 @@
 
 #include "axes.h"
 
-#include "exception.h"
-#include "mrtrix.h"
-
 namespace MR::Axes {
 
-std::string dir2id(const Eigen::Vector3d &axis) {
-  if (axis[0] == -1) {
-    assert(!axis[1]);
-    assert(!axis[2]);
-    return "i-";
-  } else if (axis[0] == 1) {
-    assert(!axis[1]);
-    assert(!axis[2]);
-    return "i";
-  } else if (axis[1] == -1) {
-    assert(!axis[0]);
-    assert(!axis[2]);
-    return "j-";
-  } else if (axis[1] == 1) {
-    assert(!axis[0]);
-    assert(!axis[2]);
-    return "j";
-  } else if (axis[2] == -1) {
-    assert(!axis[0]);
-    assert(!axis[1]);
-    return "k-";
-  } else if (axis[2] == 1) {
-    assert(!axis[0]);
-    assert(!axis[1]);
-    return "k";
-  } else {
-    throw Exception("Malformed axis direction: \"" + str(axis.transpose()) + "\"");
-  }
-}
-
-Eigen::Vector3d id2dir(const std::string &id) {
-  if (id == "i-")
-    return {-1, 0, 0};
-  else if (id == "i")
-    return {1, 0, 0};
-  else if (id == "j-")
-    return {0, -1, 0};
-  else if (id == "j")
-    return {0, 1, 0};
-  else if (id == "k-")
-    return {0, 0, -1};
-  else if (id == "k")
-    return {0, 0, 1};
-  else
-    throw Exception("Malformed image axis identifier: \"" + id + "\"");
-}
-
-void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip) {
-  perm = closest(T.matrix().topLeftCorner<3, 3>());
+Shuffle get_shuffle_to_make_RAS(const transform_type &T) {
+  Shuffle result;
+  result.permutations = closest(T.linear());
   // Figure out whether any of the rows of the transform point in the
   //   opposite direction to the MRtrix convention
-  flip[perm[0]] = T(0, perm[0]) < 0.0;
-  flip[perm[1]] = T(1, perm[1]) < 0.0;
-  flip[perm[2]] = T(2, perm[2]) < 0.0;
+  result.flips[result.permutations[0]] = T(0, result.permutations[0]) < 0.0;
+  result.flips[result.permutations[1]] = T(1, result.permutations[1]) < 0.0;
+  result.flips[result.permutations[2]] = T(2, result.permutations[2]) < 0.0;
+  return result;
 }
 
-std::array<size_t, 3> closest(const Eigen::Matrix3d &M) {
-  std::array<size_t, 3> result{3, 3, 3};
+permutations_type closest(const Eigen::Matrix3d &M) {
+  permutations_type result;
   // Find which row of the transform is closest to each scanner axis
   Eigen::Matrix3d::Index index(0);
   M.row(0).cwiseAbs().maxCoeff(&index);
@@ -87,7 +39,7 @@ std::array<size_t, 3> closest(const Eigen::Matrix3d &M) {
   result[1] = index;
   M.row(2).cwiseAbs().maxCoeff(&index);
   result[2] = index;
-  assert(result[0] < 3 && result[1] < 3 && result[2] < 3);
+  assert(result.valid());
 
   // Disambiguate permutations
   auto not_any_of = [](size_t a, size_t b) -> size_t {
@@ -105,7 +57,7 @@ std::array<size_t, 3> closest(const Eigen::Matrix3d &M) {
     result[2] = not_any_of(result[0], result[1]);
   if (result[1] == result[2])
     result[2] = not_any_of(result[0], result[1]);
-  assert(result[0] != result[1] && result[1] != result[2] && result[2] != result[0]);
+  assert(result.valid());
 
   return result;
 }
