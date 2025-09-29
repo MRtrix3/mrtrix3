@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import math, os, shutil
+import math, os, shutil, sys
 
 DWIBIASCORRECT_MAX_ITERS = 2
 LMAXES_MULTI = [4,0,0]
@@ -261,11 +261,16 @@ def execute(): #pylint: disable=unused-variable
   tissue_sum_image = None
   iteration = 0
   step = 'initialisation'
-  prev_dice_coefficient = 0.0
+  prev_dice_coefficient = None
   total_scaling_factor = 1.0
 
   def msg():
-    return f'Iteration {iteration}; {step} step; previous Dice coefficient {prev_dice_coefficient}'
+    if sys.stderr.isatty():
+      result = f'Iteration {iteration}; {step} step'
+      if iteration:
+        result += '; previous Dice coefficient {prev_dice_coefficient}'
+      return result
+    return 'Running iterative optimisation'
   progress = app.ProgressBar(msg)
 
   iteration = 1
@@ -388,7 +393,7 @@ def execute(): #pylint: disable=unused-variable
     app.debug(f'Old mask voxel count: {dwi_old_mask_count}')
     app.debug(f'New mask voxel count: {dwi_new_mask_count}')
     dwi_mask_overlap_image = f'dwi_mask_overlap{iter_string}.mif'
-    run.command(f'mrcalc {dwi_mask_image} {new_dwi_mask_image} -mult {dwi_mask_overlap_image}')
+    run.command(f'mrcalc {dwi_mask_image} {new_dwi_mask_image} -mult {dwi_mask_overlap_image} -datatype bit')
 
     old_dwi_mask_image = dwi_mask_image
     dwi_mask_image = new_dwi_mask_image
@@ -422,7 +427,7 @@ def execute(): #pylint: disable=unused-variable
       total_scaling_factor *= scale_multiplier
       break
 
-    if new_dice_coefficient < prev_dice_coefficient:
+    if prev_dice_coefficient is not None and new_dice_coefficient < prev_dice_coefficient:
       progress.done()
       app.warn(f'Mask divergence at iteration {iteration} '
                f'(Dice coefficient = {new_dice_coefficient}); '

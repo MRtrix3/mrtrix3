@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2024 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -124,10 +124,9 @@ class Shared:
     for entry in entries:
       # It's possible that the file might be defined in a '--option=XXX' style argument
       #   It's also possible that the filename in the command string has the file extension omitted
-      if entry.startswith('--') and '=' in entry:
-        totest = entry.split('=')[1]
-      else:
-        totest = entry
+      totest = entry.split('=')[1] \
+          if isinstance(entry, str) and entry.startswith('--') and '=' in entry \
+          else entry
       if totest in [ self._last_file, os.path.splitext(self._last_file)[0] ]:
         self._last_file = ''
         return True
@@ -483,7 +482,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   if shared.get_scratch_dir():
     with shared.lock:
       with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf-8') as outfile:
-        outfile.write(cmdstring + '\n')
+        outfile.write(' '.join(cmdsplit) + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
 
@@ -506,7 +505,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   fnstring = f'{fn_to_execute.__module__}.{fn_to_execute.__name__}' \
              f'({", ".join([quoted(a) if isinstance(a, str) else str(a) for a in args])}' \
              f'{", " if (args and kwargs) else ""}' \
-             f'{", ".join([format_keyval(key, value) for key, value in kwargs.items()])}'
+             f'{", ".join([format_keyval(key, value) for key, value in kwargs.items()])})'
 
   if shared.get_continue():
     if shared.trigger_continue(args) or shared.trigger_continue(kwargs.values()):
