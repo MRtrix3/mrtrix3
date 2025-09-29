@@ -54,6 +54,7 @@ SEARCH_PATHS = [
     SearchPath('docs', False, True, '#', [], []),
     SearchPath('matlab', True, False, '%', ['.m'], []),
     SearchPath('python', True, False, '#', ['.py'], [os.path.join('mrtrix3', 'version.py.in'), os.path.join('mrtrix3', 'commands', '__init__.py.in')]),
+    SearchPath('thirdparty', False, True, '#', ['.sh'], [])
     SearchPath(os.path.join('share', 'mrtrix3'), True, False, '#', ['.txt'], []),
     SearchPath(os.path.join('testing', 'tools'), False, False, '*', ['.cpp'], []),
     SearchPath(os.path.join('testing', 'unit_tests'), False, False, '*', ['.cpp'], []),
