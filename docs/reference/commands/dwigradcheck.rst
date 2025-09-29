@@ -34,15 +34,15 @@ Options
 
 - **-number count** Set the number of tracks to generate for each test
 
-- **-threshold** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
+- **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
 
 - **-notranspose** Do not evaluate possible misattribution of gradient directions between image and scanner spaces
 
-- **-shuffle** Restrict the possible search space of axis shuffles; options are: none,real,bvec
+- **-shuffle choice** Restrict the possible search space of axis shuffles; options are: none,real,bvec (if omitted, shuffling of both bvec and realspace vectors will be performed)
 
 - **-all** Print table containing all results to standard output
 
-- **-out** Write text file with table containing all results
+- **-out fileout** Write text file with table containing all results
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -75,6 +75,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='Set the number of tracks to generate for each test')
   cmdline.add_argument('-threshold',
                        type=float,
+                       metavar='value',
                        default=DEFAULT_THRESHOLD,
                        help='Modulate thresold on the ratio of empirical to maximal mean length to issue an error')
   cmdline.add_argument('-notranspose',
@@ -82,11 +83,14 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='Do not evaluate possible misattribution of gradient directions between image and scanner spaces')
   cmdline.add_argument('-shuffle',
                        choices=SHUFFLING_BASES,
-                       help=f'Restrict the possible search space of axis shuffles; options are: {",".join(SHUFFLING_BASES)}')
+                       help='Restrict the possible search space of axis shuffles;'
+                            f' options are: {",".join(SHUFFLING_BASES)}'
+                            ' (if omitted, shuffling of both bvec and realspace vectors will be performed)')
   cmdline.add_argument('-all',
                        action='store_true',
                        help='Print table containing all results to standard output')
   cmdline.add_argument('-out',
+                       type=app.Parser.FileOut(),
                        help='Write text file with table containing all results')
   app.add_dwgrad_export_options(cmdline)
   app.add_dwgrad_import_options(cmdline)
@@ -100,7 +104,7 @@ class Variant():
     self.shuffle_basis = shuffle_basis
     self.transpose = transpose
     self.mean_length = None
-  def __format__(self, fmt):
+  def __format__(self, fmt): #pylint: disable=too-many-return-statements
     if self.is_default():
       return 'none'
     if self.transpose == 'bvec2real':
@@ -108,25 +112,19 @@ class Variant():
         return 'bvec_transB2R'
       if self.shuffle_basis == 'real':
         return f'bvec_transB2R_flip{self.flip}_perm{"".join(map(str, self.permutations))}'
-      elif self.shuffle_basis == 'bvec':
-        return f'bvec_flip{self.flip}_perm{"".join(map(str, self.permutations))}_transB2R'
-      else:
-        assert False
+      assert self.shuffle_basis == 'bvec'
+      return f'bvec_flip{self.flip}_perm{"".join(map(str, self.permutations))}_transB2R'
     if self.transpose == 'real2bvec':
       if self.no_shuffling():
         return 'real_transR2B'
       if self.shuffle_basis == 'real':
         return f'real_flip{self.flip}_perm{"".join(map(str, self.permutations))}_transR2B'
-      elif self.shuffle_basis == 'bvec':
-        return f'real_transR2B_flip{self.flip}_perm{"".join(map(str, self.permutations))}'
-      else:
-        assert False
+      assert self.shuffle_basis == 'bvec'
+      return f'real_transR2B_flip{self.flip}_perm{"".join(map(str, self.permutations))}'
     if self.shuffle_basis == 'real':
       return f'real_flip{self.flip}_perm{"".join(map(str, self.permutations))}'
-    elif self.shuffle_basis == 'bvec':
-      return f'bvec_flip{self.flip}_perm{"".join(map(str, self.permutations))}'
-    else:
-      assert False
+    assert self.shuffle_basis == 'bvec'
+    return f'bvec_flip{self.flip}_perm{"".join(map(str, self.permutations))}'
   def is_default(self):
     return self.flip is None and self.permutations == (0,1,2) and self.shuffle_basis == 'none' and self.transpose is None
   def no_flip(self):
@@ -161,6 +159,14 @@ class Variant():
     if self.no_shuffling():
       return '    none     '
     return f'{self.shuffle_basis}:({self.str_shuffle()}){" " if self.flip is None else ""}'
+  def out_format(self):
+    if self.transpose == 'real2bvec' and self.shuffle_basis == 'real':
+      return 'bvec'
+    if self.transpose == 'bvec2real' and self.shuffle_basis == 'bvec':
+      return 'real'
+    if self.shuffle_basis == 'none':
+      return 'bvec' if self.transpose == 'real2bvec' else 'real'
+    return self.shuffle_basis
 
 def sort_key(item):
   assert item.mean_length is not None
@@ -230,32 +236,34 @@ def execute(): #pylint: disable=unused-variable
   number_option = ['-select', str(app.ARGS.number)]
 
   variants = []
-  for f in FLIPS:
-    for p in PERMUTATIONS:
-      for b in SHUFFLING_BASES:
+  for flip in FLIPS:
+    for permutation in PERMUTATIONS:
+      for shuffling_base in SHUFFLING_BASES:
         # Exclude invalid combinations
-        if b == 'none' and (f is not None or p != (0,1,2)):
+        if shuffling_base == 'none' and (flip is not None or permutation != (0,1,2)):
           continue
-        if b != 'none' and (f is None and p == (0,1,2)):
+        if shuffling_base != 'none' and (flip is None and permutation == (0,1,2)):
           continue
-        if app.ARGS.shuffle is not None and b != app.ARGS.shuffle:
+        if app.ARGS.shuffle is not None and shuffling_base != app.ARGS.shuffle:
           continue
-        for t in TRANSPOSITIONS:
-          if t is None and b is None:
+        for transposition in TRANSPOSITIONS:
+          if transposition is None and shuffling_base is None:
             continue
-          if t is not None and app.ARGS.notranspose:
+          if transposition is not None and app.ARGS.notranspose:
             continue
           # Always omit the unmodified data here; add it at the end
-          if f is None and p == (0,1,2) and b == 'none' and t is None:
+          if flip is None and permutation == (0,1,2) and shuffling_base == 'none' and transposition is None:
             continue
-          variants.append(Variant(f, p, b, t))
+          variants.append(Variant(flip, permutation, shuffling_base, transposition))
   # Add the "no change" variant only at the very end
   variants.append(Variant(None, (0,1,2), 'none', None))
   app.debug('Complete list of variants:')
-  for v in variants:
-    app.debug(f'{v}')
+  for variant in variants:
+    app.debug(f'{variant}')
 
-  progress = app.ProgressBar(f'Testing gradient table alterations (0 of {len(variants)})', len(variants))
+  progress = app.ProgressBar('Testing gradient table alterations' +
+                             (f' (0 of {len(variants)})' if sys.stderr.isatty() else f' ({len(variants)} variants)'),
+                             len(variants))
   meanlength_default = None
   for index, variant in enumerate(variants):
     # Break processing into four phases:
@@ -294,16 +302,11 @@ def execute(): #pylint: disable=unused-variable
       assert shuffling_basis == 'none'
 
     # 3. Post shuffling transposition
+    save_basis = variant.out_format()
     if variant.transpose == 'real2bvec' and variant.shuffle_basis == 'real':
       grad = [[row[i] for row in grad] for i in range(0, 3)]
-      save_basis = 'bvec'
     elif variant.transpose == 'bvec2real' and variant.shuffle_basis == 'bvec':
       grad = [[row[i] for row in grad_bvecs] + [grad_bvals[i]] for i in range(0, len(grad[0]))]
-      save_basis = 'real'
-    elif shuffling_basis == 'none':
-      save_basis = 'bvec' if variant.transpose == 'real2bvec' else 'real'
-    else:
-      save_basis = shuffling_basis
 
     # 4. Save to file
     if save_basis == 'bvec':
@@ -312,7 +315,8 @@ def execute(): #pylint: disable=unused-variable
         for line in grad:
           bvecs_file.write (' '.join([str(v) for v in line]) + '\n')
       grad_option = ['-fslgrad', grad_path, 'bvals']
-    elif save_basis == 'real':
+    else:
+      assert save_basis == 'real'
       grad_path = f'grad_{variant}.b'
       with open(grad_path, 'w', encoding='utf-8') as grad_file:
         for line in grad:
@@ -349,19 +353,20 @@ def execute(): #pylint: disable=unused-variable
   # Sort the list to find the best gradient configuration(s)
   sorted_variants = list(variants)
   sorted_variants.sort(reverse=True, key=sort_key)
-  meanlength_max = sorted_variants[0].mean_length
+  best_variant = sorted_variants[0]
 
-  if sorted_variants[0].is_default():
+  if best_variant.is_default():
     meanlength_ratio = 1.0
     app.console('Absence of manipulation of the gradient table resulted in the maximal mean length')
   else:
-    meanlength_ratio = meanlength_default / meanlength_max
+    meanlength_ratio = meanlength_default / best_variant.mean_length
+    app.console(f'Optimal variant: "{best_variant}"')
     app.console(f'Ratio of mean length of empirical data to mean length of best candidate: {meanlength_ratio:.3f}')
 
   # Provide a printout of the mean streamline length of each gradient table manipulation
   if app.ARGS.all:
-    def pad_transpose(s):
-      return s.ljust(7, ' ').rjust(9, ' ')
+    def pad_transpose(string):
+      return string.ljust(7, ' ').rjust(9, ' ')
     if app.ARGS.notranspose:
       sys.stdout.write('Mean length     Shuffle\n')
       for variant in sorted_variants:
@@ -373,30 +378,45 @@ def execute(): #pylint: disable=unused-variable
     else:
       sys.stdout.write('Mean length   Transform        Shuffle       Transform\n')
       for variant in sorted_variants:
-        sys.stdout.write(f'  {variant.mean_length:5.2f}       {pad_transpose(variant.str_transpose_preshuffle())}     {variant.str_shuffle_pretty()}    {pad_transpose(variant.str_transpose_postshuffle())}\n')
+        sys.stdout.write(f'  {variant.mean_length:5.2f}'
+                         f'       {pad_transpose(variant.str_transpose_preshuffle())}'
+                         f'     {variant.str_shuffle_pretty()}'
+                         f'    {pad_transpose(variant.str_transpose_postshuffle())}\n')
     sys.stdout.flush()
 
   # Write comprehensive results to a file
   if app.ARGS.out:
-    if os.path.splitext(app.ARGS.out)[-1].lower() == '.tsv':
+    if app.ARGS.out.suffix.lower() == '.tsv':
       delimiter = '\t'
       quote = ''
     else:
       delimiter = ','
       quote = '"'
-    with open(path.from_user(app.ARGS.out, False), 'w') as f:
-      f.write(f'Pre-shuffle transpose{delimiter}Shuffling basis{delimiter}Axis shuffle{delimiter}Post-shuffle transpose{delimiter}Mean length\n')
-      for v in variants:
-        f.write(f'{v.str_transpose_preshuffle()}{delimiter}{v.shuffle_basis}{delimiter}{quote}{v.str_shuffle()}{quote}{delimiter}{v.str_transpose_postshuffle()}{delimiter}{v.mean_length}\n')
+    with open(app.ARGS.out, 'w', encoding='utf-8') as outfile:
+      outfile.write(f'Pre-shuffle transpose'
+                    f'{delimiter}Shuffling basis'
+                    f'{delimiter}Axis shuffle'
+                    f'{delimiter}Post-shuffle transpose'
+                    f'{delimiter}Mean length\n')
+      for variant in variants:
+        outfile.write(f'{variant.str_transpose_preshuffle()}'
+                      f'{delimiter}{variant.shuffle_basis}'
+                      f'{delimiter}{quote}{variant.str_shuffle()}{quote}'
+                      f'{delimiter}{variant.str_transpose_postshuffle()}'
+                      f'{delimiter}{variant.mean_length}\n')
 
   # If requested, extract what has been detected as the best gradient table, and
   #   export it in the format requested by the user
   grad_export_option = app.dwgrad_export_options()
   if grad_export_option:
-    if variant.shuffle_basis == 'real' or (variant.shuffle_basis == 'bvec' and variant.transpose == 'bvec2real'):
-      grad_import_option = ['-grad', 'grad_{sorted_variants[0]}.b']
-    elif variant.shuffle_basis == 'bvec' or (variant.shuffle_basis == 'real' and variant.transpose == 'real2bvec'):
-      grad_import_option = ['-fslgrad', f'bvecs_{variant}', 'bvals']
+    grad_import_option = None
+    if best_variant.is_default():
+      grad_import_option = ['-grad', 'grad.b']
+    elif best_variant.out_format() == 'bvec':
+      grad_import_option = ['-fslgrad', f'bvecs_{best_variant}', 'bvals']
+    else:
+      assert best_variant.out_format() == 'real'
+      grad_import_option = ['-grad', f'grad_{best_variant}.b']
     run.command(['mrinfo', 'data.mif'] + grad_import_option + grad_export_option,
                 force=app.FORCE_OVERWRITE)
 
