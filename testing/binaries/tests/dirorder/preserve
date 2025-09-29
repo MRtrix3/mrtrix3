@@ -1,0 +1,23 @@
+#!/bin/bash
+# Verify operation of command with use of -preserve option
+# Compared to the default operation test,
+#   here the first 6 volumes of the ordered direction set are preserved in-place,
+#   which would otherwise be highly sub-optimal
+#   given that there are all highly collinear.
+# We then check both to make sure that these directions were indeed preserved,
+#   and that the command was nevertheless able to find a reasonable ordering
+#   of those subsequent volumes to produce a reasonably well-distributed upon truncation
+
+dirorder dirorder/ordered.txt -cartesian tmp.txt -preserve 6 -force
+
+rm -f tmp2.txt
+sed '/^#/d' tmp.txt | \
+    head -n20 > tmp2.txt
+
+(( $(echo $(dirstat tmp2.txt -output SH4) "< 5" | bc) ))
+
+sed '/^#/d' tmp.txt | \
+    head -n6 > tmp3.txt
+sed '/^#/d' dirorder/ordered.txt | \
+    head -n6 > tmp4.txt
+testing_diff_matrix tmp3.txt tmp4.txt -abs 1e-15
