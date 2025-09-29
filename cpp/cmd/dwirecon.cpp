@@ -338,14 +338,14 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         for (size_t col = 0; col != shell.size(); ++col) {
           if (assigned[col])
             continue;
-          ssize_t row;
+          decltype(dp_matrix)::Index row(-1);
           const default_type this_closest_dp = dp_matrix.col(col).maxCoeff(&row);
           if (this_closest_dp < 0.0)
             throw Exception(std::string("No reversed phase encoding volume found") + //
                             " for volume " + str(shell.get_volumes()[col]));         //
           if (col > row)
             continue;
-          ssize_t min_col;
+          decltype(dp_matrix)::Index min_col(-1);
           dp_matrix.col(row).maxCoeff(&min_col);
           if (min_col != col) {
             DEBUG(std::string("Debugging information for reversed phase encoding volume pairing") + //
@@ -365,7 +365,8 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
           assigned[col] = true;
           // Ensure that there are no two unmatched volumes
           //   that are closer than any two matched volumes
-          dp_matrix(row, col) = dp_matrix(col, row) = -1.0;
+          dp_matrix(row, col) = -1.0;
+          dp_matrix(col, row) = -1.0;
           max_nonclosest_dp =
               std::min({max_nonclosest_dp, dp_matrix.col(col).maxCoeff(), dp_matrix.col(row).maxCoeff()});
         }
@@ -492,7 +493,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         for (auto l = Loop(gradient)(gradient, /*jacdet_image,*/ weight_image); l; ++l) {
           const default_type jacdet = std::max(0.0, 1.0 + (gradient.value() * multiplier));
           // jacdet_image.value() = jacdet;
-          weight_image.value() = Math::pow2(jacdet);
+          weight_image.value() = float(Math::pow2(jacdet));
         }
         // jacdet_images.push_back(std::move(jacdet_image));
         weight_images.push_back(std::move(weight_image));
@@ -502,7 +503,8 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
     ProgressBar progress("Performing explicit volume recombination", header_out.size(3));
     for (size_t out_volume = 0; out_volume != header_out.size(3); ++out_volume) {
       dwi_out.index(3) = out_volume;
-      Image<float> first_volume(dwi_in), second_volume(dwi_in);
+      Image<float> first_volume(dwi_in);
+      Image<float> second_volume(dwi_in);
       first_volume.index(3) = volume_pairs[out_volume].first;
       second_volume.index(3) = volume_pairs[out_volume].second;
       Image<float> first_weight(weight_images[pe_indices[volume_pairs[out_volume].first]]);
@@ -520,12 +522,13 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
     // No field map image provided; do a straight averaging of input volumes into output
     ProgressBar progress("Performing explicit volume recombination", header_out.size(3));
     for (size_t out_volume = 0; out_volume != header_out.size(3); ++out_volume) {
-      Image<float> first_volume(dwi_in), second_volume(dwi_in);
+      Image<float> first_volume(dwi_in);
+      Image<float> second_volume(dwi_in);
       dwi_out.index(3) = out_volume;
       first_volume.index(3) = volume_pairs[out_volume].first;
       second_volume.index(3) = volume_pairs[out_volume].second;
       for (auto l = Loop(dwi_out, 0, 3)(dwi_out, first_volume, second_volume); l; ++l)
-        dwi_out.value() = 0.5 * (first_volume.value() + second_volume.value());
+        dwi_out.value() = 0.5f * (first_volume.value() + second_volume.value());
       ++progress;
     }
   }
@@ -551,7 +554,7 @@ void run_combine_predicted(Image<float> &dwi_in,
                            Header &header_out) {
 
   const std::vector<std::string> invalid_options{"pairs_in", "pairs_out"};
-  for (const auto opt : invalid_options)
+  for (const auto &opt : invalid_options)
     if (!get_options(opt).empty())
       throw Exception("-" + opt + " option not supported for \"combine_predicted\" operation");
 
@@ -570,7 +573,7 @@ void run_combine_predicted(Image<float> &dwi_in,
     throw Exception("Cannot combine empirical with predicted intensities"
                     " in the absence of phase encoding contrast");
 
-  DWI::Shells shells(grad_in);
+  const DWI::Shells shells(grad_in);
   const std::vector<int> vol2shell = get_vol2shell(shells, grad_in.rows());
 
   auto opt = get_options("lmax");
@@ -580,13 +583,13 @@ void run_combine_predicted(Image<float> &dwi_in,
     if (lmax_user.size() != shells.count())
       throw Exception("-lmax option must specify one lmax for each unique b-value");
     for (size_t shell_index = 0; shell_index != shells.count(); ++shell_index) {
-      if (lmax_user[shell_index] % 2)
+      if (lmax_user[shell_index] % 2 != 0)
         throw Exception("-lmax values must be even numbers");
       // Technically this is a weak constraint:
       //   user-requested lmax may not be possible once excluding a phase encoding group
       if (lmax_user[shell_index] > Math::SH::NforL(shells[shell_index].count()))
         throw Exception("Requested lmax=" + str(lmax_user[shell_index]) +                                  //
-                        " for shell b=" + str<int>(shells[shell_index].get_mean()) + "," +                 //
+                        " for shell b=" + str(int(std::round(shells[shell_index].get_mean()))) + "," +     //
                         " but only " + str(shells[shell_index].count()) + " volumes," +                    //
                         " which only supports lmax=" + str(Math::SH::NforL(shells[shell_index].count()))); //
     }
@@ -616,7 +619,7 @@ void run_combine_predicted(Image<float> &dwi_in,
       Image<float> jacdet_image =
           Image<float>::scratch(field_image, "Jacobian determinant image for phase encoding group " + str(pe_index));
       for (auto l = Loop(gradient)(gradient, jacdet_image); l; ++l)
-        jacdet_image.value() = std::max(0.0, 1.0 + (gradient.value() * multiplier));
+        jacdet_image.value() = float(std::max(0.0, 1.0 + (gradient.value() * multiplier)));
       jacdet_images.push_back(std::move(jacdet_image));
       ++progress;
     }
@@ -684,7 +687,8 @@ void run_combine_predicted(Image<float> &dwi_in,
       }
       assert(!source_volumes.empty());
       assert(!target_volumes.empty());
-      std::stringstream ss_sources, ss_targets;
+      std::stringstream ss_sources;
+      std::stringstream ss_targets;
       for (const auto i : source_volumes)
         ss_sources << str(i) << " ";
       for (const auto i : target_volumes)
@@ -692,7 +696,7 @@ void run_combine_predicted(Image<float> &dwi_in,
       DEBUG(str(source_volumes.size()) + " source volumes for this reconstruction: " + ss_sources.str());
       DEBUG(str(target_volumes.size()) + " target volumes for this reconstruction: " + ss_targets.str());
       const size_t lmax_data = shells[shell_index].is_bzero() ? 0 : Math::SH::LforN(source_volumes.size());
-      size_t lmax;
+      size_t lmax(0);
       if (lmax_user.empty()) {
         lmax = lmax_data;
       } else {
@@ -775,7 +779,8 @@ void run_combine_predicted(Image<float> &dwi_in,
           default_type empirical_weight = std::max(0.0, std::min(1.0, default_type(jacdet.value())));
           if (empirical_weight == 1.0) {
             for (const auto volume : target_volumes) {
-              dwi_in.index(3) = dwi_out.index(3) = volume;
+              dwi_in.index(3) = volume;
+              dwi_out.index(3) = volume;
               dwi_out.value() = dwi_in.value();
             }
             predicted_data.fill(std::numeric_limits<default_type>::quiet_NaN());
@@ -793,8 +798,8 @@ void run_combine_predicted(Image<float> &dwi_in,
             // Write these to the output image
             for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
               dwi_in.index(3) = dwi_out.index(3) = target_volumes[target_index];
-              dwi_out.value() =
-                  (empirical_weight * dwi_in.value()) + ((1.0 - empirical_weight) * predicted_data[target_index]);
+              dwi_out.value() = float((empirical_weight * dwi_in.value()) +
+                                      ((1.0 - empirical_weight) * predicted_data[target_index]));
             }
           }
           if (weights_image.valid()) {
