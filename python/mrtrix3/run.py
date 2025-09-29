@@ -266,10 +266,10 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry)}'
         cmdsplit.append(entry)
       elif isinstance(entry, app.FSQEPath):
-        cmdstring += f'{" " if cmdstring else ""}' \
-                     f'{entry.relative_to(app.SCRATCH_DIR) \
-                        if app.SCRATCH_DIR and entry.is_relative_to(app.SCRATCH_DIR) \
-                        else entry}'
+        fsqepath = entry.relative_to(app.SCRATCH_DIR) \
+            if app.SCRATCH_DIR and entry.is_relative_to(app.SCRATCH_DIR) \
+            else entry
+        cmdstring += f'{" " if cmdstring else ""}{fsqepath}'
         cmdsplit.append(str(entry))
       elif isinstance(entry, pathlib.Path):
         cmdstring += f'{" " if cmdstring else ""}' \

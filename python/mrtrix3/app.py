@@ -594,14 +594,14 @@ class ProgressBar: #pylint: disable=unused-variable
 class FSQEPath(type(pathlib.Path.cwd())):
   def absolute(self):
     return FSQEPath(super().absolute())
-  @classmethod
+  @staticmethod
   def cwd():
     return FSQEPath(pathlib.Path.cwd())
   def expanduser(self):
     return FSQEPath(super().expanduser())
   def joinpath(self, *pathsegments):
     return FSQEPath(self, *pathsegments)
-  @classmethod
+  @staticmethod
   def home():
     return FSQEPath(pathlib.Path.home())
   @property
@@ -613,16 +613,17 @@ class FSQEPath(type(pathlib.Path.cwd())):
     return FSQEPath(super().rename(target))
   def replace(self, target):
     return FSQEPath(super().replace(target))
-  def resolve(self):
-    return FSQEPath(super().resolve())
+  def resolve(self, *args):
+    return FSQEPath(super().resolve(*args))
   def with_name(self, name):
     return FSQEPath(super().with_name(name))
-  def with_segments(self, *pathsegments):
-    return FSQEPath(super().with_segments(*pathsegments))
+# Only available from Python 3.12
+#  def with_segments(self, *pathsegments):
+#    return FSQEPath(super().with_segments(*pathsegments))
   def with_stem(self, stem):
     return FSQEPath(super().with_stem(stem))
-  def with_suffix(self, stem):
-    return FSQEPath(super().with_suffix(stem))
+  def with_suffix(self, suffix):
+    return FSQEPath(super().with_suffix(suffix))
   def __format__(self, _):
     return shlex.quote(str(self))
   def __truediv__(self, key):

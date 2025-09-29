@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os, shlex, shutil
+import os, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, run
 
