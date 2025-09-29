@@ -1,18 +1,19 @@
+.. _motivation_for_afdconnectivity:
+
 Motivation for ``afdconnectivity``
 ==================================
 
 .. NOTE::
 
-    A `preprint <https://osf.io/c67kn/>`_ has now been uploaded, which
-    expands on the concepts within this page with figures and greater detail,
-    and includes explanation of the newer SIFT2 method available in command
-    :ref:`tcksift2`. Readers may find it more informative and up-to-date than
-    the content of this documentation page.
+    A published journal article expands on the concepts within this page
+    with figures and greater detail [Smith2022]_;
+    readers may find it more informative and up-to-date
+    than the content of this documentation page.
 
 Due to the interest in the :ref:`afdconnectivity` command, I thought I'd
 explain the reasoning behind the approach, the rationale behind the
-improvements made in commit 
-`40ccdb62 <https://github.com/MRtrix3/mrtrix3/commit/40ccdb6290ccac81252747d5be71a77af56e8dc6>`_, 
+improvements made in commit
+`40ccdb62 <https://github.com/MRtrix3/mrtrix3/commit/40ccdb6290ccac81252747d5be71a77af56e8dc6>`_,
 and the argument for why we recommend the use of :ref:`sift` as an
 alternative if possible.
 

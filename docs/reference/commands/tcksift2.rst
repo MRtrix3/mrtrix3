@@ -19,8 +19,21 @@ Usage
 -  *in_fod*: input image containing the spherical harmonics of the fibre orientation distributions
 -  *out_weights*: output text file containing the weighting factor for each streamline
 
+Description
+-----------
+
+Interpretation of not just the relative magnitudes of the output weights of different streamlines, but their ABSOLUTE magnitude, depends on the presence or absence of any modulations applied to those values; by the tcksift2 command itself, and/or other experimental factors applied, whether implicit or explicit. This has been termed "inter-subject connection density normalisation". Within the scope of the tcksift2 command, some control of this normalisation is available by specifying the units of those output weights. The options available for these units, and their corresponding interpretations, are described in further detail in the following paragraphs.
+
+- "NOS" (Number Of Streamlines) / "none": No explicit scaling of the output streamline weights is performed. A key component of the SIFT model as originally devised was to scale the contributions of all streamlines by proportionality coefficient mu, to facilitate direct comparison of tractogram and fixel-wise fibre densities. This is therefore the "native" form in which these streamline weights are computed. In the contex of output of the SIFT2 method, this makes the per-streamline weights approximately centred around unity, such that the overall magnitude of inter-areal connection weights will be comparable to that of the number-of-streamlines metric. This was the behaviour of the tcksift2 command prior to software version 3.1.0.
+
+- "AFD/mm" / "AFD.mm-1", "AFD.mm^-1": The streamline weights in their native representation are multiplied by SIFT model proportionality coefficient mu as they are exported to file. These values encode the AFD per millimetre of length that is contributed to the model by that streamline. Only under specific circumstances does utilising these units permit direct comparison of Fibre Bundle Capacity (FBC) between reconstructions: a) Use of common response function(s); b) Having used some mechanism for global intensity normalisation (as required for any analysis of AFD); c) All DWI data have the same spatial resolution.
+
+- "mm2" / "mm^2": The streamline weights in their native representation are multiplied both by SIFT model proportionality coefficient mu and by the voxel volume in mm^3 as they are exported to file. These units interpret the fixel-wise AFD values as volume fractions (despite the fact that these values do not have an upper bound of 1.0), such that the streamline weights may be interpreted as a physical fibre cross-sectional area in units of mm^2; each streamline therefore contributes some fibre volume per unit length. Only under specific circumstances does utilising these units permit direct comparison of Fibre Bundle Capacity (FBC) between reconstructions: a) Use of common response function(s); b) Having used some mechanism for global intensity normalisation (as required for any analysis of AFD). Unlike the AFD/mm units however, streamline weights exported in these units are invariant to the resolution of the FOD voxel grid used in the SIFT2 optimisation.
+
 Options
 -------
+
+-  **-units choice** specify the physical units for the output streamline weights (see Description)
 
 Options for setting the processing mask for the SIFT fixel-streamlines comparison model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -107,8 +120,7 @@ References
 
 Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. NeuroImage, 2015, 119, 338-351
 
-* If using the -linear option:  |br|
-  Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.
+Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. OHBM Aperture, doi: 10.52294/ApertureNeuro.2022.2.NEOD9565.
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
