@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os, shlex, shutil
+import os, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, run
 
@@ -138,13 +138,11 @@ def execute(): #pylint: disable=unused-variable
   if not app.ARGS.sfwm_fa_threshold:
     app.console(f'Selecting WM single-fibre voxels using "{app.ARGS.wm_algo}" algorithm')
     run.command(f'dwi2response {app.ARGS.wm_algo} dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif'
-                ' -scratch %s' % shlex.quote(app.SCRATCH_DIR)
-                + recursive_cleanup_option)
+                f' -scratch {app.SCRATCH_DIR}{recursive_cleanup_option}')
   else:
     app.console(f'Selecting WM single-fibre voxels using "fa" algorithm with a hard FA threshold of {app.ARGS.sfwm_fa_threshold}')
     run.command(f'dwi2response fa dwi.mif wm_ss_response.txt -mask wm_mask.mif -threshold {app.ARGS.sfwm_fa_threshold} -voxels wm_sf_mask.mif'
-                ' -scratch %s' % shlex.quote(app.SCRATCH_DIR)
-                + recursive_cleanup_option)
+                f' -scratch {app.SCRATCH_DIR}{recursive_cleanup_option}')
 
   # Check for empty masks
   wm_voxels  = image.statistics('wm_sf_mask.mif', mask='wm_sf_mask.mif').count

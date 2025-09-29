@@ -54,8 +54,8 @@ def execute(): #pylint: disable=unused-variable
   app.ARGS.template = []
   for i_contrast in range(n_contrasts):
     inargs = (input_output[i_contrast*2], input_output[i_contrast*2+1])
-    app.ARGS.input_dir.append(app.Parser.make_userpath_object(app.Parser._UserPathExtras, inargs[0])) # pylint: disable=protected-access
-    app.ARGS.template.append(app.Parser.make_userpath_object(app.Parser._UserOutPathExtras, inargs[1])) # pylint: disable=protected-access
+    app.ARGS.input_dir.append(app.Parser.UserInPath(inargs[0]))
+    app.ARGS.template.append(app.Parser.UserOutPath(inargs[1]))
   # Perform checks that otherwise would have been done immediately after command-line parsing
   #   were it not for the inability to represent input-output pairs in the command-line interface representation
   for output_path in app.ARGS.template:

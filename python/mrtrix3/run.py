@@ -265,21 +265,49 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       if isinstance(entry, str):
         cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry)}'
         cmdsplit.append(entry)
-      elif isinstance(entry, list):
-        assert all(isinstance(item, str) for item in entry)
-        if len(entry) > 1:
-          common_prefix = os.path.commonprefix(entry)
-          common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
-          if common_prefix == entry[0] and common_prefix == common_suffix:
-            cmdstring += f'{" " if cmdstring else ""}[{entry[0]} (x{len(entry)})]'
-          else:
-            cmdstring += f'{" " if cmdstring else ""}[{common_prefix}*{common_suffix} ({len(entry)} items)]'
-        else:
-          cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry[0])}'
-        cmdsplit.extend(entry)
-      elif isinstance(entry, pathlib.Path):
-        cmdstring += f'{" " if cmdstring else ""}{shlex.quote(str(entry))}'
+      elif isinstance(entry, app.FSQEPath):
+        fsqepath = entry.relative_to(app.SCRATCH_DIR) \
+            if app.SCRATCH_DIR and entry.is_relative_to(app.SCRATCH_DIR) \
+            else entry
+        cmdstring += f'{" " if cmdstring else ""}{fsqepath}'
         cmdsplit.append(str(entry))
+      elif isinstance(entry, pathlib.Path):
+        cmdstring += f'{" " if cmdstring else ""}' \
+                     + shlex.quote(str(entry.relative_to(app.SCRATCH_DIR)) \
+                                       if app.SCRATCH_DIR and entry.is_relative_to(app.SCRATCH_DIR) \
+                                       else entry)
+        cmdsplit.append(str(entry))
+      elif isinstance(entry, list):
+        if all(isinstance(item, str) for item in entry):
+          if len(entry) > 1:
+            common_prefix = os.path.commonprefix(entry)
+            common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
+            if common_prefix == entry[0] and common_prefix == common_suffix:
+              cmdstring += f'{" " if cmdstring else ""}[{entry[0]} (x{len(entry)})]'
+            else:
+              cmdstring += f'{" " if cmdstring else ""}[{common_prefix}*{common_suffix} ({len(entry)} items)]'
+          else:
+            cmdstring += f'{" " if cmdstring else ""}{shlex.quote(entry[0])}'
+          cmdsplit.extend(entry)
+        elif all(isinstance(item, (app.FSQEPath, pathlib.Path)) for item in entry):
+          if len(entry) > 1:
+            common_prefix = os.path.commonprefix(entry)
+            common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
+            if common_prefix == entry[0] and common_prefix == common_suffix:
+              cmdstring += f'{" " if cmdstring else ""}' \
+                           f'[{shlex.quote(entry[0])} (x{len(entry)})]'
+            else:
+              cmdstring += f'{" " if cmdstring else ""} [' \
+                           + shlex.quote(f'{common_prefix}*{common_suffix}') \
+                           + f'({len(entry)} items)]'
+          else:
+            cmdstring += f'{" " if cmdstring else ""}' \
+                         f'{entry[0] if isinstance(entry[0], app.FSQEPath) else shlex.quote(entry[0])}'
+          cmdsplit.extend(entry)
+        else:
+          raise TypeError('If a list input to run.command() includes within it a list, '
+                          'the entries in that list must all be of the same type, '
+                          'and that type must be either str, app.FSQEPath or pathlib.Path')
       else:
         raise TypeError('When run.command() is provided with a list as input, '
                         'entries in the list must be either strings or lists of strings; '
@@ -287,7 +315,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   elif isinstance(cmd, str):
     cmdstring = cmd
     # Split the command string by spaces, preserving anything encased within quotation marks
-    if os.sep == '/': # Cheap POSIX compliance check
+    if os.sep == '/': # Cheap POSIX compliance check (including MSYS2)
       cmdsplit = shlex.split(cmd)
     else: # Native Windows Python
       cmdsplit = [ entry.strip('\"') for entry in shlex.split(cmd, posix=False) ]
@@ -489,7 +517,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   #   other flags may potentially change if this file is eventually used to resume the script
   if shared.get_scratch_dir():
     with shared.lock:
-      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf-8') as outfile:
+      with open(shared.get_scratch_dir() / 'log.txt', 'a', encoding='utf-8') as outfile:
         outfile.write(' '.join(cmdsplit) + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
@@ -540,8 +568,8 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   # Only now do we append to the script log, since the function has completed successfully
   if shared.get_scratch_dir():
     with shared.lock:
-      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf-8') as outfile:
-        outfile.write(fnstring + '\n')
+      with open(shared.get_scratch_dir() / 'log.txt', 'a', encoding='utf-8') as outfile:
+        outfile.write(f'{fnstring}\n')
 
   return result
 
@@ -587,7 +615,7 @@ def version_match(item):
     return exe_path_manual
   exe_path_sys = shutil.which(exe_name(item))
   if exe_path_sys and os.path.isfile(exe_path_sys):
-    app.debug(f'Using non-version-matched executable for "{item}": {exe_path_sys}')
+    app.warn(f'Using non-version-matched executable for MRtrix3 "{item}" from {exe_path_sys}')
     return exe_path_sys
   raise MRtrixError(f'Unable to find executable for MRtrix3 command "{item}"')
 
@@ -595,20 +623,20 @@ def version_match(item):
 
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
-def get_interpreter(item):
+def get_interpreter(cmdname):
   from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
-  if os.sep in item:
-    path = item
+  if os.sep in cmdname:
+    cmdpath = cmdname
   else:
-    path = version_match(item)
-    if path == item:
-      path = shutil.which(exe_name(item))
-  if not path:
-    app.debug(f'File "{item}": Could not find file to query')
+    cmdpath = version_match(cmdname)
+    if cmdpath == cmdname:
+      cmdpath = shutil.which(exe_name(cmdname))
+  if not cmdpath:
+    app.debug(f'Command "{cmdname}": Could not find file to query')
     return []
   # Read the first 1024 bytes of the file
-  with open(path, 'rb') as file_in:
+  with open(cmdpath, 'rb') as file_in:
     data = file_in.read(1024)
 
   class ShebangParseError(Exception):
@@ -661,7 +689,7 @@ def get_interpreter(item):
     if shebang_firstitem_basename == 'env' and resolve_env:
       exe_path = shutil.which(shebang[1])
       if not exe_path:
-        raise ShebangParseError(f'on Windows with "env" shebang, but unable to find command "{shebang[1]}"')
+        raise ShebangParseError(f'attempting to bypass "env" shebang, but unable to find command "{shebang[1]}"')
       return [exe_path] + shebang_extras
     if os.path.exists(shebang[0]):
       if not os.access(shebang[0], os.X_OK):
@@ -675,17 +703,17 @@ def get_interpreter(item):
     try:
       line = str(line.decode('utf-8'))
     except UnicodeDecodeError:
-      app.debug(f'File "{item}": Not a text file')
+      app.debug(f'File "{cmdpath}": Not a text file')
       return []
     line = line.strip()
     if not (len(line) > 2 and line[0:2] == '#!'):
       continue
     try:
       interpreter = parse_shebang(line, utils.is_windows())
-      app.debug(f'File "{item}": shebang line "{line}"; utilising interpreter {interpreter}')
+      app.debug(f'File "{cmdpath}": shebang line "{line}"; utilising interpreter {interpreter}')
       return interpreter
     except ShebangParseError as exc:
-      app.warn(f'Invalid shebang in script file "{item}": {exc}')
+      app.warn(f'Invalid shebang found for command {cmdname} ("{exc}"): may not execute')
       return []
-  app.debug(f'File "{item}": No shebang found')
+  app.debug(f'File "{cmdpath}": No shebang found')
   return []

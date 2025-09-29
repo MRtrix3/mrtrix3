@@ -13,13 +13,18 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os, shutil, subprocess
+import os, pathlib, shutil, subprocess
 from mrtrix3 import MRtrixError
 
 
 
 
 _SUFFIX = ''
+
+IMAGETYPE2SUFFIX = {'NIFTI': '.nii',
+                    'NIFTI_GZ': '.nii.gz',
+                    'NIFTI_PAIR': '.img',
+                    'NIFTI_PAIR_GZ': None}
 
 
 
@@ -118,15 +123,17 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
     #   select the one with the highest version number
     binaries = [ ]
     for directory in os.environ['PATH'].split(os.pathsep):
-      if os.path.isdir(directory):
-        for entry in os.listdir(directory):
-          if entry.startswith('eddy_cuda'):
-            binaries.append(entry)
+      directory = pathlib.Path(directory)
+      try:
+        for entry in directory.glob('eddy_cuda*'):
+          binaries.append(entry)
+      except OSError:
+        pass
     max_version = 0.0
-    exe_path = ''
+    exe_path = None
     for entry in binaries:
       try:
-        version = float(entry.lstrip('eddy_cuda'))
+        version = float(entry.stem.lstrip('eddy_cuda'))
         if version > max_version:
           max_version = version
           exe_path = entry
@@ -167,21 +174,26 @@ def exe_name(name): #pylint: disable=unused-variable
 
 
 # In some versions of FSL, even though we try to predict the names of image files that
-#   FSL commands will generate based on the suffix() function, the FSL binaries themselves
-#   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
-# Whenever receiving an output image from an FSL command, explicitly search for the path
+#   FSL commands will generate based on the suffix() function,
+#   the FSL binaries themselves ignore the FSLOUTPUTTYPE environment variable.
+# Therefore, the safest approach is:
+#   Whenever receiving an output image from an FSL command,
+#   explicitly search for the path
 def find_image(name): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
-  if os.path.isfile(prefix + suffix()):
-    app.debug(f'Image at expected location: "{prefix}{suffix()}"')
-    return f'{prefix}{suffix()}'
+  prefix = pathlib.PurePath(name)
+  prefix = prefix.parent / prefix.name.split('.')[0]
+  expected = prefix.with_suffix(suffix())
+  if expected.is_file():
+    app.debug(f'Image at expected location: {expected}')
+    return expected
   for suf in ['.nii', '.nii.gz', '.img']:
-    if os.path.isfile(f'{prefix}{suf}'):
-      app.debug(f'Expected image at "{prefix}{suffix()}", '
-                f'but found at "{prefix}{suf}"')
-      return f'{prefix}{suf}'
-  raise MRtrixError(f'Unable to find FSL output file for path "{name}"')
+    candidate = prefix.with_suffix(suf)
+    if candidate.is_file():
+      app.debug(f'Expected image at {expected}, '
+                f'but found at {candidate}')
+      return candidate
+  raise MRtrixError(f'Unable to find FSL output image for path {name}')
 
 
 
@@ -195,26 +207,20 @@ def suffix(): #pylint: disable=unused-variable
   if _SUFFIX:
     return _SUFFIX
   fsl_output_type = os.environ.get('FSLOUTPUTTYPE', '')
-  if fsl_output_type == 'NIFTI':
-    app.debug('NIFTI -> .nii')
-    _SUFFIX = '.nii'
-  elif fsl_output_type == 'NIFTI_GZ':
-    app.debug('NIFTI_GZ -> .nii.gz')
-    _SUFFIX = '.nii.gz'
-  elif fsl_output_type == 'NIFTI_PAIR':
-    app.debug('NIFTI_PAIR -> .img')
-    _SUFFIX = '.img'
-  elif fsl_output_type == 'NIFTI_PAIR_GZ':
-    raise MRtrixError('MRtrix3 does not support compressed NIFTI pairs; '
-                      'please change FSLOUTPUTTYPE environment variable')
-  elif fsl_output_type:
-    app.warn('Unrecognised value for environment variable FSLOUTPUTTYPE '
-             f'("{fsl_output_type}"): '
-             'Expecting compressed NIfTIs, but FSL commands may fail')
-    _SUFFIX = '.nii.gz'
+  if fsl_output_type in IMAGETYPE2SUFFIX:
+    _SUFFIX = IMAGETYPE2SUFFIX[fsl_output_type]
+    if _SUFFIX is None:
+      raise MRtrixError(f'MRtrix3 does not support FSL output image type "{fsl_output_type}; '
+                        'please change FSLOUTPUTTYPE environment variable')
+    app.debug(f'{fsl_output_type} -> {_SUFFIX}')
   else:
-    app.warn('Environment variable FSLOUTPUTTYPE not set; '
-             'FSL commands may fail, '
-             'or script may fail to locate FSL command outputs')
     _SUFFIX = '.nii.gz'
+    if fsl_output_type:
+      app.warn('Unrecognised value for environment variable FSLOUTPUTTYPE '
+              f'("{fsl_output_type}"): '
+              'executed FSL commands may fail')
+    else:
+      app.warn('Environment variable FSLOUTPUTTYPE not set; '
+               'FSL commands may fail, '
+               'or this script may fail to locate FSL command outputs')
   return _SUFFIX

@@ -17,7 +17,7 @@
 
 
 
-import ctypes, os, shutil, subprocess, time
+import ctypes, os, pathlib, shutil, subprocess, time
 
 
 
@@ -51,7 +51,7 @@ def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
 #   need to be used in conjunction with scriptSubDirName()
 def shared_data_path(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
+  result = pathlib.Path(__file__).resolve().parents[2] / 'share' / 'mrtrix3'
   app.debug(result)
   return result
 
@@ -122,7 +122,7 @@ def wait_for(paths): #pylint: disable=unused-variable
   else:
     assert isinstance(paths, list)
     for entry in paths:
-      assert isinstance(entry, str)
+      assert isinstance(entry, (str, pathlib.Path))
 
   app.debug(str(paths))
 
@@ -131,7 +131,7 @@ def wait_for(paths): #pylint: disable=unused-variable
   if current_num_exist != len(paths):
     item_message = f'new item "{paths[0]}"' if len(paths) == 1 else f'{len(paths)} new items'
     progress = app.ProgressBar(f'Waiting for creation of {item_message}', len(paths))
-    for _ in range(num_exist):
+    for _ in range(current_num_exist):
       progress.increment()
     delay = 1.0/1024.0
     while not current_num_exist == len(paths):
@@ -177,7 +177,7 @@ def wait_for(paths): #pylint: disable=unused-variable
   delay = 1.0/1024.0
   while current_num_in_use:
     time.sleep(delay)
-    new_num_in_use = current_num_in_use(paths)
+    new_num_in_use = num_in_use(paths)
     if new_num_in_use == current_num_in_use:
       delay = min(60.0, delay*2.0)
     elif new_num_in_use < current_num_in_use:

@@ -19,6 +19,7 @@ from mrtrix3 import utils, version
 
 
 
+
 # These global constants can / should be accessed directly by scripts:
 # - 'ARGS' will contain the user's command-line inputs upon parsing of the command-line
 # - 'CONTINUE_OPTION' will be set to True if the user provides the -continue option;
@@ -38,12 +39,12 @@ from mrtrix3 import utils, version
 ARGS = None
 CONTINUE_OPTION = False
 DO_CLEANUP = True
-EXEC_NAME = os.path.basename(sys.argv[0])
+EXEC_NAME = pathlib.Path(sys.argv[0]).stem
 FORCE_OVERWRITE = False #pylint: disable=unused-variable
 NUM_THREADS = None #pylint: disable=unused-variable
-SCRATCH_DIR = ''
+SCRATCH_DIR = None
 VERBOSITY = 0 if 'MRTRIX_QUIET' in os.environ else int(os.environ.get('MRTRIX_LOGLEVEL', '1'))
-WORKING_DIR = os.getcwd()
+WORKING_DIR = pathlib.Path.cwd()
 
 
 
@@ -183,7 +184,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   try:
     for key in vars(ARGS):
       value = getattr(ARGS, key)
-      if isinstance(value, Parser._UserOutPathExtras): # pylint: disable=protected-access
+      if isinstance(value, Parser.UserOutPath):
         value.check_output()
   except FileExistsError as exception:
     sys.stderr.write('\n')
@@ -206,10 +207,11 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
 
   if hasattr(ARGS, 'cont') and ARGS.cont:
     CONTINUE_OPTION = True
-    SCRATCH_DIR = os.path.abspath(ARGS.cont[0])
+    SCRATCH_DIR = pathlib.Path(ARGS.cont[0]).absolute()
+    # unlink(missing_ok=) only added in Python 3.8; do via try clause for compatibility with 3.7
     try:
-      os.remove(os.path.join(SCRATCH_DIR, 'error.txt'))
-    except OSError:
+      pathlib.Path(SCRATCH_DIR, 'error.txt').unlink()
+    except FileNotFoundError:
       pass
     run.shared.set_continue(ARGS.cont[1])
 
@@ -241,7 +243,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
     return_code = exception.returncode if is_cmd else 1
     DO_CLEANUP = False
     if SCRATCH_DIR:
-      with open(os.path.join(SCRATCH_DIR, 'error.txt'), 'w', encoding='utf-8') as outfile:
+      with open(pathlib.Path(SCRATCH_DIR, 'error.txt'), 'w', encoding='utf-8') as outfile:
         outfile.write((exception.command if is_cmd else exception.function) + '\n\n' + str(exception) + '\n')
     exception_frame = inspect.getinnerframes(sys.exc_info()[2])[-2]
     try:
@@ -290,12 +292,12 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
       for line in calling_code:
         sys.stderr.write(f'{EXEC_NAME}: {ANSI.error}[ERROR]{ANSI.clear}     {ANSI.debug}{line.strip()}{ANSI.clear}\n')
   finally:
-    if os.getcwd() != WORKING_DIR:
+    if pathlib.Path.cwd() != WORKING_DIR:
       if not return_code:
         console(f'Changing back to original directory ({WORKING_DIR})')
       os.chdir(WORKING_DIR)
     if _STDIN_IMAGES:
-      debug(f'Erasing {len(_STDIN_IMAGES)} piped input images')
+      debug(f'Erasing {len(_STDIN_IMAGES)} piped input images: {"; ".join(map(str, _STDIN_IMAGES))}')
       for item in _STDIN_IMAGES:
         try:
           item.unlink()
@@ -314,8 +316,21 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
       else:
         console(f'Scratch directory retained; location: {SCRATCH_DIR}')
     if _STDOUT_IMAGES:
-      debug(f'Emitting {len(_STDOUT_IMAGES)} output piped images to stdout')
-      sys.stdout.write('\n'.join(map(str, _STDOUT_IMAGES)))
+      if utils.is_windows() and shutil.which('cygpath.exe'):
+        debug('Running in Cygwin environment;'
+              ' translating internal Posix paths to native Windows before transmitting')
+        stdout_images = []
+        for item in _STDOUT_IMAGES:
+          try:
+            stdout_images.append(subprocess.run(['cygpath.exe', '-m', str(item)], check=True, capture_output=True, text=True).stdout)
+          except subprocess.CalledProcessError:
+            warn(f'Error attempting to translate path {item} using cygpath;'
+                 'application downstream of pipe may fail')
+            stdout_images.append(str(item))
+      else:
+        stdout_images = map(str, _STDOUT_IMAGES)
+      debug(f'Emitting {len(_STDOUT_IMAGES)} output piped images to stdout: {"; ".join(stdout_images)}')
+      sys.stdout.write('\n'.join(stdout_images) + '\n')
   sys.exit(return_code)
 
 
@@ -333,11 +348,11 @@ def activate_scratch_dir(): #pylint: disable=unused-variable
     # Defaulting to working directory since too many users have encountered storage issues
     dir_path = CONFIG.get('ScriptScratchDir', WORKING_DIR)
   prefix = CONFIG.get('ScriptScratchPrefix', f'{EXEC_NAME}-tmp-')
-  SCRATCH_DIR = dir_path
-  while os.path.isdir(SCRATCH_DIR):
+  SCRATCH_DIR = pathlib.Path(dir_path)
+  while SCRATCH_DIR.is_dir():
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
-    SCRATCH_DIR = os.path.join(dir_path, f'{prefix}{random_string}') + os.sep
-  os.makedirs(SCRATCH_DIR)
+    SCRATCH_DIR = pathlib.Path(dir_path, f'{prefix}{random_string}')
+  SCRATCH_DIR.mkdir()
   os.chdir(SCRATCH_DIR)
   if VERBOSITY:
     console(f'Activated scratch directory: {SCRATCH_DIR}')
@@ -568,6 +583,57 @@ class ProgressBar: #pylint: disable=unused-variable
 
 
 
+# This class provides exactly the same functionality as pathlib.Path,
+#   with the exception that where filesystem paths are used
+#   to construct command strings to be executed via the run.command() function
+#   by using Python3's f-strings,
+#   these paths will be quote-escaped in the presence of whitespace
+#   (which may be outside of the developer's control if a user-specified path),
+#   so that within the contewxt of a full command string,
+#   the filesystem path is properly interpreted as a singular string.
+class FSQEPath(type(pathlib.Path.cwd())):
+  def absolute(self):
+    return FSQEPath(super().absolute())
+  @staticmethod
+  def cwd():
+    return FSQEPath(pathlib.Path.cwd())
+  def expanduser(self):
+    return FSQEPath(super().expanduser())
+  def joinpath(self, *pathsegments):
+    return FSQEPath(self, *pathsegments)
+  @staticmethod
+  def home():
+    return FSQEPath(pathlib.Path.home())
+  @property
+  def parent(self):
+    return FSQEPath(super().parent)
+  def readlink(self):
+    return FSQEPath(super().readlink())
+  def rename(self, target):
+    return FSQEPath(super().rename(target))
+  def replace(self, target):
+    return FSQEPath(super().replace(target))
+  def resolve(self, *args):
+    return FSQEPath(super().resolve(*args))
+  def with_name(self, name):
+    return FSQEPath(super().with_name(name))
+# Only available from Python 3.12
+#  def with_segments(self, *pathsegments):
+#    return FSQEPath(super().with_segments(*pathsegments))
+  def with_stem(self, stem):
+    return FSQEPath(super().with_stem(stem))
+  def with_suffix(self, suffix):
+    return FSQEPath(super().with_suffix(suffix))
+  def __format__(self, _):
+    return shlex.quote(str(self))
+  def __truediv__(self, key):
+    return FSQEPath(super() / key)
+  def __rtruediv__(self, key):
+    return FSQEPath(key / super())
+
+
+
+
 
 
 # The Parser class is responsible for setting up command-line parsing for the script.
@@ -575,49 +641,21 @@ class ProgressBar: #pylint: disable=unused-variable
 #   that are common for all scripts, providing a custom help page that is consistent with the
 #   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
 #   automated self-documentation.
-
 class Parser(argparse.ArgumentParser):
 
-  # Function that will create a new class,
-  #   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
-  #   and a desired augmentation that provides additional functions
-  @staticmethod
-  def make_userpath_object(base_class, *args):
-    abspath = os.path.normpath(os.path.join(WORKING_DIR, *args))
-    super_class = pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath
-    new_class = type(f'{base_class.__name__.lstrip("_").rstrip("Extras")}',
-                    (base_class, super_class),
-                    {})
-    if sys.version_info < (3, 12):
-      instance = new_class.__new__(new_class, abspath)
-    else:
-      instance = new_class.__new__(new_class)
-      super(super_class, instance).__init__(abspath) # pylint: disable=bad-super-call
-    return instance
-
-  # Classes that extend the functionality of pathlib.Path
-  class _UserPathExtras:
-    def __format__(self, _):
-      return shlex.quote(str(self))
-  class _UserOutPathExtras(_UserPathExtras):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserOutPath(FSQEPath):
     def check_output(self, item_type='path'):
-      if self.exists(): # pylint: disable=no-member
+      if self.exists():
         if FORCE_OVERWRITE:
           warn(f'Output {item_type} "{str(self)}" already exists; '
                 'will be overwritten at script completion')
         else:
           raise FileExistsError(f'Output {item_type} "{str(self)}" already exists '
                                 '(use -force option to force overwrite)')
-  class _UserFileOutPathExtras(_UserOutPathExtras):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserFileOutPath(UserOutPath):
     def check_output(self): # pylint: disable=arguments-differ
       return super().check_output('file')
-  class _UserDirOutPathExtras(_UserOutPathExtras):
-    def __init__(self, *args, **kwargs):
-      super().__init__(self, *args, **kwargs)
+  class UserDirOutPath(UserOutPath):
     def check_output(self): # pylint: disable=arguments-differ
       return super().check_output('directory')
     # Force parents=True for user-specified path
@@ -637,6 +675,20 @@ class Parser(argparse.ArgumentParser):
             # pylint: disable=raise-missing-from
             raise FileExistsError(f'Output directory "{str(self)}" already exists '
                                   '(use -force option to force overwrite)')
+  class UserInPath(FSQEPath):
+    def check_input(self, item_type='path'):
+      if not super().exists(): # pylint: disable=no-member
+        raise argparse.ArgumentTypeError(f'Input {item_type} "{self}" does not exist')
+  class UserFileInPath(UserInPath):
+    def check_input(self): # pylint: disable=arguments-differ
+      super().check_input('file')
+      if not super().is_file(): # pylint: disable=no-member
+        raise argparse.ArgumentTypeError(f'Input path "{self}" is not a file')
+  class UserDirInPath(UserInPath):
+    def check_input(self): # pylint: disable=arguments-differ
+      super().check_input('directory')
+      if not super().is_dir(): # pylint: disable=no-member
+        raise argparse.ArgumentTypeError(f'Input path "{self}" is not a directory')
 
   # Various callable types for use as argparse argument types
   class CustomTypeBase:
@@ -740,11 +792,8 @@ class Parser(argparse.ArgumentParser):
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = Parser.make_userpath_object(Parser._UserPathExtras, input_value)
-      if not abspath.exists():
-        raise argparse.ArgumentTypeError(f'Input directory "{input_value}" does not exist')
-      if not abspath.is_dir():
-        raise argparse.ArgumentTypeError(f'Input path "{input_value}" is not a directory')
+      abspath = Parser.UserDirInPath(os.path.join(WORKING_DIR, input_value))
+      abspath.check_input()
       return abspath
     @staticmethod
     def _legacytypestring():
@@ -755,7 +804,7 @@ class Parser(argparse.ArgumentParser):
 
   class DirectoryOut(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = Parser.make_userpath_object(Parser._UserDirOutPathExtras, input_value)
+      abspath = Parser.UserDirOutPath(os.path.join(WORKING_DIR, input_value))
       return abspath
     @staticmethod
     def _legacytypestring():
@@ -766,11 +815,8 @@ class Parser(argparse.ArgumentParser):
 
   class FileIn(CustomTypeBase):
     def __call__(self, input_value):
-      abspath = Parser.make_userpath_object(Parser._UserPathExtras, input_value)
-      if not abspath.exists():
-        raise argparse.ArgumentTypeError(f'Input file "{input_value}" does not exist')
-      if not abspath.is_file():
-        raise argparse.ArgumentTypeError(f'Input path "{input_value}" is not a file')
+      abspath = Parser.UserFileInPath(os.path.join(WORKING_DIR, input_value))
+      abspath.check_input()
       return abspath
     @staticmethod
     def _legacytypestring():
@@ -781,7 +827,7 @@ class Parser(argparse.ArgumentParser):
 
   class FileOut(CustomTypeBase):
     def __call__(self, input_value):
-      return Parser.make_userpath_object(Parser._UserFileOutPathExtras, input_value)
+      return Parser.UserFileOutPath(os.path.join(WORKING_DIR, input_value))
     @staticmethod
     def _legacytypestring():
       return 'FILEOUT'
@@ -791,12 +837,22 @@ class Parser(argparse.ArgumentParser):
 
   class ImageIn(CustomTypeBase):
     def __call__(self, input_value):
-      if input_value == '-':
-        input_value = sys.stdin.readline().strip()
-        abspath = pathlib.Path(input_value)
-        _STDIN_IMAGES.append(abspath)
-        return abspath
-      return Parser.make_userpath_object(Parser._UserPathExtras, input_value)
+      if input_value != '-':
+        return FSQEPath(os.path.join(WORKING_DIR, input_value))
+      input_value = sys.stdin.readline().strip()
+      if shutil.which('cygpath.exe'):
+        try:
+          new_path = subprocess.run(['cygpath.exe', '-u', '-a', input_value], check=True, capture_output=True, text=True).stdout.strip()
+          abspath = FSQEPath(new_path)
+        except subprocess.CalledProcessError:
+          warn(f'Error converting input piped image path {input_value} using cygpath;'
+               ' attempts to read piped image may fail')
+          abspath = FSQEPath(input_value)
+      else:
+        abspath = FSQEPath(input_value)
+      _STDIN_IMAGES.append(abspath)
+      return abspath
+
     @staticmethod
     def _legacytypestring():
       return 'IMAGEIN'
@@ -807,13 +863,15 @@ class Parser(argparse.ArgumentParser):
   class ImageOut(CustomTypeBase):
     def __call__(self, input_value):
       if input_value == '-':
-        input_value = utils.name_temporary('mif')
-        abspath = pathlib.Path(input_value)
+        # TODO Create a different class for handling output piped images,
+        #   which only invokes utils.name_temporary() upon first usage
+        abspath = FSQEPath(utils.name_temporary('mif'))
         _STDOUT_IMAGES.append(abspath)
         return abspath
-      # Not guaranteed to catch all cases of output images trying to overwrite existing files;
+      # No detriments to using "UserFileOutPath" here;
+      #   not guaranteed to catch all cases of output images trying to overwrite existing files;
       #   but will at least catch some of them
-      return Parser.make_userpath_object(Parser._UserFileOutPathExtras, input_value)
+      return Parser.UserFileOutPath(os.path.join(WORKING_DIR, input_value))
     @staticmethod
     def _legacytypestring():
       return 'IMAGEOUT'
@@ -934,11 +992,11 @@ class Parser(argparse.ArgumentParser):
                                   help='continue the script from a previous execution; '
                                        'must provide the scratch directory path, '
                                        'and the name of the last successfully-generated file.')
-    module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
-    self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
+    module_file = pathlib.Path(inspect.getsourcefile(inspect.stack()[-1][0])).resolve()
+    self._is_project = pathlib.Path(module_file.parent, os.pardir, 'lib', 'mrtrix3', 'app.py').resolve() != pathlib.Path(__file__).resolve()
     try:
       with subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ],
-                             cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)),
+                             cwd=pathlib.PurePath(*module_file.parts[:-1]),
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE) as process:
         self._git_version = process.communicate()[0]
@@ -983,7 +1041,7 @@ class Parser(argparse.ArgumentParser):
   def add_subparsers(self): # pylint: disable=arguments-differ
     # Import the command-line settings for all algorithms in the relevant sub-directories
     # This is expected to be being called from the 'usage' module of the relevant command
-    module_name = os.path.dirname(inspect.getouterframes(inspect.currentframe())[1].filename).split(os.sep)[-1]
+    module_name = pathlib.PurePath(inspect.getouterframes(inspect.currentframe())[1].filename).stem
     module = sys.modules['mrtrix3.commands.' + module_name]
     base_parser = Parser(description='Base parser for construction of subparsers', parents=[self])
     subparsers = super().add_subparsers(title='Algorithm choices',
@@ -1580,7 +1638,7 @@ def handler(signum, _frame):
   if not signal_found:
     msg += '?] Unknown system signal'
   sys.stderr.write(f'\n{EXEC_NAME}: {ANSI.error}{msg}{ANSI.clear}\n')
-  if os.getcwd() != WORKING_DIR:
+  if pathlib.Path.cwd() != WORKING_DIR:
     os.chdir(WORKING_DIR)
   if SCRATCH_DIR:
     if DO_CLEANUP:
