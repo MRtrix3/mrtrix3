@@ -24,15 +24,15 @@ Note that the corrected gradient table can be output using the -export_grad_{mrt
 
 In addition to testing for potential permutations and flips of axes in the gradient table (which may have occurred within either the real / scanner space or bvec representations of such), the command also considers the prospect that the gradient table contents may have been computed / provided in real / scanner space but erroneously interpreted as "bvec" contents or vice-versa. To address this, the command additionally considers possible transpositions between these two representations. Where there is possibly a combination of both transposition and axis shuffles, that transposition will be applied either before or after the axis shuffles as necessary. If it is known that no such transposition has occurred, or if there is very close correspondence between image and real / scanner space axes, the search space of the command can be reduced using the -notranspose option.
 
-Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called  to derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. More information on mask derivation from DWI data can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
+Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. More information on mask derivation from DWI data can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.7/dwi_preprocessing/masking.html
 
 Options
 -------
 
 - **-mask image** Provide a mask image within which to seed & constrain tracking
 
-- **-number** Set the number of tracks to generate for each test
+- **-number count** Set the number of tracks to generate for each test
 
 - **-threshold** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
 
@@ -47,7 +47,7 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
@@ -63,9 +63,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -99,7 +99,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

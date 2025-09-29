@@ -1,0 +1,6 @@
+#!/bin/bash
+# Basic evaluation of command operation with no special command-line options
+# Because the input peaks image already uses the MRtrix3 default format & reference,
+#   this invocation should have no influence on the input data
+peaksconvert peaks.mif - | \
+    testing_diff_peaks - peaks.mif 1e-15

@@ -15,31 +15,44 @@ Usage
 
     responsemean inputs output [ options ]
 
--  *inputs*: The input response functions
--  *output*: The output mean response function
+-  *inputs*: The input response function files
+-  *output*: The output mean response function file
 
 Description
 -----------
 
-Example usage: responsemean input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt
-
 All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.
 
-As long as the number of unique b-values is identical across all input files, the coefficients will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the responsemean command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.
+As long as the number of unique b-values is identical across all input files, the response functions will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the responsemean command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.
+
+Example usages
+--------------
+
+-   *Usage where all response functions are in the same directory:*::
+
+        $ responsemean input_response1.txt input_response2.txt input_response3.txt output_average_response.txt
+
+-   *Usage selecting response functions within a directory using a wildcard:*::
+
+        $ responsemean input_response*.txt output_average_response.txt
+
+-   *Usage where data for each participant reside in a participant-specific directory:*::
+
+        $ responsemean subject-*/response.txt output_average_response.txt
 
 Options
 -------
 
-- **-legacy** Use the legacy behaviour of former command 'average_response': average response function coefficients directly, without compensating for global magnitude differences between input files
+- **-legacy** Use the legacy behaviour of former command "average_response": average response function coefficients directly, without compensating for global magnitude differences between input files
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -71,7 +84,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

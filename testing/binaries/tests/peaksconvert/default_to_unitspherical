@@ -1,0 +1,15 @@
+#!/bin/bash
+# Evaluation of command operation for conversion from default format to:
+# - Unit spherical format,
+#   which does not include any quantitative measure per fixel
+# - Persisting with the default "xyz" reference axes
+# As with test "default_to_spherical",
+#   "testing_diff_peaks" can't be used here
+# The contents of the "unitspherical" format can be expected
+#   to be the second and third volumes for each fixel,
+#   ie. excluding the "radius" volume for each
+peaksconvert peaks.mif \
+    -out_format unitspherical \
+    - | \
+testing_diff_image - \
+    $(mrconvert peaksconvert/xyzspherical.mif -coord 3 1,2,4,5,7,8 -)

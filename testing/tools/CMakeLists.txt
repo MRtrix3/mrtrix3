@@ -1,4 +1,5 @@
 set(CPP_TOOLS_SRCS
+    testing_cpp_cli.cpp
     testing_diff_dir.cpp
     testing_diff_fixel.cpp
     testing_diff_fixel_old.cpp
@@ -14,31 +15,56 @@ set(CPP_TOOLS_SRCS
     testing_npywrite.cpp
 )
 
-set(PYTHON_TOOLS_SRCS
-    testing_check_npy
-    testing_gen_npy
+set(PYTHON_TOOLS_STANDALONE
+    testing_check_npy.py
+    testing_gen_npy.py
 )
 
-add_custom_target(testing_tools)
+set(PYTHON_TOOLS_MRTRIXAPI
+    testing_python_cli.py
+)
 
-function(add_testing_cmd CMD_SRC)
+add_custom_target(testing_tools ALL)
+
+function(add_cpp_tool TOOL_SRC)
     # Extract the filename without an extension (NAME_WE)
-    get_filename_component(CMD_NAME ${CMD} NAME_WE)
-    add_executable(${CMD_NAME} ${CMD})
-    target_link_libraries(${CMD_NAME} PRIVATE
-        mrtrix::headless
-        mrtrix::exec-version-lib
+    get_filename_component(TOOL_NAME ${TOOL_SRC} NAME_WE)
+    add_executable(${TOOL_NAME} ${TOOL_SRC})
+    target_link_libraries(${TOOL_NAME} PRIVATE
+        mrtrix::core
+        mrtrix::executable-version
         mrtrix::tests-lib
     )
-    set_target_properties(${CMD_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
-    add_dependencies(testing_tools ${CMD_NAME})
+    set_target_properties(${TOOL_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
+    add_dependencies(testing_tools ${TOOL_NAME})
 endfunction()
 
+function(add_python_tool_standalone TOOL_SRC)
+    get_filename_component(TOOL_NAME ${TOOL_SRC} NAME_WE)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TOOL_SRC} ${CMAKE_CURRENT_BINARY_DIR}/${TOOL_NAME} COPYONLY)
+endfunction()
+
+# If the tool behaves like a Python MRtrix3 command, then we need to generate its executable using
+# the MakePythonExecutable script
+function(add_python_tool_mrtrixapi TOOL_SRC)
+    get_filename_component(TOOL_NAME ${TOOL_SRC} NAME_WE)
+    set(MRTRIX_PYTHON_LIB_PATH "${PROJECT_BINARY_DIR}/lib")
+    add_custom_command(
+        TARGET testing_tools PRE_BUILD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DCMDNAME=${TOOL_NAME} -DOUTPUT_DIR="${PROJECT_BINARY_DIR}/bin" -P ${PROJECT_SOURCE_DIR}/cmake/MakePythonExecutable.cmake
+    )
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TOOL_SRC} ${PROJECT_BINARY_DIR}/lib/mrtrix3/commands/${TOOL_SRC} COPYONLY)
+endfunction()
 
 foreach(CMD ${CPP_TOOLS_SRCS})
-    add_testing_cmd(${CMD})
+    add_cpp_tool(${CMD})
 endforeach(CMD)
 
-foreach(CMD ${PYTHON_TOOLS_SRCS})
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${CMD} ${CMAKE_CURRENT_BINARY_DIR}/${CMD} COPYONLY)
+foreach(CMD ${PYTHON_TOOLS_STANDALONE})
+    add_python_tool_standalone(${CMD})
+endforeach(CMD)
+
+foreach(CMD ${PYTHON_TOOLS_MRTRIXAPI})
+    add_python_tool_mrtrixapi(${CMD})
 endforeach(CMD)

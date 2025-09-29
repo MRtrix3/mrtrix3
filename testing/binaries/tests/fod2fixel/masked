@@ -8,6 +8,7 @@ fod2fixel -nthreads 1 fod.mif tmp/ \
 -afd afd.mif \
 -peak peak.mif \
 -disp disp.mif \
+-skew skew.mif \
 -force
 
 testing_diff_fixel -frac 10e-5 tmp/ fod2fixel/out2

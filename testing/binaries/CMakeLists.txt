@@ -1,7 +1,5 @@
 find_program(BASH bash)
 
-set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
-
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
@@ -23,7 +21,7 @@ function(add_bash_binary_test file_path)
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/${file_path}"
         PREFIX "${folder_name}"
-        WORKING_DIRECTORY ${DATA_DIR}
+        WORKING_DIRECTORY ${BINARY_DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         LABELS "binary;${folder_name};${extra_labels}"
     )
@@ -52,10 +50,27 @@ add_bash_binary_test(connectomeedit/upper_triangular_from_symmetric)
 add_bash_binary_test(connectomeedit/upper_triangular_from_upper_triangular)
 add_bash_binary_test(connectomeedit/zero_diagonal)
 
+add_bash_binary_test(dirflip/default)
+add_bash_binary_test(dirflip/preserve)
+
 add_bash_binary_test(dirgen/cartesian)
 add_bash_binary_test(dirgen/default)
+add_bash_binary_test(dirgen/fixed)
 add_bash_binary_test(dirgen/power)
 add_bash_binary_test(dirgen/unipolar)
+
+add_bash_binary_test(dirmerge/onesubset)
+add_bash_binary_test(dirmerge/twosubsets)
+add_bash_binary_test(dirmerge/foursubsets)
+add_bash_binary_test(dirmerge/onesubset_firstisfirst)
+add_bash_binary_test(dirmerge/twosubsets_firstisfirst)
+add_bash_binary_test(dirmerge/foursubsets_firstisfirst)
+
+add_bash_binary_test(dirorder/default)
+add_bash_binary_test(dirorder/preserve)
+
+add_bash_binary_test(dirrotate/default)
+add_bash_binary_test(dirrotate/onerotation)
 
 add_bash_binary_test(dwi2adc/default)
 
@@ -122,8 +137,12 @@ add_bash_binary_test(fixelcorrespondence/default)
 
 add_bash_binary_test(fixelcrop/default)
 
+add_bash_binary_test(fixelfilter/cfe_default)
+add_bash_binary_test(fixelfilter/cfe_masked)
+add_bash_binary_test(fixelfilter/cfe_nan)
 add_bash_binary_test(fixelfilter/smooth_inputdir)
 add_bash_binary_test(fixelfilter/smooth_inputfile)
+add_bash_binary_test(fixelfilter/smooth_masked)
 
 add_bash_binary_test(fixelreorient/default)
 
@@ -188,12 +207,16 @@ add_bash_binary_test(mraverageheader/min_nearest)
 add_bash_binary_test(mraverageheader/min_projection)
 add_bash_binary_test(mraverageheader/padding)
 
+add_bash_binary_test(mrcalc/calc_mode)
 add_bash_binary_test(mrcalc/expression_1)
 add_bash_binary_test(mrcalc/expression_2)
 add_bash_binary_test(mrcalc/expression_3)
 add_bash_binary_test(mrcalc/expression_4)
+add_bash_binary_test(mrcalc/expression_5)
+add_bash_binary_test(mrcalc/dwscheme_preservation_imprecision)
 
 add_bash_binary_test(mrcat/axis)
+add_bash_binary_test(mrcat/dwscheme_merge)
 add_bash_binary_test(mrcat/single_input)
 add_bash_binary_test(mrcat/singlevoxel)
 
@@ -232,6 +255,14 @@ add_bash_binary_test(mrconvert/strides)
 
 add_bash_binary_test(mrdegibbs/default)
 
+add_bash_binary_test(mrfilter/demodulate_3Din_linear_2Ddemod)
+add_bash_binary_test(mrfilter/demodulate_3Din_linear_3Ddemod)
+add_bash_binary_test(mrfilter/demodulate_3Din_nonlinear_2Ddemod)
+add_bash_binary_test(mrfilter/demodulate_3Din_nonlinear_3Ddemod)
+add_bash_binary_test(mrfilter/demodulate_4Din_linear_2Ddemod)
+add_bash_binary_test(mrfilter/demodulate_4Din_linear_3Ddemod)
+add_bash_binary_test(mrfilter/demodulate_4Din_nonlinear_2Ddemod)
+add_bash_binary_test(mrfilter/demodulate_4Din_nonlinear_3Ddemod)
 add_bash_binary_test(mrfilter/gradient_default)
 add_bash_binary_test(mrfilter/gradient_magnitude)
 add_bash_binary_test(mrfilter/gradient_scanner)
@@ -270,6 +301,8 @@ add_bash_binary_test(mrhistogram/allvolumes)
 add_bash_binary_test(mrhistogram/bins)
 add_bash_binary_test(mrhistogram/default)
 add_bash_binary_test(mrhistogram/masked)
+
+add_bash_binary_test(mrinfo/bvec_bval_nan)
 
 add_bash_binary_test(mrmath/multiimage_median)
 add_bash_binary_test(mrmath/singleimage_mean)
@@ -329,6 +362,17 @@ add_bash_binary_test(peaks2amp/default)
 
 add_bash_binary_test(peaks2fixel/default)
 
+add_bash_binary_test(peaksconvert/default_to_fsl3vector)
+add_bash_binary_test(peaksconvert/default_to_ijk3vector)
+add_bash_binary_test(peaksconvert/default_to_spherical)
+add_bash_binary_test(peaksconvert/default_to_unit3vector)
+add_bash_binary_test(peaksconvert/default_to_unitspherical)
+add_bash_binary_test(peaksconvert/fsl3vector_to_default)
+add_bash_binary_test(peaksconvert/ijk3vector_to_default)
+add_bash_binary_test(peaksconvert/passthrough)
+add_bash_binary_test(peaksconvert/spherical_to_default)
+add_bash_binary_test(peaksconvert/unitspherical_to_default)
+
 add_bash_binary_test(sh2amp/default)
 add_bash_binary_test(sh2amp/grad)
 add_bash_binary_test(sh2amp/msmt)
@@ -340,11 +384,6 @@ add_bash_binary_test(sh2peaks/fast)
 add_bash_binary_test(sh2power/default)
 
 add_bash_binary_test(sh2response/default)
-
-add_bash_binary_test(shbasis/new2new)
-add_bash_binary_test(shbasis/new2old)
-add_bash_binary_test(shbasis/old2new)
-add_bash_binary_test(shbasis/old2old)
 
 add_bash_binary_test(shconv/default)
 add_bash_binary_test(shconv/msmt)
