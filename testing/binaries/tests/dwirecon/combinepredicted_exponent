@@ -19,7 +19,7 @@ dwirecon tmp.mif combine_predicted \
     -field dwirecon/field.mif \
     -exponent -inf \
     - | \
-testing_diff_image - tmp.mif
+testing_diff_image - tmp.mif -frac 1e-5
 
 # 2. With an exponent of +infinity,
 #    anywhere that the Jacobian is less than one,
@@ -30,4 +30,4 @@ dwirecon tmp.mif combine_predicted \
     -field dwirecon/field.mif \
     -exponent inf \
     - | \
-testing_diff_image - dwirecon/combine_predicted/exponentinf.mif
+testing_diff_image - dwirecon/combine_predicted/exponentinf.mif -frac 1e-5

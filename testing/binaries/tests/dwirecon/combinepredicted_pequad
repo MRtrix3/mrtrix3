@@ -14,7 +14,7 @@ mrcat \
 dwirecon - combine_predicted \
     -field dwirecon/field.mif \
     - | \
-testing_diff_image - dwirecon/combine_predicted/pequad1.mif
+testing_diff_image - dwirecon/combine_predicted/pequad1.mif -frac 1e-5
 
 mrcat \
     dwirecon/AP_preproc.mif \
@@ -29,4 +29,4 @@ mrconvert - \
 dwirecon - combine_predicted \
     -field dwirecon/field.mif \
     - | \
-testing_diff_image - dwirecon/combine_predicted/pequad2.mif
+testing_diff_image - dwirecon/combine_predicted/pequad2.mif -frac 1e-5

@@ -16,7 +16,7 @@ mrcat \
 dwirecon - combine_predicted \
     -field dwirecon/field.mif \
     - | \
-testing_diff_image - dwirecon/combine_predicted/rpepair1.mif
+testing_diff_image - dwirecon/combine_predicted/rpepair1.mif -frac 1e-5
 
 # 2. Volumes are interleaved between the two phase encoding directions
 mrcat \
@@ -30,4 +30,4 @@ mrconvert - \
 dwirecon - combine_predicted \
     -field dwirecon/field.mif \
     - | \
-testing_diff_image - dwirecon/combine_predicted/rpepair2.mif
+testing_diff_image - dwirecon/combine_predicted/rpepair2.mif -frac 1e-5

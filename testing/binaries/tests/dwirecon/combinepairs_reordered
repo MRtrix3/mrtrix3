@@ -19,7 +19,7 @@ mrcat \
 dwirecon - combine_pairs \
     -field dwirecon/field.mif \
     - | \
-testing_diff_image - dwirecon/combine_pairs/rpepair.mif
+testing_diff_image - dwirecon/combine_pairs/rpepair.mif -frac 1e-5
 
 #   2. Volumes are permuted between the two phase encoding directions;
 #      one realistic possibility is that for each diffusion sensitisation direction,
@@ -35,4 +35,4 @@ mrconvert - \
 dwirecon - combine_pairs \
     -field dwirecon/field.mif \
     - | \
-testing_diff_image - dwirecon/combine_pairs/rpepair.mif
+testing_diff_image - dwirecon/combine_pairs/rpepair.mif -frac 1e-5

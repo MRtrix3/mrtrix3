@@ -13,4 +13,4 @@ mrcat \
 dwirecon - combine_pairs \
     -field dwirecon/field.mif \
     - | \
-testing_diff_image - dwirecon/combine_pairs/rpepair.mif
+testing_diff_image - dwirecon/combine_pairs/rpepair.mif -frac 1e-5

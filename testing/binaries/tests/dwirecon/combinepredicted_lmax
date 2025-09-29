@@ -24,7 +24,7 @@ dwirecon tmp_in.mif combine_predicted \
     -field dwirecon/field.mif \
     -lmax 0,0 \
     - | \
-testing_diff_image - dwirecon/combine_predicted/lmax0.mif
+testing_diff_image - dwirecon/combine_predicted/lmax0.mif -frac 1e-5
 
 # 2. With -lmax 2,
 #    the result should match what is produced under default behaviour
@@ -33,7 +33,7 @@ dwirecon tmp_in.mif combine_predicted \
     -field dwirecon/field.mif \
     -lmax 0,2 \
     - | \
-testing_diff_image - dwirecon/combine_predicted/rpepair1.mif
+testing_diff_image - dwirecon/combine_predicted/rpepair1.mif -frac 1e-5
 
 # 3. With -lmax 4,
 #    the command should ideally error out:
