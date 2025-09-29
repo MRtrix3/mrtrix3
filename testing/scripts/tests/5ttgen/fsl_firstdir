@@ -1,0 +1,23 @@
+#!/bin/bash
+# Verify "5ttgen fsl" operation when -first_dir is used
+# Only ensure successful completion
+# Make sure that 5ttgen fsl doesn't invoke FIRST
+
+mkdir tmp_first
+
+mrgrid BIDS/sub-01/anat/sub-01_T1w.nii.gz regrid tmp_T1w.nii \
+-scale 2
+
+run_first_all -m none \
+-s L_Accu,R_Accu,L_Caud,R_Caud,L_Pall,R_Pall,L_Puta,R_Puta,L_Thal,R_Thal \
+-i tmp_T1w.nii \
+-o tmp_first/prefix
+
+echo "false" > tmp_first/run_first_all
+chmod 775 tmp_first/run_first_all
+export PATH=$(pwd)/tmp_first:$PATH
+
+5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz tmp.mif \
+-first_dir tmp_first/ \
+-force
+
