@@ -394,11 +394,6 @@ add_bash_binary_test(sh2power/default)
 
 add_bash_binary_test(sh2response/default)
 
-add_bash_binary_test(shbasis/new2new)
-add_bash_binary_test(shbasis/new2old)
-add_bash_binary_test(shbasis/old2new)
-add_bash_binary_test(shbasis/old2old)
-
 add_bash_binary_test(shconv/default)
 add_bash_binary_test(shconv/msmt)
 

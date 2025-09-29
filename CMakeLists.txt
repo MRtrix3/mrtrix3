@@ -31,7 +31,8 @@ set(MRTRIX_DEPENDENCIES_DIR "" CACHE PATH
     - Eigen3 https://gitlab.com/libeigen/eigen (version 3.4.0 in .tar.gz format)\n \
     - Json for Modern C++ https://github.com/nlohmann/json (version 3.11.3 in .tar.xz format)\n \
     - Half https://half.sourceforge.net/ (version 2.1.0 in zip format)\n \
-    - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n"
+    - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n
+    - Google Test https://github.com/google/googletest (version 1.17.0 in .tar.gz format). Only required for tests.\n)"
 )
 
 if(MRTRIX_BUILD_TESTS)
