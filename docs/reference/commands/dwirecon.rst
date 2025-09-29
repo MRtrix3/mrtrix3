@@ -50,6 +50,10 @@ Options specific to "combine_predicted" operation
 
 -  **-exponent value** set the exponent modulating relative contributions between empirical and predicted signal (see Description)
 
+-  **-weights image** export an image encoding, for each intensity sample,how much the output was weighted by the empirical data vs. prediction
+
+-  **-predicted image** export an image containing the predictions generated excluding each volume's own phase encoding group
+
 Options for importing phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

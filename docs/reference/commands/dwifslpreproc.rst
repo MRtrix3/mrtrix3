@@ -52,6 +52,12 @@ Example usages
 
     Here the two individual b=0 volumes are concatenated into a single 4D image series, and this is provided to the script via the -se_epi option. Note that with the -rpe_pair option used here, which indicates that the SE-EPI image series contains one or more pairs of b=0 images with reversed phase encoding, the FIRST HALF of the volumes in the SE-EPI series must possess the same phase encoding as the input DWI series, while the second half are assumed to contain the opposite phase encoding direction but identical total readout time. Use of the -align_seepi option is advocated as long as its use is valid (more information in the Description section).
 
+-   *DWI gradient table split equally between two opposed phase encoding directions*::
+
+        $ mrcat DWI_AP.mif DWI_PA.mif DWI_in.mif -axis 3; dwifslpreproc DWI_in.mif DWI_out.mif -rpe_split -pe_dir ap -readout_time 0.72
+
+    Here the diffusion gradient table is presumed to have been split into two equally-sized halves, with the FIRST HALF of the volumes acquired with the phase encoding direction indicated using the -pe_dir option, and the SECOND HALF acquired with the opposite phase encoding direction. The number of volumes in the two halves must be identical (where this is specifically violated, see use of -rpe_header option elsewhere); however it is not a single set of diffusion sensitisations that has been acquired in two repeats (see use of -rpe_all option elsewhere); rather each of the two halves contains a unique set of diffusion sensitisations, each of which is reasonably well distributed independently but that form a more dense and optimal set upon their concatenation. For data acquired in this way, the output DWIs will be constructed from a weighted combination of the empirical data and the intensities predicted from other volumes, in order to restore spatial contrast in highly geometrically compressed regions. In the absence of use of the -se_epi option (which is recommended in this instance), the b=0 volumes will be extracted from these two halves of the input data and used to estimate the susceptibility distortion field.
+
 -   *All DWI directions & b-values are acquired twice, with the phase encoding direction of the second acquisition protocol being reversed with respect to the first*::
 
         $ mrcat DWI_lr.mif DWI_rl.mif DWI_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_all -pe_dir lr -readout_time 0.66
@@ -75,6 +81,8 @@ Options for specifying the acquisition phase-encoding design; note that one of t
 - **-rpe_none** Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only
 
 - **-rpe_pair** Specify that a set of images (typically b=0 volumes) will be provided for use in inhomogeneity field estimation only (using the -se_epi option)
+
+- **-rpe_split** Specify that input DWIs were split sequentially between two phase encoding directions
 
 - **-rpe_all** Specify that ALL DWIs have been acquired with opposing phase-encoding
 

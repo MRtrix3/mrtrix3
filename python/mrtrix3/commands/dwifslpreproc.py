@@ -101,7 +101,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' phase encoding direction but identical total readout time.'
                             ' Use of the -align_seepi option is advocated as long as its use is valid'
                             ' (more information in the Description section).')
-  cmdline.add_example_usage('DWI gradient table split equally between two opposed phase encoding directions'
+  cmdline.add_example_usage('DWI gradient table split equally between two opposed phase encoding directions',
                             'mrcat DWI_AP.mif DWI_PA.mif DWI_in.mif -axis 3;'
                             ' dwifslpreproc DWI_in.mif DWI_out.mif -rpe_split -pe_dir ap -readout_time 0.72',
                             'Here the diffusion gradient table is presumed to have been split into two equally-sized halves,'
