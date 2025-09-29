@@ -1,0 +1,21 @@
+#!/bin/bash
+# Test that command exewcutes successfully when only one rotation is requested
+# For this test,
+#   do not require that the peak gradient usage is less in the output set
+#   compared to the input set;
+#   just make sure that the command executes successfully,
+#   and that the stastistical properties of the direction set are conserved
+
+dirgen 30 tmp1.txt -force -cartesian -restarts 1
+
+dirstat tmp1.txt | \
+grep 'condition numbers for lmax' | \
+awk '{ print $10,$11,$12 }' > tmp1_stats.txt
+
+dirrotate tmp1.txt tmp2.txt -force -cartesian -number 1
+
+dirstat tmp2.txt | \
+grep 'condition numbers for lmax' | \
+awk '{ print $10,$11,$12 }' > tmp2_stats.txt
+
+testing_diff_matrix tmp1_stats.txt tmp2_stats.txt
