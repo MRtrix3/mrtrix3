@@ -1,6 +1,6 @@
 file(
     GLOB CPP_COMMAND_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmd/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/cmd/*.cpp
 )
 
 file(

@@ -4,37 +4,45 @@ on:
   release:
     types: [created]
 
-
 jobs:
   package:
-
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
 
     env:
-      MSYSTEM: MINGW64
       MSYSCON: defterm
       CHERE_INVOKING: enabled_from_arguments
       MSYS2_NOSTART: yes
+      MINGW_PACKAGE_PREFIX: mingw-w64-x86_64
 
     steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: |
+            git
+            pkg-config
+            python
+            ${{env.MINGW_PACKAGE_PREFIX}}-bc
+            ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
+            ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
+            ${{env.MINGW_PACKAGE_PREFIX}}-fftw
+            ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt5-base
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt5-svg
+            ${{env.MINGW_PACKAGE_PREFIX}}-zlib
 
-    - name: fetch and install MSYS2
-      run: bash -c 'curl -sL https://github.com/MRtrix3/MinGW/releases/download/1.0/msys2.tar.{0,1} | tar xf -'
+      - name: fetch PKGBUILD
+        run: git clone https://github.com/MRtrix3/MinGW.git && mv MinGW/* .
 
-    - name: run qtbinpatcher
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "qtbinpatcher --qt-dir=$(dirname $(which qmake))"
+      - name: run makepkg
+        run: LINKFLAGS=-lopengl32 ./run.sh ${GITHUB_REF#refs/*/} ${GITHUB_REPOSITORY%%/*}
 
-    - name: fetch PKGBUILD
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "git clone https://github.com/MRtrix3/MinGW.git && mv MinGW/* ."
-
-    - name: run makepkg
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./run.sh ${GITHUB_REF#refs/*/} ${GITHUB_REPOSITORY%%/*}"
-
-    - name: Upload package to GitHub Release
-      uses: AButler/upload-release-assets@v2.0
-      with:
-        files: '*.tar.xz'
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload package to GitHub Release
+        uses: AButler/upload-release-assets@v2.0
+        with:
+          files: "*.tar.zst"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}

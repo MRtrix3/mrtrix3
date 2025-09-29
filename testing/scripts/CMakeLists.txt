@@ -1,7 +1,5 @@
 find_program(BASH bash)
 
-set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
-
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND EXEC_DIRS ${PROJECT_BINARY_DIR}/bin)
@@ -23,12 +21,16 @@ function(add_bash_script_test file_path)
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/${file_path}"
         PREFIX "${folder_name}"
-        WORKING_DIRECTORY ${DATA_DIR}
+        WORKING_DIRECTORY ${SCRIPT_DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         LABELS "script;${folder_name};${extra_labels}"
     )
 endfunction()
 
+add_bash_script_test(5ttgen/deepatropos_fromseg_default "pythonci")
+add_bash_script_test(5ttgen/deepatropos_fromseg_whitestem)
+add_bash_script_test(5ttgen/deepatropos_fromprob_default "pythonci")
+add_bash_script_test(5ttgen/deepatropos_fromprob_whitestem)
 add_bash_script_test(5ttgen/freesurfer_default "pythonci")
 add_bash_script_test(5ttgen/freesurfer_nocrop)
 add_bash_script_test(5ttgen/freesurfer_piping)
@@ -190,6 +192,7 @@ add_bash_script_test(dwicat/whitespace)
 
 add_bash_script_test(dwifslpreproc/axis_padding)
 add_bash_script_test(dwifslpreproc/eddyqc)
+add_bash_script_test(dwifslpreproc/header_pe_dir_no_trt)
 add_bash_script_test(dwifslpreproc/permuted_volumes)
 add_bash_script_test(dwifslpreproc/piping)
 add_bash_script_test(dwifslpreproc/rpeall)
@@ -199,6 +202,7 @@ add_bash_script_test(dwifslpreproc/rpeheader_rpepair)
 add_bash_script_test(dwifslpreproc/rpenone_default)
 add_bash_script_test(dwifslpreproc/rpepair_alignseepi)
 add_bash_script_test(dwifslpreproc/rpepair_default)
+add_bash_script_test(dwifslpreproc/topup_files)
 add_bash_script_test(dwifslpreproc/whitespace)
 
 add_bash_script_test(dwigradcheck/default)
@@ -244,6 +248,17 @@ add_bash_script_test(mask2glass/whitespace)
 add_bash_script_test(mrtrix_cleanup/default "pythonci")
 add_bash_script_test(mrtrix_cleanup/test "pythonci")
 add_bash_script_test(mrtrix_cleanup/whitespace)
+
+add_bash_script_test(peakscheck/3vector_permutation)
+add_bash_script_test(peakscheck/all)
+add_bash_script_test(peakscheck/default)
+add_bash_script_test(peakscheck/mask)
+add_bash_script_test(peakscheck/noshuffle "pythonci")
+add_bash_script_test(peakscheck/notransform "pythonci")
+add_bash_script_test(peakscheck/out_table)
+add_bash_script_test(peakscheck/reference)
+add_bash_script_test(peakscheck/spherical)
+add_bash_script_test(peakscheck/spherical_permutation)
 
 add_bash_script_test(population_template/fa_affine)
 add_bash_script_test(population_template/fa_affinenonlinear)
