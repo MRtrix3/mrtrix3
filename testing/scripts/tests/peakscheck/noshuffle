@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify operation of the "peakscheck" command
+#   with use of the "-noshuffle" option
+# This option drastically reduces the search space,
+#   as it is only the three possible axes references that are tested
+# Make sure that the command does indeed reduce the numebr of variants that it tests
+rm -f tmp.txt
+peakscheck peakscheck/posdet_xyz3vector.mif \
+    -number 100 \
+    -threshold 0.0 \
+    -noshuffle \
+    > tmp.txt 2>&1
+
+grep -E "Testing peaks orientation alterations \(3 variants\)" tmp.txt
