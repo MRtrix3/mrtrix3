@@ -1,0 +1,18 @@
+#!/bin/bash
+# Ensure that the dwigradcheck script completes successfully
+#   when -shuffle none is specified
+# Output should contain 4 lines in this use case:
+#   - Header fields
+#   - No transpose
+#   - Transpose from bvec to real / scanner space
+#   - transpose from real / scanner space to bvec
+
+dwigradcheck BIDS/sub-01/dwi/sub-01_dwi.nii.gz -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-shuffle none \
+-out tmp.csv
+
+LINECOUNT=$(wc -l tmp.csv)
+if [ "$LINECOUNT" -neq "4" ]; then
+    exit 1
+fi

@@ -206,6 +206,9 @@ add_bash_script_test(dwifslpreproc/topup_files)
 add_bash_script_test(dwifslpreproc/whitespace)
 
 add_bash_script_test(dwigradcheck/default)
+add_bash_script_test(dwigradcheck/nobvec)
+add_bash_script_test(dwigradcheck/noshuffle)
+add_bash_script_test(dwigradcheck/notranspose)
 add_bash_script_test(dwigradcheck/piping)
 add_bash_script_test(dwigradcheck/whitespace)
 

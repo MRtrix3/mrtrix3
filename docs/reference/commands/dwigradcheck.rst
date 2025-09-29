@@ -22,6 +22,8 @@ Description
 
 Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.
 
+In addition to testing for potential permutations and flips of axes in the gradient table (which may have occurred within either the real / scanner space or bvec representations of such), the command also considers the prospect that the gradient table contents may have been computed / provided in real / scanner space but erroneously interpreted as "bvec" contents or vice-versa. To address this, the command additionally considers possible transpositions between these two representations. Where there is possibly a combination of both transposition and axis shuffles, that transposition will be applied either before or after the axis shuffles as necessary. If it is known that no such transposition has occurred, or if there is very close correspondence between image and real / scanner space axes, the search space of the command can be reduced using the -notranspose option.
+
 Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. More information on mask derivation from DWI data can be found at the following link: 
 https://mrtrix.readthedocs.io/en/3.0.7/dwi_preprocessing/masking.html
 
@@ -31,6 +33,16 @@ Options
 - **-mask image** Provide a mask image within which to seed & constrain tracking
 
 - **-number count** Set the number of tracks to generate for each test
+
+- **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
+
+- **-notranspose** Do not evaluate possible misattribution of gradient directions between image and scanner spaces
+
+- **-shuffle choice** Restrict the possible search space of axis shuffles; options are: none,real,bvec (if omitted, shuffling of both bvec and realspace vectors will be performed)
+
+- **-all** Print table containing all results to standard output
+
+- **-out fileout** Write text file with table containing all results
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
