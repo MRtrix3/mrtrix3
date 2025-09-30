@@ -113,7 +113,6 @@ template <typename PointType> typename PointType::Scalar length(const std::vecto
   return value;
 }
 
-// Assumes equidistant spacing of vertices
 template <typename PointType> PointType tangent(const std::vector<PointType> &tck, const size_t index) {
   assert(index < tck.size());
   if (tck.size() < 2)
@@ -122,7 +121,19 @@ template <typename PointType> PointType tangent(const std::vector<PointType> &tc
     return (tck[1] - tck[0]).normalized();
   if (index == tck.size() - 1)
     return (tck[index] - tck[index - 1]).normalized();
-  return (tck[index + 1] - tck[index - 1]).normalized();
+  const PointType offset_prev = tck[index] - tck[index - 1];
+  const PointType offset_next = tck[index + 1] - tck[index];
+  const typename PointType::Scalar dist_prev = offset_prev.norm();
+  const typename PointType::Scalar dist_next = offset_next.norm();
+  if (dist_prev == typename PointType::Scalar(0)) {
+    return (dist_next == typename PointType::Scalar(0)
+                ? PointType::Constant(std::numeric_limits<typename PointType::Scalar>::quiet_NaN())
+                : offset_next.normalized());
+  } else if (dist_next == typename PointType::Scalar(0)) {
+    return offset_prev.normalized();
+  }
+  // Greater weight given to the shorter step
+  return (dist_next * offset_prev.normalized() + dist_prev * offset_next.normalized()).normalized();
 }
 
 } // namespace MR::DWI::Tractography
