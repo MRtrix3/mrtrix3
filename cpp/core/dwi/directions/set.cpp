@@ -29,10 +29,9 @@ index_type Set::get_min_linkage(const index_type one, const index_type two) cons
   if (one == two)
     return 0;
 
-  std::vector<bool> processed(size(), 0);
-  std::vector<index_type> to_expand;
+  Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(size()));
   processed[one] = true;
-  to_expand.push_back(one);
+  std::vector<index_type> to_expand(1, one);
   index_type min_linkage = 0;
   do {
     ++min_linkage;
@@ -211,7 +210,7 @@ void Set::initialise_adjacency() {
   std::vector<Plane> hull;
 
   // Speedup: Only test those directions that have not yet been incorporated into any plane
-  std::vector<bool> assigned(vertices.size(), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> assigned(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(vertices.size()));
   assigned[base_plane.indices[0]] = true;
   assigned[base_plane.indices[1]] = true;
   assigned[base_plane.indices[2]] = true;

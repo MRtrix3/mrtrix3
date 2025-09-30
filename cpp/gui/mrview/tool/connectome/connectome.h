@@ -273,7 +273,7 @@ private:
   node_alpha_t node_alpha;
 
   // Values that need to be stored locally w.r.t. node visualisation
-  std::vector<bool> selected_nodes;
+  Eigen::Array<bool, Eigen::Dynamic, 1> selected_nodes;
   node_t selected_node_count;
   NodeSelectionSettings node_selection_settings;
 

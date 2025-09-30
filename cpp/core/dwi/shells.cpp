@@ -338,7 +338,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
 }
 
 size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clusters) const {
-  std::vector<bool> visited(bvals.size(), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(bvals.size()));
   size_t clusterIdx = 0;
 
   for (ssize_t ii = 0; ii != bvals.size(); ii++) {

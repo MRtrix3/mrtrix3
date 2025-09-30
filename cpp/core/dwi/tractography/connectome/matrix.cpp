@@ -147,7 +147,7 @@ template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missin
   if (vector_output)
     return;
   assert(mat2vec);
-  std::vector<bool> visited(mat2vec->mat_size(), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(mat2vec->mat_size()));
   for (ssize_t i = 0; i != data.size(); ++i) {
     if (std::isfinite(data[i]) && data[i]) {
       auto nodes = (*mat2vec)(i);

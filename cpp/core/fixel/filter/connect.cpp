@@ -45,7 +45,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
   for (auto l = Loop(0)(output); l; ++l)
     output.value() = 0.0f;
 
-  std::vector<bool> processed(input.size(0), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(input.size(0)));
   using IndexAndSize = std::pair<size_t, size_t>;
   std::vector<IndexAndSize> cluster_sizes;
   for (index_type seed = 0; seed != input.size(0); ++seed) {

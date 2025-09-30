@@ -25,12 +25,12 @@ void PassThrough::operator()(in_column_type in, out_column_type out) const { out
 
 void NBS::operator()(in_column_type in, const value_type T, out_column_type out) const {
   out.setZero();
-  std::vector<bool> visited(in.size(), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.size()));
 
   for (ssize_t seed = 0; seed != in.size(); ++seed) {
     if (std::isfinite(in[seed]) && in[seed] >= T && !out[seed]) {
 
-      visited.assign(in.size(), false);
+      visited.setZero();
       visited[seed] = true;
       std::vector<size_t> to_expand(1, seed);
       size_t cluster_size = 0;
