@@ -224,9 +224,10 @@ protected:
       Math::SH::delta(fod, Eigen::Vector3f(0.0, 0.0, 1.0), P.S.lmax);
     }
 
-    float operator()(float el) {
-      return std::pow(Math::SH::value(P.values, Eigen::Vector3f(std::sin(el), 0.0, std::cos(el)), P.S.lmax),
-                      P.S.fod_power);
+    float operator()(float inclination) {
+      return std::pow(
+          Math::SH::value(P.values, Eigen::Vector3f(std::sin(inclination), 0.0, std::cos(inclination)), P.S.lmax),
+          P.S.fod_power);
     }
 
   private:

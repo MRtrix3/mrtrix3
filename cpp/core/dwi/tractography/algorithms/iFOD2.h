@@ -268,8 +268,8 @@ public:
     const size_t points_to_remove = sample_idx_at_full_length + ((revert_step - 1) * S.num_samples);
     if (tck.get_seed_index() + points_to_remove >= tck.size()) {
       tck.clear();
-      pos = {NaN, NaN, NaN};
-      dir = {NaN, NaN, NaN};
+      pos.setConstant(std::numeric_limits<float>::quiet_NaN());
+      dir.setConstant(std::numeric_limits<float>::quiet_NaN());
       return;
     }
     const size_t new_size = length_to_revert_from - points_to_remove;
@@ -400,9 +400,9 @@ private:
       init_log_prob = 0.5 * std::log(Math::SH::value(P.values, Eigen::Vector3f(0.0, 0.0, 1.0), P.S.lmax));
     }
 
-    float operator()(float el) {
-      P.pos = {0.0f, 0.0f, 0.0f};
-      P.get_path(positions, tangents, Eigen::Vector3f(std::sin(el), 0.0, std::cos(el)));
+    float operator()(float inclination) {
+      P.pos = Eigen::Vector3f::Zero();
+      P.get_path(positions, tangents, Eigen::Vector3f(std::sin(inclination), 0.0, std::cos(inclination)));
 
       float log_prob = init_log_prob;
       for (size_t i = 0; i < P.S.num_samples; ++i) {

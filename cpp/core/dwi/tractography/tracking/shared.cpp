@@ -22,7 +22,7 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
     : source_header(Header::open(diff_path)),
       source(source_header.get_image<float>().with_direct_io(3)),
       properties(property_set),
-      init_dir({NaN, NaN, NaN}),
+      init_dir(Eigen::Vector3f::Constant(NaN)),
       min_num_points_preds(0),
       max_num_points_preds(0),
       min_num_points_postds(0),

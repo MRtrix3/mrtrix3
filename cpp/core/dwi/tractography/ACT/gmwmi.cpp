@@ -47,7 +47,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
 
   Tissues tissues;
 
-  Eigen::Vector3f step(0.0, 0.0, 0.0);
+  Eigen::Vector3f step(Eigen::Vector3f::Zero());
   size_t gradient_iters = 0;
 
   tissues = get_tissues(p, interp);
@@ -96,7 +96,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
 
 Eigen::Vector3f GMWMI_finder::get_normal(const Eigen::Vector3f &p, Interp &interp) const {
 
-  Eigen::Vector3f normal(0.0, 0.0, 0.0);
+  Eigen::Vector3f normal(Eigen::Vector3f::Zero());
 
   for (size_t axis = 0; axis != 3; ++axis) {
 
@@ -116,7 +116,7 @@ Eigen::Vector3f GMWMI_finder::get_normal(const Eigen::Vector3f &p, Interp &inter
 
 Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &interp) const {
 
-  Eigen::Vector3f grad(0.0, 0.0, 0.0);
+  Eigen::Vector3f grad(Eigen::Vector3f::Zero());
 
   for (size_t axis = 0; axis != 3; ++axis) {
 
@@ -129,7 +129,7 @@ Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &
     const Tissues v_plus = get_tissues(p_plus, interp);
 
     if (!v_minus.valid() || !v_plus.valid())
-      return {0.0, 0.0, 0.0};
+      return Eigen::Vector3f::Zero();
 
     grad[axis] = (v_plus.get_gm() - v_plus.get_wm()) - (v_minus.get_gm() - v_minus.get_wm());
   }
@@ -137,7 +137,7 @@ Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &
   grad *= (1.0 / GMWMI_PERTURBATION);
 
   if (!grad.squaredNorm())
-    return {0.0, 0.0, 0.0};
+    return Eigen::Vector3f::Zero();
 
   const Tissues local_tissue = get_tissues(p, interp);
   const float diff = local_tissue.get_gm() - local_tissue.get_wm();
