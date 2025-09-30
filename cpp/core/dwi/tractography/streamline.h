@@ -68,6 +68,7 @@ template <typename ValueType = float>
 class Streamline : public std::vector<Eigen::Matrix<ValueType, 3, 1>>, public DataIndex {
 public:
   using point_type = Eigen::Matrix<ValueType, 3, 1>;
+  using tangent_type = point_type;
   using value_type = ValueType;
 
   Streamline() : weight(1.0f) {}

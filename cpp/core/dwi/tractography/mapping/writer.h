@@ -322,7 +322,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
     assign_pos_of(i).to(buffer);
     const default_type factor = get_factor(i, in);
     const default_type weight = in.weight * i.get_length();
-    auto scaled_colour = i.get_colour().cast<default_type>() * factor;
+    auto scaled_colour = i.get_colour().template cast<default_type>() * factor;
     const auto current_value = get_dec();
     switch (voxel_statistic) {
     case V_SUM:

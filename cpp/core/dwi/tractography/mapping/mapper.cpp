@@ -236,7 +236,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   if (contrast != CURVATURE)
     throw Exception("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  std::vector<tangent_type> tangents;
+  std::vector<Streamline<>::tangent_type> tangents;
   tangents.reserve(tck.size());
 
   // Would like to be able to manipulate the length over which the tangent calculation is affected
@@ -253,11 +253,11 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   step_sizes.reserve(tck.size());
 
   for (size_t i = 0; i != tck.size(); ++i) {
-    const tangent_type this_tangent = Tractography::tangent(tck, i);
+    const Streamline<>::tangent_type this_tangent = Tractography::tangent(tck, i);
     if (this_tangent.allFinite())
       tangents.push_back(this_tangent);
     else
-      tangents.push_back({0.0F, 0.0F, 0.0F});
+      tangents.push_back(Streamline<>::tangent_type::Zero());
     if (i)
       step_sizes.push_back((tck[i] - tck[i - 1]).norm());
   }
@@ -302,7 +302,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
-  std::vector<Eigen::Vector3d> smoothed_tangents;
+  std::vector<Streamline<>::tangent_type> smoothed_tangents;
   smoothed_tangents.reserve(tangents.size());
 
   static const default_type gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt(2.0 * log(2.0)));
@@ -310,7 +310,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    tangent_type this_tangent({0.0F, 0.0F, 0.0F});
+    Streamline<>::tangent_type this_tangent(Streamline<>::tangent_type::Zero());
 
     for (size_t j = 0; j != tck.size(); ++j) {
       const default_type distance = spline_distances(i, j);

@@ -20,8 +20,6 @@
 
 namespace MR::DWI::Tractography::Mapping::Gaussian {
 
-using Mapping::tangent_type;
-
 // Base class to handle case where the factor contributed by the streamline varies along its length
 //   (currently only occurs when the track-wise statistic is Gaussian)
 class VoxelAddon {
@@ -77,9 +75,10 @@ class VoxelDEC : public Mapping::VoxelDEC, public VoxelAddon {
 public:
   VoxelDEC() : Base(), VoxelAddon() {}
   VoxelDEC(const Eigen::Vector3i &V) : Base(V), VoxelAddon() {}
-  VoxelDEC(const Eigen::Vector3i &V, const tangent_type &d) : Base(V, d), VoxelAddon() {}
-  VoxelDEC(const Eigen::Vector3i &V, const tangent_type &d, const default_type l) : Base(V, d, l), VoxelAddon() {}
-  VoxelDEC(const Eigen::Vector3i &V, const tangent_type &d, const default_type l, const default_type f)
+  VoxelDEC(const Eigen::Vector3i &V, const Streamline<>::tangent_type &d) : Base(V, d), VoxelAddon() {}
+  VoxelDEC(const Eigen::Vector3i &V, const Streamline<>::tangent_type &d, const default_type l)
+      : Base(V, d, l), VoxelAddon() {}
+  VoxelDEC(const Eigen::Vector3i &V, const Streamline<>::tangent_type &d, const default_type l, const default_type f)
       : Base(V, d, l), VoxelAddon(f) {}
 
   VoxelDEC &operator=(const VoxelDEC &V) {
@@ -88,12 +87,12 @@ public:
     return (*this);
   }
   void operator+=(const default_type) const { assert(0); }
-  void operator+=(const tangent_type &) const { assert(0); }
+  void operator+=(const Streamline<>::tangent_type &) const { assert(0); }
   bool operator==(const VoxelDEC &V) const { return Base::operator==(V); }
   bool operator<(const VoxelDEC &V) const { return Base::operator<(V); }
 
-  void add(const tangent_type &, const default_type) const { assert(0); }
-  void add(const tangent_type &d, const default_type l, const default_type f) const {
+  void add(const Streamline<>::tangent_type &, const default_type) const { assert(0); }
+  void add(const Streamline<>::tangent_type &d, const default_type l, const default_type f) const {
     Base::add(d, l);
     VoxelAddon::operator+=(f);
   }
@@ -199,7 +198,8 @@ class SetVoxelDEC : public std::set<VoxelDEC>, public Mapping::SetVoxelExtras {
 public:
   using VoxType = VoxelDEC;
 
-  inline void insert(const Eigen::Vector3i &v, const Eigen::Vector3d &d, const default_type l, const default_type f) {
+  inline void
+  insert(const Eigen::Vector3i &v, const Streamline<>::tangent_type &d, const default_type l, const default_type f) {
     const VoxelDEC temp(v, d, l, f);
     iterator existing = std::set<VoxelDEC>::find(temp);
     if (existing == std::set<VoxelDEC>::end())

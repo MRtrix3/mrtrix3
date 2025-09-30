@@ -32,7 +32,7 @@ class DixelMappingPlugin {
 public:
   DixelMappingPlugin(const DWI::Directions::FastLookupSet &directions) : dirs(directions) {}
   DixelMappingPlugin(const DixelMappingPlugin &that) : dirs(that.dirs) {}
-  DWI::Directions::index_type operator()(const tangent_type &d) const {
+  DWI::Directions::index_type operator()(const Streamline<>::tangent_type &d) const {
     return dirs.select_direction(d.template cast<default_type>());
   }
 
