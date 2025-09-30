@@ -1,33 +1,32 @@
-.. _fixelreorient:
+.. _fixeltransform:
 
-fixelreorient
+fixeltransform
 ===================
 
 Synopsis
 --------
 
-Reorient fixel directions
+Transform a fixel dataset
 
 Usage
 --------
 
 ::
 
-    fixelreorient [ options ]  fixel_in warp fixel_out
+    fixeltransform [ options ]  fixel_in warp fixel_out
 
 -  *fixel_in*: the input fixel directory
--  *warp*: a 4D deformation field used to perform reorientation.
--  *fixel_out*: the output fixel directory. If the the input and output directories are the same, the existing directions file will be replaced (providing the -force option is supplied). If a new directory is supplied, then the fixel directions and all other fixel data will be copied to the new directory.
+-  *warp*: the 4D deformation field
+-  *fixel_out*: the output fixel directory
 
 Description
 -----------
 
-Whenever data that encode some orientation-dependent data are transformed in space, there is a corresponding rotation of that orientation-dependent data that must occur. Typically, spatial transformation and reorientation of data should happen simultaneously. This command however operates in a very specific context where this is NOT the case. If the data from which fixels are estimated have been transformed in space, but the corresponding requisite reorientation that should accompany such a transformation was NOT applied, then that reorientation can instead be applied to the fixel directions after the fact. The most common scenario is where FODs are transformed from one space to another, but FOD-based reorientation is explicitly disabled during such due to its potentially deleterious consequences on FOD shape, with the requisite reorientation instead applied to the fixels resulting from FOD segmentation.
+Unlike the fixelreorient command, which does not move fixels in space but just reorients them in place based on the premise of a prior transformation having been applied, this command additionally involves applying a spatial transformation to input fixel data.
 
-Reorientation is performed by transforming the vector representing the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, then re-normalising the vector.
+Because it is not trivial to interpolate fixel data at sub-voxel locations, the resampling following transformation is performed using nearest-neighbour interpolation. This also means that there may be some fixels in the input dataset for which there is no corresponding fixel created in the output dataset, as well as fixels in the input dataset for which there are multiple corresponding fixels created in the output dataset. Finally, there is no assurance of any form of fixel correspondence between the input and output datasets.
 
-Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.7/fixel_based_analysis/fixel_directory_format.html
+The output fixel dataset will consist of the compulsory index and directions images, and resampled versions of any fixel data files found in the input directory. Any voxel images present in the input fixel directory will be skipped. Fixel data files with more than one column are currently not supported. This command does not apply any modulation to fixel-wise data based on the deformation applied.
 
 Options
 -------
@@ -60,7 +59,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
