@@ -99,6 +99,15 @@ add_bash_binary_test(dwidenoise/noise_extent)
 add_bash_binary_test(dwiextract/bzero)
 add_bash_binary_test(dwiextract/default)
 
+add_bash_binary_test(dwirecon/combinepairs_pequad)
+add_bash_binary_test(dwirecon/combinepairs_reordered)
+add_bash_binary_test(dwirecon/combinepairs_rpepair)
+add_bash_binary_test(dwirecon/combinepairs_unbalanced)
+add_bash_binary_test(dwirecon/combinepredicted_exponent)
+add_bash_binary_test(dwirecon/combinepredicted_lmax)
+add_bash_binary_test(dwirecon/combinepredicted_pequad)
+add_bash_binary_test(dwirecon/combinepredicted_rpepair)
+
 add_bash_binary_test(fixel2peaks/input_afd)
 add_bash_binary_test(fixel2peaks/input_directions)
 add_bash_binary_test(fixel2peaks/input_directory)
@@ -384,11 +393,6 @@ add_bash_binary_test(sh2peaks/fast)
 add_bash_binary_test(sh2power/default)
 
 add_bash_binary_test(sh2response/default)
-
-add_bash_binary_test(shbasis/new2new)
-add_bash_binary_test(shbasis/new2old)
-add_bash_binary_test(shbasis/old2new)
-add_bash_binary_test(shbasis/old2old)
 
 add_bash_binary_test(shconv/default)
 add_bash_binary_test(shconv/msmt)
