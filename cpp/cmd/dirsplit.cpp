@@ -38,14 +38,12 @@ ARGUMENTS
   + Argument ("dirs", "the text file containing the directions.").type_file_in()
   + Argument ("out", "the output partitioned directions").type_file_out().allow_multiple();
 
-
 OPTIONS
   + Option ("number", "number of permutations to try"
-                            " (default: " + str(default_number) + ")")
+                      " (default: " + str(default_number) + ")")
     + Argument ("num").type_integer (1)
 
-  + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                         " instead of [az el].");
+  + DWI::Directions::cartesian_option;
 
 }
 // clang-format on
