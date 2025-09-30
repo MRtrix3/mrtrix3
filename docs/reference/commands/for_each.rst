@@ -22,7 +22,14 @@ Usage
 Description
 -----------
 
-This script greatly simplifies various forms of batch processing by enabling the execution of a command (or set of commands) independently for each of a set of inputs. Part of the way that this is achieved is by providing basic text substitutions, which simplify the formation of valid command strings based on the unique components of the input strings on which the script is instructed to execute. The available substitutions are listed below (note that the -test command-line option can be used to ensure correct command string formation prior to actually executing the commands):
+This script greatly simplifies various forms of batch processing by enabling the execution of a command (or set of commands) independently for each of a set of inputs.
+
+More information on use of the for_each command can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.7/tips_and_tricks/batch_processing_with_foreach.html
+
+The way that this batch processing capability is achieved is by providing basic text substitutions, which simplify the formation of valid command strings based on the unique components of the input strings on which the script is instructed to execute. This does however mean that the items to be passed as inputs to the for_each command (e.g. file / directory names) MUST NOT contain any instances of these substitution strings, as otherwise those paths will be corrupted during the course of the substitution.
+
+The available substitutions are listed below (note that the -test command-line option can be used to ensure correct command string formation prior to actually executing the commands):
 
    - IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".
 
@@ -41,13 +48,13 @@ Example usages
 
         $ for_each folder/*.mif : mrinfo IN
 
-    This will run the "mrinfo" command for every .mif file present in "folder/". Note that the compulsory colon symbol is used to separate the list of items on which for_each is being instructed to operate, from the command that is intended to be run for each input.
+    This will run the "mrinfo" command for every .mif file present in "folder/". Note that the compulsory colon symbol is used to separate the list of items on which for_each is being instructed to operate from the command that is intended to be run for each input.
 
 -   *Multi-threaded use of for_each*::
 
         $ for_each -nthreads 4 freesurfer/subjects/* : recon-all -subjid NAME -all
 
-    In this example, for_each is instructed to run the FreeSurfer command 'recon-all' for all subjects within the 'subjects' directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 commands), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.
+    In this example, for_each is instructed to run the FreeSurfer command "recon-all" for all subjects within the "subjects" directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 commands), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.
 
 -   *Excluding specific inputs from execution*::
 
@@ -61,6 +68,12 @@ Example usages
 
     By specifying the -test option, the script will print to the terminal the results of text substitutions for all of the specified inputs, but will not actually execute those commands. It can therefore be used to verify that the script is receiving the intended set of inputs, and that the text substitutions on those inputs lead to the intended command strings.
 
+-   *Utilising shell operators within the command substitution*::
+
+        $ for_each * : tensor2metric IN/dwi.mif - "|" tensor2metric - -fa IN/fa.mif
+
+    In this example, if the double-quotes were NOT placed around the pipe operator, then the shell would take the sum total output of the for_each script and pipe that to a single invocation of the tensor2metric command. Since in this example it is instead desired for the pipe operator to be a part of the command string that is executed multiple times by the for_each script, it must be escaped using double-quotes.
+
 Options
 -------
 
@@ -73,9 +86,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -107,7 +120,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

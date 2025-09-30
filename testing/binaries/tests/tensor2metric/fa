@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify calculation of an FA image
+# Outcome is compared to that generated using a prior software version
+tensor2metric tensor2metric/dt.mif -fa - | \
+testing_diff_image - tensor2metric/fa.mif -frac 1e-5
