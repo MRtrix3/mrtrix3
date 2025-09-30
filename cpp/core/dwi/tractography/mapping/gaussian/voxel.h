@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "dwi/directions/directions.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 namespace MR::DWI::Tractography::Mapping::Gaussian {

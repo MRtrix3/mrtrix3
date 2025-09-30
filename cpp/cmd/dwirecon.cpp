@@ -286,7 +286,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         // b==0 shell
         // For each volume in turn,
         //   just find the first unallocated volume in the reversed phase encoding group
-        std::vector<bool> used(shell.size(), false);
+        Eigen::Array<bool, Eigen::Dynamic, 1> used(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(shell.size()));
         for (size_t first_index = 0; first_index != shell.size(); ++first_index) {
           if (used[first_index])
             continue;
@@ -312,6 +312,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
                             " across reversed phase encoding directions" +             //
                             " (no match found for volume " + str(first_volume) + ")"); //
         }
+        assert(used.all());
       } else {
         // b!=0 shell
         // Generate full similarity matrix

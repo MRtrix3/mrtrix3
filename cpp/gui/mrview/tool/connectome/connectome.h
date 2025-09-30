@@ -21,7 +21,6 @@
 #include "image.h"
 #include "types.h"
 
-#include "misc/bitset.h"
 #include "surface/mesh.h"
 
 #include "color_button.h"
@@ -274,7 +273,7 @@ private:
   node_alpha_t node_alpha;
 
   // Values that need to be stored locally w.r.t. node visualisation
-  BitSet selected_nodes;
+  Eigen::Array<bool, Eigen::Dynamic, 1> selected_nodes;
   node_t selected_node_count;
   NodeSelectionSettings node_selection_settings;
 

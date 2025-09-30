@@ -20,8 +20,6 @@
 #include "progressbar.h"
 #include "types.h"
 
-#include "misc/bitset.h"
-
 #include "math/stats/typedefs.h"
 #include <vector>
 
@@ -47,7 +45,8 @@ public:
 
 class Shuffler {
 public:
-  typedef std::vector<index_type> PermuteLabels;
+  using PermuteLabels = std::vector<index_type>;
+  using FlipSigns = Eigen::Array<bool, Eigen::Dynamic, 1>;
   enum class error_t { EE, ISE, BOTH };
 
   // First version reads command-line options in order to determine parameters prior to running initialise();
@@ -80,7 +79,7 @@ public:
 private:
   const index_type rows;
   std::vector<PermuteLabels> permutations;
-  std::vector<BitSet> signflips;
+  std::vector<FlipSigns> signflips;
   index_type nshuffles, counter;
   std::unique_ptr<ProgressBar> progress;
 
@@ -114,7 +113,7 @@ private:
   void load_permutations(const std::string &filename);
 
   // Similar functions required for sign-flipping
-  bool is_duplicate(const BitSet &) const;
+  bool is_duplicate(const FlipSigns &) const;
 
   void generate_random_signflips(const index_type num_signflips,
                                  const index_type num_rows,

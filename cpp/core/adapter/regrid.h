@@ -42,10 +42,9 @@ public:
           return v;
         }()),
         index_requires_bound_check([&] {
-          std::vector<bool> v;
-          for (size_t d = 0; d < from_.size(); ++d) {
-            v.push_back(from_[d] < 0 || size_[d] > original.size(d) - from_[d]);
-          }
+          Eigen::Array<bool, Eigen::Dynamic, 1> v(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(from_.size()));
+          for (size_t d = 0; d < from_.size(); ++d)
+            v[d] = from_[d] < 0 || size_[d] > original.size(d) - from_[d];
           return v;
         }()),
         fill_(fill),
@@ -101,7 +100,7 @@ protected:
   using base_type::parent;
   const std::vector<ssize_t> from_, size_;
   const std::vector<std::vector<ssize_t>> index_invalid_lower_upper;
-  const std::vector<bool> index_requires_bound_check;
+  const Eigen::Array<bool, Eigen::Dynamic, 1> index_requires_bound_check;
   const value_type fill_;
   transform_type transform_;
   std::vector<ssize_t> index_;

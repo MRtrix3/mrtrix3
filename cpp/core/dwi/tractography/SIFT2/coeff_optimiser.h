@@ -18,7 +18,6 @@
 
 #include "math/golden_section_search.h"
 #include "math/quadratic_line_search.h"
-#include "misc/bitset.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
@@ -30,10 +29,12 @@
 namespace MR::DWI::Tractography::SIFT2 {
 
 class TckFactor;
+using SIFT::fixel_mask_type;
 
 class CoefficientOptimiserBase {
 public:
-  CoefficientOptimiserBase(TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, BitSet &, double &);
+  CoefficientOptimiserBase(
+      TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, fixel_mask_type &, double &);
   CoefficientOptimiserBase(const CoefficientOptimiserBase &);
   virtual ~CoefficientOptimiserBase();
 
@@ -53,12 +54,12 @@ private:
   StreamlineStats &step_stats;
   StreamlineStats &coefficient_stats;
   unsigned int &nonzero_streamlines;
-  BitSet &fixels_to_exclude;
+  fixel_mask_type &fixels_to_exclude;
   double &sum_costs;
 
   StreamlineStats local_stats_steps, local_stats_coefficients;
   size_t local_nonzero_count;
-  BitSet local_to_exclude;
+  fixel_mask_type local_to_exclude;
 
 protected:
   mutable double local_sum_costs;
@@ -71,7 +72,8 @@ private:
 class CoefficientOptimiserGSS : public CoefficientOptimiserBase {
 
 public:
-  CoefficientOptimiserGSS(TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, BitSet &, double &);
+  CoefficientOptimiserGSS(
+      TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, fixel_mask_type &, double &);
   CoefficientOptimiserGSS(const CoefficientOptimiserGSS &);
   ~CoefficientOptimiserGSS() {}
 
@@ -85,7 +87,8 @@ private:
 class CoefficientOptimiserQLS : public CoefficientOptimiserBase {
 
 public:
-  CoefficientOptimiserQLS(TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, BitSet &, double &);
+  CoefficientOptimiserQLS(
+      TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, fixel_mask_type &, double &);
   CoefficientOptimiserQLS(const CoefficientOptimiserQLS &);
   ~CoefficientOptimiserQLS() {}
 
@@ -100,7 +103,8 @@ private:
 class CoefficientOptimiserIterative : public CoefficientOptimiserBase {
 
 public:
-  CoefficientOptimiserIterative(TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, BitSet &, double &);
+  CoefficientOptimiserIterative(
+      TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, fixel_mask_type &, double &);
   CoefficientOptimiserIterative(const CoefficientOptimiserIterative &);
   ~CoefficientOptimiserIterative();
 

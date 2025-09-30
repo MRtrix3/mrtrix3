@@ -22,5 +22,6 @@ namespace MR::DWI::Tractography::SIFT {
 
 using track_t = unsigned int;
 using voxel_t = unsigned int;
+using fixel_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
 } // namespace MR::DWI::Tractography::SIFT

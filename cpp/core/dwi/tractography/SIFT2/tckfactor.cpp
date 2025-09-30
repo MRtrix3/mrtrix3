@@ -18,7 +18,6 @@
 #include "image.h"
 
 #include "file/matrix.h"
-#include "misc/bitset.h"
 
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/image.h"
@@ -234,7 +233,7 @@ void TckFactor::estimate_factors() {
 
   // Logging which fixels need to be excluded from optimisation in subsequent iterations,
   //   due to driving streamlines to unwanted high weights
-  BitSet fixels_to_exclude(fixels.size());
+  fixel_mask_type fixels_to_exclude(fixel_mask_type::Zero(fixels.size()));
 
   do {
 
@@ -244,7 +243,7 @@ void TckFactor::estimate_factors() {
     // Line search to optimise each coefficient
     StreamlineStats step_stats, coefficient_stats;
     nonzero_streamlines = 0;
-    fixels_to_exclude.clear();
+    fixels_to_exclude.setZero();
     double sum_costs = 0.0;
     {
       SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());

@@ -217,7 +217,7 @@ public:
         lambda(c.size()),
         lambda_prev(c.size()),
         l(lambda.size()),
-        active(lambda.size(), false) {}
+        active(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(lambda.size())) {}
 
   size_t operator()(vector_type &x, const vector_type &b) {
 #ifdef MRTRIX_ICLS_DEBUG
@@ -238,9 +238,8 @@ public:
     lambda.setZero();
     lambda_prev.setZero();
     // set active set empty:
-    std::fill(active.begin(), active.end(), false);
-    if (num_eq > 0)
-      std::fill(active.begin() + num_ineq, active.end(), true);
+    active.setZero();
+    active.tail(num_ineq).setOnes();
 
     // initial estimate of constraint values:
     c = c_u;
@@ -318,9 +317,7 @@ public:
 
 #ifdef MRTRIX_ICLS_DEBUG
       l_stream << lambda << "\n";
-      for (const auto &a : active)
-        n_stream << a << " ";
-      n_stream << "\n";
+      n_stream << active.transpose() << "\n";
 #endif
 
       ++niter;
@@ -344,7 +341,7 @@ protected:
   const Problem<value_type> &P;
   matrix_type BtB, B;
   vector_type y_u, c, c_u, lambda, lambda_prev, l;
-  std::vector<bool> active;
+  Eigen::Array<bool, Eigen::Dynamic, 1> active;
 };
 
 } // namespace ICLS
