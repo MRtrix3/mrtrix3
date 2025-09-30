@@ -153,18 +153,14 @@ inline Eigen::Matrix<typename VectorType::Scalar, Eigen::Dynamic, 1> invert(cons
   return ret;
 }
 
-template <typename ValueType> class Transform {
+template <typename ValueType> class TransformBase {
 public:
   using matrix_type = Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>;
 
-  template <class MatrixType>
-  Transform(const MatrixType &dirs, int lmax) : SHT(init_transform(dirs, lmax)), iSHT(pinv(SHT)) {}
+  template <class MatrixType> TransformBase(const MatrixType &dirs, int lmax) : SHT(init_transform(dirs, lmax)) {}
 
-  template <class VectorType> void set_filter(const VectorType &filter) {
-    scale_degrees_forward(SHT, invert(filter));
-    scale_degrees_inverse(iSHT, filter);
-  }
   template <class VectorType1, class VectorType2> void A2SH(VectorType1 &sh, const VectorType2 &amplitudes) const {
+    assert(iSHT.rows() > 0);
     sh.noalias() = iSHT * amplitudes;
   }
   template <class VectorType1, class VectorType2> void SH2A(VectorType1 &amplitudes, const VectorType2 &sh) const {
@@ -179,6 +175,27 @@ public:
 
 protected:
   matrix_type SHT, iSHT;
+};
+
+template <typename ValueType> class Transform : public TransformBase<ValueType> {
+public:
+  template <class MatrixType> Transform(const MatrixType &dirs, int lmax) : TransformBase<ValueType>(dirs, lmax) {
+    TransformBase<ValueType>::iSHT = pinv(TransformBase<ValueType>::SHT);
+  }
+
+  template <class VectorType> void set_filter(const VectorType &filter) {
+    scale_degrees_forward(TransformBase<ValueType>::SHT, invert(filter));
+    scale_degrees_inverse(TransformBase<ValueType>::iSHT, filter);
+  }
+};
+
+template <typename ValueType> class WeightedTransform : public TransformBase<ValueType> {
+public:
+  template <class MatrixType, class VectorType>
+  WeightedTransform(const MatrixType &dirs, const VectorType &weights, int lmax)
+      : TransformBase<ValueType>(dirs, lmax) {
+    TransformBase<ValueType>::iSHT = wls(TransformBase<ValueType>::SHT, weights);
+  }
 };
 
 template <class VectorType>
