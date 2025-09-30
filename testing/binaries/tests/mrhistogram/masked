@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify command operation when the -mask option is used
+#   to restrict which voxels contribute to the histogram
+# Outcome is compared to an output generated using a prior software version
+mrhistogram dwi.mif tmp.txt -mask mask.mif -force
+testing_diff_matrix tmp.txt mrhistogram/masked.txt -abs 0.5

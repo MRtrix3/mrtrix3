@@ -33,11 +33,9 @@ Options
 
 -  **-lum** Correct for luminance/perception, using default values Cr,Cg,Cb = 0.3,0.5,0.2 and gamma = 2.2 (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).
 
--  **-lum_coefs values** The coefficients Cr,Cg,Cb to correct for luminance/perception.  |br|
-   Note: this implicitly switches on luminance/perception correction, using a default gamma = 2.2 unless specified otherwise.
+-  **-lum_coefs values** The coefficients Cr,Cg,Cb to correct for luminance/perception. Note: this implicitly switches on luminance/perception correction, using a default gamma = 2.2 unless specified otherwise.
 
--  **-lum_gamma value** The gamma value to correct for luminance/perception.  |br|
-   Note: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = 0.3,0.5,0.2 unless specified otherwise.
+-  **-lum_gamma value** The gamma value to correct for luminance/perception. Note: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = 0.3,0.5,0.2 unless specified otherwise.
 
 -  **-threshold value** FOD amplitudes below the threshold value are considered zero.
 

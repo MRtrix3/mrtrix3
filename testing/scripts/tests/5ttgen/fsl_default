@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify "5ttgen fsl" default operation
+# The output is not compared to that generated using a prior software version
+#   because the outcomes of FSL command "standard_space_roi" changed between FSL versions,
+#   which in turn would change the output image FoV
+5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz tmp.mif -force
+# testing_diff_header ../tmp/5ttgen/fsl/default.mif 5ttgen/fsl/default.mif.gz

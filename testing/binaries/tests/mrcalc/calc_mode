@@ -1,0 +1,134 @@
+#!/bin/bash
+# Checks operations of mrcalc when used in pure calculator mode
+
+function verify {
+  operation=$1
+  expected_result=$2
+  result=$($operation)
+  if [ "$result" != "$expected_result" ]; then
+    echo "Test failed: $operation = $result, expected $expected_result"
+    return 1
+  fi
+}
+
+verify "mrcalc 5 -abs" "5"
+verify "mrcalc -5 -abs" "5"
+
+verify "mrcalc 8 -neg" "-8"
+verify "mrcalc -8 -neg" "8"
+verify "mrcalc 8 -neg -neg" "8"
+
+verify "mrcalc 5 3 -add" "8"
+verify "mrcalc 5 3 -sub" "2"
+verify "mrcalc 5 3 -mul" "15"
+verify "mrcalc pi pi -mul" "9.86961"
+verify "mrcalc 5 3 -div" "1.66667"
+verify "mrcalc 10.2 0.0 -div" "inf"
+
+verify "mrcalc 10 3 -modulo" "1"
+verify "mrcalc 10 -3 -modulo" "1"
+
+verify "mrcalc 2 3 4 -add -mult" "14" # Computes 2 * (3 + 4) = 14
+verify "mrcalc 5 1 2 -add 4 -multiply -add 3 -subtract" "14" # Computes 5 + ((1 + 2) * 4) - 3 = 14
+
+verify "mrcalc 5 7 -min" "5"
+verify "mrcalc -5 7 -min" "-5"
+verify "mrcalc 3 3 -min" "3"
+verify "mrcalc 5 7 -max" "7"
+verify "mrcalc -5 7 -max" "7"
+verify "mrcalc 3 3 -max" "3"
+
+verify "mrcalc 0 5 7 -if" "7"
+verify "mrcalc 1 5 7 -if" "5"
+
+verify "mrcalc 1 1 3 -replace" "3"
+verify "mrcalc 2 1 3 -replace" "2"
+
+verify "mrcalc 4 -sqrt" "2"
+verify "mrcalc 10.89 -sqrt" "3.3"
+verify "mrcalc 5 3 -pow" "125"
+verify "mrcalc 5 -3 -pow" "0.008"
+
+verify "mrcalc 3 5 -lt" "1"
+verify "mrcalc 5 3 -lt" "0"
+verify "mrcalc 5 3 -gt" "1"
+verify "mrcalc 3 5 -gt" "0"
+verify "mrcalc 3 5 -le" "1"
+verify "mrcalc 5 3 -le" "0"
+verify "mrcalc 5 3 -ge" "1"
+verify "mrcalc 3 5 -ge" "0"
+verify "mrcalc 5 5 -eq" "1"
+verify "mrcalc 5 3 -eq" "0"
+verify "mrcalc 5 3 -neq" "1"
+verify "mrcalc 5 5 -neq" "0"
+
+verify "mrcalc 2.3 -round" "2"
+verify "mrcalc 2.7 -round" "3"
+verify "mrcalc 2.3 -ceil" "3"
+verify "mrcalc -2.3 -ceil" "-2"
+verify "mrcalc 2.7 -floor" "2"
+verify "mrcalc -2.7 -floor" "-3"
+
+verify "mrcalc 0 -not" "1"
+verify "mrcalc 5 -not" "0"
+verify "mrcalc 1 1 -and" "1"
+verify "mrcalc 1 0 -and" "0"
+verify "mrcalc 0 1 -or" "1"
+verify "mrcalc 0 0 -or" "0"
+verify "mrcalc 1 0 -xor" "1"
+verify "mrcalc 1 1 -xor" "0"
+
+verify "mrcalc 0 0 -divide -isnan" "1"
+verify "mrcalc 5 -isnan" "0"
+verify "mrcalc 1 0 -divide -isinf" "1"
+verify "mrcalc 5 -isinf" "0"
+verify "mrcalc 5 -finite" "1"
+verify "mrcalc 1 0 -divide -finite" "0"
+
+verify "mrcalc 3 4 -complex -abs" "5"
+verify "mrcalc 5 12 -complex -abs" "13"
+verify "mrcalc 5 0 -polar -real" "5"
+verify "mrcalc 5 3.1416 -polar -real" "-5"
+verify "mrcalc 3 4 -complex -real" "3"
+verify "mrcalc -2 3 -complex -real" "-2"
+verify "mrcalc 3 4 -complex -imag" "4"
+verify "mrcalc 5 -2 -complex -imag" "-2"
+verify "mrcalc 1 0 -complex -phase" "0"
+verify "mrcalc 0 1 -complex -phase" "1.5708"
+verify "mrcalc 3 4 -complex -conj -imag" "-4"
+verify "mrcalc 5 -2 -complex -conj -imag" "2"
+verify "mrcalc 1 0 -complex -proj -real" "1"
+verify "mrcalc 0 1 -complex -proj -imag" "1"
+
+verify "mrcalc 0 -exp" "1"
+verify "mrcalc 1 -exp" "2.71828"
+verify "mrcalc 1 -log" "0"
+verify "mrcalc 2 -log" "0.693147"
+verify "mrcalc 1 -log10" "0"
+verify "mrcalc 10 -log10" "1"
+
+verify "mrcalc 0 -cos" "1"
+verify "mrcalc 3.1416 -cos" "-1"
+verify "mrcalc 0 -sin" "0"
+verify "mrcalc 1.5708 -sin" "1"
+verify "mrcalc 0 -tan" "0"
+verify "mrcalc 0.7854 -tan" "1"
+verify "mrcalc 1 -acos" "0"
+verify "mrcalc 0 -acos" "1.5708"
+verify "mrcalc 0 -asin" "0"
+verify "mrcalc 1 -asin" "1.5708"
+verify "mrcalc 0 -atan" "0"
+verify "mrcalc 1 -atan" "0.785398"
+
+verify "mrcalc 0 -cosh" "1"
+verify "mrcalc 1 -cosh" "1.54308"
+verify "mrcalc 0 -sinh" "0"
+verify "mrcalc 1 -sinh" "1.1752"
+verify "mrcalc 0 -tanh" "0"
+verify "mrcalc 1 -tanh" "0.761594"
+verify "mrcalc 1 -acosh" "0"
+verify "mrcalc 2 -acosh" "1.31696"
+verify "mrcalc 0 -asinh" "0"
+verify "mrcalc 1 -asinh" "0.881374"
+verify "mrcalc 0 -atanh" "0"
+verify "mrcalc 0.5 -atanh" "0.549306"

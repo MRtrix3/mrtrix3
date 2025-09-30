@@ -1,0 +1,20 @@
+#!/bin/bash
+# vectorstats test 3
+#
+# Prior version where test data were generated on the fly:
+# N=16 SNR=5 vectorstats/gen3.py
+# vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -errors ise -force
+# vectorstats/test3.py
+# This is no longer used in order to prevent random CI failures
+vectorstats vectorstats/3/subjects.txt vectorstats/3/design.csv vectorstats/3/contrast.csv tmpout -errors ise -force
+testing_diff_matrix tmpoutZstat_t1.csv vectorstats/3/outZstat_t1.csv -frac 1e-6
+testing_diff_matrix tmpoutZstat_t2.csv vectorstats/3/outZstat_t2.csv -frac 1e-6
+testing_diff_matrix tmpoutabs_effect_t1.csv vectorstats/3/outabs_effect_t1.csv -frac 1e-6
+testing_diff_matrix tmpoutabs_effect_t2.csv vectorstats/3/outabs_effect_t2.csv -frac 1e-6
+testing_diff_matrix tmpoutbetas.csv vectorstats/3/outbetas.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_dev.csv vectorstats/3/outstd_dev.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_effect_t1.csv vectorstats/3/outstd_effect_t1.csv -frac 1e-6
+testing_diff_matrix tmpoutstd_effect_t2.csv vectorstats/3/outstd_effect_t2.csv -frac 1e-6
+testing_diff_matrix tmpouttvalue_t1.csv vectorstats/3/outtvalue_t1.csv -frac 1e-6
+testing_diff_matrix tmpouttvalue_t2.csv vectorstats/3/outtvalue_t2.csv -frac 1e-6
+vectorstats/test3.py
