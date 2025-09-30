@@ -17,6 +17,7 @@
 #include "command.h"
 #include "dwi/directions/file.h"
 #include "dwi/gradient.h"
+#include "file/matrix.h"
 #include "math/SH.h"
 #include "math/rng.h"
 #include "progressbar.h"
@@ -48,7 +49,8 @@ void usage() {
     + Option ("preserve", "preserve some number of directions in their position at the start of the set")
       + Argument ("num").type_integer(1)
     + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].")
-    + Option ("indices", "Print out the indices of the reordered directions to standard output.");
+    + Option ("indices", "Print out the indices of the reordered directions to a text file")
+      + Argument("path").type_file_out();
 
 }
 // clang-format on
@@ -146,11 +148,9 @@ void run() {
     }
   }
 
-  if (get_options("indices").size()) {
-    for (const auto i : best_order)
-      std::cout << i << " ";
-    std::cout << "\n";
-  }
+  auto opt = get_options("indices");
+  if (!opt.empty())
+    File::Matrix::save_vector(best_order, opt[0][0]);
 
   decltype(directions) output(directions.rows(), 3);
   for (ssize_t n = 0; n < directions.rows(); ++n)
