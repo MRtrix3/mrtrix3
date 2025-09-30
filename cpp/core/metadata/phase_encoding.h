@@ -36,6 +36,8 @@ extern const App::OptionGroup ExportOptions;
 
 using scheme_type = Eigen::MatrixXd;
 
+constexpr default_type trt_tolerance = 1e-3;
+
 //! check that a phase-encoding table is valid
 void check(const scheme_type &PE);
 

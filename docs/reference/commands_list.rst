@@ -44,6 +44,7 @@ List of MRtrix3 commands
     commands/dwifslpreproc
     commands/dwigradcheck
     commands/dwinormalise
+    commands/dwirecon
     commands/dwishellmath
     commands/fixel2peaks
     commands/fixel2sh
@@ -179,6 +180,7 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwifslpreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
+    |cpp.png|, :ref:`dwirecon`, "Perform reconstruction of DWI data from an input DWI series"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
     |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
     |cpp.png|, :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
