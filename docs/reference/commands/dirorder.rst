@@ -30,7 +30,7 @@ Options
 
 -  **-cartesian** Output directions in Cartesian coordinates [x y z] instead of spherical angles [az in].
 
--  **-indices path** Print out the indices of the reordered directions to a text file
+-  **-indices path** Write the indices of the reordered directions to file
 
 Standard options
 ^^^^^^^^^^^^^^^^

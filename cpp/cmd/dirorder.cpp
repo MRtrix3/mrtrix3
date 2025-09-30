@@ -49,36 +49,39 @@ void usage() {
     + Option ("preserve", "preserve some number of directions in their position at the start of the set")
       + Argument ("num").type_integer(1)
     + DWI::Directions::cartesian_option
-    + Option ("indices", "Print out the indices of the reordered directions to a text file")
+    + Option ("indices", "Write the indices of the reordered directions to file")
       + Argument("path").type_file_out();
 
 }
 // clang-format on
 
+// Don't use size_t: no get/set functions for unsigned long on MacOS
+using index_type = uint32_t;
 using value_type = double;
 
-std::vector<size_t> optimise(const Eigen::MatrixXd &directions, const size_t preserve, const size_t first_volume) {
+std::vector<index_type>
+optimise(const Eigen::MatrixXd &directions, const index_type preserve, const size_t first_volume) {
   assert(first_volume >= preserve);
-  std::vector<size_t> indices;
+  std::vector<index_type> indices;
   indices.reserve(directions.rows());
-  for (size_t n = 0; n != preserve; ++n)
+  for (index_type n = 0; n != preserve; ++n)
     indices.push_back(n);
   indices.push_back(first_volume);
-  std::vector<size_t> remaining;
+  std::vector<index_type> remaining;
   remaining.reserve(directions.rows() - preserve);
-  for (size_t n = preserve; n < size_t(directions.rows()); ++n)
+  for (index_type n = preserve; n < index_type(directions.rows()); ++n)
     if (n != first_volume)
       remaining.push_back(n);
 
   while (!remaining.empty()) {
-    ssize_t best = 0;
+    index_type best = 0;
     value_type best_E = std::numeric_limits<value_type>::max();
 
-    for (size_t n = 0; n < remaining.size(); ++n) {
+    for (index_type n = 0; n < remaining.size(); ++n) {
       value_type E = 0.0;
-      ssize_t a = remaining[n];
-      for (size_t i = 0; i < indices.size(); ++i) {
-        ssize_t b = indices[i];
+      index_type a = remaining[n];
+      for (index_type i = 0; i < indices.size(); ++i) {
+        index_type b = indices[i];
         E += 1.0 / (directions.row(a) - directions.row(b)).norm();
         E += 1.0 / (directions.row(a) + directions.row(b)).norm();
       }
@@ -95,19 +98,19 @@ std::vector<size_t> optimise(const Eigen::MatrixXd &directions, const size_t pre
   return indices;
 }
 
-value_type calc_cost(const Eigen::MatrixXd &directions, const std::vector<size_t> &order) {
-  const size_t start = Math::SH::NforL(2);
-  if (size_t(directions.rows()) <= start)
+value_type calc_cost(const Eigen::MatrixXd &directions, const std::vector<index_type> &order) {
+  const ssize_t start = Math::SH::NforL(2);
+  if (directions.rows() <= start)
     return value_type(0);
   Eigen::MatrixXd subset(start, 3);
-  for (size_t i = 0; i != start; ++i)
+  for (ssize_t i = 0; i != start; ++i)
     subset.row(i) = directions.row(order[i]);
   value_type cost = value_type(0);
-  for (size_t N = start + 1; N < size_t(directions.rows()); ++N) {
+  for (ssize_t N = start + 1; N < directions.rows(); ++N) {
     // Don't include condition numbers where precisely the number of coefficients
     //   for that spherical harmonic degree are included, as these tend to
     //   be outliers
-    const size_t lmax = Math::SH::LforN(N - 1);
+    const ssize_t lmax = Math::SH::LforN(N - 1);
     subset.conservativeResize(N, 3);
     subset.row(N - 1) = directions.row(order[N - 1]);
     const value_type cond = DWI::condition_number_for_lmax(subset, lmax);
@@ -119,9 +122,9 @@ value_type calc_cost(const Eigen::MatrixXd &directions, const std::vector<size_t
 void run() {
   auto directions = DWI::Directions::load_cartesian(argument[0]);
 
-  const size_t preserve = get_option_value<size_t>("preserve", 0);
+  const index_type preserve = get_option_value<index_type>("preserve", 0);
 
-  size_t last_candidate_first_volume = directions.rows();
+  index_type last_candidate_first_volume = index_type(directions.rows());
   if (size_t(directions.rows()) <= Math::SH::NforL(2)) {
     // clang-format off
     WARN("Very few directions in input (" + str(directions.rows()) + ";" +
@@ -134,11 +137,11 @@ void run() {
     last_candidate_first_volume = preserve + 1;
   }
   value_type min_cost = std::numeric_limits<value_type>::infinity();
-  std::vector<size_t> best_order;
+  std::vector<index_type> best_order;
   {
     ProgressBar progress("Determining best reordering", directions.rows());
-    for (size_t first_volume = preserve; first_volume != last_candidate_first_volume; ++first_volume) {
-      const std::vector<size_t> order = optimise(directions, preserve, first_volume);
+    for (index_type first_volume = preserve; first_volume != last_candidate_first_volume; ++first_volume) {
+      const std::vector<index_type> order = optimise(directions, preserve, first_volume);
       const value_type cost = calc_cost(directions, order);
       if (cost < min_cost) {
         min_cost = cost;
