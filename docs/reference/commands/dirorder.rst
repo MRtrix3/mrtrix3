@@ -28,9 +28,9 @@ Options
 
 -  **-preserve num** preserve some number of directions in their position at the start of the set
 
--  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
+-  **-cartesian** Output directions in Cartesian coordinates [x y z] instead of spherical angles [az in].
 
--  **-indices** Print out the indices of the reordered directions to standard output.
+-  **-indices path** Print out the indices of the reordered directions to a text file
 
 Standard options
 ^^^^^^^^^^^^^^^^

@@ -48,7 +48,7 @@ void usage() {
   OPTIONS
     + Option ("preserve", "preserve some number of directions in their position at the start of the set")
       + Argument ("num").type_integer(1)
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].")
+    + DWI::Directions::cartesian_option
     + Option ("indices", "Print out the indices of the reordered directions to a text file")
       + Argument("path").type_file_out();
 

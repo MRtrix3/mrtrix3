@@ -38,7 +38,7 @@ const OptionGroup CommonOptions = OptionGroup ("Options common to more than one 
             "specify the directions over which to apply the non-negativity constraint"
             " (by default, the built-in 300 direction set is used)."
             " These should be supplied as a text file"
-            " containing [ az el ] pairs for the directions.")
+            " containing [ az in ] pairs for the directions.")
       + Argument ("file").type_file_in()
 
   + Option ("lmax",

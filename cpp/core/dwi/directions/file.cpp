@@ -16,9 +16,14 @@
 
 #include "dwi/directions/file.h"
 
+#include "cmdline_option.h"
 #include "math/math.h"
 
 namespace MR::DWI::Directions {
+
+App::Option cartesian_option = App::Option("cartesian",
+                                           "Output directions in Cartesian coordinates [x y z]"
+                                           " instead of spherical angles [az in].");
 
 Eigen::MatrixXd load_spherical(const std::string &filename) {
   auto directions = File::Matrix::load_matrix<>(filename);

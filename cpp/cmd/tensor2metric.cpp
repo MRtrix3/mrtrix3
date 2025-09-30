@@ -113,7 +113,7 @@ void usage() {
     + Option("mk_dirs",
              "specify the directions used to numerically calculate mean kurtosis"
              " (by default, the built-in 300 direction set is used)."
-             " These should be supplied as a text file containing [ az el ] pairs for the directions.")
+             " These should be supplied as a text file containing [ az in ] pairs for the directions.")
       + Argument("file").type_file_in()
 
     + Option("rk_ndirs",
