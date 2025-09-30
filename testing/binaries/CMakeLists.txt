@@ -146,6 +146,9 @@ add_bash_binary_test(fixelfilter/smooth_masked)
 
 add_bash_binary_test(fixelreorient/default)
 
+add_bash_binary_test(fixeltransform/default)
+add_bash_binary_test(fixeltransform/noop)
+
 add_bash_binary_test(fod2dec/anat_combo)
 add_bash_binary_test(fod2dec/anat_default)
 add_bash_binary_test(fod2dec/anat_lum)

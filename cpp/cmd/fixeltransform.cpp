@@ -57,7 +57,9 @@ void usage() {
   + "The output fixel dataset will consist of the compulsory index and directions images,"
     " and resampled versions of any fixel data files found in the input directory."
     " Any voxel images present in the input fixel directory will be skipped."
-    " Fixel data files with more than one column are currently not supported.";
+    " Fixel data files with more than one column are currently not supported."
+    " This command does not apply any modulation to fixel-wise data"
+    " based on the deformation applied.";
 
   ARGUMENTS
   + Argument("fixel_in", "the input fixel directory").type_directory_in()
