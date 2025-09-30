@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+ <mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+
+   <mime-type type="application/x-mrtrix">  
+     <comment>MRtrix image</comment>
+     <generic-icon name="x-mrtrix"/>
+     <magic>
+       <match type="string" offset="0" value="mrtrix image"/>
+     </magic>
+     <glob pattern="*.mif"/>
+     <glob pattern="*.mih"/>
+   </mime-type>
+
+   <mime-type type="application/x-mrtrix-gz">  
+     <comment>MRtrix image (compressed)</comment>
+     <generic-icon name="x-mrtrix"/>
+     <glob pattern="*.mif.gz"/>
+   </mime-type>
+
+   <mime-type type="application/x-nifti">  
+     <comment>NIfTI image</comment>
+     <generic-icon name="x-mrtrix"/>
+     <glob pattern="*.nii"/>
+   </mime-type>
+
+   <mime-type type="application/x-nifti-gz">  
+     <comment>NIfTI image (compressed)</comment>
+     <generic-icon name="x-mrtrix"/>
+     <glob pattern="*.nii.gz"/>
+   </mime-type>
+
+   <mime-type type="application/x-image-mgh">  
+     <comment>MGH image</comment>
+     <generic-icon name="x-mrtrix"/>
+     <glob pattern="*.mgh"/>
+   </mime-type>
+
+   <mime-type type="application/x-image-mgz">  
+     <comment>MGH image (compressed)</comment>
+     <generic-icon name="x-mrtrix"/>
+     <glob pattern="*.mgz"/>
+   </mime-type>
+
+   <mime-type type="application/x-image-analyze">  
+     <comment>Analyze image</comment>
+     <generic-icon name="x-mrtrix"/>
+     <glob pattern="*.img"/>
+   </mime-type>
+
+   <mime-type type="application/x-mrtrix-tracks">  
+     <comment>MRtrix streamlines file</comment>
+     <generic-icon name="x-mrtrix"/>
+     <glob pattern="*.tck"/>
+   </mime-type>
+
+ </mime-info>
+

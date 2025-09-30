@@ -31,15 +31,13 @@ Required dependencies:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 5, clang);
--  `Python <https://www.python.org/>`__ version >= 2.7 (>= 3 strongly recommended
-   due to `deprecation of Python2 <https://www.python.org/doc/sunset-python-2/>`__);
+-  `Python <https://www.python.org/>`__ version >= 3.3;
 -  The `zlib <http://www.zlib.net/>`__ compression library;
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 (>= 3.3 recommended);
--  `Qt <http://www.qt.io/>`__ version >= 4.7 (>= 5.0 recommended) *[GUI components only]*;
+-  `Qt <http://www.qt.io/>`__ version >= 5.5 (but *not* Qt 6) *[GUI components only]*;
 
 and optionally:
 
-- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support);
 - `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
   certain applications, currently only ``mrdegibbs``);
 - `libpng <http://www.libpng.org>`__ (for PNG support).
@@ -76,25 +74,19 @@ some of the most common Linux distributions below.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt5opengl5-dev libqt5svg5-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
-
-   .. NOTE::
-
-         On Ubuntu 20.04 and newer, you'll to replace ``python`` in the line
-         above with ``python-is-python3`` (or ``python-is-python2`` if you're
-         still using version 2.7, which is now *very* deprecated).
+       sudo apt-get install git g++ python3 libeigen3-dev zlib1g-dev libqt5opengl5-dev libqt5svg5-dev libgl1-mesa-dev libfftw3-dev libpng-dev
 
 -  RPM-based distros (Fedora, CentOS)::
 
-       sudo yum install git g++ python eigen3-devel zlib-devel libqt5-devel libgl1-mesa-dev fftw-devel libtiff-devel libpng-devel
+       sudo yum install git g++ python3 eigen3-devel zlib-devel libqt5-devel libgl1-mesa-dev fftw-devel libpng-devel
 
    On Fedora 24, this is reported to work::
 
-       sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
+       sudo yum install git gcc-c++ python3 eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libpng-devel
 
 -  Arch Linux::
 
-       sudo pacman -Syu git python gcc zlib eigen qt5-svg fftw libtiff libpng
+       sudo pacman -Syu git python gcc zlib eigen qt5-svg fftw libpng
 
 You may find that your package installer is unable to find the packages
 listed, or that the subsequent steps fail due to missing dependencies
@@ -106,23 +98,20 @@ packages:
 
 -  an appropriate C++ compiler (e.g. GCC 5 or above, or clang);
 
--  Python version >= 2.7 (version >= 3.0 strongly recommended);
+-  Python version >= 3.3;
 
 -  the ``zlib`` compression library and its corresponding development
    header/include files;
 
 -  the Eigen template library (only consists of development header/include files);
 
--  Qt version >= 4.7 (>= 5.0 is recommended), its corresponding development
+-  Qt version >= 5.5, its corresponding development
    header/include files, and the executables required to compile the code.
    Note that this can be broken up into several packages, depending on how your
    distribution has chosen to distribute this. You will need to get
    those that provide these Qt modules: Core, GUI, OpenGL, SVG, and the
    ``qmake``, ``rcc`` & ``moc`` executables (note these will probably be included in
    one of the other packages);
-
--  *[optional]* the TIFF library and utilities version >= 4.0, and its
-   corresponding development header/include files;
 
 -  *[optional]* the FFTW library version >= 3.0, and its corresponding development
    header/include files;
@@ -210,8 +199,6 @@ macOS
          `<http://download.qt.io/official_releases/qt/>`__
 
          You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
-         Note that you need to use at least Qt 5.1, since earlier versions
-         don't support OpenGL 3.3, though we advise you to use the latest version.
          You can choose to install it system-wide or just in your home folder,
          whichever suits; just remember where you installed it.
 
@@ -223,17 +210,15 @@ macOS
          Make sure *not* to include the final ``/Eigen`` folder in the path
          name: use the folder in which it resides instead!
 
-4. Install TIFF, FFTW and PNG libraries.
+4. Install FFTW and PNG libraries.
 
    -  With `Homebrew <http://brew.sh/>`__:
 
-      -  Install TIFF: ``brew install libtiff``
       -  Install FFTW: ``brew install fftw``
       -  Install PNG:  ``brew install libpng``
       
    -  With `MacPorts <http://macports.org/>`__:
 
-      -  Install TIFF: ``port install tiff``
       -  Install FFTW: ``port install fftw-3``
       -  Install PNG:  ``port install libpng``
 
@@ -274,7 +259,7 @@ All of these dependencies are installed below by the MSYS2 package manager.
 
 4. From the **'MinGW-w64 Win64 Shell'** run::
 
-       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-libpng
+       pacman -S git python3 pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libpng
     
    Sometimes ``pacman`` may fail to find a particular package from any of
    the available mirrors. If this occurs, you can download the relevant

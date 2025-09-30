@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify anisotropic resampling via the "regrid" option,
+#   where the shape of the output image voxels is determined via option -scale
+#   which applies multiplicative scaling to the input voxel spacings
+# Outcome is compared against that generated using an obsolete command (mrresize)
+#   from an earlier version of the software.
+mrgrid dwi.mif regrid -scale 1.9,0.5,1.3 -datatype float32 - | \
+testing_diff_image - mrresize/out6.mif -voxel 1e-5

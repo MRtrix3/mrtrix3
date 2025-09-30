@@ -28,6 +28,8 @@ The command can also write the diffusion gradient table from a single input imag
 
 The -dwgrad, -export_* and -shell_* options provide (information about) the diffusion weighting gradient table after it has been processed by the MRtrix3 back-end (vectors normalised, b-values scaled by the square of the vector norm, depending on the -bvalue_scaling option). To see the raw gradient table information as stored in the image header, i.e. without MRtrix3 back-end processing, use "-property dw_scheme".
 
+The -petable option exports the MRtrix3 internal representation of the phase encoding table, regardless of whether the relevant metadata are stored in the BIDS fields "PhaseEncodingDirection" and "TotalReadoutTime" or the MRtrix3-specific "pe_scheme". The contents of this query should however *not* be provided to FSL tools: despite the contents being of the same format, the phase encoding directions may be erroneously interpreted. If extracting phase encoding information to interface with FSL tools, use the -export_pe_topup or -export_pe_eddy options. More information can be found on this issue at: https://mrtrix.readthedocs.io/en/3.0.7/concepts/pe_scheme.html
+
 The -bvalue_scaling option controls an aspect of the import of diffusion gradient tables. When the input diffusion-weighting direction vectors have norms that differ substantially from unity, the b-values will be scaled by the square of their corresponding vector norm (this is how multi-shell acquisitions are frequently achieved on scanner platforms). However in some rare instances, the b-values may be correct, despite the vectors not being of unit norm (or conversely, the b-values may need to be rescaled even though the vectors are close to unit norm). This option allows the user to control this operation and override MRrtix3's automatic detection.
 
 Options
@@ -67,11 +69,11 @@ Options for exporting image header fields
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
--  **-bvalue_scaling mode** enable or disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption). Valid choices are yes/no, true/false, 0/1 (default: automatic).
+-  **-bvalue_scaling mode** enable or disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption). Valid choices are: yes/no, true/false, 0/1 (default: automatic).
 
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -93,9 +95,16 @@ Options for exporting phase-encode tables
 
 -  **-export_pe_table file** export phase-encoding table to file
 
+-  **-export_pe_topup file** export phase-encoding table to file intended for FSL topup
+
 -  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
 
--  **-petable** print the phase encoding table
+-  **-petable** print the MRtrix internal representation of the phase encoding table (see Description)
+
+Handling of piped images
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-nodelete** don't delete temporary images or images passed to mrinfo via Unix pipes
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -125,9 +134,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
