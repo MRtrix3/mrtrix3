@@ -210,7 +210,7 @@ For more details, see http://www.mrtrix.org/.
 Synopsis
 --------
 
-Use ANTs commands, the output of the dHCP pipeline and the M-CRIB atlas to generate the 5TT image of a neonatal subject based on a T2-weighted image
+Use ANTs commands, the output of the dHCP pipeline, and the M-CRIB atlas, to generate the 5TT image of a neonatal subject based on a T2-weighted image
 
 Usage
 -----
@@ -233,15 +233,15 @@ Options
 Options specific to the 'dhcp' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mcrib_path** Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")
+- **-mcrib_path directory** Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")
 
-- **-parcellation** Additionally export the M-CRIB parcellation warped to the subject data
+- **-parcellation image** Additionally export the M-CRIB parcellation warped to the subject data
 
 - **-quick** Specify the use of quick registration parameters
 
 - **-hard_segmentation** Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT
 
-- **-ants_parallel** Control for parallel computation for antsJointLabelFusion (default 0) -- 0 == run serially,  1 == SGE qsub, 2 == use PEXEC (localhost), 3 == Apple XGrid, 4 == PBS qsub, 5 == SLURM.
+- **-ants_parallel value** Control for parallel computation for antsJointLabelFusion (default 0): 0 == run serially; 1 == SGE qsub; 2 == use PEXEC (localhost); 3 == Apple XGrid; 4 == PBS qsub; 5 == SLURM.
 
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -255,9 +255,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -285,7 +285,7 @@ References
 
 * Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P. Hierarchical complexity of the macro-scale neonatal brain. Cerebral Cortex, 2021, 4, 2071-2084
 
-* Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. 2008, Medical Image Analysis, 41, 12-26
+* Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. Medical Image Analysis, 2008, 41, 12-26
 
 * Wang, H.; Suh, J.W.; Das, S.R.; Pluta, J.B.; Craige, C. & Yushkevich, P.A. Multi-atlas segmentation with joint label fusion. IEEE Trans Pattern Anal Mach Intell., 2013, 35, 611-623.
 
@@ -299,9 +299,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Manuel Blesa (manuel.blesa@ed.ac.uk), Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Manuel Blesa (manuel.blesa@ed.ac.uk) and Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -742,17 +742,17 @@ Options
 Options specific to the 'mcrib' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Manually provide a brain mask, MANDATORY
+- **-mask image** Manually provide a brain mask; MANDATORY
 
-- **-mcrib_path** Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")
+- **-mcrib_path directory** Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")
 
-- **-parcellation** Additionally export the M-CRIB parcellation warped to the subject data
+- **-parcellation image** Additionally export the M-CRIB parcellation warped to the subject data
 
 - **-quick** Specify the use of quick registration parameters
 
 - **-hard_segmentation** Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT (NOTE: use of this option in this segmentation algorithm is not recommended)
 
-- **-ants_parallel** Control for parallel computation for antsJointLabelFusion (default 0) -- 0 == run serially,  1 == SGE qsub, 2 == use PEXEC (localhost), 3 == Apple XGrid, 4 == PBS qsub, 5 == SLURM.
+- **-ants_parallel value** Control for parallel computation for antsJointLabelFusion (default 0): 0 == run serially; 1 == SGE qsub; 2 == use PEXEC (localhost); 3 == Apple XGrid; 4 == PBS qsub; 5 == SLURM.
 
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -766,9 +766,9 @@ Additional standard options for Python scripts
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -796,7 +796,7 @@ References
 
 * Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P. Hierarchical complexity of the macro-scale neonatal brain. Cerebral Cortex, 2021, 4, 2071-2084
 
-* Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. 2008, Medical Image Analysis, 41, 12-26
+* Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. Medical Image Analysis, 2008, 41, 12-26
 
 * Wang, H.; Suh, J.W.; Das, S.R.; Pluta, J.B.; Craige, C. & Yushkevich, P.A. Multi-atlas segmentation with joint label fusion. IEEE Trans Pattern Anal Mach Intell., 2013, 35, 611-623.
 
@@ -808,9 +808,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Manuel Blesa (manuel.blesa@ed.ac.uk), Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Manuel Blesa (manuel.blesa@ed.ac.uk) and Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
