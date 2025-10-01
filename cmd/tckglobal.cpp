@@ -310,11 +310,29 @@ void run ()
   EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, Eext, properties.lam_ext / ( wmscale2 * properties.weight*properties.weight));
 
   MHSampler mhs (header_in, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
-
-
   INFO("Start MH sampler");
 
-  Thread::run (Thread::multi(mhs), "MH sampler");
+  const size_t nthreads = Thread::number_of_threads();
+  switch (Thread::type_nthreads()) {
+    case Thread::nthreads_t::UNINITIALISED:
+      assert(false);
+      throw Exception("Erroneously uninitialised nthreads");
+    case Thread::nthreads_t::EXPLICIT:
+      if (nthreads > 1) {
+        WARN("Current tckglobal implementation has known race conditions;"
+             " explicitly requested multi-threaded execution may yield undefined behaviour");
+        Thread::run (Thread::multi(mhs), "MH sampler");
+      } else {
+        mhs.execute();
+      }
+      break;
+    case Thread::nthreads_t::IMPLICIT:
+      if (nthreads > 1) {
+        INFO("Multi-threading implicitly disabled"
+             " due to known race conditions in current implementation");
+      }
+      mhs.execute();
+  }
 
   INFO("Final no. particles: " + std::to_string(pgrid.getTotalCount()));
   INFO("Final external energy: " + std::to_string(stats.getEextTotal()));
