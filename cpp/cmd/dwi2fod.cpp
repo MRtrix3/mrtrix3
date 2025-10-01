@@ -159,9 +159,6 @@ public:
 
     if (modelled_image.valid()) {
       assign_pos_of(fod, 0, 3).to(modelled_image);
-      // TODO Wrong operation?
-      // Need to first perform the forward convolution in SH,
-      //   and then apply the SH2A transform for the direction set
       data = sdeconv.shared.fconv * sdeconv.FOD();
       assert(data.size() == sdeconv.shared.dwis.size());
       for (auto l = Loop(3)(modelled_image); l; ++l)
