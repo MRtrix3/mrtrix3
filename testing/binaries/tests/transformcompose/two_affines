@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify composition of two affine transformations
+# Outcome is compared to that generated using a prior software version
+transformcompose rotatez.txt rotatez.txt tmp.txt -force
+testing_diff_matrix tmp.txt transformcompose/out.txt -abs 0.0001
