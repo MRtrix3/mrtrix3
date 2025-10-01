@@ -71,8 +71,7 @@ App::OptionGroup glm_options(const std::string &element_name) {
 }
 
 void check_design(const matrix_type &design, const bool extra_factors) {
-  Eigen::ColPivHouseholderQR<matrix_type> decomp;
-  decomp.setThreshold(1e-5);
+  Eigen::FullPivHouseholderQR<matrix_type> decomp;
   decomp = decomp.compute(design);
   if (decomp.rank() < design.cols()) {
     if (extra_factors) {
