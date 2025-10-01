@@ -65,6 +65,8 @@ Options common to more than one algorithm
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
+-  **-predicted_signal image** output the predicted dwi image.
+
 Options for the Constrained Spherical Deconvolution algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -84,8 +86,6 @@ Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution al
 -  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1e-10).
 
 -  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-10).
-
--  **-predicted_signal image** output the predicted dwi image.
 
 Stride options
 ^^^^^^^^^^^^^^
