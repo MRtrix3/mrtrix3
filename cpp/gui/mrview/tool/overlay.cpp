@@ -305,18 +305,7 @@ int Overlay::draw_tool_labels(int position, int start_line_num, const Projection
     Image *image = dynamic_cast<Image *>(image_list_model->items[i].get());
     if (image && image->show) {
       std::string value_str = Path::basename(image->get_filename()) + " ";
-      cfloat value;
-      if (image->interpolate()) {
-        value_str += "interp value: ";
-        value = image->trilinear_value(window().focus());
-      } else {
-        value_str += "voxel value: ";
-        value = image->nearest_neighbour_value(window().focus());
-      }
-      if (std::isnan(abs(value)))
-        value_str += "?";
-      else
-        value_str += str(value);
+      value_str += image->describe_value(window().focus());
       transform.render_text(value_str, position, start_line_num + num_of_new_lines);
       num_of_new_lines += 1;
     }
