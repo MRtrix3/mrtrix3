@@ -129,18 +129,18 @@ void usage() {
 
 class CSD_Processor {
 public:
-  CSD_Processor(const DWI::SDeconv::CSD::Shared &shared, Image<bool> &mask, Image<float> &dwi_modelled = Image<float>())
-      : sdeconv(shared),
-        data(shared.dwis.size()),
-        mask(mask),
-        modelled_image(dwi_modelled),
-        dwi_data(shared.grad.rows()),
-        output_data(shared.HR_dirs.cols()) {}
+  CSD_Processor(const DWI::SDeconv::CSD::Shared &shared, Image<bool> &mask, Image<float> dwi_modelled = Image<float>())
+      : sdeconv(shared), data(shared.dwis.size()), mask(mask), modelled_image(dwi_modelled) {}
 
   void operator()(Image<float> &dwi, Image<float> &fod) {
     if (!load_data(dwi)) {
       for (auto l = Loop(3)(fod); l; ++l)
         fod.value() = 0.0;
+      if (modelled_image.valid()) {
+        assign_pos_of(dwi, 0, 3).to(modelled_image);
+        for (auto l = Loop(3)(modelled_image); l; ++l)
+          modelled_image.value() = std::numeric_limits<float>::quiet_NaN();
+      }
       return;
     }
 
@@ -155,13 +155,21 @@ public:
       INFO("voxel [ " + str(dwi.index(0)) + " " + str(dwi.index(1)) + " " + str(dwi.index(2)) +
            " ] did not reach full convergence");
 
-    output_data = sdeconv.FOD();
-    fod.row(3) = output_data;
+    fod.row(3) = sdeconv.FOD();
 
     if (modelled_image.valid()) {
       assign_pos_of(fod, 0, 3).to(modelled_image);
-      dwi_data = sdeconv.shared.HR_dirs * output_data;
-      modelled_image.row(3) = dwi_data;
+      // TODO Wrong operation?
+      // Need to first perform the forward convolution in SH,
+      //   and then apply the SH2A transform for the direction set
+      data = sdeconv.shared.fconv * sdeconv.FOD();
+      assert(data.size() == sdeconv.shared.dwis.size());
+      for (auto l = Loop(3)(modelled_image); l; ++l)
+        modelled_image.value() = std::numeric_limits<float>::quiet_NaN();
+      for (size_t n = 0; n < sdeconv.shared.dwis.size(); n++) {
+        modelled_image.index(3) = sdeconv.shared.dwis[n];
+        modelled_image.value() = data[n];
+      }
     }
   }
 
@@ -170,8 +178,7 @@ private:
   Eigen::VectorXd data;
   Image<bool> mask;
   Image<float> modelled_image;
-  Eigen::VectorXd dwi_data;
-  Eigen::VectorXd output_data;
+  Eigen::VectorXd SH_predicted;
 
   bool load_data(Image<float> &dwi) {
     if (mask.valid()) {
@@ -263,7 +270,7 @@ void run() {
   Image<float> dwi_modelled;
   opt = get_options("predicted_signal");
   if (opt.size())
-    dwi_modelled = Image<float>::create(opt[0][0], header_in);
+    dwi_modelled = Image<float>::create(opt[0][0], header_out);
 
   int algorithm = argument[0];
   if (algorithm == 0) {

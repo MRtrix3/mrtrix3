@@ -2,4 +2,4 @@
 # Verify operation of "csd" algorithm when a user-specified mask is provided
 # Compare output to that generated using a prior software version
 dwi2fod csd dwi.mif -mask mask.mif response.txt - | \
-testing_diff_image - dwi2fod/out_mask.mif -voxel 1e-5
+    testing_diff_image - dwi2fod/csd/out_mask.mif -voxel 1e-5

@@ -122,12 +122,12 @@ public:
         init_filter = Eigen::VectorXd::Ones(3);
       init_filter.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax_response)));
 
-      auto RH = Math::ZSH::ZSH2RH(response);
+      RH = Math::ZSH::ZSH2RH(response);
       if (size_t(RH.size()) < Math::ZSH::NforL(lmax))
         RH.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax)));
 
       // inverse sdeconv for initialisation:
-      auto fconv = init_transform(DW_dirs, lmax_response);
+      fconv = init_transform(DW_dirs, lmax_response);
       rconv.resize(fconv.cols(), fconv.rows());
       fconv.diagonal().array() += 1.0e-2;
       // fconv.save ("fconv.txt");
@@ -184,8 +184,8 @@ public:
     size_t nSH() const { return HR_trans.cols(); }
 
     Eigen::MatrixXd grad;
-    Eigen::VectorXd response, init_filter;
-    Eigen::MatrixXd DW_dirs, HR_dirs;
+    Eigen::VectorXd response, init_filter, RH;
+    Eigen::MatrixXd fconv, DW_dirs, HR_dirs;
     Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
     default_type neg_lambda, norm_lambda, threshold;
     std::vector<size_t> dwis;

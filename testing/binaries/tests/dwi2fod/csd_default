@@ -1,5 +1,8 @@
 #!/bin/bash
 # Basic test of default operation of command using "csd" algorithm
 # Compare output to that generated using earlier software version
-dwi2fod csd dwi.mif response.txt - | \
-testing_diff_image - dwi2fod/out.mif -voxel 1e-5
+dwi2fod csd dwi.mif response.txt tmp_fod.mif \
+    -predicted_signal tmp_predicted.mif \
+    -force
+testing_diff_image tmp_fod.mif dwi2fod/csd/out.mif -voxel 1e-5
+testing_diff_image tmp_predicted.mif dwi2fod/csd/predicted.mif -voxel 1e-5
