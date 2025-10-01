@@ -34,7 +34,9 @@ Options
 
 -  **-extent window** Set the patch size of the denoising filter. By default, the command will select the smallest isotropic patch size that exceeds the number of DW images in the input data, e.g., 5x5x5 for data with <= 125 DWI volumes, 7x7x7 for data with <= 343 DWI volumes, etc.
 
--  **-noise level** The output noise map, i.e., the estimated noise level 'sigma' in the data. Note that on complex input data, this will be the total noise level across real and imaginary channels, so a scale factor sqrt(2) applies.
+-  **-noise level** The output noise map, i.e., the estimated noise level 'sigma' in the data.Note that on complex input data, this will be the total noise level across real and imaginary channels, so a scale factor sqrt(2) applies.
+
+-  **-rank cutoff** The selected signal rank of the output denoised image.
 
 -  **-datatype float32/float64** Datatype for the eigenvalue decomposition (single or double precision). For complex input data, this will select complex float32 or complex float64 datatypes.
 
@@ -76,7 +78,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk) and Jelle Veraart (jelle.veraart@nyumc.org) and J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors 
  

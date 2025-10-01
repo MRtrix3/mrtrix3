@@ -1,0 +1,38 @@
+# Verify operation of "dwirecon" command for:
+# - "combine_pairs" option:
+#   identifies volumes with phase encoding equal in readout time but opposing in polarity,
+#   and does a weighted recombination of them based on the local Jacobians
+# - *Two* input phase encoding directions
+#
+# Unlike another test that evaluates this condition,
+#   in this scenario the volumes of the input images are permuted in order;
+#   the command should be capable of identifying the corresponding pairs,
+#   and suitably recombining them
+#   This permutation can happen in one of two ways:
+#   1. The two phase encoding directions still appear one after the other,
+#      but the volumes within each of those two halves are not necessarily preserved in order
+mrcat \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:6 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 6:-1:0 -) \
+    -axis 3 \
+    - | \
+dwirecon - combine_pairs \
+    -field dwirecon/field.mif \
+    - | \
+testing_diff_image - dwirecon/combine_pairs/rpepair.mif -frac 1e-5
+
+#   2. Volumes are permuted between the two phase encoding directions;
+#      one realistic possibility is that for each diffusion sensitisation direction,
+#      two volumes opposed in phase encoding polarity are acquired consecutively
+mrcat \
+    dwirecon/LR_preproc.mif \
+    dwirecon/RL_preproc.mif \
+    -axis 3 \
+    - | \
+mrconvert - \
+    -coord 3 0,28,1,29,2,30,3,31,4,32,5,33,6,34 \
+    - | \
+dwirecon - combine_pairs \
+    -field dwirecon/field.mif \
+    - | \
+testing_diff_image - dwirecon/combine_pairs/rpepair.mif -frac 1e-5

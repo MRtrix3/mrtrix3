@@ -23,11 +23,14 @@ Description
 
 The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), and RenderMan RIB (export only).
 
-Note that ascii files will be stored with one streamline per numbered file. To support this, the command will use the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, for example:
+Example usages
+--------------
 
-$ tckconvert input.tck output-'[]'.txt
+-   *Writing multiple ASCII files, one per streamline*::
 
-will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...
+        $ tckconvert input.tck output-[].txt
+
+    By using the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, this example will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...
 
 Options
 -------
@@ -57,6 +60,11 @@ Options for both PLY and RIB writer
 
 -  **-radius radius** radius of the streamlines
 
+Options specific to VTK writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-ascii** write an ASCII VTK file (binary by default)
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
@@ -85,9 +93,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com), Daniel Blezek (daniel.blezek@gmail.com).
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk) and J-Donald Tournier (jdtournier@gmail.com) and Philip Broser (philip.broser@me.com) and Daniel Blezek (daniel.blezek@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

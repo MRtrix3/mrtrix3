@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify operation of command
+#   when utilising image paths that include whitespace characters
+rm -rf "tmp scratch"
+
+ln -s BIDS/sub-01/anat/sub-01_parc-desikan_indices.nii.gz "tmp indices.nii.gz"
+ln -s BIDS/sub-01/anat/sub-01_T1w.nii.gz "tmp T1w.nii.gz"
+ln -s BIDS/parc-desikan_lookup.txt "tmp lookup.txt"
+
+mkdir "tmp scratch"
+
+labelsgmfirst "tmp indices.nii.gz" "tmp T1w.nii.gz" "tmp lookup.txt" "tmp out.mif" -force \
+-scratch "tmp scratch"
+
+testing_diff_header "tmp out.mif" labelsgmfirst/default.mif.gz

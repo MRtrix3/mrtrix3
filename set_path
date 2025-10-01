@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ import sys, os, platform, subprocess
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
-  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).decode(errors='ignore').splitlines()[0].strip()
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python3' ]).decode(errors='ignore').splitlines()[0].strip()
   sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 # check whether we are in the right location:

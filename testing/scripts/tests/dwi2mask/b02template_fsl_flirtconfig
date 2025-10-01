@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify operation of "dwi2mask b02template" algorithm, when:
+# - Software selection is "fsl",
+#   which invokes FSL commands flirt and fnirt
+# - Command-line options to be provided to FSL flirt
+#   are specified via the MRtrix config file;
+#   since the test cannot modify the user config file,
+#   simulate this by using the standard command-line option "-config"
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software fsl \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-config Dwi2maskTemplateFSLFlirtOptions "-cost normmi -dof 12"

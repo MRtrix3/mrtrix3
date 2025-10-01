@@ -1,0 +1,7 @@
+#!/bin/bash
+# Ensure correct operation of the "5ttgen hsvs" command
+#   where the output image is sent down a pipe to a subsequent command
+# There is no possibility of input piping to this command
+#   given that the input is a directory rather than an image
+5ttgen hsvs freesurfer/sub-01 - | \
+testing_diff_header - 5ttgen/hsvs/default.mif.gz
