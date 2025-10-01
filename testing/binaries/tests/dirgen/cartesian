@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify operation of command when flag "-cartesian" is set
+# TODO Manually ensure that the output file contains 3 rather than 2 columns
+# Cannot compare directly to a pre-generated output due to stochasticity of command;
+#   instead extract statistical properties of output,
+#   and ensure that these are comparable to those of a pre-generated output
+
+dirgen 60 tmp.txt -cartesian -force
+
+dirstat tmp.txt | \
+grep 'nearest-neighbour angles:' | \
+head -n 1 | \
+awk '{ print $5$8 "," $10 }' | \
+tr ',' ' ' > tmp_stats.txt
+
+testing_diff_matrix tmp_stats.txt dirgen/stats_60_cartesian.txt -abs 1.0

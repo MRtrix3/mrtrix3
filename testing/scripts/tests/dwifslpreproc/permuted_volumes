@@ -1,0 +1,15 @@
+#!/bin/bash
+# If the first volume in the input DWI is not a b=0 volume,
+#   the volumes are internally permuted such that the first b=0 volume is the first volume in the series
+#   prior to running any FSL tools;
+#   the volume permutation is then reverted after execution of those tools
+#   so that the order of volumes in the output pre-processed series is the same as the input series
+mrconvert BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp-sub-04_dwi.mif -force \
+-fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
+-json_import BIDS/sub-04/dwi/sub-04_dwi.json \
+-coord 3 2:67,0,1
+
+dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -force \
+-pe_dir ap -readout_time 0.1 -rpe_none
+
+testing_diff_header tmp.mif dwifslpreproc/permuted_volumes.mif.gz

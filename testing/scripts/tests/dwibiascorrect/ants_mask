@@ -1,0 +1,10 @@
+#!/bin/bash
+# Ensure successful execution of "dwibiascorrect ants" algorithm
+#   when a processing mask is provided as input
+dwibiascorrect ants BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-bias tmpbias.mif
+
+testing_diff_header tmpout.mif dwibiascorrect/ants/masked_out.mif.gz
+testing_diff_header tmpbias.mif dwibiascorrect/ants/masked_bias.mif.gz

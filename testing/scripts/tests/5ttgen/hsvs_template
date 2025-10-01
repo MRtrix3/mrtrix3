@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify "5ttgen hsvs" operation when the 5TT image is generated on a user-specified template voxel grid
+5ttgen hsvs freesurfer/sub-01 tmp.mif -template BIDS/sub-01/anat/sub-01_T1w.nii.gz -force
+testing_diff_header tmp.mif 5ttgen/hsvs/template.mif.gz

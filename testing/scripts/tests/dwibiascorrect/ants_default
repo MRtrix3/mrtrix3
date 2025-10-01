@@ -1,0 +1,29 @@
+#!/bin/bash
+# Verify operation of "dwibiascorrect ants" algorithm under default behaviour
+# Ensure that the command can proceed regardless of whether the gradient table comes from:
+# - The image header
+# - The -fslgrad option
+# - The -grad option
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp-sub-01_dwi.mif \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-export_grad_mrtrix tmp-sub-01_dwi.b \
+-strides 0,0,0,1 \
+-force
+
+dwibiascorrect ants tmp-sub-01_dwi.mif tmpout.mif -force \
+-bias tmpbias.mif
+testing_diff_header tmpout.mif dwibiascorrect/ants/default_out.mif.gz
+testing_diff_header tmpbias.mif dwibiascorrect/ants/default_bias.mif.gz
+
+dwibiascorrect ants BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-bias tmpbias.mif
+testing_diff_header tmpout.mif dwibiascorrect/ants/default_out.mif.gz
+testing_diff_header tmpbias.mif dwibiascorrect/ants/default_bias.mif.gz
+
+dwibiascorrect ants BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-grad tmp-sub-01_dwi.b \
+-bias tmpbias.mif
+testing_diff_header tmpout.mif dwibiascorrect/ants/default_out.mif.gz
+testing_diff_header tmpbias.mif dwibiascorrect/ants/default_bias.mif.gz

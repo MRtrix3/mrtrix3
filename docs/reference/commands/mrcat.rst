@@ -13,10 +13,9 @@ Usage
 
 ::
 
-    mrcat [ options ]  image1 image2 [ image2 ... ] output
+    mrcat [ options ]  inputs [ inputs ... ] output
 
--  *image1*: the first input image.
--  *image2*: additional input image(s).
+-  *inputs*: the input images.
 -  *output*: the output image.
 
 Example usages
@@ -31,12 +30,12 @@ Example usages
 Options
 -------
 
--  **-axis axis** specify axis along which concatenation should be performed. By default, the program will use the last non-singleton, non-spatial axis of any of the input images - in other words axis 3 or whichever axis (greater than 3) of the input images has size greater than one.
+-  **-axis index** specify axis along which concatenation should be performed. By default, the program will use the last non-singleton, non-spatial axis of any of the input images; in other words, axis 3, or whichever axis (greater than 3) of the input images has size greater than one.
 
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices are: float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -68,7 +67,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify default operation of "5ttgen freesurfer"
+# Outcome is compared to that generated using a prior software version
+5ttgen freesurfer BIDS/sub-01/anat/aparc+aseg.mgz tmp.mif -force
+testing_diff_image tmp.mif 5ttgen/freesurfer/default.mif.gz

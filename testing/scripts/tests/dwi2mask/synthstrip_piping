@@ -1,0 +1,15 @@
+#!/bin/bash
+# Ensure correct operation of the "dwi2mask synthstrip" command
+#   where image piping is used
+
+# Both input and output images are piped
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+dwi2mask synthstrip - - | \
+mrconvert - tmp.mif -force
+
+# Output stripped image is piped
+dwi2mask synthstrip BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp-out.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-stripped - | \
+mrconvert - tmp-stripped.mif -force
