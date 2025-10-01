@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify operation of "dwibiascorrect fsl" command
+#   when the -mask option is used to control the mask
+#   within which the bias field is estimated & corrected
+dwibiascorrect fsl BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-bias tmpbias.mif
+
+testing_diff_header tmpout.mif dwibiascorrect/fsl/masked_out.mif.gz
+testing_diff_header tmpbias.mif dwibiascorrect/fsl/masked_bias.mif.gz

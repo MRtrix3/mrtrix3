@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,18 @@
 # Author: Rami Tabbara
 #
 
+# Parse the build directory from the command line
+args=$(getopt -o '' -l 'build-dir:' -n "$0" -- "$@")
+echo "$args" | grep -q -- '--build-dir' || { echo "Usage: $0 --build-dir <build-dir>"; exit 1; }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --build-dir) build_dir="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "Invalid option!"; exit 1 ;;
+  esac
+done
+
 function prepend {
   echo -e "$1" | cat - "$2" > "$2".tmp && mv "$2".tmp "$2"
 }
@@ -30,7 +42,7 @@ function prepend {
 # Generating documentation for all commands
 
 mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
-export PATH=$mrtrix_root/bin:"$PATH"
+export PATH=$build_dir/bin:$PATH
 dirpath=${mrtrix_root}'/docs/reference/commands'
 export LC_ALL=C
 
@@ -67,11 +79,11 @@ echo "
 " > $table_file
 
 cmdlist=""
-for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp"`; do
+for n in `find "${mrtrix_root}"/cpp/cmd/ -name "*.cpp"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
-for n in `find "${mrtrix_root}"/bin/ -type f -print0 | xargs -0 grep -l "import mrtrix3"`; do
-  cmdlist=$cmdlist$'\n'`basename $n`
+for n in `ls "${mrtrix_root}"/python/mrtrix3/commands/ --ignore=__init__.py* --ignore=CMakeLists.txt`; do
+  cmdlist=$cmdlist$'\n'`basename $n .py`
 done
 
 for n in `echo "$cmdlist" | sort`; do
@@ -110,7 +122,7 @@ echo "
 
 # Generating list of configuration file options
 
-grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b' "${mrtrix_root}" |\
+grep -rn --include=\*.h --include=\*.cpp '^\s*//\sCONF\b' "${mrtrix_root}" |\
   "${mrtrix_root}"/docs/format_config_options > ${mrtrix_root}/docs/reference/config_file_options.rst
 
 
@@ -119,6 +131,6 @@ grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b' "${mrtrix_root}" |\
 
 # Generating list of environment variables
 
-grep -rn --include=\*.h --include=\*.cpp '^\s*//ENVVAR\b' "${mrtrix_root}" |\
+grep -rn --include=\*.h --include=\*.cpp '^\s*//\sENVVAR\b' "${mrtrix_root}" |\
   "${mrtrix_root}"/docs/format_environment_variables > ${mrtrix_root}/docs/reference/environment_variables.rst
 

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify "mean" operator when applied along the axis of a single image
+# Outcome is compared against that calculated using a prior software version
+mrmath dwi.mif mean -axis 3 - | \
+testing_diff_image - mrmath/out1.mif -frac 1e-5

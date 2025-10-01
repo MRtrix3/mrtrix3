@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify the upsampling feature of the "regrid" operation,
+#   using the default interpolator (cubic)
+# Outcome is compared against that generated using an older command (mrresize)
+#   from an earlier software version
+mrgrid dwi.mif regrid -scale 1.6 -datatype float32 - | \
+testing_diff_image - mrresize/out2.mif -voxel 1e-5

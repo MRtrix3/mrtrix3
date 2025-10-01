@@ -1,0 +1,6 @@
+#!/bin/bash
+# Evaluation of command output under default operation,
+#   with only a small number of directions along which to sample amplitudes for computational efficiency
+# Output is compared to that generated using a prior software version
+sh2amp amp2sh/out.mif sh2amp/dir20.txt - | \
+testing_diff_image - sh2amp/out.mif -voxel 1e-5

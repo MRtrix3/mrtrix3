@@ -1,0 +1,34 @@
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+2  Lateral-nucleus                                   72  132 181 0
+2  Basolateral-nucleus                               243 243 243 0
+2  Basal-nucleus                                     207 63  79  0
+2  Centromedial-nucleus                              121 20  135 0
+2  Central-nucleus                                   197 60  248 0
+2  Medial-nucleus                                    2   149 2   0
+2  Cortical-nucleus                                  221 249 166 0
+2  Accessory-Basal-nucleus                           232 146 35  0
+2  Corticoamygdaloid-transitio                       20  60  120 0
+2  Anterior-amygdaloid-area-AAA                      250 250 0   0
+2  Fusion-amygdala-HP-FAH                            122 187 222 0
+2  Hippocampal-amygdala-transition-HATA              237 12  177 0
+2  Endopiriform-nucleus                              10  49  255 0
+3  Lateral-nucleus-olfactory-tract                   205 184 144 0
+2  Paralaminar-nucleus                               45  205 165 0
+2  Intercalated-nucleus                              117 160 175 0
+2  Prepiriform-cortex                                221 217 21  0
+2  Periamygdaloid-cortex                             20  60  120 0
+2  Envelope-Amygdala                                 141 21  100 0
+2  Extranuclear-Amydala                              225 140 141 0

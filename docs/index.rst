@@ -164,6 +164,7 @@ Table of Contents
 
    dwi_preprocessing/denoising
    dwi_preprocessing/dwifslpreproc
+   dwi_preprocessing/masking
 
 .. toctree::
    :maxdepth: 1
@@ -207,6 +208,7 @@ Table of Contents
    concepts/sh_basis_lmax
    concepts/fixels_dixels
    concepts/afd_connectivity
+   concepts/mrview_lock_axes/mrview_lock_axes
 
 .. toctree::
    :maxdepth: 1

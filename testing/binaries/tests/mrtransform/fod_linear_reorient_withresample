@@ -1,0 +1,8 @@
+#!/bin/bash
+# Test that the operation of FOD reorientation is close to identical to that
+#   produced using a prior software version
+# In this test, the image data are also explicitly resampled onto a new voxel grid,
+#   even though that template grid is in fact identical to the input image;
+#   it nevertheless executes a separate code branch
+mrtransform fod.mif -linear rotatez.txt -reorient_fod yes -template fod.mif - | \
+testing_diff_image - mrtransform/out8.mif.gz -voxel 0.001
