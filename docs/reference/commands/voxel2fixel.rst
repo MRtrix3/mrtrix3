@@ -16,8 +16,8 @@ Usage
     voxel2fixel [ options ]  image_in fixel_directory_in fixel_directory_out fixel_data_out
 
 -  *image_in*: the input image.
--  *fixel_directory_in*: the input fixel directory. Used to define the fixels and their directions
--  *fixel_directory_out*: the fixel directory where the output will be written. This can be the same as the input directory if desired
+-  *fixel_directory_in*: the input fixel directory; used to define the fixels and their directions
+-  *fixel_directory_out*: the fixel directory where the output will be written; this can be the same as the input directory if desired
 -  *fixel_data_out*: the name of the fixel data image.
 
 Description
@@ -26,7 +26,7 @@ Description
 This command is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures.
 
 Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.3/fixel_based_analysis/fixel_directory_format.html
+https://mrtrix.readthedocs.io/en/3.0.7/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
@@ -61,7 +61,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

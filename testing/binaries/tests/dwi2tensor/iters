@@ -1,0 +1,19 @@
+#!/bin/bash
+# Ensure that the internal steps of iteratively reweighted least squares
+#   is consistent with that generated using a previous version of the software
+# The command does not have an interface by which the tensor fit at each iteration can be exported;
+#   instead, just run the command multiple times, using different numbers of fixed iterations
+dwi2tensor dwi.mif -mask mask.mif -iter 0 - | \
+testing_diff_image - dwi2tensor/out_it0.mif -frac 1e-5
+
+dwi2tensor dwi.mif -mask mask.mif -iter 1 - | \
+testing_diff_image - dwi2tensor/out_it1.mif -frac 1e-5
+
+dwi2tensor dwi.mif -mask mask.mif -iter 2 - | \
+testing_diff_image - dwi2tensor/out_it2.mif -frac 1e-5
+
+dwi2tensor dwi.mif -mask mask.mif -iter 3 - | \
+testing_diff_image - dwi2tensor/out_it3.mif -frac 1e-5
+
+dwi2tensor dwi.mif -mask mask.mif -iter 4 - | \
+testing_diff_image - dwi2tensor/out_it4.mif -frac 1e-5

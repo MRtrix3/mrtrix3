@@ -18,19 +18,24 @@ Usage
 -  *input*: the input image(s).
 -  *output*: the output image
 
+Description
+-----------
+
+The voxel spacings of the calculated average header can be determined from the set of input images in one of four different ways, which may be more or less appropriate in different use cases. These options vary in two key ways: 1. Projected voxel spacing of the input image in the direction of the average header axes versus the voxel spacing of the input image axis that is closest to the average header axis; 2. Selecting the minimum of these spacings across input images to maintain maximal spatial resolution versus the mean across images to produce an unbiased average.
+
 Options
 -------
 
--  **-padding value**  boundary box padding in voxels. Default: 0
+-  **-padding value** boundary box padding in voxels. Default: 0
 
--  **-resolution type**  subsampling of template compared to smallest voxel size in any input image. Valid options are 'mean': unbiased but loss of resolution for individual images possible, and 'max': smallest voxel size of any input image defines the resolution. Default: mean
+-  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description). Valid options are: min_projection,mean_projection,min_nearest,mean_nearest; default = mean_projection
 
--  **-fill**  set the intensity in the first volume of the average space to 1
+-  **-fill** set the intensity in the first volume of the average space to 1
 
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices are: float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -62,7 +67,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Maximilian Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

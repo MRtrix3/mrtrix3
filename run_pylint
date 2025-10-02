@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,23 +19,10 @@ LOGFILE=pylint.log
 echo logging to \""$LOGFILE"\"
 
 # generate list of tests to run:
-tests="build configure update_copyright"
+tests="update_copyright"
 if [ $# == 0 ]; then
-  for lib_path in lib/mrtrix3/*; do
-    if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
-      for src_file in ${lib_path}/*.py; do
-        if [[ -f ${src_file} ]]; then
-          tests="$tests $src_file"
-        fi
-      done
-    elif [[ ${lib_path} == *.py ]]; then
-      tests="$tests $lib_path"
-    fi
-  done
-  for bin_path in bin/*; do
-    if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!\/usr\/bin\/python3"); then
-      tests="$tests $bin_path"
-    fi
+  for filepath in $(find python/mrtrix3/ -name '*.py'); do
+    tests="$tests $filepath"
   done
 else
   tests="$@"
@@ -64,7 +51,7 @@ cat >> $LOGFILE <<EOD
 EOD
 
 
-export PYTHONPATH="$(pwd)/lib:$PYTHONPATH"
+export PYTHONPATH="$(pwd)/python/lib:$PYTHONPATH"
 for file in $tests; do
 
   cat >> $LOGFILE <<EOD

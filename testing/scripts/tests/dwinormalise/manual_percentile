@@ -1,0 +1,8 @@
+#!/bin/bash
+# Test operation of the "dwinormalise manual" algorithm
+#   when the -percentile option is specified to modulate which statistic is used to map to the reference intensity
+dwinormalise manual BIDS/sub-01/dwi/sub-01_dwi.nii.gz BIDS/sub-01/dwi/sub-01_brainmask.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-percentile 40
+
+testing_diff_image tmp.mif dwinormalise/manual/percentile.mif.gz -frac 1e-5

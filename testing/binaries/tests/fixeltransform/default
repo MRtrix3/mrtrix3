@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify default operation of the "fixeltransform" command
+# Results have been manually cross-checked
+#   with those produced from the "mrtransform/fod_nonlinear" test
+rm -rf tmp/
+fixeltransform fixel_image/ rotatez_warp.mif tmp/
+testing_diff_fixel tmp/ fixeltransform/default/ -abs 1e-5
