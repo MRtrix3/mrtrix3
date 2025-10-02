@@ -16,8 +16,7 @@ Usage
     transformconvert [ options ]  input [ input ... ] operation output
 
 -  *input*: the input(s) for the specified operation
--  *operation*: the operation to perform, one of: |br|
-   flirt_import, itk_import
+-  *operation*: the operation to perform; one of: flirt_import, itk_import
 -  *output*: the output transformation matrix.
 
 Description
@@ -71,7 +70,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

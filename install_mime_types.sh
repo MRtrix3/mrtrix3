@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,11 @@
 # For more details, see http://www.mrtrix.org/.
 
 for s in 16 32 48 64 128; do
-  for t in mrtrix mrtrix-gz nifti nifti-gz mgh mgz analyze; do #TODO add mrtrix-tracks
-    xdg-icon-resource install --context apps --size $s icons/desktop/${s}x${s}/mrtrix.png application-x-${t}
-  done
+  xdg-icon-resource install --context apps --size $s share/icons/hicolor/${s}x${s}/apps/application-x-mrtrix.png application-x-mrtrix
+  xdg-icon-resource install --context mimetypes --size $s share/icons/hicolor/${s}x${s}/apps/application-x-mrtrix.png x-mrtrix
 done
 
-xdg-mime install mrtrix-mime.xml
+xdg-mime install share/mime/mrtrix-mime.xml
+sed s^Exec=mrview^Exec=$(pwd)/bin/mrview^ < 'share/applications/mrview.desktop' > mrtrix-mrview.desktop
 xdg-desktop-menu install mrtrix-mrview.desktop
-xdg-desktop-icon install mrtrix-mrview.desktop
 

@@ -16,7 +16,7 @@ Usage
     transformcalc [ options ]  inputs [ inputs ... ] operation output
 
 -  *inputs*: the input(s) for the specified operation
--  *operation*: the operation to perform, one of: invert, half, rigid, header, average, interpolate, decompose, align_vertices_rigid, align_vertices_rigid_scale (see description section for details).
+-  *operation*: the operation to perform; one of: invert, half, rigid, header, average, interpolate, decompose, align_vertices_rigid, align_vertices_rigid_scale (see description section for details).
 -  *output*: the output transformation matrix.
 
 Example usages
@@ -36,7 +36,7 @@ Example usages
 
 -   *Calculate the transformation matrix from an original image and an image with modified header*::
 
-        $ transformcalc mov mapmovhdr header output
+        $ transformcalc orig_image modified_image header output
 
 -   *Calculate the average affine matrix of a set of input matrices*::
 
@@ -52,7 +52,7 @@ Example usages
 
         $ transformcalc matrix_in.txt decompose matrixes_out.txt
 
-    The output is a key-value text file containing: scaling: vector of 3 scaling factors in x, y, z direction; shear: list of shear factors for xy, xz, yz axes; angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; angle_axis: angle in radians and rotation axis; translation : translation vector along x, y, z axes in mm; R: composed roation matrix (R = rot_x * rot_y * rot_z); S: composed scaling and shear matrix
+    The output is a key-value text file containing: scaling: vector of 3 scaling factors in x, y, z direction; shear: list of shear factors for xy, xz, yz axes; angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; angle_axis: angle in radians and rotation axis; translation: translation vector along x, y, z axes in mm; R: composed roation matrix (R = rot_x * rot_y * rot_z); S: composed scaling and shear matrix
 
 -   *Calculate transformation that aligns two images based on sets of corresponding landmarks*::
 
@@ -93,7 +93,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

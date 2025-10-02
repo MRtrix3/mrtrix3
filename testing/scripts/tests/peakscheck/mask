@@ -1,0 +1,23 @@
+#!/bin/bash
+# Verify operation of the "peakscheck" command
+#   under default usage,
+#   with the input image being of the default format,
+#   but with an input mask provided
+# Here just ensuring that the command executes successfully
+
+# Produce a mask that is not equivalent to what was used
+#   in the production of the sample data
+mrmath peakscheck/posdet_xyz3vector.mif std \
+    -axis 3 \
+    - | \
+mrthreshold - \
+    -abs 0.0 \
+    -comparison gt \
+    - | \
+maskfilter - erode \
+    - | \
+# Now use this as the input mask
+peakscheck peakscheck/posdet_xyz3vector.mif \
+    -number 100 \
+    -threshold 0.0 \
+    -mask -

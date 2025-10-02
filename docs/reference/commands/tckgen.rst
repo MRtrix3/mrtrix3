@@ -76,13 +76,13 @@ Streamlines tractography options
 Tractography seeding mechanisms; at least one must be provided
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-seed_image image** *(multiple uses permitted)* seed streamlines entirely at random within a mask image 
+-  **-seed_image image** *(multiple uses permitted)* seed streamlines entirely at random within a mask image
 
 -  **-seed_sphere spec** *(multiple uses permitted)* spherical seed as four comma-separated values (XYZ position and radius)
 
 -  **-seed_random_per_voxel image num_per_voxel** *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel
 
--  **-seed_grid_per_voxel image grid_size** *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid (grid_size argument is per axis; so a grid_size of 3 results in 27 seeds per voxel)
+-  **-seed_grid_per_voxel image grid_size** *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid (grid_size argument is per axis, so a grid_size of 3 results in 27 seeds per voxel)
 
 -  **-seed_rejection image** *(multiple uses permitted)* seed from an image using rejection sampling (higher values = more probable to seed from)
 
@@ -93,7 +93,7 @@ Tractography seeding mechanisms; at least one must be provided
 Tractography seeding options and parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-seeds number** set the number of seeds that tckgen will attempt to track from. If this option is NOT provided, the default number of seeds is set to 1000× the number of selected streamlines. If -select is NOT also specified, tckgen will continue tracking until this number of seeds has been attempted. However, if -select is also specified, tckgen will stop when the number of seeds attempted reaches the number specified here, OR when the number of streamlines selected reaches the number requested with the -select option. This can be used to prevent the program from running indefinitely when no or very few streamlines can be found that match the selection criteria. Setting this to zero will cause tckgen to keep attempting seeds until the number specified by -select has been reached.
+-  **-seeds number** set the number of seeds that tckgen will attempt to track from. If this option is NOT provided, the default number of seeds is set to 1000 x the number of selected streamlines. If -select is NOT also specified, tckgen will continue tracking until this number of seeds has been attempted. However, if -select is also specified, tckgen will stop when the number of seeds attempted reaches the number specified here, OR when the number of streamlines selected reaches the number requested with the -select option. This can be used to prevent the program from running indefinitely  when no or very few streamlines can be found that match the selection criteria Setting this to zero will cause tckgen to keep attempting seeds until the number specified by -select has been reached.
 
 -  **-max_attempts_per_seed number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point. This should be set high enough to ensure that an actual plausible seed point is not discarded prematurely as being unable to initiate tracking from. Higher settings may affect performance if many seeds are genuinely impossible to track from, as many attempts will still be made in vain for such seeds. (default: 1000)
 
@@ -138,7 +138,7 @@ Options specific to the iFOD2 tracking algorithm
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
@@ -203,7 +203,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
