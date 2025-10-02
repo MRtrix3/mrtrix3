@@ -230,6 +230,12 @@ void usage() {
   + DWI::Tractography::Algorithms::iFODOptions
   + DWI::Tractography::Algorithms::iFOD2Options
 
+  + OptionGroup("Options for additional data export")
+    + Option ("output_seeds", "output the seed location of all successful streamlines to a text file")
+      + Argument ("path").type_file_out()
+    + Option ("output_stats", "output statistics on streamline generation to a JSON file")
+      + Argument ("path").type_file_out()
+
   + DWI::GradImportOptions();
 
 }
@@ -254,6 +260,10 @@ void run() {
     Algorithms::load_iFOD_options(properties);
   if (algorithm == 2)
     Algorithms::load_iFOD2_options(properties);
+
+  auto opt = get_options("output_seeds");
+  if (!opt.empty())
+    properties["seed_output"] = std::string(opt[0][0]);
 
   // load ROIs and tractography specific options
   // NB must occur before seed check below due to -select option override

@@ -52,8 +52,10 @@ public:
         throw Exception("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
       }
 
-      set_step_and_angle(
-          rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder, Defaults::angle_ifod1, rk4);
+      set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                         Defaults::angle_ifod1,
+                         rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
+                         curvature_constraint_t::LIMITED_SEARCH);
 
       // max_angle_1o needs to be set because it influences the cone in which FOD amplitudes are sampled
       if (rk4) {
@@ -151,19 +153,19 @@ public:
 
   term_t next() override {
     if (!get_data(source))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
 
     float max_val = 0.0;
     for (size_t i = 0; i < calibrate_list.size(); ++i) {
       float val = FOD(rotate_direction(dir, calibrate_list[i]));
       if (std::isnan(val))
-        return EXIT_IMAGE;
+        return term_t::EXIT_IMAGE;
       else if (val > max_val)
         max_val = val;
     }
 
     if (max_val <= 0.0)
-      return CALIBRATOR;
+      return term_t::CALIBRATOR;
 
     max_val = std::pow(max_val, S.fod_power) * calibrate_ratio;
 
@@ -188,12 +190,12 @@ public:
           dir.normalize();
           pos += S.step_size * dir;
           mean_sample_num += n;
-          return CONTINUE;
+          return term_t::CONTINUE;
         }
       }
     }
 
-    return MODEL;
+    return term_t::MODEL;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {

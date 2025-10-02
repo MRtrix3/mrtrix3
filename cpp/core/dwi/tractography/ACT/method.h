@@ -46,25 +46,25 @@ public:
 
   term_t check_structural(const Eigen::Vector3f &pos) {
     if (!fetch_tissue_data(pos))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
 
     if (tissues().is_csf())
-      return (sgm_depth ? EXIT_SGM : ENTER_CSF);
+      return (sgm_depth > 0 ? term_t::EXIT_SGM : term_t::ENTER_CSF);
 
     if (tissues().is_gm()) {
       if (tissues().get_cgm() >= tissues().get_sgm())
-        return ENTER_CGM;
+        return term_t::ENTER_CGM;
       ++sgm_depth;
     } else if (sgm_depth) {
       if (seed_in_sgm && !sgm_seed_to_wm) {
         sgm_seed_to_wm = true;
         sgm_depth = 0;
-        return CONTINUE;
+        return term_t::CONTINUE;
       }
-      return EXIT_SGM;
+      return term_t::EXIT_SGM;
     }
 
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 
   bool check_seed(const Eigen::Vector3f &pos) {
