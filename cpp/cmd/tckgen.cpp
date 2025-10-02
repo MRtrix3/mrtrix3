@@ -262,7 +262,7 @@ void run() {
     Algorithms::load_iFOD2_options(properties);
 
   auto opt = get_options("output_seeds");
-  if (opt.size())
+  if (!opt.empty())
     properties["seed_output"] = std::string(opt[0][0]);
 
   // load ROIs and tractography specific options

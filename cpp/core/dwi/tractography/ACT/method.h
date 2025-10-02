@@ -49,7 +49,7 @@ public:
       return term_t::EXIT_IMAGE;
 
     if (tissues().is_csf())
-      return (sgm_depth ? term_t::EXIT_SGM : term_t::ENTER_CSF);
+      return (sgm_depth > 0 ? term_t::EXIT_SGM : term_t::ENTER_CSF);
 
     if (tissues().is_gm()) {
       if (tissues().get_cgm() >= tissues().get_sgm())

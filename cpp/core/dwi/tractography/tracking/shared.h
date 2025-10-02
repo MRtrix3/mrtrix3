@@ -66,7 +66,7 @@ public:
     return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), float(1.0 / 3.0));
   }
 
-  void set_step_and_angle(const float stepsize,
+  void set_step_and_angle(const float voxel_frac,
                           const float angle,
                           const intrinsic_integration_order_t intrinsic_integration_order,
                           const curvature_constraint_t curvature_constraint_type);

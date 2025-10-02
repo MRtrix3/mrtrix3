@@ -262,9 +262,9 @@ bool SharedBase::termination_relevant(const term_t i) const {
   case term_t::EXIT_SGM:
     return is_act();
   case term_t::EXIT_MASK:
-    return properties.mask.size();
+    return !properties.mask.empty();
   case term_t::ENTER_EXCLUDE:
-    return properties.exclude.size();
+    return !properties.exclude.empty();
   case term_t::TRAVERSE_ALL_INCLUDE:
     return stop_on_all_include;
   }
@@ -282,9 +282,9 @@ bool SharedBase::rejection_relevant(const reject_t i) const {
   case reject_t::TRACK_TOO_LONG:
     return is_act();
   case reject_t::ENTER_EXCLUDE_REGION:
-    return properties.exclude.size();
+    return !properties.exclude.empty();
   case reject_t::MISSED_INCLUDE_REGION:
-    return properties.include.size();
+    return !properties.include.empty();
   case reject_t::ACT_POOR_TERMINATION:
     return is_act();
   case reject_t::ACT_FAILED_WM_REQUIREMENT:

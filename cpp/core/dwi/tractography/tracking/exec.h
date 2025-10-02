@@ -142,7 +142,7 @@ private:
         return structural_term;
     }
 
-    if (S.properties.mask.size() && !S.properties.mask.contains(method.pos))
+    if (!S.properties.mask.empty() && !S.properties.mask.contains(method.pos))
       return term_t::EXIT_MASK;
 
     if (S.properties.exclude.contains(method.pos))
