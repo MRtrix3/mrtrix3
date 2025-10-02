@@ -54,7 +54,8 @@ public:
   float max_angle_1o, max_angle_ho, cos_max_angle_1o, cos_max_angle_ho;
   float step_size, min_radius, threshold, init_threshold;
   size_t max_seed_attempts;
-  bool unidirectional, rk4, implicit_constrain_curvature, stop_on_all_include, implicit_max_num_seeds;
+  bool unidirectional, rk4, stop_on_all_include, implicit_max_num_seeds;
+  curvature_constraint_t curvature_constraint;
   DWI::Tractography::Resampling::Downsampler downsampler;
 
   // Additional members for ACT
@@ -67,8 +68,8 @@ public:
 
   void set_step_and_angle(const float stepsize,
                           const float angle,
-                          const bool is_higher_order,
-                          const bool curvature_constrained);
+                          const intrinsic_integration_order_t intrinsic_integration_order,
+                          const curvature_constraint_t curvature_constraint_type);
   void set_num_points();
   void set_num_points(const float angle_minradius_preds, const float max_step_postds);
   void set_cutoff(float cutoff);
@@ -78,28 +79,36 @@ public:
   // (Only utilised for Exec::satisfy_wm_requirement())
   virtual float internal_step_size() const { return step_size; }
 
-  void add_termination(const term_t i) const { terminations[i].fetch_add(1, std::memory_order_relaxed); }
-  void add_rejection(const reject_t i) const { rejections[i].fetch_add(1, std::memory_order_relaxed); }
+  void add_termination(const term_t i) const {
+    terminations[static_cast<ssize_t>(i)].fetch_add(1, std::memory_order_relaxed);
+  }
+  void add_rejection(const reject_t i) const {
+    rejections[static_cast<ssize_t>(i)].fetch_add(1, std::memory_order_relaxed);
+  }
 
 #ifdef DEBUG_TERMINATIONS
   void add_termination(const term_t i, const Eigen::Vector3f &p) const;
 #endif
 
-  size_t termination_count(const term_t i) const { return terminations[i].load(std::memory_order_seq_cst); }
-  size_t rejection_count(const reject_t i) const { return rejections[i].load(std::memory_order_seq_cst); }
+  size_t termination_count(const term_t i) const {
+    return terminations[static_cast<ssize_t>(i)].load(std::memory_order_seq_cst);
+  }
+  size_t rejection_count(const reject_t i) const {
+    return rejections[static_cast<ssize_t>(i)].load(std::memory_order_seq_cst);
+  }
 
   bool termination_relevant(const term_t i) const;
   bool rejection_relevant(const reject_t i) const;
 
 private:
-  mutable std::atomic<size_t> terminations[TERMINATION_REASON_COUNT];
-  mutable std::atomic<size_t> rejections[REJECTION_REASON_COUNT];
+  mutable std::atomic<size_t> terminations[termination_type_count];
+  mutable std::atomic<size_t> rejections[rejection_type_count];
 
   std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 
 #ifdef DEBUG_TERMINATIONS
   Header debug_header;
-  Image<uint32_t> *debug_images[TERMINATION_REASON_COUNT];
+  std::vector<std::unique_ptr<Image<uint32_t>>> debug_images;
   const Transform transform;
 #endif
 };

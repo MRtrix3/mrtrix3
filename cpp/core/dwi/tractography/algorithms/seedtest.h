@@ -31,7 +31,7 @@ public:
   public:
     Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
-      set_step_and_angle(1.0f, 90.0f, false, false);
+      set_step_and_angle(1.0f, 90.0f, intrinsic_integration_order_t::FIRST, curvature_constraint_t::POSTHOC_THRESHOLD);
       min_num_points_preds = min_num_points_postds = 1;
       max_num_points_preds = max_num_points_postds = 2;
       set_cutoff(0.0f);
@@ -43,7 +43,7 @@ public:
   Seedtest(const Shared &shared) : MethodBase(shared), S(shared) {}
 
   bool init() override { return true; }
-  term_t next() override { return EXIT_IMAGE; }
+  term_t next() override { return term_t::EXIT_IMAGE; }
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override { return 1.0f; }
 
 protected:

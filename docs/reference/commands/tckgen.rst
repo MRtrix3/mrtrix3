@@ -103,8 +103,6 @@ Tractography seeding options and parameters
 
 -  **-seed_direction dir** specify a seeding direction for the tracking (this should be supplied as a vector of 3 comma-separated values.
 
--  **-output_seeds path** output the seed location of all successful streamlines to a file
-
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -134,6 +132,13 @@ Options specific to the iFOD2 tracking algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-samples number** set the number of FOD samples to take per step (Default: 4).
+
+Options for additional data export
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-output_seeds path** output the seed location of all successful streamlines to a text file
+
+-  **-output_stats path** output statistics on streamline generation to a JSON file
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

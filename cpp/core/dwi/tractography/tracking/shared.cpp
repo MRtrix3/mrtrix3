@@ -47,6 +47,11 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
       transform(debug_header)
 #endif
 {
+  for (size_t i = 0; i != termination_type_count; ++i)
+    std::atomic_init(&terminations[i], 0);
+  for (size_t i = 0; i != rejection_type_count; ++i)
+    std::atomic_init(&rejections[i], 0);
+
   if (properties.find("max_num_tracks") == properties.end())
     max_num_tracks = (properties.find("max_num_seeds") == properties.end()) ? Defaults::num_selected_tracks : 0;
   properties.set(max_num_tracks, "max_num_tracks");
@@ -83,91 +88,38 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
   if (properties.find("downsample_factor") != properties.end())
     downsampler.set_ratio(to<int>(properties["downsample_factor"]));
 
-  for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i)
-    terminations[i] = 0;
-  for (size_t i = 0; i != REJECTION_REASON_COUNT; ++i)
-    rejections[i] = 0;
-
 #ifdef DEBUG_TERMINATIONS
   debug_header.ndim() = 3;
   debug_header.datatype() = DataType::UInt32;
-  for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
-    std::string name;
-    switch (i) {
-    case CONTINUE:
-      name = "undefined";
-      break;
-    case ENTER_CGM:
-      name = "enter_cgm";
-      break;
-    case CALIBRATOR:
-      name = "calibrator";
-      break;
-    case EXIT_IMAGE:
-      name = "exit_image";
-      break;
-    case ENTER_CSF:
-      name = "enter_csf";
-      break;
-    case MODEL:
-      name = "model";
-      break;
-    case HIGH_CURVATURE:
-      name = "curvature";
-      break;
-    case LENGTH_EXCEED:
-      name = "max_length";
-      break;
-    case TERM_IN_SGM:
-      name = "term_in_sgm";
-      break;
-    case EXIT_SGM:
-      name = "exit_sgm";
-      break;
-    case EXIT_MASK:
-      name = "exit_mask";
-      break;
-    case ENTER_EXCLUDE:
-      name = "enter_exclude";
-      break;
-    case TRAVERSE_ALL_INCLUDE:
-      name = "all_include";
-      break;
-    }
-    debug_images[i] = new Image<uint32_t>(Image<uint32_t>::create("terms_" + name + ".mif", debug_header));
-  }
+  for (const auto &i : termination_info)
+    debug_images.emplace_back(
+        new Image<uint32_t>(Image<uint32_t>::create("terms_" + i.second.name + ".mif", debug_header)));
 #endif
 }
 
 SharedBase::~SharedBase() {
   size_t sum_terminations = 0;
-  for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i)
-    sum_terminations += terminations[i];
+  for (const auto &i : terminations)
+    sum_terminations += i;
   INFO("Total number of track terminations: " + str(sum_terminations));
   INFO("Termination reason probabilities:");
-  for (size_t i = 1; i != TERMINATION_REASON_COUNT; ++i) {
-    if (termination_relevant(term_t(i)))
-      INFO("  " + termination_strings[i] + ": " + str(100.0 * terminations[i] / (double)sum_terminations, 3) + "\%");
+  for (const auto &i : termination_info) {
+    if (termination_relevant(i.first))
+      INFO("  " + i.second.description + ": " +
+           str(100.0 * terminations[static_cast<ssize_t>(i.first)] / (double)sum_terminations, 3) + "\%");
   }
 
   INFO("Track rejection counts:");
-  for (size_t i = 0; i != REJECTION_REASON_COUNT; ++i) {
-    if (rejection_relevant(reject_t(i)))
-      INFO("  " + rejection_strings[i] + ": " + str(rejections[i]));
+  for (const auto &i : rejection_strings) {
+    if (rejection_relevant(i.first))
+      INFO("  " + i.second + ": " + str(rejections[static_cast<ssize_t>(i.first)]));
   }
-
-#ifdef DEBUG_TERMINATIONS
-  for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
-    delete debug_images[i];
-    debug_images[i] = NULL;
-  }
-#endif
 }
 
 void SharedBase::set_step_and_angle(const float voxel_frac,
                                     const float angle,
-                                    const bool is_higher_order,
-                                    const bool curvature_constrained) {
+                                    const intrinsic_integration_order_t intrinsic_integration_order,
+                                    const curvature_constraint_t curvature_constraint_type) {
   step_size = voxel_frac * vox();
   properties.set(step_size, "step_size");
   INFO("step size = " + str(step_size) + " mm");
@@ -180,15 +132,22 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
 
   max_angle_1o = angle;
   properties.set(max_angle_1o, "max_angle");
-  const std::string angle_msg =
-      is_higher_order ? "maximum angular change in fibre orientation per step" : "maximum deviation angle per step";
+  std::string angle_msg;
+  switch (intrinsic_integration_order) {
+  case intrinsic_integration_order_t::FIRST:
+    angle_msg = "maximum deviation angle per step";
+    break;
+  case intrinsic_integration_order_t::HIGHER:
+    angle_msg = "maximum angular change in fibre orientation per step";
+    break;
+  }
   INFO(angle_msg + " = " + str(max_angle_1o) + " deg");
   max_angle_1o *= Math::pi / 180.0;
   cos_max_angle_1o = std::cos(max_angle_1o);
   min_radius = step_size / (2.0f * std::sin(0.5f * max_angle_1o));
   INFO("Minimum radius of curvature = " + str(min_radius) + "mm");
 
-  if (is_higher_order) {
+  if (intrinsic_integration_order == intrinsic_integration_order_t::HIGHER) {
     max_angle_ho = max_angle_1o;
     cos_max_angle_ho = cos_max_angle_1o;
     // Clear these variables so that the next() function of the underlying method
@@ -197,11 +156,11 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
     cos_max_angle_1o = 0.0f;
   }
 
-  // If the curvature constraint gets applied implicitly during path propagation, rather than
-  //   having the orientation determined and then checked against the curvature constraint,
-  //   then it is impossible for a streamline to be terminated specifically due to a curvature
-  //   constraint; this should therefore be omitted from reporting of termination statistics
-  implicit_constrain_curvature = curvature_constrained;
+  // If the curvature constraint gets applied implicitly during path propagation,
+  //   rather than having the orientation determined and then checked against the curvature constraint,
+  //   then it is impossible for a streamline to be terminated specifically due to a curvature constraint;
+  //   this should therefore be omitted from reporting of termination statistics
+  curvature_constraint = curvature_constraint_type;
 }
 
 void SharedBase::set_num_points() {
@@ -282,31 +241,31 @@ void SharedBase::add_termination(const term_t i, const Eigen::Vector3f &p) const
 
 bool SharedBase::termination_relevant(const term_t i) const {
   switch (i) {
-  case CONTINUE:
+  case term_t::CONTINUE:
     return false;
-  case ENTER_CGM:
+  case term_t::ENTER_CGM:
     return is_act();
-  case CALIBRATOR:
+  case term_t::CALIBRATOR:
     return true;
-  case EXIT_IMAGE:
+  case term_t::EXIT_IMAGE:
     return true;
-  case ENTER_CSF:
+  case term_t::ENTER_CSF:
     return is_act();
-  case MODEL:
+  case term_t::MODEL:
     return true;
-  case HIGH_CURVATURE:
-    return !implicit_constrain_curvature;
-  case LENGTH_EXCEED:
+  case term_t::HIGH_CURVATURE:
+    return curvature_constraint == curvature_constraint_t::POSTHOC_THRESHOLD;
+  case term_t::LENGTH_EXCEED:
     return true;
-  case TERM_IN_SGM:
+  case term_t::TERM_IN_SGM:
     return is_act();
-  case EXIT_SGM:
+  case term_t::EXIT_SGM:
     return is_act();
-  case EXIT_MASK:
+  case term_t::EXIT_MASK:
     return properties.mask.size();
-  case ENTER_EXCLUDE:
+  case term_t::ENTER_EXCLUDE:
     return properties.exclude.size();
-  case TRAVERSE_ALL_INCLUDE:
+  case term_t::TRAVERSE_ALL_INCLUDE:
     return stop_on_all_include;
   }
   return false;
@@ -314,21 +273,21 @@ bool SharedBase::termination_relevant(const term_t i) const {
 
 bool SharedBase::rejection_relevant(const reject_t i) const {
   switch (i) {
-  case INVALID_SEED:
+  case reject_t::INVALID_SEED:
     return true;
-  case NO_PROPAGATION_FROM_SEED:
+  case reject_t::NO_PROPAGATION_FROM_SEED:
     return true;
-  case TRACK_TOO_SHORT:
+  case reject_t::TRACK_TOO_SHORT:
     return true;
-  case TRACK_TOO_LONG:
+  case reject_t::TRACK_TOO_LONG:
     return is_act();
-  case ENTER_EXCLUDE_REGION:
+  case reject_t::ENTER_EXCLUDE_REGION:
     return properties.exclude.size();
-  case MISSED_INCLUDE_REGION:
+  case reject_t::MISSED_INCLUDE_REGION:
     return properties.include.size();
-  case ACT_POOR_TERMINATION:
+  case reject_t::ACT_POOR_TERMINATION:
     return is_act();
-  case ACT_FAILED_WM_REQUIREMENT:
+  case reject_t::ACT_FAILED_WM_REQUIREMENT:
     return is_act();
   }
   return false;

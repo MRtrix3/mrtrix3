@@ -46,8 +46,8 @@ public:
 
       set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                          Defaults::angle_deterministic,
-                         rk4,
-                         false);
+                         rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
+                         curvature_constraint_t::POSTHOC_THRESHOLD);
       set_num_points();
       set_cutoff(Defaults::cutoff_fa * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
@@ -83,7 +83,7 @@ public:
 
   term_t next() override {
     if (!get_data(source))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
     return do_next();
   }
 
@@ -129,7 +129,7 @@ protected:
     dwi2tensor(dt, S.binv, values);
 
     if (tensor2FA(dt) < S.threshold)
-      return MODEL;
+      return term_t::MODEL;
 
     Eigen::Vector3f prev_dir = dir;
 
@@ -137,14 +137,14 @@ protected:
 
     float dot = prev_dir.dot(dir);
     if (abs(dot) < S.cos_max_angle_1o)
-      return HIGH_CURVATURE;
+      return term_t::HIGH_CURVATURE;
 
     if (dot < 0.0)
       dir = -dir;
 
     pos += dir * S.step_size;
 
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 };
 

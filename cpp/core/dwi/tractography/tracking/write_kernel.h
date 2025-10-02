@@ -19,7 +19,8 @@
 #include <cinttypes>
 #include <string>
 
-#include "file/json.h"
+#include <nlohmann/json.hpp>
+
 #include "file/ofstream.h"
 #include "timer.h"
 
@@ -77,13 +78,13 @@ public:
       data["Generation"]["Seeds"] = seeds;
       data["Generation"]["Streamlines"] = streamlines;
       data["Generation"]["Selected"] = selected;
-      for (size_t i = 1; i != TERMINATION_REASON_COUNT; ++i) {
-        if (S.termination_relevant(term_t(i)))
-          data["Terminations"][termination_strings[i]] = S.termination_count(term_t(i));
+      for (const auto &i : termination_info) {
+        if (S.termination_relevant(i.first))
+          data["Terminations"][i.second.name] = S.termination_count(i.first);
       }
-      for (size_t i = 0; i != REJECTION_REASON_COUNT; ++i) {
-        if (S.rejection_relevant(reject_t(i)))
-          data["Rejections"][rejection_strings[i]] = S.rejection_count(reject_t(i));
+      for (const auto &i : rejection_strings) {
+        if (S.rejection_relevant(i.first))
+          data["Rejections"][i.second] = S.rejection_count(i.first);
       }
       File::OFStream outfile(opt[0][0]);
       outfile << data.dump(4);
