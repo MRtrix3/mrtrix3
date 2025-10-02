@@ -51,6 +51,8 @@ add_bash_script_test(5ttgen/hsvs_piping)
 add_bash_script_test(5ttgen/hsvs_template)
 add_bash_script_test(5ttgen/hsvs_whitespace)
 add_bash_script_test(5ttgen/hsvs_whitestem)
+add_bash_script_test(5ttgen/msmt_default)
+add_bash_script_test(5ttgen/msmt_masked)
 
 add_bash_script_test(dwi2mask/3dautomask_default)
 add_bash_script_test(dwi2mask/3dautomask_options)
