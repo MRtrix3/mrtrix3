@@ -26,6 +26,8 @@ class Header;
 
 namespace MR::Metadata::SliceEncoding {
 
+constexpr default_type slice_timing_precision_siemens = 0.0025;
+
 void transform_for_image_load(KeyValues &keyval, const Header &H);
 
 void transform_for_nifti_write(KeyValues &keyval, const Header &H);
