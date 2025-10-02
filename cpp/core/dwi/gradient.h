@@ -25,7 +25,7 @@
 #include "math/sphere.h"
 #include "types.h"
 
-#define DWI_BZERO_THRESHOLD_DEFAULT 10.0
+#define DWI_BZERO_THRESHOLD_DEFAULT 22.5
 
 namespace MR {
 namespace App {
