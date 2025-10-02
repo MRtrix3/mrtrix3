@@ -44,7 +44,9 @@ public:
 
   bool init() override { return true; }
   term_t next() override { return term_t::EXIT_IMAGE; }
-  float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override { return 1.0F; }
+  float get_metric(const Eigen::Vector3f & /*position*/, const Eigen::Vector3f & /*direction*/) override {
+    return 1.0F;
+  }
 
 protected:
   const Shared &S;

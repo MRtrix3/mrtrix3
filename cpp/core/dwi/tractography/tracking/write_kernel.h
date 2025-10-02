@@ -72,7 +72,7 @@ public:
       output_seeds->close();
     }
     auto opt = App::get_options("output_stats");
-    if (opt.size()) {
+    if (!opt.empty()) {
       nlohmann::json data;
       data["Command"] = MR::App::command_history_string;
       data["Generation"]["Seeds"] = seeds;

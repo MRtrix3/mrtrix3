@@ -101,8 +101,8 @@ public:
   bool rejection_relevant(const reject_t i) const;
 
 private:
-  mutable std::atomic<size_t> terminations[termination_type_count];
-  mutable std::atomic<size_t> rejections[rejection_type_count];
+  mutable std::array<std::atomic<size_t>, termination_type_count> terminations;
+  mutable std::array<std::atomic<size_t>, rejection_type_count> rejections;
 
   std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 
