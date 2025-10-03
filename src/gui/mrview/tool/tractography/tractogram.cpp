@@ -998,7 +998,7 @@ namespace MR
           num_tracks_per_buffer.push_back (tck_count);
 
           // Build an index buffer for this chunk of tracks
-          std::vector<uint32_t> chunk_indices;
+          vector<uint32_t> chunk_indices;
           for (size_t t = 0; t < sizes.size(); ++t) {
             const GLint start = starts[t];
             const GLint n     = sizes[t];
