@@ -15,19 +15,20 @@ Usage
 
     dwi2response algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
+-  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
 
 Description
 -----------
 
-dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after 'dwi2response'. The subsequent arguments and options depend on the particular algorithm being invoked.
+dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after "dwi2response". The subsequent arguments and options depend on the particular algorithm being invoked.
 
-Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the 'fa' algorithm, type 'dwi2response fa'.
+Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the "fa" algorithm, type "dwi2response fa".
 
 More information on response function estimation for spherical deconvolution can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.4/constrained_spherical_deconvolution/response_function_estimation.html
+https://mrtrix.readthedocs.io/en/3.0.7/constrained_spherical_deconvolution/response_function_estimation.html
 
-Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive an initial voxel exclusion mask. More information on mask derivation from DWI data can be found at: https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
+Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive an initial voxel exclusion mask. More information on mask derivation from DWI data can be found at: 
+https://mrtrix.readthedocs.io/en/3.0.7/dwi_preprocessing/masking.html
 
 Options
 -------
@@ -35,29 +36,29 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -89,7 +90,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -134,47 +135,47 @@ This is an improved version of the Dhollander et al. (2016) algorithm for unsupe
 Options
 -------
 
-Options for the 'dhollander' algorithm
+Options for the "dhollander" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
+- **-erode iterations** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
 
-- **-fa** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
+- **-fa threshold** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
 
-- **-sfwm** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
+- **-sfwm percentage** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
 
-- **-gm** Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
+- **-gm percentage** Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
 
-- **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
+- **-csf percentage** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
 - **-wm_algo algorithm** Use external dwi2response algorithm for WM single-fibre voxel selection (options: fa, tax, tournier) (default: built-in Dhollander 2019)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -210,7 +211,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -248,41 +249,41 @@ Usage
 Options
 -------
 
-Options specific to the 'fa' algorithm
+Options specific to the "fa" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)
+- **-erode iterations** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)
 
-- **-number** The number of highest-FA voxels to use
+- **-number voxels** The number of highest-FA voxels to use
 
-- **-threshold** Apply a hard FA threshold, rather than selecting the top voxels
+- **-threshold value** Apply a hard FA threshold, rather than selecting the top voxels
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -316,7 +317,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -355,37 +356,37 @@ Usage
 Options
 -------
 
-Options specific to the 'manual' algorithm
+Options specific to the "manual" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
+- **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -417,7 +418,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -458,45 +459,45 @@ Usage
 Options
 -------
 
-Options specific to the 'msmt_5tt' algorithm
+Options specific to the "msmt_5tt" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
+- **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
 
-- **-fa** Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)
+- **-fa value** Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)
 
-- **-pvf** Partial volume fraction threshold for tissue voxel selection (default: 0.95)
+- **-pvf fraction** Partial volume fraction threshold for tissue voxel selection (default: 0.95)
 
 - **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection (options: fa, tax, tournier; default: tournier)
 
-- **-sfwm_fa_threshold** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
+- **-sfwm_fa_threshold value** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -530,7 +531,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -568,41 +569,41 @@ Usage
 Options
 -------
 
-Options specific to the 'tax' algorithm
+Options specific to the "tax" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-peak_ratio** Second-to-first-peak amplitude ratio threshold
+- **-peak_ratio value** Second-to-first-peak amplitude ratio threshold
 
-- **-max_iters** Maximum number of iterations
+- **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence)
 
-- **-convergence** Percentile change in any RF coefficient required to continue iterating
+- **-convergence percentage** Percentile change in any RF coefficient required to continue iterating
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -636,7 +637,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -674,43 +675,43 @@ Usage
 Options
 -------
 
-Options specific to the 'tournier' algorithm
+Options specific to the "tournier" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-number** Number of single-fibre voxels to use when calculating response function
+- **-number voxels** Number of single-fibre voxels to use when calculating response function
 
-- **-iter_voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)
+- **-iter_voxels voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)
 
-- **-dilate** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
+- **-dilate iterations** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
 
-- **-max_iters** Maximum number of iterations
+- **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide the diffusion gradient table in MRtrix format
+- **-grad file** Provide the diffusion gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -744,7 +745,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

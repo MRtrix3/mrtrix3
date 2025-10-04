@@ -22,7 +22,7 @@ Usage
 Options
 -------
 
--  **-nofilter** do NOT perform track filtering - just construct the model in order to provide output debugging images
+-  **-nofilter** do NOT perform track filtering; just construct the model in order to provide output debugging images
 
 -  **-output_at_counts counts** output filtered track files (and optionally debugging images if -output_debug is specified) at specific numbers of remaining streamlines; provide as comma-separated list of integers
 
@@ -42,7 +42,7 @@ Options affecting the SIFT model
 
 -  **-make_null_lobes** add an additional FOD lobe to each voxel, with zero integral, that covers all directions with zero / negative FOD amplitudes
 
--  **-remove_untracked** remove FOD lobes that do not have any streamline density attributed to them; this improves filtering slightly, at the expense of longer computation time (and you can no longer do quantitative comparisons between reconstructions if this is enabled)
+-  **-remove_untracked** remove FOD lobes that do not have any streamline density attributed to them; this improves filtering slightly, at the expense of longer computation time (and you can no longer trivially do quantitative comparisons between reconstructions if this is enabled)
 
 -  **-fd_thresh value** fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount (streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)
 
@@ -60,10 +60,9 @@ Options to make SIFT provide additional output files
 Options to control when SIFT terminates filtering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-term_number value** number of streamlines - continue filtering until this number of streamlines remain
+-  **-term_number value** number of streamlines; continue filtering until this number of streamlines remain
 
--  **-term_ratio value** termination ratio - defined as the ratio between reduction in cost function, and reduction in density of streamlines. |br|
-   Smaller values result in more streamlines being filtered out.
+-  **-term_ratio value** termination ratio; defined as the ratio between reduction in cost function, and reduction in density of streamlines. Smaller values result in more streamlines being filtered out.
 
 -  **-term_mu value** terminate filtering once the SIFT proportionality coefficient reaches a given value
 
@@ -99,7 +98,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

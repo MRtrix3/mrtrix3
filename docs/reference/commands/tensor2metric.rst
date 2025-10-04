@@ -58,7 +58,7 @@ Diffusion Kurtosis Imaging
 
 -  **-rk image** compute the radial kurtosis (RK) of the kurtosis tensor.
 
--  **-mk_dirs file** specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
+-  **-mk_dirs file** specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az in ] pairs for the directions.
 
 -  **-rk_ndirs integer** specify the number of directions used to numerically calculate radial kurtosis (by default, 300 directions are used).
 
@@ -86,7 +86,8 @@ References
 
 Basser, P. J.; Mattiello, J. & Lebihan, D. MR diffusion tensor spectroscopy and imaging. Biophysical Journal, 1994, 66, 259-267
 
-Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. Geometrical diffusion measures for MRI from tensor basis analysis. Proc Intl Soc Mag Reson Med, 1997, 5, 1742
+* If using -cl, -cp or -cs options:  |br|
+  Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. Geometrical diffusion measures for MRI from tensor basis analysis. Proc Intl Soc Mag Reson Med, 1997, 5, 1742
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
@@ -94,9 +95,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be), Thijs Dhollander (thijs.dhollander@gmail.com) & J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be) and Thijs Dhollander (thijs.dhollander@gmail.com) and J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

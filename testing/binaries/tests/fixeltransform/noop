@@ -1,0 +1,6 @@
+#!/bin/bash
+# Test for no effect of the "fixeltransform" command
+#   when run using a unit deformation field
+rm -rf tmp/
+fixeltransform fixel_image/ unit_warp.mif tmp/
+testing_diff_fixel fixel_image/ tmp/ -abs 1e-5

@@ -1,0 +1,110 @@
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
+
+#pragma once
+
+#include <cinttypes>
+#include <string>
+
+#include <nlohmann/json.hpp>
+
+#include "file/ofstream.h"
+#include "timer.h"
+
+#include "dwi/tractography/file.h"
+#include "dwi/tractography/properties.h"
+#include "dwi/tractography/streamline.h"
+
+#include "dwi/tractography/tracking/early_exit.h"
+#include "dwi/tractography/tracking/generated_track.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
+
+namespace MR::DWI::Tractography::Tracking {
+
+class WriteKernel {
+public:
+  WriteKernel(const SharedBase &shared, const std::string &output_file, const DWI::Tractography::Properties &properties)
+      : S(shared),
+        writer(output_file, properties),
+        always_increment(S.properties.seeds.is_finite() || !S.max_num_tracks),
+        warn_on_max_seeds(S.implicit_max_num_seeds),
+        seeds(0),
+        streamlines(0),
+        selected(0),
+        progress(printf("       0 seeds,        0 streamlines,        0 selected", 0, 0),
+                 always_increment ? S.max_num_seeds : S.max_num_tracks),
+        early_exit(shared) {
+    const auto p = properties.find("seed_output");
+    if (p != properties.end()) {
+      output_seeds.reset(new File::OFStream(p->second, std::ios_base::out | std::ios_base::trunc));
+      (*output_seeds) << "# " << App::command_history_string << "\n";
+      (*output_seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
+    }
+  }
+
+  WriteKernel(const WriteKernel &) = delete;
+  WriteKernel &operator=(const WriteKernel &) = delete;
+
+  ~WriteKernel() {
+    // Use set_text() rather than update() here to force update of the text before progress goes out of scope
+    progress.set_text(
+        printf("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected));
+    if (warn_on_max_seeds && writer.total_count == S.max_num_seeds && S.max_num_tracks &&
+        writer.count < S.max_num_tracks) {
+      WARN("less than desired streamline number due to implicit maximum number of seeds; set -seeds 0 to override");
+    }
+    if (output_seeds) {
+      (*output_seeds) << "\n";
+      output_seeds->close();
+    }
+    auto opt = App::get_options("output_stats");
+    if (!opt.empty()) {
+      nlohmann::json data;
+      data["Command"] = MR::App::command_history_string;
+      data["Generation"]["Seeds"] = seeds;
+      data["Generation"]["Streamlines"] = streamlines;
+      data["Generation"]["Selected"] = selected;
+      for (const auto &i : termination_info) {
+        if (S.termination_relevant(i.first))
+          data["Terminations"][i.second.name] = S.termination_count(i.first);
+      }
+      for (const auto &i : rejection_strings) {
+        if (S.rejection_relevant(i.first))
+          data["Rejections"][i.second] = S.rejection_count(i.first);
+      }
+      File::OFStream outfile(opt[0][0]);
+      outfile << data.dump(4);
+    }
+  }
+
+  bool operator()(const GeneratedTrack &);
+
+  bool complete() const {
+    return ((S.max_num_tracks && selected >= S.max_num_tracks) || (S.max_num_seeds && seeds >= S.max_num_seeds));
+  }
+
+protected:
+  const SharedBase &S;
+  Writer<> writer;
+  const bool always_increment, warn_on_max_seeds;
+  size_t seeds, streamlines, selected;
+  std::unique_ptr<File::OFStream> output_seeds;
+  ProgressBar progress;
+  EarlyExit early_exit;
+};
+
+} // namespace MR::DWI::Tractography::Tracking
