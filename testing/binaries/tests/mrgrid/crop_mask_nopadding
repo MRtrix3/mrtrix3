@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify the "crop" operation when a mask is used to determine the extent of cropping,
+#   but the additional voxel padded beyond the spatial extent of the mask in each direction
+#   is omitted
+# This is tested by providing as input a mask
+#   that has had that one extra voxel coverage in each direction already added,
+#   and ensuring that it produces the same result as if the unaltered mask were provided as input
+#   and the default padding were still applied
+maskfilter mrcrop/mask.mif dilate - | \
+mrgrid noise.mif crop -mask - -uniform 0 - | \
+testing_diff_image - mrcrop/out.mif

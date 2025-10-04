@@ -23,7 +23,7 @@ Options
 Statistics options
 ^^^^^^^^^^^^^^^^^^
 
--  **-output field** *(multiple uses permitted)* output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, std_rv, min, max, count. Useful for use in scripts. Both std options refer to the unbiased (sample) standard deviation. For complex data, min, max and std are calculated separately for real and imaginary parts, std_rv is based on the real valued variance (equals sqrt of sum of variances of imaginary and real parts).
+-  **-output field** *(multiple uses permitted)* output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, std_rv, min, max, count. Useful for use in scripts.  Both std options refer to the unbiased (sample) standard deviation. For complex data, min, max and std are calculated separately for real and imaginary parts, std_rv is based on the real valued variance (equals sqrt of sum of variances of imaginary and real parts).
 
 -  **-mask image** only perform computation within the specified binary mask image.
 
@@ -64,7 +64,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

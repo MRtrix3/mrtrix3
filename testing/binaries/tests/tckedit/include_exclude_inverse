@@ -1,0 +1,26 @@
+#!/bin/bash
+# Ensure that various combinations of use of -include, -exclude, and -inverse,
+#   yield the expected results given the known two bundles within the data
+tckedit tckedit/in.tck -include SIFT_phantom/upper.mif tmp.tck -force
+testing_diff_tck tmp.tck tckedit/upper.tck
+
+tckedit tckedit/in.tck -include SIFT_phantom/lower.mif tmp.tck -force
+testing_diff_tck tmp.tck tckedit/lower.tck
+
+tckedit tckedit/in.tck -exclude SIFT_phantom/upper.mif tmp.tck -force
+testing_diff_tck tmp.tck tckedit/lower.tck
+
+tckedit tckedit/in.tck -exclude SIFT_phantom/lower.mif tmp.tck -force
+testing_diff_tck tmp.tck tckedit/upper.tck
+
+tckedit tckedit/in.tck -include SIFT_phantom/upper.mif -inverse tmp.tck -force
+testing_diff_tck tmp.tck tckedit/lower.tck
+
+tckedit tckedit/in.tck -include SIFT_phantom/lower.mif -inverse tmp.tck -force
+testing_diff_tck tmp.tck tckedit/upper.tck
+
+tckedit tckedit/in.tck -exclude SIFT_phantom/upper.mif -inverse tmp.tck -force
+testing_diff_tck tmp.tck tckedit/upper.tck
+
+tckedit tckedit/in.tck -exclude SIFT_phantom/lower.mif -inverse tmp.tck -force
+testing_diff_tck tmp.tck tckedit/lower.tck

@@ -39,7 +39,9 @@ Options for connected-component filter
 
 -  **-largest** only retain the largest connected component
 
--  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
+-  **-connectivity** use 26-voxel-neighbourhood connectivity (Default is 6-voxel-neighbourhood)
+
+-  **-minsize value** impose minimum size of segmented components (Default: select all components)
 
 Options for dilate / erode filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -51,7 +53,7 @@ Options for interior-filling filter
 
 -  **-axes axes** specify which axes should be included in the connected components. By default only the first 3 axes are included. The axes should be provided as a comma-separated list of values.
 
--  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
+-  **-connectivity** use 26-voxel-neighbourhood connectivity (Default is 6-voxel-neighbourhood)
 
 Options for median filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -91,9 +93,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com) and J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify successful execution of "dwi2mask synthstrip",
+#   when the algirithm is permitted to use internal defaults
+dwi2mask synthstrip BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval

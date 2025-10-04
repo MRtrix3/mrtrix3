@@ -1,0 +1,23 @@
+#!/bin/bash
+# Verify operation of the -seed_coordinates_global option
+# Currently it is only successful execution that is evaluated
+
+# Test 1
+rm -f tmp.txt
+printf "3 3 3\n0 0 0\n-3 -3 -3" > tmp.txt
+
+tckgen SIFT_phantom/dwi.mif tmp.tck \
+    -algo seedtest \
+    -seed_coordinates_global tmp.txt \
+    -select 5K \
+    -force
+
+# Test 2
+rm -f tmp.txt
+printf "3 3 3\n0 0 0\n-3 -3 -3\n1,2,3" > tmp.txt
+
+tckgen SIFT_phantom/dwi.mif tmp.tck \
+    -algo seedtest \
+    -seed_coordinates_global tmp.txt \
+    -select 5K \
+    -force

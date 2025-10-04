@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-The available filters are: fft, gradient, median, smooth, normalise, zclean.
+The available filters are: demodulate, fft, gradient, median, smooth, normalise, zclean.
 
 Each filter has its own unique set of optional parameters.
 
@@ -30,6 +30,13 @@ For 4D images, each 3D volume is processed independently.
 
 Options
 -------
+
+Options for demodulate filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-axes list** the axes along which to demodulate; by default, this will be chosen based on the presence / content of header field SliceEncodingDirection: two spatial axes if present, three spatial axes if absent
+
+-  **-linear** demodulate using only a linear phase ramp, rather than the default non-linear phase map
 
 Options for FFT filter
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -47,7 +54,7 @@ Options for FFT filter
 Options for gradient filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-stdev sigma** the standard deviation of the Gaussian kernel used to smooth the input image (in mm). The image is smoothed to reduced large spurious gradients caused by noise. Use this option to override the default stdev of 1 voxel. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis.
+-  **-stdev sigma** the standard deviation of the Gaussian kernel used to  smooth the input image (in mm). The image is smoothed to reduced large spurious gradients caused by noise. Use this option to override the default stdev of 1 voxel. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis).
 
 -  **-magnitude** output the gradient magnitude, rather than the default x,y,z components
 
@@ -56,12 +63,12 @@ Options for gradient filter
 Options for median filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-extent size** specify extent of median filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
+-  **-extent size** specify extent of median filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).
 
 Options for normalisation filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-extent size** specify extent of normalisation filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
+-  **-extent size** specify extent of normalisation filtering neighbourhood in voxels.This can be specified either as a single value to be used for all 3 axes,or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).
 
 Options for smooth filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -75,11 +82,11 @@ Options for smooth filter
 Options for zclean filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-zupper num** define high intensity outliers: default: 2.5
+-  **-zupper num** define high intensity outliers; default: 2.5
 
--  **-zlower num** define low intensity outliers: default: 2.5
+-  **-zlower num** define low intensity outliers; default: 2.5
 
--  **-bridge num** number of voxels to gap to fill holes in mask: default: 4
+-  **-bridge num** number of voxels to gap to fill holes in mask; default: 4
 
 -  **-maskin image** initial mask that defines the maximum spatial extent and the region from which to smaple the intensity range.
 
@@ -118,9 +125,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

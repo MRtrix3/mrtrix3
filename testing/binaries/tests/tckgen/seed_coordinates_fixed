@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify operation of the -seed_coordinates_fixed option
+# Currently it is only successful execution that is evaluated
+rm -f tmp.txt
+printf "3 3 3\n0 0 0\n-3 -3 -3" > tmp.txt
+
+tckgen SIFT_phantom/dwi.mif tmp.tck \
+    -algo seedtest \
+    -seed_coordinates_fixed tmp.txt 10 \
+    -force

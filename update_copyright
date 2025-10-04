@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2022 the MRtrix3 contributors.
+# Copyright (c) 2008-2025 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,23 +43,21 @@ SearchPath = namedtuple('SearchPath', 'dirname recursive need_shebang comment ex
 ProcessFile = namedtuple('ProcessFile', 'path keep_shebang comment')
 
 MRTRIX_ROOT = os.path.abspath(os.path.dirname(__file__))
-APP_CPP_PATH = os.path.join(MRTRIX_ROOT, 'core', 'app.cpp')
-APP_CPP_STRING = 'const char* COPYRIGHT ='
-APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'lib', 'mrtrix3', 'app.py')
+APP_CPP_PATH = os.path.join(MRTRIX_ROOT, 'cpp', 'core', 'app.cpp')
+APP_CPP_STRING = 'std::string COPYRIGHT ='
+APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'python', 'mrtrix3', 'app.py')
 APP_PY_STRING = '_DEFAULT_COPYRIGHT ='
 
 SEARCH_PATHS = [
     SearchPath('.', False, True, '#', [], ['mrtrix-mrview.desktop']),
-    SearchPath('bin', False, True, '#', [], []),
-    SearchPath('bin', False, True, '#', ['.py'], []),
-    SearchPath('cmd', False, False, '*', ['.cpp'], []),
-    SearchPath('core', True, False, '*', ['.cpp', '.h'], [os.path.join('file', 'json.h'), os.path.join('file', 'nifti1.h'), 'version.h']),
+    SearchPath(os.path.join('cpp'), True, False, '*', ['.cpp', '.h'], []),
     SearchPath('docs', False, True, '#', [], []),
     SearchPath('matlab', True, False, '%', ['.m'], []),
-    SearchPath('lib', True, False, '#', ['.py'], [os.path.join('mrtrix3', '_version.py')]),
-    SearchPath('share', True, False, '#', ['.txt'], []),
-    SearchPath('src', True, False, '*', ['.cpp', '.h'], []),
-    SearchPath(os.path.join('testing', 'cmd'), False, False, '*', ['.cpp'], []),
+    SearchPath('python', True, False, '#', ['.py'], [os.path.join('mrtrix3', 'version.py.in'), os.path.join('mrtrix3', 'commands', '__init__.py.in')]),
+    SearchPath(os.path.join('share', 'mrtrix3'), True, False, '#', ['.txt'], []),
+    SearchPath(os.path.join('testing', 'tools'), False, False, '*', ['.cpp'], []),
+    SearchPath(os.path.join('testing', 'unit_tests'), False, False, '*', ['.cpp'], []),
+    SearchPath(os.path.join('testing', 'lib'), False, False, '*', ['.h'], []),
     SearchPath(os.path.join('testing', 'src'), True, False, '*', ['.cpp', '.h'], [])]
 
 
@@ -127,11 +125,12 @@ def main():
   first_line = next(index for index, value in enumerate(data) if value.strip().startswith(APP_CPP_STRING)) + 1
   indent = ' ' * (len(data[first_line]) - len(data[first_line].lstrip()))
   with open(APP_CPP_PATH, 'w', encoding='utf-8') as app_cpp_file:
-    app_cpp_file.write(''.join(data[:first_line]))
-    for line in COPYRIGHT[:-1]:
+    app_cpp_file.write(''.join(data[:first_line-1]))
+    app_cpp_file.write(APP_CPP_STRING + ' "' + COPYRIGHT[0].replace('"', '\\"') + '\\n"\n')
+    for line in COPYRIGHT[1:-1]:
       app_cpp_file.write(indent + '"' + line.replace('"', '\\"') + '\\n"\n')
     app_cpp_file.write(indent + '"' + COPYRIGHT[-1].replace('"', '\\"') + '\\n";\n')
-    app_cpp_file.write(''.join(data[first_line+len(COPYRIGHT):]))
+    app_cpp_file.write(''.join(data[first_line-1+len(COPYRIGHT):]))
 
 
   with open(APP_PY_PATH, 'r', encoding='utf-8') as app_py_file:
