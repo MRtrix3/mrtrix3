@@ -76,7 +76,7 @@ Streamlines tractography options
 Tractography seeding mechanisms; at least one must be provided
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-seed_image image** *(multiple uses permitted)* seed streamlines entirely at random within a mask image
+-  **-seed_voxels image** *(multiple uses permitted)* seed streamlines entirely at random within a voxel mask (formerly -seed_image)
 
 -  **-seed_sphere spec** *(multiple uses permitted)* spherical seed as four comma-separated values (XYZ position and radius)
 
@@ -84,15 +84,17 @@ Tractography seeding mechanisms; at least one must be provided
 
 -  **-seed_grid_per_voxel image grid_size** *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid (grid_size argument is per axis, so a grid_size of 3 results in 27 seeds per voxel)
 
--  **-seed_rejection image** *(multiple uses permitted)* seed from an image using rejection sampling (higher values = more probable to seed from)
+-  **-seed_rejection_per_voxel image** *(multiple uses permitted)* seed from an image using rejection sampling (higher values = more probable to seed from) (formerly -seed_rejection)
 
 -  **-seed_gmwmi image** *(multiple uses permitted)* seed from the grey matter - white matter interface (only valid if using ACT framework). Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the interface using the 5TT image provided using the -act option.
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
 
--  **-seed_coordinates_fixed cds_path num_per_coordinate** *(multiple uses permitted)* provide coordinates in a space-separated Mx3 matrix (XYZ per row) and seed a fixed number of streamlines per coordinate
+-  **-seed_coordinates coords_path** provide realspace coordinates as an Mx3 matrix (XYZ per row) and seed until target seed / streamline count is reached (must not provide any other seeding mechanism)
 
--  **-seed_coordinates_global cds_path** provide coordinates in a space-separated Mx3 matrix (XYZ per row) and seed until global seed/streamline target is met (must not provide any other seeding mechanism). The matrix may optionally contain a fourth column with non-negative weights 
+-  **-seed_per_coordinate coords_path number_seeds_per_coordinate** *(multiple uses permitted)* provide realspace coordinates as an Mx3 matrix (XYZ per row) and seed a fixed number of streamlines per coordinate
+
+-  **-seed_rejection_per_coordinate coords_path** provide realspace coordinates and respective seeding probability as an Mx4 matrix (XYZ then weight per row) and seed until global seed/streamline target is met (must not provide any other seeding mechanism)
 
 Tractography seeding options and parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -105,7 +107,7 @@ Tractography seeding options and parameters
 
 -  **-seed_unidirectional** track from the seed point in one direction only (default is to track in both directions).
 
--  **-seed_direction dir** specify a seeding direction for the tracking (this should be supplied as a vector of 3 comma-separated values.
+-  **-seed_direction dir** specify a seeding direction for the tracking (this should be supplied as a vector of 3 comma-separated values).
 
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

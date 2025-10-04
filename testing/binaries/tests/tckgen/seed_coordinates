@@ -1,13 +1,13 @@
 #!/bin/bash
-# Verify operation of the -seed_coordinates_global option
+# Verify operation of the -seed_coordinates option
 # Ensure that all seeds produced correspond to one of the specified locations
 
-rm -f tmp.txt
+rm -f tmp_in.txt
 printf "3 3 3\n0 0 0\n-3 -3 -3" > tmp_in.txt
 
 tckgen SIFT_phantom/dwi.mif tmp_out.tck \
     -algo seedtest \
-    -seed_coordinates_global tmp_in.txt \
+    -seed_coordinates tmp_in.txt \
     -select 5K \
     -force
 

@@ -1,13 +1,13 @@
 #!/bin/bash
-# Verify operation of the -seed_coordinates_fixed option
+# Verify operation of the -seed_per_coordinate option
 # Ensure that each coordinate produces the number of seeds specified
 #
-rm -f tmp.txt
+rm -f tmp_in.txt
 printf "3 3 3\n0 0 0\n-3 -3 -3" > tmp_in.txt
 
 tckgen SIFT_phantom/dwi.mif tmp_out.tck \
     -algo seedtest \
-    -seed_coordinates_fixed tmp_in.txt 10 \
+    -seed_per_coordinate tmp_in.txt 10 \
     -force
 
 tckconvert tmp_out.tck tmp_out[].txt -force

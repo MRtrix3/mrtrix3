@@ -152,7 +152,7 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Rejection::Rejection(const std::string &in)
+Rejection_per_voxel::Rejection_per_voxel(const std::string &in)
     : Base(in, "rejection sampling", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
       interp(in),
@@ -216,7 +216,7 @@ Rejection::Rejection(const std::string &in)
 #endif
 }
 
-bool Rejection::get_seed(Eigen::Vector3f &p) const {
+bool Rejection_per_voxel::get_seed(Eigen::Vector3f &p) const {
   std::uniform_real_distribution<float> uniform;
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
   auto seed = interp;
@@ -265,13 +265,13 @@ CoordinatesLoader::CoordinatesLoader(const std::string &cds_path) //
   }
 }
 
-Coordinates_fixed::Coordinates_fixed(const std::string &in, const ssize_t n_streamlines)
-    : Base(in, "coordinate seeding fixed", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+Count_per_coord::Count_per_coord(const std::string &in, const ssize_t streamlines_per_coord)
+    : Base(in, "fixed streamlines per coordinate", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
       CoordinatesLoader(in),
       current_coord(0),
       num_at_coord(0),
       expired(false),
-      streamlines_per_coordinate(n_streamlines) {
+      streamlines_per_coordinate(streamlines_per_coord) {
   if (have_weights())
     throw Exception("Seeding fixed # streamlines per coordinates"
                     " cannot also specify per-coordinate weights"
@@ -279,7 +279,7 @@ Coordinates_fixed::Coordinates_fixed(const std::string &in, const ssize_t n_stre
   Base::count = num_coordinates() * streamlines_per_coordinate;
 }
 
-bool Coordinates_fixed::get_seed(Eigen::Vector3f &p) const {
+bool Count_per_coord::get_seed(Eigen::Vector3f &p) const {
   std::lock_guard<std::mutex> lock(mutex);
   if (expired)
     return false;
@@ -296,19 +296,36 @@ bool Coordinates_fixed::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Coordinates_global::Coordinates_global(const std::string &in)                   //
-    : Base(in, "coordinate seeding global", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), //
-      CoordinatesLoader(in) {}                                                  //
+Coordinates::Coordinates(const std::string &in)                                           //
+    : Base(in, "random coordinate selection seeding", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), //
+      CoordinatesLoader(in) {                                                             //
+  if (have_weights())
+    throw Exception("Seeding fixed # streamlines per coordinates" //
+                    " cannot also specify per-coordinate weights" //
+                    " (must be only 3 columns in input file)");   //
+}
 
-bool Coordinates_global::get_seed(Eigen::Vector3f &p) const {
-  long coordinate_index = std::uniform_int_distribution<>(0, num_coordinates() - 1)(rng);
-  if (have_weights()) {
-    std::uniform_real_distribution<float> uniform;
-    float selector = uniform(rng);
-    do {
-      coordinate_index = std::uniform_int_distribution<>(0, num_coordinates() - 1)(rng);
-    } while (weights(coordinate_index) < selector);
-  }
+bool Coordinates::get_seed(Eigen::Vector3f &p) const {
+  p = coords.row(std::uniform_int_distribution<>(0, num_coordinates() - 1)(rng));
+  return true;
+}
+
+Rejection_per_coord::Rejection_per_coord(const std::string &in)                           //
+    : Base(in, "rejection sampling from coordinates", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), //
+      CoordinatesLoader(in) {                                                             //
+  if (!have_weights())
+    throw Exception("Rejection seeding from user-specified coordinates" //
+                    " must also specify per-coordinate weights"         //
+                    " (must be 4 columns in input file)");              //
+}
+
+bool Rejection_per_coord::get_seed(Eigen::Vector3f &p) const {
+  std::uniform_int_distribution<> index_selector(0, num_coordinates() - 1);
+  std::uniform_real_distribution<float> selector;
+  ssize_t coordinate_index(-1);
+  do {
+    coordinate_index = index_selector(rng);
+  } while (weights(coordinate_index) < selector(rng));
   p = coords.row(coordinate_index);
   return true;
 }

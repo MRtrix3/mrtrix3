@@ -74,10 +74,10 @@ private:
   mutable bool expired;
 };
 
-class Rejection : public Base {
+class Rejection_per_voxel : public Base {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
-  Rejection(const std::string &);
+  Rejection_per_voxel(const std::string &);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -101,9 +101,9 @@ protected:
   bool have_weights() const { return weights.size() > 0; }
 };
 
-class Coordinates_fixed : public Base, public CoordinatesLoader {
+class Count_per_coord : public Base, public CoordinatesLoader {
 public:
-  Coordinates_fixed(const std::string &in, const ssize_t n_streamlines);
+  Count_per_coord(const std::string &in, const ssize_t streamlines_per_coord);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -113,9 +113,15 @@ private:
   const ssize_t streamlines_per_coordinate;
 };
 
-class Coordinates_global : public Base, public CoordinatesLoader {
+class Coordinates : public Base, public CoordinatesLoader {
 public:
-  Coordinates_global(const std::string &in);
+  Coordinates(const std::string &in);
+  virtual bool get_seed(Eigen::Vector3f &p) const override;
+};
+
+class Rejection_per_coord : public Base, public CoordinatesLoader {
+public:
+  Rejection_per_coord(const std::string &in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 };
 
