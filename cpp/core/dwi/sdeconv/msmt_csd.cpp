@@ -32,11 +32,7 @@ const OptionGroup MSMT_CSD_options =
              "the regularisation parameter lambda that controls the strength "
              "of the non-negativity constraint"
              " (default = " + str(DEFAULT_MSMTCSD_NEG_LAMBDA, 2) + ").")
-      + Argument("value").type_float(0.0)
-
-    + Option("predicted_signal",
-             "output the predicted dwi image.")
-      + Argument("image").type_image_out();
+      + Argument("value").type_float(0.0);
 // clang-format on
 
 } // namespace MR::DWI::SDeconv
