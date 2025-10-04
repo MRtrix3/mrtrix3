@@ -78,17 +78,17 @@ template <class ImageType> float get_volume(ImageType &data) {
 class Base {
 
 public:
-  Base(const std::string &in, const std::string &desc, const size_t attempts)
+  Base(const std::string &in, const std::string &desc, const ssize_t attempts)
       : volume(0.0), count(0), type(desc), name(Path::exists(in) ? Path::basename(in) : in), max_attempts(attempts) {}
 
   virtual ~Base() {}
 
   default_type vol() const { return volume; }
-  uint32_t num() const { return count; }
+  ssize_t num() const { return count; }
   bool is_finite() const { return count; }
   const std::string &get_type() const { return type; }
   const std::string &get_name() const { return name; }
-  size_t get_max_attempts() const { return max_attempts; }
+  ssize_t get_max_attempts() const { return max_attempts; }
 
   virtual bool get_seed(Eigen::Vector3f &) const = 0;
   virtual bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &) { return get_seed(p); }
@@ -101,14 +101,14 @@ public:
 protected:
   // Finite seeds are defined by the number of seeds; non-limited are defined by volume
   float volume;
-  uint32_t count;
+  ssize_t count;
   mutable std::mutex mutex;
   const std::string type; // Text describing the type of seed this is
 
 private:
-  const std::string name;    // Could be an image path, or spherical coordinates
-  const size_t max_attempts; // Maximum number of times the tracking algorithm should attempt to start from each
-                             // provided seed point
+  const std::string name;     // Could be an image path, or spherical coordinates
+  const ssize_t max_attempts; // Maximum number of times the tracking algorithm should attempt to start from each
+                              // provided seed point
 };
 
 } // namespace MR::DWI::Tractography::Seeding

@@ -29,18 +29,8 @@
 namespace MR::DWI::Tractography::Seeding {
 
 class Sphere : public Base {
-
 public:
-  Sphere(const std::string &in) : Base(in, "sphere", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
-    auto F = parse_floats(in);
-    if (F.size() != 4)
-      throw Exception("Could not parse seed \"" + in +
-                      "\" as a spherical seed point; needs to be 4 comma-separated values (XYZ position, then radius)");
-    pos = {float(F[0]), float(F[1]), float(F[2])};
-    rad = F[3];
-    volume = 4.0 * Math::pi * Math::pow3(rad) / 3.0;
-  }
-
+  Sphere(const std::string &in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -49,12 +39,8 @@ private:
 };
 
 class SeedMask : public Base {
-
 public:
-  SeedMask(const std::string &in) : Base(in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), mask(in) {
-    volume = get_count(mask) * mask.spacing(0) * mask.spacing(1) * mask.spacing(2);
-  }
-
+  SeedMask(const std::string &in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -62,51 +48,27 @@ private:
 };
 
 class Random_per_voxel : public Base {
-
 public:
-  Random_per_voxel(const std::string &in, const size_t num_per_voxel)
-      : Base(in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
-        mask(in),
-        num(num_per_voxel),
-        inc(0),
-        expired(false) {
-    count = get_count(mask) * num_per_voxel;
-    mask.index(0) = 0;
-    mask.index(1) = 0;
-    mask.index(2) = -1;
-  }
-
+  Random_per_voxel(const std::string &in, const ssize_t num_per_voxel);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
   virtual ~Random_per_voxel() {}
 
 private:
   mutable Mask mask;
-  const size_t num;
-
-  mutable uint32_t inc;
+  const ssize_t num;
+  mutable ssize_t inc;
   mutable bool expired;
 };
 
 class Grid_per_voxel : public Base {
-
 public:
-  Grid_per_voxel(const std::string &in, const size_t os_factor)
-      : Base(in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
-        mask(in),
-        os(os_factor),
-        pos(os, os, os),
-        offset(-0.5 + (1.0 / (2 * os))),
-        step(1.0 / os),
-        expired(false) {
-    count = get_count(mask) * Math::pow3(os_factor);
-  }
-
+  Grid_per_voxel(const std::string &in, const ssize_t os_factor);
   virtual ~Grid_per_voxel() {}
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
   mutable Mask mask;
-  const int os;
+  const ssize_t os;
   mutable Eigen::Vector3i pos;
   const float offset, step;
   mutable bool expired;
@@ -116,7 +78,6 @@ class Rejection : public Base {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
   Rejection(const std::string &);
-
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -129,62 +90,33 @@ private:
   float max;
 };
 
-class Coordinate_parser {
+class CoordinatesLoader {
 public:
+  CoordinatesLoader(const std::string &cds_path);
+
+protected:
   Eigen::MatrixXf coords;
-  size_t nr;
-  size_t nc;
-  Coordinate_parser(const std::string &cds_path) {
-    coords = File::Matrix::load_matrix<float>(cds_path);
-    nr = coords.rows();
-    nc = coords.cols();
-  }
+  Eigen::VectorXf weights;
+  ssize_t num_coordinates() const { return coords.rows(); }
+  bool have_weights() const { return weights.size() > 0; }
 };
 
-class Coordinates_fixed : public Base, public Coordinate_parser {
+class Coordinates_fixed : public Base, public CoordinatesLoader {
 public:
-  Coordinates_fixed(const std::string &in, const size_t n_streamlines)
-      : Base(in, "coordinate seeding fixed", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
-        Coordinate_parser(in),
-        current_coord(0),
-        num_at_coord(0),
-        expired(false),
-        nsl(n_streamlines) {
-    if (nc != 3)
-      throw Exception("Number of columns in \"" + in + "\" must equal 3!");
-    count = nr * nsl;
-  }
-
+  Coordinates_fixed(const std::string &in, const ssize_t n_streamlines);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
-  mutable size_t current_coord;
-  mutable size_t num_at_coord;
+  mutable ssize_t current_coord;
+  mutable ssize_t num_at_coord;
   mutable bool expired;
-  const size_t nsl;
+  const ssize_t streamlines_per_coordinate;
 };
 
-class Coordinates_global : public Base, public Coordinate_parser {
+class Coordinates_global : public Base, public CoordinatesLoader {
 public:
-  Coordinates_global(const std::string &in)
-      : Base(in, "coordinate seeding global", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), Coordinate_parser(in) {
-    if (nc < 3 && nc > 4)
-      throw Exception("Number of columns in \"" + in + "\" must equal 3 or 4!");
-    if (nc == 4) {
-      if (coords.col(3).minCoeff() < 0)
-        throw Exception("The seeding weights must be non-negative!");
-      if (coords.col(3).maxCoeff() == 0)
-        throw Exception("At least one of the weights must be positive!");
-      weights = coords.col(3).array() / coords.col(3).maxCoeff();
-      coords = coords.block(0, 0, nr, 3);
-    }
-    volume = 0.0;
-  }
-
+  Coordinates_global(const std::string &in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
-
-private:
-  mutable Eigen::VectorXf weights;
 };
 
 } // namespace MR::DWI::Tractography::Seeding

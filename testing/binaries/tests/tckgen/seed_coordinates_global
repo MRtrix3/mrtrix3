@@ -1,23 +1,25 @@
 #!/bin/bash
 # Verify operation of the -seed_coordinates_global option
-# Currently it is only successful execution that is evaluated
+# Ensure that all seeds produced correspond to one of the specified locations
 
-# Test 1
 rm -f tmp.txt
-printf "3 3 3\n0 0 0\n-3 -3 -3" > tmp.txt
+printf "3 3 3\n0 0 0\n-3 -3 -3" > tmp_in.txt
 
-tckgen SIFT_phantom/dwi.mif tmp.tck \
+tckgen SIFT_phantom/dwi.mif tmp_out.tck \
     -algo seedtest \
-    -seed_coordinates_global tmp.txt \
+    -seed_coordinates_global tmp_in.txt \
     -select 5K \
     -force
 
-# Test 2
-rm -f tmp.txt
-printf "3 3 3\n0 0 0\n-3 -3 -3\n1,2,3" > tmp.txt
+tckconvert tmp_out.tck tmp_out[].txt
 
-tckgen SIFT_phantom/dwi.mif tmp.tck \
-    -algo seedtest \
-    -seed_coordinates_global tmp.txt \
-    -select 5K \
-    -force
+rm -f tmp_out.txt
+cat tmp_out*.txt | \
+    sort | \
+    uniq > tmp_out.txt
+
+rm -f tmp_in2.txt
+cat tmp_in.txt | \
+    sort > tmp_in2.txt
+
+testing_diff_matrix tmp_in2.txt tmp_out.txt
