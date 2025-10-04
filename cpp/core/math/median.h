@@ -74,9 +74,9 @@ template <class Container> inline typename Container::value_type quantile(Contai
   if (!num)
     return std::numeric_limits<typename Container::value_type>::quiet_NaN();
 
-  default_type f;
-  default_type t = std::modf(num * quantile, &f);
-  ssize_t loc = size_t(f);
+  default_type f(std::numeric_limits<default_type>::quiet_NaN());
+  const default_type t = std::modf(default_type(num) * quantile, &f);
+  const ssize_t loc = size_t(f);
   std::nth_element(list.begin(), list.begin() + loc, list.begin() + loc);
   typename Container::value_type val0 = list[loc];
   std::nth_element(list.begin(), list.begin() + loc, list.begin() + loc + 1);

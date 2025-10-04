@@ -23,7 +23,7 @@
 
 namespace MR::Stats {
 
-extern std::vector<std::string> field_choices;
+extern const std::vector<std::string> field_choices;
 extern const App::OptionGroup Options;
 
 using value_type = default_type;
