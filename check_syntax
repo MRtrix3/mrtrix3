@@ -52,7 +52,7 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp');
 
 
 # detect any instances of "using namespace std;":
-  res="$res"$(
+  res=$(
     cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
     $grep -Po '\busing\s+namespace\s+std\s*;'

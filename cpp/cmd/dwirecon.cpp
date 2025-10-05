@@ -250,9 +250,9 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         // Phase encoding same axis but reversed direction
         // and
         // Equal total readout time (if present)
-        if (((pe_second.head(3) + pe_first.head(3)).squaredNorm() == 0) &&                     //
-            (pe_config.cols() == 3 ||                                                          //
-             std::abs(pe_second[3] - pe_first[3]) < Metadata::PhaseEncoding::trt_tolerance)) { //
+        if (((pe_second.head(3) + pe_first.head(3)).squaredNorm() == 0) &&                //
+            (pe_config.cols() == 3 ||                                                     //
+             abs(pe_second[3] - pe_first[3]) < Metadata::PhaseEncoding::trt_tolerance)) { //
           peindex2paired[pe_first_index] = pe_second_index;
           peindex2paired[pe_second_index] = pe_first_index;
           pe_pairs.push_back(std::make_pair(pe_first_index, pe_second_index));
@@ -326,7 +326,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
             if (pe_indices[second_volume] != pe_second_index)
               continue;
             const default_type dot_product =
-                std::abs(grad_in.block<1, 3>(first_volume, 0).dot(grad_in.block<1, 3>(second_volume, 0)));
+                abs(grad_in.block<1, 3>(first_volume, 0).dot(grad_in.block<1, 3>(second_volume, 0)));
             dp_matrix(row, col) = dot_product;
             dp_matrix(col, row) = dot_product;
           }

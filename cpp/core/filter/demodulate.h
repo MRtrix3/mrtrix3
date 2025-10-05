@@ -121,7 +121,7 @@ public:
                                      std::numeric_limits<double>::signaling_NaN()); //
       for (auto l_inner = Loop(axes)(kspace); l_inner; ++l_inner) {
         const cdouble value = kspace.value();
-        const double magnitude = std::abs(value);
+        const double magnitude = abs(value);
         if (magnitude > max_magnitude) {
           max_magnitude = magnitude;
           value_at_max = value;
@@ -142,7 +142,7 @@ public:
       assign_pos_of(index_of_max).to(interp);
       interp.voxel(pos.template cast<double>());
       interp.value_and_gradient(value, gradient);
-      const double mag = std::abs(value);
+      const double mag = abs(value);
       for (ssize_t iter = 0; iter != 10; ++iter) {
         pos_type grad_mag({0.0, 0.0, 0.0}); // Gradient of the magnitude of the complex k-space data
         for (ssize_t axis = 0; axis != 3; ++axis) {
@@ -155,7 +155,7 @@ public:
       }
       value_at_max = value;
       const real_type phase_at_max = std::arg(value_at_max);
-      max_magnitude = std::abs(value_at_max);
+      max_magnitude = abs(value_at_max);
 
       // Determine direction and frequency of harmonic
       pos_type kspace_origin;

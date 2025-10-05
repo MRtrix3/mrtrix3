@@ -140,7 +140,7 @@ private:
         this->emplace_back(dir_from_peak ? lobe.get_peak_dir(0).cast<float>() : lobe.get_mean_dir().cast<float>(),
                            lobe.get_integral(),
                            lobe.get_max_peak_value(),
-                           std::acos(std::abs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
+                           std::acos(abs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
       }
     }
     Eigen::Array3i vox;
