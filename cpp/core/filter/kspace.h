@@ -237,7 +237,7 @@ protected:
     assert(scratch.valid());
     Math::FFT(kspace, scratch, axis, FFTW_BACKWARD, false);
     for (auto l = Loop(out)(scratch, out); l; ++l)
-      out.value() = std::abs(cdouble(scratch.value()));
+      out.value() = abs(cdouble(scratch.value()));
   }
 
   static Header make_window_header(const Header &header, const std::vector<size_t> &inner_axes) {
