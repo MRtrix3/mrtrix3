@@ -23,7 +23,7 @@
 
 namespace MR::Stats {
 
-extern std::vector<std::string> field_choices;
+extern const std::vector<std::string> field_choices;
 extern const App::OptionGroup Options;
 
 using value_type = default_type;
@@ -71,6 +71,9 @@ public:
           std::cout << (count > 1 ? str(std) : "N/A") << " ";
         else if (fields[n] == "std_rv")
           std::cout << (count > 1 ? str(std_rv) : "N/A") << " ";
+        else if (fields[n] == "iqr")
+          std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A")
+                    << " ";
         else if (fields[n] == "min")
           std::cout << str(min) << " ";
         else if (fields[n] == "max")

@@ -31,7 +31,7 @@ template <> inline bool not_a_number(float x) { return std::isnan(x); }
 template <> inline bool not_a_number(double x) { return std::isnan(x); }
 } // namespace
 
-template <class Container> inline typename Container::value_type median(Container &list) {
+template <class Container> typename Container::value_type median(Container &list) {
   size_t num = list.size();
   // remove NaNs:
   for (size_t n = 0; n < num; ++n) {
@@ -56,6 +56,39 @@ template <class Container> inline typename Container::value_type median(Containe
     med_val = (med_val + list[middle]) / 2.0;
   }
   return med_val;
+}
+
+template <class Container> typename Container::value_type quantile(Container &list, const default_type quantile) {
+  assert(quantile >= 0.0 && quantile <= 1.0);
+  ssize_t num = list.size();
+  // remove NaNs:
+  for (ssize_t n = 0; n < num; ++n) {
+    while (not_a_number(list[n]) && n < num) {
+      --num;
+      // std::swap (list[n], list[num]);
+      //  Commented std::swap to provide bool compatibility
+      typename Container::value_type temp = list[num];
+      list[num] = list[n];
+      list[n] = temp;
+    }
+  }
+  if (!num)
+    return std::numeric_limits<typename Container::value_type>::quiet_NaN();
+  const auto end = list.begin() + num;
+  if (quantile == 0.0)
+    return *std::min_element(list.begin(), end);
+  if (quantile == 1.0)
+    return *std::max_element(list.begin(), end);
+  default_type f(std::numeric_limits<default_type>::quiet_NaN());
+  const default_type t = std::modf(default_type(num) * quantile, &f);
+  const ssize_t loc = ssize_t(f);
+  std::nth_element(list.begin(), list.begin() + loc, end);
+  const typename Container::value_type val0 = list[loc];
+  std::nth_element(list.begin(), list.begin() + loc + 1, end);
+  const typename Container::value_type val1 = list[loc + 1];
+  const typename Container::value_type val = (1.0 - t) * val0 + t * val1;
+
+  return val;
 }
 
 // Weiszfeld median
