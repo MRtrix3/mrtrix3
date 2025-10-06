@@ -36,24 +36,16 @@
 
 // #define DYNAMIC_SEED_DEBUGGING
 
-// TD_sum is set to this at the start of execution to prevent a divide_by_zero error
-#define DYNAMIC_SEED_INITIAL_TD_SUM 1e-6
-
-// Initial seeding probability: Smaller will be slower, but allow under-reconstructed fixels
-//   to be seeded more densely
-#define DYNAMIC_SEED_INITIAL_PROB 1e-3
-
-// Applicable for approach 2 with correlation term only:
-// How much of the projected change in seed probability is included in seeds outside the fixel
-#define DYNAMIC_SEEDING_DAMPING_FACTOR 0.5
-
-namespace MR::DWI::Tractography {
-
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 class GMWMI_finder;
-}
+} // namespace MR::DWI::Tractography::ACT
 
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
+
+// Initial seeding probability:
+//   Smaller will be slower,
+//   but allow under-reconstructed fixels to be seeded more densely
+constexpr default_type dynamicseeding_initprob = 1e-3;
 
 class Fixel_TD_seed : public SIFT::FixelBase {
 
@@ -63,7 +55,7 @@ public:
         voxel(-1, -1, -1),
         TD(SIFT::FixelBase::TD),
         update(true),
-        old_prob(DYNAMIC_SEED_INITIAL_PROB),
+        old_prob(dynamicseeding_initprob),
         applied_prob(old_prob),
         track_count_at_last_update(0),
         seed_count(0) {
@@ -87,7 +79,7 @@ public:
         voxel(-1, -1, -1),
         TD(0.0),
         update(true),
-        old_prob(DYNAMIC_SEED_INITIAL_PROB),
+        old_prob(dynamicseeding_initprob),
         applied_prob(old_prob),
         track_count_at_last_update(0),
         seed_count(0) {
@@ -172,6 +164,9 @@ private:
 
 class Dynamic : public Base, public SIFT::ModelBase<Fixel_TD_seed> {
 private:
+  // TD_sum is set to a small value at the start of execution to prevent a divide-by-zero error
+  static const default_type initial_td_sum;
+
   using Fixel = Fixel_TD_seed;
 
   using MapVoxel = Fixel_map<Fixel>::MapVoxel;
@@ -246,5 +241,4 @@ public:
   bool operator()(const Tracking::GeneratedTrack &, Streamline<> &);
 };
 
-} // namespace Seeding
-} // namespace MR::DWI::Tractography
+} // namespace MR::DWI::Tractography::Seeding

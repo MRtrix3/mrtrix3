@@ -83,15 +83,15 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
   if (properties.find("downsample_factor") != properties.end())
     downsampler.set_ratio(to<int>(properties["downsample_factor"]));
 
-  for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i)
+  for (size_t i = 0; i != termination_reason_count; ++i)
     terminations[i] = 0;
-  for (size_t i = 0; i != REJECTION_REASON_COUNT; ++i)
+  for (size_t i = 0; i != rejection_reason_count; ++i)
     rejections[i] = 0;
 
 #ifdef DEBUG_TERMINATIONS
   debug_header.ndim() = 3;
   debug_header.datatype() = DataType::UInt32;
-  for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
+  for (size_t i = 0; i != termination_reason_count; ++i) {
     std::string name;
     switch (i) {
     case CONTINUE:
@@ -141,11 +141,11 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
 
 SharedBase::~SharedBase() {
   size_t sum_terminations = 0;
-  for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i)
+  for (size_t i = 0; i != termination_reason_count; ++i)
     sum_terminations += terminations[i];
   INFO("Total number of track terminations: " + str(sum_terminations));
   INFO("Termination reason probabilities:");
-  for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
+  for (size_t i = 0; i != termination_reason_count; ++i) {
     std::string term_type;
     bool to_print = false;
     switch (i) {
@@ -207,7 +207,7 @@ SharedBase::~SharedBase() {
   }
 
   INFO("Track rejection counts:");
-  for (size_t i = 0; i != REJECTION_REASON_COUNT; ++i) {
+  for (size_t i = 0; i != rejection_reason_count; ++i) {
     std::string reject_type;
     bool to_print = false;
     switch (i) {

@@ -20,9 +20,6 @@
 #include "fixel/fixel.h"
 #include "fixel/matrix.h"
 
-#define DEFAULT_FIXEL_SMOOTHING_FWHM 10.0
-#define DEFAULT_FIXEL_SMOOTHING_MINWEIGHT 0.01
-
 namespace MR::Fixel::Filter {
 
 /** \addtogroup Filters
@@ -46,10 +43,13 @@ namespace MR::Fixel::Filter {
 class Smooth : public Base {
 
 public:
+  static const float default_fwhm;
+  static const float default_threshold;
+
   Smooth(Image<index_type> index_image,
          const Matrix::Reader &matrix,
-         const float smoothing_fwhm = DEFAULT_FIXEL_SMOOTHING_FWHM,
-         const float smoothing_threshold = DEFAULT_FIXEL_SMOOTHING_MINWEIGHT);
+         const float smoothing_fwhm = default_fwhm,
+         const float smoothing_threshold = default_threshold);
 
   void set_fwhm(const float fwhm);
   void set_threshold(const float t) { threshold = t; }
@@ -61,6 +61,10 @@ protected:
   std::vector<Eigen::Vector3f> fixel_positions;
   float stdev, gaussian_const1, gaussian_const2, threshold;
 };
+
+const float Smooth::default_fwhm = 10.0F;
+const float Smooth::default_threshold = 0.01F;
+
 //! @}
 
 } // namespace MR::Fixel::Filter

@@ -127,7 +127,7 @@ public:
   size_t offset(uint8_t *address) const { return address - fmap->address(); }
   bool is_big_endian() const { return is_BE; }
   bool is_new_sequence() const {
-    return VR == VR_SQ || (group == GROUP_DATA && element == ELEMENT_DATA && size == LENGTH_UNDEFINED);
+    return VR == VR_SQ || (group == group_data && element == element_data && size == undefined_length);
   }
 
   bool ignore_when_parsing() const;

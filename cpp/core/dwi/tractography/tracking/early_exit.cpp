@@ -20,6 +20,15 @@
 
 namespace MR::DWI::Tractography::Tracking {
 
+const default_type EarlyExit::probability_threshold =
+#if EIGEN_VERSION_AT_LEAST(3, 3, 0)
+    1e-3;
+#else
+    1e-6;
+#endif
+const default_type EarlyExit::zvalue_threshold = -4.753408; // For a p-value of 1e-6; should be negative
+const default_type EarlyExit::cease_testing_percentage = 0.20;
+
 bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
   if (++counter != next_test)
     return false;
@@ -34,10 +43,10 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
     return false;
   }
 
-  if ((num_seeds / default_type(max_num_seeds) > TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE) ||
-      (num_tracks / default_type(max_num_tracks) > TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE)) {
-    DEBUG("tckgen early exit: No longer testing (tracking progressed beyond " +
-          str<int>(std::round(100.0 * TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE)) + "%)");
+  if ((num_seeds / default_type(max_num_seeds) > cease_testing_percentage) ||
+      (num_tracks / default_type(max_num_tracks) > cease_testing_percentage)) {
+    DEBUG(std::string("tckgen early exit: No longer testing") +                                             //
+          " (tracking progressed beyond " + str<int>(std::round(100.0 * cease_testing_percentage)) + "%)"); //
     next_test = 0;
     return false;
   }
@@ -59,12 +68,16 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
   const default_type prob_hypothesis_prior = (max_num_tracks + 1.0) / (max_num_seeds + 1.0);
   const default_type prob_observation = (num_tracks + 1.0) / (num_seeds + 1.0);
   const default_type posterior = conditional * prob_hypothesis_prior / prob_observation;
-  DEBUG("tckgen early exit: Target " + str(max_num_tracks) + "/" + str(max_num_seeds) + " (" +
-        str(max_num_tracks / default_type(max_num_seeds), 3) + "), " + "current " + str(num_tracks) + "/" +
-        str(num_seeds) + " (" + str(num_tracks / default_type(num_seeds), 3) + "), " + "conditional probability " +
-        str(conditional, 3) + ", hypothesis prior probability " + str(prob_hypothesis_prior, 3) + ", " +
-        "observation probability " + str(prob_observation, 3) + ", posterior " + str(posterior, 3));
-  return (posterior < TCKGEN_EARLY_EXIT_PROB_THRESHOLD);
+  DEBUG(std::string("tckgen early exit:") +                                      //
+        " Target " + str(max_num_tracks) + "/" + str(max_num_seeds) +            //
+        " (" + str(max_num_tracks / default_type(max_num_seeds), 3) + ")," +     //
+        " current " + str(num_tracks) + "/" + str(num_seeds) +                   //
+        " (" + str(num_tracks / default_type(num_seeds), 3) + ")," +             //
+        " conditional probability " + str(conditional, 3) + "," +                //
+        " hypothesis prior probability " + str(prob_hypothesis_prior, 3) + "," + //
+        " observation probability " + str(prob_observation, 3) + "," +           //
+        " posterior " + str(posterior, 3));                                      //
+  return (posterior < probability_threshold);
 #else
   // Use normal approximation to the binomial distribution
   // CDF of normal distribution isn't trivial

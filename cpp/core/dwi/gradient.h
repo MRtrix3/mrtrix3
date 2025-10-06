@@ -25,16 +25,15 @@
 #include "math/sphere.h"
 #include "types.h"
 
-#define DWI_BZERO_THRESHOLD_DEFAULT 10.0
-
-namespace MR {
-namespace App {
+namespace MR::App {
 class OptionGroup;
 }
 
 // TODO Move some to metadata
 
-namespace DWI {
+namespace MR::DWI {
+
+constexpr default_type default_bzero_threshold = 10.0;
 
 App::OptionGroup GradImportOptions();
 App::OptionGroup GradExportOptions();
@@ -334,5 +333,4 @@ inline size_t lmax_for_directions(const Eigen::MatrixXd &directions,
   return Math::SH::LforN(mapping.cols());
 }
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI

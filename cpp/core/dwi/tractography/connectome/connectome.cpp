@@ -39,7 +39,7 @@ const OptionGroup AssignmentOptions =
              " Argument is the maximum radius in mm;"
              " if no node is found within this radius,"
              " the streamline endpoint is not assigned to any node."
-             " Default search distance is " + str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm.")
+             " Default search distance is " + str(default_tck2nodes_radial_distance, 2) + "mm.")
       + Argument("radius").type_float(0.0)
     + Option("assignment_reverse_search",
              "traverse from each streamline endpoint inwards along the streamline,"
@@ -49,7 +49,7 @@ const OptionGroup AssignmentOptions =
       + Argument("max_dist").type_float(0.0)
     + Option("assignment_forward_search",
              "project the streamline forwards from the endpoint in search of a parcellation node voxel."
-             " Argument is the maximum traversal length in mm.")
+             " Argument is the maximum traversal length in mm")
       + Argument("max_dist").type_float(0.0)
     + Option("assignment_all_voxels",
              "assign the streamline to all nodes it intersects along its length"
@@ -92,7 +92,7 @@ Tck2nodes_base *load_assignment_mode(Image<node_t> &nodes_data) {
 
   // default
   if (!tck2nodes)
-    tck2nodes = new Tck2nodes_radial(nodes_data, TCK2NODES_RADIAL_DEFAULT_DIST);
+    tck2nodes = new Tck2nodes_radial(nodes_data, default_tck2nodes_radial_distance);
 
   return tck2nodes;
 }

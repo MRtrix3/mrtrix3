@@ -37,11 +37,11 @@ enum term_t {
   ENTER_EXCLUDE,
   TRAVERSE_ALL_INCLUDE
 };
-#define TERMINATION_REASON_COUNT 13
+constexpr ssize_t termination_reason_count = 13;
 
 // This lookup table specifies whether or not the most recent position should be added to the end of the streamline,
 //   based on what mechanism caused the termination
-const uint8_t term_add_to_tck[TERMINATION_REASON_COUNT] = {1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1};
+const uint8_t term_add_to_tck[termination_reason_count] = {1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1};
 
 enum reject_t {
   INVALID_SEED,
@@ -53,7 +53,7 @@ enum reject_t {
   ACT_POOR_TERMINATION,
   ACT_FAILED_WM_REQUIREMENT
 };
-#define REJECTION_REASON_COUNT 8
+constexpr ssize_t rejection_reason_count = 8;
 
 template <class ImageType> class Interpolator {
 public:

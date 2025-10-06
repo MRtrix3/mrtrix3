@@ -20,9 +20,9 @@
 #include <utility>
 
 // MSYS2 supports VT100, and file redirection is handled explicitly so this can be used globally
-#define CLEAR_LINE_CODE "\033[0K"
-#define WRAP_ON_CODE "\033[?7h"
-#define WRAP_OFF_CODE "\033[?7l"
+#define CLEAR_LINE_CODE "\033[0K" // check_syntax off
+#define WRAP_ON_CODE "\033[?7h"   // check_syntax off
+#define WRAP_OFF_CODE "\033[?7l"  // check_syntax off
 
 namespace MR {
 
@@ -30,7 +30,7 @@ extern bool __need_newline;
 
 namespace {
 
-const char *busy[] = {".   ", " .  ", "  . ", "   .", "  . ", " .  "};
+const std::array<std::string, 6> busy{".   ", " .  ", "  . ", "   .", "  . ", " .  "};
 
 void display_func_multithreaded(const ProgressBar &p) {
   ProgressBar::notification_is_genuine = true;
@@ -48,7 +48,7 @@ void display_func_terminal(const ProgressBar &p) {
   else
     __print_stderr(printf(WRAP_OFF_CODE "\r%s: [%s] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
                           App::NAME.c_str(),
-                          busy[p.value() % 6],
+                          busy[p.value() % busy.size()].c_str(),
                           p.text().c_str(),
                           p.ellipsis().c_str()));
 }
@@ -75,8 +75,11 @@ void display_func_redirect(const ProgressBar &p) {
             "%s: [%3" PRI_SIZET "%%] %s%s\n", App::NAME.c_str(), p.value(), p.text().c_str(), p.ellipsis().c_str()));
         ;
       } else {
-        __print_stderr(
-            printf("%s: [%s] %s%s\n", App::NAME.c_str(), busy[p.value() % 6], p.text().c_str(), p.ellipsis().c_str()));
+        __print_stderr(printf("%s: [%s] %s%s\n",
+                              App::NAME.c_str(),
+                              busy[p.value() % busy.size()].c_str(),
+                              p.text().c_str(),
+                              p.ellipsis().c_str()));
       }
       if (next_update_at)
         next_update_at *= 2;
@@ -126,6 +129,8 @@ void done_func_redirect(const ProgressBar &p) {
 }
 
 } // namespace
+
+const default_type ProgressBar::busy_interval = 0.1;
 
 void (*ProgressBar::display_func)(const ProgressBar &p) = display_func_terminal;
 void (*ProgressBar::done_func)(const ProgressBar &p) = done_func_terminal;

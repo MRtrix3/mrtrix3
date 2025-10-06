@@ -19,12 +19,11 @@
 #include "app.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/rng.h"
-#include "dwi/tractography/seeding/dynamic.h"
-#include "math/SH.h"
-
+#include "dwi/tractography/seeding/seeding.h"
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/image.h"
 #include "fixel/legacy/keys.h"
+#include "math/SH.h"
 
 namespace MR::DWI::Tractography::Seeding {
 
@@ -49,11 +48,13 @@ bool Dynamic_ACT_additions::check_seed(Eigen::Vector3f &p) {
   // return retval;
 }
 
+const default_type Dynamic::initial_td_sum = 1e-6;
+
 Dynamic::Dynamic(const std::string &in,
                  Image<float> &fod_data,
                  const size_t num,
                  const DWI::Directions::FastLookupSet &dirs)
-    : Base(in, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
+    : Base(in, "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
       SIFT::ModelBase<Fixel_TD_seed>(fod_data, dirs),
       target_trackcount(num),
       track_count(0),
@@ -76,7 +77,7 @@ Dynamic::Dynamic(const std::string &in,
   volume *= fod_data.spacing(0) * fod_data.spacing(1) * fod_data.spacing(2);
 
   // Prevent divide-by-zero at commencement
-  SIFT::ModelBase<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
+  SIFT::ModelBase<Fixel_TD_seed>::TD_sum = initial_td_sum;
 
   // For small / unreliable fixels, don't modify the seeding probability during execution
   perform_fixel_masking();

@@ -44,7 +44,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
     // Search for a free id
     QLocalSocket *socket = new QLocalSocket(this);
     freeEntry = -1;
-    for (int i = 0; i < MAX_NO_ALLOWED; i++) {
+    for (int i = 0; i < maximum_instances; i++) {
       QString serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
       socket->connectToServer(serverName);
       socket->waitForConnected();
@@ -86,7 +86,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
   }
 
   // Set up outgoing connections
-  for (int i = 0; i < MAX_NO_ALLOWED; i++) {
+  for (int i = 0; i < maximum_instances; i++) {
     TryConnectTo(i);
   }
 }

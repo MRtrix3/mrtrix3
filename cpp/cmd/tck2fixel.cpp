@@ -25,14 +25,13 @@
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/writer.h"
 
 using namespace MR;
 using namespace App;
 
 using Fixel::index_type;
-
-#define DEFAULT_ANGLE_THRESHOLD 45.0
 
 class TrackProcessor {
 
@@ -102,7 +101,7 @@ void usage() {
 
   OPTIONS
   + Option ("angle", "the max angle threshold for assigning streamline tangents to fixels"
-                     " (default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
+                     " (default: " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
     + Argument ("value").type_float(0.0, 90.0);
 }
 // clang-format on
@@ -123,7 +122,7 @@ void run() {
 
   const index_type num_fixels = Fixel::get_number_of_fixels(index_header);
 
-  const float angular_threshold = get_option_value("angle", DEFAULT_ANGLE_THRESHOLD);
+  const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);
 
   std::vector<Eigen::Vector3d> positions(num_fixels);
   std::vector<Eigen::Vector3d> directions(num_fixels);

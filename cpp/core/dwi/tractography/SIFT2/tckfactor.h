@@ -30,33 +30,31 @@
 
 #include "dwi/tractography/SIFT2/fixel.h"
 
-#define SIFT2_REGULARISATION_TIKHONOV_DEFAULT 0.0
-#define SIFT2_REGULARISATION_TV_DEFAULT 0.1
-
-#define SIFT2_MIN_TD_FRAC_DEFAULT 0.10
-
-#define SIFT2_MIN_ITERS_DEFAULT 10
-#define SIFT2_MAX_ITERS_DEFAULT 1000
-#define SIFT2_MIN_COEFF_DEFAULT (-std::numeric_limits<default_type>::infinity())
-#define SIFT2_MAX_COEFF_DEFAULT (std::numeric_limits<default_type>::infinity())
-#define SIFT2_MAX_COEFF_STEP_DEFAULT 1.0
-#define SIFT2_MIN_CF_DECREASE_DEFAULT 2.5e-5
-
 namespace MR::DWI::Tractography::SIFT2 {
+
+constexpr default_type default_regularisation_tikhonov = 0.0;
+constexpr default_type default_regularisation_tv = 0.1;
+constexpr default_type default_minimum_td_fraction = 0.1;
+constexpr ssize_t default_minimum_iterations = 10;
+constexpr ssize_t default_maximum_iterations = 1000;
+constexpr default_type default_minimum_coefficient = -std::numeric_limits<default_type>::infinity();
+constexpr default_type default_maximum_coefficient = std::numeric_limits<default_type>::infinity();
+constexpr default_type default_maximum_coeffstep = 1.0;
+constexpr default_type default_minimum_cf_fractional_decrease = 2.5e-5;
 
 class TckFactor : public SIFT::Model<Fixel> {
 
 public:
   TckFactor(Image<float> &fod_image, const DWI::Directions::FastLookupSet &dirs)
       : SIFT::Model<Fixel>(fod_image, dirs),
-        reg_multiplier_tikhonov(0.0),
-        reg_multiplier_tv(0.0),
-        min_iters(SIFT2_MIN_ITERS_DEFAULT),
-        max_iters(SIFT2_MAX_ITERS_DEFAULT),
-        min_coeff(SIFT2_MIN_COEFF_DEFAULT),
-        max_coeff(SIFT2_MAX_COEFF_DEFAULT),
-        max_coeff_step(SIFT2_MAX_COEFF_STEP_DEFAULT),
-        min_cf_decrease_percentage(SIFT2_MIN_CF_DECREASE_DEFAULT),
+        reg_multiplier_tikhonov(default_regularisation_tikhonov),
+        reg_multiplier_tv(default_regularisation_tv),
+        min_iters(default_minimum_iterations),
+        max_iters(default_maximum_iterations),
+        min_coeff(default_minimum_coefficient),
+        max_coeff(default_maximum_coefficient),
+        max_coeff_step(default_maximum_coeffstep),
+        min_cf_decrease_percentage(default_minimum_cf_fractional_decrease),
         data_scale_term(0.0) {}
 
   void set_reg_lambdas(const double, const double);

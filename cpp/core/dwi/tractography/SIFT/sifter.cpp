@@ -110,7 +110,7 @@ void SIFTer::perform_filtering() {
     const double current_cf = calc_cost_function();
     const double current_roc_cf = calc_roc_cost_function();
 
-    TrackIndexRangeWriter range_writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    TrackIndexRangeWriter range_writer(TrackIndexRangeWriter::default_batch_size, num_tracks());
     TrackGradientCalculator gradient_calculator(*this, gradient_vector, current_mu, current_roc_cf);
     Thread::run_queue(range_writer, TrackIndexRange(), Thread::multi(gradient_calculator));
 

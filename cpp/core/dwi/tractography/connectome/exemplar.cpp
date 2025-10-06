@@ -16,11 +16,9 @@
 
 #include "dwi/tractography/connectome/exemplar.h"
 
-// Fraction of the streamline length at each end that will be pulled toward the node centre-of-mass
-// TODO Make this a fraction of length, rather than fraction of points?
-#define EXEMPLAR_ENDPOINT_CONVERGE_FRACTION 0.25
-
 namespace MR::DWI::Tractography::Connectome {
+
+const default_type Exemplar::endpoint_convergence_fraction = 0.25;
 
 Exemplar &Exemplar::operator=(const Exemplar &that) {
   Tractography::Streamline<float>(*this) = that;
@@ -123,7 +121,7 @@ void Exemplar::finalize(const float step_size) {
     *i *= multiplier;
 
   // Constrain endpoints to the node centres of mass
-  size_t num_converging_points = EXEMPLAR_ENDPOINT_CONVERGE_FRACTION * size();
+  size_t num_converging_points = endpoint_convergence_fraction * size();
   for (size_t i = 0; i != num_converging_points; ++i) {
     const float mu = i / float(num_converging_points);
     (*this)[i] = (mu * (*this)[i]) + ((1.0f - mu) * node_COMs.first);

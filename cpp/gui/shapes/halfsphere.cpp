@@ -18,26 +18,29 @@
 
 #include <map>
 
-#define X .525731112119133606
-#define Z .850650808352039932
-
-#define NUM_VERTICES 9
-#define NUM_INDICES 10
-
 namespace {
 
-static float initial_vertices[NUM_VERTICES][3] = {{-X, 0.0, Z},
-                                                  {X, 0.0, Z},
-                                                  {0.0, Z, X},
-                                                  {0.0, -Z, X},
-                                                  {Z, X, 0.0},
-                                                  {-Z, X, 0.0},
-                                                  {Z, -X, 0.0},
-                                                  {-Z, -X, 0.0},
-                                                  {0.0, -Z, -X}};
+constexpr float x = .525731112119133606;
+constexpr float z = .850650808352039932;
+constexpr float initial_vertices_data[]{x,   0.0, z,   //
+                                        0.0, z,   x,   //
+                                        0.0, -z,  x,   //
+                                        z,   x,   0.0, //
+                                        -z,  x,   0.0, //
+                                        z,   -x,  0.0, //
+                                        -z,  -x,  0.0, //
+                                        0.0, -z,  -x}; //
 
-static GLuint initial_indices[NUM_INDICES][3] = {
-    {0, 1, 2}, {0, 2, 5}, {2, 1, 4}, {4, 1, 6}, {8, 6, 3}, {8, 3, 7}, {7, 3, 0}, {0, 3, 1}, {3, 6, 1}, {5, 7, 0}};
+constexpr uint32_t initial_indices_data[]{0, 1, 2,  //
+                                          0, 2, 5,  //
+                                          2, 1, 4,  //
+                                          4, 1, 6,  //
+                                          8, 6, 3,  //
+                                          8, 3, 7,  //
+                                          7, 3, 0,  //
+                                          0, 3, 1,  //
+                                          3, 6, 1,  //
+                                          5, 7, 0}; //
 
 } // namespace
 
@@ -52,6 +55,11 @@ public:
     index[0] = x[0];
     index[1] = x[1];
     index[2] = x[2];
+  }
+  Triangle(Eigen::Map<const Eigen::Array<uint32_t, 10, 3, Eigen::RowMajor>>::ConstRowXpr row) {
+    index[0] = row[0];
+    index[1] = row[1];
+    index[2] = row[2];
   }
   Triangle(size_t i1, size_t i2, size_t i3) {
     index[0] = i1;
@@ -94,11 +102,14 @@ void HalfSphere::LOD(const size_t level_of_detail) {
   vertices.clear();
   std::vector<Triangle> indices;
 
-  for (size_t n = 0; n < NUM_VERTICES; n++)
-    vertices.push_back(initial_vertices[n]);
+  const Eigen::Map<const Eigen::Matrix<float, 9, 3, Eigen::RowMajor>> initial_vertices(initial_vertices_data);
+  const Eigen::Map<const Eigen::Array<uint32_t, 10, 3, Eigen::RowMajor>> initial_indices(initial_indices_data);
 
-  for (size_t n = 0; n < NUM_INDICES; n++)
-    indices.push_back(initial_indices[n]);
+  for (size_t n = 0; n < initial_vertices.rows(); n++)
+    vertices.push_back(initial_vertices.row(n));
+
+  for (size_t n = 0; n < initial_indices.rows(); n++)
+    indices.push_back(initial_indices.row(n));
 
   std::map<Edge, GLuint> edges;
 

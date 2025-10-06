@@ -70,18 +70,18 @@ void usage() {
 
   + OptionGroup ("Options specific to the \"connect\" filter")
   + Option ("threshold_value", "specify a threshold for the input fixel data file values"
-                               " (default = " + str(DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD) + ")")
+                               " (default = " + str(Fixel::Filter::Connect::default_value_threshold) + ")")
     + Argument ("value").type_float ()
   + Option ("threshold_connectivity", "specify a fixel-fixel connectivity threshold for connected-component analysis"
-                                      " (default = " + str(DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD) + ")")
+                                      " (default = " + str(Fixel::Filter::Connect::default_connectivity_threshold) + ")")
     + Argument ("value").type_float (0.0)
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
   + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
-                    " (default = " + str(DEFAULT_FIXEL_SMOOTHING_FWHM) + "mm)")
+                    " (default = " + str(Fixel::Filter::Smooth::default_fwhm) + "mm)")
     + Argument ("value").type_float (0.0)
   + Option ("minweight", "apply a minimum threshold to smoothing weights"
-                         " (default = " + str(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT) + ")")
+                         " (default = " + str(Fixel::Filter::Smooth::default_threshold) + ")")
     + Argument ("value").type_float (0.0);
 
 }
@@ -174,9 +174,9 @@ void run() {
       option_list.erase("cfe_legacy");
     } break;
     case 1: {
-      const float value = get_option_value("threshold_value", float(DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD));
+      const float value = get_option_value("threshold_value", Fixel::Filter::Connect::default_value_threshold);
       const float connect =
-          get_option_value("threshold_connectivity", float(DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD));
+          get_option_value("threshold_connectivity", Fixel::Filter::Connect::default_connectivity_threshold);
       // TODO What does / should -mask do here?
       filter.reset(new Fixel::Filter::Connect(matrix, value, connect));
       output_header.datatype() = DataType::UInt32;
@@ -185,8 +185,8 @@ void run() {
       option_list.erase("threshold_connectivity");
     } break;
     case 2: {
-      const float fwhm = get_option_value("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
-      const float threshold = get_option_value("minweight", float(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT));
+      const float fwhm = get_option_value("fwhm", Fixel::Filter::Smooth::default_fwhm);
+      const float threshold = get_option_value("minweight", Fixel::Filter::Smooth::default_threshold);
       filter.reset(new Fixel::Filter::Smooth(index_image, matrix, fwhm, threshold));
       option_list.erase("fwhm");
       option_list.erase("minweight");

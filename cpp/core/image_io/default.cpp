@@ -39,7 +39,7 @@ void Default::load(const Header &header, size_t) {
   if (files.size() * double(bytes_per_segment) >= double(std::numeric_limits<size_t>::max()))
     throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
 
-  if (files.size() > MAX_FILES_PER_IMAGE)
+  if (files.size() > max_files_per_image)
     copy_to_mem(header);
   else
     map_files(header);

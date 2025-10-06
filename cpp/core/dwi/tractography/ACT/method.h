@@ -25,9 +25,9 @@
 #include "interp/linear.h"
 #include "interp/masked.h"
 
-#define GMWMI_NORMAL_PERTURBATION 0.001
-
 namespace MR::DWI::Tractography::ACT {
+
+constexpr default_type gmwmi_normal_perturbation = 0.001;
 
 using namespace MR::DWI::Tractography::Tracking;
 
@@ -81,7 +81,7 @@ public:
 
     seed_in_sgm = false;
 
-    if ((tissues().is_csf()) || !tissues().get_wm() || ((tissues().get_gm() - tissues().get_wm()) >= GMWMI_ACCURACY))
+    if ((tissues().is_csf()) || !tissues().get_wm() || ((tissues().get_gm() - tissues().get_wm()) >= gmwmi_accuracy))
       return false;
 
     return true;
@@ -96,11 +96,11 @@ public:
 
     const Tissues tissues_at_pos(tissues());
 
-    const Eigen::Vector3f pos_plus(pos + (dir * GMWMI_NORMAL_PERTURBATION));
+    const Eigen::Vector3f pos_plus(pos + (dir * gmwmi_normal_perturbation));
     fetch_tissue_data(pos_plus);
     const Tissues tissues_plus(tissues());
 
-    const Eigen::Vector3f pos_minus(pos - (dir * GMWMI_NORMAL_PERTURBATION));
+    const Eigen::Vector3f pos_minus(pos - (dir * gmwmi_normal_perturbation));
     fetch_tissue_data(pos_minus);
     const Tissues &tissues_minus(tissues());
 

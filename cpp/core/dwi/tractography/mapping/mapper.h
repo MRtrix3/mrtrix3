@@ -33,10 +33,6 @@
 
 #include "math/hermite.h"
 
-// Didn't bother making this a command-line option, since curvature contrast results were very poor regardless of
-// smoothing
-#define CURVATURE_TRACK_SMOOTHING_FWHM 10.0 // In mm
-
 namespace MR::DWI::Tractography::Mapping {
 
 class TrackMapperBase {

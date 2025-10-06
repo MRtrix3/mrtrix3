@@ -83,8 +83,8 @@ public:
 #endif
 
 private:
-  mutable std::atomic<size_t> terminations[TERMINATION_REASON_COUNT];
-  mutable std::atomic<size_t> rejections[REJECTION_REASON_COUNT];
+  mutable std::atomic<size_t> terminations[termination_reason_count];
+  mutable std::atomic<size_t> rejections[rejection_reason_count];
 
   std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 

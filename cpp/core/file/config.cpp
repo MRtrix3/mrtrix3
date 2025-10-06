@@ -21,13 +21,12 @@
 #include "file/config.h"
 #include "file/path.h"
 
-#define MRTRIX_CONFIG_FILE "mrtrix.conf"
-#define MRTRIX_SYS_CONFIG_FILE "/etc/" MRTRIX_CONFIG_FILE
-#define MRTRIX_USER_CONFIG_FILE "." MRTRIX_CONFIG_FILE
-
 namespace MR::File {
 
 KeyValues Config::config;
+
+const std::string Config::file_basename("mrtrix.conf");
+const std::string Config::default_sys_config_file("/etc/" + file_basename);
 
 // ENVVAR name: MRTRIX_CONFIGFILE
 // ENVVAR This can be used to set the location of the system-wide
@@ -39,7 +38,7 @@ KeyValues Config::config;
 void Config::init() {
   const char *sysconf_location = getenv("MRTRIX_CONFIGFILE");
   if (!sysconf_location)
-    sysconf_location = MRTRIX_SYS_CONFIG_FILE;
+    sysconf_location = default_sys_config_file.c_str();
 
   if (Path::is_file(sysconf_location)) {
     INFO(std::string("reading config file \"") + sysconf_location + "\"...");
@@ -54,7 +53,7 @@ void Config::init() {
     DEBUG(std::string("No config file found at \"") + sysconf_location + "\"");
   }
 
-  std::string path = Path::join(Path::home(), MRTRIX_USER_CONFIG_FILE);
+  std::string path = Path::join(Path::home(), "." + file_basename);
   if (Path::is_file(path)) {
     INFO("reading config file \"" + path + "\"...");
     try {

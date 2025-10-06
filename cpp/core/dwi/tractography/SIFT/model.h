@@ -208,7 +208,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
   fixels.swap(new_fixels);
 
-  TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels");
+  TrackIndexRangeWriter writer(TrackIndexRangeWriter::default_batch_size, num_tracks(), "Removing excluded fixels");
   FixelRemapper remapper(*this, fixel_index_mapping);
   Thread::run_queue(writer, TrackIndexRange(), Thread::multi(remapper));
 

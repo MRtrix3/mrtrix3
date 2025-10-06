@@ -22,6 +22,7 @@
 #include "filter/smooth.h"
 #include "image.h"
 #include "interp/cubic.h"
+#include "interp/interp.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/sinc.h"
@@ -57,7 +58,7 @@ public:
   template <class HeaderType>
   Resize(const HeaderType &in)
       : Base(in),
-        interp_type(2), // Cubic
+        interp_type(MR::Interp::interp_type::CUBIC),
         transformation(Adapter::NoTransform),
         oversampling(Adapter::AutoOverSample),
         out_of_bounds_value(nullptr) {}
@@ -128,7 +129,7 @@ public:
     oversampling = oversample;
   }
 
-  void set_interp_type(int type) { interp_type = type; }
+  void set_interp_type(const MR::Interp::interp_type type) { interp_type = type; }
 
   void set_transform(const transform_type &trafo) { transform_ = trafo; }
 
@@ -142,17 +143,17 @@ public:
     const typename InputImageType::value_type oob =
         out_of_bounds_value ? *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
     switch (interp_type) {
-    case 0:
+    case MR::Interp::interp_type::NEAREST:
       // Use of oversampling is prevented in reslice adapter
       reslice<Interp::Nearest>(input, output, transformation, oversampling, oob);
       break;
-    case 1:
+    case MR::Interp::interp_type::LINEAR:
       reslice<Interp::Linear>(input, output, transformation, oversampling, oob);
       break;
-    case 2:
+    case MR::Interp::interp_type::CUBIC:
       reslice<Interp::Cubic>(input, output, transformation, oversampling, oob);
       break;
-    case 3:
+    case MR::Interp::interp_type::SINC:
       reslice<Interp::Sinc>(input, output, transformation, oversampling, oob);
       break;
     default:
@@ -162,7 +163,7 @@ public:
   }
 
 protected:
-  int interp_type;
+  MR::Interp::interp_type interp_type;
   transform_type transformation;
   std::vector<uint32_t> oversampling;
   default_type *out_of_bounds_value;

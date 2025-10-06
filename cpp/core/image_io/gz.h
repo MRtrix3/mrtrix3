@@ -42,6 +42,8 @@ protected:
 
   virtual void load(const Header &, size_t);
   virtual void unload(const Header &);
+
+  static const size_t bytes_per_zcall = 524288;
 };
 
 } // namespace MR::ImageIO

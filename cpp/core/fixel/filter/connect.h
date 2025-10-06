@@ -20,9 +20,6 @@
 #include "fixel/matrix.h"
 #include "image.h"
 
-#define DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD 0.5
-#define DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD 0.1
-
 namespace MR::Fixel::Filter {
 
 /** \addtogroup Filters
@@ -44,9 +41,12 @@ namespace MR::Fixel::Filter {
 class Connect : public Base {
 
 public:
+  static const float default_value_threshold;
+  static const float default_connectivity_threshold;
+
   Connect(const Fixel::Matrix::Reader &matrix,
-          const float value_threshold = DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD,
-          const float connectivity_threshold = DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD)
+          const float value_threshold = default_value_threshold,
+          const float connectivity_threshold = default_connectivity_threshold)
       : matrix(matrix), value_threshold(value_threshold), connectivity_threshold(connectivity_threshold) {}
 
   void operator()(Image<float> &input, Image<float> &output) const override;
@@ -57,6 +57,9 @@ protected:
   Fixel::Matrix::Reader matrix;
   float value_threshold, connectivity_threshold;
 };
+
+const float Connect::default_value_threshold = 0.5;
+const float Connect::default_connectivity_threshold = 0.1;
 //! @}
 
 } // namespace MR::Fixel::Filter

@@ -38,8 +38,12 @@ const App::OptionGroup ShellsOption =
       + App::Argument("bvalues").type_sequence_float();
 // clang-format on
 
+// CONF option: BValueEpsilon
+// CONF default: 80.0
+// CONF Specifies the difference between b-values necessary for image
+// CONF volumes to be classified as belonging to different shells.
 FORCE_INLINE default_type bvalue_epsilon() {
-  static const default_type value = File::Config::get_float("BValueEpsilon", DWI_SHELLS_EPSILON);
+  static const default_type value = File::Config::get_float("BValueEpsilon", default_shellclustering_epsilon);
   return value;
 }
 
@@ -357,7 +361,7 @@ size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clus
       std::vector<size_t> neighborIdx;
       regionQuery(bvals, b, neighborIdx);
 
-      if (b > bzero_threshold() && neighborIdx.size() < DWI_SHELLS_MIN_LINKAGE) {
+      if (b > bzero_threshold() && neighborIdx.size() < default_shellclustering_minlinkage) {
 
         clusters[ii] = 0;
 
@@ -369,7 +373,7 @@ size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clus
             visited[neighborIdx[i]] = true;
             std::vector<size_t> neighborIdx2;
             regionQuery(bvals, bvals[neighborIdx[i]], neighborIdx2);
-            if (neighborIdx2.size() >= DWI_SHELLS_MIN_LINKAGE)
+            if (neighborIdx2.size() >= default_shellclustering_minlinkage)
               for (size_t j = 0; j != neighborIdx2.size(); j++)
                 neighborIdx.push_back(neighborIdx2[j]);
           }
