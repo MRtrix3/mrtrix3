@@ -47,9 +47,9 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
       transform(debug_header)
 #endif
 {
-  for (size_t i = 0; i != termination_type_count; ++i)
+  for (size_t i = 0; i != termination_reason_count; ++i)
     std::atomic_init(&terminations[i], 0);
-  for (size_t i = 0; i != rejection_type_count; ++i)
+  for (size_t i = 0; i != rejection_reason_count; ++i)
     std::atomic_init(&rejections[i], 0);
 
   if (properties.find("max_num_tracks") == properties.end())
