@@ -64,7 +64,7 @@ Standard options
 References
 ^^^^^^^^^^
 
-Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.
+Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. OHBM Aperture, 10.52294/ApertureNeuro.2022.2.NEOD9565.
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
