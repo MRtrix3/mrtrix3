@@ -67,21 +67,7 @@ void Base::paintGL() {
       projection.render_text(printf("position: [ %.4g %.4g %.4g ] mm", focus()[0], focus()[1], focus()[2]),
                              LeftEdge | BottomEdge);
       projection.render_text(vox_str, LeftEdge | BottomEdge, 1);
-      std::string value_str;
-      cfloat value;
-      if (image()->interpolate()) {
-        value_str = "interp value: ";
-        value = image()->trilinear_value(window().focus());
-      } else {
-        value_str = "voxel value: ";
-        value = image()->nearest_neighbour_value(window().focus());
-      }
-      if (std::isfinite(abs(value)))
-        value_str += str(value);
-      else
-        value_str += "?";
-
-      projection.render_text(value_str, LeftEdge | BottomEdge, 2);
+      projection.render_text(image()->describe_value(window().focus()), LeftEdge | BottomEdge, 2);
 
       // Draw additional labels from tools
       QList<QAction *> tools = window().tools()->actions();

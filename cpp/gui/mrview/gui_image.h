@@ -70,9 +70,12 @@ public:
 
   cfloat trilinear_value(const Eigen::Vector3f &) const;
   cfloat nearest_neighbour_value(const Eigen::Vector3f &) const;
+  Eigen::VectorXcf trilinear_values(const Eigen::Vector3f &, const size_t axis = 3) const;
+  Eigen::VectorXcf nearest_neighbour_values(const Eigen::Vector3f &, const size_t axis = 3) const;
 
   const transform_type &transform() const { return image.transform(); }
   const std::vector<std::string> &comments() const { return _comments; }
+  std::string describe_value(const Eigen::Vector3f &focus) const;
 
   void reset_windowing(const int, const bool);
 

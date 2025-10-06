@@ -33,7 +33,7 @@ class OptionGroup;
 
 namespace MR::DWI {
 
-constexpr default_type default_bzero_threshold = 10.0;
+constexpr default_type default_bzero_threshold = 22.5;
 
 App::OptionGroup GradImportOptions();
 App::OptionGroup GradExportOptions();

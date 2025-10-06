@@ -28,14 +28,14 @@ class MethodBase {
 
 public:
   MethodBase(const SharedBase &shared)
-      : pos(0.0, 0.0, 0.0),
+      : pos(Eigen::Vector3f::Zero()),
         dir(0.0, 0.0, 1.0),
         S(shared),
         act_method_additions(S.is_act() ? new ACT::ACT_Method_additions(S) : nullptr),
         values(shared.source.size(3)) {}
 
   MethodBase(const MethodBase &that)
-      : pos(0.0, 0.0, 0.0),
+      : pos(Eigen::Vector3f::Zero()),
         dir(0.0, 0.0, 1.0),
         S(that.S),
         act_method_additions(S.is_act() ? new ACT::ACT_Method_additions(that.act()) : nullptr),

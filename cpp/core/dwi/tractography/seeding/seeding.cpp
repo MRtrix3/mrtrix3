@@ -115,10 +115,7 @@ const OptionGroup SeedParameterOption =
     + Option("seed_direction",
              "specify a seeding direction for the tracking"
              " (this should be supplied as a vector of 3 comma-separated values.")
-      + Argument("dir").type_sequence_float()
-    + Option("output_seeds",
-             "output the seed location of all successful streamlines to a file")
-      + Argument("path").type_file_out();
+      + Argument("dir").type_sequence_float();
 // clang-format on
 
 void load_seed_mechanisms(Properties &properties) {
@@ -197,10 +194,6 @@ void load_seed_parameters(Properties &properties) {
   opt = get_options("seed_direction");
   if (!opt.empty())
     properties["init_direction"] = std::string(opt[0][0]);
-
-  opt = get_options("output_seeds");
-  if (!opt.empty())
-    properties["seed_output"] = std::string(opt[0][0]);
 }
 
 } // namespace MR::DWI::Tractography::Seeding

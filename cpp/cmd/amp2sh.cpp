@@ -42,7 +42,7 @@ void usage() {
 
   + "The directions can be defined either as a DW gradient scheme"
     " (for example to compute the SH representation of the DW signal),"
-    " a set of [az el] pairs as output by the dirgen command,"
+    " a set of [az in] pairs as output by the dirgen command,"
     " or a set of [ x y z ] directions in Cartesian coordinates."
     " The DW gradient scheme or direction set can be supplied within the input image header"
     " or using the -gradient or -directions option."
@@ -69,7 +69,7 @@ void usage() {
   + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD."
                           " By default this option is not required"
                           " providing the direction set is supplied in the amplitude image."
-                          " This should be supplied as a list of directions [az el],"
+                          " This should be supplied as a list of directions [az in],"
                           " as generated using the dirgen command,"
                           " or as a list of [ x y z ] Cartesian coordinates.")
   +   Argument ("file").type_file_in()

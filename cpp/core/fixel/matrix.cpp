@@ -139,7 +139,7 @@ public:
         //   however this will not be permitted to contribute to the matrix
         index_type closest_fixel_index = last_index;
         default_type largest_dp = 0.0;
-        const direction_type dir(i.get_dir().normalized());
+        const direction_type dir(i.get_dir().cast<default_type>().normalized());
         for (index_type j = first_index; j < last_index; ++j) {
           fixel_directions.index(0) = j;
           const default_type dp = abs(dir.dot(direction_type(fixel_directions.row(1))));

@@ -217,7 +217,7 @@ void usage() {
         "directions defining the number and orientation of the apodised point spread functions"
         " used in FOD reorientation"
         " (Default: 300 directions)")
-    + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
+    + Argument ("file", "a list of directions [az in] generated using the dirgen command.").type_file_in()
 
     + Option ("reorient_fod",
         "specify whether to perform FOD reorientation."

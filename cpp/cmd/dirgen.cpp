@@ -59,7 +59,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("ndir", "the number of directions to generate.").type_integer(6, std::numeric_limits<int>::max())
-    + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
+    + Argument ("dirs", "the text file to write the directions to, as [ az in ] pairs.").type_file_out();
 
   OPTIONS
     + Option ("power", "specify exponent to use for repulsion power law"
@@ -82,8 +82,7 @@ void usage() {
     + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model"
                           " rather than the bipolar model normally assumed in DWI")
 
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                           " instead of [az el].");
+    + DWI::Directions::cartesian_option;
 
 }
 // clang-format on

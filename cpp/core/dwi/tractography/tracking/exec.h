@@ -108,7 +108,7 @@ public:
       return false;
     if (track_excluded) {
       item.set_status(GeneratedTrack::status_t::SEED_REJECTED);
-      S.add_rejection(INVALID_SEED);
+      S.add_rejection(reject_t::INVALID_SEED);
       return true;
     }
     gen_track(item);
@@ -133,20 +133,20 @@ private:
   term_t iterate() {
     const term_t method_term = (S.rk4 ? next_rk4() : method.next());
 
-    if (method_term)
-      return (S.is_act() && method.act().sgm_depth) ? TERM_IN_SGM : method_term;
+    if (method_term != term_t::CONTINUE)
+      return (S.is_act() && method.act().sgm_depth) ? term_t::TERM_IN_SGM : method_term;
 
     if (S.is_act()) {
       const term_t structural_term = method.act().check_structural(method.pos);
-      if (structural_term)
+      if (structural_term != term_t::CONTINUE)
         return structural_term;
     }
 
-    if (S.properties.mask.size() && !S.properties.mask.contains(method.pos))
-      return EXIT_MASK;
+    if (!S.properties.mask.empty() && !S.properties.mask.contains(method.pos))
+      return term_t::EXIT_MASK;
 
     if (S.properties.exclude.contains(method.pos))
-      return ENTER_EXCLUDE;
+      return term_t::ENTER_EXCLUDE;
 
     // If backtracking is not enabled, add streamline to include regions as it is generated
     // If it is enabled, this check can only be performed after the streamline is completed
@@ -154,16 +154,16 @@ private:
       include_visitation(method.pos);
 
     if (S.stop_on_all_include && bool(include_visitation))
-      return TRAVERSE_ALL_INCLUDE;
+      return term_t::TRAVERSE_ALL_INCLUDE;
 
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 
   bool seed_track(GeneratedTrack &tck) {
     tck.clear();
     track_excluded = false;
     include_visitation.reset();
-    method.dir = {NaN, NaN, NaN};
+    method.dir.setConstant(NaN);
 
     if (S.properties.seeds.is_finite()) {
 
@@ -215,7 +215,7 @@ private:
   }
 
   void gen_track_unidir(GeneratedTrack &tck) {
-    term_t termination = CONTINUE;
+    term_t termination = term_t::CONTINUE;
 
     if (S.is_act() && S.act().backtrack()) {
 
@@ -225,11 +225,11 @@ private:
 
       do {
         termination = iterate();
-        if (term_add_to_tck[termination])
+        if (termination_info.at(termination).add_term_to_tck)
           tck.push_back(method.pos);
-        if (termination) {
+        if (termination != term_t::CONTINUE) {
           apply_priors(termination);
-          if (track_excluded && termination != ENTER_EXCLUDE) {
+          if (track_excluded && termination != term_t::ENTER_EXCLUDE) {
             if (tck.size() > max_size_at_backtrack) {
               max_size_at_backtrack = tck.size();
               revert_step = 1;
@@ -243,52 +243,52 @@ private:
             method.truncate_track(tck, max_size_at_backtrack, revert_step);
             if (method.pos.allFinite()) {
               track_excluded = false;
-              termination = CONTINUE;
+              termination = term_t::CONTINUE;
             }
           }
         } else if (tck.size() >= S.max_num_points_preds) {
-          termination = LENGTH_EXCEED;
+          termination = term_t::LENGTH_EXCEED;
         }
-      } while (!termination);
+      } while (termination == term_t::CONTINUE);
 
     } else {
 
       do {
         termination = iterate();
-        if (term_add_to_tck[termination])
+        if (termination_info.at(termination).add_term_to_tck)
           tck.push_back(method.pos);
-        if (!termination && tck.size() >= S.max_num_points_preds)
-          termination = LENGTH_EXCEED;
-      } while (!termination);
+        if (termination == term_t::CONTINUE && tck.size() >= S.max_num_points_preds)
+          termination = term_t::LENGTH_EXCEED;
+      } while (termination == term_t::CONTINUE);
     }
 
     apply_priors(termination);
 
-    if (termination == EXIT_SGM) {
+    if (termination == term_t::EXIT_SGM) {
       truncate_exit_sgm(tck);
       method.pos = tck.back();
     }
 
     if (track_excluded) {
       switch (termination) {
-      case CALIBRATOR:
-      case ENTER_CSF:
-      case MODEL:
-      case HIGH_CURVATURE:
-        S.add_rejection(ACT_POOR_TERMINATION);
+      case term_t::CALIBRATOR:
+      case term_t::ENTER_CSF:
+      case term_t::MODEL:
+      case term_t::HIGH_CURVATURE:
+        S.add_rejection(reject_t::ACT_POOR_TERMINATION);
         break;
-      case LENGTH_EXCEED:
-        S.add_rejection(TRACK_TOO_LONG);
+      case term_t::LENGTH_EXCEED:
+        S.add_rejection(reject_t::TRACK_TOO_LONG);
         break;
-      case ENTER_EXCLUDE:
-        S.add_rejection(ENTER_EXCLUDE_REGION);
+      case term_t::ENTER_EXCLUDE:
+        S.add_rejection(reject_t::ENTER_EXCLUDE_REGION);
         break;
       default:
         throw Exception("\nFIXME: Unidirectional track excluded but termination is good!\n");
       }
     }
 
-    if (S.is_act() && (termination == ENTER_CGM) && S.act().crop_at_gmwmi())
+    if (S.is_act() && (termination == term_t::ENTER_CGM) && S.act().crop_at_gmwmi())
       S.act().crop_at_gmwmi(tck);
 
 #ifdef DEBUG_TERMINATIONS
@@ -304,28 +304,28 @@ private:
 
       switch (termination) {
 
-      case CONTINUE:
+      case term_t::CONTINUE:
         throw Exception("\nFIXME: undefined termination of track in apply_priors()\n");
 
-      case ENTER_CGM:
-      case EXIT_IMAGE:
-      case EXIT_MASK:
-      case EXIT_SGM:
-      case TERM_IN_SGM:
-      case TRAVERSE_ALL_INCLUDE:
+      case term_t::ENTER_CGM:
+      case term_t::EXIT_IMAGE:
+      case term_t::EXIT_MASK:
+      case term_t::EXIT_SGM:
+      case term_t::TERM_IN_SGM:
+      case term_t::TRAVERSE_ALL_INCLUDE:
         break;
 
-      case ENTER_CSF:
-      case LENGTH_EXCEED:
-      case ENTER_EXCLUDE:
+      case term_t::ENTER_CSF:
+      case term_t::LENGTH_EXCEED:
+      case term_t::ENTER_EXCLUDE:
         track_excluded = true;
         break;
 
-      case CALIBRATOR:
-      case MODEL:
-      case HIGH_CURVATURE:
+      case term_t::CALIBRATOR:
+      case term_t::MODEL:
+      case term_t::HIGH_CURVATURE:
         if (method.act().sgm_depth)
-          termination = TERM_IN_SGM;
+          termination = term_t::TERM_IN_SGM;
         else if (!method.act().in_pathology())
           track_excluded = true;
         break;
@@ -335,25 +335,25 @@ private:
 
       switch (termination) {
 
-      case CONTINUE:
+      case term_t::CONTINUE:
         throw Exception("\nFIXME: undefined termination of track in apply_priors()\n");
 
-      case ENTER_CGM:
-      case ENTER_CSF:
-      case EXIT_SGM:
-      case TERM_IN_SGM:
+      case term_t::ENTER_CGM:
+      case term_t::ENTER_CSF:
+      case term_t::EXIT_SGM:
+      case term_t::TERM_IN_SGM:
         throw Exception("\nFIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()\n");
 
-      case EXIT_IMAGE:
-      case EXIT_MASK:
-      case LENGTH_EXCEED:
-      case CALIBRATOR:
-      case MODEL:
-      case HIGH_CURVATURE:
-      case TRAVERSE_ALL_INCLUDE:
+      case term_t::EXIT_IMAGE:
+      case term_t::EXIT_MASK:
+      case term_t::LENGTH_EXCEED:
+      case term_t::CALIBRATOR:
+      case term_t::MODEL:
+      case term_t::HIGH_CURVATURE:
+      case term_t::TRAVERSE_ALL_INCLUDE:
         break;
 
-      case ENTER_EXCLUDE:
+      case term_t::ENTER_EXCLUDE:
         track_excluded = true;
         break;
       }
@@ -367,19 +367,19 @@ private:
 
     // seedtest algorithm uses min_num_points_preds = 1; should be 2 or more for all other algorithms
     if (tck.size() == 1 && S.min_num_points_preds > 1) {
-      S.add_rejection(NO_PROPAGATION_FROM_SEED);
+      S.add_rejection(reject_t::NO_PROPAGATION_FROM_SEED);
       return true;
     }
 
     if (tck.size() < S.min_num_points_preds) {
-      S.add_rejection(TRACK_TOO_SHORT);
+      S.add_rejection(reject_t::TRACK_TOO_SHORT);
       return true;
     }
 
     if (S.is_act()) {
 
       if (!satisfy_wm_requirement(tck)) {
-        S.add_rejection(ACT_FAILED_WM_REQUIREMENT);
+        S.add_rejection(reject_t::ACT_FAILED_WM_REQUIREMENT);
         return true;
       }
 
@@ -390,7 +390,7 @@ private:
     }
 
     if (!bool(include_visitation)) {
-      S.add_rejection(MISSED_INCLUDE_REGION);
+      S.add_rejection(reject_t::MISSED_INCLUDE_REGION);
       return true;
     }
 
@@ -450,12 +450,12 @@ private:
     if (length < S.min_dist) {
       tck.clear();
       tck.set_status(GeneratedTrack::status_t::TRACK_REJECTED);
-      S.add_rejection(TRACK_TOO_SHORT);
+      S.add_rejection(reject_t::TRACK_TOO_SHORT);
     } else if (length > S.max_dist) {
       if (S.is_act()) {
         tck.clear();
         tck.set_status(GeneratedTrack::status_t::TRACK_REJECTED);
-        S.add_rejection(TRACK_TOO_LONG);
+        S.add_rejection(reject_t::TRACK_TOO_LONG);
       } else {
         truncate_maxlength(tck);
         tck.set_status(GeneratedTrack::status_t::ACCEPTED);
@@ -505,38 +505,38 @@ private:
   }
 
   term_t next_rk4() {
-    term_t termination = CONTINUE;
+    term_t termination = term_t::CONTINUE;
     const Eigen::Vector3f init_pos(method.pos);
     const Eigen::Vector3f init_dir(method.dir);
-    if ((termination = method.next()))
+    if ((termination = method.next()) != term_t::CONTINUE)
       return termination;
     const Eigen::Vector3f dir_rk1(method.dir);
     method.pos = init_pos + (dir_rk1 * (0.5 * S.step_size));
     method.dir = init_dir;
-    if ((termination = method.next()))
+    if ((termination = method.next()) != term_t::CONTINUE)
       return termination;
     const Eigen::Vector3f dir_rk2(method.dir);
     method.pos = init_pos + (dir_rk2 * (0.5 * S.step_size));
     method.dir = init_dir;
-    if ((termination = method.next()))
+    if ((termination = method.next()) != term_t::CONTINUE)
       return termination;
     const Eigen::Vector3f dir_rk3(method.dir);
     method.pos = init_pos + (dir_rk3 * S.step_size);
     method.dir = (dir_rk2 + dir_rk3).normalized();
-    if ((termination = method.next()))
+    if ((termination = method.next()) != term_t::CONTINUE)
       return termination;
     const Eigen::Vector3f dir_rk4(method.dir);
     method.dir = (dir_rk1 + (dir_rk2 * 2.0) + (dir_rk3 * 2.0) + dir_rk4).normalized();
     method.pos = init_pos + (method.dir * S.step_size);
     const Eigen::Vector3f final_pos(method.pos);
     const Eigen::Vector3f final_dir(method.dir);
-    if ((termination = method.next()))
+    if ((termination = method.next()) != term_t::CONTINUE)
       return termination;
     if (dir_rk1.dot(method.dir) < S.cos_max_angle_ho)
-      return HIGH_CURVATURE;
+      return term_t::HIGH_CURVATURE;
     method.pos = final_pos;
     method.dir = final_dir;
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 };
 

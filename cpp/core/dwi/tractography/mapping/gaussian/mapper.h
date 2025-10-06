@@ -85,14 +85,26 @@ protected:
   template <class Cont> void voxelise_precise(const Streamline<> &, Cont &) const;
   template <class Cont> void voxelise_ends(const Streamline<> &, Cont &) const;
 
-  inline void add_to_set(
-      SetVoxel &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type, const default_type) const;
-  inline void add_to_set(
-      SetVoxelDEC &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type, const default_type) const;
-  inline void add_to_set(
-      SetDixel &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type, const default_type) const;
-  inline void add_to_set(
-      SetVoxelTOD &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type, const default_type) const;
+  inline void add_to_set(SetVoxel &,
+                         const Eigen::Vector3i &,
+                         const Streamline<>::tangent_type &,
+                         const default_type,
+                         const default_type) const;
+  inline void add_to_set(SetVoxelDEC &,
+                         const Eigen::Vector3i &,
+                         const Streamline<>::tangent_type &,
+                         const default_type,
+                         const default_type) const;
+  inline void add_to_set(SetDixel &,
+                         const Eigen::Vector3i &,
+                         const Streamline<>::tangent_type &,
+                         const default_type,
+                         const default_type) const;
+  inline void add_to_set(SetVoxelTOD &,
+                         const Eigen::Vector3i &,
+                         const Streamline<>::tangent_type &,
+                         const default_type,
+                         const default_type) const;
 
   // Convenience function to convert from streamline position index to a linear-interpolated
   //   factor value (TrackMapperTWI member field factors[] only contains one entry per pre-upsampled point)
@@ -100,28 +112,15 @@ protected:
 };
 
 template <class Cont> void TrackMapper::voxelise(const Streamline<> &tck, Cont &output) const {
-
-  size_t prev = 0;
-  const size_t last = tck.size() - 1;
-
   Eigen::Vector3i vox;
-  for (size_t i = 0; i != last; ++i) {
+  for (size_t i = 0; i != tck.size(); ++i) {
     vox = round(scanner2voxel * tck[i]);
     if (check(vox, info)) {
-      const Eigen::Vector3d dir((tck[i + 1] - tck[prev]).cast<default_type>().normalized());
+      const Streamline<>::tangent_type dir(Tractography::tangent(tck, i));
       const default_type factor = tck_index_to_factor(i);
       add_to_set(output, vox, dir, 1.0, factor);
     }
-    prev = i;
   }
-
-  vox = round(scanner2voxel * tck[last]);
-  if (check(vox, info)) {
-    const Eigen::Vector3d dir((tck[last] - tck[prev]).cast<default_type>().normalized());
-    const default_type factor = tck_index_to_factor(last);
-    add_to_set(output, vox, dir, 1.0f, factor);
-  }
-
   for (auto &i : output)
     i.normalize();
 }
@@ -197,7 +196,7 @@ template <class Cont> void TrackMapper::voxelise_precise(const Streamline<> &tck
     }
 
     length += (p_prev - p_voxel_exit).norm();
-    Eigen::Vector3d traversal_vector = (p_voxel_exit - p_voxel_entry).cast<default_type>().normalized();
+    const Streamline<>::tangent_type traversal_vector = (p_voxel_exit - p_voxel_entry).normalized();
     if (traversal_vector.allFinite() && check(this_voxel, info)) {
       const default_type index_voxel_exit = default_type(p) + mu;
       const size_t mean_tck_index = std::round(0.5 * (index_voxel_entry + index_voxel_exit));
@@ -212,8 +211,7 @@ template <class Cont> void TrackMapper::voxelise_ends(const Streamline<> &tck, C
   for (size_t end = 0; end != 2; ++end) {
     const Eigen::Vector3i vox = round(scanner2voxel * (end ? tck.back() : tck.front()));
     if (check(vox, info)) {
-      const Eigen::Vector3d dir =
-          (end ? (tck[tck.size() - 1] - tck[tck.size() - 2]) : (tck[0] - tck[1])).cast<default_type>().normalized();
+      const Streamline<>::tangent_type dir = Tractography::tangent(tck, end ? tck.size() - 1 : 0);
       const default_type factor = (end ? factors.back() : factors.front());
       add_to_set(out, vox, dir, 1.0, factor);
     }
@@ -222,21 +220,21 @@ template <class Cont> void TrackMapper::voxelise_ends(const Streamline<> &tck, C
 
 inline void TrackMapper::add_to_set(SetVoxel &out,
                                     const Eigen::Vector3i &v,
-                                    const Eigen::Vector3d &d,
+                                    const Streamline<>::tangent_type &d,
                                     const default_type l,
                                     const default_type f) const {
   out.insert(v, l, f);
 }
 inline void TrackMapper::add_to_set(SetVoxelDEC &out,
                                     const Eigen::Vector3i &v,
-                                    const Eigen::Vector3d &d,
+                                    const Streamline<>::tangent_type &d,
                                     const default_type l,
                                     const default_type f) const {
   out.insert(v, d, l, f);
 }
 inline void TrackMapper::add_to_set(SetDixel &out,
                                     const Eigen::Vector3i &v,
-                                    const Eigen::Vector3d &d,
+                                    const Streamline<>::tangent_type &d,
                                     const default_type l,
                                     const default_type f) const {
   assert(dixel_plugin);
@@ -245,7 +243,7 @@ inline void TrackMapper::add_to_set(SetDixel &out,
 }
 inline void TrackMapper::add_to_set(SetVoxelTOD &out,
                                     const Eigen::Vector3i &v,
-                                    const Eigen::Vector3d &d,
+                                    const Streamline<>::tangent_type &d,
                                     const default_type l,
                                     const default_type f) const {
   assert(tod_plugin);

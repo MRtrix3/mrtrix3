@@ -84,7 +84,7 @@ const char *const bvalue_scaling_description(
 // clang-format on
 
 // CONF option: BZeroThreshold
-// CONF default: 10.0
+// CONF default: 22.5
 // CONF Specifies the b-value threshold for determining those image
 // CONF volumes that correspond to b=0.
 default_type bzero_threshold() {
