@@ -31,7 +31,7 @@ namespace MR::GUI::MRView::Tool {
 constexpr float fovrate_multipler = 1.0e-2F;
 
 constexpr float min_opacity = 1.0e-3F;
-constexpr float opacity_exponent = -std::log(min_opacity) / 1000.0F;
+constexpr float opacity_exponent = 0.0069077552789821370521; // -std::log(min_opacity) / 1000.0F
 
 class ClipPlane {
 public:

@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/tracking/early_exit.h"
 
+#include <string>
+
 #include "file/config.h"
 
 namespace MR::DWI::Tractography::Tracking {
@@ -45,8 +47,8 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
 
   if ((num_seeds / default_type(max_num_seeds) > cease_testing_percentage) ||
       (num_tracks / default_type(max_num_tracks) > cease_testing_percentage)) {
-    DEBUG(std::string("tckgen early exit: No longer testing") +                                             //
-          " (tracking progressed beyond " + str<int>(std::round(100.0 * cease_testing_percentage)) + "%)"); //
+    DEBUG(std::string("tckgen early exit: No longer testing (tracking progressed beyond ") + //
+          str<int>(std::round(100.0 * cease_testing_percentage)) + "%)");                    //
     next_test = 0;
     return false;
   }
@@ -68,8 +70,8 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
   const default_type prob_hypothesis_prior = (max_num_tracks + 1.0) / (max_num_seeds + 1.0);
   const default_type prob_observation = (num_tracks + 1.0) / (num_seeds + 1.0);
   const default_type posterior = conditional * prob_hypothesis_prior / prob_observation;
-  DEBUG(std::string("tckgen early exit:") +                                      //
-        " Target " + str(max_num_tracks) + "/" + str(max_num_seeds) +            //
+  DEBUG(std::string("tckgen early exit: Target ") +                              //
+        str(max_num_tracks) + "/" + str(max_num_seeds) +                         //
         " (" + str(max_num_tracks / default_type(max_num_seeds), 3) + ")," +     //
         " current " + str(num_tracks) + "/" + str(num_seeds) +                   //
         " (" + str(num_tracks / default_type(num_seeds), 3) + ")," +             //

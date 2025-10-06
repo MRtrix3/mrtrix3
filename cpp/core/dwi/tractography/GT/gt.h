@@ -29,7 +29,7 @@
 namespace MR::DWI::Tractography::GT {
 
 constexpr double M_4PI = 4.0 * Math::pi;
-constexpr double M_sqrt4PI = std::sqrt(M_4PI);
+constexpr double M_sqrt4PI = 3.5449077018110320546;
 
 constexpr ssize_t iter_bigstep = 10000;
 constexpr default_type fraction_burnin = 0.1;

@@ -25,7 +25,7 @@
 using namespace MR;
 using namespace App;
 
-constexpr default_type default_reference_value = 1.0 / std::sqrt(4.0 * Math::pi);
+constexpr default_type default_reference_value = 0.28209479177387814347; // 1.0/sqrt(4pi)
 constexpr ssize_t default_main_iterations = 15;
 constexpr ssize_t default_balance_maxiterations = 7;
 constexpr ssize_t default_polynormial_order = 3;
