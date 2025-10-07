@@ -1284,6 +1284,7 @@ int main() { Foo f; }
       filetext += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
       if system == "darwin":
         filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
+        filetext += 'QMAKE_LIBS_OPENGL = -framework OpenGL\n'
 
       log ('\nproject file "qt.pro":\n---\n' + filetext + '---\n')
       with open (os.path.join (qt_dir.name, 'qt.pro'), 'w') as f:
