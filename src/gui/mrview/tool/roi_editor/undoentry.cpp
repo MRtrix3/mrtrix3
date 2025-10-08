@@ -43,16 +43,17 @@ namespace MR
               "  gl_Position = vec4 (vertpos,1);\n"
               "}\n");
           GL::Shader::Fragment fragment_shader (
-              "uniform isampler3D tex;\n"
-              "uniform ivec3 position;\n"
-              "uniform ivec2 axes;\n"
-              "layout (location = 0) out vec3 color0;\n"
-              "void main() {\n"
-              "  ivec3 pos = position;\n"
-              "  pos[axes.x] = int(gl_FragCoord.x);\n"
-              "  pos[axes.y] = int(gl_FragCoord.y);\n"
-              "  color0.r = texelFetch (tex, pos, 0).r;\n"
-              "}\n");
+            "uniform usampler3D tex;\n"
+            "uniform ivec3 position;\n"
+            "uniform ivec2 axes;\n"
+            "layout (location = 0) out float color0;\n"
+            "void main() {\n"
+            "  ivec3 pos = position;\n"
+            "  pos[axes.x] = int(gl_FragCoord.x);\n"
+            "  pos[axes.y] = int(gl_FragCoord.y);\n"
+            "  uint v = texelFetch(tex, pos, 0).r;\n"
+            "  color0 = (v > 0u) ? 1.0 : 0.0;\n"
+            "}\n");
 
           program.attach (vertex_shader);
           program.attach (fragment_shader);
@@ -238,7 +239,7 @@ namespace MR
           GL::Context::Grab context;
           GL::assert_context_is_current();
           roi.texture().bind();
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void*) (&after[0]));
           GL::assert_context_is_current();
         }
 
@@ -284,7 +285,7 @@ namespace MR
           GL::Context::Grab context;
           GL::assert_context_is_current();
           roi.texture().bind();
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void*) (&after[0]));
           GL::assert_context_is_current();
         }
 
@@ -319,7 +320,7 @@ namespace MR
           GL::Context::Grab context;
           GL::assert_context_is_current();
           roi.texture().bind();
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void*) (&after[0]));
           GL::assert_context_is_current();
         }
 
@@ -352,7 +353,7 @@ namespace MR
           GL::Context::Grab context;
           GL::assert_context_is_current();
           roi.texture().bind();
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void*) (&after[0]));
           GL::assert_context_is_current();
         }
 
@@ -409,7 +410,7 @@ namespace MR
           GL::Context::Grab context;
           GL::assert_context_is_current();
           roi.texture().bind();
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&before[0]));
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void*) (&before[0]));
           GL::assert_context_is_current();
         }
 
@@ -418,7 +419,7 @@ namespace MR
           GL::Context::Grab context;
           GL::assert_context_is_current();
           roi.texture().bind();
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void*) (&after[0]));
           GL::assert_context_is_current();
         }
 
@@ -428,7 +429,7 @@ namespace MR
           GL::assert_context_is_current();
           after = source.before;
           roi.texture().bind();
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void*) (&after[0]));
           GL::assert_context_is_current();
         }
 
