@@ -74,6 +74,10 @@ void usage ()
     "outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or "
     "thresholding is applied."
 
+  + "For Connectivity-based Fixel Enhancement, use of the -nonstationarity option for empirical non-stationarity correction "
+    "is generally discouraged, unless the data are of exceptionally high quality. The intrinsic non-stationarity correction "
+    "that is applied by default (i.e. if the -cfe_legacy option is not used) provides superior statistical power in most scenarios."
+
   + Math::Stats::GLM::column_ones_description;
 
   REFERENCES
