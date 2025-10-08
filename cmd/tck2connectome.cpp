@@ -39,7 +39,6 @@ using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Connectome;
 
 
-
 void usage ()
 {
 
@@ -47,6 +46,8 @@ void usage ()
 
   SYNOPSIS = "Generate a connectome matrix from a streamlines file and a node parcellation image";
 
+  DESCRIPTION
+  + MR::DWI::Tractography::Connectome::tck2nodes_description.c_str();
 
   EXAMPLES
   + Example ("Default usage",
@@ -112,7 +113,7 @@ void usage ()
                       "rather than a matrix of node-node connectivities");
 
   REFERENCES
-  + "If using the default streamline-parcel assignment mechanism (or -assignment_radial_search option): " // Internal
+  + "If using the default \"radial search\" streamline-parcel assignment mechanism: " // Internal
     "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
     "The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. "
     "NeuroImage, 2015, 104, 253-265"

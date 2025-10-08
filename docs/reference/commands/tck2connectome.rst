@@ -19,6 +19,11 @@ Usage
 -  *nodes_in*: the input node parcellation image
 -  *connectome_out*: the output .csv file containing edge weights
 
+Description
+-----------
+
+The default mechanism by which streamlines are ascribed to connectome parcels is the "radial search" algorithm as described in reference (Smith et al., 2015), with a default maximal search distance of 4mm. For each streamline endpoint, if there is no voxel with a non-zero parcel index whose centre is closer to the streamline endpoint than the maximal search distance, then that streamline endpoint will not be assigned to any parcel, and the streamline will be omitted from the connectome matrix (unless the -keep_unassigned option is specified). The maximal search distance can be modified using the -assignment_radial_search option, or an alternative algorithm can be activated using one of the other -assignment_* options.
+
 Example usages
 --------------
 
@@ -115,7 +120,7 @@ Standard options
 References
 ^^^^^^^^^^
 
-If using the default streamline-parcel assignment mechanism (or -assignment_radial_search option): Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265
+If using the default "radial search" streamline-parcel assignment mechanism: Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265
 
 If using -scale_invlength or -scale_invnodevol options: Hagmann, P.; Cammoun, L.; Gigandet, X.; Meuli, R.; Honey, C.; Wedeen, V. & Sporns, O. Mapping the Structural Core of Human Cerebral Cortex. PLoS Biology 6(7), e159
 
