@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,6 +42,9 @@ namespace MR
       void mesh2image (const Mesh& mesh_realspace, Image<float>& image)
       {
 
+        if (image.ndim() < 3)
+          throw Exception ("Template voxel grid for mesh2image operation must be at least 3D");
+
         // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
         enum vox_mesh_t { UNDEFINED, ON_MESH, PRELIM_OUTSIDE, PRELIM_INSIDE, FILL_TEMP, OUTSIDE, INSIDE };
 
@@ -83,6 +86,7 @@ namespace MR
           // Create some memory to work with:
           // Stores a flag for each voxel as encoded in enum vox_mesh_t
           Header H (image);
+          H.ndim() = 3;
           H.datatype() = DataType::UInt8;
           auto init_seg = Image<uint8_t>::scratch (H);
           for (auto l = Loop(init_seg) (init_seg); l; ++l)
@@ -227,7 +231,7 @@ namespace MR
             for (adj_voxel[2] = centre_voxel[2]-1; adj_voxel[2] <= centre_voxel[2]+1; ++adj_voxel[2]) {
               for (adj_voxel[1] = centre_voxel[1]-1; adj_voxel[1] <= centre_voxel[1]+1; ++adj_voxel[1]) {
                 for (adj_voxel[0] = centre_voxel[0]-1; adj_voxel[0] <= centre_voxel[0]+1; ++adj_voxel[0]) {
-                  if (!is_out_of_bounds (H, adj_voxel) && (adj_voxel - centre_voxel).any()) {
+                  if (!is_out_of_bounds (H, adj_voxel, 0, 3) && (adj_voxel - centre_voxel).any()) {
                     const Eigen::Vector3d offset (adj_voxel.cast<default_type>().matrix() - mesh.vert(i));
                     const default_type dp_normal = offset.dot (mesh.norm(i));
                     const default_type offset_on_plane = (offset - (mesh.norm(i) * dp_normal)).norm();

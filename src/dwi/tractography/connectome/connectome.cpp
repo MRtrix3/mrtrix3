@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,6 +36,19 @@ using namespace App;
 const char* modes[] = { "assignment_end_voxels", "assignment_radial_search", "assignment_reverse_search", "assignment_forward_search", "assignment_all_voxels", NULL };
 
 
+
+const std::string tck2nodes_description
+  = "The default mechanism by which streamlines are ascribed to connectome parcels"
+    " is the \"radial search\" algorithm as described in reference (Smith et al., 2015),"
+    " with a default maximal search distance of " + str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm."
+    " For each streamline endpoint,"
+    " if there is no voxel with a non-zero parcel index"
+    " whose centre is closer to the streamline endpoint than the maximal search distance,"
+    " then that streamline endpoint will not be assigned to any parcel,"
+    " and the streamline will be omitted from the connectome matrix"
+    " (unless the -keep_unassigned option is specified)."
+    " The maximal search distance can be modified using the -assignment_radial_search option,"
+    " or an alternative algorithm can be activated using one of the other -assignment_* options.";
 
 const OptionGroup AssignmentOptions = OptionGroup ("Structural connectome streamline assignment option")
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,12 +19,12 @@
 #include "command.h"
 #include "image.h"
 #include "memory.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
+#include "dwi/gradient.h"
 #include "math/math.h"
 #include "math/median.h"
-#include "dwi/gradient.h"
+#include "metadata/phase_encoding.h"
 
 #include <limits>
 
@@ -381,7 +381,7 @@ void run ()
         DWI::stash_DW_scheme (header_out, DW_scheme);
       } catch (...) { }
       DWI::clear_DW_scheme (header_out);
-      PhaseEncoding::clear_scheme (header_out);
+      Metadata::PhaseEncoding::clear_scheme (header_out.keyval());
     }
 
     header_out.datatype() = DataType::from_command_line (DataType::Float32);
@@ -434,7 +434,7 @@ void run ()
       headers_in[i] = Header::open (path);
       const Header& temp (headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
+        throw Exception ("Image " + path + " has fewer axes than first input image " + header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
           throw Exception ("Dimensions of image " + path + " do not match those of first input image " + header.name());
@@ -443,7 +443,7 @@ void run ()
         if (temp.size(axis) != 1)
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
-      header.merge_keyval (temp);
+      header.merge_keyval (temp.keyval());
     }
 
     // Instantiate a kernel depending on the operation requested

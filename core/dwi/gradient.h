@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,13 +19,15 @@
 
 #include "app.h"
 #include "header.h"
-#include "dwi/shells.h"
+#include "types.h"
 #include "file/config.h"
 #include "file/path.h"
 #include "math/condition_number.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 
+
+#define DWI_BZERO_THRESHOLD_DEFAULT 10.0
 
 namespace MR
 {
@@ -40,6 +42,7 @@ namespace MR
     extern App::Option bvalue_scaling_option;
     extern const char* const bvalue_scaling_description;
 
+    default_type bzero_threshold ();
 
 
     //! check that the DW scheme matches the DWI data in \a header
@@ -168,6 +171,64 @@ namespace MR
         }
       }
 
+    //! store the DW gradient encoding matrix in a KeyValues structure
+    /*! this will store the DW gradient encoding matrix under the key 'dw_scheme'.
+     */
+    template <class MatrixType>
+      void set_DW_scheme (KeyValues& keyval, const MatrixType& G)
+      {
+        if (!G.rows()) {
+          auto it = keyval.find ("dw_scheme");
+          if (it != keyval.end())
+            keyval.erase (it);
+          return;
+        }
+        keyval["dw_scheme"] = scheme2str (G);
+      }
+
+    template <class MatrixType1, class MatrixType2>
+      Eigen::MatrixXd resolve_DW_scheme (const MatrixType1& one, const MatrixType2& two)
+      {
+        if (one.rows() != two.rows())
+          throw Exception ("Unequal numbers of rows between gradient tables");
+        if (one.cols() != two.cols())
+          throw Exception ("Unequal numbers of rows between gradient tables");
+        Eigen::MatrixXd result (one.rows(), one.cols());
+        // Don't know how to intellegently combine data beyond four columns;
+        //   therefore don't proceed if such data are present and are not precisely equivalent
+        if (one.cols() > 4) {
+          if (one.rightCols(one.cols()-4) != two.rightCols(two.cols()-4))
+            throw Exception ("Unequal dw_scheme contents beyond standard four columns");
+          result.rightCols(one.cols()-4) = one.rightCols(one.cols()-4);
+        }
+        for (ssize_t rowindex = 0; rowindex != one.rows(); ++rowindex) {
+          auto one_dir = one.template block<1,3>(rowindex, 0);
+          auto two_dir = two.template block<1,3>(rowindex, 0);
+          const default_type one_bvalue = one(rowindex, 3);
+          const default_type two_bvalue = two(rowindex, 3);
+          const bool is_bzero = std::max(one_bvalue, two_bvalue) <= bzero_threshold();
+          if (one_dir == two_dir) {
+            result.block<1,3>(rowindex, 0) = one_dir;
+          } else {
+            const Eigen::Vector3d mean_dir = (one_dir + two_dir).normalized();
+            if (!is_bzero && mean_dir.dot (one_dir) < 1.0 - 1e-3) {
+              throw Exception("Diffusion vector directions not equal within permissible imprecision "
+                              "(row " + str(rowindex) + ": " + str(one_dir.transpose()) + " <--> " + str(two_dir.transpose())
+                              + "; dot product " + str(mean_dir.dot(one_dir)) + ")");
+            }
+            result.block<1,3>(rowindex, 0) = mean_dir;
+          }
+          if (one_bvalue == two_bvalue) {
+            result(rowindex, 3) = one_bvalue;
+          } else if (is_bzero || abs(one_bvalue - two_bvalue) <= 1.0) {
+            result(rowindex, 3) = 0.5 * (one_bvalue + two_bvalue);
+          } else {
+            throw Exception("Diffusion gradient table b-values not equivalent");
+          }
+        }
+        return result;
+      }
+
 
 
     //! parse the DW gradient encoding matrix from a header
@@ -196,6 +257,7 @@ namespace MR
 
     //! clear any DW gradient encoding scheme from the header
     void clear_DW_scheme (Header&);
+    void clear_DW_scheme (KeyValues&);
 
 
 

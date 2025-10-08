@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -71,7 +71,7 @@ namespace MR
                 Eigen::Array3f c5 (-71.31942824499214, 32.62606426397723, 73.20951985803202);
                 Eigen::Array3f c6 (25.13112622477341, -12.24266895238567, -23.07032500287172);  
                 Eigen::Array3f rgb = c0 + amplitude*(c1 + amplitude*(c2 + amplitude*(c3 + amplitude*(c4 + amplitude*(c5 + amplitude*c6)))));
-                rgb = rgb.max(0.0).min(1.0);
+                rgb = rgb.max(0.0F).min(1.0F);
                 return rgb;
               }),
           
@@ -93,7 +93,7 @@ namespace MR
                 Eigen::Array3f c5 (4.776384997670288, -13.74514537774601, -65.35303263337234);
                 Eigen::Array3f c6 (-5.435455855934631, 4.645852612178535, 26.3124352495832);
                 Eigen::Array3f rgb = c0 + amplitude*(c1 + amplitude*(c2 + amplitude*(c3 + amplitude*(c4 + amplitude*(c5 + amplitude*c6)))));
-                rgb = rgb.max(0.0).min(1.0);
+                rgb = rgb.max(0.0F).min(1.0F);
                 return rgb;
               }),
 

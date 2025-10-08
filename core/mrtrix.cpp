@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -118,13 +118,13 @@ namespace MR
       // If the first string contains '?', or current characters
       // of both strings match
       if (*first == '?' || *first == *second)
-        return match(first+1, second+1);
+        return __match(first+1, second+1);
 
       // If there is *, then there are two possibilities
       // a) We consider current character of second string
       // b) We ignore current character of second string.
       if (*first == '*')
-        return match(first+1, second) || match(first, second+1);
+        return __match(first+1, second) || __match(first, second+1);
 
       return false;
     }

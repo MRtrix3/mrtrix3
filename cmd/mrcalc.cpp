@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -182,7 +182,6 @@ UNARY_OP (atanh, "atanh (%1)", NORMAL, "inverse hyperbolic tangent", { return st
 #include "command.h"
 #include "image.h"
 #include "memory.h"
-#include "phase_encoding.h"
 #include "math/rng.h"
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
@@ -249,7 +248,17 @@ EXAMPLES
              "This applies the spherical harmonic basis scaling factor: "
              "1.0/sqrt(4*pi), such that a single-tissue voxel containing the "
              "same intensities as the response function of that tissue "
-             "should contain the value 1.0.");
+             "should contain the value 1.0.")
+
+  + Example ("Produce a complex datatype image from Siemens magnitude & phase series",
+             "mrcalc DWI_MAG/ DWI_PHASE/ pi 4096 -div -mult -polar dwi_complex.mif",
+             "Phase images from Siemens scanners are typically not provided in Radians units, "
+             "but rather contain values in the range [-4096, +4094]. "
+             "This command usage pre-multiplies these phase values by (pi/4096) "
+             "to get them into units of Radians, "
+             "prior to using the -polar option "
+             "that combines magnitude & phase components at its input "
+             "to produce complex data.");
 
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
@@ -731,7 +740,7 @@ void get_header (const StackEntry& entry, Header& header)
       header.spacing(n) = entry.image->spacing(n);
   }
 
-  header.merge_keyval (*entry.image);
+  header.merge_keyval (entry.image->keyval());
 }
 
 

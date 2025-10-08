@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #ifndef __dwi_tractography_connectome_connectome_h__
 #define __dwi_tractography_connectome_connectome_h__
 
+#include <string>
 
 #include "app.h"
 #include "image.h"
@@ -46,6 +47,7 @@ class Metric;
 
 
 extern const char* modes[];
+extern const std::string tck2nodes_description;
 extern const App::OptionGroup AssignmentOptions;
 Tck2nodes_base* load_assignment_mode (Image<node_t>&);
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2025 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,9 @@
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
+#include "types.h"
 #include "algo/threaded_loop.h"
+#include "metadata/bids.h"
 #include <numeric>
 
 using namespace MR;
@@ -208,15 +210,15 @@ class ComputeSlice
         const int numlines = eig.cols();
         shifted.resize (n, 2*nsh+1);
 
-        int shifts [2*nsh+1];
+        vector<int> shifts(2*nsh+1);
         shifts[0] = 0;
         for (int j = 0; j < nsh; j++) {
           shifts[j+1] = j+1;
           shifts[1+nsh+j] = -(j+1);
         }
 
-        double TV1arr[2*nsh+1];
-        double TV2arr[2*nsh+1];
+        vector<double> TV1arr(2*nsh+1);
+        vector<double> TV2arr(2*nsh+1);
 
         for (int k = 0; k < numlines; k++) {
           shifted.col(0) = eig.col(k);
@@ -337,7 +339,7 @@ void run ()
   auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     try {
-      const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+      const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot = Metadata::BIDS::axisid2vector (slice_encoding_it->second);
       vector<size_t> auto_slice_axes = { 0, 0 };
       if (slice_encoding_axis_onehot[0])
         auto_slice_axes = { 1, 2 };
