@@ -24,9 +24,10 @@
 #include "gui/opengl/lighting.h"
 #include "gui/mrview/mode/base.h"
 
-
+#include <cstdint>
 
 const size_t MAX_BUFFER_SIZE = 2796200;  // number of points to fill 32MB
+constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFu; // Primitive restart index for UNSIGNED_INT
 
 namespace MR
 {
@@ -399,6 +400,8 @@ namespace MR
             gl::DeleteBuffers (intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
           if (threshold_scalar_buffers.size())
             gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
+          if (!element_buffers.empty())
+            gl::DeleteBuffers(element_buffers.size(), &element_buffers[0]);
           GL::assert_context_is_current();
         }
 
@@ -566,8 +569,15 @@ namespace MR
 
             auto mode = geometry_type == TrackGeometryType::Points ? gl::POINTS : gl::LINE_STRIP;
 
-            gl::MultiDrawArrays (mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
-
+            if(mode == gl::POINTS) {
+              gl::MultiDrawArrays(mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+            } else if (element_counts[buf] > 0 && element_buffers[buf] != 0) {
+              // Use the EBO stored with this VAO to render all tracks in this chunk
+              gl::Enable(gl::PRIMITIVE_RESTART);
+              gl::PrimitiveRestartIndex(PRIMITIVE_RESTART_SENTINEL);
+              gl::DrawElements(gl::LINE_STRIP, element_counts[buf], gl::UNSIGNED_INT, nullptr);
+              gl::Disable(gl::PRIMITIVE_RESTART);
+            }
           }
 
           vao_dirty = false;
@@ -986,6 +996,32 @@ namespace MR
           original_track_starts.push_back (starts);
           original_track_sizes.push_back (sizes);
           num_tracks_per_buffer.push_back (tck_count);
+
+          // Build an index buffer for this chunk of tracks
+          vector<uint32_t> chunk_indices;
+          for (size_t t = 0; t < sizes.size(); ++t) {
+            const GLint start = starts[t];
+            const GLint n     = sizes[t];
+            if (n < 2) continue;
+            for (GLint k = 0; k < n; ++k)
+              chunk_indices.push_back(static_cast<uint32_t>(start + k));
+            chunk_indices.push_back(PRIMITIVE_RESTART_SENTINEL);
+          }
+
+          if (!chunk_indices.empty()) {
+            GLuint ebo = 0;
+            gl::GenBuffers(1, &ebo);
+            // bind to the VAO so that ELEMENT_ARRAY_BUFFER is part of VAO state
+            gl::BindVertexArray(vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+            gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, chunk_indices.size() * sizeof(uint32_t), chunk_indices.data(), gl::STATIC_DRAW);
+            element_buffers.push_back(ebo);
+            element_counts.push_back(static_cast<GLsizei>(chunk_indices.size()));
+          } else {
+            // keep arrays aligned with other per-chunk vectors
+            element_buffers.push_back(0);
+            element_counts.push_back(0);
+          }
 
           buffer.clear();
           starts.clear();

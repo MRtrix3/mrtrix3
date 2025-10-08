@@ -18,6 +18,7 @@
 #define __gui_mrview_tool_fixel_fixelimage_h__
 
 #include <unordered_map>
+#include <cstdint>
 
 #include "header.h"
 #include "image.h"
@@ -264,6 +265,7 @@ namespace MR
               vector<float> regular_grid_buffer_val;
               vector<float> regular_grid_buffer_threshold;
 
+              // If slice_fixel* are modified, rebuild_element_index_buffer() must be called
               vector<vector<vector<GLint> > > slice_fixel_indices;
               vector<vector<vector<GLsizei> > > slice_fixel_sizes;
               vector<vector<GLsizei> > slice_fixel_counts;
@@ -282,6 +284,8 @@ namespace MR
               bool value_buffer_dirty;
               bool threshold_buffer_dirty;
               bool dir_buffer_dirty;
+              bool element_indices_dirty = false;
+              void rebuild_element_index_buffer();
 
             private:
               Fixel& fixel_tool;
@@ -290,6 +294,7 @@ namespace MR
               GL::VertexBuffer colour_buffer;
               GL::VertexBuffer value_buffer;
               GL::VertexBuffer threshold_buffer;
+              GL::VertexBuffer element_index_buffer;
               GL::VertexArrayObject vertex_array_object;
 
               GL::VertexArrayObject regular_grid_vao;
@@ -298,6 +303,9 @@ namespace MR
               GL::VertexBuffer regular_grid_colour_buffer;
               GL::VertexBuffer regular_grid_val_buffer;
               GL::VertexBuffer regular_grid_threshold_buffer;
+
+              // Index buffer for rendering slabs
+              vector<uint32_t> element_indices;
 
               float voxel_size_length_multipler;
               float user_line_length_multiplier;
