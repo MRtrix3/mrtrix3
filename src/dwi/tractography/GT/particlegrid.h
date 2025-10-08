@@ -78,6 +78,7 @@ namespace MR {
           Math::RNG rng;
           transform_type T_s2g;
           size_t dims[3];
+          default_type grid_spacing;
 
 
           inline size_t pos2idx(const Point_t& pos) const
@@ -102,6 +103,10 @@ namespace MR {
             x = Math::round<size_t>(gpos[0]);
             y = Math::round<size_t>(gpos[1]);
             z = Math::round<size_t>(gpos[2]);
+          }
+
+          inline default_type spacing () {
+            return grid_spacing;
           }
 
         protected:

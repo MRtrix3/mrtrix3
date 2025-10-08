@@ -27,7 +27,7 @@ namespace MR {
           DEBUG("Initialise particle grid.");
           // define (isotropic) grid spacing
           default_type vox = std::min({H.spacing(0), H.spacing(1), H.spacing(2)});
-          default_type grid_spacing = std::max(2.0 * Particle::L, vox);
+          grid_spacing = std::max(2.0 * Particle::L, vox);
 
           // set grid dimensions
           dims[0] = Math::ceil<size_t>( (H.size(0)-1) * H.spacing(0) / grid_spacing ) + 1;
