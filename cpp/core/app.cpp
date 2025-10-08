@@ -115,8 +115,8 @@ bool fail_on_warn = false;
 bool terminal_use_colour = true;
 const std::thread::id main_thread_ID = std::this_thread::get_id();
 
-const char *project_version = nullptr;
-const char *project_build_date = nullptr;
+const std::string project_version;
+const std::string project_build_date;
 
 std::vector<std::string> raw_arguments_list;
 
@@ -186,68 +186,46 @@ std::string underline(const std::string &text, bool ignore_whitespace = false) {
 
 } // namespace
 
-const char *argtype_description(ArgType type) {
-  switch (type) {
-  case Boolean:
-    return ("boolean");
-  case Integer:
-    return ("integer");
-  case Float:
-    return ("float");
-  case Text:
-    return ("string");
-  case ArgFileIn:
-    return ("file in");
-  case ArgFileOut:
-    return ("file out");
-  case ArgDirectoryIn:
-    return ("directory in");
-  case ArgDirectoryOut:
-    return ("directory out");
-  case ImageIn:
-    return ("image in");
-  case ImageOut:
-    return ("image out");
-  case Choice:
-    return ("choice");
-  case IntSeq:
-    return ("int seq");
-  case FloatSeq:
-    return ("float seq");
-  case TracksIn:
-    return ("tracks in");
-  case TracksOut:
-    return ("tracks out");
-  case Various:
-    return ("various");
-  default:
-    return ("undefined");
-  }
-}
+const std::unordered_map<ArgType, std::string> argtype_descriptions{{Boolean, "boolean"},
+                                                                    {Integer, "integer"},
+                                                                    {Float, "float"},
+                                                                    {Text, "string"},
+                                                                    {ArgFileIn, "file in"},
+                                                                    {ArgFileOut, "file out"},
+                                                                    {ArgDirectoryIn, "directory in"},
+                                                                    {ArgDirectoryOut, "directory out"},
+                                                                    {ImageIn, "image in"},
+                                                                    {ImageOut, "image out"},
+                                                                    {Choice, "choice"},
+                                                                    {IntSeq, "int seq"},
+                                                                    {FloatSeq, "float seq"},
+                                                                    {TracksIn, "tracks in"},
+                                                                    {TracksOut, "tracks out"},
+                                                                    {Various, "various"}};
 
 std::string help_head(int format) {
   if (!format) {
     return std::string(NAME) + ": " +
-           (project_version ? std::string("external MRtrix3 project, version ") + project_version +
-                                  "\nbuilt against MRtrix3 version " + mrtrix_version
-                            : std::string("part of the MRtrix3 package, version ") + mrtrix_version) +
+           (project_version.empty() ? ("part of the MRtrix3 package, version " + mrtrix_version)
+                                    : "external MRtrix3 project, version " + project_version +
+                                          "\nbuilt against MRtrix3 version " + mrtrix_version) +
            "\n\n";
   }
 
-  std::string version_string =
-      project_version ? std::string("Version ") + project_version : std::string("MRtrix ") + mrtrix_version;
+  const std::string version_string =
+      project_version.empty() ? std::string("MRtrix ") : ("Version " + project_version) + mrtrix_version;
 
-  std::string date(project_version ? project_build_date : build_date);
+  const std::string date(project_version.empty() ? build_date : project_build_date);
 
   std::string topline =
       version_string + std::string(std::max(1, 40 - size(version_string) - size(App::NAME) / 2), ' ') + bold(App::NAME);
   topline += std::string(80 - size(topline) - size(date), ' ') + date;
 
-  if (project_version)
+  if (!project_version.empty())
     topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
 
   return topline + "\n\n     " + bold(NAME) + ": " +
-         (project_version ? "external MRtrix3 project" : "part of the MRtrix3 package") + "\n\n";
+         (project_version.empty() ? "part of the MRtrix3 package" : "external MRtrix3 project") + "\n\n";
 }
 
 std::string help_synopsis(int format) {
@@ -296,14 +274,19 @@ std::string usage_syntax(int format) {
   return s + "\n\n";
 }
 
-Description &Description::operator+(const char *text) {
+Description &Description::operator+(const char *text) { // check_syntax off
+  push_back(std::string(text));
+  return *this;
+}
+
+Description &Description::operator+(const std::string &text) {
   push_back(text);
   return *this;
 }
 
-Description &Description::operator+(const char *const text[]) {
-  for (const char *const *p = text; *p != nullptr; ++p)
-    push_back(*p);
+Description &Description::operator+(const char *const text[]) { // check_syntax off
+  for (const char *const *p = text; *p != nullptr; ++p)         // check_syntax off
+    push_back(std::string(*p));
   return *this;
 }
 
@@ -575,9 +558,9 @@ void print_help() {
 #endif
 
 std::string version_string() {
-  std::string version = "== " + App::NAME + " " + (project_version ? project_version : mrtrix_version) + " ==\n" +
-                        str(8 * sizeof(size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date +
-                        (project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("")) +
+  std::string version = "== " + App::NAME + " " + (project_version.empty() ? mrtrix_version : project_version) +
+                        " ==\n" + str(8 * sizeof(size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date +
+                        (project_version.empty() ? std::string("") : " against MRtrix " + mrtrix_version) +
                         ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." +
                         str(EIGEN_MINOR_VERSION) +
                         "\n"
@@ -1010,7 +993,7 @@ void parse() {
         for (const auto &og : OPTIONS) {
           for (const auto &o : og) {
             if (std::string(a) == std::string(o.id))
-              potential_options.push_back("'-" + a + "'");
+              potential_options.push_back("'-" + std::string(a) + "'");
           }
         }
       }
@@ -1137,7 +1120,7 @@ void parse() {
   SignalHandler::init();
 }
 
-void init(int cmdline_argc, const char *const *cmdline_argv) {
+void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax off
 #ifdef MRTRIX_WINDOWS
   // force stderr to be unbuffered, and stdout to be line-buffered:
   setvbuf(stderr, nullptr, _IONBF, 0);
@@ -1182,7 +1165,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
   for (const auto &a : raw_arguments_list)
     command_history_string += std::string(" ") + argv_quoted(a);
   command_history_string += std::string("  (version=") + mrtrix_version;
-  if (project_version)
+  if (!project_version.empty())
     command_history_string += std::string(", project=") + project_version;
   command_history_string += ")";
 
@@ -1402,12 +1385,12 @@ ParsedArgument ParsedOption::operator[](size_t num) const {
   return ParsedArgument(opt, &(*opt)[num], args[num], index + num + 1);
 }
 
-bool ParsedOption::operator==(const char *match) const {
+bool ParsedOption::operator==(std::string_view match) const {
   const std::string name = lowercase(match);
   return name == opt->id;
 }
 
-std::string operator+(const char *left, const ParsedArgument &right) {
+std::string operator+(const char *const left, const ParsedArgument &right) { // check_syntax off
   std::string retval(left);
   retval += std::string(right);
   return retval;

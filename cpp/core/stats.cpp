@@ -56,9 +56,9 @@ void Stats::operator()(complex_type val) {
     count++;
     // Welford's online algorithm for variance calculation:
     delta = val - mean;
-    mean += cdouble(delta.real() / static_cast<double>(count), delta.imag() / static_cast<double>(count));
+    mean += cdouble{delta.real() / static_cast<double>(count), delta.imag() / static_cast<double>(count)};
     delta2 = val - mean;
-    m2 += cdouble(delta.real() * delta2.real(), delta.imag() * delta2.imag());
+    m2 += cdouble{delta.real() * delta2.real(), delta.imag() * delta2.imag()};
     if (!is_complex)
       values.push_back(static_cast<value_type>(val.real()));
   }

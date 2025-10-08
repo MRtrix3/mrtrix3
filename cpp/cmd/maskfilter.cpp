@@ -172,7 +172,7 @@ void run() {
     Filter::Dilate filter(input_image, std::string("applying dilate filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
-      filter.set_npass(int(opt[0][0]));
+      filter.set_npass(static_cast<unsigned int>(opt[0][0]));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
@@ -186,7 +186,7 @@ void run() {
     Filter::Erode filter(input_image, std::string("applying erode filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
-      filter.set_npass(int(opt[0][0]));
+      filter.set_npass(static_cast<unsigned int>(opt[0][0]));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;

@@ -74,7 +74,7 @@ public:
     scale = new_scale;
     update();
   }
-  void reset_scale() { set_scale(NaN); }
+  void reset_scale() { set_scale(NaNF); }
   void reset_view();
   void set_lmax(int lmax) {
     assert(mode == mode_t::SH);

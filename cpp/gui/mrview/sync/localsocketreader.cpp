@@ -42,10 +42,8 @@ void LocalSocketReader::OnDataReceived() {
     }
 
     // Read the size of the message that follows
-    char fourByteHeader[4];
-    socket->read(fourByteHeader, 4);
-    unsigned int sizeOfMessage;
-    memcpy(&sizeOfMessage, fourByteHeader, 4);
+    int32_t sizeOfMessage(0);
+    socket->read(reinterpret_cast<char *>(&sizeOfMessage), 4);
 
     // Wait until all data is delivered
     loops = 0;
@@ -59,10 +57,10 @@ void LocalSocketReader::OnDataReceived() {
     }
 
     // Read delivered data
-    char read[sizeOfMessage];
-    socket->read(read, sizeOfMessage);
+    std::string read(sizeOfMessage, '\0');
+    socket->read(&read[0], sizeOfMessage);
     std::shared_ptr<QByteArray> readData = std::shared_ptr<QByteArray>(new QByteArray());
-    readData->insert(0, read, sizeOfMessage);
+    readData->insert(0, &read[0], sizeOfMessage);
 
     // save message
     messagesReceived.emplace_back(readData);

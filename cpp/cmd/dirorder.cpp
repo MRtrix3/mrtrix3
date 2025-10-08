@@ -69,7 +69,7 @@ optimise(const Eigen::MatrixXd &directions, const index_type preserve, const siz
   indices.push_back(first_volume);
   std::vector<index_type> remaining;
   remaining.reserve(directions.rows() - preserve);
-  for (index_type n = preserve; n < index_type(directions.rows()); ++n)
+  for (index_type n = preserve; n < static_cast<index_type>(directions.rows()); ++n)
     if (n != first_volume)
       remaining.push_back(n);
 
@@ -124,8 +124,8 @@ void run() {
 
   const index_type preserve = get_option_value<index_type>("preserve", 0);
 
-  index_type last_candidate_first_volume = index_type(directions.rows());
-  if (size_t(directions.rows()) <= Math::SH::NforL(2)) {
+  index_type last_candidate_first_volume = static_cast<index_type>(directions.rows());
+  if (static_cast<size_t>(directions.rows()) <= Math::SH::NforL(2)) {
     // clang-format off
     WARN("Very few directions in input (" + str(directions.rows()) + ";" +
          " selection of first direction cannot be optimised" +

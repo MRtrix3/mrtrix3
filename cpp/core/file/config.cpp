@@ -36,12 +36,12 @@ const std::string Config::default_sys_config_file("/etc/" + file_basename);
 // ENVVAR the software to have different configurations, etc.
 
 void Config::init() {
-  const char *sysconf_location = getenv("MRTRIX_CONFIGFILE");
-  if (!sysconf_location)
-    sysconf_location = default_sys_config_file.c_str();
+  const char *sysconf_location_env = getenv("MRTRIX_CONFIGFILE"); // check_syntax off
+  const std::string sysconf_location(sysconf_location_env == nullptr ? default_sys_config_file
+                                                                     : std::string(sysconf_location_env));
 
   if (Path::is_file(sysconf_location)) {
-    INFO(std::string("reading config file \"") + sysconf_location + "\"...");
+    INFO("reading config file \"" + sysconf_location + "\"...");
     try {
       KeyValue::Reader kv(sysconf_location);
       while (kv.next()) {
@@ -50,7 +50,7 @@ void Config::init() {
     } catch (...) {
     }
   } else {
-    DEBUG(std::string("No config file found at \"") + sysconf_location + "\"");
+    DEBUG("No config file found at \"" + sysconf_location + "\"");
   }
 
   std::string path = Path::join(Path::home(), "." + file_basename);

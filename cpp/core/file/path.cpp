@@ -97,7 +97,7 @@ bool has_suffix(const std::string &name, const std::vector<std::string> &suffix_
 }
 
 bool is_mrtrix_image(const std::string &name) {
-  return strcmp(name.c_str(), std::string("-").c_str()) == 0 || Path::has_suffix(name, {".mif", ".mih", ".mif.gz"});
+  return name == "-" || Path::has_suffix(name, {".mif", ".mih", ".mif.gz"});
 }
 
 char delimiter(const std::string &filename) {
@@ -124,7 +124,7 @@ std::string cwd() {
 }
 
 std::string home() {
-  const char *home = getenv(home_env.c_str());
+  const char *home = getenv(home_env.c_str()); // check_syntax off
   if (!home)
     throw Exception(home_env + " environment variable is not set!");
   return home;

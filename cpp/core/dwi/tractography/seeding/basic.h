@@ -36,8 +36,8 @@ public:
     if (F.size() != 4)
       throw Exception("Could not parse seed \"" + in +
                       "\" as a spherical seed point; needs to be 4 comma-separated values (XYZ position, then radius)");
-    pos = {float(F[0]), float(F[1]), float(F[2])};
-    rad = F[3];
+    pos = {static_cast<float>(F[0]), static_cast<float>(F[1]), static_cast<float>(F[2])};
+    rad = static_cast<float>(F[3]);
     volume = 4.0 * Math::pi * Math::pow3(rad) / 3.0;
   }
 

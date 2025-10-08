@@ -161,7 +161,9 @@ template <typename T> struct container_cast : public T {
 using default_type = double;
 
 constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
+constexpr float NaNF = std::numeric_limits<float>::quiet_NaN();
 constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
+constexpr float InfF = std::numeric_limits<float>::infinity();
 
 //! the type for the affine transform of an image:
 using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
@@ -188,6 +190,9 @@ inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is
 template <typename X>
 inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value, X>::type
 abs(X x) {
+  return std::abs(x);
+}
+template <typename X> inline constexpr typename std::enable_if<is_complex<X>::value, X>::type abs(X x) {
   return std::abs(x);
 }
 } // namespace MR

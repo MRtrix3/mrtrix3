@@ -20,6 +20,7 @@
 #include <limits>
 #include <string>
 #include <thread>
+#include <unordered_map>
 
 #ifdef None
 #undef None
@@ -48,10 +49,10 @@ extern const std::thread::id main_thread_ID;
 
 extern std::vector<std::string> raw_arguments_list;
 
-extern const char *project_version;
-extern const char *project_build_date;
+extern const std::string project_version;
+extern const std::string project_build_date;
 
-const char *argtype_description(ArgType type);
+extern const std::unordered_map<ArgType, std::string> argtype_descriptions;
 
 struct HelpFormatting {
   struct Indents {
@@ -80,11 +81,11 @@ std::string usage_syntax(int format);
 // @{
 
 //! vector of strings to hold more comprehensive command description
-class Description : public std::vector<const char *> {
+class Description : public std::vector<std::string> {
 public:
-  Description &operator+(const char *text);
-
-  Description &operator+(const char *const text[]);
+  Description &operator+(const char *text); // check_syntax off
+  Description &operator+(const std::string &text);
+  Description &operator+(const char *const text[]); // check_syntax off
 
   std::string syntax(int format) const;
 };
@@ -135,7 +136,7 @@ void check_overwrite(const std::string &name);
 /*! this function must be called from within main(), immediately after the
  * argument and options have been specified, and before any further
  * processing takes place. */
-void init(int argc, const char *const *argv);
+void init(int argc, const char *const *argv); // check_syntax off
 
 //! verify that command's usage() function has set requisite fields [used internally]
 void verify_usage();
@@ -157,12 +158,14 @@ std::string full_usage();
 
 class ParsedArgument {
 public:
+  using IntType = int64_t; // Native single-integer parsed type before conversion
+
   operator std::string() const { return p; }
 
   const std::string &as_text() const { return p; }
   bool as_bool() const { return to<bool>(p); }
   int64_t as_int() const;
-  uint64_t as_uint() const { return uint64_t(as_int()); }
+  uint64_t as_uint() const { return static_cast<uint64_t>(as_int()); }
   default_type as_float() const;
 
   std::vector<int32_t> as_sequence_int() const;
@@ -184,7 +187,7 @@ public:
   operator std::vector<uint32_t>() const { return as_sequence_uint(); }
   operator std::vector<default_type>() const { return as_sequence_float(); }
 
-  const char *c_str() const { return p.c_str(); }
+  const char *c_str() const { return p.c_str(); } // check_syntax off
 
   //! the index of this argument in the raw command-line arguments list
   size_t index() const { return index_; }
@@ -201,7 +204,7 @@ private:
 
   friend class ParsedOption;
   friend class Options;
-  friend void MR::App::init(int argc, const char *const *argv);
+  friend void MR::App::init(int argc, const char *const *argv); // check_syntax off
   friend void MR::App::parse();
   friend void MR::App::sort_arguments(const std::vector<std::string> &arguments);
 };
@@ -223,7 +226,7 @@ public:
   ParsedArgument operator[](size_t num) const;
 
   //! check whether this option matches the name supplied
-  bool operator==(const char *match) const;
+  bool operator==(std::string_view match) const;
 };
 
 //! the list of arguments parsed from the command-line
@@ -369,7 +372,7 @@ template <typename T> inline T get_option_value(const std::string &name, const T
 }
 
 //! convenience function provided mostly to ease writing Exception strings
-std::string operator+(const char *left, const App::ParsedArgument &right);
+std::string operator+(const char *const left, const App::ParsedArgument &right); // check_syntax off
 
 std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument &arg);
 

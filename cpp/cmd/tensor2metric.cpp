@@ -240,7 +240,7 @@ public:
       ith_eig[1] = 1;
       ith_eig[2] = 2;
       std::sort(std::begin(ith_eig), std::end(ith_eig), [&eigval](size_t a, size_t b) {
-        return abs(eigval[a]) > abs(eigval[b]);
+        return std::fabs(eigval[a]) > std::fabs(eigval[b]);
       });
     }
 

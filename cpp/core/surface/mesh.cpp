@@ -290,17 +290,17 @@ void Mesh::load_stl(const std::string &path) {
 
   bool warn_right_hand_rule = false, warn_nonstandard_normals = false;
 
-  char init[6];
-  in.get(init, 6);
-  init[5] = '\0';
+  std::string init(7, '\0');
+  in.get(&init[0], 6);
+  init.resize(init.find('\0'));
 
-  if (strncmp(init, "solid", 5)) {
+  if (!(init.size() >= 5 && init.substr(5) == "solid")) {
 
     // File is stored as binary
     in.close();
     in.open(path.c_str(), std::ios_base::in | std::ios_base::binary);
-    char header[80];
-    in.read(header, 80);
+    std::string header(80, '\0');
+    in.read(&header[0], 80);
 
     uint32_t count;
     in.read(reinterpret_cast<char *>(&count), sizeof(uint32_t));
@@ -313,19 +313,20 @@ void Mesh::load_stl(const std::string &path) {
     while (in.read(reinterpret_cast<char *>(normal.data()), 3 * sizeof(float))) {
       for (size_t index = 0; index != 3; ++index) {
         if (!in.read(reinterpret_cast<char *>(vertex.data()), 3 * sizeof(float)))
-          throw Exception("Error in parsing STL file");
+          throw Exception("Error in parsing binary STL file");
         vertices.push_back(vertex.cast<default_type>());
       }
       in.read(reinterpret_cast<char *>(&attribute_byte_count), sizeof(uint16_t));
       if (attribute_byte_count)
         warn_attribute = true;
 
-      triangles.push_back(std::vector<uint32_t>{
-          uint32_t(vertices.size() - 3), uint32_t(vertices.size() - 2), uint32_t(vertices.size() - 1)});
+      triangles.push_back(std::vector<uint32_t>{static_cast<uint32_t>(vertices.size() - 3),
+                                                static_cast<uint32_t>(vertices.size() - 2),
+                                                static_cast<uint32_t>(vertices.size() - 1)});
       const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
       if (computed_normal.dot(normal.cast<default_type>()) < 0.0)
         warn_right_hand_rule = true;
-      if (abs(computed_normal.dot(normal.cast<default_type>())) < 0.99)
+      if (std::fabs(computed_normal.dot(normal.cast<default_type>())) < 0.99)
         warn_nonstandard_normals = true;
     }
     if (triangles.size() != count)
@@ -345,73 +346,77 @@ void Mesh::load_stl(const std::string &path) {
     std::string line;
     size_t vertex_index = 0;
     bool inside_solid = true, inside_facet = false, inside_loop = false;
-    while (std::getline(in, line)) {
-      // Strip leading whitespace
-      line = line.substr(line.find_first_not_of(' '), line.npos);
-      if (line.substr(0, 12) == "facet normal") {
-        if (!inside_solid)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": facet outside solid");
-        if (inside_facet)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": nested facets");
-        inside_facet = true;
-        line = line.substr(12);
-        sscanf(line.c_str(), "%lf %lf %lf", &normal[0], &normal[1], &normal[2]);
-      } else if (line.substr(0, 10) == "outer loop") {
-        if (inside_loop)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": nested loops");
-        if (!inside_facet)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": loop outside facet");
-        inside_loop = true;
-      } else if (line.substr(0, 6) == "vertex") {
-        if (!inside_loop)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": vertex outside loop");
-        if (!inside_facet)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": vertex outside facet");
-        line = line.substr(6);
-        sscanf(line.c_str(), "%lf %lf %lf", &vertex[0], &vertex[1], &vertex[2]);
-        vertices.push_back(vertex);
-        ++vertex_index;
-      } else if (line.substr(0, 7) == "endloop") {
-        if (!inside_loop)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": loop ending without start");
-        if (!inside_facet)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": loop ending outside facet");
-        inside_loop = false;
-      } else if (line.substr(0, 8) == "endfacet") {
-        if (inside_loop)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": facet ending inside loop");
-        if (!inside_facet)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": facet ending without start");
-        inside_facet = false;
-        if (vertex_index != 3)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": facet ended with " + str(vertex_index) +
-                          " vertices");
-        triangles.push_back(std::vector<uint32_t>{
-            uint32_t(vertices.size() - 3), uint32_t(vertices.size() - 2), uint32_t(vertices.size() - 1)});
-        vertex_index = 0;
-        const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
-        if (computed_normal.dot(normal) < 0.0)
-          warn_right_hand_rule = true;
-        if (abs(computed_normal.dot(normal)) < 0.99)
-          warn_nonstandard_normals = true;
-      } else if (line.substr(0, 8) == "endsolid") {
-        if (inside_facet)
-          throw Exception("Error parsing STL file " + Path::basename(path) + ": solid ending inside facet");
-        inside_solid = false;
-      } else if (line.substr(0, 5) == "solid") {
-        throw Exception("Error parsing STL file " + Path::basename(path) + ": multiple solids in file");
-      } else {
-        throw Exception("Error parsing STL file " + Path::basename(path) + ": unknown key (" + line + ")");
+    try {
+      while (std::getline(in, line)) {
+        // Strip leading whitespace
+        line = line.substr(line.find_first_not_of(' '), line.npos);
+        if (line.substr(0, 12) == "facet normal") {
+          if (!inside_solid)
+            throw Exception("facet outside solid");
+          if (inside_facet)
+            throw Exception("nested facets");
+          inside_facet = true;
+          line = line.substr(12);
+          sscanf(line.c_str(), "%lf %lf %lf", &normal[0], &normal[1], &normal[2]);
+        } else if (line.substr(0, 10) == "outer loop") {
+          if (inside_loop)
+            throw Exception("nested loops");
+          if (!inside_facet)
+            throw Exception("loop outside facet");
+          inside_loop = true;
+        } else if (line.substr(0, 6) == "vertex") {
+          if (!inside_loop)
+            throw Exception("vertex outside loop");
+          if (!inside_facet)
+            throw Exception("vertex outside facet");
+          line = line.substr(6);
+          sscanf(line.c_str(), "%lf %lf %lf", &vertex[0], &vertex[1], &vertex[2]);
+          vertices.push_back(vertex);
+          ++vertex_index;
+        } else if (line.substr(0, 7) == "endloop") {
+          if (!inside_loop)
+            throw Exception("loop ending without start");
+          if (!inside_facet)
+            throw Exception("loop ending outside facet");
+          inside_loop = false;
+        } else if (line.substr(0, 8) == "endfacet") {
+          if (inside_loop)
+            throw Exception("facet ending inside loop");
+          if (!inside_facet)
+            throw Exception("facet ending without start");
+          inside_facet = false;
+          if (vertex_index != 3)
+            throw Exception("facet ended with " + str(vertex_index) + " vertices");
+          triangles.push_back(std::vector<uint32_t>{static_cast<uint32_t>(vertices.size() - 3),
+                                                    static_cast<uint32_t>(vertices.size() - 2),
+                                                    static_cast<uint32_t>(vertices.size() - 1)});
+          vertex_index = 0;
+          const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
+          if (computed_normal.dot(normal) < 0.0)
+            warn_right_hand_rule = true;
+          if (std::fabs(computed_normal.dot(normal)) < 0.99)
+            warn_nonstandard_normals = true;
+        } else if (line.substr(0, 8) == "endsolid") {
+          if (inside_facet)
+            throw Exception("solid ending inside facet");
+          inside_solid = false;
+        } else if (line.substr(0, 5) == "solid") {
+          throw Exception("multiple solids in file");
+        } else {
+          throw Exception("unknown key (" + line + ")");
+        }
       }
+      if (inside_solid)
+        throw Exception("failed to close solid");
+      if (inside_facet)
+        throw Exception("failed to close facet");
+      if (inside_loop)
+        throw Exception("failed to close loop");
+      if (vertex_index)
+        throw Exception("failed to complete triangle");
+    } catch (Exception &e) {
+      throw Exception("Error parsing STL file " + Path::basename(path) + ": " + e[0]);
     }
-    if (inside_solid)
-      throw Exception("Error parsing STL file " + Path::basename(path) + ": Failed to close solid");
-    if (inside_facet)
-      throw Exception("Error parsing STL file " + Path::basename(path) + ": Failed to close facet");
-    if (inside_loop)
-      throw Exception("Error parsing STL file " + Path::basename(path) + ": Failed to close loop");
-    if (vertex_index)
-      throw Exception("Error parsing STL file " + Path::basename(path) + ": Failed to complete triangle");
   }
 
   if (warn_right_hand_rule)
@@ -675,7 +680,9 @@ void Mesh::save_vtk(const std::string &path, const bool binary) const {
     out.write(points_header.c_str(), points_header.size());
     std::array<float, 3> temp_vertex;
     for (const auto &v : vertices) {
-      temp_vertex = {ByteOrder::BE(float(v[0])), ByteOrder::BE(float(v[1])), ByteOrder::BE(float(v[2]))};
+      temp_vertex = {ByteOrder::BE(static_cast<float>(v[0])),
+                     ByteOrder::BE(static_cast<float>(v[1])),
+                     ByteOrder::BE(static_cast<float>(v[2]))};
       out.write(reinterpret_cast<const char *>(&temp_vertex), 3 * sizeof(float));
       ++progress;
     }
@@ -729,20 +736,20 @@ void Mesh::save_stl(const std::string &path, const bool binary) const {
 
     File::OFStream out(path, std::ios_base::binary | std::ios_base::out);
     const std::string string = std::string("mrtrix_version: ") + App::mrtrix_version;
-    char header[80];
-    strncpy(header, string.c_str(), 79);
-    out.write(header, 80);
+    std::string header(80, '\0');
+    header.substr(0, string.size()) = string;
+    out.write(&header[0], 80);
     const uint32_t count = triangles.size();
     out.write(reinterpret_cast<const char *>(&count), sizeof(uint32_t));
     const uint16_t attribute_byte_count = 0;
     for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
       const Eigen::Vector3d n(normal(*this, *i));
-      const float n_temp[3]{float(n[0]), float(n[1]), float(n[2])};
+      const float n_temp[3]{static_cast<float>(n[0]), static_cast<float>(n[1]), static_cast<float>(n[2])};
       out.write(reinterpret_cast<const char *>(&n_temp[0]), 3 * sizeof(float));
       for (size_t v = 0; v != 3; ++v) {
         const Vertex &p(vertices[(*i)[v]]);
-        const float p_temp[3]{float(p[0]), float(p[1]), float(p[2])};
-        out.write(reinterpret_cast<const char *>(&p_temp[0]), 3 * sizeof(float));
+        const Eigen::Matrix<float, 3, 1> p_temp(p.cast<float>());
+        out.write(reinterpret_cast<const char *>(p_temp.data()), 3 * sizeof(float));
       }
       out.write(reinterpret_cast<const char *>(&attribute_byte_count), sizeof(uint16_t));
       ++progress;

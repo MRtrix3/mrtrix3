@@ -68,7 +68,7 @@ void run() {
   if (!opt.empty()) {
     auto H = Header::open(opt[0][1]);
     auto transform = std::make_unique<Surface::Filter::VertexTransform>(H);
-    switch (int(opt[0][0])) {
+    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
     case 0:
       transform->set_first2real();
       break;

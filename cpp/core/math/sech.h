@@ -19,9 +19,7 @@
 #include "math/math.h"
 #include "math/vector.h"
 
-namespace MR {
-namespace Math {
-namespace Sech {
+namespace MR::Math::Sech {
 
 template <typename T> inline T lnP(const T measured, const T actual, const T one_over_noise_squared) {
   T n = sqrt(one_over_noise_squared);
@@ -162,6 +160,4 @@ inline T lnP(const Math::Vector<T> &measured,
   return (lnP - 0.5 * actual.size() * log(one_over_noise_squared));
 }
 
-} // namespace Sech
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Sech

@@ -106,12 +106,13 @@ public:
       //   return successfully
       // Difficult to do this without knowledge of the cost function
       if (fm > (fl + ((fu - fl) * (m - l) / (u - l)))) {
-        if ((std::min(m - l, u - m) < value_tolerance) || (abs((fu - fl) / (0.5 * (fu + fl))) < function_tolerance)) {
+        if ((std::min(m - l, u - m) < value_tolerance) ||
+            (MR::abs((fu - fl) / (0.5 * (fu + fl))) < function_tolerance)) {
           status = SUCCESS;
           return m;
         }
         status = NONCONVEX;
-        return NaN;
+        return std::numeric_limits<ValueType>::quiet_NaN();
       }
 
       const ValueType sl = (fm - fl) / (m - l);
@@ -126,7 +127,7 @@ public:
       if (n < l) {
         if (exit_outside_bounds) {
           status = OUTSIDE_BOUNDS;
-          return NaN;
+          return std::numeric_limits<ValueType>::quiet_NaN();
         }
         u = m;
         fu = fm;
@@ -159,7 +160,7 @@ public:
       } else {
         if (exit_outside_bounds) {
           status = OUTSIDE_BOUNDS;
-          return NaN;
+          return std::numeric_limits<ValueType>::quiet_NaN();
         }
         l = m;
         fl = fm;
@@ -179,7 +180,7 @@ public:
     }
 
     status = NONCONVERGING;
-    return NaN;
+    return std::numeric_limits<ValueType>::quiet_NaN();
   }
 
   template <class Functor> ValueType verbose(Functor &functor) const {
@@ -204,7 +205,7 @@ public:
         }
         status = NONCONVEX;
         std::cerr << "Returning due to nonconvexity, unsuccessfully\n";
-        return NaN;
+        return std::numeric_limits<ValueType>::quiet_NaN();
       }
 
       const ValueType sl = (fm - fl) / (m - l);
@@ -219,7 +220,7 @@ public:
       if (n < l) {
         if (exit_outside_bounds) {
           status = OUTSIDE_BOUNDS;
-          return NaN;
+          return std::numeric_limits<ValueType>::quiet_NaN();
         }
         u = m;
         fu = fm;
@@ -252,7 +253,7 @@ public:
       } else {
         if (exit_outside_bounds) {
           status = OUTSIDE_BOUNDS;
-          return NaN;
+          return std::numeric_limits<ValueType>::quiet_NaN();
         }
         l = m;
         fl = fm;
@@ -275,7 +276,7 @@ public:
 
     status = NONCONVERGING;
     std::cerr << "Returning due to too many iterations\n";
-    return NaN;
+    return std::numeric_limits<ValueType>::quiet_NaN();
   }
 
 private:

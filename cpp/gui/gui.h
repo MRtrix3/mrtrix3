@@ -35,7 +35,7 @@ inline QString qstr(const std::string &s) { return QString::fromUtf8(s.c_str());
 class App : public QApplication {
 
 public:
-  App(int &cmdline_argc, char **cmdline_argv);
+  App(int &cmdline_argc, char **cmdline_argv); // check_syntax off
 
   // this needs to be defined on a per-application basis:
   virtual bool event(QEvent *event) override;

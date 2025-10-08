@@ -175,9 +175,9 @@ template <class VectorType> inline transform_type load_transform(const std::stri
     centre[2] = NaN;
     std::vector<std::string> elements;
     for (auto &line : comments) {
-      if (strncmp(line.c_str(), key.c_str(), key.size()) == 0)
+      if (line.substr(0, key.size()) == key)
         elements = split(strip(line.substr(key.size())), " ,;\t", true);
-      else if (strncmp(line.c_str(), key_legacy.c_str(), key_legacy.size()) == 0)
+      else if (line.substr(0, key_legacy.size()) == key_legacy)
         elements = split(strip(line.substr(key_legacy.size())), " ,;\t", true);
       if (!elements.empty()) {
         if (elements.size() != 3)

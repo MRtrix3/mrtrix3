@@ -231,7 +231,7 @@ void run() {
     check_dimensions(mask_hdr, fod_hdr, 0, 3);
   }
 
-  float thresh = get_option_value("threshold", NAN);
+  float thresh = get_option_value("threshold", NaNF);
 
   bool needtolum = false;
   Eigen::Array<value_type, 3, 1> coefs(1.0, 1.0, 1.0);

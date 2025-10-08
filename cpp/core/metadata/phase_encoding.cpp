@@ -110,7 +110,7 @@ void set_scheme(KeyValues &keyval, const scheme_type &PE) {
     erase(keyval, "TotalReadoutTime");
   } else {
     erase(keyval, "pe_scheme");
-    const Metadata::BIDS::axis_vector_type dir{int(PE(0, 0)), int(PE(0, 1)), int(PE(0, 2))};
+    const Metadata::BIDS::axis_vector_type dir(PE.block<1, 3>(0, 0).cast<Metadata::BIDS::axis_vector_type::Scalar>());
     keyval["PhaseEncodingDirection"] = Metadata::BIDS::vector2axisid(dir);
     if (PE.cols() >= 4)
       keyval["TotalReadoutTime"] = str(PE(0, 3), 3);
@@ -139,7 +139,7 @@ scheme_type parse_scheme(const KeyValues &keyval, const Header &header) {
     } catch (Exception &e) {
       throw Exception(e, "malformed PE scheme associated with image \"" + header.name() + "\"");
     }
-    if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
+    if (static_cast<ssize_t>(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
       throw Exception("malformed PE scheme associated with image \"" + header.name() + "\":" + //
                       " number of rows does not equal number of volumes");
   } else {
@@ -293,7 +293,7 @@ void topup2eddy(const scheme_type &PE, Eigen::MatrixXd &config, Eigen::Array<int
   for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
     for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
       bool dir_match = PE.template block<1, 3>(PE_row, 0).isApprox(config.block<1, 3>(config_row, 0));
-      bool time_match = abs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
+      bool time_match = std::fabs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
       if (dir_match && time_match) {
         // FSL-style index file indexes from 1
         indices[PE_row] = config_row + 1;

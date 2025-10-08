@@ -50,7 +50,7 @@ void Properties::set_timestamp() { (*this)["timestamp"] = str(Timer::current_tim
 
 void Properties::set_version_info() {
   (*this)["mrtrix_version"] = App::mrtrix_version;
-  if (App::project_version)
+  if (!App::project_version.empty())
     (*this)["project_version"] = App::project_version;
 }
 
@@ -80,7 +80,7 @@ float Properties::get_stepsize() const {
     } catch (...) {
     }
   }
-  return NaN;
+  return NaNF;
 }
 
 void Properties::compare_stepsize_rois() const {

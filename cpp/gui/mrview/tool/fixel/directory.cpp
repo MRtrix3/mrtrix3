@@ -27,9 +27,13 @@ void Directory::load_image_buffer() {
   // Load fixel index image
   for (auto l = Loop(0, 3)(*fixel_data); l; ++l) {
 
-    const std::array<int, 3> voxel{{int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2))}};
-    Eigen::Vector3f pos{float(voxel[0]), float(voxel[1]), float(voxel[2])};
-    pos = transform.voxel2scanner.cast<float>() * pos;
+    const std::array<int, 3> voxel{static_cast<int>(fixel_data->index(0)),
+                                   static_cast<int>(fixel_data->index(1)),
+                                   static_cast<int>(fixel_data->index(2))};
+    const Eigen::Vector3f pos =
+        (transform.voxel2scanner *
+         Eigen::Vector3d(static_cast<double>(voxel[0]), static_cast<double>(voxel[1]), static_cast<double>(voxel[2])))
+            .cast<float>();
 
     fixel_data->index(3) = 0;
     const size_t nfixels = fixel_data->value();

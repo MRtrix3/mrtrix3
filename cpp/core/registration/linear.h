@@ -254,7 +254,7 @@ public:
     ssize_t lmax = 0;
     for (auto &s : stages)
       lmax = std::max(s.fod_lmax, lmax);
-    return (int)lmax;
+    return lmax;
   }
 
   Header get_midway_header() { return Header(midway_image_header); }

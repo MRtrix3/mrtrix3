@@ -20,9 +20,8 @@
 #include "registration/metric/linear_base.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
+
 class CrossCorrelationNoGradient : public LinearBase {
 
 public:
@@ -181,8 +180,9 @@ private:
       assert(mask.index(1) == pimage.index(1));
       assert(mask.index(2) == pimage.index(2));
       assert(pimage.index(3) == 0);
-      vox =
-          Eigen::Vector3d(default_type(pimage.index(0)), default_type(pimage.index(1)), default_type(pimage.index(2)));
+      vox = {static_cast<default_type>(pimage.index(0)),
+             static_cast<default_type>(pimage.index(1)),
+             static_cast<default_type>(pimage.index(2))};
       pos = v2s * vox;
 
       pos1 = trafo_half * pos;
@@ -247,6 +247,5 @@ private:
     MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
   };
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+
+} // namespace MR::Registration::Metric

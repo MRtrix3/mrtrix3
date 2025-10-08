@@ -317,7 +317,7 @@ void run() {
     if (spacing)
       print_spacing(header);
     if (datatype)
-      std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
+      std::cout << header.datatype().specifier() << "\n";
     if (strides)
       print_strides(header);
     if (offset)

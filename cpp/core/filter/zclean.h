@@ -105,7 +105,8 @@ public:
       lower = median - zlower * mad;
       INFO("median: " + str(median) + ", changed: " + str((median - previous_median) / previous_median));
       INFO("mad: " + str(mad) + ", changed: " + str((mad - previous_mad) / previous_mad));
-      INFO("FOV: " + str(float(cnt) / (input.size(0) * input.size(1) * input.size(2))));
+      INFO("FOV: " + str(static_cast<default_type>(cnt) /
+                         static_cast<default_type>(input.size(0) * input.size(1) * input.size(2))));
       INFO("lower: " + str(lower) + " upper: " + str(upper));
       INFO("cnt_upper - cnt: " + str(cnt_upper - cnt));
       if (lower > 0.0 && ((median + 2.5 * mad) - (previous_median + 2.5 * previous_mad)) < 0.0 && (cnt < cnt_upper))
@@ -142,14 +143,14 @@ public:
             bool good = (z > -zlower) && (z < zupper);
             if (App::log_level >= 3) {
               assign_pos_of(input, 0, 3).to(eroded_zscore_image);
-              eroded_zscore_image.value() = (z > -zlower) && (dont_maskupper || z < zupper) ? z : NaN;
+              eroded_zscore_image.value() = (z > -zlower) && (dont_maskupper || z < zupper) ? z : NaNF;
             }
             if (good)
               cnt++;
             int_roi.value() = good;
           } else if (App::log_level >= 3) {
             assign_pos_of(input, 0, 3).to(eroded_zscore_image);
-            eroded_zscore_image.value() = NaN;
+            eroded_zscore_image.value() = NaNF;
           }
         }
         previous_mad = mad;

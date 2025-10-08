@@ -20,13 +20,11 @@
 #include "dwi/tractography/seeding/basic.h"
 #include "image.h"
 
-namespace MR::DWI::Tractography {
-
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 class GMWMI_finder;
 }
 
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 
 class GMWMI_5TT_Wrapper {
 public:
@@ -50,5 +48,4 @@ private:
   bool perturb(Eigen::Vector3f &, Interp &) const;
 };
 
-} // namespace Seeding
-} // namespace MR::DWI::Tractography
+} // namespace MR::DWI::Tractography::Seeding

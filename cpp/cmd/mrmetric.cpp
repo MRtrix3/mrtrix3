@@ -237,7 +237,7 @@ void run() {
   MetricType metric_type = MetricType::MeanSquared;
   auto opt = get_options("metric");
   if (!opt.empty()) {
-    if (int(opt[0][0]) == 1) { // CC
+    if (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]) == 1) { // CC
       if (space != space_t::AVERAGE)
         throw Exception("CC metric only implemented for use in average space");
       if (interp != MR::Interp::interp_type::LINEAR && interp != MR::Interp::interp_type::CUBIC)

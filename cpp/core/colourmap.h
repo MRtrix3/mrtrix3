@@ -26,28 +26,28 @@ class Entry {
 public:
   using basic_map_fn = std::function<Eigen::Array3f(float)>;
 
-  Entry(const char *name,
-        const char *glsl_mapping,
+  Entry(const std::string &name,
+        const std::string &glsl_mapping,
         basic_map_fn basic_mapping,
-        const char *amplitude = NULL,
+        const std::string amplitude = "",
         bool special = false,
         bool is_colour = false,
         bool is_rgb = false)
       : name(name),
         glsl_mapping(glsl_mapping),
         basic_mapping(basic_mapping),
-        amplitude(amplitude ? amplitude : default_amplitude),
+        amplitude(amplitude.empty() ? default_amplitude : amplitude),
         special(special),
         is_colour(is_colour),
         is_rgb(is_rgb) {}
 
-  const char *name;
-  const char *glsl_mapping;
+  const std::string name;
+  const std::string glsl_mapping;
   basic_map_fn basic_mapping;
-  const char *amplitude;
+  const std::string amplitude;
   bool special, is_colour, is_rgb;
 
-  static const char *default_amplitude;
+  static const std::string default_amplitude;
 };
 
 extern const std::vector<Entry> maps;

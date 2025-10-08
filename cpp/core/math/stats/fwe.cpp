@@ -28,12 +28,12 @@ matrix_type fwe_pvalue(const matrix_type &null_distributions, const matrix_type 
   matrix_type pvalues(statistics.rows(), statistics.cols());
 
   auto s2p = [](const std::vector<value_type> &null_dist, const matrix_type::ConstColXpr in, matrix_type::ColXpr out) {
-    for (index_type element = 0; element != index_type(in.size()); ++element) {
+    for (index_type element = 0; element != static_cast<index_type>(in.size()); ++element) {
       if (in[element] > 0.0) {
         value_type pvalue = 1.0;
         for (index_type j = 0; j < null_dist.size(); ++j) {
           if (in[element] < null_dist[j]) {
-            pvalue = value_type(j) / value_type(null_dist.size());
+            pvalue = static_cast<value_type>(j) / static_cast<value_type>(null_dist.size());
             break;
           }
         }

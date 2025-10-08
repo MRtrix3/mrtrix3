@@ -131,7 +131,7 @@ DataType fetch_datatype(uint8_t c) {
   uint8_t t = c & ~(0x07U);
   if (d >= 0x05U)
     ++d;
-  return {uint8_t(d | t)};
+  return DataType(d | t);
 }
 
 uint8_t store_datatype(const DataType &dt) {
@@ -162,7 +162,6 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   H.ndim() = 4;
 
   size_t data_offset = 0;
-  char *c;
   const uint8_t *current = fmap.address() + sizeof(int32_t) + sizeof(uint16_t);
   const uint8_t *last = fmap.address() + fmap.size() - 2 * sizeof(uint32_t);
 
@@ -179,10 +178,9 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       H.size(3) = Raw::fetch_<uint32_t>(data(current) + 3 * sizeof(uint32_t), is_BE);
       break;
     case mriformat_index_order:
-      c = (char *)data(current);
       for (size_t n = 0; n < 4; n++) {
         bool forward = true;
-        size_t ax = char2order(c[n], forward);
+        const size_t ax = char2order(*(reinterpret_cast<const char *>(data(current) + n)), forward);
         if (ax == std::numeric_limits<size_t>::max())
           throw Exception("invalid order specifier in MRI image \"" + H.name() + "\"");
         H.stride(ax) = n + 1;
@@ -268,12 +266,12 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
 
   write_tag(out, mriformat_index_order, 4 * sizeof(uint8_t), is_BE);
   size_t n;
-  char order[4];
+  std::array<char, 4> order;
   for (n = 0; n < H.ndim(); ++n)
-    order[abs(H.stride(n)) - 1] = order2char(n, H.stride(n) > 0);
+    order[MR::abs(H.stride(n)) - 1] = order2char(n, H.stride(n) > 0);
   for (; n < 4; ++n)
     order[n] = order2char(n, true);
-  out.write(order, 4);
+  out.write(order.data(), 4);
 
   write_tag(out, mriformat_index_voxelsize, 3 * sizeof(float32), is_BE);
   write<float>(out, H.spacing(0), is_BE);
@@ -312,7 +310,7 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   write_tag(out, mriformat_index_data, 1, is_BE);
   out.put(store_datatype(H.datatype()));
 
-  size_t data_offset = int64_t(out.tellp());
+  size_t data_offset = static_cast<size_t>(out.tellp());
   out.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));

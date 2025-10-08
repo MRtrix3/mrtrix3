@@ -119,7 +119,7 @@ template <class HeaderType, typename ReturnType> struct enable_if_header_type {
 
 //! convenience function for SFINAE on header types
 template <typename HeaderType> class is_header_type {
-  typedef char yes[1], no[2];
+  typedef char yes[1], no[2]; // check_syntax off
   template <typename C> static yes &test(typename enable_if_header_type<HeaderType, int>::type);
   template <typename C> static no &test(...);
 
@@ -137,7 +137,7 @@ template <class ImageType, typename ReturnType> struct enable_if_image_type {
 
 //! convenience function for SFINAE on image types
 template <typename ImageType> class is_image_type {
-  typedef char yes[1], no[2];
+  typedef char yes[1], no[2]; // check_syntax off
   template <typename C> static yes &test(typename enable_if_image_type<ImageType, int>::type);
   template <typename C> static no &test(...);
 
@@ -248,19 +248,12 @@ voxel_count(const HeaderType &in, size_t from_axis = 0, size_t to_axis = std::nu
 }
 
 //! returns the number of voxel in the relevant subvolume of the data set
-template <class HeaderType> inline size_t voxel_count(const HeaderType &in, const char *specifier) {
-  size_t fp = 1;
-  for (size_t n = 0; n < in.ndim(); ++n)
-    if (specifier[n] != ' ')
-      fp *= in.size(n);
-  return fp;
-}
-
-//! returns the number of voxel in the relevant subvolume of the data set
 template <class HeaderType> inline size_t voxel_count(const HeaderType &in, const std::initializer_list<size_t> axes) {
   size_t fp = 1;
-  for (auto n : axes)
+  for (auto n : axes) {
+    assert(n < in.ndim());
     fp *= in.size(n);
+  }
   return fp;
 }
 
@@ -291,9 +284,9 @@ footprint(const HeaderType &in, size_t from_dim = 0, size_t up_to_dim = std::num
 
 //! returns the memory footprint of an Image
 template <class HeaderType>
-inline typename std::enable_if<std::is_class<HeaderType>::value, int64_t>::type footprint(const HeaderType &in,
-                                                                                          const char *specifier) {
-  return footprint(voxel_count(in, specifier), in.datatype());
+inline typename std::enable_if<std::is_class<HeaderType>::value, int64_t>::type
+footprint(const HeaderType &in, const std::initializer_list<size_t> axes) {
+  return footprint(voxel_count(in, axes), in.datatype());
 }
 
 template <class HeaderType1, class HeaderType2>
@@ -301,7 +294,7 @@ inline bool spacings_match(const HeaderType1 &in1, const HeaderType2 &in2, const
   if (in1.ndim() != in2.ndim())
     return false;
   for (size_t n = 0; n < in1.ndim(); ++n)
-    if (abs(in1.spacing(n) - in2.spacing(n)) > tol * 0.5 * (in1.spacing(n) + in2.spacing(n)))
+    if (std::fabs(in1.spacing(n) - in2.spacing(n)) > tol * 0.5 * (in1.spacing(n) + in2.spacing(n)))
       return false;
   return true;
 }
@@ -313,7 +306,7 @@ inline bool spacings_match(
   if (to_axis > in1.ndim() || to_axis > in2.ndim())
     return false;
   for (size_t n = from_axis; n < to_axis; ++n)
-    if (abs(in1.spacing(n) - in2.spacing(n)) > tol * 0.5 * (in1.spacing(n) + in2.spacing(n)))
+    if (std::fabs(in1.spacing(n) - in2.spacing(n)) > tol * 0.5 * (in1.spacing(n) + in2.spacing(n)))
       return false;
   return true;
 }
@@ -326,7 +319,8 @@ inline bool spacings_match(const HeaderType1 &in1,
   for (size_t n = 0; n < axes.size(); ++n) {
     if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
       return false;
-    if (abs(in1.spacing(axes[n]) - in2.spacing(axes[n])) > tol * 0.5 * (in1.spacing(axes[n]) + in2.spacing(axes[n])))
+    if (std::fabs(in1.spacing(axes[n]) - in2.spacing(axes[n])) >
+        tol * 0.5 * (in1.spacing(axes[n]) + in2.spacing(axes[n])))
       return false;
   }
   return true;
@@ -498,7 +492,7 @@ public:
   FORCE_INLINE operator value_type() const { return get(); }
   FORCE_INLINE value_type operator=(value_type value) { return set(value); }
   template <typename OtherType> FORCE_INLINE value_type operator=(Value<OtherType> &&V) {
-    return set(typename OtherType::value_type(V));
+    return set(static_cast<typename OtherType::value_type>(V));
   }
   FORCE_INLINE value_type operator+=(value_type value) { return set(get() + value); }
   FORCE_INLINE value_type operator-=(value_type value) { return set(get() - value); }
@@ -545,7 +539,7 @@ public:
     assert(image.size(axis) == other.image.size(other.axis));
     for (image.index(axis) = 0, other.image.index(other.axis); image.index(axis) < image.size(axis);
          ++image.index(axis), ++other.image.index(other.axis))
-      image.value() = typename OtherImageType::value_type(other.image.value());
+      image.value() = static_cast<typename OtherImageType::value_type>(other.image.value());
   }
 
   using ConstRow<ImageType>::image;
@@ -587,7 +581,7 @@ public:
     assert(image.size(axis) == other.image.size(other.axis));                                                          \
     for (image.index(axis) = 0, other.image.index(other.axis) = 0; image.index(axis) < image.size(axis);               \
          ++image.index(axis), ++other.image.index(other.axis))                                                         \
-      image.value() ARG typename OtherImageType::value_type(other.image.value());                                      \
+      image.value() ARG static_cast<typename OtherImageType::value_type>(other.image.value());                         \
   }
   MRTRIX_OP(=);
   MRTRIX_OP(+=);

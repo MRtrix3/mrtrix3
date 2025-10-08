@@ -416,7 +416,7 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
   int64_t offset = 0;
   out << "file: ";
   if (single_file) {
-    offset = int64_t(out.tellp()) + int64_t(18);
+    offset = static_cast<int64_t>(out.tellp()) + int64_t(18);
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else {

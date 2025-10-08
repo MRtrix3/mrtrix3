@@ -79,7 +79,7 @@ public:
 
         if (weights.size()) {
 
-          if (tck.get_index() < size_t(weights.size())) {
+          if (tck.get_index() < static_cast<size_t>(weights.size())) {
             tck.weight = weights[tck.get_index()];
           } else {
             WARN("Streamline weights file contains less entries (" + str(weights.size()) +
@@ -118,36 +118,36 @@ protected:
     switch (dtype()) {
     case DataType::Float32LE: {
       float p[3];
-      in.read((char *)p, sizeof(p));
-      return {ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2]))};
+      in.read(reinterpret_cast<char *>(p), sizeof(p));
+      return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
     }
     case DataType::Float32BE: {
       float p[3];
-      in.read((char *)p, sizeof(p));
-      return {ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2]))};
+      in.read(reinterpret_cast<char *>(p), sizeof(p));
+      return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
     }
     case DataType::Float64LE: {
       double p[3];
-      in.read((char *)p, sizeof(p));
-      return {ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2]))};
+      in.read(reinterpret_cast<char *>(p), sizeof(p));
+      return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
     }
     case DataType::Float64BE: {
       double p[3];
-      in.read((char *)p, sizeof(p));
-      return {ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2]))};
+      in.read(reinterpret_cast<char *>(p), sizeof(p));
+      return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
     }
     default:
       assert(0);
       break;
     }
-    return {NaN, NaN, NaN};
+    return Eigen::Matrix<ValueType, 3, 1>::Constant(std::numeric_limits<ValueType>::quiet_NaN());
   }
 
   //! Check that the weights file does not contain excess entries
   void check_excess_weights() {
     if (!weights.size())
       return;
-    if (size_t(weights.size()) > current_index) {
+    if (static_cast<size_t>(weights.size()) > current_index) {
       WARN("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" +
            str(current_index) + ")");
     }
@@ -204,7 +204,7 @@ public:
 
     vector_type x;
     format_point(barrier(), x);
-    out.write(reinterpret_cast<char *>(&x[0]), sizeof(x));
+    out.write(reinterpret_cast<const char *>(&x[0]), sizeof(x));
     if (!out.good())
       throw Exception("error writing tracks file \"" + name + "\": " + strerror(errno));
     open_success = true;
@@ -248,9 +248,9 @@ protected:
   int64_t barrier_addr;
 
   //! indicates end of track and start of new track
-  vector_type delimiter() const { return {ValueType(NaN), ValueType(NaN), ValueType(NaN)}; }
+  vector_type delimiter() const { return vector_type::Constant(std::numeric_limits<ValueType>::quiet_NaN()); }
   //! indicates end of data
-  vector_type barrier() const { return {ValueType(Inf), ValueType(Inf), ValueType(Inf)}; }
+  vector_type barrier() const { return vector_type::Constant(std::numeric_limits<ValueType>::infinity()); }
 
   //! perform per-point byte-swapping if required
   void format_point(const vector_type &src, vector_type &dest) {
@@ -280,11 +280,11 @@ protected:
 
     format_point(barrier(), data[num_points]);
     File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-    out.write(reinterpret_cast<const char *const>(data + 1), sizeof(vector_type) * num_points);
+    out.write(reinterpret_cast<const char *>(data + 1), sizeof(vector_type) * num_points);
     verify_stream(out);
-    barrier_addr = int64_t(out.tellp()) - sizeof(vector_type);
+    barrier_addr = static_cast<int64_t>(out.tellp()) - sizeof(vector_type);
     out.seekp(prev_barrier_addr, out.beg);
-    out.write(reinterpret_cast<const char *const>(data), sizeof(vector_type));
+    out.write(reinterpret_cast<const char *>(data), sizeof(vector_type));
     verify_stream(out);
     update_counts(out);
   }

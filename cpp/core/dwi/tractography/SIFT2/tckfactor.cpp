@@ -40,7 +40,7 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
   for (size_t i = 1; i != fixels.size(); ++i)
     A += fixels[i].get_weight() * Math::pow2(fixels[i].get_FOD());
 
-  A /= double(num_tracks());
+  A /= static_cast<double>(num_tracks());
   INFO("Constant A scaling regularisation terms to match data term is " + str(A));
   reg_multiplier_tikhonov = lambda_tikhonov * A;
   reg_multiplier_tv = lambda_tv * A;
@@ -108,7 +108,7 @@ void TckFactor::test_streamline_length_scaling() {
   const double actual_TD_sum = TD_sum;
   std::ofstream out("mu.csv", std::ios_base::trunc);
   for (int i = -1000; i != 1000; ++i) {
-    const double factor = std::pow(10.0, double(i) / 1000.0);
+    const double factor = std::pow(10.0, static_cast<double>(i) / 1000.0);
     TD_sum = factor * actual_TD_sum;
     out << str(factor) << "," << str(calc_cost_function()) << "\n";
   }
@@ -350,7 +350,7 @@ void TckFactor::report_entropy() const {
 }
 
 void TckFactor::output_factors(const std::string &path) const {
-  if (size_t(coefficients.size()) != contributions.size())
+  if (static_cast<size_t>(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
   decltype(coefficients) weights;
   try {
@@ -417,7 +417,8 @@ void TckFactor::output_all_debug_images(const std::string &dirpath, const std::s
   for (size_t i = 1; i != fixels.size(); ++i) {
     if (!std::isfinite(mins[i]))
       mins[i] = std::numeric_limits<double>::quiet_NaN();
-    stdevs[i] = (fixels[i].get_count() > 1) ? (std::sqrt(stdevs[i] / float(fixels[i].get_count() - 1))) : 0.0;
+    stdevs[i] =
+        (fixels[i].get_count() > 1) ? (std::sqrt(stdevs[i] / static_cast<float>(fixels[i].get_count() - 1))) : 0.0;
     if (!std::isfinite(maxs[i]))
       maxs[i] = std::numeric_limits<double>::quiet_NaN();
   }

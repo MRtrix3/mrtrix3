@@ -36,13 +36,20 @@ std::ostream &operator<<(std::ostream &stream, const Time &item) {
   return stream;
 }
 
-const char *Element::type_as_str[] = {
-    "invalid", "integer", "unsigned integer", "floating-point", "date", "time", "string", "sequence", "other", nullptr};
+const std::unordered_map<Element::Type, std::string> Element::type_as_str{{INVALID, "invalid"},
+                                                                          {INT, "integer"},
+                                                                          {UINT, "unsigned integer"},
+                                                                          {FLOAT, "floating-point"},
+                                                                          {DATE, "date"},
+                                                                          {TIME, "time"},
+                                                                          {STRING, "string"},
+                                                                          {SEQ, "sequence"},
+                                                                          {OTHER, "other"}};
 
 void Element::set(const std::string &filename, bool force_read, bool read_write) {
   group = element = VR = 0;
   size = 0;
-  start = data = next = NULL;
+  start = data = next = nullptr;
   is_BE = is_transfer_syntax_BE = false;
   transfer_syntax_supported = true;
   parents.clear();
@@ -96,7 +103,7 @@ bool Element::read_GR_EL() {
   group = element = VR = 0;
   size = 0;
   start = next;
-  data = next = NULL;
+  data = next = nullptr;
 
   if (start < fmap->address())
     throw Exception("invalid DICOM element");
@@ -199,24 +206,24 @@ bool Element::read() {
   switch (group) {
   case group_byte_order:
     switch (element) {
-    case element_transfer_syntax_uid:
-      if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.1", size) == 0) {
+    case element_transfer_syntax_uid: {
+      const std::string data_as_string(reinterpret_cast<const char *>(data), size);
+      if (data_as_string == "1.2.840.10008.1.2.1") {
         is_BE = is_transfer_syntax_BE = false; // explicit VR Little Endian
         is_explicit = true;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.2", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2.2") {
         is_BE = is_transfer_syntax_BE = true; // Explicit VR Big Endian
         is_explicit = true;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2") {
         is_BE = is_transfer_syntax_BE = false; // Implicit VR Little Endian
         is_explicit = false;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.1.99", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2.1.99") {
         throw Exception("DICOM deflated explicit VR little endian transfer syntax not supported");
       } else {
         transfer_syntax_supported = false;
-        INFO("unsupported DICOM transfer syntax: \"" + std::string(reinterpret_cast<const char *>(data), size) +
-             "\" in file \"" + fmap->name() + "\"");
+        INFO("unsupported DICOM transfer syntax: \"" + data_as_string + "\" in file \"" + fmap->name() + "\"");
       }
-      break;
+    } break;
     }
 
     break;
@@ -393,7 +400,7 @@ std::string Element::as_string() const {
         return "unknown data type";
     }
   } catch (Exception &e) {
-    DEBUG("Error converting data at offset " + str(offset(start)) + " to " + type_as_str[type()] + " type: ");
+    DEBUG("Error converting data at offset " + str(offset(start)) + " to " + type_as_str.at(type()) + " type: ");
     for (auto &s : e.description)
       DEBUG(s);
     return "invalid entry";

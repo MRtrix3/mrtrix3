@@ -112,7 +112,7 @@ bool QuickScan::read(
               item.element == 0x1120U || item.element == 0x1210U || item.element == 0x1220U) {
             CSAEntry entry(item.data, item.data + item.size);
             while (entry.parse()) {
-              const bool is_phoenix = (strcmp("MrPhoenixProtocol", entry.key()) == 0);
+              const bool is_phoenix = entry.key() == "MrPhoenixProtocol";
               if ((print_Phoenix && is_phoenix) || (print_CSA_fields && !is_phoenix)) {
                 if (print_CSA_fields) {
                   print(str(entry));

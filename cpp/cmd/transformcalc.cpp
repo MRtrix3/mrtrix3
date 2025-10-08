@@ -138,7 +138,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
   Eigen::VectorXd src_centre = src_vertices.colwise().mean();
   Eigen::MatrixXd trg_centred = trg_vertices.rowwise() - trg_centre.transpose();
   Eigen::MatrixXd src_centred = src_vertices.rowwise() - src_centre.transpose();
-  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / default_type(n - 1);
+  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / static_cast<default_type>(n - 1);
 
   Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
 

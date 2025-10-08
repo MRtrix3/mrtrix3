@@ -79,8 +79,8 @@ public:
     }
 
     ~Shared() {
-      mean_samples /= double(num_proc);
-      mean_truncations /= double(num_proc);
+      mean_samples /= static_cast<double>(num_proc);
+      mean_truncations /= static_cast<double>(num_proc);
       INFO("mean number of samples per step = " + str(mean_samples));
       if (mean_truncations) {
         INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
@@ -119,8 +119,9 @@ public:
   }
 
   ~iFOD1() {
-    S.update_stats(calibrate_list.size() + float(mean_sample_num) / float(num_sample_runs),
-                   float(num_truncations) / float(num_sample_runs),
+    S.update_stats(calibrate_list.size() +
+                       (static_cast<double>(mean_sample_num) / static_cast<double>(num_sample_runs)),
+                   static_cast<double>(num_truncations) / static_cast<double>(num_sample_runs),
                    max_truncation);
   }
 

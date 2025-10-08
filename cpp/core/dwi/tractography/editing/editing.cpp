@@ -55,26 +55,26 @@ void load_properties(Tractography::Properties &properties) {
   auto opt = get_options("maxlength");
   if (!opt.empty()) {
     if (properties.find("max_dist") == properties.end()) {
-      properties["max_dist"] = str(float(opt[0][0]));
+      properties["max_dist"] = static_cast<std::string>(opt[0][0]);
     } else {
       try {
-        const float maxlength = std::min(float(opt[0][0]), to<float>(properties["max_dist"]));
+        const float maxlength = std::min(static_cast<float>(opt[0][0]), to<float>(properties["max_dist"]));
         properties["max_dist"] = str(maxlength);
       } catch (...) {
-        properties["max_dist"] = str(float(opt[0][0]));
+        properties["max_dist"] = static_cast<std::string>(opt[0][0]);
       }
     }
   }
   opt = get_options("minlength");
   if (!opt.empty()) {
     if (properties.find("min_dist") == properties.end()) {
-      properties["min_dist"] = str(float(opt[0][0]));
+      properties["min_dist"] = static_cast<std::string>(opt[0][0]);
     } else {
       try {
-        const float minlength = std::max(float(opt[0][0]), to<float>(properties["min_dist"]));
+        const float minlength = std::max(static_cast<float>(opt[0][0]), to<float>(properties["min_dist"]));
         properties["min_dist"] = str(minlength);
       } catch (...) {
-        properties["min_dist"] = str(float(opt[0][0]));
+        properties["min_dist"] = static_cast<std::string>(opt[0][0]);
       }
     }
   }
@@ -86,10 +86,10 @@ void load_properties(Tractography::Properties &properties) {
   // Only the thresholds have an influence on Properties
   opt = get_options("maxweight");
   if (!opt.empty())
-    properties["max_weight"] = str(float(opt[0][0]));
+    properties["max_weight"] = static_cast<std::string>(opt[0][0]);
   opt = get_options("minweight");
   if (!opt.empty())
-    properties["min_weight"] = str(float(opt[0][0]));
+    properties["min_weight"] = static_cast<std::string>(opt[0][0]);
 }
 
 } // namespace MR::DWI::Tractography::Editing

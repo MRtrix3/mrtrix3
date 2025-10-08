@@ -500,7 +500,7 @@ void run() {
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
     if (Path::exists(argument[2 * n + 1]) && !App::overwrite_files)
-      throw Exception("Output file \"" + argument[2 * n + 1] + "\" already exists." +
+      throw Exception("Output file \"" + std::string(argument[2 * n + 1]) + "\" already exists." +
                       " (use -force option to force overwrite)");
     load_data(data, argument[2 * n], index);
   }

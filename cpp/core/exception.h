@@ -27,11 +27,12 @@
 #include <iostream>
 #include <string>
 
-namespace MR {
-namespace App {
+namespace MR::App {
 extern int log_level;
 extern int exit_error_code;
-} // namespace App
+} // namespace MR::App
+
+namespace MR {
 
 //! print primary output to stdout as-is.
 /*! This function is intended for cases where the command's primary output is text, not
@@ -88,7 +89,7 @@ public:
     description.push_back(msg);
   }
 
-  const char *what() const noexcept override;
+  const char *what() const noexcept override; // check_syntax off
 
   void display(int log_level = 0) const { display_func(*this, log_level); }
 

@@ -168,7 +168,8 @@ std::shared_ptr<Voxel2Vector> SubjectVoxelImport::v2v = nullptr;
 
 void run() {
 
-  const value_type cluster_forming_threshold = get_option_value("threshold", NaN);
+  const value_type cluster_forming_threshold =
+      get_option_value("threshold", std::numeric_limits<value_type>::quiet_NaN());
   const value_type tfce_dh = get_option_value("tfce_dh", default_tfce_dh);
   const value_type tfce_H = get_option_value("tfce_h", default_tfce_h);
   const value_type tfce_E = get_option_value("tfce_e", default_tfce_e);
@@ -199,7 +200,7 @@ void run() {
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix<value_type>(argument[1]);
-  if (index_type(design.rows()) != importer.size())
+  if (static_cast<index_type>(design.rows()) != importer.size())
     throw Exception("Number of input files does not match number of rows in design matrix");
 
   // Before validating the contrast matrix, we first need to see if there are any

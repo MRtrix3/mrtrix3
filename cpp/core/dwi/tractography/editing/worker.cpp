@@ -104,11 +104,11 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   }
 
   // Stitch back together in preparation for sending down queue as a single track
-  out.push_back({NaN, NaN, NaN});
+  out.push_back({NaNF, NaNF, NaNF});
   for (const auto &i : cropped_tracks) {
     for (const auto &p : i)
       out.push_back(p);
-    out.push_back({NaN, NaN, NaN});
+    out.push_back({NaNF, NaNF, NaNF});
   }
   return true;
 }

@@ -25,22 +25,22 @@
 #include "mrview/gui_image.h"
 #include "opengl/font.h"
 
-namespace MR::GUI {
-namespace GL {
+namespace MR::GUI::GL {
 class Lighting;
-}
+} // namespace MR::GUI::GL
 
-namespace MRView {
-
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 class Base;
 class __Entry__;
-} // namespace Mode
-namespace Tool {
+} // namespace MR::GUI::MRView::Mode
+
+namespace MR::GUI::MRView::Tool {
 class Base;
 class ODF;
 class CameraInteractor;
-} // namespace Tool
+} // namespace MR::GUI::MRView::Tool
+
+namespace MR::GUI::MRView {
 
 class Window : public QMainWindow, ColourMapButtonObserver {
   Q_OBJECT
@@ -326,5 +326,4 @@ private:
   friend class GrabContext;
 };
 
-} // namespace MRView
-} // namespace MR::GUI
+} // namespace MR::GUI::MRView

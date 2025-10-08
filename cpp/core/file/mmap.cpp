@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
 #include <fcntl.h>
 #include <unistd.h>
 #include <zlib.h>
@@ -42,7 +43,7 @@
 namespace MR::File {
 
 MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size)
-    : Entry(entry), addr(NULL), first(NULL), msize(mapped_size), readwrite(readwrite) {
+    : Entry(entry), addr(nullptr), first(nullptr), msize(mapped_size), readwrite(readwrite) {
   DEBUG("memory-mapping file \"" + Entry::name + "\"...");
 
   struct stat sbuf;
@@ -61,8 +62,8 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 
 #ifdef MRTRIX_WINDOWS
     const unsigned int length = 255;
-    char root_path[length];
-    if (GetVolumePathName(Entry::name.c_str(), root_path, length)) { // Returns non-zero on success
+    std::array<char, length> root_path;
+    if (GetVolumePathName(Entry::name.c_str(), root_path.data(), length)) { // Returns non-zero on success
 
       const unsigned int code = GetDriveType(root_path);
       switch (code) {
@@ -154,7 +155,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
   try {
 #ifdef MRTRIX_WINDOWS
     HANDLE handle = CreateFileMapping(
-        (HANDLE)_get_osfhandle(fd), NULL, (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, start + msize, NULL);
+        (HANDLE)_get_osfhandle(fd), nullptr, (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, start + msize, nullptr);
     if (!handle)
       throw 0;
     addr = static_cast<uint8_t *>(
@@ -164,13 +165,13 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
     CloseHandle(handle);
 #else
     addr = static_cast<uint8_t *>(
-        mmap((char *)0, start + msize, (readwrite ? PROT_WRITE | PROT_READ : PROT_READ), MAP_SHARED, fd, 0));
+        mmap(nullptr, start + msize, (readwrite ? PROT_WRITE | PROT_READ : PROT_READ), MAP_SHARED, fd, 0));
     if (addr == MAP_FAILED)
       throw 0;
 #endif
   } catch (...) {
     close(fd);
-    addr = NULL;
+    addr = nullptr;
     throw Exception("memory-mapping failed for file \"" + Entry::name + "\": " + strerror(errno));
   }
   first = addr + start;
@@ -185,7 +186,7 @@ MMap::~MMap() {
   if (addr) {
     DEBUG("unmapping file \"" + Entry::name + "\"");
 #ifdef MRTRIX_WINDOWS
-    if (!UnmapViewOfFile((LPVOID)addr))
+    if (!UnmapViewOfFile(static_cast<LPVOID>(addr)))
 #else
     if (munmap(addr, msize))
 #endif
@@ -197,7 +198,7 @@ MMap::~MMap() {
       try {
         File::OFStream out(Entry::name, std::ios::in | std::ios::out | std::ios::binary);
         out.seekp(start, out.beg);
-        out.write((char *)first, msize);
+        out.write((const char *)first, msize);
         if (!out.good())
           throw 1;
       } catch (...) {
@@ -214,7 +215,7 @@ bool MMap::changed() const {
   struct stat sbuf;
   if (fstat(fd, &sbuf))
     return false;
-  if (int64_t(msize) != sbuf.st_size)
+  if (static_cast<int64_t>(msize) != sbuf.st_size)
     return true;
   if (mtime != sbuf.st_mtime)
     return true;

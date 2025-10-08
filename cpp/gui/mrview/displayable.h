@@ -197,7 +197,7 @@ public:
       GL::Shader::Fragment fragment_shader(fragment_shader_source(object));
 
       attach(vertex_shader);
-      if ((GLuint)geometry_shader)
+      if (static_cast<GLuint>(geometry_shader))
         attach(geometry_shader);
       attach(fragment_shader);
       link();

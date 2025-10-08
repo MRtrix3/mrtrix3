@@ -127,7 +127,8 @@ FORCE_INLINE bool fixels_match(const IndexHeaderType &index_header, const DataHe
 
   if (is_index_image(index_header)) {
     if (index_header.keyval().count(n_fixels_key)) {
-      fixels_match = std::stoul(index_header.keyval().at(n_fixels_key)) == (index_type)data_header.size(0);
+      fixels_match =
+          to<index_type>(index_header.keyval().at(n_fixels_key)) == static_cast<index_type>(data_header.size(0));
     } else {
       auto index_image = Image<index_type>::open(index_header.name());
       index_image.index(3) = 1;
@@ -141,7 +142,7 @@ FORCE_INLINE bool fixels_match(const IndexHeaderType &index_header, const DataHe
           index_image.index(3) = 1;
         }
       }
-      fixels_match = (max_offset + num_fixels) == (index_type)data_header.size(0);
+      fixels_match = (max_offset + num_fixels) == static_cast<index_type>(data_header.size(0));
     }
   }
 

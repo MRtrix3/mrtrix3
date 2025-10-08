@@ -23,10 +23,7 @@
 
 #include "file/ofstream.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+namespace MR::DWI::Tractography::Mapping {
 
 template <typename value_type> class BufferScratchDump : public Image<value_type> {
 
@@ -40,13 +37,11 @@ public:
 
 private:
   // Helper function to get the underlying data pointer
-  inline const char *get_data_ptr() const {
-    return reinterpret_cast<const char *>(Image::BufferScratch<value_type>::address(0));
-  }
+  inline void *get_data_ptr() const { return reinterpret_cast<void *>(Image::BufferScratch<value_type>::address(0)); }
 };
 
-template <> inline const char *BufferScratchDump<bool>::get_data_ptr() const {
-  return reinterpret_cast<const char *>(Image::BufferScratch<bool>::address());
+template <> inline void *BufferScratchDump<bool>::get_data_ptr() const {
+  return reinterpret_cast<void *>(Image::BufferScratch<bool>::address());
 }
 
 template <typename value_type>
@@ -76,9 +71,9 @@ void BufferScratchDump<value_type>::dump_to_file(const std::string &path, const 
   Image::Stride::List stride = Image::Stride::get(H);
   Image::Stride::symbolise(stride);
 
-  out_header << "\nlayout: " << (stride[0] > 0 ? "+" : "-") << abs(stride[0]) - 1;
+  out_header << "\nlayout: " << (stride[0] > 0 ? "+" : "-") << MR::abs(stride[0]) - 1;
   for (size_t n = 1; n < H.ndim(); ++n)
-    out_header << "," << (stride[n] > 0 ? "+" : "-") << abs(stride[n]) - 1;
+    out_header << "," << (stride[n] > 0 ? "+" : "-") << MR::abs(stride[n]) - 1;
 
   out_header << "\ndatatype: " << H.datatype().specifier();
 
@@ -125,7 +120,7 @@ void BufferScratchDump<value_type>::dump_to_file(const std::string &path, const 
     out_dat.open(dat_path, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
   }
 
-  const char *data_ptr = get_data_ptr();
+  const void *data_ptr = get_data_ptr();
   out_dat.write(data_ptr, dat_size);
   out_dat.close();
 
@@ -136,7 +131,4 @@ void BufferScratchDump<value_type>::dump_to_file(const std::string &path, const 
     File::resize(dat_path, dat_size);
 }
 
-} // namespace Mapping
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Mapping

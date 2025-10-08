@@ -163,7 +163,7 @@ private:
     tck.clear();
     track_excluded = false;
     include_visitation.reset();
-    method.dir.setConstant(NaN);
+    method.dir.setConstant(NaNF);
 
     if (S.properties.seeds.is_finite()) {
 

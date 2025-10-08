@@ -250,9 +250,9 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         // Phase encoding same axis but reversed direction
         // and
         // Equal total readout time (if present)
-        if (((pe_second.head(3) + pe_first.head(3)).squaredNorm() == 0) &&                //
-            (pe_config.cols() == 3 ||                                                     //
-             abs(pe_second[3] - pe_first[3]) < Metadata::PhaseEncoding::trt_tolerance)) { //
+        if (((pe_second.head(3) + pe_first.head(3)).squaredNorm() == 0) &&                      //
+            (pe_config.cols() == 3 ||                                                           //
+             std::fabs(pe_second[3] - pe_first[3]) < Metadata::PhaseEncoding::trt_tolerance)) { //
           peindex2paired[pe_first_index] = pe_second_index;
           peindex2paired[pe_second_index] = pe_first_index;
           pe_pairs.push_back(std::make_pair(pe_first_index, pe_second_index));
@@ -326,7 +326,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
             if (pe_indices[second_volume] != pe_second_index)
               continue;
             const default_type dot_product =
-                abs(grad_in.block<1, 3>(first_volume, 0).dot(grad_in.block<1, 3>(second_volume, 0)));
+                std::fabs(grad_in.block<1, 3>(first_volume, 0).dot(grad_in.block<1, 3>(second_volume, 0)));
             dp_matrix(row, col) = dot_product;
             dp_matrix(col, row) = dot_product;
           }
@@ -349,7 +349,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
           dp_matrix.col(row).maxCoeff(&min_col);
           if (min_col != col) {
             DEBUG(std::string("Debugging information for reversed phase encoding volume pairing") + //
-                  " for b=" + str(int(std::round(shell.get_mean()))));                              //
+                  " for b=" + str(static_cast<ssize_t>(std::round(shell.get_mean()))));             //
             DEBUG("Dot product matrix:");
             DEBUG("\n" + str(dp_matrix.cast<float>()));
             DEBUG("Column " + str(col) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[col], 0)) + //
@@ -357,7 +357,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
             DEBUG("Row " + str(row) + " is however closest" + //
                   " to column " + str(min_col) + " " + str(grad_in.block<1, 3>(shell.get_volumes()[min_col], 0)));
             throw Exception(std::string("Ambiguity in establishing reversed phase encoding volume pairs") + //
-                            " for shell b=" + str(int(std::round(shell.get_mean()))));                      //
+                            " for shell b=" + str(static_cast<ssize_t>(std::round(shell.get_mean()))));     //
           }
           volume_pairs.push_back(std::make_pair(shell.get_volumes()[col], shell.get_volumes()[row]));
           min_closest_dp = std::min(min_closest_dp, this_closest_dp);
@@ -411,8 +411,8 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         throw Exception("Duplicate indices present");
     } catch (Exception &e) {
       throw Exception(e,
-                      "Unable to interpret contents of file \"" + opt[0][0] + "\"" + //
-                          " as volume index pairs");                                 //
+                      "Unable to interpret contents of file \"" + std::string(opt[0][0]) + "\"" + //
+                          " as volume index pairs");                                              //
     }
     bool issue_unmatched_shells_warning = false;
     bool issue_non_reversed_phase_encoding_warning = false;
@@ -421,7 +421,8 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         issue_unmatched_shells_warning = true;
       if (peindex2paired[pe_indices[from_file(row, 0)]] != pe_indices[from_file(row, 1)])
         issue_non_reversed_phase_encoding_warning = true;
-      volume_pairs.push_back(std::make_pair(size_t(from_file(row, 0)), size_t(from_file(row, 1))));
+      volume_pairs.push_back(
+          std::make_pair(static_cast<size_t>(from_file(row, 0)), static_cast<size_t>(from_file(row, 1))));
     }
     if (issue_unmatched_shells_warning) {
       WARN("User-specified volume pairings merging volumes from different shells");
@@ -493,7 +494,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         for (auto l = Loop(gradient)(gradient, /*jacdet_image,*/ weight_image); l; ++l) {
           const default_type jacdet = std::max(0.0, 1.0 + (gradient.value() * multiplier));
           // jacdet_image.value() = jacdet;
-          weight_image.value() = float(Math::pow2(jacdet));
+          weight_image.value() = static_cast<float>(Math::pow2(jacdet));
         }
         // jacdet_images.push_back(std::move(jacdet_image));
         weight_images.push_back(std::move(weight_image));
@@ -588,10 +589,10 @@ void run_combine_predicted(Image<float> &dwi_in,
       // Technically this is a weak constraint:
       //   user-requested lmax may not be possible once excluding a phase encoding group
       if (lmax_user[shell_index] > Math::SH::NforL(shells[shell_index].count()))
-        throw Exception("Requested lmax=" + str(lmax_user[shell_index]) +                                  //
-                        " for shell b=" + str(int(std::round(shells[shell_index].get_mean()))) + "," +     //
-                        " but only " + str(shells[shell_index].count()) + " volumes," +                    //
-                        " which only supports lmax=" + str(Math::SH::NforL(shells[shell_index].count()))); //
+        throw Exception("Requested lmax=" + str(lmax_user[shell_index]) +                                         //
+                        " for shell b=" + str(static_cast<ssize_t>(std::round(shells[shell_index].get_mean()))) + //
+                        ", but only " + str(shells[shell_index].count()) + " volumes," +                          //
+                        " which only supports lmax=" + str(Math::SH::NforL(shells[shell_index].count())));        //
     }
   }
 
@@ -619,7 +620,8 @@ void run_combine_predicted(Image<float> &dwi_in,
       Image<float> jacdet_image =
           Image<float>::scratch(field_image, "Jacobian determinant image for phase encoding group " + str(pe_index));
       for (auto l = Loop(gradient)(gradient, jacdet_image); l; ++l)
-        jacdet_image.value() = float(std::max(0.0, 1.0 + (gradient.value() * multiplier)));
+        jacdet_image.value() =
+            static_cast<float>(std::max(0.0, 1.0 + (static_cast<default_type>(gradient.value()) * multiplier)));
       jacdet_images.push_back(std::move(jacdet_image));
       ++progress;
     }
@@ -788,7 +790,8 @@ void run_combine_predicted(Image<float> &dwi_in,
         for (auto l = Loop(jacdet)(jacdet, dwi_in, dwi_out); l; ++l) {
           // How much weight are we attributing to the empirical data?
           // (if 1.0, we don't need to bother generating predictions)
-          default_type empirical_weight = std::max(0.0, std::min(1.0, default_type(jacdet.value())));
+          default_type empirical_weight =
+              std::max(0.0, std::min(1.0, static_cast<default_type>(static_cast<float>(jacdet.value()))));
           if (empirical_weight == 1.0) {
             for (const auto volume : target_volumes) {
               dwi_in.index(3) = volume;
@@ -810,8 +813,8 @@ void run_combine_predicted(Image<float> &dwi_in,
             // Write these to the output image
             for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
               dwi_in.index(3) = dwi_out.index(3) = target_volumes[target_index];
-              dwi_out.value() = float((empirical_weight * dwi_in.value()) +
-                                      ((1.0 - empirical_weight) * predicted_data[target_index]));
+              dwi_out.value() = static_cast<float>((empirical_weight * static_cast<default_type>(dwi_in.value())) +
+                                                   ((1.0 - empirical_weight) * predicted_data[target_index]));
             }
           }
           if (weights_image.valid()) {
@@ -924,7 +927,7 @@ void run() {
   header_out.datatype().set_byte_order_native();
   header_out.name() = std::string(argument[2]);
 
-  switch (int(argument[1])) {
+  switch (static_cast<uint64_t>(argument[1])) {
 
   case 0:
     Metadata::PhaseEncoding::clear_scheme(header_out.keyval());

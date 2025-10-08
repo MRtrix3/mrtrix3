@@ -17,6 +17,7 @@
 #include "mrtrix.h"
 
 #include <cstdarg>
+#include <string_view>
 
 namespace MR {
 
@@ -35,7 +36,7 @@ std::vector<default_type> parse_floats(const std::string &spec) {
     do {
       end = spec.find_first_of(",:", start);
       std::string sub(spec.substr(start, end - start));
-      range_spec[i] = (sub.empty() || sub == "nan") ? NAN : to<default_type>(sub);
+      range_spec[i] = (sub.empty() || sub == "nan") ? NaN : to<default_type>(sub);
       char last_char = end < spec.size() ? spec[end] : '\0';
       if (last_char == ':') {
         i++;
@@ -66,7 +67,7 @@ std::vector<default_type> parse_floats(const std::string &spec) {
 }
 
 std::vector<std::string>
-split(const std::string &string, const char *delimiters, bool ignore_empty_fields, size_t num) {
+split(const std::string &string, const std::string delimiters, bool ignore_empty_fields, size_t num) {
   std::vector<std::string> V;
   if (string.empty())
     return V;
@@ -97,37 +98,38 @@ namespace {
 
 // from https://www.geeksforgeeks.org/wildcard-character-matching/
 
-inline bool __match(const char *first, const char *second) {
+inline bool __match(std::string_view first, std::string_view second) {
   // If we reach at the end of both strings, we are done
-  if (*first == '\0' && *second == '\0')
+  if (first.empty() && second.empty())
     return true;
 
   // Make sure that the characters after '*' are present
   // in second string. This function assumes that the first
   // string will not contain two consecutive '*'
-  if (*first == '*' && *(first + 1) != '\0' && *second == '\0')
+  if (first[0] == '*' && first[1] != '\0' && !second.empty())
     return false;
 
   // If the first string contains '?', or current characters
   // of both strings match
-  if (*first == '?' || *first == *second)
-    return match(first + 1, second + 1);
+  if (first[0] == '?' || first[0] == second[0])
+    return __match(first.substr(1), second.substr(1));
 
   // If there is *, then there are two possibilities
   // a) We consider current character of second string
   // b) We ignore current character of second string.
-  if (*first == '*')
-    return match(first + 1, second) || match(first, second + 1);
+  if (first[0] == '*')
+    return __match(first.substr(1), second) || __match(first, second.substr(1));
 
   return false;
 }
+
 } // namespace
 
 bool match(const std::string &pattern, const std::string &text, bool ignore_case) {
   if (ignore_case)
-    return __match(lowercase(pattern).c_str(), lowercase(text).c_str());
+    return __match(lowercase(pattern), lowercase(text));
   else
-    return __match(pattern.c_str(), text.c_str());
+    return __match(pattern, text);
 }
 
 std::istream &getline(std::istream &stream, std::string &string) {
@@ -149,21 +151,21 @@ std::string shorten(const std::string &text, size_t longest, size_t prefix) {
     return text;
 }
 
-std::string lowercase(const std::string &string) {
+std::string lowercase(std::string_view string) {
   std::string ret;
   ret.resize(string.size());
   transform(string.begin(), string.end(), ret.begin(), tolower);
   return ret;
 }
 
-std::string uppercase(const std::string &string) {
+std::string uppercase(std::string_view string) {
   std::string ret;
   ret.resize(string.size());
   transform(string.begin(), string.end(), ret.begin(), toupper);
   return ret;
 }
 
-std::string printf(const char *format, ...) {
+std::string printf(const char *format, ...) { // check_syntax off
   size_t len = 0;
   va_list list1, list2;
   va_start(list1, format);
@@ -215,13 +217,14 @@ std::vector<std::string> split_lines(const std::string &string, bool ignore_empt
   return split(string, "\n", ignore_empty_fields, num);
 }
 
-size_t char_is_dash(const char *arg) {
-  assert(arg != nullptr);
+size_t dash_bytes(std::string_view arg) {
+  if (arg.empty())
+    return 0;
   if (arg[0] == '-')
     return 1;
   if (arg[0] == '\0' || arg[1] == '\0' || arg[2] == '\0')
     return 0;
-  const unsigned char *uarg = reinterpret_cast<const unsigned char *>(arg);
+  std::basic_string_view<unsigned char> uarg(reinterpret_cast<const unsigned char *>(arg.data()));
   if (uarg[0] == 0xE2 && uarg[1] == 0x80 && (uarg[2] >= 0x90 && uarg[2] <= 0x95))
     return 3;
   if (uarg[0] == 0xEF) {
@@ -234,17 +237,17 @@ size_t char_is_dash(const char *arg) {
 }
 
 bool is_dash(std::string_view arg) {
-  const size_t nbytes = char_is_dash(arg.data());
+  const size_t nbytes = dash_bytes(arg.data());
   return nbytes != 0 && nbytes == arg.size();
 }
 
-bool starts_with_dash(std::string_view arg) { return char_is_dash(arg.data()) != 0U; }
+bool starts_with_dash(std::string_view arg) { return dash_bytes(arg.data()) != 0U; }
 
 std::string_view without_leading_dash(std::string_view arg) {
-  size_t nbytes = char_is_dash(arg.data());
+  size_t nbytes = dash_bytes(arg.data());
   while (nbytes > 0) {
     arg.remove_prefix(nbytes);
-    nbytes = char_is_dash(arg.data());
+    nbytes = dash_bytes(arg.data());
   }
   return arg;
 }
@@ -259,12 +262,12 @@ std::string join(const std::vector<std::string> &V, const std::string &delimiter
   return ret;
 }
 
-std::string join(const char *const *null_terminated_array, const std::string &delimiter) {
+std::string join(const char *const *null_terminated_array, const std::string &delimiter) { // check_syntax off
   std::string ret;
   if (!null_terminated_array)
     return ret;
   ret = null_terminated_array[0];
-  for (const char *const *p = null_terminated_array + 1; *p; ++p)
+  for (const char *const *p = null_terminated_array + 1; *p; ++p) // check_syntax off
     ret += delimiter + *p;
   return ret;
 }

@@ -133,7 +133,7 @@ std::string resolve_slice_timing(const std::string &one, const std::string &two)
       DEBUG("Error converting slice timing vector to floating-point");
       return "invalid";
     }
-    const default_type diff = abs(f_two - f_one);
+    const default_type diff = std::fabs(f_two - f_one);
     if (diff > 0.00375) {
       DEBUG("Supra-threshold difference of " + str(diff) + "s in slice times");
       return "variable";

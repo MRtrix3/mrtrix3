@@ -28,11 +28,11 @@
 
 #include "surface/types.h"
 
-namespace MR::Surface {
-
-namespace Filter {
+namespace MR::Surface::Filter {
 class Smooth;
-}
+} // namespace MR::Surface::Filter
+
+namespace MR::Surface {
 
 class Mesh {
 

@@ -138,9 +138,9 @@ template <class StreamType> void write_mrtrix_header(const Header &H, StreamType
   auto stride = Stride::get(H);
   Stride::symbolise(stride);
 
-  out << "\nlayout: " << (stride[0] > 0 ? "+" : "-") << abs(stride[0]) - 1;
+  out << "\nlayout: " << (stride[0] > 0 ? "+" : "-") << MR::abs(stride[0]) - 1;
   for (size_t n = 1; n < H.ndim(); ++n)
-    out << "," << (stride[n] > 0 ? "+" : "-") << abs(stride[n]) - 1;
+    out << "," << (stride[n] > 0 ? "+" : "-") << MR::abs(stride[n]) - 1;
 
   DataType dt = H.datatype();
   dt.set_byte_order_native();

@@ -28,16 +28,14 @@ namespace MR::DWI::Tractography::Mapping {
 // Helper functions; note that int[3] rather than Voxel is always used during the mapping itself
 template <typename T> inline Eigen::Vector3i round(const Eigen::Matrix<T, 3, 1> &p) {
   assert(p.allFinite());
-  return {int(std::round(p[0])), int(std::round(p[1])), int(std::round(p[2]))};
+  return p.array().round().template cast<int>().matrix();
 }
 
 template <class HeaderType> inline bool check(const Eigen::Vector3i &V, const HeaderType &H) {
   return (V[0] >= 0 && V[0] < H.size(0) && V[1] >= 0 && V[1] < H.size(1) && V[2] >= 0 && V[2] < H.size(2));
 }
 
-inline Streamline<>::tangent_type vec2DEC(const Streamline<>::tangent_type &d) {
-  return {abs(d[0]), abs(d[1]), abs(d[2])};
-}
+inline Streamline<>::tangent_type vec2DEC(const Streamline<>::tangent_type &d) { return d.array().abs().matrix(); }
 
 class Voxel : public Eigen::Vector3i {
 public:

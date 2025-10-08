@@ -113,7 +113,7 @@ void run() {
   for (size_t n = 0; n < VRs.size(); ++n) {
     union __VR {
       uint16_t i;
-      char c[2];
+      char c[2]; // check_syntax off
     } VR;
     VR.i = VRs[n];
     INFO(std::string("clearing entries with VR \"") + VR.c[1] + VR.c[0] + "\"");

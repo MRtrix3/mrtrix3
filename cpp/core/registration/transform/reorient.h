@@ -39,7 +39,8 @@ multiContrastSetting2start_nvols(const std::vector<MultiContrastSetting> &mcsett
   if (!mcsettings.empty()) {
     for (const auto &mc : mcsettings) {
       if (mc.do_reorientation && mc.lmax > 0) {
-        start_nvols.emplace_back(std::initializer_list<ssize_t>{(ssize_t)mc.start, (ssize_t)mc.nvols});
+        start_nvols.emplace_back(
+            std::initializer_list<ssize_t>{static_cast<ssize_t>(mc.start), static_cast<ssize_t>(mc.nvols)});
         max_n_SH = std::max(mc.nvols, max_n_SH);
       }
     }
@@ -348,7 +349,7 @@ void reorient_warp(const std::string progress_message,
     DEBUG("reorienting warp using MultiContrast NonLinearKernel");
     ThreadedLoop(progress_message, fod_image, 0, 3)
         .run(NonLinearKernelMultiContrast<FODImageType>(
-                 fod_image.size(3), (ssize_t)max_n_SH, warp, directions, start_nvols, modulate),
+                 fod_image.size(3), max_n_SH, warp, directions, start_nvols, modulate),
              fod_image);
   } else {
     DEBUG("reorienting warp using NonLinearKernel");
@@ -374,7 +375,7 @@ void reorient_warp(FODImageType &fod_image,
     DEBUG("reorienting warp using MultiContrast NonLinearKernel");
     ThreadedLoop(fod_image, 0, 3)
         .run(NonLinearKernelMultiContrast<FODImageType>(
-                 fod_image.size(3), (ssize_t)max_n_SH, warp, directions, start_nvols, modulate),
+                 fod_image.size(3), max_n_SH, warp, directions, start_nvols, modulate),
              fod_image);
   } else {
     DEBUG("reorienting warp using NonLinearKernel");

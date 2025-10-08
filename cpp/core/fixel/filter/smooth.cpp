@@ -34,8 +34,9 @@ Smooth::Smooth(Image<index_type> index_image,
   fixel_positions.resize(matrix.size());
   const Transform transform(index_image);
   for (auto i = Loop(index_image, 0, 3)(index_image); i; ++i) {
-    const Eigen::Vector3d vox(
-        (default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
+    const Eigen::Vector3d vox(static_cast<double>(index_image.index(0)),
+                              static_cast<double>(index_image.index(1)),
+                              static_cast<double>(index_image.index(2)));
     const Eigen::Vector3f scanner = (transform.voxel2scanner * vox).cast<float>();
     index_image.index(3) = 0;
     const index_type count = index_image.value();
@@ -60,7 +61,7 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
 
   check_dimensions(input, output);
 
-  if (size_t(input.size(0)) != matrix.size())
+  if (static_cast<size_t>(input.size(0)) != matrix.size())
     throw Exception("Size of fixel data file \"" + input.name() + "\" (" + str(input.size(0)) +
                     ") does not match fixel connectivity matrix (" + str(matrix.size()) + ")");
 

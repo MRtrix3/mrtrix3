@@ -117,11 +117,11 @@ public:
         }
       }
       double max_magnitude = -std::numeric_limits<double>::infinity();
-      cdouble value_at_max = cdouble(std::numeric_limits<double>::signaling_NaN(),  //
-                                     std::numeric_limits<double>::signaling_NaN()); //
+      cdouble value_at_max = {std::numeric_limits<double>::signaling_NaN(),  //
+                              std::numeric_limits<double>::signaling_NaN()}; //
       for (auto l_inner = Loop(axes)(kspace); l_inner; ++l_inner) {
         const cdouble value = kspace.value();
-        const double magnitude = abs(value);
+        const double magnitude = MR::abs(value);
         if (magnitude > max_magnitude) {
           max_magnitude = magnitude;
           value_at_max = value;
@@ -142,7 +142,7 @@ public:
       assign_pos_of(index_of_max).to(interp);
       interp.voxel(pos.template cast<double>());
       interp.value_and_gradient(value, gradient);
-      const double mag = abs(value);
+      const double mag = MR::abs(value);
       for (ssize_t iter = 0; iter != 10; ++iter) {
         pos_type grad_mag({0.0, 0.0, 0.0}); // Gradient of the magnitude of the complex k-space data
         for (ssize_t axis = 0; axis != 3; ++axis) {
@@ -155,7 +155,7 @@ public:
       }
       value_at_max = value;
       const real_type phase_at_max = std::arg(value_at_max);
-      max_magnitude = abs(value_at_max);
+      max_magnitude = MR::abs(value_at_max);
 
       // Determine direction and frequency of harmonic
       pos_type kspace_origin;
@@ -176,7 +176,7 @@ public:
         const real_type voxel_phase =
             phase_at_max + (2.0 * Math::pi * (pos - voxel_origin).dot(cycle_voxel) / cycle_voxel.squaredNorm());
         const value_type modulator(std::cos(voxel_phase), std::sin(voxel_phase));
-        phase.value() = cfloat(modulator);
+        phase.value() = static_cast<cfloat>(modulator);
       }
     }; // End of gen_linear_phase()
 
@@ -187,15 +187,15 @@ public:
       Image<double> window = Filter::KSpace::window_hann(input, axes);
       Adapter::Replicate<Image<double>> replicating_window(window, in);
       for (auto l = Loop(kspace)(kspace, replicating_window); l; ++l)
-        kspace.value() *= double(replicating_window.value());
+        kspace.value() *= static_cast<double>(replicating_window.value());
       for (auto axis : axes) {
         Math::FFT(kspace, kspace, axis, FFTW_BACKWARD, false);
         ++progress;
       }
       for (auto l = Loop(kspace)(kspace, phase); l; ++l) {
-        cdouble value = cdouble(kspace.value());
+        cdouble value = static_cast<cdouble>(kspace.value());
         value /= std::sqrt(norm(value));
-        phase.value() = {float(value.real()), float(value.imag())};
+        phase.value() = {static_cast<float>(value.real()), static_cast<float>(value.imag())};
       }
     }; // End of gen_nonlinear_phase()
 
@@ -218,13 +218,14 @@ public:
   operator()(InputImageType &in, OutputImageType &out, const bool forward = false) {
     if (forward) {
       for (auto l = Loop("re-applying phase modulation")(in, phase, out); l; ++l)
-        out.value() = typename OutputImageType::value_type(typename InputImageType::value_type(in.value()) *
-                                                           typename InputImageType::value_type(cfloat(phase.value())));
+        out.value() = static_cast<typename OutputImageType::value_type>(
+            static_cast<typename InputImageType::value_type>(in.value()) *
+            static_cast<typename InputImageType::value_type>(static_cast<cfloat>(phase.value())));
     } else {
       for (auto l = Loop("performing phase demodulation")(in, phase, out); l; ++l)
-        out.value() =
-            typename OutputImageType::value_type(typename InputImageType::value_type(in.value()) *
-                                                 typename InputImageType::value_type(std::conj(cfloat(phase.value()))));
+        out.value() = static_cast<typename OutputImageType::value_type>(
+            static_cast<typename InputImageType::value_type>(in.value()) *
+            static_cast<typename InputImageType::value_type>(std::conj(static_cast<cfloat>(phase.value()))));
     }
   }
 
@@ -233,13 +234,14 @@ public:
   operator()(ImageType &image, const bool forward = false) {
     if (forward) {
       for (auto l = Loop("re-applying phase modulation")(image, phase); l; ++l)
-        image.value() = typename ImageType::value_type(typename ImageType::value_type(image.value()) *
-                                                       typename ImageType::value_type(cfloat(phase.value())));
+        image.value() = static_cast<typename ImageType::value_type>(
+            static_cast<typename ImageType::value_type>(image.value()) *
+            static_cast<typename ImageType::value_type>(static_cast<cfloat>(phase.value())));
     } else {
       for (auto l = Loop("performing phase demodulation")(image, phase); l; ++l)
-        image.value() =
-            typename ImageType::value_type(typename ImageType::value_type(image.value()) *
-                                           typename ImageType::value_type(std::conj(cfloat(phase.value()))));
+        image.value() = static_cast<typename ImageType::value_type>(
+            static_cast<typename ImageType::value_type>(image.value()) *
+            static_cast<typename ImageType::value_type>(std::conj(static_cast<cfloat>(phase.value()))));
     }
   }
 

@@ -63,14 +63,14 @@ public:
   float get_threshold_rate() const {
     switch (threshold_type) {
     case TrackThresholdType::None:
-      return NaN;
+      return NaNF;
     case TrackThresholdType::UseColourFile:
       return scaling_rate();
     case TrackThresholdType::SeparateFile:
       return (1e-3 * (threshold_max - threshold_min));
     }
     assert(0);
-    return NaN;
+    return NaNF;
   }
   float get_threshold_min() const { return threshold_min; }
   float get_threshold_max() const { return threshold_max; }

@@ -85,7 +85,7 @@ public:
     return items[index];
   }
   const FileDataVector &get(QModelIndex &index) {
-    assert(size_t(index.row()) < items.size());
+    assert(static_cast<size_t>(index.row()) < items.size());
     return items[index.row()];
   }
 

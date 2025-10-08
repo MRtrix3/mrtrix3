@@ -288,7 +288,7 @@ private:
     az_in.col(0) = idx * golden_angle;
 
     // el(i) = acos (1-(1-cosd(max_cone_angle_deg))*i/(n_dir-1) )
-    default_type a = (1.0 - std::cos(Math::pi / 180.0 * default_type(max_cone_angle_deg))) / (default_type(n_dir - 1));
+    default_type a = (1.0 - std::cos(Math::pi / 180.0 * max_cone_angle_deg)) / static_cast<default_type>(n_dir - 1);
     az_in.col(1).array() = -a * idx.array() + 1.0;
     for (size_t i = 0; i < n_dir; ++i)
       az_in(i, 1) = std::acos(az_in(i, 1));

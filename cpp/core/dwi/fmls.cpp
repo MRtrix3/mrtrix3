@@ -64,7 +64,7 @@ void load_fmls_thresholds(Segmenter &segmenter) {
       WARN("Option -fmls_integral ignored:"
            " -fmls_no_thresholds overrides this");
     } else {
-      segmenter.set_integral_threshold(default_type(opt[0][0]));
+      segmenter.set_integral_threshold(static_cast<default_type>(opt[0][0]));
     }
   }
 
@@ -74,13 +74,13 @@ void load_fmls_thresholds(Segmenter &segmenter) {
       WARN("Option -fmls_peak_value ignored:"
            " -fmls_no_thresholds overrides this");
     } else {
-      segmenter.set_peak_value_threshold(default_type(opt[0][0]));
+      segmenter.set_peak_value_threshold(static_cast<default_type>(opt[0][0]));
     }
   }
 
   opt = get_options("fmls_lobe_merge_ratio");
   if (!opt.empty())
-    segmenter.set_lobe_merge_ratio(default_type(opt[0][0]));
+    segmenter.set_lobe_merge_ratio(static_cast<default_type>(opt[0][0]));
 }
 
 IntegrationWeights::IntegrationWeights(const DWI::Directions::Set &dirs) : data(dirs.size()) {
@@ -137,12 +137,12 @@ Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const siz
 
 class Max_abs {
 public:
-  bool operator()(const default_type &a, const default_type &b) const { return (abs(a) > abs(b)); }
+  bool operator()(const default_type &a, const default_type &b) const { return (std::fabs(a) > std::fabs(b)); }
 };
 
 bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
-  assert(in.size() == ssize_t(Math::SH::NforL(lmax)));
+  assert(in.size() == static_cast<Eigen::Index>(Math::SH::NforL(lmax)));
 
   out.clear();
   out.vox = in.vox;
@@ -156,8 +156,8 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
   using map_type = std::multimap<default_type, index_type, Max_abs>;
 
   map_type data_in_order;
-  for (size_t i = 0; i != size_t(values.size()); ++i)
-    data_in_order.insert(std::make_pair(values[i], i));
+  for (Eigen::Index i = 0; i != values.size(); ++i)
+    data_in_order.insert(std::make_pair(values[i], static_cast<index_type>(i)));
 
   if (data_in_order.begin()->first <= 0.0)
     return true;
@@ -188,7 +188,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
       // Changed handling of lobe merges
       // Merge lobes as they appear to be merged, but update the
       //   contents of retrospective_assignments accordingly
-      if (abs(i.first) / out[adj_lobes.back()].get_max_peak_value() > lobe_merge_ratio) {
+      if (std::fabs(i.first) / out[adj_lobes.back()].get_max_peak_value() > lobe_merge_ratio) {
 
         std::sort(adj_lobes.begin(), adj_lobes.end());
         for (size_t j = 1; j != adj_lobes.size(); ++j)
@@ -247,7 +247,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
           default_type max_dp = 0.0;
           size_t nearest_original_peak = i->num_peaks();
           for (size_t j = 0; j != i->num_peaks(); ++j) {
-            const default_type this_dp = abs(newton_peak_dir.dot(i->get_peak_dir(j)));
+            const default_type this_dp = std::fabs(newton_peak_dir.dot(i->get_peak_dir(j)));
             if (this_dp > max_dp) {
               max_dp = this_dp;
               nearest_original_peak = j;
@@ -391,7 +391,7 @@ void Segmenter::optimise_mean_dir(FOD_lobe &lobe) const {
           p = -p;
         p[2] = 0.0; // Force projection onto the tangent plane
 
-        const float dp = abs(mean_dir.dot(dir));
+        const float dp = std::fabs(mean_dir.dot(dir));
         const float theta = (dp < 1.0) ? std::acos(dp) : 0.0;
         const float log_transform = theta ? (theta / std::sin(theta)) : 1.0;
         p *= log_transform;

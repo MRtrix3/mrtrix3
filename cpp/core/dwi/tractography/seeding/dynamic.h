@@ -65,7 +65,7 @@ public:
   Fixel_TD_seed(const Fixel_TD_seed &that)
       : SIFT::FixelBase(that),
         voxel(that.voxel),
-        TD(double(that.TD)),
+        TD(static_cast<double>(that.TD)),
         update(that.update),
         old_prob(that.old_prob),
         applied_prob(that.applied_prob),
@@ -116,9 +116,9 @@ public:
       ;
     float cumulative_prob = old_prob;
     if (track_count > track_count_at_last_update) {
-      cumulative_prob =
-          ((track_count_at_last_update * old_prob) + ((track_count - track_count_at_last_update) * applied_prob)) /
-          float(track_count);
+      cumulative_prob = ((static_cast<float>(track_count_at_last_update) * old_prob) +
+                         (static_cast<float>(track_count - track_count_at_last_update) * applied_prob)) /
+                        static_cast<float>(track_count);
       old_prob = cumulative_prob;
       track_count_at_last_update = track_count;
     }
@@ -138,8 +138,8 @@ public:
 
 private:
   Eigen::Vector3i voxel;
-  std::atomic<double>
-      TD;      // Protect against concurrent reads & writes, though perfect thread concurrency is not necessary
+  // Protect against concurrent reads & writes, though perfect thread concurrency is not necessary
+  std::atomic<double> TD;
   bool update; // For small / noisy fixels, exclude the seeding probability from being updated
 
   // Multiple values to update - use an atomic boolean in a similar manner to a mutex, but with less overhead

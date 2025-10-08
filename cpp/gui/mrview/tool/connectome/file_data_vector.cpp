@@ -23,7 +23,7 @@
 
 namespace MR::GUI::MRView::Tool {
 
-FileDataVector::FileDataVector() : base_t(), min(NaN), mean(NaN), max(NaN) {}
+FileDataVector::FileDataVector() : base_t(), min(NaNF), mean(NaNF), max(NaNF) {}
 
 FileDataVector::FileDataVector(const FileDataVector &V)
     : base_t(V), name(V.name), min(V.min), mean(V.mean), max(V.max) {}
@@ -31,13 +31,13 @@ FileDataVector::FileDataVector(const FileDataVector &V)
 FileDataVector::FileDataVector(FileDataVector &&V)
     : base_t(std::move(V)), name(V.name), min(V.min), mean(V.mean), max(V.max) {
   V.name.clear();
-  V.min = V.mean = V.max = NaN;
+  V.min = V.mean = V.max = NaNF;
 }
 
-FileDataVector::FileDataVector(const size_t nelements) : base_t(nelements), min(NaN), mean(NaN), max(NaN) {}
+FileDataVector::FileDataVector(const size_t nelements) : base_t(nelements), min(NaNF), mean(NaNF), max(NaNF) {}
 
 FileDataVector::FileDataVector(const std::string &file)
-    : base_t(), name(qstr(Path::basename(file))), min(NaN), mean(NaN), max(NaN) {
+    : base_t(), name(qstr(Path::basename(file))), min(NaNF), mean(NaNF), max(NaNF) {
   base_t temp = File::Matrix::load_vector<float>(file);
   base_t::operator=(temp);
   calc_stats();
@@ -58,7 +58,9 @@ FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
   mean = that.mean;
   max = that.max;
   that.name.clear();
-  that.min = that.mean = that.max = NaN;
+  that.min = NaNF;
+  that.mean = NaNF;
+  that.max = NaNF;
   return *this;
 }
 
@@ -73,20 +75,22 @@ FileDataVector &FileDataVector::load(const std::string &filename) {
 FileDataVector &FileDataVector::clear() {
   base_t::resize(0);
   name.clear();
-  min = mean = max = NaN;
+  min = NaNF;
+  mean = NaNF;
+  max = NaNF;
   return *this;
 }
 
 void FileDataVector::calc_stats() {
-  min = std::numeric_limits<float>::infinity();
+  min = InfF;
   double sum = 0.0;
-  max = -std::numeric_limits<float>::infinity();
-  for (size_t i = 0; i != size_t(size()); ++i) {
+  max = -InfF;
+  for (Eigen::Index i = 0; i != size(); ++i) {
     min = std::min(min, operator[](i));
     sum += operator[](i);
     max = std::max(max, operator[](i));
   }
-  mean = sum / double(size());
+  mean = sum / static_cast<double>(size());
 }
 
 } // namespace MR::GUI::MRView::Tool

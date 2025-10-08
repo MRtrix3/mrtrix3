@@ -63,7 +63,7 @@ public:
   const ACT::ACT_Shared_additions &act() const { return *act_shared_additions; }
 
   float vox() const {
-    return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), float(1.0 / 3.0));
+    return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), 1.0F / 3.0F);
   }
 
   void set_step_and_angle(const float voxel_frac,

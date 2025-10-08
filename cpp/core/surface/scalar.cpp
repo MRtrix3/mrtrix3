@@ -40,7 +40,7 @@ Scalar::Scalar(const std::string &path, const Mesh &mesh) {
       }
     }
   }
-  if (size_t(size()) != mesh.num_vertices())
+  if (static_cast<size_t>(size()) != mesh.num_vertices())
     throw Exception("Input surface scalar file \"" + path + "\" has incorrect number of vertices (" + str(size()) +
                     ", mesh has " + str(mesh.num_vertices()) + ")");
   name = Path::basename(path);
@@ -59,7 +59,7 @@ void Scalar::load_fs_w(const std::string &path, const Mesh &mesh) {
   for (int32_t i = 0; i != num_entries; ++i) {
     const int32_t index = FreeSurfer::get_int24_BE(in);
     const float value = FreeSurfer::get_BE<float>(in);
-    if (size_t(index) >= mesh.num_vertices())
+    if (static_cast<size_t>(index) >= mesh.num_vertices())
       throw Exception("Error opening file \"" + path + "\" as FreeSurfer w-file: invalid vertex index (" + str(index) +
                       ", mesh has " + str(mesh.num_vertices()) + ")");
     if (!in.good())
@@ -77,12 +77,12 @@ void Scalar::load_fs_curv(const std::string &path, const Mesh &mesh) {
   if (magic_number == FreeSurfer::new_curv_file_magic_number) {
 
     const int32_t num_vertices = FreeSurfer::get_BE<int32_t>(in);
-    if (size_t(num_vertices) != mesh.num_vertices())
+    if (static_cast<size_t>(num_vertices) != mesh.num_vertices())
       throw Exception("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of vertices (" +
                       str(num_vertices) + ", mesh has " + str(mesh.num_vertices()) + ")");
 
     const int32_t num_faces = FreeSurfer::get_BE<int32_t>(in);
-    if (size_t(num_faces) != mesh.num_polygons())
+    if (static_cast<size_t>(num_faces) != mesh.num_polygons())
       throw Exception("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of polygons (" +
                       str(num_faces) + ", mesh has " + str(mesh.num_polygons()) + ")");
 
@@ -97,12 +97,12 @@ void Scalar::load_fs_curv(const std::string &path, const Mesh &mesh) {
   } else {
 
     const int32_t num_vertices = magic_number;
-    if (size_t(num_vertices) != mesh.num_vertices())
+    if (static_cast<size_t>(num_vertices) != mesh.num_vertices())
       throw Exception("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of vertices (" +
                       str(num_vertices) + ", mesh has " + str(mesh.num_vertices()) + ")");
 
     const int32_t num_faces = FreeSurfer::get_int24_BE(in);
-    if (size_t(num_faces) != mesh.num_polygons())
+    if (static_cast<size_t>(num_faces) != mesh.num_polygons())
       throw Exception("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of polygons (" +
                       str(num_faces) + ", mesh has " + str(mesh.num_polygons()) + ")");
 

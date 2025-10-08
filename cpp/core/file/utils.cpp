@@ -59,12 +59,12 @@ inline char random_char() {
 // ENVVAR temporary files (as used in Unix pipes) for a single session,
 // ENVVAR within a single script, or for a single command without
 // ENVVAR modifying the configuration  file.
-const std::string __get_tmpfile_dir() {
-  const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR");
+std::string __get_tmpfile_dir() {
+  const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR"); // check_syntax off
   if (from_env_mrtrix != nullptr)
-    return from_env_mrtrix;
+    return std::string(from_env_mrtrix);
 
-  const char *default_tmpdir =
+  std::string default_tmpdir =
 #ifdef MRTRIX_WINDOWS
       "."
 #else
@@ -72,9 +72,9 @@ const std::string __get_tmpfile_dir() {
 #endif
       ;
 
-  const char *from_env_general = getenv("TMPDIR");
+  const char *from_env_general = getenv("TMPDIR"); // check_syntax off
   if (from_env_general != nullptr)
-    default_tmpdir = from_env_general;
+    default_tmpdir = std::string(from_env_general);
 
   return File::Config::get("TmpFileDir", default_tmpdir);
 }
@@ -99,8 +99,8 @@ const std::string &tmpfile_dir() {
 // ENVVAR the name  of temporary files (as used in Unix pipes) for a
 // ENVVAR single session, within a single script, or for a single command
 // ENVVAR without modifying the configuration file.
-const std::string __get_tmpfile_prefix() {
-  const char *from_env = getenv("MRTRIX_TMPFILE_PREFIX");
+std::string __get_tmpfile_prefix() {
+  const char *from_env = getenv("MRTRIX_TMPFILE_PREFIX"); // check_syntax off
   if (from_env != nullptr)
     return from_env;
   return File::Config::get("TmpFilePrefix", "mrtrix-tmp-");
@@ -160,22 +160,20 @@ void resize(const std::string &filename, int64_t size) {
     throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
 }
 
-bool is_tempfile(const std::string &name, const char *suffix) {
+bool is_tempfile(const std::string &name, const std::string &suffix) {
   if (Path::basename(name).compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
     return false;
-  if (suffix != nullptr)
-    if (!Path::has_suffix(name, suffix))
-      return false;
+  if (!suffix.empty() && !Path::has_suffix(name, suffix))
+    return false;
   return true;
 }
 
-std::string create_tempfile(int64_t size, const char *suffix) {
+std::string create_tempfile(int64_t size, const std::string &suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
   std::string filename(Path::join(tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
   const int rand_index = filename.size() - 7;
-  if (suffix != nullptr)
-    filename += suffix;
+  filename += suffix;
 
   int fid(0);
   do {

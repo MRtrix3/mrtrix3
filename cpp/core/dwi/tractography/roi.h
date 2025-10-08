@@ -49,7 +49,7 @@ public:
   ROI(const Eigen::Vector3f &sphere_pos, float sphere_radius)
       : pos(sphere_pos), radius(sphere_radius), radius2(Math::pow2(radius)) {}
 
-  ROI(const std::string &spec) : radius(NaN), radius2(NaN) {
+  ROI(const std::string &spec) : radius(NaNF), radius2(NaNF) {
     try {
       auto F = parse_floats(spec);
       if (F.size() != 4)

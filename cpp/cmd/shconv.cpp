@@ -90,7 +90,7 @@ protected:
 };
 
 void run() {
-  if (!(argument.size() & size_t(1U)))
+  if (!(argument.size() & size_t(1)))
     throw Exception("unexpected number of arguments");
 
   std::vector<Image<value_type>> inputs((argument.size() - 1) / 2);

@@ -97,28 +97,28 @@ protected:
     case DataType::Float32LE: {
       float val;
       in.read((char *)&val, sizeof(val));
-      return (value_type(LE(val)));
+      return static_cast<value_type>(LE(val));
     }
     case DataType::Float32BE: {
       float val;
       in.read((char *)&val, sizeof(val));
-      return (value_type(BE(val)));
+      return static_cast<value_type>(BE(val));
     }
     case DataType::Float64LE: {
       double val;
       in.read((char *)&val, sizeof(val));
-      return (value_type(LE(val)));
+      return static_cast<value_type>(LE(val));
     }
     case DataType::Float64BE: {
       double val;
       in.read((char *)&val, sizeof(val));
-      return (value_type(BE(val)));
+      return static_cast<value_type>(BE(val));
     }
     default:
       assert(0);
       break;
     }
-    return (value_type(NaN));
+    return std::numeric_limits<value_type>::quiet_NaN();
   }
 
   ScalarReader(const ScalarReader &) = delete;
@@ -195,7 +195,7 @@ protected:
 
   void add_scalar(const value_type &s) { format_scalar(s, buffer[buffer_size++]); }
 
-  value_type delimiter() const { return value_type(NAN); }
+  value_type delimiter() const { return std::numeric_limits<value_type>::quiet_NaN(); }
 
   void format_scalar(const value_type &s, value_type &destination) {
     using namespace ByteOrder;
@@ -211,7 +211,7 @@ protected:
     File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out.seekp(current_offset, out.beg);
     out.write(reinterpret_cast<char *>(buffer.get()), sizeof(value_type) * buffer_size);
-    current_offset = int64_t(out.tellp());
+    current_offset = static_cast<int64_t>(out.tellp());
     verify_stream(out);
     update_counts(out);
     verify_stream(out);

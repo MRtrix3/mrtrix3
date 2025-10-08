@@ -146,11 +146,11 @@ protected:
 
       // calculating oscillation measure within given window
       for (int k = minW; k <= maxW; ++k) {
-        sum_left += abs(ifft[f][wraparound(n - k, lsize)].real() - ifft[f][wraparound(n - k - 1, lsize)].real());
-        sum_left += abs(ifft[f][wraparound(n - k, lsize)].imag() - ifft[f][wraparound(n - k - 1, lsize)].imag());
+        sum_left += std::fabs(ifft[f][wraparound(n - k, lsize)].real() - ifft[f][wraparound(n - k - 1, lsize)].real());
+        sum_left += std::fabs(ifft[f][wraparound(n - k, lsize)].imag() - ifft[f][wraparound(n - k - 1, lsize)].imag());
 
-        sum_right += abs(ifft[f][wraparound(n + k, lsize)].real() - ifft[f][wraparound(n + k + 1, lsize)].real());
-        sum_right += abs(ifft[f][wraparound(n + k, lsize)].imag() - ifft[f][wraparound(n + k + 1, lsize)].imag());
+        sum_right += std::fabs(ifft[f][wraparound(n + k, lsize)].real() - ifft[f][wraparound(n + k + 1, lsize)].real());
+        sum_right += std::fabs(ifft[f][wraparound(n + k, lsize)].imag() - ifft[f][wraparound(n + k + 1, lsize)].imag());
       }
 
       const real_type tot_var = std::min(sum_left, sum_right);

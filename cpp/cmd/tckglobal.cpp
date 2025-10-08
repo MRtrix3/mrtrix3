@@ -381,7 +381,7 @@ void run() {
       auto Fiso = Image<float>::create(opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     } else {
-      WARN("Ignore saving file " + opt[0][0] + ", because no isotropic response functions were provided.");
+      WARN("Ignore saving file " + std::string(opt[0][0]) + ", because no isotropic response functions were provided.");
     }
   }
 

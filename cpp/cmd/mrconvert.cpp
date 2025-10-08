@@ -429,7 +429,7 @@ void run() {
     auto entry = header_out.keyval().find(opt[n][0]);
     if (entry == header_out.keyval().end()) {
       if (std::string(opt[n][0]) != "command_history") {
-        WARN("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+        WARN("No header key/value entry \"" + std::string(opt[n][0]) + "\" found; ignored");
       }
     } else {
       header_out.keyval().erase(entry);
@@ -475,7 +475,7 @@ void run() {
       if (axis == 3) {
         const auto grad = DWI::parse_DW_scheme(header_out);
         if (grad.rows()) {
-          if ((ssize_t)grad.rows() != header_in.size(3)) {
+          if (static_cast<ssize_t>(grad.rows()) != header_in.size(3)) {
             WARN("Diffusion encoding of input file does not match number of image volumes;" //
                  " omitting gradient information from output image");                       //
             DWI::clear_DW_scheme(header_out);
@@ -506,8 +506,8 @@ void run() {
     for (size_t n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
         pos[n].resize(header_in.size(n));
-        for (uint32_t i = 0; i < uint32_t(pos[n].size()); i++)
-          pos[n][i] = i;
+        for (size_t i = 0; i < pos[n].size(); i++)
+          pos[n][i] = static_cast<uint32_t>(i);
       }
     }
   }

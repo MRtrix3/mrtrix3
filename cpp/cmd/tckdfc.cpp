@@ -150,10 +150,10 @@ class Receiver {
 public:
   Receiver(const Header &header, const vox_stat_t stat_vox)
       : buffer(Image<float>::scratch(header, "TW-dFC scratch buffer")), vox_stat(stat_vox) {
-    if (vox_stat == V_MIN) {
+    if (vox_stat == vox_stat_t::MIN) {
       for (auto l = Loop(buffer)(buffer); l; ++l)
         buffer.value() = std::numeric_limits<float>::infinity();
-    } else if (vox_stat == V_MAX) {
+    } else if (vox_stat == vox_stat_t::MAX) {
       for (auto l = Loop(buffer)(buffer); l; ++l)
         buffer.value() = -std::numeric_limits<float>::infinity();
     }
@@ -173,16 +173,16 @@ bool Receiver::operator()(const Mapping::SetVoxel &in) {
   for (const auto &i : in) {
     assign_pos_of(i, 0, 3).to(buffer);
     switch (vox_stat) {
-    case V_SUM:
+    case vox_stat_t::SUM:
       buffer.value() += factor;
       break;
-    case V_MIN:
-      buffer.value() = std::min(float(buffer.value()), factor);
+    case vox_stat_t::MIN:
+      buffer.value() = std::min(static_cast<float>(buffer.value()), factor);
       break;
-    case V_MAX:
-      buffer.value() = std::max(float(buffer.value()), factor);
+    case vox_stat_t::MAX:
+      buffer.value() = std::max(static_cast<float>(buffer.value()), factor);
       break;
-    case V_MEAN:
+    case vox_stat_t::MEAN:
       buffer.value() += factor;
       break;
       // Unlike Mapping::MapWriter, don't need to deal with counts here
@@ -195,7 +195,7 @@ void Receiver::scale_by_count(Image<uint32_t> &counts) {
   assert(dimensions_match(buffer, counts, 0, 3));
   for (auto l = Loop(buffer)(buffer, counts); l; ++l) {
     if (counts.value())
-      buffer.value() /= float(counts.value());
+      buffer.value() /= static_cast<float>(counts.value());
     else
       buffer.value() = 0.0f;
   }
@@ -249,27 +249,27 @@ void run() {
 
     case 1: // triangle
       for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 1.0 - (abs(i - centre) / default_type(halfwidth));
+        window[i] = 1.0 - (std::fabs(i - centre) / static_cast<default_type>(halfwidth));
       break;
 
     case 2: // cosine
       for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = std::sin(i * Math::pi / default_type(window_width - 1));
+        window[i] = std::sin(i * Math::pi / static_cast<default_type>(window_width - 1));
       break;
 
     case 3: // hann
       for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 0.5 * (1.0 - std::cos(2.0 * Math::pi * i / default_type(window_width - 1)));
+        window[i] = 0.5 * (1.0 - std::cos(2.0 * Math::pi * i / static_cast<default_type>(window_width - 1)));
       break;
 
     case 4: // hamming
       for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 0.53836 - (0.46164 * std::cos(2.0 * Math::pi * i / default_type(window_width - 1)));
+        window[i] = 0.53836 - (0.46164 * std::cos(2.0 * Math::pi * i / static_cast<default_type>(window_width - 1)));
       break;
 
     case 5: // lanczos
       for (ssize_t i = 0; i != window_width; ++i) {
-        const default_type v = 2.0 * Math::pi * abs(i - centre) / default_type(window_width - 1);
+        const default_type v = 2.0 * Math::pi * std::fabs(i - centre) / static_cast<default_type>(window_width - 1);
         window[i] = v ? std::max(0.0, (std::sin(v) / v)) : 1.0;
       }
       break;
@@ -348,7 +348,8 @@ void run() {
   }
 
   opt = get_options("stat_vox");
-  const vox_stat_t stat_vox = !opt.empty() ? vox_stat_t(int(opt[0][0])) : V_MEAN;
+  const vox_stat_t stat_vox =
+      !opt.empty() ? vox_stat_t(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : vox_stat_t::MEAN;
 
   Header H_3D(header);
   H_3D.ndim() = 3;
@@ -357,7 +358,7 @@ void run() {
 
     Tractography::Reader<float> tck_file(tck_path, properties);
     Mapping::TrackLoader loader(tck_file, num_tracks, "Generating (static) TW-dFC image");
-    Mapping::TrackMapperTWI mapper(H_3D, SCALAR_MAP, ENDS_CORR);
+    Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
     mapper.set_upsample_ratio(upsample_ratio);
     mapper.add_twdfc_static_image(fmri_image);
     Mapping::MapWriter<float> writer(header, argument[2], stat_vox);
@@ -371,7 +372,7 @@ void run() {
   } else {
 
     Image<uint32_t> counts;
-    if (stat_vox == V_MEAN) {
+    if (stat_vox == vox_stat_t::MEAN) {
       counts = Image<uint32_t>::scratch(H_3D, "Track count scratch buffer");
       Tractography::Reader<float> tck_file(tck_path, properties);
       Mapping::TrackLoader loader(tck_file, num_tracks, "Calculating initial TDI");
@@ -393,7 +394,7 @@ void run() {
         LogLevelLatch latch(0);
         Tractography::Reader<float> tck_file(tck_path, properties);
         Mapping::TrackLoader loader(tck_file);
-        Mapping::TrackMapperTWI mapper(H_3D, SCALAR_MAP, ENDS_CORR);
+        Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
         mapper.set_upsample_ratio(upsample_ratio);
         mapper.add_twdfc_dynamic_image(fmri_image, window, timepoint);
         Receiver receiver(H_3D, stat_vox);
@@ -403,7 +404,7 @@ void run() {
                           Thread::batch(Mapping::SetVoxel()),
                           receiver);
 
-        if (stat_vox == V_MEAN)
+        if (stat_vox == vox_stat_t::MEAN)
           receiver.scale_by_count(counts);
 
         out_image.index(3) = timepoint;

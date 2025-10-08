@@ -98,7 +98,7 @@ void usage() {
 
 class Direction {
 public:
-  Direction() : a(NaN) {}
+  Direction() : a(NaNF) {}
   Direction(const Direction &d) : a(d.a), v(d.v) {}
   Direction(value_type phi, value_type theta)
       : a(1.0), v(std::cos(phi) * std::sin(theta), std::sin(phi) * std::sin(theta), std::cos(theta)) {}
@@ -129,7 +129,7 @@ public:
         assign_pos_of(sh, 0, 3).to(mask);
       if (mask.valid() && !mask.value()) {
         for (auto l = Loop(3)(sh); l; ++l)
-          item.data[sh.index(3)] = NaN;
+          item.data[sh.index(3)] = NaNF;
       } else {
         // iterates over SH coefficients
         for (auto l = Loop(3)(sh); l; ++l)
@@ -177,19 +177,19 @@ public:
 
     if (check_input(item)) {
       for (auto l = Loop(3)(dirs_vox); l; ++l)
-        dirs_vox.value() = NaN;
+        dirs_vox.value() = NaNF;
       return true;
     }
 
     std::vector<Direction> all_peaks;
 
-    for (size_t i = 0; i < size_t(dirs.rows()); i++) {
+    for (decltype(dirs)::Index i = 0; i < dirs.rows(); i++) {
       Direction p(dirs(i, 0), dirs(i, 1));
       p.a = Math::SH::get_peak(item.data, lmax, p.v, precomputer.get());
       if (std::isfinite(p.a)) {
         for (size_t j = 0; j < all_peaks.size(); j++) {
-          if (abs(p.v.dot(all_peaks[j].v)) > dotproduct_threshold) {
-            p.a = NAN;
+          if (std::fabs(p.v.dot(all_peaks[j].v)) > dotproduct_threshold) {
+            p.a = NaNF;
             break;
           }
         }
@@ -214,7 +214,7 @@ public:
 
         value_type mdot = 0.0;
         for (size_t n = 0; n < all_peaks.size(); n++) {
-          value_type f = abs(p.dot(all_peaks[n].v));
+          value_type f = std::fabs(p.dot(all_peaks[n].v));
           if (f > mdot) {
             mdot = f;
             peaks_out[i] = all_peaks[n];
@@ -225,7 +225,7 @@ public:
       for (int i = 0; i < npeaks; i++) {
         value_type mdot = 0.0;
         for (size_t n = 0; n < all_peaks.size(); n++) {
-          value_type f = abs(all_peaks[n].v.dot(true_peaks[i].v));
+          value_type f = std::fabs(all_peaks[n].v.dot(true_peaks[i].v));
           if (f > mdot) {
             mdot = f;
             peaks_out[i] = all_peaks[n];
@@ -236,7 +236,7 @@ public:
       std::partial_sort_copy(all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
     }
 
-    int actual_npeaks = std::min(npeaks, (int)all_peaks.size());
+    int actual_npeaks = std::min(npeaks, static_cast<int>(all_peaks.size()));
     dirs_vox.index(3) = 0;
     for (int n = 0; n < actual_npeaks; n++) {
       dirs_vox.value() = peaks_out[n].a * peaks_out[n].v[0];
@@ -247,7 +247,7 @@ public:
       dirs_vox.index(3)++;
     }
     for (; dirs_vox.index(3) < 3 * npeaks; dirs_vox.index(3)++)
-      dirs_vox.value() = NaN;
+      dirs_vox.value() = NaNF;
 
     return true;
   }
@@ -268,16 +268,16 @@ private:
       ipeaks_vox.index(1) = item.pos[1];
       ipeaks_vox.index(2) = item.pos[2];
       ipeaks_vox.index(3) = 0;
-      if (std::isnan(value_type(ipeaks_vox.value())))
+      if (std::isnan(static_cast<float>(ipeaks_vox.value())))
         return true;
     }
 
     bool no_peaks = true;
-    for (size_t i = 0; i < size_t(item.data.size()); i++) {
+    for (decltype(item.data)::Index i = 0; i < item.data.size(); i++) {
       if (std::isnan(item.data[i]))
         return true;
       if (no_peaks)
-        if (i && item.data[i] != 0.0)
+        if (i > 0 && item.data[i] != 0.0)
           no_peaks = false;
     }
 
@@ -310,13 +310,14 @@ void run() {
   opt = get_options("direction");
   std::vector<Direction> true_peaks;
   for (size_t n = 0; n < opt.size(); ++n) {
-    Direction p(Math::pi * to<float>(opt[n][0]) / 180.0, Math::pi * float(opt[n][1]) / 180.0);
+    Direction p(Math::pi * static_cast<default_type>(opt[n][0]) / 180.0,
+                Math::pi * static_cast<default_type>(opt[n][1]) / 180.0);
     true_peaks.push_back(p);
   }
   if (!true_peaks.empty())
     npeaks = true_peaks.size();
 
-  value_type threshold = get_option_value("threshold", -INFINITY);
+  value_type threshold = get_option_value("threshold", -InfF);
 
   auto header = Header(SH_data);
   header.datatype() = DataType::Float32;

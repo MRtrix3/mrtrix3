@@ -94,7 +94,7 @@ public:
       out << "prior_roi: " << it.first << " " << it.second << "\n";
 
     out << "datatype: " << dtype.specifier() << "\n";
-    int64_t data_offset = int64_t(out.tellp()) + 65;
+    int64_t data_offset = static_cast<int64_t>(out.tellp()) + 65;
     data_offset += (4 - (data_offset % 4)) % 4;
     out << "file: . " << data_offset << "\n";
     out << "count: ";

@@ -50,9 +50,9 @@ namespace MR::DWI::Tractography::SIFT {
 class FixelBase {
 
 public:
-  FixelBase() : FOD(0.0), TD(0.0), weight(0.0), dir({NaN, NaN, NaN}) {}
+  FixelBase() : FOD(0.0), TD(0.0), weight(0.0), dir(decltype(dir)::Constant(NaN)) {}
 
-  FixelBase(const default_type amp) : FOD(amp), TD(0.0), weight(1.0), dir({NaN, NaN, NaN}) {}
+  FixelBase(const default_type amp) : FOD(amp), TD(0.0), weight(1.0), dir(decltype(dir)::Constant(NaN)) {}
 
   FixelBase(const default_type amp, const Eigen::Vector3d &d) : FOD(amp), TD(0.0), weight(1.0), dir(d) {}
 

@@ -63,7 +63,7 @@ template <typename T, class StreamType> void write(Image<T> image, Image<bool> &
 }
 
 template <class StreamType> void write(Header &header, Image<bool> &mask, StreamType &out) {
-  switch (uint8_t(DataType(header.datatype())()) &
+  switch (static_cast<uint8_t>(DataType(header.datatype())()) &
           ~(DataType::BigEndian | DataType::LittleEndian | DataType::Complex)) {
   case DataType::Bit:
   case DataType::UInt8:
@@ -96,7 +96,7 @@ template <class StreamType> void write(Header &header, Image<bool> &mask, Stream
     break;
   default:
     throw Exception("Unknown data type: " + std::string(header.datatype().description()) + " (" +
-                    str(uint32_t(uint8_t(DataType(header.datatype())()))) + ")");
+                    str(static_cast<uint32_t>(static_cast<uint8_t>(DataType(header.datatype())()))) + ")");
   }
 }
 

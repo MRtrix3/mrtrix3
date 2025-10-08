@@ -45,7 +45,7 @@ template <class Fixel> void ModelBase<Fixel>::output_target_voxel(const std::str
         value += i().get_FOD();
       out.value() = value;
     } else {
-      out.value() = NAN;
+      out.value() = NaNF;
     }
   }
 }
@@ -75,7 +75,7 @@ template <class Fixel> void ModelBase<Fixel>::output_target_sh(const std::string
         out.value() = sum[out.index(3)];
     } else {
       for (auto l = Loop(3)(out); l; ++l)
-        out.value() = NAN;
+        out.value() = NaNF;
     }
   }
 }
@@ -98,7 +98,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_voxel(const std::string
         value += i().get_TD();
       out.value() = value * current_mu;
     } else {
-      out.value() = NaN;
+      out.value() = NaNF;
     }
   }
 }
@@ -116,7 +116,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_null_lobes(const std::s
       }
       out.value() = value * current_mu;
     } else {
-      out.value() = NaN;
+      out.value() = NaNF;
     }
   }
 }
@@ -147,7 +147,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_sh(const std::string &p
       }
     } else {
       for (auto l = Loop(3)(out); l; ++l)
-        out.value() = NaN;
+        out.value() = NaNF;
     }
   }
 }
@@ -174,7 +174,7 @@ void ModelBase<Fixel>::output_errors_voxel(const std::string &dirpath,
       default_type max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
       for (typename Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
         const default_type this_diff = i().get_diff(current_mu);
-        max_abs_diff = std::max(max_abs_diff, abs(this_diff));
+        max_abs_diff = std::max(max_abs_diff, std::fabs(this_diff));
         diff += this_diff;
         cost += i().get_cost(current_mu) * i().get_weight();
       }
@@ -182,9 +182,9 @@ void ModelBase<Fixel>::output_errors_voxel(const std::string &dirpath,
       out_diff.value() = diff;
       out_cost.value() = cost;
     } else {
-      out_max_abs_diff.value() = NaN;
-      out_diff.value() = NaN;
-      out_cost.value() = NaN;
+      out_max_abs_diff.value() = NaNF;
+      out_diff.value() = NaNF;
+      out_cost.value() = NaNF;
     }
   }
 }

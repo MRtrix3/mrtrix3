@@ -56,8 +56,8 @@ void Base::paintGL() {
 
     projection.setup_render_text();
     if (window().show_voxel_info()) {
-      Eigen::Vector3f voxel(image()->scanner2voxel() * focus());
-      ssize_t vox[] = {ssize_t(std::round(voxel[0])), ssize_t(std::round(voxel[1])), ssize_t(std::round(voxel[2]))};
+      const Eigen::Vector3f voxel(image()->scanner2voxel() * focus());
+      const Eigen::Matrix<ssize_t, 3, 1> vox(voxel.array().round().cast<ssize_t>());
 
       std::string vox_str = printf("voxel index: [ %d %d %d ", vox[0], vox[1], vox[2]);
       for (size_t n = 3; n < image()->header().ndim(); ++n)
@@ -229,12 +229,12 @@ void Base::setup_projection(const GL::mat4 &M, ModelViewProjection &with_project
 Eigen::Quaternionf Base::get_tilt_rotation(const ModelViewProjection &proj) const {
   QPoint dpos = window().mouse_displacement();
   if (dpos.x() == 0 && dpos.y() == 0)
-    return Eigen::Quaternionf(NaN, NaN, NaN, NaN);
+    return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
   const Eigen::Vector3f x = proj.screen_to_model_direction(dpos, target());
   const Eigen::Vector3f z = proj.screen_normal();
   const Eigen::Vector3f v(x.cross(z).normalized());
-  float angle = -rotation_increment * std::sqrt(float(Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
+  float angle = -rotation_increment * std::sqrt(static_cast<float>(Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
   if (angle > Math::pi_2)
     angle = Math::pi_2;
   return Eigen::Quaternionf(Eigen::AngleAxisf(angle, v));
@@ -243,14 +243,14 @@ Eigen::Quaternionf Base::get_tilt_rotation(const ModelViewProjection &proj) cons
 Eigen::Quaternionf Base::get_rotate_rotation(const ModelViewProjection &proj) const {
   QPoint dpos = window().mouse_displacement();
   if (dpos.x() == 0 && dpos.y() == 0)
-    return Eigen::Quaternionf(NaN, NaN, NaN, NaN);
+    return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
   Eigen::Vector3f x1(window().mouse_position().x() - proj.x_position() - proj.width() / 2,
                      window().mouse_position().y() - proj.y_position() - proj.height() / 2,
                      0.0);
 
   if (x1.norm() < 16.0f)
-    return Eigen::Quaternionf(NaN, NaN, NaN, NaN);
+    return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
   Eigen::Vector3f x0(dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
 
@@ -321,9 +321,9 @@ void Base::reset_view() {
   if (!proj)
     return;
 
-  float dim[] = {float(image()->header().size(0) * image()->header().spacing(0)),
-                 float(image()->header().size(1) * image()->header().spacing(1)),
-                 float(image()->header().size(2) * image()->header().spacing(2))};
+  const Eigen::Vector3f dim{static_cast<float>(image()->header().size(0) * image()->header().spacing(0)),
+                            static_cast<float>(image()->header().size(1) * image()->header().spacing(1)),
+                            static_cast<float>(image()->header().size(2) * image()->header().spacing(2))};
   if (dim[0] < dim[1] && dim[0] < dim[2])
     set_plane(0);
   else if (dim[1] < dim[0] && dim[1] < dim[2])
@@ -331,9 +331,9 @@ void Base::reset_view() {
   else
     set_plane(2);
 
-  Eigen::Vector3f p(std::floor((image()->header().size(0) - 1) / 2.0f),
-                    std::floor((image()->header().size(1) - 1) / 2.0f),
-                    std::floor((image()->header().size(2) - 1) / 2.0f));
+  const Eigen::Vector3f p(std::floor(static_cast<float>(image()->header().size(0) - 1) / 2.0f),
+                          std::floor(static_cast<float>(image()->header().size(1) - 1) / 2.0f),
+                          std::floor(static_cast<float>(image()->header().size(2) - 1) / 2.0f));
 
   set_focus(image()->voxel2scanner() * p);
   set_target(focus());

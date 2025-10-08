@@ -69,8 +69,8 @@ inline const SliceData parse_line(const std::string &line, const ParCols &cols) 
   data.ri = cols.ri >= 0 ? to<float>(token[cols.ri]) : 0.0;
   data.rs = cols.rs >= 0 ? to<float>(token[cols.rs]) : 1.0;
   data.ss = cols.ss >= 0 ? to<float>(token[cols.ss]) : 1.0;
-  data.thick = cols.thick >= 0 ? to<float>(token[cols.thick]) : NaN;
-  data.gap = cols.gap >= 0 ? to<float>(token[cols.gap]) : NaN;
+  data.thick = cols.thick >= 0 ? to<float>(token[cols.thick]) : NaNF;
+  data.gap = cols.gap >= 0 ? to<float>(token[cols.gap]) : NaNF;
 
   if (cols.size >= 0) {
     data.size[0] = to<int>(token[cols.size]);
@@ -83,10 +83,10 @@ inline const SliceData parse_line(const std::string &line, const ParCols &cols) 
     data.vox[0] = to<float>(token[cols.vox]);
     data.vox[1] = to<float>(token[cols.vox + 1]);
   } else {
-    data.vox[0] = data.vox[1] = NaN;
+    data.vox[0] = data.vox[1] = NaNF;
   }
 
-  data.b = cols.b >= 0 ? to<float>(token[cols.b]) : NaN;
+  data.b = cols.b >= 0 ? to<float>(token[cols.b]) : NaNF;
 
   if (cols.ang >= 0) {
     data.ang[0] = to<float>(token[cols.ang]);
@@ -122,7 +122,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   if (!in)
     throw Exception("error opening PAR/REC header \"" + H.name() + "\": " + strerror(errno));
 
-  float version = NaN;
+  float version = NaNF;
   ParCols cols;
   std::vector<SliceData> slices;
 
@@ -164,8 +164,8 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
 
   std::vector<std::array<float, 4>> G;
 
-  int nslices = 0;
-  int nvols = 0;
+  size_t nslices = 0;
+  size_t nvols = 0;
   for (const auto &slice : slices) {
     if (slice.seq != slices[0].seq)
       throw Exception("non-matching orientations in PAR/REC file \"" + H.name() + "\"");
@@ -198,7 +198,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
       nslices = slice.sl;
   }
 
-  if (size_t(nvols * nslices) != slices.size())
+  if (nvols * nslices != slices.size())
     throw Exception("mismatch in dimensions when reading PAR/REC file \"" + H.name() + "\"");
 
   if (nvols > 1) {
@@ -256,7 +256,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   }
 
   if (!G.empty()) {
-    if (G.size() != size_t(nvols))
+    if (G.size() != nvols)
       throw Exception("mismatch between number of volumes and number of b-values in PAR/REC file \"" + H.name() + "\"");
 
     Eigen::MatrixXd grad(G.size(), 4);

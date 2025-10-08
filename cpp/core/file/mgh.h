@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <iomanip>
 #include <sstream>
 
 #include "file/gz.h"
@@ -152,7 +153,7 @@ typedef struct {
   float32 pe_dir[3];      // phase-encode direction in RAS coords
   float32 slice_dir[3];   // slice direction in RAS coords
   int32_t label;          // index into CLUT
-  char name[strlen];      // human-readable description of frame contents
+  char name[strlen];      // human-readable description of frame contents; check_syntax off
   int32_t dof;            // for stat maps (e.g. # of subjects)
 
   Eigen::Matrix<default_type, 4, 4> *m_ras2vox;
@@ -282,31 +283,17 @@ template <class Input> void read_other(Header &H, Input &in) {
   // TODO These may well be shared with the FreeSurfer surface file formats
 
   auto read_matrix = [](Input &in) {
-    char buffer[matrix_strlen];
-    in.read(buffer, matrix_strlen);
+    std::string buffer(matrix_strlen + 1, '\0');
+    in.read(&buffer[0], matrix_strlen);
     // There's also a string before the 16 floating-point values, the FreeSurfer code
     //   discards it immediately
-    char ch[100];
+    std::string ch;
     Eigen::Matrix<default_type, 4, 4> M;
-    sscanf(buffer,
-           "%s %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-           ch,
-           &M(0, 0),
-           &M(0, 1),
-           &M(0, 2),
-           &M(0, 3),
-           &M(1, 0),
-           &M(1, 1),
-           &M(1, 2),
-           &M(1, 3),
-           &M(2, 0),
-           &M(2, 1),
-           &M(2, 2),
-           &M(2, 3),
-           &M(3, 0),
-           &M(3, 1),
-           &M(3, 2),
-           &M(3, 3));
+    std::istringstream iss(buffer);
+    iss >> ch >> M(0, 0) >> M(0, 1) >> M(0, 2) >> M(0, 3) >> //
+        M(1, 0) >> M(1, 1) >> M(1, 2) >> M(1, 3) >>          //
+        M(2, 0) >> M(2, 1) >> M(2, 2) >> M(2, 3) >>          //
+        M(3, 0) >> M(3, 1) >> M(3, 2) >> M(3, 3);
     return M;
   };
 
@@ -399,8 +386,8 @@ template <class Input> void read_other(Header &H, Input &in) {
     const int64_t fend = in.tellg();
     const int64_t empty_space_len = len - (fend - fstart);
     if (empty_space_len > 0) {
-      char buffer[empty_space_len];
-      in.read(buffer, empty_space_len);
+      std::string buffer(empty_space_len + 1, '\0');
+      in.read(&buffer[0], empty_space_len);
     }
 
     return table;
@@ -411,16 +398,16 @@ template <class Input> void read_other(Header &H, Input &in) {
       throw Exception("Error reading colour table from file \"" + H.name() + "\": No entries");
     std::string table;
     const int32_t filename_length = fetch<int32_t>(in);
-    std::string filename(filename_length, '\0');
-    in.read(const_cast<char *>(filename.data()), filename_length);
+    std::string filename(filename_length + 1, '\0');
+    in.read(&filename[0], filename_length);
+    filename.resize(filename.find('\0'));
     for (int32_t structure = 0; structure != nentries; ++structure) {
       const int32_t structurename_length = fetch<int32_t>(in);
-      if (structurename_length < 0)
-        throw Exception("Error reading colour table from file \"" + H.name() + "\": Negative structure name length");
-      std::string structurename(structurename_length, '\0');
-      in.read(const_cast<char *>(structurename.data()), structurename_length);
-      while (!structurename.empty() && !structurename.back())
-        structurename.pop_back();
+      if (structurename_length <= 0)
+        throw Exception("Error reading colour table from file \"" + H.name() + "\": Invalid structure name length");
+      std::string structurename(structurename_length + 1, '\0');
+      in.read(&structurename[0], structurename_length);
+      structurename.resize(structurename.find('\0'));
       const int32_t r = fetch<int32_t>(in);
       const int32_t g = fetch<int32_t>(in);
       const int32_t b = fetch<int32_t>(in);
@@ -437,27 +424,27 @@ template <class Input> void read_other(Header &H, Input &in) {
       throw Exception("Error reading colour table from file \"" + H.name() + "\": No entries");
     std::vector<std::string> table;
     const int32_t filename_length = fetch<int32_t>(in);
-    std::string filename(filename_length, '\0');
-    in.read(const_cast<char *>(filename.data()), filename_length);
+    std::string filename(filename_length + 1, '\0');
+    in.read(&filename[0], filename_length);
+    filename.resize(filename.find('\0'));
     const int32_t num_entries_to_read = fetch<int32_t>(in);
     for (int32_t i = 0; i != num_entries_to_read; ++i) {
       const int32_t structure = fetch<int32_t>(in);
       if (structure < 0)
         throw Exception("Error reading colour table from file \"" + H.name() + "\":" + //
                         " Negative structure index (" + str(structure) + ")");         //
-      if (size_t(structure) < table.size() && !table[structure].empty())
+      if (static_cast<size_t>(structure) < table.size() && !table[structure].empty())
         throw Exception("Error reading colour table from file \"" + H.name() + "\":" + //
                         " Duplicate structure index (" + str(structure) + ")");        //
-      else if (size_t(structure) >= table.size())
+      else if (static_cast<size_t>(structure) >= table.size())
         table.resize(structure + 1, std::string());
       const int32_t structurename_length = fetch<int32_t>(in);
-      if (structurename_length < 0)
+      if (structurename_length <= 0)
         throw Exception("Error reading colour table from file \"" + H.name() + "\":" + //
-                        " Negative structure name length");                            //
-      std::string structurename(structurename_length, '\0');
-      in.read(const_cast<char *>(structurename.data()), structurename_length);
-      while (!structurename.empty() && !structurename.back())
-        structurename.pop_back();
+                        " Invalid structure name length");                             //
+      std::string structurename(structurename_length + 1, '\0');
+      in.read(&structurename[0], structurename_length);
+      structurename.resize(structurename.find('\0'));
       const int32_t r = fetch<int32_t>(in);
       const int32_t g = fetch<int32_t>(in);
       const int32_t b = fetch<int32_t>(in);
@@ -512,12 +499,14 @@ template <class Input> void read_other(Header &H, Input &in) {
       } break;
       case tag_old_mgh_xform:
       case tag_mgh_xform:
-        in.read(const_cast<char *>(content.data()), size);
+        in.read(&content[0], size);
+        content.resize(content.find('\0'));
         H.keyval()[tag_ID_to_string(id)] = content;
         // Don't care whether or not we can actually access this file...
         break;
       case tag_cmdline:
-        in.read(const_cast<char *>(content.data()), size);
+        in.read(&content[0], size);
+        content.resize(content.find('\0'));
         // Should only appear one line at a time
         add_line(H.keyval()["command_history"], content);
         break;
@@ -529,7 +518,8 @@ template <class Input> void read_other(Header &H, Input &in) {
         H.keyval()[tag_ID_to_string(id)] = sstream.str();
       } break;
       case tag_pedir:
-        in.read(const_cast<char *>(content.data()), size);
+        in.read(&content[0], size);
+        content.resize(content.find('\0'));
         H.keyval()[tag_ID_to_string(id)] = content;
         break;
       case tag_fieldstrength: {
@@ -545,7 +535,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         H.keyval()[tag_ID_to_string(id)] = str(field_strength);
       } break;
       default: // FreeSurfer doesn't actually perform any import of any other fields
-        in.read(const_cast<char *>(content.data()), size);
+        in.read(&content[0], size);
         break;
       }
     } while (!in.eof());
@@ -646,31 +636,17 @@ template <class Output> void write_other(const Header &H, Output &out) {
   // Function znzWriteMatrix() is used for both tag_auto_align tag entries,
   //   and in znzTAGwriteMRIframes() for the VOX2RAS matrix.
   auto write_matrix = [](const Eigen::Matrix<default_type, 4, 4> &M, Output &out) {
-    char buffer[matrix_strlen];
-    memset(buffer, 0x00, matrix_strlen);
-    snprintf(
-        buffer,
-        sizeof(buffer) / sizeof(buffer[0]),
-        "AutoAlign %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf %10lf",
-        M(0, 0),
-        M(0, 1),
-        M(0, 2),
-        M(0, 3),
-        M(1, 0),
-        M(1, 1),
-        M(1, 2),
-        M(1, 3),
-        M(2, 0),
-        M(2, 1),
-        M(2, 2),
-        M(2, 3),
-        M(3, 0),
-        M(3, 1),
-        M(3, 2),
-        M(3, 3));
+    std::ostringstream oss;
+    oss << "AutoAlign " << std::setprecision(10);
+    oss << M(0, 0) << " " << M(0, 1) << " " << M(0, 2) << " " << M(0, 3) << " ";
+    oss << M(1, 0) << " " << M(1, 1) << " " << M(1, 2) << " " << M(1, 3) << " ";
+    oss << M(2, 0) << " " << M(2, 1) << " " << M(2, 2) << " " << M(2, 3) << " ";
+    oss << M(3, 0) << " " << M(3, 1) << " " << M(3, 2) << " " << M(3, 3) << " ";
+    std::string buffer(matrix_strlen, '\0');
+    buffer.substr(oss.str().size()) = oss.str();
     store<int32_t>(tag_auto_align, out);
     store<int64_t>(matrix_strlen, out);
-    out.write(buffer, matrix_strlen);
+    out.write(&buffer[0], matrix_strlen);
   };
 
   auto write_mri_frames = [&](const std::string &table, Output &out) {
@@ -711,7 +687,8 @@ template <class Output> void write_other(const Header &H, Output &out) {
       for (size_t i = 0; i != 3; ++i)
         frame.slice_dir[i] = to<float32>(entries[15 + i]);
       frame.label = to<int32_t>(entries[18]);
-      strcpy(frame.name, entries[19].c_str());
+      memset(frame.name, 0x00, strlen);
+      strncpy(frame.name, entries[19].c_str(), strlen); // check_syntax off
       frame.dof = to<int32_t>(entries[20]);
 
       frame.m_ras2vox = new Eigen::Matrix<default_type, 4, 4>(Eigen::Matrix<default_type, 4, 4>::Zero());
@@ -836,9 +813,8 @@ template <class Output> void write_other(const Header &H, Output &out) {
     const int64_t fend = out.tellp();
     const int64_t extra_space_len = len - (fend - fstart);
     if (extra_space_len > 0) {
-      char buffer[extra_space_len];
-      memset(buffer, 0x00, extra_space_len);
-      out.write(buffer, extra_space_len);
+      const std::string buffer(extra_space_len, '\0');
+      out.write(&buffer[0], extra_space_len);
     }
   };
 
@@ -908,7 +884,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
   std::vector<Tag> tags; /*!< variable length char strings */
   std::unique_ptr<Eigen::Matrix<default_type, 4, 4>> auto_align_matrix;
   std::string pe_dir("UNKNOWN");
-  float32 field_strength = NaN;
+  float32 field_strength = NaNF;
   std::string mri_frames, colour_table;
   std::vector<Tag> cmdline_tags;
 

@@ -16,10 +16,8 @@
 
 #pragma once
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
+
 enum FixelColourType { Direction, CValue };
 enum FixelScaleType { Unity, Value };
 
@@ -84,7 +82,4 @@ struct FixelValue {
   }
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool
