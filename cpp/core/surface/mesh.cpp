@@ -293,8 +293,7 @@ void Mesh::load_stl(const std::string &path) {
   std::string init(7, '\0');
   in.get(&init[0], 6);
   init.resize(init.find('\0'));
-
-  if (!(init.size() >= 5 && init.substr(5) == "solid")) {
+  if (!(init.size() >= 5 && init.substr(0, 5) == "solid")) {
 
     // File is stored as binary
     in.close();
