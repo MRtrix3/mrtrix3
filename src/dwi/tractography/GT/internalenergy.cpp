@@ -21,8 +21,8 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
-        
-        
+
+
         double InternalEnergyComputer::stageConnect(const ParticleEnd& pe1, ParticleEnd &pe2)
         {
           // new
@@ -37,33 +37,34 @@ namespace MR {
           }
           return dEint / stats.getTint();
         }
-        
-        
-        
+
+
+
         void InternalEnergyComputer::scanNeighbourhood(const Particle* p, const int alpha0, const double currTemp)
         {
           neighbourhood.resize(1);
           normalization = 1.0;
-          
+
           Point_t ep = p->getEndPoint(alpha0);
           if (pGrid.isoutofbounds(ep))
             return;
           size_t x, y, z;
           pGrid.pos2xyz(ep, x, y, z);
-          
+
           float tolerance2 = Particle::L * Particle::L;   // distance threshold (particle length), hard coded
           float costheta = Math::sqrt1_2;                 // angular threshold (45 degrees), hard coded
           ParticleEnd pe;
           float d1, d2, d, ct;
-          
+
           for (int i = -1; i <= 1; i++) {
             for (int j = -1; j <= 1; j++) {
               for (int k = -1; k <= 1; k++) {
-                const ParticleGrid::ParticleVectorType* pvec = pGrid.at(x+i, y+j, z+k);
-                if (pvec == NULL)
+                const ParticleGrid::ParticleContainer* pvec = pGrid.at(x+i, y+j, z+k);
+                if (!pvec)
                   continue;
-                
-                for (ParticleGrid::ParticleVectorType::const_iterator it = pvec->begin(); it != pvec->end(); ++it) 
+
+                std::lock_guard<std::mutex> lock (pvec->mutex);
+                for (ParticleGrid::ParticleContainer::const_iterator it = pvec->begin(); it != pvec->end(); ++it)
                 {
                   pe.par = *it;
                   if (pe.par == p)
@@ -83,14 +84,14 @@ namespace MR {
                     neighbourhood.push_back(pe);
                   }
                 }
-                
+
               }
             }
           }
-          
+
         }
-        
-        
+
+
         ParticleEnd InternalEnergyComputer::pickNeighbour()
         {
           double sum = 0.0;
@@ -105,8 +106,8 @@ namespace MR {
           }
           return pe;
         }
-        
-        
+
+
       }
     }
   }

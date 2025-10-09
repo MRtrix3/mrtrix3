@@ -20,7 +20,7 @@
 namespace MR {
 
   class SpinLock
-  {
+  { NOMEMALIGN
     public:
       void lock() noexcept { while (m_.test_and_set(std::memory_order_acquire)); }
       void unlock() noexcept { m_.clear(std::memory_order_release); }

@@ -46,6 +46,7 @@ namespace MR {
         {
           Particle* p = pool.create(pos, dir);
           size_t gidx = pos2idx(pos);
+          std::lock_guard<std::mutex> lock (mutex);
           grid[gidx].push_back(p);
         }
 
@@ -53,7 +54,8 @@ namespace MR {
         {
           size_t gidx0 = pos2idx(p->getPosition());
           size_t gidx1 = pos2idx(pos);
-          grid[gidx0].erase(std::remove(grid[gidx0].begin(), grid[gidx0].end(), p), grid[gidx0].end());
+          std::lock_guard<std::mutex> lock (mutex);
+          grid[gidx0].remove(p);
           p->setPosition(pos);
           p->setDirection(dir);
           grid[gidx1].push_back(p);
@@ -62,7 +64,10 @@ namespace MR {
         void ParticleGrid::remove(Particle* p)
         {
           size_t gidx0 = pos2idx(p->getPosition());
-          grid[gidx0].erase(std::remove(grid[gidx0].begin(), grid[gidx0].end(), p), grid[gidx0].end());
+          {
+            std::lock_guard<std::mutex> lock (mutex);
+            grid[gidx0].remove (p);// (std::remove(grid[gidx0].begin(), grid[gidx0].end(), p), grid[gidx0].end());
+          }
           pool.destroy(p);
         }
 
@@ -72,7 +77,7 @@ namespace MR {
           pool.clear();
         }
 
-        const ParticleGrid::ParticleVectorType* ParticleGrid::at(const ssize_t x, const ssize_t y, const ssize_t z) const
+        const ParticleGrid::ParticleContainer* ParticleGrid::at(const ssize_t x, const ssize_t y, const ssize_t z) const
         {
           if ((x < 0) || (size_t(x) >= dims[0]) || (y < 0) || (size_t(y) >= dims[1]) || (z < 0) || (size_t(z) >= dims[2]))  // out of bounds
             return nullptr;
@@ -88,7 +93,7 @@ namespace MR {
           int alpha = 0;
           vector<Point_t> track;
           // Loop through all unvisited particles
-          for (ParticleVectorType& gridvox : grid)
+          for (ParticleContainer& gridvox : grid)
           {
             for (Particle* par0 : gridvox)
             {
@@ -128,7 +133,7 @@ namespace MR {
             }
           }
           // Free all particle locks
-          for (ParticleVectorType& gridvox : grid) {
+          for (ParticleContainer& gridvox : grid) {
             for (Particle* par : gridvox) {
                 par->setVisited(false);
             }

@@ -312,14 +312,7 @@ void run ()
   MHSampler mhs (header_in, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
   INFO("Start MH sampler");
 
-  const size_t nthreads = Thread::number_of_threads();
-  if (nthreads > 1) {
-    WARN("Current tckglobal implementation has known race conditions;"
-         " multi-threaded execution may yield undefined behaviour");
-    Thread::run (Thread::multi(mhs), "MH sampler");
-  } else {
-    mhs.execute();
-  }
+  Thread::run (Thread::multi(mhs), "MH sampler");
 
   INFO("Final no. particles: " + std::to_string(pgrid.getTotalCount()));
   INFO("Final external energy: " + std::to_string(stats.getEextTotal()));
