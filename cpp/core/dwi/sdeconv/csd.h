@@ -108,7 +108,7 @@ public:
       if (lmax_response <= 0)
         throw Exception("response function does not contain anisotropic terms");
 
-      lmax = (lmax_cmdline ? lmax_cmdline : std::min(lmax_response, uint32_t(default_csd_lmax)));
+      lmax = (lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, uint32_t(default_csd_lmax)));
 
       if (lmax <= 0 || lmax % 2)
         throw Exception("lmax must be a positive even integer");

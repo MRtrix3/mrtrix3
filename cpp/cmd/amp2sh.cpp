@@ -170,9 +170,9 @@ protected:
     default_type norm_amp = 0.0;
     for (ssize_t n = 0; n < ap.size(); ++n) {
       ap[n] = std::max(ap[n], default_type(0.0));
-      default_type t = std::pow(ap[n] / noise, default_type(rician_power));
+      const default_type t = std::pow(ap[n] / noise, default_type(rician_power));
       w[n] = Math::pow2((t + 1.7) / (t + 1.12));
-      default_type diff = a[n] - noise * std::pow(t + 1.65, 1.0 / rician_power);
+      const default_type diff = a[n] - noise * std::pow(t + 1.65, 1.0 / rician_power);
       norm_diff += Math::pow2(diff);
       norm_amp += Math::pow2(a[n]);
       ap[n] += diff;

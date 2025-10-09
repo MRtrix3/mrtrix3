@@ -74,7 +74,7 @@ bool is_dir(const std::string &path) {
 
 bool is_file(const std::string &path) {
   struct stat buf;
-  if (!stat(path.c_str(), &buf))
+  if (stat(path.c_str(), &buf) == 0)
     return S_ISREG(buf.st_mode);
   if (errno == ENOENT)
     return false;
@@ -103,10 +103,7 @@ bool is_mrtrix_image(const std::string &name) {
 char delimiter(const std::string &filename) {
   if (Path::has_suffix(filename, ".tsv"))
     return '\t';
-  else if (Path::has_suffix(filename, ".csv"))
-    return ',';
-  else
-    return ' ';
+  return Path::has_suffix(filename, ".csv") ? ',' : ' ';
 }
 
 std::string cwd() {
@@ -114,7 +111,7 @@ std::string cwd() {
   size_t buf_size = 32;
   while (true) {
     path.reserve(buf_size);
-    if (getcwd(&path[0], buf_size))
+    if (getcwd(&path[0], buf_size) != nullptr)
       break;
     if (errno != ERANGE)
       throw Exception("failed to get current working directory!");
@@ -125,25 +122,25 @@ std::string cwd() {
 
 std::string home() {
   const char *home = getenv(home_env.c_str());
-  if (!home)
+  if (home == nullptr)
     throw Exception(home_env + " environment variable is not set!");
   return home;
 }
 
 Dir::Dir(const std::string &name) : p(opendir(!name.empty() ? name.c_str() : ".")) {
-  if (!p)
+  if (p == nullptr)
     throw Exception("error opening folder " + name + ": " + strerror(errno));
 }
 Dir::~Dir() {
-  if (p)
+  if (p != nullptr)
     closedir(p);
 }
 
 std::string Dir::read_name() {
   std::string ret;
   struct dirent *entry = readdir(p);
-  if (entry) {
-    ret = entry->d_name;
+  if (entry != nullptr) {
+    ret = std::string(entry->d_name);
     if (ret == "." || ret == "..")
       ret = read_name();
   }
@@ -151,7 +148,7 @@ std::string Dir::read_name() {
 }
 
 void Dir::close() {
-  if (p)
+  if (p != nullptr)
     closedir(p);
   p = nullptr;
 }

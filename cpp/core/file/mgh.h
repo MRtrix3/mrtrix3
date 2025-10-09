@@ -647,7 +647,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
   //   and in znzTAGwriteMRIframes() for the VOX2RAS matrix.
   auto write_matrix = [](const Eigen::Matrix<default_type, 4, 4> &M, Output &out) {
     char buffer[matrix_strlen];
-    memset(buffer, 0x00, matrix_strlen);
+    memset(&buffer[0], 0x00, matrix_strlen);
     snprintf(
         buffer,
         sizeof(buffer) / sizeof(buffer[0]),

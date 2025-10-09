@@ -187,8 +187,9 @@ void run() {
     if (!opt.empty())
       tckfactor.set_csv_path(opt[0][0]);
 
-    const float reg_tikhonov = get_option_value("reg_tikhonov", SIFT2::default_regularisation_tikhonov);
-    const float reg_tv = get_option_value("reg_tv", SIFT2::default_regularisation_tv);
+    const float reg_tikhonov =
+        static_cast<float>(get_option_value("reg_tikhonov", SIFT2::default_regularisation_tikhonov));
+    const float reg_tv = static_cast<float>(get_option_value("reg_tv", SIFT2::default_regularisation_tv));
     tckfactor.set_reg_lambdas(reg_tikhonov, reg_tv);
 
     opt = get_options("min_iters");

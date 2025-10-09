@@ -472,7 +472,7 @@ void run() {
     WARN("Only one contrast provided. If multi-tissue CSD was performed, provide all components to mtnormalise.");
 
   const int order = get_option_value<int>("order", default_polynormial_order);
-  const float reference_value = get_option_value("reference", default_reference_value);
+  const float reference_value = static_cast<float>(get_option_value("reference", default_reference_value));
   const float log_ref_value = std::log(reference_value);
 
   size_t max_iter = default_main_iterations;

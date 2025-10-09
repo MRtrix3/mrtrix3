@@ -258,7 +258,7 @@ void run() {
   // Parameters -------------------------------------------------------------------------
 
   Particle::L = get_option_value("length", default_length);
-  double cpot = get_option_value("cpot", default_cpot);
+  const double cpot = get_option_value("cpot", default_cpot);
 
   properties.Lmax = get_option_value("lmax", default_lmax);
   properties.p_birth = default_prob_birth;
@@ -294,11 +294,11 @@ void run() {
     }
   }
 
-  uint64_t niter = get_option_value<uint64_t>("niter", default_niter);
-  double t0 = get_option_value("t0", default_t0);
-  double t1 = get_option_value("t1", default_t1);
+  const uint64_t niter = get_option_value<uint64_t>("niter", default_niter);
+  const double t0 = get_option_value("t0", default_t0);
+  const double t1 = get_option_value("t1", default_t1);
 
-  double mu = get_option_value("ppot", default_ppot);
+  const double mu = get_option_value("ppot", default_ppot);
   properties.ppot = mu * wmscale2 * properties.weight;
 
   opt = get_options("lambda");

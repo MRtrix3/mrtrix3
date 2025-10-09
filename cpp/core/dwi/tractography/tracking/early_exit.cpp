@@ -45,8 +45,8 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
     return false;
   }
 
-  if ((num_seeds / default_type(max_num_seeds) > cease_testing_percentage) ||
-      (num_tracks / default_type(max_num_tracks) > cease_testing_percentage)) {
+  if ((default_type(num_seeds) / default_type(max_num_seeds) > cease_testing_percentage) ||
+      (default_type(num_tracks) / default_type(max_num_tracks) > cease_testing_percentage)) {
     DEBUG(std::string("tckgen early exit: No longer testing (tracking progressed beyond ") + //
           str<int>(std::round(100.0 * cease_testing_percentage)) + "%)");                    //
     next_test = 0;
