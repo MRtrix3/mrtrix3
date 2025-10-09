@@ -150,7 +150,7 @@ void usage() {
 
     + Option ("interp",
         std::string("set the interpolation method to use when reslicing")
-        + " (choices: " + join(MR::Interp::interp_choices, ",") + ";"
+        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
         + " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
       + Argument ("method").type_choice(MR::Interp::interp_choices)
 

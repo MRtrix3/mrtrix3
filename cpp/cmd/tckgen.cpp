@@ -214,7 +214,7 @@ void usage() {
             "specify the tractography algorithm to use."
             " Valid choices are: "
             + join(algorithms, ", ")
-            + " (default: " + algorithms[static_cast<ssize_t>(default_algorithm)] + ".")
+            + " (default: " + algorithms[static_cast<ssize_t>(default_algorithm)] + ").")
     + Argument ("name").type_choice(algorithms)
 
   + DWI::Tractography::Tracking::TrackOption
