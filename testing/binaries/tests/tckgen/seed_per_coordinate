@@ -1,0 +1,22 @@
+#!/bin/bash
+# Verify operation of the -seed_per_coordinate option
+# Ensure that each coordinate produces the number of seeds specified
+#
+rm -f tmp_in.txt
+printf "3 3 3\n0 0 0\n-3 -3 -3" > tmp_in.txt
+
+tckgen SIFT_phantom/dwi.mif tmp_out.tck \
+    -algo seedtest \
+    -seed_per_coordinate tmp_in.txt 10 \
+    -force
+
+tckconvert tmp_out.tck tmp_out[].txt -force
+
+rm -f tmp_out.txt
+cat tmp_out*.txt | \
+    sort > tmp_out.txt
+rm -f tmp_in2.txt
+cat tmp_in.txt | \
+    sort |
+    awk '{for(i=0;i<10;i++)print}' > tmp_in2.txt
+testing_diff_matrix tmp_in2.txt tmp_out.txt

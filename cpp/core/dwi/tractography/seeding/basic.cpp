@@ -20,13 +20,31 @@
 
 namespace MR::DWI::Tractography::Seeding {
 
+Sphere::Sphere(const std::string &in)                                    //
+    : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) { //
+  auto F = parse_floats(in);
+  if (F.size() != 4)
+    throw Exception("Could not parse seed \"" + in + "\" as a spherical seed point;" +    //
+                    " needs to be 4 comma-separated values (XYZ position, then radius)"); //
+  pos = {static_cast<float>(F[0]), static_cast<float>(F[1]), static_cast<float>(F[2])};
+  rad = static_cast<float>(F[3]);
+  Base::volume = static_cast<float>(4.0 * Math::pi * Math::pow3(F[3]) / 3.0);
+}
+
 bool Sphere::get_seed(Eigen::Vector3f &p) const {
   std::uniform_real_distribution<float> uniform;
   do {
-    p = {2.0f * uniform(rng) - 1.0f, 2.0f * uniform(rng) - 1.0f, 2.0f * uniform(rng) - 1.0f};
-  } while (p.squaredNorm() > 1.0f);
+    p = {2.0F * uniform(rng) - 1.0F, 2.0F * uniform(rng) - 1.0F, 2.0F * uniform(rng) - 1.0F};
+  } while (p.squaredNorm() > 1.0F);
   p = pos + rad * p;
   return true;
+}
+
+SeedMask::SeedMask(const std::string &in)                                            //
+    : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
+      mask(in) {                                                                     //
+  Base::volume = static_cast<float>(static_cast<default_type>(get_count(mask)) * mask.spacing(0) * mask.spacing(1) *
+                                    mask.spacing(2));
 }
 
 bool SeedMask::get_seed(Eigen::Vector3f &p) const {
@@ -37,9 +55,23 @@ bool SeedMask::get_seed(Eigen::Vector3f &p) const {
     seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2) - 1)(rng);
   } while (!seed.value());
   std::uniform_real_distribution<float> uniform;
-  p = {seed.index(0) + uniform(rng) - 0.5f, seed.index(1) + uniform(rng) - 0.5f, seed.index(2) + uniform(rng) - 0.5f};
+  p = {static_cast<float>(seed.index(0)) + uniform(rng) - 0.5F,
+       static_cast<float>(seed.index(1)) + uniform(rng) - 0.5F,
+       static_cast<float>(seed.index(2)) + uniform(rng) - 0.5F};
   p = (*mask.voxel2scanner) * p;
   return true;
+}
+
+Random_per_voxel::Random_per_voxel(const std::string &in, const size_t num_per_voxel)
+    : Base(in, "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
+      mask(in),
+      num(num_per_voxel),
+      inc(0),
+      expired(false) {
+  Base::count = get_count(mask) * num_per_voxel;
+  mask.index(0) = 0;
+  mask.index(1) = 0;
+  mask.index(2) = -1;
 }
 
 bool Random_per_voxel::get_seed(Eigen::Vector3f &p) const {
@@ -69,9 +101,22 @@ bool Random_per_voxel::get_seed(Eigen::Vector3f &p) const {
   }
 
   std::uniform_real_distribution<float> uniform;
-  p = {mask.index(0) + uniform(rng) - 0.5f, mask.index(1) + uniform(rng) - 0.5f, mask.index(2) + uniform(rng) - 0.5f};
+  p = {static_cast<float>(mask.index(0)) + uniform(rng) - 0.5F,
+       static_cast<float>(mask.index(1)) + uniform(rng) - 0.5F,
+       static_cast<float>(mask.index(2)) + uniform(rng) - 0.5F};
   p = (*mask.voxel2scanner) * p;
   return true;
+}
+
+Grid_per_voxel::Grid_per_voxel(const std::string &in, const size_t os_factor)
+    : Base(in, "grid per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
+      mask(in),
+      os(os_factor),
+      pos(os, os, os),
+      offset(-0.5 + (1.0 / (2 * os))),
+      step(1.0 / os),
+      expired(false) {
+  Base::count = get_count(mask) * Math::pow3(os_factor);
 }
 
 bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
@@ -105,14 +150,14 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
     }
   }
 
-  p = {mask.index(0) + offset + (pos[0] * step),
-       mask.index(1) + offset + (pos[1] * step),
-       mask.index(2) + offset + (pos[2] * step)};
+  p = {static_cast<float>(mask.index(0)) + offset + (pos[0] * step),
+       static_cast<float>(mask.index(1)) + offset + (pos[1] * step),
+       static_cast<float>(mask.index(2)) + offset + (pos[2] * step)};
   p = (*mask.voxel2scanner) * p;
   return true;
 }
 
-Rejection::Rejection(const std::string &in)
+Rejection_per_voxel::Rejection_per_voxel(const std::string &in)
     : Base(in, "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
       interp(in),
@@ -121,8 +166,8 @@ Rejection::Rejection(const std::string &in)
   auto vox = Image<float>::open(in);
   if (!(vox.ndim() == 3 || (vox.ndim() == 4 && vox.size(3) == 1)))
     throw Exception("Seed image must be a 3D image");
-  std::vector<size_t> bottom(3, std::numeric_limits<size_t>::max());
-  std::vector<size_t> top(3, 0);
+  std::vector<ssize_t> bottom(3, std::numeric_limits<ssize_t>::max());
+  std::vector<ssize_t> top(3, 0);
 
   for (auto i = Loop(0, 3)(vox); i; ++i) {
     const float value = vox.value();
@@ -131,17 +176,17 @@ Rejection::Rejection(const std::string &in)
         throw Exception("Cannot have negative values in an image used for rejection sampling!");
       max = std::max(max, value);
       volume += value;
-      if (size_t(vox.index(0)) < bottom[0])
+      if (vox.index(0) < bottom[0])
         bottom[0] = vox.index(0);
-      if (size_t(vox.index(0)) > top[0])
+      if (vox.index(0) > top[0])
         top[0] = vox.index(0);
-      if (size_t(vox.index(1)) < bottom[1])
+      if (vox.index(1) < bottom[1])
         bottom[1] = vox.index(1);
-      if (size_t(vox.index(1)) > top[1])
+      if (vox.index(1) > top[1])
         top[1] = vox.index(1);
-      if (size_t(vox.index(2)) < bottom[2])
+      if (vox.index(2) < bottom[2])
         bottom[2] = vox.index(2);
-      if (size_t(vox.index(2)) > top[2])
+      if (vox.index(2) > top[2])
         top[2] = vox.index(2);
     }
   }
@@ -156,9 +201,9 @@ Rejection::Rejection(const std::string &in)
   if (bottom[2])
     --bottom[2];
 
-  top[0] = std::min(size_t(vox.size(0) - bottom[0]), top[0] + 2 - bottom[0]);
-  top[1] = std::min(size_t(vox.size(1) - bottom[1]), top[1] + 2 - bottom[1]);
-  top[2] = std::min(size_t(vox.size(2) - bottom[2]), top[2] + 2 - bottom[2]);
+  top[0] = std::min(vox.size(0) - bottom[0], top[0] + 2 - bottom[0]);
+  top[1] = std::min(vox.size(1) - bottom[1], top[1] + 2 - bottom[1]);
+  top[2] = std::min(vox.size(2) - bottom[2], top[2] + 2 - bottom[2]);
 
   auto sub = Adapter::make<Adapter::Subset>(vox, bottom, top);
   Header header = sub;
@@ -176,7 +221,7 @@ Rejection::Rejection(const std::string &in)
 #endif
 }
 
-bool Rejection::get_seed(Eigen::Vector3f &p) const {
+bool Rejection_per_voxel::get_seed(Eigen::Vector3f &p) const {
   std::uniform_real_distribution<float> uniform;
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
   auto seed = interp;
@@ -201,6 +246,92 @@ bool Rejection::get_seed(Eigen::Vector3f &p) const {
   p = {seed.index(0) + uniform(rng) - 0.5f, seed.index(1) + uniform(rng) - 0.5f, seed.index(2) + uniform(rng) - 0.5f};
   p = voxel2scanner * p;
 #endif
+  return true;
+}
+
+CoordinatesLoader::CoordinatesLoader(const std::string &cds_path) //
+    : coords(File::Matrix::load_matrix<float>(cds_path)) {        //
+  switch (coords.cols()) {
+  case 3:
+    break;
+  case 4: {
+    weights = coords.col(3);
+    coords.conservativeResize(coords.rows(), 3);
+    if (weights.minCoeff() < 0.0F)
+      throw Exception("Per-coordinate seeding weights must be non-negative");
+    const float max_coeff = weights.maxCoeff();
+    if (max_coeff == 0.0F)
+      throw Exception("Per-coordinate seeds must have at least one non-zero value");
+    // Normalise to max of 1.0: simplifies rejection seeding
+    weights *= 1.0F / max_coeff;
+  } break;
+  default:
+    throw Exception("Invalid number of columns (" + str(coords.cols()) + ") in seed coordinates file " + cds_path);
+  }
+}
+
+Count_per_coord::Count_per_coord(const std::string &in, const size_t streamlines_per_coord)
+    : Base(in, "fixed streamlines per coordinate", attempts_per_seed.at(seed_attempt_t::FIXED)),
+      CoordinatesLoader(in),
+      current_coord(0),
+      num_at_coord(0),
+      expired(false),
+      streamlines_per_coordinate(streamlines_per_coord) {
+  if (have_weights())
+    throw Exception("Seeding fixed # streamlines per coordinates"
+                    " cannot also specify per-coordinate weights"
+                    " (must be only 3 columns in input file)");
+  Base::count = num_coordinates() * streamlines_per_coordinate;
+}
+
+bool Count_per_coord::get_seed(Eigen::Vector3f &p) const {
+  std::lock_guard<std::mutex> lock(mutex);
+  if (expired)
+    return false;
+  if (num_at_coord == streamlines_per_coordinate) {
+    num_at_coord = 0;
+    current_coord++;
+  }
+  if (current_coord == num_coordinates()) {
+    expired = true;
+    return false;
+  }
+  p = coords.row(current_coord);
+  num_at_coord++;
+  return true;
+}
+
+Coordinates::Coordinates(const std::string &in)                                                      //
+    : Base(in, "random coordinate selection seeding", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
+      CoordinatesLoader(in) {                                                                        //
+  if (have_weights())
+    throw Exception("Seeding fixed # streamlines per coordinates" //
+                    " cannot also specify per-coordinate weights" //
+                    " (must be only 3 columns in input file)");   //
+}
+
+bool Coordinates::get_seed(Eigen::Vector3f &p) const {
+  p = coords.row(std::uniform_int_distribution<>(0, num_coordinates() - 1)(rng));
+  return true;
+}
+
+Rejection_per_coord::Rejection_per_coord(const std::string &in)                                      //
+    : Base(in, "rejection sampling from coordinates", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
+      CoordinatesLoader(in) {                                                                        //
+  if (!have_weights())
+    throw Exception("Rejection seeding from user-specified coordinates" //
+                    " must also specify per-coordinate weights"         //
+                    " (must be 4 columns in input file)");              //
+}
+
+bool Rejection_per_coord::get_seed(Eigen::Vector3f &p) const {
+  std::uniform_int_distribution<> index_selector(0, num_coordinates() - 1);
+  std::uniform_real_distribution<float> selector;
+  ssize_t coordinate_index(-1);
+  do {
+    coordinate_index = index_selector(rng);
+  } while (weights(coordinate_index) < selector(rng));
+  p = coords.row(coordinate_index);
   return true;
 }
 
