@@ -65,7 +65,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
     std::array<char, length> root_path;
     if (GetVolumePathName(Entry::name.c_str(), root_path.data(), length)) { // Returns non-zero on success
 
-      const unsigned int code = GetDriveType(root_path);
+      const unsigned int code = GetDriveType(root_path.data());
       switch (code) {
       case 0: // DRIVE_UNKNOWN
         DEBUG("cannot get filesystem information on file \"" + Entry::name + "\": " + strerror(errno));
