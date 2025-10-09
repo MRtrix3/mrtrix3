@@ -349,13 +349,13 @@ namespace MR
 
             struct PerThread { MEMALIGN(PerThread)
               Shared& shared;
+              Iterator pos;
               typename std::remove_reference<Functor>::type func;
               void execute () {
-                Iterator pos = shared.iterator;
                 while (shared.next (pos))
                   func (pos);
               }
-            } loop_thread = { shared, functor };
+            } loop_thread = { shared, shared.iterator, functor };
 
             auto threads = Thread::run (Thread::multi (loop_thread), "loop threads");
 
