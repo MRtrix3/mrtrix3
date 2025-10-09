@@ -108,8 +108,8 @@ namespace MR
 
       index_buffer.gen();
       index_buffer.bind();
-      num_indices = 3 * NUM_POLYGONS * sizeof(GLuint);
-      gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, num_indices, &polygons[0], gl::STATIC_DRAW);
+      num_indices = 3 * NUM_POLYGONS;
+      gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, num_indices * sizeof(GLuint), &polygons[0], gl::STATIC_DRAW);
     }
 
 
