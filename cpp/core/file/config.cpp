@@ -53,7 +53,7 @@ void Config::init() {
     DEBUG("No config file found at \"" + sysconf_location + "\"");
   }
 
-  std::string path = Path::join(Path::home(), "." + file_basename);
+  const std::string path = Path::join(Path::home(), "." + file_basename);
   if (Path::is_file(path)) {
     INFO("reading config file \"" + path + "\"...");
     try {

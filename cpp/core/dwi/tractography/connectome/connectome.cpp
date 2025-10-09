@@ -48,7 +48,7 @@ const OptionGroup AssignmentOptions =
       + Argument("max_dist").type_float(0.0)
     + Option("assignment_forward_search",
              "project the streamline forwards from the endpoint in search of a parcellation node voxel."
-             " Argument is the maximum traversal length in mm")
+             " Argument is the maximum traversal length in mm.")
       + Argument("max_dist").type_float(0.0)
     + Option("assignment_all_voxels",
              "assign the streamline to all nodes it intersects along its length"

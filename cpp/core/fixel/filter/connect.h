@@ -58,8 +58,6 @@ protected:
   float value_threshold, connectivity_threshold;
 };
 
-const float Connect::default_value_threshold = 0.5;
-const float Connect::default_connectivity_threshold = 0.1;
 //! @}
 
 } // namespace MR::Fixel::Filter

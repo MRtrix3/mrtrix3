@@ -60,8 +60,8 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
     step = get_cf_min_step(p, interp);
     p += step;
     tissues = get_tissues(p, interp);
-  } while (tissues.valid() && step.squaredNorm() && (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy) &&
-           (++gradient_iters < max_iters));
+  } while (tissues.valid() && step.squaredNorm() > 0.0F &&
+           (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy) && ++gradient_iters < max_iters);
 
   // Make sure an appropriate cost function minimum has been found, and that
   //   this would be an acceptable termination point if it were processed by the tracking algorithm

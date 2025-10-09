@@ -73,7 +73,7 @@ void usage() {
                                " (default = " + str(Fixel::Filter::Connect::default_value_threshold) + ")")
     + Argument ("value").type_float ()
   + Option ("threshold_connectivity", "specify a fixel-fixel connectivity threshold for connected-component analysis"
-                                      " (default = " + str(Fixel::Filter::Connect::default_connectivity_threshold) + ")")
+                                      " (default = " + str(Fixel::Filter::Connect::default_connectivity_threshold, 2) + ")")
     + Argument ("value").type_float (0.0)
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
@@ -81,7 +81,7 @@ void usage() {
                     " (default = " + str(Fixel::Filter::Smooth::default_fwhm) + "mm)")
     + Argument ("value").type_float (0.0)
   + Option ("minweight", "apply a minimum threshold to smoothing weights"
-                         " (default = " + str(Fixel::Filter::Smooth::default_threshold) + ")")
+                         " (default = " + str(Fixel::Filter::Smooth::default_threshold, 2) + ")")
     + Argument ("value").type_float (0.0);
 
 }

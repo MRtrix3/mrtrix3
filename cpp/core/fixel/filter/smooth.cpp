@@ -23,6 +23,9 @@
 
 namespace MR::Fixel::Filter {
 
+const float Smooth::default_fwhm = 10.0F;
+const float Smooth::default_threshold = 0.01F;
+
 Smooth::Smooth(Image<index_type> index_image,
                const Matrix::Reader &matrix,
                const float smoothing_fwhm,

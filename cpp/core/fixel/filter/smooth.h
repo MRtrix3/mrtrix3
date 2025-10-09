@@ -62,9 +62,6 @@ protected:
   float stdev, gaussian_const1, gaussian_const2, threshold;
 };
 
-const float Smooth::default_fwhm = 10.0F;
-const float Smooth::default_threshold = 0.01F;
-
 //! @}
 
 } // namespace MR::Fixel::Filter
