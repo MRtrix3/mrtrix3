@@ -49,8 +49,8 @@ Example usages
 Options
 -------
 
-Structural connectome streamline assignment option
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Structural connectome streamline assignment options (can only specify one)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-assignment_end_voxels** use a simple voxel lookup value at each streamline endpoint
 
