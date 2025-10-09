@@ -303,17 +303,13 @@ void run ()
   if (opt.size())
     stats.open_stream(opt[0][0]);
 
-  auto dwi = header_in.get_image<float>().with_direct_io(3);
-  ParticleGrid pgrid (dwi);
-
+  ParticleGrid pgrid (header_in);
   ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, header_in, properties);
   InternalEnergyComputer* Eint = new InternalEnergyComputer(stats, pgrid);
   Eint->setConnPot(cpot);
   EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, Eext, properties.lam_ext / ( wmscale2 * properties.weight*properties.weight));
 
-  MHSampler mhs (dwi, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
-
-
+  MHSampler mhs (header_in, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
   INFO("Start MH sampler");
 
   Thread::run (Thread::multi(mhs), "MH sampler");
@@ -345,7 +341,7 @@ void run ()
 
 
   // Save fiso, tod and eext
-  Header header_out (dwi);
+  Header header_out (header_in);
   header_out.datatype() = DataType::Float32;
 
   opt = get_options("fod");
