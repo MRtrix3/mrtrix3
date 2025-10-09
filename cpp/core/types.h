@@ -35,40 +35,19 @@
 #define PRI_SIZET "zu" // check_syntax off
 #endif
 
-namespace MR {
-
-#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
-#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
-// needed for clang 3.4:
-using __max_align_t = struct {
-  long long __clang_max_align_nonce1 __attribute__((__aligned__(__alignof__(long long))));
-  long double __clang_max_align_nonce2 __attribute__((__aligned__(__alignof__(long double))));
-};
-constexpr size_t malloc_align = alignof(__max_align_t);
-#else
-constexpr size_t malloc_align = alignof(std::max_align_t);
-#endif
-#else
-constexpr size_t malloc_align = alignof(::max_align_t);
-#endif
-
-namespace Helper {
+namespace MR::Helper {
 template <class ImageType> class ConstRow;
 template <class ImageType> class Row;
-} // namespace Helper
-} // namespace MR
-
-#ifdef EIGEN_HAS_OPENMP
-#undef EIGEN_HAS_OPENMP
-#endif
-
+} // namespace MR::Helper
 #define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
 #define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h" // check_syntax off
 #define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
 #define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"         // check_syntax off
 #define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"           // check_syntax off
-
 #include <Eigen/Geometry>
+#ifdef EIGEN_HAS_OPENMP
+#undef EIGEN_HAS_OPENMP
+#endif
 
 /*! \defgroup VLA Variable-length array macros
  *
@@ -148,6 +127,21 @@ template <class ImageType> class Row;
 
 namespace MR {
 
+#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
+#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
+// needed for clang 3.4:
+using __max_align_t = struct {
+  long long __clang_max_align_nonce1 __attribute__((__aligned__(__alignof__(long long))));
+  long double __clang_max_align_nonce2 __attribute__((__aligned__(__alignof__(long double))));
+};
+constexpr size_t malloc_align = alignof(__max_align_t);
+#else
+constexpr size_t malloc_align = alignof(std::max_align_t);
+#endif
+#else
+constexpr size_t malloc_align = alignof(::max_align_t);
+#endif
+
 using float32 = float;
 using float64 = double;
 using cdouble = std::complex<double>;
@@ -188,13 +182,15 @@ inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is
   return x;
 }
 template <typename X>
+inline constexpr typename std::enable_if<std::is_floating_point<X>::value, X>::type abs(const std::complex<X> &x) {
+  return std::abs(x);
+}
+template <typename X>
 inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value, X>::type
 abs(X x) {
   return std::abs(x);
 }
-template <typename X> inline constexpr typename std::enable_if<is_complex<X>::value, X>::type abs(X x) {
-  return std::abs(x);
-}
+
 } // namespace MR
 
 namespace std {
