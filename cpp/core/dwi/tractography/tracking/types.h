@@ -37,6 +37,7 @@ enum class term_t {
   ENTER_EXCLUDE,
   TRAVERSE_ALL_INCLUDE
 };
+constexpr ssize_t termination_reason_count = 13;
 struct term_info {
   std::string name;
   std::string description;
@@ -56,7 +57,6 @@ const std::map<term_t, term_info> termination_info{
     {term_t::EXIT_MASK, {"exit_mask", "Exited mask", false}},
     {term_t::ENTER_EXCLUDE, {"enter_exclude", "Entered exclusion region", true}},
     {term_t::TRAVERSE_ALL_INCLUDE, {"all_include", "Traversed all include regions", true}}};
-constexpr ssize_t termination_type_count = 13;
 
 enum class reject_t {
   INVALID_SEED,
@@ -68,6 +68,7 @@ enum class reject_t {
   ACT_POOR_TERMINATION,
   ACT_FAILED_WM_REQUIREMENT
 };
+constexpr ssize_t rejection_reason_count = 8;
 const std::map<reject_t, std::string> rejection_strings{
     {reject_t::INVALID_SEED, "Invalid seed point"},
     {reject_t::NO_PROPAGATION_FROM_SEED, "No propagation from seed"},
@@ -77,7 +78,6 @@ const std::map<reject_t, std::string> rejection_strings{
     {reject_t::MISSED_INCLUDE_REGION, "Missed inclusion region"},
     {reject_t::ACT_POOR_TERMINATION, "Poor structural termination"},
     {reject_t::ACT_FAILED_WM_REQUIREMENT, "Failed to traverse white matter"}};
-constexpr ssize_t rejection_type_count = 8;
 
 enum class intrinsic_integration_order_t { FIRST, HIGHER };
 

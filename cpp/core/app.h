@@ -53,6 +53,24 @@ extern const char *project_build_date;
 
 const char *argtype_description(ArgType type);
 
+struct HelpFormatting {
+  struct Indents {
+    ssize_t header;
+    ssize_t main;
+  };
+  const ssize_t width;
+  const Indents purpose_indents;
+  const Indents arg_indents;
+  const Indents option_indents;
+  const ssize_t example_indent;
+};
+
+extern const HelpFormatting help_formatting;
+
+extern const std::string help_command;
+
+extern const std::string core_reference;
+
 std::string help_head(int format);
 std::string help_synopsis(int format);
 std::string help_tail(int format);

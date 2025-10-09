@@ -22,10 +22,12 @@
 #include "opengl/transformation.h"
 #include "projection.h"
 
-#define ROTATION_INC 0.002
-#define MOVE_IN_OUT_FOV_MULTIPLIER 1.0e-3f
-
 namespace MR::GUI::MRView {
+
+// Note: distinct from MR::GUI::MRView::Tool::fovrate_multipler
+constexpr float moveinout_fovmultiplier = 1e-3F;
+
+constexpr float rotation_increment = 0.002F;
 
 namespace Tool {
 class Dock;
@@ -139,7 +141,7 @@ public:
   }
 
   Eigen::Vector3f get_through_plane_translation_FOV(int increment, const ModelViewProjection &projection) {
-    return get_through_plane_translation(MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
+    return get_through_plane_translation(moveinout_fovmultiplier * increment * FOV(), projection);
   }
 
   void render_tools(const Projection &projection, bool is_3D = false, int axis = 0, int slice = 0) {

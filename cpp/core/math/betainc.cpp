@@ -55,15 +55,17 @@ namespace MR::Math {
 //   if not available, lock across threads just for execution of std::lgamma()
 // - Changed double to default_type
 // - Changed formatting to match MRtrix3 convention
-
-#define BETAINCREG_STOP 1.0e-8
-#define BETAINCREG_TINY 1.0e-30
+// - Changed numerical constants from macros to static consts
 
 #ifdef MRTRIX_HAVE_LGAMMA_R
 extern "C" double lgamma_r(double, int *);
 #endif
 
 default_type betaincreg(const default_type a, const default_type b, const default_type x) {
+
+  static const default_type stop_threshold = 1.0e-8;
+  static const default_type tiny_threshold = 1.0e-30;
+
   if (a <= 0.0 || b <= 0.0 || x < 0.0 || x > 1.0)
     throw Exception("Invalid inputs: MR::Math::betaincreg(" + str(a) + ", " + str(b) + ", " + str(x) + ")");
 
@@ -104,19 +106,19 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
 
     // Do an iteration of Lentz's algorithm
     d = 1.0 + numerator * d;
-    if (abs(d) < BETAINCREG_TINY)
-      d = BETAINCREG_TINY;
+    if (abs(d) < tiny_threshold)
+      d = tiny_threshold;
     d = 1.0 / d;
 
     c = 1.0 + numerator / c;
-    if (abs(c) < BETAINCREG_TINY)
-      c = BETAINCREG_TINY;
+    if (abs(c) < tiny_threshold)
+      c = tiny_threshold;
 
     const default_type cd = c * d;
     f *= cd;
 
     // Check for stop
-    if (abs(1.0 - cd) < BETAINCREG_STOP)
+    if (abs(1.0 - cd) < stop_threshold)
       return front * (f - 1.0);
   }
 

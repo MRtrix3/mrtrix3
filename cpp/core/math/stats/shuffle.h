@@ -25,10 +25,12 @@
 #include "math/stats/typedefs.h"
 #include <vector>
 
-#define DEFAULT_NUMBER_SHUFFLES 5000
-#define DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY 5000
-
 namespace MR::Math::Stats {
+
+// TODO Reconsider position
+// Perhaps these need to be with "permtest", while others remain with "shuffle"?
+constexpr ssize_t default_numshuffles_nulldist = 5000;
+constexpr ssize_t default_numshuffles_nonstationarity = 5000;
 
 // Generic command-line options:
 // - Set nature of errors

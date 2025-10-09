@@ -88,7 +88,7 @@ const char *const bvalue_scaling_description(
 // CONF Specifies the b-value threshold for determining those image
 // CONF volumes that correspond to b=0.
 default_type bzero_threshold() {
-  static const default_type value = File::Config::get_float("BZeroThreshold", DWI_BZERO_THRESHOLD_DEFAULT);
+  static const default_type value = File::Config::get_float("BZeroThreshold", default_bzero_threshold);
   return value;
 }
 

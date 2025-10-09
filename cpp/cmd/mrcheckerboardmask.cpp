@@ -24,7 +24,7 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_NUM_TILES 5
+constexpr ssize_t default_number_tiles = 5;
 
 // clang-format off
 void usage() {
@@ -38,7 +38,8 @@ void usage() {
   + Argument ("output", "the output binary image mask.").type_image_out ();
 
   OPTIONS
-  + Option ("tiles", "specify the number of tiles in any direction")
+  + Option ("tiles", "specify the number of tiles in any direction"
+                     " (default: " + str(default_number_tiles) + ")")
     + Argument ("value").type_integer()
 
   + Option ("invert", "invert output binary mask.")
@@ -50,7 +51,7 @@ void usage() {
 
 void run() {
 
-  const size_t ntiles = get_option_value("tiles", DEFAULT_NUM_TILES);
+  const size_t ntiles = get_option_value("tiles", default_number_tiles);
   const bool invert = !get_options("invert").empty();
   const bool use_NaN = !get_options("nan").empty();
 

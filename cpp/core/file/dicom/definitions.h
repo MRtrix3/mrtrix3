@@ -16,49 +16,50 @@
 
 #pragma once
 
+#include <stdint.h>
 #include <string>
 
-#define VR_OB 0x4F42U
-#define VR_OW 0x4F57U
-#define VR_OF 0x4F46U
-#define VR_SQ 0x5351U
-#define VR_UN 0x554EU
-#define VR_AE 0x4145U
-#define VR_AS 0x4153U
-#define VR_AT 0x4154U
-#define VR_CS 0x4353U
-#define VR_DA 0x4441U
-#define VR_DS 0x4453U
-#define VR_DT 0x4454U
-#define VR_FD 0x4644U
-#define VR_FL 0x464CU
-#define VR_IS 0x4953U
-#define VR_LO 0x4C4FU
-#define VR_LT 0x4C54U
-#define VR_PN 0x504EU
-#define VR_SH 0x5348U
-#define VR_SL 0x534CU
-#define VR_SS 0x5353U
-#define VR_ST 0x5354U
-#define VR_TM 0x544DU
-#define VR_UI 0x5549U
-#define VR_UL 0x554CU
-#define VR_US 0x5553U
-#define VR_UT 0x5554U
-
-#define LENGTH_UNDEFINED 0xFFFFFFFFUL
-
-#define GROUP_BYTE_ORDER 0x0002U
-#define GROUP_BYTE_ORDER_SWAPPED 0x0200U
-#define GROUP_SEQUENCE 0xFFFEU
-#define GROUP_DATA 0x7FE0U
-
-#define ELEMENT_TRANSFER_SYNTAX_UID 0x0010U
-#define ELEMENT_SEQUENCE_ITEM 0xE000U
-#define ELEMENT_SEQUENCE_DELIMITATION_ITEM 0xE0DDU
-#define ELEMENT_DATA 0x0010U
-
 namespace MR::File::Dicom {
+
+constexpr uint16_t VR_OB = 0x4F42U;
+constexpr uint16_t VR_OW = 0x4F57U;
+constexpr uint16_t VR_OF = 0x4F46U;
+constexpr uint16_t VR_SQ = 0x5351U;
+constexpr uint16_t VR_UN = 0x554EU;
+constexpr uint16_t VR_AE = 0x4145U;
+constexpr uint16_t VR_AS = 0x4153U;
+constexpr uint16_t VR_AT = 0x4154U;
+constexpr uint16_t VR_CS = 0x4353U;
+constexpr uint16_t VR_DA = 0x4441U;
+constexpr uint16_t VR_DS = 0x4453U;
+constexpr uint16_t VR_DT = 0x4454U;
+constexpr uint16_t VR_FD = 0x4644U;
+constexpr uint16_t VR_FL = 0x464CU;
+constexpr uint16_t VR_IS = 0x4953U;
+constexpr uint16_t VR_LO = 0x4C4FU;
+constexpr uint16_t VR_LT = 0x4C54U;
+constexpr uint16_t VR_PN = 0x504EU;
+constexpr uint16_t VR_SH = 0x5348U;
+constexpr uint16_t VR_SL = 0x534CU;
+constexpr uint16_t VR_SS = 0x5353U;
+constexpr uint16_t VR_ST = 0x5354U;
+constexpr uint16_t VR_TM = 0x544DU;
+constexpr uint16_t VR_UI = 0x5549U;
+constexpr uint16_t VR_UL = 0x554CU;
+constexpr uint16_t VR_US = 0x5553U;
+constexpr uint16_t VR_UT = 0x5554U;
+
+constexpr uint16_t group_byte_order = 0x0002U;
+constexpr uint16_t group_byte_order_swapped = 0x0200U;
+constexpr uint16_t group_sequence = 0xFFFEU;
+constexpr uint16_t group_data = 0x7FE0U;
+
+constexpr uint16_t element_transfer_syntax_uid = 0x0010U;
+constexpr uint16_t element_sequence_item = 0xE000U;
+constexpr uint16_t element_sequence_delimitation_item = 0xE0DDU;
+constexpr uint16_t element_data = 0x0010U;
+
+constexpr uint64_t undefined_length = 0xFFFFFFFFUL;
 
 inline std::string format_date(const std::string &date) {
   if (date.empty() || date.size() < 8)

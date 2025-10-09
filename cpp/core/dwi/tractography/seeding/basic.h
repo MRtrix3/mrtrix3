@@ -18,6 +18,7 @@
 
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/base.h"
+#include "dwi/tractography/seeding/seeding.h"
 #include "file/matrix.h"
 
 // By default, the rejection sampler will perform its sampling based on image intensity values,
@@ -49,7 +50,7 @@ private:
 
 class Random_per_voxel : public Base {
 public:
-  Random_per_voxel(const std::string &in, const ssize_t num_per_voxel);
+  Random_per_voxel(const std::string &in, const size_t num_per_voxel);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
   virtual ~Random_per_voxel() {}
 
@@ -62,7 +63,7 @@ private:
 
 class Grid_per_voxel : public Base {
 public:
-  Grid_per_voxel(const std::string &in, const ssize_t os_factor);
+  Grid_per_voxel(const std::string &in, const size_t os_factor);
   virtual ~Grid_per_voxel() {}
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
@@ -103,7 +104,7 @@ protected:
 
 class Count_per_coord : public Base, public CoordinatesLoader {
 public:
-  Count_per_coord(const std::string &in, const ssize_t streamlines_per_coord);
+  Count_per_coord(const std::string &in, const size_t streamlines_per_coord);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:

@@ -234,7 +234,7 @@ Eigen::Quaternionf Base::get_tilt_rotation(const ModelViewProjection &proj) cons
   const Eigen::Vector3f x = proj.screen_to_model_direction(dpos, target());
   const Eigen::Vector3f z = proj.screen_normal();
   const Eigen::Vector3f v(x.cross(z).normalized());
-  float angle = -ROTATION_INC * std::sqrt(float(Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
+  float angle = -rotation_increment * std::sqrt(float(Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
   if (angle > Math::pi_2)
     angle = Math::pi_2;
   return Eigen::Quaternionf(Eigen::AngleAxisf(angle, v));

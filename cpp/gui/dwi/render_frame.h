@@ -26,8 +26,6 @@
 #include "projection.h"
 #include "types.h"
 
-#define MAX_LOD 8
-
 namespace MR::GUI::DWI {
 
 class RenderFrame : public GL::Area {

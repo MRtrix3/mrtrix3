@@ -21,8 +21,6 @@
 
 namespace MR::DWI::Tractography::SIFT {
 
-#define SIFT_TRACK_INDEX_BUFFER_SIZE 10000
-
 using TrackIndexRange = std::pair<track_t, track_t>;
 using TrackIndexRangeQueue = Thread::Queue<TrackIndexRange>;
 
@@ -33,6 +31,7 @@ using TrackIndexRangeQueue = Thread::Queue<TrackIndexRange>;
 class TrackIndexRangeWriter {
 
 public:
+  static const track_t default_batch_size;
   TrackIndexRangeWriter(const track_t, const track_t, const std::string &message = std::string());
 
   bool operator()(TrackIndexRange &);

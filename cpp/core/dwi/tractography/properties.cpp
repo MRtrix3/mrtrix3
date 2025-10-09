@@ -46,9 +46,7 @@ void check_counts(const Properties &a, const Properties &b, const std::string &t
   }
 }
 
-void Properties::set_timestamp() {
-  (*this)["timestamp"] = str(Timer::current_time(), TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION);
-}
+void Properties::set_timestamp() { (*this)["timestamp"] = str(Timer::current_time(), file_timestamp_precision); }
 
 void Properties::set_version_info() {
   (*this)["mrtrix_version"] = App::mrtrix_version;

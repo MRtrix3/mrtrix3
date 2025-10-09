@@ -53,7 +53,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
                "use strong familywise error control across multiple hypotheses")
       + Option("nshuffles",
                "the number of shuffles"
-               " (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")")
+               " (default: " + str(default_numshuffles_nulldist) + ")")
         + Argument("number").type_integer(1)
       + Option("permutations",
                "manually define the permutations (relabelling)."
@@ -75,7 +75,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
            + Option("nshuffles_nonstationarity",
                     "the number of shuffles to use when precomputing the empirical statistic image"
                     " for non-stationarity correction"
-                    " (default: " + str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")")
+                    " (default: " + str(default_numshuffles_nonstationarity) + ")")
              + Argument("number").type_integer(1)
            + Option("permutations_nonstationarity",
                     "manually define the permutations (relabelling)"
@@ -94,7 +94,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
 
 Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, const std::string msg)
     : rows(num_rows),
-      nshuffles(is_nonstationarity ? DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY : DEFAULT_NUMBER_SHUFFLES),
+      nshuffles(is_nonstationarity ? default_numshuffles_nonstationarity : default_numshuffles_nulldist),
       counter(0) {
   using namespace App;
   auto opt = get_options("errors");

@@ -46,7 +46,7 @@ Note that the behaviour of the -angle option varies slightly depending on the or
 Options
 -------
 
--  **-algorithm name** specify the tractography algorithm to use. Valid choices are: FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).
+-  **-algorithm name** specify the tractography algorithm to use. Valid choices are: fact, ifod1, ifod2, nulldist1, nulldist2, sd_stream, seedtest, tensor_det, tensor_prob (default: ifod2).
 
 Streamlines tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

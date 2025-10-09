@@ -20,30 +20,31 @@
 
 namespace MR::DWI::Tractography::Seeding {
 
-Sphere::Sphere(const std::string &in)                         //
-    : Base(in, "sphere", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) { //
+Sphere::Sphere(const std::string &in)                                    //
+    : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) { //
   auto F = parse_floats(in);
   if (F.size() != 4)
     throw Exception("Could not parse seed \"" + in + "\" as a spherical seed point;" +    //
                     " needs to be 4 comma-separated values (XYZ position, then radius)"); //
-  pos = {float(F[0]), float(F[1]), float(F[2])};
-  rad = F[3];
-  Base::volume = 4.0 * Math::pi * Math::pow3(rad) / 3.0;
+  pos = {static_cast<float>(F[0]), static_cast<float>(F[1]), static_cast<float>(F[2])};
+  rad = static_cast<float>(F[3]);
+  Base::volume = static_cast<float>(4.0 * Math::pi * Math::pow3(F[3]) / 3.0);
 }
 
 bool Sphere::get_seed(Eigen::Vector3f &p) const {
   std::uniform_real_distribution<float> uniform;
   do {
-    p = {2.0f * uniform(rng) - 1.0f, 2.0f * uniform(rng) - 1.0f, 2.0f * uniform(rng) - 1.0f};
-  } while (p.squaredNorm() > 1.0f);
+    p = {2.0F * uniform(rng) - 1.0F, 2.0F * uniform(rng) - 1.0F, 2.0F * uniform(rng) - 1.0F};
+  } while (p.squaredNorm() > 1.0F);
   p = pos + rad * p;
   return true;
 }
 
-SeedMask::SeedMask(const std::string &in)                                 //
-    : Base(in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), //
-      mask(in) {                                                          //
-  Base::volume = get_count(mask) * mask.spacing(0) * mask.spacing(1) * mask.spacing(2);
+SeedMask::SeedMask(const std::string &in)                                            //
+    : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
+      mask(in) {                                                                     //
+  Base::volume = static_cast<float>(static_cast<default_type>(get_count(mask)) * mask.spacing(0) * mask.spacing(1) *
+                                    mask.spacing(2));
 }
 
 bool SeedMask::get_seed(Eigen::Vector3f &p) const {
@@ -54,13 +55,15 @@ bool SeedMask::get_seed(Eigen::Vector3f &p) const {
     seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2) - 1)(rng);
   } while (!seed.value());
   std::uniform_real_distribution<float> uniform;
-  p = {seed.index(0) + uniform(rng) - 0.5f, seed.index(1) + uniform(rng) - 0.5f, seed.index(2) + uniform(rng) - 0.5f};
+  p = {static_cast<float>(seed.index(0)) + uniform(rng) - 0.5F,
+       static_cast<float>(seed.index(1)) + uniform(rng) - 0.5F,
+       static_cast<float>(seed.index(2)) + uniform(rng) - 0.5F};
   p = (*mask.voxel2scanner) * p;
   return true;
 }
 
-Random_per_voxel::Random_per_voxel(const std::string &in, const ssize_t num_per_voxel)
-    : Base(in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+Random_per_voxel::Random_per_voxel(const std::string &in, const size_t num_per_voxel)
+    : Base(in, "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
       mask(in),
       num(num_per_voxel),
       inc(0),
@@ -98,13 +101,15 @@ bool Random_per_voxel::get_seed(Eigen::Vector3f &p) const {
   }
 
   std::uniform_real_distribution<float> uniform;
-  p = {mask.index(0) + uniform(rng) - 0.5f, mask.index(1) + uniform(rng) - 0.5f, mask.index(2) + uniform(rng) - 0.5f};
+  p = {static_cast<float>(mask.index(0)) + uniform(rng) - 0.5F,
+       static_cast<float>(mask.index(1)) + uniform(rng) - 0.5F,
+       static_cast<float>(mask.index(2)) + uniform(rng) - 0.5F};
   p = (*mask.voxel2scanner) * p;
   return true;
 }
 
-Grid_per_voxel::Grid_per_voxel(const std::string &in, const ssize_t os_factor)
-    : Base(in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+Grid_per_voxel::Grid_per_voxel(const std::string &in, const size_t os_factor)
+    : Base(in, "grid per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
       mask(in),
       os(os_factor),
       pos(os, os, os),
@@ -145,15 +150,15 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
     }
   }
 
-  p = {mask.index(0) + offset + (pos[0] * step),
-       mask.index(1) + offset + (pos[1] * step),
-       mask.index(2) + offset + (pos[2] * step)};
+  p = {static_cast<float>(mask.index(0)) + offset + (pos[0] * step),
+       static_cast<float>(mask.index(1)) + offset + (pos[1] * step),
+       static_cast<float>(mask.index(2)) + offset + (pos[2] * step)};
   p = (*mask.voxel2scanner) * p;
   return true;
 }
 
 Rejection_per_voxel::Rejection_per_voxel(const std::string &in)
-    : Base(in, "rejection sampling", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
+    : Base(in, "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
       interp(in),
 #endif
@@ -265,8 +270,8 @@ CoordinatesLoader::CoordinatesLoader(const std::string &cds_path) //
   }
 }
 
-Count_per_coord::Count_per_coord(const std::string &in, const ssize_t streamlines_per_coord)
-    : Base(in, "fixed streamlines per coordinate", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+Count_per_coord::Count_per_coord(const std::string &in, const size_t streamlines_per_coord)
+    : Base(in, "fixed streamlines per coordinate", attempts_per_seed.at(seed_attempt_t::FIXED)),
       CoordinatesLoader(in),
       current_coord(0),
       num_at_coord(0),
@@ -296,9 +301,9 @@ bool Count_per_coord::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Coordinates::Coordinates(const std::string &in)                                           //
-    : Base(in, "random coordinate selection seeding", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), //
-      CoordinatesLoader(in) {                                                             //
+Coordinates::Coordinates(const std::string &in)                                                      //
+    : Base(in, "random coordinate selection seeding", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
+      CoordinatesLoader(in) {                                                                        //
   if (have_weights())
     throw Exception("Seeding fixed # streamlines per coordinates" //
                     " cannot also specify per-coordinate weights" //
@@ -310,9 +315,9 @@ bool Coordinates::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Rejection_per_coord::Rejection_per_coord(const std::string &in)                           //
-    : Base(in, "rejection sampling from coordinates", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), //
-      CoordinatesLoader(in) {                                                             //
+Rejection_per_coord::Rejection_per_coord(const std::string &in)                                      //
+    : Base(in, "rejection sampling from coordinates", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
+      CoordinatesLoader(in) {                                                                        //
   if (!have_weights())
     throw Exception("Rejection seeding from user-specified coordinates" //
                     " must also specify per-coordinate weights"         //

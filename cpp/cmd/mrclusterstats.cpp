@@ -41,11 +41,10 @@ using namespace MR::Math::Stats::GLM;
 using MR::Math::Stats::index_type;
 using Stats::PermTest::count_matrix_type;
 
-#define DEFAULT_TFCE_DH 0.1
-#define DEFAULT_TFCE_H 2.0
-#define DEFAULT_TFCE_E 0.5
-
-#define DEFAULT_EMPIRICAL_SKEW 1.0
+constexpr default_type default_tfce_dh = 0.1;
+constexpr default_type default_tfce_h = 2.0;
+constexpr default_type default_tfce_e = 0.5;
+constexpr default_type default_empirical_skew = 1.0;
 
 // clang-format off
 void usage() {
@@ -84,9 +83,9 @@ void usage() {
 
 
   OPTIONS
-  + Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
+  + Math::Stats::shuffle_options(true, default_empirical_skew)
 
-  + Stats::TFCE::Options(DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
+  + Stats::TFCE::Options(default_tfce_dh, default_tfce_e, default_tfce_h)
 
   + Math::Stats::GLM::glm_options("voxel")
 
@@ -170,13 +169,13 @@ std::shared_ptr<Voxel2Vector> SubjectVoxelImport::v2v = nullptr;
 void run() {
 
   const value_type cluster_forming_threshold = get_option_value("threshold", NaN);
-  const value_type tfce_dh = get_option_value("tfce_dh", DEFAULT_TFCE_DH);
-  const value_type tfce_H = get_option_value("tfce_h", DEFAULT_TFCE_H);
-  const value_type tfce_E = get_option_value("tfce_e", DEFAULT_TFCE_E);
+  const value_type tfce_dh = get_option_value("tfce_dh", default_tfce_dh);
+  const value_type tfce_H = get_option_value("tfce_h", default_tfce_h);
+  const value_type tfce_E = get_option_value("tfce_e", default_tfce_e);
   const bool use_tfce = !std::isfinite(cluster_forming_threshold);
   const bool do_26_connectivity = !get_options("connectivity").empty();
   const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
-  const default_type empirical_skew = get_option_value("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
+  const default_type empirical_skew = get_option_value("skew_nonstationarity", default_empirical_skew);
 
   // Load analysis mask and compute adjacency
   auto mask_header = Header::open(argument[3]);

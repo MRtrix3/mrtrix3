@@ -24,13 +24,13 @@ const App::OptionGroup FMLSSegmentOption =
     + App::Option("fmls_integral",
                   "threshold absolute numerical integral of positive FOD lobes."
                   " Any lobe for which the integral is smaller than this threshold will be discarded."
-                  " Default: " + str(FMLS_INTEGRAL_THRESHOLD_DEFAULT, 2) + ".")
+                  " Default: " + str(default_integral_threshold, 2) + ".")
       + App::Argument("value").type_float(0.0)
 
     + App::Option("fmls_peak_value",
                   "threshold peak amplitude of positive FOD lobes."
                   " Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded."
-                  " Default: " + str(FMLS_PEAK_VALUE_THRESHOLD_DEFAULT, 2) + ".")
+                  " Default: " + str(default_peakamp_threshold, 2) + ".")
       + App::Argument("value").type_float(0.0)
 
     + App::Option("fmls_no_thresholds",
@@ -45,7 +45,7 @@ const App::OptionGroup FMLSSegmentOption =
                   " divided by the peak amplitude of the smaller of the two adjoining lobes."
                   " A value of 1.0 will never merge two lobes into one;"
                   " a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing."
-                  " Default: " + str(FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT, 2) + ".")
+                  " Default: " + str(default_mergeratio_bridgetopeak, 2) + ".")
       + App::Argument("value").type_float(0.0, 1.0);
 // clang-format on
 
@@ -119,9 +119,9 @@ Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const siz
     : dirs(directions),
       lmax(l),
       precomputer(new Math::SH::PrecomputedAL<default_type>(lmax, 2 * dirs.size())),
-      integral_threshold(FMLS_INTEGRAL_THRESHOLD_DEFAULT),
-      peak_value_threshold(FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
-      lobe_merge_ratio(FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT),
+      integral_threshold(default_integral_threshold),
+      peak_value_threshold(default_peakamp_threshold),
+      lobe_merge_ratio(default_mergeratio_bridgetopeak),
       create_null_lobe(false),
       create_lookup_table(true),
       dilate_lookup_table(false) {

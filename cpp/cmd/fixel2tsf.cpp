@@ -28,13 +28,12 @@
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
 
 using namespace MR;
 using namespace App;
 
 using Fixel::index_type;
-
-#define DEFAULT_ANGULAR_THRESHOLD 45.0
 
 // clang-format off
 void usage() {
@@ -59,7 +58,7 @@ void usage() {
   OPTIONS
   + Option ("angle", "the max anglular threshold for computing correspondence"
                      " between a fixel direction and track tangent"
-                     " (default = " + str(DEFAULT_ANGULAR_THRESHOLD, 2) + " degrees)")
+                     " (default = " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
   + Argument ("value").type_float (0.001, 90.0);
 
 }
@@ -86,7 +85,7 @@ void run() {
 
   DWI::Tractography::ScalarWriter<float> tsf_writer(argument[2], properties);
 
-  float angular_threshold = get_option_value("angle", DEFAULT_ANGULAR_THRESHOLD);
+  const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int>(properties["count"]);

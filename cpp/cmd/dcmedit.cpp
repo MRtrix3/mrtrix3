@@ -95,7 +95,7 @@ void run() {
 
   if (!get_options("anonymise").empty()) {
     tags.push_back(Tag(0x0010U, 0x0030U, "")); // PatientBirthDate
-    VRs.push_back(VR_PN);
+    VRs.push_back(File::Dicom::VR_PN);
   }
 
   auto opt = get_options("tag");

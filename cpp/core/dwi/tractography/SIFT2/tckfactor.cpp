@@ -157,7 +157,7 @@ void TckFactor::calc_afcsa() {
     const double fixed_mu;
   };
   {
-    SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
     Functor functor(*this);
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(functor));
   }
@@ -167,7 +167,7 @@ void TckFactor::calc_afcsa() {
     i->clear_mean_coeff();
   }
   {
-    SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
     FixelUpdater worker(*this);
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
   }
@@ -247,7 +247,7 @@ void TckFactor::estimate_factors() {
     fixels_to_exclude.clear();
     double sum_costs = 0.0;
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       // CoefficientOptimiserGSS worker (*this, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines,
       // fixels_to_exclude, sum_costs); CoefficientOptimiserQLS worker (*this, /*projected_steps,*/ step_stats,
       // coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
@@ -276,7 +276,7 @@ void TckFactor::estimate_factors() {
       i->clear_mean_coeff();
     }
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       FixelUpdater worker(*this);
       Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
     }
@@ -292,7 +292,7 @@ void TckFactor::estimate_factors() {
     // Log different regularisation costs separately
     double cf_reg_tik = 0.0, cf_reg_tv = 0.0;
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       RegularisationCalculator worker(*this, cf_reg_tik, cf_reg_tv);
       Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
     }

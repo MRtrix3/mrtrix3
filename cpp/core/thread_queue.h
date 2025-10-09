@@ -23,10 +23,10 @@
 #include "memory.h"
 #include "thread.h"
 
-#define MRTRIX_QUEUE_DEFAULT_CAPACITY 128
-#define MRTRIX_QUEUE_DEFAULT_BATCH_SIZE 128
-
 namespace MR::Thread {
+
+constexpr ssize_t default_queue_capacity = 128;
+constexpr ssize_t default_batchsize = 128;
 
 //* \cond skip
 namespace {
@@ -320,9 +320,9 @@ public:
    * blocking. If a thread attempts to push more data onto the queue when the
    * queue already contains this number of items, the thread will block until
    * at least one item has been popped.  By default, the buffer size is
-   * MRTRIX_QUEUE_DEFAULT_CAPACITY items.
+   * default_queue_capacity items.
    */
-  Queue(const std::string &description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY)
+  Queue(const std::string &description = "unnamed", size_t buffer_size = default_queue_capacity)
       : buffer(new T *[buffer_size]),
         front(buffer),
         back(buffer),
@@ -752,9 +752,9 @@ template <class Item, class Functor> struct __Sink {
 //! used to request batched processing of items
 /*! This function is used in combination with Thread::run_queue to request
  * that the items \a object be processed in batches of \a number items
- * (defaults to MRTRIX_QUEUE_DEFAULT_BATCH_SIZE).
+ * (defaults to default_batchsize).
  * \sa Thread::run_queue() */
-template <class Item> inline __Batch<Item> batch(const Item &, size_t number = MRTRIX_QUEUE_DEFAULT_BATCH_SIZE) {
+template <class Item> inline __Batch<Item> batch(const Item &, size_t number = default_batchsize) {
   return __Batch<Item>(number);
 }
 
@@ -919,7 +919,7 @@ template <class Item> inline __Batch<Item> batch(const Item &, size_t number = M
  * }
  * \endcode
  *
- * By default, batches consist of MRTRIX_QUEUE_DEFAULT_BATCH_SIZE items
+ * By default, batches consist of default_batchsize items
  * (defined as 128). This can be set explicitly by providing the desired
  * size as an additional argument to Thread::batch():
  *
@@ -940,7 +940,7 @@ template <class Item> inline __Batch<Item> batch(const Item &, size_t number = M
  */
 
 template <class Source, class Item, class Sink>
-inline void run_queue(Source &&source, const Item &item, Sink &&sink, size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY) {
+inline void run_queue(Source &&source, const Item &item, Sink &&sink, size_t capacity = default_queue_capacity) {
   if (threads_to_execute() == 0) {
     typename Type<Item>::item item;
     while (__job<Source>::functor(source)(item))
@@ -1012,7 +1012,7 @@ inline void run_queue(Source &&source,
                       Pipe &&pipe,
                       const Item2 &item2,
                       Sink &&sink,
-                      size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY) {
+                      size_t capacity = default_queue_capacity) {
   if (threads_to_execute() == 0) {
     typename Type<Item1>::item item1;
     typename Type<Item2>::item item2;
@@ -1053,7 +1053,7 @@ inline void run_queue(Source &&source,
                       Pipe2 &&pipe2,
                       const Item3 &item3,
                       Sink &&sink,
-                      size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY) {
+                      size_t capacity = default_queue_capacity) {
   if (threads_to_execute() == 0) {
     typename Type<Item1>::item item1;
     typename Type<Item2>::item item2;

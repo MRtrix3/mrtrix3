@@ -30,7 +30,7 @@ using namespace App;
 
 using value_type = float;
 
-#define DEFAULT_NITER 2
+constexpr ssize_t default_iterations = 2;
 
 const char *const encoding_description[] = {
     "The tensor coefficients are stored in the output image as follows:\n"
@@ -100,7 +100,7 @@ void usage() {
 
   + Option("iter",
            "number of iterative reweightings for IWLS algorithm"
-           " (default: " + str(DEFAULT_NITER) +")"
+           " (default: " + str(default_iterations) +")"
            " (see Description).")
     + Argument("integer").type_integer(0, 10)
 
@@ -290,7 +290,7 @@ void run() {
   const bool ols = !get_options("ols").empty();
 
   // depending on whether first (initialisation) loop should be considered an iteration
-  auto iter = get_option_value("iter", DEFAULT_NITER);
+  auto iter = get_option_value("iter", default_iterations);
 
   Header header_out(header_in);
   header_out.datatype() = DataType::Float32;
