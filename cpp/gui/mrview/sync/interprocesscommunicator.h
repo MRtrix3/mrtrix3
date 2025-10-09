@@ -20,11 +20,11 @@
 #include "mrview/sync/client.h"
 #include "mrview/sync/localsocketreader.h"
 
+namespace MR::GUI::MRView::Sync {
+
 // maximum number of inter process syncers that are allowed. This can be
 // raised, but may reduce performance when new IPS are created.
-#define MAX_NO_ALLOWED 32
-
-namespace MR::GUI::MRView::Sync {
+constexpr ssize_t maximum_instances = 32;
 
 /**
  * Sends and receives information from other MRView processes

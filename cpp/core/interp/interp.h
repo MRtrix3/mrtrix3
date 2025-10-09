@@ -14,31 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <cctype>
+#pragma once
 
-#include "file/mgh.h"
-#include "file/ofstream.h"
-#include "header.h"
+#include <string>
+#include <vector>
 
-namespace MR::File::MGH {
+namespace MR::Interp {
 
-std::string tag_ID_to_string(const tag_type tag) {
-  try {
-    return tag2str.at(tag);
-  } catch (std::out_of_range &) {
-    return "MGH_TAG_" + str(tag);
-  }
-}
+const std::vector<std::string> interp_choices{"nearest", "linear", "cubic", "sinc"};
+enum class interp_type { NEAREST, LINEAR, CUBIC, SINC };
 
-tag_type string_to_tag_ID(const std::string &key) {
-  if (key.compare(0, 8, "MGH_TAG_") != 0)
-    return 0;
-
-  for (const auto &i : tag2str) {
-    if (i.second == key)
-      return i.first;
-  }
-  return 0;
-}
-
-} // namespace MR::File::MGH
+} // namespace MR::Interp

@@ -685,8 +685,20 @@ void run_combine_predicted(Image<float> &dwi_in,
         else
           source_volumes.push_back(volume);
       }
-      assert(!source_volumes.empty());
-      assert(!target_volumes.empty());
+      // For highly complex multi-phase-encoding acquisitions
+      //   (or test data of reduced size...),
+      //   it is possible for there to exist a shell
+      //   that does not contain at least one volume for every phase encoding direction
+      if (target_volumes.empty())
+        continue;
+      // Can't combine the empirical data with predictions
+      //   if there isn't at least one volume belonging to the same shell
+      //   that was acquired with some other phase encoding direction
+      if (source_volumes.empty())
+        throw Exception("For PE group " + str(pe_config.row(pe_index)) + "," +   //
+                        "shell b=" + str(shells[shell_index].get_mean()) + "," + //
+                        " no volumes from other phase encoding directions" +     //
+                        " with which to generate predictions");                  //
       std::stringstream ss_sources;
       std::stringstream ss_targets;
       for (const auto i : source_volumes)

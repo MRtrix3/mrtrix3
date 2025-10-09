@@ -29,7 +29,7 @@
 using namespace MR;
 using namespace App;
 
-#define MAX_ERROR 0.001
+constexpr default_type maximum_deviation_unitysum = 1e-3;
 
 // clang-format off
 void usage()
@@ -87,7 +87,7 @@ void run() {
         }
         if (!sum)
           continue;
-        if (abs(sum - 1.0) > MAX_ERROR) {
+        if (abs(sum - 1.0) > maximum_deviation_unitysum) {
           ++voxel_error_sum;
           if (voxels.valid()) {
             assign_pos_of(in, 0, 3).to(voxels);

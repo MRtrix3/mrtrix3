@@ -25,12 +25,23 @@
 
 namespace MR::DWI::Tractography::Mapping {
 
+// Default angular threshold for assigning streamlines to fixels
+//   in the absence of any other information
+constexpr default_type default_streamline2fixel_angle = 45.0;
+
+// Didn't bother making this a command-line option,
+//   since curvature contrast results were very poor regardless of smoothing
+constexpr default_type curvature_smoothing_mm = 10.0;
+
+// How many streamlines to read from a tractogram file
+//   in order to establish the spatial bounding box
+constexpr ssize_t streamlines_for_bounding_box = 1000000;
+
 // Convenience functions to figure out an appropriate upsampling ratio for streamline mapping
 size_t determine_upsample_ratio(const Header &, const float, const float);
 size_t determine_upsample_ratio(const Header &, const std::string &, const float);
 size_t determine_upsample_ratio(const Header &, const Tractography::Properties &, const float);
 
-#define MAX_TRACKS_READ_FOR_HEADER 1000000
 void generate_header(Header &, const std::string &, const std::vector<default_type> &);
 
 void oversample_header(Header &, const std::vector<default_type> &);

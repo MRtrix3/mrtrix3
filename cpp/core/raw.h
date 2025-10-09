@@ -23,7 +23,7 @@
 
 #include "mrtrix.h"
 
-#define BITMASK 0x01U << 7
+#define BITMASK 0x01U << 7 // check_syntax off
 
 #ifdef BYTE_ORDER_IS_BIG_ENDIAN
 #define MRTRIX_IS_BIG_ENDIAN true

@@ -48,6 +48,11 @@ public:
       p[1] = x[1];
       p[2] = x[2];
     }
+    Vertex(Eigen::Map<const Eigen::Matrix<float, 9, 3, Eigen::RowMajor>>::ConstRowXpr row) {
+      p[0] = row[0];
+      p[1] = row[1];
+      p[2] = row[2];
+    }
     template <class Container> Vertex(const Container &vertices, size_t i1, size_t i2) {
       p[0] = vertices[i1][0] + vertices[i2][0];
       p[1] = vertices[i1][1] + vertices[i2][1];

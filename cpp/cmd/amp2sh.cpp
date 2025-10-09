@@ -84,9 +84,8 @@ void usage() {
 }
 // clang-format on
 
-#define RICIAN_POWER 2.25
-
 using value_type = float;
+constexpr value_type rician_power = 2.25F;
 
 class Amp2SHCommon {
 public:
@@ -171,9 +170,9 @@ protected:
     default_type norm_amp = 0.0;
     for (ssize_t n = 0; n < ap.size(); ++n) {
       ap[n] = std::max(ap[n], default_type(0.0));
-      default_type t = std::pow(ap[n] / noise, default_type(RICIAN_POWER));
+      const default_type t = std::pow(ap[n] / noise, default_type(rician_power));
       w[n] = Math::pow2((t + 1.7) / (t + 1.12));
-      default_type diff = a[n] - noise * std::pow(t + 1.65, 1.0 / RICIAN_POWER);
+      const default_type diff = a[n] - noise * std::pow(t + 1.65, 1.0 / rician_power);
       norm_diff += Math::pow2(diff);
       norm_amp += Math::pow2(a[n]);
       ap[n] += diff;

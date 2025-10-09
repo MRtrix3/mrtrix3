@@ -21,9 +21,6 @@
 #include "math/legendre.h"
 #include "mrtrix.h"
 
-#define MAX_DIR_CHANGE 0.2
-#define ANGLE_TOLERANCE 1e-4
-
 namespace MR::Math::SH {
 
 /** \defgroup spherical_harmonics Spherical Harmonics
@@ -446,6 +443,8 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
                                             int lmax,
                                             UnitVectorType &unit_init_dir,
                                             PrecomputedAL<typename VectorType::Scalar> *precomputer = nullptr) {
+  static const default_type max_dir_change = 0.2;
+  static const default_type angle_tolerance = 1e-4;
   using value_type = typename VectorType::Scalar;
   assert(std::isfinite(unit_init_dir[0]));
   for (int i = 0; i < 50; i++) {
@@ -467,8 +466,8 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
 
     if (dt < 0.0)
       dt = -dt;
-    if (dt > MAX_DIR_CHANGE)
-      dt = MAX_DIR_CHANGE;
+    if (dt > max_dir_change)
+      dt = max_dir_change;
 
     del *= dt;
     daz *= dt;
@@ -478,7 +477,7 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
     unit_init_dir[2] -= del * std::sin(el);
     unit_init_dir.normalize();
 
-    if (dt < ANGLE_TOLERANCE)
+    if (dt < angle_tolerance)
       return amplitude;
   }
 

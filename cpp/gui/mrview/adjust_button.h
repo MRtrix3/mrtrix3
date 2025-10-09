@@ -19,12 +19,12 @@
 #include "mrtrix.h"
 #include "opengl/glutils.h"
 
-#define ADJUST_BUTTON_DEADZONE_SIZE 8
-
 namespace MR::GUI::MRView {
 
 class AdjustButton : public QLineEdit {
   Q_OBJECT
+
+  static const ssize_t deadzone_size;
 
 public:
   AdjustButton(QWidget *parent, float change_rate = 1.0);

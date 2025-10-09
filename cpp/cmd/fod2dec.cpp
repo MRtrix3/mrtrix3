@@ -29,10 +29,10 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_LUM_CR 0.3
-#define DEFAULT_LUM_CG 0.5
-#define DEFAULT_LUM_CB 0.2
-#define DEFAULT_LUM_GAMMA 2.2
+constexpr default_type default_lum_cr = 0.3;
+constexpr default_type default_lum_cg = 0.5;
+constexpr default_type default_lum_cb = 0.2;
+constexpr default_type default_lum_gamma = 2.2;
 
 // clang-format off
 void usage() {
@@ -84,19 +84,19 @@ void usage() {
 
     + Option ("lum", "Correct for luminance/perception,"
                      " using default values Cr,Cg,Cb = "
-                     + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2)
-                     + " and gamma = " + str(DEFAULT_LUM_GAMMA, 2)
+                     + str(default_lum_cr, 2) + "," + str(default_lum_cg, 2) + "," + str(default_lum_cb, 2)
+                     + " and gamma = " + str(default_lum_gamma, 2)
                      + " (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).")
 
     + Option ("lum_coefs", "The coefficients Cr,Cg,Cb to correct for luminance/perception."
                            " Note: this implicitly switches on luminance/perception correction,"
-                           " using a default gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " unless specified otherwise.")
+                           " using a default gamma = " + str(default_lum_gamma, 2) + " unless specified otherwise.")
       + Argument ("values").type_sequence_float()
 
     + Option ("lum_gamma", "The gamma value to correct for luminance/perception."
                            " Note: this implicitly switches on luminance/perception correction,"
                            " using a default Cr,Cg,Cb = "
-                           + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2)
+                           + str(default_lum_cr, 2) + "," + str(default_lum_cg, 2) + "," + str(default_lum_cb, 2)
                            + " unless specified otherwise.")
     + Argument ("value").type_float()
 
@@ -240,14 +240,14 @@ void run() {
   auto optlg = get_options("lum_gamma");
   if (!get_options("lum").empty() || !optlc.empty() || !optlg.empty()) {
     needtolum = true;
-    coefs << DEFAULT_LUM_CR, DEFAULT_LUM_CG, DEFAULT_LUM_CB;
-    gamma = DEFAULT_LUM_GAMMA;
+    coefs << default_lum_cr, default_lum_cg, default_lum_cb;
+    gamma = default_lum_gamma;
     if (!optlc.empty()) {
       auto lc = parse_floats(optlc[0][0]);
       if (lc.size() != 3)
         throw Exception("expecting exactly 3 coefficients for the lum_coefs option, provided as a comma-separated list "
                         "Cr,Cg,Cb ; e.g., " +
-                        str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + "");
+                        str(default_lum_cr, 2) + "," + str(default_lum_cg, 2) + "," + str(default_lum_cb, 2) + "");
       coefs(0) = lc[0];
       coefs(1) = lc[1];
       coefs(2) = lc[2];

@@ -25,6 +25,9 @@
 
 namespace MR::Fixel::Filter {
 
+const float Connect::default_value_threshold = 0.5;
+const float Connect::default_connectivity_threshold = 0.1;
+
 void Connect::operator()(Image<float> &input, Image<float> &output) const {
   Fixel::check_data_file(input);
   Fixel::check_data_file(output);

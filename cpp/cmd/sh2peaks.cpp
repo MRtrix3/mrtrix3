@@ -23,11 +23,13 @@
 #include "progressbar.h"
 #include "thread_queue.h"
 
-#define DOT_THRESHOLD 0.99
-#define DEFAULT_NPEAKS 3
-
 using namespace MR;
 using namespace App;
+
+using value_type = float;
+
+constexpr value_type dotproduct_threshold = 0.99F;
+constexpr ssize_t default_npeaks = 3;
 
 // clang-format off
 void usage() {
@@ -54,7 +56,7 @@ void usage() {
 
   OPTIONS
   + Option ("num", "the number of peaks to extract"
-                   " (default: " + str(DEFAULT_NPEAKS) + ").")
+                   " (default: " + str(default_npeaks) + ").")
     + Argument ("peaks").type_integer (0)
 
   + Option ("direction",
@@ -93,8 +95,6 @@ void usage() {
     "Human Brain Mapping, 2013, 34(11), 2747-2766";
 }
 // clang-format on
-
-using value_type = float;
 
 class Direction {
 public:
@@ -188,7 +188,7 @@ public:
       p.a = Math::SH::get_peak(item.data, lmax, p.v, precomputer.get());
       if (std::isfinite(p.a)) {
         for (size_t j = 0; j < all_peaks.size(); j++) {
-          if (abs(p.v.dot(all_peaks[j].v)) > DOT_THRESHOLD) {
+          if (abs(p.v.dot(all_peaks[j].v)) > dotproduct_threshold) {
             p.a = NAN;
             break;
           }
@@ -305,7 +305,7 @@ void run() {
   if (dirs.cols() != 2)
     throw Exception("expecting 2 columns for search directions matrix");
 
-  int npeaks = get_option_value("num", DEFAULT_NPEAKS);
+  int npeaks = get_option_value("num", default_npeaks);
 
   opt = get_options("direction");
   std::vector<Direction> true_peaks;

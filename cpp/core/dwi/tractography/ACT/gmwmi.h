@@ -22,21 +22,18 @@
 #include "interp/linear.h"
 #include "math/hermite.h"
 
-#define GMWMI_PERTURBATION 0.001 // in mm
-#define GMWMI_MAX_ITERS_TO_FIND_BOUNDARY 10
-#define GMWMI_HERMITE_TENSION 0.1
-
-namespace MR::DWI::Tractography {
-
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
 class Dynamic_ACT_additions;
-}
+} // namespace MR::DWI::Tractography::Seeding
 
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 
 class GMWMI_finder {
 
 protected:
+  static const default_type perturbation_mm;
+  static const ssize_t max_iters;
+  static const default_type hermite_tension;
   using Interp = Interp::Linear<Image<float>>;
 
 public:
@@ -74,5 +71,4 @@ protected:
   friend class Tractography::Seeding::Dynamic_ACT_additions;
 };
 
-} // namespace ACT
-} // namespace MR::DWI::Tractography
+} // namespace MR::DWI::Tractography::ACT

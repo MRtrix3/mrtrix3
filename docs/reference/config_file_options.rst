@@ -318,7 +318,7 @@ List of MRtrix3 configuration file options
 
 .. option:: HelpCommand
 
-    *default: less*
+    *default: less -X*
 
      The command to use to display each command's help page (leave
      empty to send directly to the terminal).

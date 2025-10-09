@@ -20,10 +20,10 @@
 #include "transform.h"
 
 namespace MR {
-
 class Header;
+} // namespace MR
 
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -200,5 +200,4 @@ protected:
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
+} // namespace MR::Interp

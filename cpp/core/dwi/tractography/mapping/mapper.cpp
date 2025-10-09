@@ -305,7 +305,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   std::vector<Streamline<>::tangent_type> smoothed_tangents;
   smoothed_tangents.reserve(tangents.size());
 
-  static const default_type gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt(2.0 * log(2.0)));
+  static const default_type gaussian_theta = curvature_smoothing_mm / (2.0 * sqrt(2.0 * log(2.0)));
   static const default_type gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
 
   for (size_t i = 0; i != tck.size(); ++i) {
