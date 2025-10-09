@@ -205,7 +205,7 @@ void Capture::on_image_changed() {
   if (!image)
     return;
 
-  int max_axis = std::max((int)image->header().ndim() - 1, 0);
+  const int max_axis = std::max(static_cast<int>(image->header().ndim() - 1), 0);
   volume_axis->setMaximum(max_axis);
   volume_axis->setValue(std::min(volume_axis->value(), max_axis));
 }
@@ -240,7 +240,8 @@ void Capture::cache_capture_state() {
                        window().focus(),
                        window().target(),
                        window().FOV(),
-                       volume_axis->value() < ssize_t(image.ndim()) ? image.index(volume_axis->value()) : 0,
+                       volume_axis->value() < static_cast<ssize_t>(image.ndim()) ? image.index(volume_axis->value())
+                                                                                 : 0,
                        volume_axis->value(),
                        start_index->value(),
                        window().plane());
@@ -310,12 +311,12 @@ void Capture::run(bool with_capture) {
   float radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
   size_t first_index = start_index->value();
 
-  float volume = 0, volume_inc = 0;
-  if (volume_axis->value() < ssize_t(image.ndim())) {
+  float volume = 0.0F, volume_inc = 0.0F;
+  if (volume_axis->value() < static_cast<ssize_t>(image.ndim())) {
     if (target_volume->value() >= image.size(volume_axis->value()))
       target_volume->setValue(image.size(volume_axis->value()) - 1);
-    volume = image.index(volume_axis->value());
-    volume_inc = target_volume->value() / (float)frames_value;
+    volume = static_cast<float>(image.index(volume_axis->value()));
+    volume_inc = static_cast<float>(target_volume->value()) / static_cast<float>(frames_value);
   }
 
   for (size_t i = first_index; i < first_index + frames_value; ++i) {
@@ -389,13 +390,13 @@ void Capture::run(bool with_capture) {
     win.set_target(target);
 
     // Volume
-    if (volume_axis->value() < ssize_t(image.ndim())) {
+    if (volume_axis->value() < static_cast<ssize_t>(image.ndim())) {
       volume += volume_inc;
       win.set_image_volume(volume_axis->value(), std::round(volume));
     }
 
     // FOV
-    win.set_FOV(window().FOV() * (std::pow(FOV_multipler->value(), (float)1.0 / frames_value)));
+    win.set_FOV(window().FOV() * (std::pow(FOV_multipler->value(), 1.0F / static_cast<float>(frames_value))));
 
     start_index->setValue(i + 1);
     this->window().updateGL();

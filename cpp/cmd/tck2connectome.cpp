@@ -150,7 +150,8 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   Tractography::Connectome::setup_metric(metric, node_image);
   std::unique_ptr<Tck2nodes_base> tck2nodes(load_assignment_mode(node_image));
   auto opt = get_options("stat_edge");
-  const stat_edge statistic = !opt.empty() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
+  const stat_edge statistic =
+      !opt.empty() ? stat_edge(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : stat_edge::SUM;
 
   // Prepare for reading the track data
   Tractography::Properties properties;

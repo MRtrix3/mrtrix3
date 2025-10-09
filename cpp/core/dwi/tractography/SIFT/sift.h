@@ -18,17 +18,14 @@
 
 #include "app.h"
 
-namespace MR {
-namespace App {
+namespace MR::App {
 class OptionGroup;
-}
+} // namespace MR::App
 
-namespace DWI::Tractography::SIFT {
+namespace MR::DWI::Tractography::SIFT {
 
 extern const App::OptionGroup SIFTModelOption;
 extern const App::OptionGroup SIFTOutputOption;
 extern const App::OptionGroup SIFTTermOption;
 
-} // namespace DWI::Tractography::SIFT
-
-} // namespace MR
+} // namespace MR::DWI::Tractography::SIFT

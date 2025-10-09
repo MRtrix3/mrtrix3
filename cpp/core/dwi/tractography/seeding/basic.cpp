@@ -131,17 +131,17 @@ Rejection::Rejection(const std::string &in)
         throw Exception("Cannot have negative values in an image used for rejection sampling!");
       max = std::max(max, value);
       volume += value;
-      if (size_t(vox.index(0)) < bottom[0])
+      if (static_cast<size_t>(vox.index(0)) < bottom[0])
         bottom[0] = vox.index(0);
-      if (size_t(vox.index(0)) > top[0])
+      if (static_cast<size_t>(vox.index(0)) > top[0])
         top[0] = vox.index(0);
-      if (size_t(vox.index(1)) < bottom[1])
+      if (static_cast<size_t>(vox.index(1)) < bottom[1])
         bottom[1] = vox.index(1);
-      if (size_t(vox.index(1)) > top[1])
+      if (static_cast<size_t>(vox.index(1)) > top[1])
         top[1] = vox.index(1);
-      if (size_t(vox.index(2)) < bottom[2])
+      if (static_cast<size_t>(vox.index(2)) < bottom[2])
         bottom[2] = vox.index(2);
-      if (size_t(vox.index(2)) > top[2])
+      if (static_cast<size_t>(vox.index(2)) > top[2])
         top[2] = vox.index(2);
     }
   }
@@ -156,9 +156,9 @@ Rejection::Rejection(const std::string &in)
   if (bottom[2])
     --bottom[2];
 
-  top[0] = std::min(size_t(vox.size(0) - bottom[0]), top[0] + 2 - bottom[0]);
-  top[1] = std::min(size_t(vox.size(1) - bottom[1]), top[1] + 2 - bottom[1]);
-  top[2] = std::min(size_t(vox.size(2) - bottom[2]), top[2] + 2 - bottom[2]);
+  top[0] = std::min(static_cast<size_t>(vox.size(0)) - bottom[0], top[0] + 2 - bottom[0]);
+  top[1] = std::min(static_cast<size_t>(vox.size(1)) - bottom[1], top[1] + 2 - bottom[1]);
+  top[2] = std::min(static_cast<size_t>(vox.size(2)) - bottom[2], top[2] + 2 - bottom[2]);
 
   auto sub = Adapter::make<Adapter::Subset>(vox, bottom, top);
   Header header = sub;

@@ -134,13 +134,13 @@ private:
   class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
   public:
     Primitive_FOD_lobes(const FOD_lobes &in, const index_type maxcount, bool dir_from_peak) : vox(in.vox) {
-      const index_type N = maxcount ? std::min(index_type(in.size()), maxcount) : in.size();
+      const index_type N = maxcount ? std::min(static_cast<index_type>(in.size()), maxcount) : in.size();
       for (index_type i = 0; i != N; ++i) {
         const FOD_lobe &lobe(in[i]);
         this->emplace_back(dir_from_peak ? lobe.get_peak_dir(0).cast<float>() : lobe.get_mean_dir().cast<float>(),
                            lobe.get_integral(),
                            lobe.get_max_peak_value(),
-                           std::acos(abs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
+                           std::acos(std::fabs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
       }
     }
     Eigen::Array3i vox;

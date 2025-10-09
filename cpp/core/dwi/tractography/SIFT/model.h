@@ -188,7 +188,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
       for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
         if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_fibre_density)) {
-          fixel_index_mapping[size_t(i)] = new_fixels.size();
+          fixel_index_mapping[static_cast<size_t>(i)] = new_fixels.size();
           new_fixels.push_back(i());
           FOD_sum += i().get_weight() * i().get_FOD();
         }

@@ -75,11 +75,11 @@ template <class Functor> void run_volume(Functor &functor, Image<float> &data, I
   if (mask.valid()) {
     for (auto l = Loop(0, 3)(data, mask); l; ++l) {
       if (mask.value())
-        functor(float(data.value()));
+        functor(static_cast<float>(data.value()));
     }
   } else {
     for (auto l = Loop(0, 3)(data); l; ++l)
-      functor(float(data.value()));
+      functor(static_cast<float>(data.value()));
   }
 }
 

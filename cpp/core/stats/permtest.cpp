@@ -202,7 +202,8 @@ void run_permutations(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_ca
                         global_uncorrected_pvalue_count);
     Thread::run_queue(shuffler, Math::Stats::Shuffle(), Thread::multi(processor));
   }
-  uncorrected_pvalues = global_uncorrected_pvalue_count.cast<default_type>() / default_type(shuffler.size());
+  uncorrected_pvalues =
+      global_uncorrected_pvalue_count.cast<default_type>() / static_cast<default_type>(shuffler.size());
 }
 
 } // namespace MR::Stats::PermTest

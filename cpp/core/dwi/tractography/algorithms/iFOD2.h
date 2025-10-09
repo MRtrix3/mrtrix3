@@ -43,7 +43,7 @@ public:
           lmax(Math::SH::LforN(source.size(3))),
           num_samples(Defaults::ifod2_nsamples),
           max_trials(Defaults::max_trials_per_step),
-          sin_max_angle_ho(NaN),
+          sin_max_angle_ho(NaNF),
           mean_samples(0.0),
           mean_truncations(0.0),
           max_max_truncation(0.0),
@@ -91,15 +91,16 @@ public:
       //   variables need to be calculated accordingly:
       //   - The arc angle subtended by two sequential vertices on a circle of minimal radius
       //     (prior to downsampling)
-      const float angle_minradius_preds = 2.0 * std::asin(step_size / (2.0 * min_radius)) / float(num_samples);
+      const float angle_minradius_preds =
+          2.0 * std::asin(step_size / (2.0 * min_radius)) / static_cast<float>(num_samples);
       //   - The maximal possible distance between vertices after downsampling
-      const float max_step_postds = downsample_factor * step_size / float(num_samples);
+      const float max_step_postds = downsample_factor * step_size / static_cast<float>(num_samples);
       set_num_points(angle_minradius_preds, max_step_postds);
     }
 
     ~Shared() {
-      mean_samples /= double(num_proc);
-      mean_truncations /= double(num_proc);
+      mean_samples /= static_cast<double>(num_proc);
+      mean_truncations /= static_cast<double>(num_proc);
       INFO("mean number of samples per step = " + str(mean_samples));
       if (mean_truncations) {
         INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
@@ -117,7 +118,7 @@ public:
       ++num_proc;
     }
 
-    float internal_step_size() const override { return step_size / float(num_samples); }
+    float internal_step_size() const override { return step_size / static_cast<float>(num_samples); }
 
     size_t lmax, num_samples, max_trials;
     float sin_max_angle_ho, fod_power;
@@ -162,8 +163,9 @@ public:
 
   ~iFOD2() {
     if (num_sample_runs)
-      S.update_stats(calibrate_list.size() + float(mean_sample_num) / float(num_sample_runs),
-                     float(num_truncations) / float(num_sample_runs),
+      S.update_stats(calibrate_list.size() +
+                         (static_cast<double>(mean_sample_num) / static_cast<double>(num_sample_runs)),
+                     static_cast<double>(num_truncations) / static_cast<double>(num_sample_runs),
                      max_truncation);
   }
 
@@ -271,8 +273,8 @@ public:
     const size_t points_to_remove = sample_idx_at_full_length + ((revert_step - 1) * S.num_samples);
     if (tck.get_seed_index() + points_to_remove >= tck.size()) {
       tck.clear();
-      pos.setConstant(std::numeric_limits<float>::quiet_NaN());
-      dir.setConstant(std::numeric_limits<float>::quiet_NaN());
+      pos.setConstant(NaNF);
+      dir.setConstant(NaNF);
       return;
     }
     const size_t new_size = length_to_revert_from - points_to_remove;
@@ -317,7 +319,7 @@ private:
 
   FORCE_INLINE float FOD(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) {
     if (!get_data(source, position))
-      return NaN;
+      return NaNF;
     return FOD(direction);
   }
 
@@ -331,7 +333,7 @@ private:
     // Early exit for ACT when path is not sensible
     if (S.is_act()) {
       if (!act().fetch_tissue_data(positions[S.num_samples - 1]))
-        return (NaN);
+        return (NaNF);
       if (act().tissues().get_csf() >= 0.5)
         return 0.0;
     }
@@ -341,7 +343,7 @@ private:
 
       float fod_amp = FOD(positions[i], tangents[i]);
       if (std::isnan(fod_amp))
-        return NaN;
+        return NaNF;
       if (fod_amp < S.threshold)
         return 0.0;
       fod_amp = std::log(fod_amp);
@@ -361,7 +363,7 @@ protected:
                 std::vector<Eigen::Vector3f> &tangents,
                 const Eigen::Vector3f &end_dir) const {
     float cos_theta = end_dir.dot(dir);
-    cos_theta = std::min(cos_theta, float(1.0));
+    cos_theta = std::min(cos_theta, 1.0F);
     float theta = std::acos(cos_theta);
 
     if (theta) {
@@ -374,10 +376,10 @@ protected:
         float a = (theta * (i + 1)) / S.num_samples;
         float cos_a = std::cos(a);
         float sin_a = std::sin(a);
-        positions[i] = pos + R * (sin_a * dir + (float(1.0) - cos_a) * curv);
+        positions[i] = pos + R * (sin_a * dir + (1.0F - cos_a) * curv);
         tangents[i] = cos_a * dir + sin_a * curv;
       }
-      positions[S.num_samples - 1] = pos + R * (std::sin(theta) * dir + (float(1.0) - cos_theta) * curv);
+      positions[S.num_samples - 1] = pos + R * (std::sin(theta) * dir + (1.0F - cos_theta) * curv);
       tangents[S.num_samples - 1] = end_dir;
 
     } else { // straight on:

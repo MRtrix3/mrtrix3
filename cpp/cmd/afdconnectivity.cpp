@@ -255,7 +255,7 @@ value_type AFDConnectivity::get(const std::string &path) {
 
     // sum_contributions currently stores sum of streamline lengths;
     //   turn into a mean length, then combine with volume to get a connectivity value
-    const double mean_length = sum_contributions / double(count);
+    const double mean_length = sum_contributions / static_cast<double>(count);
     sum_contributions = sum_volumes / mean_length;
   }
 

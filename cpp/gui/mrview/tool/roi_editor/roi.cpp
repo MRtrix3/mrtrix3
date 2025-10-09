@@ -331,9 +331,12 @@ void ROI::save(ROI_Item *roi) {
 }
 
 int ROI::normal2axis(const Eigen::Vector3f &normal, const ROI_Item &roi) const {
-  float x_dot_n = abs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{1.0f, 0.0f, 0.0f}).dot(normal));
-  float y_dot_n = abs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 1.0f, 0.0f}).dot(normal));
-  float z_dot_n = abs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 0.0f, 1.0f}).dot(normal));
+  float x_dot_n =
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{1.0f, 0.0f, 0.0f}).dot(normal));
+  float y_dot_n =
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 1.0f, 0.0f}).dot(normal));
+  float z_dot_n =
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 0.0f, 1.0f}).dot(normal));
   if (x_dot_n > y_dot_n)
     return x_dot_n > z_dot_n ? 0 : 2;
   else
@@ -715,7 +718,7 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("roi.opacity")) {
     try {
       float value = opt[0];
-      opacity_slider->setSliderPosition(int(1.e3f * value));
+      opacity_slider->setSliderPosition(static_cast<int>(1.e3F * value));
     } catch (Exception &e) {
       e.display();
     }
@@ -731,7 +734,9 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
       if (std::min({values[0], values[1], values[2]}) < 0.0 || max_value > 255)
         throw Exception("values provided to -roi.colour must be either between 0.0 and 1.0, or between 0 and 255");
       const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
-      QColor colour(int(values[0] * multiplier), int(values[1] * multiplier), int(values[2] * multiplier));
+      QColor colour(static_cast<int>(values[0] * multiplier),
+                    static_cast<int>(values[1] * multiplier),
+                    static_cast<int>(values[2] * multiplier));
       colour_button->setColor(colour);
       colour_changed();
     } catch (Exception &e) {

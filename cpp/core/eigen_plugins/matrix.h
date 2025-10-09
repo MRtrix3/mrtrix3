@@ -22,7 +22,7 @@ template <class ImageType> Matrix(const MR::Helper::Row<ImageType> &row) : Base(
     this->resize(row.image.size(row.axis), 1);                                                                         \
     for (row.image.index(row.axis) = 0; row.image.index(row.axis) < row.image.size(row.axis);                          \
          ++row.image.index(row.axis))                                                                                  \
-      this->operator()(ssize_t(row.image.index(row.axis)), 0) ARG row.image.value();                                   \
+      this->operator()(static_cast<ssize_t>(row.image.index(row.axis)), 0) ARG row.image.value();                      \
     return *this;                                                                                                      \
   }
 

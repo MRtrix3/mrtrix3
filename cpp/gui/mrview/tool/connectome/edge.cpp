@@ -242,7 +242,7 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
     gl::BufferData(gl::ARRAY_BUFFER, tangents.size() * sizeof(Eigen::Vector3f), &tangents[0][0], gl::STATIC_DRAW);
 
   std::vector<std::pair<float, float>> normal_multipliers;
-  const float angle_multiplier = 2.0 * Math::pi / float(shared.points_per_vertex());
+  const float angle_multiplier = 2.0 * Math::pi / static_cast<float>(shared.points_per_vertex());
   for (size_t i = 0; i != shared.points_per_vertex(); ++i)
     normal_multipliers.push_back(std::make_pair(std::cos(i * angle_multiplier), std::sin(i * angle_multiplier)));
   std::vector<Eigen::Vector3f> normals;

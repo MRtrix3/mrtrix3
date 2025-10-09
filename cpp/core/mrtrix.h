@@ -24,6 +24,7 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 #include "exception.h"
 #include "types.h"
@@ -63,12 +64,12 @@ std::string &add_line(std::string &original, const std::string &new_line);
 std::string shorten(const std::string &text, size_t longest = 40, size_t prefix = 10);
 
 //! return lowercase version of string
-std::string lowercase(const std::string &string);
+std::string lowercase(std::string_view string);
 
 //! return uppercase version of string
-std::string uppercase(const std::string &string);
+std::string uppercase(std::string_view string);
 
-std::string printf(const char *format, ...);
+std::string printf(const char *format, ...); // check_syntax off
 
 std::string
 strip(const std::string &string, const std::string &ws = {" \0\t\r\n", 5}, bool left = true, bool right = true);
@@ -81,7 +82,7 @@ void replace(std::string &string, char orig, char final);
 void replace(std::string &str, const std::string &from, const std::string &to);
 
 std::vector<std::string> split(const std::string &string,
-                               const char *delimiters = " \t\n",
+                               const std::string delimiters = " \t\n",
                                bool ignore_empty_fields = false,
                                size_t num = std::numeric_limits<size_t>::max());
 
@@ -101,7 +102,7 @@ bool match(const std::string &pattern, const std::string &text, bool ignore_case
 //! match a dash or any Unicode character that looks like one
 /*! \note This returns the number of bytes taken up by the matched UTF8
  * character, zero if no match. */
-size_t char_is_dash(const char *arg);
+size_t dash_bytes(std::string_view arg);
 
 //! match whole string to a dash or any Unicode character that looks like one
 bool is_dash(std::string_view arg);
@@ -175,12 +176,12 @@ template <> inline cfloat to<cfloat>(const std::string &string) {
 
   const std::string stripped = strip(string);
   std::vector<cfloat> candidates;
-  for (ssize_t i = -1; i <= ssize_t(stripped.size()); ++i) {
+  for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
     std::string first, second;
     if (i == -1) {
       first = "0";
       second = stripped;
-    } else if (i == ssize_t(stripped.size())) {
+    } else if (i == static_cast<ssize_t>(stripped.size())) {
       first = stripped;
       second = "0i";
     } else {
@@ -195,7 +196,7 @@ template <> inline cfloat to<cfloat>(const std::string &string) {
     if (second.empty() || second == "-" || second == "+")
       second.push_back('1');
     try {
-      candidates.push_back(cfloat(to<float>(first), to<float>(second)));
+      candidates.push_back(cfloat{to<float>(first), to<float>(second)});
     } catch (Exception &) {
     }
   }
@@ -232,12 +233,12 @@ template <> inline cdouble to<cdouble>(const std::string &string) {
 
   const std::string stripped = strip(string);
   std::vector<cdouble> candidates;
-  for (ssize_t i = -1; i <= ssize_t(stripped.size()); ++i) {
+  for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
     std::string first, second;
     if (i == -1) {
       first = "0";
       second = stripped;
-    } else if (i == ssize_t(stripped.size())) {
+    } else if (i == static_cast<ssize_t>(stripped.size())) {
       first = stripped;
       second = "0i";
     } else {
@@ -252,7 +253,7 @@ template <> inline cdouble to<cdouble>(const std::string &string) {
     if (second.empty() || second == "-" || second == "+")
       second.push_back('1');
     try {
-      candidates.push_back(cdouble(to<double>(first), to<double>(second)));
+      candidates.push_back(cdouble{to<double>(first), to<double>(second)});
     } catch (Exception &) {
     }
   }
@@ -349,7 +350,7 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(const std:
     const auto values = parse_floats(lines[row]);
     if (M.cols() == 0)
       M.resize(lines.size(), values.size());
-    else if (M.cols() != ssize_t(values.size()))
+    else if (M.cols() != static_cast<Eigen::Index>(values.size()))
       throw Exception("error converting string to matrix - uneven number of entries per row");
     for (size_t col = 0; col < values.size(); ++col)
       M(row, col) = values[col];
@@ -374,6 +375,6 @@ template <typename T> inline std::string join(const std::vector<T> &V, const std
   return ret;
 }
 
-std::string join(const char *const *null_terminated_array, const std::string &delimiter);
+std::string join(const char *const *null_terminated_array, const std::string &delimiter); // check_syntax off
 
 } // namespace MR

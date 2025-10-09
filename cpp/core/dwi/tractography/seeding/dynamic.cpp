@@ -107,12 +107,14 @@ Dynamic::~Dynamic() {
     if (!force_seed) {
       const uint64_t total_seeds = seeds.load(std::memory_order_relaxed);
       const uint64_t fixel_seeds = fixel.get_seed_count();
-      seed_prob = cumulative_prob * (current_trackcount / float(target_trackcount - current_trackcount)) *
-                  (((total_seeds / float(fixel_seeds)) * (target_trackcount / float(current_trackcount)) *
-                    ((1.0f / ratio) - ((total_seeds - fixel_seeds) / float(total_seeds)))) -
-                   1.0f);
-      seed_prob = std::min(1.0f, seed_prob);
-      seed_prob = std::max(0.0f, seed_prob);
+      seed_prob =
+          cumulative_prob * (current_trackcount / static_cast<float>(target_trackcount - current_trackcount)) *
+          (((static_cast<float>(total_seeds) / static_cast<float>(fixel_seeds)) *
+            (static_cast<float>(target_trackcount) / static_cast<float>(current_trackcount)) *
+            ((1.0F / ratio) - (static_cast<float>(total_seeds - fixel_seeds) / static_cast<float>(total_seeds)))) -
+           1.0F);
+      seed_prob = std::min(1.0F, seed_prob);
+      seed_prob = std::max(0.0F, seed_prob);
     }
     fixel.update_prob(seed_prob, false);
   }
@@ -157,7 +159,7 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
 
   uint64_t this_attempts = 0;
   std::uniform_int_distribution<size_t> uniform_int(0, fixels.size() - 2);
-  std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
+  std::uniform_real_distribution<float> uniform_float(0.0F, 1.0F);
 
   while (1) {
 
@@ -191,8 +193,8 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
 #endif
 
         // These can occur fairly regularly, depending on the exact derivation
-        seed_prob = std::min(1.0f, seed_prob);
-        seed_prob = std::max(0.0f, seed_prob);
+        seed_prob = std::min(1.0F, seed_prob);
+        seed_prob = std::max(0.0F, seed_prob);
       }
 
     } else {
@@ -325,7 +327,7 @@ void Dynamic::perform_fixel_masking() {
       out.value().set_size((*v.value()).num_fixels());
       size_t index = 0;
       for (Fixel_map<Fixel_TD_seed>::ConstIterator f = begin(v); f; ++f, ++index) {
-        Image::Fixel::Legacy::FixelMetric fixel(f().get_dir(), f().get_FOD(), (f().can_update() ? 1.0f : 0.0f));
+        Image::Fixel::Legacy::FixelMetric fixel(f().get_dir(), f().get_FOD(), (f().can_update() ? 1.0F : 0.0F));
         out.value()[index] = fixel;
       }
     }
@@ -335,11 +337,11 @@ void Dynamic::perform_fixel_masking() {
 
 bool WriteKernelDynamic::operator()(const Tracking::GeneratedTrack &in, Tractography::Streamline<> &out) {
   out.set_index(writer.count);
-  out.weight = 1.0f;
+  out.weight = 1.0F;
   if (!WriteKernel::operator()(in)) {
     out.clear();
     // Flag to indicate that tracking has completed, and threads should therefore terminate
-    out.weight = 0.0f;
+    out.weight = 0.0F;
     // Actually need to pass this down the queue so that the seeder thread receives it and knows to terminate
     return true;
   }

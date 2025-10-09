@@ -20,8 +20,7 @@
 
 #include "math/math.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 //! \addtogroup Optimisation
 // @{
@@ -250,5 +249,5 @@ protected:
   }
 };
 //! @}
-} // namespace Math
-} // namespace MR
+
+} // namespace MR::Math

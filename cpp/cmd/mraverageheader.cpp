@@ -77,7 +77,8 @@ void run() {
   auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
   INFO("padding in template voxels: " + str(padding.transpose().head<3>()));
   auto opt = get_options("spacing");
-  const avgspace_voxspacing_t spacing = opt.empty() ? SPACING_DEFAULT_VALUE : avgspace_voxspacing_t(int(opt[0][0]));
+  const avgspace_voxspacing_t spacing =
+      opt.empty() ? SPACING_DEFAULT_VALUE : static_cast<avgspace_voxspacing_t>(static_cast<int>(opt[0][0]));
   const bool fill = !get_options("fill").empty();
 
   std::vector<Header> headers_in;

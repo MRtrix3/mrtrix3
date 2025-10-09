@@ -67,14 +67,7 @@ public:
              bool orthographic = false,
              const GL::mat4 *colour_relative_to_projection = nullptr);
 
-  void draw(const Eigen::Vector3f &origin, int buffer_ID = 0) const {
-    (void)buffer_ID; // to silence unused-parameter warnings
-    gl::Uniform3fv(origin_ID, 1, origin.data());
-    gl::Uniform1i(reverse_ID, 0);
-    half_draw();
-    gl::Uniform1i(reverse_ID, 1);
-    half_draw();
-  }
+  void draw(const Eigen::Vector3f &origin, int buffer_ID = 0) const;
 
   void stop() const { shader.stop(); }
 

@@ -53,7 +53,7 @@ public:
                   const std::vector<node_t> &,
                   const bool,
                   const node_t,
-                  const std::vector<Eigen::Vector3f> &);
+                  const std::vector<Eigen::Vector3d> &);
 
   bool operator()(const Tractography::Connectome::Streamline_nodepair &);
   bool operator()(const Tractography::Connectome::Streamline_nodelist &);

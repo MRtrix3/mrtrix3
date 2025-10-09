@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <unordered_map>
+
 #include "algo/loop.h"
 #include "file/path.h"
 #include "file/utils.h"
@@ -31,18 +33,18 @@
 
 namespace MR::DWI::Tractography::Mapping {
 
-enum writer_dim { UNDEFINED, GREYSCALE, DEC, DIXEL, TOD };
-extern const char *writer_dims[];
+enum class writer_dim { UNDEFINED, GREYSCALE, DEC, DIXEL, TOD };
+extern const std::unordered_map<writer_dim, std::string> output_dimension_names;
 
 class MapWriterBase {
 
 public:
   MapWriterBase(const Header &header,
                 const std::string &name,
-                const vox_stat_t s = V_SUM,
-                const writer_dim t = GREYSCALE)
+                const vox_stat_t s = vox_stat_t::SUM,
+                const writer_dim t = writer_dim::GREYSCALE)
       : H(header), output_image_name(name), voxel_statistic(s), type(t) {
-    assert(type != UNDEFINED);
+    assert(type != writer_dim::UNDEFINED);
   }
 
   MapWriterBase(const MapWriterBase &) = delete;
@@ -82,14 +84,14 @@ template <typename value_type> class MapWriter : public MapWriterBase {
 public:
   MapWriter(const Header &header,
             const std::string &name,
-            const vox_stat_t voxel_statistic = V_SUM,
-            const writer_dim type = GREYSCALE)
+            const vox_stat_t voxel_statistic = vox_stat_t::SUM,
+            const writer_dim type = writer_dim::GREYSCALE)
       : MapWriterBase(header, name, voxel_statistic, type),
-        buffer(Image<value_type>::scratch(header, "TWI " + str(writer_dims[type]) + " buffer")) {
+        buffer(Image<value_type>::scratch(header, "TWI " + str(output_dimension_names.at(type)) + " buffer")) {
     auto loop = Loop(buffer);
-    if (type == DEC || type == TOD) {
+    if (type == writer_dim::DEC || type == writer_dim::TOD) {
 
-      if (voxel_statistic == V_MIN) {
+      if (voxel_statistic == vox_stat_t::MIN) {
         for (auto l = loop(buffer); l; ++l)
           buffer.value() = std::numeric_limits<value_type>::max();
       }
@@ -100,10 +102,10 @@ public:
 
     } else { // Greyscale and dixel
 
-      if (voxel_statistic == V_MIN) {
+      if (voxel_statistic == vox_stat_t::MIN) {
         for (auto l = loop(buffer); l; ++l)
           buffer.value() = std::numeric_limits<value_type>::max();
-      } else if (voxel_statistic == V_MAX) {
+      } else if (voxel_statistic == vox_stat_t::MAX) {
         for (auto l = loop(buffer); l; ++l)
           buffer.value() = std::numeric_limits<value_type>::lowest();
       }
@@ -115,11 +117,11 @@ public:
 
     // With TOD, hijack the counts buffer in voxel statistic min/max mode
     //   (use to store maximum / minimum factors and hence decide when to update the TOD)
-    if ((type != DEC && voxel_statistic == V_MEAN) ||
-        (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX)) ||
-        (type == DEC && voxel_statistic == V_SUM)) {
+    if ((type != writer_dim::DEC && voxel_statistic == vox_stat_t::MEAN) ||
+        (type == writer_dim::TOD && (voxel_statistic == vox_stat_t::MIN || voxel_statistic == vox_stat_t::MAX)) ||
+        (type == writer_dim::DEC && voxel_statistic == vox_stat_t::SUM)) {
       Header H_counts(header);
-      if (type == DEC || type == TOD)
+      if (type == writer_dim::DEC || type == writer_dim::TOD)
         H_counts.ndim() = 3;
       counts.reset(new Image<float>(Image<float>::scratch(H_counts, "TWI streamline count buffer")));
     }
@@ -132,8 +134,8 @@ public:
     auto loop = Loop(buffer, 0, 3);
     switch (voxel_statistic) {
 
-    case V_SUM:
-      if (type == DEC) {
+    case vox_stat_t::SUM:
+      if (type == writer_dim::DEC) {
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
           const float total_weight = counts->value();
@@ -148,27 +150,27 @@ public:
       }
       break;
 
-    case V_MIN:
+    case vox_stat_t::MIN:
       for (auto l = loop(buffer); l; ++l) {
         if (buffer.value() == std::numeric_limits<value_type>::max())
           buffer.value() = value_type(0);
       }
       break;
 
-    case V_MEAN:
-      if (type == GREYSCALE) {
+    case vox_stat_t::MEAN:
+      if (type == writer_dim::GREYSCALE) {
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
           if (counts->value())
-            buffer.value() /= value_type(counts->value());
+            buffer.value() /= static_cast<float>(counts->value());
         }
-      } else if (type == DEC) {
+      } else if (type == writer_dim::DEC) {
         for (auto l = loop(buffer); l; ++l) {
           auto value = get_dec();
           if (value.squaredNorm())
             set_dec(value.normalized());
         }
-      } else if (type == TOD) {
+      } else if (type == writer_dim::TOD) {
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
           if (counts->value()) {
@@ -184,18 +186,18 @@ public:
         //   rather than a per-dixel mean?
         for (auto l = Loop(buffer)(buffer, *counts); l; ++l) {
           if (counts->value())
-            buffer.value() /= default_type(counts->value());
+            buffer.value() /= static_cast<float>(counts->value());
         }
       }
       break;
 
-    case V_MAX:
-      if (type == GREYSCALE) {
+    case vox_stat_t::MAX:
+      if (type == writer_dim::GREYSCALE) {
         for (auto l = loop(buffer); l; ++l) {
           if (buffer.value() == -std::numeric_limits<value_type>::max())
             buffer.value() = value_type(0);
         }
-      } else if (type == DIXEL) {
+      } else if (type == writer_dim::DIXEL) {
         for (auto l = Loop(buffer)(buffer); l; ++l) {
           if (buffer.value() == -std::numeric_limits<value_type>::max())
             buffer.value() = value_type(0);
@@ -289,22 +291,22 @@ private:
 };
 
 template <typename value_type> template <class Cont> void MapWriter<value_type>::receive_greyscale(const Cont &in) {
-  assert(MapWriterBase::type == GREYSCALE);
+  assert(MapWriterBase::type == writer_dim::GREYSCALE);
   for (const auto &i : in) {
     assign_pos_of(i).to(buffer);
     const default_type factor = get_factor(i, in);
     const default_type weight = in.weight * i.get_length();
     switch (voxel_statistic) {
-    case V_SUM:
+    case vox_stat_t::SUM:
       add(weight, factor);
       break;
-    case V_MIN:
-      buffer.value() = std::min(default_type(buffer.value()), factor);
+    case vox_stat_t::MIN:
+      buffer.value() = std::min(static_cast<default_type>(static_cast<value_type>(buffer.value())), factor);
       break;
-    case V_MAX:
-      buffer.value() = std::max(default_type(buffer.value()), factor);
+    case vox_stat_t::MAX:
+      buffer.value() = std::max(static_cast<default_type>(static_cast<value_type>(buffer.value())), factor);
       break;
-    case V_MEAN:
+    case vox_stat_t::MEAN:
       add(weight, factor);
       assert(counts);
       assign_pos_of(i).to(*counts);
@@ -317,7 +319,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
 }
 
 template <typename value_type> template <class Cont> void MapWriter<value_type>::receive_dec(const Cont &in) {
-  assert(type == DEC);
+  assert(type == writer_dim::DEC);
   for (const auto &i : in) {
     assign_pos_of(i).to(buffer);
     const default_type factor = get_factor(i, in);
@@ -325,20 +327,20 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
     auto scaled_colour = i.get_colour().template cast<default_type>() * factor;
     const auto current_value = get_dec();
     switch (voxel_statistic) {
-    case V_SUM:
+    case vox_stat_t::SUM:
       set_dec(current_value + (scaled_colour * weight));
       assert(counts);
       assign_pos_of(i).to(*counts);
       counts->value() += weight;
       break;
-    case V_MIN:
+    case vox_stat_t::MIN:
       if (scaled_colour.squaredNorm() < current_value.squaredNorm())
         set_dec(scaled_colour);
       break;
-    case V_MEAN:
+    case vox_stat_t::MEAN:
       set_dec(current_value + (scaled_colour * weight));
       break;
-    case V_MAX:
+    case vox_stat_t::MAX:
       if (scaled_colour.squaredNorm() > current_value.squaredNorm())
         set_dec(scaled_colour);
       break;
@@ -349,23 +351,23 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
 }
 
 template <typename value_type> template <class Cont> void MapWriter<value_type>::receive_dixel(const Cont &in) {
-  assert(type == DIXEL);
+  assert(type == writer_dim::DIXEL);
   for (const auto &i : in) {
     assign_pos_of(i, 0, 3).to(buffer);
     buffer.index(3) = i.get_dir();
     const default_type factor = get_factor(i, in);
     const default_type weight = in.weight * i.get_length();
     switch (voxel_statistic) {
-    case V_SUM:
+    case vox_stat_t::SUM:
       add(weight, factor);
       break;
-    case V_MIN:
-      buffer.value() = std::min(default_type(buffer.value()), factor);
+    case vox_stat_t::MIN:
+      buffer.value() = std::min(static_cast<default_type>(static_cast<value_type>(buffer.value())), factor);
       break;
-    case V_MAX:
-      buffer.value() = std::max(default_type(buffer.value()), factor);
+    case vox_stat_t::MAX:
+      buffer.value() = std::max(static_cast<default_type>(static_cast<value_type>(buffer.value())), factor);
       break;
-    case V_MEAN:
+    case vox_stat_t::MEAN:
       add(weight, factor);
       assert(counts);
       assign_pos_of(i, 0, 3).to(*counts);
@@ -379,7 +381,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
 }
 
 template <typename value_type> template <class Cont> void MapWriter<value_type>::receive_tod(const Cont &in) {
-  assert(type == TOD);
+  assert(type == writer_dim::TOD);
   VoxelTOD::vector_type sh_coefs;
   for (const auto &i : in) {
     assign_pos_of(i, 0, 3).to(buffer);
@@ -389,13 +391,13 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
     if (counts)
       assign_pos_of(i, 0, 3).to(*counts);
     switch (voxel_statistic) {
-    case V_SUM:
+    case vox_stat_t::SUM:
       for (ssize_t index = 0; index != sh_coefs.size(); ++index)
         sh_coefs[index] += i.get_tod()[index] * weight * factor;
       set_tod(sh_coefs);
       break;
       // For TOD, need to store min/max factors - counts buffer is hijacked to do this
-    case V_MIN:
+    case vox_stat_t::MIN:
       assert(counts);
       if (factor < counts->value()) {
         counts->value() = factor;
@@ -404,7 +406,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
         set_tod(tod);
       }
       break;
-    case V_MAX:
+    case vox_stat_t::MAX:
       assert(counts);
       if (factor > counts->value()) {
         counts->value() = factor;
@@ -413,7 +415,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
         set_tod(tod);
       }
       break;
-    case V_MEAN:
+    case vox_stat_t::MEAN:
       assert(counts);
       for (ssize_t index = 0; index != sh_coefs.size(); ++index)
         sh_coefs[index] += i.get_tod()[index] * weight * factor;
@@ -437,7 +439,7 @@ inline void MapWriter<value_type>::add(const default_type weight, const default_
 }
 
 template <typename value_type> Eigen::Vector3d MapWriter<value_type>::get_dec() {
-  assert(type == DEC);
+  assert(type == writer_dim::DEC);
   Eigen::Vector3d value;
   buffer.index(3) = 0;
   value[0] = buffer.value();
@@ -449,7 +451,7 @@ template <typename value_type> Eigen::Vector3d MapWriter<value_type>::get_dec() 
 }
 
 template <typename value_type> void MapWriter<value_type>::set_dec(const Eigen::Vector3d &value) {
-  assert(type == DEC);
+  assert(type == writer_dim::DEC);
   buffer.index(3) = 0;
   buffer.value() = value[0];
   buffer.index(3)++;
@@ -459,14 +461,14 @@ template <typename value_type> void MapWriter<value_type>::set_dec(const Eigen::
 }
 
 template <typename value_type> void MapWriter<value_type>::get_tod(VoxelTOD::vector_type &sh_coefs) {
-  assert(type == TOD);
+  assert(type == writer_dim::TOD);
   sh_coefs.resize(buffer.size(3));
   for (auto l = Loop(3)(buffer); l; ++l)
     sh_coefs[buffer.index(3)] = buffer.value();
 }
 
 template <typename value_type> void MapWriter<value_type>::set_tod(const VoxelTOD::vector_type &sh_coefs) {
-  assert(type == TOD);
+  assert(type == writer_dim::TOD);
   assert(sh_coefs.size() == buffer.size(3));
   for (auto l = Loop(3)(buffer); l; ++l)
     buffer.value() = sh_coefs[buffer.index(3)];

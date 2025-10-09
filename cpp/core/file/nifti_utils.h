@@ -23,8 +23,9 @@
 
 namespace MR {
 class Header;
+}
 
-namespace File::NIfTI {
+namespace MR::File::NIfTI {
 extern bool right_left_warning_issued;
 
 Axes::Shuffle axes_on_write(const Header &H);
@@ -41,6 +42,4 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H);
 int version(Header &H);
 std::string get_json_path(const std::string &nifti_path);
 
-} // namespace File::NIfTI
-
-} // namespace MR
+} // namespace MR::File::NIfTI

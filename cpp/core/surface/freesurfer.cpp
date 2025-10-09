@@ -131,7 +131,10 @@ void read_label(const std::string &path, VertexList &vertices, Scalar &scalar) {
   for (size_t i = 0; i != num_vertices; ++i) {
     std::getline(in, line);
     uint32_t index = std::numeric_limits<uint32_t>::max();
-    default_type x = NaN, y = NaN, z = NaN, value = NaN;
+    default_type x = NaN;
+    default_type y = NaN;
+    default_type z = NaN;
+    default_type value = NaN;
     sscanf(line.c_str(), "%u %lf %lf %lf %lf", &index, &x, &y, &z, &value);
     if (index == std::numeric_limits<uint32_t>::max())
       throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\": Malformed line");

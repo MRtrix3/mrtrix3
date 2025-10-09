@@ -94,7 +94,7 @@ class TWIScalarImagePlugin : public TWIImagePluginBase {
 public:
   TWIScalarImagePlugin(const std::string &input_image, const tck_stat_t track_statistic)
       : TWIImagePluginBase(input_image, track_statistic) {
-    assert(statistic != ENDS_CORR);
+    assert(statistic != tck_stat_t::ENDS_CORR);
     if (!((interp.ndim() == 3) || (interp.ndim() == 4 && interp.size(3) == 1)))
       throw Exception("Scalar image used for TWI must be a 3D image");
     if (interp.ndim() == 4)
@@ -117,7 +117,7 @@ public:
       : TWIImagePluginBase(input_image, track_statistic),
         sh_coeffs(interp.size(3)),
         precomputer(new Math::SH::PrecomputedAL<default_type>()) {
-    if (track_statistic == ENDS_CORR)
+    if (track_statistic == tck_stat_t::ENDS_CORR)
       throw Exception("Cannot use ends_corr track statistic with an FOD image");
     Math::SH::check(Header(interp));
     precomputer->init(Math::SH::LforN(sh_coeffs.size()));
@@ -136,7 +136,7 @@ private:
 
 class TWDFCStaticImagePlugin : public TWIImagePluginBase {
 public:
-  TWDFCStaticImagePlugin(Image<float> &input_image) : TWIImagePluginBase(input_image, ENDS_CORR) {}
+  TWDFCStaticImagePlugin(Image<float> &input_image) : TWIImagePluginBase(input_image, tck_stat_t::ENDS_CORR) {}
 
   TWDFCStaticImagePlugin(const TWDFCStaticImagePlugin &that) = default;
 
@@ -148,7 +148,7 @@ public:
 class TWDFCDynamicImagePlugin : public TWIImagePluginBase {
 public:
   TWDFCDynamicImagePlugin(Image<float> &input_image, const std::vector<float> &kernel, const ssize_t timepoint)
-      : TWIImagePluginBase(input_image, ENDS_CORR),
+      : TWIImagePluginBase(input_image, tck_stat_t::ENDS_CORR),
         kernel(kernel),
         kernel_centre((kernel.size() - 1) / 2),
         sample_centre(timepoint) {}

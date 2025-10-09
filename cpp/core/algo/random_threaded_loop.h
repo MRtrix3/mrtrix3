@@ -114,8 +114,7 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
     cnt = 0;
     it = std::begin(idx);
     stop = std::end(idx);
-    max_cnt = // size_t (density * dims[inner[0]]);
-        (size_t)std::ceil(density * dims[inner[0]]);
+    max_cnt = static_cast<size_t>(std::ceil(density * dims[inner[0]]));
     // VAR(max_cnt);
     for (size_t i = 0; i < max_cnt; ++i) {
       pos.index(inner[0]) = *it;

@@ -2453,24 +2453,30 @@ void Connectome::initialise(const std::string &path) {
         if (node_index >= max_index) {
           node_coms.resize(node_index + 1, Eigen::Vector3f{0.0f, 0.0f, 0.0f});
           node_volumes.resize(node_index + 1, 0);
-          node_lower_corners.resize(node_index + 1, Eigen::Array3i{int(H.size(0)), int(H.size(1)), int(H.size(2))});
+          node_lower_corners.resize(
+              node_index + 1,
+              Eigen::Array3i{static_cast<int>(H.size(0)), static_cast<int>(H.size(1)), static_cast<int>(H.size(2))});
           node_upper_corners.resize(node_index + 1, Eigen::Array3i{-1, -1, -1});
           max_index = node_index;
         }
 
-        const Eigen::Vector3f voxel{float(buffer->index(0)), float(buffer->index(1)), float(buffer->index(2))};
+        const Eigen::Vector3f voxel{static_cast<float>(buffer->index(0)),
+                                    static_cast<float>(buffer->index(1)),
+                                    static_cast<float>(buffer->index(2))};
         node_coms[node_index] += transform.voxel2scanner.cast<float>() * voxel;
         node_volumes[node_index]++;
 
         for (size_t axis = 0; axis != 3; ++axis) {
-          node_lower_corners[node_index][axis] = std::min(node_lower_corners[node_index][axis], int(voxel[axis]));
-          node_upper_corners[node_index][axis] = std::max(node_upper_corners[node_index][axis], int(voxel[axis]));
+          node_lower_corners[node_index][axis] =
+              std::min(node_lower_corners[node_index][axis], static_cast<int>(voxel[axis]));
+          node_upper_corners[node_index][axis] =
+              std::max(node_upper_corners[node_index][axis], static_cast<int>(voxel[axis]));
         }
       }
     }
   }
   for (node_t n = 1; n <= max_index; ++n)
-    node_coms[n] *= (1.0f / float(node_volumes[n]));
+    node_coms[n] *= (1.0F / static_cast<float>(node_volumes[n]));
 
   selected_nodes.resize(max_index + 1);
 
@@ -3076,7 +3082,7 @@ void Connectome::calculate_node_visibility() {
 
   } else if (node_visibility == node_visibility_t::MATRIX_FILE) {
 
-    assert(size_t(node_values_from_file_visibility.size()) == num_edges());
+    assert(static_cast<size_t>(node_values_from_file_visibility.size()) == num_edges());
 
     if (selected_node_count) {
       const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
@@ -3161,7 +3167,7 @@ void Connectome::calculate_node_colours() {
               max = std::max(max, value);
             }
           }
-          const float mean = sum / float(selected_node_count);
+          const float mean = sum / static_cast<float>(selected_node_count);
           float factor = 0.0f;
           switch (node_colour_matrix_operator) {
           case node_property_matrix_operator_t::MIN:
@@ -3208,7 +3214,7 @@ void Connectome::calculate_node_colours() {
 
   } else if (node_colour == node_colour_t::MATRIX_FILE) {
 
-    assert(size_t(node_values_from_file_colour.size()) == num_edges());
+    assert(static_cast<size_t>(node_values_from_file_colour.size()) == num_edges());
     if (selected_node_count) {
       const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
       for (node_t i = 1; i <= num_nodes(); ++i) {
@@ -3224,7 +3230,7 @@ void Connectome::calculate_node_colours() {
               max = std::max(max, value);
             }
           }
-          const float mean = sum / float(selected_node_count);
+          const float mean = sum / static_cast<float>(selected_node_count);
           float factor = 0.0f;
           switch (node_colour_matrix_operator) {
           case node_property_matrix_operator_t::MIN:
@@ -3291,7 +3297,7 @@ void Connectome::calculate_node_sizes() {
               max = std::max(max, value);
             }
           }
-          const float mean = sum / float(selected_node_count);
+          const float mean = sum / static_cast<float>(selected_node_count);
           float factor = 0.0f;
           switch (node_size_matrix_operator) {
           case node_property_matrix_operator_t::MIN:
@@ -3333,7 +3339,7 @@ void Connectome::calculate_node_sizes() {
 
   } else if (node_size == node_size_t::MATRIX_FILE) {
 
-    assert(size_t(node_values_from_file_size.size()) == num_edges());
+    assert(static_cast<size_t>(node_values_from_file_size.size()) == num_edges());
     if (selected_node_count) {
       const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
       const bool invert = node_size_invert_checkbox->isChecked();
@@ -3353,7 +3359,7 @@ void Connectome::calculate_node_sizes() {
               max = std::max(max, value);
             }
           }
-          const float mean = sum / float(selected_node_count);
+          const float mean = sum / static_cast<float>(selected_node_count);
           float factor = 0.0f;
           switch (node_size_matrix_operator) {
           case node_property_matrix_operator_t::MIN:
@@ -3409,7 +3415,7 @@ void Connectome::calculate_node_alphas() {
               max = std::max(max, value);
             }
           }
-          const float mean = sum / float(selected_node_count);
+          const float mean = sum / static_cast<float>(selected_node_count);
           float factor = 0.0f;
           switch (node_alpha_matrix_operator) {
           case node_property_matrix_operator_t::MIN:
@@ -3466,7 +3472,7 @@ void Connectome::calculate_node_alphas() {
 
   } else if (node_alpha == node_alpha_t::MATRIX_FILE) {
 
-    assert(size_t(node_values_from_file_alpha.size()) == num_edges());
+    assert(static_cast<size_t>(node_values_from_file_alpha.size()) == num_edges());
     if (selected_node_count) {
       const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
       const bool invert = node_alpha_invert_checkbox->isChecked();
@@ -3483,7 +3489,7 @@ void Connectome::calculate_node_alphas() {
               max = std::max(max, value);
             }
           }
-          const float mean = sum / float(selected_node_count);
+          const float mean = sum / static_cast<float>(selected_node_count);
           float factor = 0.0f;
           switch (node_alpha_matrix_operator) {
           case node_property_matrix_operator_t::MIN:
@@ -3524,7 +3530,7 @@ void Connectome::update_node_overlay() {
         assert(node_index <= num_nodes());
         const Eigen::Array3f &colour(nodes[node_index].get_colour());
         for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
-          out.value() = colour[int(out.index(3))];
+          out.value() = colour[static_cast<ssize_t>(out.index(3))];
         out.value() = nodes[node_index].get_alpha();
       } else {
         for (out.index(3) = 0; out.index(3) != 4; ++out.index(3))
@@ -3602,7 +3608,7 @@ void Connectome::calculate_edge_colours() {
   } else if (edge_colour == edge_colour_t::DIRECTION) {
 
     for (auto i = edges.begin(); i != edges.end(); ++i)
-      i->set_colour(Eigen::Array3f{abs(i->get_dir()[0]), abs(i->get_dir()[1]), abs(i->get_dir()[2])});
+      i->set_colour(i->get_dir().array().abs());
 
   } else if (edge_colour == edge_colour_t::CONNECTOME) {
 

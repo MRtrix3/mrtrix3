@@ -728,7 +728,7 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
   }
 
   thickness_slider->blockSignals(true);
-  thickness_slider->setSliderPosition(mean_thickness / float(indices.size()));
+  thickness_slider->setSliderPosition(mean_thickness / static_cast<float>(indices.size()));
   thickness_slider->blockSignals(false);
 }
 
@@ -895,7 +895,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.thickness")) {
     // Thickness runs from -1000 to 1000,
-    float thickness = float(opt[0]) * 1000.0f;
+    float thickness = static_cast<float>(opt[0]) * 1000.0F;
     try {
       thickness_slider->setValue(thickness);
     } catch (Exception &E) {
@@ -907,7 +907,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
   if (opt.opt->is("tractography.tsf_colourmap")) {
     try {
       int n = opt[0];
-      if (n < 0 || !ColourMap::maps[n].name)
+      if (n < 0 || ColourMap::maps[n].name.empty())
         throw Exception("invalid tsf colourmap index \"" + std::string(opt[0]) +
                         "\" for -tractography.tsf_colourmap option");
       if (process_commandline_option_tsf_check_tracto_loaded()) {
@@ -987,7 +987,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.opacity")) {
     // Opacity runs from 0 to 1000, so multiply by 1000
-    float opacity = float(opt[0]) * 1000.0f;
+    float opacity = static_cast<float>(opt[0]) * 1000.0F;
     try {
       opacity_slider->setValue(opacity);
     } catch (Exception &E) {

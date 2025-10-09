@@ -61,7 +61,7 @@ template <> inline QPoint position(QWheelEvent *event) {
 #endif
 }
 
-Qt::KeyboardModifiers get_modifier(const char *key, Qt::KeyboardModifiers default_key) {
+Qt::KeyboardModifiers get_modifier(const std::string &key, Qt::KeyboardModifiers default_key) {
   std::string value = lowercase(MR::File::Config::get(key));
   if (value.empty())
     return default_key;
@@ -213,8 +213,8 @@ Window::Window()
       MoveModifier(get_modifier("MRViewMoveModifierKey", Qt::ShiftModifier)),
       RotateModifier(get_modifier("MRViewRotateModifierKey", Qt::ControlModifier)),
       mouse_action(NoAction),
-      focal_point{NAN, NAN, NAN},
-      camera_target{NAN, NAN, NAN},
+      focal_point(Eigen::Vector3f::Constant(NaNF)),
+      camera_target(Eigen::Vector3f::Constant(NaNF)),
       orient(NaN, NaN, NaN, NaN),
       field_of_view(100.0),
       anatomical_plane(2),
@@ -223,7 +223,7 @@ Window::Window()
       snap_to_image_axes_and_voxel(true),
       camera_interactor(nullptr),
       tool_has_focus(nullptr),
-      best_FPS(NAN),
+      best_FPS(NaN),
       show_FPS(false),
       current_option(0) {
   main = this;
@@ -1383,12 +1383,12 @@ void Window::paintGL() {
     render_times.push_back(Timer::current_time());
     while (render_times.size() > 10)
       render_times.erase(render_times.begin());
-    double FPS = NAN;
+    double FPS = NaN;
     std::string FPS_string = "-";
     std::string FPS_best_string = "-";
 
     if (render_times.back() - best_FPS_time > 3.0)
-      best_FPS = NAN;
+      best_FPS = NaN;
 
     if (render_times.size() == 10) {
       FPS = (render_times.size() - 1.0) / (render_times.back() - render_times.front());
@@ -1398,7 +1398,7 @@ void Window::paintGL() {
         best_FPS_time = render_times.back();
       }
     } else
-      best_FPS = NAN;
+      best_FPS = NaN;
 
     if (std::isfinite(best_FPS))
       FPS_best_string = str(best_FPS, 4);
@@ -1703,7 +1703,7 @@ void Window::process_commandline_option() {
         auto pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-focus option expects a comma-separated list of 3 floating-point values");
-        set_focus(Eigen::Vector3f{float(pos[0]), float(pos[1]), float(pos[2])});
+        set_focus(Eigen::Vector3f{static_cast<float>(pos[0]), static_cast<float>(pos[1]), static_cast<float>(pos[2])});
       } catch (Exception &E) {
         try {
           show_crosshairs_action->setChecked(to<bool>(opt[0]));
@@ -1720,7 +1720,7 @@ void Window::process_commandline_option() {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-target option expects a comma-separated list of 3 floating-point values");
-        set_target(Eigen::Vector3f{float(pos[0]), float(pos[1]), float(pos[2])});
+        set_target(Eigen::Vector3f{static_cast<float>(pos[0]), static_cast<float>(pos[1]), static_cast<float>(pos[2])});
         glarea->update();
       }
       return;
@@ -1731,7 +1731,10 @@ void Window::process_commandline_option() {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 4)
           throw Exception("-orientation option expects a comma-separated list of 4 floating-point values");
-        set_orientation({float(pos[0]), float(pos[1]), float(pos[2]), float(pos[3])});
+        set_orientation({static_cast<float>(pos[0]),
+                         static_cast<float>(pos[1]),
+                         static_cast<float>(pos[2]),
+                         static_cast<float>(pos[3])});
         glarea->update();
       }
       return;
@@ -1742,7 +1745,8 @@ void Window::process_commandline_option() {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-voxel option expects a comma-separated list of 3 floating-point values");
-        set_focus(image()->voxel2scanner() * Eigen::Vector3f{float(pos[0]), float(pos[1]), float(pos[2])});
+        set_focus(image()->voxel2scanner() *
+                  Eigen::Vector3f{static_cast<float>(pos[0]), static_cast<float>(pos[1]), static_cast<float>(pos[2])});
         glarea->update();
       }
       return;

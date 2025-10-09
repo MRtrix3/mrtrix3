@@ -282,11 +282,8 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   p += projection.screen_normal() * (projection.screen_normal().dot(Window::main->focus() - p));
   p = transform.scanner2voxel.cast<float>() * p;
 
-  if (fixel_tool.is_locked_to_grid()) {
-    p[0] = (int)std::round(p[0]);
-    p[1] = (int)std::round(p[1]);
-    p[2] = (int)std::round(p[2]);
-  }
+  if (fixel_tool.is_locked_to_grid())
+    p = p.array().round();
 
   p = transform.voxel2scanner.cast<float>() * p;
 
@@ -326,10 +323,11 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
 
   for (int y = -ny; y <= ny; ++y) {
     for (int x = -nx; x <= nx; ++x) {
-      Eigen::Vector3f scanner_pos = p + float(x) * x_dir + float(y) * y_dir;
-      Eigen::Vector3f voxel_pos = transform.scanner2voxel.cast<float>() * scanner_pos;
-      std::array<int, 3> voxel{
-          {(int)std::round(voxel_pos[0]), (int)std::round(voxel_pos[1]), (int)std::round(voxel_pos[2])}};
+      const Eigen::Vector3f scanner_pos = p + static_cast<float>(x) * x_dir + static_cast<float>(y) * y_dir;
+      const Eigen::Vector3f voxel_pos = transform.scanner2voxel.cast<float>() * scanner_pos;
+      const std::array<int, 3> voxel{static_cast<int>(std::round(voxel_pos[0])),
+                                     static_cast<int>(std::round(voxel_pos[1])),
+                                     static_cast<int>(std::round(voxel_pos[2]))};
 
       // Find and add point indices that correspond to projected voxel
       const auto &voxel_indices = voxel_to_indices_map[voxel];

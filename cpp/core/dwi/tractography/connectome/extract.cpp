@@ -63,7 +63,7 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
                                  const std::vector<node_t> &nodes,
                                  const bool exclusive,
                                  const node_t first_node,
-                                 const std::vector<Eigen::Vector3f> &COMs)
+                                 const std::vector<Eigen::Vector3d> &COMs)
     : step_size(properties.get_stepsize()) {
   if (!std::isfinite(step_size))
     step_size = 1.0f;
@@ -83,7 +83,10 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
       for (size_t j = i; j != nodes.size(); ++j) {
         const node_t two = nodes[j];
         selectors.push_back(Selector(one, two));
-        exemplars.push_back(Exemplar(index++, length, std::make_pair(one, two), std::make_pair(COMs[one], COMs[two])));
+        exemplars.push_back(Exemplar(index++,
+                                     length,
+                                     std::make_pair(one, two),
+                                     std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
       }
     }
   } else {
@@ -94,8 +97,10 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
         if (std::find(nodes.begin(), nodes.end(), one) != nodes.end() ||
             std::find(nodes.begin(), nodes.end(), two) != nodes.end()) {
           selectors.push_back(Selector(one, two));
-          exemplars.push_back(
-              Exemplar(index++, length, std::make_pair(one, two), std::make_pair(COMs[one], COMs[two])));
+          exemplars.push_back(Exemplar(index++,
+                                       length,
+                                       std::make_pair(one, two),
+                                       std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
         }
       }
     }

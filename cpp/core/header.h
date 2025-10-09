@@ -55,7 +55,6 @@ public:
 
   Header()
       : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)), //
-        format_(nullptr),                                             //
         offset_(0.0),                                                 //
         scale_(1.0) {}                                                //
 
@@ -115,7 +114,6 @@ public:
       : transform_(original.transform()),
         name_(original.name()),
         keyval_(original.keyval()),
-        format_(nullptr),
         datatype_(DataType::from<typename HeaderType::value_type>()),
         offset_(0.0),
         scale_(1.0) {
@@ -166,7 +164,7 @@ public:
     transform_ = original.transform();
     name_ = original.name();
     keyval_ = original.keyval();
-    format_ = nullptr;
+    format_.clear();
     datatype_ = DataType::from<typename HeaderType::value_type>();
     offset_ = 0.0;
     scale_ = 1.0;
@@ -194,7 +192,7 @@ public:
   std::string &name() { return name_; }
 
   //! return the format of the image
-  const char *format() const { return format_; }
+  const std::string &format() const { return format_; }
 
   //! get the 4x4 affine transformation matrix mapping image to world coordinates
   const transform_type &transform() const { return transform_; }
@@ -406,7 +404,7 @@ protected:
   transform_type transform_;
   std::string name_;
   KeyValues keyval_;
-  const char *format_;
+  std::string format_;
 
   //! additional information relevant for images stored on file
   std::unique_ptr<ImageIO::Base> io;

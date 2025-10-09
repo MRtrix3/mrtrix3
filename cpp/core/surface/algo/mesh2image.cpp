@@ -98,7 +98,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       // Constrain to lie within the dimensions of the image
       for (size_t axis = 0; axis != 3; ++axis) {
         lower_bound[axis] = std::max(0, lower_bound[axis]);
-        upper_bound[axis] = std::min(int(H.size(axis) - 1), upper_bound[axis]);
+        upper_bound[axis] = std::min(static_cast<int>(H.size(axis) - 1), upper_bound[axis]);
       }
 
       // For all voxels within this rectangular region, assign this polygon to the map
@@ -375,11 +375,14 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       offsets_to_test.reset(new std::vector<Eigen::Vector3d>());
       offsets_to_test->reserve(pve_nsamples);
       for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
-        const default_type x = -0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
+        const default_type x =
+            -0.5 + ((static_cast<default_type>(x_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
         for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
-          const default_type y = -0.5 + ((default_type(y_idx) + 0.5) / default_type(pve_os_ratio));
+          const default_type y =
+              -0.5 + ((static_cast<default_type>(y_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
           for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
-            const default_type z = -0.5 + ((default_type(z_idx) + 0.5) / default_type(pve_os_ratio));
+            const default_type z =
+                -0.5 + ((static_cast<default_type>(z_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
             offsets_to_test->push_back(Vertex(x, y, z));
           }
         }
@@ -483,7 +486,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           }
 
           if (min_edge_distance_on_plane > 0.0) {
-            if (abs(distance_from_plane) < abs(best_min_distance_from_interior_projection)) {
+            if (std::fabs(distance_from_plane) < std::fabs(best_min_distance_from_interior_projection)) {
               best_min_distance_from_interior_projection = distance_from_plane;
               best_result_inside = is_inside;
             }
@@ -499,7 +502,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           ++inside_mesh_count;
       }
 
-      out = std::make_pair(voxel, (default_type)inside_mesh_count / (default_type)pve_nsamples);
+      out =
+          std::make_pair(voxel, static_cast<default_type>(inside_mesh_count) / static_cast<default_type>(pve_nsamples));
       return true;
     }
 

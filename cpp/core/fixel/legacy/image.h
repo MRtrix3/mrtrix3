@@ -28,10 +28,8 @@
 #include "image_io/sparse.h"
 #include "types.h"
 
-namespace MR {
+namespace MR::Fixel::Legacy {
 
-namespace Fixel {
-namespace Legacy {
 template <typename DataType> class Value {
 public:
   Value(::MR::Image<uint64_t> &offsets, ImageIO::SparseLegacy &io) : offsets(offsets), io(io) {}
@@ -126,6 +124,4 @@ protected:
   }
 };
 
-} // namespace Legacy
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Legacy

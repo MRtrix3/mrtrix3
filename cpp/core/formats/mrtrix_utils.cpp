@@ -61,12 +61,12 @@ std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
   if (parsed.size() != ndim)
     throw Exception("incorrect number of dimensions for axes specifier");
   for (size_t n = 0; n < parsed.size(); n++) {
-    if (!parsed[n] || size_t(abs(parsed[n])) > ndim)
+    if (!parsed[n] || static_cast<size_t>(MR::abs(parsed[n])) > ndim)
       throw Exception("axis ordering " + str(parsed[n]) + " out of range");
 
     for (size_t i = 0; i < n; i++)
-      if (abs(parsed[i]) == abs(parsed[n]))
-        throw Exception("duplicate axis ordering (" + str(abs(parsed[n])) + ")");
+      if (MR::abs(parsed[i]) == MR::abs(parsed[n]))
+        throw Exception("duplicate axis ordering (" + str(MR::abs(parsed[n])) + ")");
   }
 
   return parsed;

@@ -56,7 +56,7 @@ public:
   }
 
   int columnCount(const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return 1;
   }
 
@@ -67,7 +67,7 @@ public:
                    float scale);
 
   QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return createIndex(row, column);
   }
 
@@ -78,7 +78,7 @@ public:
   }
 
   ODF_Item *get_image(QModelIndex &index) {
-    return index.isValid() ? dynamic_cast<ODF_Item *>(items[index.row()].get()) : NULL;
+    return index.isValid() ? dynamic_cast<ODF_Item *>(items[index.row()].get()) : nullptr;
   }
 
   std::vector<std::unique_ptr<ODF_Item>> items;

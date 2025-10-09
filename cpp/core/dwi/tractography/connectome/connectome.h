@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "app.h"
 #include "image.h"
 
@@ -34,9 +36,9 @@ constexpr default_type default_tck2nodes_radial_distance = 4.0;
 class Tck2nodes_base;
 class Metric;
 
-extern const char *modes[];
+extern const std::vector<std::string> assignment_options;
 extern const App::OptionGroup AssignmentOptions;
-Tck2nodes_base *load_assignment_mode(Image<node_t> &);
+std::unique_ptr<Tck2nodes_base> load_assignment_mode(Image<node_t> &);
 
 extern const App::OptionGroup MetricOptions;
 void setup_metric(Metric &, Image<node_t> &);

@@ -31,29 +31,29 @@ void Volume::allocate() {
   gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
 
   gl::TexImage3D(
-      gl::TEXTURE_3D, 0, internal_format, _header.size(0), _header.size(1), _header.size(2), 0, format, type, NULL);
+      gl::TEXTURE_3D, 0, internal_format, _header.size(0), _header.size(1), _header.size(2), 0, format, type, nullptr);
 
   value_min = std::numeric_limits<float>::infinity();
   value_max = -std::numeric_limits<float>::infinity();
 
   switch (type) {
   case gl::BYTE:
-    _scale_factor = float(std::numeric_limits<int8_t>::max());
+    _scale_factor = static_cast<float>(std::numeric_limits<int8_t>::max());
     break;
   case gl::UNSIGNED_BYTE:
-    _scale_factor = float(std::numeric_limits<uint8_t>::max());
+    _scale_factor = static_cast<float>(std::numeric_limits<uint8_t>::max());
     break;
   case gl::SHORT:
-    _scale_factor = float(std::numeric_limits<int16_t>::max());
+    _scale_factor = static_cast<float>(std::numeric_limits<int16_t>::max());
     break;
   case gl::UNSIGNED_SHORT:
-    _scale_factor = float(std::numeric_limits<uint16_t>::max());
+    _scale_factor = static_cast<float>(std::numeric_limits<uint16_t>::max());
     break;
   case gl::INT:
-    _scale_factor = float(std::numeric_limits<int32_t>::max());
+    _scale_factor = static_cast<float>(std::numeric_limits<int32_t>::max());
     break;
   case gl::UNSIGNED_INT:
-    _scale_factor = float(std::numeric_limits<uint32_t>::max());
+    _scale_factor = static_cast<float>(std::numeric_limits<uint32_t>::max());
     break;
   default:
     _scale_factor = 1.0f;

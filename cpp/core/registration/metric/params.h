@@ -153,15 +153,18 @@ public:
     auto check = Image<default_type>::create(image_path, header);
 
     std::vector<uint32_t> no_oversampling(3, 1);
-    Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(im1_image, midway_image, trafo1, no_oversampling, NAN);
-    Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(im2_image, midway_image, trafo2, no_oversampling, NAN);
+    Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(
+        im1_image, midway_image, trafo1, no_oversampling, std::numeric_limits<Im1ValueType>::quiet_NaN());
+    Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(
+        im2_image, midway_image, trafo2, no_oversampling, std::numeric_limits<Im2ValueType>::quiet_NaN());
 
     auto T = MR::Transform(midway_image).voxel2scanner;
     Eigen::Vector3d midway_point, voxel_pos, im1_point, im2_point;
 
     for (auto i = Loop(midway_image)(check, im1_reslicer, im2_reslicer); i; ++i) {
-      voxel_pos =
-          Eigen::Vector3d((default_type)check.index(0), (default_type)check.index(1), (default_type)check.index(2));
+      voxel_pos = {static_cast<default_type>(check.index(0)),
+                   static_cast<default_type>(check.index(1)),
+                   static_cast<default_type>(check.index(2))};
       midway_point = T * voxel_pos;
 
       check.index(3) = 0;
@@ -170,7 +173,7 @@ public:
         transformation.transform_half(im1_point, midway_point);
         im1_mask_interp->scanner(im1_point);
         if (im1_mask_interp->value() < 0.5)
-          check.value() = NAN;
+          check.value() = NaN;
       }
 
       check.index(3) = 1;
@@ -179,7 +182,7 @@ public:
         transformation.transform_half_inverse(im2_point, midway_point);
         im2_mask_interp->scanner(im2_point);
         if (im2_mask_interp->value() < 0.5)
-          check.value() = NAN;
+          check.value() = NaN;
       }
       if (robust_estimate_score1_interp) {
         check.index(3) = 2;

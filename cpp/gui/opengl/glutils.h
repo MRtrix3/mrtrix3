@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string_view>
+
 #include "debug.h"
 #include "mrtrix.h"
 
@@ -75,9 +77,9 @@ using Format = QSurfaceFormat;
 void init();
 void set_default_context();
 
-const char *ErrorString(GLenum errorcode);
+std::string ErrorString(GLenum errorcode);
 
-inline void check_error(const char *filename, int line) {
+inline void check_error(const char *filename, int line) { // check_syntax off (input is __FILE__)
   GLenum err = gl::GetError();
   while (err) {
     FAIL(std::string("[") + filename + ": " + str(line) + "] OpenGL error: " + ErrorString(err));
@@ -371,16 +373,17 @@ public:
     bind();
     GL_DEBUG("texture ID " + str(tex) + " attached to framebuffer ID " + str(id) + " at color attachement " +
              str(attachment));
-    gl::FramebufferTexture(gl::FRAMEBUFFER, GLenum(size_t(gl::COLOR_ATTACHMENT0) + attachment), tex, 0);
+    gl::FramebufferTexture(gl::FRAMEBUFFER, GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + attachment), tex, 0);
   }
   void draw_buffers(size_t first) const {
     check_context();
-    GLenum list[1] = {GLenum(size_t(gl::COLOR_ATTACHMENT0) + first)};
+    GLenum list[1] = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first)};
     gl::DrawBuffers(1, list);
   }
   void draw_buffers(size_t first, size_t second) const {
     check_context();
-    GLenum list[2] = {GLenum(size_t(gl::COLOR_ATTACHMENT0) + first), GLenum(size_t(gl::COLOR_ATTACHMENT0) + second)};
+    GLenum list[2] = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first),
+                      GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + second)};
     gl::DrawBuffers(2, list);
   }
 

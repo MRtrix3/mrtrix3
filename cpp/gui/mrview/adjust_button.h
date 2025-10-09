@@ -31,11 +31,11 @@ public:
 
   float value() const {
     if (text().isEmpty())
-      return NAN;
+      return NaNF;
     try {
       return to<float>(text().toStdString());
     } catch (Exception) {
-      return NAN;
+      return NaNF;
     }
   }
 

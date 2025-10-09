@@ -68,8 +68,9 @@ public:
         progress("running MH sampler", n_max / iter_bigstep) {
     for (int k = 0; k != 5; k++)
       n_gen[k] = n_acc[k] = 0;
-    alpha = std::pow(T1 / T0,                                                                                       //
-                     double(iter_bigstep) / double(fraction_burnin * (n_max - n_max) - fraction_phaseout * n_max)); //
+    alpha = std::pow(T1 / T0, //
+                     static_cast<double>(iter_bigstep) /
+                         (fraction_burnin * (n_max - n_max) - fraction_phaseout * n_max)); //
   }
 
   ~Stats() { out.close(); }
@@ -197,15 +198,15 @@ public:
   double getAcceptanceRate(const char p) const {
     switch (p) {
     case 'b':
-      return double(n_acc[0]) / double(n_gen[0]);
+      return static_cast<double>(n_acc[0]) / static_cast<double>(n_gen[0]);
     case 'd':
-      return double(n_acc[1]) / double(n_gen[1]);
+      return static_cast<double>(n_acc[1]) / static_cast<double>(n_gen[1]);
     case 'r':
-      return double(n_acc[2]) / double(n_gen[2]);
+      return static_cast<double>(n_acc[2]) / static_cast<double>(n_gen[2]);
     case 'o':
-      return double(n_acc[3]) / double(n_gen[3]);
+      return static_cast<double>(n_acc[3]) / static_cast<double>(n_gen[3]);
     case 'c':
-      return double(n_acc[4]) / double(n_gen[4]);
+      return static_cast<double>(n_acc[4]) / static_cast<double>(n_gen[4]);
     default:
       return 0.0;
     }

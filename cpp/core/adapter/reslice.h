@@ -42,7 +42,7 @@ typename std::enable_if<!std::is_same<value_type, bool>::value && //
                             std::is_integral<value_type>::value,  //
                         value_type>::type inline                  //
     normalise(const default_type sum, const default_type norm) {  //
-  return value_type(std::round(sum * norm));
+  return static_cast<value_type>(std::round(sum * norm));
 }
 
 // Standard implementation for floating point (either real or complex)
@@ -51,7 +51,7 @@ typename std::enable_if<!std::is_same<value_type, bool>::value && //
                             !std::is_integral<value_type>::value, //
                         value_type>::type inline                  //
     normalise(const summing_type sum, const default_type norm) {  //
-  return value_type(sum * norm);
+  return static_cast<value_type>(sum * norm);
 }
 
 // If summing complex numbers, use double precision complex;
@@ -162,7 +162,7 @@ public:
       oversampling = true;
       norm = 1.0;
       for (size_t i = 0; i < 3; ++i) {
-        inc[i] = 1.0 / default_type(OS[i]);
+        inc[i] = 1.0 / static_cast<default_type>(OS[i]);
         from[i] = 0.5 * (inc[i] - 1.0);
         norm *= OS[i];
       }

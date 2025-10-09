@@ -100,8 +100,8 @@ UNARY_OP(
     "|%1|",
     COMPLEX_MAPS_TO_REAL,
     "return absolute value (magnitude) of real or complex number",
-    { return abs(v); },
-    { return abs(v); })
+    { return MR::abs(v); },
+    { return MR::abs(v); })
 UNARY_OP(
     neg, "-%1", NORMAL, "negative value", { return -v; }, { return -v; })
 BINARY_OP(
@@ -554,11 +554,11 @@ std::map<std::string, LoadedImage> StackEntry::image_list;
 
 class Evaluator {
 public:
-  Evaluator(const std::string &name, const char *format_string, bool Z2R = false, bool R2Z = false)
+  Evaluator(const std::string &name, const std::string &format_string, bool Z2R = false, bool R2Z = false)
       : id(name), format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
   virtual ~Evaluator() {}
   const std::string id;
-  const char *format;
+  const std::string format;
   bool ZtoR, RtoZ;
   std::vector<StackEntry> operands;
 
@@ -921,14 +921,15 @@ void run_operations(const std::vector<StackEntry> &stack) {
 
 class OpBase {
 public:
-  OpBase(const char *format_string, bool Z2R = false, bool R2Z = false) : format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
-  const char *format;
+  OpBase(const std::string &format_string, bool Z2R = false, bool R2Z = false)
+      : format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
+  const std::string format;
   const bool ZtoR, RtoZ;
 };
 
 class OpUnary : public OpBase {
 public:
-  OpUnary(const char *format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
+  OpUnary(const std::string &format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type v) const {
     throw Exception("operation not supported!");
     return v;
@@ -941,7 +942,7 @@ public:
 
 class OpBinary : public OpBase {
 public:
-  OpBinary(const char *format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
+  OpBinary(const std::string &format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type a, real_type b) const {
     throw Exception("operation not supported!");
     return a;
@@ -954,7 +955,7 @@ public:
 
 class OpTernary : public OpBase {
 public:
-  OpTernary(const char *format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
+  OpTernary(const std::string &format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type a, real_type b, real_type c) const {
     throw Exception("operation not supported!");
     return a;

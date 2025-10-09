@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <string>
+#include <unordered_map>
+
 #include "cmdline_option.h"
 #include "half.h"
 
@@ -84,8 +87,8 @@ public:
 
   size_t bits() const;
   size_t bytes() const { return (bits() + 7) / 8; }
-  const char *description() const;
-  const char *specifier() const;
+  const std::string &description() const;
+  const std::string &specifier() const;
 
   void set_flag(uint8_t flag) { dt |= flag; }
   void unset_flag(uint8_t flag) { dt &= ~flag; }
@@ -98,6 +101,12 @@ public:
   }
   static DataType parse(const std::string &spec);
   static DataType from_command_line(DataType default_datatype = Undefined);
+
+  struct Strings {
+    std::string specifier;
+    std::string description;
+  };
+  static const std::unordered_map<uint8_t, Strings> dt2str;
 
   static constexpr uint8_t Attributes = 0xF0U;
   static constexpr uint8_t Type = 0x0FU;

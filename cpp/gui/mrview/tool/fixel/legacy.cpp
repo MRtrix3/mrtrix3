@@ -31,10 +31,13 @@ void Legacy::load_image_buffer() {
 
   for (auto l = Loop(*fixel_data)(*fixel_data); l; ++l) {
 
-    const std::array<int, 3> voxel{{int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2))}};
-
-    Eigen::Vector3f pos{float(voxel[0]), float(voxel[1]), float(voxel[2])};
-    pos = transform.voxel2scanner.cast<float>() * pos;
+    const std::array<int, 3> voxel{static_cast<int>(fixel_data->index(0)),
+                                   static_cast<int>(fixel_data->index(1)),
+                                   static_cast<int>(fixel_data->index(2))};
+    const Eigen::Vector3f pos =
+        (transform.voxel2scanner *
+         Eigen::Vector3d(static_cast<double>(voxel[0]), static_cast<double>(voxel[1]), static_cast<double>(voxel[2])))
+            .cast<float>();
 
     for (size_t f = 0; f != fixel_data->value().size(); ++f) {
 

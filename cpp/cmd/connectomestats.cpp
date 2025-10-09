@@ -153,7 +153,7 @@ public:
   }
 
   default_type operator[](const index_type index) const override {
-    assert(index < index_type(data.size()));
+    assert(index < static_cast<index_type>(data.size()));
     return (data[index]);
   }
 
@@ -184,7 +184,7 @@ void run() {
 
   // Initialise enhancement algorithm
   std::shared_ptr<Stats::EnhancerBase> enhancer;
-  switch (int(argument[1])) {
+  switch (static_cast<MR::App::ParsedArgument::IntType>(argument[1])) {
   case 0: {
     auto opt = get_options("threshold");
     if (opt.empty())
@@ -212,7 +212,7 @@ void run() {
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[2]);
-  if (index_type(design.rows()) != importer.size())
+  if (static_cast<index_type>(design.rows()) != importer.size())
     throw Exception("number of subjects (" + str(importer.size()) +
                     ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 

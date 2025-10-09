@@ -20,12 +20,11 @@
 #include "mrview/mode/base.h"
 #include "opengl/transformation.h"
 
-namespace MR::GUI::MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class View;
-}
+} // namespace MR::GUI::MRView::Tool
 
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 class Volume : public Base {
 public:
@@ -62,5 +61,4 @@ protected:
   bool get_clipintersectionmodestate() const;
 };
 
-} // namespace Mode
-} // namespace MR::GUI::MRView
+} // namespace MR::GUI::MRView::Mode

@@ -212,7 +212,7 @@ template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &in
   lines.resize(number_of_line_indices);
   // swap from big endian
   for (int i = 0; i < number_of_line_indices; i++)
-    lines[i] = int64_t(ByteOrder::BE(buffer[i]));
+    lines[i] = static_cast<int64_t>(ByteOrder::BE(buffer[i]));
 }
 
 class VTKReader : public ReaderInterface<float> {
@@ -285,7 +285,7 @@ public:
     tck.clear();
     if (item < list.size()) {
       auto t = File::Matrix::load_matrix<float>(list[item].name());
-      for (size_t i = 0; i < size_t(t.rows()); i++)
+      for (decltype(t)::Index i = 0; i < t.rows(); i++)
         tck.push_back(Eigen::Vector3f(t.row(i)));
       item++;
       return true;
@@ -425,17 +425,17 @@ public:
 
   bool operator()(const Streamline<float> &intck) {
     // Need at least 5 points, silently ignore...
-    if (intck.size() < size_t(increment * 3)) {
+    if (intck.size() < static_cast<size_t>(increment * 3)) {
       return true;
     }
 
     auto nSides = sides;
     Eigen::MatrixXf coords(nSides, 2);
     Eigen::MatrixXi faces(nSides, 6);
-    auto theta = 2.0 * Math::pi / float(nSides);
+    auto theta = 2.0 * Math::pi / static_cast<default_type>(nSides);
     for (auto i = 0; i < nSides; i++) {
-      coords(i, 0) = cos((double)i * theta);
-      coords(i, 1) = sin((double)i * theta);
+      coords(i, 0) = cos(static_cast<default_type>(i) * theta);
+      coords(i, 1) = sin(static_cast<default_type>(i) * theta);
       // Face offsets
       faces(i, 0) = i;
       faces(i, 1) = (i + 1) % nSides;

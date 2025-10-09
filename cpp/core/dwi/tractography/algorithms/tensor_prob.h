@@ -101,7 +101,7 @@ protected:
 
     bool get(const Eigen::Vector3f &pos, Eigen::VectorXf &data) {
       if (!scanner(pos)) {
-        data.fill(NaN);
+        data.fill(NaNF);
         return false;
       }
 

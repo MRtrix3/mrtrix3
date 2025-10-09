@@ -136,7 +136,7 @@ protected:
     get_EV();
 
     float dot = prev_dir.dot(dir);
-    if (abs(dot) < S.cos_max_angle_1o)
+    if (std::fabs(dot) < S.cos_max_angle_1o)
       return term_t::HIGH_CURVATURE;
 
     if (dot < 0.0)

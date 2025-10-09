@@ -21,17 +21,17 @@
 
 namespace MR::File::KeyValue {
 
-void Reader::open(const std::string &file, const char *first_line) {
+void Reader::open(const std::string &file, const std::string &first_line) {
   filename.clear();
   DEBUG("reading key/value file \"" + file + "\"...");
 
   in.open(file.c_str(), std::ios::in | std::ios::binary);
   if (!in)
     throw Exception("failed to open key/value file \"" + file + "\": " + strerror(errno));
-  if (first_line) {
+  if (!first_line.empty()) {
     std::string sbuf;
     getline(in, sbuf);
-    if (sbuf.compare(0, strlen(first_line), first_line)) {
+    if (sbuf.compare(0, first_line.size(), first_line)) {
       in.close();
       throw Exception("invalid first line for key/value file \"" + file + "\" (expected \"" + first_line + "\")");
     }

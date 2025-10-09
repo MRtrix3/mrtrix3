@@ -392,9 +392,9 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   min_value->setEnabled(n_images);
 
   if (!n_images) {
-    max_value->setValue(NAN);
-    min_value->setValue(NAN);
-    length_multiplier->setValue(NAN);
+    max_value->setValue(NaNF);
+    min_value->setValue(NaNF);
+    length_multiplier->setValue(NaNF);
     return;
   }
 
@@ -458,7 +458,7 @@ void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
   length_combobox->setEnabled(n_images == 1);
 
   if (!n_images) {
-    length_multiplier->setValue(NAN);
+    length_multiplier->setValue(NaNF);
     return;
   }
 
@@ -485,8 +485,8 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
   threshold_combobox->setEnabled(n_images == 1);
 
   if (!n_images) {
-    threshold_lower->setValue(NAN);
-    threshold_upper->setValue(NAN);
+    threshold_lower->setValue(NaNF);
+    threshold_upper->setValue(NaNF);
     return;
   }
 

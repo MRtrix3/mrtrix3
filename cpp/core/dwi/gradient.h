@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "app.h"
 #include "file/config.h"
 #include "file/path.h"
@@ -38,8 +40,8 @@ constexpr default_type default_bzero_threshold = 22.5;
 App::OptionGroup GradImportOptions();
 App::OptionGroup GradExportOptions();
 
-extern App::Option bvalue_scaling_option;
-extern const char *const bvalue_scaling_description;
+extern const App::Option bvalue_scaling_option;
+extern const std::string bvalue_scaling_description;
 
 default_type bzero_threshold();
 
@@ -54,7 +56,7 @@ template <class MatrixType> inline void check_DW_scheme(const Header &header, co
     throw Exception("unexpected diffusion gradient table matrix dimensions");
 
   if (header.ndim() >= 4) {
-    if (header.size(3) != (int)grad.rows())
+    if (header.size(3) != static_cast<ssize_t>(grad.rows()))
       throw Exception("number of studies in base image (" + str(header.size(3)) +
                       ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
   } else if (grad.rows() != 1)
@@ -187,7 +189,7 @@ Eigen::MatrixXd resolve_DW_scheme(const MatrixType1 &one, const MatrixType2 &two
     }
     if (one_bvalue == two_bvalue) {
       result(rowindex, 3) = one_bvalue;
-    } else if (is_bzero || abs(one_bvalue - two_bvalue) <= 1.0) {
+    } else if (is_bzero || std::fabs(one_bvalue - two_bvalue) <= 1.0) {
       result(rowindex, 3) = 0.5 * (one_bvalue + two_bvalue);
     } else {
       throw Exception("Diffusion gradient table b-values not equivalent");

@@ -78,7 +78,7 @@ public:
   }
   Time() : hour(0), minute(0), second(0), fraction(0.0) {}
   operator default_type() const { return (hour * 3600.0 + minute * 60 + second + fraction); }
-  Time operator-(const Time &t) const { return Time(default_type(*this) - default_type(t)); }
+  Time operator-(const Time &t) const { return Time(static_cast<default_type>(*this) - static_cast<default_type>(t)); }
   uint32_t hour, minute, second;
   default_type fraction;
   friend std::ostream &operator<<(std::ostream &stream, const Time &item);
@@ -87,6 +87,7 @@ public:
 class Element {
 public:
   typedef enum _Type { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER } Type;
+  static const std::unordered_map<Type, std::string> type_as_str;
 
   uint16_t group, element, VR;
   uint32_t size;
@@ -106,8 +107,8 @@ public:
   std::string tag_name() const {
     if (dict.empty())
       init_dict();
-    const char *s = dict[tag()];
-    return (s ? s : "");
+    const char *s = dict[tag()]; // check_syntax off
+    return (s == nullptr ? "" : s);
   }
 
   uint32_t tag() const {
@@ -188,7 +189,7 @@ protected:
 
   uint16_t get_VR_from_tag_name(const std::string &name) {
     union {
-      char t[2];
+      std::array<char, 2> t;
       uint16_t i;
     } d = {{name[0], name[1]}};
     return ByteOrder::BE(d.i);
@@ -207,8 +208,6 @@ protected:
   void error_in_get(size_t idx) const;
   void error_in_check_size(size_t min_size, size_t actual_size) const;
   void report_unknown_tag_with_implicit_syntax() const;
-
-  static const char *type_as_str[];
 };
 
 } // namespace MR::File::Dicom

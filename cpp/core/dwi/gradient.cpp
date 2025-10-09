@@ -60,15 +60,15 @@ OptionGroup GradExportOptions() {
         + Argument("bvals_path").type_file_out();
 }
 
-Option bvalue_scaling_option = Option("bvalue_scaling",
-                                      "enable or disable scaling of diffusion b-values"
-                                      " by the square of the corresponding DW gradient norm"
-                                      " (see Desciption)."
-                                      " Valid choices are: yes/no, true/false, 0/1"
-                                      " (default: automatic).")
-                               + Argument("mode").type_bool();
+const Option bvalue_scaling_option = Option("bvalue_scaling",
+                                            "enable or disable scaling of diffusion b-values"
+                                            " by the square of the corresponding DW gradient norm"
+                                            " (see Desciption)."
+                                            " Valid choices are: yes/no, true/false, 0/1"
+                                            " (default: automatic).")
+                                     + Argument("mode").type_bool();
 
-const char *const bvalue_scaling_description(
+const std::string bvalue_scaling_description(
     "The -bvalue_scaling option controls an aspect of the import of diffusion gradient tables."
     " When the input diffusion-weighting direction vectors"
     " have norms that differ substantially from unity,"
@@ -155,7 +155,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_
   // clang-format on
 
   const size_t num_volumes = header.ndim() < 4 ? 1 : header.size(3);
-  if (size_t(bvals.cols()) != num_volumes)
+  if (static_cast<size_t>(bvals.cols()) != num_volumes)
     // clang-format off
     throw Exception("bvecs and bvals files do not have same number of diffusion directions as DW-image:"
                     " gradients: " + str(bvecs.cols()) + ","
@@ -295,7 +295,7 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     // modulate verbosity of message & whether or not header is modified
     // based on magnitude of effect of normalisation
     const default_type max_log_scaling_factor =
-        squared_norms.unaryExpr([](double v) { return v > 0.0 ? abs(log(v)) : 0.0; }).maxCoeff();
+        squared_norms.unaryExpr([](double v) { return v > 0.0 ? std::fabs(log(v)) : 0.0; }).maxCoeff();
     const default_type max_scaling_factor = std::exp(max_log_scaling_factor);
     const bool exceeds_single_precision = max_log_scaling_factor > 1e-5;
     const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;

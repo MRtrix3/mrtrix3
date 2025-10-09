@@ -58,10 +58,10 @@ public:
   FOD_lobe(const DWI::Directions::Set &dirs, const index_type seed, const default_type value, const default_type weight)
       : mask(dirs),
         values(Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero(dirs.size())),
-        max_peak_value(abs(value)),
+        max_peak_value(std::fabs(value)),
         peak_dirs(1, dirs.get_dir(seed)),
-        mean_dir(peak_dirs.front() * abs(value) * weight),
-        integral(abs(value * weight)),
+        mean_dir(peak_dirs.front() * std::fabs(value) * weight),
+        integral(std::fabs(value * weight)),
         neg(value <= 0.0) {
     mask[seed] = true;
     values[seed] = value;
@@ -82,8 +82,8 @@ public:
     values[bin] = value;
     const Eigen::Vector3d &dir = mask.get_dirs()[bin];
     const default_type multiplier = (mean_dir.dot(dir)) > 0.0 ? 1.0 : -1.0;
-    mean_dir += dir * multiplier * abs(value) * weight;
-    integral += abs(value * weight);
+    mean_dir += dir * multiplier * std::fabs(value) * weight;
+    integral += std::fabs(value * weight);
   }
 
   void revise_peak(const size_t index, const Eigen::Vector3d &revised_peak_dir, const default_type revised_peak_value) {
@@ -198,7 +198,7 @@ class IntegrationWeights {
 public:
   IntegrationWeights(const DWI::Directions::Set &dirs);
   default_type operator[](const size_t i) {
-    assert(i < size_t(data.size()));
+    assert(i < static_cast<size_t>(data.size()));
     return data[i];
   }
 

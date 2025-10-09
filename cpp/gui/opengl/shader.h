@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "app.h"
 #include "opengl/glutils.h"
 
@@ -60,8 +62,8 @@ public:
       index_ = gl::CreateShader(TYPE);
       GL_DEBUG("created OpenGL " + this->type() + " shader ID " + str(index_));
     }
-    const char *p = code.c_str();
-    gl::ShaderSource(index_, 1, &p, NULL);
+    std::array<const char *const, 1> p{code.c_str()}; // check_syntax off
+    gl::ShaderSource(index_, 1, p.data(), nullptr);
     gl::CompileShader(index_);
     GLint status;
     gl::GetShaderiv(index_, gl::COMPILE_STATUS, &status);

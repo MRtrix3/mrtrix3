@@ -15,6 +15,9 @@
  */
 
 #include "opengl/glutils.h"
+
+#include <unordered_map>
+
 #include "file/config.h"
 
 namespace MR::GUI::GL {
@@ -102,20 +105,18 @@ void init() {
           */
 }
 
-const char *ErrorString(GLenum errorcode) {
-  switch (errorcode) {
-  case gl::INVALID_ENUM:
-    return "invalid value for enumerated argument";
-  case gl::INVALID_VALUE:
-    return "value out of range";
-  case gl::INVALID_OPERATION:
-    return "operation not allowed given current state";
-  case gl::OUT_OF_MEMORY:
-    return "insufficient memory";
-  case gl::INVALID_FRAMEBUFFER_OPERATION:
-    return "invalid framebuffer operation";
-  default:
-    return "unknown error";
+std::string ErrorString(GLenum errorcode) {
+  static const std::string unknown("unknown error");
+  static const std::unordered_map<GLenum, std::string> map{
+      {gl::INVALID_ENUM, "invalid value for enumerated argument"},
+      {gl::INVALID_VALUE, "value out of range"},
+      {gl::INVALID_OPERATION, "operation not allowed given current state"},
+      {gl::OUT_OF_MEMORY, "insufficient memory"},
+      {gl::INVALID_FRAMEBUFFER_OPERATION, "invalid framebuffer operation"}};
+  try {
+    return map.at(errorcode);
+  } catch (std::out_of_range) {
+    return unknown;
   }
 }
 

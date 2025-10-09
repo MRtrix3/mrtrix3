@@ -122,7 +122,7 @@ class InitFixelUnweighted : public InitFixelBase<InitElementUnweighted> {
 public:
   using BaseType = InitFixelBase<InitElementUnweighted>;
   InitFixelUnweighted() : track_count(0) {}
-  default_type norm_factor() const override { return 1.0 / default_type(track_count); }
+  default_type norm_factor() const override { return 1.0 / static_cast<default_type>(track_count); }
 
 private:
   count_type track_count;

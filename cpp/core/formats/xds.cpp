@@ -117,7 +117,7 @@ std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
   out.close();
 
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
-  File::create(H.name(), footprint(H, "11 1"));
+  File::create(H.name(), footprint(H, {0, 1, 3}));
   io_handler->files.push_back(File::Entry(H.name()));
 
   return io_handler;

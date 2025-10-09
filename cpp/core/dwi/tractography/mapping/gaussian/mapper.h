@@ -31,15 +31,16 @@ class TrackMapper : public Mapping::TrackMapperTWI {
 public:
   template <class HeaderType>
   TrackMapper(const HeaderType &template_image, const contrast_t c)
-      : BaseMapper(template_image, c, GAUSSIAN), gaussian_denominator(0.0) {
-    assert(c == SCALAR_MAP || c == SCALAR_MAP_COUNT || c == FOD_AMP || c == CURVATURE);
+      : BaseMapper(template_image, c, tck_stat_t::GAUSSIAN), gaussian_denominator(0.0) {
+    assert(c == contrast_t::SCALAR_MAP || c == contrast_t::SCALAR_MAP_COUNT || c == contrast_t::FOD_AMP ||
+           c == contrast_t::CURVATURE);
   }
 
   TrackMapper(const TrackMapper &) = default;
   ~TrackMapper() {}
 
   void set_gaussian_FWHM(const default_type FWHM) {
-    if (track_statistic != GAUSSIAN)
+    if (track_statistic != tck_stat_t::GAUSSIAN)
       throw Exception("Cannot set Gaussian FWHM unless the track statistic is Gaussian");
     const default_type theta = FWHM / (2.0 * std::sqrt(2.0 * std::log(2.0)));
     gaussian_denominator = 2.0 * Math::pow2(theta);
@@ -152,7 +153,7 @@ template <class Cont> void TrackMapper::voxelise_precise(const Streamline<> &tck
     const point_type p_voxel_entry(p_voxel_exit);
     point_type p_prev(p_voxel_entry);
     default_type length = 0.0;
-    const default_type index_voxel_entry = default_type(p) + mu;
+    const default_type index_voxel_entry = static_cast<default_type>(p) + mu;
     const Eigen::Vector3i this_voxel = next_voxel;
 
     while ((p != tck.size()) && ((next_voxel = round(scanner2voxel * tck[p])) == this_voxel)) {
@@ -198,7 +199,7 @@ template <class Cont> void TrackMapper::voxelise_precise(const Streamline<> &tck
     length += (p_prev - p_voxel_exit).norm();
     const Streamline<>::tangent_type traversal_vector = (p_voxel_exit - p_voxel_entry).normalized();
     if (traversal_vector.allFinite() && check(this_voxel, info)) {
-      const default_type index_voxel_exit = default_type(p) + mu;
+      const default_type index_voxel_exit = static_cast<default_type>(p) + mu;
       const size_t mean_tck_index = std::round(0.5 * (index_voxel_entry + index_voxel_exit));
       const default_type factor = tck_index_to_factor(mean_tck_index);
       add_to_set(out, this_voxel, traversal_vector, length, factor);
@@ -253,10 +254,11 @@ inline void TrackMapper::add_to_set(SetVoxelTOD &out,
 }
 
 inline default_type TrackMapper::tck_index_to_factor(const size_t i) const {
-  const default_type ideal_index = default_type(i) / default_type(upsampler.get_ratio());
-  const size_t lower_index = std::max(size_t(std::floor(ideal_index)), size_t(0));
-  const size_t upper_index = std::min(size_t(std::ceil(ideal_index)), size_t(factors.size() - 1));
-  const default_type mu = ideal_index - default_type(lower_index);
+  const default_type ideal_index = static_cast<default_type>(i) / static_cast<default_type>(upsampler.get_ratio());
+  const size_t lower_index = std::max(static_cast<size_t>(std::floor(ideal_index)), size_t(0));
+  const size_t upper_index =
+      std::min(static_cast<size_t>(std::ceil(ideal_index)), static_cast<size_t>(factors.size() - 1));
+  const default_type mu = ideal_index - static_cast<default_type>(lower_index);
   return ((mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]));
 }
 

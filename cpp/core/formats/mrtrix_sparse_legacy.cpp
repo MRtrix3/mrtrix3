@@ -124,7 +124,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
   std::string image_path, sparse_path;
   if (single_file) {
 
-    image_offset = int64_t(out.tellp()) + int64_t(54);
+    image_offset = static_cast<int64_t>(out.tellp()) + int64_t(54);
     image_offset += ((4 - (image_offset % 4)) % 4);
     sparse_offset = image_offset + footprint(H);
 

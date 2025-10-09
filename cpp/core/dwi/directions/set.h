@@ -122,7 +122,7 @@ template <class MatrixType> void Set::initialise(const Eigen::Matrix<MatrixType,
     }
   } else if (in.cols() == 3) {
     for (size_t i = 0; i != size(); ++i)
-      unit_vectors[i] = {default_type(in(i, 0)), default_type(in(i, 1)), default_type(in(i, 2))};
+      unit_vectors[i] = in.row(i).template cast<default_type>();
   } else {
     assert(0);
   }

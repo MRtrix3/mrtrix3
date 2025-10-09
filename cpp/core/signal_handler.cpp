@@ -52,8 +52,8 @@ void handler(int i) noexcept {
     for (auto func : cleanup_operations)
       func();
 
-    const char *sig = nullptr;
-    const char *msg = nullptr;
+    const char *sig = nullptr; // check_syntax off
+    const char *msg = nullptr; // check_syntax off
     switch (i) {
 
 #define __SIGNAL(SIG, MSG)                                                                                             \
@@ -72,7 +72,7 @@ void handler(int i) noexcept {
 
     // Don't use std::cerr << here: Use basic C string-handling functions and a write() call to STDERR_FILENO
     // Don't attempt to use any terminal colouring
-    char str[256];
+    char str[256]; // check_syntax off
     str[255] = '\0';
     snprintf(str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
     if (write(STDERR_FILENO, str, strnlen(str, 256)) == 0)

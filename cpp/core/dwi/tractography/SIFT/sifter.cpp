@@ -128,8 +128,11 @@ void SIFTer::perform_filtering() {
     // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
     //   remaining streamlines have a negative gradient
 
-    const track_t sort_size = std::min(std::ceil(num_tracks() / double(Thread::number_of_threads())),
-                                       std::round(2000.0 * double(num_tracks()) / double(tracks_remaining)));
+    const track_t sort_size =
+        std::min(static_cast<track_t>(std::ceil(static_cast<default_type>(num_tracks()) /
+                                                static_cast<default_type>(Thread::number_of_threads()))),
+                 static_cast<track_t>(std::round(2000.0 * static_cast<default_type>(num_tracks()) /
+                                                 static_cast<default_type>(tracks_remaining))));
     MT_gradient_vector_sorter sorter(gradient_vector, sort_size);
 
     // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed

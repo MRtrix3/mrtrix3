@@ -31,31 +31,35 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
   // ENVVAR name: DICOM_PATIENT
   // ENVVAR when reading DICOM data, match the PatientName entry against
   // ENVVAR the string provided
-  const char *patient_from_env = getenv("DICOM_PATIENT");
+  const char *patient_env = getenv("DICOM_PATIENT"); // check_syntax off
+  const std::string patient_from_env(patient_env == nullptr ? "" : std::string(patient_env));
 
   // ENVVAR name: DICOM_ID
   // ENVVAR when reading DICOM data, match the PatientID entry against
   // ENVVAR the string provided
-  const char *patid_from_env = getenv("DICOM_ID");
+  const char *patid_env = getenv("DICOM_ID"); // check_syntax off
+  const std::string patid_from_env(patid_env == nullptr ? "" : std::string(patid_env));
 
   // ENVVAR name: DICOM_STUDY
   // ENVVAR when reading DICOM data, match the StudyName entry against
   // ENVVAR the string provided
-  const char *study_from_env = getenv("DICOM_STUDY");
+  const char *study_env = getenv("DICOM_STUDY"); // check_syntax off
+  const std::string study_from_env(study_env == nullptr ? "" : std::string(study_env));
 
   // ENVVAR name: DICOM_SERIES
   // ENVVAR when reading DICOM data, match the SeriesName entry against
   // ENVVAR the string provided
-  const char *series_from_env = getenv("DICOM_SERIES");
+  const char *series_env = getenv("DICOM_SERIES"); // check_syntax off
+  const std::string series_from_env(series_env == nullptr ? "" : std::string(series_env));
 
-  if (patient_from_env || patid_from_env || study_from_env || series_from_env) {
+  if (!patient_from_env.empty() || !patid_from_env.empty() || !study_from_env.empty() || !series_from_env.empty()) {
 
     // select using environment variables:
 
     std::vector<std::shared_ptr<Patient>> patient;
     for (size_t i = 0; i < tree.size(); i++) {
-      if ((!patient_from_env || match(patient_from_env, tree[i]->name, true)) &&
-          (!patid_from_env || match(patid_from_env, tree[i]->ID, true)))
+      if ((patient_from_env.empty() || match(patient_from_env, tree[i]->name, true)) &&
+          (patid_from_env.empty() || match(patid_from_env, tree[i]->ID, true)))
         patient.push_back(tree[i]);
     }
     if (patient.empty())
@@ -65,7 +69,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
 
     std::vector<std::shared_ptr<Study>> study;
     for (size_t i = 0; i < patient[0]->size(); i++) {
-      if (!study_from_env || match(study_from_env, (*patient[0])[i]->name, true))
+      if (study_from_env.empty() || match(study_from_env, (*patient[0])[i]->name, true))
         study.push_back((*patient[0])[i]);
     }
     if (study.empty())
@@ -74,7 +78,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       throw Exception("too many matching studies in DICOM dataset \"" + tree.description + "\"");
 
     for (size_t i = 0; i < study[0]->size(); i++) {
-      if (!series_from_env || match(series_from_env, (*study[0])[i]->name, true))
+      if (series_from_env.empty() || match(series_from_env, (*study[0])[i]->name, true))
         series.push_back((*study[0])[i]);
     }
     if (series.empty())
@@ -103,8 +107,8 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
       if (isdigit(buf[0])) {
-        int n = to<int>(buf) - 1;
-        if (n <= (int)tree.size())
+        const int n = to<int>(buf) - 1;
+        if (n <= static_cast<int>(tree.size()))
           patient_p = tree[n].get();
       }
       if (!patient_p)
@@ -141,8 +145,8 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
       if (isdigit(buf[0])) {
-        int n = to<int>(buf) - 1;
-        if (n <= (int)patient.size())
+        const int n = to<int>(buf) - 1;
+        if (n <= static_cast<int>(patient.size()))
           study_p = patient[n].get();
       }
       if (!study_p)
@@ -186,7 +190,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
         try {
           seq = parse_ints<uint32_t>(buf);
           for (size_t i = 0; i < seq.size(); i++) {
-            if (seq[i] < 0 || seq[i] >= (uint32_t)study.size()) {
+            if (seq[i] < 0 || seq[i] >= static_cast<uint32_t>(study.size())) {
               series.clear();
               break;
             }

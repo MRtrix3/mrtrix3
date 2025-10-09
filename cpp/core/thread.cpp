@@ -47,7 +47,7 @@ size_t number_of_threads() {
   // ENVVAR This overrides the automatically determined number, or the
   // ENVVAR :option:`NumberOfThreads` setting in the configuration file, but
   // ENVVAR will be overridden by the ENVVAR ``-nthreads`` command-line option.
-  const char *from_env = getenv("MRTRIX_NTHREADS");
+  const char *from_env = getenv("MRTRIX_NTHREADS"); // check_syntax off
   if (from_env) {
     __number_of_threads = to<size_t>(from_env);
     __nthreads_type = nthreads_t::EXPLICIT;

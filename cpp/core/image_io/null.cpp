@@ -17,8 +17,7 @@
 #include "image_io/null.h"
 #include "header.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 void Null::load(const Header &header, size_t) {
   throw Exception("No suitable handler to access data in \"" + header.name() + "\"");
@@ -28,5 +27,4 @@ void Null::unload(const Header &header) {
   throw Exception("No suitable handler to access data in \"" + header.name() + "\"");
 }
 
-} // namespace ImageIO
-} // namespace MR
+} // namespace MR::ImageIO

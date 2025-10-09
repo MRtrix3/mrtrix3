@@ -310,7 +310,7 @@ void Tractogram::Shader::update(const Displayable &object) {
 Tractogram::Tractogram(Tractography &tool, const std::string &filename)
     : Displayable(filename),
       show_colour_bar(true),
-      original_fov(NAN),
+      original_fov(NaNF),
       line_thickness(0.f),
       intensity_scalar_filename(std::string()),
       threshold_scalar_filename(std::string()),
@@ -321,8 +321,8 @@ Tractogram::Tractogram(Tractography &tool, const std::string &filename)
       geometry_type(default_tract_geom),
       sample_stride(0),
       vao_dirty(true),
-      threshold_min(NaN),
-      threshold_max(NaN) {
+      threshold_min(NaNF),
+      threshold_max(NaNF) {
   set_allowed_features(true, true, true);
   colourmap = 1;
   connect(&window(), SIGNAL(fieldOfViewChanged()), this, SLOT(on_FOV_changed()));
@@ -488,8 +488,10 @@ inline void Tractogram::render_streamlines() {
           2, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void *)(6 * sample_stride * sizeof(float)));
 
       for (size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
-        track_sizes[buf][j] = (GLint)std::ceil(original_track_sizes[buf][j] / (float)sample_stride);
-        track_starts[buf][j] = (GLint)std::floor(original_track_starts[buf][j] / (float)sample_stride);
+        track_sizes[buf][j] = static_cast<GLint>(
+            std::ceil(static_cast<float>(original_track_sizes[buf][j]) / static_cast<float>(sample_stride)));
+        track_starts[buf][j] = static_cast<GLint>(
+            std::floor(static_cast<float>(original_track_starts[buf][j]) / static_cast<float>(sample_stride)));
 
         // Vertex attributes are packed prev, curr, next
         // So ensure first curr does indeed correspond to track start
@@ -500,7 +502,8 @@ inline void Tractogram::render_streamlines() {
         GLint offset = original_track_starts[buf][j] + original_track_sizes[buf][j] -
                        (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
 
-        track_sizes[buf][j] += (GLint)std::floor(offset / (float)sample_stride);
+        track_sizes[buf][j] +=
+            static_cast<GLint>(std::floor(static_cast<float>(offset) / static_cast<float>(sample_stride)));
       }
     }
 
@@ -522,7 +525,8 @@ inline void Tractogram::update_stride() {
   if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite(step_size)) {
     const auto geom_size = geometry_type == TrackGeometryType::Pseudotubes ? Tractogram::default_line_thickness
                                                                            : Tractogram::default_point_size;
-    new_stride = GLint(geom_size * std::exp(2.0e-3f * line_thickness) * original_fov / step_size);
+    new_stride =
+        static_cast<GLint>(std::floor(geom_size * std::exp(2.0e-3F * line_thickness) * original_fov / step_size));
     // We have to ensure that our vertex buffer contains at least two copies
     // of track start and track end to correctly render our tracks
     // => Max stride = track_padding / 2
@@ -606,7 +610,7 @@ void Tractogram::load_end_colours() {
     for (size_t buffer_tck_counter = 0; buffer_tck_counter != num_tracks; ++buffer_tck_counter) {
 
       const Eigen::Vector3f &tangent(endpoint_tangents[total_tck_counter++]);
-      const Eigen::Vector3f colour(abs(tangent[0]), abs(tangent[1]), abs(tangent[2]));
+      const Eigen::Vector3f colour(tangent.array().abs());
       const size_t tck_length = original_track_sizes[buffer_index][buffer_tck_counter];
 
       // Includes pre- and post-padding to coincide with tracks buffer
@@ -641,7 +645,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
     while (file(tck_scalar)) {
 
       const size_t tck_size = tck_scalar.size();
-      assert(tck_size == size_t(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
+      assert(tck_size == static_cast<size_t>(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
       if (!tck_size)
         continue;
@@ -673,7 +677,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
     size_t total_num_tracks = 0;
     for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
-    if (size_t(scalars.size()) != total_num_tracks)
+    if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
     size_t running_index = 0;
 
@@ -733,7 +737,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
     while (file(tck_scalar)) {
 
       const size_t tck_size = tck_scalar.size();
-      assert(tck_size == size_t(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
+      assert(tck_size == static_cast<size_t>(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
 
       if (!tck_size)
         continue;
@@ -765,7 +769,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
     size_t total_num_tracks = 0;
     for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
-    if (size_t(scalars.size()) != total_num_tracks)
+    if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
     size_t running_index = 0;
 
@@ -832,7 +836,8 @@ void Tractogram::erase_threshold_scalar_data() {
     threshold_scalar_buffers.clear();
   }
   threshold_scalar_filename.clear();
-  threshold_min = threshold_max = NaN;
+  threshold_min = NaNF;
+  threshold_max = NaNF;
   set_use_discard_lower(false);
   set_use_discard_upper(false);
   GL::assert_context_is_current();

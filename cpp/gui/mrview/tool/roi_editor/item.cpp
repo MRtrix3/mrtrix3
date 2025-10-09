@@ -106,7 +106,7 @@ void ROI_Item::start(ROI_UndoEntry &&entry) {
   while (current_undo + 1 > int(undo_list.size()))
     undo_list.erase(undo_list.end() - 1);
   undo_list.push_back(std::move(entry));
-  while (undo_list.size() > size_t(number_of_undos))
+  while (undo_list.size() > static_cast<size_t>(number_of_undos))
     undo_list.erase(undo_list.begin());
   current_undo = undo_list.size() - 1;
 }

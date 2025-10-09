@@ -226,7 +226,7 @@ void usage () {
 
 MapWriterBase *make_writer(Header &H, const std::string &name, const vox_stat_t stat_vox, const writer_dim dim) {
   MapWriterBase *writer = nullptr;
-  const uint8_t dt = uint8_t(H.datatype()()) & DataType::Type;
+  const uint8_t dt = static_cast<uint8_t>(H.datatype()()) & DataType::Type;
   if (dt == DataType::Bit)
     writer = new MapWriter<bool>(H, name, stat_vox, dim);
   else if (dt == DataType::UInt8)
@@ -249,8 +249,8 @@ DataType determine_datatype(const DataType current_dt,
   if (current_dt == DataType::Undefined) {
     return default_dt;
   } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
-    WARN("Cannot use non-floating-point datatype with " + str(Mapping::contrasts[contrast]) + " contrast" +
-         (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
+    WARN("Cannot use non-floating-point datatype with " + str(Mapping::contrast_names.at(contrast).description) +
+         " contrast" + (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
     return default_dt;
   } else {
     return current_dt;
@@ -301,42 +301,45 @@ void run() {
   header.keyval()["tck_source"] = std::string(argument[0]);
 
   opt = get_options("contrast");
-  const contrast_t contrast = !opt.empty() ? contrast_t(int(opt[0][0])) : TDI;
+  const contrast_t contrast =
+      !opt.empty() ? contrast_t(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : contrast_t::TDI;
 
   opt = get_options("stat_vox");
-  vox_stat_t stat_vox = !opt.empty() ? vox_stat_t(int(opt[0][0])) : V_SUM;
+  vox_stat_t stat_vox =
+      !opt.empty() ? vox_stat_t(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : vox_stat_t::SUM;
 
   opt = get_options("stat_tck");
-  tck_stat_t stat_tck = !opt.empty() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
+  tck_stat_t stat_tck =
+      !opt.empty() ? tck_stat_t(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : tck_stat_t::MEAN;
 
   float gaussian_fwhm_tck = 0.0;
   opt = get_options("fwhm_tck");
   if (!opt.empty()) {
-    if (stat_tck != GAUSSIAN) {
+    if (stat_tck != tck_stat_t::GAUSSIAN) {
       WARN("Overriding per-track statistic to Gaussian as a full-width half-maximum has been provided.");
-      stat_tck = GAUSSIAN;
+      stat_tck = tck_stat_t::GAUSSIAN;
     }
     gaussian_fwhm_tck = opt[0][0];
-  } else if (stat_tck == GAUSSIAN) {
+  } else if (stat_tck == tck_stat_t::GAUSSIAN) {
     throw Exception("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the "
                     "Gaussian kernel using the -fwhm option");
   }
 
   bool backtrack = false;
   if (!get_options("backtrack").empty()) {
-    if (stat_tck == ENDS_CORR || stat_tck == ENDS_MAX || stat_tck == ENDS_MEAN || stat_tck == ENDS_MIN ||
-        stat_tck == ENDS_PROD)
+    if (stat_tck == tck_stat_t::ENDS_CORR || stat_tck == tck_stat_t::ENDS_MAX || stat_tck == tck_stat_t::ENDS_MEAN ||
+        stat_tck == tck_stat_t::ENDS_MIN || stat_tck == tck_stat_t::ENDS_PROD)
       backtrack = true;
     else
       WARN("-backtrack option ignored; only applicable to endpoint-based track statistics");
   }
 
   // Determine the dimensionality of the output image
-  writer_dim writer_type = GREYSCALE;
+  writer_dim writer_type = writer_dim::GREYSCALE;
 
   opt = get_options("dec");
   if (!opt.empty()) {
-    writer_type = DEC;
+    writer_type = writer_dim::DEC;
     header.ndim() = 4;
     header.size(3) = 3;
     header.sanitise();
@@ -346,9 +349,9 @@ void run() {
   std::unique_ptr<Directions::FastLookupSet> dirs;
   opt = get_options("dixel");
   if (!opt.empty()) {
-    if (writer_type != GREYSCALE)
+    if (writer_type != writer_dim::GREYSCALE)
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
-    writer_type = DIXEL;
+    writer_type = writer_dim::DIXEL;
     if (Path::exists(opt[0][0]))
       dirs.reset(new Directions::FastLookupSet(str(opt[0][0])));
     else
@@ -370,9 +373,9 @@ void run() {
 
   opt = get_options("tod");
   if (!opt.empty()) {
-    if (writer_type != GREYSCALE)
+    if (writer_type != writer_dim::GREYSCALE)
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
-    writer_type = TOD;
+    writer_type = writer_dim::TOD;
     const size_t lmax = opt[0][0];
     if (lmax % 2)
       throw Exception("lmax for TODI must be an even number");
@@ -382,53 +385,53 @@ void run() {
     Stride::set(header, Stride::contiguous_along_axis(3, header));
   }
 
-  header.keyval()["twi_dimensionality"] = writer_dims[writer_type];
+  header.keyval()["twi_dimensionality"] = Mapping::output_dimension_names.at(writer_type);
 
   // Deal with erroneous statistics & provide appropriate messages
   switch (contrast) {
 
-  case TDI:
-    if (stat_vox != V_SUM && stat_vox != V_MEAN) {
+  case contrast_t::TDI:
+    if (stat_vox != vox_stat_t::SUM && stat_vox != vox_stat_t::MEAN) {
       WARN("Cannot use voxel statistic other than 'sum' or 'mean' for TDI generation - ignoring");
-      stat_vox = V_SUM;
+      stat_vox = vox_stat_t::SUM;
     }
-    if (stat_tck != T_MEAN)
+    if (stat_tck != tck_stat_t::MEAN)
       WARN("Cannot use track statistic other than default for TDI generation - ignoring");
-    stat_tck = T_MEAN;
+    stat_tck = tck_stat_t::MEAN;
     break;
 
-  case LENGTH:
-    if (stat_tck != T_MEAN)
+  case contrast_t::LENGTH:
+    if (stat_tck != tck_stat_t::MEAN)
       WARN("Cannot use track statistic other than default for length-weighted TDI generation - ignoring");
-    stat_tck = T_MEAN;
+    stat_tck = tck_stat_t::MEAN;
     break;
 
-  case INVLENGTH:
-    if (stat_tck != T_MEAN)
+  case contrast_t::INVLENGTH:
+    if (stat_tck != tck_stat_t::MEAN)
       WARN("Cannot use track statistic other than default for inverse-length-weighted TDI generation - ignoring");
-    stat_tck = T_MEAN;
+    stat_tck = tck_stat_t::MEAN;
     break;
 
-  case SCALAR_MAP:
-  case SCALAR_MAP_COUNT:
-  case FOD_AMP:
-  case CURVATURE:
+  case contrast_t::SCALAR_MAP:
+  case contrast_t::SCALAR_MAP_COUNT:
+  case contrast_t::FOD_AMP:
+  case contrast_t::CURVATURE:
     break;
 
-  case VECTOR_FILE:
-    if (stat_tck != T_MEAN)
+  case contrast_t::VECTOR_FILE:
+    if (stat_tck != tck_stat_t::MEAN)
       WARN("Cannot use track statistic other than default when providing contrast from an external data file - "
            "ignoring");
-    stat_tck = T_MEAN;
+    stat_tck = tck_stat_t::MEAN;
     break;
 
   default:
     throw Exception("Undefined contrast mechanism");
   }
 
-  header.keyval()["twi_contrast"] = contrasts[contrast];
-  header.keyval()["twi_vox_stat"] = voxel_statistics[stat_vox];
-  header.keyval()["twi_tck_stat"] = track_statistics[stat_tck];
+  header.keyval()["twi_contrast"] = Mapping::contrast_names.at(contrast).choice;
+  header.keyval()["twi_vox_stat"] = Mapping::voxel_statistic_names.at(stat_vox);
+  header.keyval()["twi_tck_stat"] = Mapping::track_statistic_names.at(stat_tck).choice;
   if (backtrack)
     header.keyval()["twi_backtrack"] = "1";
 
@@ -467,13 +470,14 @@ void run() {
 
   // Get header datatype based on user input, or select an appropriate datatype automatically
   header.datatype() = DataType::Undefined;
-  if (writer_type == DEC)
+  if (writer_type == writer_dim::DEC)
     header.datatype() = DataType::Float32;
 
   opt = get_options("datatype");
   if (!opt.empty()) {
-    if (writer_type == DEC || writer_type == TOD) {
-      WARN("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) + " processing;" + //
+    if (writer_type == writer_dim::DEC || writer_type == writer_dim::TOD) {
+      WARN("Can't manually set datatype for " + str(Mapping::output_dimension_names.at(writer_type)) +
+           " processing;" + //
            " overriding to Float32");
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
@@ -488,8 +492,8 @@ void run() {
   }
 
   DataType default_datatype = DataType::Float32;
-  if ((writer_type == GREYSCALE || writer_type == DIXEL) && !have_weights &&
-      ((!precise && contrast == TDI) || contrast == SCALAR_MAP_COUNT))
+  if ((writer_type == writer_dim::GREYSCALE || writer_type == writer_dim::DIXEL) && !have_weights &&
+      ((!precise && contrast == contrast_t::TDI) || contrast == contrast_t::SCALAR_MAP_COUNT))
     default_datatype = DataType::UInt32;
   header.datatype() = determine_datatype(header.datatype(), contrast, default_datatype, precise);
   header.datatype().set_byte_order_native();
@@ -501,119 +505,38 @@ void run() {
     header.keyval()["map_zero"] = "1";
 
   // Produce a useful INFO message
-  std::string msg = std::string("Generating ") + Mapping::writer_dims[writer_type] + " image with ";
-  switch (contrast) {
-  case TDI:
-    msg += "density";
-    break;
-  case LENGTH:
-    msg += "length";
-    break;
-  case INVLENGTH:
-    msg += "inverse length";
-    break;
-  case SCALAR_MAP:
-    msg += "scalar map";
-    break;
-  case SCALAR_MAP_COUNT:
-    msg += "scalar-map-thresholded tdi";
-    break;
-  case FOD_AMP:
-    msg += "FOD amplitude";
-    break;
-  case CURVATURE:
-    msg += "curvature";
-    break;
-  case VECTOR_FILE:
-    msg += "external-file-based";
-    break;
-  default:
-    msg += "ERROR";
-    break;
-  }
-  msg += " contrast";
-  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP || contrast == CURVATURE)
+  std::string msg = std::string("Generating ") + Mapping::output_dimension_names.at(writer_type) + " image" + " with " +
+                    Mapping::contrast_names.at(contrast).description + " contrast";
+  if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT ||
+      contrast == contrast_t::FOD_AMP || contrast == contrast_t::CURVATURE)
     msg += ", ";
   else
-    msg += " and ";
-  switch (stat_vox) {
-  case V_SUM:
-    msg += "summed";
-    break;
-  case V_MIN:
-    msg += "minimum";
-    break;
-  case V_MEAN:
-    msg += "mean";
-    break;
-  case V_MAX:
-    msg += "maximum";
-    break;
-  default:
-    msg += "ERROR";
-    break;
-  }
-  msg += " per-voxel statistic";
-  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP || contrast == CURVATURE) {
-    msg += " and ";
-    switch (stat_tck) {
-    case T_SUM:
-      msg += "summed";
-      break;
-    case T_MIN:
-      msg += "minimum";
-      break;
-    case T_MEAN:
-      msg += "mean";
-      break;
-    case T_MAX:
-      msg += "maximum";
-      break;
-    case T_MEDIAN:
-      msg += "median";
-      break;
-    case T_MEAN_NONZERO:
-      msg += "mean (nonzero)";
-      break;
-    case GAUSSIAN:
-      msg += "gaussian (FWHM " + str(gaussian_fwhm_tck) + "mm)";
-      break;
-    case ENDS_MIN:
-      msg += "endpoints (minimum)";
-      break;
-    case ENDS_MEAN:
-      msg += "endpoints (mean)";
-      break;
-    case ENDS_MAX:
-      msg += "endpoints (maximum)";
-      break;
-    case ENDS_PROD:
-      msg += "endpoints (product)";
-      break;
-    default:
-      throw Exception("Invalid track-wise statistic detected");
-    }
-    msg += " per-track statistic";
+    msg += " and " + Mapping::voxel_statistic_names.at(stat_vox) + " per-voxel statistic";
+  if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT ||
+      contrast == contrast_t::FOD_AMP || contrast == contrast_t::CURVATURE) {
+    msg += " and " + Mapping::track_statistic_names.at(stat_tck).description + " per-track statistic";
   }
   INFO(msg);
 
   // Start initialising members for multi-threaded calculation
   TrackLoader loader(file, num_tracks);
 
-  std::unique_ptr<TrackMapperTWI> mapper((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper(header, contrast))
-                                                                : (new TrackMapperTWI(header, contrast, stat_tck)));
+  std::unique_ptr<TrackMapperTWI> mapper((stat_tck == tck_stat_t::GAUSSIAN)
+                                             ? (new Gaussian::TrackMapper(header, contrast))
+                                             : (new TrackMapperTWI(header, contrast, stat_tck)));
   mapper->set_upsample_ratio(upsample_ratio);
   mapper->set_map_zero(map_zero);
   mapper->set_use_precise_mapping(precise);
   mapper->set_map_ends_only(ends_only);
-  if (writer_type == DIXEL)
+  if (writer_type == writer_dim::DIXEL)
     mapper->create_dixel_plugin(*dirs);
-  if (writer_type == TOD)
+  if (writer_type == writer_dim::TOD)
     mapper->create_tod_plugin(header.size(3));
-  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
+  if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT ||
+      contrast == contrast_t::FOD_AMP) {
     opt = get_options("image");
     if (opt.empty()) {
-      if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+      if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT)
         throw Exception("If using 'scalar_map' or 'scalar_map_count' contrast, must provide the relevant scalar image "
                         "using -image option");
       else
@@ -621,7 +544,7 @@ void run() {
             "If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
     const std::string assoc_image(opt[0][0]);
-    if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
+    if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT) {
       mapper->add_scalar_image(assoc_image);
       if (backtrack)
         mapper->set_backtrack();
@@ -629,7 +552,7 @@ void run() {
       mapper->add_fod_image(assoc_image);
     }
     header.keyval()["twi_assoc_image"] = Path::basename(assoc_image);
-  } else if (contrast == VECTOR_FILE) {
+  } else if (contrast == contrast_t::VECTOR_FILE) {
     opt = get_options("vector_file");
     if (opt.empty())
       throw Exception(
@@ -641,53 +564,53 @@ void run() {
 
   std::unique_ptr<MapWriterBase> writer;
   switch (writer_type) {
-  case UNDEFINED:
+  case writer_dim::UNDEFINED:
     throw Exception("Invalid TWI writer image dimensionality");
-  case GREYSCALE:
-    writer.reset(make_writer(header, argument[1], stat_vox, GREYSCALE));
+  case writer_dim::GREYSCALE:
+    writer.reset(make_writer(header, argument[1], stat_vox, writer_dim::GREYSCALE));
     break;
-  case DEC:
-    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, DEC));
+  case writer_dim::DEC:
+    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, writer_dim::DEC));
     break;
-  case DIXEL:
-    writer.reset(make_writer(header, argument[1], stat_vox, DIXEL));
+  case writer_dim::DIXEL:
+    writer.reset(make_writer(header, argument[1], stat_vox, writer_dim::DIXEL));
     break;
-  case TOD:
-    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, TOD));
+  case writer_dim::TOD:
+    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, writer_dim::TOD));
     break;
   }
 
   // Finally get to do some number crunching!
   // Complete branch here for Gaussian track-wise statistic; it's a nightmare to manage, so am
   //   keeping the code as separate as possible
-  if (stat_tck == GAUSSIAN) {
+  if (stat_tck == tck_stat_t::GAUSSIAN) {
     Gaussian::TrackMapper *const mapper_ptr = dynamic_cast<Gaussian::TrackMapper *>(mapper.get());
     mapper_ptr->set_gaussian_FWHM(gaussian_fwhm_tck);
     switch (writer_type) {
-    case UNDEFINED:
+    case writer_dim::UNDEFINED:
       throw Exception("Invalid TWI writer image dimensionality");
-    case GREYSCALE:
+    case writer_dim::GREYSCALE:
       Thread::run_queue(loader,
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper_ptr),
                         Thread::batch(Gaussian::SetVoxel()),
                         *writer);
       break;
-    case DEC:
+    case writer_dim::DEC:
       Thread::run_queue(loader,
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper_ptr),
                         Thread::batch(Gaussian::SetVoxelDEC()),
                         *writer);
       break;
-    case DIXEL:
+    case writer_dim::DIXEL:
       Thread::run_queue(loader,
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper_ptr),
                         Thread::batch(Gaussian::SetDixel()),
                         *writer);
       break;
-    case TOD:
+    case writer_dim::TOD:
       Thread::run_queue(loader,
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper_ptr),
@@ -697,30 +620,30 @@ void run() {
     }
   } else {
     switch (writer_type) {
-    case UNDEFINED:
+    case writer_dim::UNDEFINED:
       throw Exception("Invalid TWI writer image dimensionality");
-    case GREYSCALE:
+    case writer_dim::GREYSCALE:
       Thread::run_queue(loader,
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper),
                         Thread::batch(SetVoxel()),
                         *writer);
       break;
-    case DEC:
+    case writer_dim::DEC:
       Thread::run_queue(loader,
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper),
                         Thread::batch(SetVoxelDEC()),
                         *writer);
       break;
-    case DIXEL:
+    case writer_dim::DIXEL:
       Thread::run_queue(loader,
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper),
                         Thread::batch(SetDixel()),
                         *writer);
       break;
-    case TOD:
+    case writer_dim::TOD:
       Thread::run_queue(loader,
                         Thread::batch(Tractography::Streamline<float>()),
                         Thread::multi(*mapper),

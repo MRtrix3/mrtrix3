@@ -25,18 +25,16 @@
 #include "mrtrix.h"
 #include "mrtrix_version.h"
 #ifdef MRTRIX_PROJECT
-namespace MR {
-namespace App {
+namespace MR::App {
 void set_project_version();
-}
-} // namespace MR
+} // namespace MR::App
 #endif
 
 #define MRTRIX_UPDATED_API
 
 #ifdef MRTRIX_AS_R_LIBRARY
 
-extern "C" void R_main(int *cmdline_argc, char **cmdline_argv) {
+extern "C" void R_main(int *cmdline_argc, char **cmdline_argv) { // check_syntax off
 #ifdef MRTRIX_PROJECT
   ::MR::App::set_project_version();
 #endif
@@ -57,19 +55,19 @@ extern "C" void R_main(int *cmdline_argc, char **cmdline_argv) {
   }
 }
 
-extern "C" void R_usage(char **output) {
+extern "C" void R_usage(char **output) { // check_syntax off
   ::MR::App::DESCRIPTION.clear();
   ::MR::App::ARGUMENTS.clear();
   ::MR::App::OPTIONS.clear();
   usage();
   std::string s = MR::App::full_usage();
   *output = new char[s.size() + 1];
-  strncpy(*output, s.c_str(), s.size() + 1);
+  strncpy(*output, s.c_str(), s.size() + 1); // check_syntax off
 }
 
 #else
 
-int main(int cmdline_argc, char **cmdline_argv) {
+int main(int cmdline_argc, char **cmdline_argv) { // check_syntax off
   if (MR::App::mrtrix_version != MR::App::mrtrix_executable_version) {
     MR::Exception E("executable was compiled for a different version of the MRtrix3 library!");
     E.push_back(std::string("  ") + MR::App::NAME + " version: " + MR::App::mrtrix_executable_version);
@@ -107,7 +105,7 @@ int main(int cmdline_argc, char **cmdline_argv) {
     // ENVVAR if it is set. This can be used in the CI of wrapping code,
     // ENVVAR such as the automatically generated Pydra interfaces.
     // ENVVAR Note that it will have no effect for R interfaces
-    char *parse_only = std::getenv("MRTRIX_CLI_PARSE_ONLY");
+    char *parse_only = std::getenv("MRTRIX_CLI_PARSE_ONLY"); // check_syntax off
     if (parse_only && ::MR::to<bool>(parse_only)) {
       CONSOLE("Quitting after parsing command-line arguments successfully due to environment variable "
               "'MRTRIX_CLI_PARSE_ONLY'");

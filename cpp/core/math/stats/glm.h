@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "app.h"
 #include "types.h"
 
@@ -29,7 +31,7 @@
 
 namespace MR::Math::Stats::GLM {
 
-extern const char *const column_ones_description;
+extern const std::string column_ones_description;
 
 App::OptionGroup glm_options(const std::string &element_name);
 

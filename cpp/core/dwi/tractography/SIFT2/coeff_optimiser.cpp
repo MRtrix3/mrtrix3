@@ -148,7 +148,7 @@ bool CoefficientOptimiserBase::operator()(const SIFT::TrackIndexRange &range) {
         std::ofstream out("soi_ls_coeff.csv", std::ios_base::out | std::ios_base::app | std::ios_base::ate);
         LineSearchFunctor line_search_functor(track_index, master, this_projected_step);
         for (size_t i = 0; i != 2001; ++i) {
-          const float dFs = 0.001 * (float(i) - 1000.0);
+          const float dFs = 0.001F * (static_cast<float>(i) - 1000.0F);
           if (i)
             out << ",";
           out << line_search_functor(dFs);
@@ -308,7 +308,7 @@ CoefficientOptimiserIterative::CoefficientOptimiserIterative(const CoefficientOp
 CoefficientOptimiserIterative::~CoefficientOptimiserIterative() {
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
   Thread::Mutex::Lock lock(master.mutex);
-  fprintf(stderr, "Mean number of iterations: %f\n", iter_count / float(total));
+  fprintf(stderr, "Mean number of iterations: %f\n", static_cast<float>(iter_count) / static_cast<float>(total));
 #endif
 }
 
@@ -356,7 +356,7 @@ double CoefficientOptimiserIterative::get_coeff_change(const SIFT::track_t track
       dFs += change;
     }
 
-  } while ((++iter < 100) && (abs(change) > 0.001));
+  } while ((++iter < 100) && (std::fabs(change) > 0.001));
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
   iter_count += iter;

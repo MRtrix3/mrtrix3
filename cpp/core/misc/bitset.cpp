@@ -16,6 +16,8 @@
 
 #include "misc/bitset.h"
 
+#include <array>
+
 namespace MR {
 
 const uint8_t BitSet::masks[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
@@ -358,7 +360,8 @@ std::ostream &operator<<(std::ostream &stream, const BitSet &d) {
   if (!d.bytes)
     return stream;
 
-  static const char dbyte_to_hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+  static const std::array<char, 16> dbyte_to_hex{
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
   auto byte_to_hex = [](const uint8_t d) {
     std::string out;

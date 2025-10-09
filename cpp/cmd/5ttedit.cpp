@@ -100,7 +100,7 @@ public:
       }
       if (count) {
         if (count > 1) {
-          const float multiplier = 1.0 / float(count);
+          const float multiplier = 1.0 / static_cast<float>(count);
           for (size_t tissue = 0; tissue != 5; ++tissue)
             values[tissue] *= multiplier;
         }

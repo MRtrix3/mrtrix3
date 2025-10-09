@@ -90,7 +90,7 @@ public:
         jacobian_adapter.index(dim) = x[dim];
       val *= jacobian_adapter.value().template cast<default_type>().determinant();
     }
-    return (value_type)val;
+    return static_cast<value_type>(val);
   }
 
   ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }

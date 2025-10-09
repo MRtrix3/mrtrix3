@@ -42,11 +42,11 @@ void Calibrator::from_file(const std::string &path) {
     std::vector<default_type>().swap(data);
     auto V = M.row(0);
     num_bins = V.size();
-    bin_width = (V[num_bins - 1] - V[0]) / default_type(num_bins - 1);
+    bin_width = (V[num_bins - 1] - V[0]) / static_cast<default_type>(num_bins - 1);
     min = V[0] - (0.5 * bin_width);
     max = V[num_bins - 1] + (0.5 * bin_width);
     for (size_t i = 0; i != num_bins; ++i) {
-      if (abs(get_bin_centre(i) - V[i]) > 1e-5)
+      if (std::fabs(get_bin_centre(i) - V[i]) > 1e-5)
         throw Exception("Non-equal spacing in histogram bin centres");
     }
   } catch (Exception &e) {
@@ -57,7 +57,7 @@ void Calibrator::from_file(const std::string &path) {
 void Calibrator::finalize(const size_t num_volumes, const bool is_integer) {
   if (!std::isfinite(bin_width)) {
     if (num_bins) {
-      bin_width = (max - min) / default_type(num_bins);
+      bin_width = (max - min) / static_cast<default_type>(num_bins);
     } else {
       // Freedman-Diaconis rule for selecting bin size for a histogram
       // Sometimes data from multiple volumes are used for calibration, but
@@ -75,7 +75,7 @@ void Calibrator::finalize(const size_t num_volumes, const bool is_integer) {
         // Now set the number of bins, and recalculate the bin width, to ensure
         //   evenly-spaced bins from min to max
         num_bins = std::round((max - min) / get_bin_width());
-        bin_width = (max - min) / default_type(num_bins);
+        bin_width = (max - min) / static_cast<default_type>(num_bins);
       }
     }
   }
@@ -95,7 +95,7 @@ default_type Calibrator::get_iqr() {
 Data::cdf_type Data::cdf() const {
   cdf_type result(list.size());
   size_t count = 0;
-  for (size_t i = 0; i != size_t(list.size()); ++i) {
+  for (Eigen::Index i = 0; i != list.size(); ++i) {
     count += list[i];
     result[i] = count;
   }
@@ -129,10 +129,10 @@ default_type Data::first_min() const {
 
 default_type Data::entropy() const {
   size_t totalFrequency = 0;
-  for (size_t i = 0; i < size_t(list.size()); i++)
+  for (Eigen::Index i = 0; i < list.size(); i++)
     totalFrequency += list[i];
   default_type imageEntropy = 0;
-  for (size_t i = 0; i < size_t(list.size()); i++) {
+  for (Eigen::Index i = 0; i < list.size(); i++) {
     const default_type probability = static_cast<default_type>(list[i]) / static_cast<default_type>(totalFrequency);
     if (probability > 0.99 / totalFrequency)
       imageEntropy += -probability * log(probability);
@@ -150,8 +150,8 @@ Matcher::Matcher(const Data &input, const Data &target)
   //   (linearly approximate the index that would result in the same value in the target CDF)
   mapping = vector_type::Zero(cdf_input.size() + 1);
   size_t upper_target_index = 1;
-  for (size_t input_index = 1; input_index != size_t(cdf_input.size()); ++input_index) {
-    while (upper_target_index < size_t(cdf_target.size()) && cdf_target[upper_target_index] < cdf_input[input_index])
+  for (Eigen::Index input_index = 1; input_index != cdf_input.size(); ++input_index) {
+    while (upper_target_index < cdf_target.size() && cdf_target[upper_target_index] < cdf_input[input_index])
       ++upper_target_index;
     const size_t lower_target_index = upper_target_index - 1;
     const default_type mu = (cdf_input[input_index] - cdf_target[lower_target_index]) /
@@ -165,8 +165,8 @@ default_type Matcher::operator()(const default_type in) const {
   default_type output_pos;
   if (input_bin_float < 0.0) {
     output_pos = 0.0;
-  } else if (input_bin_float >= default_type(calib_input.get_num_bins())) {
-    output_pos = default_type(calib_input.get_num_bins());
+  } else if (input_bin_float >= static_cast<default_type>(calib_input.get_num_bins())) {
+    output_pos = static_cast<default_type>(calib_input.get_num_bins());
   } else {
     const size_t lower = std::floor(input_bin_float);
     const default_type mu = input_bin_float - lower;

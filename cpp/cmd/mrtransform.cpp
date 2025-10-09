@@ -426,7 +426,7 @@ void run() {
   const bool is_possible_fod_image =
       input_header.ndim() == 4 &&  //
       input_header.size(3) >= 6 && //
-      input_header.size(3) == (int)Math::SH::NforL(Math::SH::LforN(input_header.size(3)));
+      input_header.size(3) == static_cast<ssize_t>(Math::SH::NforL(Math::SH::LforN(input_header.size(3))));
 
   // reorientation
   if (!get_options("no_reorientation").empty())
@@ -455,8 +455,8 @@ void run() {
 
   // Intensity / FOD modulation
   opt = get_options("modulate");
-  const bool modulate_fod = !opt.empty() && (int)opt[0][0] == 0;
-  const bool modulate_jac = !opt.empty() && (int)opt[0][0] == 1;
+  const bool modulate_fod = !opt.empty() && static_cast<int>(opt[0][0]) == 0;
+  const bool modulate_jac = !opt.empty() && static_cast<int>(opt[0][0]) == 1;
 
   const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)
@@ -498,7 +498,7 @@ void run() {
     }
     if (grad.rows()) {
       try {
-        if (input_header.size(3) != (ssize_t)grad.rows()) {
+        if (input_header.size(3) != static_cast<ssize_t>(grad.rows())) {
           throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
                           " to number of image volumes (" + str(input_header.size(3)) + ")");
         }
@@ -528,7 +528,7 @@ void run() {
       }
       try {
         const auto lines = split_lines(hit->second);
-        if (lines.size() != size_t(input_header.size(3)))
+        if (lines.size() != static_cast<size_t>(input_header.size(3)))
           throw Exception("Number of lines in header entry \"directions\" (" + str(lines.size()) + ")" +
                           " does not match number of volumes in image (" + str(input_header.size(3)) + ")");
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
@@ -540,7 +540,7 @@ void run() {
                               " (expected matrix with 2 or 3 columns;" +      //
                               " data has " + str(v.size()) + " columns)");
             result.resize(lines.size(), v.size());
-          } else if (v.size() != size_t(result.cols())) {
+          } else if (v.size() != static_cast<size_t>(result.cols())) {
             throw Exception("Inconsistent number of columns in \"directions\" field");
           }
           if (result.cols() == 2) {
@@ -570,7 +570,7 @@ void run() {
   MR::Interp::interp_type interp = default_interp;
   opt = get_options("interp");
   if (!opt.empty()) {
-    interp = MR::Interp::interp_type(ssize_t(opt[0][0]));
+    interp = MR::Interp::interp_type(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]));
     if (!warp && !template_header)
       WARN("interpolator choice ignored since the input image will not be regridded");
   }

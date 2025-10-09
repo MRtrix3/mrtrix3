@@ -41,10 +41,10 @@ void check(const Header &H) {
     //   therefore once this check has completed the image can no longer be opened
     auto test = Image<float>::open(H.name());
     for (auto l = Loop("Verifying parcellation image", test)(test); l; ++l) {
-      if (std::round(float(test.value())) != test.value())
+      if (std::round(static_cast<float>(test.value())) != test.value())
         throw Exception("Floating-point number detected in image \"" + H.name() +
                         "\"; label images should contain integers only");
-      if (float(test.value()) < 0.0f)
+      if (static_cast<float>(test.value()) < 0.0F)
         throw Exception("Negative value detected in image \"" + H.name() +
                         "\"; label images should be strictly non-negative");
     }
@@ -54,7 +54,7 @@ void check(const Header &H) {
     CONSOLE("Image \"" + H.name() + "\" stored with signed integer type; need to check for negative values");
     auto test = Image<int64_t>::open(H.name());
     for (auto l = Loop("Verifying parcellation image", test)(test); l; ++l) {
-      if (int64_t(test.value()) < int64_t(0))
+      if (static_cast<int64_t>(test.value()) < int64_t(0))
         throw Exception("Negative value detected in image \"" + H.name() +
                         "\"; label images should be strictly non-negative");
     }

@@ -158,11 +158,11 @@ inline Dock::~Dock() { delete tool; }
 class __Action__ : public QAction {
   Q_OBJECT
 public:
-  __Action__(QActionGroup *parent, const char *const name, const char *const description, int index)
-      : QAction(name, parent), dock(nullptr) {
+  __Action__(QActionGroup *parent, const std::string &name, const std::string &description, int index)
+      : QAction(name.c_str(), parent), dock(nullptr) {
     setCheckable(true);
     setShortcut(tr(std::string("Ctrl+F" + str(index)).c_str()));
-    setStatusTip(tr(description));
+    setStatusTip(tr(description.c_str()));
   }
 
   virtual ~__Action__() { delete dock; }
@@ -185,8 +185,8 @@ template <class T> Dock *create(const QString &text, bool floating) {
 
 template <class T> class Action : public __Action__ {
 public:
-  Action(QActionGroup *parent, const char *const name, const char *const description, int index)
-      : __Action__(parent, name, description, index) {}
+  Action(QActionGroup *parent, const std::string &name, const std::string &description, int index)
+      : __Action__(parent, name.c_str(), description.c_str(), index) {}
 
   virtual Dock *create(bool floating) {
     dock = Tool::create<T>(this->text(), floating);

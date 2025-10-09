@@ -38,6 +38,29 @@ PNG png_handler;
 #endif
 MRtrix_sparse mrtrix_sparse_handler;
 
+const std::vector<std::string> known_extensions{
+    ".mih",
+    ".mif",
+    ".mif.gz",
+    ".img",
+    ".nii",
+    ".nii.gz",
+    ".bfloat",
+    ".bshort",
+    ".mri",
+    ".par",
+    ".mgh",
+    ".mgz",
+    ".mgh.gz",
+    ".msf",
+    ".msh",
+    ".dcm",
+#ifdef MRTRIX_PNG_SUPPORT
+    ".png",
+    ".PNG",
+#endif
+};
+
 const Base *handlers[] = {&RAM_handler,
                           &pipe_handler,
                           &dicom_handler,
@@ -57,27 +80,5 @@ const Base *handlers[] = {&RAM_handler,
 #endif
                           &mrtrix_sparse_handler,
                           nullptr};
-
-const char *known_extensions[] = {".mih",
-                                  ".mif",
-                                  ".mif.gz",
-                                  ".img",
-                                  ".nii",
-                                  ".nii.gz",
-                                  ".bfloat",
-                                  ".bshort",
-                                  ".mri",
-                                  ".par",
-                                  ".mgh",
-                                  ".mgz",
-                                  ".mgh.gz",
-                                  ".msf",
-                                  ".msh",
-                                  ".dcm",
-#ifdef MRTRIX_PNG_SUPPORT
-                                  ".png",
-                                  ".PNG",
-#endif
-                                  nullptr};
 
 } // namespace MR::Formats

@@ -35,12 +35,10 @@
 #define TO_BE(v) swap(v)
 #endif
 
-namespace MR {
-
 /** \addtogroup Binary
  * @{ */
 
-namespace ByteOrder {
+namespace MR::ByteOrder {
 
 template <typename ValueType>
 inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 1, ValueType>::type
@@ -98,9 +96,9 @@ template <typename ValueType> inline ValueType swap(const ValueType value, bool 
   return is_big_endian ? BE(value) : LE(value);
 }
 
-} // namespace ByteOrder
+} // namespace MR::ByteOrder
 
-namespace Raw {
+namespace MR::Raw {
 
 namespace {
 template <typename ValueType> ValueType *as(void *p) { return reinterpret_cast<ValueType *>(p); }
@@ -209,8 +207,6 @@ template <> inline void store<bool>(const bool value, void *data, size_t i, bool
 }
 
 //! \endcond
-} // namespace Raw
-
 /** @} */
 
-} // namespace MR
+} // namespace MR::Raw

@@ -131,7 +131,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
     Item &item(array[seq_index[n]]);
     if (!item.sequence().empty()) {
       if (maxvals[m])
-        if (item.sequence().size() != (size_t)maxvals[m])
+        if (item.sequence().size() != static_cast<size_t>(maxvals[m]))
           throw Exception("dimensions requested in image specifier \"" + specification +
                           "\" do not match supplied header information");
     } else {
@@ -147,7 +147,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
 void NameParser::Item::calc_padding(size_t maxval) {
   for (size_t i = 0; i < sequence().size(); i++) {
     assert(sequence()[i] >= 0);
-    if (maxval < (size_t)sequence()[i])
+    if (maxval < static_cast<size_t>(sequence()[i]))
       maxval = sequence()[i];
   }
 
