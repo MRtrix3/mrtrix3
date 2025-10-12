@@ -17,6 +17,7 @@
 #pragma once
 
 #include "exception.h"
+#include "mrtrix.h"
 #include "types.h"
 #include <functional>
 
@@ -26,8 +27,8 @@ class Entry {
 public:
   using basic_map_fn = std::function<Eigen::Array3f(float)>;
 
-  Entry(const std::string &name,
-        const std::string &glsl_mapping,
+  Entry(std::string_view name,
+        std::string_view glsl_mapping,
         basic_map_fn basic_mapping,
         const std::string amplitude = "",
         bool special = false,
@@ -58,7 +59,7 @@ inline size_t num_scalar() {
   return std::count_if(maps.begin(), maps.end(), [](const Entry &map) { return map.special; });
 }
 
-inline size_t index(const std::string &name) {
+inline size_t index(std::string_view name) {
   auto it = std::find_if(maps.begin(), maps.end(), [&name](const Entry &map) { return map.name == name; });
 
   if (it == maps.end())

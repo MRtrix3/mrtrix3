@@ -187,12 +187,12 @@ public:
   bool operator!() const { return !valid(); }
 
   //! get the name of the image
-  const std::string &name() const { return name_; }
+  std::string_view name() const { return name_; }
   //! get/set the name of the image
   std::string &name() { return name_; }
 
   //! return the format of the image
-  const std::string &format() const { return format_; }
+  std::string_view format() const { return format_; }
 
   //! get the 4x4 affine transformation matrix mapping image to world coordinates
   const transform_type &transform() const { return transform_; }
@@ -385,10 +385,9 @@ public:
   //! merge key/value entries from another dictionary
   void merge_keyval(const KeyValues &);
 
-  static Header open(const std::string &image_name);
-  static Header
-  create(const std::string &image_name, const Header &template_header, bool add_to_command_history = true);
-  static Header scratch(const Header &template_header, const std::string &label = "scratch image");
+  static Header open(std::string_view image_name);
+  static Header create(std::string_view image_name, const Header &template_header, bool add_to_command_history = true);
+  static Header scratch(const Header &template_header, std::string_view label = "scratch image");
 
   /*! use to prevent automatic realignment of transform matrix into
    * near-standard (RAS) coordinate system. */

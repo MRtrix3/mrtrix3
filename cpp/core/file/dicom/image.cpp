@@ -24,7 +24,7 @@
 
 namespace MR::File::Dicom {
 
-void Image::parse_item(Element &item, const std::string &dirname) {
+void Image::parse_item(Element &item, std::string_view dirname) {
   if (item.ignore_when_parsing())
     return;
 
@@ -320,16 +320,16 @@ void Image::read() {
 
 namespace {
 template <typename T, class Functor>
-void phoenix_scalar(const KeyValues &keyval, const std::string &key, const Functor &functor, T &field) {
-  const auto it = keyval.find(key);
+void phoenix_scalar(const KeyValues &keyval, std::string_view key, const Functor &functor, T &field) {
+  const auto it = keyval.find(std::string(key));
   if (it == keyval.end())
     return;
   field = functor(it->second);
 }
-template <typename T> void phoenix_vector(const KeyValues &keyval, const std::string &key, std::vector<T> &data) {
+template <typename T> void phoenix_vector(const KeyValues &keyval, std::string_view key, std::vector<T> &data) {
   data.clear();
   for (size_t index = 0;; ++index) {
-    const auto it = keyval.find(key + "[" + str(index) + "]");
+    const auto it = keyval.find(std::string(key) + "[" + str(index) + "]");
     if (it == keyval.end())
       return;
     data.push_back(to<T>(it->second));
@@ -351,10 +351,8 @@ void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
       Eigen::Matrix<default_type, 6, 1> v;
       entry.get_float(v);
       if (v.allFinite()) {
-        orientation_x = v.head(3);
-        orientation_y = v.tail(3);
-        orientation_x.normalize();
-        orientation_y.normalize();
+        orientation_x = v.head(3).normalized();
+        orientation_y = v.tail(3).normalized();
       }
     } else if (entry.key() == "ImagePositionPatient") {
       Eigen::Matrix<default_type, 3, 1> v;
@@ -370,12 +368,12 @@ void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
       phoenix_scalar(
           keyval,
           "sDiffusion.dsScheme",
-          [](const std::string &value) -> size_t { return to<size_t>(value); },
+          [](std::string_view value) -> size_t { return to<size_t>(value); },
           bipolar_flag);
       phoenix_scalar(
           keyval,
           "sKSpace.ucPhasePartialFourier",
-          [](const std::string &value) -> default_type {
+          [](std::string_view value) -> default_type {
             switch (to<size_t>(value)) {
             case 1:
               return 0.5;
@@ -393,7 +391,7 @@ void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
       phoenix_scalar(
           keyval,
           "ucReadOutMode",
-          [](const std::string &value) -> size_t { return to<size_t>(value); },
+          [](std::string_view value) -> size_t { return to<size_t>(value); },
           readoutmode_flag);
       phoenix_vector(keyval, "adFlipAngleDegree", flip_angles);
 
@@ -414,7 +412,7 @@ void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
 
 KeyValues Image::read_csa_ascii(const std::vector<std::string> &data) {
 
-  auto split_keyval = [](const std::string &s) -> std::pair<std::string, std::string> {
+  auto split_keyval = [](std::string_view s) -> std::pair<std::string, std::string> {
     const size_t delimiter = s.find_first_of("=");
     if (delimiter == std::string::npos)
       return std::make_pair(std::string(), std::string());

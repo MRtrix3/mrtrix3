@@ -53,7 +53,7 @@ public:
     return (*this)(static_cast<typename T::value_type>(val));
   }
 
-  void from_file(const std::string &);
+  void from_file(std::string_view);
 
   void finalize(const size_t num_volumes, const bool is_integer);
 

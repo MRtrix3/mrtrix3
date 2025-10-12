@@ -17,7 +17,7 @@
 #include "mrview/tool/fixel/base_fixel.h"
 
 namespace MR::GUI::MRView::Tool {
-BaseFixel::BaseFixel(const std::string &filename, Fixel &fixel_tool)
+BaseFixel::BaseFixel(std::string_view filename, Fixel &fixel_tool)
     : Displayable(filename),
       header(MR::Header::open(filename)),
       slice_fixel_indices(3),
@@ -407,7 +407,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   GL::assert_context_is_current();
 }
 
-void BaseFixel::load_image(const std::string &filename) {
+void BaseFixel::load_image(std::string_view filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;

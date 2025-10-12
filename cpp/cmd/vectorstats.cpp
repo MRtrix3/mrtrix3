@@ -79,7 +79,7 @@ using Stats::PermTest::count_matrix_type;
 
 class SubjectVectorImport : public SubjectDataImportBase {
 public:
-  SubjectVectorImport(const std::string &path) : SubjectDataImportBase(path), data(File::Matrix::load_vector(path)) {}
+  SubjectVectorImport(std::string_view path) : SubjectDataImportBase(path), data(File::Matrix::load_vector(path)) {}
 
   void operator()(matrix_type::RowXpr row) const override {
     assert(static_cast<index_type>(row.size()) == size());

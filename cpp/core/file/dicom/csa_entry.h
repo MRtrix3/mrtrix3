@@ -85,7 +85,7 @@ public:
     return true;
   }
 
-  const std::string &key() const { return name; }
+  std::string_view key() const { return name; }
 
   uint32_t num_items() const { return nitems; }
   uint32_t size() const { return num; }

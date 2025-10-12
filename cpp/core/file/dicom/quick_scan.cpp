@@ -23,7 +23,7 @@
 namespace MR::File::Dicom {
 
 bool QuickScan::read(
-    const std::string &file_name, bool print_DICOM_fields, bool print_CSA_fields, bool print_Phoenix, bool force_read) {
+    std::string_view file_name, bool print_DICOM_fields, bool print_CSA_fields, bool print_Phoenix, bool force_read) {
   filename = file_name;
   modality.clear();
   patient.clear();

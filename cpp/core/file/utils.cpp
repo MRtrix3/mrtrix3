@@ -17,6 +17,7 @@
 #include "file/utils.h"
 
 #include <fcntl.h>
+#include <string>
 #include <unistd.h>
 
 #include "app.h"
@@ -79,7 +80,7 @@ std::string __get_tmpfile_dir() {
   return File::Config::get("TmpFileDir", default_tmpdir);
 }
 
-const std::string &tmpfile_dir() {
+std::string_view tmpfile_dir() {
   static const std::string __tmpfile_dir = __get_tmpfile_dir();
   return __tmpfile_dir;
 }
@@ -106,35 +107,38 @@ std::string __get_tmpfile_prefix() {
   return File::Config::get("TmpFilePrefix", "mrtrix-tmp-");
 }
 
-const std::string &tmpfile_prefix() {
+std::string_view tmpfile_prefix() {
   static const std::string __tmpfile_prefix = __get_tmpfile_prefix();
   return __tmpfile_prefix;
 }
 
 } // namespace
 
-void remove(const std::string &file) {
-  if (std::remove(file.c_str()) != 0)
-    throw Exception("error deleting file \"" + file + "\": " + strerror(errno));
+void remove(std::string_view filename) {
+  const std::string temp(filename);
+  if (std::remove(temp.c_str()) != 0)
+    throw Exception("error deleting file \"" + temp + "\": " + strerror(errno));
 }
 
-void create(const std::string &filename, int64_t size) {
-  DEBUG(std::string("creating ") + (size ? "" : "empty ") + "file \"" + filename + "\"" +
+void create(std::string_view filename, int64_t size) {
+  const std::string temp(filename);
+  DEBUG(std::string("creating ") + (size ? "" : "empty ") + "file \"" + temp + "\"" +
         (size == 0 ? "" : (" with size " + str(size))));
 
   int fid(0);
-  while ((fid = open(filename.c_str(),
-                     O_CREAT | O_RDWR | O_EXCL,
-                     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) < 0) {
+  while ((fid = open(temp.c_str(),                                              //
+                     O_CREAT | O_RDWR | O_EXCL,                                 //
+                     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) //
+          ) < 0) {                                                              //
     if (errno == EEXIST) {
       App::check_overwrite(filename);
-      INFO("file \"" + filename + "\" already exists - removing");
+      INFO("file \"" + temp + "\" already exists - removing");
       remove(filename);
     } else
-      throw Exception("error creating output file \"" + filename + "\": " + std::strerror(errno));
+      throw Exception("error creating output file \"" + temp + "\": " + std::strerror(errno));
   }
   if (fid < 0) {
-    std::string mesg("error creating file \"" + filename + "\": " + strerror(errno));
+    std::string mesg("error creating file \"" + temp + "\": " + strerror(errno));
     if (errno == EEXIST)
       mesg += " (use -force option to force overwrite)";
     throw Exception(mesg);
@@ -148,19 +152,20 @@ void create(const std::string &filename, int64_t size) {
     throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
 }
 
-void resize(const std::string &filename, int64_t size) {
-  DEBUG("resizing file \"" + filename + "\" to " + str(size));
+void resize(std::string_view filename, int64_t size) {
+  const std::string temp(filename);
+  DEBUG("resizing file \"" + temp + "\" to " + str(size));
 
-  const int fd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+  const int fd = open(temp.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   if (fd < 0)
-    throw Exception("error opening file \"" + filename + "\" for resizing: " + strerror(errno));
+    throw Exception("error opening file \"" + temp + "\" for resizing: " + strerror(errno));
   const int status = ftruncate(fd, size);
   close(fd);
   if (status != 0)
-    throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
+    throw Exception("cannot resize file \"" + temp + "\": " + strerror(errno));
 }
 
-bool is_tempfile(const std::string &name, const std::string &suffix) {
+bool is_tempfile(std::string_view name, std::string_view suffix) {
   if (Path::basename(name).compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
     return false;
   if (!suffix.empty() && !Path::has_suffix(name, suffix))
@@ -168,7 +173,7 @@ bool is_tempfile(const std::string &name, const std::string &suffix) {
   return true;
 }
 
-std::string create_tempfile(int64_t size, const std::string &suffix) {
+std::string create_tempfile(int64_t size, std::string_view suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
   std::string filename(Path::join(tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
@@ -194,17 +199,18 @@ std::string create_tempfile(int64_t size, const std::string &suffix) {
   return filename;
 }
 
-void mkdir(const std::string &folder) {
-  if (::mkdir(folder.c_str()
+void mkdir(std::string_view folder) {
+  const std::string temp(folder);
+  if (::mkdir(temp.c_str()
 #ifndef MRTRIX_WINDOWS
                   ,
               0777
 #endif
               ) != 0)
-    throw Exception("error creating folder \"" + folder + "\": " + strerror(errno));
+    throw Exception("error creating folder \"" + temp + "\": " + strerror(errno));
 }
 
-void rmdir(const std::string &folder, bool recursive) {
+void rmdir(std::string_view folder, bool recursive) {
   if (recursive) {
     Path::Dir dir(folder);
     std::string entry;
@@ -216,9 +222,10 @@ void rmdir(const std::string &folder, bool recursive) {
         remove(path);
     }
   }
-  DEBUG("deleting folder \"" + folder + "\"...");
-  if (::rmdir(folder.c_str()))
-    throw Exception("error deleting folder \"" + folder + "\": " + strerror(errno));
+  const std::string temp(folder);
+  DEBUG("deleting folder \"" + temp + "\"...");
+  if (::rmdir(temp.c_str()))
+    throw Exception("error deleting folder \"" + temp + "\": " + strerror(errno));
 }
 
 } // namespace MR::File

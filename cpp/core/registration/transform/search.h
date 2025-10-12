@@ -102,7 +102,7 @@ public:
                      Image<default_type>,
                      Interp::Nearest<Image<default_type>>>;
 
-  void write_images(const std::string &im1_path, const std::string &im2_path) {
+  void write_images(std::string_view im1_path, std::string_view im2_path) {
     Image<default_type> image1_midway;
     Image<default_type> image2_midway;
 

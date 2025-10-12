@@ -21,7 +21,7 @@
 namespace MR::GUI::MRView::Tool {
 class Legacy : public FixelType<FixelLegacyType> {
 public:
-  Legacy(const std::string &filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool) {
+  Legacy(std::string_view filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool) {
     value_types = {"unity", "fixel size", "associated value"};
     colour_types = {"direction", "fixel size", "associated value"};
     threshold_types = {"fixel size", "associated value"};

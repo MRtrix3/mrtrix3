@@ -261,9 +261,7 @@ void convert_new2old() {
   }
 }
 
-bool is_old_format(const std::string &path) {
-  return (Path::has_suffix(path, ".msf") || Path::has_suffix(path, ".msh"));
-}
+bool is_old_format(std::string_view path) { return (Path::has_suffix(path, ".msf") || Path::has_suffix(path, ".msh")); }
 
 void run() {
   // Detect in which direction the conversion is occurring

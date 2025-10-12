@@ -48,7 +48,7 @@ public:
   }
 
   template <class HeaderType>
-  ZClean(const HeaderType &in, const std::string &message)
+  ZClean(const HeaderType &in, std::string_view message)
       : Base(in, message),
         zupper(2.5),
         zlower(2.5),

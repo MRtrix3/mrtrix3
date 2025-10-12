@@ -47,7 +47,7 @@ public:
 template <class ValueType = float> class Reader : public __ReaderBase__, public ReaderInterface<ValueType> {
 public:
   //! open the \c file for reading and load header into \c properties
-  Reader(const std::string &file, Properties &properties) {
+  Reader(std::string_view file, Properties &properties) {
     open(file, "tracks", properties);
     auto opt = App::get_options("tck_weights_in");
     if (!opt.empty())
@@ -183,7 +183,7 @@ public:
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(const std::string &file, const Properties &properties) : __WriterBase__<ValueType>(file) {
+  WriterUnbuffered(std::string_view file, const Properties &properties) : __WriterBase__<ValueType>(file) {
 
     if (!Path::has_suffix(name, ".tck"))
       throw Exception("output track files must use the .tck suffix");
@@ -235,7 +235,7 @@ public:
   }
 
   //! set the path to the track weights
-  void set_weights_path(const std::string &path) {
+  void set_weights_path(std::string_view path) {
     if (!weights_name.empty())
       throw Exception("Cannot change output streamline weights file path");
     weights_name = path;
@@ -262,7 +262,7 @@ protected:
   }
 
   //! write track weights data to file
-  void write_weights(const std::string &contents) {
+  void write_weights(std::string_view contents) {
     File::OFStream out(weights_name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out << contents;
     if (!out.good())
@@ -328,7 +328,7 @@ public:
   // CONF writing track files. MRtrix will store the output tracks in a
   // CONF relatively large buffer to limit the number of write() calls,
   // CONF avoid associated issues such as file fragmentation.
-  Writer(const std::string &file, const Properties &properties, size_t default_buffer_capacity = 16777216)
+  Writer(std::string_view file, const Properties &properties, size_t default_buffer_capacity = 16777216)
       : WriterUnbuffered<ValueType>(file, properties),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
         buffer(new vector_type[buffer_capacity]),

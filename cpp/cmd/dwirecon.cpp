@@ -149,7 +149,7 @@ using data_vector_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
 // Shared functions //
 //////////////////////
 
-Image<float> get_field_image(const Image<float> &dwi_in, const std::string &operation, const bool compulsory) {
+Image<float> get_field_image(const Image<float> &dwi_in, std::string_view operation, const bool compulsory) {
 
   auto opt = get_options("field");
   Image<float> field_image;

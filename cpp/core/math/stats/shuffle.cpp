@@ -375,7 +375,7 @@ void Shuffler::initialise(const error_t error_types,
     nshuffles = max_shuffles;
 }
 
-index_array_type Shuffler::load_blocks(const std::string &filename, const bool equal_sizes) {
+index_array_type Shuffler::load_blocks(std::string_view filename, const bool equal_sizes) {
   index_array_type data = File::Matrix::load_vector<index_type>(filename).array();
   if (static_cast<index_type>(data.size()) != rows)
     throw Exception("Number of entries in file \"" + filename + "\" (" + str(data.size()) +
@@ -573,7 +573,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
     write(indices);
 }
 
-void Shuffler::load_permutations(const std::string &filename) {
+void Shuffler::load_permutations(std::string_view filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
   if (temp.empty())
     throw Exception("no data found in permutations file: " + str(filename));

@@ -110,7 +110,7 @@ public:
   void perform_FOD_segmentation(Image<float> &);
   void scale_FDs_by_GM();
 
-  void map_streamlines(const std::string &);
+  void map_streamlines(std::string_view);
 
   virtual bool operator()(const FMLS::FOD_lobes &in);
   virtual bool operator()(const Mapping::SetDixel &in);
@@ -120,10 +120,10 @@ public:
   default_type mu() const { return FOD_sum / TD_sum; }
   bool have_act_data() const { return act_5tt.valid(); }
 
-  void output_proc_mask(const std::string &);
-  void output_5tt_image(const std::string &);
-  void initialise_debug_image_output(const std::string &) const;
-  void output_all_debug_images(const std::string &, const std::string &) const;
+  void output_proc_mask(std::string_view);
+  void output_5tt_image(std::string_view);
+  void initialise_debug_image_output(std::string_view) const;
+  void output_all_debug_images(std::string_view, std::string_view) const;
 
   using Mapping::Fixel_TD_map<Fixel>::begin;
 
@@ -137,17 +137,17 @@ protected:
   bool have_null_lobes;
 
   // The definitions of these functions are located in dwi/tractography/SIFT/output.h
-  void output_target_voxel(const std::string &) const;
-  void output_target_sh(const std::string &) const;
-  void output_target_fixel(const std::string &) const;
-  void output_tdi_voxel(const std::string &) const;
-  void output_tdi_null_lobes(const std::string &) const;
-  void output_tdi_sh(const std::string &) const;
-  void output_tdi_fixel(const std::string &) const;
-  void output_errors_voxel(const std::string &, const std::string &, const std::string &, const std::string &) const;
-  void output_errors_fixel(const std::string &, const std::string &, const std::string &) const;
-  void output_scatterplot(const std::string &) const;
-  void output_fixel_count_image(const std::string &) const;
+  void output_target_voxel(std::string_view) const;
+  void output_target_sh(std::string_view) const;
+  void output_target_fixel(std::string_view) const;
+  void output_tdi_voxel(std::string_view) const;
+  void output_tdi_null_lobes(std::string_view) const;
+  void output_tdi_sh(std::string_view) const;
+  void output_tdi_fixel(std::string_view) const;
+  void output_errors_voxel(std::string_view, std::string_view, std::string_view, std::string_view) const;
+  void output_errors_fixel(std::string_view, std::string_view, std::string_view) const;
+  void output_scatterplot(std::string_view) const;
+  void output_fixel_count_image(std::string_view) const;
 };
 
 template <class Fixel> void ModelBase<Fixel>::perform_FOD_segmentation(Image<float> &data) {
@@ -181,7 +181,7 @@ template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
   }
 }
 
-template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::string &path) {
+template <class Fixel> void ModelBase<Fixel>::map_streamlines(std::string_view path) {
   Tractography::Properties properties;
   Tractography::Reader<> file(path, properties);
 
@@ -242,16 +242,16 @@ template <class Fixel> default_type ModelBase<Fixel>::calc_cost_function() const
   return cost;
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_proc_mask(const std::string &path) { save(proc_mask, path); }
+template <class Fixel> void ModelBase<Fixel>::output_proc_mask(std::string_view path) { save(proc_mask, path); }
 
-template <class Fixel> void ModelBase<Fixel>::output_5tt_image(const std::string &path) {
+template <class Fixel> void ModelBase<Fixel>::output_5tt_image(std::string_view path) {
   if (!have_act_data())
     throw Exception("Cannot export 5TT image; no such data present");
   save(act_5tt, path);
 }
 
-template <class Fixel> void ModelBase<Fixel>::initialise_debug_image_output(const std::string &dirpath) const {
-  File::mkdir(dirpath);
+template <class Fixel> void ModelBase<Fixel>::initialise_debug_image_output(std::string_view dirpath) const {
+  File::mkdir(std::string(dirpath));
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
   Header H_index(this->header());
   H_index.ndim() = 4;
@@ -297,7 +297,7 @@ template <class Fixel> void ModelBase<Fixel>::initialise_debug_image_output(cons
 }
 
 template <class Fixel>
-void ModelBase<Fixel>::output_all_debug_images(const std::string &dirpath, const std::string &prefix) const {
+void ModelBase<Fixel>::output_all_debug_images(std::string_view dirpath, std::string_view prefix) const {
   output_tdi_voxel(Path::join(dirpath, prefix + "_tdi_voxel.mif"));
   if (have_null_lobes)
     output_tdi_null_lobes(Path::join(dirpath, prefix + "_tdi_nulllobes.mif"));

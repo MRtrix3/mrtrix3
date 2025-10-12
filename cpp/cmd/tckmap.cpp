@@ -224,7 +224,7 @@ void usage () {
 }
 // clang-format on
 
-MapWriterBase *make_writer(Header &H, const std::string &name, const vox_stat_t stat_vox, const writer_dim dim) {
+MapWriterBase *make_writer(Header &H, std::string_view name, const vox_stat_t stat_vox, const writer_dim dim) {
   MapWriterBase *writer = nullptr;
   const uint8_t dt = static_cast<uint8_t>(H.datatype()()) & DataType::Type;
   if (dt == DataType::Bit)

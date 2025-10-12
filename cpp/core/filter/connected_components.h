@@ -194,7 +194,7 @@ public:
   }
 
   template <class HeaderType>
-  ConnectedComponents(const HeaderType &in, const std::string &message) : ConnectedComponents(in) {
+  ConnectedComponents(const HeaderType &in, std::string_view message) : ConnectedComponents(in) {
     set_message(message);
   }
 

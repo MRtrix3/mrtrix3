@@ -28,7 +28,7 @@ class Tensor_Prob : public Tensor_Det {
 public:
   class Shared : public Tensor_Det::Shared {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : Tensor_Det::Shared(diff_path, property_set) {
 
       if (is_act() && act().backtrack())

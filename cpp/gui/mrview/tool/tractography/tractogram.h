@@ -31,7 +31,7 @@ class Tractogram : public Displayable {
   Q_OBJECT
 
 public:
-  Tractogram(Tractography &tool, const std::string &file_path);
+  Tractogram(Tractography &tool, std::string_view file_path);
 
   ~Tractogram();
 
@@ -47,8 +47,8 @@ public:
   void load_tracks();
 
   void load_end_colours();
-  void load_intensity_track_scalars(const std::string &);
-  void load_threshold_track_scalars(const std::string &);
+  void load_intensity_track_scalars(std::string_view);
+  void load_threshold_track_scalars(std::string_view);
   void erase_colour_data();
   void erase_intensity_scalar_data();
   void erase_threshold_scalar_data();

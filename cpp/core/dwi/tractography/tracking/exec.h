@@ -43,8 +43,7 @@ constexpr ssize_t streamline_generation_batch_size = 10;
 template <class Method> class Exec {
 
 public:
-  static void
-  run(const std::string &diff_path, const std::string &destination, DWI::Tractography::Properties &properties) {
+  static void run(std::string_view diff_path, std::string_view destination, DWI::Tractography::Properties &properties) {
 
     if (properties.find("seed_dynamic") == properties.end()) {
 
@@ -56,7 +55,7 @@ public:
 
     } else {
 
-      const std::string &fod_path(properties["seed_dynamic"]);
+      std::string_view fod_path(properties["seed_dynamic"]);
       const std::string max_num_tracks = properties["max_num_tracks"];
       if (max_num_tracks.empty())
         throw Exception("Dynamic seeding requires setting the desired number of tracks using the -select option");

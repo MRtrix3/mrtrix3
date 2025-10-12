@@ -27,9 +27,9 @@ class Patient;
 class Tree : public std::vector<std::shared_ptr<Patient>> {
 public:
   std::string description;
-  void read(const std::string &filename);
+  void read(std::string_view filename);
   std::shared_ptr<Patient>
-  find(const std::string &patient_name, const std::string &patient_ID, const std::string &patient_DOB);
+  find(std::string_view patient_name, std::string_view patient_ID, std::string_view patient_DOB);
 
   void sort() {
     std::sort(begin(), end(), compare_ptr_contents());
@@ -41,8 +41,8 @@ public:
   }
 
 protected:
-  void read_dir(const std::string &filename, ProgressBar &progress);
-  void read_file(const std::string &filename);
+  void read_dir(std::string_view filename, ProgressBar &progress);
+  void read_file(std::string_view filename);
 };
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item);

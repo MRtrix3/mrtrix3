@@ -349,7 +349,7 @@ void TckFactor::report_entropy() const {
        str(equiv_N) + " equally-weighted streamlines");
 }
 
-void TckFactor::output_factors(const std::string &path) const {
+void TckFactor::output_factors(std::string_view path) const {
   if (static_cast<size_t>(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
   decltype(coefficients) weights;
@@ -364,11 +364,11 @@ void TckFactor::output_factors(const std::string &path) const {
   File::Matrix::save_vector(weights, path);
 }
 
-void TckFactor::output_coefficients(const std::string &path) const { File::Matrix::save_vector(coefficients, path); }
+void TckFactor::output_coefficients(std::string_view path) const { File::Matrix::save_vector(coefficients, path); }
 
-void TckFactor::output_TD_images(const std::string &dirpath,
-                                 const std::string &origTD_path,
-                                 const std::string &count_path) const {
+void TckFactor::output_TD_images(std::string_view dirpath,
+                                 std::string_view origTD_path,
+                                 std::string_view count_path) const {
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_count;
   H_count.datatype() = DataType::native(DataType::UInt32);
@@ -381,7 +381,7 @@ void TckFactor::output_TD_images(const std::string &dirpath,
   }
 }
 
-void TckFactor::output_all_debug_images(const std::string &dirpath, const std::string &prefix) const {
+void TckFactor::output_all_debug_images(std::string_view dirpath, std::string_view prefix) const {
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 

@@ -2427,7 +2427,7 @@ void Connectome::enable_all(const bool value) {
   edge_alpha_invert_checkbox->setEnabled(value);
 }
 
-void Connectome::initialise(const std::string &path) {
+void Connectome::initialise(std::string_view path) {
   MR::Header H = MR::Header::open(path);
   if (!H.datatype().is_integer())
     throw Exception("Input parcellation image must have an integer datatype; try running mrconvert -datatype uint32");
@@ -2901,7 +2901,7 @@ void Connectome::draw_edges(const Projection &projection) {
   GL::assert_context_is_current();
 }
 
-bool Connectome::import_vector_file(FileDataVector &data, const std::string &attribute) {
+bool Connectome::import_vector_file(FileDataVector &data, std::string_view attribute) {
   const std::string path = Dialog::File::get_file(
       this, "Select vector file to determine " + attribute, "Data files (*.csv)", &current_folder);
   if (path.empty())
@@ -2926,7 +2926,7 @@ bool Connectome::import_vector_file(FileDataVector &data, const std::string &att
   }
 }
 
-bool Connectome::import_matrix_file(FileDataVector &data, const std::string &attribute) {
+bool Connectome::import_matrix_file(FileDataVector &data, std::string_view attribute) {
   const std::string path = Dialog::File::get_file(
       this, "Select matrix file to determine " + attribute, "Data files (*.csv)", &current_folder);
   if (path.empty())
@@ -2977,7 +2977,7 @@ void Connectome::load_properties() {
         std::vector<std::string> names;
         const auto range = lut.equal_range(node_index);
         for (auto i = range.first; i != range.second; ++i)
-          names.push_back(i->second.get_name());
+          names.emplace_back(std::string(i->second.get_name()));
         std::nth_element(names.begin(), names.begin(), names.end());
         nodes[node_index].set_name(names.front());
       }

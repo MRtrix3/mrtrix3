@@ -37,7 +37,7 @@ namespace MR::DWI::Tractography::Tracking {
 
 class WriteKernel {
 public:
-  WriteKernel(const SharedBase &shared, const std::string &output_file, const DWI::Tractography::Properties &properties)
+  WriteKernel(const SharedBase &shared, std::string_view output_file, const DWI::Tractography::Properties &properties)
       : S(shared),
         writer(output_file, properties),
         always_increment(S.properties.seeds.is_finite() || !S.max_num_tracks),

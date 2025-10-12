@@ -75,9 +75,9 @@ public:
 
   ~Stats() { out.close(); }
 
-  void open_stream(const std::string &file) {
+  void open_stream(std::string_view file) {
     out.close();
-    out.open(file.c_str(), std::ofstream::out);
+    out.open(std::string(file).c_str(), std::ofstream::out);
   }
 
   bool next() {

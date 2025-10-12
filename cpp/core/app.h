@@ -19,6 +19,7 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_map>
 
@@ -42,7 +43,7 @@ extern int exit_error_code;
 extern std::string NAME;
 extern std::string command_history_string;
 extern bool overwrite_files;
-extern void (*check_overwrite_files_func)(const std::string &name);
+extern void (*check_overwrite_files_func)(std::string_view name);
 extern bool fail_on_warn;
 extern bool terminal_use_colour;
 extern const std::thread::id main_thread_ID;
@@ -84,7 +85,7 @@ std::string usage_syntax(int format);
 class Description : public std::vector<std::string> {
 public:
   Description &operator+(const char *text); // check_syntax off
-  Description &operator+(const std::string &text);
+  Description &operator+(std::string_view text);
   Description &operator+(const char *const text[]); // check_syntax off
 
   std::string syntax(int format) const;
@@ -93,7 +94,7 @@ public:
 //! object for storing a single example command usage
 class Example {
 public:
-  Example(const std::string &title, const std::string &code, const std::string &description);
+  Example(std::string_view title, std::string_view code, std::string_view description);
   const std::string title, code, description;
 
   operator std::string() const;
@@ -130,7 +131,7 @@ public:
   std::string syntax(int format) const;
 };
 
-void check_overwrite(const std::string &name);
+void check_overwrite(std::string_view name);
 
 //! initialise MRtrix and parse command-line arguments
 /*! this function must be called from within main(), immediately after the
@@ -161,8 +162,9 @@ public:
   using IntType = int64_t; // Native single-integer parsed type before conversion
 
   operator std::string() const { return p; }
+  operator std::string_view() const { return std::string_view(p.data(), p.size()); }
 
-  const std::string &as_text() const { return p; }
+  std::string_view as_text() const { return p; }
   bool as_bool() const { return to<bool>(p); }
   int64_t as_int() const;
   uint64_t as_uint() const { return static_cast<uint64_t>(as_int()); }
@@ -345,7 +347,7 @@ extern OptionGroup __standard_options;
  *    auto values = opt[0][4].as_sequence_float();
  * }
  * \endcode */
-const std::vector<ParsedOption> get_options(const std::string &name);
+const std::vector<ParsedOption> get_options(std::string_view name);
 
 //! Returns the option value if set, and the default otherwise.
 /*! Only be used for command-line options that do not specify
@@ -357,7 +359,7 @@ const std::vector<ParsedOption> get_options(const std::string &name);
  *  int arg2 = get_option_value("myotheropt", arg2_default);
  * \endcode
  */
-template <typename T> inline T get_option_value(const std::string &name, const T default_value) {
+template <typename T> inline T get_option_value(std::string_view name, const T default_value) {
   auto opt = get_options(name);
   switch (opt.size()) {
   case 0:

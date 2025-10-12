@@ -28,7 +28,7 @@ namespace MR::DWI::Tractography::Seeding {
 
 class GMWMI_5TT_Wrapper {
 public:
-  GMWMI_5TT_Wrapper(const std::string &path) : anat_data(Image<float>::open(path)) {}
+  GMWMI_5TT_Wrapper(std::string_view path) : anat_data(Image<float>::open(path)) {}
   Image<float> anat_data;
 };
 
@@ -37,7 +37,7 @@ class GMWMI : public Base, private GMWMI_5TT_Wrapper, private ACT::GMWMI_finder 
 public:
   using ACT::GMWMI_finder::Interp;
 
-  GMWMI(const std::string &, const std::string &);
+  GMWMI(std::string_view, std::string_view);
 
   bool get_seed(Eigen::Vector3f &) const override;
 

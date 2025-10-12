@@ -83,7 +83,7 @@ public:
   void set_function_tolerance(const ValueType i) { function_tolerance = i; }
   void set_exit_if_outside_bounds(const bool i) { exit_outside_bounds = i; }
   void set_max_iterations(const size_t i) { max_iters = i; }
-  void set_message(const std::string &i) { message = i; }
+  void set_message(std::string_view i) { message = i; }
 
   return_t get_status() const { return status; }
 

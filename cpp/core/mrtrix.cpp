@@ -25,7 +25,7 @@ namespace MR {
  *                       Miscellaneous functions                        *
  ************************************************************************/
 
-std::vector<default_type> parse_floats(const std::string &spec) {
+std::vector<default_type> parse_floats(std::string_view spec) {
   std::vector<default_type> V;
   if (spec.empty())
     throw Exception("floating-point sequence specifier is empty");
@@ -67,7 +67,7 @@ std::vector<default_type> parse_floats(const std::string &spec) {
 }
 
 std::vector<std::string>
-split(const std::string &string, const std::string delimiters, bool ignore_empty_fields, size_t num) {
+split(std::string_view string, const std::string delimiters, bool ignore_empty_fields, size_t num) {
   std::vector<std::string> V;
   if (string.empty())
     return V;
@@ -77,14 +77,14 @@ split(const std::string &string, const std::string delimiters, bool ignore_empty
       start = string.find_first_not_of(delimiters);
     do {
       end = string.find_first_of(delimiters, start);
-      V.push_back(string.substr(start, end - start));
+      V.emplace_back(std::string(string.substr(start, end - start)));
       if (end >= string.size())
         break;
       start = ignore_empty_fields ? string.find_first_not_of(delimiters, end + 1) : end + 1;
       if (start > string.size())
         break;
       if (V.size() + 1 >= num) {
-        V.push_back(string.substr(start));
+        V.emplace_back(std::string(string.substr(start)));
         break;
       }
     } while (true);
@@ -125,7 +125,7 @@ inline bool __match(std::string_view first, std::string_view second) {
 
 } // namespace
 
-bool match(const std::string &pattern, const std::string &text, bool ignore_case) {
+bool match(std::string_view pattern, std::string_view text, bool ignore_case) {
   if (ignore_case)
     return __match(lowercase(pattern), lowercase(text));
   else
@@ -140,15 +140,15 @@ std::istream &getline(std::istream &stream, std::string &string) {
   return stream;
 }
 
-std::string &add_line(std::string &original, const std::string &new_line) {
+std::string &add_line(std::string &original, std::string_view new_line) {
   return original.empty() ? (original = new_line) : (original += "\n" + new_line);
 }
 
-std::string shorten(const std::string &text, size_t longest, size_t prefix) {
+std::string shorten(std::string_view text, size_t longest, size_t prefix) {
   if (text.size() > longest)
-    return (text.substr(0, prefix) + "..." + text.substr(text.size() - longest + prefix + 3));
+    return (std::string(text.substr(0, prefix)) + "..." + text.substr(text.size() - longest + prefix + 3));
   else
-    return text;
+    return std::string(text);
 }
 
 std::string lowercase(std::string_view string) {
@@ -178,23 +178,23 @@ std::string printf(const char *format, ...) { // check_syntax off
   return buf;
 }
 
-std::string strip(const std::string &string, const std::string &ws, bool left, bool right) {
+std::string strip(std::string_view string, std::string_view ws, bool left, bool right) {
   const std::string::size_type start = (left ? string.find_first_not_of(ws) : 0);
   if (start == std::string::npos)
     return "";
   const std::string::size_type end = (right ? string.find_last_not_of(ws) + 1 : std::string::npos);
-  return string.substr(start, end - start);
+  return std::string(string.substr(start, end - start));
 }
 
-std::string unquote(const std::string &string) {
+std::string unquote(std::string_view string) {
   if (string.size() <= 2)
-    return string;
+    return std::string(string);
   if (!(string.front() == '\"' && string.back() == '\"'))
-    return string;
-  std::string substring = string.substr(1, string.size() - 2);
+    return std::string(string);
+  const std::string substring(string.substr(1, string.size() - 2));
   if (std::none_of(substring.begin(), substring.end(), [](const char &c) { return c == '\"'; }))
     return substring;
-  return string;
+  return std::string(string);
 }
 
 void replace(std::string &string, char orig, char final) {
@@ -203,7 +203,7 @@ void replace(std::string &string, char orig, char final) {
       c = final;
 }
 
-void replace(std::string &str, const std::string &from, const std::string &to) {
+void replace(std::string &str, std::string_view from, std::string_view to) {
   if (from.empty())
     return;
   size_t start_pos = 0;
@@ -213,7 +213,7 @@ void replace(std::string &str, const std::string &from, const std::string &to) {
   }
 }
 
-std::vector<std::string> split_lines(const std::string &string, bool ignore_empty_fields, size_t num) {
+std::vector<std::string> split_lines(std::string_view string, bool ignore_empty_fields, size_t num) {
   return split(string, "\n", ignore_empty_fields, num);
 }
 
@@ -254,7 +254,7 @@ std::string_view without_leading_dash(std::string_view arg) {
   return arg;
 }
 
-std::string join(const std::vector<std::string> &V, const std::string &delimiter) {
+std::string join(const std::vector<std::string> &V, std::string_view delimiter) {
   std::string ret;
   if (V.empty())
     return ret;
@@ -264,7 +264,7 @@ std::string join(const std::vector<std::string> &V, const std::string &delimiter
   return ret;
 }
 
-std::string join(const char *const *null_terminated_array, const std::string &delimiter) { // check_syntax off
+std::string join(const char *const *null_terminated_array, std::string_view delimiter) { // check_syntax off
   std::string ret;
   if (!null_terminated_array)
     return ret;

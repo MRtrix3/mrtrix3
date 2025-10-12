@@ -200,7 +200,7 @@ private:
   mapper.set_use_precise_mapping(true);                                                                                \
   TrackProcessor track_processor(mapper, index_image, directions_image, fixel_mask, angular_threshold);
 
-InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
+InitMatrixUnweighted generate_unweighted(std::string_view track_filename,
                                          Image<index_type> &index_image,
                                          Image<bool> &fixel_mask,
                                          const float angular_threshold) {
@@ -215,7 +215,7 @@ InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
   return connectivity_matrix;
 }
 
-InitMatrixWeighted generate_weighted(const std::string &track_filename,
+InitMatrixWeighted generate_weighted(std::string_view track_filename,
                                      Image<index_type> &index_image,
                                      Image<bool> &fixel_mask,
                                      const float angular_threshold) {
@@ -230,17 +230,17 @@ InitMatrixWeighted generate_weighted(const std::string &track_filename,
   return connectivity_matrix;
 }
 
-template <class MatrixType> void Writer<MatrixType>::set_count_path(const std::string &path) {
+template <class MatrixType> void Writer<MatrixType>::set_count_path(std::string_view path) {
   assert(!count_image.valid());
   count_image = Image<count_type>::create(path, MR::Fixel::data_header_from_nfixels(matrix.size()));
 }
 
-template <class MatrixType> void Writer<MatrixType>::set_extent_path(const std::string &path) {
+template <class MatrixType> void Writer<MatrixType>::set_extent_path(std::string_view path) {
   assert(!extent_image.valid());
   extent_image = Image<connectivity_value_type>::create(path, MR::Fixel::data_header_from_nfixels(matrix.size()));
 }
 
-template <class MatrixType> void Writer<MatrixType>::save(const std::string &path) const {
+template <class MatrixType> void Writer<MatrixType>::save(std::string_view path) const {
   if (Path::exists(path)) {
     if (Path::is_dir(path)) {
       if (!App::overwrite_files &&
@@ -369,7 +369,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::string &pat
 template class Writer<InitMatrixUnweighted>;
 template class Writer<InitMatrixWeighted>;
 
-Reader::Reader(const std::string &path, const Image<bool> &mask) : directory(path), mask_image(mask) {
+Reader::Reader(std::string_view path, const Image<bool> &mask) : directory(path), mask_image(mask) {
   try {
     index_image = Image<index_image_type>::open(Path::join(directory, "index.mif"));
     if (index_image.ndim() != 4)
@@ -389,7 +389,7 @@ Reader::Reader(const std::string &path, const Image<bool> &mask) : directory(pat
   }
 }
 
-Reader::Reader(const std::string &path) : Reader(path, Image<bool>()) {}
+Reader::Reader(std::string_view path) : Reader(path, Image<bool>()) {}
 
 NormFixel Reader::operator[](const size_t i) const {
   // For thread-safety

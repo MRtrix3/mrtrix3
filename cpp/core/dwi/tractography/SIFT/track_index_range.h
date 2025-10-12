@@ -32,7 +32,7 @@ class TrackIndexRangeWriter {
 
 public:
   static const track_t default_batch_size;
-  TrackIndexRangeWriter(const track_t, const track_t, const std::string &message = std::string());
+  TrackIndexRangeWriter(const track_t, const track_t, std::string_view message = std::string());
 
   bool operator()(TrackIndexRange &);
 

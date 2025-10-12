@@ -56,7 +56,7 @@ namespace MR::ImageIO {
 class SparseLegacy : public Default {
 public:
   SparseLegacy(const Header &header,
-               const std::string &sparse_class_name,
+               std::string_view sparse_class_name,
                const size_t sparse_class_size,
                const File::Entry &entry)
       : Default(header), class_name(sparse_class_name), class_size(sparse_class_size), file(entry), data_end(0) {}
@@ -81,7 +81,7 @@ public:
     return ptr;
   }
 
-  const std::string &get_class_name() const { return class_name; }
+  std::string_view get_class_name() const { return class_name; }
   size_t get_class_size() const { return class_size; }
 
 protected:

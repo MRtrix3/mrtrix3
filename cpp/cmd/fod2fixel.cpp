@@ -111,13 +111,13 @@ public:
 
   void commit();
 
-  void set_fixel_directory_output(const std::string &path) { fixel_directory_path = path; }
-  void set_index_output(const std::string &path) { index_path = path; }
-  void set_directions_output(const std::string &path) { dir_path = path; }
-  void set_afd_output(const std::string &path) { afd_path = path; }
-  void set_peak_amp_output(const std::string &path) { peak_amp_path = path; }
-  void set_disp_output(const std::string &path) { disp_path = path; }
-  void set_skew_output(const std::string &path) { skew_path = path; }
+  void set_fixel_directory_output(std::string_view path) { fixel_directory_path = path; }
+  void set_index_output(std::string_view path) { index_path = path; }
+  void set_directions_output(std::string_view path) { dir_path = path; }
+  void set_afd_output(std::string_view path) { afd_path = path; }
+  void set_peak_amp_output(std::string_view path) { peak_amp_path = path; }
+  void set_disp_output(std::string_view path) { disp_path = path; }
+  void set_skew_output(std::string_view path) { skew_path = path; }
 
   bool operator()(const FOD_lobes &);
 

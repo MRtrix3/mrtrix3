@@ -48,9 +48,7 @@ public:
     datatype_ = DataType::Bit;
   }
 
-  template <class HeaderType> Fill(const HeaderType &in, const std::string &message) : Fill(in) {
-    set_message(message);
-  }
+  template <class HeaderType> Fill(const HeaderType &in, std::string_view message) : Fill(in) { set_message(message); }
 
   void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());

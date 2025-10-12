@@ -307,7 +307,7 @@ void Tractogram::Shader::update(const Displayable &object) {
   Displayable::Shader::update(object);
 }
 
-Tractogram::Tractogram(Tractography &tool, const std::string &filename)
+Tractogram::Tractogram(Tractography &tool, std::string_view filename)
     : Displayable(filename),
       show_colour_bar(true),
       original_fov(NaNF),
@@ -625,7 +625,7 @@ void Tractogram::load_end_colours() {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_intensity_track_scalars(const std::string &filename) {
+void Tractogram::load_intensity_track_scalars(std::string_view filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -717,7 +717,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_threshold_track_scalars(const std::string &filename) {
+void Tractogram::load_threshold_track_scalars(std::string_view filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;

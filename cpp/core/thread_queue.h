@@ -322,7 +322,7 @@ public:
    * at least one item has been popped.  By default, the buffer size is
    * default_queue_capacity items.
    */
-  Queue(const std::string &description = "unnamed", size_t buffer_size = default_queue_capacity)
+  Queue(std::string_view description = "unnamed", size_t buffer_size = default_queue_capacity)
       : buffer(new T *[buffer_size]),
         front(buffer),
         back(buffer),

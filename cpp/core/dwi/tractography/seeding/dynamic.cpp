@@ -50,7 +50,7 @@ bool Dynamic_ACT_additions::check_seed(Eigen::Vector3f &p) {
 
 const default_type Dynamic::initial_td_sum = 1e-6;
 
-Dynamic::Dynamic(const std::string &in,
+Dynamic::Dynamic(std::string_view in,
                  Image<float> &fod_data,
                  const size_t num,
                  const DWI::Directions::FastLookupSet &dirs)

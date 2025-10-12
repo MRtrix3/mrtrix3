@@ -35,20 +35,20 @@
 
 namespace MR::File::JSON {
 
-void load(Header &H, const std::string &path) {
-  std::ifstream in(path);
+void load(Header &H, std::string_view path) {
+  std::ifstream in({std::string(path)});
   if (!in)
-    throw Exception("Error opening JSON file \"" + path + "\"");
+    throw Exception("Error opening JSON file \"" + std::string(path) + "\"");
   nlohmann::json json;
   try {
     in >> json;
   } catch (std::logic_error &e) {
-    throw Exception("Error parsing JSON file \"" + path + "\": " + e.what());
+    throw Exception("Error parsing JSON file \"" + std::string(path) + "\": " + e.what());
   }
   read(json, H);
 }
 
-void save(const Header &H, const std::string &json_path, const std::string &image_path) {
+void save(const Header &H, std::string_view json_path, std::string_view image_path) {
   nlohmann::json json;
   write(H, json, image_path);
   File::OFStream out(json_path);
@@ -63,7 +63,7 @@ KeyValues read(const nlohmann::json &json) {
     } else if (i->is_number_integer() || i->is_number_float()) {
       result.insert(std::make_pair(i.key(), i->dump()));
     } else if (i->is_string()) {
-      const std::string s = unquote(i.value());
+      const std::string s = unquote(std::string(i.value()));
       result.insert(std::make_pair(i.key(), s));
     } else if (i->is_array()) {
       size_t num_subarrays = 0;
@@ -82,7 +82,7 @@ KeyValues read(const nlohmann::json &json) {
         if (all_string) {
           std::vector<std::string> lines;
           for (const auto &k : *i)
-            lines.push_back(unquote(k));
+            lines.push_back(unquote(std::string(k)));
           result.insert(std::make_pair(i.key(), join(lines, "\n")));
         } else if (all_numeric) {
           std::vector<std::string> line;
@@ -206,7 +206,7 @@ void write(const KeyValues &keyval, nlohmann::json &json) {
   }
 }
 
-void write(const Header &header, nlohmann::json &json, const std::string &image_path) {
+void write(const Header &header, nlohmann::json &json, std::string_view image_path) {
   Header H_adj(header);
   H_adj.name() = image_path;
   if (!App::get_options("export_grad_fsl").empty() || !App::get_options("export_grad_mrtrix").empty())

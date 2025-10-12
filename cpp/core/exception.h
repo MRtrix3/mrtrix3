@@ -44,13 +44,13 @@ namespace MR {
  * least their filenames) between MRtrix commands. This function should
  * therefore never be used in commands that produce output images, as the two
  * different types of output may then interfere and cause unexpected issues. */
-extern void (*print)(const std::string &msg);
+extern void (*print)(std::string_view msg);
 
 //! \cond skip
 
 // for internal use only
 
-inline void __print_stderr(const std::string &text) {
+inline void __print_stderr(std::string_view text) {
 #ifdef MRTRIX_AS_R_LIBRARY
   REprintf(text.c_str());
 #else
@@ -62,7 +62,7 @@ inline void __print_stderr(const std::string &text) {
 //! display error, warning, debug, etc. message to user
 /*! types are: 0: error; 1: warning; 2: additional information; 3:
  * debugging information; anything else: none. */
-extern void (*report_to_user_func)(const std::string &msg, int type);
+extern void (*report_to_user_func)(std::string_view msg, int type);
 
 #define CONSOLE(msg)                                                                                                   \
   if (MR::App::log_level >= 1)                                                                                         \
@@ -84,9 +84,9 @@ class Exception : public std::exception {
 public:
   Exception() {}
 
-  Exception(const std::string &msg) { description.push_back(msg); }
-  Exception(const Exception &previous_exception, const std::string &msg) : description(previous_exception.description) {
-    description.push_back(msg);
+  Exception(std::string_view msg) { description.push_back(std::string(msg)); }
+  Exception(const Exception &previous_exception, std::string_view msg) : description(previous_exception.description) {
+    description.push_back(std::string(msg));
   }
 
   const char *what() const noexcept override; // check_syntax off
@@ -94,8 +94,8 @@ public:
   void display(int log_level = 0) const { display_func(*this, log_level); }
 
   size_t num() const { return description.size(); }
-  const std::string &operator[](size_t n) const { return description[n]; }
-  void push_back(const std::string &s) { description.push_back(s); }
+  std::string_view operator[](size_t n) const { return description[n]; }
+  void push_back(std::string_view s) { description.push_back(std::string(s)); }
   void push_back(const Exception &e) {
     for (auto s : e.description)
       push_back(s);
@@ -108,8 +108,8 @@ public:
 
 class InvalidImageException : public Exception {
 public:
-  InvalidImageException(const std::string &msg) : Exception(msg) {}
-  InvalidImageException(const Exception &previous_exception, const std::string &msg)
+  InvalidImageException(std::string_view msg) : Exception(msg) {}
+  InvalidImageException(const Exception &previous_exception, std::string_view msg)
       : Exception(previous_exception, msg) {}
 };
 
@@ -119,8 +119,8 @@ public:
 };
 
 void display_exception_cmdline(const Exception &E, int log_level);
-void cmdline_print_func(const std::string &msg);
-void cmdline_report_to_user_func(const std::string &msg, int type);
+void cmdline_print_func(std::string_view msg);
+void cmdline_report_to_user_func(std::string_view msg, int type);
 
 class LogLevelLatch {
 public:

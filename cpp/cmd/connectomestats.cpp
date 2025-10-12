@@ -137,7 +137,7 @@ void load_tfce_parameters(Stats::TFCE::Wrapper &enhancer) {
 //   that subject
 class SubjectConnectomeImport : public SubjectDataImportBase {
 public:
-  SubjectConnectomeImport(const std::string &path) : SubjectDataImportBase(path) {
+  SubjectConnectomeImport(std::string_view path) : SubjectDataImportBase(path) {
     auto M = File::Matrix::load_matrix(path);
     Connectome::check(M);
     if (Connectome::is_directed(M))

@@ -18,7 +18,7 @@
 
 namespace MR::GUI::MRView {
 
-Displayable::Displayable(const std::string &filename)
+Displayable::Displayable(std::string_view filename)
     : QAction(nullptr),
       lessthan(NaNF),
       greaterthan(NaNF),

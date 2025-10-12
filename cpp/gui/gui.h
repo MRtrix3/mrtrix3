@@ -30,7 +30,7 @@
 
 namespace MR::GUI {
 
-inline QString qstr(const std::string &s) { return QString::fromUtf8(s.c_str()); }
+inline QString qstr(std::string_view s) { return QString::fromUtf8(std::string(s).c_str()); }
 
 class App : public QApplication {
 

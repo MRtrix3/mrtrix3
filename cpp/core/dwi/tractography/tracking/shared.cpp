@@ -18,7 +18,7 @@
 
 namespace MR::DWI::Tractography::Tracking {
 
-SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
+SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
     : source_header(Header::open(diff_path)),
       source(source_header.get_image<float>().with_direct_io(3)),
       properties(property_set),

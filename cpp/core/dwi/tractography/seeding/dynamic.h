@@ -152,7 +152,7 @@ private:
 class Dynamic_ACT_additions {
 
 public:
-  Dynamic_ACT_additions(const std::string &path)
+  Dynamic_ACT_additions(std::string_view path)
       : interp_template(Image<float>::open(path)), gmwmi_finder(interp_template) {}
 
   bool check_seed(Eigen::Vector3f &);
@@ -173,7 +173,7 @@ private:
   using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 public:
-  Dynamic(const std::string &, Image<float> &, const size_t, const DWI::Directions::FastLookupSet &);
+  Dynamic(std::string_view, Image<float> &, const size_t, const DWI::Directions::FastLookupSet &);
   ~Dynamic();
 
   Dynamic(const Dynamic &) = delete;
@@ -234,7 +234,7 @@ private:
 
 class WriteKernelDynamic : public Tracking::WriteKernel {
 public:
-  WriteKernelDynamic(const Tracking::SharedBase &shared, const std::string &output_file, const Properties &properties)
+  WriteKernelDynamic(const Tracking::SharedBase &shared, std::string_view output_file, const Properties &properties)
       : Tracking::WriteKernel(shared, output_file, properties) {}
   WriteKernelDynamic(const WriteKernelDynamic &) = delete;
   WriteKernelDynamic &operator=(const WriteKernelDynamic &) = delete;

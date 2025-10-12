@@ -33,7 +33,7 @@ namespace MR::Math::Stats::GLM {
 
 extern const std::string column_ones_description;
 
-App::OptionGroup glm_options(const std::string &element_name);
+App::OptionGroup glm_options(std::string_view element_name);
 
 // Define a base class to contain information regarding an individual hypothesis, and
 //   pre-compute as much as possible with regards to Freedman-Lane
@@ -97,7 +97,7 @@ void check_design(const matrix_type &, const bool);
 
 index_array_type load_variance_groups(const index_type num_inputs);
 
-std::vector<Hypothesis> load_hypotheses(const std::string &file_path);
+std::vector<Hypothesis> load_hypotheses(std::string_view file_path);
 
 /** \addtogroup Statistics
   @{ */

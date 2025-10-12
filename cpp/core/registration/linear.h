@@ -544,7 +544,7 @@ public:
 
   // template<class ImageType, class TransformType>
   // void transform_image_midway (const ImageType& input, const TransformType& transformation,
-  //   const bool do_reorientation, const bool input_is_one, const std::string& out_path, const Header& h_midway) {
+  //   const bool do_reorientation, const bool input_is_one, const std::string out_path, const Header& h_midway) {
   //   if (do_reorientation and aPSF_directions.size() == 0)
   //     throw Exception ("directions have to be calculated before reorientation");
 

@@ -25,6 +25,7 @@
 #include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
+#include "mrtrix.h"
 #include "mrtrix_version.h"
 #include "progressbar.h"
 #include "signal_handler.h"
@@ -121,25 +122,28 @@ const std::string project_build_date;
 std::vector<std::string> raw_arguments_list;
 
 bool overwrite_files = false;
-void (*check_overwrite_files_func)(const std::string &name) = nullptr;
+void (*check_overwrite_files_func)(std::string_view name) = nullptr;
 
 namespace {
 
-inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, const std::string &stub) {
+inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, std::string_view stub) {
   for (size_t i = 0; i < group.size(); ++i) {
     if (stub.compare(0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
       candidates.push_back(&group[i]);
   }
 }
 
-inline int size(const std::string &text) { return text.size() - 2 * std::count(text.begin(), text.end(), 0x08U); }
+inline std::string::size_type size(std::string_view text) {
+  return text.size() - 2 * std::count(text.begin(), text.end(), 0x08U);
+}
 
 inline void resize(std::string &text, size_t new_size, char fill) {
   text.resize(text.size() + new_size - size(text), fill);
 }
 
-std::string paragraph(const std::string &header, const std::string &text, const HelpFormatting::Indents indents) {
-  std::string out, line = std::string(indents.header, ' ') + header + " ";
+std::string paragraph(std::string_view header, std::string_view text, const HelpFormatting::Indents indents) {
+  std::string out;
+  std::string line = std::string(indents.header, ' ') + std::string(header) + " ";
   if (size(line) < indents.main)
     resize(line, indents.main, ' ');
 
@@ -161,7 +165,7 @@ std::string paragraph(const std::string &header, const std::string &text, const 
   return out;
 }
 
-std::string bold(const std::string &text) {
+std::string bold(std::string_view text) {
   std::string retval(3 * text.size(), '\0');
   for (size_t n = 0; n < text.size(); ++n) {
     retval[3 * n] = retval[3 * n + 2] = text[n];
@@ -170,7 +174,7 @@ std::string bold(const std::string &text) {
   return retval;
 }
 
-std::string underline(const std::string &text, bool ignore_whitespace = false) {
+std::string underline(std::string_view text, bool ignore_whitespace = false) {
   size_t m(0);
   std::string retval(3 * text.size(), '\0');
   for (size_t n = 0; n < text.size(); ++n) {
@@ -218,7 +222,9 @@ std::string help_head(int format) {
   const std::string date(project_version.empty() ? build_date : project_build_date);
 
   std::string topline =
-      version_string + std::string(std::max(1, 40 - size(version_string) - size(App::NAME) / 2), ' ') + bold(App::NAME);
+      version_string +
+      std::string(std::max(std::string::size_type(1), 40 - size(version_string) - size(App::NAME) / 2), ' ') +
+      bold(App::NAME);
   topline += std::string(80 - size(topline) - size(date), ' ') + date;
 
   if (!project_version.empty())
@@ -275,18 +281,18 @@ std::string usage_syntax(int format) {
 }
 
 Description &Description::operator+(const char *text) { // check_syntax off
-  push_back(std::string(text));
+  emplace_back(std::string(text));
   return *this;
 }
 
-Description &Description::operator+(const std::string &text) {
-  push_back(text);
+Description &Description::operator+(std::string_view text) {
+  emplace_back(std::string(text));
   return *this;
 }
 
 Description &Description::operator+(const char *const text[]) { // check_syntax off
   for (const char *const *p = text; *p != nullptr; ++p)         // check_syntax off
-    push_back(std::string(*p));
+    emplace_back(std::string(*p));
   return *this;
 }
 
@@ -301,7 +307,7 @@ std::string Description::syntax(int format) const {
   return s;
 }
 
-Example::Example(const std::string &title, const std::string &code, const std::string &description)
+Example::Example(std::string_view title, std::string_view code, std::string_view description)
     : title(title), code(code), description(description) {}
 
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
@@ -467,7 +473,7 @@ std::string Argument::usage() const {
   case Choice: {
     stream << "CHOICE";
     const auto &choices = std::get<std::vector<std::string>>(limits);
-    for (const std::string &p : choices)
+    for (std::string_view p : choices)
       stream << " " << p;
     break;
   }
@@ -1138,7 +1144,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
     NAME.erase(NAME.size() - 4);
 #endif
 
-  auto argv_quoted = [](const std::string &s) -> std::string {
+  auto argv_quoted = [](std::string_view s) -> std::string {
     for (size_t i = 0; i != s.size(); ++i) {
       if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
         std::string escaped_string("\'");
@@ -1159,7 +1165,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
         return escaped_string;
       }
     }
-    return s;
+    return std::string(s);
   };
   command_history_string = cmdline_argv[0];
   for (const auto &a : raw_arguments_list)
@@ -1175,7 +1181,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   srand(time(nullptr));
 }
 
-const std::vector<ParsedOption> get_options(const std::string &name) {
+const std::vector<ParsedOption> get_options(std::string_view name) {
   assert(!name.empty());
   assert(name[0] != '-');
   std::vector<ParsedOption> matches;
@@ -1351,12 +1357,13 @@ void ParsedArgument::error(Exception &e) const {
   throw Exception(e, msg);
 }
 
-void check_overwrite(const std::string &name) {
+void check_overwrite(std::string_view name) {
   if (Path::exists(name) && !overwrite_files) {
     if (check_overwrite_files_func != nullptr)
       check_overwrite_files_func(name);
     else
-      throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
+      throw Exception("output path \"" + std::string(name) +
+                      "\" already exists (use -force option to force overwrite)");
   }
 }
 

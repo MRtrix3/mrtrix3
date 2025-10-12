@@ -41,7 +41,7 @@ public:
 
 class Date {
 public:
-  Date(const std::string &entry) : year(0), month(0), day(0) {
+  Date(std::string_view entry) : year(0), month(0), day(0) {
     if (entry.size() >= 8) {
       year = to<uint32_t>(entry.substr(0, 4));
       month = to<uint32_t>(entry.substr(4, 2));
@@ -56,7 +56,7 @@ public:
 
 class Time {
 public:
-  Time(const std::string &entry) : Time() {
+  Time(std::string_view entry) : Time() {
     if (entry.size() < 6)
       throw Exception("field \"" + entry + "\" is too short to be interpreted as a time");
     hour = to<uint32_t>(entry.substr(0, 2));
@@ -95,7 +95,7 @@ public:
   std::vector<Sequence> parents;
   bool transfer_syntax_supported;
 
-  void set(const std::string &filename, bool force_read = false, bool read_write = false);
+  void set(std::string_view filename, bool force_read = false, bool read_write = false);
   bool read();
 
   bool is(uint16_t Group, uint16_t Element) const {
@@ -187,7 +187,7 @@ protected:
 
   std::vector<uint8_t *> end_seq;
 
-  uint16_t get_VR_from_tag_name(const std::string &name) {
+  uint16_t get_VR_from_tag_name(std::string_view name) {
     union {
       std::array<char, 2> t;
       uint16_t i;

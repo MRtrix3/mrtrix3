@@ -31,9 +31,9 @@ public:
   template <class Template> BufferScratchDump(const Template &info) : Image::BufferScratch<value_type>(info) {}
 
   template <class Template>
-  BufferScratchDump(const Template &info, const std::string &label) : Image::BufferScratch<value_type>(info, label) {}
+  BufferScratchDump(const Template &info, std::string_view label) : Image::BufferScratch<value_type>(info, label) {}
 
-  void dump_to_file(const std::string &, const Image::Header &) const;
+  void dump_to_file(std::string_view, const Image::Header &) const;
 
 private:
   // Helper function to get the underlying data pointer
@@ -45,7 +45,7 @@ template <> inline void *BufferScratchDump<bool>::get_data_ptr() const {
 }
 
 template <typename value_type>
-void BufferScratchDump<value_type>::dump_to_file(const std::string &path, const Header &H) const {
+void BufferScratchDump<value_type>::dump_to_file(std::string_view path, const Header &H) const {
 
   if (!Path::has_suffix(path, ".mih") && !Path::has_suffix(path, ".mif"))
     throw Exception("Can only perform direct dump to file for .mih / .mif files");

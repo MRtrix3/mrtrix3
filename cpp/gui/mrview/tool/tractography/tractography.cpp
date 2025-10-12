@@ -45,7 +45,7 @@ TrackGeometryType geometry_index2type(const int idx) {
 size_t geometry_string2index(std::string type_str) {
   type_str = lowercase(type_str);
 
-  auto matches = [&type_str](const std::string &s) { return type_str == lowercase(s); };
+  auto matches = [&type_str](std::string_view s) { return type_str == lowercase(s); };
   const auto &list = tractogram_geometry_types;
   auto it = std::find_if(list.begin(), list.end(), matches);
   if (it != list.end())

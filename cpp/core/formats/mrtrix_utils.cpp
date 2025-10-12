@@ -18,7 +18,7 @@
 
 namespace MR::Formats {
 
-std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
+std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
   std::vector<ssize_t> parsed(ndim);
 
   size_t sub = 0;
@@ -105,11 +105,11 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
   return true;
 }
 
-void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname, size_t &offset) {
+void get_mrtrix_file_path(Header &H, std::string_view flag, std::string &fname, size_t &offset) {
 
-  auto i = H.keyval().find(flag);
+  auto i = H.keyval().find(std::string(flag));
   if (i == H.keyval().end())
-    throw Exception("missing \"" + flag + "\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("missing \"" + std::string(flag) + "\" specification for MRtrix image \"" + H.name() + "\"");
   const std::string path = i->second;
   H.keyval().erase(i);
 
@@ -120,8 +120,8 @@ void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname
     try {
       file_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"" + fname + "\" in MRtrix image header \"" + H.name() +
-                      "\"");
+      throw Exception("invalid offset specified for file \"" + fname + "\"" + //
+                      " in MRtrix image header \"" + H.name() + "\"");        //
     }
   }
 

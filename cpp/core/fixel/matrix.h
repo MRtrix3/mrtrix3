@@ -183,12 +183,12 @@ public:
 };
 
 // Generate a fixel-fixel connectivity matrix
-InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
+InitMatrixUnweighted generate_unweighted(std::string_view track_filename,
                                          Image<fixel_index_type> &index_image,
                                          Image<bool> &fixel_mask,
                                          const float angular_threshold);
 
-InitMatrixWeighted generate_weighted(const std::string &track_filename,
+InitMatrixWeighted generate_weighted(std::string_view track_filename,
                                      Image<fixel_index_type> &index_image,
                                      Image<bool> &fixel_mask,
                                      const float angular_threshold);
@@ -197,9 +197,9 @@ template <class MatrixType> class Writer {
 public:
   Writer(MatrixType &matrix, const connectivity_value_type threshold) : matrix(matrix), threshold(threshold) {}
   void set_keyvals(KeyValues &kv) { keyvals = kv; }
-  void set_count_path(const std::string &path);
-  void set_extent_path(const std::string &path);
-  void save(const std::string &path) const;
+  void set_count_path(std::string_view path);
+  void set_extent_path(std::string_view path);
+  void save(std::string_view path) const;
 
 private:
   MatrixType &matrix;
@@ -213,8 +213,8 @@ private:
 class Reader {
 
 public:
-  Reader(const std::string &path, const Image<bool> &mask);
-  Reader(const std::string &path);
+  Reader(std::string_view path, const Image<bool> &mask);
+  Reader(std::string_view path);
 
   // TODO Entirely feasible to construct this thing using scratch storage;
   //   would need two passes over the pre-normalised data in order to calculate

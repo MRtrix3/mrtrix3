@@ -216,7 +216,7 @@ RandomThreadedLoop(const HeaderType &source,
 
 template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-RandomThreadedLoop(const std::string &progress_message,
+RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
                    const std::vector<size_t> &outer_axes,
                    const std::vector<size_t> &inner_axes) {
@@ -225,7 +225,7 @@ RandomThreadedLoop(const std::string &progress_message,
 
 template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-RandomThreadedLoop(const std::string &progress_message,
+RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
                    const std::vector<size_t> &axes,
                    size_t num_inner_axes = 1) {
@@ -234,7 +234,7 @@ RandomThreadedLoop(const std::string &progress_message,
 
 template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-RandomThreadedLoop(const std::string &progress_message,
+RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
                    size_t from_axis = 0,
                    size_t to_axis = std::numeric_limits<size_t>::max(),

@@ -28,7 +28,7 @@ void init();
 void on_signal(cleanup_function_type func);
 
 //! mark the file for deletion when a signal is received or at program exit
-void mark_file_for_deletion(const std::string &filename);
+void mark_file_for_deletion(std::string_view filename);
 //! unmark the file from deletion
-void unmark_file_for_deletion(const std::string &filename);
+void unmark_file_for_deletion(std::string_view filename);
 } // namespace MR::SignalHandler

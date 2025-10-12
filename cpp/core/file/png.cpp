@@ -30,8 +30,8 @@
 
 namespace MR::File::PNG {
 
-Reader::Reader(const std::string &filename)
-    : infile(fopen(filename.c_str(), "rb")),
+Reader::Reader(std::string_view filename)
+    : infile(fopen(std::string(filename).c_str(), "rb")),
       png_ptr(nullptr),
       info_ptr(nullptr),
       width(0),
@@ -142,7 +142,7 @@ void Reader::load(uint8_t *image_data) {
 
 jmp_buf Writer::jmpbuf;
 
-Writer::Writer(const Header &H, const std::string &filename)
+Writer::Writer(const Header &H, std::string_view filename)
     : png_ptr(nullptr),
       info_ptr(nullptr),
       color_type(0),
@@ -161,7 +161,7 @@ Writer::Writer(const Header &H, const std::string &filename)
     png_destroy_write_struct(&png_ptr, &info_ptr);
     throw Exception("Unable to set jump buffer for PNG structure for image \"" + filename + "\"");
   }
-  outfile = fopen(filename.c_str(), "wb");
+  outfile = fopen(Writer::filename.c_str(), "wb");
   if (!outfile)
     throw Exception("Unable to open PNG file for writing for image \"" + filename + "\": " //
                     + strerror(errno));                                                    //

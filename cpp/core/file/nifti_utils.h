@@ -40,6 +40,6 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H);
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H);
 
 int version(Header &H);
-std::string get_json_path(const std::string &nifti_path);
+std::string get_json_path(std::string_view nifti_path);
 
 } // namespace MR::File::NIfTI

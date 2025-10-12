@@ -76,7 +76,7 @@ protected:
 // A convenience class for wrapping access to sparse images
 template <typename DataType> class Image : public ::MR::Image<uint64_t> {
 public:
-  Image(const std::string &image_name) : ::MR::Image<uint64_t>(::MR::Image<uint64_t>::open(image_name)), io(nullptr) {
+  Image(std::string_view image_name) : ::MR::Image<uint64_t>(::MR::Image<uint64_t>::open(image_name)), io(nullptr) {
     check();
   }
 
@@ -84,7 +84,7 @@ public:
 
   Image(const Image<DataType> &that) = default;
 
-  Image(const std::string &image_name, const Header &template_header)
+  Image(std::string_view image_name, const Header &template_header)
       : ::MR::Image<uint64_t>(::MR::Image<uint64_t>::create(image_name, template_header)), io(nullptr) {
     check();
   }
@@ -109,7 +109,7 @@ protected:
     if (name_it == keyval().end())
       throw Exception("cannot create sparse image without knowledge of underlying class type in the image header");
     // TODO temporarily disabled this to allow updated_syntax tests to pass with files generated with master branch.
-    //          const std::string& class_name = name_it->second;
+    //          const std::string class_name = name_it->second;
     //          if (str(typeid(DataType).name()) != class_name)
     //            throw Exception ("class type of sparse image buffer (" + str(typeid(DataType).name()) + ") does not
     //            match that in image header (" + class_name + ")");

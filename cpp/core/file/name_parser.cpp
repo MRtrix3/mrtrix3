@@ -33,7 +33,7 @@ inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
 
 } // namespace
 
-void NameParser::parse(const std::string &imagename, size_t max_num_sequences) {
+void NameParser::parse(std::string_view imagename, size_t max_num_sequences) {
   specification = imagename;
   if (Path::is_dir(imagename)) {
     array.resize(1);
@@ -95,7 +95,7 @@ std::ostream &operator<<(std::ostream &stream, const NameParser &parser) {
   return stream;
 }
 
-bool NameParser::match(const std::string &file_name, std::vector<uint32_t> &indices) const {
+bool NameParser::match(std::string_view file_name, std::vector<uint32_t> &indices) const {
   uint32_t current = 0;
   size_t num = 0;
   indices.resize(seq_index.size());
@@ -207,7 +207,7 @@ bool ParsedName::operator<(const ParsedName &pn) const {
   return false;
 }
 
-std::vector<uint32_t> ParsedName::List::parse_scan_check(const std::string &specifier, size_t max_num_sequences) {
+std::vector<uint32_t> ParsedName::List::parse_scan_check(std::string_view specifier, size_t max_num_sequences) {
   NameParser parser;
   parser.parse(specifier);
 

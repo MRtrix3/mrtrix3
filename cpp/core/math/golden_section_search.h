@@ -45,7 +45,7 @@ namespace MR::Math {
 
 template <class FunctionType, typename ValueType>
 ValueType golden_section_search(FunctionType &function,
-                                const std::string &message,
+                                std::string_view message,
                                 ValueType min_bound,
                                 ValueType init_estimate,
                                 ValueType max_bound,

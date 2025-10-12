@@ -61,7 +61,7 @@ template <> inline QPoint position(QWheelEvent *event) {
 #endif
 }
 
-Qt::KeyboardModifiers get_modifier(const std::string &key, Qt::KeyboardModifiers default_key) {
+Qt::KeyboardModifiers get_modifier(std::string_view key, Qt::KeyboardModifiers default_key) {
   std::string value = lowercase(MR::File::Config::get(key));
   if (value.empty())
     return default_key;
@@ -758,7 +758,7 @@ void Window::parse_arguments() {
   QTimer::singleShot(10, this, SLOT(process_commandline_option_slot()));
 }
 
-ColourBars::Position Window::parse_colourmap_position_str(const std::string &position_str) {
+ColourBars::Position Window::parse_colourmap_position_str(std::string_view position_str) {
 
   ColourBars::Position pos(ColourBars::Position::None);
 

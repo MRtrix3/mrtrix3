@@ -133,7 +133,7 @@ void ODF_Item::DixelPlugin::set_none() {
   dir_type = DixelPlugin::dir_t::NONE;
 }
 
-void ODF_Item::DixelPlugin::set_from_file(const std::string &path) {
+void ODF_Item::DixelPlugin::set_from_file(std::string_view path) {
   auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(path);
   std::swap(dirs, new_dirs);
   dir_type = DixelPlugin::dir_t::FILE;

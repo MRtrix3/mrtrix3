@@ -25,7 +25,7 @@ class Scalar : public Eigen::Array<default_type, Eigen::Dynamic, 1> {
 public:
   using Base = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 
-  Scalar(const std::string &, const Mesh &);
+  Scalar(std::string_view, const Mesh &);
 
   Scalar(const Scalar &that) = default;
 
@@ -50,16 +50,16 @@ public:
     name.clear();
   }
 
-  void save(const std::string &) const;
+  void save(std::string_view) const;
 
-  const std::string &get_name() const { return name; }
-  void set_name(const std::string &s) { name = s; }
+  std::string_view get_name() const { return name; }
+  void set_name(std::string_view s) { name = s; }
 
 private:
   std::string name;
 
-  void load_fs_w(const std::string &, const Mesh &);
-  void load_fs_curv(const std::string &, const Mesh &);
+  void load_fs_w(std::string_view, const Mesh &);
+  void load_fs_curv(std::string_view, const Mesh &);
 };
 
 } // namespace MR::Surface

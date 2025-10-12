@@ -31,7 +31,7 @@ namespace MR::DWI::Tractography::Seeding {
 class Sphere : public Base {
 
 public:
-  Sphere(const std::string &in) : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) {
+  Sphere(std::string_view in) : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) {
     auto F = parse_floats(in);
     if (F.size() != 4)
       throw Exception("Could not parse seed \"" + in +
@@ -51,7 +51,7 @@ private:
 class SeedMask : public Base {
 
 public:
-  SeedMask(const std::string &in)
+  SeedMask(std::string_view in)
       : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)), mask(in) {
     volume = get_count(mask) * mask.spacing(0) * mask.spacing(1) * mask.spacing(2);
   }
@@ -65,7 +65,7 @@ private:
 class Random_per_voxel : public Base {
 
 public:
-  Random_per_voxel(const std::string &in, const size_t num_per_voxel)
+  Random_per_voxel(std::string_view in, const size_t num_per_voxel)
       : Base(in, "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
         mask(in),
         num(num_per_voxel),
@@ -91,7 +91,7 @@ private:
 class Grid_per_voxel : public Base {
 
 public:
-  Grid_per_voxel(const std::string &in, const size_t os_factor)
+  Grid_per_voxel(std::string_view in, const size_t os_factor)
       : Base(in, "grid per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
         mask(in),
         os(os_factor),
@@ -116,7 +116,7 @@ private:
 class Rejection : public Base {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
-  Rejection(const std::string &);
+  Rejection(std::string_view);
 
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 

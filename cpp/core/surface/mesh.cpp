@@ -27,7 +27,7 @@
 
 namespace MR::Surface {
 
-Mesh::Mesh(const std::string &path) {
+Mesh::Mesh(std::string_view path) {
   if (path.substr(path.size() - 4) == ".vtk" || path.substr(path.size() - 4) == ".VTK") {
     load_vtk(path);
   } else if (path.substr(path.size() - 4) == ".stl" || path.substr(path.size() - 4) == ".STL") {
@@ -45,7 +45,7 @@ Mesh::Mesh(const std::string &path) {
   name = Path::basename(path);
 }
 
-void Mesh::save(const std::string &path, const bool binary) const {
+void Mesh::save(std::string_view path, const bool binary) const {
   if (path.substr(path.size() - 4) == ".vtk")
     save_vtk(path, binary);
   else if (path.substr(path.size() - 4) == ".stl")
@@ -85,9 +85,9 @@ void load_vtk_points_binary(std::ifstream &in, const size_t num_vertices, std::v
 }
 } // namespace
 
-void Mesh::load_vtk(const std::string &path) {
+void Mesh::load_vtk(std::string_view path) {
 
-  std::ifstream in(path.c_str(), std::ios_base::binary);
+  std::ifstream in(std::string(path).c_str(), std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -283,8 +283,8 @@ void Mesh::load_vtk(const std::string &path) {
   }
 }
 
-void Mesh::load_stl(const std::string &path) {
-  std::ifstream in(path.c_str(), std::ios_base::in);
+void Mesh::load_stl(std::string_view path) {
+  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -297,7 +297,7 @@ void Mesh::load_stl(const std::string &path) {
 
     // File is stored as binary
     in.close();
-    in.open(path.c_str(), std::ios_base::in | std::ios_base::binary);
+    in.open(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
     std::string header(80, '\0');
     in.read(&header[0], 80);
 
@@ -329,7 +329,7 @@ void Mesh::load_stl(const std::string &path) {
         warn_nonstandard_normals = true;
     }
     if (triangles.size() != count)
-      WARN("Number of triangles indicated in file " + Path::basename(path) + "(" + str(count) +
+      WARN("Number of triangles indicated in file " + Path::basename(path) + " (" + str(count) +
            ") does not match number actually read (" + str(triangles.size()) + ")");
     if (warn_attribute)
       WARN("Some facets in file " + Path::basename(path) + " have extended attributes; ignoring");
@@ -430,13 +430,13 @@ void Mesh::load_stl(const std::string &path) {
   }
 }
 
-void Mesh::load_obj(const std::string &path) {
+void Mesh::load_obj(std::string_view path) {
 
   struct FaceData {
     uint32_t vertex, texture, normal;
   };
 
-  std::ifstream in(path.c_str(), std::ios_base::in);
+  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
   std::string line;
@@ -551,9 +551,9 @@ void Mesh::load_obj(const std::string &path) {
   }
 }
 
-void Mesh::load_fs(const std::string &path) {
+void Mesh::load_fs(std::string_view path) {
 
-  std::ifstream in(path.c_str(), std::ios_base::in | std::ios_base::binary);
+  std::ifstream in(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -660,7 +660,7 @@ void Mesh::load_fs(const std::string &path) {
   }
 }
 
-void Mesh::save_vtk(const std::string &path, const bool binary) const {
+void Mesh::save_vtk(std::string_view path, const bool binary) const {
   File::OFStream out(path, std::ios_base::out);
   out << "# vtk DataFile Version 1.0\n";
   out << "\n";
@@ -725,7 +725,7 @@ void Mesh::save_vtk(const std::string &path, const bool binary) const {
   }
 }
 
-void Mesh::save_stl(const std::string &path, const bool binary) const {
+void Mesh::save_stl(std::string_view path, const bool binary) const {
   if (!quads.empty())
     throw Exception("STL binary file format does not support quads; only triangles");
 
@@ -774,7 +774,7 @@ void Mesh::save_stl(const std::string &path, const bool binary) const {
   }
 }
 
-void Mesh::save_obj(const std::string &path) const {
+void Mesh::save_obj(std::string_view path) const {
   File::OFStream out(path);
   out << "# " << App::command_history_string << "\n";
   out << "o " << name << "\n";

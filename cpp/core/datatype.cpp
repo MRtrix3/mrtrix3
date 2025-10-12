@@ -75,7 +75,7 @@ const std::vector<std::string> DataType::identifiers = {
     "uint16le",   "int16be",   "uint16be",   "cfloat16",   "cfloat16le", "cfloat16be", "cfloat32", "cfloat32le",
     "cfloat32be", "cfloat64",  "cfloat64le", "cfloat64be", "int8",       "uint8",      "bit"};
 
-DataType DataType::parse(const std::string &spec) {
+DataType DataType::parse(std::string_view spec) {
   std::string str(lowercase(spec));
 
   if (str == "float16")
@@ -194,7 +194,7 @@ size_t DataType::bits() const {
   return 0;
 }
 
-const std::string &DataType::description() const {
+std::string_view DataType::description() const {
   static const std::string invalid("invalid data type");
   try {
     return dt2str.at(dt).description;
@@ -203,7 +203,7 @@ const std::string &DataType::description() const {
   }
 }
 
-const std::string &DataType::specifier() const {
+std::string_view DataType::specifier() const {
   static const std::string invalid("invalid");
   try {
     return dt2str.at(dt).specifier;

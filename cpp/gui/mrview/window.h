@@ -285,7 +285,7 @@ private:
 
       *OpenGL_action, *about_action, *aboutQt_action;
 
-  static ColourBars::Position parse_colourmap_position_str(const std::string &position_str);
+  static ColourBars::Position parse_colourmap_position_str(std::string_view position_str);
 
   void paintGL();
   void initGL();

@@ -85,11 +85,11 @@ void Directory::load_image_buffer() {
   }
 }
 
-void Directory::lazy_load_fixel_value_file(const std::string &key) const {
+void Directory::lazy_load_fixel_value_file(std::string_view key) const {
 
   // We're assuming the key corresponds to the fixel data filename
   const auto data_filepath = Path::join(Path::dirname(fixel_data->name()), key);
-  fixel_values[key].loaded = true;
+  fixel_values[std::string(key)].loaded = true;
 
   if (!Path::exists(data_filepath))
     return;
@@ -111,18 +111,18 @@ void Directory::lazy_load_fixel_value_file(const std::string &key) const {
     for (size_t f = 0; f < nfixels; ++f) {
       data_image.index(0) = offset + f;
       float value = data_image.value();
-      fixel_values[key].add_value(value);
+      fixel_values[std::string(key)].add_value(value);
     }
   }
 
-  fixel_values[key].initialise_windowing();
+  fixel_values[std::string(key)].initialise_windowing();
 }
 
-FixelValue &Directory::get_fixel_value(const std::string &key) const {
+FixelValue &Directory::get_fixel_value(std::string_view key) const {
   if (!has_values())
     return dummy_fixel_val_state;
 
-  FixelValue &fixel_val = fixel_values[key];
+  FixelValue &fixel_val = fixel_values[std::string(key)];
   // Buffer hasn't been loaded yet -  we do this lazily
   if (!fixel_val.loaded)
     lazy_load_fixel_value_file(key);
