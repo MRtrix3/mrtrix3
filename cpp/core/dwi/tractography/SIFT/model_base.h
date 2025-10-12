@@ -110,20 +110,20 @@ public:
   void perform_FOD_segmentation(Image<float> &);
   void scale_FDs_by_GM();
 
-  void map_streamlines(std::string_view);
+  void map_streamlines(std::string_view /*path*/);
 
-  virtual bool operator()(const FMLS::FOD_lobes &in);
-  virtual bool operator()(const Mapping::SetDixel &in);
+  virtual bool operator()(const FMLS::FOD_lobes & /*in*/);
+  virtual bool operator()(const Mapping::SetDixel & /*in*/);
 
   default_type calc_cost_function() const;
 
   default_type mu() const { return FOD_sum / TD_sum; }
   bool have_act_data() const { return act_5tt.valid(); }
 
-  void output_proc_mask(std::string_view);
-  void output_5tt_image(std::string_view);
-  void initialise_debug_image_output(std::string_view) const;
-  void output_all_debug_images(std::string_view, std::string_view) const;
+  void output_proc_mask(std::string_view /*path*/);
+  void output_5tt_image(std::string_view /*path*/);
+  void initialise_debug_image_output(std::string_view /*dirpath*/) const;
+  void output_all_debug_images(std::string_view /*dirpath*/, std::string_view /*prefix*/) const;
 
   using Mapping::Fixel_TD_map<Fixel>::begin;
 

@@ -178,7 +178,7 @@ void parse_itk_trafo(std::string_view itk_file,
 void run() {
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
-  std::string_view output_path = argument.back();
+  const std::string_view output_path = argument.back();
 
   switch (op) {
   case 0: { // flirt_import

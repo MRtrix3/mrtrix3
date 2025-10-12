@@ -70,7 +70,7 @@ const std::vector<std::string> suffixes{".nii", ".img"};
 bool right_left_warning_issued = false;
 
 template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
-  std::string_view version = Type<NiftiHeader>::version();
+  const std::string_view version = Type<NiftiHeader>::version();
   using dim_type = typename Type<NiftiHeader>::dim_type;
   using code_type = typename Type<NiftiHeader>::code_type;
   using float_type = typename Type<NiftiHeader>::float_type;
@@ -345,7 +345,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
 }
 
 template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const bool single_file) {
-  std::string_view version = Type<NiftiHeader>::version();
+  const std::string_view version = Type<NiftiHeader>::version();
   using dim_type = typename Type<NiftiHeader>::dim_type;
   using vox_offset_type = typename Type<NiftiHeader>::vox_offset_type;
   using code_type = typename Type<NiftiHeader>::code_type;
@@ -691,7 +691,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
-  std::string_view version = Type<nifti_header>::version();
+  const std::string_view version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -723,7 +723,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
-  std::string_view version = Type<nifti_header>::version();
+  const std::string_view version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");

@@ -145,7 +145,7 @@ void MeshMulti::load(std::string_view path) {
 }
 
 void MeshMulti::save(std::string_view path) const {
-  if (!Path::has_suffix(std::string(path).c_str(), "obj") && !Path::has_suffix(path, "OBJ"))
+  if (!Path::has_suffix(path, {"obj", "OBJ"}))
     throw Exception("Multiple meshes only supported by OBJ file format");
   File::OFStream out(path);
   size_t offset = 1;

@@ -28,7 +28,7 @@ std::string basename(std::string_view name) {
 std::string dirname(std::string_view name) {
   size_t i = name.find_last_of(PATH_SEPARATORS);
   return (i == std::string::npos ? std::string("")
-                                 : (i ? std::string(name.substr(0, i)) : std::string(1, PATH_SEPARATORS[0])));
+                                 : (i > 0 ? std::string(name.substr(0, i)) : std::string(1, PATH_SEPARATORS[0])));
 }
 
 std::string join(std::string_view first, std::string_view second) {
@@ -47,9 +47,9 @@ bool exists(std::string_view path) {
   struct stat buf;
 #ifdef MRTRIX_WINDOWS
   const std::string stripped(strip(path, PATH_SEPARATORS, false, true));
-  if (!stat(stripped.c_str(), &buf))
+  if (stat(stripped.c_str(), &buf) == 0)
 #else
-  if (!stat(std::string(path).c_str(), &buf))
+  if (stat(std::string(path).c_str(), &buf) == 0)
 #endif
     return true;
   if (errno == ENOENT)

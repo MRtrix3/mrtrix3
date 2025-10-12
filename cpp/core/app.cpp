@@ -473,7 +473,7 @@ std::string Argument::usage() const {
   case Choice: {
     stream << "CHOICE";
     const auto &choices = std::get<std::vector<std::string>>(limits);
-    for (std::string_view p : choices)
+    for (const auto &p : choices)
       stream << " " << p;
     break;
   }
@@ -1181,7 +1181,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   srand(time(nullptr));
 }
 
-const std::vector<ParsedOption> get_options(std::string_view name) {
+std::vector<ParsedOption> get_options(std::string_view name) {
   assert(!name.empty());
   assert(name[0] != '-');
   std::vector<ParsedOption> matches;

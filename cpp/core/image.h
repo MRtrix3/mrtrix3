@@ -132,7 +132,7 @@ public:
    * possibility that this image might use indirect IO, you should use
    * the save() function instead (and even then, it should only be used
    * for debugging purposes). */
-  std::string dump_to_mrtrix_file(std::string_view nominated_filename, bool use_multi_threading = true) const;
+  std::string dump_to_mrtrix_file(std::string_view nominated_filename) const;
 
   //! return a new Image using direct IO
   /*!
@@ -396,12 +396,13 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 }
 
 template <typename ValueType>
-std::string Image<ValueType>::dump_to_mrtrix_file(std::string_view nominated_filename, bool) const {
-  if (!data_pointer || (!Path::has_suffix(nominated_filename, ".mih") && !Path::has_suffix(nominated_filename, ".mif")))
+std::string Image<ValueType>::dump_to_mrtrix_file(std::string_view nominated_filename) const {
+  if (data_pointer == nullptr ||
+      (!Path::has_suffix(nominated_filename, ".mih") && !Path::has_suffix(nominated_filename, ".mif")))
     throw Exception("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
   // try to dump file to mrtrix format if possible (direct IO)
-  const std::string output_filename =
+  std::string output_filename =
       is_dash(nominated_filename) ? File::create_tempfile(0, "mif") : std::string(nominated_filename);
 
   DEBUG("dumping image \"" + name() + "\" to file \"" + output_filename + "\"...");
@@ -441,7 +442,7 @@ std::string Image<ValueType>::dump_to_mrtrix_file(std::string_view nominated_fil
 }
 
 template <class ImageType>
-std::string __save_generic(ImageType &x, std::string_view filename, bool use_multi_threading) {
+std::string _save_generic(ImageType &x, std::string_view filename, bool use_multi_threading) {
   auto out = Image<typename ImageType::value_type>::create(filename, x);
   if (use_multi_threading)
     threaded_copy(x, out);
@@ -456,7 +457,7 @@ std::string __save_generic(ImageType &x, std::string_view filename, bool use_mul
 template <class ImageType>
 typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value, std::string>::type
 save(ImageType &&x, std::string_view filename, bool use_multi_threading = true) {
-  return __save_generic(x, filename, use_multi_threading);
+  return _save_generic(x, filename, use_multi_threading);
 }
 
 //! save contents of an existing image to file (for debugging only)
@@ -464,10 +465,10 @@ template <class ImageType>
 typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, std::string>::type
 save(ImageType &&x, std::string_view filename, bool use_multi_threading = true) {
   try {
-    return x.dump_to_mrtrix_file(filename, use_multi_threading);
+    return x.dump_to_mrtrix_file(filename);
   } catch (...) {
   }
-  return __save_generic(x, filename, use_multi_threading);
+  return _save_generic(x, filename, use_multi_threading);
 }
 
 //! display the contents of an image in MRView (for debugging only)

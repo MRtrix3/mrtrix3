@@ -48,7 +48,7 @@ void run() {
   MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
   MR::Connectome::check(connectome);
   const int op = argument[1];
-  std::string_view output_path = argument[2];
+  const std::string_view output_path = argument[2];
 
   INFO("Applying \'" + str(operations[op]) + "\' transformation to the input connectome.");
 

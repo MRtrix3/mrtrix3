@@ -207,7 +207,7 @@ bool ParsedName::operator<(const ParsedName &pn) const {
   return false;
 }
 
-std::vector<uint32_t> ParsedName::List::parse_scan_check(std::string_view specifier, size_t max_num_sequences) {
+std::vector<uint32_t> ParsedName::List::parse_scan_check(std::string_view specifier) {
   NameParser parser;
   parser.parse(specifier);
 

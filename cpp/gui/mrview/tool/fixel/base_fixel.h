@@ -269,7 +269,8 @@ private:
 
 template <typename ImageType> class FixelType : public BaseFixel {
 public:
-  FixelType(std::string_view filename, Fixel &fixel_tool) : BaseFixel(filename, fixel_tool), transform(header) {}
+  FixelType(std::string_view filename, Fixel &fixel_tool)
+      : BaseFixel(filename, fixel_tool), fixel_data(nullptr), transform(header) {}
 
 protected:
   std::unique_ptr<ImageType> fixel_data;

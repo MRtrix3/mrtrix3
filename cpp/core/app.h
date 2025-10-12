@@ -347,7 +347,7 @@ extern OptionGroup __standard_options;
  *    auto values = opt[0][4].as_sequence_float();
  * }
  * \endcode */
-const std::vector<ParsedOption> get_options(std::string_view name);
+std::vector<ParsedOption> get_options(std::string_view name);
 
 //! Returns the option value if set, and the default otherwise.
 /*! Only be used for command-line options that do not specify

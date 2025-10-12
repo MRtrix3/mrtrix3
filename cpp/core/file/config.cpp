@@ -84,7 +84,7 @@ std::string Config::get(std::string_view key) {
 }
 
 std::string Config::get(std::string_view key, std::string_view default_value) {
-  KeyValues::iterator i = config.find(std::string(key));
+  const KeyValues::const_iterator i = config.find(std::string(key));
   return (i != config.end() ? i->second : std::string(default_value));
 }
 

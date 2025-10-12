@@ -34,14 +34,14 @@ public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
   Mask(const Mask &) = default;
   Mask(std::string_view name)
-      : Image<bool>(__get_mask(name)),
+      : Image<bool>(get_mask(name)),
         scanner2voxel(new transform_type(Transform(*this).scanner2voxel.cast<float>())),
         voxel2scanner(new transform_type(Transform(*this).voxel2scanner.cast<float>())) {}
 
   std::shared_ptr<transform_type> scanner2voxel, voxel2scanner; // Ptr to prevent unnecessary copy-construction
 
 private:
-  static Image<bool> __get_mask(std::string_view name);
+  static Image<bool> get_mask(std::string_view name);
 };
 
 class ROI {

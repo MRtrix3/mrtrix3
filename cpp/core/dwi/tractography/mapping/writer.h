@@ -95,10 +95,6 @@ public:
         for (auto l = loop(buffer); l; ++l)
           buffer.value() = std::numeric_limits<value_type>::max();
       }
-      /* shouldn't be needed: scratch IO class memset to zero already:
-                    else {
-                      buffer.zero();
-                    } */
 
     } else { // Greyscale and dixel
 
@@ -109,10 +105,6 @@ public:
         for (auto l = loop(buffer); l; ++l)
           buffer.value() = std::numeric_limits<value_type>::lowest();
       }
-      /* shouldn't be needed: scratch IO class memset to zero already:
-                    else {
-                      buffer.zero();
-                    }*/
     }
 
     // With TOD, hijack the counts buffer in voxel statistic min/max mode

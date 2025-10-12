@@ -187,7 +187,7 @@ protected:
 
   std::vector<uint8_t *> end_seq;
 
-  uint16_t get_VR_from_tag_name(std::string_view name) {
+  static uint16_t get_VR_from_tag_name(std::string_view name) {
     union {
       std::array<char, 2> t;
       uint16_t i;

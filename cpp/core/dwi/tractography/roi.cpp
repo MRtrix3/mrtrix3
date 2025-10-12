@@ -70,7 +70,7 @@ void load_rois(Properties &properties) {
     properties.mask.add(ROI(opt[i][0]));
 }
 
-Image<bool> Mask::__get_mask(std::string_view name) {
+Image<bool> Mask::get_mask(std::string_view name) {
   auto data = Image<bool>::open(name);
   std::vector<size_t> bottom(3, 0);
   std::vector<size_t> top(3, 0);

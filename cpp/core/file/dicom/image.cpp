@@ -24,7 +24,7 @@
 
 namespace MR::File::Dicom {
 
-void Image::parse_item(Element &item, std::string_view dirname) {
+void Image::parse_item(Element &item) {
   if (item.ignore_when_parsing())
     return;
 

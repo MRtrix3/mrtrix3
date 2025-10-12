@@ -90,7 +90,7 @@ void replace(std::string &string, char orig, char final);
 void replace(std::string &str, std::string_view from, std::string_view to);
 
 std::vector<std::string> split(std::string_view string,
-                               const std::string delimiters = " \t\n",
+                               std::string_view delimiters = " \t\n",
                                bool ignore_empty_fields = false,
                                size_t num = std::numeric_limits<size_t>::max());
 

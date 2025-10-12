@@ -55,7 +55,7 @@ public:
 
     } else {
 
-      std::string_view fod_path(properties["seed_dynamic"]);
+      const std::string_view fod_path(properties["seed_dynamic"]);
       const std::string max_num_tracks = properties["max_num_tracks"];
       if (max_num_tracks.empty())
         throw Exception("Dynamic seeding requires setting the desired number of tracks using the -select option");

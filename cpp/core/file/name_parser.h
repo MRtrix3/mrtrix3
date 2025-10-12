@@ -120,8 +120,7 @@ public:
   //! a class to hold a set of parsed image filenames
   class List {
   public:
-    std::vector<uint32_t> parse_scan_check(std::string_view specifier,
-                                           size_t max_num_sequences = std::numeric_limits<size_t>::max());
+    std::vector<uint32_t> parse_scan_check(std::string_view specifier);
 
     void scan(NameParser &parser);
 

@@ -37,7 +37,7 @@ public:
       in.close();
   }
 
-  void open(std::string_view file, std::string_view firstline, Properties &properties);
+  void open(std::string_view file, std::string_view type, Properties &properties);
 
   void close() { in.close(); }
 

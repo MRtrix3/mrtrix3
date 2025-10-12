@@ -224,7 +224,7 @@ void rmdir(std::string_view folder, bool recursive) {
   }
   const std::string temp(folder);
   DEBUG("deleting folder \"" + temp + "\"...");
-  if (::rmdir(temp.c_str()))
+  if (::rmdir(temp.c_str()) != 0)
     throw Exception("error deleting folder \"" + temp + "\": " + strerror(errno));
 }
 

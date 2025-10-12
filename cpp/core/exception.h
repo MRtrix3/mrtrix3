@@ -52,7 +52,7 @@ extern void (*print)(std::string_view msg);
 
 inline void __print_stderr(std::string_view text) {
 #ifdef MRTRIX_AS_R_LIBRARY
-  REprintf(text.c_str());
+  REprintf(std::string(text).c_str());
 #else
   std::cerr << text;
 #endif

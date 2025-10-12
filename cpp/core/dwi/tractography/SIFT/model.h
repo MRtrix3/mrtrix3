@@ -55,7 +55,7 @@ public:
   virtual ~Model();
 
   // Over-rides the function defined in ModelBase; need to build contributions member also
-  void map_streamlines(std::string_view);
+  void map_streamlines(std::string_view /*path*/);
 
   void remove_excluded_fixels();
 
@@ -64,7 +64,7 @@ public:
 
   track_t num_tracks() const { return contributions.size(); }
 
-  void output_non_contributing_streamlines(std::string_view) const;
+  void output_non_contributing_streamlines(std::string_view /*output_path*/) const;
 
   using ModelBase<Fixel>::mu;
 

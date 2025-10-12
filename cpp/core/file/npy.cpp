@@ -342,7 +342,7 @@ ReadInfo read_header(std::string_view path) {
 
   // Make sure that the size of the file matches expectations given the offset to the data, the shape, and the data type
   struct stat sbuf;
-  if (stat(std::string(path).c_str(), &sbuf))
+  if (stat(std::string(path).c_str(), &sbuf) != 0)
     throw Exception("Cannot query size of NumPy file \"" + std::string(path) + "\": " + strerror(errno));
   const size_t file_size = sbuf.st_size;
   size_t num_elements = info.shape[0];

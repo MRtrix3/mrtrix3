@@ -67,7 +67,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
 }
 
 std::vector<std::string>
-split(std::string_view string, const std::string delimiters, bool ignore_empty_fields, size_t num) {
+split(std::string_view string, std::string_view delimiters, bool ignore_empty_fields, size_t num) {
   std::vector<std::string> V;
   if (string.empty())
     return V;

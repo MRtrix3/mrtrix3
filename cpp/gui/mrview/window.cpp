@@ -31,6 +31,7 @@
 #include "opengl/lighting.h"
 #include "timer.h"
 #include <QDebug>
+#include <unordered_map>
 
 namespace MR::GUI::MRView {
 using namespace App;
@@ -758,20 +759,18 @@ void Window::parse_arguments() {
   QTimer::singleShot(10, this, SLOT(process_commandline_option_slot()));
 }
 
+namespace {
+const std::unordered_map<std::string, ColourBars::Position> str2pos{{"bottomleft", ColourBars::Position::BottomLeft},
+                                                                    {"bottomright", ColourBars::Position::BottomRight},
+                                                                    {"topleft", ColourBars::Position::TopLeft},
+                                                                    {"topright", ColourBars::Position::TopRight}};
+}
 ColourBars::Position Window::parse_colourmap_position_str(std::string_view position_str) {
-
-  ColourBars::Position pos(ColourBars::Position::None);
-
-  if (position_str == "bottomleft")
-    pos = ColourBars::Position::BottomLeft;
-  else if (position_str == "bottomright")
-    pos = ColourBars::Position::BottomRight;
-  else if (position_str == "topleft")
-    pos = ColourBars::Position::TopLeft;
-  else if (position_str == "topright")
-    pos = ColourBars::Position::TopRight;
-
-  return pos;
+  try {
+    return str2pos.at(std::string(position_str));
+  } catch (std::out_of_range) {
+    return ColourBars::Position::None;
+  }
 }
 
 Window::~Window() {

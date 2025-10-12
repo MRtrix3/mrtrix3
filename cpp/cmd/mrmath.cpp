@@ -335,7 +335,7 @@ protected:
 void run() {
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
-  std::string_view output_path = argument.back();
+  const std::string_view output_path = argument.back();
 
   auto opt = get_options("axis");
   if (!opt.empty()) {
