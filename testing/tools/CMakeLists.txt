@@ -2,7 +2,6 @@ set(CPP_TOOLS_SRCS
     testing_cpp_cli.cpp
     testing_diff_dir.cpp
     testing_diff_fixel.cpp
-    testing_diff_fixel_old.cpp
     testing_diff_header.cpp
     testing_diff_image.cpp
     testing_diff_matrix.cpp

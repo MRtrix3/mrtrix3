@@ -115,7 +115,7 @@ def parse_commands (commands_dir, completion_path, commands):
         else:
           arg_choices +=  " " + choice
     elif arg_type == 'IMAGEIN':
-      arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,msf,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
+      arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
     elif arg_type == 'FILEIN':
       arg_choices ='`eval ls "$1*" 2> /dev/null | grep -E "$1*\.[^[:space:]]+"``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
     elif arg_type == 'TRACKSIN':

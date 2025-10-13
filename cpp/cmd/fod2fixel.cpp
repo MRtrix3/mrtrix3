@@ -35,7 +35,7 @@ using namespace App;
 using Fixel::index_type;
 
 // clang-format off
-const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
+const OptionGroup OutputOptions = OptionGroup ("Metric values for output fixel data files")
 
   + Option ("afd",
             "output the total Apparent Fibre Density per fixel"

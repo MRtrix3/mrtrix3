@@ -27,7 +27,7 @@
 
 namespace MR::Formats {
 
-// Read generic image header information - common between conventional, compressed and sparse formats
+// Read generic image header information - common between conventional and compressed formats
 template <class SourceType> void read_mrtrix_header(Header &, SourceType &);
 
 // These are helper functiosn for reading key/value pairs from either a File::KeyValue construct,
@@ -36,7 +36,7 @@ bool next_keyvalue(File::KeyValue::Reader &, std::string &, std::string &);
 bool next_keyvalue(File::GZ &, std::string &, std::string &);
 
 // Get the path to a file - use same function for image data and sparse data
-// Note that the 'file' and 'sparse_file' fields are read in as entries in the map<string, string>
+// Note that the 'file' field is read in as entries in the map<string, string>
 //   by read_mrtrix_header(), and are therefore erased by this function so that they do not propagate
 //   into new images created using this header
 void get_mrtrix_file_path(Header &, const std::string &, std::string &, size_t &);
