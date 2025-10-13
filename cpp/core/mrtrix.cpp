@@ -106,7 +106,7 @@ inline bool __match(std::string_view first, std::string_view second) {
   // Make sure that the characters after '*' are present
   // in second string. This function assumes that the first
   // string will not contain two consecutive '*'
-  if (first[0] == '*' && first[1] != '\0' && !second.empty())
+  if (first[0] == '*' && first.size() > 1 && !second.empty())
     return false;
 
   // If the first string contains '?', or current characters
@@ -222,8 +222,6 @@ size_t dash_bytes(std::string_view arg) {
     return 0;
   if (arg[0] == '-')
     return 1;
-  if (arg[0] == '\0' || arg[1] == '\0' || arg[2] == '\0')
-    return 0;
   if (arg.size() < 3)
     return 0;
   std::basic_string_view<unsigned char> uarg(reinterpret_cast<const unsigned char *>(arg.data()), arg.size());
