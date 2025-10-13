@@ -20,10 +20,6 @@
 #include "file/matrix.h"
 #include "misc/bitset.h"
 
-#include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
-#include "fixel/legacy/keys.h"
-
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
 #include "dwi/tractography/SIFT2/reg_calculator.h"

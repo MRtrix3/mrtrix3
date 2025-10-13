@@ -35,8 +35,6 @@
 
 #include "math/rng.h"
 
-#include "fixel/legacy/image.h"
-
 namespace MR::DWI::Tractography::SIFT {
 
 void SIFTer::perform_filtering() {

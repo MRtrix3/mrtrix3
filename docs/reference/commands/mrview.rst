@@ -164,7 +164,7 @@ ODF tool options
 Fixel plot tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-fixel.load image** *(multiple uses permitted)* Load a fixel file (any file inside a fixel directory, or an old .msf / .msh legacy format file) into the fixel tool.
+-  **-fixel.load image** *(multiple uses permitted)* Load a fixel data file inside a fixel directory into the fixel tool.
 
 Connectome tool options
 ^^^^^^^^^^^^^^^^^^^^^^^

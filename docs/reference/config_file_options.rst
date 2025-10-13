@@ -696,12 +696,6 @@ List of MRtrix3 configuration file options
      characters are then appended to produce a unique name in cases
      where a script may be run multiple times in parallel).
 
-.. option:: SparseDataInitialSize
-
-    *default: 16777216*
-
-     Initial buffer size for data in MRtrix sparse image format file (in bytes).
-
 .. option:: SpecularExponent
 
     *default: 5.0*

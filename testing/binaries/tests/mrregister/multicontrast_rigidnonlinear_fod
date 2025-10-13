@@ -4,12 +4,12 @@
 #   (even though both "contrasts" are actually the same image)
 # - Rigid & non-linear modes
 # - FOD-based registration
-mrtransform dwi2fod/msmt/wm.mif -linear moving2template.txt -reorient_fod yes tmp-wmtemplate.mif -force
+mrtransform dwi2fod/msmt_csd/wm.mif -linear moving2template.txt -reorient_fod yes tmp-wmtemplate.mif -force
 
 mrregister -type rigid_nonlinear \
 -rigid_scale 1 -rigid_niter 0 \
 -nl_niter 2,2 -nl_scale 0.3,1 -nl_lmax 0,2 \
-dwi2fod/msmt/wm.mif tmp-wmtemplate.mif \
-dwi2fod/msmt/wm.mif tmp-wmtemplate.mif \
+dwi2fod/msmt_csd/wm.mif tmp-wmtemplate.mif \
+dwi2fod/msmt_csd/wm.mif tmp-wmtemplate.mif \
 -nl_warp_full - | \
 testing_diff_image - mrregister/warp_full.mif.gz -abs 1e-4

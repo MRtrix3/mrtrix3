@@ -36,7 +36,6 @@ MGZ mgz_handler;
 #ifdef MRTRIX_PNG_SUPPORT
 PNG png_handler;
 #endif
-MRtrix_sparse mrtrix_sparse_handler;
 
 const std::vector<std::string> known_extensions{
     ".mih",
@@ -52,8 +51,6 @@ const std::vector<std::string> known_extensions{
     ".mgh",
     ".mgz",
     ".mgh.gz",
-    ".msf",
-    ".msh",
     ".dcm",
 #ifdef MRTRIX_PNG_SUPPORT
     ".png",
@@ -78,7 +75,6 @@ const Base *handlers[] = {&RAM_handler,
 #ifdef MRTRIX_PNG_SUPPORT
                           &png_handler,
 #endif
-                          &mrtrix_sparse_handler,
                           nullptr};
 
 } // namespace MR::Formats
