@@ -15,7 +15,7 @@
 
 
 import math, shlex, shutil
-from mrtrix3 import CONFIG, MRtrixError
+from mrtrix3 import BZERO_THRESHOLD_DEFAULT, CONFIG, MRtrixError
 from mrtrix3 import app, image, run
 
 
@@ -102,7 +102,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  bzero_threshold = float(CONFIG['BZeroThreshold']) if 'BZeroThreshold' in CONFIG else 10.0
+  bzero_threshold = float(CONFIG['BZeroThreshold']) if 'BZeroThreshold' in CONFIG else BZERO_THRESHOLD_DEFAULT
 
 
   # CHECK INPUTS AND OPTIONS

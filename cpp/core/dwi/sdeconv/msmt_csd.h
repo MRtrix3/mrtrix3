@@ -28,11 +28,11 @@
 
 #include "dwi/directions/predefined.h"
 
-#define DEFAULT_MSMTCSD_LMAX 8
-#define DEFAULT_MSMTCSD_NORM_LAMBDA 1.0e-10
-#define DEFAULT_MSMTCSD_NEG_LAMBDA 1.0e-10
-
 namespace MR::DWI::SDeconv {
+
+constexpr ssize_t default_msmt_lmax = 8;
+constexpr default_type default_msmt_normlambda = 1e-10;
+constexpr default_type default_msmt_neglambda = 1e-10;
 
 extern const App::OptionGroup MSMT_CSD_options;
 
@@ -44,8 +44,8 @@ public:
         : grad(DWI::get_DW_scheme(dwi_header)),
           shells(grad),
           HR_dirs(DWI::Directions::electrostatic_repulsion_300()),
-          solution_min_norm_regularisation(DEFAULT_MSMTCSD_NORM_LAMBDA),
-          constraint_min_norm_regularisation(DEFAULT_MSMTCSD_NEG_LAMBDA) {
+          solution_min_norm_regularisation(default_msmt_normlambda),
+          constraint_min_norm_regularisation(default_msmt_neglambda) {
       shells.select_shells(false, false, false);
     }
 
@@ -89,7 +89,7 @@ public:
       if (lmax.empty()) {
         lmax = lmax_response;
         for (size_t t = 0; t != num_tissues(); ++t) {
-          lmax[t] = std::min(uint32_t(DEFAULT_MSMTCSD_LMAX), lmax[t]);
+          lmax[t] = std::min(uint32_t(default_msmt_lmax), lmax[t]);
         }
       } else {
         if (lmax.size() != num_tissues())

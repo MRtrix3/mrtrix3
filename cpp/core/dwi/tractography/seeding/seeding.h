@@ -16,30 +16,29 @@
 
 #pragma once
 
-#include "dwi/tractography/seeding/basic.h"
-#include "dwi/tractography/seeding/dynamic.h"
-#include "dwi/tractography/seeding/gmwmi.h"
-#include "dwi/tractography/seeding/list.h"
+#include <unordered_map>
+
 #include "mrtrix.h"
 
-namespace MR {
-
-namespace App {
+namespace MR::App {
 class OptionGroup;
 }
 
-namespace DWI::Tractography {
-
+namespace MR::DWI::Tractography {
 class Properties;
+}
 
-namespace Seeding {
+namespace MR::DWI::Tractography::Seeding {
+
+// These constants set how many times a tracking algorithm should attempt to propagate
+//   from a given seed point, based on the mechanism used to provide the seed point
+enum class seed_attempt_t { RANDOM, DYNAMIC, GMWMI, FIXED };
+
+extern const std::unordered_map<seed_attempt_t, ssize_t> attempts_per_seed;
 
 extern const App::OptionGroup SeedMechanismOption;
 extern const App::OptionGroup SeedParameterOption;
 void load_seed_mechanisms(Properties &);
 void load_seed_parameters(Properties &);
 
-} // namespace Seeding
-} // namespace DWI::Tractography
-
-} // namespace MR
+} // namespace MR::DWI::Tractography::Seeding

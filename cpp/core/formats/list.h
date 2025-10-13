@@ -97,7 +97,6 @@ DECLARE_IMAGEFORMAT(PAR, "Philips PAR/REG");
 #ifdef MRTRIX_PNG_SUPPORT
 DECLARE_IMAGEFORMAT(PNG, "PNG");
 #endif
-DECLARE_IMAGEFORMAT(MRtrix_sparse, "MRtrix WIP sparse image data format");
 
 /*! a list of all extensions for image formats that %MRtrix can handle. */
 extern const char *known_extensions[];

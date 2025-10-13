@@ -30,9 +30,9 @@ using namespace MR::DWI::Tractography;
 using namespace MR::Raw;
 using namespace MR::ByteOrder;
 
-#define DEFAULT_PLY_INCREMENT 1
-#define DEFAULT_PLY_RADIUS 0.1F
-#define DEFAULT_PLY_SIDES 5
+constexpr int default_ply_increment = 1;
+constexpr float default_ply_radius = 0.1F;
+constexpr int default_ply_sides = 5;
 
 // clang-format off
 void usage() {
@@ -330,9 +330,9 @@ private:
 class PLYWriter : public WriterInterface<float> {
 public:
   PLYWriter(const std::string &file,
-            int increment = DEFAULT_PLY_INCREMENT,
-            float radius = DEFAULT_PLY_RADIUS,
-            int sides = DEFAULT_PLY_SIDES)
+            int increment = default_ply_increment,
+            float radius = default_ply_radius,
+            int sides = default_ply_sides)
       : out(file), increment(increment), radius(radius), sides(sides) {
     vertexFilename = File::create_tempfile(0, "vertex");
     faceFilename = File::create_tempfile(0, "face");
@@ -699,9 +699,9 @@ void run() {
     auto write_ascii = get_options("ascii").size();
     writer.reset(new VTKWriter(argument[1], write_ascii));
   } else if (Path::has_suffix(argument[1], ".ply")) {
-    const int increment = get_option_value("increment", DEFAULT_PLY_INCREMENT);
-    const float radius = get_option_value("radius", DEFAULT_PLY_RADIUS);
-    const int sides = get_option_value("sides", DEFAULT_PLY_SIDES);
+    const int increment = get_option_value("increment", default_ply_increment);
+    const float radius = get_option_value("radius", default_ply_radius);
+    const int sides = get_option_value("sides", default_ply_sides);
     writer.reset(new PLYWriter(argument[1], increment, radius, sides));
   } else if (Path::has_suffix(argument[1], ".rib")) {
     writer.reset(new RibWriter(argument[1]));

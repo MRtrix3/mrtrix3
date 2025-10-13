@@ -58,7 +58,10 @@ public:
       if (rk4)
         throw Exception("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
-      set_step_and_angle(Defaults::stepsize_voxels_ifod2, Defaults::angle_ifod2, true);
+      set_step_and_angle(Defaults::stepsize_voxels_ifod2,
+                         Defaults::angle_ifod2,
+                         intrinsic_integration_order_t::HIGHER,
+                         curvature_constraint_t::LIMITED_SEARCH);
       sin_max_angle_ho = std::sin(max_angle_ho);
       set_cutoff(Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
@@ -200,7 +203,7 @@ public:
     if (++sample_idx < S.num_samples) {
       pos = positions[sample_idx];
       dir = tangents[sample_idx];
-      return CONTINUE;
+      return term_t::CONTINUE;
     }
 
     Eigen::Vector3f next_pos, next_dir;
@@ -210,13 +213,13 @@ public:
       get_path(calib_positions, calib_tangents, rotate_direction(dir, calibrate_list[i]));
       float val = path_prob(calib_positions, calib_tangents);
       if (std::isnan(val))
-        return EXIT_IMAGE;
+        return term_t::EXIT_IMAGE;
       else if (val > max_val)
         max_val = val;
     }
 
     if (max_val <= 0.0)
-      return CALIBRATOR;
+      return term_t::CALIBRATOR;
 
     max_val *= calibrate_ratio;
 
@@ -238,11 +241,11 @@ public:
         pos = positions[0];
         dir = tangents[0];
         sample_idx = 0;
-        return CONTINUE;
+        return term_t::CONTINUE;
       }
     }
 
-    return MODEL;
+    return term_t::MODEL;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {

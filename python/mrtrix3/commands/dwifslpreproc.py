@@ -319,7 +319,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import BZERO_THRESHOLD_DEFAULT, CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, fsl, image, matrix, phaseencoding, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
 
   if utils.is_windows():
@@ -760,7 +760,7 @@ def execute(): #pylint: disable=unused-variable
   # This needs to occur at the outermost loop as it is pertinent information
   #   not only for the -align_seepi option, but also for when the -se_epi option
   #   is not provided at all, and the input to topup is extracted solely from the DWIs
-  bzero_threshold = float(CONFIG.get('BZeroThreshold', 10.0))
+  bzero_threshold = float(CONFIG.get('BZeroThreshold', BZERO_THRESHOLD_DEFAULT))
   dwi_first_bzero_index = 0
   for line in grad:
     if line[3] <= bzero_threshold:

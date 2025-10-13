@@ -52,7 +52,7 @@ Options specific to the "connect" filter
 
 -  **-threshold_value value** specify a threshold for the input fixel data file values (default = 0.5)
 
--  **-threshold_connectivity value** specify a fixel-fixel connectivity threshold for connected-component analysis (default = 0.10000000000000001)
+-  **-threshold_connectivity value** specify a fixel-fixel connectivity threshold for connected-component analysis (default = 0.1)
 
 Options specific to the "smooth" filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

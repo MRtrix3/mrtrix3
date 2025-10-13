@@ -20,10 +20,10 @@
 #include "dwi/tractography/streamline.h"
 #include "math/median.h"
 
-#define DEFAULT_SMOOTHING 4.0
-
 using namespace MR;
 using namespace App;
+
+constexpr float default_smoothing = 4.0F;
 
 // clang-format off
 void usage() {
@@ -39,7 +39,7 @@ void usage() {
   OPTIONS
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
                      " The standard deviation is defined in units of track points"
-                     " (default: " + str(DEFAULT_SMOOTHING, 2) + ")")
+                     " (default: " + str(default_smoothing, 2) + ")")
     + Argument ("sigma").type_float(1e-6);
 
 }
@@ -52,7 +52,7 @@ void run() {
   DWI::Tractography::ScalarReader<value_type> reader(argument[0], properties);
   DWI::Tractography::ScalarWriter<value_type> writer(argument[1], properties);
 
-  float stdev = get_option_value("stdev", DEFAULT_SMOOTHING);
+  float stdev = get_option_value("stdev", default_smoothing);
 
   std::vector<float> kernel(2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;

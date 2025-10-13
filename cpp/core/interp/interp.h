@@ -16,22 +16,12 @@
 
 #pragma once
 
-#include "mrview/tool/fixel/base_fixel.h"
+#include <string>
+#include <vector>
 
-namespace MR::GUI::MRView::Tool {
-class Legacy : public FixelType<FixelLegacyType> {
-public:
-  Legacy(const std::string &filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool) {
-    value_types = {"unity", "fixel size", "associated value"};
-    colour_types = {"direction", "fixel size", "associated value"};
-    threshold_types = {"fixel size", "associated value"};
-    fixel_values[value_types[1]];
-    fixel_values[value_types[2]];
+namespace MR::Interp {
 
-    fixel_data.reset(new FixelLegacyType(header));
-    load_image(filename);
-  }
+const std::vector<std::string> interp_choices{"nearest", "linear", "cubic", "sinc"};
+enum class interp_type { NEAREST, LINEAR, CUBIC, SINC };
 
-  void load_image_buffer() override;
-};
-} // namespace MR::GUI::MRView::Tool
+} // namespace MR::Interp

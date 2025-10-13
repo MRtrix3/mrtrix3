@@ -39,16 +39,25 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_TRANSFORMATION_TYPE 5 // affine_nonlinear
 const std::vector<std::string> transformation_choices = {
     "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear"};
+enum class transformation_t {
+  RIGID,
+  AFFINE,
+  NONLINEAR,
+  RIGID_AFFINE,
+  RIGID_NONLINEAR,
+  AFFINE_NONLINEAR,
+  RIGID_AFFINE_NONLINEAR
+};
+constexpr transformation_t default_transformation_type = transformation_t::AFFINE_NONLINEAR;
 
 // clang-format off
 const OptionGroup multiContrastOptions =
   OptionGroup ("Multi-contrast options")
   + Option ("mc_weights", "relative weight of images used for multi-contrast registration."
                           " Default: 1.0 (equal weighting)")
-    + Argument ("weights").type_sequence_float ();
+    + Argument ("weights").type_sequence_float();
 
 
 void usage() {
@@ -101,9 +110,9 @@ void usage() {
 
   OPTIONS
   + Option ("type", std::string("the registration type.") +
-                    " Valid choices are:"
-                    " rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear"
-                    " (Default: " + transformation_choices[DEFAULT_TRANSFORMATION_TYPE] + ")")
+                    " Valid choices are: "
+                    + join(transformation_choices, ", ")
+                    + " (default: " + transformation_choices[static_cast<ssize_t>(default_transformation_type)] + ")")
     + Argument ("choice").type_choice (transformation_choices)
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
@@ -171,33 +180,34 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
-  const int registration_type = get_option_value("type", DEFAULT_TRANSFORMATION_TYPE);
+  const transformation_t registration_type =
+      transformation_t(get_option_value("type", static_cast<ssize_t>(default_transformation_type)));
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;
   switch (registration_type) {
-  case 0:
+  case transformation_t::RIGID:
     do_rigid = true;
     break;
-  case 1:
+  case transformation_t::AFFINE:
     do_affine = true;
     break;
-  case 2:
+  case transformation_t::NONLINEAR:
     do_nonlinear = true;
     break;
-  case 3:
+  case transformation_t::RIGID_AFFINE:
     do_rigid = true;
     do_affine = true;
     break;
-  case 4:
+  case transformation_t::RIGID_NONLINEAR:
     do_rigid = true;
     do_nonlinear = true;
     break;
-  case 5:
+  case transformation_t::AFFINE_NONLINEAR:
     do_affine = true;
     do_nonlinear = true;
     break;
-  case 6:
+  case transformation_t::RIGID_AFFINE_NONLINEAR:
     do_rigid = true;
     do_affine = true;
     do_nonlinear = true;

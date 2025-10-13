@@ -24,8 +24,6 @@
 
 #include "algo/loop.h"
 #include "fixel/helpers.h"
-#include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
 
 #include "mrview/displayable.h"
 #include "mrview/tool/fixel/fixel.h"
@@ -280,7 +278,6 @@ protected:
   }
 };
 
-using FixelLegacyType = MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric>;
 using FixelImage4DType = MR::Image<float>;
 using FixelIndexImageType = MR::Image<uint32_t>;
 } // namespace MR::GUI::MRView::Tool

@@ -32,8 +32,6 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 
-#define MAX_VOXEL_STEP_RATIO 0.333
-
 using namespace MR;
 using namespace App;
 
@@ -42,6 +40,8 @@ using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 
 const std::vector<std::string> windows = {"rectangle", "triangle", "cosine", "hann", "hamming", "lanczos"};
+
+constexpr default_type maximum_ratio_stepsize_voxelsize = 1.0 / 3.0;
 
 // clang-format off
 void usage () {
@@ -338,7 +338,7 @@ void run() {
     INFO("track interpolation factor manually set to " + str(upsample_ratio));
   } else {
     try {
-      upsample_ratio = determine_upsample_ratio(header, properties, MAX_VOXEL_STEP_RATIO);
+      upsample_ratio = determine_upsample_ratio(header, properties, maximum_ratio_stepsize_voxelsize);
       INFO("track interpolation factor automatically set to " + str(upsample_ratio));
     } catch (Exception &e) {
       e.push_back("Try using -upsample option to explicitly set the streamline upsampling ratio;");

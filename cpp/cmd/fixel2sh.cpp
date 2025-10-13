@@ -37,7 +37,7 @@ void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
            " and David Raffelt (david.raffelt@florey.edu.au)";
 
-  SYNOPSIS = "Convert a fixel-based sparse-data image into an spherical harmonic image";
+  SYNOPSIS = "Generate spherical harmonics decompositions that mimic the content of a fixel data file";
 
   DESCRIPTION
   + "This command generates spherical harmonic data from fixels"

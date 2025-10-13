@@ -29,6 +29,6 @@ extern const char *format_description;
 using index_type = uint32_t;
 
 const std::string n_fixels_key("nfixels");
-const std::initializer_list<const std::string> supported_sparse_formats{".mif", ".nii", ".mif.gz", ".nii.gz"};
+const std::initializer_list<const std::string> supported_image_formats{".mif", ".nii", ".mif.gz", ".nii.gz"};
 
 } // namespace MR::Fixel

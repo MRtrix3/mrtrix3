@@ -67,7 +67,7 @@ Options for controlling the SIFT2 optimisation algorithm
 
 -  **-min_iters count** minimum number of iterations to run before testing for convergence; this can prevent premature termination at early iterations if the cost function increases slightly (default: 10)
 
--  **-max_iters count** maximum number of iterations to run before terminating program
+-  **-max_iters count** maximum number of iterations to run before terminating program (default: 1000)
 
 -  **-min_factor factor** minimum weighting factor for an individual streamline; if the factor falls below this number, the streamline will be rejected entirely (factor set to zero) (default: 0)
 

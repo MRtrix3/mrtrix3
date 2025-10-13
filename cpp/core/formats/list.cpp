@@ -36,7 +36,6 @@ MGZ mgz_handler;
 #ifdef MRTRIX_PNG_SUPPORT
 PNG png_handler;
 #endif
-MRtrix_sparse mrtrix_sparse_handler;
 
 const Base *handlers[] = {&RAM_handler,
                           &pipe_handler,
@@ -55,7 +54,6 @@ const Base *handlers[] = {&RAM_handler,
 #ifdef MRTRIX_PNG_SUPPORT
                           &png_handler,
 #endif
-                          &mrtrix_sparse_handler,
                           nullptr};
 
 const char *known_extensions[] = {".mih",
@@ -71,8 +69,6 @@ const char *known_extensions[] = {".mih",
                                   ".mgh",
                                   ".mgz",
                                   ".mgh.gz",
-                                  ".msf",
-                                  ".msh",
                                   ".dcm",
 #ifdef MRTRIX_PNG_SUPPORT
                                   ".png",

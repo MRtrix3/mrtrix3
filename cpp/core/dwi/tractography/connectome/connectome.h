@@ -23,13 +23,13 @@
 
 namespace MR::DWI::Tractography::Connectome {
 
-#define TCK2NODES_RADIAL_DEFAULT_DIST 4.0
-#define TCK2NODES_REVSEARCH_DEFAULT_DIST                                                                               \
-  0.0 // Default = no distance limit, reverse search all the way to the streamline midpoint
-#define TCK2NODES_FORWARDSEARCH_DEFAULT_DIST 3.0
-
 using node_t = MR::Connectome::node_t;
 using NodePair = std::pair<node_t, node_t>;
+
+constexpr default_type default_tck2nodes_radial_distance = 4.0;
+// Default = no distance limit, reverse search all the way to the streamline midpoint
+// constexpr default_type default_tck2nodes_reversesearch_distance = 0.0;
+// constexpr default_type default_tck2nodes_forwardsearch_distance = 3.0;
 
 class Tck2nodes_base;
 class Metric;
