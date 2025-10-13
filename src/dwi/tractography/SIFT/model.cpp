@@ -148,7 +148,10 @@ namespace MR
         // TODO Some small discrepancy;
         //   is this due to an imbalance in the track fixel contribution compression?
         //   Or perhaps truncation?
-        VAR (TD_sum);
+        if (App::log_level < 3)
+          return;
+        DEBUG("Checking quantification of total tractogram density:")
+        DEBUG("TD_sum after initial streamline mapping is " + str(TD_sum));
         value_type sum_from_fixels = 0.0, sum_from_fixels_weighted = 0.0;
 
         for (size_t i = 0; i != nfixels(); ++i) {
@@ -156,14 +159,14 @@ namespace MR
           sum_from_fixels          += fixel.td();
           sum_from_fixels_weighted += fixel.td() * fixel.weight();
         }
-        VAR (sum_from_fixels);
-        VAR (sum_from_fixels_weighted);
+        DEBUG("Sum of all track densities from all fixels: " + str(sum_from_fixels));
+        DEBUG("TD_sum aggregated across fixels accounting for fixel model weights: " + str(sum_from_fixels_weighted));
         value_type sum_from_tracks = 0.0;
         for (vector<TrackContribution*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i)
             sum_from_tracks += (*i)->get_total_contribution();
         }
-        VAR (sum_from_tracks);
+        DEBUG("Sum of total contributions from all streamlines: " + str(sum_from_tracks));
       }
 
 

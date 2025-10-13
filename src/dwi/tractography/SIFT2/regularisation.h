@@ -279,11 +279,15 @@ namespace MR
         return Math::pow2(deltacoeff);
       }
       FORCE_INLINE value_type reg_deltacoeff (const value_type deltacoeff, const value_type ref) {
+        assert (!reg_delta_out_of_bounds(ref));
         if (reg_delta_out_of_bounds(deltacoeff))
           return std::numeric_limits<value_type>::signaling_NaN();
-        return Math::pow2((deltacoeff - ref) / (deltacoeff <= ref        //
-                                                ? value_type(1) + ref    //
-                                                : value_type(1) - ref)); //
+        const value_type diff = deltacoeff - ref;
+        if (diff == value_type(0))
+          return value_type(0);
+        return Math::pow2(diff / (deltacoeff < ref         //
+                                  ? value_type(1) + ref    //
+                                  : value_type(1) - ref)); //
       }
       FORCE_INLINE value_type reg_deltacoeff (const DifferentialWCF &dWCF) {
         return reg_deltacoeff(dWCF.delta_coeff());
@@ -297,11 +301,15 @@ namespace MR
         return value_type(2) * dWCF.delta_coeff();
       }
       FORCE_INLINE value_type dregdeltacoeff_ddeltacoeff (const DifferentialWCF &dWCF, const value_type ref) {
+        assert (!reg_delta_out_of_bounds(ref));
         if (reg_delta_out_of_bounds(dWCF))
           return std::numeric_limits<value_type>::signaling_NaN();
-        return value_type(2) * (dWCF.delta_coeff() - ref) / Math::pow2(dWCF.delta_coeff() <= ref //
-                                                                       ? value_type(1) + ref     //
-                                                                       : value_type(1) - ref);   //
+        const value_type diff = dWCF.delta_coeff() - ref;
+        if (diff == value_type(0))
+          return value_type(0);
+        return value_type(2) * diff / Math::pow2(dWCF.delta_coeff() < ref //
+                                                 ? value_type(1) + ref    //
+                                                 : value_type(1) - ref);  //
       }
       FORCE_INLINE value_type d2regadeltacoeff_ddeltacoeff2 (const DifferentialWCF &dWCF) {
         if (reg_delta_out_of_bounds(dWCF))
@@ -309,9 +317,12 @@ namespace MR
         return value_type(2);
       }
       FORCE_INLINE value_type d2regadeltacoeff_ddeltacoeff2 (const DifferentialWCF &dWCF, const value_type ref) {
+        assert (!reg_delta_out_of_bounds(ref));
         if (reg_delta_out_of_bounds(dWCF))
           return std::numeric_limits<value_type>::signaling_NaN();
-        return value_type(2) / Math::pow2(dWCF.delta_coeff() <= ref
+        if (MR::abs(ref) == value_type(1))
+          return value_type(0.5);
+        return value_type(2) / Math::pow2(dWCF.delta_coeff() < ref
                                            ? value_type(1) + ref
                                            : value_type(1) - ref);
       }

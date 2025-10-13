@@ -38,7 +38,7 @@ namespace MR {
           local_sum_normalisation (tckfactor.nfixels(), value_type(0))
       {
         assert(*std::min_element(sum_normalisation.begin(), sum_normalisation.end()) == value_type(0)
-          && *std::max_elements(sum_normalisation.begin(), sum_normalisation.end()) == value_type(0));
+          && *std::max_element(sum_normalisation.begin(), sum_normalisation.end()) == value_type(0));
       }
 
       FixelUpdaterBase::~FixelUpdaterBase() {
