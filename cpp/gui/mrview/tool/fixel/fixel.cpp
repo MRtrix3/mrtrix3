@@ -23,7 +23,6 @@
 #include "mrview/tool/fixel/base_fixel.h"
 #include "mrview/tool/fixel/directory.h"
 #include "mrview/tool/fixel/image4D.h"
-#include "mrview/tool/fixel/legacy.h"
 #include "mrview/tool/list_model_base.h"
 #include "mrview/window.h"
 
@@ -40,23 +39,15 @@ public:
     for (size_t i = 0, N = filenames.size(); i < N; ++i) {
       BaseFixel *fixel_image(nullptr);
       try {
+        fixel_image = new Directory(filenames[i], fixel_tool);
+      } catch (InvalidFixelDirectoryException &error) {
+        error.push_back("Couldn't open \"" + filenames[i] + "\" as a Directory fixel dataset");
         try {
-          if (Path::has_suffix(filenames[i], {".msf", ".msh"}))
-            fixel_image = new Legacy(filenames[i], fixel_tool);
-          else
-            fixel_image = new Directory(filenames[i], fixel_tool);
-        } catch (InvalidFixelDirectoryException &error) {
-          error.push_back("Couldn't open \"" + filenames[i] + "\" as a Directory fixel dataset");
-          try {
-            fixel_image = new Image4D(filenames[i], fixel_tool);
-          } catch (InvalidImageException &e) {
-            error.push_back(e);
-            error.push_back("Couldn't open \"" + filenames[i] + "\" as a 4D vector image");
-            throw error;
-          }
+          fixel_image = new Image4D(filenames[i], fixel_tool);
         } catch (InvalidImageException &e) {
-          e.push_back("Couldn't open \"" + filenames[i] + "\" as a Legacy fixel dataset");
-          throw e;
+          error.push_back(e);
+          error.push_back("Couldn't open \"" + filenames[i] + "\" as a 4D vector image");
+          throw error;
         }
       } catch (Exception &e) {
         e.push_back("Error loading \"" + filenames[i] + "\" as a fixel dataset");
@@ -738,9 +729,7 @@ void Fixel::add_commandline_options(MR::App::OptionList &options) {
   // clang-format off
   options + OptionGroup("Fixel plot tool options")
       + Option("fixel.load",
-               "Load a fixel file"
-               " (any file inside a fixel directory,"
-               " or an old .msf / .msh legacy format file)"
+               "Load a fixel data file inside a fixel directory"
                " into the fixel tool.").allow_multiple()
         + Argument("image").type_image_in();
   // clang-format on

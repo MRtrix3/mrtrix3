@@ -52,7 +52,6 @@ List of MRtrix3 commands
     commands/fixel2voxel
     commands/fixelcfestats
     commands/fixelconnectivity
-    commands/fixelconvert
     commands/fixelcorrespondence
     commands/fixelcrop
     commands/fixelfilter
@@ -183,12 +182,11 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`dwirecon`, "Perform reconstruction of DWI data from an input DWI series"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
     |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
-    |cpp.png|, :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
+    |cpp.png|, :ref:`fixel2sh`, "Generate spherical harmonics decompositions that mimic the content of a fixel data file"
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
-    |cpp.png|, :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
+    |cpp.png|, :ref:`fixel2voxel`, "Aggregate content from a fixel data file into a voxel scalar image"
     |cpp.png|, :ref:`fixelcfestats`, "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing"
     |cpp.png|, :ref:`fixelconnectivity`, "Generate a fixel-fixel connectivity matrix"
-    |cpp.png|, :ref:`fixelconvert`, "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format"
     |cpp.png|, :ref:`fixelcorrespondence`, "Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask"
     |cpp.png|, :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
     |cpp.png|, :ref:`fixelfilter`, "Perform filtering operations on fixel-based data"
