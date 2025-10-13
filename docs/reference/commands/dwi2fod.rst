@@ -87,6 +87,8 @@ Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution al
 
 -  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-10).
 
+-  **-predicted_signal image** output the predicted dwi image.
+
 Stride options
 ^^^^^^^^^^^^^^
 
