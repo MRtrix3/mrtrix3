@@ -26,6 +26,8 @@
 #include "algo/threaded_copy.h"
 #include "debug.h"
 #include "fetch_store.h"
+#include "file/ofstream.h"
+#include "file/utils.h"
 #include "formats/mrtrix_utils.h"
 #include "half.h"
 #include "header.h"
