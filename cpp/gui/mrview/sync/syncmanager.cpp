@@ -52,7 +52,7 @@ void SyncManager::OnWindowFocusChanged() {
  */
 bool SyncManager::SendData(DataKey code, QByteArray dat) {
   QByteArray data;
-  data.insert(0, reinterpret_cast<const char *>(code), 4);
+  data.insert(0, reinterpret_cast<const char *>(&code), 4);
   data.insert(4, dat, dat.size());
   return ips->SendData(data);
 }
