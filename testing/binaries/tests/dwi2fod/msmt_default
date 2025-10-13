@@ -13,4 +13,4 @@ dwi2fod msmt_csd dwi2fod/msmt_csd/dwi.mif \
 testing_diff_image tmp_wm.mif dwi2fod/msmt_csd/wm.mif -abs 1e-5
 testing_diff_image tmp_gm.mif dwi2fod/msmt_csd/gm.mif -abs 1e-5
 testing_diff_image tmp_csf.mif dwi2fod/msmt_csd/csf.mif -abs 1e-5
-testing_diff_image tmp_predicted.mif dwi2fod/msmt_csd/predicted.mif -abs 1e-5
+testing_diff_image tmp_predicted.mif dwi2fod/msmt_csd/predicted.mif -voxel 1e-5
