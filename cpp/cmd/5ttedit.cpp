@@ -14,15 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
+#include <array>
 
+#include "algo/iterator.h"
+#include "command.h"
+#include "dwi/tractography/ACT/act.h"
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
 
-#include "algo/iterator.h"
-
-#include "dwi/tractography/ACT/act.h"
+// #define FIVETTEDIT_DEBUG_PER_VOXEL
 
 using namespace MR;
 using namespace App;
@@ -51,7 +52,7 @@ void usage() {
   + Argument ("output", "the output modified 5TT image").type_image_out();
 
   OPTIONS
-  + Option ("cgm", "provide an image of new cortical grey matter partial volumes fractions")
+  + Option ("cgm", "provide an image of new cortical grey matter partial volume fractions")
     + Argument ("image").type_image_in()
 
   + Option ("sgm", "provide an image of new sub-cortical grey matter partial volume fractions")
@@ -110,7 +111,7 @@ public:
 
 private:
   Image<float> v_in, v_out;
-  Image<float> buffers[5];
+  std::array<Image<float>, 5> buffers;
   Image<bool> none;
   size_t excess_volume_count;
   size_t inadequate_volume_count;
@@ -182,7 +183,7 @@ bool Modifier::operator()(const Iterator &pos) {
           for (auto i = Loop(3)(v_out); i; ++i)
             v_out.value() = buffers[v_out.index(3)].valid() ? (buffers[v_out.index(3)].value() * multiplier) : 0.0;
         }
-#ifndef NDEBUG
+#ifdef FIVETTEDIT_DEBUG_PER_VOXEL
         default_type sum_result = 0.0;
         for (auto i = Loop(3)(v_out); i; ++i)
           sum_result += v_out.value();
