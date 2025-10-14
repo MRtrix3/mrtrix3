@@ -80,13 +80,13 @@ public:
       : v_in(input_image), v_out(output_image), excess_volume_count(0), inadequate_volume_count(0) {}
 
   ~Modifier() {
-    if (excess_volume_count) {
+    if (excess_volume_count > 0) {
       WARN("A total of " + str(excess_volume_count) + " voxels" +                                  //
            " had a sum of partial volume fractions across user-provided images greater than one" + //
            " (these were auto-scaled to sum to one," +                                             //
            " but there may have been an error in generation of input images)");                    //
     }
-    if (inadequate_volume_count) {
+    if (inadequate_volume_count > 0) {
       WARN("A total of " + str(excess_volume_count) + " voxels were outside the brain in the input image," + //
            " the user provided non-zero partial volume fractions in at least one input volume," +            //
            " but the sum of partial volume fractions across user-provided images was less than one" +        //
@@ -148,46 +148,46 @@ bool Modifier::operator()(const Iterator &pos) {
         sum_user += value;
       }
     }
-    if (sum_user) {
-      if (float(sum_user) > 1.0f) {
+    if (sum_user > 0.0) {
+      if (float(sum_user) > 1.0F) {
         // Erroneous input from user;
         //   we can rescale so that the sum of partial volume fractions is one,
         //   but we should also warn the user about the bad input
         for (auto i = Loop(3)(v_out); i; ++i)
-          v_out.value() = buffers[v_out.index(3)].valid() ? buffers[v_out.index(3)].value() / sum_user : 0.0;
+          v_out.value() = buffers[v_out.index(3)].valid() ? buffers[v_out.index(3)].value() / sum_user : 0.0F;
         ++excess_volume_count;
       } else {
         // Total of residual tissue fractions ignoring what is being explicitly modified
         default_type sum_unmodified = 0.0;
         for (auto i = Loop(3)(v_in); i; ++i) {
-          if (!buffers[v_in.index(3)].valid() || !buffers[v_in.index(3)].value())
+          if (!buffers[v_in.index(3)].valid() || buffers[v_in.index(3)].value() == 0.0F)
             sum_unmodified += v_in.value();
         }
         default_type multiplier = std::numeric_limits<default_type>::quiet_NaN();
-        if (sum_unmodified) {
+        if (sum_unmodified > 0.0) {
           // Scale all of these so that after the requested tissue overrides,
           //   inclusion of the unmodified tissues still results in a partial volume sum of one
-          multiplier = sum_unmodified ? ((1.0 - sum_user) / sum_unmodified) : 0.0;
+          multiplier = (1.0 - sum_user) / sum_unmodified;
           for (auto i = Loop(3)(v_in, v_out); i; ++i)
-            v_out.value() = (buffers[v_in.index(3)].valid() && buffers[v_in.index(3)].value())
+            v_out.value() = (buffers[v_in.index(3)].valid() && buffers[v_in.index(3)].value() != 0.0F)
                                 ? buffers[v_in.index(3)].value()
                                 : multiplier * v_in.value();
         } else {
           // Voxel is zero-filled in input image;
           //   ideally the user will have provided a unity sum of volume fractions as their input
-          multiplier = 1.0f;
-          if (float(sum_user) < 1.0f) {
+          multiplier = 1.0;
+          if (float(sum_user) < 1.0F) {
             multiplier = 1.0 / sum_user;
             ++inadequate_volume_count;
           }
           for (auto i = Loop(3)(v_out); i; ++i)
-            v_out.value() = buffers[v_out.index(3)].valid() ? (buffers[v_out.index(3)].value() * multiplier) : 0.0;
+            v_out.value() = buffers[v_out.index(3)].valid() ? (buffers[v_out.index(3)].value() * multiplier) : 0.0F;
         }
 #ifdef FIVETTEDIT_DEBUG_PER_VOXEL
         default_type sum_result = 0.0;
         for (auto i = Loop(3)(v_out); i; ++i)
           sum_result += v_out.value();
-        if (std::abs(sum_result - 1.0) > 1e-5) {
+        if (MR::abs(sum_result - 1.0) > 1e-5) {
           std::cerr << "[" << str(pos.index(0)) << "," << str(pos.index(1)) << "," << str(pos.index(2)) << "]\n";
           std::cerr << "Input image values: ";
           for (auto i = Loop(3)(v_in); i; ++i)
