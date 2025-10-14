@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify command operation when the mean track-wise statistic is requested
+# Outcome is verified against that generated using a prior software version
+tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck mean -force
+testing_diff_matrix tmp.csv tcksample/mean.csv -frac 1e-5

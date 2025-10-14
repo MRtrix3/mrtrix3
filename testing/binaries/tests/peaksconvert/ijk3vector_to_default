@@ -1,0 +1,11 @@
+#!/bin/bash
+# Evaluation of command operation for conversion:
+#   - From:
+#     - Non-unit 3-vector
+#     - Using "ijk" reference axes
+#   - To default format (xyz non-unit 3-vector)
+# This is the inverse operation to how the reference data were generated
+peaksconvert peaksconvert/ijk3vector.mif \
+    -in_reference ijk \
+    - | \
+testing_diff_peaks - peaks.mif 1e-14

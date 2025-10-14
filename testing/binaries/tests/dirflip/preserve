@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify operation of command with use of -preserve option
+# In addition to improving the asymmetry vector,
+#   with this invocation none of the first 10 directions should be changed
+
+dirflip dirflip/hemisphere.txt -cartesian tmp.txt -number 100000 -preserve 10 -force
+
+(( $(echo $(dirstat tmp.txt -output ASYM) "< 0.2" | bc) ))
+
+sed '/^#/d' dirflip/hemisphere.txt | \
+    head -n10 > tmp2.txt
+sed '/^#/d' tmp.txt | \
+    head -n10 > tmp3.txt
+testing_diff_matrix tmp2.txt tmp3.txt -abs 1e-15

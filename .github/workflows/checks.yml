@@ -1,44 +1,73 @@
-name: checks
+name: Checks
 
 on:
   pull_request:
     types: [opened, synchronize]
-    branches:
-      - master
-      - dev
+    branches: [ master, dev]
+    merge_group:
+      types: [checks_requested]
+      branches: [master]
 
-
-
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   linux-clang-build:
-
     runs-on: ubuntu-latest
 
     env:
-      CFLAGS: -Werror
-      QT_SELECT: qt5
+      QT_SELECT: qt6
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
 
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.16.3'
+
+    - name: Print CMake version
+      run: cmake --version
 
     - name: configure
-      run: ./configure -assert || { cat configure.log; false; }
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
+        -D CMAKE_C_COMPILER=clang
+        -D CMAKE_CXX_COMPILER=clang++
 
     - name: build
-      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+      run: cmake --build build
 
     - name: unit tests
-      run: ./run_tests units || { cat testing_units.log; false; }
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
     - name: binary tests
-      run: ./run_tests binaries || { cat testing_binaries.log; false; }
+      run: cd build && ctest -L binary --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
 
+    - name: check command documentation
+      run: ./docs/generate_user_docs.sh --build-dir build && git diff --exit-code docs/
 
 
 
@@ -49,60 +78,107 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CXX: g++-9
-      CFLAGS: -Werror
-      QT_SELECT: qt5
+      QT_SELECT: qt6
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
 
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.16.3'
+
+    - name: Print CMake version
+      run: cmake --version
 
     - name: configure
-      run: ./configure -nooptim || { cat configure.log; false; }
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+      run: cmake --build build
 
+    - name: unit tests
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
-
-
-
+    - name: binary tests
+      run: cd build && ctest -L binary --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
 
   macos-build:
 
     runs-on: macos-latest
 
     env:
-      CFLAGS: -Werror
-      PACKAGES: "qt5 eigen pkg-config fftw libpng"
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
 
     - name: install dependencies
       run: |
-         brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
-         brew install $PACKAGES || brew install $PACKAGES
-         brew link --force qt5
+         brew bundle --file=${{ github.workspace }}/.brewfile
+         brew link --force qt
+         brew install numpy
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.22.0'
+
+    - name: Print CMake version
+      run: cmake --version
 
     - name: configure
-      run: ./configure -assert || { cat configure.log; false; }
+      run: >
+        export PATH=/usr/local/opt/qt/bin:$PATH;
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_FIND_FRAMEWORK=LAST
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_USE_PCH=OFF
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+      run: cmake --build build
 
     - name: unit tests
-      run: ./run_tests units || { cat testing_units.log; false; }
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
     - name: binary tests
-      run: ./run_tests binaries || { cat testing_binaries.log; false; }
-
-    - name: check command documentation
-      run: ./docs/generate_user_docs.sh && git diff --exit-code docs/
+      run: cd build && ctest -L binary --output-on-failure
+#
+#    - name: limited script tests
+#      run: cd build && ctest -L pythonci --output-on-failure
 
 
 
@@ -111,65 +187,90 @@ jobs:
   windows-build:
 
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
 
     env:
-      CFLAGS: -Werror
-      MSYSTEM: MINGW64
-      MSYSCON: defterm
       CHERE_INVOKING: enabled_from_arguments
-      MSYS2_NOSTART: yes
+      MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
 
     steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
 
-    - uses: actions/checkout@v1
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          release: false
+          install: |
+            git
+            python
+            ${{env.MINGW_PACKAGE_PREFIX}}-bc
+            ${{env.MINGW_PACKAGE_PREFIX}}-cmake
+            ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
+            ${{env.MINGW_PACKAGE_PREFIX}}-fftw
+            ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-ninja
+            ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt6-base
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt6-svg
+            ${{env.MINGW_PACKAGE_PREFIX}}-zlib
 
-    - name: fetch and install MSYS2
-      run: bash -c 'curl -sL https://github.com/MRtrix3/MinGW/releases/download/1.0/msys2.tar.{0,1} | tar xf -'
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
-    - name: run qtbinpatcher
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "qtbinpatcher --qt-dir=$(dirname $(which qmake))"
+      - name: export sccache to msys2 shell
+        run: |
+          export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
+          echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
 
-    - name: configure
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./configure -assert || { cat configure.log; false; }"
+      - name: configure
+        run: >
+            cmake
+            -B build
+            -G Ninja
+            -D CMAKE_BUILD_TYPE=Release
+            -D MRTRIX_BUILD_TESTS=ON
+            -D MRTRIX_STL_DEBUGGING=ON
+            -D MRTRIX_WARNINGS_AS_ERRORS=ON
+            -D CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
 
-    - name: build
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./build -nowarnings -persistent -nopaginate || { cat build.log; false; }"
+      - name: build
+        run: cmake --build build
 
-    - name: unit tests
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./run_tests units || { cat testing_units.log; false; }"
+      - name: unit tests
+        run: cd build && ctest -L unittest --output-on-failure --parallel 4
 
-    - name: binary tests
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./run_tests binaries || { cat testing_binaries.log; false; }"
-
-
-
+      - name: binary tests
+        run: cd build && ctest -L binary --output-on-failure
+#
+#      - name: limited script tests
+#        run: cd build && ctest -L pythonci --output-on-failure
 
   secondary-checks:
-
     runs-on: ubuntu-latest
 
     env:
-      QT_SELECT: qt5
+      QT_SELECT: qt6
 
     steps:
     - uses: actions/checkout@v1
 
     - name: install dependencies
       run: |
-         sudo apt-get update
-         sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip python3-sphinx-notfound-page
+        sudo apt-get update
+        sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip python3-sphinx-notfound-page
 
     - name: check syntax
       run: ./check_syntax || { cat syntax.log; false; }
 
     - name: pylint
       run: |
-         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
          ./run_pylint || { cat pylint.log; false; }
 
     - name: check copyright headers
@@ -177,3 +278,12 @@ jobs:
 
     - name: check building of documentation
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
+
+    - name: clang-format check
+      uses: DoozyX/clang-format-lint-action@v0.16.2
+      with:
+        source: '.'
+        extensions: 'h,cpp'
+        clangFormatVersion: 16
+        # Ignore third party headers
+        exclude: './thirdparty ./_deps'

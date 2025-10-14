@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify default operation of the shconv command
+# Outcome is compared to that generated using a prior software version
+shconv dwi2fod/csd/out.mif response.txt - | \
+testing_diff_image - shconv/out.mif -abs 1e-4

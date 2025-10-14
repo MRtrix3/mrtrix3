@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verification that command does as expected
+#   when many command-line options tested in isolation are utilised in conjunction:
+# - Input image is 4D;
+# - -allvolumes flag is specified,
+#   such that data across all volumes contribute to determination of a single threshold
+#   and that threshold is applied to data across all volumes;
+# - Threshold is calculated based on the median intensity of all data considered;
+# - Only voxels within user-specified 3D mask contribute to threshold determination
+mrthreshold dwi.mif - -percentile 50 -mask mask.mif -allvolumes | \
+testing_diff_image - mrthreshold/4d_median_masked_allvolumes.mif
