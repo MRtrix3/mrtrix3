@@ -45,7 +45,7 @@ void Config::init() {
     try {
       KeyValue::Reader kv(sysconf_location);
       while (kv.next()) {
-        config[kv.key()] = kv.value();
+        config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
@@ -59,7 +59,7 @@ void Config::init() {
     try {
       KeyValue::Reader kv(path);
       while (kv.next()) {
-        config[kv.key()] = kv.value();
+        config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
@@ -78,18 +78,18 @@ void Config::init() {
   Header::do_realign_transform = get_bool("RealignTransform", true);
 }
 
-std::string Config::get(const std::string &key) {
-  const KeyValues::const_iterator i = config.find(key);
+std::string Config::get(std::string_view key) {
+  const KeyValues::const_iterator i = config.find(std::string(key));
   return (i != config.end() ? i->second : "");
 }
 
-std::string Config::get(const std::string &key, const std::string &default_value) {
-  KeyValues::iterator i = config.find(key);
-  return (i != config.end() ? i->second : default_value);
+std::string Config::get(std::string_view key, std::string_view default_value) {
+  const KeyValues::const_iterator i = config.find(std::string(key));
+  return (i != config.end() ? i->second : std::string(default_value));
 }
 
-bool Config::get_bool(const std::string &key, bool default_value) {
-  std::string value = get(key);
+bool Config::get_bool(std::string_view key, bool default_value) {
+  const std::string value = get(std::string(key));
   if (value.empty())
     return default_value;
   try {
@@ -100,8 +100,8 @@ bool Config::get_bool(const std::string &key, bool default_value) {
   }
 }
 
-int Config::get_int(const std::string &key, int default_value) {
-  std::string value = get(key);
+int Config::get_int(std::string_view key, int default_value) {
+  const std::string value = get(std::string(key));
   if (value.empty())
     return default_value;
   try {
@@ -112,8 +112,8 @@ int Config::get_int(const std::string &key, int default_value) {
   }
 }
 
-float Config::get_float(const std::string &key, float default_value) {
-  std::string value = get(key);
+float Config::get_float(std::string_view key, float default_value) {
+  const std::string value = get(std::string(key));
   if (value.empty())
     return default_value;
   try {
@@ -124,8 +124,8 @@ float Config::get_float(const std::string &key, float default_value) {
   }
 }
 
-void Config::get_RGB(const std::string &key, float *ret, float default_R, float default_G, float default_B) {
-  std::string value = get(key);
+void Config::get_RGB(std::string_view key, float *ret, float default_R, float default_G, float default_B) {
+  const std::string value = get(std::string(key));
   if (!value.empty()) {
     try {
       std::vector<default_type> V(parse_floats(value));

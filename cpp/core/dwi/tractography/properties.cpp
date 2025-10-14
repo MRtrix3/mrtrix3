@@ -18,7 +18,7 @@
 
 namespace MR::DWI::Tractography {
 
-void check_timestamps(const Properties &a, const Properties &b, const std::string &type) {
+void check_timestamps(const Properties &a, const Properties &b, std::string_view type) {
   Properties::const_iterator stamp_a = a.find("timestamp");
   Properties::const_iterator stamp_b = b.find("timestamp");
   if (stamp_a == a.end() || stamp_b == b.end())
@@ -27,7 +27,7 @@ void check_timestamps(const Properties &a, const Properties &b, const std::strin
     throw Exception("invalid " + type + " combination - timestamps do not match");
 }
 
-void check_counts(const Properties &a, const Properties &b, const std::string &type, bool abort_on_fail) {
+void check_counts(const Properties &a, const Properties &b, std::string_view type, bool abort_on_fail) {
   Properties::const_iterator count_a = a.find("count");
   Properties::const_iterator count_b = b.find("count");
   if ((count_a == a.end()) || (count_b == b.end())) {
@@ -88,7 +88,7 @@ void Properties::compare_stepsize_rois() const {
   if (!std::isfinite(step_size) || !step_size)
     return;
 
-  auto f = [](const ROISetBase &rois, const std::string &type, const float threshold) {
+  auto f = [](const ROISetBase &rois, std::string_view type, const float threshold) {
     for (size_t i = 0; i != rois.size(); ++i) {
       if (rois[i].min_featurelength() < threshold) {
         WARN("Streamline step size is large compared to " + type + " ROI \"" + rois[i].parameters() + "; " +

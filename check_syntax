@@ -1,3 +1,5 @@
+
+
 #!/bin/bash
 
 # Copyright (c) 2008-2025 the MRtrix3 contributors.
@@ -59,8 +61,12 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' |
     $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok)\s*\((?!.*\bcheck_syntax\s+off)'
   )
 
-# TODO Consider detecting instances of const std::string &,
-#   and seeing how many such instances can be changed to std::string_view
+# Detecting instances of const std::string &;
+#  most can be changed to std::string_view
+  res="$res"$(
+    cat $f | \
+    $grep -Po '(?!<//)\bconst\s+std::string\s*\&(?!.*check_syntax\s+off)'
+  )
 
 # detect deprecated use of "#ifdef __headerpath__"
   res="$res"$(
@@ -156,6 +162,7 @@ else
   - Define numerical constants using constexpr rather than preprocessor macros;
   - Use static_cast<>() rather than C-style casts;
   - Use std::string (and optionally std::string_view) rather than C-style char* and relevant functions;
+  - Use std::string_view rather than const std::string&;
   - Do not use \"using namespace std\";
   - Replace all instances of std::abs() or naked abs() with either std::fabs() (for scalar floating-point only) or MR::abs() (for complex data, integers and template types);
   - Replace all instances of %zu in print() calls with PRI_SIZET;

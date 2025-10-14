@@ -39,7 +39,7 @@ extern const std::vector<std::string> known_extensions;
  * added to the list in the file list.cpp. */
 class Base {
 public:
-  Base(const std::string &desc) : description(desc) {}
+  Base(std::string_view desc) : description(desc) {}
   virtual ~Base() {}
 
   const std::string description; //!< a short human-readable description of the image format

@@ -70,7 +70,7 @@ const std::vector<std::string> suffixes{".nii", ".img"};
 bool right_left_warning_issued = false;
 
 template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
-  const std::string &version = Type<NiftiHeader>::version();
+  const std::string_view version = Type<NiftiHeader>::version();
   using dim_type = typename Type<NiftiHeader>::dim_type;
   using code_type = typename Type<NiftiHeader>::code_type;
   using float_type = typename Type<NiftiHeader>::float_type;
@@ -345,7 +345,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
 }
 
 template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const bool single_file) {
-  const std::string &version = Type<NiftiHeader>::version();
+  const std::string_view version = Type<NiftiHeader>::version();
   using dim_type = typename Type<NiftiHeader>::dim_type;
   using vox_offset_type = typename Type<NiftiHeader>::vox_offset_type;
   using code_type = typename Type<NiftiHeader>::code_type;
@@ -537,7 +537,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   // CONF to save any header entries that cannot be stored in the NIfTI
   // CONF header.
   if (single_file && File::Config::get_bool("NIfTIAutoSaveJSON", false)) {
-    std::string json_path = H.name();
+    std::string json_path(H.name());
     if (Path::has_suffix(json_path, ".nii.gz"))
       json_path = json_path.substr(0, json_path.size() - 7);
     else if (Path::has_suffix(json_path, ".nii"))
@@ -655,7 +655,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
   const std::string header_path = single_file ? H.name() : H.name().substr(0, H.name().size() - 4) + ".hdr";
 
   try {
-    File::MMap fmap(header_path);
+    File::MMap fmap{MR::File::Entry(header_path)};
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
     handler->files.push_back(File::Entry(H.name(), (single_file ? data_offset : 0)));
@@ -691,7 +691,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
-  const std::string &version = Type<nifti_header>::version();
+  const std::string_view version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -723,7 +723,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
-  const std::string &version = Type<nifti_header>::version();
+  const std::string_view version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -773,7 +773,7 @@ int version(Header &H) {
   return 1;
 }
 
-std::string get_json_path(const std::string &nifti_path) {
+std::string get_json_path(std::string_view nifti_path) {
   std::string json_path;
   if (Path::has_suffix(nifti_path, ".nii.gz"))
     json_path = nifti_path.substr(0, nifti_path.size() - 7);

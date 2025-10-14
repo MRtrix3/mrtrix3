@@ -131,7 +131,7 @@ void usage() {
 // clang-format on
 
 template <class VectorType>
-void write_fixel_output(const std::string &filename, const VectorType &data, Image<bool> &mask, const Header &header) {
+void write_fixel_output(std::string_view filename, const VectorType &data, Image<bool> &mask, const Header &header) {
   auto output = Image<float>::create(filename, header);
   for (auto l = Loop(0)(output, mask); l; ++l)
     output.value() = mask.value() ? data[output.index(0)] : NaNF;
@@ -142,7 +142,7 @@ void write_fixel_output(const std::string &filename, const VectorType &data, Ima
 //   that subject
 class SubjectFixelImport : public Math::Stats::SubjectDataImportBase {
 public:
-  SubjectFixelImport(const std::string &path)
+  SubjectFixelImport(std::string_view path)
       : Math::Stats::SubjectDataImportBase(path), H(Header::open(path)), data(H.get_image<float>()) {
     for (size_t axis = 1; axis < data.ndim(); ++axis) {
       if (data.size(axis) > 1)

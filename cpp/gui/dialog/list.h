@@ -23,7 +23,7 @@ namespace MR::GUI::Dialog {
 
 class TreeItem {
 public:
-  TreeItem(const std::string &key, const std::string &value, TreeItem *parent = 0) {
+  TreeItem(std::string_view key, std::string_view value, TreeItem *parent = 0) {
     parentItem = parent;
     itemData << qstr(key) << qstr(value);
   }

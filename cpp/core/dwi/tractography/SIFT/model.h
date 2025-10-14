@@ -55,7 +55,7 @@ public:
   virtual ~Model();
 
   // Over-rides the function defined in ModelBase; need to build contributions member also
-  void map_streamlines(const std::string &);
+  void map_streamlines(std::string_view /*path*/);
 
   void remove_excluded_fixels();
 
@@ -64,7 +64,7 @@ public:
 
   track_t num_tracks() const { return contributions.size(); }
 
-  void output_non_contributing_streamlines(const std::string &) const;
+  void output_non_contributing_streamlines(std::string_view /*output_path*/) const;
 
   using ModelBase<Fixel>::mu;
 
@@ -133,7 +133,7 @@ template <class Fixel> Model<Fixel>::~Model() {
   }
 }
 
-template <class Fixel> void Model<Fixel>::map_streamlines(const std::string &path) {
+template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path) {
   Tractography::Properties properties;
   Tractography::Reader<> file(path, properties);
 
@@ -236,7 +236,7 @@ template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(sum_from_tracks);
 }
 
-template <class Fixel> void Model<Fixel>::output_non_contributing_streamlines(const std::string &output_path) const {
+template <class Fixel> void Model<Fixel>::output_non_contributing_streamlines(std::string_view output_path) const {
   Tractography::Properties p;
   Tractography::Reader<float> reader(tck_file_path, p);
   Tractography::Writer<float> writer(output_path, p);

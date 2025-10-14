@@ -191,6 +191,12 @@ abs(X x) {
   return std::abs(x);
 }
 
+template <class ValueType> struct is_string_type : std::false_type {};
+template <> struct is_string_type<std::string> : std::true_type {};
+template <> struct is_string_type<std::string_view> : std::true_type {};
+template <> struct is_string_type<const char *const> : std::true_type {}; // check_syntax off
+template <> struct is_string_type<const char *> : std::true_type {};      // check_syntax off
+
 } // namespace MR
 
 namespace std {

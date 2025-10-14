@@ -82,7 +82,7 @@ constexpr tag_type datatype_float = 3;
 constexpr tag_type frame_original = 0;
 constexpr tag_type frame_diffusion_augmented = 1;
 
-tag_type string_to_tag_ID(const std::string &key);
+tag_type string_to_tag_ID(std::string_view key);
 std::string tag_ID_to_string(const tag_type tag);
 
 template <typename ValueType, class Input> inline ValueType fetch(Input &in) {
@@ -624,8 +624,8 @@ template <class Output> void write_other(const Header &H, Output &out) {
   class Tag {
   public:
     Tag() : id(0), content() {}
-    Tag(const int32_t i, const std::string &s) : id(i), content(s) {}
-    void set(const int32_t i, const std::string &s) {
+    Tag(const int32_t i, std::string_view s) : id(i), content(s) {}
+    void set(const int32_t i, std::string_view s) {
       id = i;
       content = s;
     }
@@ -649,7 +649,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
     out.write(&buffer[0], matrix_strlen);
   };
 
-  auto write_mri_frames = [&](const std::string &table, Output &out) {
+  auto write_mri_frames = [&](std::string_view table, Output &out) {
     const size_t nframes = H.ndim() == 4 ? H.size(3) : 1;
     const auto lines = split_lines(table);
     if (lines.size() != nframes) {
@@ -818,7 +818,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
     }
   };
 
-  auto write_colourtable_V1 = [](const std::string &table, Output &out) {
+  auto write_colourtable_V1 = [](std::string_view table, Output &out) {
     const auto lines = split_lines(table);
     if (lines.empty())
       return;
@@ -842,7 +842,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
     }
   };
 
-  auto write_colourtable_V2 = [](const std::string &table, Output &out) {
+  auto write_colourtable_V2 = [](std::string_view table, Output &out) {
     store<int32_t>(tag_old_colortable, out);
     store<int32_t>(-2, out);
     // Need to find out the maximum node index

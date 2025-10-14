@@ -172,7 +172,7 @@ void Font::initGL(bool with_shadow) {
   DEBUG("font loaded");
 }
 
-void Font::render(const std::string &text, int x, int y) const {
+void Font::render(std::string_view text, int x, int y) const {
   assert(tex);
   assert(vertex_buffer[0]);
   assert(vertex_buffer[1]);

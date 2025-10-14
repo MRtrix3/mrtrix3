@@ -66,7 +66,7 @@ const std::array<ParseIntsParam, 20> parse_ints_test_cases{{
 
 TEST_F(ParseIntsTest, HandlesVariousFormats) {
   for (const auto &param : parse_ints_test_cases) {
-    const std::string &input = param.input_str;
+    std::string_view input = param.input_str;
     std::vector<int> actual_values;
     if (param.exception_policy == ParseIntsParam::ExceptionPolicy::Expected) {
       EXPECT_THROW(actual_values = MR::parse_ints<int>(input), MR::Exception)

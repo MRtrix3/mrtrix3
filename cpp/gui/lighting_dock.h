@@ -40,7 +40,7 @@ protected slots:
 
 class LightingDock : public QDockWidget {
 public:
-  LightingDock(const std::string &title, GL::Lighting &lighting);
+  LightingDock(std::string_view title, GL::Lighting &lighting);
 
 private:
   LightingSettings *settings;

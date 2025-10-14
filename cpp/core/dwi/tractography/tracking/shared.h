@@ -38,7 +38,7 @@ namespace MR::DWI::Tractography::Tracking {
 class SharedBase {
 
 public:
-  SharedBase(const std::string &diff_path, Properties &property_set);
+  SharedBase(std::string_view diff_path, Properties &property_set);
 
   virtual ~SharedBase();
 

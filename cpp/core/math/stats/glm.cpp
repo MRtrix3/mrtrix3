@@ -41,7 +41,7 @@ const std::string
                             "be included in their design matrix, and add it explicitly if necessary. "
                             "The contrast matrix must also reflect the presence of this additional column.");
 
-App::OptionGroup glm_options(const std::string &element_name) {
+App::OptionGroup glm_options(std::string_view element_name) {
   using namespace App;
   // clang-format off
   OptionGroup result =
@@ -62,7 +62,7 @@ App::OptionGroup glm_options(const std::string &element_name) {
                " do not perform statistical inference on entries in the contrast matrix")
       + Option("column",
                "add a column to the design matrix"
-               " corresponding to subject " + element_name + "-wise values"
+               " corresponding to subject " + std::string(element_name) + "-wise values"
                " (note that the contrast matrix must include an additional column for each use of this option);"
                " the text file provided via this option should contain a file name for each subject").allow_multiple()
         + Argument("path").type_file_in();
@@ -135,7 +135,7 @@ index_array_type load_variance_groups(const index_type num_inputs) {
   }
 }
 
-std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
+std::vector<Hypothesis> load_hypotheses(std::string_view file_path) {
   std::vector<Hypothesis> hypotheses;
   const matrix_type contrast_matrix = File::Matrix::load_matrix(file_path);
   for (Eigen::Index row = 0; row != contrast_matrix.rows(); ++row)

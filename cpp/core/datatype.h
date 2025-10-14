@@ -87,8 +87,8 @@ public:
 
   size_t bits() const;
   size_t bytes() const { return (bits() + 7) / 8; }
-  const std::string &description() const;
-  const std::string &specifier() const;
+  std::string_view description() const;
+  std::string_view specifier() const;
 
   void set_flag(uint8_t flag) { dt |= flag; }
   void unset_flag(uint8_t flag) { dt &= ~flag; }
@@ -99,7 +99,7 @@ public:
     dt.set_byte_order_native();
     return dt;
   }
-  static DataType parse(const std::string &spec);
+  static DataType parse(std::string_view spec);
   static DataType from_command_line(DataType default_datatype = Undefined);
 
   struct Strings {

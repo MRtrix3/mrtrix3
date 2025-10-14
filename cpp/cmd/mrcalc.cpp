@@ -554,7 +554,7 @@ std::map<std::string, LoadedImage> StackEntry::image_list;
 
 class Evaluator {
 public:
-  Evaluator(const std::string &name, const std::string &format_string, bool Z2R = false, bool R2Z = false)
+  Evaluator(std::string_view name, std::string_view format_string, bool Z2R = false, bool R2Z = false)
       : id(name), format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
   virtual ~Evaluator() {}
   const std::string id;
@@ -623,7 +623,7 @@ inline Chunk &StackEntry::evaluate(ThreadLocalStorage &storage) const {
   return storage.next();
 }
 
-inline void replace(std::string &orig, size_t n, const std::string &value) {
+inline void replace(std::string &orig, size_t n, std::string_view value) {
   if (orig[0] == '(' && orig[orig.size() - 1] == ')') {
     size_t pos = orig.find("(%" + str(n + 1) + ")");
     if (pos != orig.npos) {
@@ -643,7 +643,7 @@ inline void replace(std::string &orig, size_t n, const std::string &value) {
 // later:
 std::string operation_string(const StackEntry &entry) {
   if (entry.image)
-    return entry.image->name();
+    return std::string(entry.image->name());
   else if (entry.rng)
     return entry.rng_gaussian ? "randn()" : "rand()";
   else if (entry.evaluator) {
@@ -657,7 +657,7 @@ std::string operation_string(const StackEntry &entry) {
 
 template <class Operation> class UnaryEvaluator : public Evaluator {
 public:
-  UnaryEvaluator(const std::string &name, Operation operation, const StackEntry &operand)
+  UnaryEvaluator(std::string_view name, Operation operation, const StackEntry &operand)
       : Evaluator(name, operation.format, operation.ZtoR, operation.RtoZ), op(operation) {
     operands.push_back(operand);
   }
@@ -678,7 +678,7 @@ public:
 
 template <class Operation> class BinaryEvaluator : public Evaluator {
 public:
-  BinaryEvaluator(const std::string &name, Operation operation, const StackEntry &operand1, const StackEntry &operand2)
+  BinaryEvaluator(std::string_view name, Operation operation, const StackEntry &operand1, const StackEntry &operand2)
       : Evaluator(name, operation.format, operation.ZtoR, operation.RtoZ), op(operation) {
     operands.push_back(operand1);
     operands.push_back(operand2);
@@ -701,7 +701,7 @@ public:
 
 template <class Operation> class TernaryEvaluator : public Evaluator {
 public:
-  TernaryEvaluator(const std::string &name,
+  TernaryEvaluator(std::string_view name,
                    Operation operation,
                    const StackEntry &operand1,
                    const StackEntry &operand2,
@@ -730,7 +730,7 @@ public:
 };
 
 template <class Operation>
-void unary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
+void unary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.empty())
     throw Exception("no operand in stack for operation \"" + operation_name + "\"!");
   StackEntry &a(stack[stack.size() - 1]);
@@ -748,7 +748,7 @@ void unary_operation(const std::string &operation_name, std::vector<StackEntry> 
 }
 
 template <class Operation>
-void binary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
+void binary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 2)
     throw Exception("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry &a(stack[stack.size() - 2]);
@@ -767,7 +767,7 @@ void binary_operation(const std::string &operation_name, std::vector<StackEntry>
 }
 
 template <class Operation>
-void ternary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
+void ternary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 3)
     throw Exception("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry &a(stack[stack.size() - 3]);
@@ -921,7 +921,7 @@ void run_operations(const std::vector<StackEntry> &stack) {
 
 class OpBase {
 public:
-  OpBase(const std::string &format_string, bool Z2R = false, bool R2Z = false)
+  OpBase(std::string_view format_string, bool Z2R = false, bool R2Z = false)
       : format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
   const std::string format;
   const bool ZtoR, RtoZ;
@@ -929,7 +929,7 @@ public:
 
 class OpUnary : public OpBase {
 public:
-  OpUnary(const std::string &format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
+  OpUnary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type v) const {
     throw Exception("operation not supported!");
     return v;
@@ -942,7 +942,7 @@ public:
 
 class OpBinary : public OpBase {
 public:
-  OpBinary(const std::string &format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
+  OpBinary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type a, real_type b) const {
     throw Exception("operation not supported!");
     return a;
@@ -955,7 +955,7 @@ public:
 
 class OpTernary : public OpBase {
 public:
-  OpTernary(const std::string &format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
+  OpTernary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type a, real_type b, real_type c) const {
     throw Exception("operation not supported!");
     return a;

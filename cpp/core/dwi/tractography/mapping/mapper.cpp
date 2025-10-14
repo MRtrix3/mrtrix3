@@ -164,7 +164,7 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
     out.factor = 0.0;
 }
 
-void TrackMapperTWI::add_scalar_image(const std::string &path) {
+void TrackMapperTWI::add_scalar_image(std::string_view path) {
   if (image_plugin)
     throw Exception("Cannot add more than one associated image to TWI");
   if (contrast != contrast_t::SCALAR_MAP && contrast != contrast_t::SCALAR_MAP_COUNT)
@@ -182,7 +182,7 @@ void TrackMapperTWI::set_backtrack() {
   ptr->set_backtrack();
 }
 
-void TrackMapperTWI::add_fod_image(const std::string &path) {
+void TrackMapperTWI::add_fod_image(std::string_view path) {
   if (image_plugin)
     throw Exception("Cannot add more than one associated image to TWI");
   if (contrast != contrast_t::FOD_AMP)
@@ -213,7 +213,7 @@ void TrackMapperTWI::add_twdfc_dynamic_image(Image<float> &image,
   image_plugin.reset(new TWDFCDynamicImagePlugin(image, kernel, timepoint));
 }
 
-void TrackMapperTWI::add_vector_data(const std::string &path) {
+void TrackMapperTWI::add_vector_data(std::string_view path) {
   if (image_plugin)
     throw Exception("Cannot add both an associated image and a vector data file to TWI");
   if (contrast != contrast_t::VECTOR_FILE)

@@ -58,7 +58,7 @@ public:
   //! get generic key/value text attributes
   FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
 
-  FORCE_INLINE const std::string &name() const { return buffer->name(); }
+  FORCE_INLINE std::string_view name() const { return buffer->name(); }
   FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
 
   FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
@@ -134,7 +134,7 @@ public:
    * possibility that this image might use indirect IO, you should use
    * the save() function instead (and even then, it should only be used
    * for debugging purposes). */
-  std::string dump_to_mrtrix_file(std::string filename, bool use_multi_threading = true) const;
+  std::string dump_to_mrtrix_file(std::string_view nominated_filename) const;
 
   //! return a new Image using direct IO
   /*!
@@ -193,14 +193,13 @@ public:
     return data_pointer ? static_cast<ValueType *>(data_pointer) + data_offset : nullptr;
   }
 
-  static Image open(const std::string &image_name, bool read_write_if_existing = false) {
+  static Image open(std::string_view image_name, bool read_write_if_existing = false) {
     return Header::open(image_name).get_image<ValueType>(read_write_if_existing);
   }
-  static Image
-  create(const std::string &image_name, const Header &template_header, bool add_to_command_history = true) {
+  static Image create(std::string_view image_name, const Header &template_header, bool add_to_command_history = true) {
     return Header::create(image_name, template_header, add_to_command_history).get_image<ValueType>();
   }
-  static Image scratch(const Header &template_header, const std::string &label = "scratch image") {
+  static Image scratch(const Header &template_header, std::string_view label = "scratch image") {
     return Header::scratch(template_header, label).get_image<ValueType>();
   }
 
@@ -398,22 +397,24 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
   return Image(buffer, with_strides);
 }
 
-template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(std::string filename, bool) const {
-  if (!data_pointer || (!Path::has_suffix(filename, ".mih") && !Path::has_suffix(filename, ".mif")))
+template <typename ValueType>
+std::string Image<ValueType>::dump_to_mrtrix_file(std::string_view nominated_filename) const {
+  if (data_pointer == nullptr ||
+      (!Path::has_suffix(nominated_filename, ".mih") && !Path::has_suffix(nominated_filename, ".mif")))
     throw Exception("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
   // try to dump file to mrtrix format if possible (direct IO)
-  if (is_dash(filename))
-    filename = File::create_tempfile(0, "mif");
+  std::string output_filename =
+      is_dash(nominated_filename) ? File::create_tempfile(0, "mif") : std::string(nominated_filename);
 
-  DEBUG("dumping image \"" + name() + "\" to file \"" + filename + "\"...");
+  DEBUG("dumping image \"" + name() + "\" to file \"" + output_filename + "\"...");
 
-  File::OFStream out(filename, std::ios::out | std::ios::binary);
+  File::OFStream out(output_filename, std::ios::out | std::ios::binary);
   out << "mrtrix image\n";
   Formats::write_mrtrix_header(*buffer, out);
 
-  const bool single_file = Path::has_suffix(filename, ".mif");
-  std::string data_filename = filename;
+  const bool single_file = Path::has_suffix(output_filename, ".mif");
+  std::string data_filename = output_filename;
 
   int64_t offset = 0;
   out << "file: ";
@@ -422,7 +423,7 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else {
-    data_filename = filename.substr(0, filename.size() - 4) + ".dat";
+    data_filename = output_filename.substr(0, output_filename.size() - 4) + ".dat";
     out << Path::basename(data_filename) << "\n";
     out.close();
     out.open(data_filename, std::ios::out | std::ios::binary);
@@ -439,17 +440,17 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
   // TODO check whether this is still needed...?
   File::resize(data_filename, offset + data_size);
 
-  return filename;
+  return output_filename;
 }
 
 template <class ImageType>
-std::string __save_generic(ImageType &x, const std::string &filename, bool use_multi_threading) {
+std::string _save_generic(ImageType &x, std::string_view filename, bool use_multi_threading) {
   auto out = Image<typename ImageType::value_type>::create(filename, x);
   if (use_multi_threading)
     threaded_copy(x, out);
   else
     copy(x, out);
-  return out.name();
+  return std::string(out.name());
 }
 
 //! \endcond
@@ -457,19 +458,19 @@ std::string __save_generic(ImageType &x, const std::string &filename, bool use_m
 //! save contents of an existing image to file (for debugging only)
 template <class ImageType>
 typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-save(ImageType &&x, const std::string &filename, bool use_multi_threading = true) {
-  return __save_generic(x, filename, use_multi_threading);
+save(ImageType &&x, std::string_view filename, bool use_multi_threading = true) {
+  return _save_generic(x, filename, use_multi_threading);
 }
 
 //! save contents of an existing image to file (for debugging only)
 template <class ImageType>
 typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-save(ImageType &&x, const std::string &filename, bool use_multi_threading = true) {
+save(ImageType &&x, std::string_view filename, bool use_multi_threading = true) {
   try {
-    return x.dump_to_mrtrix_file(filename, use_multi_threading);
+    return x.dump_to_mrtrix_file(filename);
   } catch (...) {
   }
-  return __save_generic(x, filename, use_multi_threading);
+  return _save_generic(x, filename, use_multi_threading);
 }
 
 //! display the contents of an image in MRView (for debugging only)

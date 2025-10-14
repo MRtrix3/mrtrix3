@@ -33,7 +33,7 @@ const OptionGroup Options =
     + Option("ignorezero", "ignore zero-valued data during histogram construction.");
 // clang-format on
 
-void Calibrator::from_file(const std::string &path) {
+void Calibrator::from_file(std::string_view path) {
   Eigen::MatrixXd M;
   try {
     M = File::Matrix::load_matrix(path);
@@ -50,7 +50,7 @@ void Calibrator::from_file(const std::string &path) {
         throw Exception("Non-equal spacing in histogram bin centres");
     }
   } catch (Exception &e) {
-    throw Exception(e, "Could not use file \"" + path + "\" as histogram template");
+    throw Exception(e, "Could not use file \"" + std::string(path) + "\" as histogram template");
   }
 }
 

@@ -130,7 +130,7 @@ std::string short_description(const Header &H) {
 }
 } // namespace
 
-Header Header::open(const std::string &image_name) {
+Header Header::open(std::string_view image_name) {
   if (image_name.empty())
     throw Exception("no name supplied to open image!");
 
@@ -262,7 +262,7 @@ inline bool check_strides_match(const std::vector<ssize_t> &a, const std::vector
 
 } // namespace
 
-Header Header::create(const std::string &image_name, const Header &template_header, bool add_to_command_history) {
+Header Header::create(std::string_view image_name, const Header &template_header, bool add_to_command_history) {
   if (image_name.empty())
     throw Exception("no name supplied to open image!");
 
@@ -442,7 +442,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
   return H;
 }
 
-Header Header::scratch(const Header &template_header, const std::string &label) {
+Header Header::scratch(const Header &template_header, std::string_view label) {
   Header H(template_header);
   H.name() = label;
   H.reset_intensity_scaling();

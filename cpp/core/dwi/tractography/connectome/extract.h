@@ -60,9 +60,9 @@ public:
 
   void finalize();
 
-  void write(const node_t, const node_t, const std::string &, const std::string &);
-  void write(const node_t, const std::string &, const std::string &);
-  void write(const std::string &, const std::string &);
+  void write(const node_t, const node_t, std::string_view, std::string_view);
+  void write(const node_t, std::string_view, std::string_view);
+  void write(std::string_view, std::string_view);
 
 private:
   float step_size;
@@ -75,9 +75,9 @@ class WriterExtraction {
 public:
   WriterExtraction(const Tractography::Properties &, const std::vector<node_t> &, const bool, const bool);
 
-  void add(const node_t, const std::string &, const std::string);
-  void add(const node_t, const node_t, const std::string &, const std::string);
-  void add(const std::vector<node_t> &, const std::string &, const std::string);
+  void add(const node_t, std::string_view, const std::string);
+  void add(const node_t, const node_t, std::string_view, const std::string);
+  void add(const std::vector<node_t> &, std::string_view, const std::string);
 
   void clear();
 

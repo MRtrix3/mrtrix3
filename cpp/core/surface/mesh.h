@@ -37,7 +37,7 @@ namespace MR::Surface {
 class Mesh {
 
 public:
-  Mesh(const std::string &);
+  Mesh(std::string_view);
 
   Mesh(const Mesh &that) = default;
 
@@ -124,7 +124,7 @@ public:
     quads.clear();
   }
 
-  void save(const std::string &, const bool binary = false) const;
+  void save(std::string_view, const bool binary = false) const;
 
   size_t num_vertices() const { return vertices.size(); }
   size_t num_triangles() const { return triangles.size(); }
@@ -134,8 +134,8 @@ public:
   bool have_normals() const { return !normals.empty(); }
   void calculate_normals();
 
-  const std::string &get_name() const { return name; }
-  void set_name(const std::string &s) { name = s; }
+  std::string_view get_name() const { return name; }
+  void set_name(std::string_view s) { name = s; }
 
   const Vertex &vert(const size_t i) const {
     assert(i < vertices.size());
@@ -171,13 +171,13 @@ protected:
 private:
   std::string name;
 
-  void load_vtk(const std::string &);
-  void load_stl(const std::string &);
-  void load_obj(const std::string &);
-  void load_fs(const std::string &);
-  void save_vtk(const std::string &, const bool) const;
-  void save_stl(const std::string &, const bool) const;
-  void save_obj(const std::string &) const;
+  void load_vtk(std::string_view);
+  void load_stl(std::string_view);
+  void load_obj(std::string_view);
+  void load_fs(std::string_view);
+  void save_vtk(std::string_view, const bool) const;
+  void save_stl(std::string_view, const bool) const;
+  void save_obj(std::string_view) const;
 
   void verify_data() const;
 

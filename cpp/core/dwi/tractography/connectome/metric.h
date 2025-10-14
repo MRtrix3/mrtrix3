@@ -99,7 +99,7 @@ public:
       node_volumes[index]++;
     }
   }
-  void set_scale_file(const std::string &path, const bool i = true) {
+  void set_scale_file(std::string_view path, const bool i = true) {
     scale_by_file = i;
     if (!i) {
       file_path.clear();

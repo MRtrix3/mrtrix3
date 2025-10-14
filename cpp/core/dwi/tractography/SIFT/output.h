@@ -31,7 +31,7 @@
 namespace MR::DWI::Tractography::SIFT {
 
 // Output functions - non-essential, mostly debugging outputs
-template <class Fixel> void ModelBase<Fixel>::output_target_voxel(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_target_voxel(std::string_view path) const {
   auto out = Image<float>::create(path, Fixel_map<Fixel>::header());
   VoxelAccessor v(accessor());
   for (auto l = Loop(out)(out, v); l; ++l) {
@@ -46,7 +46,7 @@ template <class Fixel> void ModelBase<Fixel>::output_target_voxel(const std::str
   }
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_target_sh(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_target_sh(std::string_view path) const {
   const size_t L = 8;
   const size_t N = Math::SH::NforL(L);
   Math::SH::aPSF<default_type> aPSF(L);
@@ -76,14 +76,14 @@ template <class Fixel> void ModelBase<Fixel>::output_target_sh(const std::string
   }
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_target_fixel(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_target_fixel(std::string_view path) const {
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Image<float> image(Image<float>::create(path, H));
   for (auto l = Loop(0)(image); l; ++l)
     image.value() = fixels[image.index(0)].get_FOD();
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_tdi_voxel(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_tdi_voxel(std::string_view path) const {
   const default_type current_mu = mu();
   auto out = Image<float>::create(path, Fixel_map<Fixel>::header());
   VoxelAccessor v(accessor());
@@ -99,7 +99,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_voxel(const std::string
   }
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_tdi_null_lobes(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_tdi_null_lobes(std::string_view path) const {
   const default_type current_mu = mu();
   auto out = Image<float>::create(path, Fixel_map<Fixel>::header());
   VoxelAccessor v(accessor());
@@ -117,7 +117,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_null_lobes(const std::s
   }
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_tdi_sh(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_tdi_sh(std::string_view path) const {
   const default_type current_mu = mu();
   const size_t L = 8;
   const size_t N = Math::SH::NforL(L);
@@ -148,7 +148,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_sh(const std::string &p
   }
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_tdi_fixel(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_tdi_fixel(std::string_view path) const {
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Image<float> image(Image<float>::create(path, H));
   for (auto l = Loop(0)(image); l; ++l)
@@ -156,10 +156,10 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_fixel(const std::string
 }
 
 template <class Fixel>
-void ModelBase<Fixel>::output_errors_voxel(const std::string &dirpath,
-                                           const std::string &max_abs_diff_path,
-                                           const std::string &diff_path,
-                                           const std::string &cost_path) const {
+void ModelBase<Fixel>::output_errors_voxel(std::string_view dirpath,
+                                           std::string_view max_abs_diff_path,
+                                           std::string_view diff_path,
+                                           std::string_view cost_path) const {
   const default_type current_mu = mu();
   auto out_max_abs_diff = Image<float>::create(Path::join(dirpath, max_abs_diff_path), Fixel_map<Fixel>::header());
   auto out_diff = Image<float>::create(Path::join(dirpath, diff_path), Fixel_map<Fixel>::header());
@@ -186,9 +186,9 @@ void ModelBase<Fixel>::output_errors_voxel(const std::string &dirpath,
 }
 
 template <class Fixel>
-void ModelBase<Fixel>::output_errors_fixel(const std::string &dirpath,
-                                           const std::string &diff_path,
-                                           const std::string &cost_path) const {
+void ModelBase<Fixel>::output_errors_fixel(std::string_view dirpath,
+                                           std::string_view diff_path,
+                                           std::string_view cost_path) const {
   const default_type current_mu = mu();
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Image<float> image_diff(Image<float>::create(Path::join(dirpath, diff_path), H));
@@ -199,7 +199,7 @@ void ModelBase<Fixel>::output_errors_fixel(const std::string &dirpath,
   }
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_scatterplot(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_scatterplot(std::string_view path) const {
   File::OFStream out(path, std::ios_base::out | std::ios_base::trunc);
   out << "# " << App::command_history_string << "\n";
   const default_type current_mu = mu();
@@ -210,7 +210,7 @@ template <class Fixel> void ModelBase<Fixel>::output_scatterplot(const std::stri
   out.close();
 }
 
-template <class Fixel> void ModelBase<Fixel>::output_fixel_count_image(const std::string &path) const {
+template <class Fixel> void ModelBase<Fixel>::output_fixel_count_image(std::string_view path) const {
   Header H_out(Fixel_map<Fixel>::header());
   H_out.datatype() = DataType::UInt8;
   auto out = Image<uint8_t>::create(path, H_out);

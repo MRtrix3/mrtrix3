@@ -67,7 +67,7 @@ public:
   void set_max_coeff_step(const double i) { max_coeff_step = i; }
   void set_min_cf_decrease(const double i) { min_cf_decrease_percentage = i; }
 
-  void set_csv_path(const std::string &i) { csv_path = i; }
+  void set_csv_path(std::string_view i) { csv_path = i; }
 
   void store_orig_TDs();
 
@@ -86,11 +86,11 @@ public:
 
   void report_entropy() const;
 
-  void output_factors(const std::string &) const;
-  void output_coefficients(const std::string &) const;
+  void output_factors(std::string_view) const;
+  void output_coefficients(std::string_view) const;
 
-  void output_TD_images(const std::string &, const std::string &, const std::string &) const;
-  void output_all_debug_images(const std::string &, const std::string &) const;
+  void output_TD_images(std::string_view, std::string_view, std::string_view) const;
+  void output_all_debug_images(std::string_view, std::string_view) const;
 
 private:
   Eigen::Array<default_type, Eigen::Dynamic, 1> coefficients;

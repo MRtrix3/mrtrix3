@@ -36,7 +36,7 @@ void display_exception_cmdline(const Exception &E, int log_level) {
 
 bool __need_newline = false;
 
-void cmdline_report_to_user_func(const std::string &msg, int type) {
+void cmdline_report_to_user_func(std::string_view msg, int type) {
 
   static const std::unordered_map<int, std::string> colour_format_strings{{-1, "%s: %s%s\n"},
                                                                           {0, "%s: \033[01;31m%s%s\033[0m\n"},
@@ -61,12 +61,12 @@ void cmdline_report_to_user_func(const std::string &msg, int type) {
   __print_stderr(printf(colour_format_strings.at(App::terminal_use_colour ? type : -1).c_str(),
                         App::NAME.c_str(),
                         console_prefixes.at(type).c_str(),
-                        msg.c_str()));
+                        std::string(msg).c_str()));
   if (type == 1 && App::fail_on_warn)
     throw Exception("terminating due to request to fail on warning");
 }
 
-void cmdline_print_func(const std::string &msg) {
+void cmdline_print_func(std::string_view msg) {
 #ifdef MRTRIX_AS_R_LIBRARY
   Rprintf(msg.c_str());
 #else
@@ -79,8 +79,8 @@ const char *Exception::what() const noexcept { // check_syntax off
   return description.empty() ? no_message.c_str() : description.back().c_str();
 }
 
-void (*print)(const std::string &msg) = cmdline_print_func;
-void (*report_to_user_func)(const std::string &msg, int type) = cmdline_report_to_user_func;
+void (*print)(std::string_view msg) = cmdline_print_func;
+void (*report_to_user_func)(std::string_view msg, int type) = cmdline_report_to_user_func;
 void (*Exception::display_func)(const Exception &E, int log_level) = display_exception_cmdline;
 
 void check_app_exit_code() {

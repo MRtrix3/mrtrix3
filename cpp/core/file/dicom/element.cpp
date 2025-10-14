@@ -46,7 +46,7 @@ const std::unordered_map<Element::Type, std::string> Element::type_as_str{{INVAL
                                                                           {SEQ, "sequence"},
                                                                           {OTHER, "other"}};
 
-void Element::set(const std::string &filename, bool force_read, bool read_write) {
+void Element::set(std::string_view filename, bool force_read, bool read_write) {
   group = element = VR = 0;
   size = 0;
   start = data = next = nullptr;
@@ -416,19 +416,19 @@ template <class T> inline void print_vec(const std::vector<T> &V) {
 } // namespace
 
 void Element::error_in_get(size_t idx) const {
-  const std::string &name(tag_name());
-  DEBUG("value not found for DICOM tag " +             //
-        printf("%04X %04X ", group, element) +         //
-        (!name.empty() ? name.substr(2) : "unknown") + //
-        " (at index " + str(idx) + ")");
+  const std::string name(tag_name());
+  DEBUG("value not found for DICOM tag " +            //
+        printf("%04X %04X ", group, element) +        //
+        (name.empty() ? "unknown" : name.substr(2)) + //
+        " (at index " + str(idx) + ")");              //
 }
 
 void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
-  const std::string &name(tag_name());
-  throw Exception("not enough items in for DICOM tag " +         //
-                  printf("%04X %04X ", group, element) +         //
-                  (!name.empty() ? name.substr(2) : "unknown") + //
-                  " (expected " + str(min_size) + ", got " + str(actual_size) + ")");
+  const std::string name(tag_name());
+  throw Exception("not enough items in for DICOM tag " +                              //
+                  printf("%04X %04X ", group, element) +                              //
+                  (name.empty() ? "unknown" : name.substr(2)) +                       //
+                  " (expected " + str(min_size) + ", got " + str(actual_size) + ")"); //
 }
 
 void Element::report_unknown_tag_with_implicit_syntax() const {
@@ -441,7 +441,7 @@ void Element::report_unknown_tag_with_implicit_syntax() const {
 std::ostream &operator<<(std::ostream &stream, const Element &item) {
   // return "TYPE  GROUP ELEMENT VR  SIZE  OFFSET  NAME                               CONTENTS";
 
-  const std::string &name(item.tag_name());
+  const std::string name(item.tag_name());
   stream << printf("[DCM] %04X %04X %c%c % 8u % 8llu ",
                    item.group,
                    item.element,
@@ -460,7 +460,7 @@ std::ostream &operator<<(std::ostream &stream, const Element &item) {
     tmp += "- ";
   else
     tmp += "  ";
-  tmp += (!name.empty() ? name.substr(2) : "unknown");
+  tmp += (name.empty() ? "unknown" : name.substr(2));
   tmp.resize(40, ' ');
   stream << tmp << " " << item.as_string() << "\n";
 

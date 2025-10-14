@@ -31,7 +31,7 @@ using index_type = unsigned int;
 class Set {
 
 public:
-  explicit Set(const std::string &path) : dir_mask_bytes(0), dir_mask_excess_bits(0), dir_mask_excess_bits_mask(0) {
+  explicit Set(std::string_view path) : dir_mask_bytes(0), dir_mask_excess_bits(0), dir_mask_excess_bits_mask(0) {
     auto matrix = File::Matrix::load_matrix(path);
 
     if (matrix.cols() != 2 && matrix.cols() != 3)
@@ -133,7 +133,7 @@ template <class MatrixType> void Set::initialise(const Eigen::Matrix<MatrixType,
 class FastLookupSet : public Set {
 
 public:
-  FastLookupSet(const std::string &path) : Set(path) { initialise(); }
+  FastLookupSet(std::string_view path) : Set(path) { initialise(); }
 
   FastLookupSet(const size_t d) : Set(d) { initialise(); }
 

@@ -37,12 +37,12 @@ bool next_keyvalue(File::GZ &, std::string &, std::string &);
 // Note that the 'file' field is read in as entries in the map<string, string>
 //   by read_mrtrix_header(), and are therefore erased by this function so that they do not propagate
 //   into new images created using this header
-void get_mrtrix_file_path(Header &, const std::string &, std::string &, size_t &);
+void get_mrtrix_file_path(Header &, std::string_view, std::string &, size_t &);
 
 // Write generic image header information to a stream -
 //   this could be an ofstream in the case of .mif, or a stringstream in the case of .mif.gz
 template <class StreamType> void write_mrtrix_header(const Header &, StreamType &);
 
-std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier);
+std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier);
 
 } // namespace MR::Formats

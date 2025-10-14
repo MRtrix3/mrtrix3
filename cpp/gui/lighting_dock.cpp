@@ -114,7 +114,7 @@ void LightingSettings::light_position_slot() {
   info.update();
 }
 
-LightingDock::LightingDock(const std::string &title, GL::Lighting &lighting)
+LightingDock::LightingDock(std::string_view title, GL::Lighting &lighting)
     : QDockWidget(qstr(title)), settings(new LightingSettings(this, lighting)) {
   setWidget(settings);
 }

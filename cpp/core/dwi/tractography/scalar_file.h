@@ -47,7 +47,7 @@ namespace MR::DWI::Tractography {
  * user in the event of a mismatch.  */
 inline void check_properties_match(const Properties &p_tck,
                                    const Properties &p_tsf,
-                                   const std::string &type,
+                                   std::string_view type,
                                    bool abort_on_fail = true) {
   check_timestamps(p_tck, p_tsf, type);
   check_counts(p_tck, p_tsf, type, abort_on_fail);
@@ -57,7 +57,7 @@ template <typename T = float> class ScalarReader : public __ReaderBase__ {
 public:
   using value_type = T;
 
-  ScalarReader(const std::string &file, Properties &properties) { open(file, "track scalars", properties); }
+  ScalarReader(std::string_view file, Properties &properties) { open(file, "track scalars", properties); }
 
   bool operator()(TrackScalar<T> &tck_scalar) {
     tck_scalar.clear();
@@ -151,7 +151,7 @@ public:
   using __WriterBase__<T>::verify_stream;
   using __WriterBase__<T>::open_success;
 
-  ScalarWriter(const std::string &file, const Properties &properties)
+  ScalarWriter(std::string_view file, const Properties &properties)
       : __WriterBase__<T>(file),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
         buffer(new value_type[buffer_capacity + 1]),

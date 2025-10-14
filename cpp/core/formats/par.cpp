@@ -56,7 +56,7 @@ typedef struct {
   float b, grad[3], ri, rs, ss, ang[3], pos[3], vox[2], thick, gap;
 } SliceData;
 
-inline const SliceData parse_line(const std::string &line, const ParCols &cols) {
+inline const SliceData parse_line(std::string_view line, const ParCols &cols) {
   auto token = split(line, " \t\n", true);
   SliceData data;
 

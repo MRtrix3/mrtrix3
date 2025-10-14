@@ -36,7 +36,7 @@ FileDataVector::FileDataVector(FileDataVector &&V)
 
 FileDataVector::FileDataVector(const size_t nelements) : base_t(nelements), min(NaNF), mean(NaNF), max(NaNF) {}
 
-FileDataVector::FileDataVector(const std::string &file)
+FileDataVector::FileDataVector(std::string_view file)
     : base_t(), name(qstr(Path::basename(file))), min(NaNF), mean(NaNF), max(NaNF) {
   base_t temp = File::Matrix::load_vector<float>(file);
   base_t::operator=(temp);
@@ -64,7 +64,7 @@ FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
   return *this;
 }
 
-FileDataVector &FileDataVector::load(const std::string &filename) {
+FileDataVector &FileDataVector::load(std::string_view filename) {
   base_t temp = File::Matrix::load_vector<float>(filename);
   base_t::operator=(temp);
   name = qstr(Path::basename(filename));

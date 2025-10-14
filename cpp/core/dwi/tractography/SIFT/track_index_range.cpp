@@ -22,7 +22,7 @@ const track_t TrackIndexRangeWriter::default_batch_size = 10000;
 
 TrackIndexRangeWriter::TrackIndexRangeWriter(const track_t batch_size,
                                              const track_t num_tracks,
-                                             const std::string &message)
+                                             std::string_view message)
     : size(batch_size),
       end(num_tracks),
       start(0),

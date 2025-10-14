@@ -31,6 +31,7 @@
 #include "opengl/lighting.h"
 #include "timer.h"
 #include <QDebug>
+#include <unordered_map>
 
 namespace MR::GUI::MRView {
 using namespace App;
@@ -61,7 +62,7 @@ template <> inline QPoint position(QWheelEvent *event) {
 #endif
 }
 
-Qt::KeyboardModifiers get_modifier(const std::string &key, Qt::KeyboardModifiers default_key) {
+Qt::KeyboardModifiers get_modifier(std::string_view key, Qt::KeyboardModifiers default_key) {
   std::string value = lowercase(MR::File::Config::get(key));
   if (value.empty())
     return default_key;
@@ -758,20 +759,18 @@ void Window::parse_arguments() {
   QTimer::singleShot(10, this, SLOT(process_commandline_option_slot()));
 }
 
-ColourBars::Position Window::parse_colourmap_position_str(const std::string &position_str) {
-
-  ColourBars::Position pos(ColourBars::Position::None);
-
-  if (position_str == "bottomleft")
-    pos = ColourBars::Position::BottomLeft;
-  else if (position_str == "bottomright")
-    pos = ColourBars::Position::BottomRight;
-  else if (position_str == "topleft")
-    pos = ColourBars::Position::TopLeft;
-  else if (position_str == "topright")
-    pos = ColourBars::Position::TopRight;
-
-  return pos;
+namespace {
+const std::unordered_map<std::string, ColourBars::Position> str2pos{{"bottomleft", ColourBars::Position::BottomLeft},
+                                                                    {"bottomright", ColourBars::Position::BottomRight},
+                                                                    {"topleft", ColourBars::Position::TopLeft},
+                                                                    {"topright", ColourBars::Position::TopRight}};
+}
+ColourBars::Position Window::parse_colourmap_position_str(std::string_view position_str) {
+  try {
+    return str2pos.at(std::string(position_str));
+  } catch (std::out_of_range) {
+    return ColourBars::Position::None;
+  }
 }
 
 Window::~Window() {

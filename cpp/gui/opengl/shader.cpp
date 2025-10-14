@@ -18,7 +18,7 @@
 
 namespace MR::GUI::GL::Shader {
 
-void print_log(bool is_program, const std::string &type_name, GLuint index) {
+void print_log(bool is_program, std::string_view type_name, GLuint index) {
   int length = 0;
   int chars = 0;
   std::string log;

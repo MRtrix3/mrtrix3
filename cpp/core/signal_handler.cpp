@@ -117,14 +117,14 @@ void on_signal(cleanup_function_type func) {
   std::atexit(func);
 }
 
-void mark_file_for_deletion(const std::string &filename) {
+void mark_file_for_deletion(std::string_view filename) {
   while (!flag.test_and_set())
     ;
-  marked_files.push_back(filename);
+  marked_files.push_back(std::string(filename));
   flag.clear();
 }
 
-void unmark_file_for_deletion(const std::string &filename) {
+void unmark_file_for_deletion(std::string_view filename) {
   while (!flag.test_and_set())
     ;
   auto i = marked_files.begin();

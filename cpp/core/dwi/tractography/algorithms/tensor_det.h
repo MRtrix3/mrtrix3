@@ -38,7 +38,7 @@ class Tensor_Det : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
 
       if (is_act() && act().backtrack())

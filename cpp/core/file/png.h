@@ -29,7 +29,7 @@ namespace MR::File::PNG {
 
 class Reader {
 public:
-  Reader(const std::string &filename);
+  Reader(std::string_view filename);
   ~Reader();
 
   uint32_t get_width() const { return width; }
@@ -59,7 +59,7 @@ private:
 
 class Writer {
 public:
-  Writer(const Header &, const std::string &);
+  Writer(const Header &, std::string_view);
   ~Writer();
 
   size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }

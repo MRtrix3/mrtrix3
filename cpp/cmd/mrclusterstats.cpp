@@ -104,7 +104,7 @@ void usage() {
 using value_type = Stats::TFCE::value_type;
 
 template <class VectorType>
-void write_output(const VectorType &data, const Voxel2Vector &v2v, const std::string &path, const Header &header) {
+void write_output(const VectorType &data, const Voxel2Vector &v2v, std::string_view path, const Header &header) {
   auto image = Image<float>::create(path, header);
   for (index_type i = 0; i != v2v.size(); i++) {
     assign_pos_of(v2v[i]).to(image);
@@ -127,7 +127,7 @@ void write_output(const VectorType &data, const Voxel2Vector &v2v, const std::st
 //
 class SubjectVoxelImport : public SubjectDataImportBase {
 public:
-  SubjectVoxelImport(const std::string &path)
+  SubjectVoxelImport(std::string_view path)
       : SubjectDataImportBase(path), H(Header::open(path)), data(H.get_image<float>()) {}
 
   virtual ~SubjectVoxelImport() {}

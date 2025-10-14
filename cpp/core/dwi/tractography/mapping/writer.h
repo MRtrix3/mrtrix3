@@ -40,7 +40,7 @@ class MapWriterBase {
 
 public:
   MapWriterBase(const Header &header,
-                const std::string &name,
+                std::string_view name,
                 const vox_stat_t s = vox_stat_t::SUM,
                 const writer_dim t = writer_dim::GREYSCALE)
       : H(header), output_image_name(name), voxel_statistic(s), type(t) {
@@ -83,7 +83,7 @@ template <typename value_type> class MapWriter : public MapWriterBase {
 
 public:
   MapWriter(const Header &header,
-            const std::string &name,
+            std::string_view name,
             const vox_stat_t voxel_statistic = vox_stat_t::SUM,
             const writer_dim type = writer_dim::GREYSCALE)
       : MapWriterBase(header, name, voxel_statistic, type),
@@ -95,10 +95,6 @@ public:
         for (auto l = loop(buffer); l; ++l)
           buffer.value() = std::numeric_limits<value_type>::max();
       }
-      /* shouldn't be needed: scratch IO class memset to zero already:
-                    else {
-                      buffer.zero();
-                    } */
 
     } else { // Greyscale and dixel
 
@@ -109,10 +105,6 @@ public:
         for (auto l = loop(buffer); l; ++l)
           buffer.value() = std::numeric_limits<value_type>::lowest();
       }
-      /* shouldn't be needed: scratch IO class memset to zero already:
-                    else {
-                      buffer.zero();
-                    }*/
     }
 
     // With TOD, hijack the counts buffer in voxel statistic min/max mode

@@ -124,7 +124,7 @@ void usage() {
 }
 // clang-format on
 
-format_t format_from_option(const std::string &option_name) {
+format_t format_from_option(std::string_view option_name) {
   auto opt = get_options(option_name);
   if (opt.empty())
     return format_t::THREEVECTOR;
@@ -141,7 +141,7 @@ format_t format_from_option(const std::string &option_name) {
     throw Exception("Unsupported input to option -" + option_name);
   }
 }
-reference_t reference_from_option(const std::string &option_name) {
+reference_t reference_from_option(std::string_view option_name) {
   auto opt = get_options(option_name);
   if (opt.empty())
     return reference_t::XYZ;

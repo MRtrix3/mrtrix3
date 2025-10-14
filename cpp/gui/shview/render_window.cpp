@@ -294,7 +294,7 @@ void Window::next_slot() { set_values(current + 1); }
 void Window::previous_10_slot() { set_values(current - 10); }
 void Window::next_10_slot() { set_values(current + 10); }
 
-void Window::set_values(const std::string &filename) {
+void Window::set_values(std::string_view filename) {
   try {
     values = File::Matrix::load_matrix<float>(filename);
     if (values.cols() == 0 || values.rows() == 0)

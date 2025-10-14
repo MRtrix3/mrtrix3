@@ -344,7 +344,7 @@ void SIFTer::perform_filtering() {
   INFO("Proportionality coefficient at end of filtering is " + str(mu()));
 }
 
-void SIFTer::output_filtered_tracks(const std::string &input_path, const std::string &output_path) const {
+void SIFTer::output_filtered_tracks(std::string_view input_path, std::string_view output_path) const {
   Tractography::Properties p;
   Tractography::Reader<float> reader(input_path, p);
   p["SIFT_mu"] = str(mu());
@@ -362,7 +362,7 @@ void SIFTer::output_filtered_tracks(const std::string &input_path, const std::st
   reader.close();
 }
 
-void SIFTer::output_selection(const std::string &path) const {
+void SIFTer::output_selection(std::string_view path) const {
   File::OFStream out(path, std::ios_base::out | std::ios_base::trunc);
   for (track_t i = 0; i != contributions.size(); ++i) {
     if (contributions[i])
@@ -372,7 +372,7 @@ void SIFTer::output_selection(const std::string &path) const {
   }
 }
 
-void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, const std::string &dirpath) {
+void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, std::string_view dirpath) {
   for (auto i : in) {
     if (i > 0 && i <= contributions.size())
       output_at_counts.push_back(i);

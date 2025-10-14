@@ -52,23 +52,23 @@ namespace MR::Path {
 
 extern const std::string home_env;
 
-std::string basename(const std::string &name);
-std::string dirname(const std::string &name);
-std::string join(const std::string &first, const std::string &second);
-bool exists(const std::string &path);
-bool is_dir(const std::string &path);
-bool is_file(const std::string &path);
-bool has_suffix(const std::string &name, const std::string &suffix);
-bool has_suffix(const std::string &name, const std::initializer_list<const std::string> &suffix_list);
-bool has_suffix(const std::string &name, const std::vector<std::string> &suffix_list);
-bool is_mrtrix_image(const std::string &name);
-char delimiter(const std::string &filename);
+std::string basename(std::string_view name);
+std::string dirname(std::string_view name);
+std::string join(std::string_view first, std::string_view second);
+bool exists(std::string_view path);
+bool is_dir(std::string_view path);
+bool is_file(std::string_view path);
+bool has_suffix(std::string_view name, std::string_view suffix);
+bool has_suffix(std::string_view name, const std::initializer_list<const std::string> &suffix_list);
+bool has_suffix(std::string_view name, const std::vector<std::string> &suffix_list);
+bool is_mrtrix_image(std::string_view name);
+char delimiter(std::string_view filename);
 std::string cwd();
 std::string home();
 
 class Dir {
 public:
-  Dir(const std::string &name);
+  Dir(std::string_view name);
   ~Dir();
 
   std::string read_name();

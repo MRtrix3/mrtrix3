@@ -36,7 +36,7 @@ namespace MR::File {
 class GZ {
 public:
   GZ() : gz(nullptr) {}
-  GZ(const std::string &fname, const std::string &mode) : gz(nullptr) { open(fname, mode); }
+  GZ(std::string_view fname, std::string_view mode) : gz(nullptr) { open(fname, mode); }
   ~GZ() {
     try {
       close();
@@ -46,15 +46,15 @@ public:
     }
   }
 
-  const std::string &name() const { return filename; }
+  std::string_view name() const { return filename; }
 
-  void open(const std::string &fname, const std::string &mode) {
+  void open(std::string_view fname, std::string_view mode) {
     close();
     filename = fname;
     if (!MR::Path::exists(filename))
       throw Exception("cannot access file \"" + filename + "\": No such file or directory");
 
-    gz = gzopen(filename.c_str(), mode.c_str());
+    gz = gzopen(filename.c_str(), std::string(mode).c_str());
     if (!gz)
       throw Exception("error opening file \"" + filename + "\": " + strerror(errno));
   }
@@ -100,9 +100,9 @@ public:
       throw Exception("error writing to GZ file \"" + filename + "\": " + error());
   }
 
-  void write(const std::string &s) {
+  void write(std::string_view s) {
     assert(gz);
-    if (gzputs(gz, s.c_str()) < 0)
+    if (gzputs(gz, std::string(s).c_str()) < 0)
       throw Exception("error writing to GZ file \"" + filename + "\": " + error());
   }
 

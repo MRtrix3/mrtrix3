@@ -341,7 +341,7 @@ void RenderFrame::wheelEvent(QWheelEvent *event) {
   update();
 }
 
-void RenderFrame::screenshot(int oversampling, const std::string &image_name) {
+void RenderFrame::screenshot(int oversampling, std::string_view image_name) {
   QApplication::setOverrideCursor(Qt::BusyCursor);
   screenshot_name = image_name;
   OS = oversampling;

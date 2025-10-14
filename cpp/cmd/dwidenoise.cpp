@@ -289,7 +289,7 @@ void process_image(Header &data,
                    Image<bool> &mask,
                    Image<real_type> &noise,
                    Image<uint16_t> &rank,
-                   const std::string &output_name,
+                   std::string_view output_name,
                    const std::vector<uint32_t> &extent,
                    bool exp1) {
   auto input = data.get_image<T>().with_direct_io(3);

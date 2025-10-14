@@ -44,7 +44,7 @@ void copy_with_progress(InputImageType &&source,
 }
 
 template <class InputImageType, class OutputImageType>
-void copy_with_progress_message(const std::string &message,
+void copy_with_progress_message(std::string_view message,
                                 InputImageType &&source,
                                 OutputImageType &&destination,
                                 size_t from_axis = 0,

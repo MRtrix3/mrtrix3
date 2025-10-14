@@ -68,12 +68,12 @@ class Modifier {
 public:
   Modifier(Image<float> &input_image, Image<float> &output_image) : v_in(input_image), v_out(output_image) {}
 
-  void set_cgm_mask(const std::string &path) { load(path, 0); }
-  void set_sgm_mask(const std::string &path) { load(path, 1); }
-  void set_wm_mask(const std::string &path) { load(path, 2); }
-  void set_csf_mask(const std::string &path) { load(path, 3); }
-  void set_path_mask(const std::string &path) { load(path, 4); }
-  void set_none_mask(const std::string &path) { load(path, 5); }
+  void set_cgm_mask(std::string_view path) { load(path, 0); }
+  void set_sgm_mask(std::string_view path) { load(path, 1); }
+  void set_wm_mask(std::string_view path) { load(path, 2); }
+  void set_csf_mask(std::string_view path) { load(path, 3); }
+  void set_path_mask(std::string_view path) { load(path, 4); }
+  void set_none_mask(std::string_view path) { load(path, 5); }
 
   bool operator()(const Iterator &pos) {
     assign_pos_of(pos, 0, 3).to(v_out);
@@ -119,7 +119,7 @@ private:
   Image<float> v_in, v_out;
   Image<bool> buffers[6];
 
-  void load(const std::string &path, const size_t index) {
+  void load(std::string_view path, const size_t index) {
     assert(index <= 5);
     buffers[index] = Image<bool>::open(path);
     if (!dimensions_match(v_in, buffers[index], 0, 3))

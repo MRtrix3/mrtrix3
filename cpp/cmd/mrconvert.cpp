@@ -359,7 +359,7 @@ template <class ImageType> inline std::vector<int> set_header(Header &header, co
 }
 
 template <typename T, class InputType>
-void copy_permute(const InputType &in, Header &header_out, const std::string &output_filename) {
+void copy_permute(const InputType &in, Header &header_out, std::string_view output_filename) {
   const auto axes = set_header(header_out, in);
   auto out = Image<T>::create(output_filename, header_out, add_to_command_history);
   DWI::export_grad_commandline(out);
@@ -372,7 +372,7 @@ template <typename T>
 void extract(Header &header_in,
              Header &header_out,
              const std::vector<std::vector<uint32_t>> &pos,
-             const std::string &output_filename) {
+             std::string_view output_filename) {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
     copy_permute<T, decltype(in)>(in, header_out, output_filename);
@@ -440,14 +440,14 @@ void run() {
   for (size_t n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
-    header_out.keyval()[opt[n][0].as_text()] = opt[n][1].as_text();
+    header_out.keyval()[std::string(opt[n][0])] = std::string(opt[n][1]);
   }
 
   opt = get_options("append_property");
   for (size_t n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
-    add_line(header_out.keyval()[opt[n][0].as_text()], opt[n][1].as_text());
+    add_line(header_out.keyval()[std::string(opt[n][0])], std::string(opt[n][1]));
   }
 
   opt = get_options("coord");

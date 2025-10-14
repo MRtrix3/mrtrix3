@@ -29,7 +29,7 @@ class Seedtest : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
       set_step_and_angle(1.0F, 90.0F, intrinsic_integration_order_t::FIRST, curvature_constraint_t::POSTHOC_THRESHOLD);
       min_num_points_preds = min_num_points_postds = 1;

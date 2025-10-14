@@ -33,22 +33,7 @@ class ZClean : public Base {
 
 public:
   template <class HeaderType>
-  ZClean(const HeaderType &in)
-      : Base(in),
-        zupper(2.5),
-        zlower(2.5),
-        fov_max(0.3),
-        fov_min(0.15),
-        bridge(0),
-        dont_maskupper(false),
-        keep_lower(false),
-        keep_upper(true) {
-    datatype_ = DataType::Float32;
-    ndim() = 3;
-  }
-
-  template <class HeaderType>
-  ZClean(const HeaderType &in, const std::string &message)
+  ZClean(const HeaderType &in, std::string_view message)
       : Base(in, message),
         zupper(2.5),
         zlower(2.5),
@@ -61,6 +46,8 @@ public:
     datatype_ = DataType::Float32;
     ndim() = 3;
   }
+
+  template <class HeaderType> ZClean(const HeaderType &in) : ZClean(in, "") {}
 
   template <class InputImageType, class MaskType, class OutputImageType>
   void operator()(InputImageType &input, MaskType &spatial_prior, OutputImageType &output) {

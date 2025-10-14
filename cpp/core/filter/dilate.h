@@ -45,7 +45,7 @@ class Dilate : public Base {
 public:
   template <class HeaderType> Dilate(const HeaderType &in) : Base(in), npass(1) { datatype_ = DataType::Bit; }
 
-  template <class HeaderType> Dilate(const HeaderType &in, const std::string &message) : Base(in, message), npass(1) {
+  template <class HeaderType> Dilate(const HeaderType &in, std::string_view message) : Base(in, message), npass(1) {
     datatype_ = DataType::Bit;
   }
 

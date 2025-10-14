@@ -19,7 +19,7 @@
 
 namespace MR::DWI::Tractography {
 
-void __ReaderBase__::open(const std::string &file, const std::string &type, Properties &properties) {
+void __ReaderBase__::open(std::string_view file, std::string_view type, Properties &properties) {
   properties.clear();
   dtype = DataType::Undefined;
 
@@ -39,13 +39,13 @@ void __ReaderBase__::open(const std::string &file, const std::string &type, Prop
         WARN("invalid ROI specification in " + type + " file \"" + file + "\" - ignored");
       }
     } else if (key == "comment")
-      properties.comments.push_back(kv.value());
+      properties.comments.emplace_back(std::string(kv.value()));
     else if (key == "file")
       data_file = kv.value();
     else if (key == "datatype")
       dtype = DataType::parse(kv.value());
     else
-      add_line(properties[kv.key()], kv.value());
+      add_line(properties[std::string(kv.key())], kv.value());
   }
 
   if (dtype == DataType::Undefined)
