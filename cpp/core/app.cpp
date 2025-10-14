@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <clocale>
+#include <cstddef>
 #include <fcntl.h>
 #include <locale>
 #include <unistd.h>
@@ -221,11 +222,21 @@ std::string help_head(int format) {
 
   const std::string date(project_version.empty() ? build_date : project_build_date);
 
-  std::string topline =
-      version_string +
-      std::string(std::max(std::string::size_type(1), 40 - size(version_string) - size(App::NAME) / 2), ' ') +
-      bold(App::NAME);
-  topline += std::string(80 - size(topline) - size(date), ' ') + date;
+  auto safe_padding = [](std::ptrdiff_t want, std::size_t minimum = 1) -> std::size_t {
+    if (want < static_cast<std::ptrdiff_t>(minimum))
+      return minimum;
+    return static_cast<std::size_t>(want);
+  };
+
+  // compute requested padding to position the program name
+  const std::ptrdiff_t requested_padding =
+      40 - static_cast<std::ptrdiff_t>(size(version_string)) - (static_cast<std::ptrdiff_t>(size(App::NAME)) / 2);
+  std::string topline = version_string + std::string(safe_padding(requested_padding), ' ') + bold(App::NAME);
+
+  // compute requested padding to right-align the date
+  const std::ptrdiff_t requested_padding2 =
+      80 - static_cast<std::ptrdiff_t>(size(topline)) - static_cast<std::ptrdiff_t>(size(date));
+  topline += std::string(safe_padding(requested_padding2), ' ') + date;
 
   if (!project_version.empty())
     topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
