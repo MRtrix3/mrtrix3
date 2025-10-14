@@ -26,6 +26,7 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include <string_view>
 
 namespace MR::App {
 extern int log_level;
@@ -84,9 +85,9 @@ class Exception : public std::exception {
 public:
   Exception() {}
 
-  Exception(std::string_view msg) { description.push_back(std::string(msg)); }
-  Exception(const Exception &previous_exception, std::string_view msg) : description(previous_exception.description) {
-    description.push_back(std::string(msg));
+  Exception(std::string msg) { description.push_back(std::move(msg)); }
+  Exception(const Exception &previous_exception, std::string msg) : description(previous_exception.description) {
+    description.push_back(std::move(msg));
   }
 
   const char *what() const noexcept override; // check_syntax off
@@ -95,7 +96,7 @@ public:
 
   size_t num() const { return description.size(); }
   std::string_view operator[](size_t n) const { return description[n]; }
-  void push_back(std::string_view s) { description.push_back(std::string(s)); }
+  void push_back(std::string s) { description.push_back(std::move(s)); }
   void push_back(const Exception &e) {
     for (auto s : e.description)
       push_back(s);
@@ -108,9 +109,9 @@ public:
 
 class InvalidImageException : public Exception {
 public:
-  InvalidImageException(std::string_view msg) : Exception(msg) {}
-  InvalidImageException(const Exception &previous_exception, std::string_view msg)
-      : Exception(previous_exception, msg) {}
+  InvalidImageException(std::string msg) : Exception(std::move(msg)) {}
+  InvalidImageException(const Exception &previous_exception, std::string msg)
+      : Exception(previous_exception, std::move(msg)) {}
 };
 
 class CancelException : public Exception {
