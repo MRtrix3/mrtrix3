@@ -224,7 +224,7 @@ private:
   size_t test_fixel;
   std::string debugging_fixel_path;
   Header H_fixeldata;
-  void output_fixel_images(const std::string & /*prefix*/);
+  void output_fixel_images(std::string_view /*prefix*/);
 #endif
 
   Transform transform;

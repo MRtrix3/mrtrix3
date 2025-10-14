@@ -41,7 +41,7 @@ template <class NiftiHeader> struct Type {
   static constexpr std::array<char, 4> signature_extra{'\0', '\0', '\0', '\0'};
   static constexpr std::array<char, 4> magic1{'n', '+', '1', '\0'};
   static constexpr std::array<char, 4> magic2{'n', 'i', '1', '\0'};
-  static const std::string version() { return "NIFTI-1.1"; }
+  static std::string_view version() { return "NIFTI-1.1"; }
   static const char *db_name(const NiftiHeader &NH) { return NH.db_name; } // check_syntax off
   static char *db_name(NiftiHeader &NH) { return NH.db_name; }             // check_syntax off
   static int *extents(NiftiHeader &NH) { return &NH.extents; }
@@ -57,7 +57,7 @@ template <> struct Type<nifti_2_header> {
   static constexpr std::array<char, 4> signature_extra{'\r', '\n', '\032', '\n'};
   static constexpr std::array<char, 4> magic1{'n', '+', '2', '\0'};
   static constexpr std::array<char, 4> magic2{'n', 'i', '2', '\0'};
-  static const std::string version() { return "NIFTI-2"; }
+  static std::string_view version() { return "NIFTI-2"; }
   static const char *db_name(const nifti_2_header &NH) { return nullptr; } // check_syntax off
   static char *db_name(nifti_2_header &NH) { return nullptr; }             // check_syntax off
   static int *extents(nifti_2_header &NH) { return nullptr; }
@@ -594,7 +594,7 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
   if (version(H) != VERSION)
     return false;
 
-  std::string format = VERSION == 1 ? Type<nifti_1_header>::version() : Type<nifti_2_header>::version();
+  const std::string_view format = VERSION == 1 ? Type<nifti_1_header>::version() : Type<nifti_2_header>::version();
 
   if (num_axes < 3)
     throw Exception("cannot create " + format + " image with less than 3 dimensions");

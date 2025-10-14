@@ -157,7 +157,7 @@ else
 
   echo "" >> $LOG
   echo "Please check the following syntax requirements:
-  - Use \#pragma once rather than \#ifndef __headername__;
+  - Use #pragma once rather than #ifndef __headername__;
   - Use nested namespaces rather than sequentially-defined namespaces;
   - Define numerical constants using constexpr rather than preprocessor macros;
   - Use static_cast<>() rather than C-style casts;

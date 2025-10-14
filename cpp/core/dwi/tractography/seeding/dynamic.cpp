@@ -279,7 +279,7 @@ void Dynamic::write_seed(const Eigen::Vector3f &p) {
   seed_output(tck);
 }
 
-void Dynamic::output_fixel_images(const std::string &prefix) {
+void Dynamic::output_fixel_images(std::string_view prefix) {
   Image<float> image_seedprobability(
       Image<float>::create(Path::join(debugging_fixel_path, prefix + "_seedprobability.mif"), H_fixeldata));
   Image<float> image_logseedprob(
