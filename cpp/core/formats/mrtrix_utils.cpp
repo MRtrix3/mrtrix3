@@ -33,7 +33,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
   size_t current = 0;
 
   try {
-    while (sub <= end) {
+    while (sub < end) {
       bool pos = true;
       if (specifier[sub] == '+') {
         pos = true;
@@ -46,15 +46,22 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
 
       lim = sub;
 
-      while (isdigit(specifier[lim]))
+      while (lim < end && std::isdigit(static_cast<unsigned char>(specifier[lim])))
         lim++;
-      if (specifier[lim] != ',' && specifier[lim] != '\0')
+
+      // we require at least one digit
+      if(lim == sub)
         throw 0;
+
+      if (lim < end && specifier[lim] != ',')
+        throw 0;
+
       parsed[current] = to<ssize_t>(specifier.substr(sub, lim - sub)) + 1;
       if (!pos)
         parsed[current] = -parsed[current];
 
-      sub = lim + 1;
+      // move to character after comma or end
+      sub = (lim < end) ? (lim + 1) : lim;
       current++;
     }
   } catch (int) {
