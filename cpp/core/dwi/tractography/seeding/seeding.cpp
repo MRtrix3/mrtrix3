@@ -42,8 +42,9 @@ using namespace App;
 // clang-format off
 const OptionGroup SeedMechanismOption =
     OptionGroup("Tractography seeding mechanisms; at least one must be provided")
-    + Option("seed_image",
-             "seed streamlines entirely at random within a mask image").allow_multiple()
+    + Option("seed_voxels",
+             "seed streamlines entirely at random within a voxel mask"
+             " (formerly -seed_image)").allow_multiple()
       + Argument("image").type_image_in()
     + Option("seed_sphere", "spherical seed as four comma-separated values"
                             " (XYZ position and radius)").allow_multiple()
@@ -60,9 +61,10 @@ const OptionGroup SeedMechanismOption =
              " so a grid_size of 3 results in 27 seeds per voxel)").allow_multiple()
       + Argument("image").type_image_in()
       + Argument("grid_size").type_integer(1)
-    + Option("seed_rejection",
+    + Option("seed_rejection_per_voxel",
              "seed from an image using rejection sampling"
-             " (higher values = more probable to seed from)").allow_multiple()
+             " (higher values = more probable to seed from)"
+             " (formerly -seed_rejection)").allow_multiple()
       + Argument("image").type_image_in()
     + Option("seed_gmwmi",
              "seed from the grey matter - white matter interface"
@@ -77,7 +79,23 @@ const OptionGroup SeedMechanismOption =
              " Note that while this seeding mechanism"
              " improves the distribution of reconstructed streamlines density, "
              "it should NOT be used as a substitute for the SIFT method itself.") // Don't allow multiple
-      + Argument("fod_image").type_image_in();
+      + Argument("fod_image").type_image_in()
+    + Option("seed_coordinates",
+             "provide realspace coordinates as an Mx3 matrix (XYZ per row)"
+             " and seed until target seed / streamline count is reached"
+             " (must not provide any other seeding mechanism)") // Don't allow multiple
+      + Argument("coords_path").type_file_in()
+    + Option("seed_per_coordinate",
+             "provide realspace coordinates as an Mx3 matrix (XYZ per row)"
+             " and seed a fixed number of streamlines per coordinate").allow_multiple()
+      + Argument("coords_path").type_file_in()
+      + Argument("number_seeds_per_coordinate").type_integer(1)
+    + Option ("seed_rejection_per_coordinate",
+              "provide realspace coordinates and respective seeding probability"
+              " as an Mx4 matrix (XYZ then weight per row)"
+              " and seed until global seed/streamline target is met"
+              " (must not provide any other seeding mechanism)") // Don't allow multiple
+      + Argument ("coords_path").type_file_in();
 
 const OptionGroup SeedParameterOption =
     OptionGroup("Tractography seeding options and parameters")
@@ -114,14 +132,14 @@ const OptionGroup SeedParameterOption =
              " (default is to track in both directions).")
     + Option("seed_direction",
              "specify a seeding direction for the tracking"
-             " (this should be supplied as a vector of 3 comma-separated values.")
+             " (this should be supplied as a vector of 3 comma-separated values).")
       + Argument("dir").type_sequence_float();
 // clang-format on
 
 void load_seed_mechanisms(Properties &properties) {
   List &list(properties.seeds);
 
-  auto opt = get_options("seed_image");
+  auto opt = get_options("seed_voxels");
   for (size_t i = 0; i < opt.size(); ++i) {
     SeedMask *seed = new SeedMask(opt[i][0]);
     list.add(seed);
@@ -145,9 +163,9 @@ void load_seed_mechanisms(Properties &properties) {
     list.add(seed);
   }
 
-  opt = get_options("seed_rejection");
+  opt = get_options("seed_rejection_per_voxel");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Rejection *seed = new Rejection(opt[i][0]);
+    Rejection_per_voxel *seed = new Rejection_per_voxel(opt[i][0]);
     list.add(seed);
   }
 
@@ -162,8 +180,34 @@ void load_seed_mechanisms(Properties &properties) {
     }
   }
 
-  // Can't instantiate the dynamic seeder here; internal FMLS segmenter has to use the same Directions::Set as
-  // TrackMapperDixel
+  opt = get_options("seed_per_coordinate");
+  for (size_t i = 0; i < opt.size(); ++i) {
+    Count_per_coord *seed = new Count_per_coord(str(opt[i][0]), opt[i][1]);
+    list.add(seed);
+  }
+
+  // those exclusive of other seeding mechanisms go to the end, with dynamic seeder last
+
+  opt = get_options("seed_coordinates");
+  if (!opt.empty()) {
+    if (list.num_seeds())
+      throw Exception("If seeding from pre-specified coordinates with no fixed number of streamlines per coordinate,"
+                      " cannot specify any other type of seed!");
+    Coordinates *seed = new Coordinates(opt[0][0]);
+    list.add(seed);
+  }
+
+  opt = get_options("seed_rejection_per_coordinate");
+  if (opt.size()) {
+    if (list.num_seeds())
+      throw Exception("If performing rejection seeding from pre-specified coordinates,"
+                      " cannot specify any other type of seed!");
+    Rejection_per_coord *seed = new Rejection_per_coord(str(opt[0][0]));
+    list.add(seed);
+  }
+
+  // Can't instantiate the dynamic seeder here;
+  //   internal FMLS segmenter has to use the same Directions::Set as TrackMapperDixel
   opt = get_options("seed_dynamic");
   if (!opt.empty()) {
     if (list.num_seeds())

@@ -3,7 +3,7 @@
 # Using a template image that is of higher spatial resolution
 #   and offset by half a voxel,
 #   ensure that streamline terminations occur only at the interfaces where ACT should permit them
-tckgen SIFT_phantom/fods.mif -algo ifod1 -seed_image SIFT_phantom/mask.mif -select 5000 tmp.tck -force \
+tckgen SIFT_phantom/fods.mif -algo ifod1 -seed_voxels SIFT_phantom/mask.mif -select 5000 tmp.tck -force \
 -act SIFT_phantom/5tt.mif
 
 tckmap tmp.tck -template tckgen/act_terminations.mif -ends_only - | \
