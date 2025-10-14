@@ -187,12 +187,12 @@ public:
   bool operator!() const { return !valid(); }
 
   //! get the name of the image
-  std::string_view name() const { return name_; }
+  std::string name() const { return name_; }
   //! get/set the name of the image
   std::string &name() { return name_; }
 
   //! return the format of the image
-  std::string_view format() const { return format_; }
+  std::string format() const { return format_; }
 
   //! get the 4x4 affine transformation matrix mapping image to world coordinates
   const transform_type &transform() const { return transform_; }

@@ -87,8 +87,8 @@ public:
 
   size_t bits() const;
   size_t bytes() const { return (bits() + 7) / 8; }
-  std::string_view description() const;
-  std::string_view specifier() const;
+  std::string description() const;
+  std::string specifier() const;
 
   void set_flag(uint8_t flag) { dt |= flag; }
   void unset_flag(uint8_t flag) { dt &= ~flag; }

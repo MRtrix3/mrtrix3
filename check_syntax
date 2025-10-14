@@ -61,11 +61,18 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' |
     $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok)\s*\((?!.*\bcheck_syntax\s+off)'
   )
 
-# Detecting instances of const std::string &;
-#  most can be changed to std::string_view
+# Detect instances of const std::string &
+#   most can be changed to std::string_view,
+#   others would be safer to return a copy
   res="$res"$(
     cat $f | \
-    $grep -Po '(?!<//)\bconst\s+std::string\s*\&(?!.*check_syntax\s+off)'
+    $grep -Po '(?!<\/\/)\bconst\s+std::string\s*\&(?!.*check_syntax\s+off).*$'
+  )
+
+# Identify any uses of std::string_view as a function return
+  res="$res"$(
+    cat $f | \
+    $grep -Po '^\s*(const\s+|)std::string_view\s+\&?([a-zA-Z_][a-zA-Z0-9_]*|operator.*)\s?\((?!.*check_syntax\s+off)'
   )
 
 # detect deprecated use of "#ifdef __headerpath__"
@@ -162,7 +169,7 @@ else
   - Define numerical constants using constexpr rather than preprocessor macros;
   - Use static_cast<>() rather than C-style casts;
   - Use std::string (and optionally std::string_view) rather than C-style char* and relevant functions;
-  - Use std::string_view rather than const std::string&;
+  - Use std::string_view rather than const std::string& for function arguments, but std::string for function returns;
   - Do not use \"using namespace std\";
   - Replace all instances of std::abs() or naked abs() with either std::fabs() (for scalar floating-point only) or MR::abs() (for complex data, integers and template types);
   - Replace all instances of %zu in print() calls with PRI_SIZET;

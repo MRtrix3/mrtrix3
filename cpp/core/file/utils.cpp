@@ -80,7 +80,7 @@ std::string __get_tmpfile_dir() {
   return File::Config::get("TmpFileDir", default_tmpdir);
 }
 
-std::string_view tmpfile_dir() {
+std::string tmpfile_dir() {
   static const std::string __tmpfile_dir = __get_tmpfile_dir();
   return __tmpfile_dir;
 }
@@ -107,7 +107,7 @@ std::string __get_tmpfile_prefix() {
   return File::Config::get("TmpFilePrefix", "mrtrix-tmp-");
 }
 
-std::string_view tmpfile_prefix() {
+std::string tmpfile_prefix() {
   static const std::string __tmpfile_prefix = __get_tmpfile_prefix();
   return __tmpfile_prefix;
 }

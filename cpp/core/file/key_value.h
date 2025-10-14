@@ -36,9 +36,9 @@ public:
   bool next();
   void close() { in.close(); }
 
-  std::string_view key() const throw() { return (K); }
-  std::string_view value() const throw() { return (V); }
-  std::string_view name() const throw() { return (filename); }
+  std::string key() const throw() { return (K); }
+  std::string value() const throw() { return (V); }
+  std::string name() const throw() { return (filename); }
 
 protected:
   std::string K, V, filename;

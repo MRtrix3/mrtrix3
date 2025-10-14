@@ -164,7 +164,7 @@ public:
   operator std::string() const { return p; }
   operator std::string_view() const { return std::string_view(p.data(), p.size()); }
 
-  std::string_view as_text() const { return p; }
+  std::string as_text() const { return p; }
   bool as_bool() const { return to<bool>(p); }
   int64_t as_int() const;
   uint64_t as_uint() const { return static_cast<uint64_t>(as_int()); }

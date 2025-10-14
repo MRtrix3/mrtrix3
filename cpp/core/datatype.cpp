@@ -194,7 +194,7 @@ size_t DataType::bits() const {
   return 0;
 }
 
-std::string_view DataType::description() const {
+std::string DataType::description() const {
   static const std::string invalid("invalid data type");
   try {
     return dt2str.at(dt).description;
@@ -203,7 +203,7 @@ std::string_view DataType::description() const {
   }
 }
 
-std::string_view DataType::specifier() const {
+std::string DataType::specifier() const {
   static const std::string invalid("invalid");
   try {
     return dt2str.at(dt).specifier;

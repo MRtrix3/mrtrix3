@@ -55,7 +55,7 @@ public:
    */
   virtual default_type operator[](const index_type index) const = 0;
 
-  std::string_view name() const { return path; }
+  std::string name() const { return path; }
 
   virtual index_type size() const = 0;
 

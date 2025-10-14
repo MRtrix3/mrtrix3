@@ -118,7 +118,7 @@ bool is_dash(std::string_view arg);
 bool starts_with_dash(std::string_view arg);
 
 //! returns string without leading dashes
-std::string_view without_leading_dash(std::string_view arg);
+std::string without_leading_dash(std::string_view arg);
 
 template <class T> inline std::string str(const T &value, int precision = 0) {
   std::ostringstream stream;

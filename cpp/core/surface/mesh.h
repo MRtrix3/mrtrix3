@@ -134,7 +134,7 @@ public:
   bool have_normals() const { return !normals.empty(); }
   void calculate_normals();
 
-  std::string_view get_name() const { return name; }
+  std::string get_name() const { return name; }
   void set_name(std::string_view s) { name = s; }
 
   const Vertex &vert(const size_t i) const {

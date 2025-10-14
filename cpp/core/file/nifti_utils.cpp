@@ -41,7 +41,7 @@ template <class NiftiHeader> struct Type {
   static constexpr std::array<char, 4> signature_extra{'\0', '\0', '\0', '\0'};
   static constexpr std::array<char, 4> magic1{'n', '+', '1', '\0'};
   static constexpr std::array<char, 4> magic2{'n', 'i', '1', '\0'};
-  static std::string_view version() { return "NIFTI-1.1"; }
+  static const std::string version() { return "NIFTI-1.1"; }
   static const char *db_name(const NiftiHeader &NH) { return NH.db_name; } // check_syntax off
   static char *db_name(NiftiHeader &NH) { return NH.db_name; }             // check_syntax off
   static int *extents(NiftiHeader &NH) { return &NH.extents; }
@@ -57,7 +57,7 @@ template <> struct Type<nifti_2_header> {
   static constexpr std::array<char, 4> signature_extra{'\r', '\n', '\032', '\n'};
   static constexpr std::array<char, 4> magic1{'n', '+', '2', '\0'};
   static constexpr std::array<char, 4> magic2{'n', 'i', '2', '\0'};
-  static std::string_view version() { return "NIFTI-2"; }
+  static const std::string version() { return "NIFTI-2"; }
   static const char *db_name(const nifti_2_header &NH) { return nullptr; } // check_syntax off
   static char *db_name(nifti_2_header &NH) { return nullptr; }             // check_syntax off
   static int *extents(nifti_2_header &NH) { return nullptr; }
@@ -70,7 +70,7 @@ const std::vector<std::string> suffixes{".nii", ".img"};
 bool right_left_warning_issued = false;
 
 template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
-  const std::string_view version = Type<NiftiHeader>::version();
+  const std::string version = Type<NiftiHeader>::version();
   using dim_type = typename Type<NiftiHeader>::dim_type;
   using code_type = typename Type<NiftiHeader>::code_type;
   using float_type = typename Type<NiftiHeader>::float_type;
@@ -345,7 +345,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
 }
 
 template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const bool single_file) {
-  const std::string_view version = Type<NiftiHeader>::version();
+  const std::string version = Type<NiftiHeader>::version();
   using dim_type = typename Type<NiftiHeader>::dim_type;
   using vox_offset_type = typename Type<NiftiHeader>::vox_offset_type;
   using code_type = typename Type<NiftiHeader>::code_type;
@@ -594,7 +594,7 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
   if (version(H) != VERSION)
     return false;
 
-  const std::string_view format = VERSION == 1 ? Type<nifti_1_header>::version() : Type<nifti_2_header>::version();
+  const std::string format = VERSION == 1 ? Type<nifti_1_header>::version() : Type<nifti_2_header>::version();
 
   if (num_axes < 3)
     throw Exception("cannot create " + format + " image with less than 3 dimensions");
@@ -691,7 +691,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
-  const std::string_view version = Type<nifti_header>::version();
+  const std::string version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -723,7 +723,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
-  const std::string_view version = Type<nifti_header>::version();
+  const std::string version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");

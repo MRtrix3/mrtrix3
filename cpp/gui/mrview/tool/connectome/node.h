@@ -47,7 +47,7 @@ public:
   size_t get_volume() const { return volume; }
 
   void set_name(std::string_view i) { name = i; }
-  std::string_view get_name() const { return name; }
+  std::string get_name() const { return name; }
   void set_size(const float i) { size = i; }
   float get_size() const { return size; }
   void set_colour(const Eigen::Array3f &i) {

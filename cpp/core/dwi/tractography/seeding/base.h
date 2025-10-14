@@ -64,8 +64,8 @@ public:
   default_type vol() const { return volume; }
   uint32_t num() const { return count; }
   bool is_finite() const { return count; }
-  std::string_view get_type() const { return type; }
-  std::string_view get_name() const { return name; }
+  std::string get_type() const { return type; }
+  std::string get_name() const { return name; }
   size_t get_max_attempts() const { return max_attempts; }
 
   virtual bool get_seed(Eigen::Vector3f &) const = 0;

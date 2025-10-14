@@ -27,8 +27,8 @@
 namespace MR {
 class InvalidFixelDirectoryException : public Exception {
 public:
-  InvalidFixelDirectoryException(std::string_view msg) : Exception(msg) {}
-  InvalidFixelDirectoryException(const Exception &previous_exception, std::string_view msg)
+  InvalidFixelDirectoryException(std::string msg) : Exception(msg) {}
+  InvalidFixelDirectoryException(const Exception &previous_exception, std::string msg)
       : Exception(previous_exception, msg) {}
 };
 

@@ -237,19 +237,20 @@ size_t dash_bytes(std::string_view arg) {
 }
 
 bool is_dash(std::string_view arg) {
-  const size_t nbytes = dash_bytes(arg.data());
+  const size_t nbytes = dash_bytes(arg);
   return nbytes != 0 && nbytes == arg.size();
 }
 
 bool starts_with_dash(std::string_view arg) { return dash_bytes(arg.data()) != 0U; }
 
-std::string_view without_leading_dash(std::string_view arg) {
-  size_t nbytes = dash_bytes(arg.data());
+std::string without_leading_dash(std::string_view arg) {
+  std::string result(arg);
+  size_t nbytes = dash_bytes(arg);
   while (nbytes > 0) {
-    arg.remove_prefix(nbytes);
-    nbytes = dash_bytes(arg.data());
+    result = result.substr(nbytes);
+    nbytes = dash_bytes(result);
   }
-  return arg;
+  return result;
 }
 
 std::string join(const std::vector<std::string> &V, std::string_view delimiter) {

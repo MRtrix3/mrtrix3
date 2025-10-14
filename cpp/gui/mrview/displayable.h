@@ -67,7 +67,7 @@ public:
 
   virtual void request_render_colourbar(DisplayableVisitor &) {}
 
-  std::string_view get_filename() const { return filename; }
+  std::string get_filename() const { return filename; }
 
   float scaling_min() const { return display_midpoint - 0.5f * display_range; }
 

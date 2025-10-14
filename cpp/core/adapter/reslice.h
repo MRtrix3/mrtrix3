@@ -176,7 +176,7 @@ public:
   int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
   default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
   const transform_type &transform() const { return transform_; }
-  std::string_view name() const { return interp.name(); }
+  std::string name() const { return interp.name(); }
 
   ssize_t stride(size_t axis) const { return interp.stride(axis); }
 

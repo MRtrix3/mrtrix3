@@ -95,7 +95,7 @@ public:
   void display(int log_level = 0) const { display_func(*this, log_level); }
 
   size_t num() const { return description.size(); }
-  std::string_view operator[](size_t n) const { return description[n]; }
+  std::string operator[](size_t n) const { return description[n]; }
   void push_back(std::string s) { description.push_back(std::move(s)); }
   void push_back(const Exception &e) {
     for (auto s : e.description)

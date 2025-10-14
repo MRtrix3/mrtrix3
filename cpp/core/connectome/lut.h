@@ -50,8 +50,8 @@ public:
   void set_colour(const RGB &rgb) { colour = rgb; }
   void set_alpha(const uint8_t a) { alpha = a; }
 
-  std::string_view get_name() const { return name; }
-  std::string_view get_short_name() const { return !short_name.empty() ? short_name : name; }
+  std::string get_name() const { return name; }
+  std::string get_short_name() const { return !short_name.empty() ? short_name : name; }
   const RGB &get_colour() const { return colour; }
   uint8_t get_alpha() const { return alpha; }
 

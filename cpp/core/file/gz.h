@@ -46,7 +46,7 @@ public:
     }
   }
 
-  std::string_view name() const { return filename; }
+  std::string name() const { return filename; }
 
   void open(std::string_view fname, std::string_view mode) {
     close();

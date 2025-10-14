@@ -52,7 +52,7 @@ public:
 
   void save(std::string_view) const;
 
-  std::string_view get_name() const { return name; }
+  std::string get_name() const { return name; }
   void set_name(std::string_view s) { name = s; }
 
 private:
