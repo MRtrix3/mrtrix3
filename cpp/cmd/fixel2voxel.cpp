@@ -58,7 +58,7 @@ void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
            " and David Raffelt (david.raffelt@florey.edu.au)";
 
-  SYNOPSIS = "Convert a fixel-based sparse-data image into some form of scalar image";
+  SYNOPSIS = "Aggregate content from a fixel data file into a voxel scalar image";
 
   DESCRIPTION
   + "Fixel data can be reduced to voxel data in a number of ways:"

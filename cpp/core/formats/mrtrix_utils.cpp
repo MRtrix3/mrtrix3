@@ -16,6 +16,12 @@
 
 #include "formats/mrtrix_utils.h"
 
+#include "file/ofstream.h"
+#include "file/path.h"
+#include "file/utils.h"
+#include "mrtrix.h"
+#include "types.h"
+
 namespace MR::Formats {
 
 std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
@@ -138,5 +144,121 @@ void get_mrtrix_file_path(Header &H, std::string_view flag, std::string &fname, 
       fname = Path::join(Path::dirname(H.name()), fname);
   }
 }
+
+template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
+  std::string dtype, layout;
+  std::vector<uint64_t> dim;
+  std::vector<default_type> vox, scaling;
+  std::vector<std::vector<default_type>> transform;
+
+  std::string key, value;
+  while (next_keyvalue(kv, key, value)) {
+    const std::string lkey = lowercase(key);
+    if (lkey == "dim")
+      dim = parse_ints<uint64_t>(value);
+    else if (lkey == "vox")
+      vox = parse_floats(value);
+    else if (lkey == "layout")
+      layout = value;
+    else if (lkey == "datatype")
+      dtype = value;
+    else if (lkey == "scaling")
+      scaling = parse_floats(value);
+    else if (lkey == "transform")
+      transform.push_back(parse_floats(value));
+    else if (!key.empty() && !value.empty())
+      add_line(H.keyval()[key], value); // Preserve capitalization if not a compulsory key
+  }
+
+  if (dim.empty())
+    throw Exception("missing \"dim\" specification for MRtrix image \"" + H.name() + "\"");
+  H.ndim() = dim.size();
+  for (size_t n = 0; n < dim.size(); n++) {
+    if (dim[n] < 1)
+      throw Exception("invalid dimensions for MRtrix image \"" + H.name() + "\"");
+    H.size(n) = dim[n];
+  }
+
+  if (vox.empty())
+    throw Exception("missing \"vox\" specification for MRtrix image \"" + H.name() + "\"");
+  if (vox.size() < std::min(size_t(3), dim.size()))
+    throw Exception("too few entries in \"vox\" specification for MRtrix image \"" + H.name() + "\"");
+  for (size_t n = 0; n < std::min<size_t>(vox.size(), H.ndim()); n++) {
+    if (vox[n] < 0.0)
+      throw Exception("invalid voxel size for MRtrix image \"" + H.name() + "\"");
+    H.spacing(n) = vox[n];
+  }
+
+  if (dtype.empty())
+    throw Exception("missing \"datatype\" specification for MRtrix image \"" + H.name() + "\"");
+  H.datatype() = DataType::parse(dtype);
+
+  if (layout.empty())
+    throw Exception("missing \"layout\" specification for MRtrix image \"" + H.name() + "\"");
+  auto ax = parse_axes(H.ndim(), layout);
+  for (size_t i = 0; i < ax.size(); ++i)
+    H.stride(i) = ax[i];
+
+  if (!transform.empty()) {
+
+    auto check_transform = [&transform]() {
+      if (transform.size() < 3)
+        return false;
+      for (auto row : transform)
+        if (row.size() != 4)
+          return false;
+      return true;
+    };
+    if (!check_transform())
+      throw Exception("invalid \"transform\" specification for MRtrix image \"" + H.name() + "\"");
+
+    for (int row = 0; row < 3; ++row)
+      for (int col = 0; col < 4; ++col)
+        H.transform()(row, col) = transform[row][col];
+  }
+
+  if (!scaling.empty()) {
+    if (scaling.size() != 2)
+      throw Exception("invalid \"scaling\" specification for MRtrix image \"" + H.name() + "\"");
+    H.set_intensity_scaling(scaling[1], scaling[0]);
+  }
+}
+template void read_mrtrix_header<File::KeyValue::Reader>(Header &H, File::KeyValue::Reader &kv);
+template void read_mrtrix_header<File::GZ>(Header &H, File::GZ &kv);
+
+template <class StreamType> void write_mrtrix_header(const Header &H, StreamType &out) {
+  out << "dim: " << H.size(0);
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out << "," << H.size(n);
+
+  out << "\nvox: " << H.spacing(0);
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out << "," << H.spacing(n);
+
+  auto stride = Stride::get(H);
+  Stride::symbolise(stride);
+
+  out << "\nlayout: " << (stride[0] > 0 ? "+" : "-") << MR::abs(stride[0]) - 1;
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out << "," << (stride[n] > 0 ? "+" : "-") << MR::abs(stride[n]) - 1;
+
+  DataType dt = H.datatype();
+  dt.set_byte_order_native();
+  out << "\ndatatype: " << dt.specifier();
+
+  Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
+  out << H.transform().matrix().topLeftCorner(3, 4).format(fmt);
+
+  if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
+    out << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
+
+  for (const auto &i : H.keyval())
+    for (const auto &line : split_lines(i.second))
+      out << "\n" << i.first << ": " << line;
+
+  out << "\n";
+}
+template void write_mrtrix_header<File::OFStream>(const Header &H, File::OFStream &out);
+template void write_mrtrix_header<std::stringstream>(const Header &H, std::stringstream &out);
 
 } // namespace MR::Formats

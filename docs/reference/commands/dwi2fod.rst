@@ -65,6 +65,8 @@ Options common to more than one algorithm
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
+-  **-predicted_signal image** output the predicted dwi image.
+
 Options for the Constrained Spherical Deconvolution algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

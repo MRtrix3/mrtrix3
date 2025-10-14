@@ -193,7 +193,7 @@ public:
 #ifdef DYNAMIC_SEED_DEBUGGING
       const size_t updated_count = ++track_count;
       if (updated_count == target_trackcount / 2)
-        output_fixel_images();
+        output_fixel_images("midpoint");
       if (updated_count >= target_trackcount)
         return false;
 #else
@@ -222,7 +222,9 @@ private:
   Tractography::Writer<float> seed_output;
   void write_seed(const Eigen::Vector3f &);
   size_t test_fixel;
-  void output_fixel_images();
+  std::string debugging_fixel_path;
+  Header H_fixeldata;
+  void output_fixel_images(const std::string & /*prefix*/);
 #endif
 
   Transform transform;

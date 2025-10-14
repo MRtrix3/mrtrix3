@@ -139,9 +139,6 @@ add_bash_binary_test(fixelcfestats/masked)
 add_bash_binary_test(fixelconnectivity/masked)
 add_bash_binary_test(fixelconnectivity/weighted)
 
-add_bash_binary_test(fixelconvert/new_to_old)
-add_bash_binary_test(fixelconvert/old_to_new)
-
 add_bash_binary_test(fixelcorrespondence/default)
 
 add_bash_binary_test(fixelcrop/default)

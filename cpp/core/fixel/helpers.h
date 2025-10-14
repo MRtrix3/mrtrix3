@@ -49,8 +49,8 @@ FORCE_INLINE void check(const Header &in) {
 
 namespace Fixel {
 FORCE_INLINE bool is_index_filename(std::string_view path) {
-  for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-       it != supported_sparse_formats.end();
+  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
+       it != supported_image_formats.end();
        ++it) {
     if (Path::basename(path) == "index" + *it)
       return true;
@@ -73,8 +73,8 @@ template <class HeaderType> FORCE_INLINE bool is_data_file(const HeaderType &in)
 }
 
 FORCE_INLINE bool is_directions_filename(std::string_view path) {
-  for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-       it != supported_sparse_formats.end();
+  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
+       it != supported_image_formats.end();
        ++it) {
     if (Path::basename(path) == "directions" + *it)
       return true;
@@ -186,8 +186,8 @@ FORCE_INLINE Header find_index_header(std::string_view fixel_directory_path) {
   Header header;
   check_fixel_directory(fixel_directory_path);
 
-  for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-       it != supported_sparse_formats.end();
+  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
+       it != supported_image_formats.end();
        ++it) {
     std::string full_path = Path::join(fixel_directory_path, "index" + *it);
     if (Path::exists(full_path)) {
@@ -218,7 +218,7 @@ FORCE_INLINE std::vector<Header> find_data_headers(std::string_view fixel_direct
 
   std::vector<Header> data_headers;
   for (auto fname : file_names) {
-    if (Path::has_suffix(fname, supported_sparse_formats)) {
+    if (Path::has_suffix(fname, supported_image_formats)) {
       try {
         auto H = Header::open(Path::join(fixel_directory_path, fname));
         if (is_data_file(H)) {
@@ -272,7 +272,7 @@ FORCE_INLINE Header find_directions_header(std::string_view fixel_directory_path
   return header;
 }
 
-//! Generate a header for a sparse data file (Nx1x1)
+//! Generate a header for a fixel data file (Nx1x1)
 FORCE_INLINE Header data_header_from_nfixels(const size_t nfixels) {
   Header header;
   header.ndim() = 3;
@@ -289,7 +289,7 @@ FORCE_INLINE Header data_header_from_nfixels(const size_t nfixels) {
   return header;
 }
 
-//! Generate a header for a sparse data file (Nx1x1) using an index image as a template
+//! Generate a header for a fixel data file (Nx1x1) using an index image as a template
 template <class IndexHeaderType> FORCE_INLINE Header data_header_from_index(IndexHeaderType &index) {
   Header header(data_header_from_nfixels(get_number_of_fixels(index)));
   for (size_t axis = 0; axis != 3; ++axis)
