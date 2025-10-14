@@ -31,7 +31,8 @@ add_bash_binary_test(5tt2gmwmi/default)
 
 add_bash_binary_test(5tt2vis/default)
 
-add_bash_binary_test(5ttedit/default)
+add_bash_binary_test(5ttedit/onetissue)
+add_bash_binary_test(5ttedit/twotissues)
 
 add_bash_binary_test(amp2sh/default)
 
