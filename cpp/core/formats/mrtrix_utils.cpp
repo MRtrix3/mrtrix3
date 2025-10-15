@@ -50,7 +50,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
         lim++;
 
       // we require at least one digit
-      if(lim == sub)
+      if (lim == sub)
         throw 0;
 
       if (lim < end && specifier[lim] != ',')

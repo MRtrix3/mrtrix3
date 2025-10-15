@@ -37,7 +37,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
       end = spec.find_first_of(",:", start);
       std::string sub(spec.substr(start, end - start));
       range_spec[i] = (sub.empty() || sub == "nan") ? NaN : to<default_type>(sub);
-      char last_char = end < spec.size() ? spec[end] : '\0';
+      const char last_char = end < spec.size() ? spec[end] : '\0';
       if (last_char == ':') {
         i++;
         if (i > 2)

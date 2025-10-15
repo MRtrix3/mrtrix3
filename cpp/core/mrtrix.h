@@ -313,7 +313,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
         num[i] = to<SignedIntType>(spec.substr(start, end - start));
 
       end = spec.find_first_not_of(" \t", end);
-      char last_char = end < spec.size() ? spec[end] : '\0';
+      const char last_char = end < spec.size() ? spec[end] : '\0';
       if (last_char == ':') {
         ++i;
         ++end;

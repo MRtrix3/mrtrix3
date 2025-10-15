@@ -134,18 +134,18 @@ inline void get_matches(std::vector<const Option *> &candidates, const OptionGro
   }
 }
 
-inline std::string::size_type size(std::string_view text) {
+inline std::string::size_type characters_ignoring_emphasis(std::string_view text) {
   return text.size() - 2 * std::count(text.begin(), text.end(), 0x08U);
 }
 
 inline void resize(std::string &text, size_t new_size, char fill) {
-  text.resize(text.size() + new_size - size(text), fill);
+  text.resize(text.size() + new_size - characters_ignoring_emphasis(text), fill);
 }
 
 std::string paragraph(std::string_view header, std::string_view text, const HelpFormatting::Indents indents) {
   std::string out;
   std::string line = std::string(indents.header, ' ') + std::string(header) + " ";
-  if (size(line) < indents.main)
+  if (characters_ignoring_emphasis(line) < indents.main)
     resize(line, indents.main, ' ');
 
   std::vector<std::string> paragraphs = split(text, "\n");
@@ -158,7 +158,7 @@ std::string paragraph(std::string_view header, std::string_view text, const Help
         line += " " + words[i++];
         if (i >= words.size())
           break;
-      } while (size(line) + 1 + size(words[i]) < help_formatting.width);
+      } while (characters_ignoring_emphasis(line) + 1 + characters_ignoring_emphasis(words[i]) < help_formatting.width);
       out += line + "\n";
       line = std::string(indents.main, ' ');
     }
@@ -229,13 +229,14 @@ std::string help_head(int format) {
   };
 
   // compute requested padding to position the program name
-  const std::ptrdiff_t requested_padding =
-      40 - static_cast<std::ptrdiff_t>(size(version_string)) - (static_cast<std::ptrdiff_t>(size(App::NAME)) / 2);
+  const std::ptrdiff_t requested_padding = 40 -
+                                           static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(version_string)) -
+                                           (static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(App::NAME)) / 2);
   std::string topline = version_string + std::string(safe_padding(requested_padding), ' ') + bold(App::NAME);
 
   // compute requested padding to right-align the date
-  const std::ptrdiff_t requested_padding2 =
-      80 - static_cast<std::ptrdiff_t>(size(topline)) - static_cast<std::ptrdiff_t>(size(date));
+  const std::ptrdiff_t requested_padding2 = 80 - static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(topline)) -
+                                            static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(date));
   topline += std::string(safe_padding(requested_padding2), ' ') + date;
 
   if (!project_version.empty())
