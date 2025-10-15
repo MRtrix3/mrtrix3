@@ -29,6 +29,8 @@
 #include "raw.h"
 #include "types.h"
 
+#include <memory>
+
 namespace MR::File::NPY {
 
 constexpr unsigned char magic_string[] = "\x93NUMPY";
