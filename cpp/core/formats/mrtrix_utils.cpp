@@ -56,6 +56,9 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
       if (lim < end && specifier[lim] != ',')
         throw 0;
 
+      if (current == ndim)
+        throw Exception("incorrect number of axes in axes specification \"" + specifier + "\"");
+
       parsed[current] = to<ssize_t>(specifier.substr(sub, lim - sub)) + 1;
       if (!pos)
         parsed[current] = -parsed[current];
@@ -73,6 +76,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
 
   if (parsed.size() != ndim)
     throw Exception("incorrect number of dimensions for axes specifier");
+
   for (size_t n = 0; n < parsed.size(); n++) {
     if (!parsed[n] || static_cast<size_t>(MR::abs(parsed[n])) > ndim)
       throw Exception("axis ordering " + str(parsed[n]) + " out of range");
