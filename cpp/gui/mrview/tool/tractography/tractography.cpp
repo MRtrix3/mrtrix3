@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "math/rng.h"
 #include "mrview/tool/tractography/tractography.h"
 #include "dialog/file.h"
 #include "lighting_dock.h"

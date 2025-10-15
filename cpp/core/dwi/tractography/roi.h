@@ -16,10 +16,7 @@
 
 #pragma once
 
-#include "app.h"
 #include "image.h"
-#include "interp/linear.h"
-#include "math/rng.h"
 #include "misc/bitset.h"
 #include "transform.h"
 
