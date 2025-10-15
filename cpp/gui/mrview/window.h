@@ -19,7 +19,6 @@
 #include "cursor.h"
 #include "gui.h"
 #include "image.h"
-#include "memory.h"
 #include "mrview/colourbars.h"
 #include "mrview/colourmap_button.h"
 #include "mrview/gui_image.h"

@@ -16,20 +16,28 @@
 
 #pragma once
 
+#include <ostream>
 #define IMAGE_H
-
-#include <functional>
-#include <tuple>
-#include <type_traits>
 
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
-#include "debug.h"
+#include "datatype.h"
+#include "exception.h"
 #include "fetch_store.h"
+#include "file/ofstream.h"
+#include "file/path.h"
+#include "file/utils.h"
 #include "formats/mrtrix_utils.h"
-#include "half.h"
 #include "header.h"
 #include "image_helpers.h"
+#include "mrtrix.h"
+#include "stride.h"
+#include "types.h"
+
+#include <cassert>
+#include <functional>
+#include <memory>
+#include <type_traits>
 
 namespace MR {
 
@@ -54,7 +62,7 @@ public:
   FORCE_INLINE bool operator!() const { return !valid(); }
 
   //! get generic key/value text attributes
-  FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
+  const KeyValues &keyval() const;
 
   FORCE_INLINE const std::string &name() const { return buffer->name(); }
   FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
@@ -215,6 +223,7 @@ protected:
   //! offset to currently pointed-to voxel
   size_t data_offset;
 };
+template <typename ValueType> inline const KeyValues &Image<ValueType>::keyval() const { return buffer->keyval(); }
 
 template <typename ValueType> class Image<ValueType>::Buffer : public Header {
 public:

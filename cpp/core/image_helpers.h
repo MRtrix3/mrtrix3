@@ -18,7 +18,7 @@
 
 #include "apply.h"
 #include "datatype.h"
-#include "debug.h"
+#include "mrtrix.h"
 
 namespace MR {
 

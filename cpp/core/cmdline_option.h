@@ -26,7 +26,6 @@
 #undef None
 #endif
 
-#include "mrtrix.h"
 #include "types.h"
 #include <variant>
 

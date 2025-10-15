@@ -16,7 +16,9 @@
 
 #include "progressbar.h"
 #include "app.h"
+#include <sys/stat.h>
 #include <thread>
+#include <unistd.h>
 #include <utility>
 
 // MSYS2 supports VT100, and file redirection is handled explicitly so this can be used globally

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <tuple>
-#include <type_traits>
 
 namespace MR {
 //! invoke \c Function f for each entry in \c Tuple t

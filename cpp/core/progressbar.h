@@ -16,20 +16,14 @@
 
 #pragma once
 
+#include "timer.h"
+#include "types.h"
+
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
-#include <memory>
 #include <mutex>
 #include <string>
-#include <thread>
-#include <utility>
-
-#include "app.h"
-#include "debug.h"
-#include "mrtrix.h"
-#include "timer.h"
-#include "types.h"
 
 namespace MR {
 

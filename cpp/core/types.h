@@ -16,13 +16,10 @@
 
 #pragma once
 
-#include <cinttypes>
 #include <complex>
 #include <cstddef>
-#include <deque>
 #include <iostream>
 #include <map>
-#include <memory>
 #include <vector>
 
 #ifdef _WIN32

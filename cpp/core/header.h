@@ -16,19 +16,17 @@
 
 #pragma once
 
-#include <functional>
-#include <map>
-
-#include "app.h"
 #include "axes.h"
 #include "datatype.h"
-#include "debug.h"
-#include "file/mmap.h"
 #include "image_helpers.h"
 #include "image_io/base.h"
-#include "memory.h"
 #include "stride.h"
 #include "types.h"
+
+#include <cmath>
+#include <limits>
+#include <ostream>
+#include <utility>
 
 namespace MR {
 

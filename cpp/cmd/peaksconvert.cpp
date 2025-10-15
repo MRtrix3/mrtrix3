@@ -14,7 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <string>
 
 #include "adapter/base.h"
 #include "algo/loop.h"
@@ -22,7 +21,8 @@
 #include "header.h"
 #include "image.h"
 #include "math/sphere.h"
-#include "transform.h"
+
+#include <string>
 
 using namespace MR;
 using namespace App;

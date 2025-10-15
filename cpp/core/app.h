@@ -16,18 +16,18 @@
 
 #pragma once
 
-#include <cstring>
-#include <limits>
-#include <string>
-#include <thread>
-
+#include <cassert>
 #ifdef None
 #undef None
 #endif
 
 #include "cmdline_option.h"
-#include "file/path.h"
+#include "mrtrix.h"
 #include "types.h"
+
+#include <cstring>
+#include <string>
+#include <thread>
 
 extern void usage();
 extern void run();

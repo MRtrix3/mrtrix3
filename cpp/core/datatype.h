@@ -17,6 +17,7 @@
 #pragma once
 
 #include "cmdline_option.h"
+#include "exception.h"
 #include "half.h"
 
 #ifdef Complex

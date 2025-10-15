@@ -16,11 +16,13 @@
 
 #include "dwi/directions/set.h"
 
-#include <list>
-#include <set>
-
+#include "debug.h"
 #include "math/rng.h"
 #include "misc/bitset.h"
+#include "mrtrix.h"
+
+#include <list>
+#include <set>
 
 namespace MR::DWI::Directions {
 

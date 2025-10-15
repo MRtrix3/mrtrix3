@@ -15,10 +15,12 @@
  */
 
 #include "connectome/lut.h"
+#include "exception.h"
+#include "file/path.h"
+#include "mrtrix.h" // For strip()
 
 #include <fstream>
-
-#include "mrtrix.h" // For strip()
+#include <string>
 
 namespace MR::Connectome {
 

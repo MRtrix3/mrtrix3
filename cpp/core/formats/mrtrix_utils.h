@@ -16,14 +16,15 @@
 
 #pragma once
 
-#include "header.h"
-#include "types.h"
-
 #include "file/gz.h"
 #include "file/key_value.h"
-#include "file/ofstream.h"
-#include "file/path.h"
-#include "file/utils.h"
+#include "exception.h"
+#include "header.h"
+#include "mrtrix.h"
+#include "stride.h"
+#include "types.h"
+
+#include <string>
 
 namespace MR::Formats {
 
