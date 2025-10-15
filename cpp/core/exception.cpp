@@ -15,6 +15,7 @@
  */
 
 #include <array>
+#include <string_view>
 #include <unordered_map>
 
 #include "app.h"
@@ -45,7 +46,7 @@ void cmdline_report_to_user_func(std::string_view msg, int type) {
                                                                           {3, "%s: \033[00;34m%s%s\033[0m\n"}};
 
   static const std::unordered_map<int, std::string> console_prefixes{
-      {-1, ""}, {0, "[ERROR] "}, {1, "[WARNING] "}, {2, "[INFO] "}, {3, "[ERROR] "}};
+      {-1, ""}, {0, "[ERROR] "}, {1, "[WARNING] "}, {2, "[INFO] "}, {3, "[DEBUG] "}};
 
   if (__need_newline) {
     __print_stderr("\n");
