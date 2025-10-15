@@ -80,8 +80,14 @@ target_include_directories(mrtrix-core PUBLIC
 if(MRTRIX_USE_PCH)
     target_precompile_headers(mrtrix-core PRIVATE
         [["exception.h"]]
-        <fstream>
+        <algorithm>
+        <array>
+        <cassert>
         <complex>
+        <fstream>
+        <memory>
+        <ostream>
+        <thread>
     )
 endif()
 
