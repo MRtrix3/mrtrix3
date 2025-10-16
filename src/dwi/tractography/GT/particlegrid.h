@@ -18,6 +18,7 @@
 #define __gt_particlegrid_h__
 
 #include <mutex>
+#include <deque>
 
 #include "header.h"
 #include "transform.h"
@@ -40,7 +41,34 @@ namespace MR {
         { MEMALIGN(ParticleGrid)
         public:
 
-          using ParticleVectorType = vector<Particle*>;
+          class ParticleContainer
+          { NOMEMALIGN
+            public:
+              ParticleContainer() = default;
+              ParticleContainer (const ParticleContainer& other) : particles (other.particles) { }
+
+              void push_back (Particle* p) {
+                std::lock_guard<std::mutex> lock (mutex);
+                particles.push_back (p);
+              }
+              void remove (Particle* p) {
+                std::lock_guard<std::mutex> lock (mutex);
+                particles.erase (std::remove (particles.begin(), particles.end(), p), particles.end());
+              }
+
+              using iterator = std::deque<Particle*>::iterator;
+              using const_iterator = std::deque<Particle*>::const_iterator;
+
+              iterator begin() { return particles.begin(); }
+              iterator end() { return particles.end(); }
+              const_iterator begin() const { return particles.begin(); }
+              const_iterator end() const { return particles.end(); }
+
+              mutable std::mutex mutex;
+
+            private:
+              std::deque<Particle*> particles;
+          };
 
           ParticleGrid(const Header&);
           ParticleGrid(const ParticleGrid&) = delete;
@@ -62,7 +90,7 @@ namespace MR {
 
           void clear();
 
-          const ParticleVectorType* at(const ssize_t x, const ssize_t y, const ssize_t z) const;
+          const ParticleContainer* at(const ssize_t x, const ssize_t y, const ssize_t z) const;
 
           inline Particle* getRandom() {
             return pool.random();
@@ -74,10 +102,11 @@ namespace MR {
         protected:
           std::mutex mutex;
           ParticlePool pool;
-          vector<ParticleVectorType> grid;
+          vector<ParticleContainer> grid;
           Math::RNG rng;
           transform_type T_s2g;
           size_t dims[3];
+          default_type grid_spacing;
 
 
           inline size_t pos2idx(const Point_t& pos) const
@@ -88,6 +117,13 @@ namespace MR {
           }
 
         public:
+          inline bool isoutofbounds(const Point_t& pos) const
+          {
+            Point_t gpos = T_s2g.cast<float>() * pos;
+            return (gpos[0] <= -0.5) || (gpos[1] <= -0.5) || (gpos[2] <= -0.5) ||
+                   (gpos[0] >= dims[0]-0.5) || (gpos[1] >= dims[1]-0.5) || (gpos[2] >= dims[2]-0.5);
+          }
+
           inline void pos2xyz(const Point_t& pos, size_t& x, size_t& y, size_t& z) const
           {
             Point_t gpos = T_s2g.cast<float>() * pos;
@@ -95,6 +131,10 @@ namespace MR {
             x = Math::round<size_t>(gpos[0]);
             y = Math::round<size_t>(gpos[1]);
             z = Math::round<size_t>(gpos[2]);
+          }
+
+          inline default_type spacing () {
+            return grid_spacing;
           }
 
         protected:

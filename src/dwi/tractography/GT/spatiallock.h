@@ -43,6 +43,7 @@ namespace MR {
           SpatialLock(const value_type tx, const value_type ty, const value_type tz) : _tx(tx), _ty(ty), _tz(tz) { }
 
           ~SpatialLock() {
+            std::lock_guard<std::mutex> lock(mutex);
             lockcentres.clear();
           }
 
@@ -61,6 +62,10 @@ namespace MR {
           { NOMEMALIGN
           public:
             Guard(SpatialLock& l) : lock(l), idx(-1) { }
+            Guard(const Guard&) = delete;
+            Guard& operator= (const Guard&) = delete;
+            Guard(Guard&& other) noexcept = delete;
+            Guard& operator= (Guard&&) = delete;
 
             ~Guard() {
               if (idx >= 0)
@@ -113,6 +118,7 @@ namespace MR {
           }
 
           void unlock(const size_t idx) {
+            std::lock_guard<std::mutex> lock(mutex);
             lockcentres[idx].second = false;
           }
 

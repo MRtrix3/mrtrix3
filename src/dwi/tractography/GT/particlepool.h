@@ -73,6 +73,7 @@ namespace MR {
            * @brief Return number of Particles in the pool.
            */
           inline size_t size() const {
+            std::lock_guard<std::mutex> lock (mutex);
             return pool.size() - avail.size();
           }
           
@@ -104,7 +105,7 @@ namespace MR {
           }
           
         protected:
-          std::mutex mutex;
+          mutable std::mutex mutex;
           deque<Particle> pool;
           std::stack<Particle*, deque<Particle*> > avail;
           Math::RNG rng;
