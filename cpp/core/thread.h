@@ -105,7 +105,8 @@ protected:
 class __single_thread : public __thread_base {
 public:
   template <class Functor> __single_thread(Functor &&functor, std::string_view name = "unnamed") : __thread_base(name) {
-    DEBUG("launching thread \"" + name + "\"...");
+    const std::string msg = std::string("launching thread \"") + name + "\"...";
+    DEBUG(msg);
     using F = typename std::remove_reference<Functor>::type;
     thread = std::async(std::launch::async, &F::execute, &functor);
   }
