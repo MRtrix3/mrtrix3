@@ -56,8 +56,8 @@ void load_act_properties(Properties &properties) {
 
 void verify_5TT_image(const Header &H) {
   if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.size(3) != 5)
-    throw Exception("Image " + H.name() + " is not a valid ACT 5TT image" +
-                    " (expecting 4D image with 5 volumes and floating-point datatype)");
+    throw Exception("Image " + std::string(H.name()) + " is not a valid ACT 5TT image" + //
+                    " (expecting 4D image with 5 volumes and floating-point datatype)"); //
 }
 
 } // namespace MR::DWI::Tractography::ACT

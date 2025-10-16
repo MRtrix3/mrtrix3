@@ -25,13 +25,13 @@ bool series_time_mismatch_warning_issued = false;
 bool series_number_UID_mismatch_warning_issued = false;
 } // namespace
 
-std::shared_ptr<Series> Study::find(const std::string &series_name,
+std::shared_ptr<Series> Study::find(std::string_view series_name,
                                     size_t series_number,
-                                    const std::string &image_type,
-                                    const std::string &series_ref_UID,
-                                    const std::string &series_modality,
-                                    const std::string &series_date,
-                                    const std::string &series_time) {
+                                    std::string_view image_type,
+                                    std::string_view series_ref_UID,
+                                    std::string_view series_modality,
+                                    std::string_view series_date,
+                                    std::string_view series_time) {
   for (size_t n = 0; n < size(); n++) {
     bool match = true;
     if (series_name == (*this)[n]->name) {

@@ -21,9 +21,7 @@
 #include "image_helpers.h"
 #include "math/math.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 
 template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType, class DerivedImageType>
 void cc_precompute(Im1ImageType &im1_image,
@@ -77,11 +75,11 @@ void cc_precompute(Im1ImageType &im1_image,
     }
 
     if (nvox == 0) {
-      A.value() = NaN;
-      C.value() = NaN;
-      B.value() = NaN;
-      im1_meansubtr.value() = NaN;
-      im2_meansubtr.value() = NaN;
+      A.value() = std::numeric_limits<typename DerivedImageType::value_type>::quiet_NaN();
+      C.value() = std::numeric_limits<typename DerivedImageType::value_type>::quiet_NaN();
+      B.value() = std::numeric_limits<typename DerivedImageType::value_type>::quiet_NaN();
+      im1_meansubtr.value() = std::numeric_limits<typename DerivedImageType::value_type>::quiet_NaN();
+      im2_meansubtr.value() = std::numeric_limits<typename DerivedImageType::value_type>::quiet_NaN();
       continue;
     }
 
@@ -106,6 +104,4 @@ void cc_precompute(Im1ImageType &im1_image,
   }
 }
 
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Metric

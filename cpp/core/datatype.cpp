@@ -75,7 +75,7 @@ const std::vector<std::string> DataType::identifiers = {
     "uint16le",   "int16be",   "uint16be",   "cfloat16",   "cfloat16le", "cfloat16be", "cfloat32", "cfloat32le",
     "cfloat32be", "cfloat64",  "cfloat64le", "cfloat64be", "int8",       "uint8",      "bit"};
 
-DataType DataType::parse(const std::string &spec) {
+DataType DataType::parse(std::string_view spec) {
   std::string str(lowercase(spec));
 
   if (str == "float16")
@@ -194,183 +194,22 @@ size_t DataType::bits() const {
   return 0;
 }
 
-const char *DataType::description() const {
-  switch (dt) {
-  case Bit:
-    return "bitwise";
-
-  case Int8:
-    return "signed 8 bit integer";
-  case UInt8:
-    return "unsigned 8 bit integer";
-
-  case Int16LE:
-    return "signed 16 bit integer (little endian)";
-  case UInt16LE:
-    return "unsigned 16 bit integer (little endian)";
-  case Int16BE:
-    return "signed 16 bit integer (big endian)";
-  case UInt16BE:
-    return "unsigned 16 bit integer (big endian)";
-
-  case Int32LE:
-    return "signed 32 bit integer (little endian)";
-  case UInt32LE:
-    return "unsigned 32 bit integer (little endian)";
-  case Int32BE:
-    return "signed 32 bit integer (big endian)";
-  case UInt32BE:
-    return "unsigned 32 bit integer (big endian)";
-
-  case Int64LE:
-    return "signed 64 bit integer (little endian)";
-  case UInt64LE:
-    return "unsigned 64 bit integer (little endian)";
-  case Int64BE:
-    return "signed 64 bit integer (big endian)";
-  case UInt64BE:
-    return "unsigned 64 bit integer (big endian)";
-
-  case Float16LE:
-    return "16 bit float (little endian)";
-  case Float16BE:
-    return "16 bit float (big endian)";
-
-  case Float32LE:
-    return "32 bit float (little endian)";
-  case Float32BE:
-    return "32 bit float (big endian)";
-
-  case Float64LE:
-    return "64 bit float (little endian)";
-  case Float64BE:
-    return "64 bit float (big endian)";
-
-  case CFloat16LE:
-    return "Complex 16 bit float (little endian)";
-  case CFloat16BE:
-    return "Complex 16 bit float (big endian)";
-
-  case CFloat32LE:
-    return "Complex 32 bit float (little endian)";
-  case CFloat32BE:
-    return "Complex 32 bit float (big endian)";
-
-  case CFloat64LE:
-    return "Complex 64 bit float (little endian)";
-  case CFloat64BE:
-    return "Complex 64 bit float (big endian)";
-
-  case Undefined:
-    return "undefined";
-
-  default:
-    return "invalid data type";
+std::string DataType::description() const {
+  static const std::string invalid("invalid data type");
+  try {
+    return dt2str.at(dt).description;
+  } catch (std::out_of_range) {
+    return invalid;
   }
-
-  return nullptr;
 }
 
-const char *DataType::specifier() const {
-  switch (dt) {
-  case Bit:
-    return "Bit";
-
-  case Int8:
-    return "Int8";
-  case UInt8:
-    return "UInt8";
-
-  case Int16LE:
-    return "Int16LE";
-  case UInt16LE:
-    return "UInt16LE";
-  case Int16BE:
-    return "Int16BE";
-  case UInt16BE:
-    return "UInt16BE";
-
-  case Int32LE:
-    return ("Int32LE");
-  case UInt32LE:
-    return ("UInt32LE");
-  case Int32BE:
-    return "Int32BE";
-  case UInt32BE:
-    return "UInt32BE";
-
-  case Int64LE:
-    return ("Int64LE");
-  case UInt64LE:
-    return ("UInt64LE");
-  case Int64BE:
-    return "Int64BE";
-  case UInt64BE:
-    return "UInt64BE";
-
-  case Float16LE:
-    return "Float16LE";
-  case Float16BE:
-    return "Float16BE";
-
-  case Float32LE:
-    return "Float32LE";
-  case Float32BE:
-    return "Float32BE";
-
-  case Float64LE:
-    return "Float64LE";
-  case Float64BE:
-    return "Float64BE";
-
-  case CFloat16LE:
-    return "CFloat16LE";
-  case CFloat16BE:
-    return "CFloat16BE";
-
-  case CFloat32LE:
-    return "CFloat32LE";
-  case CFloat32BE:
-    return "CFloat32BE";
-
-  case CFloat64LE:
-    return "CFloat64LE";
-  case CFloat64BE:
-    return "CFloat64BE";
-
-  case Int16:
-    return "Int16";
-  case UInt16:
-    return "UInt16";
-  case Int32:
-    return "Int32";
-  case UInt32:
-    return "UInt32";
-  case Int64:
-    return "Int64";
-  case UInt64:
-    return "UInt64";
-  case Float16:
-    return "Float16";
-  case Float32:
-    return "Float32";
-  case Float64:
-    return "Float64";
-  case CFloat16:
-    return "CFloat16";
-  case CFloat32:
-    return "CFloat32";
-  case CFloat64:
-    return "CFloat64";
-
-  case Undefined:
-    return "Undefined";
-
-  default:
-    return "invalid";
+std::string DataType::specifier() const {
+  static const std::string invalid("invalid");
+  try {
+    return dt2str.at(dt).specifier;
+  } catch (std::out_of_range) {
+    return invalid;
   }
-
-  return NULL;
 }
 
 DataType DataType::from_command_line(DataType default_datatype) {
@@ -379,6 +218,36 @@ DataType DataType::from_command_line(DataType default_datatype) {
     default_datatype = parse(opt[0][0]);
   return default_datatype;
 }
+
+const std::unordered_map<uint8_t, DataType::Strings> DataType::dt2str{
+    {Bit, {"Bit", "bitwise"}},
+    {Int8, {"Int8", "signed 8 bit integer"}},
+    {UInt8, {"UInt8", "unsigned 8 bit integer"}},
+    {Int16LE, {"Int16LE", "signed 16 bit integer (little endian)"}},
+    {UInt16LE, {"UInt16LE", "unsigned 16 bit integer (little endian)"}},
+    {Int16BE, {"Int16BE", "signed 16 bit integer (big endian)"}},
+    {UInt16BE, {"UInt16BE", "unsigned 16 bit integer (big endian)"}},
+    {Int32LE, {"Int32LE", "signed 32 bit integer (little endian)"}},
+    {UInt32LE, {"UInt32LE", "unsigned 32 bit integer (little endian)"}},
+    {Int32BE, {"Int32BE", "signed 32 bit integer (big endian)"}},
+    {UInt32BE, {"UInt32BE", "unsigned 32 bit integer (big endian)"}},
+    {Int64LE, {"Int64LE", "signed 64 bit integer (little endian)"}},
+    {UInt64LE, {"UInt64LE", "unsigned 64 bit integer (little endian)"}},
+    {Int64BE, {"Int64BE", "signed 64 bit integer (big endian)"}},
+    {UInt64BE, {"UInt64BE", "unsigned 64 bit integer (big endian)"}},
+    {Float16LE, {"Float16LE", "16 bit float (little endian)"}},
+    {Float16BE, {"Float16BE", "16 bit float (big endian)"}},
+    {Float32LE, {"Float32LE", "32 bit float (little endian)"}},
+    {Float32BE, {"Float32BE", "32 bit float (big endian)"}},
+    {Float64LE, {"Float64LE", "64 bit float (little endian)"}},
+    {Float64BE, {"Float64BE", "64 bit float (big endian)"}},
+    {CFloat16LE, {"CFloat16LE", "Complex 16 bit float (little endian)"}},
+    {CFloat16BE, {"CFloat16BE", "Complex 16 bit float (big endian)"}},
+    {CFloat32LE, {"CFloat32LE", "Complex 32 bit float (little endian)"}},
+    {CFloat32BE, {"CFloat32BE", "Complex 32 bit float (big endian)"}},
+    {CFloat64LE, {"CFloat64LE", "Complex 64 bit float (little endian)"}},
+    {CFloat64BE, {"CFloat64BE", "Complex 64 bit float (big endian)"}},
+    {Undefined, {"Undefined", "undefined"}}};
 
 // clang-format off
 App::OptionGroup DataType::options() {

@@ -76,7 +76,7 @@ protected:
   void map();
 
 private:
-  MMap(const MMap &mmap) : Entry(mmap), fd(0), addr(NULL), first(NULL), msize(0), mtime(0), readwrite(false) {
+  MMap(const MMap &mmap) : Entry(mmap), fd(0), addr(nullptr), first(nullptr), msize(0), mtime(0), readwrite(false) {
     assert(0);
   }
 };

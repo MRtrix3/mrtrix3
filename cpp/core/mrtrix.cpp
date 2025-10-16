@@ -17,6 +17,7 @@
 #include "mrtrix.h"
 
 #include <cstdarg>
+#include <string_view>
 
 namespace MR {
 
@@ -24,7 +25,7 @@ namespace MR {
  *                       Miscellaneous functions                        *
  ************************************************************************/
 
-std::vector<default_type> parse_floats(const std::string &spec) {
+std::vector<default_type> parse_floats(std::string_view spec) {
   std::vector<default_type> V;
   if (spec.empty())
     throw Exception("floating-point sequence specifier is empty");
@@ -35,8 +36,8 @@ std::vector<default_type> parse_floats(const std::string &spec) {
     do {
       end = spec.find_first_of(",:", start);
       std::string sub(spec.substr(start, end - start));
-      range_spec[i] = (sub.empty() || sub == "nan") ? NAN : to<default_type>(sub);
-      char last_char = end < spec.size() ? spec[end] : '\0';
+      range_spec[i] = (sub.empty() || sub == "nan") ? NaN : to<default_type>(sub);
+      const char last_char = end < spec.size() ? spec[end] : '\0';
       if (last_char == ':') {
         i++;
         if (i > 2)
@@ -66,7 +67,7 @@ std::vector<default_type> parse_floats(const std::string &spec) {
 }
 
 std::vector<std::string>
-split(const std::string &string, const char *delimiters, bool ignore_empty_fields, size_t num) {
+split(std::string_view string, std::string_view delimiters, bool ignore_empty_fields, size_t num) {
   std::vector<std::string> V;
   if (string.empty())
     return V;
@@ -76,14 +77,14 @@ split(const std::string &string, const char *delimiters, bool ignore_empty_field
       start = string.find_first_not_of(delimiters);
     do {
       end = string.find_first_of(delimiters, start);
-      V.push_back(string.substr(start, end - start));
+      V.emplace_back(std::string(string.substr(start, end - start)));
       if (end >= string.size())
         break;
       start = ignore_empty_fields ? string.find_first_not_of(delimiters, end + 1) : end + 1;
       if (start > string.size())
         break;
       if (V.size() + 1 >= num) {
-        V.push_back(string.substr(start));
+        V.emplace_back(std::string(string.substr(start)));
         break;
       }
     } while (true);
@@ -97,37 +98,38 @@ namespace {
 
 // from https://www.geeksforgeeks.org/wildcard-character-matching/
 
-inline bool __match(const char *first, const char *second) {
+inline bool __match(std::string_view first, std::string_view second) {
   // If we reach at the end of both strings, we are done
-  if (*first == '\0' && *second == '\0')
+  if (first.empty() && second.empty())
     return true;
 
   // Make sure that the characters after '*' are present
   // in second string. This function assumes that the first
   // string will not contain two consecutive '*'
-  if (*first == '*' && *(first + 1) != '\0' && *second == '\0')
+  if (first[0] == '*' && first.size() > 1 && !second.empty())
     return false;
 
   // If the first string contains '?', or current characters
   // of both strings match
-  if (*first == '?' || *first == *second)
-    return match(first + 1, second + 1);
+  if (first[0] == '?' || first[0] == second[0])
+    return __match(first.substr(1), second.substr(1));
 
   // If there is *, then there are two possibilities
   // a) We consider current character of second string
   // b) We ignore current character of second string.
-  if (*first == '*')
-    return match(first + 1, second) || match(first, second + 1);
+  if (first[0] == '*')
+    return __match(first.substr(1), second) || __match(first, second.substr(1));
 
   return false;
 }
+
 } // namespace
 
-bool match(const std::string &pattern, const std::string &text, bool ignore_case) {
+bool match(std::string_view pattern, std::string_view text, bool ignore_case) {
   if (ignore_case)
-    return __match(lowercase(pattern).c_str(), lowercase(text).c_str());
+    return __match(lowercase(pattern), lowercase(text));
   else
-    return __match(pattern.c_str(), text.c_str());
+    return __match(pattern, text);
 }
 
 std::istream &getline(std::istream &stream, std::string &string) {
@@ -138,32 +140,32 @@ std::istream &getline(std::istream &stream, std::string &string) {
   return stream;
 }
 
-std::string &add_line(std::string &original, const std::string &new_line) {
+std::string &add_line(std::string &original, std::string_view new_line) {
   return original.empty() ? (original = new_line) : (original += "\n" + new_line);
 }
 
-std::string shorten(const std::string &text, size_t longest, size_t prefix) {
+std::string shorten(std::string_view text, size_t longest, size_t prefix) {
   if (text.size() > longest)
-    return (text.substr(0, prefix) + "..." + text.substr(text.size() - longest + prefix + 3));
+    return (std::string(text.substr(0, prefix)) + "..." + text.substr(text.size() - longest + prefix + 3));
   else
-    return text;
+    return std::string(text);
 }
 
-std::string lowercase(const std::string &string) {
+std::string lowercase(std::string_view string) {
   std::string ret;
   ret.resize(string.size());
   transform(string.begin(), string.end(), ret.begin(), tolower);
   return ret;
 }
 
-std::string uppercase(const std::string &string) {
+std::string uppercase(std::string_view string) {
   std::string ret;
   ret.resize(string.size());
   transform(string.begin(), string.end(), ret.begin(), toupper);
   return ret;
 }
 
-std::string printf(const char *format, ...) {
+std::string printf(const char *format, ...) { // check_syntax off
   size_t len = 0;
   va_list list1, list2;
   va_start(list1, format);
@@ -176,23 +178,23 @@ std::string printf(const char *format, ...) {
   return buf;
 }
 
-std::string strip(const std::string &string, const std::string &ws, bool left, bool right) {
+std::string strip(std::string_view string, std::string_view ws, bool left, bool right) {
   const std::string::size_type start = (left ? string.find_first_not_of(ws) : 0);
   if (start == std::string::npos)
     return "";
   const std::string::size_type end = (right ? string.find_last_not_of(ws) + 1 : std::string::npos);
-  return string.substr(start, end - start);
+  return std::string(string.substr(start, end - start));
 }
 
-std::string unquote(const std::string &string) {
+std::string unquote(std::string_view string) {
   if (string.size() <= 2)
-    return string;
+    return std::string(string);
   if (!(string.front() == '\"' && string.back() == '\"'))
-    return string;
-  std::string substring = string.substr(1, string.size() - 2);
+    return std::string(string);
+  const std::string substring(string.substr(1, string.size() - 2));
   if (std::none_of(substring.begin(), substring.end(), [](const char &c) { return c == '\"'; }))
     return substring;
-  return string;
+  return std::string(string);
 }
 
 void replace(std::string &string, char orig, char final) {
@@ -201,7 +203,7 @@ void replace(std::string &string, char orig, char final) {
       c = final;
 }
 
-void replace(std::string &str, const std::string &from, const std::string &to) {
+void replace(std::string &str, std::string_view from, std::string_view to) {
   if (from.empty())
     return;
   size_t start_pos = 0;
@@ -211,17 +213,18 @@ void replace(std::string &str, const std::string &from, const std::string &to) {
   }
 }
 
-std::vector<std::string> split_lines(const std::string &string, bool ignore_empty_fields, size_t num) {
+std::vector<std::string> split_lines(std::string_view string, bool ignore_empty_fields, size_t num) {
   return split(string, "\n", ignore_empty_fields, num);
 }
 
-size_t char_is_dash(const char *arg) {
-  assert(arg != nullptr);
+size_t dash_bytes(std::string_view arg) {
+  if (arg.empty())
+    return 0;
   if (arg[0] == '-')
     return 1;
-  if (arg[0] == '\0' || arg[1] == '\0' || arg[2] == '\0')
+  if (arg.size() < 3)
     return 0;
-  const unsigned char *uarg = reinterpret_cast<const unsigned char *>(arg);
+  std::basic_string_view<unsigned char> uarg(reinterpret_cast<const unsigned char *>(arg.data()), arg.size());
   if (uarg[0] == 0xE2 && uarg[1] == 0x80 && (uarg[2] >= 0x90 && uarg[2] <= 0x95))
     return 3;
   if (uarg[0] == 0xEF) {
@@ -234,22 +237,23 @@ size_t char_is_dash(const char *arg) {
 }
 
 bool is_dash(std::string_view arg) {
-  const size_t nbytes = char_is_dash(arg.data());
+  const size_t nbytes = dash_bytes(arg);
   return nbytes != 0 && nbytes == arg.size();
 }
 
-bool starts_with_dash(std::string_view arg) { return char_is_dash(arg.data()) != 0U; }
+bool starts_with_dash(std::string_view arg) { return dash_bytes(arg.data()) != 0U; }
 
-std::string_view without_leading_dash(std::string_view arg) {
-  size_t nbytes = char_is_dash(arg.data());
+std::string without_leading_dash(std::string_view arg) {
+  std::string result(arg);
+  size_t nbytes = dash_bytes(arg);
   while (nbytes > 0) {
-    arg.remove_prefix(nbytes);
-    nbytes = char_is_dash(arg.data());
+    result = result.substr(nbytes);
+    nbytes = dash_bytes(result);
   }
-  return arg;
+  return result;
 }
 
-std::string join(const std::vector<std::string> &V, const std::string &delimiter) {
+std::string join(const std::vector<std::string> &V, std::string_view delimiter) {
   std::string ret;
   if (V.empty())
     return ret;
@@ -259,12 +263,12 @@ std::string join(const std::vector<std::string> &V, const std::string &delimiter
   return ret;
 }
 
-std::string join(const char *const *null_terminated_array, const std::string &delimiter) {
+std::string join(const char *const *null_terminated_array, std::string_view delimiter) { // check_syntax off
   std::string ret;
   if (!null_terminated_array)
     return ret;
   ret = null_terminated_array[0];
-  for (const char *const *p = null_terminated_array + 1; *p; ++p)
+  for (const char *const *p = null_terminated_array + 1; *p; ++p) // check_syntax off
     ret += delimiter + *p;
   return ret;
 }

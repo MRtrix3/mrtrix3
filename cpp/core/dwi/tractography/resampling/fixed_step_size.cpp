@@ -47,7 +47,8 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
 
       // If we don't have to step along the input track, can keep the mu from the previous
       //   interpolation point as the lower bound
-      while (index > 1 && index < ssize_t(temp.size() - 2) && (out.back() - temp[index + step]).norm() < step_size) {
+      while (index > 1 && index < static_cast<ssize_t>(temp.size() - 2) &&
+             (out.back() - temp[index + step]).norm() < step_size) {
         index += step;
         mu_lower = value_type(0);
       }
@@ -55,7 +56,7 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
       if (index == 1) {
         out.push_back(temp[1]);
         std::reverse(out.begin(), out.end());
-      } else if (index == ssize_t(temp.size() - 2)) {
+      } else if (index == static_cast<ssize_t>(temp.size() - 2)) {
         out.push_back(temp[s]);
       } else {
 
@@ -79,7 +80,7 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
       }
 
       // Loop until an endpoint has been added
-    } while (index > 1 && index < ssize_t(temp.size() - 2));
+    } while (index > 1 && index < static_cast<ssize_t>(temp.size() - 2));
   }
 
   return true;

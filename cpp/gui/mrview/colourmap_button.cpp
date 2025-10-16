@@ -43,7 +43,7 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts) {
   size_t n = 0;
   for (const auto &map : ColourMap::maps) {
     if (!map.special && !map.is_colour) {
-      QAction *action = new QAction(map.name, this);
+      QAction *action = new QAction(map.name.c_str(), this);
       action->setCheckable(true);
       core_colourmaps_actions->addAction(action);
 
@@ -84,7 +84,7 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts) {
   size_t n = colourmap_actions.size();
   for (const auto &map : ColourMap::maps) {
     if (map.special) {
-      QAction *action = new QAction(map.name, this);
+      QAction *action = new QAction(map.name.c_str(), this);
       action->setCheckable(true);
       core_colourmaps_actions->addAction(action);
 

@@ -114,8 +114,7 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
     cnt = 0;
     it = std::begin(idx);
     stop = std::end(idx);
-    max_cnt = // size_t (density * dims[inner[0]]);
-        (size_t)std::ceil(density * dims[inner[0]]);
+    max_cnt = static_cast<size_t>(std::ceil(density * dims[inner[0]]));
     // VAR(max_cnt);
     for (size_t i = 0; i < max_cnt; ++i) {
       pos.index(inner[0]) = *it;
@@ -217,7 +216,7 @@ RandomThreadedLoop(const HeaderType &source,
 
 template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-RandomThreadedLoop(const std::string &progress_message,
+RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
                    const std::vector<size_t> &outer_axes,
                    const std::vector<size_t> &inner_axes) {
@@ -226,7 +225,7 @@ RandomThreadedLoop(const std::string &progress_message,
 
 template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-RandomThreadedLoop(const std::string &progress_message,
+RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
                    const std::vector<size_t> &axes,
                    size_t num_inner_axes = 1) {
@@ -235,7 +234,7 @@ RandomThreadedLoop(const std::string &progress_message,
 
 template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-RandomThreadedLoop(const std::string &progress_message,
+RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
                    size_t from_axis = 0,
                    size_t to_axis = std::numeric_limits<size_t>::max(),

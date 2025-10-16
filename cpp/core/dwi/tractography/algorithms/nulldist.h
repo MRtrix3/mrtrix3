@@ -29,7 +29,7 @@ class NullDist1 : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
       set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                          Defaults::angle_ifod1,
@@ -76,7 +76,7 @@ class NullDist2 : public iFOD2 {
 public:
   class Shared : public iFOD2::Shared {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : iFOD2::Shared(diff_path, property_set) {
       set_cutoff(0.0f);
       properties["method"] = "Nulldist2";

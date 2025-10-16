@@ -49,16 +49,16 @@ public:
 
   // CORE OPERATIONS
   void perform_filtering();
-  void output_filtered_tracks(const std::string &, const std::string &) const;
-  void output_selection(const std::string &) const;
+  void output_filtered_tracks(std::string_view, std::string_view) const;
+  void output_selection(std::string_view) const;
 
   // CONFIGURATION OPTIONS
   void set_term_number(const track_t i) { term_number = i; }
   void set_term_ratio(const float i) { term_ratio = i; }
   void set_term_mu(const float i) { term_mu = i; }
-  void set_csv_path(const std::string &i) { csv_path = i; }
+  void set_csv_path(std::string_view i) { csv_path = i; }
 
-  void set_regular_outputs(const std::vector<uint32_t> &, const std::string &);
+  void set_regular_outputs(const std::vector<uint32_t> &, std::string_view);
 
   // DEBUGGING
   void test_sorting_block_size(const size_t) const;

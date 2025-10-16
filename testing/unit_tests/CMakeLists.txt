@@ -12,6 +12,7 @@ set(UNIT_TESTS_CPP_SRCS
     erfinv_tests.cpp
     icls_tests.cpp
     ordered_queue_tests.cpp
+    parse_axes_tests.cpp
     parse_ints_tests.cpp
     roi_tests.cpp
     sh_precomputer_tests.cpp

@@ -49,7 +49,7 @@ bool List::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
       if (i->get_seed(p, d))
         return true;
 
-    p = {NaN, NaN, NaN};
+    p.fill(NaNF);
     return false;
 
   } else {

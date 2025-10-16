@@ -30,7 +30,7 @@ void transform_for_image_load(KeyValues &keyval, const Header &H);
 
 void transform_for_nifti_write(KeyValues &keyval, const Header &H);
 
-std::string resolve_slice_timing(const std::string &one, const std::string &two);
+std::string resolve_slice_timing(std::string_view one, std::string_view two);
 
 void clear(KeyValues &);
 

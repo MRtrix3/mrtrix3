@@ -47,7 +47,7 @@ size_t number_of_threads() {
   // ENVVAR This overrides the automatically determined number, or the
   // ENVVAR :option:`NumberOfThreads` setting in the configuration file, but
   // ENVVAR will be overridden by the ENVVAR ``-nthreads`` command-line option.
-  const char *from_env = getenv("MRTRIX_NTHREADS");
+  const char *from_env = getenv("MRTRIX_NTHREADS"); // check_syntax off
   if (from_env) {
     __number_of_threads = to<size_t>(from_env);
     __nthreads_type = nthreads_t::EXPLICIT;
@@ -74,8 +74,8 @@ nthreads_t type_nthreads() { return __nthreads_type; }
 
 size_t threads_to_execute() { return (__Backend::valid() ? 0 : number_of_threads()); }
 
-void (*__Backend::previous_print_func)(const std::string &msg) = nullptr;
-void (*__Backend::previous_report_to_user_func)(const std::string &msg, int type) = nullptr;
+void (*__Backend::previous_print_func)(std::string_view msg) = nullptr;
+void (*__Backend::previous_report_to_user_func)(std::string_view msg, int type) = nullptr;
 
 __Backend::__Backend() : refcount(0) {
   DEBUG("initialising threads...");
@@ -99,12 +99,12 @@ __Backend::~__Backend() {
   report_to_user_func = previous_report_to_user_func;
 }
 
-void __Backend::thread_print_func(const std::string &msg) {
+void __Backend::thread_print_func(std::string_view msg) {
   std::lock_guard<std::mutex> lock(mutex);
   previous_print_func(msg);
 }
 
-void __Backend::thread_report_to_user_func(const std::string &msg, int type) {
+void __Backend::thread_report_to_user_func(std::string_view msg, int type) {
   std::lock_guard<std::mutex> lock(mutex);
   previous_report_to_user_func(msg, type);
 }

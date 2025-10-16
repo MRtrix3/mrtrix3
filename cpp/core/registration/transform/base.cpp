@@ -62,7 +62,7 @@ void Base::set_centre(const Eigen::Vector3d &centre_in) {
 }
 
 void Base::set_optimiser_weights(Eigen::VectorXd &weights) {
-  assert(size() == (size_t)optimiser_weights.size());
+  assert(size() == static_cast<size_t>(optimiser_weights.size()));
   optimiser_weights = weights;
 }
 

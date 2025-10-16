@@ -40,7 +40,7 @@ public:
         pGrid(pgrid),
         E(e),
         T(dwi),
-        dims{size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))},
+        dims{static_cast<size_t>(dwi.size(0)), static_cast<size_t>(dwi.size(1)), static_cast<size_t>(dwi.size(2))},
         mask(m),
         lock(std::make_shared<SpatialLock<float>>(5 * Particle::L)),
         sigpos(Particle::L / 8.),

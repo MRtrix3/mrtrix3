@@ -99,8 +99,8 @@ void ImageBase::get_axes(const int plane, int &x, int &y) const {
 Image::Image(MR::Header &&image_header)
     : ImageBase(std::move(image_header)),
       image(header().get_image<cfloat>()),
-      slice_min{{NaN, NaN, NaN}},
-      slice_max{{NaN, NaN, NaN}} {
+      slice_min{{NaNF, NaNF, NaNF}},
+      slice_max{{NaNF, NaNF, NaNF}} {
   set_colourmap(guess_colourmap());
   const KeyValues::const_iterator i = header().keyval().find("comments");
   if (i != header().keyval().end())
@@ -174,7 +174,7 @@ void Image::update_texture2D(int plane, int slice) {
         for (image.index(y) = 0; image.index(y) < ysize; ++image.index(y)) {
           for (image.index(x) = 0; image.index(x) < xsize; ++image.index(x)) {
             cfloat val = image.value();
-            float mag = abs(val.real());
+            float mag = MR::abs(val.real());
             data[3 * (image.index(x) + image.index(y) * xsize) + n] = mag;
             if (std::isfinite(mag)) {
               slice_min[plane] = std::min(slice_min[plane], mag);
@@ -216,7 +216,7 @@ void Image::update_texture2D(int plane, int slice) {
           size_t idx = 2 * (image.index(x) + image.index(y) * xsize);
           data[idx] = val.real();
           data[idx + 1] = val.imag();
-          float mag = abs(val);
+          float mag = MR::abs(val);
           if (std::isfinite(mag))
             slice_max[plane] = std::max(slice_max[plane], mag);
         }
@@ -409,8 +409,8 @@ inline void Image::lookup_texture_4D_cache() {
     tex_positions[3] = image.index(3);
   } else {
     CachedTexture entry;
-    entry.value_min = NaN;
-    entry.value_max = NaN;
+    entry.value_min = NaNF;
+    entry.value_max = NaNF;
     _current_texture = &(tex_4d_cache[image.index(3)] = std::move(entry)).tex;
     tex_positions[3] = -1;
   }
@@ -423,20 +423,6 @@ inline void Image::update_texture_4D_cache() {
 
   tex_4d_cache[image.index(3)].value_min = value_min;
   tex_4d_cache[image.index(3)].value_max = value_max;
-}
-
-// required to shut up clang's compiler warnings about abs() when
-// instantiating Image::copy_texture_3D() with unsigned types:
-template <typename ValueType>
-inline ValueType abs_if_signed(ValueType x,
-                               typename std::enable_if<!std::is_unsigned<ValueType>::value>::type * = nullptr) {
-  return abs(x);
-}
-
-template <typename ValueType>
-inline ValueType abs_if_signed(ValueType x,
-                               typename std::enable_if<std::is_unsigned<ValueType>::value>::type * = nullptr) {
-  return x;
 }
 
 template <typename ValueType> inline void Image::copy_texture_3D() {
@@ -478,8 +464,8 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
         for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
           ValueType val = *p = V.value();
           if (std::isfinite(val)) {
-            value_min = std::min(value_min, float(val));
-            value_max = std::max(value_max, float(val));
+            value_min = std::min(value_min, static_cast<float>(val));
+            value_max = std::max(value_max, static_cast<float>(val));
           }
           ++p;
         }
@@ -501,10 +487,10 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
         auto p = data.begin() + n;
         for (V.index(1) = 0; V.index(1) < V.size(1); ++V.index(1)) {
           for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
-            ValueType val = *p = abs_if_signed(ValueType(V.value()));
+            ValueType val = *p = MR::abs(static_cast<ValueType>(V.value()));
             if (std::isfinite(val)) {
-              value_min = std::min(value_min, float(val));
-              value_max = std::max(value_max, float(val));
+              value_min = std::min(value_min, static_cast<float>(val));
+              value_max = std::max(value_max, static_cast<float>(val));
             }
 #ifndef NDEBUG
             if (std::distance(p, data.end()) > 3)
@@ -544,7 +530,7 @@ inline void Image::copy_texture_3D_complex() {
         cfloat val = image.value();
         *(p++) = val.real();
         *(p++) = val.imag();
-        float mag = abs(val);
+        float mag = MR::abs(val);
         if (std::isfinite(mag)) {
           value_min = std::min(value_min, mag);
           value_max = std::max(value_max, mag);
@@ -560,7 +546,7 @@ inline void Image::copy_texture_3D_complex() {
 cfloat Image::trilinear_value(const Eigen::Vector3f &scanner_point) const {
   auto interp = Interp::make_linear(image);
   if (!interp.scanner(scanner_point))
-    return cfloat(NAN, NAN);
+    return cfloat{NaNF, NaNF};
   for (size_t n = 3; n < image.ndim(); ++n)
     interp.index(n) = image.index(n);
   return interp.value();
@@ -569,7 +555,7 @@ cfloat Image::trilinear_value(const Eigen::Vector3f &scanner_point) const {
 cfloat Image::nearest_neighbour_value(const Eigen::Vector3f &scanner_point) const {
   auto interp = Interp::make_nearest(image);
   if (!interp.scanner(scanner_point))
-    return cfloat(NAN, NAN);
+    return cfloat{NaNF, NaNF};
   for (size_t n = 3; n < image.ndim(); ++n)
     interp.index(n) = image.index(n);
   return interp.value();
@@ -578,14 +564,14 @@ cfloat Image::nearest_neighbour_value(const Eigen::Vector3f &scanner_point) cons
 Eigen::VectorXcf Image::trilinear_values(const Eigen::Vector3f &scanner_point, const size_t axis) const {
   auto interp = Interp::make_linear(image);
   if (!interp.scanner(scanner_point))
-    return Eigen::VectorXcf::Constant(image.size(axis), cfloat(NAN, NAN));
+    return Eigen::VectorXcf::Constant(image.size(axis), cfloat{NaNF, NaNF});
   return interp.row(axis);
 }
 
 Eigen::VectorXcf Image::nearest_neighbour_values(const Eigen::Vector3f &scanner_point, const size_t axis) const {
   auto interp = Interp::make_nearest(image);
   if (!interp.scanner(scanner_point))
-    return Eigen::VectorXcf::Constant(image.size(axis), cfloat(NAN, NAN));
+    return Eigen::VectorXcf::Constant(image.size(axis), cfloat{NaNF, NaNF});
   return interp.row(axis);
 }
 
@@ -600,11 +586,11 @@ std::string Image::describe_value(const Eigen::Vector3f &focus) const {
       value_str += "rgb"[n];
       value_str += ": ";
       const ssize_t v = n + image.index(3);
-      value_str += std::isfinite(abs(values[v])) ? str(values[v]) : "?";
+      value_str += std::isfinite(MR::abs(values[v])) ? str(values[v]) : "?";
     }
   } else { // show single value
     const cfloat value = interpolate() ? trilinear_value(focus) : nearest_neighbour_value(focus);
-    value_str += " value: " + (std::isfinite(abs(value)) ? str(value) : "?");
+    value_str += " value: " + (std::isfinite(MR::abs(value)) ? str(value) : "?");
   }
   return value_str;
 }

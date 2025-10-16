@@ -208,7 +208,7 @@ void run() {
     size_t n = 0;
     for (auto &m : d)
       n += m.size();
-    fraction.push_back(float(n) / float(total));
+    fraction.push_back(static_cast<float>(n) / static_cast<float>(total));
   };
 
   auto num_for_b = [&](size_t b) {
@@ -230,7 +230,7 @@ void run() {
     size_t b = 0, n;
     value_type fraction_diff = std::numeric_limits<value_type>::max();
     for (n = 0; n < bvalue.size(); ++n) {
-      value_type f_diff = float(num_for_b(n)) / float(merged.size()) - fraction[n];
+      value_type f_diff = static_cast<float>(num_for_b(n)) / static_cast<float>(merged.size()) - fraction[n];
       if (f_diff < fraction_diff && !dirs[n][nPE].empty()) {
         fraction_diff = f_diff;
         b = n;
@@ -260,6 +260,6 @@ void run() {
                       d.d[0],
                       d.d[1],
                       d.d[2],
-                      int(bvalue[d.b]),
-                      int(d.pe + 1));
+                      static_cast<int>(bvalue[d.b]),
+                      d.pe + 1);
 }

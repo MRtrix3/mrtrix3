@@ -25,13 +25,13 @@ class Config {
 public:
   static void init();
 
-  static void set(const std::string &key, const std::string &value) { config[key] = value; }
-  static std::string get(const std::string &key);
-  static std::string get(const std::string &key, const std::string &default_value);
-  static bool get_bool(const std::string &key, bool default_value);
-  static int get_int(const std::string &key, int default_value);
-  static float get_float(const std::string &key, float default_value);
-  static void get_RGB(const std::string &key, float *ret, float default_R, float default_G, float default_B);
+  static void set(std::string_view key, std::string_view value) { config[std::string(key)] = std::string(value); }
+  static std::string get(std::string_view key);
+  static std::string get(std::string_view key, std::string_view default_value);
+  static bool get_bool(std::string_view key, bool default_value);
+  static int get_int(std::string_view key, int default_value);
+  static float get_float(std::string_view key, float default_value);
+  static void get_RGB(std::string_view key, float *ret, float default_R, float default_G, float default_B);
 
 private:
   static KeyValues config;

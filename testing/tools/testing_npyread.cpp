@@ -45,7 +45,7 @@ const Eigen::Array<bool, 3, 1> reference_1d_bool{false, true, true};
 const Eigen::Array<default_type, 3, 2> reference_2d{{0.0, 1.0}, {10.0, 11.0}, {20.0, 21.0}};
 const Eigen::Array<bool, 3, 2> reference_2d_bool{{false, true}, {true, true}, {true, true}};
 
-template <bool isboolean, bool is1D> bool verify_basic(const std::string &filepath) {
+template <bool isboolean, bool is1D> bool verify_basic(std::string_view filepath) {
   if (is1D) {
     const Eigen::Array<default_type, Eigen::Dynamic, 1> data = File::Matrix::load_vector(filepath);
     return (isboolean ? data.cast<bool>().isApprox(reference_1d_bool) : data.isApprox(reference_1d));
@@ -128,7 +128,7 @@ bool check_datatype(void *address, const File::NPY::ReadInfo &info) {
 }
 } // namespace
 
-bool verify_advanced(const std::string &filepath, const File::NPY::ReadInfo &info) {
+bool verify_advanced(std::string_view filepath, const File::NPY::ReadInfo &info) {
   File::MMap mmap({filepath, info.data_offset}, false);
   return check_datatype(mmap.address(), info);
 }

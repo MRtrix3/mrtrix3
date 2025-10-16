@@ -69,7 +69,7 @@ public:
     else if (scale_by_invlength)
       result = (tck.size() > 1 ? (result / Tractography::length(tck)) : 0.0);
     if (scale_by_file) {
-      if (tck.get_index() >= size_t(file_values.size()))
+      if (tck.get_index() >= static_cast<size_t>(file_values.size()))
         throw Exception("File " + file_path + " does not contain enough entries for this tractogram");
       result *= file_values[tck.get_index()];
     }
@@ -99,7 +99,7 @@ public:
       node_volumes[index]++;
     }
   }
-  void set_scale_file(const std::string &path, const bool i = true) {
+  void set_scale_file(std::string_view path, const bool i = true) {
     scale_by_file = i;
     if (!i) {
       file_path.clear();

@@ -58,7 +58,7 @@ protected:
                         const default_type offset,
                         const default_type scale,
                         const array_type &data,
-                        std::function<default_type(default_type)> func) const;
+                        std::function<default_type(default_type)> func) const; // check_syntax off
   };
 
   class Lookup_t2z : public LookupBase {

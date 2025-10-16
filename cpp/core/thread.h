@@ -76,11 +76,11 @@ public:
 
   static bool valid() { return backend; }
 
-  static void thread_print_func(const std::string &msg);
-  static void thread_report_to_user_func(const std::string &msg, int type);
+  static void thread_print_func(std::string_view msg);
+  static void thread_report_to_user_func(std::string_view msg, int type);
 
-  static void (*previous_print_func)(const std::string &msg);
-  static void (*previous_report_to_user_func)(const std::string &msg, int type);
+  static void (*previous_print_func)(std::string_view msg);
+  static void (*previous_report_to_user_func)(std::string_view msg, int type);
 
 protected:
   size_t refcount;
@@ -93,7 +93,7 @@ namespace {
 
 class __thread_base {
 public:
-  __thread_base(const std::string &name = "unnamed") : name(name) { __Backend::register_thread(); }
+  __thread_base(std::string_view name = "unnamed") : name(name) { __Backend::register_thread(); }
   __thread_base(const __thread_base &) = delete;
   __thread_base(__thread_base &&) = default;
   ~__thread_base() { __Backend::unregister_thread(); }
@@ -104,9 +104,9 @@ protected:
 
 class __single_thread : public __thread_base {
 public:
-  template <class Functor>
-  __single_thread(Functor &&functor, const std::string &name = "unnamed") : __thread_base(name) {
-    DEBUG("launching thread \"" + name + "\"...");
+  template <class Functor> __single_thread(Functor &&functor, std::string_view name = "unnamed") : __thread_base(name) {
+    const std::string msg = std::string("launching thread \"") + name + "\"...";
+    DEBUG(msg);
     using F = typename std::remove_reference<Functor>::type;
     thread = std::async(std::launch::async, &F::execute, &functor);
   }
@@ -137,7 +137,7 @@ protected:
 
 template <class Functor> class __multi_thread : public __thread_base {
 public:
-  __multi_thread(Functor &functor, size_t nthreads, const std::string &name = "unnamed")
+  __multi_thread(Functor &functor, size_t nthreads, std::string_view name = "unnamed")
       : __thread_base(name), functors((nthreads > 0 ? nthreads - 1 : 0), functor) {
     DEBUG("launching " + str(nthreads) + " threads \"" + name + "\"...");
     using F = typename std::remove_reference<Functor>::type;
@@ -220,13 +220,13 @@ public:
 template <class Functor> class __run {
 public:
   using type = __single_thread;
-  type operator()(Functor &functor, const std::string &name) { return {functor, name}; }
+  type operator()(Functor &functor, std::string_view name) { return {functor, name}; }
 };
 
 template <class Functor> class __run<__Multi<Functor>> {
 public:
   using type = __multi_thread<Functor>;
-  type operator()(__Multi<Functor> &functor, const std::string &name) { return {functor.functor, functor.num, name}; }
+  type operator()(__Multi<Functor> &functor, std::string_view name) { return {functor.functor, functor.num, name}; }
 };
 
 } // namespace
@@ -358,7 +358,7 @@ inline __Multi<typename std::remove_reference<Functor>::type> multi(Functor &&fu
  * \sa Thread::multi()
  */
 template <class Functor>
-inline typename __run<Functor>::type run(Functor &&functor, const std::string &name = "unnamed") {
+inline typename __run<Functor>::type run(Functor &&functor, std::string_view name = "unnamed") {
   return __run<typename std::remove_reference<Functor>::type>()(functor, name);
 }
 

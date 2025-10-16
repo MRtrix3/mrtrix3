@@ -107,7 +107,7 @@ bool median_weiszfeld(const MatrixType &X,
 
     median = s1 / denum;
     if (i > 3) {
-      convergence = (abs(dist[i] - dist[i - 2]) < precision);
+      convergence = (std::fabs(dist[i] - dist[i - 2]) < precision);
     }
     ++i;
   }

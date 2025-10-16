@@ -31,11 +31,11 @@
 
 namespace MR::File::NPY {
 
-constexpr unsigned char magic_string[] = "\x93NUMPY";
+constexpr std::array<char, 6> magic_string{'\x93', 'N', 'U', 'M', 'P', 'Y'};
 constexpr size_t alignment = 16;
 
-DataType descr2datatype(const std::string &);
-bool descr_is_half(const std::string &, bool &is_little_endian);
+DataType descr2datatype(std::string_view);
+bool descr_is_half(std::string_view, bool &is_little_endian);
 std::string datatype2descr(const DataType);
 size_t float_max_save_precision();
 KeyValues parse_dict(std::string);
@@ -48,10 +48,10 @@ struct ReadInfo {
   int64_t data_offset;
 };
 
-ReadInfo read_header(const std::string &path);
+ReadInfo read_header(std::string_view path);
 
 template <typename ValueType>
-Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::string &path) {
+Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(std::string_view path) {
   const ReadInfo info = read_header(path);
 
   // Memory-map the data content of the file
@@ -81,26 +81,26 @@ struct WriteInfo {
   DataType data_type;
 };
 
-WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, const std::vector<size_t> &shape);
+WriteInfo prepare_ND_write(std::string_view path, const DataType data_type, const std::vector<size_t> &shape);
 
-template <class ContType> void save_vector(const ContType &data, const std::string &path) {
+template <class ContType> void save_vector(const ContType &data, std::string_view path) {
   using ValueType = typename container_value_type<ContType>::type;
-  const WriteInfo info = prepare_ND_write(path, DataType::from<ValueType>(), {size_t(data.size())});
+  const WriteInfo info = prepare_ND_write(path, DataType::from<ValueType>(), {static_cast<size_t>(data.size())});
   if (info.data_type == DataType::Bit) {
     uint8_t *const out = reinterpret_cast<uint8_t *const>(info.mmap->address());
-    for (size_t i = 0; i != size_t(data.size()); ++i)
+    for (ssize_t i = 0; i != static_cast<ssize_t>(data.size()); ++i)
       out[i] = data[i] ? uint8_t(1) : uint8_t(0);
     return;
   }
   auto store_func = __set_store_function<ValueType>(info.data_type);
-  for (size_t i = 0; i != size_t(data.size()); ++i)
+  for (ssize_t i = 0; i != static_cast<ssize_t>(data.size()); ++i)
     store_func(data[i], info.mmap->address(), i);
 }
 
-template <class ContType> void save_matrix(const ContType &data, const std::string &path) {
+template <class ContType> void save_matrix(const ContType &data, std::string_view path) {
   using ValueType = typename ContType::Scalar;
-  const WriteInfo info =
-      prepare_ND_write(path, DataType::from<ValueType>(), {size_t(data.rows()), size_t(data.cols())});
+  const WriteInfo info = prepare_ND_write(
+      path, DataType::from<ValueType>(), {static_cast<size_t>(data.rows()), static_cast<size_t>(data.cols())});
   if (info.data_type == DataType::Bit) {
     uint8_t *const out = reinterpret_cast<uint8_t *const>(info.mmap->address());
     size_t i = 0;

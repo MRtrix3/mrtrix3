@@ -92,9 +92,9 @@ public:
   void allocate();
 
   float focus_rate() const {
-    return 1.0e-3 * (std::pow(_header.size(0) * _header.spacing(0) * _header.size(1) * _header.spacing(1) *
-                                  _header.size(2) * _header.spacing(2),
-                              float(1.0 / 3.0)));
+    return 1.0e-3F * (std::pow(_header.size(0) * _header.spacing(0) * _header.size(1) * _header.spacing(1) *
+                                   _header.size(2) * _header.spacing(2),
+                               1.0F / 3.0F));
   }
 
   float scale_factor() const { return _scale_factor; }

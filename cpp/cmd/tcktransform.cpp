@@ -46,7 +46,7 @@ using TrackType = Tractography::Streamline<value_type>;
 
 class Loader {
 public:
-  Loader(const std::string &file) : reader(file, properties) {}
+  Loader(std::string_view file) : reader(file, properties) {}
 
   bool operator()(TrackType &item) { return reader(item); }
 
@@ -91,7 +91,7 @@ protected:
 
 class Writer {
 public:
-  Writer(const std::string &file, const Tractography::Properties &properties)
+  Writer(std::string_view file, const Tractography::Properties &properties)
       : progress("applying spatial transformation to tracks",
                  properties.find("count") == properties.end() ? 0 : to<size_t>(properties.find("count")->second)),
         writer(file, properties) {}

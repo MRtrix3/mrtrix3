@@ -1,3 +1,5 @@
+
+
 #!/bin/bash
 
 # Copyright (c) 2008-2025 the MRtrix3 contributors.
@@ -33,19 +35,55 @@ fi
 
 retval=0
 
-for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp'); do
+for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' | $grep -v 'gl_core_3_3' | sort); do
 
 # Check for use of #define for constants
 # Intended to catch integers, floats, scientific notation, hexadecimal, bitwise, and strings
 # Check can be disabled for an individual line by including " // check_syntax off"
-  if [[ "$f" -ef "cpp/gui/opengl/gl_core_3_3.h" ]]; then
-    res=""
-  else
-    res=$(
-      cat $f | \
-      $grep -Po '^#define\s+[a-zA-Z_][a-zA-Z0-9_]+\s+(0x[\dA-F]+|0b[01]+|\".*\"|[-+]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)(?!.*check_syntax\s+off)'
-    )
-  fi
+  res=$(
+    cat $f | \
+    $grep -Po '^#define\s+[a-zA-Z_][a-zA-Z0-9_]*\s+(0x[\dA-F]+|0b[01]+|\".*\"|[-+]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)(?!.*\bcheck_syntax\s+off)'
+  )
+
+# detect any instances of char* or char item[],
+#   which does not look like a cast for compatibility with external code
+# Check can be disabled for an individual line by including " // check_syntax off"
+  res="$res"$(
+    cat $f | \
+    $grep -Po '(const\s+|)char(\s?\*([\s]*const|)\s?(?![>\(\)])|\s+[a-zA-Z_][a-zA-Z0-9_]*\[.*\])(?!.*\bcheck_syntax\s+off)'
+  )
+
+# Detect any instances of C-style string manipulation functions
+#   (need to permit strerror() for interfacing with external libraries)
+# Check can be disabled for an individual line by including " // check_syntax off"
+  res="$res"$(
+    cat $f | \
+    $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok)\s*\((?!.*\bcheck_syntax\s+off)'
+  )
+
+# Detect instances of const std::string &
+#   most can be changed to std::string_view,
+#   others would be safer to return a copy
+  res="$res"$(
+    cat $f | \
+    $grep -Po '(?!<\/\/)\bconst\s+std::string\s*\&(?!.*check_syntax\s+off).*$'
+  )
+
+# Identify any uses of std::string_view as a function return
+  res="$res"$(
+    cat $f | \
+    $grep -Po '^\s*(const\s+|)std::string_view\s+\&?([a-zA-Z_][a-zA-Z0-9_]*|operator.*)\s?\((?!.*check_syntax\s+off)'
+  )
+
+# detect deprecated use of "#ifdef __headerpath__"
+  res="$res"$(
+    cat $f | \
+    perl -pe 's|//.*$||' | \
+    tr '\n' ' ' | \
+    perl -pe 's|\s+| |g' | \
+    perl -pe 's|/\*.*?\*/||g' |
+    $grep -Po '\#ifndef\s+__.*__\s+\#define\s+__.*__'
+  )
 
 # process the file to strip comments, macros, etc:
   cat $f | \
@@ -62,6 +100,11 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp');
 # remove quoted strings:
   cat .check_syntax2.tmp | perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax.tmp
 
+# detect namespaces that could have been nested
+  res="$res"$(
+    cat .check_syntax.tmp | \
+    $grep -Po '\bnamespace [\w\:]+\s*\{(namespace [\w\:]+\s*\{)+'
+  )
 
 # detect any instances of "using namespace std;":
   res="$res"$(
@@ -70,12 +113,12 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp');
     $grep -Po '\busing\s+namespace\s+std\s*;'
   )
 
-# detect any instances of std::abs (outside of the SFINAE call in core/types.h):
+# detect any instances of std::abs() or non-disambiguated abs() (outside of the SFINAE call in core/types.h):
   if [[ ! "$f" -ef "cpp/core/types.h" ]]; then
     res="$res"$(
       cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-      $grep -Po '(?<!::)std::abs\b'
+      $grep -Po '((?<!::)std::|)(?<!MR::)(?<!\.)\babs\s*\('
     )
   fi
 
@@ -85,6 +128,18 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp');
 # match for the parts we're interested in and output just the bits that match:
     $grep -Po '\w*print\w*.*?%\d?zu\b' |
     $grep -Po '\w*print(?!.*?print).*?$'
+  )
+
+# detect any instances of C-style casts
+  res="$res"$(
+    cat .check_syntax.tmp | \
+    grep -Po '(\((?!void\))[a-zA-Z][a-zA-Z0-9_]*\)[a-zA-Z][a-zA-Z0-9_]*|\([a-zA-Z][a-zA-Z0-9_]*\*(\s*const)?\)[a-zA-Z][a-zA-Z0-9_]*|(?<!\bstd::function<)\b(GLint|GLfloat|c?float|c?double|(default|value|index)_type|[^\w_](unsigned\s+)?int|u?int(8|16|32|64)_t|s?size_t|ValueType|(?<!Scalar)::Scalar)\(\(*\**(?![\d\.]*\)))'
+  )
+
+# Detect any instances of macros NULL (nullptr is better), NAN, INFINITY
+  res="$res"$(
+    cat .check_syntax.tmp | \
+    $grep -Po '\b(NAN|INFINITY|NULL)\b'
   )
 
 # delete intermediate files
@@ -109,9 +164,16 @@ else
 
   echo "" >> $LOG
   echo "Please check the following syntax requirements:
+  - Use #pragma once rather than #ifndef __headername__;
+  - Use nested namespaces rather than sequentially-defined namespaces;
   - Define numerical constants using constexpr rather than preprocessor macros;
+  - Use static_cast<>() rather than C-style casts;
+  - Use std::string (and optionally std::string_view) rather than C-style char* and relevant functions;
+  - Use std::string_view rather than const std::string& for function arguments, but std::string for function returns;
   - Do not use \"using namespace std\";
-  - Replace all instances of std::abs() with MR::abs() (or just abs());
-  - Replace all instances of %zu in print() calls with PRI_SIZET." >> $LOG
+  - Replace all instances of std::abs() or naked abs() with either std::fabs() (for scalar floating-point only) or MR::abs() (for complex data, integers and template types);
+  - Replace all instances of %zu in print() calls with PRI_SIZET;
+  - Use nullptr rather than NULL macro;
+  - Use std::numeric_limits<> or MR::NaN(F) / MR::Inf(F) rather than macros NAN / INFINITY." >> $LOG
   exit 1
 fi

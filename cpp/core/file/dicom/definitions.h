@@ -61,22 +61,22 @@ constexpr uint16_t element_data = 0x0010U;
 
 constexpr uint64_t undefined_length = 0xFFFFFFFFUL;
 
-inline std::string format_date(const std::string &date) {
+inline std::string format_date(std::string_view date) {
   if (date.empty() || date.size() < 8)
-    return date;
-  return date.substr(6, 2) + "/" + date.substr(4, 2) + "/" + date.substr(0, 4);
+    return std::string(date);
+  return std::string(date.substr(6, 2)) + "/" + std::string(date.substr(4, 2)) + "/" + std::string(date.substr(0, 4));
 }
 
-inline std::string format_time(const std::string &time) {
+inline std::string format_time(std::string_view time) {
   if (time.empty())
-    return time;
-  return time.substr(0, 2) + ":" + time.substr(2, 2) + ":" + time.substr(4, 2);
+    return std::string(time);
+  return std::string(time.substr(0, 2)) + ":" + std::string(time.substr(2, 2)) + ":" + std::string(time.substr(4, 2));
 }
 
-inline std::string format_ID(const std::string &ID) {
+inline std::string format_ID(std::string_view ID) {
   if (ID.empty())
-    return ID;
-  return "(" + ID + ")";
+    return std::string(ID);
+  return "(" + std::string(ID) + ")";
 }
 
 } // namespace MR::File::Dicom

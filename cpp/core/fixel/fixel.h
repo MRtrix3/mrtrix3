@@ -24,7 +24,7 @@ namespace MR::Fixel {
 //! a string containing a description of the fixel directory format
 /*! This can used directly in the DESCRIPTION field of a command's
  * usage() function. */
-extern const char *format_description;
+extern const std::string format_description;
 
 using index_type = uint32_t;
 

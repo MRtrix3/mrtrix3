@@ -34,7 +34,7 @@ namespace MR {
 template <class T> class Min_mem_array {
 
 public:
-  Min_mem_array() : n(0), d(NULL) {}
+  Min_mem_array() : n(0), d(nullptr) {}
 
   Min_mem_array(const T &i) : n(1), d(new T[1]) { d[0] = i; }
 
@@ -53,7 +53,7 @@ public:
 
   virtual ~Min_mem_array() {
     delete[] d;
-    d = NULL;
+    d = nullptr;
   }
 
   void add(const T &i) {
@@ -91,7 +91,7 @@ public:
   void erase() {
     if (d) {
       delete[] d;
-      d = NULL;
+      d = nullptr;
       n = 0;
     }
   }

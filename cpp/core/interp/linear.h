@@ -175,7 +175,7 @@ public:
     if (Base<ImageType>::out_of_bounds)
       return Base<ImageType>::out_of_bounds_value;
 
-    ssize_t c[] = {ssize_t(std::floor(P[0])), ssize_t(std::floor(P[1])), ssize_t(std::floor(P[2]))};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>());
 
     Eigen::Matrix<value_type, 8, 1> coeff_vec;
 
@@ -204,7 +204,7 @@ public:
       return out_of_bounds_row;
     }
 
-    ssize_t c[] = {ssize_t(std::floor(P[0])), ssize_t(std::floor(P[1])), ssize_t(std::floor(P[2]))};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>());
 
     Eigen::Matrix<value_type, Eigen::Dynamic, 8> coeff_matrix(ImageType::size(3), 8);
 
@@ -305,7 +305,7 @@ public:
     if (Base<ImageType>::out_of_bounds)
       return out_of_bounds_vec;
 
-    ssize_t c[] = {ssize_t(std::floor(P[0])), ssize_t(std::floor(P[1])), ssize_t(std::floor(P[2]))};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>());
 
     Eigen::Matrix<coef_type, 1, 8> coeff_vec;
 
@@ -341,7 +341,7 @@ public:
 
     assert(ImageType::ndim() == 4);
 
-    ssize_t c[] = {ssize_t(std::floor(P[0])), ssize_t(std::floor(P[1])), ssize_t(std::floor(P[2]))};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>());
 
     Eigen::Matrix<value_type, Eigen::Dynamic, 8> coeff_matrix(ImageType::size(3), 8);
 
@@ -465,7 +465,7 @@ public:
       return;
     }
 
-    ssize_t c[] = {ssize_t(std::floor(P[0])), ssize_t(std::floor(P[1])), ssize_t(std::floor(P[2]))};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>());
 
     Eigen::Matrix<value_type, 1, 8> coeff_vec;
 
@@ -509,7 +509,7 @@ public:
 
     assert(ImageType::ndim() == 4);
 
-    ssize_t c[] = {ssize_t(std::floor(P[0])), ssize_t(std::floor(P[1])), ssize_t(std::floor(P[2]))};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>());
 
     Eigen::Matrix<value_type, Eigen::Dynamic, 8> coeff_matrix(ImageType::size(3), 8);
 

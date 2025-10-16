@@ -28,7 +28,8 @@
 namespace {
 
 inline float get_alpha_from_slider(float slider_value) {
-  return MR::GUI::MRView::Tool::min_opacity * std::exp(MR::GUI::MRView::Tool::opacity_exponent * float(slider_value));
+  return MR::GUI::MRView::Tool::min_opacity *
+         std::exp(MR::GUI::MRView::Tool::opacity_exponent * static_cast<float>(slider_value));
 }
 
 inline float get_slider_value_from_alpha(float alpha) {
@@ -77,12 +78,12 @@ public:
   QModelIndex parent(const QModelIndex &) const { return {}; }
 
   int rowCount(const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return planes.size();
   }
 
   int columnCount(const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return 1;
   }
 
@@ -479,11 +480,11 @@ void View::showEvent(QShowEvent *) {
 void View::onVolumeIndexChanged() {
   assert(window().image());
   const auto &image(window().image()->image);
-  assert(image.ndim() == size_t(volume_index_layout->count() + 3));
+  assert(image.ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
   for (int i = 0; i < volume_index_layout->count(); ++i) {
     auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-    box->setValue(image.ndim() > size_t(i + 3) ? image.index(i + 3) : 0);
+    box->setValue(image.ndim() > static_cast<size_t>(i + 3) ? image.index(i + 3) : 0);
   }
 }
 
@@ -605,11 +606,11 @@ void View::onSetVoxel() {
 void View::onSetVolumeIndex() {
   if (window().image()) {
     const auto &image(window().image()->image);
-    assert(image.ndim() == size_t(volume_index_layout->count() + 3));
+    assert(image.ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
     for (int i = 0; i < volume_index_layout->count(); ++i) {
       auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-      if (image.ndim() <= size_t(i + 3))
+      if (image.ndim() <= static_cast<size_t>(i + 3))
         break;
       window().set_image_volume(i + 3, box->value());
     }

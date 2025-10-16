@@ -98,7 +98,8 @@ void run() {
   DWI::Tractography::TrackScalar<float> scalars;
 
   const Transform transform(in_index_image);
-  Eigen::Vector3d voxel_pos;
+  Eigen::Vector3d voxel_pos_float;
+  Eigen::Vector3i voxel_pos_int;
 
   while (reader(tck)) {
     SetVoxelDir dixels;
@@ -107,13 +108,14 @@ void run() {
     scalars.set_index(tck.get_index());
     scalars.resize(tck.size(), 0.0f);
     for (size_t p = 0; p < tck.size(); ++p) {
-      voxel_pos = transform.scanner2voxel * tck[p].cast<default_type>();
-      for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
-        if ((int)round(voxel_pos[0]) == (*d)[0] && (int)round(voxel_pos[1]) == (*d)[1] &&
-            (int)round(voxel_pos[2]) == (*d)[2]) {
-          assign_pos_of(*d).to(in_index_image);
-          Eigen::Vector3f dir = d->get_dir().cast<float>();
-          dir.normalize();
+      voxel_pos_float = transform.scanner2voxel * tck[p].cast<default_type>();
+      voxel_pos_int = voxel_pos_float.array().round().cast<int>();
+      for (const auto &d : dixels) {
+        // Invokes Mapping::Voxel::operator==();
+        //   ie. only checks 3D voxel indices, not direction within voxel
+        if (voxel_pos_int == d) {
+          assign_pos_of(d).to(in_index_image);
+          const Eigen::Vector3f dir = d.get_dir().cast<float>().normalized();
           float largest_dp = 0.0f;
           int32_t closest_fixel_index = -1;
 
@@ -124,7 +126,7 @@ void run() {
 
           for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
             in_directions_image.index(0) = offset + fixel;
-            const float dp = abs(dir.dot(Eigen::Vector3f(in_directions_image.row(1))));
+            const float dp = std::fabs(dir.dot(Eigen::Vector3f(in_directions_image.row(1))));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_fixel_index = fixel;

@@ -70,7 +70,7 @@ void usage() {
 
 class Tag {
 public:
-  Tag(uint16_t group, uint16_t element, const std::string &newvalue)
+  Tag(uint16_t group, uint16_t element, std::string_view newvalue)
       : group(group), element(element), newvalue(newvalue) {}
   uint16_t group, element;
   std::string newvalue;
@@ -82,7 +82,7 @@ inline std::string hex(uint16_t value) {
   return hex.str();
 }
 
-inline uint16_t read_hex(const std::string &m) {
+inline uint16_t read_hex(const std::string m) {
   uint16_t value;
   std::istringstream hex(m);
   hex >> std::hex >> value;
@@ -113,7 +113,7 @@ void run() {
   for (size_t n = 0; n < VRs.size(); ++n) {
     union __VR {
       uint16_t i;
-      char c[2];
+      char c[2]; // check_syntax off
     } VR;
     VR.i = VRs[n];
     INFO(std::string("clearing entries with VR \"") + VR.c[1] + VR.c[0] + "\"");

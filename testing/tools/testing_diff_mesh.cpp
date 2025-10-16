@@ -51,20 +51,42 @@ void run() {
   try {
     MR::Surface::Mesh mesh(argument[0]);
     multi_in1.push_back(mesh);
-  } catch (...) {
-    multi_in1.load(argument[0]);
+  } catch (Exception &e_single) {
+    try {
+      multi_in1.load(argument[0]);
+    } catch (Exception &e_multi) {
+      Exception e("Unable to load input \"" + std::string(argument[0]) + "\" as mesh file");
+      e.push_back("  As individual mesh:");
+      for (size_t line_index = 0; line_index != e_single.num(); ++line_index)
+        e.push_back("    " + e_single[line_index]);
+      e.push_back("  As multi mesh:");
+      for (size_t line_index = 0; line_index != e_multi.num(); ++line_index)
+        e.push_back("    " + e_multi[line_index]);
+      throw e;
+    }
   }
 
   try {
     MR::Surface::Mesh mesh(argument[1]);
     multi_in2.push_back(mesh);
-  } catch (...) {
-    multi_in2.load(argument[1]);
+  } catch (Exception &e_single) {
+    try {
+      multi_in2.load(argument[1]);
+    } catch (Exception &e_multi) {
+      Exception e("Unable to load input \"" + std::string(argument[1]) + "\" as mesh file");
+      e.push_back("  As individual mesh:");
+      for (size_t line_index = 0; line_index != e_single.num(); ++line_index)
+        e.push_back("    " + e_single[line_index]);
+      e.push_back("  As multi mesh:");
+      for (size_t line_index = 0; line_index != e_multi.num(); ++line_index)
+        e.push_back("    " + e_multi[line_index]);
+      throw e;
+    }
   }
 
   if (multi_in1.size() != multi_in2.size())
-    throw Exception("Mismatched number of mesh objects (" + str(multi_in1.size()) + " - " + str(multi_in2.size()) +
-                    ") - test FAILED");
+    throw Exception(std::string("Mismatched number of mesh objects") + " (" + str(multi_in1.size()) + " - " +
+                    str(multi_in2.size()) + ");" + " test FAILED");
 
   for (size_t mesh_index = 0; mesh_index != multi_in1.size(); ++mesh_index) {
 

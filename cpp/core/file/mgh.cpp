@@ -30,7 +30,7 @@ std::string tag_ID_to_string(const tag_type tag) {
   }
 }
 
-tag_type string_to_tag_ID(const std::string &key) {
+tag_type string_to_tag_ID(std::string_view key) {
   if (key.compare(0, 8, "MGH_TAG_") != 0)
     return 0;
 

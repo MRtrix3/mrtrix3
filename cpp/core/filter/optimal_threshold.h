@@ -155,7 +155,7 @@ public:
 
     mean_xy /= count;
     double covariance = mean_xy - (sum / count) * input_image_mean;
-    double mask_stdev = sqrt((sum - double(sum * sum) / count) / count);
+    double mask_stdev = sqrt((sum - Math::pow2(sum) / static_cast<double>(count)) / static_cast<double>(count));
 
     return -covariance / (input_image_stdev * mask_stdev);
   }

@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <string>
+#include <string_view>
 
 #include "command.h"
 #include "datatype.h"
@@ -45,16 +45,16 @@ const Eigen::Array<bool, 3, 1> reference_1d_bool{false, true, true};
 const Eigen::Array<default_type, 3, 2> reference_2d{{0.0, 1.0}, {10.0, 11.0}, {20.0, 21.0}};
 const Eigen::Array<bool, 3, 2> reference_2d_bool{{false, true}, {true, true}, {true, true}};
 
-template <typename T> void save_1d(const std::string &path) {
+template <typename T> void save_1d(std::string_view path) {
   File::Matrix::save_vector(reference_1d.cast<T>(), Path::join(argument[0], path));
 }
 
-template <typename T> void save_2d(const std::string &path) {
+template <typename T> void save_2d(std::string_view path) {
   File::Matrix::save_matrix(reference_2d.cast<T>(), Path::join(argument[0], path));
 }
 
 void run() {
-  File::mkdir(argument[0]);
+  File::mkdir(std::string_view(argument[0]));
 
   File::Matrix::save_vector(reference_1d_bool, Path::join(argument[0], "1D3_BOOL.npy"));
   save_1d<int8_t>("1D3_i1.npy");

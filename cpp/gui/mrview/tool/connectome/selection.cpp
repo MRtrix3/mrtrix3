@@ -623,7 +623,7 @@ void NodeSelectionSettingsFrame::edge_other_alpha_slot() {
 }
 
 NodeSelectionSettingsDialog::NodeSelectionSettingsDialog(QWidget *,
-                                                         const std::string &message,
+                                                         std::string_view message,
                                                          NodeSelectionSettings &settings)
     : frame(new NodeSelectionSettingsFrame(this, settings)) {
   setWindowTitle(qstr(message));

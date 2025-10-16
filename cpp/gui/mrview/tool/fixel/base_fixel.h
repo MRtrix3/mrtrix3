@@ -33,7 +33,7 @@ namespace MR::GUI::MRView::Tool {
 
 class BaseFixel : public Displayable {
 public:
-  BaseFixel(const std::string &, Fixel &);
+  BaseFixel(std::string_view, Fixel &);
   ~BaseFixel();
 
   class Shader : public Displayable::Shader {
@@ -58,7 +58,7 @@ public:
       visitor.render_fixel_colourbar(*this);
   }
 
-  void load_image(const std::string &filename);
+  void load_image(std::string_view filename);
 
   void reload_directions_buffer();
 
@@ -205,7 +205,7 @@ protected:
 
   inline FixelValue &current_fixel_colour_state() const { return get_fixel_value(colour_types[colour_type_index]); }
 
-  virtual FixelValue &get_fixel_value(const std::string &key) const { return fixel_values[key]; }
+  virtual FixelValue &get_fixel_value(std::string_view key) const { return fixel_values[std::string(key)]; }
 
   MR::Header header;
   std::vector<std::string> colour_types;
@@ -267,7 +267,8 @@ private:
 
 template <typename ImageType> class FixelType : public BaseFixel {
 public:
-  FixelType(const std::string &filename, Fixel &fixel_tool) : BaseFixel(filename, fixel_tool), transform(header) {}
+  FixelType(std::string_view filename, Fixel &fixel_tool)
+      : BaseFixel(filename, fixel_tool), fixel_data(nullptr), transform(header) {}
 
 protected:
   std::unique_ptr<ImageType> fixel_data;

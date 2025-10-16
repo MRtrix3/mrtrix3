@@ -19,18 +19,17 @@
 #include "memory.h"
 
 namespace MR {
-
 class Header;
-namespace ImageIO {
+}
+
+namespace MR::ImageIO {
 class Base;
 }
 
-namespace File::Dicom {
+namespace MR::File::Dicom {
 
 class Series;
 
 std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<std::shared_ptr<Series>> &series);
 
-} // namespace File::Dicom
-
-} // namespace MR
+} // namespace MR::File::Dicom

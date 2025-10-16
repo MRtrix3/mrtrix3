@@ -33,12 +33,12 @@ namespace MR::Fixel::Filter {
  */
 class Base {
 public:
-  Base(const std::string &s) : message(s) {}
+  Base(std::string_view s) : message(s) {}
   Base() {}
 
   virtual ~Base() {}
 
-  void set_message(const std::string &s) { message = s; }
+  void set_message(std::string_view s) { message = s; }
 
   virtual void operator()(Image<float> &, Image<float> &) const {
     throw Exception("Running empty function Fixel::Filter::Base::operator()");

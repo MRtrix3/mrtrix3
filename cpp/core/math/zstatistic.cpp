@@ -28,34 +28,35 @@ namespace MR::Math {
 namespace {
 default_type F2z_upper(const default_type F, const size_t rank, const default_type dof) {
   assert(F >= 1.0);
-  const default_type x = (dof / F) / (dof / F + default_type(rank));
+  const default_type x = (dof / F) / (dof / F + static_cast<default_type>(rank));
   return Math::sqrt2 *
-         Math::erfcinv(
-             2.0 *
+         Math::erfcinv(2.0 *
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
-             Math::betaincreg(Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, 0.5 * dof),
-                              Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, 0.5 * default_type(rank)),
-                              Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, x))(0, 0)
+                       Math::betaincreg(Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, 0.5 * dof),
+                                        Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(
+                                            1, 0.5 * static_cast<default_type>(rank)),
+                                        Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, x))(0, 0)
 #else
-             Math::betaincreg(0.5 * dof, 0.5 * default_type(rank), x)
+                       Math::betaincreg(0.5 * dof, 0.5 * static_cast<default_type>(rank), x)
 #endif
          );
 }
 
 default_type F2z_lower(const default_type oneoverF, const size_t rank, const default_type dof) {
   assert(oneoverF >= 1.0);
-  const default_type x = (default_type(rank) / oneoverF) / (default_type(rank) / oneoverF + dof);
+  const default_type x =
+      (static_cast<default_type>(rank) / oneoverF) / (static_cast<default_type>(rank) / oneoverF + dof);
   return Math::sqrt2 *
-         Math::erfinv(
-             2.0 *
+         Math::erfinv(2.0 *
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
-                 Math::betaincreg(Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, 0.5 * default_type(rank)),
-                                  Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, 0.5 * dof),
-                                  Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, x))(0, 0)
+                          Math::betaincreg(Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(
+                                               1, 0.5 * static_cast<default_type>(rank)),
+                                           Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, 0.5 * dof),
+                                           Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, x))(0, 0)
 #else
-                 Math::betaincreg(0.5 * default_type(rank), 0.5 * dof, x)
+                          Math::betaincreg(0.5 * static_cast<default_type>(rank), 0.5 * dof, x)
 #endif
-             - 1.0);
+                      - 1.0);
 }
 } // namespace
 
@@ -125,8 +126,8 @@ default_type Zstatistic::LookupBase::interp(const default_type stat,
                                             std::function<default_type(default_type)> func) const {
   const default_type index_float = (stat - offset) * scale;
   if (index_float >= 1.0 && index_float < data.size() - 2) {
-    const ssize_t index_int(ssize_t(std::floor(index_float)));
-    const default_type mu(index_float - default_type(index_int));
+    const ssize_t index_int(static_cast<ssize_t>(std::floor(index_float)));
+    const default_type mu(index_float - static_cast<default_type>(index_int));
     Math::Hermite<default_type> hermite(0.0);
     hermite.set(mu);
     return hermite.value(data[index_int - 1], data[index_int], data[index_int + 1], data[index_int + 2]);
@@ -145,7 +146,7 @@ default_type Zstatistic::LookupBase::interp(const default_type stat,
 constexpr default_type t2z_max = 10.0;
 constexpr default_type t2z_step = 0.001;
 // Do not permit this division to be a non-integer value!
-constexpr ssize_t t2z_halfdomain = ssize_t(t2z_max / t2z_step);
+constexpr ssize_t t2z_halfdomain = static_cast<ssize_t>(t2z_max / t2z_step);
 
 Zstatistic::Lookup_t2z::Lookup_t2z(const size_t dof) : dof(dof), offset(-t2z_max - t2z_step), scale(1.0 / t2z_step) {
   auto t2x = [&](const default_type t) { return dof / (Math::pow2(t) + dof); };
@@ -206,7 +207,7 @@ default_type Zstatistic::Lookup_t2z::operator()(const default_type t) const {
 constexpr default_type F2z_max = 100.0;
 constexpr default_type F2z_step = 0.01;
 // Do not permit this division to be a non-integer value!
-constexpr ssize_t F2z_halfdomain = size_t((F2z_max - 1.0) / F2z_step);
+constexpr ssize_t F2z_halfdomain = static_cast<size_t>((F2z_max - 1.0) / F2z_step);
 
 Zstatistic::Lookup_F2z::Lookup_F2z(const size_t rank, const size_t dof)
     : rank(rank),
@@ -230,7 +231,7 @@ Zstatistic::Lookup_F2z::Lookup_F2z(const size_t rank, const size_t dof)
   F[0] = 1.0 - F2z_step;
   oneoverF[0] = 1.0 / (1.0 - F2z_step);
   for (ssize_t i = 0; i <= F2z_halfdomain; ++i) {
-    F[i + 1] = 1.0 + (default_type(i) * F2z_step);
+    F[i + 1] = 1.0 + (static_cast<default_type>(i) * F2z_step);
     oneoverF[i + 1] = 1.0 / F[i + 1];
   }
   F[F.size() - 1] = F2z_max + F2z_step;
@@ -263,8 +264,8 @@ Zstatistic::Lookup_F2z::Lookup_F2z(const size_t rank, const size_t dof)
 }
 
 default_type Zstatistic::Lookup_F2z::operator()(const default_type F) const {
-  auto func_upper = [&](const default_type in) { return F2z_upper(in, rank, default_type(dof)); };
-  auto func_lower = [&](const default_type in) { return F2z_lower(in, rank, default_type(dof)); };
+  auto func_upper = [&](const default_type in) { return F2z_upper(in, rank, static_cast<default_type>(dof)); };
+  auto func_lower = [&](const default_type in) { return F2z_lower(in, rank, static_cast<default_type>(dof)); };
   if (F >= 1.0)
     return interp(F, offset_upper, scale_upper, data_upper, func_upper);
   else

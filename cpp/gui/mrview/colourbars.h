@@ -61,7 +61,7 @@ public:
               float local_max_value,
               float global_min_value,
               float global_range,
-              Eigen::Array3f colour = {NAN, NAN, NAN});
+              Eigen::Array3f colour = Eigen::Array3f::Constant(NaNF));
 
   void render(const Displayable &object, bool inverted);
 

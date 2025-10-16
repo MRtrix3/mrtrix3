@@ -18,7 +18,7 @@
 
 namespace MR::DWI::Tractography::Tracking {
 
-SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
+SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
     : source_header(Header::open(diff_path)),
       source(source_header.get_image<float>().with_direct_io(3)),
       properties(property_set),
@@ -27,15 +27,15 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
       max_num_points_preds(0),
       min_num_points_postds(0),
       max_num_points_postds(0),
-      min_dist(NaN),
-      max_dist(NaN),
-      max_angle_1o(NaN),
-      max_angle_ho(NaN),
-      cos_max_angle_1o(NaN),
-      cos_max_angle_ho(NaN),
-      step_size(NaN),
-      min_radius(NaN),
-      threshold(NaN),
+      min_dist(NaNF),
+      max_dist(NaNF),
+      max_angle_1o(NaNF),
+      max_angle_ho(NaNF),
+      cos_max_angle_1o(NaNF),
+      cos_max_angle_ho(NaNF),
+      step_size(NaNF),
+      min_radius(NaNF),
+      threshold(NaNF),
       unidirectional(false),
       rk4(false),
       stop_on_all_include(false),
@@ -110,7 +110,10 @@ SharedBase::~SharedBase() {
   for (const auto &i : termination_info) {
     if (termination_relevant(i.first))
       INFO("  " + i.second.description + ": " +
-           str(100.0 * terminations[static_cast<ssize_t>(i.first)] / (double)sum_terminations, 3) + "\%");
+           str(100.0 * static_cast<default_type>(terminations[static_cast<ssize_t>(i.first)]) /
+                   static_cast<default_type>(sum_terminations),
+               3) +
+           "\%");
   }
 
   INFO("Track rejection counts:");
@@ -156,7 +159,7 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
     cos_max_angle_ho = cos_max_angle_1o;
     // Clear these variables so that the next() function of the underlying method
     //   does not enforce curvature constraints; rely on e.g. RK4 to do it
-    max_angle_1o = float(Math::pi);
+    max_angle_1o = static_cast<float>(Math::pi);
     cos_max_angle_1o = 0.0f;
   }
 
@@ -180,9 +183,9 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   // Maximal angle around this minimum radius traversed after downsampling
   const float angle_minradius_postds = downsampler.get_ratio() * angle_minradius_preds;
   // Minimum chord length after streamline has been downsampled
-  const float min_step_postds = (angle_minradius_postds > float(2.0 * Math::pi))
-                                    ? 0.0f
-                                    : (2.0f * min_radius * std::sin(0.5f * angle_minradius_postds));
+  const float min_step_postds = (angle_minradius_postds > static_cast<float>(2.0 * Math::pi))
+                                    ? 0.0F
+                                    : (2.0F * min_radius * std::sin(0.5F * angle_minradius_postds));
 
   // What we need:
   //   - Before downsampling:
@@ -190,14 +193,15 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   //         streamline may exceed the minimum length after downsampling?
   //       (If a streamline doesn't reach this number of vertices, there's no point in
   //         even attempting any further processing of it; it will always be rejected)
-  min_num_points_preds = 1 + std::ceil(min_dist / step_size);
+  min_num_points_preds = 1 + static_cast<size_t>(std::ceil(min_dist / step_size));
   //     - How many points before it is no longer feasible to become shorter than the
   //         maximum length, even after down-sampling?
   //       (There is no point in continuing streamlines propagation after this point;
   //         it will invariably be either truncated or rejected, no matter what
   //         happens during downsampling)
-  max_num_points_preds = min_step_postds ? (3 + std::ceil(downsampler.get_ratio() * max_dist / min_step_postds))
-                                         : std::numeric_limits<size_t>::max();
+  max_num_points_preds =
+      min_step_postds ? (3 + static_cast<size_t>(std::ceil(downsampler.get_ratio() * max_dist / min_step_postds)))
+                      : std::numeric_limits<size_t>::max();
   //   - After downsampling:
   //     - How many vertices must a streamline have (after downsampling) for it to be
   //         guaranteed to exceed the minimum length?
@@ -234,10 +238,10 @@ void SharedBase::set_cutoff(float cutoff) {
 void SharedBase::add_termination(const term_t i, const Eigen::Vector3f &p) const {
   terminations[i].fetch_add(1, std::memory_order_relaxed);
   Image<uint32_t> image(*debug_images[i]);
-  const auto pv = transform.scanner2voxel * p.cast<default_type>();
-  image.index(0) = ssize_t(std::round(pv[0]));
-  image.index(1) = ssize_t(std::round(pv[1]));
-  image.index(2) = ssize_t(std::round(pv[2]));
+  const auto pv = (transform.scanner2voxel * p.cast<default_type>()).array().round().cast<ssize_t>();
+  image.index(0) = pv[0];
+  image.index(1) = pv[1];
+  image.index(2) = pv[2];
   if (!is_out_of_bounds(image))
     image.value() += 1;
 }

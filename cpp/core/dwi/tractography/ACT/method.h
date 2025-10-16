@@ -81,7 +81,7 @@ public:
 
     seed_in_sgm = false;
 
-    if (tissues().is_csf() > 0.0F || tissues().get_wm() == 0.0F ||
+    if (tissues().is_csf() || tissues().get_wm() == 0.0F ||
         ((tissues().get_gm() - tissues().get_wm()) >= gmwmi_accuracy))
       return false;
 

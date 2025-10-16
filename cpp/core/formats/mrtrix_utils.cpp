@@ -16,9 +16,15 @@
 
 #include "formats/mrtrix_utils.h"
 
+#include "file/ofstream.h"
+#include "file/path.h"
+#include "file/utils.h"
+#include "mrtrix.h"
+#include "types.h"
+
 namespace MR::Formats {
 
-std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
+std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
   std::vector<ssize_t> parsed(ndim);
 
   size_t sub = 0;
@@ -27,7 +33,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
   size_t current = 0;
 
   try {
-    while (sub <= end) {
+    while (sub < end) {
       bool pos = true;
       if (specifier[sub] == '+') {
         pos = true;
@@ -40,15 +46,25 @@ std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
 
       lim = sub;
 
-      while (isdigit(specifier[lim]))
+      while (lim < end && std::isdigit(static_cast<unsigned char>(specifier[lim])))
         lim++;
-      if (specifier[lim] != ',' && specifier[lim] != '\0')
+
+      // we require at least one digit
+      if (lim == sub)
         throw 0;
+
+      if (lim < end && specifier[lim] != ',')
+        throw 0;
+
+      if (current == ndim)
+        throw Exception("incorrect number of axes in axes specification \"" + specifier + "\"");
+
       parsed[current] = to<ssize_t>(specifier.substr(sub, lim - sub)) + 1;
       if (!pos)
         parsed[current] = -parsed[current];
 
-      sub = lim + 1;
+      // move to character after comma or end
+      sub = (lim < end) ? (lim + 1) : lim;
       current++;
     }
   } catch (int) {
@@ -60,13 +76,14 @@ std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
 
   if (parsed.size() != ndim)
     throw Exception("incorrect number of dimensions for axes specifier");
+
   for (size_t n = 0; n < parsed.size(); n++) {
-    if (!parsed[n] || size_t(abs(parsed[n])) > ndim)
+    if (!parsed[n] || static_cast<size_t>(MR::abs(parsed[n])) > ndim)
       throw Exception("axis ordering " + str(parsed[n]) + " out of range");
 
     for (size_t i = 0; i < n; i++)
-      if (abs(parsed[i]) == abs(parsed[n]))
-        throw Exception("duplicate axis ordering (" + str(abs(parsed[n])) + ")");
+      if (MR::abs(parsed[i]) == MR::abs(parsed[n]))
+        throw Exception("duplicate axis ordering (" + str(MR::abs(parsed[n])) + ")");
   }
 
   return parsed;
@@ -105,11 +122,11 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
   return true;
 }
 
-void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname, size_t &offset) {
+void get_mrtrix_file_path(Header &H, std::string_view flag, std::string &fname, size_t &offset) {
 
-  auto i = H.keyval().find(flag);
+  auto i = H.keyval().find(std::string(flag));
   if (i == H.keyval().end())
-    throw Exception("missing \"" + flag + "\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("missing \"" + std::string(flag) + "\" specification for MRtrix image \"" + H.name() + "\"");
   const std::string path = i->second;
   H.keyval().erase(i);
 
@@ -120,8 +137,8 @@ void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname
     try {
       file_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"" + fname + "\" in MRtrix image header \"" + H.name() +
-                      "\"");
+      throw Exception("invalid offset specified for file \"" + fname + "\"" + //
+                      " in MRtrix image header \"" + H.name() + "\"");        //
     }
   }
 
@@ -138,5 +155,121 @@ void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname
       fname = Path::join(Path::dirname(H.name()), fname);
   }
 }
+
+template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
+  std::string dtype, layout;
+  std::vector<uint64_t> dim;
+  std::vector<default_type> vox, scaling;
+  std::vector<std::vector<default_type>> transform;
+
+  std::string key, value;
+  while (next_keyvalue(kv, key, value)) {
+    const std::string lkey = lowercase(key);
+    if (lkey == "dim")
+      dim = parse_ints<uint64_t>(value);
+    else if (lkey == "vox")
+      vox = parse_floats(value);
+    else if (lkey == "layout")
+      layout = value;
+    else if (lkey == "datatype")
+      dtype = value;
+    else if (lkey == "scaling")
+      scaling = parse_floats(value);
+    else if (lkey == "transform")
+      transform.push_back(parse_floats(value));
+    else if (!key.empty() && !value.empty())
+      add_line(H.keyval()[key], value); // Preserve capitalization if not a compulsory key
+  }
+
+  if (dim.empty())
+    throw Exception("missing \"dim\" specification for MRtrix image \"" + H.name() + "\"");
+  H.ndim() = dim.size();
+  for (size_t n = 0; n < dim.size(); n++) {
+    if (dim[n] < 1)
+      throw Exception("invalid dimensions for MRtrix image \"" + H.name() + "\"");
+    H.size(n) = dim[n];
+  }
+
+  if (vox.empty())
+    throw Exception("missing \"vox\" specification for MRtrix image \"" + H.name() + "\"");
+  if (vox.size() < std::min(size_t(3), dim.size()))
+    throw Exception("too few entries in \"vox\" specification for MRtrix image \"" + H.name() + "\"");
+  for (size_t n = 0; n < std::min<size_t>(vox.size(), H.ndim()); n++) {
+    if (vox[n] < 0.0)
+      throw Exception("invalid voxel size for MRtrix image \"" + H.name() + "\"");
+    H.spacing(n) = vox[n];
+  }
+
+  if (dtype.empty())
+    throw Exception("missing \"datatype\" specification for MRtrix image \"" + H.name() + "\"");
+  H.datatype() = DataType::parse(dtype);
+
+  if (layout.empty())
+    throw Exception("missing \"layout\" specification for MRtrix image \"" + H.name() + "\"");
+  auto ax = parse_axes(H.ndim(), layout);
+  for (size_t i = 0; i < ax.size(); ++i)
+    H.stride(i) = ax[i];
+
+  if (!transform.empty()) {
+
+    auto check_transform = [&transform]() {
+      if (transform.size() < 3)
+        return false;
+      for (auto row : transform)
+        if (row.size() != 4)
+          return false;
+      return true;
+    };
+    if (!check_transform())
+      throw Exception("invalid \"transform\" specification for MRtrix image \"" + H.name() + "\"");
+
+    for (int row = 0; row < 3; ++row)
+      for (int col = 0; col < 4; ++col)
+        H.transform()(row, col) = transform[row][col];
+  }
+
+  if (!scaling.empty()) {
+    if (scaling.size() != 2)
+      throw Exception("invalid \"scaling\" specification for MRtrix image \"" + H.name() + "\"");
+    H.set_intensity_scaling(scaling[1], scaling[0]);
+  }
+}
+template void read_mrtrix_header<File::KeyValue::Reader>(Header &H, File::KeyValue::Reader &kv);
+template void read_mrtrix_header<File::GZ>(Header &H, File::GZ &kv);
+
+template <class StreamType> void write_mrtrix_header(const Header &H, StreamType &out) {
+  out << "dim: " << H.size(0);
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out << "," << H.size(n);
+
+  out << "\nvox: " << H.spacing(0);
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out << "," << H.spacing(n);
+
+  auto stride = Stride::get(H);
+  Stride::symbolise(stride);
+
+  out << "\nlayout: " << (stride[0] > 0 ? "+" : "-") << MR::abs(stride[0]) - 1;
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out << "," << (stride[n] > 0 ? "+" : "-") << MR::abs(stride[n]) - 1;
+
+  DataType dt = H.datatype();
+  dt.set_byte_order_native();
+  out << "\ndatatype: " << dt.specifier();
+
+  Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
+  out << H.transform().matrix().topLeftCorner(3, 4).format(fmt);
+
+  if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
+    out << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
+
+  for (const auto &i : H.keyval())
+    for (const auto &line : split_lines(i.second))
+      out << "\n" << i.first << ": " << line;
+
+  out << "\n";
+}
+template void write_mrtrix_header<File::OFStream>(const Header &H, File::OFStream &out);
+template void write_mrtrix_header<std::stringstream>(const Header &H, std::stringstream &out);
 
 } // namespace MR::Formats

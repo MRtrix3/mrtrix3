@@ -86,7 +86,7 @@ private:
 
 class Receiver {
 public:
-  Receiver(const std::string &path, const Properties &properties)
+  Receiver(std::string_view path, const Properties &properties)
       : writer(path, properties), progress("resampling streamlines") {}
 
   bool operator()(const Streamline<value_type> &tck) {

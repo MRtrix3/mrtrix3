@@ -79,7 +79,7 @@ void MHSampler::death() {
   SpatialLock<float>::Guard spatial_guard(*lock);
   do {
     par = pGrid.getRandom();
-    if (par == NULL || par->hasPredecessor() || par->hasSuccessor())
+    if (par == nullptr || par->hasPredecessor() || par->hasSuccessor())
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
@@ -102,7 +102,7 @@ void MHSampler::randshift() {
   SpatialLock<float>::Guard spatial_guard(*lock);
   do {
     par = pGrid.getRandom();
-    if (par == NULL)
+    if (par == nullptr)
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
@@ -131,7 +131,7 @@ void MHSampler::optshift() {
   SpatialLock<float>::Guard spatial_guard(*lock);
   do {
     par = pGrid.getRandom();
-    if (par == NULL)
+    if (par == nullptr)
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
@@ -162,7 +162,7 @@ void MHSampler::connect() // TODO Current implementation does not prevent loops.
   SpatialLock<float>::Guard spatial_guard(*lock);
   do {
     par = pGrid.getRandom();
-    if (par == NULL)
+    if (par == nullptr)
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
@@ -172,7 +172,7 @@ void MHSampler::connect() // TODO Current implementation does not prevent loops.
   pe0.alpha = alpha0;
 
   ParticleEnd pe2;
-  pe2.par = NULL;
+  pe2.par = nullptr;
   double dE = E->stageConnect(pe0, pe2);
   double R = exp(-dE);
   if (R > rng_uniform()) {
@@ -232,7 +232,7 @@ void MHSampler::moveRandom(const Particle *par, Point_t &pos, Point_t &dir) {
 }
 
 bool MHSampler::moveOptimal(const Particle *par, Point_t &pos, Point_t &dir) const {
-  // assert(par != NULL);
+  // assert(par != nullptr);
   if (par->hasPredecessor() && par->hasSuccessor()) {
     int a1 = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
     int a3 = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;

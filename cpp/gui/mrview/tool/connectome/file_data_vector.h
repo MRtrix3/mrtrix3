@@ -30,16 +30,16 @@ public:
   FileDataVector(const FileDataVector &);
   FileDataVector(FileDataVector &&);
   FileDataVector(const size_t);
-  FileDataVector(const std::string &);
+  FileDataVector(std::string_view);
 
   FileDataVector &operator=(const FileDataVector &);
   FileDataVector &operator=(FileDataVector &&);
 
-  FileDataVector &load(const std::string &);
+  FileDataVector &load(std::string_view);
   FileDataVector &clear();
 
   const QString &get_name() const { return name; }
-  void set_name(const std::string &s) { name = qstr(s); }
+  void set_name(std::string_view s) { name = qstr(s); }
 
   float get_min() const { return min; }
   float get_mean() const { return mean; }

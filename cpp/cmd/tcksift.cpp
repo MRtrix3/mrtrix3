@@ -107,13 +107,13 @@ void run() {
 
     auto opt = get_options("term_number");
     if (!opt.empty())
-      sifter.set_term_number(int(opt[0][0]));
+      sifter.set_term_number(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]));
     opt = get_options("term_ratio");
     if (!opt.empty())
-      sifter.set_term_ratio(float(opt[0][0]));
+      sifter.set_term_ratio(static_cast<float>(opt[0][0]));
     opt = get_options("term_mu");
     if (!opt.empty())
-      sifter.set_term_mu(float(opt[0][0]));
+      sifter.set_term_mu(static_cast<float>(opt[0][0]));
     opt = get_options("csv");
     if (!opt.empty())
       sifter.set_csv_path(opt[0][0]);

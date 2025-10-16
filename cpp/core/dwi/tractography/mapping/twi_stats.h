@@ -17,19 +17,31 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
+
 namespace MR::DWI::Tractography::Mapping {
 
-enum contrast_t { TDI, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE, VECTOR_FILE };
-enum vox_stat_t { V_SUM, V_MIN, V_MEAN, V_MAX };
+enum class contrast_t { TDI, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE, VECTOR_FILE };
+struct Strings {
+  std::string choice;
+  std::string description;
+};
+extern const std::unordered_map<contrast_t, Strings> contrast_names;
+extern const std::vector<std::string> contrasts;
+
+enum class vox_stat_t { SUM, MIN, MEAN, MAX };
+extern const std::unordered_map<vox_stat_t, std::string> voxel_statistic_names;
+extern const std::vector<std::string> voxel_statistics;
+
 // Note: ENDS_CORR not provided as a command-line option
-enum tck_stat_t {
-  T_SUM,
-  T_MIN,
-  T_MEAN,
-  T_MAX,
-  T_MEDIAN,
-  T_MEAN_NONZERO,
+enum class tck_stat_t {
+  SUM,
+  MIN,
+  MEAN,
+  MAX,
+  MEDIAN,
+  MEAN_NONZERO,
   GAUSSIAN,
   ENDS_MIN,
   ENDS_MEAN,
@@ -37,9 +49,7 @@ enum tck_stat_t {
   ENDS_PROD,
   ENDS_CORR
 };
-
-extern const std::vector<std::string> contrasts;
-extern const std::vector<std::string> voxel_statistics;
+extern const std::unordered_map<tck_stat_t, Strings> track_statistic_names;
 extern const std::vector<std::string> track_statistics;
 
 } // namespace MR::DWI::Tractography::Mapping

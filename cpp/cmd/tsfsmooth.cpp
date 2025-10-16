@@ -56,7 +56,8 @@ void run() {
 
   std::vector<float> kernel(2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;
-  float radius = (kernel.size() - 1.0) / 2.0;
+  const float radius = (kernel.size() - 1.0) / 2.0;
+  const int floor_radius = static_cast<int>(std::floor(radius));
   for (size_t c = 0; c < kernel.size(); ++c) {
     kernel[c] = exp(-(c - radius) * (c - radius) / (2 * stdev * stdev));
     norm_factor += kernel[c];
@@ -69,11 +70,11 @@ void run() {
     DWI::Tractography::TrackScalar<value_type> tck_scalars_smoothed(tck_scalar.size());
     tck_scalars_smoothed.set_index(tck_scalar.get_index());
 
-    for (int i = 0; i < (int)tck_scalar.size(); ++i) {
-      float norm_factor = 0.0;
-      float value = 0.0;
-      for (int k = -(int)radius; k <= (int)radius; ++k) {
-        if (i + k >= 0 && i + k < (int)tck_scalar.size()) {
+    for (int i = 0; i < static_cast<int>(tck_scalar.size()); ++i) {
+      float norm_factor = 0.0F;
+      float value = 0.0F;
+      for (int k = -floor_radius; k <= floor_radius; ++k) {
+        if (i + k >= 0 && i + k < static_cast<int>(tck_scalar.size())) {
           value += kernel[k + radius] * tck_scalar[i + k];
           norm_factor += kernel[k + radius];
         }

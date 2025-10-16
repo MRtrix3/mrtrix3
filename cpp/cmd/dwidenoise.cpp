@@ -200,8 +200,8 @@ public:
     {                               // (as opposed to the paper where p is defined as the number of signal components)
       double lam = std::max(s[p], 0.0) / q;
       clam += lam;
-      double gam = double(p + 1) / (exp1 ? q : q - (r - p - 1));
-      double sigsq1 = clam / double(p + 1);
+      double gam = static_cast<double>(p + 1) / static_cast<double>(exp1 ? q : q - (r - p - 1));
+      double sigsq1 = clam / static_cast<double>(p + 1);
       double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
@@ -232,7 +232,7 @@ public:
     // store rank map if requested:
     if (rankmap.valid()) {
       assign_pos_of(dwi, 0, 3).to(rankmap);
-      rankmap.value() = uint16_t(r - cutoff_p);
+      rankmap.value() = static_cast<uint16_t>(r - cutoff_p);
     }
   }
 
@@ -289,7 +289,7 @@ void process_image(Header &data,
                    Image<bool> &mask,
                    Image<real_type> &noise,
                    Image<uint16_t> &rank,
-                   const std::string &output_name,
+                   std::string_view output_name,
                    const std::vector<uint32_t> &extent,
                    bool exp1) {
   auto input = data.get_image<T>().with_direct_io(3);
@@ -333,8 +333,9 @@ void run() {
     uint32_t e = 1;
     while (e * e * e < dwi.size(3))
       e += 2;
-    extent = {
-        std::min(e, uint32_t(dwi.size(0))), std::min(e, uint32_t(dwi.size(1))), std::min(e, uint32_t(dwi.size(2)))};
+    extent = {std::min(e, static_cast<uint32_t>(dwi.size(0))),
+              std::min(e, static_cast<uint32_t>(dwi.size(1))),
+              std::min(e, static_cast<uint32_t>(dwi.size(2)))};
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 

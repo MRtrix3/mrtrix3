@@ -42,20 +42,20 @@ List &sanitise(List &current, const List &desired, const std::vector<ssize_t> &d
     for (size_t j = i + 1; j < current.size(); ++j) {
       if (!current[j])
         continue;
-      if (abs(current[i]) == abs(current[j]))
+      if (MR::abs(current[i]) == MR::abs(current[j]))
         current[j] = 0;
     }
   }
 
   ssize_t desired_max = 0;
   for (size_t i = 0; i < desired.size(); ++i)
-    if (abs(desired[i]) > desired_max)
-      desired_max = abs(desired[i]);
+    if (MR::abs(desired[i]) > desired_max)
+      desired_max = MR::abs(desired[i]);
 
   ssize_t in_max = 0;
   for (size_t i = 0; i < current.size(); ++i)
-    if (abs(current[i]) > in_max)
-      in_max = abs(current[i]);
+    if (MR::abs(current[i]) > in_max)
+      in_max = MR::abs(current[i]);
   in_max += desired_max + 1;
 
   for (size_t i = 0; i < current.size(); ++i)
@@ -97,7 +97,7 @@ List __from_command_line(const List &current) {
   strides.resize(current.size(), 0);
 
   for (const auto x : strides)
-    if (abs(x) > int(current.size()))
+    if (MR::abs(x) > static_cast<int>(current.size()))
       throw Exception("strides specified exceed image dimensions: got " + str(opt[0][0]) + ", but image has " +
                       str(current.size()) + " axes");
 
@@ -105,7 +105,7 @@ List __from_command_line(const List &current) {
     if (!strides[1])
       continue;
     for (size_t j = i + 1; j < strides.size(); ++j)
-      if (abs(strides[i]) == abs(strides[j]))
+      if (MR::abs(strides[i]) == MR::abs(strides[j]))
         throw Exception("duplicate entries provided to \"-strides\" option: " + str(opt[0][0]));
   }
 
@@ -118,12 +118,12 @@ List __from_command_line(const List &current) {
   prev = get_symbolic(prev);
   ssize_t max_remaining = 0;
   for (const auto x : prev)
-    if (abs(x) > max_remaining)
-      max_remaining = abs(x);
+    if (MR::abs(x) > max_remaining)
+      max_remaining = MR::abs(x);
 
   struct FindStride {
-    FindStride(List::value_type value) : x(abs(value)) {}
-    bool operator()(List::value_type a) { return abs(a) == x; }
+    FindStride(List::value_type value) : x(MR::abs(value)) {}
+    bool operator()(List::value_type a) { return MR::abs(a) == x; }
     const List::value_type x;
   };
 

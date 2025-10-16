@@ -90,9 +90,12 @@ void LightBox::draw_plane_primitive(int axis, Displayable::Shader &shader_progra
 
 void LightBox::paint(Projection &) {
   GL::assert_context_is_current();
-  GLint x = projection.x_position(), y = projection.y_position();
-  GLint w = projection.width(), h = projection.height();
-  GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
+  const GLint x = projection.x_position();
+  const GLint y = projection.y_position();
+  const GLint w = projection.width();
+  const GLint h = projection.height();
+  const GLfloat dw = static_cast<float>(w) / static_cast<float>(n_cols);
+  const GLfloat dh = static_cast<float>(h) / static_cast<float>(n_rows);
 
   const Eigen::Vector3f orig_focus = window().focus();
   const ssize_t original_slice_index = image()->image.index(3);
@@ -109,7 +112,7 @@ void LightBox::paint(Projection &) {
       current_slice_index = original_slice_index / volume_increment;
   }
 
-  float value_min = NaN, value_max = NaN;
+  float value_min = NaNF, value_max = NaNF;
 
   ssize_t slice_idx = 0;
   for (ssize_t row = 0; row < n_rows; ++row) {

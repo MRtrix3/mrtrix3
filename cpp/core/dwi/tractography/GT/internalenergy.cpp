@@ -49,7 +49,7 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
     for (int j = -1; j <= 1; j++) {
       for (int k = -1; k <= 1; k++) {
         const ParticleGrid::ParticleVectorType *pvec = pGrid.at(x + i, y + j, z + k);
-        if (pvec == NULL)
+        if (pvec == nullptr)
           continue;
 
         for (ParticleGrid::ParticleVectorType::const_iterator it = pvec->begin(); it != pvec->end(); ++it) {

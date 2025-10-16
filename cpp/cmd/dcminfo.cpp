@@ -55,7 +55,7 @@ public:
   std::string value;
 };
 
-inline uint16_t read_hex(const std::string &m) {
+inline uint16_t read_hex(const std::string m) {
   uint16_t value;
   std::istringstream hex(m);
   hex >> std::hex >> value;

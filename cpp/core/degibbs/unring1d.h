@@ -34,7 +34,7 @@ public:
 
   template <typename Derived> FORCE_INLINE void operator()(Eigen::MatrixBase<Derived> &data) {
     assert(data.cols() == 1);
-    assert(fft.size() == size_t(data.size()));
+    assert(fft.size() == static_cast<size_t>(data.size()));
 
     VLA(TV1arr, real_type, 2 * nsh + 1);
     VLA(TV2arr, real_type, 2 * nsh + 1);
@@ -51,7 +51,7 @@ public:
 
     // apply shifts and iFFT each line:
     for (int j = 1; j < 2 * nsh + 1; j++) {
-      const real_type phi = Math::pi * real_type(shifts[j]) / double(n * nsh);
+      const real_type phi = Math::pi * real_type(shifts[j]) / static_cast<real_type>(n * nsh);
       const complex_type u(std::cos(phi), std::sin(phi));
       complex_type e(1.0, 0.0);
       fft[0] = data[0];
@@ -76,10 +76,10 @@ public:
       TV1arr[j] = 0.0;
       TV2arr[j] = 0.0;
       for (int t = minW; t <= maxW; t++) {
-        TV1arr[j] += abs(shifted((n - t) % n, j).real() - shifted((n - t - 1) % n, j).real());
-        TV1arr[j] += abs(shifted((n - t) % n, j).imag() - shifted((n - t - 1) % n, j).imag());
-        TV2arr[j] += abs(shifted((n + t) % n, j).real() - shifted((n + t + 1) % n, j).real());
-        TV2arr[j] += abs(shifted((n + t) % n, j).imag() - shifted((n + t + 1) % n, j).imag());
+        TV1arr[j] += std::fabs(shifted((n - t) % n, j).real() - shifted((n - t - 1) % n, j).real());
+        TV1arr[j] += std::fabs(shifted((n - t) % n, j).imag() - shifted((n - t - 1) % n, j).imag());
+        TV2arr[j] += std::fabs(shifted((n + t) % n, j).real() - shifted((n + t + 1) % n, j).real());
+        TV2arr[j] += std::fabs(shifted((n + t) % n, j).imag() - shifted((n + t + 1) % n, j).imag());
       }
     }
 
@@ -97,15 +97,15 @@ public:
           minidx = j;
         }
 
-        TV1arr[j] += abs(shifted((l - minW + 1 + n) % n, j).real() - shifted((l - (minW) + n) % n, j).real());
-        TV1arr[j] -= abs(shifted((l - maxW + n) % n, j).real() - shifted((l - (maxW + 1) + n) % n, j).real());
-        TV2arr[j] += abs(shifted((l + maxW + 1 + n) % n, j).real() - shifted((l + (maxW + 2) + n) % n, j).real());
-        TV2arr[j] -= abs(shifted((l + minW + n) % n, j).real() - shifted((l + (minW + 1) + n) % n, j).real());
+        TV1arr[j] += std::fabs(shifted((l - minW + 1 + n) % n, j).real() - shifted((l - (minW) + n) % n, j).real());
+        TV1arr[j] -= std::fabs(shifted((l - maxW + n) % n, j).real() - shifted((l - (maxW + 1) + n) % n, j).real());
+        TV2arr[j] += std::fabs(shifted((l + maxW + 1 + n) % n, j).real() - shifted((l + (maxW + 2) + n) % n, j).real());
+        TV2arr[j] -= std::fabs(shifted((l + minW + n) % n, j).real() - shifted((l + (minW + 1) + n) % n, j).real());
 
-        TV1arr[j] += abs(shifted((l - minW + 1 + n) % n, j).imag() - shifted((l - (minW) + n) % n, j).imag());
-        TV1arr[j] -= abs(shifted((l - maxW + n) % n, j).imag() - shifted((l - (maxW + 1) + n) % n, j).imag());
-        TV2arr[j] += abs(shifted((l + maxW + 1 + n) % n, j).imag() - shifted((l + (maxW + 2) + n) % n, j).imag());
-        TV2arr[j] -= abs(shifted((l + minW + n) % n, j).imag() - shifted((l + (minW + 1) + n) % n, j).imag());
+        TV1arr[j] += std::fabs(shifted((l - minW + 1 + n) % n, j).imag() - shifted((l - (minW) + n) % n, j).imag());
+        TV1arr[j] -= std::fabs(shifted((l - maxW + n) % n, j).imag() - shifted((l - (maxW + 1) + n) % n, j).imag());
+        TV2arr[j] += std::fabs(shifted((l + maxW + 1 + n) % n, j).imag() - shifted((l + (maxW + 2) + n) % n, j).imag());
+        TV2arr[j] -= std::fabs(shifted((l + minW + n) % n, j).imag() - shifted((l + (minW + 1) + n) % n, j).imag());
       }
 
       const real_type a0r = shifted((l - 1 + n) % n, minidx).real();

@@ -69,7 +69,7 @@ public:
   bool valid() const { return interp.valid(); }
   int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
   default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
-  const std::string &name() const { return interp.name(); }
+  std::string name() const { return interp.name(); }
 
   ssize_t stride(size_t axis) const { return interp.stride(axis); }
 
@@ -90,7 +90,7 @@ public:
         jacobian_adapter.index(dim) = x[dim];
       val *= jacobian_adapter.value().template cast<default_type>().determinant();
     }
-    return (value_type)val;
+    return static_cast<value_type>(val);
   }
 
   ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }

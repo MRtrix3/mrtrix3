@@ -24,7 +24,7 @@ namespace MR::File::Dicom {
 class QuickScan {
 
 public:
-  bool read(const std::string &file_name,
+  bool read(std::string_view file_name,
             bool print_DICOM_fields = false,
             bool print_CSA_fields = false,
             bool print_Phoenix = false,

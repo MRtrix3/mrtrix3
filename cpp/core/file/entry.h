@@ -24,7 +24,7 @@ namespace MR::File {
 
 class Entry {
 public:
-  Entry(const std::string &fname, int64_t offset = 0) : name(fname), start(offset) {}
+  Entry(std::string_view fname, int64_t offset = 0) : name(fname), start(offset) {}
 
   Entry(const Entry &) = default;
   Entry(Entry &&) noexcept = default;

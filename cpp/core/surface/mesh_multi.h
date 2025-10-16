@@ -32,8 +32,8 @@ class MeshMulti : public std::vector<Mesh> {
 public:
   using std::vector<Mesh>::vector;
 
-  void load(const std::string &);
-  void save(const std::string &) const;
+  void load(std::string_view);
+  void save(std::string_view) const;
 };
 
 } // namespace MR::Surface

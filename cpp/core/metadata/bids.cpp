@@ -51,7 +51,7 @@ std::string vector2axisid(const axis_vector_type &dir) {
   }
 }
 
-axis_vector_type axisid2vector(const std::string &id) {
+axis_vector_type axisid2vector(std::string_view id) {
   if (id == "i-")
     return {-1, 0, 0};
   else if (id == "i")

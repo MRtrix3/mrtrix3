@@ -21,22 +21,20 @@
 
 namespace MR::File::KeyValue {
 
-void Reader::open(const std::string &file, const char *first_line) {
-  filename.clear();
-  DEBUG("reading key/value file \"" + file + "\"...");
-
-  in.open(file.c_str(), std::ios::in | std::ios::binary);
+void Reader::open(std::string_view file, std::string_view first_line) {
+  filename = std::string(file);
+  DEBUG("reading key/value file \"" + filename + "\"...");
+  in.open(filename.c_str(), std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("failed to open key/value file \"" + file + "\": " + strerror(errno));
-  if (first_line) {
+    throw Exception("failed to open key/value file \"" + filename + "\": " + strerror(errno));
+  if (!first_line.empty()) {
     std::string sbuf;
     getline(in, sbuf);
-    if (sbuf.compare(0, strlen(first_line), first_line)) {
+    if (sbuf.compare(0, first_line.size(), first_line)) {
       in.close();
-      throw Exception("invalid first line for key/value file \"" + file + "\" (expected \"" + first_line + "\")");
+      throw Exception("invalid first line for key/value file \"" + filename + "\" (expected \"" + first_line + "\")");
     }
   }
-  filename = file;
 }
 
 bool Reader::next() {
@@ -69,10 +67,7 @@ bool Reader::next() {
   return false;
 }
 
-void write(File::OFStream &out,
-           const KeyValues &keyvals,
-           const std::string &prefix,
-           const bool add_to_command_history) {
+void write(File::OFStream &out, const KeyValues &keyvals, std::string_view prefix, const bool add_to_command_history) {
   bool command_history_appended = false;
   for (const auto &keyval : keyvals) {
     const auto lines = split_lines(keyval.second);

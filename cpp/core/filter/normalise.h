@@ -44,7 +44,7 @@ public:
   }
 
   template <class HeaderType>
-  Normalise(const HeaderType &in, const std::string &message) : Base(in, message), extent(1, 3) {
+  Normalise(const HeaderType &in, std::string_view message) : Base(in, message), extent(1, 3) {
     datatype() = DataType::Float32;
   }
 
@@ -54,7 +54,7 @@ public:
   }
 
   template <class HeaderType>
-  Normalise(const HeaderType &in, const std::string &message, const std::vector<uint32_t> &extent)
+  Normalise(const HeaderType &in, std::string_view message, const std::vector<uint32_t> &extent)
       : Base(in, message), extent(extent) {
     datatype() = DataType::Float32;
   }

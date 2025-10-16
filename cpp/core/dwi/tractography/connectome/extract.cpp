@@ -63,7 +63,7 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
                                  const std::vector<node_t> &nodes,
                                  const bool exclusive,
                                  const node_t first_node,
-                                 const std::vector<Eigen::Vector3f> &COMs)
+                                 const std::vector<Eigen::Vector3d> &COMs)
     : step_size(properties.get_stepsize()) {
   if (!std::isfinite(step_size))
     step_size = 1.0f;
@@ -83,7 +83,10 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
       for (size_t j = i; j != nodes.size(); ++j) {
         const node_t two = nodes[j];
         selectors.push_back(Selector(one, two));
-        exemplars.push_back(Exemplar(index++, length, std::make_pair(one, two), std::make_pair(COMs[one], COMs[two])));
+        exemplars.push_back(Exemplar(index++,
+                                     length,
+                                     std::make_pair(one, two),
+                                     std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
       }
     }
   } else {
@@ -94,8 +97,10 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
         if (std::find(nodes.begin(), nodes.end(), one) != nodes.end() ||
             std::find(nodes.begin(), nodes.end(), two) != nodes.end()) {
           selectors.push_back(Selector(one, two));
-          exemplars.push_back(
-              Exemplar(index++, length, std::make_pair(one, two), std::make_pair(COMs[one], COMs[two])));
+          exemplars.push_back(Exemplar(index++,
+                                       length,
+                                       std::make_pair(one, two),
+                                       std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
         }
       }
     }
@@ -127,10 +132,7 @@ void WriterExemplars::finalize() {
   }
 }
 
-void WriterExemplars::write(const node_t one,
-                            const node_t two,
-                            const std::string &path,
-                            const std::string &weights_path) {
+void WriterExemplars::write(const node_t one, const node_t two, std::string_view path, std::string_view weights_path) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::WriterUnbuffered<float> writer(path, properties);
@@ -149,7 +151,7 @@ void WriterExemplars::write(const node_t one,
   }
 }
 
-void WriterExemplars::write(const node_t node, const std::string &path, const std::string &weights_path) {
+void WriterExemplars::write(const node_t node, std::string_view path, std::string_view weights_path) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
@@ -168,7 +170,7 @@ void WriterExemplars::write(const node_t node, const std::string &path, const st
   }
 }
 
-void WriterExemplars::write(const std::string &path, const std::string &weights_path) {
+void WriterExemplars::write(std::string_view path, std::string_view weights_path) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
@@ -187,7 +189,7 @@ WriterExtraction::WriterExtraction(const Tractography::Properties &p,
                                    const bool keep_self)
     : properties(p), node_list(nodes), exclusive(exclusive), keep_self(keep_self) {}
 
-void WriterExtraction::add(const node_t node, const std::string &path, const std::string weights_path = "") {
+void WriterExtraction::add(const node_t node, std::string_view path, const std::string weights_path = "") {
   selectors.emplace_back(Selector(node, keep_self));
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
   if (!weights_path.empty())
@@ -196,7 +198,7 @@ void WriterExtraction::add(const node_t node, const std::string &path, const std
 
 void WriterExtraction::add(const node_t node_one,
                            const node_t node_two,
-                           const std::string &path,
+                           std::string_view path,
                            const std::string weights_path = "") {
   if (keep_self || (node_one != node_two)) {
     selectors.emplace_back(Selector(node_one, node_two));
@@ -207,7 +209,7 @@ void WriterExtraction::add(const node_t node_one,
 }
 
 void WriterExtraction::add(const std::vector<node_t> &list,
-                           const std::string &path,
+                           std::string_view path,
                            const std::string weights_path = "") {
   selectors.emplace_back(Selector(list, exclusive, keep_self));
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));

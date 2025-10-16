@@ -29,7 +29,7 @@ namespace MR::File::PNG {
 
 class Reader {
 public:
-  Reader(const std::string &filename);
+  Reader(std::string_view filename);
   ~Reader();
 
   uint32_t get_width() const { return width; }
@@ -59,7 +59,7 @@ private:
 
 class Writer {
 public:
-  Writer(const Header &, const std::string &);
+  Writer(const Header &, std::string_view);
   ~Writer();
 
   size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
@@ -89,7 +89,7 @@ void Writer::fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, c
   std::function<void(default_type, void *, size_t, default_type, default_type)> store_func;
   __set_fetch_store_scale_functions<default_type>(fetch_func, store_func, data_type);
   for (size_t i = 0; i != num_elements; ++i) {
-    Raw::store_BE<T>(std::min(default_type(std::numeric_limits<T>::max()),                              //
+    Raw::store_BE<T>(std::min(static_cast<default_type>(std::numeric_limits<T>::max()),                 //
                               std::max(0.0, std::round(multiplier * fetch_func(in_ptr, i, 0.0, 1.0)))), //
                      out_ptr,                                                                           //
                      i);                                                                                //
