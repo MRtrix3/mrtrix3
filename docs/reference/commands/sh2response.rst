@@ -24,7 +24,7 @@ Description
 -----------
 
 The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.7/concepts/spherical_harmonics.html
+https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 
 Options
 -------
