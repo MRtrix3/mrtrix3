@@ -58,7 +58,7 @@ Include: apt
     ln -s /usr/bin/python3 /usr/bin/python
 
 # MRtrix3 setup
-    git clone -b master --depth 1 https://github.com/MRtrix3/mrtrix3.git /opt/mrtrix3
+    git clone -b 3.0.8 --depth 1 https://github.com/MRtrix3/mrtrix3.git /opt/mrtrix3
     cd /opt/mrtrix3 && ./configure && ./build -persistent -nopaginate && rm -rf testing/ tmp/ && cd ../../
 
 # apt cleanup to recover as much space as possible
