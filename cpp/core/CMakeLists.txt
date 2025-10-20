@@ -110,7 +110,6 @@ target_link_libraries(mrtrix-core PUBLIC
     Threads::Threads
     nlohmann_json::nlohmann_json
     nifti::nifti
-    half::half
 )
 
 # On Windows, the libraries need to be in the same directory as the executables

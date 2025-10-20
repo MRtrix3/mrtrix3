@@ -40,32 +40,6 @@ else()
 endif()
 
 
-# Half-precision floating-point library
-if(MRTRIX_USE_SYSTEM_HALF)
-    find_path(HALF_INCLUDE_DIR 
-        NAMES half.hpp half.h
-        PATHS ${HALF_DIR} /usr/include /usr/local/include
-    )
-    if(NOT HALF_INCLUDE_DIR)
-        message(FATAL_ERROR "Could not find Half library. Please set HALF_DIR to the installation prefix.") 
-    endif()
-else()
-    set(half_url "https://sourceforge.net/projects/half/files/half/2.1.0/half-2.1.0.zip/download")
-    FetchContent_Declare(
-        half
-        DOWNLOAD_EXTRACT_TIMESTAMP ON
-        URL ${half_url}
-    )
-    FetchContent_MakeAvailable(half)
-    set(HALF_INCLUDE_DIR "${half_SOURCE_DIR}/include")
-endif()
-
-
-add_library(half INTERFACE)
-add_library(half::half ALIAS half)
-target_include_directories(half INTERFACE "${HALF_INCLUDE_DIR}")
-
-
 # Nifti headers
 if(MRTRIX_USE_SYSTEM_NIFTI)
     find_path(NIFTI1_INCLUDE_DIR 
