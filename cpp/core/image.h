@@ -341,7 +341,7 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
 }
 
 template <typename ValueType> Image<ValueType>::~Image() {
-  if (buffer.unique()) {
+  if (buffer.use_count() == 1) {
     // was image preloaded and read/write? If so,need to write back:
     if (buffer->get_io()) {
       if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
@@ -360,7 +360,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
   if (!buffer->get_io())
     throw Exception("FIXME: don't invoke 'with_direct_io()' on non-validated images!");
-  if (!buffer.unique())
+  if (buffer.use_count() != 1)
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
   bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
