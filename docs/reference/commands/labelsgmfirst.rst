@@ -27,6 +27,8 @@ Options
 
 - **-sgm_amyg_hipp** Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST
 
+- **-first_dir /path/to/first/dir** use pre-calculated output of FSL FIRST previously run on T1-weighted image; must be defined in the same space as input FreeSurfer parcellation
+
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
