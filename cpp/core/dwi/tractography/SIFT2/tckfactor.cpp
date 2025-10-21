@@ -345,7 +345,7 @@ void TckFactor::report_entropy() const {
        str(equiv_N) + " equally-weighted streamlines");
 }
 
-void TckFactor::output_factors(const std::string &path) const {
+void TckFactor::output_factors(const std::string &path, const units_t units) const {
   if (size_t(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
   decltype(coefficients) weights;
@@ -355,9 +355,24 @@ void TckFactor::output_factors(const std::string &path) const {
     WARN("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
     return;
   }
+  default_type units_multiplier = 0.0;
+  switch (units) {
+  case units_t::NOS:
+    units_multiplier = 1.0;
+    break;
+  case units_t::AFDpermm:
+    units_multiplier = mu();
+    break;
+  case units_t::mm2:
+    units_multiplier = mu() * header().spacing(0) * header().spacing(1) * header().spacing(2);
+    break;
+  }
   for (SIFT::track_t i = 0; i != num_tracks(); ++i)
     weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ? 0.0 : std::exp(coefficients[i]);
-  File::Matrix::save_vector(weights, path);
+  KeyValues keyval;
+  keyval["SIFT_mu"] = str(mu());
+  keyval["Units"] = units2str(units);
+  File::Matrix::save_vector(units_multiplier * weights, path, keyval);
 }
 
 void TckFactor::output_coefficients(const std::string &path) const { File::Matrix::save_vector(coefficients, path); }

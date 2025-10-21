@@ -18,6 +18,7 @@
 
 #include "dwi/tractography/SIFT/types.h"
 #include "progressbar.h"
+#include "thread_queue.h"
 
 namespace MR::DWI::Tractography::SIFT {
 

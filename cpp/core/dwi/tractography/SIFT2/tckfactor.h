@@ -29,6 +29,7 @@
 #include "dwi/tractography/SIFT/output.h"
 
 #include "dwi/tractography/SIFT2/fixel.h"
+#include "dwi/tractography/SIFT2/units.h"
 
 namespace MR::DWI::Tractography::SIFT2 {
 
@@ -86,7 +87,7 @@ public:
 
   void report_entropy() const;
 
-  void output_factors(const std::string &) const;
+  void output_factors(const std::string &, const units_t) const;
   void output_coefficients(const std::string &) const;
 
   void output_TD_images(const std::string &, const std::string &, const std::string &) const;

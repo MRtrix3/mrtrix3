@@ -19,6 +19,7 @@
 #include "header.h"
 #include "image.h"
 
+#include "file/config.h"
 #include "file/path.h"
 
 #include "dwi/directions/set.h"
@@ -29,6 +30,7 @@
 #include "dwi/tractography/SIFT/sift.h"
 
 #include "dwi/tractography/SIFT2/tckfactor.h"
+#include "dwi/tractography/SIFT2/units.h"
 
 using namespace MR;
 using namespace App;
@@ -110,17 +112,75 @@ void usage() {
   SYNOPSIS = "Optimise per-streamline cross-section multipliers"
              " to match a whole-brain tractogram to fixel-wise fibre densities";
 
+  DESCRIPTION
+    + "Interpretation of not just the relative magnitudes of the output weights of different streamlines,"
+      " but their ABSOLUTE magnitude,"
+      " depends on the presence or absence of any modulations applied to those values;"
+      " by the tcksift2 command itself,"
+      " and/or other experimental factors applied,"
+      " whether implicit or explicit."
+      " This has been termed \"inter-subject connection density normalisation\"."
+      " Within the scope of the tcksift2 command,"
+      " some control of this normalisation is available by specifying the units of those output weights."
+      " The options available for these units,"
+      " and their corresponding interpretations,"
+      " are described in further detail in the following paragraphs."
+
+    + "- \"NOS\" (Number Of Streamlines) / \"none\":"
+      " No explicit scaling of the output streamline weights is performed."
+      " A key component of the SIFT model as originally devised"
+      " was to scale the contributions of all streamlines by proportionality coefficient mu,"
+      " to facilitate direct comparison of tractogram and fixel-wise fibre densities."
+      " This is therefore the \"native\" form in which these streamline weights are computed."
+      " In the contex of output of the SIFT2 method,"
+      " this makes the per-streamline weights approximately centred around unity,"
+      " such that the overall magnitude of inter-areal connection weights"
+      " will be comparable to that of the number-of-streamlines metric."
+      " This was the behaviour of the tcksift2 command prior to software version 3.1.0."
+
+    + "- \"AFD/mm\" / \"AFD.mm-1\", \"AFD.mm^-1\":"
+      " The streamline weights in their native representation"
+      " are multiplied by SIFT model proportionality coefficient mu"
+      " as they are exported to file."
+      " These values encode the AFD per millimetre of length"
+      " that is contributed to the model by that streamline."
+      " Only under specific circumstances"
+      " does utilising these units permit direct comparison of Fibre Bundle Capacity (FBC)"
+      " between reconstructions:"
+      " a) Use of common response function(s);"
+      " b) Having used some mechanism for global intensity normalisation"
+      " (as required for any analysis of AFD);"
+      " c) All DWI data have the same spatial resolution."
+
+    + "- \"mm2\" / \"mm^2\":"
+      " The streamline weights in their native representation"
+      " are multiplied both by SIFT model proportionality coefficient mu"
+      " and by the voxel volume in mm^3 as they are exported to file."
+      " These units interpret the fixel-wise AFD values as volume fractions"
+      " (despite the fact that these values do not have an upper bound of 1.0),"
+      " such that the streamline weights may be interpreted"
+      " as a physical fibre cross-sectional area in units of mm^2;"
+      " each streamline therefore contributes some fibre volume per unit length."
+      " Only under specific circumstances"
+      " does utilising these units permit direct comparison of Fibre Bundle Capacity (FBC)"
+      " between reconstructions:"
+      " a) Use of common response function(s);"
+      " b) Having used some mechanism for global intensity normalisation"
+      " (as required for any analysis of AFD)."
+      " Unlike the AFD/mm units however,"
+      " streamline weights exported in these units are invariant"
+      " to the resolution of the FOD voxel grid used in the SIFT2 optimisation.";
+
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity"
     " using streamlines tractography. "
     "NeuroImage, 2015, 119, 338-351"
 
-    + "* If using the -linear option: \n"
-    "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
+    + "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
     "Quantitative Streamlines Tractography:"
     " Methods and Inter-Subject Normalisation. "
-    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    "OHBM Aperture, doi: 10.52294/ApertureNeuro.2022.2.NEOD9565.";
 
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()
@@ -128,6 +188,8 @@ void usage() {
   + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_file_out();
 
   OPTIONS
+  + Option ("units", "specify the physical units for the output streamline weights (see Description)")
+     + Argument ("choice").type_choice(SIFT2::units_choices)
 
   + SIFT::SIFTModelProcMaskOption
   + SIFT::SIFTModelOption
@@ -142,6 +204,29 @@ void usage() {
 }
 // clang-format on
 
+// CONF option: SIFT2DefaultUnits
+// CONF default: "mm^2"
+// CONF A string indicating the units of the streamline weights
+// CONF yielded by the tcksift2 command.
+SIFT2::units_t get_units() {
+  auto opt = get_options("units");
+  if (!opt.empty()) {
+    try {
+      return SIFT2::str2units(opt[0][0]);
+    } catch (Exception &e) {
+      throw Exception("Incorrectly specified SIFT2 units on command-line");
+    }
+  }
+  const std::string from_config = File::Config::get("SIFT2DefaultUnits");
+  if (from_config.empty())
+    return SIFT2::default_units;
+  try {
+    return SIFT2::str2units(from_config);
+  } catch (Exception &e) {
+    throw Exception(e, "Incorrectly specified SIFT2 units in MRtrix config file");
+  }
+}
+
 void run() {
 
   if (!get_options("min_factor").empty() && !get_options("min_coeff").empty())
@@ -151,6 +236,8 @@ void run() {
 
   if (Path::has_suffix(argument[2], ".tck"))
     throw Exception("Output of tcksift2 command should be a text file, not a tracks file");
+
+  const SIFT2::units_t units = get_units();
 
   auto in_dwi = Image<float>::open(argument[1]);
 
@@ -222,7 +309,7 @@ void run() {
 
   tckfactor.report_entropy();
 
-  tckfactor.output_factors(argument[2]);
+  tckfactor.output_factors(argument[2], units);
 
   auto opt = get_options("out_coeffs");
   if (!opt.empty())
@@ -233,6 +320,8 @@ void run() {
 
   opt = get_options("out_mu");
   if (!opt.empty()) {
+    CONSOLE("Note that while \"-out_mu\" option remains available, "
+            "value of proportionality coefficient is also available in output file header comments");
     File::OFStream out_mu(opt[0][0]);
     out_mu << tckfactor.mu();
   }
