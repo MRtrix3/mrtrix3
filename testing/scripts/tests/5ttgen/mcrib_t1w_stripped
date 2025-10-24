@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify "5ttgen mcrib" operation with:
+# - A *T1-weighted* input image
+# - The M-CRIB template data having had all leading components *stripped*;
+#   that is, all files reside in a single sub-directory
+# The output cannot be compared to that generated using a prior software version,
+#   as there seems to be some stochasticity in the outcomes of ANTs commands invoked
+5ttgen mcrib 5ttgen/mcrib/in/T1w.mif t1w \
+    -mask 5ttgen/mcrib/in/mask.mif \
+    -mcrib 5ttgen/mcrib/MCRIB \
+    tmp.mif -force
+
+#testing_diff_header tmp.mif 5ttgen/mcrib/out/T1w.mif
