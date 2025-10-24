@@ -498,7 +498,8 @@ public:
   FORCE_INLINE operator value_type() const { return get(); }
   FORCE_INLINE value_type operator=(value_type value) { return set(value); }
   template <typename OtherImageType> FORCE_INLINE value_type operator=(Value<OtherImageType> &&V) {
-    return set(static_cast<value_type>(static_cast<typename OtherImageType::value_type>(V)));
+    const auto rhs = V.operator typename OtherImageType::value_type();
+    return set(static_cast<value_type>(rhs));
   }
   FORCE_INLINE value_type operator+=(value_type value) { return set(get() + value); }
   FORCE_INLINE value_type operator-=(value_type value) { return set(get() - value); }
