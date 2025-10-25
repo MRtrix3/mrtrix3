@@ -110,7 +110,7 @@ bool check_datatype(void *address, const File::NPY::ReadInfo &info) {
   if (type == DataType::UInt16)
     return check_major<uint16_t>(address, info);
   if (type == DataType::Float16)
-    return check_major<half_float::half>(address, info);
+    return check_major<Eigen::half>(address, info);
   if (type == DataType::Int32)
     return check_major<int32_t>(address, info);
   if (type == DataType::UInt32)

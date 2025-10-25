@@ -28,7 +28,6 @@ option(MRTRIX_USE_LLD "Use lld as the linker" OFF)
 
 option(MRTRIX_USE_SYSTEM_EIGEN "Use system-installed Eigen3 library" OFF)
 option(MRTRIX_USE_SYSTEM_JSON "Use system-installed Json for Modern C++ library" OFF)
-option(MRTRIX_USE_SYSTEM_HALF "Use system-installed Half library" OFF)
 option(MRTRIX_USE_SYSTEM_NIFTI "Use system-installed NIfTI C headers" OFF)
 option(MRTRIX_USE_SYSTEM_GTEST "Use system-installed Google Test library" OFF)
 
