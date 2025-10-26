@@ -734,13 +734,31 @@ Usage
 Description
 -----------
 
-This command creates the 5TT file for human neonatal subjects. The M-CRIB atlas is used to idenity the different tissues. The atlas data can be obtained from: https://osf.io/2yx8u/
+The M-CRIB atlas is required for this command, as its segmentations are used to project tissue segmentation information to the input image. These data can be downloaded from: https://osf.io/2yx8u/. The command can be informed of the location of these data in one of two ways: either explicit use of the -mcrib_path option, or through setting the value of MCRIBPath in an MRtrix config file.
+
+It is a necessary component in the production of a 5TT image that a brain mask be determined in some manner. In this algorithm, there are multiple possible mechanisms by which such a mask may arise. Use of the -mask option allows the user to provide as input a pre-calculated mask. Use of the -premasked option indicates that the input image has already been zero-filled outside of the brain. In the absence of either of these options, the command will perform an internal brain mask computation. If the -mask_hdbet option is specified, then the HD-BET method will be used for this purpose; otherwise, the ANTs brain extraction script will be used.
 
 Options
 -------
 
-Options specific to the 'mcrib' algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options that affect the output of the 'mcrib' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-white_stem** Classify the brainstem as white matter; streamlines will not be permitted to terminate within this region
+
+- **-parcellation image** Additionally export the M-CRIB parcellation warped to the subject data
+
+- **-hard_segmentation** Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT (not recommended)
+
+Options that affect the internal execution of ANTs within the 'mcrib' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-ants_quick** Specify the use of "quick" registration parameters in ANTs: results are a little bit less accurate, but much faster
+
+- **-ants_parallel value** Control for parallel computation for antsJointLabelFusion (default 0): 0 == run serially; 1 == SGE qsub; 2 == use PEXEC (localhost); 3 == Apple XGrid; 4 == PBS qsub; 5 == SLURM.
+
+Options relating to masking for the 'mcrib' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask image** Manually provide a brain mask, rather than having the script generate one automatically
 
@@ -748,17 +766,10 @@ Options specific to the 'mcrib' algorithm
 
 - **-mask_hdbet** Use HD-BET to compute the required brain mask from the input image
 
-- **-white_stem** Classify the brainstem as white matter; streamlines will not be permitted to terminate within this region
+Option for providing template data to the 'mcrib' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mcrib_path directory** Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")
-
-- **-parcellation image** Additionally export the M-CRIB parcellation warped to the subject data
-
-- **-quick** Specify the use of "quick" registration parameters: results are a little bit less accurate, but much faster
-
-- **-hard_segmentation** Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT (not recommended)
-
-- **-ants_parallel value** Control for parallel computation for antsJointLabelFusion (default 0): 0 == run serially; 1 == SGE qsub; 2 == use PEXEC (localhost); 3 == Apple XGrid; 4 == PBS qsub; 5 == SLURM.
+- **-mcrib_path directory** Provide the path of the M-CRIB atlas
 
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
