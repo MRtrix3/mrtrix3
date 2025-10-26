@@ -734,7 +734,7 @@ Usage
 Description
 -----------
 
-This command creates the 5TT file for human neonatal subjects. The M-CRIB atlas is used to idenity the different tissues.
+This command creates the 5TT file for human neonatal subjects. The M-CRIB atlas is used to idenity the different tissues. The atlas data can be obtained from: https://osf.io/2yx8u/
 
 Options
 -------
@@ -742,15 +742,21 @@ Options
 Options specific to the 'mcrib' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Manually provide a brain mask; MANDATORY
+- **-mask image** Manually provide a brain mask, rather than having the script generate one automatically
+
+- **-premasked** Indicate that brain masking has already been applied to the input image
+
+- **-mask_hdbet** Use HD-BET to compute the required brain mask from the input image
+
+- **-white_stem** Classify the brainstem as white matter; streamlines will not be permitted to terminate within this region
 
 - **-mcrib_path directory** Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")
 
 - **-parcellation image** Additionally export the M-CRIB parcellation warped to the subject data
 
-- **-quick** Specify the use of quick registration parameters
+- **-quick** Specify the use of "quick" registration parameters: results are a little bit less accurate, but much faster
 
-- **-hard_segmentation** Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT (NOTE: use of this option in this segmentation algorithm is not recommended)
+- **-hard_segmentation** Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT (not recommended)
 
 - **-ants_parallel value** Control for parallel computation for antsJointLabelFusion (default 0): 0 == run serially; 1 == SGE qsub; 2 == use PEXEC (localhost); 3 == Apple XGrid; 4 == PBS qsub; 5 == SLURM.
 
@@ -802,13 +808,17 @@ References
 
 * Alexander, B.; Murray, A.L.; Loh, W.Y.; Matthews, L.G.; Adamson, C.; Beare, R.; Chen, J.; Kelly, C.E.; Rees, S.; Warfield, S.K.; Anderson, P.J.; Doyle, L.W.; Spittle, A.J.; Cheong, J.L.Y; Seal, M.L. & Thompson, D.K. A new neonatal cortical and subcortical brain atlas: the Melbourne Children's Regional Infant Brain (m-crib) atlas. NeuroImage, 2017, 852, 147-841.
 
+* If -mask_hdbet option is used: Isensee, F.; Schell, M.; Tursunova, I.; Brugnara, G.; Bonekamp, D.; Neuberger, U.; Wick, A.; Schlemmer, H.P.; Heiland, S.; Wick, W.; Bendszus, M.; Maier-Hein, K.H.; Kickingereder, P. Automated brain extraction of multi-sequence MRI using artificial neural networks. Hum Brain Mapp. 2019; 2019; 40: 4952-4964.
+
+* If -premasked or -mask or -mask_hdbet options are not provided: Avants, B.; Tustison, N.J.; Wu, J.; Cook, P.A. & Gee, J.C. An open source multivariate framework for n-tissue segmentation with evaluation on public data. Neuroinformatics, 2011, 9(4), 381-400
+
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 
 
 
-**Author:** Manuel Blesa (manuel.blesa@ed.ac.uk) and Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Manuel Blesa (manuel.blesa@ed.ac.uk) and Paola Galdi (paola.galdi@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 

@@ -20,7 +20,8 @@ from mrtrix3 import app, image, run, utils
 # Labels 1004 and 2004 are not present in the M-CRIB atlas
 MCRIB_CGM = list(range(1000, 1004)) + list(range(1005,1036)) + list(range(2000, 2004)) + list(range(2005,2036))
 MCRIB_SGM = [9, 11, 12, 13, 26, 48, 50, 51, 52, 58]
-MCRIB_WM = [2, 41, 75, 76, 90, 170, 192]
+MCRIB_WM = [2, 41, 75, 76, 90, 192]
+MCRIB_BS = [170]
 MCRIB_CSF = [4, 14, 15, 24, 43]
 MCRIB_AMYG_HIPP = [17, 18, 53, 54]
 MCRIB_CEREBELLAR = [91, 93]
@@ -35,12 +36,14 @@ MCRIB_SUBDIRS = [
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('mcrib', parents=[base_parser])
   parser.set_author('Manuel Blesa (manuel.blesa@ed.ac.uk)'
-                    ' and Paola Galdi (paola.galdi@ed.ac.uk)'
+                    ' and Paola Galdi (paola.galdi@gmail.com)'
                     ' and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use ANTs commands and the M-CRIB atlas to generate the 5TT image of a neonatal subject'
                       ' based on a T1-weighted or T2-weighted image')
   parser.add_description('This command creates the 5TT file for human neonatal subjects.'
-                         ' The M-CRIB atlas is used to idenity the different tissues.')
+                         ' The M-CRIB atlas is used to idenity the different tissues.'
+                         ' The atlas data can be obtained from:'
+                         ' https://osf.io/2yx8u/')
   parser.add_citation('Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P.'
                       ' Hierarchical complexity of the macro-scale neonatal brain.'
                       ' Cerebral Cortex, 2021, 4, 2071-2084',
@@ -59,6 +62,16 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       ' the Melbourne Children\'s Regional Infant Brain (m-crib) atlas.'
                       ' NeuroImage, 2017, 852, 147-841.',
                       is_external=True)
+  parser.add_citation('Isensee, F.; Schell, M.; Tursunova, I.; Brugnara, G.; Bonekamp, D.; Neuberger, U.; Wick, A.; Schlemmer, H.P.; Heiland, S.; Wick, W.; Bendszus, M.; Maier-Hein, K.H.; Kickingereder, P.'
+                      ' Automated brain extraction of multi-sequence MRI using artificial neural networks.'
+                      ' Hum Brain Mapp. 2019; 2019; 40: 4952-4964.',
+                      is_external=True,
+                      condition='If -mask_hdbet option is used')
+  parser.add_citation('Avants, B.; Tustison, N.J.; Wu, J.; Cook, P.A. & Gee, J.C.'
+                      ' An open source multivariate framework for n-tissue segmentation with evaluation on public data.'
+                      ' Neuroinformatics, 2011, 9(4), 381-400',
+                      is_external=True,
+                      condition='If -premasked or -mask or -mask_hdbet options are not provided')
   parser.add_argument('input',
                       type=app.Parser.ImageIn(),
                       help='The input structural image')
@@ -71,8 +84,19 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the \'mcrib\' algorithm')
   options.add_argument('-mask',
                        type=app.Parser.ImageIn(),
-                       help='Manually provide a brain mask; MANDATORY',
-                       required=True)
+                       help='Manually provide a brain mask,'
+                            ' rather than having the script generate one automatically')
+  options.add_argument('-premasked',
+                       action='store_true',
+                       help='Indicate that brain masking has already been applied to the input image')
+  options.add_argument('-mask_hdbet',
+                       action='store_true',
+                       help='Use HD-BET to compute the required brain mask from the input image')
+  parser.flag_mutually_exclusive_options( [ 'mask', 'premasked', 'mask_hdbet' ] )
+  options.add_argument('-white_stem',
+                       action='store_true',
+                       help='Classify the brainstem as white matter;'
+                            ' streamlines will not be permitted to terminate within this region')
   options.add_argument('-mcrib_path',
                        type=app.Parser.DirectoryIn(),
                        help='Provide the path of the M-CRIB atlas'
@@ -82,11 +106,12 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                        help='Additionally export the M-CRIB parcellation warped to the subject data')
   options.add_argument('-quick',
                        action='store_true',
-                       help='Specify the use of quick registration parameters')
+                       help='Specify the use of "quick" registration parameters:'
+                            ' results are a little bit less accurate, but much faster')
   options.add_argument('-hard_segmentation',
                        action='store_true',
                        help='Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT'
-                            ' (NOTE: use of this option in this segmentation algorithm is not recommended)')
+                            ' (not recommended)')
   options.add_argument('-ants_parallel',
                        type=app.Parser.Int(0, 5),
                        default=0,
@@ -121,6 +146,15 @@ def execute(): #pylint: disable=unused-variable
   if not shutil.which('antsJointLabelFusion.sh'):
     raise MRtrixError('Could not find ANTS script antsJointLabelFusion.sh;'
                       ' please check installation')
+  if not app.ARGS.mask and not app.ARGS.premasked:
+    if app.ARGS.mask_hdbet:
+      if not shutil.which('hd-bet'):
+        raise MRtrixError('Brain masking using HD-BET requested,'
+                          ' but command hd-bet not found;'
+                          ' check installation')
+    elif not shutil.which('antsBrainExtraction.sh'):
+      raise MRtrixError('Could not find ANTS script antsBrainExtraction.sh;'
+                        ' check installation')
 
   if app.ARGS.mcrib_path:
     mcrib_dir = app.ARGS.mcrib_path
@@ -131,14 +165,13 @@ def execute(): #pylint: disable=unused-variable
                       ' either in the config file ("MCRIBPath")'
                       ' or with the command-line option -mcrib_path')
 
+  image.check_3d_nonunity(app.ARGS.input)
+  run.command(f'mrconvert {app.ARGS.input} input_raw.mif')
+
   # Interrogate the MCRIB input directory;
   #   determine whether the files are stored preserving the original filesystem structure,
   #   or whether all files have been collapsed into a single directory
   mcrib_has_subdir_structure = all((mcrib_dir / item).is_dir() for item in MCRIB_SUBDIRS)
-
-  image.check_3d_nonunity(app.ARGS.input)
-  run.command(f'mrconvert {app.ARGS.input} input_raw.mif')
-  run.command(f'mrconvert {app.ARGS.mask} mask.mif -datatype bit -strides -1,+2,+3')
 
   modality_subdir = (mcrib_dir / \
                      f'M-CRIB {"T1" if app.ARGS.modality == "t1w" else "T2"}-weighted images' / \
@@ -185,13 +218,44 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Found required M-CRIB image data'
              f' for only {len(mcrib_image_pairs)} of expected {MCRIB_SUBJECTS} subjects')
 
-  run.command('mrcalc input_raw.mif mask.mif -mul input.mif')
-  run.command('mrconvert input.mif input.nii')
-  run.command('mrconvert mask.mif mask.nii -datatype bit')
+  # Decide whether or not we're going to do any brain masking
+  mask_image = pathlib.Path('mask.mif')
+  if app.ARGS.mask:
+    run.command(f'mrconvert {app.ARGS.mask} {mask_image} -datatype bit')
+    # Check to see if the mask matches the input image
+    if not image.match('input_raw.mif', mask_image):
+      app.warn('Mask image does not match input image; re-gridding')
+      new_mask_image = pathlib.Path('mask_regrid.mif')
+      run.command(f'mrgrid {mask_image} regrid -template input_raw.mif - | '
+                  f'mrthreshold - -abs 0.5 {new_mask_image} -datatype bit')
+      app.cleanup(mask_image)
+      mask_image = new_mask_image
+  elif app.ARGS.premasked:
+    run.command(f'mrthreshold input_raw.mif {mask_image} -abs 0.0 -comparison gt')
+  elif app.ARGS.mask_hdbet:
+    run.command('mrconvert input_raw.mif input_raw.nii -strides +1,+2,+3')
+    run.command('hd-bet -i input_raw.nii -o hdbet_output.nii.gz --save_bet_mask --no_bet_image')
+    run.command(f'mrconvert hdbet_output_bet.nii.gz {mask_image} -datatype bit')
+  else:
+    # Use antsBrainExtraction.sh script to generate a brain mask
+    #   based on the parcellation of the first template participant
+    run.command('mrconvert input_raw.mif input_raw.nii -strides +1,+2,+3')
+    run.command(f'mrthreshold {mcrib_image_pairs[0].parc} mask_template.nii -abs 0.5')
+    run.command('antsBrainExtraction.sh'
+                ' -d 3'
+                ' -a input_raw.nii'
+                f' -e f{mcrib_image_pairs[0].image}'
+                ' -m mask_template.nii'
+                ' -o ants_mask_output')
+    run.command(f'mrconvert ants_mask_outputBrainExtractionMask.nii.gz {mask_image} -datatype bit')
+  # Finish branching based on brain masking
+
+  run.command(f'mrcalc input_raw.mif {mask_image} -mult input.nii -strides +1,+2,+3')
 
   ants_options = ['-q', str(1 if app.ARGS.quick else 0),
                   '-c', str(app.ARGS.ants_parallel),
-                  '-k', '1']
+                  '-k', '1',
+                  '-x', 'none']
   if app.ARGS.ants_parallel == 2:
     ants_options.extend(['-j', str(2 if app.ARGS.nthreads is None else app.ARGS.nthreads)])
   app.debug(f'ANTs command-line options for JointLabelFusion: "{" ".join(ants_options)}"')
@@ -212,16 +276,14 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup(mcrib_image_pair.image)
       app.cleanup(mcrib_image_pair.parc)
 
-  run.command('antsJointFusion -d 3 -t input.nii --verbose 1 '
-              + ' '.join(f'-g {item.warped_image()} -l {item.warped_parc()}' for item in mcrib_image_pairs)
-              + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
-
   for tissue, indices in { 'cGM': MCRIB_CGM + ([] if app.ARGS.sgm_amyg_hipp else MCRIB_AMYG_HIPP),
                            'sGM': MCRIB_SGM + MCRIB_CEREBELLAR + (MCRIB_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
-                           'WM' : MCRIB_WM,
-                           'CSF': MCRIB_CSF }.items():
-
-    if app.ARGS.hard_segmentation:
+                           'WM' : MCRIB_WM + (MCRIB_BS if app.ARGS.white_stem else []),
+                           'CSF': MCRIB_CSF,
+                           'path': ([] if app.ARGS.white_stem else MCRIB_BS) }.items():
+    if not indices:
+      run.command(f'mrcalc {mask_image} 0 -mult {tissue}.mif')
+    elif app.ARGS.hard_segmentation:
       run.command('mrcalc '
                   + ' '.join(f'input_parcellation_Labels.nii.gz {i} -eq' for i in indices)
                   + ' '
@@ -234,16 +296,15 @@ def execute(): #pylint: disable=unused-variable
                    f'{tissue}.mif'])
 
 
-  #Force normalization
-  run.command('mrmath WM.mif cGM.mif sGM.mif CSF.mif sum tissue_sum.mif')
-  run.command('mrcalc mask.nii cGM.mif tissue_sum.mif -divide 0 -if cgm_norm.mif')
-  run.command('mrcalc mask.nii sGM.mif tissue_sum.mif -divide 0 -if sgm_norm.mif')
-  run.command('mrcalc mask.nii WM.mif tissue_sum.mif -divide 0 -if wm_norm.mif')
-  run.command('mrcalc mask.nii CSF.mif tissue_sum.mif -divide 0 -if csf_norm.mif')
+  # Force normalization
+  run.command('mrmath WM.mif cGM.mif sGM.mif CSF.mif path.mif sum tissue_sum.mif')
+  run.command(f'mrcalc {mask_image} cGM.mif tissue_sum.mif -divide 0 -if cgm_norm.mif')
+  run.command(f'mrcalc {mask_image} sGM.mif tissue_sum.mif -divide 0 -if sgm_norm.mif')
+  run.command(f'mrcalc {mask_image} WM.mif tissue_sum.mif -divide 0 -if wm_norm.mif')
+  run.command(f'mrcalc {mask_image} CSF.mif tissue_sum.mif -divide 0 -if csf_norm.mif')
+  run.command(f'mrcalc {mask_image} path.mif tissue_sum.mif -divide 0 -if path_norm.mif')
 
-  run.command('mrcalc csf_norm.mif 0 -mul path.mif')
-
-  run.command('mrcat cgm_norm.mif sgm_norm.mif wm_norm.mif csf_norm.mif path.mif - -axis 3 |'
+  run.command('mrcat cgm_norm.mif sgm_norm.mif wm_norm.mif csf_norm.mif path_norm.mif - -axis 3 |'
               ' mrconvert - combined_precrop.mif -strides +2,+3,+4,+1')
 
   # Crop to reduce file size (improves caching of image data during tracking)
