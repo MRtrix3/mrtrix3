@@ -17,12 +17,12 @@
 #include "platform.h"
 #include <gtest/gtest.h>
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(MRTRIX_LINUX) || defined(MRTRIX_MACOSX) || defined(MRTRIX_FREEBSD)
 #include <sys/unistd.h>
 #include <unistd.h>
 #endif
 
-#if defined(_WIN32)
+#if defined(MRTRIX_WINDOWS)
 #include <algorithm>
 #endif
 
@@ -48,13 +48,13 @@ TEST(ExecutablePathTest, ReturnsExistingAbsolutePath) {
 TEST(ExecutablePathTest, PlatformExecutableCheck) {
   const auto p = get_executable_path();
 
-#if defined(_WIN32)
+#if defined(MRTRIX_WINDOWS)
   ASSERT_TRUE(p.has_extension()) << "Executable should have an extension on Windows: " << p;
   std::string ext = p.extension().string();
   std::transform(
       ext.begin(), ext.end(), ext.begin(), [](auto ch) -> char { return static_cast<char>(std::tolower(ch)); });
   EXPECT_EQ(ext, ".exe") << "Expected .exe extension for test binary on Windows: " << p;
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(MRTRIX_LINUX) || defined(MRTRIX_MACOSX) || defined(MRTRIX_FREEBSD)
   // On POSIX, check that the file is marked executable for current user.
   const char *cpath = p.c_str();
   const int ok = access(cpath, X_OK);

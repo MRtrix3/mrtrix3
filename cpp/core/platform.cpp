@@ -16,11 +16,14 @@
 
 #include "platform.h"
 
-#if defined(_WIN32)
+#ifdef MRTRIX_WINDOWS
 #include <windows.h>
-#elif defined(__APPLE__)
+#elif defined(MRTRIX_MACOSX)
 #include <mach-o/dyld.h>
-#elif defined(__linux__)
+#elif defined(MRTRIX_FREEBSD)
+#include <sys/sysctl.h>
+#include <sys/types.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -31,7 +34,7 @@
 
 namespace MR::Platform {
 std::filesystem::path get_executable_path() {
-#if defined(_WIN32)
+#ifdef MRTRIX_WINDOWS
   std::vector<wchar_t> buffer;
   buffer.resize(MAX_PATH);
   for (;;) {
@@ -48,7 +51,7 @@ std::filesystem::path get_executable_path() {
       throw std::runtime_error("Executable path too long");
     buffer.resize(new_size);
   }
-#elif defined(__APPLE__)
+#elif defined(MRTRIX_MACOSX)
   uint32_t size = 0;
   if (_NSGetExecutablePath(nullptr, &size) != -1)
     throw std::runtime_error("Unexpected success getting buffer size");
@@ -62,7 +65,7 @@ std::filesystem::path get_executable_path() {
     return std::filesystem::weakly_canonical(std::filesystem::path(buffer));
   }
   return std::filesystem::canonical(std::filesystem::path(buffer));
-#elif defined(__linux__)
+#elif defined(MRTRIX_LINUX)
   const std::filesystem::path link("/proc/self/exe");
   try {
     const auto p = std::filesystem::read_symlink(link);
@@ -74,6 +77,24 @@ std::filesystem::path get_executable_path() {
   } catch (const std::filesystem::filesystem_error &e) {
     throw std::system_error(std::error_code(errno, std::system_category()),
                             std::string("read_symlink(\"/proc/self/exe\") failed: ") + e.what());
+  }
+#elif defined(MRTRIX_FREEBSD)
+  // See https://github.com/chromium/chromium/blob/db87c489ae756af10467897d653518f321db2f4d/base/base_paths_posix.cc
+  int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+  size_t size = 0;
+  if (sysctl(mib, 4, nullptr, &size, nullptr, 0) == -1)
+    throw std::system_error(std::error_code(errno, std::system_category()),
+                            "sysctl(KERN_PROC_PATHNAME) failed to get size");
+  std::string buffer;
+  buffer.resize(size);
+  if (sysctl(mib, 4, buffer.data(), &size, nullptr, 0) == -1)
+    throw std::system_error(std::error_code(errno, std::system_category()),
+                            "sysctl(KERN_PROC_PATHNAME) failed to get path");
+  // Ensure we use the null-terminated string
+  try {
+    return std::filesystem::canonical(std::filesystem::path(buffer.c_str()));
+  } catch (const std::filesystem::filesystem_error &) {
+    return std::filesystem::weakly_canonical(std::filesystem::path(buffer.c_str()));
   }
 #else
   static_assert(false, "Unsupported platform");
