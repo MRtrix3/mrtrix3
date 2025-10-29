@@ -42,7 +42,7 @@ void usage() {
   ARGUMENTS
     + Argument ("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in()
     + Argument ("mask", "the mask containing the voxels from which to estimate the response function").type_image_in()
-    + Argument ("directions", "a 4D image containing the direction vectors along which to estimate the response function").type_image_in()
+    + Argument ("fibre_directions", "a 4D image containing the direction vectors along which to estimate the response function").type_image_in()
     + Argument ("response", "the output axially-symmetric spherical harmonic coefficients").type_file_out();
 
   OPTIONS
