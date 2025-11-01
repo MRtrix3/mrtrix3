@@ -44,7 +44,7 @@ public:
   bool get_seed(Eigen::Vector3f &) const override;
 
 private:
-  Rejection init_seeder;
+  Rejection_per_voxel init_seeder;
   const float perturb_max_step;
 
   bool perturb(Eigen::Vector3f &, Interp &) const;
