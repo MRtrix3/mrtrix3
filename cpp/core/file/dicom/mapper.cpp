@@ -28,6 +28,7 @@
 #include "image_io/null.h"
 #include "image_io/variable_scaling.h"
 #include "metadata/phase_encoding.h"
+#include "metadata/slice_encoding.h"
 
 namespace MR::File::Dicom {
 
@@ -247,8 +248,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     else
       H.datatype() = DataType::UInt16 | DataType::LittleEndian;
   } else
-    throw Exception("unexpected number of allocated bits per pixel (" + str(frame.bits_alloc) + ") in file \"" +
-                    H.name() + "\"");
+    throw Exception("unexpected number of allocated bits per pixel (" + str(frame.bits_alloc) + ")" + //
+                    " in file \"" + H.name() + "\"");                                                 //
 
   H.set_intensity_scaling(frame.scale_slope, frame.scale_intercept);
 
@@ -300,19 +301,22 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   }
 
   // Slice timing may come from a few different potential sources
-  std::vector<std::string> slices_timing_str;
-  std::vector<float> slices_timing_float;
+  std::vector<std::string> slices_timing_csamosaic_str;
+  std::vector<float> slices_timing_csamosaic_float;
+  std::vector<float> slices_timing_acqtime;
+  std::vector<float> slices_timing_csatimeafterstart;
   if (image.images_in_mosaic) {
     if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
-      WARN("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) +
-           ") is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
+      WARN("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) + ")" + //
+           " is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + ");" +        //
+           " ignoring");                                                                                 //
     } else {
-      DEBUG("Taking slice timing information from CSA mosaic info");
+      DEBUG("Extracting slice timing information from CSA mosaic info");
       // CSA mosaic defines these in ms; we want them in s
       // We also want to avoid floating-point precision issues resulting from
       //   base-10 scaling
       for (size_t n = 0; n < image.images_in_mosaic; ++n) {
-        slices_timing_float.push_back(0.001 * image.mosaic_slices_timing[n]);
+        slices_timing_csamosaic_float.push_back(0.001 * image.mosaic_slices_timing[n]);
         std::string temp = str(int(10.0 * image.mosaic_slices_timing[n]));
         const bool neg = image.mosaic_slices_timing[n] < 0.0;
         if (neg)
@@ -322,36 +326,147 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
         temp.insert(temp.begin() + temp.size() - 4, '.');
         if (neg)
           temp.insert(temp.begin(), '-');
-        slices_timing_str.push_back(temp);
+        slices_timing_csamosaic_str.push_back(temp);
       }
     }
-  } else if (std::isfinite(frame.time_after_start)) {
-    DEBUG("Taking slice timing information from CSA TimeAfterStart field");
-    default_type min_time_after_start = std::numeric_limits<default_type>::infinity();
-    for (size_t n = 0; n != dim[1]; ++n)
-      min_time_after_start = std::min(min_time_after_start, frames[n]->time_after_start);
-    for (size_t n = 0; n != dim[1]; ++n)
-      slices_timing_float.push_back(frames[n]->time_after_start - min_time_after_start);
-  } else if (std::isfinite(static_cast<default_type>(frame.acquisition_time))) {
-    DEBUG("Estimating slice timing from DICOM AcquisitionTime field");
+  }
+  if (std::isfinite(static_cast<default_type>(frame.acquisition_time))) {
+    DEBUG("Extracting slice timing from DICOM AcquisitionTime field");
     default_type min_acquisition_time = std::numeric_limits<default_type>::infinity();
     for (size_t n = 0; n != dim[1]; ++n)
       min_acquisition_time = std::min(min_acquisition_time, default_type(frames[n]->acquisition_time));
     for (size_t n = 0; n != dim[1]; ++n)
-      slices_timing_float.push_back(default_type(frames[n]->acquisition_time) - min_acquisition_time);
+      slices_timing_acqtime.push_back(default_type(frames[n]->acquisition_time) - min_acquisition_time);
   }
-  if (!slices_timing_float.empty()) {
-    const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
+  if (std::isfinite(frame.time_after_start)) {
+    DEBUG("Extracting slice timing information from CSA TimeAfterStart field");
+    default_type min_time_after_start = std::numeric_limits<default_type>::infinity();
+    for (size_t n = 0; n != dim[1]; ++n)
+      min_time_after_start = std::min(min_time_after_start, frames[n]->time_after_start);
+    for (size_t n = 0; n != dim[1]; ++n)
+      slices_timing_csatimeafterstart.push_back(frames[n]->time_after_start - min_time_after_start);
+  }
+
+  // If there is more than one potential source of slice timing information,
+  //   need to quantitatively compare them;
+  //   if they are different to one another,
+  //   need to issue a warning and state which is taking precedence
+  auto slice_timing_equivalent = [](const std::vector<float> &one, const std::vector<float> &two) {
+    if (two.size() != one.size())
+      return false;
+    if (one.empty())
+      throw Exception("Cannot test equivalence of empty slice timing vectors");
+    for (ssize_t i = 0; i != one.size(); ++i) {
+      if (abs(two[i] - one[i]) > 0.5 * Metadata::SliceEncoding::slice_timing_precision_siemens)
+        return false;
+    }
+    return true;
+  };
+
+  const ssize_t valid_slice_timing_count = (slices_timing_csamosaic_float.empty() ? 0 : 1) +  //
+                                           (slices_timing_acqtime.empty() ? 0 : 1) +          //
+                                           (slices_timing_csatimeafterstart.empty() ? 0 : 1); //
+
+  auto write_slice_timing_info = [&](const std::vector<float> &timing_vector, const std::string timing_string) {
+    const size_t slices_acquired_at_zero = std::count(timing_vector.begin(), timing_vector.end(), 0.0F);
     if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
-      H.keyval()["SliceTiming"] =
-          !slices_timing_str.empty() ? join(slices_timing_str, ",") : join(slices_timing_float, ",");
+      H.keyval()["SliceTiming"] = timing_string;
       H.keyval()["MultibandAccelerationFactor"] = str(slices_acquired_at_zero);
       H.keyval()["SliceEncodingDirection"] = "k";
     } else {
       DEBUG("All slices acquired at same time; not writing slice encoding information");
     }
-  } else {
-    DEBUG("No slice timing information obtained");
+  };
+  enum class slice_timing_source_t { NONE, CSAMOSAIC, ACQTIME, CSATIMEAFTERSTART };
+  slice_timing_source_t slice_timing_source(slice_timing_source_t::NONE);
+
+  switch (valid_slice_timing_count) {
+  case 0:
+    DEBUG("No slice timing information found");
+    break;
+  case 1:
+    if (!slices_timing_csamosaic_str.empty()) {
+      DEBUG("Slice timing only available from Siemens CSA Mosaic data; utilising");
+      slice_timing_source = slice_timing_source_t::CSAMOSAIC;
+    } else if (!slices_timing_acqtime.empty()) {
+      DEBUG("Slice timing only available from DICOM AcquisitionTime field; utilising");
+      slice_timing_source = slice_timing_source_t::ACQTIME;
+    } else {
+      assert(!slices_timing_csatimeafterstart.empty());
+      DEBUG("Slice timing only available from Siemens CSA TimeAfterStart field; utilising");
+      slice_timing_source = slice_timing_source_t::CSATIMEAFTERSTART;
+    }
+    break;
+  case 2:
+    if (slices_timing_csamosaic_str.empty()) {
+      slice_timing_source = slice_timing_source_t::ACQTIME;
+      if (slice_timing_equivalent(slices_timing_acqtime, slices_timing_csatimeafterstart)) {
+        DEBUG("Slice timing vectors equivalent between DICOM AcquisitionTime and Siemens CSA TimeAfterStart;"
+              " the former will be used");
+      } else {
+        WARN("Slice timing vectors differ between DICOM AcquisitionTime and Siemens CSA TimeAfterStart;"
+             " the former will be used");
+        DEBUG("  From DICOM AcquisitionTime: " + join(slices_timing_acqtime, ","));
+        DEBUG("  From Siemens CSA TimeAfterStart: " + join(slices_timing_csatimeafterstart, ","));
+      }
+    } else {
+      // This takes precedence when available as it is initially read in string form,
+      //   which (with care) prevents floating-point imprecision from detrimentally affecting the header contents
+      slice_timing_source = slice_timing_source_t::CSAMOSAIC;
+      if (slices_timing_acqtime.empty()) {
+        if (slice_timing_equivalent(slices_timing_csamosaic_float, slices_timing_csatimeafterstart)) {
+          DEBUG("Slice timing vectors equivalent between Siemens CSA Mosaic and Siemens CSA TimeAfterStart;"
+                " the former will be used");
+        } else {
+          WARN("Slice timing vectors differ between Siemens CSA Mosaic and Siemens CSA TimeAfterStart;"
+               " the former will be used");
+          DEBUG("  From Siemens CSA Mosaic: " + join(slices_timing_csamosaic_str, ","));
+          DEBUG("  From Siemens CSA TimeAfterStart: " + join(slices_timing_csatimeafterstart, ","));
+        }
+      } else {
+        assert(slices_timing_csatimeafterstart.empty());
+        if (slice_timing_equivalent(slices_timing_csamosaic_float, slices_timing_acqtime)) {
+          DEBUG("Slice timing vectors equivalent between Siemens CSA Mosaic and DICOM AcquisitionTime;"
+                " the former will be used");
+        } else {
+          WARN("Slice timing vectors differ between Siemens CSA Mosaic and DICOM AcquisitionTime;"
+               " the former will be used");
+          DEBUG("  From Siemens CSA Mosaic: " + join(slices_timing_csamosaic_str, ","));
+          DEBUG("  From DICOM AcquisitionTime: " + join(slices_timing_acqtime, ","));
+        }
+      }
+    }
+    break;
+  case 3:
+    slice_timing_source = slice_timing_source_t::CSAMOSAIC;
+    if (slice_timing_equivalent(slices_timing_csamosaic_float, slices_timing_acqtime) &&
+        slice_timing_equivalent(slices_timing_csamosaic_float, slices_timing_csatimeafterstart)) {
+      DEBUG("Slice timing vectors from all available sources equivalent;"
+            " the Siemens CSA Mosaic source will be used to preserve precision");
+    } else {
+      WARN("Slice timing vectors differ between the various sources available;"
+           " the Siemens CSA Mosaic source will be used to preserve precision");
+      DEBUG("  From Siemens CSA Mosaic: " + join(slices_timing_csamosaic_str, ","));
+      DEBUG("  From DICOM AcquisitionTime: " + join(slices_timing_acqtime, ","));
+      DEBUG("  From Siemens CSA TimeAfterStart: " + join(slices_timing_csatimeafterstart, ","));
+    }
+    break;
+  default:
+    assert(false);
+  }
+
+  switch (slice_timing_source) {
+  case slice_timing_source_t::NONE:
+    break;
+  case slice_timing_source_t::CSAMOSAIC:
+    write_slice_timing_info(slices_timing_csamosaic_float, join(slices_timing_csamosaic_str, ","));
+    break;
+  case slice_timing_source_t::ACQTIME:
+    write_slice_timing_info(slices_timing_acqtime, join(slices_timing_acqtime, ","));
+    break;
+  case slice_timing_source_t::CSATIMEAFTERSTART:
+    write_slice_timing_info(slices_timing_csatimeafterstart, join(slices_timing_csatimeafterstart, ","));
+    break;
   }
 
   if (!transfer_syntax_supported) {

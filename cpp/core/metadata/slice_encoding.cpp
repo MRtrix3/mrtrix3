@@ -134,7 +134,7 @@ std::string resolve_slice_timing(const std::string &one, const std::string &two)
       return "invalid";
     }
     const default_type diff = abs(f_two - f_one);
-    if (diff > 0.00375) {
+    if (diff > 1.5 * slice_timing_precision_siemens) {
       DEBUG("Supra-threshold difference of " + str(diff) + "s in slice times");
       return "variable";
     }
