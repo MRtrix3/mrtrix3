@@ -31,7 +31,7 @@ class Header:
     from mrtrix3 import app, run, utils #pylint: disable=import-outside-toplevel
     image_path_str = str(image_path) if isinstance(image_path, pathlib.Path) else image_path
     filename = utils.name_temporary('json')
-    command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename, '-nodelete' ]
+    command = [ run.exe_name(run.version_match('mrinfo')), image_path_str, '-json_all', filename, '-nodelete' ]
     if app.VERBOSITY > 1:
       app.console(f'Loading header for image file "{image_path_str}"')
     app.debug(str(command))
@@ -129,7 +129,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not isinstance(image_in, Header):
-    if not isinstance(image_in, str) and not isinstance(image_in, pathlib.Path):
+    if not isinstance(image_in, (str, pathlib.Path)):
       raise MRtrixError(f'Error trying to test "{image_in}": '
                         'Not an image header or file path')
     image_in = Header(image_in)
@@ -150,7 +150,7 @@ def check_3d_nonunity(image_in): #pylint: disable=unused-variable
 #   form is not performed by this function.
 def mrinfo(image_path, field): #pylint: disable=unused-variable
   from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
-  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field, '-nodelete' ]
+  command = [ run.exe_name(run.version_match('mrinfo')), image_path, f'-{field}', '-nodelete' ]
   if app.VERBOSITY > 1:
     app.console(f'Command: "{" ".join(command)}" '
                 '(piping data to local storage)')
@@ -175,12 +175,12 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
     raise TypeError('Unsupported keyword arguments passed to image.match(): '
                     + str(kwargs))
   if not isinstance(image_one, Header):
-    if not isinstance(image_one, str):
+    if not isinstance(image_one, (str, pathlib.Path)):
       raise MRtrixError(f'Error trying to test "{image_one}": '
                         'Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
-    if not isinstance(image_two, str):
+    if not isinstance(image_two, (str, pathlib.Path)):
       raise MRtrixError(f'Error trying to test "{image_two}": '
                         'Not an image header or file path')
     image_two = Header(image_two)
