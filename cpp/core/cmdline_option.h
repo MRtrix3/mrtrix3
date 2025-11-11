@@ -16,15 +16,12 @@
 
 #pragma once
 
+#include <bitset>
 #include <cassert>
 #include <limits>
 #include <string>
 #include <utility>
 #include <vector>
-
-#ifdef None
-#undef None
-#endif
 
 #include "mrtrix.h"
 #include "types.h"
@@ -39,28 +36,45 @@ namespace MR::App {
  * \ref command_line_parsing page.
  * */
 
-using ArgTypeFlags = int;
-constexpr ArgTypeFlags Undefined = 0;
-constexpr ArgTypeFlags Text = 0x0001;
-constexpr ArgTypeFlags Boolean = 0x0002;
-constexpr ArgTypeFlags Integer = 0x0004;
-constexpr ArgTypeFlags Float = 0x0008;
-constexpr ArgTypeFlags ArgFileIn = 0x0010;
-constexpr ArgTypeFlags ArgFileOut = 0x0020;
-constexpr ArgTypeFlags ArgDirectoryIn = 0x0040;
-constexpr ArgTypeFlags ArgDirectoryOut = 0x0080;
-constexpr ArgTypeFlags ImageIn = 0x0100;
-constexpr ArgTypeFlags ImageOut = 0x0200;
-constexpr ArgTypeFlags IntSeq = 0x0400;
-constexpr ArgTypeFlags FloatSeq = 0x0800;
-constexpr ArgTypeFlags TracksIn = 0x1000;
-constexpr ArgTypeFlags TracksOut = 0x2000;
-constexpr ArgTypeFlags Choice = 0x4000;
+class ArgTypeFlags : public std::bitset<15> {
+public:
+  ArgTypeFlags() = default;
+  static const ssize_t Text = 0;
+  static const ssize_t Boolean = 1;
+  static const ssize_t Integer = 2;
+  static const ssize_t Float = 3;
+  static const ssize_t FileIn = 4;
+  static const ssize_t FileOut = 5;
+  static const ssize_t DirectoryIn = 6;
+  static const ssize_t DirectoryOut = 7;
+  static const ssize_t ImageIn = 8;
+  static const ssize_t ImageOut = 9;
+  static const ssize_t IntSeq = 10;
+  static const ssize_t FloatSeq = 11;
+  static const ssize_t TracksIn = 12;
+  static const ssize_t TracksOut = 13;
+  static const ssize_t Choice = 14;
+};
 
-using ArgModifierFlags = int;
-constexpr ArgModifierFlags None = 0;
-constexpr ArgModifierFlags Optional = 0x1;
-constexpr ArgModifierFlags AllowMultiple = 0x2;
+class ArgModifierFlags {
+public:
+  ArgModifierFlags() = default;
+  ArgModifierFlags(const ArgModifierFlags &) = default;
+  void set_optional() { data.set(Optional); }
+  void set_required() { data.reset(Optional); }
+  void set_allow_multiple() { data.set(AllowMultiple); }
+  bool optional() const { return data[Optional]; }
+  bool required() const { return !data[Optional]; }
+  bool allow_multiple() const { return data[AllowMultiple]; }
+  bool any() const { return data.any(); }
+  bool operator!=(const ArgModifierFlags &that) const { return data != that.data; }
+
+private:
+  std::bitset<2> data;
+  static const ssize_t Optional = 0;
+  static const ssize_t AllowMultiple = 1;
+};
+
 //! \endcond
 
 namespace {
@@ -111,7 +125,7 @@ public:
    * and description. If default arguments are used, the object corresponds
    * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
   Argument(std::string name, std::string description = std::string())
-      : id(std::move(name)), desc(std::move(description)), types(Undefined), flags(None) {}
+      : id(std::move(name)), desc(std::move(description)) {}
 
   //! the argument name
   std::string id;
@@ -159,32 +173,32 @@ public:
    * \note Only one argument can be specified as optional and/or multiple.
    */
   Argument &optional() {
-    flags |= Optional;
+    flags.set_optional();
     return *this;
   }
 
   //! specifies that multiple such arguments can be specified
   /*! See optional() for details. */
   Argument &allow_multiple() {
-    flags |= AllowMultiple;
+    flags.set_allow_multiple();
     return *this;
   }
 
   //! specifies that the argument should be a text string
   Argument &type_text() {
-    types |= Text;
+    types.set(ArgTypeFlags::Text);
     return *this;
   }
 
   //! specifies that the argument should be an input image
   Argument &type_image_in() {
-    types |= ImageIn;
+    types.set(ArgTypeFlags::ImageIn);
     return *this;
   }
 
   //! specifies that the argument should be an output image
   Argument &type_image_out() {
-    types |= ImageOut;
+    types.set(ArgTypeFlags::ImageOut);
     return *this;
   }
 
@@ -192,7 +206,7 @@ public:
   /*! if desired, a range of allowed values can be specified. */
   Argument &type_integer(const int64_t min = std::numeric_limits<int64_t>::min(),
                          const int64_t max = std::numeric_limits<int64_t>::max()) {
-    types |= Integer;
+    types.set(ArgTypeFlags::Integer);
     int_limits.set(min, max);
     return *this;
   }
@@ -200,7 +214,7 @@ public:
   //! specifies that the argument should be a boolean
   /*! Valid responses are 0,no,false or any non-zero integer, yes, true. */
   Argument &type_bool() {
-    types |= Boolean;
+    types.set(ArgTypeFlags::Boolean);
     return *this;
   }
 
@@ -208,7 +222,7 @@ public:
   /*! if desired, a range of allowed values can be specified. */
   Argument &type_float(const default_type min = -std::numeric_limits<default_type>::infinity(),
                        const default_type max = std::numeric_limits<default_type>::infinity()) {
-    types |= Float;
+    types.set(ArgTypeFlags::Float);
     float_limits.set(min, max);
     return *this;
   }
@@ -225,70 +239,61 @@ public:
    * \endcode
    * \note Each string in the list must be supplied in \b lowercase. */
   Argument &type_choice(const std::vector<std::string> &c) {
-    types |= Choice;
+    types.set(ArgTypeFlags::Choice);
     choices = c;
     return *this;
   }
 
   //! specifies that the argument should be an input file
   Argument &type_file_in() {
-    types |= ArgFileIn;
+    types.set(ArgTypeFlags::FileIn);
     return *this;
   }
 
   //! specifies that the argument should be an output file
   Argument &type_file_out() {
-    types |= ArgFileOut;
+    types.set(ArgTypeFlags::FileOut);
     return *this;
   }
 
   //! specifies that the argument should be an input directory
   Argument &type_directory_in() {
-    types |= ArgDirectoryIn;
+    types.set(ArgTypeFlags::DirectoryIn);
     return *this;
   }
 
   //! specifies that the argument should be an output directory
   Argument &type_directory_out() {
-    types |= ArgDirectoryOut;
+    types.set(ArgTypeFlags::DirectoryOut);
     return *this;
   }
 
   //! specifies that the argument should be a sequence of comma-separated integer values
   Argument &type_sequence_int() {
-    types |= IntSeq;
+    types.set(ArgTypeFlags::IntSeq);
     return *this;
   }
 
   //! specifies that the argument should be a sequence of comma-separated floating-point values.
   Argument &type_sequence_float() {
-    types |= FloatSeq;
+    types.set(ArgTypeFlags::FloatSeq);
     return *this;
   }
 
   //! specifies that the argument should be an input tracks file
   Argument &type_tracks_in() {
-    types |= TracksIn;
+    types.set(ArgTypeFlags::TracksIn);
     return *this;
   }
 
   //! specifies that the argument should be an output tracks file
   Argument &type_tracks_out() {
-    types |= TracksOut;
+    types.set(ArgTypeFlags::TracksOut);
     return *this;
   }
 
   std::string syntax(int format) const;
   std::string usage() const;
-
-  // According to how many different unique types can this argument be interpreted?
-  ssize_t num_types() const {
-    int data = types;
-    ssize_t count;
-    for (count = 0; data; ++count)
-      data &= data - 1;
-    return count;
-  }
 };
 
 //! A class to specify a command-line option
@@ -330,10 +335,11 @@ public:
  */
 class Option : public std::vector<Argument> {
 public:
-  Option() : flags(Optional) {}
+  Option() { flags.set_optional(); }
 
-  Option(std::string name, std::string description)
-      : id(std::move(name)), desc(std::move(description)), flags(Optional) {}
+  Option(std::string name, std::string description) : id(std::move(name)), desc(std::move(description)) {
+    flags.set_optional();
+  }
 
   Option &operator+(const Argument &arg) {
     push_back(arg);
@@ -362,14 +368,14 @@ public:
    * \endcode
    */
   Option &required() {
-    flags &= ~Optional;
+    flags.set_required();
     return (*this);
   }
 
   //! specifies that multiple such options can be specified
   /*! See required() for details. */
   Option &allow_multiple() {
-    flags |= AllowMultiple;
+    flags.set_allow_multiple();
     return *this;
   }
 

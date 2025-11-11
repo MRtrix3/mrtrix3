@@ -241,16 +241,16 @@ std::string usage_syntax(int format) {
 
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
-    if (ARGUMENTS[i].flags & Optional)
+    if (ARGUMENTS[i].flags.optional())
       s += " [";
     s += std::string(" ") + ARGUMENTS[i].id;
 
-    if (ARGUMENTS[i].flags & AllowMultiple) {
-      if (!(ARGUMENTS[i].flags & Optional))
+    if (ARGUMENTS[i].flags.allow_multiple()) {
+      if (ARGUMENTS[i].flags.required())
         s += std::string(" [ ") + ARGUMENTS[i].id;
       s += " ...";
     }
-    if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
+    if (ARGUMENTS[i].flags.any())
       s += " ]";
   }
   return s + "\n\n";
@@ -338,7 +338,7 @@ std::string Option::syntax(int format) const {
   for (size_t i = 0; i < size(); ++i)
     opt += std::string(" ") + (*this)[i].id;
 
-  if (format && (flags & AllowMultiple))
+  if (format && flags.allow_multiple())
     opt += "  (multiple uses permitted)";
 
   if (format)
@@ -406,39 +406,39 @@ std::string OptionList::syntax(int format) const {
 
 std::string Argument::usage() const {
   std::ostringstream stream;
-  stream << "ARGUMENT " << id                           //
-         << " " << (flags & Optional ? '1' : '0')       //
-         << " " << (flags & AllowMultiple ? '1' : '0'); //
+  stream << "ARGUMENT " << id                            //
+         << " " << (flags.optional() ? '1' : '0')        //
+         << " " << (flags.allow_multiple() ? '1' : '0'); //
 
-  if (types & Text)
+  if (types[ArgTypeFlags::Text])
     stream << " TEXT";
-  if (types & Boolean)
+  if (types[ArgTypeFlags::Boolean])
     stream << " BOOL";
-  if (types & Integer)
+  if (types[ArgTypeFlags::Integer])
     stream << " INT " << int_limits.min() << " " << int_limits.max();
-  if (types & Float)
+  if (types[ArgTypeFlags::Float])
     stream << " FLOAT " << float_limits.min() << " " << float_limits.max();
-  if (types & ArgFileIn)
+  if (types[ArgTypeFlags::FileIn])
     stream << " FILEIN";
-  if (types & ArgFileOut)
+  if (types[ArgTypeFlags::FileOut])
     stream << " FILEOUT";
-  if (types & ArgDirectoryIn)
+  if (types[ArgTypeFlags::DirectoryIn])
     stream << " DIRIN";
-  if (types & ArgDirectoryOut)
+  if (types[ArgTypeFlags::DirectoryOut])
     stream << " DIROUT";
-  if (types & ImageIn)
+  if (types[ArgTypeFlags::ImageIn])
     stream << " IMAGEIN";
-  if (types & ImageOut)
+  if (types[ArgTypeFlags::ImageOut])
     stream << " IMAGEOUT";
-  if (types & IntSeq)
+  if (types[ArgTypeFlags::IntSeq])
     stream << " ISEQ";
-  if (types & FloatSeq)
+  if (types[ArgTypeFlags::FloatSeq])
     stream << " FSEQ";
-  if (types & TracksIn)
+  if (types[ArgTypeFlags::TracksIn])
     stream << " TRACKSIN";
-  if (types & TracksOut)
+  if (types[ArgTypeFlags::TracksOut])
     stream << " TRACKSOUT";
-  if (types & Choice) {
+  if (types[ArgTypeFlags::Choice]) {
     stream << " CHOICE";
     for (const std::string &p : choices)
       stream << " " << p;
@@ -452,7 +452,7 @@ std::string Argument::usage() const {
 
 std::string Option::usage() const {
   std::ostringstream stream;
-  stream << "OPTION " << id << " " << (flags & Optional ? '1' : '0') << " " << (flags & AllowMultiple ? '1' : '0')
+  stream << "OPTION " << id << " " << (flags.optional() ? '1' : '0') << " " << (flags.allow_multiple() ? '1' : '0')
          << "\n";
 
   if (!desc.empty())
@@ -562,16 +562,16 @@ std::string markdown_usage() {
   // Syntax line:
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
-    if (ARGUMENTS[i].flags & Optional)
+    if (ARGUMENTS[i].flags.optional())
       s += "[";
     s += std::string(" ") + ARGUMENTS[i].id;
 
-    if (ARGUMENTS[i].flags & AllowMultiple) {
-      if (!(ARGUMENTS[i].flags & Optional))
+    if (ARGUMENTS[i].flags.allow_multiple()) {
+      if (ARGUMENTS[i].flags.required())
         s += std::string(" [ ") + ARGUMENTS[i].id;
       s += " ...";
     }
-    if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
+    if (ARGUMENTS[i].flags.any())
       s += " ]";
   }
   s += "\n\n";
@@ -608,7 +608,7 @@ std::string markdown_usage() {
     for (size_t a = 0; a < opt.size(); ++a)
       f += std::string(" ") + opt[a].id;
     f += "**";
-    if (opt.flags & AllowMultiple)
+    if (opt.flags.allow_multiple())
       f += "  *(multiple uses permitted)*";
     f += std::string("<br>") + opt.desc + "\n\n";
     return f;
@@ -667,16 +667,16 @@ std::string restructured_text_usage() {
   // Syntax line:
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
-    if (ARGUMENTS[i].flags & Optional)
+    if (ARGUMENTS[i].flags.optional())
       s += "[";
     s += std::string(" ") + ARGUMENTS[i].id;
 
-    if (ARGUMENTS[i].flags & AllowMultiple) {
-      if (!(ARGUMENTS[i].flags & Optional))
+    if (ARGUMENTS[i].flags.allow_multiple()) {
+      if (ARGUMENTS[i].flags.required())
         s += std::string(" [ ") + ARGUMENTS[i].id;
       s += " ...";
     }
-    if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
+    if (ARGUMENTS[i].flags.any())
       s += " ]";
   }
   s += "\n\n";
@@ -734,7 +734,7 @@ std::string restructured_text_usage() {
     for (size_t a = 0; a < opt.size(); ++a)
       f += std::string(" ") + opt[a].id;
     f += std::string("** ");
-    if (opt.flags & AllowMultiple)
+    if (opt.flags.allow_multiple())
       f += "*(multiple uses permitted)* ";
     auto desc = split_lines(opt.desc, false);
     f += escape_special(desc[0]);
@@ -902,15 +902,15 @@ void parse() {
   size_t num_args_required = 0;
   size_t num_optional_arguments = 0;
 
-  ArgModifierFlags flags = None;
+  ArgModifierFlags flags;
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    if (ARGUMENTS[i].flags) {
-      if (flags && flags != ARGUMENTS[i].flags)
-        throw Exception("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in "
-                        "command-line syntax");
+    if (ARGUMENTS[i].flags.any()) {
+      if (flags.any() && flags != ARGUMENTS[i].flags)
+        throw Exception("FIXME: all arguments declared optional() or allow_multiple()"
+                        " should have matching flags in command-line syntax");
       flags = ARGUMENTS[i].flags;
       ++num_optional_arguments;
-      if (!(flags & Optional))
+      if (!flags.optional())
         ++num_args_required;
     } else
       ++num_args_required;
@@ -955,7 +955,7 @@ void parse() {
   size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
   if (num_arg_per_multi * num_optional_arguments != num_extra_arguments)
     throw Exception("number of optional arguments provided are not equal for all arguments");
-  if (!(flags & Optional))
+  if (flags.required())
     ++num_arg_per_multi;
 
   // assign arguments to their corresponding definitions:
@@ -963,7 +963,7 @@ void parse() {
     if (n == next) {
       if (n)
         ++index;
-      if (ARGUMENTS[index].flags != None)
+      if (ARGUMENTS[index].flags.any())
         next = n + num_arg_per_multi;
       else
         ++next;
@@ -979,10 +979,10 @@ void parse() {
         if (option[k].opt == &OPTIONS[i][j])
           count++;
 
-      if (count < 1 && !(OPTIONS[i][j].flags & Optional))
+      if (count < 1 && OPTIONS[i][j].flags.required())
         throw Exception(std::string("mandatory option \"-") + OPTIONS[i][j].id + "\" must be specified");
 
-      if (count > 1 && !(OPTIONS[i][j].flags & AllowMultiple))
+      if (count > 1 && !OPTIONS[i][j].flags.allow_multiple())
         throw Exception(std::string("multiple instances of option \"-") + OPTIONS[i][j].id + "\" are not allowed");
     }
   }
@@ -1008,65 +1008,125 @@ void parse() {
   // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
     const std::string text = std::string(i);
-    if (!(i.arg->types & ~(ArgFileIn | TracksIn))) {
-      if (!Path::exists(text))
-        throw Exception("required input file \"" + text + "\" not found");
-      if (!Path::is_file(text))
-        throw Exception("required input \"" + text + "\" is not a file");
+    assert(i.arg->types.any());
+    {
+      ArgTypeFlags types_not_input_file(i.arg->types);
+      types_not_input_file.reset(ArgTypeFlags::FileIn);
+      types_not_input_file.reset(ArgTypeFlags::TracksIn);
+      if (!types_not_input_file.any()) {
+        if (!Path::exists(text))
+          throw Exception("required input file \"" + text + "\" not found");
+        if (!Path::is_file(text))
+          throw Exception("required input \"" + text + "\" is not a file");
+      }
     }
-    if (!(i.arg->types & ~ArgDirectoryIn)) {
-      if (!Path::exists(text))
-        throw Exception("required input directory \"" + text + "\" not found");
-      if (!Path::is_dir(text))
-        throw Exception("required input \"" + text + "\" is not a directory");
+    {
+      ArgTypeFlags types_not_input_directory(i.arg->types);
+      types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
+      if (!types_not_input_directory.any()) {
+        if (!Path::exists(text))
+          throw Exception("required input directory \"" + text + "\" not found");
+        if (!Path::is_dir(text))
+          throw Exception("required input \"" + text + "\" is not a directory");
+      }
     }
-    if (!(i.arg->types & ~(ArgFileOut | TracksOut))) {
-      if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-        throw Exception("output path \"" + std::string(i) +
-                        "\" is not a valid file path (ends with directory path separator)");
+    {
+      ArgTypeFlags types_not_output_file(i.arg->types);
+      types_not_output_file.reset(ArgTypeFlags::FileOut);
+      types_not_output_file.reset(ArgTypeFlags::TracksOut);
+      if (!types_not_output_file.any()) {
+        if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
+          throw Exception("output path \"" + std::string(i) + "\" is not a valid file path" +
+                          " (ends with directory path separator)");
+      }
     }
-    if (!(i.arg->types & ~(ArgFileOut | ArgDirectoryOut | TracksOut)))
-      check_overwrite(text);
-    if (!(i.arg->types & ~TracksIn)) {
-      if (!Path::has_suffix(text, ".tck"))
-        throw Exception("input file \"" + text + "\" is not a valid track file");
+    {
+      ArgTypeFlags types_not_output_filesystem(i.arg->types);
+      types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
+      types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
+      types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
+      if (!types_not_output_filesystem.any())
+        check_overwrite(text);
     }
-    if (!(i.arg->types & ~TracksOut)) {
-      if (!Path::has_suffix(text, ".tck"))
-        throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+    {
+      ArgTypeFlags types_not_input_tractogram(i.arg->types);
+      types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
+      if (!types_not_input_tractogram.any()) {
+        if (!Path::has_suffix(text, ".tck"))
+          throw Exception("input file \"" + text + "\" is not a valid track file");
+      }
+    }
+    {
+      ArgTypeFlags types_not_output_tractogram(i.arg->types);
+      types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
+      if (!types_not_output_tractogram.any()) {
+        if (!Path::has_suffix(text, ".tck"))
+          throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+      }
     }
   }
   for (const auto &i : option) {
     for (size_t j = 0; j != i.opt->size(); ++j) {
       const Argument &arg = i.opt->operator[](j);
+      assert(arg.types.any());
       const std::string text = std::string(i.args[j]);
-      if (!(arg.types & ~(ArgFileIn | TracksIn))) {
-        if (!Path::exists(text))
-          throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
-        if (!Path::is_file(text))
-          throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+      {
+        ArgTypeFlags types_not_input_file(arg.types);
+        types_not_input_file.reset(ArgTypeFlags::FileIn);
+        types_not_input_file.reset(ArgTypeFlags::TracksIn);
+        if (!types_not_input_file.any()) {
+          if (!Path::exists(text))
+            throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
+          if (!Path::is_file(text))
+            throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+        }
       }
-      if (!(arg.types & ~ArgDirectoryIn)) {
-        if (!Path::exists(text))
-          throw Exception("input directory \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
-        if (!Path::is_dir(text))
-          throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
+      {
+        ArgTypeFlags types_not_input_directory(arg.types);
+        types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
+        if (!types_not_input_directory.any()) {
+          if (!Path::exists(text))
+            throw Exception("input directory \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) +
+                            "\" not found");
+          if (!Path::is_dir(text))
+            throw Exception("input \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) +
+                            "\" is not a directory");
+        }
       }
-      if (!(arg.types & ~(ArgFileOut | TracksOut))) {
-        if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-          throw Exception("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) +
-                          "\" is not a valid file path (ends with directory path separator)");
+      {
+        ArgTypeFlags types_not_output_file(arg.types);
+        types_not_output_file.reset(ArgTypeFlags::FileOut);
+        types_not_output_file.reset(ArgTypeFlags::TracksOut);
+        if (!types_not_output_file.any()) {
+          if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
+            throw Exception("output path \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
+                            " is not a valid file path (ends with directory path separator)");
+        }
       }
-      if (!(arg.types & ~(ArgFileOut | ArgDirectoryOut | TracksOut)))
-        check_overwrite(text);
-      if (!(arg.types & ~TracksIn)) {
-        if (!Path::has_suffix(text, ".tck"))
-          throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
-                          "\" is not a valid track file");
-        if (!(arg.types & ~TracksOut)) {
+      {
+        ArgTypeFlags types_not_output_filesystem(arg.types);
+        types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
+        types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
+        types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
+        if (!types_not_output_filesystem.any())
+          check_overwrite(text);
+      }
+      {
+        ArgTypeFlags types_not_input_tractogram(arg.types);
+        types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
+        if (!types_not_input_tractogram.any()) {
           if (!Path::has_suffix(text, ".tck"))
-            throw Exception("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
-                            "\" must use the .tck suffix");
+            throw Exception("input file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
+                            " is not a valid track file");
+        }
+      }
+      {
+        ArgTypeFlags types_not_output_tractogram(arg.types);
+        types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
+        if (!types_not_output_tractogram.any()) {
+          if (!Path::has_suffix(text, ".tck"))
+            throw Exception("output track file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
+                            " must use the .tck suffix");
         }
       }
     }
@@ -1146,8 +1206,8 @@ int64_t App::ParsedArgument::as_int() const {
 
   std::string as_choice_msg;
 
-  if (arg->types & Choice) {
-    std::string selection = lowercase(p);
+  if (arg->types[ArgTypeFlags::Choice]) {
+    const std::string selection = lowercase(p);
     auto it = std::find(arg->choices.begin(), arg->choices.end(), selection);
     if (it == arg->choices.end()) {
       std::string msg = std::string("unexpected value supplied for ");
@@ -1159,14 +1219,14 @@ int64_t App::ParsedArgument::as_int() const {
       as_choice_msg = std::string("received \"" + std::string(p) + "\"; ");
       as_choice_msg += std::string("valid choices are: ") + join(arg->choices, ", ");
       msg += "(" + as_choice_msg + ")";
-      if (!(arg->types & Integer))
+      if (!arg->types[ArgTypeFlags::Integer])
         throw Exception(msg);
     } else {
       return static_cast<int>(std::distance(arg->choices.begin(), it));
     }
   }
 
-  assert(arg->types & Integer);
+  assert(arg->types[ArgTypeFlags::Integer]);
 
   // Check to see if there are any alpha characters in here
   // - If a single character at the end, use as integer multiplier
@@ -1243,14 +1303,14 @@ int64_t App::ParsedArgument::as_int() const {
     return retval;
   } catch (Exception &e_int) {
     as_int_msg = e_int[0];
-    if (!(arg->types & Choice))
+    if (!arg->types[ArgTypeFlags::Choice])
       throw Exception("unable to parse string " + str(p) + " supplied for " +
-                      (opt ? std::string("option \"") + opt->id : std::string("argument \"") + arg->id) +
+                      (opt == nullptr ? std::string("argument \"") + arg->id : std::string("option \"") + opt->id) +
                       " as integer: " + as_int_msg);
   }
 
   Exception full_msg(std::string("Unable to interpret value supplied for ") +
-                     (opt ? std::string("option \"") + opt->id : std::string("argument \"") + arg->id) +
+                     (opt == nullptr ? std::string("argument \"") + arg->id : std::string("option \"") + opt->id) +
                      " as either integer or choice selection");
   full_msg.push_back("Error when interpreted as choice selection:");
   full_msg.push_back(as_choice_msg);
@@ -1269,7 +1329,7 @@ uint64_t App::ParsedArgument::as_uint() const {
 }
 
 default_type App::ParsedArgument::as_float() const {
-  assert(arg->types & Float);
+  assert(arg->types[ArgTypeFlags::Float]);
   const default_type retval = to<default_type>(p);
   if (retval < arg->float_limits.min() || retval > arg->float_limits.max()) {
     std::string msg("value supplied for ");
@@ -1287,7 +1347,7 @@ default_type App::ParsedArgument::as_float() const {
 }
 
 std::vector<int32_t> ParsedArgument::as_sequence_int() const {
-  assert(arg->types & IntSeq);
+  assert(arg->types[ArgTypeFlags::IntSeq]);
   try {
     return parse_ints<int32_t>(p);
   } catch (Exception &e) {
@@ -1297,7 +1357,7 @@ std::vector<int32_t> ParsedArgument::as_sequence_int() const {
 }
 
 std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
-  assert(arg->types & IntSeq);
+  assert(arg->types[ArgTypeFlags::IntSeq]);
   try {
     return parse_ints<uint32_t>(p);
   } catch (Exception &e) {
@@ -1307,7 +1367,7 @@ std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
 }
 
 std::vector<default_type> ParsedArgument::as_sequence_float() const {
-  assert(arg->types & FloatSeq);
+  assert(arg->types[ArgTypeFlags::FloatSeq]);
   try {
     return parse_floats(p);
   } catch (Exception &e) {
@@ -1346,14 +1406,16 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
     const auto &p = arguments[i];
     if (!starts_with_dash(p))
       continue;
-    if ((*option)[i].types & (ImageIn | ImageOut | Integer | Float | IntSeq | FloatSeq))
+    if ((*option)[i].types[ArgTypeFlags::ImageIn] || (*option)[i].types[ArgTypeFlags::ImageOut] ||
+        (*option)[i].types[ArgTypeFlags::Integer] || (*option)[i].types[ArgTypeFlags::Float] ||
+        (*option)[i].types[ArgTypeFlags::IntSeq] || (*option)[i].types[ArgTypeFlags::FloatSeq])
       continue;
     WARN(std::string("Value \"") + arguments[i] + "\" is being used as " +
          ((option->size() == 1) ? "the expected argument "
                                 : ("one of the " + str(option->size()) + " expected arguments ")) +
-         "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+         "for option \"-" + option->id + "\"," + " yet this itself looks like a separate command-line option; " +
          "the requisite input" + ((option->size() == 1) ? " " : "s ") + "to command-line option \"-" + option->id +
-         "\" may have been erroneously omitted, which may cause " + "other command-line parsing errors");
+         "\" may have been erroneously omitted, which may cause other command-line parsing errors");
   }
 }
 
