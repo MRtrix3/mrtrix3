@@ -105,14 +105,19 @@ trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT; \
 ! testing_cpp_cli random_arg
 
 # Test export of interface to various file formats
-trap "rm -f tmp.txt" EXIT; testing_cpp_cli -help | tail -n +3 > tmp.txt \
-    && diff -a --strip-trailing-cr tmp.txt cpp_cli/help.txt
-trap "rm -f tmp.txt" EXIT; testing_cpp_cli __print_full_usage__ > tmp.txt \
-    && diff -a --strip-trailing-cr tmp.txt cpp_cli/full_usage.txt
-trap "rm -f tmp.md" EXIT; testing_cpp_cli __print_usage_markdown__ > tmp.md \
-    && diff -a --strip-trailing-cr tmp.md cpp_cli/markdown.md
-trap "rm -f tmp.rst" EXIT; testing_cpp_cli __print_usage_rst__ > tmp.rst \
-    && diff -a --strip-trailing-cr tmp.rst cpp_cli/restructured_text.rst
+trap "rm -f tmp.txt" EXIT; \
+    testing_cpp_cli -help | \
+    tail -n +3 | \
+    diff -a --strip-trailing-cr - cpp_cli/help.txt
+trap "rm -f tmp.txt" EXIT; \
+    testing_cpp_cli __print_full_usage__ | \
+    diff -a --strip-trailing-cr - cpp_cli/full_usage.txt
+trap "rm -f tmp.md" EXIT; \
+    testing_cpp_cli __print_usage_markdown__ | \
+    diff -a --strip-trailing-cr - cpp_cli/markdown.md
+trap "rm -f tmp.rst" EXIT; \
+    testing_cpp_cli __print_usage_rst__ | \
+    diff -a --strip-trailing-cr - cpp_cli/restructured_text.rst
 
 # Test suitable handling of valid and invalid inputs to various argument types
 testing_cpp_cli -bool false
