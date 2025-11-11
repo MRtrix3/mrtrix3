@@ -1,38 +1,35 @@
-.. _shbasis:
+.. _fixeltransform:
 
-shbasis
+fixeltransform
 ===================
 
 Synopsis
 --------
 
-Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used
+Transform a fixel dataset
 
 Usage
 --------
 
 ::
 
-    shbasis [ options ]  SH [ SH ... ]
+    fixeltransform [ options ]  fixel_in warp fixel_out
 
--  *SH*: the input image(s) of SH coefficients.
+-  *fixel_in*: the input fixel directory
+-  *warp*: the 4D deformation field
+-  *fixel_out*: the output fixel directory
 
 Description
 -----------
 
-In previous versions of MRtrix, the convention used for storing spherical harmonic coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of sqrt(2) too large). This error has been rectified in newer versions of MRtrix, but will cause issues if processing SH data that was generated using an older version of MRtrix (or vice-versa).
+Unlike the fixelreorient command, which does not move fixels in space but just reorients them in place based on the premise of a prior transformation having been applied, this command additionally involves applying a spatial transformation to input fixel data.
 
-This command provides a mechanism for testing the basis used in storage of image data representing a spherical harmonic series per voxel, and allows the user to forcibly modify the raw image data to conform to the desired basis.
+Because it is not trivial to interpolate fixel data at sub-voxel locations, the resampling following transformation is performed using nearest-neighbour interpolation. This also means that there may be some fixels in the input dataset for which there is no corresponding fixel created in the output dataset, as well as fixels in the input dataset for which there are multiple corresponding fixels created in the output dataset. Finally, there is no assurance of any form of fixel correspondence between the input and output datasets.
 
-Note that the "force_*" conversion choices should only be used in cases where this command has previously been unable to automatically determine the SH basis from the image data, but the user themselves are confident of the SH basis of the data.
-
-The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.7/concepts/spherical_harmonics.html
+The output fixel dataset will consist of the compulsory index and directions images, and resampled versions of any fixel data files found in the input directory. Any voxel images present in the input fixel directory will be skipped. Fixel data files with more than one column are currently not supported. This command does not apply any modulation to fixel-wise data based on the deformation applied.
 
 Options
 -------
-
--  **-convert mode** convert the image data in-place to the desired basis; options are: old,new,force_oldtonew,force_newtoold.
 
 Standard options
 ^^^^^^^^^^^^^^^^

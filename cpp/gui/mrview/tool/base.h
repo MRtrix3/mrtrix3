@@ -21,19 +21,18 @@
 #include "mrview/window.h"
 #include "projection.h"
 
-#define LAYOUT_SPACING 3
-
 #define __STR__(x) #x
 #define __STR(x) __STR__(x)
 
-namespace MR {
-namespace App {
+namespace MR::App {
 class OptionList;
 class Options;
-} // namespace App
+} // namespace MR::App
 
-namespace GUI::MRView::Tool {
+namespace MR::GUI::MRView::Tool {
 class Base;
+
+constexpr ssize_t layout_spacing = 3;
 
 class CameraInteractor {
 public:
@@ -94,8 +93,8 @@ public:
 
   protected:
     void init() {
-      setSpacing(LAYOUT_SPACING);
-      setContentsMargins(LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING);
+      setSpacing(layout_spacing);
+      setContentsMargins(layout_spacing, layout_spacing, layout_spacing, layout_spacing);
     }
   };
 
@@ -106,8 +105,8 @@ public:
 
   protected:
     void init() {
-      setSpacing(LAYOUT_SPACING);
-      setContentsMargins(LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING);
+      setSpacing(layout_spacing);
+      setContentsMargins(layout_spacing, layout_spacing, layout_spacing, layout_spacing);
     }
   };
 
@@ -118,8 +117,8 @@ public:
 
   protected:
     void init() {
-      setSpacing(LAYOUT_SPACING);
-      setContentsMargins(LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING);
+      setSpacing(layout_spacing);
+      setContentsMargins(layout_spacing, layout_spacing, layout_spacing, layout_spacing);
     }
   };
 
@@ -130,8 +129,8 @@ public:
 
   protected:
     void init() {
-      setSpacing(LAYOUT_SPACING);
-      setContentsMargins(LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING);
+      setSpacing(layout_spacing);
+      setContentsMargins(layout_spacing, layout_spacing, layout_spacing, layout_spacing);
     }
   };
 
@@ -195,6 +194,4 @@ public:
   }
 };
 
-} // namespace GUI::MRView::Tool
-
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

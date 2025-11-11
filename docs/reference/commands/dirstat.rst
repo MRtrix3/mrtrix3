@@ -22,7 +22,7 @@ Description
 
 This command will accept as inputs:
 
-- directions file in spherical coordinates (ASCII text, [ az el ] space-separated values, one per line);
+- directions file in spherical coordinates (ASCII text, [ az in ] space-separated values, one per line);
 
 - directions file in Cartesian coordinates (ASCII text, [ x y z ] space-separated values, one per line);
 

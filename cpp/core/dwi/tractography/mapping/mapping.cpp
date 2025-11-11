@@ -51,7 +51,7 @@ void generate_header(Header &header, const std::string &tck_file_path, const std
 
   {
     ProgressBar progress("creating new template image", 0);
-    while (file(tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
+    while (file(tck) && track_counter++ < streamlines_for_bounding_box) {
       for (const auto &i : tck) {
         min_values[0] = std::min(min_values[0], i[0]);
         max_values[0] = std::max(max_values[0], i[0]);

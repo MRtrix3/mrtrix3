@@ -45,6 +45,10 @@ CONFIG = {
 
 
 
+BZERO_THRESHOLD_DEFAULT = 22.5 #pylint: disable=unused-variable
+
+
+
 # Codes for printing information to the terminal
 ANSICodes = namedtuple('ANSI', 'lineclear clear console debug error execute warn')
 ANSI = ANSICodes('\033[0K', '', '', '', '', '', '') #pylint: disable=unused-variable

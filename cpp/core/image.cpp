@@ -25,7 +25,7 @@ template Image<int32_t>::~Image();
 template Image<uint32_t>::~Image();
 template Image<int64_t>::~Image();
 template Image<uint64_t>::~Image();
-template Image<half_float::half>::~Image();
+template Image<Eigen::half>::~Image();
 template Image<float>::~Image();
 template Image<double>::~Image();
 template Image<cfloat>::~Image();

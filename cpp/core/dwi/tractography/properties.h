@@ -23,9 +23,9 @@
 #include "types.h"
 #include <map>
 
-#define TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION 20
-
 namespace MR::DWI::Tractography {
+
+constexpr ssize_t file_timestamp_precision = 20;
 
 void check_timestamps(const Properties &, const Properties &, const std::string &);
 void check_counts(const Properties &, const Properties &, const std::string &, bool abort_on_fail);

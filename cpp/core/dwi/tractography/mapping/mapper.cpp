@@ -236,7 +236,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   if (contrast != CURVATURE)
     throw Exception("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  std::vector<Eigen::Vector3d> tangents;
+  std::vector<Streamline<>::tangent_type> tangents;
   tangents.reserve(tck.size());
 
   // Would like to be able to manipulate the length over which the tangent calculation is affected
@@ -253,17 +253,11 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   step_sizes.reserve(tck.size());
 
   for (size_t i = 0; i != tck.size(); ++i) {
-    Eigen::Vector3d this_tangent;
-    if (i == 0)
-      this_tangent = ((tck[1] - tck[0]).cast<default_type>().normalized());
-    else if (i == tck.size() - 1)
-      this_tangent = ((tck[i] - tck[i - 1]).cast<default_type>().normalized());
-    else
-      this_tangent = ((tck[i + 1] - tck[i - 1]).cast<default_type>().normalized());
+    const Streamline<>::tangent_type this_tangent = Tractography::tangent(tck, i);
     if (this_tangent.allFinite())
       tangents.push_back(this_tangent);
     else
-      tangents.push_back({0.0, 0.0, 0.0});
+      tangents.push_back(Streamline<>::tangent_type::Zero());
     if (i)
       step_sizes.push_back((tck[i] - tck[i - 1]).norm());
   }
@@ -308,15 +302,15 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
-  std::vector<Eigen::Vector3d> smoothed_tangents;
+  std::vector<Streamline<>::tangent_type> smoothed_tangents;
   smoothed_tangents.reserve(tangents.size());
 
-  static const default_type gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt(2.0 * log(2.0)));
+  static const default_type gaussian_theta = curvature_smoothing_mm / (2.0 * sqrt(2.0 * log(2.0)));
   static const default_type gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    Eigen::Vector3d this_tangent(0.0, 0.0, 0.0);
+    Streamline<>::tangent_type this_tangent(Streamline<>::tangent_type::Zero());
 
     for (size_t j = 0; j != tck.size(); ++j) {
       const default_type distance = spline_distances(i, j);

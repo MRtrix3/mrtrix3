@@ -44,7 +44,7 @@ using Math::Stats::value_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
-#define DEFAULT_EMPIRICAL_SKEW 1.0 // TODO Update from experience
+constexpr default_type default_empirical_skew = 1.0;
 
 // clang-format off
 void usage() {
@@ -119,7 +119,7 @@ void usage() {
   + Option ("mask", "provide a fixel data file containing a mask of those fixels to be used during processing")
     + Argument ("file").type_image_in()
 
-  + Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
+  + Math::Stats::shuffle_options(true, default_empirical_skew)
 
   + Fixel::Filter::cfe_options
 
@@ -178,7 +178,7 @@ void run() {
   const bool cfe_legacy = !get_options("cfe_legacy").empty();
 
   const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
-  const default_type empirical_skew = get_option_value("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
+  const default_type empirical_skew = get_option_value("skew_nonstationarity", default_empirical_skew);
 
   const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header(input_fixel_directory);

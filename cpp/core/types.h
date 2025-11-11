@@ -32,7 +32,7 @@
 #define PRI_SIZET PRIu32
 #endif
 #else
-#define PRI_SIZET "zu"
+#define PRI_SIZET "zu" // check_syntax off
 #endif
 
 namespace MR {
@@ -62,11 +62,11 @@ template <class ImageType> class Row;
 #undef EIGEN_HAS_OPENMP
 #endif
 
-#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"
-#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h"
-#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"
-#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"
-#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"
+#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
+#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h" // check_syntax off
+#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
+#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"         // check_syntax off
+#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"           // check_syntax off
 
 #include <Eigen/Geometry>
 

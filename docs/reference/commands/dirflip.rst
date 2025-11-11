@@ -30,7 +30,7 @@ Options
 
 -  **-preserve num** preserve the sign of some number of directions at the start of the set
 
--  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
+-  **-cartesian** Output directions in Cartesian coordinates [x y z] instead of spherical angles [az in].
 
 Standard options
 ^^^^^^^^^^^^^^^^

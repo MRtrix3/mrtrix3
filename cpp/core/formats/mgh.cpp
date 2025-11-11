@@ -34,13 +34,13 @@ std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
 
   // Remaining header items appear AFTER the data
   // It's possible that these data may not even be there; need to make sure that we don't go over the file size
-  in.seekg(MGH_DATA_OFFSET + footprint(H));
+  in.seekg(File::MGH::data_offset + footprint(H));
   File::MGH::read_other(H, in);
 
   in.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
 
   return io_handler;
 }
@@ -54,11 +54,11 @@ bool MGH::check(Header &H, size_t num_axes) const {
 std::unique_ptr<ImageIO::Base> MGH::create(Header &H) const {
   File::OFStream out(H.name(), std::ios_base::binary);
   File::MGH::write_header(H, out);
-  out.seekp(MGH_DATA_OFFSET + footprint(H));
+  out.seekp(File::MGH::data_offset + footprint(H));
   File::MGH::write_other(H, out);
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
 
   return io_handler;
 }

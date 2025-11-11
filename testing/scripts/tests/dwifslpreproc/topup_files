@@ -13,34 +13,74 @@ mrcat \
 mrconvert - tmp-sub-04_epi.nii \
     -strides -1,+2,+3,+4 -force
 
-echo $'0 -1 0 0.1\n0 1 0 0.1\n' | \
-tee tmp-sub-04_epi.txt
+echo $'0 1 0 0.1\n0 -1 0 0.1\n' | \
+    tee tmp-sub-04_epi.txt
 
-topupcmd="topup --imain=tmp-sub-04_epi.nii --datain=tmp-sub-04_epi.txt --config=${FSLDIR}/etc/flirtsch/b02b0_2.cnf --out=tmp-out"
+mrcat \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-1_dwi.nii.gz - \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-1_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-1_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-1_dwi.json) \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-2_dwi.nii.gz - \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-2_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-2_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-2_dwi.json) \
+    -axis 3 \
+    tmp-sub-05_dwi.mif \
+    -force
+
+mrcat \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-1_dwi.nii.gz - \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-1_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-1_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-1_dwi.json \
+        -coord 3 0) \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-2_dwi.nii.gz - \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-2_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-2_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-2_dwi.json \
+        -coord 3 0) \
+    -axis 3 \
+    - | \
+mrconvert - \
+    tmp-sub-05_epi.nii \
+    -strides -1,+2,+3,+4 \
+    -force
+
+echo $'0 1 0 0.1\n0 -1 0 0.1\n' | \
+    tee tmp-sub-05_epi.txt
+
+topupcmd="topup --imain=tmp-sub-04_epi.nii --datain=tmp-sub-04_epi.txt --config=${FSLDIR}/etc/flirtsch/b02b0_2.cnf --out=tmp_topup_sub-04"
 echo $topupcmd
 $topupcmd
 
-#topup \
-#    --imain=tmp-sub-04_epi.nii \
-#    --datain=tmp-sub-04_epi.txt \
-#    --config=${FSLDIR}/etc/flirtsch/b02b0_2.cnf \
-#    --out=tmp-out
+topupcmd="topup --imain=tmp-sub-05_epi.nii --datain=tmp-sub-05_epi.txt --config=${FSLDIR}/etc/flirtsch/b02b0_1.cnf --out=tmp_topup_sub-05 --fout=tmp_topupfield_sub-05.nii"
+echo $topupcmd
+$topupcmd
 
 # Different strings that could possibly be provided by the user at the command-line
 dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force \
-    -topup_files tmp-out -debug
+    -topup_files tmp_topup_sub-04
 testing_diff_header tmp.mif dwifslpreproc/rpepair_default.mif.gz
 
 dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force \
-    -topup_files tmp-out_ -debug
+    -topup_files tmp_topup_sub-04_
 testing_diff_header tmp.mif dwifslpreproc/rpepair_default.mif.gz
 
 dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force \
-    -topup_files tmp-out_fieldcoef.nii.gz -debug
+    -topup_files tmp_topup_sub-04_fieldcoef.nii.gz
 testing_diff_header tmp.mif dwifslpreproc/rpepair_default.mif.gz
 
 dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force \
-    -topup_files tmp-out_movpar.txt -debug
+    -topup_files tmp_topup_sub-04_movpar.txt
 testing_diff_header tmp.mif dwifslpreproc/rpepair_default.mif.gz
 
+# Running explicit volume recombination without access to a field map image,
+#   due to providing -topup_files but not -topup_field,
+#   should execute to completion,
+#   but a suitable warning message should be produced
+dwifslpreproc tmp-sub-05_dwi.mif tmp.mif -rpe_header -force \
+    -topup_files tmp_topup_sub-05 2>&1 |
+grep "Explicit volume recombination done without access to field map image"
+testing_diff_header tmp.mif dwifslpreproc/rpeall.mif.gz
 
+dwifslpreproc tmp-sub-05_dwi.mif tmp.mif -rpe_header -force \
+    -topup_files tmp_topup_sub-05 \
+    -topup_field tmp_topupfield_sub-05.nii*
+testing_diff_header tmp.mif dwifslpreproc/rpeall.mif.gz

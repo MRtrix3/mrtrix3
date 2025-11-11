@@ -19,7 +19,13 @@
 #include "file/matrix.h"
 #include "math/sphere.h"
 
+namespace MR::App {
+class Option;
+}
+
 namespace MR::DWI::Directions {
+
+extern App::Option cartesian_option;
 
 Eigen::MatrixXd load_spherical(const std::string &filename);
 Eigen::MatrixXd load_cartesian(const std::string &filename);

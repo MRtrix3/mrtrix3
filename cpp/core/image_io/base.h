@@ -25,18 +25,18 @@
 #include "mrtrix.h"
 #include "types.h"
 
-#define MAX_FILES_PER_IMAGE 256U
-
 namespace MR {
-
 class Header;
+} // namespace MR
 
 //! Classes responsible for actual image loading & writing
 /*! These classes are designed to provide a consistent interface for image
  * loading & writing, so that various non-trivial types of image storage
  * can be accommodated. These include compressed files, and images stored
  * as mosaic (e.g. Siemens DICOM mosaics). */
-namespace ImageIO {
+namespace MR::ImageIO {
+
+constexpr ssize_t max_files_per_image = 256;
 
 class Base {
 public:
@@ -100,6 +100,4 @@ protected:
   virtual void unload(const Header &header) = 0;
 };
 
-} // namespace ImageIO
-
-} // namespace MR
+} // namespace MR::ImageIO

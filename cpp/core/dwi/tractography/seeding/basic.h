@@ -18,6 +18,7 @@
 
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/base.h"
+#include "dwi/tractography/seeding/seeding.h"
 
 // By default, the rejection sampler will perform its sampling based on image intensity values,
 //   and then randomly select a position within that voxel
@@ -30,7 +31,7 @@ namespace MR::DWI::Tractography::Seeding {
 class Sphere : public Base {
 
 public:
-  Sphere(const std::string &in) : Base(in, "sphere", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
+  Sphere(const std::string &in) : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) {
     auto F = parse_floats(in);
     if (F.size() != 4)
       throw Exception("Could not parse seed \"" + in +
@@ -50,7 +51,8 @@ private:
 class SeedMask : public Base {
 
 public:
-  SeedMask(const std::string &in) : Base(in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), mask(in) {
+  SeedMask(const std::string &in)
+      : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)), mask(in) {
     volume = get_count(mask) * mask.spacing(0) * mask.spacing(1) * mask.spacing(2);
   }
 
@@ -64,7 +66,7 @@ class Random_per_voxel : public Base {
 
 public:
   Random_per_voxel(const std::string &in, const size_t num_per_voxel)
-      : Base(in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+      : Base(in, "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
         mask(in),
         num(num_per_voxel),
         inc(0),
@@ -90,7 +92,7 @@ class Grid_per_voxel : public Base {
 
 public:
   Grid_per_voxel(const std::string &in, const size_t os_factor)
-      : Base(in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+      : Base(in, "grid per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
         mask(in),
         os(os_factor),
         pos(os, os, os),

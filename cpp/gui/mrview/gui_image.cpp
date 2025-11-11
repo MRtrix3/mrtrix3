@@ -575,6 +575,40 @@ cfloat Image::nearest_neighbour_value(const Eigen::Vector3f &scanner_point) cons
   return interp.value();
 }
 
+Eigen::VectorXcf Image::trilinear_values(const Eigen::Vector3f &scanner_point, const size_t axis) const {
+  auto interp = Interp::make_linear(image);
+  if (!interp.scanner(scanner_point))
+    return Eigen::VectorXcf::Constant(image.size(axis), cfloat(NAN, NAN));
+  return interp.row(axis);
+}
+
+Eigen::VectorXcf Image::nearest_neighbour_values(const Eigen::Vector3f &scanner_point, const size_t axis) const {
+  auto interp = Interp::make_nearest(image);
+  if (!interp.scanner(scanner_point))
+    return Eigen::VectorXcf::Constant(image.size(axis), cfloat(NAN, NAN));
+  return interp.row(axis);
+}
+
+std::string Image::describe_value(const Eigen::Vector3f &focus) const {
+  std::string value_str(interpolate() ? "interp" : "voxel");
+  if (colourmap == 8 && header().ndim() > 3 && header().size(3) > 1) { // show RGB values
+    const Eigen::VectorXcf values = interpolate() ? trilinear_values(focus) : nearest_neighbour_values(focus);
+    value_str += " values: ";
+    for (ssize_t n = 0; (n + image.index(3)) < values.rows() && n < 3; n++) {
+      if (n > 0)
+        value_str += ", ";
+      value_str += "rgb"[n];
+      value_str += ": ";
+      const ssize_t v = n + image.index(3);
+      value_str += std::isfinite(abs(values[v])) ? str(values[v]) : "?";
+    }
+  } else { // show single value
+    const cfloat value = interpolate() ? trilinear_value(focus) : nearest_neighbour_value(focus);
+    value_str += " value: " + (std::isfinite(abs(value)) ? str(value) : "?");
+  }
+  return value_str;
+}
+
 void Image::reset_windowing(const int plane, const bool axis_locked) {
   if (axis_locked)
     set_windowing(slice_min[plane], slice_max[plane]);

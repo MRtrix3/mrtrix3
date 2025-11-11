@@ -25,12 +25,12 @@
 using namespace MR;
 using namespace App;
 
-#define VALUE_DEFAULT_BG 0.0
-#define VALUE_DEFAULT_CGM 0.5
-#define VALUE_DEFAULT_SGM 0.75
-#define VALUE_DEFAULT_WM 1.0
-#define VALUE_DEFAULT_CSF 0.15
-#define VALUE_DEFAULT_PATH 2.0
+constexpr default_type default_value_background = 0.0;
+constexpr default_type default_value_cgm = 0.5;
+constexpr default_type default_value_sgm = 0.75;
+constexpr default_type default_value_wm = 1.0;
+constexpr default_type default_value_csf = 0.15;
+constexpr default_type default_value_pathology = 2.0;
 
 // clang-format off
 void usage() {
@@ -47,27 +47,27 @@ void usage() {
   OPTIONS
 
   + Option ("bg", "image intensity of background"
-                  " (default: " + str(VALUE_DEFAULT_BG, 2) + ")")
+                  " (default: " + str(default_value_background, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("cgm", "image intensity of cortical grey matter"
-                   " (default: " + str(VALUE_DEFAULT_CGM, 2) + ")")
+                   " (default: " + str(default_value_cgm, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("sgm", "image intensity of sub-cortical grey matter"
-                   " (default: " + str(VALUE_DEFAULT_SGM, 2) + ")")
+                   " (default: " + str(default_value_sgm, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("wm", "image intensity of white matter"
-                  " (default: " + str(VALUE_DEFAULT_WM, 2) + ")")
+                  " (default: " + str(default_value_wm, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("csf", "image intensity of CSF"
-                   " (default: " + str(VALUE_DEFAULT_CSF, 2) + ")")
+                   " (default: " + str(default_value_csf, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("path", "image intensity of pathological tissue"
-                    " (default: " + str(VALUE_DEFAULT_PATH, 2) + ")")
+                    " (default: " + str(default_value_pathology, 2) + ")")
     + Argument ("value").type_float (0.0, 10.0);
 
 }
@@ -81,12 +81,12 @@ void run() {
   Header H(input);
   H.ndim() = 3;
 
-  const float bg_multiplier = get_option_value("bg", VALUE_DEFAULT_BG);
-  const float cgm_multiplier = get_option_value("cgm", VALUE_DEFAULT_CGM);
-  const float sgm_multiplier = get_option_value("sgm", VALUE_DEFAULT_SGM);
-  const float wm_multiplier = get_option_value("wm", VALUE_DEFAULT_WM);
-  const float csf_multiplier = get_option_value("csf", VALUE_DEFAULT_CSF);
-  const float path_multiplier = get_option_value("path", VALUE_DEFAULT_PATH);
+  const float bg_multiplier = get_option_value("bg", default_value_background);
+  const float cgm_multiplier = get_option_value("cgm", default_value_cgm);
+  const float sgm_multiplier = get_option_value("sgm", default_value_sgm);
+  const float wm_multiplier = get_option_value("wm", default_value_wm);
+  const float csf_multiplier = get_option_value("csf", default_value_csf);
+  const float path_multiplier = get_option_value("path", default_value_pathology);
 
   auto output = Image<float>::create(argument[1], H);
 

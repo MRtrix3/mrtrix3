@@ -25,16 +25,15 @@
 #include "math/sphere.h"
 #include "types.h"
 
-#define DWI_BZERO_THRESHOLD_DEFAULT 10.0
-
-namespace MR {
-namespace App {
+namespace MR::App {
 class OptionGroup;
 }
 
 // TODO Move some to metadata
 
-namespace DWI {
+namespace MR::DWI {
+
+constexpr default_type default_bzero_threshold = 22.5;
 
 App::OptionGroup GradImportOptions();
 App::OptionGroup GradExportOptions();
@@ -110,14 +109,16 @@ void save_bvecs_bvals(const Header &, const std::string &, const std::string &);
 
 namespace {
 template <class MatrixType> std::string scheme2str(const MatrixType &G) {
-  std::string dw_scheme;
+  std::ostringstream dw_scheme;
+  dw_scheme.precision(10);
   for (ssize_t row = 0; row < G.rows(); ++row) {
-    std::string line = str(G(row, 0), 10);
+    if (row > 0)
+      dw_scheme << "\n";
+    dw_scheme << G(row, 0);
     for (ssize_t col = 1; col < G.cols(); ++col)
-      line += "," + str(G(row, col), 10);
-    add_line(dw_scheme, line);
+      dw_scheme << "," << G(row, col);
   }
-  return dw_scheme;
+  return dw_scheme.str();
 }
 } // namespace
 
@@ -334,5 +335,4 @@ inline size_t lmax_for_directions(const Eigen::MatrixXd &directions,
   return Math::SH::LforN(mapping.cols());
 }
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI

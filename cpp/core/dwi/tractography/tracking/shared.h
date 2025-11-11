@@ -55,6 +55,7 @@ public:
   float step_size, min_radius, threshold, init_threshold;
   size_t max_seed_attempts;
   bool unidirectional, rk4, stop_on_all_include, implicit_max_num_seeds;
+  curvature_constraint_t curvature_constraint;
   DWI::Tractography::Resampling::Downsampler downsampler;
 
   // Additional members for ACT
@@ -65,7 +66,10 @@ public:
     return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), float(1.0 / 3.0));
   }
 
-  void set_step_and_angle(const float stepsize, const float angle, bool is_higher_order);
+  void set_step_and_angle(const float voxel_frac,
+                          const float angle,
+                          const intrinsic_integration_order_t intrinsic_integration_order,
+                          const curvature_constraint_t curvature_constraint_type);
   void set_num_points();
   void set_num_points(const float angle_minradius_preds, const float max_step_postds);
   void set_cutoff(float cutoff);
@@ -75,22 +79,36 @@ public:
   // (Only utilised for Exec::satisfy_wm_requirement())
   virtual float internal_step_size() const { return step_size; }
 
-  void add_termination(const term_t i) const { terminations[i].fetch_add(1, std::memory_order_relaxed); }
-  void add_rejection(const reject_t i) const { rejections[i].fetch_add(1, std::memory_order_relaxed); }
+  void add_termination(const term_t i) const {
+    terminations[static_cast<ssize_t>(i)].fetch_add(1, std::memory_order_relaxed);
+  }
+  void add_rejection(const reject_t i) const {
+    rejections[static_cast<ssize_t>(i)].fetch_add(1, std::memory_order_relaxed);
+  }
 
 #ifdef DEBUG_TERMINATIONS
   void add_termination(const term_t i, const Eigen::Vector3f &p) const;
 #endif
 
+  size_t termination_count(const term_t i) const {
+    return terminations[static_cast<ssize_t>(i)].load(std::memory_order_seq_cst);
+  }
+  size_t rejection_count(const reject_t i) const {
+    return rejections[static_cast<ssize_t>(i)].load(std::memory_order_seq_cst);
+  }
+
+  bool termination_relevant(const term_t i) const;
+  bool rejection_relevant(const reject_t i) const;
+
 private:
-  mutable std::atomic<size_t> terminations[TERMINATION_REASON_COUNT];
-  mutable std::atomic<size_t> rejections[REJECTION_REASON_COUNT];
+  mutable std::array<std::atomic<size_t>, termination_reason_count> terminations;
+  mutable std::array<std::atomic<size_t>, rejection_reason_count> rejections;
 
   std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 
 #ifdef DEBUG_TERMINATIONS
   Header debug_header;
-  Image<uint32_t> *debug_images[TERMINATION_REASON_COUNT];
+  std::vector<std::unique_ptr<Image<uint32_t>>> debug_images;
   const Transform transform;
 #endif
 };

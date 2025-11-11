@@ -91,21 +91,29 @@ void set_scheme(KeyValues &keyval, const scheme_type &PE) {
     erase(keyval, "TotalReadoutTime");
     return;
   }
-  std::string pe_scheme;
+  std::ostringstream pe_scheme;
   std::string first_line;
   bool variation = false;
   for (ssize_t row = 0; row < PE.rows(); ++row) {
-    std::string line = str(PE(row, 0));
-    for (ssize_t col = 1; col < PE.cols(); ++col)
-      line += "," + str(PE(row, col), 3);
-    add_line(pe_scheme, line);
-    if (first_line.empty())
-      first_line = line;
-    else if (line != first_line)
-      variation = true;
+    std::ostringstream line;
+    line.precision(0);
+    line << static_cast<int>(PE(row, 0));
+    for (ssize_t col = 1; col < 3; ++col)
+      line << "," << static_cast<int>(PE(row, col));
+    line.precision(3);
+    for (ssize_t col = 3; col < PE.cols(); ++col)
+      line << "," << PE(row, col);
+    if (row == 0) {
+      first_line = line.str();
+    } else {
+      pe_scheme << "\n";
+      if (line.str() != first_line)
+        variation = true;
+    }
+    pe_scheme << line.str();
   }
   if (variation) {
-    keyval["pe_scheme"] = pe_scheme;
+    keyval["pe_scheme"] = pe_scheme.str();
     erase(keyval, "PhaseEncodingDirection");
     erase(keyval, "TotalReadoutTime");
   } else {
@@ -293,7 +301,7 @@ void topup2eddy(const scheme_type &PE, Eigen::MatrixXd &config, Eigen::Array<int
   for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
     for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
       bool dir_match = PE.template block<1, 3>(PE_row, 0).isApprox(config.block<1, 3>(config_row, 0));
-      bool time_match = abs(PE(PE_row, 3) - config(config_row, 3)) < 1e-3;
+      bool time_match = abs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
       if (dir_match && time_match) {
         // FSL-style index file indexes from 1
         indices[PE_row] = config_row + 1;

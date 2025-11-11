@@ -21,9 +21,6 @@
 #include "math/legendre.h"
 #include "mrtrix.h"
 
-#define MAX_DIR_CHANGE 0.2
-#define ANGLE_TOLERANCE 1e-4
-
 namespace MR::Math::SH {
 
 /** \defgroup spherical_harmonics Spherical Harmonics
@@ -153,18 +150,14 @@ inline Eigen::Matrix<typename VectorType::Scalar, Eigen::Dynamic, 1> invert(cons
   return ret;
 }
 
-template <typename ValueType> class Transform {
+template <typename ValueType> class TransformBase {
 public:
   using matrix_type = Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>;
 
-  template <class MatrixType>
-  Transform(const MatrixType &dirs, int lmax) : SHT(init_transform(dirs, lmax)), iSHT(pinv(SHT)) {}
+  template <class MatrixType> TransformBase(const MatrixType &dirs, int lmax) : SHT(init_transform(dirs, lmax)) {}
 
-  template <class VectorType> void set_filter(const VectorType &filter) {
-    scale_degrees_forward(SHT, invert(filter));
-    scale_degrees_inverse(iSHT, filter);
-  }
   template <class VectorType1, class VectorType2> void A2SH(VectorType1 &sh, const VectorType2 &amplitudes) const {
+    assert(iSHT.rows() > 0);
     sh.noalias() = iSHT * amplitudes;
   }
   template <class VectorType1, class VectorType2> void SH2A(VectorType1 &amplitudes, const VectorType2 &sh) const {
@@ -179,6 +172,27 @@ public:
 
 protected:
   matrix_type SHT, iSHT;
+};
+
+template <typename ValueType> class Transform : public TransformBase<ValueType> {
+public:
+  template <class MatrixType> Transform(const MatrixType &dirs, int lmax) : TransformBase<ValueType>(dirs, lmax) {
+    TransformBase<ValueType>::iSHT = pinv(TransformBase<ValueType>::SHT);
+  }
+
+  template <class VectorType> void set_filter(const VectorType &filter) {
+    scale_degrees_forward(TransformBase<ValueType>::SHT, invert(filter));
+    scale_degrees_inverse(TransformBase<ValueType>::iSHT, filter);
+  }
+};
+
+template <typename ValueType> class WeightedTransform : public TransformBase<ValueType> {
+public:
+  template <class MatrixType, class VectorType>
+  WeightedTransform(const MatrixType &dirs, const VectorType &weights, int lmax)
+      : TransformBase<ValueType>(dirs, lmax) {
+    TransformBase<ValueType>::iSHT = wls(TransformBase<ValueType>::SHT, weights);
+  }
 };
 
 template <class VectorType>
@@ -429,6 +443,8 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
                                             int lmax,
                                             UnitVectorType &unit_init_dir,
                                             PrecomputedAL<typename VectorType::Scalar> *precomputer = nullptr) {
+  static const default_type max_dir_change = 0.2;
+  static const default_type angle_tolerance = 1e-4;
   using value_type = typename VectorType::Scalar;
   assert(std::isfinite(unit_init_dir[0]));
   for (int i = 0; i < 50; i++) {
@@ -450,8 +466,8 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
 
     if (dt < 0.0)
       dt = -dt;
-    if (dt > MAX_DIR_CHANGE)
-      dt = MAX_DIR_CHANGE;
+    if (dt > max_dir_change)
+      dt = max_dir_change;
 
     del *= dt;
     daz *= dt;
@@ -461,7 +477,7 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
     unit_init_dir[2] -= del * std::sin(el);
     unit_init_dir.normalize();
 
-    if (dt < ANGLE_TOLERANCE)
+    if (dt < angle_tolerance)
       return amplitude;
   }
 

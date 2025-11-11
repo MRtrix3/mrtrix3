@@ -21,8 +21,8 @@ Usage
 Options
 -------
 
-Metric values for fixel-based sparse output images
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Metric values for output fixel data files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-afd image** output the total Apparent Fibre Density per fixel (integral of FOD lobe)
 

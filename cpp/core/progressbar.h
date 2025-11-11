@@ -31,8 +31,6 @@
 #include "timer.h"
 #include "types.h"
 
-#define BUSY_INTERVAL 0.1
-
 namespace MR {
 
 //! implements a progress meter to provide feedback to the user
@@ -55,6 +53,8 @@ namespace MR {
  * done_func() static functions. These functions will then be used throughout
  * the application.  */
 class ProgressBar {
+  static const default_type busy_interval;
+
 public:
   //! Create an unusable ProgressBar.
   explicit ProgressBar() = default;
@@ -104,7 +104,7 @@ public:
   //! update text displayed and optionally increment counter
   /*! This expects a function, functor or lambda function that should
    * return a std::string to replace the text. This functor will only be
-   * called when necessary, i.e. when BUSY_INTERVAL time has elapsed, or if
+   * called when necessary, i.e. when busy_interval time has elapsed, or if
    * the percentage value to display has changed. The reason for passing a
    * functor rather than the text itself is to minimise the overhead of
    * forming the string in cases where this is sufficiently expensive to
@@ -215,11 +215,11 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
     set_text(text_func());
     _ellipsis.clear();
     if (_multiplier)
-      next_time = time + BUSY_INTERVAL;
+      next_time = time + busy_interval;
     else {
-      _value = time / BUSY_INTERVAL;
+      _value = time / busy_interval;
       do {
-        next_time += BUSY_INTERVAL;
+        next_time += busy_interval;
       } while (next_time <= time);
     }
     display_now();
@@ -239,9 +239,9 @@ FORCE_INLINE void ProgressBar::operator++() {
   } else {
     double time = timer.elapsed();
     if (time >= next_time) {
-      _value = time / BUSY_INTERVAL;
+      _value = time / busy_interval;
       do {
-        next_time += BUSY_INTERVAL;
+        next_time += busy_interval;
       } while (next_time <= time);
       display_now();
     }

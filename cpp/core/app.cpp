@@ -29,21 +29,6 @@
 #include "progressbar.h"
 #include "signal_handler.h"
 
-#define MRTRIX_HELP_COMMAND "less -X"
-
-#define HELP_WIDTH 80
-
-#define HELP_PURPOSE_INDENT 0, 4
-#define HELP_ARG_INDENT 8, 20
-#define HELP_OPTION_INDENT 2, 20
-#define HELP_EXAMPLE_INDENT 7
-
-#define MRTRIX_CORE_REFERENCE                                                                                          \
-  "Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, " \
-  "B.; Yeh, C.-H. & Connelly, A. "                                                                                     \
-  "MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. "             \
-  "NeuroImage, 2019, 202, 116137"
-
 namespace MR::App {
 
 Description DESCRIPTION;
@@ -52,6 +37,22 @@ ArgumentList ARGUMENTS;
 OptionList OPTIONS;
 Description REFERENCES;
 bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
+
+const HelpFormatting help_formatting{
+    80,      // const ssize_t width
+    {0, 4},  // const Indents purpose_indents
+    {8, 20}, // const Indents arg_indents
+    {2, 20}, // const Indents option_indents
+    7        // const ssize_t example_indent
+};
+
+const std::string help_command = "less -X";
+
+const std::string core_reference =
+    "Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; " //
+    "Jeurissen, B.; Yeh, C.-H. & Connelly, A. "                                                               //
+    "MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. "  //
+    "NeuroImage, 2019, 202, 116137";                                                                          //
 
 // clang-format off
 OptionGroup __standard_options =
@@ -137,10 +138,10 @@ inline void resize(std::string &text, size_t new_size, char fill) {
   text.resize(text.size() + new_size - size(text), fill);
 }
 
-std::string paragraph(const std::string &header, const std::string &text, int header_indent, int indent) {
-  std::string out, line = std::string(header_indent, ' ') + header + " ";
-  if (size(line) < indent)
-    resize(line, indent, ' ');
+std::string paragraph(const std::string &header, const std::string &text, const HelpFormatting::Indents indents) {
+  std::string out, line = std::string(indents.header, ' ') + header + " ";
+  if (size(line) < indents.main)
+    resize(line, indents.main, ' ');
 
   std::vector<std::string> paragraphs = split(text, "\n");
 
@@ -152,9 +153,9 @@ std::string paragraph(const std::string &header, const std::string &text, int he
         line += " " + words[i++];
         if (i >= words.size())
           break;
-      } while (size(line) + 1 + size(words[i]) < HELP_WIDTH);
+      } while (size(line) + 1 + size(words[i]) < help_formatting.width);
       out += line + "\n";
-      line = std::string(indent, ' ');
+      line = std::string(indents.main, ' ');
     }
   }
   return out;
@@ -213,7 +214,7 @@ std::string help_head(int format) {
 std::string help_synopsis(int format) {
   if (!format)
     return SYNOPSIS;
-  return bold("SYNOPSIS") + "\n\n" + paragraph("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
+  return bold("SYNOPSIS") + "\n\n" + paragraph("", SYNOPSIS, help_formatting.purpose_indents) + "\n";
 }
 
 std::string help_tail(int format) {
@@ -221,12 +222,12 @@ std::string help_tail(int format) {
   if (!format)
     return retval;
 
-  return bold("AUTHOR") + "\n" + paragraph("", AUTHOR, HELP_PURPOSE_INDENT) + "\n" + bold("COPYRIGHT") + "\n" +
-         paragraph("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n" + [&]() {
+  return bold("AUTHOR") + "\n" + paragraph("", AUTHOR, help_formatting.purpose_indents) + "\n" + bold("COPYRIGHT") +
+         "\n" + paragraph("", COPYRIGHT, help_formatting.purpose_indents) + "\n" + [&]() {
            std::string s = bold("REFERENCES") + "\n";
            for (size_t n = 0; n < REFERENCES.size(); ++n)
-             s += paragraph("", REFERENCES[n], HELP_PURPOSE_INDENT) + "\n";
-           s += paragraph("", MRTRIX_CORE_REFERENCE, HELP_PURPOSE_INDENT) + "\n";
+             s += paragraph("", REFERENCES[n], help_formatting.purpose_indents) + "\n";
+           s += paragraph("", core_reference, help_formatting.purpose_indents) + "\n";
            return s;
          }();
 }
@@ -274,7 +275,7 @@ std::string Description::syntax(int format) const {
   if (format)
     s += bold("DESCRIPTION") + "\n\n";
   for (size_t i = 0; i < size(); ++i)
-    s += paragraph("", (*this)[i], HELP_PURPOSE_INDENT) + "\n";
+    s += paragraph("", (*this)[i], help_formatting.purpose_indents) + "\n";
   return s;
 }
 
@@ -284,10 +285,10 @@ Example::Example(const std::string &title, const std::string &code, const std::s
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
 
 std::string Example::syntax(int format) const {
-  std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", HELP_PURPOSE_INDENT);
-  s += std::string(HELP_EXAMPLE_INDENT, ' ') + "$ " + code + "\n";
+  std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", help_formatting.purpose_indents);
+  s += std::string(help_formatting.example_indent, ' ') + "$ " + code + "\n";
   if (!description.empty())
-    s += paragraph("", description, HELP_PURPOSE_INDENT);
+    s += paragraph("", description, help_formatting.purpose_indents);
   if (format)
     s += "\n";
   return s;
@@ -310,7 +311,7 @@ std::string ExampleList::syntax(int format) const {
 }
 
 std::string Argument::syntax(int format) const {
-  std::string retval = paragraph((format ? underline(id, true) : id), desc, HELP_ARG_INDENT);
+  std::string retval = paragraph((format ? underline(id, true) : id), desc, help_formatting.arg_indents);
   if (format)
     retval += "\n";
   return retval;
@@ -342,9 +343,9 @@ std::string Option::syntax(int format) const {
     opt += "  (multiple uses permitted)";
 
   if (format)
-    opt = "  " + opt + "\n" + paragraph("", desc, HELP_PURPOSE_INDENT) + "\n";
+    opt = "  " + opt + "\n" + paragraph("", desc, help_formatting.purpose_indents) + "\n";
   else
-    opt = paragraph(opt, desc, HELP_OPTION_INDENT);
+    opt = paragraph(opt, desc, help_formatting.option_indents);
   return opt;
 }
 
@@ -475,10 +476,10 @@ void print_help() {
   File::Config::init();
 
   // CONF option: HelpCommand
-  // CONF default: less
+  // CONF default: less -X
   // CONF The command to use to display each command's help page (leave
   // CONF empty to send directly to the terminal).
-  const std::string help_display_command = File::Config::get("HelpCommand", MRTRIX_HELP_COMMAND);
+  const std::string help_display_command = File::Config::get("HelpCommand", help_command);
 
   if (!help_display_command.empty()) {
     std::string help_string = get_help_string(1);
@@ -637,7 +638,7 @@ std::string markdown_usage() {
   s += std::string("## References\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i)
     s += std::string(REFERENCES[i]) + "\n\n";
-  s += std::string(MRTRIX_CORE_REFERENCE) + "\n\n";
+  s += core_reference + "\n\n";
 
   s += std::string("**Author:** ") + AUTHOR + "\n\n";
   s += std::string("**Copyright:** ") + COPYRIGHT + "\n\n";
@@ -772,7 +773,7 @@ std::string restructured_text_usage() {
       s += " |br|\n  " + refs[n];
     s += "\n\n";
   }
-  s += std::string(MRTRIX_CORE_REFERENCE) + "\n\n";
+  s += core_reference + "\n\n";
 
   s += std::string("--------------\n\n") + "\n\n**Author:** " + AUTHOR + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
 
