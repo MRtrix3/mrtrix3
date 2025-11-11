@@ -91,7 +91,7 @@ jobs:
       run: |
          brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
          brew install $PACKAGES || brew install $PACKAGES
-         brew link --force qt5
+         brew link --force qt5 eigen@3
 
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }
