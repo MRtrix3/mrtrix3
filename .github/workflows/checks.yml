@@ -82,7 +82,7 @@ jobs:
 
     env:
       CFLAGS: -Werror
-      PACKAGES: "qt5 eigen pkg-config fftw libpng"
+      PACKAGES: "qt5 eigen@3 pkg-config fftw libpng"
 
     steps:
     - uses: actions/checkout@v1
