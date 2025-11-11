@@ -53,10 +53,10 @@ void usage() {
   + Fixel::format_description;
 
   ARGUMENTS
-  + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_various()
+  + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
   + Argument ("filter", "the filtering operation to perform;"
                         " options are: " + join (filters, ", ")).type_choice (filters)
-  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_various();
+  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out();
 
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix"

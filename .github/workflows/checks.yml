@@ -57,8 +57,14 @@ jobs:
     - name: build
       run: cmake --build build
 
+    - name: interface tests
+      run: cd build && ctest -L cli --output-on-failure
+
     - name: unit tests
       run: cd build && ctest -L unittest --output-on-failure --parallel 4
+
+    - name: compatibility tests
+      run: cd build && ctest -L compatibility --output-on-failure
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -116,8 +122,14 @@ jobs:
     - name: build
       run: cmake --build build
 
+    - name: interface tests
+      run: cd build && ctest -L cli --output-on-failure
+
     - name: unit tests
       run: cd build && ctest -L unittest --output-on-failure --parallel 4
+
+    - name: compatibility tests
+      run: cd build && ctest -L compatibility --output-on-failure
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -171,8 +183,14 @@ jobs:
     - name: build
       run: cmake --build build
 
+    - name: interface tests
+      run: cd build && ctest -L cli --output-on-failure
+
     - name: unit tests
       run: cd build && ctest -L unittest --output-on-failure --parallel 4
+
+    - name: compatibility tests
+      run: cd build && ctest -L compatibility --output-on-failure
 
     - name: binary tests
       run: cd build && ctest -L binary --output-on-failure
@@ -243,8 +261,14 @@ jobs:
       - name: build
         run: cmake --build build
 
+      - name: interface tests
+        run: cd build && ctest -L cli --output-on-failure
+
       - name: unit tests
         run: cd build && ctest -L unittest --output-on-failure --parallel 4
+
+      - name: compatibility tests
+        run: cd build && ctest -L compatibility --output-on-failure
 
       - name: binary tests
         run: cd build && ctest -L binary --output-on-failure

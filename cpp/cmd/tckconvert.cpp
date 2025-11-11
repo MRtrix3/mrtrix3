@@ -60,8 +60,8 @@ void usage() {
               " output-0000.txt, output-0001.txt, output-0002.txt, ...");
 
   ARGUMENTS
-    + Argument ("input", "the input track file.").type_various()
-    + Argument ("output", "the output track file.").type_file_out();
+    + Argument ("input", "the input track file.").type_tracks_in().type_file_in().type_text()
+    + Argument ("output", "the output track file.").type_tracks_out().type_file_out();
 
   OPTIONS
     + Option ("scanner2voxel",

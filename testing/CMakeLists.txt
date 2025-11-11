@@ -44,7 +44,9 @@ set(SCRIPT_DATA_DIR
 )
 
 add_subdirectory(binaries)
+add_subdirectory(integration_tests)
 add_subdirectory(lib)
 add_subdirectory(scripts)
 add_subdirectory(tools)
+add_subdirectory(ui_tests)
 add_subdirectory(unit_tests)

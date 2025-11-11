@@ -47,7 +47,7 @@ void usage() {
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("inputs", "the input(s) for the specified operation").allow_multiple()
+  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
                            " one of: " + join(operations, ", ") +
                            " (see description section for details).").type_choice (operations)
