@@ -186,7 +186,7 @@ std::string underline(const std::string &text, bool ignore_whitespace = false) {
 
 } // namespace
 
-std::string help_head(int format) {
+std::string help_head(const bool format) {
   if (!format) {
     return std::string(NAME) + ": " +
            (project_version ? std::string("external MRtrix3 project, version ") + project_version +
@@ -211,13 +211,13 @@ std::string help_head(int format) {
          (project_version ? "external MRtrix3 project" : "part of the MRtrix3 package") + "\n\n";
 }
 
-std::string help_synopsis(int format) {
+std::string help_synopsis(const bool format) {
   if (!format)
     return SYNOPSIS;
   return bold("SYNOPSIS") + "\n\n" + paragraph("", SYNOPSIS, help_formatting.purpose_indents) + "\n";
 }
 
-std::string help_tail(int format) {
+std::string help_tail(const bool format) {
   std::string retval;
   if (!format)
     return retval;
@@ -232,7 +232,7 @@ std::string help_tail(int format) {
          }();
 }
 
-std::string usage_syntax(int format) {
+std::string usage_syntax(const bool format) {
   std::string s = "USAGE";
   if (format)
     s = bold(s) + "\n\n     ";
@@ -268,7 +268,7 @@ Description &Description::operator+(const char *const text[]) {
   return *this;
 }
 
-std::string Description::syntax(int format) const {
+std::string Description::syntax(const bool format) const {
   if (!size())
     return std::string();
   std::string s;
@@ -284,7 +284,7 @@ Example::Example(const std::string &title, const std::string &code, const std::s
 
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
 
-std::string Example::syntax(int format) const {
+std::string Example::syntax(const bool format) const {
   std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", help_formatting.purpose_indents);
   s += std::string(help_formatting.example_indent, ' ') + "$ " + code + "\n";
   if (!description.empty())
@@ -299,7 +299,7 @@ ExampleList &ExampleList::operator+(const Example &example) {
   return *this;
 }
 
-std::string ExampleList::syntax(int format) const {
+std::string ExampleList::syntax(const bool format) const {
   if (!size())
     return std::string();
   std::string s;
@@ -310,7 +310,7 @@ std::string ExampleList::syntax(int format) const {
   return s;
 }
 
-std::string Argument::syntax(int format) const {
+std::string Argument::syntax(const bool format) const {
   std::string retval = paragraph((format ? underline(id, true) : id), desc, help_formatting.arg_indents);
   if (format)
     retval += "\n";
@@ -322,14 +322,14 @@ ArgumentList &ArgumentList::operator+(const Argument &argument) {
   return *this;
 }
 
-std::string ArgumentList::syntax(int format) const {
+std::string ArgumentList::syntax(const bool format) const {
   std::string s;
   for (size_t i = 0; i < size(); ++i)
     s += (*this)[i].syntax(format);
   return s + "\n";
 }
 
-std::string Option::syntax(int format) const {
+std::string Option::syntax(const bool format) const {
   std::string opt("-");
   opt += id;
 
@@ -349,16 +349,18 @@ std::string Option::syntax(int format) const {
   return opt;
 }
 
-std::string OptionGroup::header(int format) const { return format ? bold(name) + "\n\n" : std::string(name) + ":\n"; }
+std::string OptionGroup::header(const bool format) const {
+  return format ? bold(name) + "\n\n" : std::string(name) + ":\n";
+}
 
-std::string OptionGroup::contents(int format) const {
+std::string OptionGroup::contents(const bool format) const {
   std::string s;
   for (size_t i = 0; i < size(); ++i)
     s += (*this)[i].syntax(format);
   return s;
 }
 
-std::string OptionGroup::footer(int format) { return format ? "" : "\n"; }
+std::string OptionGroup::footer(const bool format) { return format ? "" : "\n"; }
 
 OptionList &OptionList::operator+(const OptionGroup &option_group) {
   push_back(option_group);
@@ -381,7 +383,7 @@ OptionList &OptionList::operator+(const Argument &argument) {
   return *this;
 }
 
-std::string OptionList::syntax(int format) const {
+std::string OptionList::syntax(const bool format) const {
   std::vector<std::string> group_names;
   for (size_t i = 0; i < size(); ++i) {
     if (std::find(group_names.begin(), group_names.end(), (*this)[i].name) == group_names.end())
@@ -465,7 +467,7 @@ std::string Option::usage() const {
   return stream.str();
 }
 
-std::string get_help_string(int format) {
+std::string get_help_string(const bool format) {
   return help_head(format) + help_synopsis(format) + usage_syntax(format) + ARGUMENTS.syntax(format) +
          DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) +
          __standard_options.header(format) + __standard_options.contents(format) + __standard_options.footer(format) +

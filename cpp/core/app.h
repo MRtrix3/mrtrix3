@@ -69,10 +69,10 @@ extern const std::string help_command;
 
 extern const std::string core_reference;
 
-std::string help_head(int format);
-std::string help_synopsis(int format);
-std::string help_tail(int format);
-std::string usage_syntax(int format);
+std::string help_head(const bool format);
+std::string help_synopsis(const bool format);
+std::string help_tail(const bool format);
+std::string usage_syntax(const bool format);
 
 //! \addtogroup CmdParse
 // @{
@@ -84,7 +84,7 @@ public:
 
   Description &operator+(const char *const text[]);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! object for storing a single example command usage
@@ -94,7 +94,7 @@ public:
   const std::string title, code, description;
 
   operator std::string() const;
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Example's
@@ -102,7 +102,7 @@ class ExampleList : public std::vector<Example> {
 public:
   ExampleList &operator+(const Example &example);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Argument's
@@ -110,7 +110,7 @@ class ArgumentList : public std::vector<Argument> {
 public:
   ArgumentList &operator+(const Argument &argument);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of option groups
@@ -124,7 +124,7 @@ public:
 
   OptionGroup &back();
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 void check_overwrite(const std::string &name);

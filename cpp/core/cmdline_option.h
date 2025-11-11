@@ -60,6 +60,8 @@ class ArgModifierFlags {
 public:
   ArgModifierFlags() = default;
   ArgModifierFlags(const ArgModifierFlags &) = default;
+  ~ArgModifierFlags() = default;
+  ArgModifierFlags &operator=(const ArgModifierFlags &) = default;
   void set_optional() { data.set(Optional); }
   void set_required() { data.reset(Optional); }
   void set_allow_multiple() { data.set(AllowMultiple); }
@@ -292,7 +294,7 @@ public:
     return *this;
   }
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
   std::string usage() const;
 };
 
@@ -381,7 +383,7 @@ public:
 
   bool is(const std::string &name) const { return name == id; }
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
   std::string usage() const;
 };
 
@@ -422,9 +424,9 @@ public:
     return std::vector<Option>::back();
   }
 
-  std::string header(int format) const;
-  std::string contents(int format) const;
-  static std::string footer(int format);
+  std::string header(const bool format) const;
+  std::string contents(const bool format) const;
+  static std::string footer(const bool format);
 };
 
 } // namespace MR::App
