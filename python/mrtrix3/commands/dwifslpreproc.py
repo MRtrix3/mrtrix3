@@ -1027,7 +1027,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrinfo dwi.mif -export_grad_mrtrix grad.b')
   dwi2mask_algo = CONFIG['Dwi2maskAlgorithm']
 
-  eddy_in_topup_option = ''
+  eddy_in_topup_option = []
   dwi_post_eddy_crop_option = ''
   slice_padded = False
   dwi_path = 'dwi.mif'
@@ -1189,7 +1189,7 @@ def execute(): #pylint: disable=unused-variable
 
     app.cleanup(applytopup_image_list)
 
-    eddy_in_topup_option = ' --topup=field'
+    eddy_in_topup_option = ['--topup=field']
 
   else:
 
@@ -1203,12 +1203,12 @@ def execute(): #pylint: disable=unused-variable
   # Use user supplied mask for eddy instead of one derived from the images using dwi2mask
   if app.ARGS.eddy_mask:
     if image.match('eddy_mask.mif', dwi_path, up_to_dim=3):
-      run.command('mrconvert eddy_mask.mif eddy_mask.nii -datatype float32 -stride -1,+2,+3')
+      run.command(f'mrconvert eddy_mask.mif eddy_mask.nii -datatype float32 {STRIDES_OPTION_FSL_COMPAT_3D}')
     else:
       app.warn('User-provided processing mask for eddy does not match DWI voxel grid; resampling')
       run.command(f'mrtransform eddy_mask.mif - -template {dwi_path} -interp linear | '
                   f'mrthreshold - -abs 0.5 - | '
-                  f'mrconvert - eddy_mask.nii -datatype float32 -stride -1,+2,+3')
+                  f'mrconvert - eddy_mask.nii -datatype float32 {STRIDES_OPTION_FSL_COMPAT_3D}')
     app.cleanup('eddy_mask.mif')
 
   # Generate the text file containing slice timing / grouping information if necessary
@@ -1246,10 +1246,6 @@ def execute(): #pylint: disable=unused-variable
     eddy_manual_options.append('--slspec=slspec.txt')
 
 
-  # Revert eddy_manual_options from a list back to a single string
-  eddy_manual_options = (' ' + ' '.join(eddy_manual_options)) if eddy_manual_options else ''
-
-
   # Prepare input data for eddy
   run.command(f'mrconvert {dwi_path} {import_dwi_pe_table_option} {dwi_permvols_preeddy_option} eddy_in.nii'
               ' -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt'
@@ -1258,15 +1254,22 @@ def execute(): #pylint: disable=unused-variable
 
   # Run eddy
   # If a CUDA version is in PATH, run that first; if it fails, re-try using the non-CUDA version
-  eddy_all_options = f'--imain=eddy_in.nii --mask=eddy_mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt ' \
-                     f'--bvecs=bvecs --bvals=bvals ' \
-                     f'{eddy_in_topup_option} {eddy_manual_options} --out=dwi_post_eddy --verbose'
+  eddy_all_options = ['--imain=eddy_in.nii',
+                      '--mask=eddy_mask.nii',
+                      '--acqp=eddy_config.txt',
+                      '--index=eddy_indices.txt',
+                      '--bvecs=bvecs',
+                      '--bvals=bvals'] \
+                     + eddy_in_topup_option \
+                     + eddy_manual_options \
+                     + ['--out=dwi_post_eddy',
+                        '--verbose']
   eddy_cuda_cmd = fsl.eddy_binary(True)
   eddy_openmp_cmd = fsl.eddy_binary(False)
   if eddy_cuda_cmd:
     # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
     try:
-      eddy_output = run.command(f'{eddy_cuda_cmd} {eddy_all_options}')
+      eddy_output = run.command([eddy_cuda_cmd] + eddy_all_options)
     except run.MRtrixCmdError as exception_cuda:
       if not eddy_openmp_cmd:
         raise
@@ -1275,7 +1278,7 @@ def execute(): #pylint: disable=unused-variable
       app.console('CUDA version of "eddy" was not successful; '
                   'attempting OpenMP version')
       try:
-        eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
+        eddy_output = run.command([eddy_openmp_cmd] + eddy_all_options)
       except run.MRtrixCmdError as exception_openmp:
         with open('eddy_openmp_failure_output.txt', 'wb') as eddy_output_file:
           eddy_output_file.write(str(exception_openmp).encode('utf-8', errors='replace'))
@@ -1284,10 +1287,10 @@ def execute(): #pylint: disable=unused-variable
         eddy_openmp_header = f'{"="*len(eddy_openmp_cmd)}\n{eddy_openmp_cmd}\n{"="*len(eddy_openmp_cmd)}\n'
         exception_stdout = f'{eddy_cuda_header}{exception_cuda.stdout}\n\n{eddy_openmp_header}{exception_openmp.stdout}\n\n'
         exception_stderr = f'{eddy_cuda_header}{exception_cuda.stderr}\n\n{eddy_openmp_header}{exception_openmp.stderr}\n\n'
-        raise run.MRtrixCmdError(f'eddy* {eddy_all_options}', 1, exception_stdout, exception_stderr)
+        raise run.MRtrixCmdError(f'eddy* {" ".join(eddy_all_options)}', 1, exception_stdout, exception_stderr)
 
   else:
-    eddy_output = run.command(f'{eddy_openmp_cmd} {eddy_all_options}')
+    eddy_output = run.command([eddy_openmp_cmd] + eddy_all_options)
   eddy_terminal_output = eddy_output.stdout + '\n' + eddy_output.stderr + '\n'
   with open('eddy_output.txt', 'wb') as eddy_output_file:
     eddy_output_file.write(eddy_terminal_output.encode('utf-8', errors='replace'))
