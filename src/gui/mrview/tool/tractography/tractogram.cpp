@@ -573,6 +573,7 @@ namespace MR
               gl::MultiDrawArrays(mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
             } else if (element_counts[buf] > 0 && element_buffers[buf] != 0) {
               // Use the EBO stored with this VAO to render all tracks in this chunk
+              gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, element_buffers[buf]);
               gl::Enable(gl::PRIMITIVE_RESTART);
               gl::PrimitiveRestartIndex(PRIMITIVE_RESTART_SENTINEL);
               gl::DrawElements(gl::LINE_STRIP, element_counts[buf], gl::UNSIGNED_INT, nullptr);
