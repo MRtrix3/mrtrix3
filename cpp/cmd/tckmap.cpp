@@ -64,7 +64,7 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
       "(references an internal direction set),"
       " or a path to a text file containing a set of directions"
       " stored as azimuth/elevation pairs")
-    + Argument ("path").type_various()
+    + Argument ("path").type_file_in().type_integer()
   + Option ("tod",
       "generate a Track Orientation Distribution (TOD) in each voxel;"
       " need to specify the maximum spherical harmonic degree lmax to use"

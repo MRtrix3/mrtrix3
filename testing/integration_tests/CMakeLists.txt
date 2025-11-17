@@ -6,17 +6,9 @@ target_compile_definitions(gtest PRIVATE
     $<TARGET_PROPERTY:mrtrix::common,INTERFACE_COMPILE_DEFINITIONS>
 )
 
-set(UNIT_TESTS_CPP_SRCS
-    bitset_tests.cpp
-    erfinv_tests.cpp
-    icls_tests.cpp
-    ordered_queue_tests.cpp
-    parse_ints_tests.cpp
-    platform_tests.cpp
-    roi_tests.cpp
-    sh_precomputer_tests.cpp
-    shuffle_tests.cpp
-    to_tests.cpp
+set(INTEGRATION_TESTS_BASH_SRCS
+    npyread
+    npywrite
 )
 
 get_filename_component(SOURCE_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
@@ -34,7 +26,9 @@ if(MINGW AND WIN32)
       )
 endif()
 
-find_package(Threads REQUIRED)
+find_package(Python3
+    COMPONENTS NumPy
+)
 
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
@@ -44,36 +38,23 @@ list(APPEND EXEC_DIRS "$ENV{PATH}")
 dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 
 
-add_executable(mrtrix-unit-tests
-    ${UNIT_TESTS_CPP_SRCS}
-)
-set_target_properties(mrtrix-unit-tests PROPERTIES
-    LINK_DEPENDS_NO_SHARED true
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
-)
-target_link_libraries(mrtrix-unit-tests PRIVATE
-    mrtrix::core
-    mrtrix::executable-version
-    mrtrix::common
-    GTest::gtest_main
-    Threads::Threads
-)
-target_compile_definitions(mrtrix-unit-tests PRIVATE
-    # To avoid conflicts with MRtrix's FAIL macro in exception.h
-    GTEST_DONT_DEFINE_FAIL
-)
-gtest_discover_tests(mrtrix-unit-tests
-    PROPERTIES LABELS "unittest"
-)
-
 include(BashTests)
-function (add_bash_unit_test FILE_SRC)
+function (add_bash_integration_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_SRC}"
-        PREFIX "unittest"
+        PREFIX "integrationtest"
         WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
-        LABELS "unittest;${NAME}"
+        ENVIRONMENT "PYTHONPATH=${PYTHON_ENV_PATH}"
+        LABELS "integration;${NAME}"
     )
 endfunction()
+
+if(${Python3_NumPy_FOUND})
+    foreach(INTEGRATION_TEST ${INTEGRATION_TESTS_BASH_SRCS})
+        add_bash_integration_test(${INTEGRATION_TEST})
+    endforeach()
+else()
+    message(WARNING "Python numpy module not found; omitting .npy format integration tests")
+endif()

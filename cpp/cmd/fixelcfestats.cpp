@@ -108,9 +108,7 @@ void usage() {
   + Argument ("contrast", "the contrast matrix,"
                           " specified as rows of weights").type_file_in ()
 
-  // .type_various() rather than .type_directory_in() to catch people trying to
-  //   pass a track file, and give a more informative error message
-  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_various ()
+  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_directory_in()
 
   + Argument ("out_fixel_directory", "the output directory where results will be saved."
                                      " Will be created if it does not exist").type_text();
@@ -173,12 +171,6 @@ private:
 };
 
 void run() {
-  if (Path::has_suffix(argument[4], ".tck"))
-    throw Exception("This version of fixelcfestats requires as input not a track file, but a "
-                    "pre-calculated fixel-fixel connectivity matrix; in addition, input fixel "
-                    "data must be pre-smoothed. Please check command / pipeline documentation "
-                    "specific to this software version.");
-
   const value_type cfe_dh = get_option_value("cfe_dh", Fixel::Filter::cfe_default_dh);
   const value_type cfe_e = get_option_value("cfe_e", Fixel::Filter::cfe_default_e);
   const value_type cfe_h = get_option_value("cfe_h", Fixel::Filter::cfe_default_h);

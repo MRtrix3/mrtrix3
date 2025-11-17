@@ -34,12 +34,12 @@ void usage() {
   SYNOPSIS = "Perform basic operations on a connectome";
 
   ARGUMENTS
-  + Argument ("input", "the input connectome.").type_text ()
+  + Argument ("input", "the input connectome.").type_file_in()
 
   + Argument ("operation", "the operation to apply,"
                            " one of: " + join(operations, ", ") + ".").type_choice (operations)
 
-  + Argument ("output", "the output connectome.").type_text();
+  + Argument ("output", "the output connectome.").type_file_out();
 
 }
 // clang-format on

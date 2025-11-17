@@ -6,17 +6,9 @@ target_compile_definitions(gtest PRIVATE
     $<TARGET_PROPERTY:mrtrix::common,INTERFACE_COMPILE_DEFINITIONS>
 )
 
-set(UNIT_TESTS_CPP_SRCS
-    bitset_tests.cpp
-    erfinv_tests.cpp
-    icls_tests.cpp
-    ordered_queue_tests.cpp
-    parse_ints_tests.cpp
-    platform_tests.cpp
-    roi_tests.cpp
-    sh_precomputer_tests.cpp
-    shuffle_tests.cpp
-    to_tests.cpp
+set(UI_TESTS_BASH_SRCS
+    cpp_cli
+    python_cli
 )
 
 get_filename_component(SOURCE_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
@@ -34,7 +26,7 @@ if(MINGW AND WIN32)
       )
 endif()
 
-find_package(Threads REQUIRED)
+find_package(Python3)
 
 include(DirsToUnix)
 set(EXEC_DIRS ${CMAKE_CURRENT_BINARY_DIR})
@@ -44,36 +36,19 @@ list(APPEND EXEC_DIRS "$ENV{PATH}")
 dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 
 
-add_executable(mrtrix-unit-tests
-    ${UNIT_TESTS_CPP_SRCS}
-)
-set_target_properties(mrtrix-unit-tests PROPERTIES
-    LINK_DEPENDS_NO_SHARED true
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
-)
-target_link_libraries(mrtrix-unit-tests PRIVATE
-    mrtrix::core
-    mrtrix::executable-version
-    mrtrix::common
-    GTest::gtest_main
-    Threads::Threads
-)
-target_compile_definitions(mrtrix-unit-tests PRIVATE
-    # To avoid conflicts with MRtrix's FAIL macro in exception.h
-    GTEST_DONT_DEFINE_FAIL
-)
-gtest_discover_tests(mrtrix-unit-tests
-    PROPERTIES LABELS "unittest"
-)
-
 include(BashTests)
-function (add_bash_unit_test FILE_SRC)
+function (add_bash_ui_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_SRC}"
-        PREFIX "unittest"
+        PREFIX "uitest"
         WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
-        LABELS "unittest;${NAME}"
+        ENVIRONMENT "PYTHONPATH=${PYTHON_ENV_PATH}"
+        LABELS "cli;${NAME}"
     )
 endfunction()
+
+foreach(UI_TEST ${UI_TESTS_BASH_SRCS})
+    add_bash_ui_test(${UI_TEST})
+endforeach()

@@ -234,7 +234,7 @@ void usage() {
   + Option ("copy_properties",
             "clear all generic properties"
             " and replace with the properties from the image / file specified.")
-  + Argument ("source").type_various()
+  + Argument ("source").type_image_in().type_file_in()
 
   + Stride::Options
 
