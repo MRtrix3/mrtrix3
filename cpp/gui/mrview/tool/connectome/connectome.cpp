@@ -2478,7 +2478,7 @@ void Connectome::initialise(std::string_view path) {
   for (node_t n = 1; n <= max_index; ++n)
     node_coms[n] *= (1.0F / static_cast<float>(node_volumes[n]));
 
-  selected_nodes.resize(max_index + 1);
+  selected_nodes = Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(max_index + 1);
 
   nodes.clear();
   const size_t pixheight = dynamic_cast<Node_list *>(node_list->tool)->row_height();
@@ -3723,7 +3723,7 @@ void Connectome::calculate_edge_alphas() {
 }
 
 void Connectome::node_selection_changed(const std::vector<node_t> &list) {
-  selected_nodes.clear();
+  selected_nodes.setZero();
   selected_node_count = list.size();
   for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
     selected_nodes[*n] = true;

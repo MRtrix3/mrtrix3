@@ -27,8 +27,6 @@
 #include "math/stats/typedefs.h"
 #include "math/zstatistic.h"
 
-#include "misc/bitset.h"
-
 namespace MR::Math::Stats::GLM {
 
 extern const std::string column_ones_description;
@@ -358,14 +356,14 @@ protected:
   const std::vector<CohortDataImport> &importers;
   const bool nans_in_data, nans_in_columns;
 
-  void get_mask(const index_type ie, BitSet &, const matrix_type &extra_columns) const;
-  void apply_mask(const BitSet &mask,
+  void get_mask(const index_type ie, element_mask_type &mask, const matrix_type &extra_columns) const;
+  void apply_mask(const element_mask_type &mask,
                   matrix_type::ConstColXpr data,
                   const matrix_type &shuffling_matrix,
                   const matrix_type &extra_column_data,
                   matrix_type &Mfull_masked,
                   matrix_type &shuffling_matrix_masked,
-                  vector_type &y_masked) const;
+                  vector_type &data_masked) const;
 };
 
 /** \addtogroup Statistics
@@ -414,7 +412,7 @@ protected:
   vector_type gamma_weights;
 
   // Need to apply the row selection mask to the variance groups in addition to other data
-  void apply_mask_VG(const BitSet &mask, index_array_type &VG_masked, index_array_type &VG_counts) const;
+  void apply_mask_VG(const element_mask_type &mask, index_array_type &VG_masked, index_array_type &VG_counts) const;
 };
 
 } // namespace MR::Math::Stats::GLM

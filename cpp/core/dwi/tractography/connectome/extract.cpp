@@ -16,8 +16,6 @@
 
 #include "dwi/tractography/connectome/extract.h"
 
-#include "misc/bitset.h"
-
 namespace MR::DWI::Tractography::Connectome {
 
 bool Selector::operator()(const node_t node) const {
@@ -47,16 +45,13 @@ bool Selector::operator()(const NodePair &nodes) const {
 }
 
 bool Selector::operator()(const std::vector<node_t> &nodes) const {
-  BitSet found(list.size());
+  Eigen::Array<bool, Eigen::Dynamic, 1> found(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(list.size()));
   for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
     for (size_t i = 0; i != list.size(); ++i)
       if (*n == list[i])
         found[i] = true;
   }
-  if (exact_match)
-    return found.full();
-  else
-    return !found.empty();
+  return exact_match ? found.all() : found.any();
 }
 
 WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
@@ -252,13 +247,13 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) con
   if (exclusive) {
     // Make sure _all_ nodes are within the list of nodes of interest;
     //   if not, don't pass to any of the selectors
-    BitSet in_list(in.get_nodes().size());
+    Eigen::Array<bool, Eigen::Dynamic, 1> in_list(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.get_nodes().size()));
     for (std::vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
       for (size_t n = 0; n != in.get_nodes().size(); ++n)
         if (*i == in.get_nodes()[n])
           in_list[n] = true;
     }
-    if (!in_list.full()) {
+    if (!in_list.all()) {
       for (size_t i = 0; i != file_count(); ++i)
         writers[i]->skip();
       return true;

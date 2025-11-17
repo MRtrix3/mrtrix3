@@ -39,6 +39,8 @@ namespace MR::Filter {
  */
 class Base : public Header {
 public:
+  using axis_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
+
   template <class HeaderType> Base(const HeaderType &in) : Header(in) {}
 
   template <class HeaderType> Base(const HeaderType &in, std::string_view message) : Header(in), message(message) {}

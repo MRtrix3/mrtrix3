@@ -95,7 +95,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
   if (force_without_bzero && force_with_bzero)
     throw Exception("Incompatible constraints: command tries to enforce proceeding both with and without b=0");
 
-  BitSet to_retain(count(), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> to_retain(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(count()));
 
   auto opt = App::get_options("shells");
   if (!opt.empty()) {
@@ -257,7 +257,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
         to_retain[0] = true;
     } else {
       // default: keep everything
-      to_retain.clear(true);
+      to_retain.setOnes();
     }
 
     if (force_with_bzero && !has_bzero())
@@ -267,7 +267,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
       to_retain[0] = false;
   }
 
-  if (to_retain.full()) {
+  if (to_retain.all()) {
     DEBUG("No DW shells to be removed");
     return *this;
   }
@@ -342,7 +342,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
 }
 
 size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clusters) const {
-  BitSet visited(bvals.size(), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(bvals.size()));
   size_t clusterIdx = 0;
 
   for (ssize_t ii = 0; ii != bvals.size(); ii++) {

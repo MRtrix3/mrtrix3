@@ -21,7 +21,6 @@
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/welch_satterthwaite.h"
-#include "misc/bitset.h"
 #include "thread_queue.h"
 
 #define MRTRIX_USE_ZSTATISTIC_LOOKUP
@@ -797,7 +796,7 @@ void TestVariableHomoscedastic::operator()(const matrix_type &shuffling_matrix,
 
   matrix_type dof(num_elements(), num_hypotheses());
   matrix_type extra_column_data(num_inputs(), importers.size());
-  BitSet element_mask(num_inputs());
+  element_mask_type element_mask(element_mask_type::Zero(num_inputs()));
   matrix_type shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
   vector_type y_masked, Sy, lambda;
   matrix_type XtX, beta;
@@ -918,8 +917,10 @@ void TestVariableHomoscedastic::operator()(const matrix_type &shuffling_matrix,
 
 } // End functor
 
-void TestVariableHomoscedastic::get_mask(const index_type ie, BitSet &mask, const matrix_type &extra_data) const {
-  mask.clear(true);
+void TestVariableHomoscedastic::get_mask(const index_type ie,
+                                         element_mask_type &mask,
+                                         const matrix_type &extra_data) const {
+  mask.setOnes();
   if (nans_in_data) {
     for (index_type row = 0; row != num_inputs(); ++row) {
       if (!std::isfinite(y(row, ie)))
@@ -934,7 +935,7 @@ void TestVariableHomoscedastic::get_mask(const index_type ie, BitSet &mask, cons
   }
 }
 
-void TestVariableHomoscedastic::apply_mask(const BitSet &mask,
+void TestVariableHomoscedastic::apply_mask(const element_mask_type &mask,
                                            matrix_type::ConstColXpr data,
                                            const matrix_type &shuffling_matrix,
                                            const matrix_type &extra_column_data,
@@ -956,7 +957,7 @@ void TestVariableHomoscedastic::apply_mask(const BitSet &mask,
 
     Mfull_masked.resize(finite_count, num_factors());
     data_masked.resize(finite_count);
-    BitSet perm_matrix_mask(num_inputs(), true);
+    element_mask_type perm_matrix_mask(element_mask_type::Ones(num_inputs()));
     index_type out_index = 0;
     for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
       if (mask[in_index]) {
@@ -1020,7 +1021,7 @@ void TestVariableHeteroscedastic::operator()(const matrix_type &shuffling_matrix
   zstats.resize(num_elements(), num_hypotheses());
 
   matrix_type extra_column_data(num_inputs(), importers.size());
-  BitSet element_mask(num_inputs());
+  element_mask_type element_mask(num_inputs(), false);
   matrix_type Mfull_masked, shuffling_matrix_masked, pinvMfull_masked, Rm;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> W;
   index_array_type VG_masked, VG_counts;
@@ -1129,7 +1130,7 @@ void TestVariableHeteroscedastic::operator()(const matrix_type &shuffling_matrix
   } // End looping over elements
 }
 
-void TestVariableHeteroscedastic::apply_mask_VG(const BitSet &mask,
+void TestVariableHeteroscedastic::apply_mask_VG(const element_mask_type &mask,
                                                 index_array_type &VG_masked,
                                                 index_array_type &VG_counts) const {
   VG_masked.resize(mask.count());

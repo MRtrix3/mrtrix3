@@ -18,7 +18,7 @@
 
 #include <set>
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/directions.h"
 #include "dwi/tractography/streamline.h"
 #include "image.h"
 #include "types.h"

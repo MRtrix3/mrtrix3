@@ -22,7 +22,6 @@
 #include "app.h"
 #include "dwi/gradient.h"
 #include "file/config.h"
-#include "misc/bitset.h"
 #include "types.h"
 
 namespace MR::App {

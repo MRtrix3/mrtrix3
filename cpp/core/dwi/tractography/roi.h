@@ -20,7 +20,6 @@
 #include "image.h"
 #include "interp/linear.h"
 #include "math/rng.h"
-#include "misc/bitset.h"
 #include "transform.h"
 
 namespace MR::DWI::Tractography {
@@ -144,7 +143,7 @@ public:
         return (true);
     return false;
   }
-  void contains(const Eigen::Vector3f &p, BitSet &retval) const {
+  void contains(const Eigen::Vector3f &p, Eigen::Array<bool, Eigen::Dynamic, 1> &retval) const {
     for (size_t n = 0; n < R.size(); ++n)
       if (R[n].contains(p))
         retval[n] = true;
@@ -198,13 +197,16 @@ public:
 class IncludeROIVisitation {
 public:
   IncludeROIVisitation(const ROIUnorderedSet &unordered, const ROIOrderedSet &ordered)
-      : unordered(unordered), ordered(ordered), visited(unordered.size()), state(ordered.size()) {}
+      : unordered(unordered),
+        ordered(ordered),
+        visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(unordered.size())),
+        state(ordered.size()) {}
 
   IncludeROIVisitation(const IncludeROIVisitation &) = default;
   IncludeROIVisitation &operator=(const IncludeROIVisitation &) = delete;
 
   void reset() {
-    visited.clear();
+    visited.setZero();
     state.reset();
   }
   size_t size() const { return unordered.size() + ordered.size(); }
@@ -214,13 +216,13 @@ public:
     ordered.contains(p, state);
   }
 
-  operator bool() const { return (visited.full() && state.all_entered()); }
-  bool operator!() const { return (!visited.full() || !state.all_entered()); }
+  operator bool() const { return (visited.all() && state.all_entered()); }
+  bool operator!() const { return (!visited.all() || !state.all_entered()); }
 
 protected:
   const ROIUnorderedSet &unordered;
   const ROIOrderedSet &ordered;
-  BitSet visited;
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited;
   ROIOrderedSet::LoopState state;
 };
 
