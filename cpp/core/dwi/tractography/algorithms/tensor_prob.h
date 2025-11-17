@@ -20,10 +20,7 @@
 #include "dwi/tractography/algorithms/tensor_det.h"
 #include "dwi/tractography/rng.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Algorithms {
+namespace MR::DWI::Tractography::Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
@@ -60,7 +57,7 @@ public:
 
   term_t next() override {
     if (!source.get(pos, values))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
     return Tensor_Det::do_next();
   }
 
@@ -134,7 +131,4 @@ protected:
   Interp source;
 };
 
-} // namespace Algorithms
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Algorithms

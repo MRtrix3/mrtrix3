@@ -104,13 +104,12 @@ endif()
 target_link_libraries(mrtrix-core PUBLIC
     Eigen3::Eigen
     ZLIB::ZLIB
-    ${FFTW_LIBRARIES}
+    fftw3::fftw
     mrtrix::common
     mrtrix::version
     Threads::Threads
     nlohmann_json::nlohmann_json
     nifti::nifti
-    half::half
 )
 
 # On Windows, the libraries need to be in the same directory as the executables

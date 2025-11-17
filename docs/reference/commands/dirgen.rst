@@ -16,7 +16,7 @@ Usage
     dirgen [ options ]  ndir dirs
 
 -  *ndir*: the number of directions to generate.
--  *dirs*: the text file to write the directions to, as [ az el ] pairs.
+-  *dirs*: the text file to write the directions to, as [ az in ] pairs.
 
 Description
 -----------
@@ -32,9 +32,11 @@ Options
 
 -  **-restarts num** specify the number of restarts to perform (default: 10).
 
+-  **-fixed direction** *(multiple uses permitted)* specify a fixed direction (comm-separateed floats) that will always be included at the start of the scheme
+
 -  **-unipolar** optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI
 
--  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
+-  **-cartesian** Output directions in Cartesian coordinates [x y z] instead of spherical angles [az in].
 
 Standard options
 ^^^^^^^^^^^^^^^^

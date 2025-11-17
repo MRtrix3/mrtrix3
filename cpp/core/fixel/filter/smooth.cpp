@@ -23,12 +23,14 @@
 
 namespace MR::Fixel::Filter {
 
+const float Smooth::default_fwhm = 10.0F;
+const float Smooth::default_threshold = 0.01F;
+
 Smooth::Smooth(Image<index_type> index_image,
                const Matrix::Reader &matrix,
-               const Image<bool> &mask_image,
                const float smoothing_fwhm,
                const float smoothing_threshold)
-    : mask_image(mask_image), matrix(matrix), threshold(smoothing_threshold) {
+    : matrix(matrix), threshold(smoothing_threshold) {
   set_fwhm(smoothing_fwhm);
   // For smoothing, we need to be able to quickly
   //   calculate the distance between any pair of fixels
@@ -46,25 +48,6 @@ Smooth::Smooth(Image<index_type> index_image,
       fixel_positions[offset + fixel_index] = scanner;
   }
 }
-
-Smooth::Smooth(Image<index_type> index_image, const Matrix::Reader &matrix, const Image<bool> &mask_image)
-    : Smooth(index_image, matrix, mask_image, DEFAULT_FIXEL_SMOOTHING_FWHM, DEFAULT_FIXEL_SMOOTHING_MINWEIGHT) {}
-
-Smooth::Smooth(Image<index_type> index_image,
-               const Matrix::Reader &matrix,
-               const float smoothing_fwhm,
-               const float smoothing_threshold)
-    : Smooth(index_image, matrix, Image<bool>(), smoothing_fwhm, smoothing_threshold) {
-  Header mask_header = Fixel::data_header_from_index(index_image);
-  mask_header.datatype() = DataType::Bit;
-  assert(size_t(mask_header.size(0)) == matrix.size());
-  mask_image = Image<bool>::scratch(mask_header, "full scratch fixel mask");
-  for (auto l = Loop(0)(mask_image); l; ++l)
-    mask_image.value() = true;
-}
-
-Smooth::Smooth(Image<index_type> index_image, const Matrix::Reader &matrix)
-    : Smooth(index_image, matrix, DEFAULT_FIXEL_SMOOTHING_FWHM, DEFAULT_FIXEL_SMOOTHING_MINWEIGHT) {}
 
 void Smooth::set_fwhm(const float fwhm) {
   stdev = fwhm / 2.3548f;
@@ -102,38 +85,32 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
   class Worker {
   public:
     Worker(const Smooth &master, const Image<float> &input, const Image<float> &output)
-        : master(master), matrix(master.matrix), input(input), output(output), mask(master.mask_image) {}
+        : master(master), matrix(master.matrix), input(input), output(output) {}
 
     bool operator()(const size_t fixel) {
-      mask.index(0) = output.index(0) = fixel;
-      if (mask.value()) {
-        const Eigen::Vector3f &pos(master.fixel_positions[fixel]);
-        const auto connectivity = matrix[fixel];
-        default_type sum_weights(0.0);
-        output.value() = 0.0;
-        for (const auto &c : connectivity) {
-          mask.index(0) = input.index(0) = c.index();
-          if (mask.value() && std::isfinite(static_cast<float>(input.value()))) {
-            const Matrix::connectivity_value_type weight =
-                c.value() * master.gaussian_const1 *
-                std::exp(master.gaussian_const2 * (master.fixel_positions[c.index()] - pos).squaredNorm());
-            if (weight >= master.threshold) {
-              output.value() += weight * input.value();
-              sum_weights += weight;
-            }
+      const Eigen::Vector3f &pos(master.fixel_positions[fixel]);
+      const auto connectivity = matrix[fixel];
+      default_type sum_weights(0.0);
+      output.index(0) = fixel;
+      output.value() = 0.0;
+      for (const auto &c : connectivity) {
+        input.index(0) = c.index();
+        if (std::isfinite(static_cast<float>(input.value()))) {
+          const Matrix::connectivity_value_type weight =
+              c.value() * master.gaussian_const1 *
+              std::exp(master.gaussian_const2 * (master.fixel_positions[c.index()] - pos).squaredNorm());
+          if (weight >= master.threshold) {
+            output.value() += weight * input.value();
+            sum_weights += weight;
           }
         }
-        if (sum_weights) {
-          output.value() /= sum_weights;
-        } else if (connectivity.empty()) {
-          // Provide unsmoothed value if disconnected
-          input.index(0) = fixel;
-          output.value() = input.value();
-        } else {
-          output.value() = std::numeric_limits<float>::quiet_NaN();
-        }
+      }
+      if (sum_weights != 0.0) {
+        output.value() /= sum_weights;
       } else {
-        output.value() = std::numeric_limits<float>::quiet_NaN();
+        // Provide unsmoothed value if disconnected / excluded from mask
+        input.index(0) = fixel;
+        output.value() = input.value();
       }
       return true;
     }
@@ -144,7 +121,6 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
     Matrix::Reader matrix;
     Image<float> input;
     Image<float> output;
-    Image<bool> mask;
   };
 
   Thread::run_queue(Source(input.size(0)), Thread::batch(size_t()), Thread::multi(Worker(*this, input, output)));

@@ -32,7 +32,7 @@ Note that if the -mask option is used, the output fixel directory will still con
 In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
 
 Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+https://mrtrix.readthedocs.io/en/3.0.7/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
@@ -64,8 +64,8 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-permutations_nonstationarity file** manually define the permutations (relabelling) for computing the emprical statistics for non-stationarity correction. The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns n defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). Overrides the -nshuffles_nonstationarity option.
 
-Parameters for the Connectivity-based Fixel Enhancement algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Parameters for the Connectivity-based Fixel Enhancement (CFE) algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-cfe_dh value** the height increment used in the cfe integration (default: 0.1)
 

@@ -51,12 +51,28 @@ extern std::vector<std::string> raw_arguments_list;
 extern const char *project_version;
 extern const char *project_build_date;
 
-const char *argtype_description(ArgType type);
+struct HelpFormatting {
+  struct Indents {
+    ssize_t header;
+    ssize_t main;
+  };
+  const ssize_t width;
+  const Indents purpose_indents;
+  const Indents arg_indents;
+  const Indents option_indents;
+  const ssize_t example_indent;
+};
 
-std::string help_head(int format);
-std::string help_synopsis(int format);
-std::string help_tail(int format);
-std::string usage_syntax(int format);
+extern const HelpFormatting help_formatting;
+
+extern const std::string help_command;
+
+extern const std::string core_reference;
+
+std::string help_head(const bool format);
+std::string help_synopsis(const bool format);
+std::string help_tail(const bool format);
+std::string usage_syntax(const bool format);
 
 //! \addtogroup CmdParse
 // @{
@@ -68,7 +84,7 @@ public:
 
   Description &operator+(const char *const text[]);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! object for storing a single example command usage
@@ -78,7 +94,7 @@ public:
   const std::string title, code, description;
 
   operator std::string() const;
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Example's
@@ -86,7 +102,7 @@ class ExampleList : public std::vector<Example> {
 public:
   ExampleList &operator+(const Example &example);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Argument's
@@ -94,7 +110,7 @@ class ArgumentList : public std::vector<Argument> {
 public:
   ArgumentList &operator+(const Argument &argument);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of option groups
@@ -108,7 +124,7 @@ public:
 
   OptionGroup &back();
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 void check_overwrite(const std::string &name);
@@ -141,10 +157,16 @@ class ParsedArgument {
 public:
   operator std::string() const { return p; }
 
-  const std::string &as_text() const { return p; }
-  bool as_bool() const { return to<bool>(p); }
+  const std::string &as_text() const {
+    assert(arg->types[ArgTypeFlags::Text]);
+    return p;
+  }
+  bool as_bool() const {
+    assert(arg->types[ArgTypeFlags::Boolean]);
+    return to<bool>(p);
+  }
   int64_t as_int() const;
-  uint64_t as_uint() const { return uint64_t(as_int()); }
+  uint64_t as_uint() const;
   default_type as_float() const;
 
   std::vector<int32_t> as_sequence_int() const;

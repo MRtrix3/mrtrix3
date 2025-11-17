@@ -20,6 +20,7 @@
 #include "degibbs/degibbs.h"
 #include "degibbs/unring2d.h"
 #include "degibbs/unring3d.h"
+#include "metadata/bids.h"
 
 using namespace MR;
 using namespace App;
@@ -159,11 +160,14 @@ void run() {
   auto slice_encoding_it = header.keyval().find("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     if (mode == 1) {
-      WARN("running 3D volume-wise unringing, but image header contains \"SliceEncodingDirection\" field");
-      WARN("If data were acquired using multi-slice encoding, run in default 2D mode.");
+      WARN("running 3D volume-wise unringing,"                            //
+           " but image header contains \"SliceEncodingDirection\" field;" //
+           " if data were acquired using multi-slice encoding,"           //
+           " run in default 2D mode.");                                   //
     } else {
       try {
-        const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir(slice_encoding_it->second);
+        const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot =
+            Metadata::BIDS::axisid2vector(slice_encoding_it->second);
         std::vector<size_t> auto_slice_axes = {0, 0};
         if (slice_encoding_axis_onehot[0])
           auto_slice_axes = {1, 2};

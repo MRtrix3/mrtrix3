@@ -33,21 +33,19 @@ fi
 
 retval=0
 
-for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp'); do
+for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp'); do
 
-# files to ignore:
-  [[ "$f" -ef "src/gui/shview/icons.h" ||
-     "$f" -ef "src/gui/shview/icons.cpp" ||
-     "$f" -ef "src/gui/mrview/icons.h" ||
-     "$f" -ef "src/gui/mrview/icons.cpp" ||
-     "$f" -ef "core/file/mgh.h" ||
-     "$f" -ef "core/file/json.h" ||
-     "$f" -ef "core/file/nifti2.h" ||
-     "$f" -ef "core/signal_handler.h" ||
-     "$f" -ef "core/signal_handler.cpp" ]] && continue
-
-
-
+# Check for use of #define for constants
+# Intended to catch integers, floats, scientific notation, hexadecimal, bitwise, and strings
+# Check can be disabled for an individual line by including " // check_syntax off"
+  if [[ "$f" -ef "cpp/gui/opengl/gl_core_3_3.h" ]]; then
+    res=""
+  else
+    res=$(
+      cat $f | \
+      $grep -Po '^#define\s+[a-zA-Z_][a-zA-Z0-9_]+\s+(0x[\dA-F]+|0b[01]+|\".*\"|[-+]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)(?!.*check_syntax\s+off)'
+    )
+  fi
 
 # process the file to strip comments, macros, etc:
   cat $f | \
@@ -73,7 +71,7 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | $grep -v '_m
   )
 
 # detect any instances of std::abs (outside of the SFINAE call in core/types.h):
-  if [[ ! "$f" -ef "core/types.h" ]]; then
+  if [[ ! "$f" -ef "cpp/core/types.h" ]]; then
     res="$res"$(
       cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
@@ -111,9 +109,9 @@ else
 
   echo "" >> $LOG
   echo "Please check the following syntax requirements:
-  - Add MEMALIGN() or NOMEMALIGN macro to any class declarations identified above;
+  - Define numerical constants using constexpr rather than preprocessor macros;
+  - Do not use \"using namespace std\";
   - Replace all instances of std::abs() with MR::abs() (or just abs());
   - Replace all instances of %zu in print() calls with PRI_SIZET." >> $LOG
   exit 1
 fi
-

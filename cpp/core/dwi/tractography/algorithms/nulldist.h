@@ -31,8 +31,10 @@ public:
   public:
     Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
-      set_step_and_angle(
-          rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder, Defaults::angle_ifod1, rk4);
+      set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                         Defaults::angle_ifod1,
+                         rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
+                         curvature_constraint_t::LIMITED_SEARCH);
       set_num_points();
       set_cutoff(0.0f);
       sin_max_angle_1o = std::sin(max_angle_1o);
@@ -52,11 +54,11 @@ public:
 
   term_t next() override {
     if (!get_data(source))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
     dir = rand_dir(dir);
     dir.normalize();
     pos += S.step_size * dir;
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 
   float get_metric(const Eigen::Vector3f &, const Eigen::Vector3f &) override { return uniform(rng); }
@@ -110,18 +112,18 @@ public:
     if (++sample_idx < S.num_samples) {
       pos = positions[sample_idx];
       dir = tangents[sample_idx];
-      return CONTINUE;
+      return term_t::CONTINUE;
     }
 
     iFOD2::get_path(positions, tangents, iFOD2::rand_dir(dir));
     if (S.is_act()) {
       if (!act().fetch_tissue_data(positions[S.num_samples - 1]))
-        return EXIT_IMAGE;
+        return term_t::EXIT_IMAGE;
     }
     pos = positions[0];
     dir = tangents[0];
     sample_idx = 0;
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 
   void reverse_track() override {

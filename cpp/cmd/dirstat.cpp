@@ -37,7 +37,7 @@ void usage() {
   DESCRIPTION
     + "This command will accept as inputs:"
     + "- directions file in spherical coordinates"
-         " (ASCII text, [ az el ] space-separated values, one per line);"
+         " (ASCII text, [ az in ] space-separated values, one per line);"
     + "- directions file in Cartesian coordinates"
          " (ASCII text, [ x y z ] space-separated values, one per line);"
     + "- DW gradient files"
@@ -88,11 +88,12 @@ void usage() {
     + Argument ("dirs", "the text file or image containing the directions.").type_file_in();
 
   OPTIONS
+    // TODO This could be a different command-line argument type
     + Option ("output", "output selected metrics as a space-delimited list,"
                         "suitable for use in scripts."
                         " This will produce one line of values per selected shell."
                         " Valid metrics are as specified in the description above.")
-      + Argument ("list")
+      + Argument ("list").type_text()
     + DWI::ShellsOption
     + DWI::GradImportOptions();
 

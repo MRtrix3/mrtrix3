@@ -16,14 +16,9 @@
 
 #pragma once
 
-// If the sum of tissue probabilities is below this threshold, the image is being exited, so a boolean flag is thrown
-// The values will however still be accessible
-#define TISSUE_SUM_THRESHOLD 0.5
+#include "dwi/tractography/ACT/act.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace ACT {
+namespace MR::DWI::Tractography::ACT {
 
 class Tissues {
 
@@ -56,7 +51,7 @@ public:
     wm = (w < 0.0) ? 0.0 : ((w > 1.0) ? 1.0 : w);
     csf = (c < 0.0) ? 0.0 : ((c > 1.0) ? 1.0 : c);
     path = (p < 0.0) ? 0.0 : ((p > 1.0) ? 1.0 : p);
-    return ((is_valid = ((cgm + sgm + wm + csf + path) >= TISSUE_SUM_THRESHOLD)));
+    return ((is_valid = ((cgm + sgm + wm + csf + path) >= tissuesum_threshold)));
   }
 
   template <class ImageType> bool set(ImageType &data) {
@@ -107,7 +102,4 @@ inline std::ostream &operator<<(std::ostream &stream, const Tissues &t) {
   return (stream);
 }
 
-} // namespace ACT
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::ACT

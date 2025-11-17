@@ -344,6 +344,11 @@ public:
     if (buffer_size + tck.size() + 2 > buffer_capacity)
       commit();
 
+    if (tck.size() + 1 >= buffer_capacity) {
+      buffer_capacity = tck.size() + 1;
+      buffer.reset(new vector_type[buffer_capacity]);
+    }
+
     for (const auto &i : tck) {
       assert(i.allFinite());
       add_point(i);
@@ -359,7 +364,7 @@ public:
   }
 
 protected:
-  const size_t buffer_capacity;
+  size_t buffer_capacity;
   std::unique_ptr<vector_type[]> buffer;
   size_t buffer_size;
   std::string weights_buffer;

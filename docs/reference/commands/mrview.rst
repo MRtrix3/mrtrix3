@@ -148,7 +148,7 @@ Tractography tool options
 
 -  **-tractography.tsf_range RangeMin,RangeMax** *(multiple uses permitted)* Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
--  **-tractography.tsf_thresh ThresholdMin,ThesholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
+-  **-tractography.tsf_thresh ThresholdMin,ThresholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
 -  **-tractography.tsf_colourmap index** *(multiple uses permitted)* Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.
 
@@ -164,7 +164,7 @@ ODF tool options
 Fixel plot tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-fixel.load image** *(multiple uses permitted)* Load a fixel file (any file inside a fixel directory, or an old .msf / .msh legacy format file) into the fixel tool.
+-  **-fixel.load image** *(multiple uses permitted)* Load a fixel data file inside a fixel directory into the fixel tool.
 
 Connectome tool options
 ^^^^^^^^^^^^^^^^^^^^^^^

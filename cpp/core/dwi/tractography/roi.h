@@ -116,6 +116,7 @@ public:
 
   void clear() { R.clear(); }
   size_t size() const { return (R.size()); }
+  bool empty() const { return R.empty(); }
   const ROI &operator[](size_t i) const { return (R[i]); }
   void add(const ROI &roi) { R.push_back(roi); }
 

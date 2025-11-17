@@ -28,10 +28,6 @@
 
 #include "math/SH.h"
 
-#include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
-#include "fixel/legacy/keys.h"
-
 namespace MR::DWI::Tractography::SIFT {
 
 // Output functions - non-essential, mostly debugging outputs

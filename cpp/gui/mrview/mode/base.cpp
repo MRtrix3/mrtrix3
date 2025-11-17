@@ -67,21 +67,7 @@ void Base::paintGL() {
       projection.render_text(printf("position: [ %.4g %.4g %.4g ] mm", focus()[0], focus()[1], focus()[2]),
                              LeftEdge | BottomEdge);
       projection.render_text(vox_str, LeftEdge | BottomEdge, 1);
-      std::string value_str;
-      cfloat value;
-      if (image()->interpolate()) {
-        value_str = "interp value: ";
-        value = image()->trilinear_value(window().focus());
-      } else {
-        value_str = "voxel value: ";
-        value = image()->nearest_neighbour_value(window().focus());
-      }
-      if (std::isfinite(abs(value)))
-        value_str += str(value);
-      else
-        value_str += "?";
-
-      projection.render_text(value_str, LeftEdge | BottomEdge, 2);
+      projection.render_text(image()->describe_value(window().focus()), LeftEdge | BottomEdge, 2);
 
       // Draw additional labels from tools
       QList<QAction *> tools = window().tools()->actions();
@@ -248,7 +234,7 @@ Eigen::Quaternionf Base::get_tilt_rotation(const ModelViewProjection &proj) cons
   const Eigen::Vector3f x = proj.screen_to_model_direction(dpos, target());
   const Eigen::Vector3f z = proj.screen_normal();
   const Eigen::Vector3f v(x.cross(z).normalized());
-  float angle = -ROTATION_INC * std::sqrt(float(Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
+  float angle = -rotation_increment * std::sqrt(float(Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
   if (angle > Math::pi_2)
     angle = Math::pi_2;
   return Eigen::Quaternionf(Eigen::AngleAxisf(angle, v));

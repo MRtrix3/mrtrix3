@@ -58,7 +58,10 @@ public:
       if (rk4)
         throw Exception("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
-      set_step_and_angle(Defaults::stepsize_voxels_ifod2, Defaults::angle_ifod2, true);
+      set_step_and_angle(Defaults::stepsize_voxels_ifod2,
+                         Defaults::angle_ifod2,
+                         intrinsic_integration_order_t::HIGHER,
+                         curvature_constraint_t::LIMITED_SEARCH);
       sin_max_angle_ho = std::sin(max_angle_ho);
       set_cutoff(Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
@@ -200,7 +203,7 @@ public:
     if (++sample_idx < S.num_samples) {
       pos = positions[sample_idx];
       dir = tangents[sample_idx];
-      return CONTINUE;
+      return term_t::CONTINUE;
     }
 
     Eigen::Vector3f next_pos, next_dir;
@@ -210,13 +213,13 @@ public:
       get_path(calib_positions, calib_tangents, rotate_direction(dir, calibrate_list[i]));
       float val = path_prob(calib_positions, calib_tangents);
       if (std::isnan(val))
-        return EXIT_IMAGE;
+        return term_t::EXIT_IMAGE;
       else if (val > max_val)
         max_val = val;
     }
 
     if (max_val <= 0.0)
-      return CALIBRATOR;
+      return term_t::CALIBRATOR;
 
     max_val *= calibrate_ratio;
 
@@ -238,11 +241,11 @@ public:
         pos = positions[0];
         dir = tangents[0];
         sample_idx = 0;
-        return CONTINUE;
+        return term_t::CONTINUE;
       }
     }
 
-    return MODEL;
+    return term_t::MODEL;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {
@@ -268,8 +271,8 @@ public:
     const size_t points_to_remove = sample_idx_at_full_length + ((revert_step - 1) * S.num_samples);
     if (tck.get_seed_index() + points_to_remove >= tck.size()) {
       tck.clear();
-      pos = {NaN, NaN, NaN};
-      dir = {NaN, NaN, NaN};
+      pos.setConstant(std::numeric_limits<float>::quiet_NaN());
+      dir.setConstant(std::numeric_limits<float>::quiet_NaN());
       return;
     }
     const size_t new_size = length_to_revert_from - points_to_remove;
@@ -400,9 +403,9 @@ private:
       init_log_prob = 0.5 * std::log(Math::SH::value(P.values, Eigen::Vector3f(0.0, 0.0, 1.0), P.S.lmax));
     }
 
-    float operator()(float el) {
-      P.pos = {0.0f, 0.0f, 0.0f};
-      P.get_path(positions, tangents, Eigen::Vector3f(std::sin(el), 0.0, std::cos(el)));
+    float operator()(float inclination) {
+      P.pos = Eigen::Vector3f::Zero();
+      P.get_path(positions, tangents, Eigen::Vector3f(std::sin(inclination), 0.0, std::cos(inclination)));
 
       float log_prob = init_log_prob;
       for (size_t i = 0; i < P.S.num_samples; ++i) {

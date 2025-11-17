@@ -25,9 +25,9 @@
 #include "interp/linear.h"
 #include "interp/masked.h"
 
-#define GMWMI_NORMAL_PERTURBATION 0.001
-
 namespace MR::DWI::Tractography::ACT {
+
+constexpr default_type gmwmi_normal_perturbation = 0.001;
 
 using namespace MR::DWI::Tractography::Tracking;
 
@@ -46,25 +46,25 @@ public:
 
   term_t check_structural(const Eigen::Vector3f &pos) {
     if (!fetch_tissue_data(pos))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
 
     if (tissues().is_csf())
-      return (sgm_depth ? EXIT_SGM : ENTER_CSF);
+      return (sgm_depth > 0 ? term_t::EXIT_SGM : term_t::ENTER_CSF);
 
     if (tissues().is_gm()) {
       if (tissues().get_cgm() >= tissues().get_sgm())
-        return ENTER_CGM;
+        return term_t::ENTER_CGM;
       ++sgm_depth;
     } else if (sgm_depth) {
       if (seed_in_sgm && !sgm_seed_to_wm) {
         sgm_seed_to_wm = true;
         sgm_depth = 0;
-        return CONTINUE;
+        return term_t::CONTINUE;
       }
-      return EXIT_SGM;
+      return term_t::EXIT_SGM;
     }
 
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 
   bool check_seed(const Eigen::Vector3f &pos) {
@@ -81,7 +81,8 @@ public:
 
     seed_in_sgm = false;
 
-    if ((tissues().is_csf()) || !tissues().get_wm() || ((tissues().get_gm() - tissues().get_wm()) >= GMWMI_ACCURACY))
+    if (tissues().is_csf() > 0.0F || tissues().get_wm() == 0.0F ||
+        ((tissues().get_gm() - tissues().get_wm()) >= gmwmi_accuracy))
       return false;
 
     return true;
@@ -96,11 +97,11 @@ public:
 
     const Tissues tissues_at_pos(tissues());
 
-    const Eigen::Vector3f pos_plus(pos + (dir * GMWMI_NORMAL_PERTURBATION));
+    const Eigen::Vector3f pos_plus(pos + (dir * gmwmi_normal_perturbation));
     fetch_tissue_data(pos_plus);
     const Tissues tissues_plus(tissues());
 
-    const Eigen::Vector3f pos_minus(pos - (dir * GMWMI_NORMAL_PERTURBATION));
+    const Eigen::Vector3f pos_minus(pos - (dir * gmwmi_normal_perturbation));
     fetch_tissue_data(pos_minus);
     const Tissues &tissues_minus(tissues());
 

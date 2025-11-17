@@ -24,8 +24,8 @@
 #include "math/math.h"
 #include "math/median.h"
 #include "memory.h"
+#include "metadata/phase_encoding.h"
 #include "misc/voxel2vector.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 
 #include <limits>
@@ -360,7 +360,7 @@ void run() {
       } catch (...) {
       }
       DWI::clear_DW_scheme(header_out);
-      PhaseEncoding::clear_scheme(header_out);
+      Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
     }
 
     header_out.datatype() = DataType::from_command_line(DataType::Float32);
@@ -439,7 +439,7 @@ void run() {
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception("Image " + path + " has fewer axes than first imput image " + header.name());
+        throw Exception("Image " + path + " has fewer axes than first input image " + header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
           throw Exception("Dimensions of image " + path + " do not match those of first input image " + header.name());
@@ -449,7 +449,7 @@ void run() {
           throw Exception("Image " + path + " has axis with non-unary dimension beyond first input image " +
                           header.name());
       }
-      header.merge_keyval(temp);
+      header.merge_keyval(temp.keyval());
     }
 
     // Instantiate a kernel depending on the operation requested

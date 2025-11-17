@@ -29,15 +29,15 @@ std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
   if (!Path::has_suffix(H.name(), ".mgh.gz") && !Path::has_suffix(H.name(), ".mgz"))
     return std::unique_ptr<ImageIO::Base>();
 
-  std::string mgh_header(MGH_DATA_OFFSET, '\0');
+  std::string mgh_header(File::MGH::data_offset, '\0');
   File::GZ in(H.name(), "rb");
-  in.read(reinterpret_cast<char *>(&mgh_header[0]), MGH_DATA_OFFSET);
+  in.read(reinterpret_cast<char *>(&mgh_header[0]), File::MGH::data_offset);
   std::istringstream s(mgh_header);
   File::MGH::read_header(H, s);
 
   // Remaining header items appear AFTER the data
   // It's possible that these data may not even be there; need to make sure that we don't go over the file size
-  in.seek(MGH_DATA_OFFSET + footprint(H));
+  in.seek(File::MGH::data_offset + footprint(H));
   File::MGH::read_other(H, in);
   in.close();
 
@@ -46,12 +46,12 @@ std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
   std::ostringstream mgh_tailer;
   File::MGH::write_other(H, mgh_tailer);
 
-  auto gz_handler = new ImageIO::GZ(H, MGH_DATA_OFFSET, mgh_tailer.str().size());
+  auto gz_handler = new ImageIO::GZ(H, File::MGH::data_offset, mgh_tailer.str().size());
   memcpy(gz_handler->header(), mgh_header.c_str(), mgh_header.size());
   memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
 
   std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
 
   return io_handler;
 }
@@ -68,14 +68,14 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   File::MGH::write_other(H, mgh_tailer);
 
   File::create(H.name());
-  auto gz_handler = new ImageIO::GZ(H, MGH_DATA_OFFSET, mgh_tailer.str().size());
+  auto gz_handler = new ImageIO::GZ(H, File::MGH::data_offset, mgh_tailer.str().size());
 
-  memset(gz_handler->header(), 0, MGH_DATA_OFFSET);
+  memset(gz_handler->header(), 0, File::MGH::data_offset);
   memcpy(gz_handler->header(), mgh_header.str().c_str(), mgh_header.str().size());
   memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
 
   std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
 
   return io_handler;
 }

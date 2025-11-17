@@ -24,6 +24,7 @@
 #include "progressbar.h"
 
 #include "fixel/filter/base.h"
+#include "fixel/filter/cfe.h"
 #include "fixel/filter/connect.h"
 #include "fixel/filter/smooth.h"
 #include "fixel/matrix.h"
@@ -33,7 +34,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Fixel;
 
-const std::vector<std::string> filters = {"connect", "smooth"};
+const std::vector<std::string> filters = {"cfe", "connect", "smooth"};
 
 // clang-format off
 void usage() {
@@ -52,33 +53,36 @@ void usage() {
   + Fixel::format_description;
 
   ARGUMENTS
-  + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_various()
+  + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
   + Argument ("filter", "the filtering operation to perform;"
                         " options are: " + join (filters, ", ")).type_choice (filters)
-  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_various();
+  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out();
 
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix"
                       " for filtering operations that require it").required()
     + Argument ("file").type_directory_in()
 
+  + Option ("mask", "constrain the filter to operate within a specified binary fixel mask")
+    + Argument ("image").type_image_in()
+
+  + Fixel::Filter::cfe_options
+
   + OptionGroup ("Options specific to the \"connect\" filter")
   + Option ("threshold_value", "specify a threshold for the input fixel data file values"
-                               " (default = " + str(DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD) + ")")
+                               " (default = " + str(Fixel::Filter::Connect::default_value_threshold) + ")")
     + Argument ("value").type_float ()
   + Option ("threshold_connectivity", "specify a fixel-fixel connectivity threshold for connected-component analysis"
-                                      " (default = " + str(DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD) + ")")
+                                      " (default = " + str(Fixel::Filter::Connect::default_connectivity_threshold, 2) + ")")
     + Argument ("value").type_float (0.0)
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
   + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
-                    " (default = " + str(DEFAULT_FIXEL_SMOOTHING_FWHM) + "mm)")
+                    " (default = " + str(Fixel::Filter::Smooth::default_fwhm) + "mm)")
     + Argument ("value").type_float (0.0)
   + Option ("minweight", "apply a minimum threshold to smoothing weights"
-                         " (default = " + str(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT) + ")")
-    + Argument ("value").type_float (0.0)
-  + Option ("mask", "only perform smoothing within a specified binary fixel mask")
-    + Argument ("image").type_image_in();
+                         " (default = " + str(Fixel::Filter::Smooth::default_threshold, 2) + ")")
+    + Argument ("value").type_float (0.0);
 
 }
 // clang-format on
@@ -87,7 +91,15 @@ using value_type = float;
 
 void run() {
 
-  std::set<std::string> option_list{"threhsold_value", "threshold_connectivity", "fwhm", "minweight", "mask"};
+  std::set<std::string> option_list{"cfe_dh",
+                                    "cfe_e",
+                                    "cfe_h",
+                                    "cfe_c",
+                                    "cfe_legacy",
+                                    "threhsold_value",
+                                    "threshold_connectivity",
+                                    "fwhm",
+                                    "minweight"};
 
   Image<float> single_file;
   std::vector<Header> multiple_files;
@@ -115,42 +127,69 @@ void run() {
     }
 
     if (single_file.valid() && !Fixel::fixels_match(index_header, single_file))
-      throw Exception("File \"" + argument[0] +
-                      "\" is not a valid fixel data file (does not match corresponding index image)");
-
-    auto opt = get_options("matrix");
-    Fixel::Matrix::Reader matrix(opt[0][0]);
+      throw Exception("File \"" + argument[0] + "\" is not a valid fixel data file" + //
+                      " (does not match corresponding index image)");                 //
 
     Image<index_type> index_image = index_header.get_image<index_type>();
     const size_t nfixels = Fixel::get_number_of_fixels(index_image);
+
+    auto opt = get_options("mask");
+    Image<bool> mask;
+    if (opt.empty()) {
+      mask = Image<bool>::scratch(MR::Fixel::data_header_from_index(index_image), "scratch true-filled fixel mask");
+      for (auto l = Loop(0)(mask); l; ++l)
+        mask.value() = true;
+      mask.reset();
+    } else {
+      mask = Image<bool>::open(opt[0][0]);
+      MR::Fixel::check_data_file(mask);
+      if (mask.size(1) != 1)
+        throw Exception("Fixel mask must be a 1D fixel data file");
+      if (size_t(mask.size(0)) != nfixels)
+        throw Exception("Number of fixels in mask image (" + str(mask.size(0)) + ")" + //
+                        " does not match number of fixels in index image" +            //
+                        " (" + str(nfixels) + ")");                                    //
+    }
+
+    opt = get_options("matrix");
+    Fixel::Matrix::Reader matrix(opt[0][0], mask);
+
     if (nfixels != matrix.size())
-      throw Exception("Number of fixels in input (" + str(nfixels) +
-                      ") does not match number of fixels in connectivity matrix (" + str(matrix.size()) + ")");
+      throw Exception("Number of fixels in input (" + str(nfixels) + ")" +        //
+                      " does not match number of fixels in connectivity matrix" + //
+                      " (" + str(matrix.size()) + ")");                           //
 
     switch (int(argument[1])) {
     case 0: {
-      const float value = get_option_value("threshold_value", float(DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD));
+      const value_type cfe_dh = get_option_value("cfe_dh", Fixel::Filter::cfe_default_dh);
+      const value_type cfe_e = get_option_value("cfe_e", Fixel::Filter::cfe_default_e);
+      const value_type cfe_h = get_option_value("cfe_h", Fixel::Filter::cfe_default_h);
+      const value_type cfe_c = get_option_value("cfe_c", Fixel::Filter::cfe_default_c);
+      const bool cfe_legacy = get_options("cfe_legacy").size();
+      filter.reset(new Fixel::Filter::CFE(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
+      option_list.erase("cfe_dh");
+      option_list.erase("cfe_e");
+      option_list.erase("cfe_h");
+      option_list.erase("cfe_c");
+      option_list.erase("cfe_legacy");
+    } break;
+    case 1: {
+      const float value = get_option_value("threshold_value", Fixel::Filter::Connect::default_value_threshold);
       const float connect =
-          get_option_value("threshold_connectivity", float(DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD));
+          get_option_value("threshold_connectivity", Fixel::Filter::Connect::default_connectivity_threshold);
+      // TODO What does / should -mask do here?
       filter.reset(new Fixel::Filter::Connect(matrix, value, connect));
       output_header.datatype() = DataType::UInt32;
       output_header.datatype().set_byte_order_native();
       option_list.erase("threshold_value");
       option_list.erase("threshold_connectivity");
     } break;
-    case 1: {
-      const float fwhm = get_option_value("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
-      const float threshold = get_option_value("minweight", float(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT));
-      opt = get_options("mask");
-      if (!opt.empty()) {
-        Image<bool> mask_image = Image<bool>::open(opt[0][0]);
-        filter.reset(new Fixel::Filter::Smooth(index_image, matrix, mask_image, fwhm, threshold));
-      } else {
-        filter.reset(new Fixel::Filter::Smooth(index_image, matrix, fwhm, threshold));
-      }
+    case 2: {
+      const float fwhm = get_option_value("fwhm", Fixel::Filter::Smooth::default_fwhm);
+      const float threshold = get_option_value("minweight", Fixel::Filter::Smooth::default_threshold);
+      filter.reset(new Fixel::Filter::Smooth(index_image, matrix, fwhm, threshold));
       option_list.erase("fwhm");
       option_list.erase("minweight");
-      option_list.erase("mask");
     } break;
     default:
       assert(0);
@@ -159,7 +198,7 @@ void run() {
 
   for (const auto &i : option_list) {
     if (!get_options(i).empty())
-      WARN("Option -" + i + " ignored; not relevant to " + filters[int(argument[1])] + " filter");
+      WARN("Option -" + i + " ignored: not relevant to " + filters[int(argument[1])] + " filter");
   }
 
   if (single_file.valid()) {

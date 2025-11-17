@@ -1,5 +1,4 @@
-
-     tteessttiinngg__ppyytthhoonn__ccllii: external MRtrix3 project
+     tteessttiinngg__ppyytthhoonn__ccllii: part of the MRtrix3 package
 
 SSYYNNOOPPSSIISS
 
@@ -62,8 +61,8 @@ CCuussttoomm  ttyyppeess
   _-_t_r_a_c_k_s___o_u_t trackfile
      An output tractogram
 
-  _-_v_a_r_i_o_u_s spec
-     An option that accepts various types of content
+  _-_c_u_s_t_o_m custom
+     An option with custom type
 
 CCoommpplleexx  iinntteerrffaacceess;;  nnaarrggss,,  mmeettaavvaarr,,  eettcc..
 
@@ -160,7 +159,7 @@ AAUUTTHHOORR
      Robert E. Smith (robert.smith@florey.edu.au)
 
 CCOOPPYYRRIIGGHHTT
-     Copyright (c) 2008-2024 the MRtrix3 contributors.  This Source Code Form is
+     Copyright (c) 2008-2025 the MRtrix3 contributors.  This Source Code Form is
      subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
      the MPL was not distributed with this file, You can obtain one at
      http://mozilla.org/MPL/2.0/.  Covered Software is provided under this

@@ -35,22 +35,7 @@ class ParticleGrid {
 public:
   using ParticleVectorType = std::vector<Particle *>;
 
-  template <class HeaderType> ParticleGrid(const HeaderType &image) {
-    DEBUG("Initialise particle grid.");
-    dims[0] = Math::ceil<size_t>(image.size(0) * image.spacing(0) / (2.0 * Particle::L));
-    dims[1] = Math::ceil<size_t>(image.size(1) * image.spacing(1) / (2.0 * Particle::L));
-    dims[2] = Math::ceil<size_t>(image.size(2) * image.spacing(2) / (2.0 * Particle::L));
-    grid.resize(dims[0] * dims[1] * dims[2]);
-
-    // Initialise scanner-to-grid transform
-    Eigen::DiagonalMatrix<default_type, 3> newspacing(2.0 * Particle::L, 2.0 * Particle::L, 2.0 * Particle::L);
-    Eigen::Vector3d shift(image.spacing(0) / 2.0 - Particle::L,
-                          image.spacing(1) / 2.0 - Particle::L,
-                          image.spacing(2) / 2.0 - Particle::L);
-    T_s2g = image.transform() * newspacing;
-    T_s2g = T_s2g.inverse().translate(shift);
-  }
-
+  ParticleGrid(const Header &H);
   ParticleGrid(const ParticleGrid &) = delete;
   ParticleGrid &operator=(const ParticleGrid &) = delete;
 

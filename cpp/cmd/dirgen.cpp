@@ -22,9 +22,9 @@
 #include "progressbar.h"
 #include "thread.h"
 
-#define DEFAULT_POWER 1
-#define DEFAULT_NITER 10000
-#define DEFAULT_RESTARTS 10
+constexpr ssize_t default_power = 1;
+constexpr ssize_t default_number_iterations = 10000;
+constexpr ssize_t default_number_restarts = 10;
 
 using namespace MR;
 using namespace App;
@@ -59,27 +59,30 @@ void usage() {
 
   ARGUMENTS
     + Argument ("ndir", "the number of directions to generate.").type_integer(6, std::numeric_limits<int>::max())
-    + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
+    + Argument ("dirs", "the text file to write the directions to, as [ az in ] pairs.").type_file_out();
 
   OPTIONS
     + Option ("power", "specify exponent to use for repulsion power law"
-                       " (default: " + str(DEFAULT_POWER) + ")."
+                       " (default: " + str(default_power) + ")."
                        " This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).")
       + Argument ("exp").type_integer(1, std::numeric_limits<int>::max())
 
     + Option ("niter", "specify the maximum number of iterations to perform"
-                       " (default: " + str(DEFAULT_NITER) + ").")
+                       " (default: " + str(default_number_iterations) + ").")
       + Argument ("num").type_integer(1, std::numeric_limits<int>::max())
 
     + Option ("restarts", "specify the number of restarts to perform"
-                          " (default: " + str(DEFAULT_RESTARTS) + ").")
+                          " (default: " + str(default_number_restarts) + ").")
       + Argument ("num").type_integer (1, std::numeric_limits<int>::max())
+
+    + Option ("fixed", "specify a fixed direction (comm-separateed floats)"
+                       " that will always be included at the start of the scheme").allow_multiple()
+      + Argument ("direction").type_sequence_float()
 
     + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model"
                           " rather than the bipolar model normally assumed in DWI")
 
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                           " instead of [az el].");
+    + DWI::Directions::cartesian_option;
 
 }
 // clang-format on
@@ -97,12 +100,12 @@ public:
 
 class Energy {
 public:
-  Energy(ProgressBar &progress)
-      : progress(progress),
-        ndirs(to<int>(argument[0])),
-        bipolar(get_options("unipolar").empty()),
-        power(0),
-        directions(3 * ndirs) {}
+  Energy(ProgressBar &progress, const size_t ndirs) //
+      : progress(progress),                         //
+        ndirs(ndirs),                               //
+        bipolar(get_options("unipolar").empty()),   //
+        power(0),                                   //
+        directions(3 * ndirs) {}                    //
 
 // Non-optimised compilation can't handle recursive inline functions
 #ifdef __OPTIMIZE__
@@ -119,7 +122,9 @@ public:
   // at higher power.
   double init(Eigen::VectorXd &x) {
     Math::RNG::Normal<double> rng;
-    for (size_t n = 0; n < ndirs; ++n) {
+    for (size_t n = 0; n != fixed_directions.size(); ++n)
+      x.segment(3 * n, 3) = fixed_directions[n];
+    for (size_t n = fixed_directions.size(); n < ndirs; ++n) {
       auto d = x.segment(3 * n, 3);
       d[0] = rng();
       d[1] = rng();
@@ -161,8 +166,11 @@ public:
       }
     }
 
+    // don't move those directions that are to remain fixed
+    g.segment(0, 3 * fixed_directions.size()).setZero();
+
     // constrain gradients to lie tangent to unit sphere:
-    for (size_t n = 0; n < ndirs; ++n)
+    for (size_t n = fixed_directions.size(); n < ndirs; ++n)
       g.segment(3 * n, 3) -= x.segment(3 * n, 3).dot(g.segment(3 * n, 3)) * x.segment(3 * n, 3);
 
     return E;
@@ -210,6 +218,7 @@ public:
   static size_t niter;
   static double best_E;
   static Eigen::VectorXd best_directions;
+  static std::vector<Eigen::Vector3d> fixed_directions;
 
 protected:
   ProgressBar &progress;
@@ -223,28 +232,49 @@ protected:
   static std::atomic<size_t> current_start;
 };
 
-size_t Energy::restarts(DEFAULT_RESTARTS);
-int Energy::target_power(DEFAULT_POWER);
-size_t Energy::niter(DEFAULT_NITER);
+size_t Energy::restarts(default_number_restarts);
+int Energy::target_power(default_power);
+size_t Energy::niter(default_number_iterations);
 std::mutex Energy::mutex;
 std::atomic<size_t> Energy::current_start(0);
 double Energy::best_E = std::numeric_limits<double>::infinity();
 Eigen::VectorXd Energy::best_directions;
+std::vector<Eigen::Vector3d> Energy::fixed_directions;
 
 void run() {
-  Energy::restarts = get_option_value("restarts", DEFAULT_RESTARTS);
-  Energy::target_power = get_option_value("power", DEFAULT_POWER);
-  Energy::niter = get_option_value("niter", DEFAULT_NITER);
+  Energy::restarts = get_option_value("restarts", default_number_restarts);
+  Energy::target_power = get_option_value("power", default_power);
+  Energy::niter = get_option_value("niter", default_number_iterations);
+
+  auto opt = get_options("fixed");
+  for (size_t i = 0; i != opt.size(); ++i) {
+    auto value = parse_floats(opt[i][0]);
+    switch (value.size()) {
+    case 2: {
+      Eigen::Vector3d xyz;
+      Math::Sphere::spherical2cartesian(Eigen::Map<Eigen::Vector2d>(value.data()), xyz);
+      Energy::fixed_directions.push_back(xyz);
+    } break;
+    case 3:
+      Energy::fixed_directions.push_back(Eigen::Map<Eigen::Vector3d>(value.data()).normalized());
+      break;
+    default:
+      throw Exception("Fixed directions must be either spherical or cartesian directions"
+                      " (comma-separated 2- or 3-vectors)");
+    }
+  }
+  const size_t ndirs = argument[0];
+  if (Energy::fixed_directions.size() >= ndirs)
+    throw Exception("No directions left to optimise after fixed directions specified");
 
   {
     ProgressBar progress("Optimising directions up to power " + str(Energy::target_power) + " (" +
                          str(Energy::restarts) + " restarts)");
-    Energy energy_functor(progress);
+    Energy energy_functor(progress, ndirs);
     auto threads = Thread::run(Thread::multi(energy_functor), "energy function");
   }
 
   CONSOLE("final energy = " + str(Energy::best_E));
-  size_t ndirs = Energy::best_directions.size() / 3;
   Eigen::MatrixXd directions_matrix(ndirs, 3);
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row(n) = Energy::best_directions.segment(3 * n, 3);

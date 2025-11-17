@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import json, os, shutil
+import json, os, shutil, sys
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, matrix, path, run
 from .contrasts import Contrasts
@@ -608,7 +608,10 @@ def execute(): #pylint: disable=unused-variable
       transform_average_driftref = matrix.load_transform('linear_transform_average_init.txt')
 
     def linear_msg():
-      return f'Optimising template with linear registration (stage {level+1} of {len(linear_scales)}; {regtype})'
+      return 'Optimising template with linear registration' \
+             + (f' (stage {level+1} of {len(linear_scales)}; {regtype})' \
+                if sys.stderr.isatty() \
+                else f' ({len(linear_scales)} stages)')
     progress = app.ProgressBar(linear_msg, len(linear_scales) * len(ins) * (1 + n_contrasts + int(use_masks)))
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
       for inp in ins:
@@ -808,7 +811,10 @@ def execute(): #pylint: disable=unused-variable
     os.mkdir('warps')
     level = 0
     def nonlinear_msg():
-      return f'Optimising template with non-linear registration (stage {level+1} of {len(nl_scales)})'
+      return 'Optimising template with non-linear registration' \
+             + (f' (stage {level+1} of {len(nl_scales)})' \
+                if sys.stderr.isatty() \
+                else f' ({len(nl_scales)} stages)')
     progress = app.ProgressBar(nonlinear_msg, len(nl_scales) * len(ins))
     for level, (scale, niter, lmax) in enumerate(zip(nl_scales, nl_niter, nl_lmax)):
       for inp in ins:

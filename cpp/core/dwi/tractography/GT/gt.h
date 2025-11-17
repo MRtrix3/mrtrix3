@@ -16,10 +16,6 @@
 
 #pragma once
 
-#define ITER_BIGSTEP 10000
-#define FRAC_BURNIN 10
-#define FRAC_PHASEOUT 10
-
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -32,8 +28,12 @@
 
 namespace MR::DWI::Tractography::GT {
 
-const double M_4PI = 4.0 * Math::pi;
-const double M_sqrt4PI = std::sqrt(M_4PI);
+constexpr double M_4PI = 4.0 * Math::pi;
+constexpr double M_sqrt4PI = 3.5449077018110320546;
+
+constexpr ssize_t iter_bigstep = 10000;
+constexpr default_type fraction_burnin = 0.1;
+constexpr default_type fraction_phaseout = 0.1;
 
 struct Properties {
   float p_birth;
@@ -65,10 +65,11 @@ public:
         EintTot(0.0),
         n_iter(0),
         n_max(maxiter),
-        progress("running MH sampler", n_max / ITER_BIGSTEP) {
+        progress("running MH sampler", n_max / iter_bigstep) {
     for (int k = 0; k != 5; k++)
       n_gen[k] = n_acc[k] = 0;
-    alpha = std::pow(T1 / T0, double(ITER_BIGSTEP) / double(n_max - n_max / FRAC_BURNIN - n_max / FRAC_PHASEOUT));
+    alpha = std::pow(T1 / T0,                                                                                       //
+                     double(iter_bigstep) / double(fraction_burnin * (n_max - n_max) - fraction_phaseout * n_max)); //
   }
 
   ~Stats() { out.close(); }
@@ -81,8 +82,8 @@ public:
   bool next() {
     std::lock_guard<std::mutex> lock(mutex);
     ++n_iter;
-    if (n_iter % ITER_BIGSTEP == 0) {
-      if ((n_iter >= n_max / FRAC_BURNIN) && (n_iter < n_max - n_max / FRAC_PHASEOUT))
+    if (n_iter % iter_bigstep == 0) {
+      if ((n_iter >= fraction_burnin * n_max) && (n_iter < n_max - fraction_phaseout * n_max))
         Tint *= alpha;
       progress++;
       out << *this << std::endl;

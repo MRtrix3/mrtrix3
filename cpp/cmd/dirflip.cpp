@@ -49,10 +49,12 @@ void usage() {
   OPTIONS
     + Option ("number", "number of shuffles to try"
                         " (default: " + str(default_number) + ")")
-    +   Argument ("num").type_integer (1)
+      + Argument ("num").type_integer (1)
 
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                           " instead of [az el].");
+    + Option ("preserve", "preserve the sign of some number of directions at the start of the set")
+      + Argument ("num").type_integer(1)
+
+    + DWI::Directions::cartesian_option;
 }
 // clang-format on
 
@@ -61,9 +63,10 @@ using vector3_type = Eigen::Vector3d;
 
 class Shared {
 public:
-  Shared(const Eigen::MatrixXd &directions, size_t target_num_shuffles)
+  Shared(const Eigen::MatrixXd &directions, const size_t target_num_shuffles, const size_t preserve)
       : directions(directions),
         target_num_shuffles(target_num_shuffles),
+        preserve(preserve),
         num_shuffles(0),
         progress("optimising directions for eddy-currents", target_num_shuffles),
         best_signs(directions.rows(), 1),
@@ -94,10 +97,12 @@ public:
 
   std::vector<int> get_init_signs() const { return std::vector<int>(directions.rows(), 1); }
   const std::vector<int> &get_best_signs() const { return best_signs; }
+  size_t get_preserve() const { return preserve; }
 
 protected:
   const Eigen::MatrixXd &directions;
   const size_t target_num_shuffles;
+  const size_t preserve;
   size_t num_shuffles;
   ProgressBar progress;
   std::vector<int> best_signs;
@@ -107,7 +112,10 @@ protected:
 
 class Processor {
 public:
-  Processor(Shared &shared) : shared(shared), signs(shared.get_init_signs()), uniform(0, signs.size() - 1) {}
+  Processor(Shared &shared)
+      : shared(shared),
+        signs(shared.get_init_signs()),
+        uniform(shared.get_preserve(), signs.size() - shared.get_preserve() - 1) {}
 
   void execute() {
     while (eval())
@@ -137,11 +145,12 @@ protected:
 void run() {
   auto directions = DWI::Directions::load_cartesian(argument[0]);
 
-  size_t num_shuffles = get_option_value<size_t>("number", default_number);
+  const size_t num_shuffles = get_option_value<size_t>("number", default_number);
+  const size_t preserve = get_option_value<size_t>("preserve", 0);
 
   std::vector<int> signs;
   {
-    Shared eddy_shared(directions, num_shuffles);
+    Shared eddy_shared(directions, num_shuffles, preserve);
     Thread::run(Thread::multi(Processor(eddy_shared)), "eval thread");
     signs = eddy_shared.get_best_signs();
   }

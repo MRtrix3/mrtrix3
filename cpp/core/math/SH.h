@@ -21,9 +21,6 @@
 #include "math/legendre.h"
 #include "mrtrix.h"
 
-#define MAX_DIR_CHANGE 0.2
-#define ANGLE_TOLERANCE 1e-4
-
 namespace MR::Math::SH {
 
 /** \defgroup spherical_harmonics Spherical Harmonics
@@ -55,14 +52,14 @@ inline size_t LforN(int N) { return N ? 2 * std::floor<size_t>((std::sqrt(float(
 //! form the SH->amplitudes matrix
 /*! This computes the matrix \a SHT mapping spherical harmonic
  * coefficients up to maximum harmonic degree \a lmax onto directions \a
- * dirs (in spherical coordinates, with columns [ azimuth elevation ]). */
+ * dirs (in spherical coordinates, with columns [ azimuth inclination ]). */
 template <class MatrixType>
 Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> init_transform(const MatrixType &dirs,
                                                                                           const int lmax) {
   using namespace Eigen;
   using value_type = typename MatrixType::Scalar;
   if (dirs.cols() != 2)
-    throw Exception("direction matrix should have 2 columns: [ azimuth elevation ]");
+    throw Exception("direction matrix should have 2 columns: [ azimuth inclination ]");
   Matrix<value_type, Dynamic, Dynamic> SHT(dirs.rows(), NforL(lmax));
   Matrix<value_type, Dynamic, 1, 0, 64> AL(lmax + 1);
   for (ssize_t i = 0; i < dirs.rows(); i++) {
@@ -153,18 +150,14 @@ inline Eigen::Matrix<typename VectorType::Scalar, Eigen::Dynamic, 1> invert(cons
   return ret;
 }
 
-template <typename ValueType> class Transform {
+template <typename ValueType> class TransformBase {
 public:
   using matrix_type = Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>;
 
-  template <class MatrixType>
-  Transform(const MatrixType &dirs, int lmax) : SHT(init_transform(dirs, lmax)), iSHT(pinv(SHT)) {}
+  template <class MatrixType> TransformBase(const MatrixType &dirs, int lmax) : SHT(init_transform(dirs, lmax)) {}
 
-  template <class VectorType> void set_filter(const VectorType &filter) {
-    scale_degrees_forward(SHT, invert(filter));
-    scale_degrees_inverse(iSHT, filter);
-  }
   template <class VectorType1, class VectorType2> void A2SH(VectorType1 &sh, const VectorType2 &amplitudes) const {
+    assert(iSHT.rows() > 0);
     sh.noalias() = iSHT * amplitudes;
   }
   template <class VectorType1, class VectorType2> void SH2A(VectorType1 &amplitudes, const VectorType2 &sh) const {
@@ -181,21 +174,42 @@ protected:
   matrix_type SHT, iSHT;
 };
 
+template <typename ValueType> class Transform : public TransformBase<ValueType> {
+public:
+  template <class MatrixType> Transform(const MatrixType &dirs, int lmax) : TransformBase<ValueType>(dirs, lmax) {
+    TransformBase<ValueType>::iSHT = pinv(TransformBase<ValueType>::SHT);
+  }
+
+  template <class VectorType> void set_filter(const VectorType &filter) {
+    scale_degrees_forward(TransformBase<ValueType>::SHT, invert(filter));
+    scale_degrees_inverse(TransformBase<ValueType>::iSHT, filter);
+  }
+};
+
+template <typename ValueType> class WeightedTransform : public TransformBase<ValueType> {
+public:
+  template <class MatrixType, class VectorType>
+  WeightedTransform(const MatrixType &dirs, const VectorType &weights, int lmax)
+      : TransformBase<ValueType>(dirs, lmax) {
+    TransformBase<ValueType>::iSHT = wls(TransformBase<ValueType>::SHT, weights);
+  }
+};
+
 template <class VectorType>
 inline typename VectorType::Scalar value(const VectorType &coefs,
-                                         typename VectorType::Scalar cos_elevation,
+                                         typename VectorType::Scalar cos_inclination,
                                          typename VectorType::Scalar cos_azimuth,
                                          typename VectorType::Scalar sin_azimuth,
                                          int lmax) {
   using value_type = typename VectorType::Scalar;
   value_type amplitude = 0.0;
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);
-  Legendre::Plm_sph(AL, lmax, 0, cos_elevation);
+  Legendre::Plm_sph(AL, lmax, 0, cos_inclination);
   for (int l = 0; l <= lmax; l += 2)
     amplitude += AL[l] * coefs[index(l, 0)];
   value_type c0(1.0), s0(0.0);
   for (int m = 1; m <= lmax; m++) {
-    Legendre::Plm_sph(AL, lmax, m, cos_elevation);
+    Legendre::Plm_sph(AL, lmax, m, cos_inclination);
     value_type c = c0 * cos_azimuth - s0 * sin_azimuth; // std::cos(m*azimuth)
     value_type s = s0 * cos_azimuth + c0 * sin_azimuth; // std::sin(m*azimuth)
     for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
@@ -208,10 +222,10 @@ inline typename VectorType::Scalar value(const VectorType &coefs,
 
 template <class VectorType>
 inline typename VectorType::Scalar value(const VectorType &coefs,
-                                         typename VectorType::Scalar cos_elevation,
+                                         typename VectorType::Scalar cos_inclination,
                                          typename VectorType::Scalar azimuth,
                                          int lmax) {
-  return value(coefs, cos_elevation, std::cos(azimuth), std::sin(azimuth), lmax);
+  return value(coefs, cos_inclination, std::cos(azimuth), std::sin(azimuth), lmax);
 }
 
 template <class VectorType1, class VectorType2>
@@ -353,8 +367,8 @@ public:
     }
   }
 
-  void set(PrecomputedFraction<ValueType> &f, const ValueType elevation) const {
-    f.f2 = elevation / inc;
+  void set(PrecomputedFraction<ValueType> &f, const ValueType inclination) const {
+    f.f2 = inclination / inc;
     int i = int(f.f2);
     if (i < 0) {
       i = 0;
@@ -429,6 +443,8 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
                                             int lmax,
                                             UnitVectorType &unit_init_dir,
                                             PrecomputedAL<typename VectorType::Scalar> *precomputer = nullptr) {
+  static const default_type max_dir_change = 0.2;
+  static const default_type angle_tolerance = 1e-4;
   using value_type = typename VectorType::Scalar;
   assert(std::isfinite(unit_init_dir[0]));
   for (int i = 0; i < 50; i++) {
@@ -450,8 +466,8 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
 
     if (dt < 0.0)
       dt = -dt;
-    if (dt > MAX_DIR_CHANGE)
-      dt = MAX_DIR_CHANGE;
+    if (dt > max_dir_change)
+      dt = max_dir_change;
 
     del *= dt;
     daz *= dt;
@@ -461,7 +477,7 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
     unit_init_dir[2] -= del * std::sin(el);
     unit_init_dir.normalize();
 
-    if (dt < ANGLE_TOLERANCE)
+    if (dt < angle_tolerance)
       return amplitude;
   }
 
@@ -475,7 +491,7 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
 template <class VectorType>
 inline void derivatives(const VectorType &sh,
                         const int lmax,
-                        const typename VectorType::Scalar elevation,
+                        const typename VectorType::Scalar inclination,
                         const typename VectorType::Scalar azimuth,
                         typename VectorType::Scalar &amplitude,
                         typename VectorType::Scalar &dSH_del,
@@ -489,21 +505,21 @@ inline void derivatives(const VectorType &sh,
   }
 
   using value_type = typename VectorType::Scalar;
-  value_type sel = std::sin(elevation);
-  value_type cel = std::cos(elevation);
-  bool atpole = sel < 1e-4;
+  const value_type sin_incl = std::sin(inclination);
+  const value_type cos_incl = std::cos(inclination);
+  bool atpole = sin_incl < 1e-4;
 
   dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
   VLA_MAX(AL, value_type, NforL_mpos(lmax), 64);
 
   if (precomputer) {
     PrecomputedFraction<value_type> f;
-    precomputer->set(f, elevation);
+    precomputer->set(f, inclination);
     precomputer->get(AL, f);
   } else {
     Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> buf(lmax + 1);
     for (int m = 0; m <= lmax; m++) {
-      Legendre::Plm_sph(buf, lmax, m, cel);
+      Legendre::Plm_sph(buf, lmax, m, cos_incl);
       for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
         AL[index_mpos(l, m)] = buf[l];
     }
@@ -555,9 +571,9 @@ inline void derivatives(const VectorType &sh,
   }
 
   if (!atpole) {
-    dSH_daz /= sel;
-    d2SH_deldaz /= sel;
-    d2SH_daz2 /= sel * sel;
+    dSH_daz /= sin_incl;
+    d2SH_deldaz /= sin_incl;
+    d2SH_daz2 /= sin_incl * sin_incl;
   }
 }
 

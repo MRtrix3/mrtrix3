@@ -26,7 +26,7 @@
 #include "file/path.h"
 
 #ifdef MRTRIX_WINDOWS
-#define STDERR_FILENO 2
+#define STDERR_FILENO 2 // check_syntax off
 #endif
 
 namespace MR::SignalHandler {

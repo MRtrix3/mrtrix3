@@ -21,14 +21,16 @@ Usage
 Options
 -------
 
-Metric values for fixel-based sparse output images
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Metric values for output fixel data files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-afd image** output the total Apparent Fibre Density per fixel (integral of FOD lobe)
 
 -  **-peak_amp image** output the amplitude of the FOD at the maximal peak per fixel
 
 -  **-disp image** output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude
+
+-  **-skew image** output a measure of FOD lobe skew as the angle between peak and weighted mean directions
 
 FOD FMLS segmenter options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

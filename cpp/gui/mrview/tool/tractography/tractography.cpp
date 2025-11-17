@@ -815,7 +815,7 @@ void Tractography::add_commandline_options(MR::App::OptionList &options) {
       + Option("tractography.tsf_thresh",
                "Set thresholds for the tractography scalar file."
                " Requires -tractography.tsf_load already provided.").allow_multiple()
-        + Argument("ThresholdMin,ThesholdMax").type_sequence_float()
+        + Argument("ThresholdMin,ThresholdMax").type_sequence_float()
 
       + Option("tractography.tsf_colourmap",
                "Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu."
