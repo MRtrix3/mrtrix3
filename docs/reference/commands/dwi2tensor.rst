@@ -36,9 +36,8 @@ By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted 
 * Monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided).
 
 The tensor coefficients are stored in the output image as follows: |br|
-volumes 0-5: D11, D22, D33, D12, D13, D23
-
-If diffusion kurtosis is estimated using the -dkt option, these are stored as follows: |br|
+volumes 0-5: D11, D22, D33, D12, D13, D23; |br|
+if diffusion kurtosis is estimated using the -dkt option, these are stored as follows: |br|
 volumes 0-2: W1111, W2222, W3333 |br|
 volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333 |br|
 volumes 9-11: W1122, W1133, W2233 |br|

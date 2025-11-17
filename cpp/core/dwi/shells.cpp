@@ -56,7 +56,7 @@ Shell::Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices)
     min = std::min(min, b);
     max = std::max(min, b);
   }
-  mean /= default_type(volumes.size());
+  mean /= static_cast<default_type>(volumes.size());
   for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
     stdev += Math::pow2(grad(*i, 3) - mean);
   stdev = std::sqrt(stdev / (volumes.size() - 1));
@@ -155,7 +155,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
           size_t best_shell = 0;
           bool ambiguous = false;
           for (size_t s = 0; s != count(); ++s) {
-            if (abs(*b - shells[s].get_mean()) <= 1.0) {
+            if (std::fabs(*b - shells[s].get_mean()) <= 1.0) {
               if (shell_selected) {
                 ambiguous = true;
               } else {
@@ -195,7 +195,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
               const default_type stdev =
                   (shells[s].is_bzero() ? 0.5 * bzero_threshold()
                                         : (zero_stdev ? std::sqrt(shells[s].get_mean()) : shells[s].get_stdev()));
-              const default_type num_stdev = abs((*b - shells[s].get_mean()) / stdev);
+              const default_type num_stdev = std::fabs((*b - shells[s].get_mean()) / stdev);
               if (num_stdev < best_num_stdevs) {
                 ambiguous = (num_stdev >= 0.1 * best_num_stdevs);
                 best_shell = s;
@@ -298,7 +298,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
   std::vector<size_t> clusters(bvals.size(), 0);
   const size_t num_shells = clusterBvalues(bvals, clusters);
 
-  if ((num_shells < 1) || (num_shells > std::sqrt(default_type(grad.rows()))))
+  if ((num_shells < 1) || (num_shells > std::sqrt(static_cast<default_type>(grad.rows()))))
     throw Exception("DWI volumes could not be classified into b-value shells; gradient encoding may not represent a "
                     "HARDI sequence");
 
@@ -389,7 +389,7 @@ size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clus
 
 void Shells::regionQuery(const BValueList &bvals, const default_type b, std::vector<size_t> &idx) const {
   for (ssize_t i = 0; i < bvals.size(); i++) {
-    if (bvals[i] > bzero_threshold() && abs(b - bvals[i]) < bvalue_epsilon())
+    if (bvals[i] > bzero_threshold() && std::fabs(b - bvals[i]) < bvalue_epsilon())
       idx.push_back(i);
   }
 }

@@ -19,9 +19,9 @@
 
 namespace MR::Math::SH {
 
-const char *encoding_description =
-    "The spherical harmonic coefficients are stored according to the conventions "
-    "described in the main documentation, which can be found at the following link: \n"
-    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/spherical_harmonics.html";
+const std::string
+    encoding_description("The spherical harmonic coefficients are stored according to the conventions "
+                         "described in the main documentation, which can be found at the following link: \n"
+                         "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/spherical_harmonics.html");
 
 }

@@ -124,11 +124,11 @@ void usage() {
 }
 // clang-format on
 
-format_t format_from_option(const std::string &option_name) {
+format_t format_from_option(std::string_view option_name) {
   auto opt = get_options(option_name);
   if (opt.empty())
     return format_t::THREEVECTOR;
-  switch (int(opt[0][0])) {
+  switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
   case 0:
     return format_t::UNITSPHERICAL;
   case 1:
@@ -141,11 +141,11 @@ format_t format_from_option(const std::string &option_name) {
     throw Exception("Unsupported input to option -" + option_name);
   }
 }
-reference_t reference_from_option(const std::string &option_name) {
+reference_t reference_from_option(std::string_view option_name) {
   auto opt = get_options(option_name);
   if (opt.empty())
     return reference_t::XYZ;
-  switch (int(opt[0][0])) {
+  switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
   case 0:
     return reference_t::XYZ;
   case 1:

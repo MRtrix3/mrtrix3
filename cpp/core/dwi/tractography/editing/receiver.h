@@ -30,7 +30,7 @@ namespace MR::DWI::Tractography::Editing {
 class Receiver {
 
 public:
-  Receiver(const std::string &path, const Properties &properties, const size_t n, const size_t s)
+  Receiver(std::string_view path, const Properties &properties, const size_t n, const size_t s)
       : writer(path, properties),
         number(n),
         skip(s),

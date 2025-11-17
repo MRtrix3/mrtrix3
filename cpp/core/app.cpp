@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <clocale>
+#include <cstddef>
 #include <fcntl.h>
 #include <locale>
 #include <unistd.h>
@@ -25,6 +26,7 @@
 #include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
+#include "mrtrix.h"
 #include "mrtrix_version.h"
 #include "progressbar.h"
 #include "signal_handler.h"
@@ -115,32 +117,35 @@ bool fail_on_warn = false;
 bool terminal_use_colour = true;
 const std::thread::id main_thread_ID = std::this_thread::get_id();
 
-const char *project_version = nullptr;
-const char *project_build_date = nullptr;
+const std::string project_version;
+const std::string project_build_date;
 
 std::vector<std::string> raw_arguments_list;
 
 bool overwrite_files = false;
-void (*check_overwrite_files_func)(const std::string &name) = nullptr;
+void (*check_overwrite_files_func)(std::string_view name) = nullptr;
 
 namespace {
 
-inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, const std::string &stub) {
+inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, std::string_view stub) {
   for (size_t i = 0; i < group.size(); ++i) {
     if (stub.compare(0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
       candidates.push_back(&group[i]);
   }
 }
 
-inline int size(const std::string &text) { return text.size() - 2 * std::count(text.begin(), text.end(), 0x08U); }
-
-inline void resize(std::string &text, size_t new_size, char fill) {
-  text.resize(text.size() + new_size - size(text), fill);
+inline std::string::size_type characters_ignoring_emphasis(std::string_view text) {
+  return text.size() - 2 * std::count(text.begin(), text.end(), 0x08U);
 }
 
-std::string paragraph(const std::string &header, const std::string &text, const HelpFormatting::Indents indents) {
-  std::string out, line = std::string(indents.header, ' ') + header + " ";
-  if (size(line) < indents.main)
+inline void resize(std::string &text, size_t new_size, char fill) {
+  text.resize(text.size() + new_size - characters_ignoring_emphasis(text), fill);
+}
+
+std::string paragraph(std::string_view header, std::string_view text, const HelpFormatting::Indents indents) {
+  std::string out;
+  std::string line = std::string(indents.header, ' ') + std::string(header) + " ";
+  if (characters_ignoring_emphasis(line) < indents.main)
     resize(line, indents.main, ' ');
 
   std::vector<std::string> paragraphs = split(text, "\n");
@@ -153,7 +158,7 @@ std::string paragraph(const std::string &header, const std::string &text, const 
         line += " " + words[i++];
         if (i >= words.size())
           break;
-      } while (size(line) + 1 + size(words[i]) < help_formatting.width);
+      } while (characters_ignoring_emphasis(line) + 1 + characters_ignoring_emphasis(words[i]) < help_formatting.width);
       out += line + "\n";
       line = std::string(indents.main, ' ');
     }
@@ -161,7 +166,7 @@ std::string paragraph(const std::string &header, const std::string &text, const 
   return out;
 }
 
-std::string bold(const std::string &text) {
+std::string bold(std::string_view text) {
   std::string retval(3 * text.size(), '\0');
   for (size_t n = 0; n < text.size(); ++n) {
     retval[3 * n] = retval[3 * n + 2] = text[n];
@@ -170,7 +175,7 @@ std::string bold(const std::string &text) {
   return retval;
 }
 
-std::string underline(const std::string &text, bool ignore_whitespace = false) {
+std::string underline(std::string_view text, bool ignore_whitespace = false) {
   size_t m(0);
   std::string retval(3 * text.size(), '\0');
   for (size_t n = 0; n < text.size(); ++n) {
@@ -189,26 +194,39 @@ std::string underline(const std::string &text, bool ignore_whitespace = false) {
 std::string help_head(const bool format) {
   if (!format) {
     return std::string(NAME) + ": " +
-           (project_version ? std::string("external MRtrix3 project, version ") + project_version +
-                                  "\nbuilt against MRtrix3 version " + mrtrix_version
-                            : std::string("part of the MRtrix3 package, version ") + mrtrix_version) +
+           (project_version.empty() ? ("part of the MRtrix3 package, version " + mrtrix_version)
+                                    : "external MRtrix3 project, version " + project_version +
+                                          "\nbuilt against MRtrix3 version " + mrtrix_version) +
            "\n\n";
   }
 
-  std::string version_string =
-      project_version ? std::string("Version ") + project_version : std::string("MRtrix ") + mrtrix_version;
+  const std::string version_string =
+      project_version.empty() ? std::string("MRtrix ") : ("Version " + project_version) + mrtrix_version;
 
-  std::string date(project_version ? project_build_date : build_date);
+  const std::string date(project_version.empty() ? build_date : project_build_date);
 
-  std::string topline =
-      version_string + std::string(std::max(1, 40 - size(version_string) - size(App::NAME) / 2), ' ') + bold(App::NAME);
-  topline += std::string(80 - size(topline) - size(date), ' ') + date;
+  auto safe_padding = [](std::ptrdiff_t want, std::size_t minimum = 1) -> std::size_t {
+    if (want < static_cast<std::ptrdiff_t>(minimum))
+      return minimum;
+    return static_cast<std::size_t>(want);
+  };
 
-  if (project_version)
+  // compute requested padding to position the program name
+  const std::ptrdiff_t requested_padding = 40 -
+                                           static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(version_string)) -
+                                           (static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(App::NAME)) / 2);
+  std::string topline = version_string + std::string(safe_padding(requested_padding), ' ') + bold(App::NAME);
+
+  // compute requested padding to right-align the date
+  const std::ptrdiff_t requested_padding2 = 80 - static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(topline)) -
+                                            static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(date));
+  topline += std::string(safe_padding(requested_padding2), ' ') + date;
+
+  if (!project_version.empty())
     topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
 
   return topline + "\n\n     " + bold(NAME) + ": " +
-         (project_version ? "external MRtrix3 project" : "part of the MRtrix3 package") + "\n\n";
+         (project_version.empty() ? "part of the MRtrix3 package" : "external MRtrix3 project") + "\n\n";
 }
 
 std::string help_synopsis(const bool format) {
@@ -257,14 +275,19 @@ std::string usage_syntax(const bool format) {
   return s + "\n\n";
 }
 
-Description &Description::operator+(const char *text) {
-  push_back(text);
+Description &Description::operator+(const char *text) { // check_syntax off
+  emplace_back(std::string(text));
   return *this;
 }
 
-Description &Description::operator+(const char *const text[]) {
-  for (const char *const *p = text; *p != nullptr; ++p)
-    push_back(*p);
+Description &Description::operator+(std::string_view text) {
+  emplace_back(std::string(text));
+  return *this;
+}
+
+Description &Description::operator+(const char *const text[]) { // check_syntax off
+  for (const char *const *p = text; *p != nullptr; ++p)         // check_syntax off
+    emplace_back(std::string(*p));
   return *this;
 }
 
@@ -279,7 +302,7 @@ std::string Description::syntax(const bool format) const {
   return s;
 }
 
-Example::Example(const std::string &title, const std::string &code, const std::string &description)
+Example::Example(std::string_view title, std::string_view code, std::string_view description)
     : title(title), code(code), description(description) {}
 
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
@@ -443,7 +466,7 @@ std::string Argument::usage() const {
     stream << " TRACKSOUT";
   if (types[ArgTypeFlags::Choice]) {
     stream << " CHOICE";
-    for (const std::string &p : choices)
+    for (const auto &p : choices)
       stream << " " << p;
   }
   stream << "\n";
@@ -509,9 +532,9 @@ void print_help() {
 #endif
 
 std::string version_string() {
-  std::string version = "== " + App::NAME + " " + (project_version ? project_version : mrtrix_version) + " ==\n" +
-                        str(8 * sizeof(size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date +
-                        (project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("")) +
+  std::string version = "== " + App::NAME + " " + (project_version.empty() ? mrtrix_version : project_version) +
+                        " ==\n" + str(8 * sizeof(size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date +
+                        (project_version.empty() ? std::string("") : " against MRtrix " + mrtrix_version) +
                         ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." +
                         str(EIGEN_MINOR_VERSION) +
                         "\n"
@@ -944,7 +967,7 @@ void parse() {
         for (const auto &og : OPTIONS) {
           for (const auto &o : og) {
             if (std::string(a) == std::string(o.id))
-              potential_options.push_back("'-" + a + "'");
+              potential_options.push_back("'-" + std::string(a) + "'");
           }
         }
       }
@@ -1138,7 +1161,7 @@ void parse() {
   SignalHandler::init();
 }
 
-void init(int cmdline_argc, const char *const *cmdline_argv) {
+void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax off
 #ifdef MRTRIX_WINDOWS
   // force stderr to be unbuffered, and stdout to be line-buffered:
   setvbuf(stderr, nullptr, _IONBF, 0);
@@ -1156,7 +1179,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
     NAME.erase(NAME.size() - 4);
 #endif
 
-  auto argv_quoted = [](const std::string &s) -> std::string {
+  auto argv_quoted = [](std::string_view s) -> std::string {
     for (size_t i = 0; i != s.size(); ++i) {
       if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
         std::string escaped_string("\'");
@@ -1177,13 +1200,13 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
         return escaped_string;
       }
     }
-    return s;
+    return std::string(s);
   };
   command_history_string = cmdline_argv[0];
   for (const auto &a : raw_arguments_list)
     command_history_string += std::string(" ") + argv_quoted(a);
   command_history_string += std::string("  (version=") + mrtrix_version;
-  if (project_version)
+  if (!project_version.empty())
     command_history_string += std::string(", project=") + project_version;
   command_history_string += ")";
 
@@ -1193,7 +1216,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
   srand(time(nullptr));
 }
 
-const std::vector<ParsedOption> get_options(const std::string &name) {
+std::vector<ParsedOption> get_options(std::string_view name) {
   assert(!name.empty());
   assert(name[0] != '-');
   std::vector<ParsedOption> matches;
@@ -1284,7 +1307,7 @@ int64_t App::ParsedArgument::as_int() const {
         }
         if (contains_dotpoint) {
           const default_type prefix = to<default_type>(num);
-          retval = std::round(prefix * default_type(multiplier));
+          retval = std::round(prefix * static_cast<default_type>(multiplier));
         } else {
           retval = to<int64_t>(num) * multiplier;
         }
@@ -1322,13 +1345,18 @@ int64_t App::ParsedArgument::as_int() const {
   throw full_msg;
 }
 
+bool App::ParsedArgument::as_bool() const {
+  assert(arg->types[ArgTypeFlags::Boolean]);
+  return to<bool>(p);
+}
+
 uint64_t App::ParsedArgument::as_uint() const {
   const int64_t signed_value = as_int();
   if (signed_value < 0)
     throw Exception("Attempting to interpret negative user-specified value (" //
                     + str(signed_value)                                       //
                     + " as unsigned integer");                                //
-  return uint64_t(signed_value);
+  return static_cast<uint64_t>(signed_value);
 }
 
 default_type App::ParsedArgument::as_float() const {
@@ -1394,12 +1422,13 @@ void ParsedArgument::error(Exception &e) const {
   throw Exception(e, msg);
 }
 
-void check_overwrite(const std::string &name) {
+void check_overwrite(std::string_view name) {
   if (Path::exists(name) && !overwrite_files) {
     if (check_overwrite_files_func != nullptr)
       check_overwrite_files_func(name);
     else
-      throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
+      throw Exception("output path \"" + std::string(name) +
+                      "\" already exists (use -force option to force overwrite)");
   }
 }
 
@@ -1427,12 +1456,12 @@ ParsedArgument ParsedOption::operator[](size_t num) const {
   return ParsedArgument(opt, &(*opt)[num], args[num], index + num + 1);
 }
 
-bool ParsedOption::operator==(const char *match) const {
+bool ParsedOption::operator==(std::string_view match) const {
   const std::string name = lowercase(match);
   return name == opt->id;
 }
 
-std::string operator+(const char *left, const ParsedArgument &right) {
+std::string operator+(const char *const left, const ParsedArgument &right) { // check_syntax off
   std::string retval(left);
   retval += std::string(right);
   return retval;

@@ -46,7 +46,7 @@ void Wrapper::operator()(in_column_type in, out_column_type out) const {
     matrix_type temp(in.size(), 1);
     (*enhancer)(in, h, temp.col(0));
     const value_type h_multiplier = std::pow(h, H);
-    for (size_t index = 0; index != size_t(in.size()); ++index)
+    for (Eigen::Index index = 0; index != in.size(); ++index)
       out[index] += (std::pow(temp(index, 0), E) * h_multiplier);
   }
 }

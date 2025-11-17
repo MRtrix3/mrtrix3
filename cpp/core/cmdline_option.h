@@ -381,7 +381,7 @@ public:
     return *this;
   }
 
-  bool is(const std::string &name) const { return name == id; }
+  bool is(std::string_view name) const { return name == id; }
 
   std::string syntax(const bool format) const;
   std::string usage() const;

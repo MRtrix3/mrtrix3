@@ -73,6 +73,14 @@ void Renderer::start(const Projection &projection,
   origin_ID = gl::GetUniformLocation(shader, "origin");
 }
 
+void Renderer::draw(const Eigen::Vector3f &origin, int /*buffer_ID*/) const {
+  gl::Uniform3fv(origin_ID, 1, origin.data());
+  gl::Uniform1i(reverse_ID, 0);
+  half_draw();
+  gl::Uniform1i(reverse_ID, 1);
+  half_draw();
+}
+
 void Renderer::Shader::start(mode_t mode,
                              bool use_lighting,
                              bool colour_by_direction,
@@ -95,7 +103,7 @@ void Renderer::Shader::start(mode_t mode,
     GL::Shader::Geometry geometry_shader(geometry_shader_source());
     GL::Shader::Fragment fragment_shader(fragment_shader_source());
     attach(vertex_shader);
-    if ((GLuint)geometry_shader)
+    if (static_cast<GLuint>(geometry_shader))
       attach(geometry_shader);
     attach(fragment_shader);
     link();
@@ -320,8 +328,7 @@ void Renderer::SH::bind() {
   half_sphere.index_buffer.bind();
 }
 
-void Renderer::SH::set_data(const vector_t &r_del_daz, int buffer_ID) const {
-  (void)buffer_ID; // to silence unused-parameter warnings
+void Renderer::SH::set_data(const vector_t &r_del_daz, int /*buffer_ID*/) const {
   surface_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, r_del_daz.size() * sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
   gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), (void *)0);
@@ -358,7 +365,7 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
 
     for (int l = 2; l <= lmax; l += 2) {
       const int idx(Math::SH::index(l, 0));
-      transform(3 * n + 1, idx) = transform(3 * n, idx + 1) * sqrt(float(l * (l + 1)));
+      transform(3 * n + 1, idx) = transform(3 * n, idx + 1) * sqrt(static_cast<float>(l * (l + 1)));
     }
 
     for (int m = 1; m <= lmax; m++) {
@@ -366,9 +373,9 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
       float saz = sin(m * az);
       for (int l = 2 * ((m + 1) / 2); l <= lmax; l += 2) {
         const int idx(Math::SH::index(l, m));
-        transform(3 * n + 1, idx) = -transform(3 * n, idx - 1) * sqrt(float((l + m) * (l - m + 1)));
+        transform(3 * n + 1, idx) = -transform(3 * n, idx - 1) * sqrt(static_cast<float>((l + m) * (l - m + 1)));
         if (l > m)
-          transform(3 * n + 1, idx) += transform(3 * n, idx + 1) * sqrt(float((l - m) * (l + m + 1)));
+          transform(3 * n + 1, idx) += transform(3 * n, idx + 1) * sqrt(static_cast<float>((l - m) * (l + m + 1)));
         transform(3 * n + 1, idx) /= 2.0;
 
         const int idx2(idx - 2 * m);
@@ -438,8 +445,7 @@ void Renderer::Tensor::update_mesh(const size_t lod) {
   QApplication::restoreOverrideCursor();
 }
 
-void Renderer::Tensor::set_data(const vector_t &data, int buffer_ID) const {
-  (void)buffer_ID; // to silence unused-parameter warnings
+void Renderer::Tensor::set_data(const vector_t &data, int /*buffer_ID*/) const {
   // For tensor overlay, send the (inverse) tensor coefficients and colour directly to the shader as a uniform
   assert(data.size() == 6);
   tensor_t D;
@@ -498,8 +504,7 @@ void Renderer::Dixel::bind() {
   VAO.bind();
 }
 
-void Renderer::Dixel::set_data(const vector_t &data, int buffer_ID) const {
-  (void)buffer_ID;
+void Renderer::Dixel::set_data(const vector_t &data, int /*buffer_ID*/) const {
   assert(data.size() == vertex_count);
 
   GL_CHECK_ERROR;
@@ -543,9 +548,9 @@ void Renderer::Dixel::update_dixels(const MR::DWI::Directions::Set &dirs) {
                 // Conform to right hand rule
                 const Eigen::Vector3d normal(((d[1] - d[0]).cross(d[2] - d[1])).normalized());
                 if (normal.dot(mean_dir) < 0.0)
-                  indices_data.push_back({{GLint(i), GLint(k), GLint(j)}});
+                  indices_data.push_back({{static_cast<GLint>(i), static_cast<GLint>(k), static_cast<GLint>(j)}});
                 else
-                  indices_data.push_back({{GLint(i), GLint(j), GLint(k)}});
+                  indices_data.push_back({{static_cast<GLint>(i), static_cast<GLint>(j), static_cast<GLint>(k)}});
               }
             }
           }

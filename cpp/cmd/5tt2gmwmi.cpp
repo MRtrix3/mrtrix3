@@ -91,8 +91,8 @@ public:
           input.index(axis) = output.index(axis) + 1;
         }
         const DWI::Tractography::ACT::Tissues pos(input);
-        gradient +=
-            Math::pow2(multiplier * std::min(abs(pos.get_gm() - neg.get_gm()), abs(pos.get_wm() - neg.get_wm())));
+        gradient += Math::pow2(
+            multiplier * std::min(std::fabs(pos.get_gm() - neg.get_gm()), std::fabs(pos.get_wm() - neg.get_wm())));
       }
       output.value() = std::max(0.0, std::sqrt(gradient));
       assign_pos_of(output, 0, 3).to(input);

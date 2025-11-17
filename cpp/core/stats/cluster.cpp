@@ -23,7 +23,7 @@ void ClusterSize::operator()(in_column_type input, const value_type T, out_colum
   std::vector<uint32_t> labels(input.size(), 0);
   connector.run(clusters, labels, input, T);
   output.resize(input.size());
-  for (size_t i = 0; i < size_t(input.size()); ++i)
+  for (Eigen::Index i = 0; i < input.size(); ++i)
     output[i] = labels[i] ? clusters[labels[i] - 1].size : 0.0;
 }
 

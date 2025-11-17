@@ -38,7 +38,7 @@ class Tensor_Det : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
 
       if (is_act() && act().backtrack())
@@ -136,7 +136,7 @@ protected:
     get_EV();
 
     float dot = prev_dir.dot(dir);
-    if (abs(dot) < S.cos_max_angle_1o)
+    if (std::fabs(dot) < S.cos_max_angle_1o)
       return term_t::HIGH_CURVATURE;
 
     if (dot < 0.0)

@@ -129,10 +129,10 @@ void usage() {
 // clang-format on
 
 template <class VectorType>
-void write_fixel_output(const std::string &filename, const VectorType &data, Image<bool> &mask, const Header &header) {
+void write_fixel_output(std::string_view filename, const VectorType &data, Image<bool> &mask, const Header &header) {
   auto output = Image<float>::create(filename, header);
   for (auto l = Loop(0)(output, mask); l; ++l)
-    output.value() = mask.value() ? data[output.index(0)] : NaN;
+    output.value() = mask.value() ? data[output.index(0)] : NaNF;
 }
 
 // Define data importer class that will obtain fixel data for a
@@ -140,7 +140,7 @@ void write_fixel_output(const std::string &filename, const VectorType &data, Ima
 //   that subject
 class SubjectFixelImport : public Math::Stats::SubjectDataImportBase {
 public:
-  SubjectFixelImport(const std::string &path)
+  SubjectFixelImport(std::string_view path)
       : Math::Stats::SubjectDataImportBase(path), H(Header::open(path)), data(H.get_image<float>()) {
     for (size_t axis = 1; axis < data.ndim(); ++axis) {
       if (data.size(axis) > 1)
@@ -158,7 +158,7 @@ public:
     Image<float> temp(data); // For thread-safety
     temp.index(0) = index;
     assert(!is_out_of_bounds(temp));
-    return default_type(temp.value());
+    return static_cast<default_type>(static_cast<float>(temp.value()));
   }
 
   Math::Stats::index_type size() const override { return data.size(0); }
@@ -244,7 +244,7 @@ void run() {
 
   // Load design matrix:
   const matrix_type design = File::Matrix::load_matrix(argument[2]);
-  if (size_t(design.rows()) != importer.size())
+  if (static_cast<MR::Math::Stats::index_type>(design.rows()) != importer.size())
     throw Exception("Number of input files does not match number of rows in design matrix");
 
   // Before validating the contrast matrix, we first need to see if there are any
@@ -350,7 +350,7 @@ void run() {
       if (!data.col(mask.index(0)).allFinite())
         nans_in_data = true;
     } else {
-      data.col(mask.index(0)).fill(NaN);
+      data.col(mask.index(0)).fill(std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
     }
   }
   if (nans_in_data) {

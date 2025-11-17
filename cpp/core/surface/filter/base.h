@@ -35,12 +35,12 @@ namespace MR::Surface::Filter {
  */
 class Base {
 public:
-  Base(const std::string &s) : message(s) {}
+  Base(std::string_view s) : message(s) {}
   Base() {}
 
   virtual ~Base() {}
 
-  void set_message(const std::string &s) { message = s; }
+  void set_message(std::string_view s) { message = s; }
 
   virtual void operator()(const Mesh &, Mesh &) const {
     throw Exception("Running empty function Surface::Filter::Base::operator()");

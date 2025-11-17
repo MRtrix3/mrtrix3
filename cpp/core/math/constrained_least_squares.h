@@ -23,8 +23,7 @@
 
 // #define DEBUG_ICLS
 
-namespace MR {
-namespace Math {
+namespace MR::Math::ICLS {
 
 /** @addtogroup linalg
   @{ */
@@ -60,7 +59,6 @@ namespace Math {
  * account), while the vectors provided to the solver will be assumed to
  * contain \e H<sup>T</sup>b.
  */
-namespace ICLS {
 
 template <typename ValueType> class Problem {
 public:
@@ -171,7 +169,7 @@ public:
                 tolerance,
                 problem_in_standard_form) {
     if (equality_constraint_vector.size() || inequality_constraint_vector.size()) {
-      if (ssize_t(num_eq) != equality_constraint_vector.size())
+      if (num_eq != static_cast<size_t>(equality_constraint_vector.size()))
         throw Exception("FIXME: dimensions of equality constraint matrix and vector do not match (ICLS)");
     }
   }
@@ -347,10 +345,7 @@ protected:
   std::vector<bool> active;
 };
 
-} // namespace ICLS
-
 /** @} */
 /** @} */
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::ICLS

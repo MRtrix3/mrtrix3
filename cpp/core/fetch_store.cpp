@@ -80,7 +80,7 @@ template <typename DiskType>
 inline
     typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type
     scale_from_storage(DiskType val, default_type offset, default_type scale) {
-  return typename DiskType::value_type(offset) + typename DiskType::value_type(scale) * val;
+  return static_cast<typename DiskType::value_type>(offset) + static_cast<typename DiskType::value_type>(scale) * val;
 }
 
 // apply scaling to storage:
@@ -94,7 +94,7 @@ template <typename DiskType>
 inline
     typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type
     scale_to_storage(DiskType val, default_type offset, default_type scale) {
-  return (val - typename DiskType::value_type(offset)) / typename DiskType::value_type(scale);
+  return (val - static_cast<typename DiskType::value_type>(offset)) / static_cast<typename DiskType::value_type>(scale);
 }
 
 // for single-byte types:

@@ -28,7 +28,7 @@
 
 namespace MR::DWI::SDeconv {
 
-constexpr ssize_t default_csd_lmax = 8;
+constexpr uint32_t default_csd_lmax = 8;
 constexpr default_type csd_normlambda_multiplier = 0.0002;
 constexpr default_type default_csd_neglambda = 1.0;
 constexpr default_type default_csd_normlambda = 1.0;
@@ -88,7 +88,7 @@ public:
         niter = opt[0][0];
     }
 
-    void set_response(const std::string &path) {
+    void set_response(std::string_view path) {
       INFO("loading response function from file \"" + path + "\"");
       set_response(File::Matrix::load_vector(path));
     }
@@ -108,7 +108,7 @@ public:
       if (lmax_response <= 0)
         throw Exception("response function does not contain anisotropic terms");
 
-      lmax = (lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, uint32_t(default_csd_lmax)));
+      lmax = lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, default_csd_lmax);
 
       if (lmax <= 0 || lmax % 2)
         throw Exception("lmax must be a positive even integer");
@@ -122,7 +122,7 @@ public:
       init_filter.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax_response)));
 
       RH = Math::ZSH::ZSH2RH(response);
-      if (size_t(RH.size()) < Math::ZSH::NforL(lmax))
+      if (static_cast<size_t>(RH.size()) < Math::ZSH::NforL(lmax))
         RH.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax)));
 
       // inverse sdeconv for initialisation:
@@ -157,7 +157,7 @@ public:
 
       // high-res sampling to apply constraint:
       HR_trans = init_transform(HR_dirs, lmax);
-      default_type constraint_multiplier = neg_lambda * 50.0 * response[0] / default_type(HR_trans.rows());
+      default_type constraint_multiplier = neg_lambda * 50.0 * response[0] / static_cast<default_type>(HR_trans.rows());
       HR_trans.array() *= constraint_multiplier;
 
       // adjust threshold accordingly:

@@ -58,26 +58,25 @@ void run() {
   auto in = Image<float>::open(argument[0]);
   check_3D_nonunity(in);
 
-  const size_t patchwidth_x = std::ceil((float)in.size(0) / (float)ntiles);
-  const size_t patchwidth_y = std::ceil((float)in.size(1) / (float)ntiles);
-  const size_t patchwidth_z = std::ceil((float)in.size(2) / (float)ntiles);
+  const Eigen::Array<ssize_t, 3, 1> patchwidths{
+      static_cast<ssize_t>(std::ceil(static_cast<default_type>(in.size(0)) / static_cast<default_type>(ntiles))),
+      static_cast<ssize_t>(std::ceil(static_cast<default_type>(in.size(1)) / static_cast<default_type>(ntiles))),
+      static_cast<ssize_t>(std::ceil(static_cast<default_type>(in.size(2)) / static_cast<default_type>(ntiles)))};
 
   Header header_out(in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
   auto out = Image<float>::create(argument[1], header_out);
 
-  float zero = use_NaN ? NAN : 0.0;
+  float zero = use_NaN ? NaNF : 0.0;
   float one = 1.0;
   if (invert)
     std::swap(zero, one);
 
   for (auto l = Loop(in)(in, out); l; ++l) {
-    const size_t x = in.index(0);
-    const size_t y = in.index(1);
-    const size_t z = in.index(2);
-    size_t xpatch = (x - (x % patchwidth_x)) / patchwidth_x;
-    size_t ypatch = (y - (y % patchwidth_y)) / patchwidth_y;
-    size_t zpatch = (z - (z % patchwidth_z)) / patchwidth_z;
-    out.value() = ((xpatch % 2 + ypatch % 2 + zpatch % 2) % 2 == 0) ? one : zero;
+    const Eigen::Array<ssize_t, 3, 1> pos{in.index(0), in.index(1), in.index(2)};
+    const Eigen::Array<ssize_t, 3, 1> patch{(pos[0] - (pos[0] % patchwidths[0])) / patchwidths[0],
+                                            (pos[1] - (pos[1] % patchwidths[1])) / patchwidths[1],
+                                            (pos[2] - (pos[2] % patchwidths[2])) / patchwidths[2]};
+    out.value() = ((patch[0] % 2 + patch[1] % 2 + patch[2] % 2) % 2 == 0) ? one : zero;
   }
 }

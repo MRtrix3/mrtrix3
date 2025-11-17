@@ -306,7 +306,7 @@ void run() {
       auto transform = Math::ZSH::init_amp_transform<default_type>(dirs_azin[shell_index].col(1), lmax[shell_index]);
       if (!transform.allFinite()) {
         Exception e("Unable to construct A2SH transformation for shell b=" +
-                    str(int(std::round((*shells)[shell_index].get_mean()))) + ";");
+                    str(static_cast<ssize_t>(std::round((*shells)[shell_index].get_mean()))) + ";");
         e.push_back("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
         if (!shell_index && (*shells)[0].is_bzero())
           e.push_back("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
@@ -334,7 +334,7 @@ void run() {
       const size_t num_angles_constraint = 90;
       Eigen::VectorXd els(num_angles_constraint + 1);
       for (size_t i = 0; i <= num_angles_constraint; ++i)
-        els[i] = default_type(i) * Math::pi / 180.0;
+        els[i] = static_cast<default_type>(i) * Math::pi / 180.0;
       auto amp_transform = Math::ZSH::init_amp_transform<default_type>(els, lmax[shell_index]);
       auto deriv_transform = Math::ZSH::init_deriv_transform<default_type>(els, lmax[shell_index]);
 

@@ -165,7 +165,7 @@ public:
 
   Eigen::Vector3f voxel_at(const Eigen::Vector3f &pos) const {
     if (!image())
-      return Eigen::Vector3f{NAN, NAN, NAN};
+      return Eigen::Vector3f::Constant(NaNF);
     const Eigen::Vector3f result = image()->scanner2voxel().cast<float>() * pos;
     return result;
   }
@@ -204,7 +204,7 @@ protected:
 //! \cond skip
 class __Action__ : public QAction {
 public:
-  __Action__(QActionGroup *parent, const char *const name, const char *const description, int index)
+  __Action__(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
       : QAction(name, parent) {
     setCheckable(true);
     setShortcut(tr(std::string("F" + str(index)).c_str()));
@@ -217,7 +217,7 @@ public:
 
 template <class T> class Action : public __Action__ {
 public:
-  Action(QActionGroup *parent, const char *const name, const char *const description, int index)
+  Action(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
       : __Action__(parent, name, description, index) {}
 
   virtual Base *create() const { return new T; }

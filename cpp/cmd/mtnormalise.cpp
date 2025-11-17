@@ -254,7 +254,7 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
   return basis;
 }
 
-void load_data(Eigen::MatrixXd &data, const std::string &image_name, IndexType &index) {
+void load_data(Eigen::MatrixXd &data, std::string_view image_name, IndexType &index) {
   static int num = 0;
 
   auto in = ImageType::open(image_name);
@@ -411,7 +411,7 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
   return out;
 }
 
-void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::string &output_file_name) {
+void write_weights(const Eigen::VectorXd &data, IndexType &index, std::string_view output_file_name) {
   Header header(index);
   header.datatype() = DataType::Float32;
 
@@ -430,8 +430,8 @@ void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::str
   ThreadedLoop(index, 0, 3).run(write, out, index);
 }
 
-void write_output(const std::string &original,
-                  const std::string &corrected,
+void write_output(std::string_view original,
+                  std::string_view corrected,
                   bool output_balanced,
                   double balance_factor,
                   ImageType &field,
@@ -500,7 +500,7 @@ void run() {
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
     if (Path::exists(argument[2 * n + 1]) && !App::overwrite_files)
-      throw Exception("Output file \"" + argument[2 * n + 1] + "\" already exists." +
+      throw Exception("Output file \"" + std::string(argument[2 * n + 1]) + "\" already exists." +
                       " (use -force option to force overwrite)");
     load_data(data, argument[2 * n], index);
   }

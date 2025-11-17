@@ -37,6 +37,27 @@ MGZ mgz_handler;
 PNG png_handler;
 #endif
 
+const std::vector<std::string> known_extensions{
+    ".mih",
+    ".mif",
+    ".mif.gz",
+    ".img",
+    ".nii",
+    ".nii.gz",
+    ".bfloat",
+    ".bshort",
+    ".mri",
+    ".par",
+    ".mgh",
+    ".mgz",
+    ".mgh.gz",
+    ".dcm",
+#ifdef MRTRIX_PNG_SUPPORT
+    ".png",
+    ".PNG",
+#endif
+};
+
 const Base *handlers[] = {&RAM_handler,
                           &pipe_handler,
                           &dicom_handler,
@@ -55,25 +76,5 @@ const Base *handlers[] = {&RAM_handler,
                           &png_handler,
 #endif
                           nullptr};
-
-const char *known_extensions[] = {".mih",
-                                  ".mif",
-                                  ".mif.gz",
-                                  ".img",
-                                  ".nii",
-                                  ".nii.gz",
-                                  ".bfloat",
-                                  ".bshort",
-                                  ".mri",
-                                  ".par",
-                                  ".mgh",
-                                  ".mgz",
-                                  ".mgh.gz",
-                                  ".dcm",
-#ifdef MRTRIX_PNG_SUPPORT
-                                  ".png",
-                                  ".PNG",
-#endif
-                                  nullptr};
 
 } // namespace MR::Formats

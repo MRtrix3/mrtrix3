@@ -115,8 +115,7 @@ void usage() {
 
 class VTKWriter : public WriterInterface<float> {
 public:
-  VTKWriter(const std::string &file, bool write_ascii = true)
-      : VTKout(file, std::ios::binary), write_ascii(write_ascii) {
+  VTKWriter(std::string_view file, bool write_ascii = true) : VTKout(file, std::ios::binary), write_ascii(write_ascii) {
     // create and write header of VTK output file:
     VTKout << "# vtk DataFile Version 3.0\n"
               "Data values for Tracks\n";
@@ -212,13 +211,13 @@ template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &in
   lines.resize(number_of_line_indices);
   // swap from big endian
   for (int i = 0; i < number_of_line_indices; i++)
-    lines[i] = int64_t(ByteOrder::BE(buffer[i]));
+    lines[i] = static_cast<int64_t>(ByteOrder::BE(buffer[i]));
 }
 
 class VTKReader : public ReaderInterface<float> {
 public:
-  VTKReader(const std::string &file) {
-    std::ifstream input(file, std::ios::binary);
+  VTKReader(std::string_view file) {
+    std::ifstream input(std::string(file).c_str(), std::ios::binary);
     std::string line;
     int number_of_points = 0;
     number_of_lines = 0;
@@ -279,13 +278,13 @@ private:
 
 class ASCIIReader : public ReaderInterface<float> {
 public:
-  ASCIIReader(const std::string &file) { auto num = list.parse_scan_check(file); }
+  ASCIIReader(std::string_view file) { auto num = list.parse_scan_check(file); }
 
   bool operator()(Streamline<float> &tck) {
     tck.clear();
     if (item < list.size()) {
       auto t = File::Matrix::load_matrix<float>(list[item].name());
-      for (size_t i = 0; i < size_t(t.rows()); i++)
+      for (decltype(t)::Index i = 0; i < t.rows(); i++)
         tck.push_back(Eigen::Vector3f(t.row(i)));
       item++;
       return true;
@@ -302,7 +301,7 @@ private:
 
 class ASCIIWriter : public WriterInterface<float> {
 public:
-  ASCIIWriter(const std::string &file) {
+  ASCIIWriter(std::string_view file) {
     count.push_back(0);
     parser.parse(file);
     if (parser.ndim() != 1)
@@ -329,7 +328,7 @@ private:
 
 class PLYWriter : public WriterInterface<float> {
 public:
-  PLYWriter(const std::string &file,
+  PLYWriter(std::string_view file,
             int increment = default_ply_increment,
             float radius = default_ply_radius,
             int sides = default_ply_sides)
@@ -425,17 +424,17 @@ public:
 
   bool operator()(const Streamline<float> &intck) {
     // Need at least 5 points, silently ignore...
-    if (intck.size() < size_t(increment * 3)) {
+    if (intck.size() < static_cast<size_t>(increment * 3)) {
       return true;
     }
 
     auto nSides = sides;
     Eigen::MatrixXf coords(nSides, 2);
     Eigen::MatrixXi faces(nSides, 6);
-    auto theta = 2.0 * Math::pi / float(nSides);
+    auto theta = 2.0 * Math::pi / static_cast<default_type>(nSides);
     for (auto i = 0; i < nSides; i++) {
-      coords(i, 0) = cos((double)i * theta);
-      coords(i, 1) = sin((double)i * theta);
+      coords(i, 0) = cos(static_cast<default_type>(i) * theta);
+      coords(i, 1) = sin(static_cast<default_type>(i) * theta);
       // Face offsets
       faces(i, 0) = i;
       faces(i, 1) = (i + 1) % nSides;
@@ -586,7 +585,7 @@ private:
 
 class RibWriter : public WriterInterface<float> {
 public:
-  RibWriter(const std::string &file, float radius = 0.1, bool dec = false)
+  RibWriter(std::string_view file, float radius = 0.1, bool dec = false)
       : out(file), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
     pointsFilename = File::create_tempfile(0, "points");
     pointsOF.open(pointsFilename);

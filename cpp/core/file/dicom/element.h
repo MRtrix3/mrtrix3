@@ -41,7 +41,7 @@ public:
 
 class Date {
 public:
-  Date(const std::string &entry) : year(0), month(0), day(0) {
+  Date(std::string_view entry) : year(0), month(0), day(0) {
     if (entry.size() >= 8) {
       year = to<uint32_t>(entry.substr(0, 4));
       month = to<uint32_t>(entry.substr(4, 2));
@@ -56,7 +56,7 @@ public:
 
 class Time {
 public:
-  Time(const std::string &entry) : Time() {
+  Time(std::string_view entry) : Time() {
     if (entry.size() < 6)
       throw Exception("field \"" + entry + "\" is too short to be interpreted as a time");
     hour = to<uint32_t>(entry.substr(0, 2));
@@ -78,7 +78,7 @@ public:
   }
   Time() : hour(0), minute(0), second(0), fraction(0.0) {}
   operator default_type() const { return (hour * 3600.0 + minute * 60 + second + fraction); }
-  Time operator-(const Time &t) const { return Time(default_type(*this) - default_type(t)); }
+  Time operator-(const Time &t) const { return Time(static_cast<default_type>(*this) - static_cast<default_type>(t)); }
   uint32_t hour, minute, second;
   default_type fraction;
   friend std::ostream &operator<<(std::ostream &stream, const Time &item);
@@ -87,6 +87,7 @@ public:
 class Element {
 public:
   typedef enum _Type { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER } Type;
+  static const std::unordered_map<Type, std::string> type_as_str;
 
   uint16_t group, element, VR;
   uint32_t size;
@@ -94,7 +95,7 @@ public:
   std::vector<Sequence> parents;
   bool transfer_syntax_supported;
 
-  void set(const std::string &filename, bool force_read = false, bool read_write = false);
+  void set(std::string_view filename, bool force_read = false, bool read_write = false);
   bool read();
 
   bool is(uint16_t Group, uint16_t Element) const {
@@ -106,8 +107,8 @@ public:
   std::string tag_name() const {
     if (dict.empty())
       init_dict();
-    const char *s = dict[tag()];
-    return (s ? s : "");
+    const char *s = dict[tag()]; // check_syntax off
+    return (s == nullptr ? "" : s);
   }
 
   uint32_t tag() const {
@@ -186,9 +187,9 @@ protected:
 
   std::vector<uint8_t *> end_seq;
 
-  uint16_t get_VR_from_tag_name(const std::string &name) {
+  static uint16_t get_VR_from_tag_name(std::string_view name) {
     union {
-      char t[2];
+      std::array<char, 2> t;
       uint16_t i;
     } d = {{name[0], name[1]}};
     return ByteOrder::BE(d.i);
@@ -207,8 +208,6 @@ protected:
   void error_in_get(size_t idx) const;
   void error_in_check_size(size_t min_size, size_t actual_size) const;
   void report_unknown_tag_with_implicit_syntax() const;
-
-  static const char *type_as_str[];
 };
 
 } // namespace MR::File::Dicom

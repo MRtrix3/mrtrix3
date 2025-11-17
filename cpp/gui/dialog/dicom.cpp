@@ -25,7 +25,7 @@ namespace {
 
 class Item {
 public:
-  Item() : parentItem(NULL) {}
+  Item() : parentItem(nullptr) {}
   Item(Item *parent, const std::shared_ptr<Patient> &p) : parentItem(parent) {
     itemData = qstr(p->name + " " + format_ID(p->ID) + " " + format_date(p->DOB));
   }

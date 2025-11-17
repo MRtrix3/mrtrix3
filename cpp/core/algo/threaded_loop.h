@@ -405,7 +405,7 @@ ThreadedLoop(const HeaderType &source,
 //* \sa image_thread_looping for details */
 template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-ThreadedLoop(const std::string &progress_message,
+ThreadedLoop(std::string_view progress_message,
              const HeaderType &source,
              const std::vector<size_t> &outer_axes,
              const std::vector<size_t> &inner_axes) {
@@ -415,7 +415,7 @@ ThreadedLoop(const std::string &progress_message,
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop(const std::string &progress_message,
+inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop(std::string_view progress_message,
                                                                                     const HeaderType &source,
                                                                                     const std::vector<size_t> &axes,
                                                                                     size_t num_inner_axes = 1) {
@@ -426,7 +426,7 @@ inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedL
 //* \sa image_thread_looping for details */
 template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-ThreadedLoop(const std::string &progress_message,
+ThreadedLoop(std::string_view progress_message,
              const HeaderType &source,
              size_t from_axis = 0,
              size_t to_axis = std::numeric_limits<size_t>::max(),

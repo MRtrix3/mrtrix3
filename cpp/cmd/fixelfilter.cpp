@@ -112,7 +112,7 @@ void run() {
       index_header = Fixel::find_index_header(argument[0]);
       multiple_files = Fixel::find_data_headers(argument[0], index_header);
       if (multiple_files.empty())
-        throw Exception("No fixel data files found in directory \"" + argument[0] + "\"");
+        throw Exception("No fixel data files found in directory \"" + std::string(argument[0]) + "\"");
       output_header = Header(multiple_files[0]);
     } catch (...) {
       try {
@@ -121,14 +121,14 @@ void run() {
         Fixel::check_data_file(single_file);
         output_header = Header(single_file);
       } catch (...) {
-        throw Exception("Could not interpret first argument \"" + argument[0] +
+        throw Exception("Could not interpret first argument \"" + std::string(argument[0]) +
                         "\" as either a fixel data file, or a fixel directory");
       }
     }
 
     if (single_file.valid() && !Fixel::fixels_match(index_header, single_file))
-      throw Exception("File \"" + argument[0] + "\" is not a valid fixel data file" + //
-                      " (does not match corresponding index image)");                 //
+      throw Exception("File \"" + std::string(argument[0]) + "\" is not a valid fixel data file" + //
+                      " (does not match corresponding index image)");                              //
 
     Image<index_type> index_image = index_header.get_image<index_type>();
     const size_t nfixels = Fixel::get_number_of_fixels(index_image);
@@ -145,7 +145,7 @@ void run() {
       MR::Fixel::check_data_file(mask);
       if (mask.size(1) != 1)
         throw Exception("Fixel mask must be a 1D fixel data file");
-      if (size_t(mask.size(0)) != nfixels)
+      if (static_cast<size_t>(mask.size(0)) != nfixels)
         throw Exception("Number of fixels in mask image (" + str(mask.size(0)) + ")" + //
                         " does not match number of fixels in index image" +            //
                         " (" + str(nfixels) + ")");                                    //
@@ -159,7 +159,7 @@ void run() {
                       " does not match number of fixels in connectivity matrix" + //
                       " (" + str(matrix.size()) + ")");                           //
 
-    switch (int(argument[1])) {
+    switch (static_cast<MR::App::ParsedArgument::IntType>(argument[1])) {
     case 0: {
       const value_type cfe_dh = get_option_value("cfe_dh", Fixel::Filter::cfe_default_dh);
       const value_type cfe_e = get_option_value("cfe_e", Fixel::Filter::cfe_default_e);
@@ -198,7 +198,8 @@ void run() {
 
   for (const auto &i : option_list) {
     if (!get_options(i).empty())
-      WARN("Option -" + i + " ignored: not relevant to " + filters[int(argument[1])] + " filter");
+      WARN("Option -" + i + " ignored:" + " not relevant to " +
+           filters[static_cast<MR::App::ParsedArgument::IntType>(argument[1])] + " filter");
   }
 
   if (single_file.valid()) {

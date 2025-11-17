@@ -20,35 +20,36 @@ namespace MR::Path {
 
 const std::string home_env("HOME");
 
-std::string basename(const std::string &name) {
+std::string basename(std::string_view name) {
   size_t i = name.find_last_of(PATH_SEPARATORS);
-  return (i == std::string::npos ? name : name.substr(i + 1));
+  return (i == std::string::npos ? std::string(name) : std::string(name.substr(i + 1)));
 }
 
-std::string dirname(const std::string &name) {
+std::string dirname(std::string_view name) {
   size_t i = name.find_last_of(PATH_SEPARATORS);
-  return (i == std::string::npos ? std::string("") : (i ? name.substr(0, i) : std::string(1, PATH_SEPARATORS[0])));
+  return (i == std::string::npos ? std::string("")
+                                 : (i > 0 ? std::string(name.substr(0, i)) : std::string(1, PATH_SEPARATORS[0])));
 }
 
-std::string join(const std::string &first, const std::string &second) {
+std::string join(std::string_view first, std::string_view second) {
   if (first.empty())
-    return second;
+    return std::string(second);
   if (first[first.size() - 1] != PATH_SEPARATORS[0]
 #ifdef MRTRIX_WINDOWS
       && first[first.size() - 1] != PATH_SEPARATORS[1]
 #endif
   )
-    return first + PATH_SEPARATORS[0] + second;
-  return first + second;
+    return std::string(first) + PATH_SEPARATORS[0] + second;
+  return std::string(first) + second;
 }
 
-bool exists(const std::string &path) {
+bool exists(std::string_view path) {
   struct stat buf;
 #ifdef MRTRIX_WINDOWS
   const std::string stripped(strip(path, PATH_SEPARATORS, false, true));
-  if (!stat(stripped.c_str(), &buf))
+  if (stat(stripped.c_str(), &buf) == 0)
 #else
-  if (!stat(path.c_str(), &buf))
+  if (stat(std::string(path).c_str(), &buf) == 0)
 #endif
     return true;
   if (errno == ENOENT)
@@ -57,13 +58,13 @@ bool exists(const std::string &path) {
   return false;
 }
 
-bool is_dir(const std::string &path) {
+bool is_dir(std::string_view path) {
   struct stat buf;
 #ifdef MRTRIX_WINDOWS
   const std::string stripped(strip(path, PATH_SEPARATORS, false, true));
   if (!stat(stripped.c_str(), &buf))
 #else
-  if (!stat(path.c_str(), &buf))
+  if (stat(std::string(path).c_str(), &buf) == 0)
 #endif
     return S_ISDIR(buf.st_mode);
   if (errno == ENOENT)
@@ -72,9 +73,9 @@ bool is_dir(const std::string &path) {
   return false;
 }
 
-bool is_file(const std::string &path) {
+bool is_file(std::string_view path) {
   struct stat buf;
-  if (stat(path.c_str(), &buf) == 0)
+  if (stat(std::string(path).c_str(), &buf) == 0)
     return S_ISREG(buf.st_mode);
   if (errno == ENOENT)
     return false;
@@ -82,25 +83,25 @@ bool is_file(const std::string &path) {
   return false;
 }
 
-bool has_suffix(const std::string &name, const std::string &suffix) {
+bool has_suffix(std::string_view name, std::string_view suffix) {
   return name.size() >= suffix.size() && name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-bool has_suffix(const std::string &name, const std::initializer_list<const std::string> &suffix_list) {
+bool has_suffix(std::string_view name, const std::initializer_list<const std::string> &suffix_list) {
   return std::any_of(
-      suffix_list.begin(), suffix_list.end(), [&](const std::string &suffix) { return has_suffix(name, suffix); });
+      suffix_list.begin(), suffix_list.end(), [&](std::string_view suffix) { return has_suffix(name, suffix); });
 }
 
-bool has_suffix(const std::string &name, const std::vector<std::string> &suffix_list) {
+bool has_suffix(std::string_view name, const std::vector<std::string> &suffix_list) {
   return std::any_of(
-      suffix_list.begin(), suffix_list.end(), [&](const std::string &suffix) { return has_suffix(name, suffix); });
+      suffix_list.begin(), suffix_list.end(), [&](std::string_view suffix) { return has_suffix(name, suffix); });
 }
 
-bool is_mrtrix_image(const std::string &name) {
-  return strcmp(name.c_str(), std::string("-").c_str()) == 0 || Path::has_suffix(name, {".mif", ".mih", ".mif.gz"});
+bool is_mrtrix_image(std::string_view name) {
+  return name == "-" || Path::has_suffix(name, {".mif", ".mih", ".mif.gz"});
 }
 
-char delimiter(const std::string &filename) {
+char delimiter(std::string_view filename) {
   if (Path::has_suffix(filename, ".tsv"))
     return '\t';
   return Path::has_suffix(filename, ".csv") ? ',' : ' ';
@@ -121,13 +122,13 @@ std::string cwd() {
 }
 
 std::string home() {
-  const char *home = getenv(home_env.c_str());
+  const char *home = getenv(home_env.c_str()); // check_syntax off
   if (home == nullptr)
     throw Exception(home_env + " environment variable is not set!");
   return home;
 }
 
-Dir::Dir(const std::string &name) : p(opendir(!name.empty() ? name.c_str() : ".")) {
+Dir::Dir(std::string_view name) : p(opendir(!name.empty() ? std::string(name).c_str() : ".")) {
   if (p == nullptr)
     throw Exception("error opening folder " + name + ": " + strerror(errno));
 }

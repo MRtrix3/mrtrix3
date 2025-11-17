@@ -22,7 +22,7 @@
 
 namespace MR::File {
 
-inline void copy(const std::string &source, const std::string &destination) {
+inline void copy(std::string_view source, std::string_view destination) {
   {
     DEBUG("copying file \"" + source + "\" to \"" + destination + "\"...");
     MMap input(source);

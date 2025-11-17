@@ -31,13 +31,13 @@ void Default::load(const Header &header, size_t) {
 
   if (header.datatype().bits() == 1) {
     bytes_per_segment = segsize / 8;
-    if (bytes_per_segment * 8 < int64_t(segsize))
+    if (bytes_per_segment * 8 < static_cast<int64_t>(segsize))
       ++bytes_per_segment;
   } else
     bytes_per_segment = header.datatype().bytes() * segsize;
 
-  if (files.size() * double(bytes_per_segment) >= double(std::numeric_limits<size_t>::max()))
-    throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
+  if (files.size() > std::numeric_limits<size_t>::max() / bytes_per_segment)
+    throw Exception("image \"" + header.name() + "\" is larger than maximum addressable memory");
 
   if (files.size() > max_files_per_image)
     copy_to_mem(header);
@@ -76,8 +76,9 @@ void Default::map_files(const Header &header) {
 
 void Default::copy_to_mem(const Header &header) {
   DEBUG("loading image \"" + header.name() + "\"...");
-  addresses.resize(
-      files.size() > 1 && header.datatype().bits() * segsize != 8 * size_t(bytes_per_segment) ? files.size() : 1);
+  addresses.resize(files.size() > 1 && header.datatype().bits() * segsize != 8 * static_cast<size_t>(bytes_per_segment)
+                       ? files.size()
+                       : 1);
   addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
   if (!addresses[0])
     throw Exception("failed to allocate memory for image \"" + header.name() + "\"");

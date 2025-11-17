@@ -82,7 +82,7 @@ private:
   Eigen::Matrix<complex_type, Eigen::Dynamic, Eigen::Dynamic> slice2;
 
   template <typename fft_obj, typename Derived> FORCE_INLINE void FFT(fft_obj &fft, Eigen::MatrixBase<Derived> &M) {
-    assert(fft.size() == size_t(M.cols()));
+    assert(fft.size() == static_cast<size_t>(M.cols()));
     for (auto n = 0; n < M.rows(); ++n) {
       for (ssize_t i = 0; i < M.cols(); ++i)
         fft[i] = M(n, i);
@@ -125,12 +125,12 @@ public:
     assign_pos_of(pos, outer_axes).to(in, out);
 
     for (auto l = Loop(slice_axes)(in); l; ++l)
-      slice(ssize_t(in.index(X)), ssize_t(in.index(Y))) = in.value();
+      slice(static_cast<ssize_t>(in.index(X)), static_cast<ssize_t>(in.index(Y))) = in.value();
 
     unring2d(slice);
 
     for (auto l = Loop(slice_axes)(out); l; ++l)
-      out.value() = slice(ssize_t(out.index(X)), ssize_t(out.index(Y)));
+      out.value() = slice(static_cast<ssize_t>(out.index(X)), static_cast<ssize_t>(out.index(Y)));
   }
 
 protected:

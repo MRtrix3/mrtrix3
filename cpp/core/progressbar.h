@@ -71,7 +71,7 @@ public:
    * Otherwise, the ProgressBar will display the percentage completed,
    * computed from the number of times the ProgressBar::operator++()
    * function was called relative to the value specified with \a target. */
-  ProgressBar(const std::string &text, size_t target = 0, int log_level = 1);
+  ProgressBar(std::string_view text, size_t target = 0, int log_level = 1);
 
   //! returns whether the progress will be shown
   /*! The progress may not be shown if the -quiet option has been supplied
@@ -89,8 +89,10 @@ public:
   FORCE_INLINE size_t count() const { return current_val; }
   FORCE_INLINE bool show_percent() const { return _multiplier; }
   FORCE_INLINE bool text_has_been_modified() const { return _text_has_been_modified; }
-  FORCE_INLINE const std::string &text() const { return _text; }
-  FORCE_INLINE const std::string &ellipsis() const { return _ellipsis; }
+  FORCE_INLINE std::string_view text() const { return _text; }
+  FORCE_INLINE std::string_view ellipsis() const { return _ellipsis; }
+  FORCE_INLINE const char *const text_cstr() const { return _text.c_str(); }         // check_syntax off
+  FORCE_INLINE const char *const ellipsis_cstr() const { return _ellipsis.c_str(); } // check_syntax off
 
   //! set the maximum target value of the ProgressBar
   /*! This function should only be called if the ProgressBar has been
@@ -99,7 +101,7 @@ public:
    * indicator. */
   FORCE_INLINE void set_max(size_t new_target);
 
-  FORCE_INLINE void set_text(const std::string &new_text);
+  FORCE_INLINE void set_text(std::string_view new_text);
 
   //! update text displayed and optionally increment counter
   /*! This expects a function, functor or lambda function that should
@@ -181,7 +183,7 @@ inline void ProgressBar::set_max(size_t target) {
   }
 }
 
-FORCE_INLINE void ProgressBar::set_text(const std::string &new_text) {
+FORCE_INLINE void ProgressBar::set_text(std::string_view new_text) {
   if (!show)
     return;
   _text_has_been_modified = true;

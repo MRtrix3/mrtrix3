@@ -208,7 +208,7 @@ struct LoopAlongSingleAxisProgress {
     const size_t axis;
     const std::tuple<ImageType &...> vox;
     const ssize_t size0;
-    FORCE_INLINE Run(const std::string &text, const size_t axis, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(std::string_view text, const size_t axis, const std::tuple<ImageType &...> &vox)
         : progress(text, std::get<0>(vox).size(axis)), axis(axis), vox(vox), size0(std::get<0>(vox).size(axis)) {
       MR::apply_for_each(set_pos(axis, 0), vox);
     }
@@ -269,12 +269,12 @@ struct LoopAlongAxisRange {
 
 struct LoopAlongAxisRangeProgress : public LoopAlongAxisRange {
   const std::string text;
-  LoopAlongAxisRangeProgress(const std::string &text, const size_t from, const size_t to)
+  LoopAlongAxisRangeProgress(std::string_view text, const size_t from, const size_t to)
       : LoopAlongAxisRange({from, to}), text(text) {}
 
   template <class... ImageType> struct Run : public LoopAlongAxisRange::Run<ImageType...> {
     MR::ProgressBar progress;
-    FORCE_INLINE Run(const std::string &text, const size_t from, const size_t to, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(std::string_view text, const size_t from, const size_t to, const std::tuple<ImageType &...> &vox)
         : LoopAlongAxisRange::Run<ImageType...>(from, to, vox),
           progress(text, MR::voxel_count(std::get<0>(vox), from, to)) {}
     FORCE_INLINE void operator++() {
@@ -344,12 +344,12 @@ struct LoopAlongDynamicAxes {
 
 struct LoopAlongDynamicAxesProgress : public LoopAlongDynamicAxes {
   const std::string text;
-  LoopAlongDynamicAxesProgress(const std::string &text, const std::vector<size_t> &axes)
+  LoopAlongDynamicAxesProgress(std::string_view text, const std::vector<size_t> &axes)
       : LoopAlongDynamicAxes({axes}), text(text) {}
 
   template <class... ImageType> struct Run : public LoopAlongDynamicAxes::Run<ImageType...> {
     MR::ProgressBar progress;
-    FORCE_INLINE Run(const std::string &text, const std::vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(std::string_view text, const std::vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
         : LoopAlongDynamicAxes::Run<ImageType...>(axes, vox), progress(text, MR::voxel_count(std::get<0>(vox), axes)) {}
     FORCE_INLINE void operator++() {
       LoopAlongDynamicAxes::Run<ImageType...>::operator++();
@@ -365,24 +365,24 @@ struct LoopAlongDynamicAxesProgress : public LoopAlongDynamicAxes {
 
 FORCE_INLINE LoopAlongAxes Loop() { return {}; }
 
-FORCE_INLINE LoopAlongAxesProgress Loop(const std::string &progress_message) { return {progress_message}; }
+FORCE_INLINE LoopAlongAxesProgress Loop(std::string_view progress_message) { return {std::string(progress_message)}; }
 
 FORCE_INLINE LoopAlongSingleAxis Loop(size_t axis) { return {axis}; }
 
-FORCE_INLINE LoopAlongSingleAxisProgress Loop(const std::string &progress_message, size_t axis) {
-  return {progress_message, axis};
+FORCE_INLINE LoopAlongSingleAxisProgress Loop(std::string_view progress_message, size_t axis) {
+  return {std::string(progress_message), axis};
 }
 
 FORCE_INLINE LoopAlongAxisRange Loop(size_t axis_from, size_t axis_to) { return {axis_from, axis_to}; }
 
-FORCE_INLINE LoopAlongAxisRangeProgress Loop(const std::string &progress_message, size_t axis_from, size_t axis_to) {
-  return {progress_message, axis_from, axis_to};
+FORCE_INLINE LoopAlongAxisRangeProgress Loop(std::string_view progress_message, size_t axis_from, size_t axis_to) {
+  return {std::string(progress_message), axis_from, axis_to};
 }
 
 FORCE_INLINE LoopAlongDynamicAxes Loop(const std::vector<size_t> &axes) { return {axes}; }
 
-FORCE_INLINE LoopAlongDynamicAxesProgress Loop(const std::string &progress_message, const std::vector<size_t> &axes) {
-  return {progress_message, axes};
+FORCE_INLINE LoopAlongDynamicAxesProgress Loop(std::string_view progress_message, const std::vector<size_t> &axes) {
+  return {std::string(progress_message), axes};
 }
 
 template <class ImageType>
@@ -397,13 +397,13 @@ Loop(const ImageType &source,
 
 template <class ImageType>
 FORCE_INLINE LoopAlongDynamicAxesProgress
-Loop(const std::string &progress_message,
+Loop(std::string_view progress_message,
      const ImageType &source,
      size_t axis_from = 0,
      size_t axis_to = std::numeric_limits<size_t>::max(),
      typename std::enable_if<std::is_class<ImageType>::value && !std::is_same<ImageType, std::string>::value,
                              int>::type = 0) {
-  return {progress_message, Stride::order(source, axis_from, axis_to)};
+  return {std::string(progress_message), Stride::order(source, axis_from, axis_to)};
 }
 
 //! @}

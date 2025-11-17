@@ -31,7 +31,7 @@ class Tractogram : public Displayable {
   Q_OBJECT
 
 public:
-  Tractogram(Tractography &tool, const std::string &file_path);
+  Tractogram(Tractography &tool, std::string_view file_path);
 
   ~Tractogram();
 
@@ -47,8 +47,8 @@ public:
   void load_tracks();
 
   void load_end_colours();
-  void load_intensity_track_scalars(const std::string &);
-  void load_threshold_track_scalars(const std::string &);
+  void load_intensity_track_scalars(std::string_view);
+  void load_threshold_track_scalars(std::string_view);
   void erase_colour_data();
   void erase_intensity_scalar_data();
   void erase_threshold_scalar_data();
@@ -63,14 +63,14 @@ public:
   float get_threshold_rate() const {
     switch (threshold_type) {
     case TrackThresholdType::None:
-      return NaN;
+      return NaNF;
     case TrackThresholdType::UseColourFile:
       return scaling_rate();
     case TrackThresholdType::SeparateFile:
       return (1e-3 * (threshold_max - threshold_min));
     }
     assert(0);
-    return NaN;
+    return NaNF;
   }
   float get_threshold_min() const { return threshold_min; }
   float get_threshold_max() const { return threshold_max; }

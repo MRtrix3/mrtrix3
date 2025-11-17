@@ -106,19 +106,19 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
 
     // Do an iteration of Lentz's algorithm
     d = 1.0 + numerator * d;
-    if (abs(d) < tiny_threshold)
+    if (std::fabs(d) < tiny_threshold)
       d = tiny_threshold;
     d = 1.0 / d;
 
     c = 1.0 + numerator / c;
-    if (abs(c) < tiny_threshold)
+    if (std::fabs(c) < tiny_threshold)
       c = tiny_threshold;
 
     const default_type cd = c * d;
     f *= cd;
 
     // Check for stop
-    if (abs(1.0 - cd) < stop_threshold)
+    if (std::fabs(1.0 - cd) < stop_threshold)
       return front * (f - 1.0);
   }
 

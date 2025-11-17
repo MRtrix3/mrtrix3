@@ -16,19 +16,21 @@
 
 #pragma once
 
+#include <array>
+
 #include "app.h"
 #include "opengl/glutils.h"
 
 namespace MR::GUI::GL::Shader {
 
-void print_log(bool is_program, const std::string &type_name, GLuint index);
+void print_log(bool is_program, std::string_view type_name, GLuint index);
 
 class Program;
 
 template <GLint TYPE> class Object {
 public:
   Object() : index_(0) {}
-  Object(const std::string &source) : index_(0) {
+  Object(std::string_view source) : index_(0) {
     if (!source.empty())
       compile(source);
   }
@@ -53,15 +55,15 @@ public:
 
   operator GLuint() const { return (index_); }
 
-  void compile(const std::string &source) {
+  void compile(std::string_view source) {
     std::string code = "#version 330 core\n" + source;
     DEBUG("compiling OpenGL " + this->type() + " shader:\n" + code);
     if (!index_) {
       index_ = gl::CreateShader(TYPE);
       GL_DEBUG("created OpenGL " + this->type() + " shader ID " + str(index_));
     }
-    const char *p = code.c_str();
-    gl::ShaderSource(index_, 1, &p, NULL);
+    std::array<const char *const, 1> p{code.c_str()}; // check_syntax off
+    gl::ShaderSource(index_, 1, p.data(), nullptr);
     gl::CompileShader(index_);
     GLint status;
     gl::GetShaderiv(index_, gl::COMPILE_STATUS, &status);

@@ -314,12 +314,12 @@ public:
       image_plugin.reset(that.image_plugin->clone());
   }
 
-  void add_scalar_image(const std::string &);
+  void add_scalar_image(std::string_view);
   void set_backtrack();
-  void add_fod_image(const std::string &);
+  void add_fod_image(std::string_view);
   void add_twdfc_static_image(Image<float> &);
   void add_twdfc_dynamic_image(Image<float> &, const std::vector<float> &, const ssize_t);
-  void add_vector_data(const std::string &);
+  void add_vector_data(std::string_view);
 
 protected:
   const contrast_t contrast;

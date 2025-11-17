@@ -23,9 +23,8 @@
 #include "filter/reslice.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
+
 template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorMasked_Naive {
   template <typename MaskType, typename ImageType3> void operator()(MaskType &mask, ImageType3 &out) {
     if (!mask.value())
@@ -250,8 +249,9 @@ public:
       return 0.0;
     }
 
-    const Eigen::Vector3d pos =
-        Eigen::Vector3d(default_type(iter.index(0)), default_type(iter.index(0)), default_type(iter.index(0)));
+    const Eigen::Vector3d pos{static_cast<default_type>(iter.index(0)),
+                              static_cast<default_type>(iter.index(1)),
+                              static_cast<default_type>(iter.index(2))};
     params.processed_image_interp->voxel(pos);
     typename Params::Im1ValueType val1;
     typename Params::Im2ValueType val2;
@@ -293,6 +293,5 @@ public:
     return A * A_BC;
   }
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+
+} // namespace MR::Registration::Metric

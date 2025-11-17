@@ -62,7 +62,7 @@ public:
         float largest_dp = 0.0;
         const Eigen::Vector3d dir(i->get_dir().cast<default_type>().normalized());
         for (index_type j = first_index; j < last_index; ++j) {
-          const float dp = abs(dir.dot(fixel_directions[j]));
+          const float dp = std::fabs(dir.dot(fixel_directions[j]));
           if (dp > largest_dp) {
             largest_dp = dp;
             closest_fixel_index = j;
@@ -107,7 +107,7 @@ void usage() {
 // clang-format on
 
 template <class VectorType>
-void write_fixel_output(const std::string &filename, const VectorType &data, const Header &header) {
+void write_fixel_output(std::string_view filename, const VectorType &data, const Header &header) {
   auto output = Image<float>::create(filename, header);
   for (size_t i = 0; i < data.size(); ++i) {
     output.index(0) = i;
@@ -135,8 +135,9 @@ void run() {
     // Load template fixel directions
     Transform image_transform(index_image);
     for (auto i = Loop("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
-      const Eigen::Vector3d vox(
-          (default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
+      const Eigen::Vector3d vox(static_cast<default_type>(index_image.index(0)),
+                                static_cast<default_type>(index_image.index(1)),
+                                static_cast<default_type>(index_image.index(2)));
       index_image.index(3) = 1;
       index_type offset = index_image.value();
       index_type fixel_index = 0;

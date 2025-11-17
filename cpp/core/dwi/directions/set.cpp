@@ -358,10 +358,10 @@ index_type FastLookupSet::select_direction(const Eigen::Vector3d &p) const {
   const size_t grid_index = dir2gridindex(p);
 
   index_type best_dir = grid_lookup[grid_index].front();
-  default_type max_dp = abs(p.dot(get_dir(best_dir)));
+  default_type max_dp = std::fabs(p.dot(get_dir(best_dir)));
   for (size_t i = 1; i != grid_lookup[grid_index].size(); ++i) {
     const index_type this_dir = (grid_lookup[grid_index])[i];
-    const default_type this_dp = abs(p.dot(get_dir(this_dir)));
+    const default_type this_dp = std::fabs(p.dot(get_dir(this_dir)));
     if (this_dp > max_dp) {
       max_dp = this_dp;
       best_dir = this_dir;
@@ -374,9 +374,9 @@ index_type FastLookupSet::select_direction(const Eigen::Vector3d &p) const {
 index_type FastLookupSet::select_direction_slow(const Eigen::Vector3d &p) const {
 
   index_type dir = 0;
-  default_type max_dot_product = abs(p.dot(unit_vectors[0]));
+  default_type max_dot_product = std::fabs(p.dot(unit_vectors[0]));
   for (size_t i = 1; i != size(); ++i) {
-    const default_type this_dot_product = abs(p.dot(unit_vectors[i]));
+    const default_type this_dot_product = std::fabs(p.dot(unit_vectors[i]));
     if (this_dot_product > max_dot_product) {
       max_dot_product = this_dot_product;
       dir = i;
@@ -392,21 +392,21 @@ void FastLookupSet::initialise() {
   for (size_t i = 0; i != size(); ++i) {
     for (std::vector<index_type>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
       if (*j > i) {
-        adj_dot_product_sum += abs(unit_vectors[i].dot(unit_vectors[*j]));
+        adj_dot_product_sum += std::fabs(unit_vectors[i].dot(unit_vectors[*j]));
         ++adj_dot_product_count;
       }
     }
   }
 
-  const default_type min_dp = adj_dot_product_sum / default_type(adj_dot_product_count);
+  const default_type min_dp = adj_dot_product_sum / static_cast<default_type>(adj_dot_product_count);
   const default_type max_angle_step = acos(min_dp);
 
   num_az_grids = ceil(2.0 * Math::pi / max_angle_step);
   num_el_grids = ceil(Math::pi / max_angle_step);
   total_num_angle_grids = num_az_grids * num_el_grids;
 
-  az_grid_step = 2.0 * Math::pi / default_type(num_az_grids - 1);
-  el_grid_step = Math::pi / default_type(num_el_grids - 1);
+  az_grid_step = 2.0 * Math::pi / static_cast<default_type>(num_az_grids - 1);
+  el_grid_step = Math::pi / static_cast<default_type>(num_el_grids - 1);
 
   az_begin = -Math::pi;
   el_begin = 0.0;
@@ -500,7 +500,7 @@ void FastLookupSet::test_lookup() const {
     if (select_direction(p) != select_direction_slow(p))
       ++error_count;
   }
-  const default_type error_rate = default_type(error_count) / default_type(checks);
+  const default_type error_rate = static_cast<default_type>(error_count) / static_cast<default_type>(checks);
   VAR(error_rate);
 }
 

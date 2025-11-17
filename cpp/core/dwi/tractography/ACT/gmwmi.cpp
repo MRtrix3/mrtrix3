@@ -61,14 +61,14 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
     p += step;
     tissues = get_tissues(p, interp);
   } while (tissues.valid() && step.squaredNorm() > 0.0F &&
-           (abs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy) && (++gradient_iters < max_iters));
+           (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy) && ++gradient_iters < max_iters);
 
   // Make sure an appropriate cost function minimum has been found, and that
   //   this would be an acceptable termination point if it were processed by the tracking algorithm
   if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm() ||
-      (abs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy)) {
+      (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy)) {
 
-    p = {NaN, NaN, NaN};
+    p.fill(NaNF);
     return false;
   }
 
@@ -79,7 +79,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
   if (!step.allFinite())
     return true;
   if (!step.squaredNorm()) {
-    p = {NaN, NaN, NaN};
+    p.fill(NaNF);
     return false;
   }
 
@@ -94,7 +94,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
 
   } while (step.norm() < 0.5 * min_vox);
 
-  p = {NaN, NaN, NaN};
+  p.fill(NaNF);
   return false;
 }
 
@@ -158,7 +158,7 @@ Eigen::Vector3f
 GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool end, Interp &interp) const {
 
   if (tck.empty())
-    return {NaN, NaN, NaN};
+    return Eigen::Vector3f::Constant(NaNF);
 
   if (tck.size() == 1)
     return tck.front();

@@ -57,10 +57,10 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
   nrows = grad.rows();
   DWI::Shells shells(grad);
 
-  if (size_t(props.resp_WM.rows()) != shells.count())
+  if (static_cast<size_t>(props.resp_WM.rows()) != shells.count())
     FAIL("WM kernel size does not match the no. b-values in the image.");
   for (auto r : props.resp_ISO) {
-    if (size_t(r.size()) != shells.count())
+    if (static_cast<size_t>(r.size()) != shells.count())
       FAIL("Isotropic kernel size does not match the no. b-values in the image.");
   }
 
@@ -76,7 +76,7 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
   double wmr0;
 
   for (size_t s = 0; s < shells.count(); s++) {
-    for (int i = 0; i < int(Math::ZSH::NforL(lmax)); ++i)
+    for (int i = 0; i < static_cast<int>(Math::ZSH::NforL(lmax)); ++i)
       wmr_zsh[i] = (i < props.resp_WM.cols()) ? props.resp_WM(s, i) : 0.0;
     wmr_rh = Math::ZSH::ZSH2RH(wmr_zsh);
     wmr0 = props.resp_WM(s, 0) / std::sqrt(M_4PI);

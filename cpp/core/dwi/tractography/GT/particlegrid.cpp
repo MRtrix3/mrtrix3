@@ -61,8 +61,9 @@ void ParticleGrid::clear() {
 }
 
 const ParticleGrid::ParticleVectorType *ParticleGrid::at(const ssize_t x, const ssize_t y, const ssize_t z) const {
-  if ((x < 0) || (size_t(x) >= dims[0]) || (y < 0) || (size_t(y) >= dims[1]) || (z < 0) ||
-      (size_t(z) >= dims[2])) // out of bounds
+  if ((x < 0) || (static_cast<size_t>(x) >= dims[0]) || //
+      (y < 0) || (static_cast<size_t>(y) >= dims[1]) || //
+      (z < 0) || (static_cast<size_t>(z) >= dims[2]))   // out of bounds
     return nullptr;
   return &grid[xyz2idx(x, y, z)];
 }

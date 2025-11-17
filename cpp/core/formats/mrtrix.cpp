@@ -80,7 +80,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
   int64_t offset = 0;
   out << "file: ";
   if (single_file) {
-    offset = int64_t(out.tellp()) + int64_t(18);
+    offset = static_cast<int64_t>(out.tellp()) + int64_t(18);
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else

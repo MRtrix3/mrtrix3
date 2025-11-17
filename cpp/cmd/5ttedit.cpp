@@ -95,13 +95,13 @@ public:
     }
   }
 
-  void set_cgm_input(const std::string &path) { load(path, 0); }
-  void set_sgm_input(const std::string &path) { load(path, 1); }
-  void set_wm_input(const std::string &path) { load(path, 2); }
-  void set_csf_input(const std::string &path) { load(path, 3); }
-  void set_path_input(const std::string &path) { load(path, 4); }
+  void set_cgm_input(std::string_view path) { load(path, 0); }
+  void set_sgm_input(std::string_view path) { load(path, 1); }
+  void set_wm_input(std::string_view path) { load(path, 2); }
+  void set_csf_input(std::string_view path) { load(path, 3); }
+  void set_path_input(std::string_view path) { load(path, 4); }
 
-  void set_none_mask(const std::string &path) {
+  void set_none_mask(std::string_view path) {
     none = Image<bool>::open(path);
     if (!dimensions_match(v_in, none, 0, 3))
       throw Exception("Image " + str(path) + " does not match 5TT image dimensions");
@@ -116,7 +116,7 @@ private:
   size_t excess_volume_count;
   size_t inadequate_volume_count;
 
-  void load(const std::string &path, const size_t index) {
+  void load(std::string_view path, const size_t index) {
     assert(index <= 4);
     buffers[index] = Image<float>::open(path);
     if (!dimensions_match(v_in, buffers[index], 0, 3))
@@ -149,7 +149,7 @@ bool Modifier::operator()(const Iterator &pos) {
       }
     }
     if (sum_user > 0.0) {
-      if (float(sum_user) > 1.0F) {
+      if (static_cast<float>(sum_user) > 1.0F) {
         // Erroneous input from user;
         //   we can rescale so that the sum of partial volume fractions is one,
         //   but we should also warn the user about the bad input
@@ -176,7 +176,7 @@ bool Modifier::operator()(const Iterator &pos) {
           // Voxel is zero-filled in input image;
           //   ideally the user will have provided a unity sum of volume fractions as their input
           multiplier = 1.0;
-          if (float(sum_user) < 1.0F) {
+          if (static_cast<float>(sum_user) < 1.0F) {
             multiplier = 1.0 / sum_user;
             ++inadequate_volume_count;
           }

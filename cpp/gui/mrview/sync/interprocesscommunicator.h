@@ -34,8 +34,6 @@ class InterprocessCommunicator : public QObject {
 
 public:
   InterprocessCommunicator();
-  static void Int32ToChar(char a[], int n);
-  static int CharTo32bitNum(char a[]);
   bool SendData(QByteArray data); // sends data to be synced
 
 private slots:
@@ -43,9 +41,9 @@ private slots:
   void OnDataReceived(std::vector<std::shared_ptr<QByteArray>> dat);
 
 signals:
-  void SyncDataReceived(
-      std::vector<std::shared_ptr<QByteArray>> data); // fires when data is received which is for syncing. It is
-                                                      // up to listeners to validate and store this value
+  // Fires when data is received which is for syncing.
+  // It is up to listeners to validate and store this value
+  void SyncDataReceived(std::vector<std::shared_ptr<QByteArray>> data);
 
 private:
   int id;                                                          // id which is unique between mrview processes
