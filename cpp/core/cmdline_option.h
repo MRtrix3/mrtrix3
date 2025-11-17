@@ -39,21 +39,21 @@ namespace MR::App {
 class ArgTypeFlags : public std::bitset<15> {
 public:
   ArgTypeFlags() = default;
-  static const ssize_t Text = 0;
-  static const ssize_t Boolean = 1;
-  static const ssize_t Integer = 2;
-  static const ssize_t Float = 3;
-  static const ssize_t FileIn = 4;
-  static const ssize_t FileOut = 5;
-  static const ssize_t DirectoryIn = 6;
-  static const ssize_t DirectoryOut = 7;
-  static const ssize_t ImageIn = 8;
-  static const ssize_t ImageOut = 9;
-  static const ssize_t IntSeq = 10;
-  static const ssize_t FloatSeq = 11;
-  static const ssize_t TracksIn = 12;
-  static const ssize_t TracksOut = 13;
-  static const ssize_t Choice = 14;
+  inline static constexpr ssize_t Text = 0;
+  inline static constexpr ssize_t Boolean = 1;
+  inline static constexpr ssize_t Integer = 2;
+  inline static constexpr ssize_t Float = 3;
+  inline static constexpr ssize_t FileIn = 4;
+  inline static constexpr ssize_t FileOut = 5;
+  inline static constexpr ssize_t DirectoryIn = 6;
+  inline static constexpr ssize_t DirectoryOut = 7;
+  inline static constexpr ssize_t ImageIn = 8;
+  inline static constexpr ssize_t ImageOut = 9;
+  inline static constexpr ssize_t IntSeq = 10;
+  inline static constexpr ssize_t FloatSeq = 11;
+  inline static constexpr ssize_t TracksIn = 12;
+  inline static constexpr ssize_t TracksOut = 13;
+  inline static constexpr ssize_t Choice = 14;
 };
 
 class ArgModifierFlags {
@@ -73,8 +73,8 @@ public:
 
 private:
   std::bitset<2> data;
-  static const ssize_t Optional = 0;
-  static const ssize_t AllowMultiple = 1;
+  inline static constexpr ssize_t Optional = 0;
+  inline static constexpr ssize_t AllowMultiple = 1;
 };
 
 //! \endcond
