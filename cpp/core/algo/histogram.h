@@ -40,20 +40,20 @@ public:
   template <typename value_type>
   typename std::enable_if<std::is_arithmetic<value_type>::value, bool>::type operator()(const value_type val) {
     if (std::isfinite(val) && !(ignore_zero && val == 0.0)) {
-      min = std::min(min, default_type(val));
-      max = std::max(max, default_type(val));
+      min = std::min(min, static_cast<default_type>(val));
+      max = std::max(max, static_cast<default_type>(val));
       if (!num_bins)
-        data.push_back(default_type(val));
+        data.push_back(static_cast<default_type>(val));
     }
     return true;
   }
 
   template <class T>
   FORCE_INLINE typename std::enable_if<!std::is_arithmetic<T>::value, bool>::type operator()(const T &val) {
-    return (*this)(typename T::value_type(val));
+    return (*this)(static_cast<typename T::value_type>(val));
   }
 
-  void from_file(const std::string &);
+  void from_file(std::string_view);
 
   void finalize(const size_t num_volumes, const bool is_integer);
 
@@ -87,21 +87,21 @@ public:
   template <typename value_type> bool operator()(const value_type val) {
     if (std::isfinite(val) && !(info.get_ignore_zero() && val == 0.0)) {
       const size_t pos = bin(val);
-      if (pos != size_t(list.size()))
+      if (pos != static_cast<size_t>(list.size()))
         ++list[pos];
     }
     return true;
   }
 
   template <typename value_type> size_t bin(const value_type val) const {
-    size_t pos = std::floor((val - info.get_min()) / info.get_bin_width());
-    if (pos > size_t(list.size()))
+    size_t pos = static_cast<size_t>(std::floor((val - info.get_min()) / info.get_bin_width()));
+    if (pos > static_cast<size_t>(list.size()))
       return size();
     return pos;
   }
 
   size_t operator[](const size_t index) const {
-    assert(index < size_t(list.size()));
+    assert(index < static_cast<size_t>(list.size()));
     return list[index];
   }
   size_t size() const { return list.size(); }
@@ -158,7 +158,7 @@ Data generate(ImageType &image, MaskType &mask, const size_t num_bins, const boo
 template <class ImageType> Data generate(const Calibrator &calibrator, ImageType &image) {
   Data result(calibrator);
   for (auto l = Loop(image)(image); l; ++l)
-    result(typename ImageType::value_type(image.value()));
+    result(static_cast<typename ImageType::value_type>(image.value()));
   return result;
 }
 
@@ -172,7 +172,7 @@ Data generate(const Calibrator &calibrator, ImageType &image, MaskType &mask) {
   Adapter::Replicate<MaskType> mask_replicate(mask, image);
   for (auto l = Loop(image)(image, mask_replicate); l; ++l) {
     if (mask_replicate.value())
-      result(typename ImageType::value_type(image.value()));
+      result(static_cast<typename ImageType::value_type>(image.value()));
   }
   return result;
 }

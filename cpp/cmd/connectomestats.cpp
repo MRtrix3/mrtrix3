@@ -43,12 +43,10 @@ using Stats::PermTest::count_matrix_type;
 
 const std::vector<std::string> algorithms = {"nbs", "tfnbs", "none"};
 
-// TODO Eventually these will move to some kind of TFCE header
-#define TFCE_DH_DEFAULT 0.1
-#define TFCE_E_DEFAULT 0.4
-#define TFCE_H_DEFAULT 3.0
-
-#define EMPIRICAL_SKEW_DEFAULT 1.0
+constexpr default_type default_tfnbs_dh = 0.1;
+constexpr default_type default_tfnbs_e = 0.4;
+constexpr default_type default_tfnbs_h = 3.0;
+constexpr default_type default_empirical_skew = 1.0;
 
 // clang-format off
 void usage() {
@@ -95,10 +93,10 @@ void usage() {
 
   OPTIONS
 
-  + Math::Stats::shuffle_options (true, EMPIRICAL_SKEW_DEFAULT)
+  + Math::Stats::shuffle_options (true, default_empirical_skew)
 
   // TODO OptionGroup these, and provide a generic loader function
-  + Stats::TFCE::Options (TFCE_DH_DEFAULT, TFCE_E_DEFAULT, TFCE_H_DEFAULT)
+  + Stats::TFCE::Options (default_tfnbs_dh, default_tfnbs_e, default_tfnbs_h)
 
   + Math::Stats::GLM::glm_options ("edge")
 
@@ -128,9 +126,9 @@ void usage() {
 // clang-format on
 
 void load_tfce_parameters(Stats::TFCE::Wrapper &enhancer) {
-  const default_type dH = get_option_value("tfce_dh", TFCE_DH_DEFAULT);
-  const default_type E = get_option_value("tfce_e", TFCE_E_DEFAULT);
-  const default_type H = get_option_value("tfce_h", TFCE_H_DEFAULT);
+  const default_type dH = get_option_value("tfce_dh", default_tfnbs_dh);
+  const default_type E = get_option_value("tfce_e", default_tfnbs_e);
+  const default_type H = get_option_value("tfce_h", default_tfnbs_h);
   enhancer.set_tfce_parameters(dH, E, H);
 }
 
@@ -139,7 +137,7 @@ void load_tfce_parameters(Stats::TFCE::Wrapper &enhancer) {
 //   that subject
 class SubjectConnectomeImport : public SubjectDataImportBase {
 public:
-  SubjectConnectomeImport(const std::string &path) : SubjectDataImportBase(path) {
+  SubjectConnectomeImport(std::string_view path) : SubjectDataImportBase(path) {
     auto M = File::Matrix::load_matrix(path);
     Connectome::check(M);
     if (Connectome::is_directed(M))
@@ -155,7 +153,7 @@ public:
   }
 
   default_type operator[](const index_type index) const override {
-    assert(index < index_type(data.size()));
+    assert(index < static_cast<index_type>(data.size()));
     return (data[index]);
   }
 
@@ -186,7 +184,7 @@ void run() {
 
   // Initialise enhancement algorithm
   std::shared_ptr<Stats::EnhancerBase> enhancer;
-  switch (int(argument[1])) {
+  switch (static_cast<MR::App::ParsedArgument::IntType>(argument[1])) {
   case 0: {
     auto opt = get_options("threshold");
     if (opt.empty())
@@ -210,11 +208,11 @@ void run() {
   }
 
   const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
-  const default_type empirical_skew = get_option_value("skew_nonstationarity", EMPIRICAL_SKEW_DEFAULT);
+  const default_type empirical_skew = get_option_value("skew_nonstationarity", default_empirical_skew);
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[2]);
-  if (index_type(design.rows()) != importer.size())
+  if (static_cast<index_type>(design.rows()) != importer.size())
     throw Exception("number of subjects (" + str(importer.size()) +
                     ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 

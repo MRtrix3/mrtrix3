@@ -35,7 +35,7 @@ using namespace App;
 using Fixel::index_type;
 
 // clang-format off
-const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
+const OptionGroup OutputOptions = OptionGroup ("Metric values for output fixel data files")
 
   + Option ("afd",
             "output the total Apparent Fibre Density per fixel"
@@ -111,13 +111,13 @@ public:
 
   void commit();
 
-  void set_fixel_directory_output(const std::string &path) { fixel_directory_path = path; }
-  void set_index_output(const std::string &path) { index_path = path; }
-  void set_directions_output(const std::string &path) { dir_path = path; }
-  void set_afd_output(const std::string &path) { afd_path = path; }
-  void set_peak_amp_output(const std::string &path) { peak_amp_path = path; }
-  void set_disp_output(const std::string &path) { disp_path = path; }
-  void set_skew_output(const std::string &path) { skew_path = path; }
+  void set_fixel_directory_output(std::string_view path) { fixel_directory_path = path; }
+  void set_index_output(std::string_view path) { index_path = path; }
+  void set_directions_output(std::string_view path) { dir_path = path; }
+  void set_afd_output(std::string_view path) { afd_path = path; }
+  void set_peak_amp_output(std::string_view path) { peak_amp_path = path; }
+  void set_disp_output(std::string_view path) { disp_path = path; }
+  void set_skew_output(std::string_view path) { skew_path = path; }
 
   bool operator()(const FOD_lobes &);
 
@@ -134,13 +134,13 @@ private:
   class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
   public:
     Primitive_FOD_lobes(const FOD_lobes &in, const index_type maxcount, bool dir_from_peak) : vox(in.vox) {
-      const index_type N = maxcount ? std::min(index_type(in.size()), maxcount) : in.size();
+      const index_type N = maxcount ? std::min(static_cast<index_type>(in.size()), maxcount) : in.size();
       for (index_type i = 0; i != N; ++i) {
         const FOD_lobe &lobe(in[i]);
         this->emplace_back(dir_from_peak ? lobe.get_peak_dir(0).cast<float>() : lobe.get_mean_dir().cast<float>(),
                            lobe.get_integral(),
                            lobe.get_max_peak_value(),
-                           std::acos(std::abs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
+                           std::acos(std::fabs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
       }
     }
     Eigen::Array3i vox;

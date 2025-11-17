@@ -24,13 +24,16 @@
 
 namespace MR::Fixel::Filter {
 
+const float Connect::default_value_threshold = 0.5;
+const float Connect::default_connectivity_threshold = 0.1;
+
 void Connect::operator()(Image<float> &input, Image<float> &output) const {
   Fixel::check_data_file(input);
   Fixel::check_data_file(output);
 
   check_dimensions(input, output);
 
-  if (size_t(input.size(0)) != matrix.size())
+  if (static_cast<size_t>(input.size(0)) != matrix.size())
     throw Exception("Size of fixel data file \"" + input.name() + "\" (" + str(input.size(0)) +
                     ") does not match fixel connectivity matrix (" + str(matrix.size()) + ")");
 

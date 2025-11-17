@@ -6,7 +6,7 @@ fixel2sh
 Synopsis
 --------
 
-Convert a fixel-based sparse-data image into an spherical harmonic image
+Generate spherical harmonics decompositions that mimic the content of a fixel data file
 
 Usage
 --------

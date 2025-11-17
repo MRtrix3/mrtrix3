@@ -305,18 +305,7 @@ int Overlay::draw_tool_labels(int position, int start_line_num, const Projection
     Image *image = dynamic_cast<Image *>(image_list_model->items[i].get());
     if (image && image->show) {
       std::string value_str = Path::basename(image->get_filename()) + " ";
-      cfloat value;
-      if (image->interpolate()) {
-        value_str += "interp value: ";
-        value = image->trilinear_value(window().focus());
-      } else {
-        value_str += "voxel value: ";
-        value = image->nearest_neighbour_value(window().focus());
-      }
-      if (std::isnan(abs(value)))
-        value_str += "?";
-      else
-        value_str += str(value);
+      value_str += image->describe_value(window().focus());
       transform.render_text(value_str, position, start_line_num + num_of_new_lines);
       num_of_new_lines += 1;
     }
@@ -415,11 +404,11 @@ void Overlay::onSetVolumeIndex() {
   Image *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[0]));
   if (overlay->header().ndim() < 4)
     return;
-  assert(overlay->header().ndim() == size_t(volume_index_layout->count() + 3));
+  assert(overlay->header().ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
   for (int i = 0; i < volume_index_layout->count(); ++i) {
     auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-    if (overlay->header().ndim() <= size_t(i + 3))
+    if (overlay->header().ndim() <= static_cast<size_t>(i + 3))
       break;
     overlay->image.index(i + 3) = box->value();
   }
@@ -527,10 +516,10 @@ void Overlay::update_selection() {
   interpolate_check_box->setEnabled(enable_controls);
 
   if (indices.empty()) {
-    max_value->setValue(NAN);
-    min_value->setValue(NAN);
-    lower_threshold->setValue(NAN);
-    upper_threshold->setValue(NAN);
+    max_value->setValue(NaNF);
+    min_value->setValue(NaNF);
+    lower_threshold->setValue(NaNF);
+    upper_threshold->setValue(NaNF);
     updateGL();
     return;
   }
@@ -544,7 +533,7 @@ void Overlay::update_selection() {
   int num_inverted = 0;
   for (int i = 0; i < indices.size(); ++i) {
     Image *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
-    if (colourmap_index != int(overlay->colourmap)) {
+    if (colourmap_index != static_cast<int>(overlay->colourmap)) {
       if (colourmap_index == -2)
         colourmap_index = overlay->colourmap;
       else
@@ -684,7 +673,7 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("overlay.opacity")) {
     try {
       float value = opt[0];
-      opacity_slider->setSliderPosition(int(1.e3f * value));
+      opacity_slider->setSliderPosition(static_cast<int>(1.e3F * value));
     } catch (Exception &e) {
       e.display();
     }
@@ -694,7 +683,7 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("overlay.colourmap")) {
     try {
       int n = opt[0];
-      if (n < 0 || !ColourMap::maps[n].name)
+      if (n < 0 || ColourMap::maps[n].name.empty())
         throw Exception("invalid overlay colourmap index \"" + std::string(opt[0]) +
                         "\" for -overlay.colourmap option");
       colourmap_button->set_colourmap_index(n);
@@ -713,7 +702,9 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
       if (std::min({values[0], values[1], values[2]}) < 0.0 || max_value > 255)
         throw Exception("values provided to -overlay.colour must be either between 0.0 and 1.0, or between 0 and 255");
       const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
-      QColor colour(int(values[0] * multiplier), int(values[1] * multiplier), int(values[2] * multiplier));
+      QColor colour(static_cast<int>(values[0] * multiplier),
+                    static_cast<int>(values[1] * multiplier),
+                    static_cast<int>(values[2] * multiplier));
       selected_custom_colour(colour, *colourmap_button);
       colourmap_button->set_fixed_colour();
     } catch (Exception &e) {

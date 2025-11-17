@@ -188,7 +188,7 @@ private:
 
 class NodeSelectionSettingsDialog : public QDialog {
 public:
-  NodeSelectionSettingsDialog(QWidget *parent, const std::string &message, NodeSelectionSettings &settings);
+  NodeSelectionSettingsDialog(QWidget *parent, std::string_view message, NodeSelectionSettings &settings);
 
   NodeSelectionSettingsFrame *frame;
 };

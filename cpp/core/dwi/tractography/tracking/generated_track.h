@@ -54,7 +54,7 @@ public:
     //   instead be used
     switch (size()) {
     case 0:
-      return NaN;
+      return NaNF;
     case 1:
       return ((*this)[1] - (*this)[0]).norm();
     default:

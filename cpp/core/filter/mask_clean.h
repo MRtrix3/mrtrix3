@@ -55,8 +55,7 @@ public:
     datatype_ = DataType::Bit;
   }
 
-  template <class HeaderType>
-  MaskClean(const HeaderType &in, const std::string &message) : Base(in, message), scale(2) {
+  template <class HeaderType> MaskClean(const HeaderType &in, std::string_view message) : Base(in, message), scale(2) {
     check_3D_nonunity(in);
     datatype_ = DataType::Bit;
   }

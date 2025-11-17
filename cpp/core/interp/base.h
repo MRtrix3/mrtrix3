@@ -20,10 +20,10 @@
 #include "transform.h"
 
 namespace MR {
-
 class Header;
+} // namespace MR
 
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -193,12 +193,11 @@ protected:
 
   template <class VectorType> Eigen::Vector3d intravoxel_offset(const VectorType &pos) {
     if (set_out_of_bounds(pos))
-      return Eigen::Vector3d(NaN, NaN, NaN);
+      return Eigen::Vector3d::Constant(NaN);
     return Eigen::Vector3d(pos[0] - std::floor(pos[0]), pos[1] - std::floor(pos[1]), pos[2] - std::floor(pos[2]));
   }
 };
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
+} // namespace MR::Interp

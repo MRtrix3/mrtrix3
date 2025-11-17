@@ -23,8 +23,15 @@
 
 namespace MR::GUI::MRView {
 class AdjustButton;
+} // namespace MR::GUI::MRView
 
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
+
+// Note: distinct from MR::GUI::MRView::moveinout_fovmultiplier
+constexpr float fovrate_multipler = 1.0e-2F;
+
+constexpr float min_opacity = 1.0e-3F;
+constexpr float opacity_exponent = 0.0069077552789821370521; // -std::log(min_opacity) / 1000.0F
 
 class ClipPlane {
 public:
@@ -137,5 +144,4 @@ private:
   void rotate_clip_planes(std::vector<GL::vec4 *> &clip, const Eigen::Quaternionf &rot);
 };
 
-} // namespace Tool
-} // namespace MR::GUI::MRView
+} // namespace MR::GUI::MRView::Tool

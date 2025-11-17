@@ -23,10 +23,12 @@
 #include "math/stats/typedefs.h"
 #include <vector>
 
-#define DEFAULT_NUMBER_SHUFFLES 5000
-#define DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY 5000
-
 namespace MR::Math::Stats {
+
+// TODO Reconsider position
+// Perhaps these need to be with "permtest", while others remain with "shuffle"?
+constexpr ssize_t default_numshuffles_nulldist = 5000;
+constexpr ssize_t default_numshuffles_nonstationarity = 5000;
 
 // Generic command-line options:
 // - Set nature of errors
@@ -90,7 +92,7 @@ private:
                   const index_array_type &eb_whole);
 
   // For exchangeability blocks (either within or whole)
-  index_array_type load_blocks(const std::string &filename, const bool equal_sizes);
+  index_array_type load_blocks(std::string_view filename, const bool equal_sizes);
 
   // For generating unique permutations
   bool is_duplicate(const PermuteLabels &, const PermuteLabels &) const;
@@ -110,7 +112,7 @@ private:
                                  const index_array_type &eb_within,
                                  const index_array_type &eb_whole);
 
-  void load_permutations(const std::string &filename);
+  void load_permutations(std::string_view filename);
 
   // Similar functions required for sign-flipping
   bool is_duplicate(const FlipSigns &) const;

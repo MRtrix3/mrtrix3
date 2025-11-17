@@ -32,15 +32,15 @@ class Mask : public Image<bool> {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
   Mask(const Mask &) = default;
-  Mask(const std::string &name)
-      : Image<bool>(__get_mask(name)),
+  Mask(std::string_view name)
+      : Image<bool>(get_mask(name)),
         scanner2voxel(new transform_type(Transform(*this).scanner2voxel.cast<float>())),
         voxel2scanner(new transform_type(Transform(*this).voxel2scanner.cast<float>())) {}
 
   std::shared_ptr<transform_type> scanner2voxel, voxel2scanner; // Ptr to prevent unnecessary copy-construction
 
 private:
-  static Image<bool> __get_mask(const std::string &name);
+  static Image<bool> get_mask(std::string_view name);
 };
 
 class ROI {
@@ -48,7 +48,7 @@ public:
   ROI(const Eigen::Vector3f &sphere_pos, float sphere_radius)
       : pos(sphere_pos), radius(sphere_radius), radius2(Math::pow2(radius)) {}
 
-  ROI(const std::string &spec) : radius(NaN), radius2(NaN) {
+  ROI(std::string_view spec) : radius(NaNF), radius2(NaNF) {
     try {
       auto F = parse_floats(spec);
       if (F.size() != 4)
@@ -77,7 +77,7 @@ public:
   std::string shape() const { return (mask ? "image" : "sphere"); }
 
   std::string parameters() const {
-    return mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
+    return mask ? std::string(mask->name()) : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
   }
 
   float min_featurelength() const {
@@ -115,6 +115,7 @@ public:
 
   void clear() { R.clear(); }
   size_t size() const { return (R.size()); }
+  bool empty() const { return R.empty(); }
   const ROI &operator[](size_t i) const { return (R[i]); }
   void add(const ROI &roi) { R.push_back(roi); }
 

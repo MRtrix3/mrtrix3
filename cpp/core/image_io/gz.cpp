@@ -22,8 +22,6 @@
 #include "image_io/gz.h"
 #include "progressbar.h"
 
-#define BYTES_PER_ZCALL 524288
-
 namespace MR::ImageIO {
 
 void GZ::load(const Header &header, size_t) {
@@ -45,18 +43,18 @@ void GZ::load(const Header &header, size_t) {
     memset(addresses[0].get(), 0, files.size() * bytes_per_segment);
   else {
     ProgressBar progress("uncompressing image \"" + header.name() + "\"",
-                         files.size() * bytes_per_segment / BYTES_PER_ZCALL);
+                         files.size() * bytes_per_segment / bytes_per_zcall);
     for (size_t n = 0; n < files.size(); n++) {
       File::GZ zf(files[n].name, "rb");
       zf.seek(files[n].start);
       uint8_t *address = addresses[0].get() + n * bytes_per_segment;
-      uint8_t *last = address + bytes_per_segment - BYTES_PER_ZCALL;
+      uint8_t *last = address + bytes_per_segment - bytes_per_zcall;
       while (address < last) {
-        zf.read(reinterpret_cast<char *>(address), BYTES_PER_ZCALL);
-        address += BYTES_PER_ZCALL;
+        zf.read(reinterpret_cast<char *>(address), bytes_per_zcall);
+        address += bytes_per_zcall;
         ++progress;
       }
-      last += BYTES_PER_ZCALL;
+      last += bytes_per_zcall;
       zf.read(reinterpret_cast<char *>(address), last - address);
     }
   }
@@ -75,20 +73,20 @@ void GZ::unload(const Header &header) {
 
     if (writable) {
       ProgressBar progress("compressing image \"" + header.name() + "\"",
-                           files.size() * bytes_per_segment / BYTES_PER_ZCALL);
+                           files.size() * bytes_per_segment / bytes_per_zcall);
       for (size_t n = 0; n < files.size(); n++) {
-        assert(files[n].start == int64_t(lead_in_size));
+        assert(files[n].start == static_cast<int64_t>(lead_in_size));
         File::GZ zf(files[n].name, "wb");
         if (lead_in)
           zf.write(reinterpret_cast<const char *>(lead_in.get()), lead_in_size);
         uint8_t *address = addresses[0].get() + n * bytes_per_segment;
-        uint8_t *last = address + bytes_per_segment - BYTES_PER_ZCALL;
+        uint8_t *last = address + bytes_per_segment - bytes_per_zcall;
         while (address < last) {
-          zf.write(reinterpret_cast<const char *>(address), BYTES_PER_ZCALL);
-          address += BYTES_PER_ZCALL;
+          zf.write(reinterpret_cast<const char *>(address), bytes_per_zcall);
+          address += bytes_per_zcall;
           ++progress;
         }
-        last += BYTES_PER_ZCALL;
+        last += bytes_per_zcall;
         zf.write(reinterpret_cast<const char *>(address), last - address);
         if (lead_out)
           zf.write(reinterpret_cast<const char *>(lead_out.get()), lead_out_size);

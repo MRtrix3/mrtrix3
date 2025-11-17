@@ -150,8 +150,8 @@ template <class Fixel> bool Fixel_map<Fixel>::operator()(const FMLS::FOD_lobes &
   if (in.empty())
     return true;
   auto v = accessor();
-  assign_pos_of(in.vox).to(v);
-  if (is_out_of_bounds(v))
+  assign_pos_of(in.vox, 0, 3).to(v);
+  if (is_out_of_bounds(v, 0, 3))
     return false;
   if (v.value())
     throw Exception("FIXME: FOD_map has received multiple segmentations for the same voxel!");

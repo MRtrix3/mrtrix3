@@ -54,8 +54,7 @@ void usage() {
     + Option ("preserve", "preserve the sign of some number of directions at the start of the set")
       + Argument ("num").type_integer(1)
 
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                           " instead of [az el].");
+    + DWI::Directions::cartesian_option;
 }
 // clang-format on
 

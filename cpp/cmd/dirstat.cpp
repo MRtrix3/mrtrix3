@@ -37,7 +37,7 @@ void usage() {
   DESCRIPTION
     + "This command will accept as inputs:"
     + "- directions file in spherical coordinates"
-         " (ASCII text, [ az el ] space-separated values, one per line);"
+         " (ASCII text, [ az in ] space-separated values, one per line);"
     + "- directions file in Cartesian coordinates"
          " (ASCII text, [ x y z ] space-separated values, one per line);"
     + "- DW gradient files"
@@ -88,11 +88,12 @@ void usage() {
     + Argument ("dirs", "the text file or image containing the directions.").type_file_in();
 
   OPTIONS
+    // TODO This could be a different command-line argument type
     + Option ("output", "output selected metrics as a space-delimited list,"
                         "suitable for use in scripts."
                         " This will produce one line of values per selected shell."
                         " Valid metrics are as specified in the description above.")
-      + Argument ("list")
+      + Argument ("list").type_text()
     + DWI::ShellsOption
     + DWI::GradImportOptions();
 
@@ -101,7 +102,7 @@ void usage() {
 
 int precision = 6;
 
-void report(const std::string &title, Eigen::MatrixXd &directions);
+void report(std::string_view title, Eigen::MatrixXd &directions);
 
 void run() {
   Eigen::MatrixXd directions;
@@ -191,7 +192,7 @@ Metrics compute(Eigen::MatrixXd &directions) {
       double cos_angle = directions.row(i).head(3).normalized().dot(directions.row(j).head(3).normalized());
       NN_unipolar[i] = std::max(NN_unipolar[i], cos_angle);
       NN_unipolar[j] = std::max(NN_unipolar[j], cos_angle);
-      cos_angle = abs(cos_angle);
+      cos_angle = std::fabs(cos_angle);
       NN_bipolar[i] = std::max(NN_bipolar[i], cos_angle);
       NN_bipolar[j] = std::max(NN_bipolar[j], cos_angle);
 
@@ -222,7 +223,7 @@ Metrics compute(Eigen::MatrixXd &directions) {
   return metrics;
 }
 
-void output_selected(const Metrics &metrics, const std::string &selection) {
+void output_selected(const Metrics &metrics, std::string_view selection) {
   auto select = split(selection, ", \t\n", true);
 
   for (const auto &x : select) {
@@ -274,7 +275,7 @@ void output_selected(const Metrics &metrics, const std::string &selection) {
   std::cout << "\n";
 }
 
-void report(const std::string &title, Eigen::MatrixXd &directions) {
+void report(std::string_view title, Eigen::MatrixXd &directions) {
   auto metrics = compute(directions);
 
   auto opt = get_options("output");

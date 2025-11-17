@@ -73,7 +73,7 @@ int Node_list_model::rowCount(const QModelIndex &parent) const {
   return (connectome.num_nodes() ? connectome.num_nodes() + 1 : 0);
 }
 int Node_list_model::columnCount(const QModelIndex &parent) const {
-  (void)parent; // to suppress warnings about unused parameters
+  (void)parent;
   return 3;
 }
 

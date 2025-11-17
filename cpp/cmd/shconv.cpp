@@ -51,7 +51,7 @@ void usage() {
   + Math::SH::encoding_description;
 
   ARGUMENTS
-    + Argument ("odf response", "pairs of input ODF image and corresponding responses").allow_multiple()
+    + Argument ("odf response", "pairs of input ODF image and corresponding responses").type_image_in().type_file_in().allow_multiple()
     + Argument ("SH_out", "the output spherical harmonics coefficients image.").type_image_out();
 
   OPTIONS
@@ -90,7 +90,7 @@ protected:
 };
 
 void run() {
-  if (!(argument.size() & size_t(1U)))
+  if (!(argument.size() & size_t(1)))
     throw Exception("unexpected number of arguments");
 
   std::vector<Image<value_type>> inputs((argument.size() - 1) / 2);

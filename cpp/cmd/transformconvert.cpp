@@ -56,7 +56,7 @@ void usage() {
              "");
 
   ARGUMENTS
-  + Argument ("input", "the input(s) for the specified operation").allow_multiple()
+  + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
                            " one of: " + join(operations, ", ")).type_choice (operations)
   + Argument ("output", "the output transformation matrix.").type_file_out ();
@@ -82,7 +82,7 @@ transform_type get_flirt_transform(const Header &header) {
 
 // //! read matrix data into a 2D vector \a filename
 // template <class ValueType = default_type>
-//   transform_type parse_surfer_transform (const std::string& filename) {
+//   transform_type parse_surfer_transform (const std::string filename) {
 //     std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
 //     std::vector<std::vector<ValueType>> V;
 //     std::string sbuf;
@@ -130,7 +130,7 @@ transform_type get_flirt_transform(const Header &header) {
 // }
 
 template <typename TransformationType>
-void parse_itk_trafo(const std::string &itk_file,
+void parse_itk_trafo(std::string_view itk_file,
                      TransformationType &transformation,
                      Eigen::Vector3d &centre_of_rotation) {
   const std::string first_line = "#Insight Transform File V1.0";
@@ -178,7 +178,7 @@ void parse_itk_trafo(const std::string &itk_file,
 void run() {
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
+  const std::string_view output_path = argument.back();
 
   switch (op) {
   case 0: { // flirt_import

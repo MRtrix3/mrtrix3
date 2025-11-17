@@ -19,6 +19,8 @@
 
 namespace MR::GUI::MRView {
 
+const ssize_t AdjustButton::deadzone_size = 8;
+
 AdjustButton::AdjustButton(QWidget *parent, float change_rate)
     : QLineEdit(parent),
       rate(change_rate),
@@ -27,7 +29,7 @@ AdjustButton::AdjustButton(QWidget *parent, float change_rate)
       is_min(false),
       is_max(false),
       deadzone_y(-1),
-      deadzone_value(NAN) {
+      deadzone_value(NaNF) {
   setValidator(new QDoubleValidator(this));
 
   setToolTip(tr("Click & drag to adjust"));
@@ -73,12 +75,12 @@ bool AdjustButton::eventFilter(QObject *obj, QEvent *event) {
     } else if (event->type() == QEvent::MouseButtonRelease) {
       if (static_cast<QMouseEvent *>(event)->buttons() == Qt::NoButton) {
         deadzone_y = -1;
-        deadzone_value = NAN;
+        deadzone_value = NaNF;
       }
     } else if (event->type() == QEvent::MouseMove) {
       QMouseEvent *mevent = static_cast<QMouseEvent *>(event);
       if (mevent->buttons() != Qt::NoButton) {
-        if (abs(mevent->pos().y() - deadzone_y) < ADJUST_BUTTON_DEADZONE_SIZE) {
+        if (MR::abs(mevent->pos().y() - deadzone_y) < deadzone_size) {
           if (value() != deadzone_value) {
             setValue(deadzone_value);
             emit valueChanged();

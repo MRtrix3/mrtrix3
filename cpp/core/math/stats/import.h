@@ -40,7 +40,7 @@ namespace MR::Math::Stats {
  */
 class SubjectDataImportBase {
 public:
-  SubjectDataImportBase(const std::string &path) : path(path) {}
+  SubjectDataImportBase(std::string_view path) : path(path) {}
   virtual ~SubjectDataImportBase() {}
 
   /*!
@@ -55,7 +55,7 @@ public:
    */
   virtual default_type operator[](const index_type index) const = 0;
 
-  const std::string &name() const { return path; }
+  std::string name() const { return path; }
 
   virtual index_type size() const = 0;
 
@@ -77,7 +77,7 @@ public:
   // Needs to be its own function rather than the constructor
   //   so that the correct template type can be invoked explicitly
   template <class SubjectDataImport>
-  void initialise(const std::string &listpath, const std::string &explicit_from_directory = "");
+  void initialise(std::string_view listpath, std::string_view explicit_from_directory = "");
 
   /*!
    * @param index for a particular element being tested (data will be acquired for
@@ -100,7 +100,7 @@ protected:
 };
 
 template <class SubjectDataImport>
-void CohortDataImport::initialise(const std::string &listpath, const std::string &explicit_from_directory) {
+void CohortDataImport::initialise(std::string_view listpath, std::string_view explicit_from_directory) {
   // Read the provided text file one at a time
   // For each file, create an instance of SubjectDataImport
   //   (which must derive from SubjectDataImportBase)
@@ -115,9 +115,9 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
   //   text file is an attempt made to load all of those files
   std::vector<std::string> lines;
   {
-    std::ifstream ifs(listpath.c_str());
+    std::ifstream ifs(std::string(listpath).c_str());
     if (!ifs)
-      throw Exception("Unable to open subject file list \"" + listpath + "\"");
+      throw Exception("Unable to open subject file list \"" + std::string(listpath) + "\"");
     std::string line;
     while (getline(ifs, line)) {
       const size_t p = line.find_last_not_of(" \t");
@@ -134,7 +134,7 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
   else if (directories[0] != ".")
     directories.push_back(".");
   if (!explicit_from_directory.empty())
-    directories.insert(directories.begin(), explicit_from_directory);
+    directories.insert(directories.begin(), std::string(explicit_from_directory));
 
   Exception e_nosuccess("Unable to load all input data from file \"" + listpath + "\"");
   std::string load_from_dir;

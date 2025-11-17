@@ -28,6 +28,6 @@ namespace MR::Metadata::BIDS {
  */
 using axis_vector_type = Eigen::Matrix<int, 3, 1>;
 std::string vector2axisid(const axis_vector_type &);
-axis_vector_type axisid2vector(const std::string &);
+axis_vector_type axisid2vector(std::string_view);
 
 } // namespace MR::Metadata::BIDS

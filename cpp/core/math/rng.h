@@ -70,7 +70,7 @@ private:
     // ENVVAR setting the :envvar:`MRTRIX_NTHREADS` environment variable to zero).
     // ENVVAR Multi-threading introduces randomness in the order of execution, which
     // ENVVAR will generally also affect the reproducibility of results.
-    const char *from_env = getenv("MRTRIX_RNG_SEED");
+    const char *from_env = getenv("MRTRIX_RNG_SEED"); // check_syntax off
     if (from_env)
       return to<std::mt19937::result_type>(from_env);
 

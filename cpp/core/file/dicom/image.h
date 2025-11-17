@@ -146,7 +146,7 @@ public:
   std::vector<std::shared_ptr<Frame>> frames;
 
   void read();
-  void parse_item(Element &item, const std::string &dirname = "");
+  void parse_item(Element &item);
   void decode_csa(const uint8_t *start, const uint8_t *end);
   KeyValues read_csa_ascii(const std::vector<std::string> &data);
 

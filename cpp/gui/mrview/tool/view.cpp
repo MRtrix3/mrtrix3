@@ -25,17 +25,16 @@
 #include "mrview/mode/volume.h"
 #include "mrview/window.h"
 
-#define FOV_RATE_MULTIPLIER 0.01f
-#define MRTRIX_MIN_ALPHA 1.0e-3f
-#define MRTRIX_ALPHA_MULT (-std::log(MRTRIX_MIN_ALPHA) / 1000.0f)
-
 namespace {
 
 inline float get_alpha_from_slider(float slider_value) {
-  return MRTRIX_MIN_ALPHA * std::exp(MRTRIX_ALPHA_MULT * float(slider_value));
+  return MR::GUI::MRView::Tool::min_opacity *
+         std::exp(MR::GUI::MRView::Tool::opacity_exponent * static_cast<float>(slider_value));
 }
 
-inline float get_slider_value_from_alpha(float alpha) { return std::log(alpha / MRTRIX_MIN_ALPHA) / MRTRIX_ALPHA_MULT; }
+inline float get_slider_value_from_alpha(float alpha) {
+  return std::log(alpha / MR::GUI::MRView::Tool::min_opacity) / MR::GUI::MRView::Tool::opacity_exponent;
+}
 
 } // namespace
 
@@ -79,12 +78,12 @@ public:
   QModelIndex parent(const QModelIndex &) const { return {}; }
 
   int rowCount(const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return planes.size();
   }
 
   int columnCount(const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return 1;
   }
 
@@ -481,11 +480,11 @@ void View::showEvent(QShowEvent *) {
 void View::onVolumeIndexChanged() {
   assert(window().image());
   const auto &image(window().image()->image);
-  assert(image.ndim() == size_t(volume_index_layout->count() + 3));
+  assert(image.ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
   for (int i = 0; i < volume_index_layout->count(); ++i) {
     auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-    box->setValue(image.ndim() > size_t(i + 3) ? image.index(i + 3) : 0);
+    box->setValue(image.ndim() > static_cast<size_t>(i + 3) ? image.index(i + 3) : 0);
   }
 }
 
@@ -583,7 +582,7 @@ void View::onFocusChanged() {
 
 void View::onFOVChanged() {
   fov->setValue(window().FOV());
-  fov->setRate(FOV_RATE_MULTIPLIER * fov->value());
+  fov->setRate(fovrate_multipler * fov->value());
 }
 
 void View::onSetFocus() {
@@ -607,11 +606,11 @@ void View::onSetVoxel() {
 void View::onSetVolumeIndex() {
   if (window().image()) {
     const auto &image(window().image()->image);
-    assert(image.ndim() == size_t(volume_index_layout->count() + 3));
+    assert(image.ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
     for (int i = 0; i < volume_index_layout->count(); ++i) {
       auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-      if (image.ndim() <= size_t(i + 3))
+      if (image.ndim() <= static_cast<size_t>(i + 3))
         break;
       window().set_image_volume(i + 3, box->value());
     }
@@ -707,7 +706,7 @@ void View::onSetScaling() {
 void View::onSetFOV() {
   if (window().image()) {
     window().set_FOV(fov->value());
-    fov->setRate(FOV_RATE_MULTIPLIER * fov->value());
+    fov->setRate(fovrate_multipler * fov->value());
     window().updateGL();
   }
 }
@@ -983,7 +982,7 @@ bool View::panthrough_event(const ModelViewProjection &projection) {
   if (clip.empty())
     return false;
   move_clip_planes_in_out(
-      projection, clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * window().FOV());
+      projection, clip, MR::GUI::MRView::moveinout_fovmultiplier * window().mouse_displacement().y() * window().FOV());
   return true;
 }
 

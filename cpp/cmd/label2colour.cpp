@@ -84,7 +84,7 @@ void run() {
         colour[0] = dist(rng);
         colour[1] = dist(rng);
         colour[2] = dist(rng);
-      } while (int(colour[0]) + int(colour[1]) + int(colour[2]) < 100);
+      } while (colour.sum() < 100);
       lut.insert(std::make_pair(i, LUT_node(str(i), colour)));
     }
   }

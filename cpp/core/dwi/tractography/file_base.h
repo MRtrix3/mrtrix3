@@ -37,7 +37,7 @@ public:
       in.close();
   }
 
-  void open(const std::string &file, const std::string &firstline, Properties &properties);
+  void open(std::string_view file, std::string_view type, Properties &properties);
 
   void close() { in.close(); }
 
@@ -51,7 +51,7 @@ template <typename ValueType = float> class __WriterBase__ {
 public:
   using value_type = ValueType;
 
-  __WriterBase__(const std::string &name)
+  __WriterBase__(std::string_view name)
       : count(0), total_count(0), name(name), dtype(DataType::from<ValueType>()), count_offset(0), open_success(false) {
     dtype.set_byte_order_native();
     if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
@@ -68,7 +68,7 @@ public:
     }
   }
 
-  void create(File::OFStream &out, const Properties &properties, const std::string &type) {
+  void create(File::OFStream &out, const Properties &properties, std::string_view type) {
     out << "mrtrix " + type + "\nEND\n";
 
     for (const auto &i : properties) {
@@ -94,7 +94,7 @@ public:
       out << "prior_roi: " << it.first << " " << it.second << "\n";
 
     out << "datatype: " << dtype.specifier() << "\n";
-    int64_t data_offset = int64_t(out.tellp()) + 65;
+    int64_t data_offset = static_cast<int64_t>(out.tellp()) + 65;
     data_offset += (4 - (data_offset % 4)) % 4;
     out << "file: . " << data_offset << "\n";
     out << "count: ";

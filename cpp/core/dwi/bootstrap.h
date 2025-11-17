@@ -18,8 +18,7 @@
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 template <class ImageType, class Functor, size_t NUM_VOX_PER_CHUNK = 256>
 class Bootstrap : public Adapter::Base<Bootstrap<ImageType, Functor, NUM_VOX_PER_CHUNK>, ImageType> {
@@ -108,5 +107,4 @@ protected:
   }
 };
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI

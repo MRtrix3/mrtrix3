@@ -25,12 +25,6 @@
 #include "math/SH.h"
 #include "memory.h"
 
-#define FMLS_INTEGRAL_THRESHOLD_DEFAULT 0.0 // By default, don't threshold by integral (tough to get a good number)
-#define FMLS_PEAK_VALUE_THRESHOLD_DEFAULT 0.1
-#define FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT                                                                        \
-  1.0 // By default, never perform merging of lobes generated from discrete peaks such that a single lobe contains
-      // multiple peaks
-
 // By default, the mean direction of each FOD lobe is calculated by taking a weighted average of the
 //   Euclidean unit vectors (weights are FOD amplitudes). This is not strictly mathematically correct, and
 //   a method is provided for optimising the mean direction estimate based on minimising the weighted sum of squared
@@ -45,6 +39,15 @@ using DWI::Directions::mask_type;
 
 class Segmenter;
 
+// By default, don't threshold by integral (tough to get a good number)
+constexpr default_type default_integral_threshold = 0.0;
+
+constexpr default_type default_peakamp_threshold = 0.1;
+
+// By default, never perform merging of lobes generated from discrete peaks
+//   such that a single lobe contains multiple peaks
+constexpr default_type default_mergeratio_bridgetopeak = 1.0;
+
 // These are for configuring the FMLS segmenter at the command line, particularly for fod_metric command
 extern const App::OptionGroup FMLSSegmentOption;
 void load_fmls_thresholds(Segmenter &);
@@ -56,10 +59,10 @@ public:
   FOD_lobe(const DWI::Directions::Set &dirs, const index_type seed, const default_type value, const default_type weight)
       : mask(mask_type::Zero(dirs.size())),
         values(Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero(dirs.size())),
-        max_peak_value(abs(value)),
+        max_peak_value(std::fabs(value)),
         peak_dirs(1, dirs.get_dir(seed)),
-        mean_dir(peak_dirs.front() * abs(value) * weight),
-        integral(abs(value * weight)),
+        mean_dir(peak_dirs.front() * std::fabs(value) * weight),
+        integral(std::fabs(value * weight)),
         neg(value <= 0.0) {
     mask[seed] = true;
     values[seed] = value;
@@ -79,8 +82,8 @@ public:
     mask[bin] = true;
     values[bin] = value;
     const default_type multiplier = (mean_dir.dot(dir)) > 0.0 ? 1.0 : -1.0;
-    mean_dir += dir * multiplier * abs(value) * weight;
-    integral += abs(value * weight);
+    mean_dir += dir * multiplier * std::fabs(value) * weight;
+    integral += std::fabs(value * weight);
   }
 
   void revise_peak(const size_t index, const Eigen::Vector3d &revised_peak_dir, const default_type revised_peak_value) {
@@ -195,7 +198,7 @@ class IntegrationWeights {
 public:
   IntegrationWeights(const DWI::Directions::Set &dirs);
   default_type operator[](const size_t i) {
-    assert(i < size_t(data.size()));
+    assert(i < static_cast<size_t>(data.size()));
     return data[i];
   }
 

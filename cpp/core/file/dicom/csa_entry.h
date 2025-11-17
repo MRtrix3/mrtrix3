@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <array>
+#include <string_view>
+
 #include "datatype.h"
 #include "file/dicom/element.h"
 #include "raw.h"
@@ -27,7 +30,7 @@ class CSAEntry {
 public:
   CSAEntry(const uint8_t *start_p, const uint8_t *end_p, bool output_fields = false)
       : start(start_p), end(end_p), print(output_fields), cnum(0) {
-    if (strncmp("SV10", (const char *)start, 4)) {
+    if (std::string_view(reinterpret_cast<const char *>(start), 4) == "SV10") {
       DEBUG("Siemens CSA entry does not start with \"SV10\"; ignoring");
       num = 0;
       next = end;
@@ -49,16 +52,19 @@ public:
     start = next;
     if (start >= end + 84)
       return false;
-    strncpy(name, (const char *)start, 64);
+    {
+      std::istream is((std::streambuf *)start);
+      is >> name;
+    }
     Raw::fetch_LE<uint32_t>(start + 64); // vm
-    strncpy(vr, (const char *)start + 68, 4);
+    memcpy(vr.data(), start + 68, 4);
     Raw::fetch_LE<uint32_t>(start + 72); // syngodt
     nitems = Raw::fetch_LE<uint32_t>(start + 76);
     const int32_t xx = Raw::fetch_LE<int32_t>(start + 80);
     if (!(xx == 77 || xx == 205))
       DEBUG("CSA tag \'xx\' integer field contains " + str(xx) + "; expected 77 or 205");
     if (print)
-      fprintf(stdout, "    [CSA] %s: ", name);
+      fprintf(stdout, "    [CSA] %s: ", name.c_str());
     next = start + 84;
     if (next + 4 >= end)
       return false;
@@ -79,7 +85,7 @@ public:
     return true;
   }
 
-  const char *key() const { return name; }
+  std::string key() const { return name; }
 
   uint32_t num_items() const { return nitems; }
   uint32_t size() const { return num; }
@@ -155,7 +161,8 @@ protected:
   const uint8_t *next;
   const uint8_t *end;
   bool print;
-  char name[65], vr[5];
+  std::string name;
+  std::array<char, 4> vr;
   uint32_t nitems, num, cnum;
 };
 

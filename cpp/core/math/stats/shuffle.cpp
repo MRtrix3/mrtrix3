@@ -53,7 +53,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
                "use strong familywise error control across multiple hypotheses")
       + Option("nshuffles",
                "the number of shuffles"
-               " (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")")
+               " (default: " + str(default_numshuffles_nulldist) + ")")
         + Argument("number").type_integer(1)
       + Option("permutations",
                "manually define the permutations (relabelling)."
@@ -75,7 +75,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
            + Option("nshuffles_nonstationarity",
                     "the number of shuffles to use when precomputing the empirical statistic image"
                     " for non-stationarity correction"
-                    " (default: " + str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")")
+                    " (default: " + str(default_numshuffles_nonstationarity) + ")")
              + Argument("number").type_integer(1)
            + Option("permutations_nonstationarity",
                     "manually define the permutations (relabelling)"
@@ -94,13 +94,13 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
 
 Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, const std::string msg)
     : rows(num_rows),
-      nshuffles(is_nonstationarity ? DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY : DEFAULT_NUMBER_SHUFFLES),
+      nshuffles(is_nonstationarity ? default_numshuffles_nonstationarity : default_numshuffles_nulldist),
       counter(0) {
   using namespace App;
   auto opt = get_options("errors");
   error_t error_types = error_t::EE;
   if (!opt.empty()) {
-    switch (int(opt[0][0])) {
+    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
     case 0:
       error_types = error_t::EE;
       break;
@@ -229,11 +229,11 @@ void Shuffler::initialise(const error_t error_types,
                           const index_array_type &eb_whole) {
   assert(!(eb_within.size() && eb_whole.size()));
   if (eb_within.size()) {
-    assert(index_type(eb_within.size()) == rows);
+    assert(static_cast<index_type>(eb_within.size()) == rows);
     assert(!eb_within.minCoeff());
   }
   if (eb_whole.size()) {
-    assert(index_type(eb_whole.size()) == rows);
+    assert(static_cast<index_type>(eb_whole.size()) == rows);
     assert(!eb_whole.minCoeff());
   }
 
@@ -375,9 +375,9 @@ void Shuffler::initialise(const error_t error_types,
     nshuffles = max_shuffles;
 }
 
-index_array_type Shuffler::load_blocks(const std::string &filename, const bool equal_sizes) {
+index_array_type Shuffler::load_blocks(std::string_view filename, const bool equal_sizes) {
   index_array_type data = File::Matrix::load_vector<index_type>(filename).array();
-  if (index_type(data.size()) != rows)
+  if (static_cast<index_type>(data.size()) != rows)
     throw Exception("Number of entries in file \"" + filename + "\" (" + str(data.size()) +
                     ") does not match number of inputs (" + str(rows) + ")");
   const index_type min_coeff = data.minCoeff();
@@ -389,14 +389,14 @@ index_array_type Shuffler::load_blocks(const std::string &filename, const bool e
     max_coeff--;
   }
   std::vector<index_type> counts(max_coeff + 1, 0);
-  for (index_type i = 0; i != index_type(data.size()); ++i)
+  for (Eigen::Index i = 0; i != data.size(); ++i)
     counts[data[i]]++;
-  for (index_type i = 0; i <= max_coeff; ++i) {
+  for (Eigen::Index i = 0; i <= max_coeff; ++i) {
     if (counts[i] < 2)
       throw Exception("Sequential indices in file \"" + filename + "\" must contain at least two entries each");
   }
   if (equal_sizes) {
-    for (index_type i = 1; i <= max_coeff; ++i) {
+    for (Eigen::Index i = 1; i <= max_coeff; ++i) {
       if (counts[i] != counts[0])
         throw Exception("Indices in file \"" + filename + "\" do not contain the same number of elements each");
     }
@@ -573,7 +573,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
     write(indices);
 }
 
-void Shuffler::load_permutations(const std::string &filename) {
+void Shuffler::load_permutations(std::string_view filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
   if (temp.empty())
     throw Exception("no data found in permutations file: " + str(filename));

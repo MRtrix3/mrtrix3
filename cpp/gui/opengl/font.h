@@ -49,7 +49,7 @@ public:
     gl::Disable(gl::BLEND);
   }
 
-  void render(const std::string &text, int x, int y) const;
+  void render(std::string_view text, int x, int y) const;
 
 protected:
   const QFont font;

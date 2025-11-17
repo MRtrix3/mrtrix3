@@ -22,16 +22,15 @@ namespace MR::DWI::Tractography::Connectome {
 
 using namespace App;
 
-const char *modes[] = {"assignment_end_voxels",
-                       "assignment_radial_search",
-                       "assignment_reverse_search",
-                       "assignment_forward_search",
-                       "assignment_all_voxels",
-                       NULL};
+const std::vector<std::string> assignment_options{"assignment_end_voxels",
+                                                  "assignment_radial_search",
+                                                  "assignment_reverse_search",
+                                                  "assignment_forward_search",
+                                                  "assignment_all_voxels"};
 
 // clang-format off
 const OptionGroup AssignmentOptions =
-    OptionGroup("Structural connectome streamline assignment option")
+    OptionGroup("Structural connectome streamline assignment options (can only specify one)")
     + Option("assignment_end_voxels",
              "use a simple voxel lookup value at each streamline endpoint")
     + Option("assignment_radial_search",
@@ -39,7 +38,7 @@ const OptionGroup AssignmentOptions =
              " Argument is the maximum radius in mm;"
              " if no node is found within this radius,"
              " the streamline endpoint is not assigned to any node."
-             " Default search distance is " + str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm.")
+             " Default search distance is " + str(default_tck2nodes_radial_distance, 2) + "mm.")
       + Argument("radius").type_float(0.0)
     + Option("assignment_reverse_search",
              "traverse from each streamline endpoint inwards along the streamline,"
@@ -57,42 +56,43 @@ const OptionGroup AssignmentOptions =
              " or indeed none at all)");
 // clang-format on
 
-Tck2nodes_base *load_assignment_mode(Image<node_t> &nodes_data) {
+std::unique_ptr<Tck2nodes_base> load_assignment_mode(Image<node_t> &nodes_data) {
 
-  Tck2nodes_base *tck2nodes = nullptr;
-  for (size_t index = 0; modes[index]; ++index) {
-    auto opt = get_options(modes[index]);
-    if (!opt.empty()) {
+  std::unique_ptr<Tck2nodes_base> tck2nodes;
 
-      if (tck2nodes) {
-        delete tck2nodes;
-        tck2nodes = nullptr;
-        throw Exception("Please only request one streamline assignment mechanism");
-      }
+  auto check_invalid = [](const std::unique_ptr<Tck2nodes_base> &ptr) {
+    if (bool(ptr))
+      throw Exception("Can only request one streamline assignment mechanism");
+  };
 
-      switch (index) {
-      case 0:
-        tck2nodes = new Tck2nodes_end_voxels(nodes_data);
-        break;
-      case 1:
-        tck2nodes = new Tck2nodes_radial(nodes_data, float(opt[0][0]));
-        break;
-      case 2:
-        tck2nodes = new Tck2nodes_revsearch(nodes_data, float(opt[0][0]));
-        break;
-      case 3:
-        tck2nodes = new Tck2nodes_forwardsearch(nodes_data, float(opt[0][0]));
-        break;
-      case 4:
-        tck2nodes = new Tck2nodes_all_voxels(nodes_data);
-        break;
-      }
-    }
+  auto opt = get_options("assignment_end_voxels");
+  if (!opt.empty()) {
+    check_invalid(tck2nodes);
+    tck2nodes.reset(new Tck2nodes_end_voxels(nodes_data));
+  }
+  opt = get_options("assignment_radial_search");
+  if (!opt.empty()) {
+    check_invalid(tck2nodes);
+    tck2nodes.reset(new Tck2nodes_radial(nodes_data, static_cast<default_type>(opt[0][0])));
+  }
+  opt = get_options("assignment_reverse_search");
+  if (!opt.empty()) {
+    check_invalid(tck2nodes);
+    tck2nodes.reset(new Tck2nodes_revsearch(nodes_data, static_cast<default_type>(opt[0][0])));
+  }
+  opt = get_options("assignment_forward_search");
+  if (!opt.empty()) {
+    check_invalid(tck2nodes);
+    tck2nodes.reset(new Tck2nodes_forwardsearch(nodes_data, static_cast<default_type>(opt[0][0])));
+  }
+  opt = get_options("assignment_all_voxels");
+  if (!opt.empty()) {
+    check_invalid(tck2nodes);
+    tck2nodes.reset(new Tck2nodes_all_voxels(nodes_data));
   }
 
-  // default
   if (!tck2nodes)
-    tck2nodes = new Tck2nodes_radial(nodes_data, TCK2NODES_RADIAL_DEFAULT_DIST);
+    tck2nodes.reset(new Tck2nodes_radial(nodes_data, default_tck2nodes_radial_distance));
 
   return tck2nodes;
 }

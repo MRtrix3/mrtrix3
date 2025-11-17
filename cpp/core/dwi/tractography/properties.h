@@ -23,12 +23,12 @@
 #include "types.h"
 #include <map>
 
-#define TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION 20
-
 namespace MR::DWI::Tractography {
 
-void check_timestamps(const Properties &, const Properties &, const std::string &);
-void check_counts(const Properties &, const Properties &, const std::string &, bool abort_on_fail);
+constexpr ssize_t file_timestamp_precision = 20;
+
+void check_timestamps(const Properties &, const Properties &, std::string_view);
+void check_counts(const Properties &, const Properties &, std::string_view, bool abort_on_fail);
 
 class Properties : public KeyValues {
 public:
@@ -39,11 +39,12 @@ public:
   void update_command_history();
   void clear();
 
-  template <typename T> void set(T &variable, const std::string &name) {
-    if ((*this)[name].empty())
-      (*this)[name] = str(variable);
+  template <typename T> void set(T &variable, std::string_view name) {
+    const std::string key(name);
+    if ((*this)[key].empty())
+      (*this)[key] = str(variable);
     else
-      variable = to<T>((*this)[name]);
+      variable = to<T>((*this)[key]);
   }
 
   float get_stepsize() const;

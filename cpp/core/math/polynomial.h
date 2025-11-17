@@ -25,7 +25,7 @@ template <class Cont> default_type polynomial(Cont &coeffs, const default_type x
   default_type result = coeffs[coeffs.size() - 1];
   for (ssize_t i = coeffs.size() - 2; i >= 0; --i) {
     result *= x;
-    result += default_type(coeffs[i]);
+    result += static_cast<default_type>(coeffs[i]);
   }
   return result;
 }

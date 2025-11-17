@@ -19,7 +19,9 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <thread>
+#include <unordered_map>
 
 #ifdef None
 #undef None
@@ -41,44 +43,60 @@ extern int exit_error_code;
 extern std::string NAME;
 extern std::string command_history_string;
 extern bool overwrite_files;
-extern void (*check_overwrite_files_func)(const std::string &name);
+extern void (*check_overwrite_files_func)(std::string_view name);
 extern bool fail_on_warn;
 extern bool terminal_use_colour;
 extern const std::thread::id main_thread_ID;
 
 extern std::vector<std::string> raw_arguments_list;
 
-extern const char *project_version;
-extern const char *project_build_date;
+extern const std::string project_version;
+extern const std::string project_build_date;
 
-const char *argtype_description(ArgType type);
+struct HelpFormatting {
+  struct Indents {
+    ssize_t header;
+    ssize_t main;
+  };
+  const ssize_t width;
+  const Indents purpose_indents;
+  const Indents arg_indents;
+  const Indents option_indents;
+  const ssize_t example_indent;
+};
 
-std::string help_head(int format);
-std::string help_synopsis(int format);
-std::string help_tail(int format);
-std::string usage_syntax(int format);
+extern const HelpFormatting help_formatting;
+
+extern const std::string help_command;
+
+extern const std::string core_reference;
+
+std::string help_head(const bool format);
+std::string help_synopsis(const bool format);
+std::string help_tail(const bool format);
+std::string usage_syntax(const bool format);
 
 //! \addtogroup CmdParse
 // @{
 
 //! vector of strings to hold more comprehensive command description
-class Description : public std::vector<const char *> {
+class Description : public std::vector<std::string> {
 public:
-  Description &operator+(const char *text);
+  Description &operator+(const char *text); // check_syntax off
+  Description &operator+(std::string_view text);
+  Description &operator+(const char *const text[]); // check_syntax off
 
-  Description &operator+(const char *const text[]);
-
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! object for storing a single example command usage
 class Example {
 public:
-  Example(const std::string &title, const std::string &code, const std::string &description);
+  Example(std::string_view title, std::string_view code, std::string_view description);
   const std::string title, code, description;
 
   operator std::string() const;
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Example's
@@ -86,7 +104,7 @@ class ExampleList : public std::vector<Example> {
 public:
   ExampleList &operator+(const Example &example);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Argument's
@@ -94,7 +112,7 @@ class ArgumentList : public std::vector<Argument> {
 public:
   ArgumentList &operator+(const Argument &argument);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of option groups
@@ -108,16 +126,16 @@ public:
 
   OptionGroup &back();
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
-void check_overwrite(const std::string &name);
+void check_overwrite(std::string_view name);
 
 //! initialise MRtrix and parse command-line arguments
 /*! this function must be called from within main(), immediately after the
  * argument and options have been specified, and before any further
  * processing takes place. */
-void init(int argc, const char *const *argv);
+void init(int argc, const char *const *argv); // check_syntax off
 
 //! verify that command's usage() function has set requisite fields [used internally]
 void verify_usage();
@@ -139,12 +157,16 @@ std::string full_usage();
 
 class ParsedArgument {
 public:
-  operator std::string() const { return p; }
+  using IntType = int64_t; // Native single-integer parsed type before conversion
 
-  const std::string &as_text() const { return p; }
-  bool as_bool() const { return to<bool>(p); }
+  // Note that these are permissive of reading the argument in this form
+  //   even if the argument is not explicitly flagged as being of text type
+  operator std::string() const { return p; }
+  operator std::string_view() const { return std::string_view(p.data(), p.size()); }
+
+  bool as_bool() const;
   int64_t as_int() const;
-  uint64_t as_uint() const { return uint64_t(as_int()); }
+  uint64_t as_uint() const;
   default_type as_float() const;
 
   std::vector<int32_t> as_sequence_int() const;
@@ -166,7 +188,7 @@ public:
   operator std::vector<uint32_t>() const { return as_sequence_uint(); }
   operator std::vector<default_type>() const { return as_sequence_float(); }
 
-  const char *c_str() const { return p.c_str(); }
+  const char *c_str() const { return p.c_str(); } // check_syntax off
 
   //! the index of this argument in the raw command-line arguments list
   size_t index() const { return index_; }
@@ -183,7 +205,7 @@ private:
 
   friend class ParsedOption;
   friend class Options;
-  friend void MR::App::init(int argc, const char *const *argv);
+  friend void MR::App::init(int argc, const char *const *argv); // check_syntax off
   friend void MR::App::parse();
   friend void MR::App::sort_arguments(const std::vector<std::string> &arguments);
 };
@@ -205,7 +227,7 @@ public:
   ParsedArgument operator[](size_t num) const;
 
   //! check whether this option matches the name supplied
-  bool operator==(const char *match) const;
+  bool operator==(std::string_view match) const;
 };
 
 //! the list of arguments parsed from the command-line
@@ -324,7 +346,7 @@ extern OptionGroup __standard_options;
  *    auto values = opt[0][4].as_sequence_float();
  * }
  * \endcode */
-const std::vector<ParsedOption> get_options(const std::string &name);
+std::vector<ParsedOption> get_options(std::string_view name);
 
 //! Returns the option value if set, and the default otherwise.
 /*! Only be used for command-line options that do not specify
@@ -336,7 +358,7 @@ const std::vector<ParsedOption> get_options(const std::string &name);
  *  int arg2 = get_option_value("myotheropt", arg2_default);
  * \endcode
  */
-template <typename T> inline T get_option_value(const std::string &name, const T default_value) {
+template <typename T> inline T get_option_value(std::string_view name, const T default_value) {
   auto opt = get_options(name);
   switch (opt.size()) {
   case 0:
@@ -351,7 +373,7 @@ template <typename T> inline T get_option_value(const std::string &name, const T
 }
 
 //! convenience function provided mostly to ease writing Exception strings
-std::string operator+(const char *left, const App::ParsedArgument &right);
+std::string operator+(const char *const left, const App::ParsedArgument &right); // check_syntax off
 
 std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument &arg);
 

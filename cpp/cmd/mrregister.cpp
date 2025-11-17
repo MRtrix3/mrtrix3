@@ -39,16 +39,25 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_TRANSFORMATION_TYPE 5 // affine_nonlinear
 const std::vector<std::string> transformation_choices = {
     "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear"};
+enum class transformation_t {
+  RIGID,
+  AFFINE,
+  NONLINEAR,
+  RIGID_AFFINE,
+  RIGID_NONLINEAR,
+  AFFINE_NONLINEAR,
+  RIGID_AFFINE_NONLINEAR
+};
+constexpr transformation_t default_transformation_type = transformation_t::AFFINE_NONLINEAR;
 
 // clang-format off
 const OptionGroup multiContrastOptions =
   OptionGroup ("Multi-contrast options")
   + Option ("mc_weights", "relative weight of images used for multi-contrast registration."
                           " Default: 1.0 (equal weighting)")
-    + Argument ("weights").type_sequence_float ();
+    + Argument ("weights").type_sequence_float();
 
 
 void usage() {
@@ -101,9 +110,9 @@ void usage() {
 
   OPTIONS
   + Option ("type", std::string("the registration type.") +
-                    " Valid choices are:"
-                    " rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear"
-                    " (Default: " + transformation_choices[DEFAULT_TRANSFORMATION_TYPE] + ")")
+                    " Valid choices are: "
+                    + join(transformation_choices, ", ")
+                    + " (default: " + transformation_choices[static_cast<ssize_t>(default_transformation_type)] + ")")
     + Argument ("choice").type_choice (transformation_choices)
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
@@ -171,33 +180,34 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
-  const int registration_type = get_option_value("type", DEFAULT_TRANSFORMATION_TYPE);
+  const transformation_t registration_type =
+      transformation_t(get_option_value("type", static_cast<ssize_t>(default_transformation_type)));
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;
   switch (registration_type) {
-  case 0:
+  case transformation_t::RIGID:
     do_rigid = true;
     break;
-  case 1:
+  case transformation_t::AFFINE:
     do_affine = true;
     break;
-  case 2:
+  case transformation_t::NONLINEAR:
     do_nonlinear = true;
     break;
-  case 3:
+  case transformation_t::RIGID_AFFINE:
     do_rigid = true;
     do_affine = true;
     break;
-  case 4:
+  case transformation_t::RIGID_NONLINEAR:
     do_rigid = true;
     do_nonlinear = true;
     break;
-  case 5:
+  case transformation_t::AFFINE_NONLINEAR:
     do_affine = true;
     do_nonlinear = true;
     break;
-  case 6:
+  case transformation_t::RIGID_AFFINE_NONLINEAR:
     do_rigid = true;
     do_affine = true;
     do_nonlinear = true;
@@ -347,7 +357,7 @@ void run() {
   value_type out_of_bounds_value = 0.0;
   opt = get_options("nan");
   if (!opt.empty())
-    out_of_bounds_value = NAN;
+    out_of_bounds_value = std::numeric_limits<value_type>::quiet_NaN();
 
   // ****** RIGID REGISTRATION OPTIONS *******
   Registration::Linear rigid_registration;
@@ -386,12 +396,12 @@ void run() {
   if (!opt.empty()) {
     if (init_rigid_matrix_set)
       throw Exception("options -rigid_init_matrix and -rigid_init_translation are mutually exclusive");
-    Registration::set_init_translation_model_from_option(rigid_registration, (int)opt[0][0]);
+    Registration::set_init_translation_model_from_option(rigid_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("rigid_init_rotation");
   if (!opt.empty())
-    Registration::set_init_rotation_model_from_option(rigid_registration, (int)opt[0][0]);
+    Registration::set_init_rotation_model_from_option(rigid_registration, static_cast<int>(opt[0][0]));
 
   opt = get_options("rigid_scale");
   if (!opt.empty()) {
@@ -417,7 +427,7 @@ void run() {
   opt = get_options("rigid_metric");
   Registration::LinearMetricType rigid_metric = Registration::Diff;
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       rigid_metric = Registration::Diff;
       break;
@@ -437,7 +447,7 @@ void run() {
   if (!opt.empty()) {
     if (rigid_metric != Registration::Diff)
       throw Exception("rigid_metric.diff.estimator set but cost function is not diff.");
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       rigid_estimator = Registration::L1;
       break;
@@ -521,14 +531,14 @@ void run() {
   if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_translation are mutually exclusive");
-    Registration::set_init_translation_model_from_option(affine_registration, (int)opt[0][0]);
+    Registration::set_init_translation_model_from_option(affine_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("affine_init_rotation");
   if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_rotation are mutually exclusive");
-    Registration::set_init_rotation_model_from_option(affine_registration, (int)opt[0][0]);
+    Registration::set_init_rotation_model_from_option(affine_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("affine_scale");
@@ -548,7 +558,7 @@ void run() {
   opt = get_options("affine_metric");
   Registration::LinearMetricType affine_metric = Registration::Diff;
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       affine_metric = Registration::Diff;
       break;
@@ -568,7 +578,7 @@ void run() {
   if (!opt.empty()) {
     if (affine_metric != Registration::Diff)
       throw Exception("affine_metric.diff.estimator set but cost function is not diff.");
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       affine_estimator = Registration::L1;
       break;
@@ -1192,8 +1202,7 @@ void run() {
           midway_header.size(3) = im2_image.size(3);
 
         const size_t nvols = im2_image.ndim() == 3 ? 1 : im2_image.size(3);
-        const value_type val = (std::sqrt(float(1 + 8 * nvols)) - 3.0) / 4.0;
-        const bool reorient_output = !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
+        const bool reorient_output = !reorientation_forbidden && (nvols > 1) && Math::SH::feasible_N(nvols);
 
         if (do_nonlinear) {
           auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);

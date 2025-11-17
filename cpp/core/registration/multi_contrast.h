@@ -31,7 +31,7 @@
 
 namespace MR::Registration {
 
-FORCE_INLINE void check_image_output(const std::string &image_name, const Header &reference) {
+FORCE_INLINE void check_image_output(std::string_view image_name, const Header &reference) {
   std::vector<std::string> V;
   if (image_name.empty())
     throw Exception("image output path is empty");

@@ -199,7 +199,7 @@ public:
   }
 
   template <class HeaderType>
-  ConnectedComponents(const HeaderType &in, const std::string &message) : ConnectedComponents(in) {
+  ConnectedComponents(const HeaderType &in, std::string_view message) : ConnectedComponents(in) {
     set_message(message);
   }
 
@@ -255,7 +255,7 @@ public:
     if (max_axis >= ndim())
       throw Exception("Requested axis for connected-component filter (" + str(max_axis) +
                       " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
-    enabled_axes = axis_mask_type::Zero(std::max(max_axis + 1, size_t(ndim())));
+    enabled_axes = axis_mask_type::Zero(std::max(max_axis + 1, static_cast<size_t>(ndim())));
     for (const auto &axis : i) {
       if (axis < 0)
         throw Exception("Cannot specify negative axis index for connected-component filter");

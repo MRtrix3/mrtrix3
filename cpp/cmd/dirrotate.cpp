@@ -50,14 +50,12 @@ void usage() {
     + Argument ("in", "the input direction file").type_file_in()
     + Argument ("out", "the output direction file").type_file_out();
 
-
   OPTIONS
     + Option ("number", "number of rotations to try"
                         " (default: " + str(default_number) + ")")
     +   Argument ("num").type_integer(1)
 
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                           " instead of [az el].");
+    + DWI::Directions::cartesian_option;
 }
 // clang-format on
 

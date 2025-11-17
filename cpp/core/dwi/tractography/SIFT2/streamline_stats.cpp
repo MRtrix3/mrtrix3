@@ -40,7 +40,7 @@ StreamlineStats &StreamlineStats::operator+=(const double i) {
   min = std::min(min, i);
   max = std::max(max, i);
   mean += i;
-  mean_abs += abs(i);
+  mean_abs += std::fabs(i);
   var += Math::pow2(i);
   ++count;
   if (i)
@@ -61,9 +61,9 @@ StreamlineStats &StreamlineStats::operator+=(const StreamlineStats &i) {
 
 void StreamlineStats::normalise() {
   assert(count);
-  mean /= double(count);
-  mean_abs /= double(count);
-  var /= double(count - 1);
+  mean /= static_cast<double>(count);
+  mean_abs /= static_cast<double>(count);
+  var /= static_cast<double>(count - 1);
 }
 
 } // namespace MR::DWI::Tractography::SIFT2

@@ -111,10 +111,10 @@ void match_linear(Image<float> &input,
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> output_vector(input_data.size());
   for (size_t input_index = 0; input_index != input_data.size() - 1; ++input_index) {
     input_matrix(input_index, 0) = input_data[input_index];
-    const default_type output_position =
-        (target_data.size() - 1) * (default_type(input_index) / default_type(input_data.size() - 1));
-    const size_t target_index_lower = std::floor(output_position);
-    const default_type mu = output_position - default_type(target_index_lower);
+    const default_type output_position = (target_data.size() - 1) * (static_cast<default_type>(input_index) /
+                                                                     static_cast<default_type>(input_data.size() - 1));
+    const size_t target_index_lower = static_cast<size_t>(std::floor(output_position));
+    const default_type mu = output_position - static_cast<default_type>(target_index_lower);
     output_vector[input_index] =
         ((1.0 - mu) * target_data[target_index_lower]) + (mu * target_data[target_index_lower + 1]);
   }
@@ -200,7 +200,7 @@ void run() {
     check_dimensions(target, mask_target, 0, 3);
   }
 
-  switch (int(argument[0])) {
+  switch (static_cast<MR::App::ParsedArgument::IntType>(argument[0])) {
   case 0: // Scale
     match_linear(input, target, mask_input, mask_target, false);
     break;

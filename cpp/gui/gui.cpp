@@ -24,7 +24,7 @@ namespace MR::GUI {
 QWidget *App::main_window = nullptr;
 App *App::application = nullptr;
 
-App::App(int &cmdline_argc, char **cmdline_argv) : QApplication(cmdline_argc, cmdline_argv) {
+App::App(int &cmdline_argc, char **cmdline_argv) : QApplication(cmdline_argc, cmdline_argv) { // check_syntax off
   application = this;
   ::MR::File::Config::init();
   ::MR::GUI::GL::set_default_context();

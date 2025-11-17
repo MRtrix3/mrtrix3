@@ -167,7 +167,7 @@ template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missin
   }
 }
 
-template <typename T> void Matrix<T>::write_assignments(const std::string &path) const {
+template <typename T> void Matrix<T>::write_assignments(std::string_view path) const {
   if (!track_assignments)
     throw Exception("Cannot write streamline assignments to file as they were not stored during processing");
   File::OFStream stream(path);
@@ -186,7 +186,7 @@ template <typename T> void Matrix<T>::write_assignments(const std::string &path)
 }
 
 template <typename T>
-void Matrix<T>::save(const std::string &path,
+void Matrix<T>::save(std::string_view path,
                      const bool keep_unassigned,
                      const bool symmetric,
                      const bool zero_diagonal) const {

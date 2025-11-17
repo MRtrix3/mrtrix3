@@ -29,11 +29,11 @@ template <typename ValueType> inline ValueType double_factorial(const ValueType 
 }
 
 template <typename ValueType> inline ValueType Plm(const int l, const int m, const ValueType x) {
-  if (m && abs(x) >= 1.0)
+  if (m != 0 && std::fabs(x) >= 1.0)
     return (0.0);
   ValueType v0 = 1.0;
   if (m > 0)
-    v0 = double_factorial(ValueType(2 * m - 1)) * pow(1.0 - pow2(x), m / 2.0);
+    v0 = double_factorial(static_cast<ValueType>(2 * m - 1)) * pow(1.0 - pow2(x), m / 2.0);
   if (m & 1)
     v0 = -v0; // (-1)^m
   if (l == m)
@@ -70,12 +70,12 @@ template <typename ValueType> inline ValueType Plm_sph(const int l, const int m,
   if (l == m)
     return (v0);
 
-  ValueType f = std::sqrt(ValueType(2 * m + 3));
+  ValueType f = std::sqrt(static_cast<ValueType>(2 * m + 3));
   ValueType v1 = x * f * v0;
 
   for (int n = m + 2; n <= l; n++) {
     ValueType v2 = x * v1 - v0 / f;
-    f = std::sqrt(ValueType(4 * pow2(n) - 1) / ValueType(pow2(n) - pow2(m)));
+    f = std::sqrt(static_cast<ValueType>(4 * pow2(n) - 1) / static_cast<ValueType>(pow2(n) - pow2(m)));
     v0 = v1;
     v1 = f * v2;
   }
@@ -97,18 +97,18 @@ inline void Plm_sph(VectorType &array, const int lmax, const int m, const typena
   }
   array[m] = 0.282094791773878;
   if (m)
-    array[m] *= std::sqrt(value_type(2 * m + 1) * Plm_sph_helper(1.0 - x2, 2.0 * m));
+    array[m] *= std::sqrt(static_cast<value_type>(2 * m + 1) * Plm_sph_helper(1.0 - x2, 2.0 * m));
   if (m & 1)
     array[m] = -array[m];
   if (lmax == m)
     return;
 
-  value_type f = std::sqrt(value_type(2 * m + 3));
+  value_type f = std::sqrt(static_cast<value_type>(2 * m + 3));
   array[m + 1] = x * f * array[m];
 
   for (int n = m + 2; n <= lmax; n++) {
     array[n] = x * array[n - 1] - array[n - 2] / f;
-    f = std::sqrt(value_type(4 * pow2(n) - 1) / value_type(pow2(n) - pow2(m)));
+    f = std::sqrt(static_cast<value_type>(4 * pow2(n) - 1) / static_cast<value_type>(pow2(n) - pow2(m)));
     array[n] *= f;
   }
 }
@@ -123,7 +123,7 @@ inline void Plm_sph_deriv(VectorType &array, const int lmax, const int m, const 
   value_type x2 = pow2(x);
   if (x2 >= 1.0) {
     for (int n = m; n <= lmax; n++)
-      array[n] = NaN;
+      array[n] = std::numeric_limits<value_type>::quiet_NaN();
     return;
   }
   x2 = 1.0 / (x2 - 1.0);

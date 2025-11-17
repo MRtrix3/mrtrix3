@@ -48,7 +48,7 @@ bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const
   value_type cumulative_length = value_type(0);
   size_t input_index = 0;
   for (size_t output_index = 0; output_index != num_points; ++output_index) {
-    const value_type target_length = length * output_index / value_type(num_points - 1);
+    const value_type target_length = length * output_index / static_cast<value_type>(num_points - 1);
     while (input_index < s && (cumulative_length + steps[input_index] < target_length))
       cumulative_length += steps[input_index++];
     if (input_index == s) {

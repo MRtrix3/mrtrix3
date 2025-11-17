@@ -55,7 +55,7 @@ public:
   virtual ~Model();
 
   // Over-rides the function defined in ModelBase; need to build contributions member also
-  void map_streamlines(const std::string &);
+  void map_streamlines(std::string_view /*path*/);
 
   void remove_excluded_fixels();
 
@@ -64,7 +64,7 @@ public:
 
   track_t num_tracks() const { return contributions.size(); }
 
-  void output_non_contributing_streamlines(const std::string &) const;
+  void output_non_contributing_streamlines(std::string_view /*output_path*/) const;
 
   using ModelBase<Fixel>::mu;
 
@@ -133,7 +133,7 @@ template <class Fixel> Model<Fixel>::~Model() {
   }
 }
 
-template <class Fixel> void Model<Fixel>::map_streamlines(const std::string &path) {
+template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path) {
   Tractography::Properties properties;
   Tractography::Reader<> file(path, properties);
 
@@ -188,7 +188,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
       for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
         if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_fibre_density)) {
-          fixel_index_mapping[size_t(i)] = new_fixels.size();
+          fixel_index_mapping[static_cast<size_t>(i)] = new_fixels.size();
           new_fixels.push_back(i());
           FOD_sum += i().get_weight() * i().get_FOD();
         }
@@ -208,7 +208,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
   fixels.swap(new_fixels);
 
-  TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels");
+  TrackIndexRangeWriter writer(TrackIndexRangeWriter::default_batch_size, num_tracks(), "Removing excluded fixels");
   FixelRemapper remapper(*this, fixel_index_mapping);
   Thread::run_queue(writer, TrackIndexRange(), Thread::multi(remapper));
 
@@ -236,7 +236,7 @@ template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(sum_from_tracks);
 }
 
-template <class Fixel> void Model<Fixel>::output_non_contributing_streamlines(const std::string &output_path) const {
+template <class Fixel> void Model<Fixel>::output_non_contributing_streamlines(std::string_view output_path) const {
   Tractography::Properties p;
   Tractography::Reader<float> reader(tck_file_path, p);
   Tractography::Writer<float> writer(output_path, p);

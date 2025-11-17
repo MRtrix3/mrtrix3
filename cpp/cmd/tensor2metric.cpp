@@ -29,7 +29,7 @@ using namespace App;
 
 using value_type = float;
 const std::vector<std::string> modulate_choices = {"none", "fa", "eigval"};
-#define DEFAULT_RK_NDIRS 300
+constexpr ssize_t default_rk_numdirections = 300;
 
 // clang-format off
 void usage() {
@@ -113,12 +113,12 @@ void usage() {
     + Option("mk_dirs",
              "specify the directions used to numerically calculate mean kurtosis"
              " (by default, the built-in 300 direction set is used)."
-             " These should be supplied as a text file containing [ az el ] pairs for the directions.")
+             " These should be supplied as a text file containing [ az in ] pairs for the directions.")
       + Argument("file").type_file_in()
 
     + Option("rk_ndirs",
              "specify the number of directions used to numerically calculate radial kurtosis"
-             " (by default, " + str(DEFAULT_RK_NDIRS) + " directions are used).")
+             " (by default, " + str(default_rk_numdirections) + " directions are used).")
       + Argument("integer").type_integer(0, 1000);
 
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)"
@@ -240,7 +240,7 @@ public:
       ith_eig[1] = 1;
       ith_eig[2] = 2;
       std::sort(std::begin(ith_eig), std::end(ith_eig), [&eigval](size_t a, size_t b) {
-        return abs(eigval[a]) > abs(eigval[b]);
+        return std::fabs(eigval[a]) > std::fabs(eigval[b]);
       });
     }
 
@@ -527,7 +527,7 @@ void run() {
       opt.empty() ? Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300())
                   : File::Matrix::load_matrix(opt[0][0]);
 
-  auto rk_ndirs = get_option_value("rk_ndirs", DEFAULT_RK_NDIRS);
+  auto rk_ndirs = get_option_value("rk_ndirs", default_rk_numdirections);
 
   if (dki_metric_count && !dkt_img.valid()) {
     throw Exception(

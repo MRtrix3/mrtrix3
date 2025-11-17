@@ -16,11 +16,9 @@
 
 #include "dwi/tractography/connectome/exemplar.h"
 
-// Fraction of the streamline length at each end that will be pulled toward the node centre-of-mass
-// TODO Make this a fraction of length, rather than fraction of points?
-#define EXEMPLAR_ENDPOINT_CONVERGE_FRACTION 0.25
-
 namespace MR::DWI::Tractography::Connectome {
+
+const default_type Exemplar::endpoint_convergence_fraction = 0.25;
 
 Exemplar &Exemplar::operator=(const Exemplar &that) {
   Tractography::Streamline<float>(*this) = that;
@@ -81,10 +79,11 @@ void Exemplar::add(const Tractography::Streamline<float> &in, const bool is_reve
   std::lock_guard<std::mutex> lock(mutex);
 
   for (size_t i = 0; i != size(); ++i) {
-    float interp_pos = (in.size() - 1) * i / float(size());
+    float interp_pos = (in.size() - 1) * i / static_cast<float>(size());
     if (is_reversed)
       interp_pos = in.size() - 1 - interp_pos;
-    const size_t lower = std::floor(interp_pos), upper(lower + 1);
+    const size_t lower = static_cast<size_t>(std::floor(interp_pos));
+    const size_t upper(lower + 1);
     const float mu = interp_pos - lower;
     point_type pos;
     if (lower == in.size() - 1)
@@ -123,14 +122,14 @@ void Exemplar::finalize(const float step_size) {
     *i *= multiplier;
 
   // Constrain endpoints to the node centres of mass
-  size_t num_converging_points = EXEMPLAR_ENDPOINT_CONVERGE_FRACTION * size();
+  size_t num_converging_points = endpoint_convergence_fraction * size();
   for (size_t i = 0; i != num_converging_points; ++i) {
-    const float mu = i / float(num_converging_points);
-    (*this)[i] = (mu * (*this)[i]) + ((1.0f - mu) * node_COMs.first);
+    const float mu = i / static_cast<float>(num_converging_points);
+    (*this)[i] = (mu * (*this)[i]) + ((1.0F - mu) * node_COMs.first);
   }
   for (size_t i = size() - 1; i != size() - 1 - num_converging_points; --i) {
-    const float mu = (size() - 1 - i) / float(num_converging_points);
-    (*this)[i] = (mu * (*this)[i]) + ((1.0f - mu) * node_COMs.second);
+    const float mu = (size() - 1 - i) / static_cast<float>(num_converging_points);
+    (*this)[i] = (mu * (*this)[i]) + ((1.0F - mu) * node_COMs.second);
   }
 
   // Resample to fixed step size
@@ -145,13 +144,13 @@ void Exemplar::finalize(const float step_size) {
       index = (size() + 1) / 2;
     }
     do {
-      while ((index + step) >= 0 && (index + step) < int32_t(size()) &&
+      while ((index + step) >= 0 && (index + step) < static_cast<int32_t>(size()) &&
              ((*this)[index + step] - vertices.back()).squaredNorm() < step_sq)
         index += step;
       // Ideal point for fixed step size lies somewhere between [index] and [index+step]
       // Do a binary search to find this point
       // Unless we're at an endpoint...
-      if (index == 0 || index == int32_t(size()) - 1) {
+      if (index == 0 || index == static_cast<int32_t>(size()) - 1) {
         vertices.push_back((*this)[index]);
       } else {
         float lower = 0.0f, mu = 0.5f, upper = 1.0f;
@@ -166,7 +165,7 @@ void Exemplar::finalize(const float step_size) {
         }
         vertices.push_back(p);
       }
-    } while (index != 0 && index != int32_t(size()) - 1);
+    } while (index != 0 && index != static_cast<int32_t>(size()) - 1);
   }
   std::swap(*this, vertices);
 

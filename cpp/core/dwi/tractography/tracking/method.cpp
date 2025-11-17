@@ -21,8 +21,8 @@ namespace MR::DWI::Tractography::Tracking {
 void MethodBase::truncate_track(GeneratedTrack &tck, const size_t length_to_revert_from, const size_t revert_step) {
   if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
     tck.clear();
-    pos = {NaN, NaN, NaN};
-    dir = {NaN, NaN, NaN};
+    pos.setConstant(NaNF);
+    dir.setConstant(NaNF);
     return;
   }
   if (tck.size() + revert_step == length_to_revert_from)
@@ -44,7 +44,7 @@ bool MethodBase::check_seed() {
 
   if ((S.properties.mask.size() && !S.properties.mask.contains(pos)) || (S.properties.exclude.contains(pos)) ||
       (S.is_act() && !act().check_seed(pos))) {
-    pos = {NaN, NaN, NaN};
+    pos.fill(NaNF);
     return false;
   }
 

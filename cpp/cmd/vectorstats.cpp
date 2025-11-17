@@ -79,10 +79,10 @@ using Stats::PermTest::count_matrix_type;
 
 class SubjectVectorImport : public SubjectDataImportBase {
 public:
-  SubjectVectorImport(const std::string &path) : SubjectDataImportBase(path), data(File::Matrix::load_vector(path)) {}
+  SubjectVectorImport(std::string_view path) : SubjectDataImportBase(path), data(File::Matrix::load_vector(path)) {}
 
   void operator()(matrix_type::RowXpr row) const override {
-    assert(index_type(row.size()) == size());
+    assert(static_cast<index_type>(row.size()) == size());
     row = data;
   }
 
@@ -124,7 +124,7 @@ void run() {
       num_inputs = data.rows();
       num_elements = data.cols();
     } catch (Exception &e_asmatrix) {
-      Exception e("Unable to load input data from file \"" + argument[0] + '"');
+      Exception e("Unable to load input data from file \"" + std::string(argument[0]) + '"');
       e.push_back("Error when interpreted as containing list of file names: ");
       e.push_back(e_asfilelist);
       e.push_back("Error when interpreted as numerical matrix data: ");
@@ -137,7 +137,7 @@ void run() {
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[1]);
-  if (index_type(design.rows()) != num_inputs)
+  if (static_cast<index_type>(design.rows()) != num_inputs)
     throw Exception("Number of subjects (" + str(num_inputs) + ") does not match number of rows in design matrix (" +
                     str(design.rows()) + ")");
 
