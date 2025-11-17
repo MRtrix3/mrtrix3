@@ -191,23 +191,6 @@ std::string underline(std::string_view text, bool ignore_whitespace = false) {
 
 } // namespace
 
-const std::unordered_map<ArgType, std::string> argtype_descriptions{{Boolean, "boolean"},
-                                                                    {Integer, "integer"},
-                                                                    {Float, "float"},
-                                                                    {Text, "string"},
-                                                                    {ArgFileIn, "file in"},
-                                                                    {ArgFileOut, "file out"},
-                                                                    {ArgDirectoryIn, "directory in"},
-                                                                    {ArgDirectoryOut, "directory out"},
-                                                                    {ImageIn, "image in"},
-                                                                    {ImageOut, "image out"},
-                                                                    {Choice, "choice"},
-                                                                    {IntSeq, "int seq"},
-                                                                    {FloatSeq, "float seq"},
-                                                                    {TracksIn, "tracks in"},
-                                                                    {TracksOut, "tracks out"},
-                                                                    {Various, "various"}};
-
 std::string help_head(const bool format) {
   if (!format) {
     return std::string(NAME) + ": " +
@@ -1362,19 +1345,9 @@ int64_t App::ParsedArgument::as_int() const {
   throw full_msg;
 }
 
-const std::string &App::ParsedArgument::as_text() const {
-  assert(arg->types[ArgTypeFlags::Text]);
-  return p;
-}
-
 bool App::ParsedArgument::as_bool() const {
   assert(arg->types[ArgTypeFlags::Boolean]);
   return to<bool>(p);
-}
-
-int64_t App::ParsedArgument::as_int() const {
-  assert(arg->types[ArgTypeFlags::Integer]);
-  return to<int64_t>(p);
 }
 
 uint64_t App::ParsedArgument::as_uint() const {

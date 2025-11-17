@@ -53,8 +53,6 @@ extern std::vector<std::string> raw_arguments_list;
 extern const std::string project_version;
 extern const std::string project_build_date;
 
-extern const std::unordered_map<ArgType, std::string> argtype_descriptions;
-
 struct HelpFormatting {
   struct Indents {
     ssize_t header;
@@ -161,6 +159,8 @@ class ParsedArgument {
 public:
   using IntType = int64_t; // Native single-integer parsed type before conversion
 
+  // Note that these are permissive of reading the argument in this form
+  //   even if the argument is not explicitly flagged as being of text type
   operator std::string() const { return p; }
   operator std::string_view() const { return std::string_view(p.data(), p.size()); }
 
