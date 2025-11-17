@@ -1307,7 +1307,7 @@ int64_t App::ParsedArgument::as_int() const {
         }
         if (contains_dotpoint) {
           const default_type prefix = to<default_type>(num);
-          retval = std::round(prefix * default_type(multiplier));
+          retval = std::round(prefix * static_cast<default_type>(multiplier));
         } else {
           retval = to<int64_t>(num) * multiplier;
         }
@@ -1356,7 +1356,7 @@ uint64_t App::ParsedArgument::as_uint() const {
     throw Exception("Attempting to interpret negative user-specified value (" //
                     + str(signed_value)                                       //
                     + " as unsigned integer");                                //
-  return uint64_t(signed_value);
+  return static_cast<uint64_t>(signed_value);
 }
 
 default_type App::ParsedArgument::as_float() const {
