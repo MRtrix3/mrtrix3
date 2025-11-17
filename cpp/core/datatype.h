@@ -186,7 +186,7 @@ template <> inline DataType DataType::from<int32_t>() { return DataType::native(
 template <> inline DataType DataType::from<uint32_t>() { return DataType::native(DataType::UInt32); }
 template <> inline DataType DataType::from<int64_t>() { return DataType::native(DataType::Int64); }
 template <> inline DataType DataType::from<uint64_t>() { return DataType::native(DataType::UInt64); }
-template <> inline DataType DataType::from<half_float::half>() { return DataType::native(DataType::Float16); }
+template <> inline DataType DataType::from<Eigen::half>() { return DataType::native(DataType::Float16); }
 template <> inline DataType DataType::from<float>() { return DataType::native(DataType::Float32); }
 template <> inline DataType DataType::from<double>() { return DataType::native(DataType::Float64); }
 template <> inline DataType DataType::from<cfloat>() { return DataType::native(DataType::CFloat32); }

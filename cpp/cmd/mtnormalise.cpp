@@ -72,7 +72,7 @@ void usage() {
 
   ARGUMENTS
   + Argument("input output", "list of all input and output tissue compartment files"
-                             " (see example usage).").type_various().allow_multiple();
+                             " (see example usage).").type_image_in().type_image_out().allow_multiple();
 
   OPTIONS
   + Option("mask", "the mask defines the data used to compute the intensity normalisation."

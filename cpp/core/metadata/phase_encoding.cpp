@@ -91,21 +91,29 @@ void set_scheme(KeyValues &keyval, const scheme_type &PE) {
     erase(keyval, "TotalReadoutTime");
     return;
   }
-  std::string pe_scheme;
+  std::ostringstream pe_scheme;
   std::string first_line;
   bool variation = false;
   for (ssize_t row = 0; row < PE.rows(); ++row) {
-    std::string line = str(PE(row, 0));
-    for (ssize_t col = 1; col < PE.cols(); ++col)
-      line += "," + str(PE(row, col), 3);
-    add_line(pe_scheme, line);
-    if (first_line.empty())
-      first_line = line;
-    else if (line != first_line)
-      variation = true;
+    std::ostringstream line;
+    line.precision(0);
+    line << static_cast<int>(PE(row, 0));
+    for (ssize_t col = 1; col < 3; ++col)
+      line << "," << static_cast<int>(PE(row, col));
+    line.precision(3);
+    for (ssize_t col = 3; col < PE.cols(); ++col)
+      line << "," << PE(row, col);
+    if (row == 0) {
+      first_line = line.str();
+    } else {
+      pe_scheme << "\n";
+      if (line.str() != first_line)
+        variation = true;
+    }
+    pe_scheme << line.str();
   }
   if (variation) {
-    keyval["pe_scheme"] = pe_scheme;
+    keyval["pe_scheme"] = pe_scheme.str();
     erase(keyval, "PhaseEncodingDirection");
     erase(keyval, "TotalReadoutTime");
   } else {

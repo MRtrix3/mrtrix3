@@ -300,7 +300,7 @@ template <class Input> void read_other(Header &H, Input &in) {
   auto read_mri_frame = [&](Input &in, const int64_t len) {
     const int64_t fstart = in.tellg();
     const size_t nframes = H.ndim() == 4 ? H.size(3) : 1;
-    std::string table;
+    std::ostringstream table;
     Eigen::IOFormat format(Eigen::StreamPrecision, Eigen::DontAlignCols, " ", " ", "", "", "", "");
     for (size_t frame_index = 0; frame_index != nframes; ++frame_index) {
       mri_frame frame;
@@ -332,14 +332,14 @@ template <class Input> void read_other(Header &H, Input &in) {
       frame.thresh = fetch<float32>(in);
       frame.units = fetch<int32_t>(in);
 
-      std::string line = str(frame.type) + "," + str(frame.TE) + "," + str(frame.TR) + "," + str(frame.flip) + "," +
-                         str(frame.TI) + "," + str(frame.TD) + "," + str(frame.sequence_type) + "," +
-                         str(frame.echo_spacing) + "," + str(frame.echo_train_len) + "," + str(frame.read_dir[0]) +
-                         "," + str(frame.read_dir[1]) + "," + str(frame.read_dir[2]) + "," + str(frame.pe_dir[0]) +
-                         "," + str(frame.pe_dir[1]) + "," + str(frame.pe_dir[2]) + "," + str(frame.slice_dir[0]) + "," +
-                         str(frame.slice_dir[1]) + "," + str(frame.slice_dir[2]) + "," + str(frame.label) + "," +
-                         frame.name + "," + str(frame.dof) + "," + str(frame.m_ras2vox->format(format)) + "," +
-                         str(frame.thresh) + "," + str(frame.units);
+      if (frame_index > 0)
+        table << "\n";
+      table << frame.type << "," << frame.TE << "," << frame.TR << "," << frame.flip << "," << frame.TI << ","
+            << frame.TD << "," << frame.sequence_type << "," << frame.echo_spacing << "," << frame.echo_train_len << ","
+            << frame.read_dir[0] << "," << frame.read_dir[1] << "," << frame.read_dir[2] << "," << frame.pe_dir[0]
+            << "," << frame.pe_dir[1] << "," << frame.pe_dir[2] << "," << frame.slice_dir[0] << ","
+            << frame.slice_dir[1] << "," << frame.slice_dir[2] << "," << frame.label << "," << frame.name << ","
+            << frame.dof << "," << frame.m_ras2vox->format(format) << "," << frame.thresh << "," << frame.units;
 
       delete frame.m_ras2vox;
       frame.m_ras2vox = nullptr;
@@ -370,15 +370,12 @@ template <class Input> void read_other(Header &H, Input &in) {
         frame.D4_flat = fetch<int64_t>(in);
         frame.D4_amp = fetch<float64>(in);
 
-        line += "," + str(frame.DX) + "," + str(frame.DY) + "," + str(frame.DZ) + "," + str(frame.DR) + "," +
-                str(frame.DP) + "," + str(frame.DS) + "," + str(frame.bvalue) + "," + str(frame.TM) + "," +
-                str(frame.D1_ramp) + "," + str(frame.D1_flat) + "," + str(frame.D1_amp) + "," + str(frame.D2_ramp) +
-                "," + str(frame.D2_flat) + "," + str(frame.D2_amp) + "," + str(frame.D3_ramp) + "," +
-                str(frame.D3_flat) + "," + str(frame.D3_amp) + "," + str(frame.D4_ramp) + "," + str(frame.D4_flat) +
-                "," + str(frame.D4_amp);
+        table << "," << frame.DX << "," << frame.DY << "," << frame.DZ << "," << frame.DR << "," << frame.DP << ","
+              << frame.DS << "," << frame.bvalue << "," << frame.TM << "," << frame.D1_ramp << "," << frame.D1_flat
+              << "," << frame.D1_amp << "," << frame.D2_ramp << "," << frame.D2_flat << "," << frame.D2_amp << ","
+              << frame.D3_ramp << "," << frame.D3_flat << "," << frame.D3_amp << "," << frame.D4_ramp << ","
+              << frame.D4_flat << "," << frame.D4_amp;
       }
-
-      add_line(table, line);
     }
 
     // Test to see if the correct amount of data has been read
@@ -390,13 +387,13 @@ template <class Input> void read_other(Header &H, Input &in) {
       in.read(&buffer[0], empty_space_len);
     }
 
-    return table;
+    return table.str();
   };
 
   auto read_colourtable_V1 = [&](Input &in, const int32_t nentries) {
     if (!nentries)
       throw Exception("Error reading colour table from file \"" + H.name() + "\": No entries");
-    std::string table;
+    std::ostringstream table;
     const int32_t filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
     in.read(&filename[0], filename_length);
@@ -413,9 +410,11 @@ template <class Input> void read_other(Header &H, Input &in) {
       const int32_t b = fetch<int32_t>(in);
       const int32_t t = fetch<int32_t>(in);
       const int32_t a = 255 - t; // Alpha = 255 - transparency
-      add_line(table, structurename + "," + str(r) + "," + str(g) + "," + str(b) + "," + str(a));
+      if (structure > 0)
+        table << "\n";
+      table << structurename << "," << r << "," << g << "," << b << "," << a;
     }
-    return table;
+    return table.str();
   };
 
   auto read_colourtable_V2 = [&](Input &in) {
@@ -452,12 +451,15 @@ template <class Input> void read_other(Header &H, Input &in) {
       const int32_t a = 255 - t; // Alpha = 255 - transparency
       table[structure] = structurename + "," + str(r) + "," + str(g) + "," + str(b) + "," + str(a);
     }
-    std::string result;
+    std::ostringstream result;
     for (size_t index = 0; index != table.size(); ++index) {
-      if (!table[index].empty())
-        add_line(result, str(index) + "," + table[index]);
+      if (!table[index].empty()) {
+        if (!result.str().empty())
+          result << "\n";
+        result << index << "," << table[index];
+      }
     }
-    return result;
+    return result.str();
   };
 
   // Start the function read_other() proper

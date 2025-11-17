@@ -1958,7 +1958,7 @@ void Window::add_commandline_options(MR::App::OptionList &options) {
                "Either set the position of the crosshairs in scanner coordinates,"
                " with the new position supplied as a comma-separated list of floating-point values,"
                " or show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
-        + Argument("spec").type_various()
+        + Argument("spec").type_bool().type_sequence_float()
 
       + Option("target",
                "Set the target location for the viewing window"

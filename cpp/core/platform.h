@@ -14,11 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#pragma once
+#include <filesystem>
 
-namespace std {
-template <> struct is_fundamental<Eigen::half> : std::true_type {};
-template <> struct is_floating_point<Eigen::half> : std::true_type {};
-template <> struct is_arithmetic<Eigen::half> : std::true_type {};
-template <> struct is_integral<Eigen::half> : std::false_type {};
-} // namespace std
+namespace MR::Platform {
+// A cross-platform function to get the (absolute) path of the current executable.
+// Throws an exception on failure.
+std::filesystem::path get_executable_path();
+} // namespace MR::Platform

@@ -111,14 +111,16 @@ void save_bvecs_bvals(const Header &, std::string_view, std::string_view);
 
 namespace {
 template <class MatrixType> std::string scheme2str(const MatrixType &G) {
-  std::string dw_scheme;
+  std::ostringstream dw_scheme;
+  dw_scheme.precision(10);
   for (ssize_t row = 0; row < G.rows(); ++row) {
-    std::string line = str(G(row, 0), 10);
+    if (row > 0)
+      dw_scheme << "\n";
+    dw_scheme << G(row, 0);
     for (ssize_t col = 1; col < G.cols(); ++col)
-      line += "," + str(G(row, col), 10);
-    add_line(dw_scheme, line);
+      dw_scheme << "," << G(row, col);
   }
-  return dw_scheme;
+  return dw_scheme.str();
 }
 } // namespace
 

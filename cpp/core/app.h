@@ -73,10 +73,10 @@ extern const std::string help_command;
 
 extern const std::string core_reference;
 
-std::string help_head(int format);
-std::string help_synopsis(int format);
-std::string help_tail(int format);
-std::string usage_syntax(int format);
+std::string help_head(const bool format);
+std::string help_synopsis(const bool format);
+std::string help_tail(const bool format);
+std::string usage_syntax(const bool format);
 
 //! \addtogroup CmdParse
 // @{
@@ -88,7 +88,7 @@ public:
   Description &operator+(std::string_view text);
   Description &operator+(const char *const text[]); // check_syntax off
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! object for storing a single example command usage
@@ -98,7 +98,7 @@ public:
   const std::string title, code, description;
 
   operator std::string() const;
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Example's
@@ -106,7 +106,7 @@ class ExampleList : public std::vector<Example> {
 public:
   ExampleList &operator+(const Example &example);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Argument's
@@ -114,7 +114,7 @@ class ArgumentList : public std::vector<Argument> {
 public:
   ArgumentList &operator+(const Argument &argument);
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of option groups
@@ -128,7 +128,7 @@ public:
 
   OptionGroup &back();
 
-  std::string syntax(int format) const;
+  std::string syntax(const bool format) const;
 };
 
 void check_overwrite(std::string_view name);
@@ -164,10 +164,9 @@ public:
   operator std::string() const { return p; }
   operator std::string_view() const { return std::string_view(p.data(), p.size()); }
 
-  std::string as_text() const { return p; }
-  bool as_bool() const { return to<bool>(p); }
+  bool as_bool() const;
   int64_t as_int() const;
-  uint64_t as_uint() const { return static_cast<uint64_t>(as_int()); }
+  uint64_t as_uint() const;
   default_type as_float() const;
 
   std::vector<int32_t> as_sequence_int() const;

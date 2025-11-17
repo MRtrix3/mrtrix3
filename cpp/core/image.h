@@ -343,7 +343,7 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
 
 template <typename ValueType> Image<ValueType>::~Image() {
   if (buffer.unique()) {
-    // was image preloaded and read/write? If so,need to write back:
+    // was image preloaded and read/write? If so, need to write back:
     if (buffer->get_io()) {
       if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
         auto data_buffer = std::move(buffer->data_buffer);
@@ -490,7 +490,7 @@ extern template MR::Image<int32_t>::~Image();
 extern template MR::Image<uint32_t>::~Image();
 extern template MR::Image<int64_t>::~Image();
 extern template MR::Image<uint64_t>::~Image();
-extern template MR::Image<half_float::half>::~Image();
+extern template MR::Image<Eigen::half>::~Image();
 extern template MR::Image<float>::~Image();
 extern template MR::Image<double>::~Image();
 extern template MR::Image<cfloat>::~Image();
