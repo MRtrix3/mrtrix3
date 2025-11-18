@@ -30,7 +30,7 @@ class SDStream : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set), lmax(Math::SH::LforN(source.size(3))) {
       try {
         Math::SH::check(source);
@@ -44,7 +44,8 @@ public:
 
       set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                          Defaults::angle_deterministic,
-                         rk4);
+                         rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
+                         curvature_constraint_t::POSTHOC_THRESHOLD);
       dot_threshold = std::cos(max_angle_1o);
       set_num_points();
       set_cutoff(Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
@@ -92,18 +93,18 @@ public:
 
   term_t next() override {
     if (!get_data(source))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
 
     const Eigen::Vector3f prev_dir(dir);
 
     if (!find_peak())
-      return MODEL;
+      return term_t::MODEL;
 
     if (prev_dir.dot(dir) < S.dot_threshold)
-      return HIGH_CURVATURE;
+      return term_t::HIGH_CURVATURE;
 
     pos += dir * S.step_size;
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {

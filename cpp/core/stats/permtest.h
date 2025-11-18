@@ -31,9 +31,6 @@
 
 #include "stats/enhance.h"
 
-#define DEFAULT_NUMBER_PERMUTATIONS 5000
-#define DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY 5000
-
 namespace MR::Stats::PermTest {
 
 using value_type = Math::Stats::value_type;

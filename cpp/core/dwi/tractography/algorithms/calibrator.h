@@ -21,8 +21,7 @@
 #include "math/SH.h"
 #include "types.h"
 
-#define SQRT_3_OVER_2 0.866025403784439
-#define NUM_CALIBRATE 1000
+constexpr float sqrt_3_over_2 = 0.866025403784439;
 
 namespace MR::DWI::Tractography::Algorithms {
 
@@ -35,7 +34,8 @@ FORCE_INLINE std::vector<Eigen::Vector3f> direction_grid(float max_angle, float 
 
   for (ssize_t i = -extent; i <= extent; ++i) {
     for (ssize_t j = -extent; j <= extent; ++j) {
-      float x = i + 0.5 * j, y = SQRT_3_OVER_2 * j;
+      float x = i + 0.5 * j;
+      float y = sqrt_3_over_2 * j;
       float n = Math::pow2(x) + Math::pow2(y);
       if (n > maxR)
         continue;
@@ -71,7 +71,9 @@ template <class Method> void calibrate(Method &method) {
   }
   float zero = amps.back().incl;
 
-  float N_min = Inf, theta_min = NaN, ratio = NaN;
+  float N_min = InfF;
+  float theta_min = NaNF;
+  float ratio = NaNF;
   for (size_t i = 1; i < amps.size(); ++i) {
     float N = Math::pow2(max_angle);
     float Ns = N * (1.0 + amps[0].amp / amps[i].amp) / (2.0 * Math::pow2(zero));
@@ -89,8 +91,9 @@ template <class Method> void calibrate(Method &method) {
   method.calibrate_list = direction_grid(max_angle + theta_min, sqrt3 * theta_min);
   method.calibrate_ratio = ratio;
 
-  INFO("rejection sampling will use " + str(method.calibrate_list.size()) + " directions with a ratio of " +
-       str(method.calibrate_ratio) + " (predicted number of samples per step = " + str(N_min) + ")");
+  INFO("rejection sampling will use " + str(method.calibrate_list.size()) + " directions" + //
+       " with a ratio of " + str(method.calibrate_ratio) +                                  //
+       " (predicted number of samples per step = " + str(N_min) + ")");                     //
 }
 
 } // namespace MR::DWI::Tractography::Algorithms

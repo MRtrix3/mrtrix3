@@ -34,12 +34,12 @@ void usage() {
   SYNOPSIS = "Perform basic operations on a connectome";
 
   ARGUMENTS
-  + Argument ("input", "the input connectome.").type_text ()
+  + Argument ("input", "the input connectome.").type_file_in()
 
   + Argument ("operation", "the operation to apply,"
                            " one of: " + join(operations, ", ") + ".").type_choice (operations)
 
-  + Argument ("output", "the output connectome.").type_text();
+  + Argument ("output", "the output connectome.").type_file_out();
 
 }
 // clang-format on
@@ -48,7 +48,7 @@ void run() {
   MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
   MR::Connectome::check(connectome);
   const int op = argument[1];
-  const std::string &output_path = argument[2];
+  const std::string_view output_path = argument[2];
 
   INFO("Applying \'" + str(operations[op]) + "\' transformation to the input connectome.");
 

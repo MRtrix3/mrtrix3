@@ -22,15 +22,16 @@
 #include "mrview/tool/base.h"
 #include "mrview/tool/odf/type.h"
 
-namespace MR::GUI {
-namespace DWI {
+namespace MR::GUI::DWI {
 class Renderer;
 class RenderFrame;
-} // namespace DWI
+} // namespace MR::GUI::DWI
 
+namespace MR::GUI {
 class LightingDock;
+} // namespace MR::GUI
 
-namespace MRView::Tool {
+namespace MR::GUI::MRView::Tool {
 
 class ODF_Item;
 class ODF_Model;
@@ -105,6 +106,4 @@ protected:
   friend class ODF_Preview;
 };
 
-} // namespace MRView::Tool
-
-} // namespace MR::GUI
+} // namespace MR::GUI::MRView::Tool

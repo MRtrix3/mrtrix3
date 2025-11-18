@@ -50,7 +50,7 @@ Options
 
 -  **-tracks_out output** an output tractogram
 
--  **-various spec** an argument that could accept one of various forms
+-  **-any spec** an argument that could accept any of the various forms
 
 -  **-nargs_two first second** A command-line option that accepts two arguments
 

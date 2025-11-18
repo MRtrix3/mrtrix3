@@ -28,7 +28,7 @@ Options
 
 -  **-number num** number of rotations to try (default: 10000000)
 
--  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
+-  **-cartesian** Output directions in Cartesian coordinates [x y z] instead of spherical angles [az in].
 
 Standard options
 ^^^^^^^^^^^^^^^^

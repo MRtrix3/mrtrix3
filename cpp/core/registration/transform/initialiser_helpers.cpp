@@ -87,8 +87,10 @@ public:
       if (!mask.value())
         return;
     }
-    Eigen::Vector3d voxel_pos((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
-    Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
+    const Eigen::Vector3d voxel_pos{static_cast<default_type>(image.index(0)),
+                                    static_cast<default_type>(image.index(1)),
+                                    static_cast<default_type>(image.index(2))};
+    const Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
 
     default_type xc = scanner_pos[0] - centre[0];
     default_type yc = scanner_pos[1] - centre[1];
@@ -162,9 +164,10 @@ void get_moments(Image<default_type> &image,
 
   if (!mask.valid()) {
     for (auto i = Loop(0, 3)(image); i; ++i) {
-      Eigen::Vector3d voxel_pos(
-          (default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
-      Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
+      const Eigen::Vector3d voxel_pos{static_cast<default_type>(image.index(0)),
+                                      static_cast<default_type>(image.index(1)),
+                                      static_cast<default_type>(image.index(2))};
+      const Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
 
       default_type xc = scanner_pos[0] - centre[0];
       default_type yc = scanner_pos[1] - centre[1];
@@ -189,9 +192,10 @@ void get_moments(Image<default_type> &image,
     for (auto i = Loop(0, 3)(image, mask); i; ++i) {
       if (mask.value() <= 0.0)
         continue;
-      Eigen::Vector3d voxel_pos(
-          (default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
-      Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
+      const Eigen::Vector3d voxel_pos{static_cast<default_type>(image.index(0)),
+                                      static_cast<default_type>(image.index(1)),
+                                      static_cast<default_type>(image.index(2))};
+      const Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
       default_type val = image.value();
 
       default_type xc = scanner_pos[0] - centre[0];
@@ -245,14 +249,15 @@ public:
       if (!mask.value())
         return;
     }
-    voxel_pos << (default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2);
+    voxel_pos << static_cast<default_type>(image.index(0)), static_cast<default_type>(image.index(1)),
+        static_cast<default_type>(image.index(2));
     scanner = transform.voxel2scanner * voxel_pos;
     for (size_t idx = 0; idx < start_vol.size(); idx++) {
       if (image.ndim() > 3)
         image.index(3) = start_vol[idx];
-      if (std::isfinite((default_type)image.value())) {
-        mass += weight[idx] * image.value();
-        centre_of_mass += scanner * (image.value() * weight[idx]);
+      if (std::isfinite(static_cast<typename ImType::value_type>(image.value()))) {
+        mass += weight[idx] * static_cast<typename ImType::value_type>(image.value());
+        centre_of_mass += scanner * (static_cast<typename ImType::value_type>(image.value()) * weight[idx]);
       }
     }
     if (image.ndim() > 3)
@@ -283,7 +288,7 @@ void get_centre_of_mass(Image<default_type> &im,
                im, mask, mass, centre_of_mass, contrast_settings),
            im);
 
-  if (mass == default_type(0.0))
+  if (mass == 0.0)
     throw Exception("centre of mass initialisation not possible for empty image");
   centre_of_mass /= mass;
   DEBUG("centre of mass of " + im.name() + ": " + str(centre_of_mass.transpose()));
@@ -474,7 +479,7 @@ void MomentsInitialiser::run() {
   Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A(3, 3);
   A = dec.solve(im1_evec_transpose);
   assert((A * im1_evec).isApprox(im2_evec));
-  assert(abs(A.determinant() - 1.0) < 0.0001);
+  assert(std::fabs(A.determinant() - 1.0) < 0.0001);
   A = A.transpose().eval(); // A * im2_evec = im1_evec
 
   Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
@@ -556,7 +561,8 @@ void FODInitialiser::init(Image<default_type> &im,
     for (auto i = Loop(0, 3)(im, mask); i; ++i) {
       if (mask.value()) {
         im_mass += im.value();
-        voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
+        voxel_pos << static_cast<default_type>(im.index(0)), static_cast<default_type>(im.index(1)),
+            static_cast<default_type>(im.index(2));
         scanner = im_transform.voxel2scanner * voxel_pos;
         centre_of_mass += scanner * im.value();
         for (im.index(3) = 0; im.index(3) < N; ++im.index(3))
@@ -567,7 +573,8 @@ void FODInitialiser::init(Image<default_type> &im,
   } else { // no mask
     for (auto i = Loop(0, 3)(im); i; ++i) {
       im_mass += im.value();
-      voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
+      voxel_pos << static_cast<default_type>(im.index(0)), static_cast<default_type>(im.index(1)),
+          static_cast<default_type>(im.index(2));
       scanner = im_transform.voxel2scanner * voxel_pos;
       centre_of_mass += scanner * im.value();
       for (im.index(3) = 0; im.index(3) < N; ++im.index(3))
@@ -577,7 +584,7 @@ void FODInitialiser::init(Image<default_type> &im,
   }
   if (cnt == 0)
     throw Exception("empty mask");
-  sh /= default_type(cnt);
+  sh /= static_cast<default_type>(cnt);
   centre_of_mass /= im_mass;
 }
 

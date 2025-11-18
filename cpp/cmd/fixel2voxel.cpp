@@ -58,7 +58,7 @@ void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
            " and David Raffelt (david.raffelt@florey.edu.au)";
 
-  SYNOPSIS = "Convert a fixel-based sparse-data image into some form of scalar image";
+  SYNOPSIS = "Aggregate content from a fixel data file into a voxel scalar image";
 
   DESCRIPTION
   + "Fixel data can be reduced to voxel data in a number of ways:"
@@ -262,7 +262,7 @@ public:
       if (!f.padding() && data.value() < min)
         min = data.value();
     }
-    out.value() = std::isfinite(min) ? min : NAN;
+    out.value() = std::isfinite(min) ? min : NaNF;
   }
 };
 
@@ -276,7 +276,7 @@ public:
       if (!f.padding() && data.value() > max)
         max = data.value();
     }
-    out.value() = std::isfinite(max) ? max : NAN;
+    out.value() = std::isfinite(max) ? max : NaNF;
   }
 };
 
@@ -285,12 +285,12 @@ public:
   AbsMax(FixelDataType &data, const index_type max_fixels) : Base(data, max_fixels) {}
 
   void operator()(FixelIndexType &index, Image<float> &out) {
-    default_type absmax = -std::numeric_limits<default_type>::infinity();
+    float absmax = -std::numeric_limits<float>::infinity();
     for (auto f = Base::Loop(index)(data); f; ++f) {
-      if (!f.padding() && abs(float(data.value())) > absmax)
-        absmax = abs(float(data.value()));
+      if (!f.padding() && std::fabs(static_cast<typename FixelDataType::value_type>(data.value())) > absmax)
+        absmax = std::fabs(static_cast<float>(data.value()));
     }
-    out.value() = std::isfinite(absmax) ? absmax : 0.0;
+    out.value() = std::isfinite(absmax) ? absmax : 0.0F;
   }
 };
 
@@ -299,12 +299,12 @@ public:
   MagMax(FixelDataType &data, const index_type num_fixels) : Base(data, num_fixels) {}
 
   void operator()(FixelIndexType &index, Image<float> &out) {
-    default_type magmax = 0.0;
+    float magmax = 0.0;
     for (auto f = Base::Loop(index)(data); f; ++f) {
-      if (!f.padding() && abs(float(data.value())) > abs(magmax))
-        magmax = data.value();
+      if (!f.padding() && std::fabs(static_cast<typename FixelDataType::value_type>(data.value())) > std::fabs(magmax))
+        magmax = static_cast<float>(data.value());
     }
-    out.value() = std::isfinite(magmax) ? magmax : 0.0;
+    out.value() = std::isfinite(magmax) ? magmax : 0.0F;
   }
 };
 
@@ -324,11 +324,12 @@ public:
     default_type sum = 0.0;
     for (auto f = Base::Loop(index)(data); f; ++f) {
       if (!f.padding()) {
-        max = std::max(max, default_type(data.value()));
+        max = std::max(max, static_cast<default_type>(data.value()));
         sum += data.value();
       }
     }
-    out.value() = (default_type(num_fixels) / default_type(num_fixels - 1.0)) * (1.0 - (max / sum));
+    out.value() =
+        (static_cast<default_type>(num_fixels) / static_cast<default_type>(num_fixels - 1)) * (1.0 - (max / sum));
   }
 };
 
@@ -341,7 +342,7 @@ public:
     default_type sum = 0.0;
     for (auto f = Base::Loop(index)(data); f; ++f) {
       if (!f.padding()) {
-        max = std::max(max, default_type(data.value()));
+        max = std::max(max, static_cast<default_type>(data.value()));
         sum += data.value();
       }
     }
@@ -359,19 +360,20 @@ public:
     if (vol.valid()) {
       for (auto f = Base::Loop(index)(data, vol, dir); f; ++f) {
         if (!f.padding())
-          sum_dec +=
-              Eigen::Vector3d(abs(dir.row(1)[0]), abs(dir.row(1)[1]), abs(dir.row(1)[2])) * data.value() * vol.value();
+          sum_dec += Eigen::Vector3d(std::fabs(dir.row(1)[0]), std::fabs(dir.row(1)[1]), std::fabs(dir.row(1)[2])) *
+                     data.value() * vol.value();
       }
     } else {
       for (auto f = Base::Loop(index)(data, dir); f; ++f) {
         if (!f.padding())
-          sum_dec += Eigen::Vector3d(abs(dir.row(1)[0]), abs(dir.row(1)[1]), abs(dir.row(1)[2])) * data.value();
+          sum_dec += Eigen::Vector3d(std::fabs(dir.row(1)[0]), std::fabs(dir.row(1)[1]), std::fabs(dir.row(1)[2])) *
+                     data.value();
       }
     }
     if ((sum_dec.array() != 0.0).any())
       sum_dec.normalize();
     for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
-      out.value() = sum_dec[size_t(out.index(3))];
+      out.value() = sum_dec[static_cast<decltype(sum_dec)::Index>(out.index(3))];
   }
 
 protected:
@@ -391,8 +393,8 @@ public:
       default_type sum_volume = 0.0;
       for (auto f = Base::Loop(index)(data, vol, dir); f; ++f) {
         if (!f.padding()) {
-          sum_dec +=
-              Eigen::Vector3d(abs(dir.row(1)[0]), abs(dir.row(1)[1]), abs(dir.row(1)[2])) * data.value() * vol.value();
+          sum_dec += Eigen::Vector3d(std::fabs(dir.row(1)[0]), std::fabs(dir.row(1)[1]), std::fabs(dir.row(1)[2])) *
+                     data.value() * vol.value();
           sum_volume += vol.value();
           sum_value += vol.value() * data.value();
         }
@@ -403,7 +405,8 @@ public:
     } else {
       for (auto f = Base::Loop(index)(data, dir); f; ++f) {
         if (!f.padding()) {
-          sum_dec += Eigen::Vector3d(abs(dir.row(1)[0]), abs(dir.row(1)[1]), abs(dir.row(1)[2])) * data.value();
+          sum_dec += Eigen::Vector3d(std::fabs(dir.row(1)[0]), std::fabs(dir.row(1)[1]), std::fabs(dir.row(1)[2])) *
+                     data.value();
           sum_value += data.value();
         }
       }
@@ -412,7 +415,7 @@ public:
       sum_dec *= sum_value;
     }
     for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
-      out.value() = sum_dec[size_t(out.index(3))];
+      out.value() = sum_dec[static_cast<decltype(sum_dec)::Index>(out.index(3))];
   }
 
 protected:
@@ -467,7 +470,7 @@ void run() {
     } else {
       index_type max_count = 0;
       for (auto l = Loop("determining largest fixel count", in_index_image, 0, 3)(in_index_image); l; ++l)
-        max_count = std::max(max_count, (index_type)in_index_image.value());
+        max_count = std::max(max_count, static_cast<index_type>(in_index_image.value()));
       if (max_count == 0)
         throw Exception("fixel image is empty");
       // 3 volumes per fixel if performing split_dir

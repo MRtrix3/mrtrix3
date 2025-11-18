@@ -139,10 +139,10 @@ public:
         //   however this will not be permitted to contribute to the matrix
         index_type closest_fixel_index = last_index;
         default_type largest_dp = 0.0;
-        const direction_type dir(i.get_dir().normalized());
+        const direction_type dir(i.get_dir().cast<default_type>().normalized());
         for (index_type j = first_index; j < last_index; ++j) {
           fixel_directions.index(0) = j;
-          const default_type dp = abs(dir.dot(direction_type(fixel_directions.row(1))));
+          const default_type dp = std::fabs(dir.dot(direction_type(fixel_directions.row(1))));
           if (dp > largest_dp) {
             largest_dp = dp;
             fixel_mask.index(0) = j;
@@ -200,7 +200,7 @@ private:
   mapper.set_use_precise_mapping(true);                                                                                \
   TrackProcessor track_processor(mapper, index_image, directions_image, fixel_mask, angular_threshold);
 
-InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
+InitMatrixUnweighted generate_unweighted(std::string_view track_filename,
                                          Image<index_type> &index_image,
                                          Image<bool> &fixel_mask,
                                          const float angular_threshold) {
@@ -215,7 +215,7 @@ InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
   return connectivity_matrix;
 }
 
-InitMatrixWeighted generate_weighted(const std::string &track_filename,
+InitMatrixWeighted generate_weighted(std::string_view track_filename,
                                      Image<index_type> &index_image,
                                      Image<bool> &fixel_mask,
                                      const float angular_threshold) {
@@ -230,17 +230,17 @@ InitMatrixWeighted generate_weighted(const std::string &track_filename,
   return connectivity_matrix;
 }
 
-template <class MatrixType> void Writer<MatrixType>::set_count_path(const std::string &path) {
+template <class MatrixType> void Writer<MatrixType>::set_count_path(std::string_view path) {
   assert(!count_image.valid());
   count_image = Image<count_type>::create(path, MR::Fixel::data_header_from_nfixels(matrix.size()));
 }
 
-template <class MatrixType> void Writer<MatrixType>::set_extent_path(const std::string &path) {
+template <class MatrixType> void Writer<MatrixType>::set_extent_path(std::string_view path) {
   assert(!extent_image.valid());
   extent_image = Image<connectivity_value_type>::create(path, MR::Fixel::data_header_from_nfixels(matrix.size()));
 }
 
-template <class MatrixType> void Writer<MatrixType>::save(const std::string &path) const {
+template <class MatrixType> void Writer<MatrixType>::save(std::string_view path) const {
   if (Path::exists(path)) {
     if (Path::is_dir(path)) {
       if (!App::overwrite_files &&
@@ -346,7 +346,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::string &pat
 
     index_image.index(0) = fixel_index;
     index_image.index(3) = 0;
-    index_image.value() = uint64_t(connection_count);
+    index_image.value() = static_cast<uint64_t>(connection_count);
     index_image.index(3) = 1;
     index_image.value() = connection_count ? connection_offset : uint64_t(0);
 
@@ -369,7 +369,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::string &pat
 template class Writer<InitMatrixUnweighted>;
 template class Writer<InitMatrixWeighted>;
 
-Reader::Reader(const std::string &path, const Image<bool> &mask) : directory(path), mask_image(mask) {
+Reader::Reader(std::string_view path, const Image<bool> &mask) : directory(path), mask_image(mask) {
   try {
     index_image = Image<index_image_type>::open(Path::join(directory, "index.mif"));
     if (index_image.ndim() != 4)
@@ -381,7 +381,7 @@ Reader::Reader(const std::string &path, const Image<bool> &mask) : directory(pat
     if (value_image.size(0) != fixel_image.size(0))
       throw Exception("Number of fixels in value image (" + str(value_image.size(0)) +
                       ") does not match number of fixels in fixel image (" + str(fixel_image.size(0)) + ")");
-    if (mask_image.valid() && size_t(mask_image.size(0)) != size())
+    if (mask_image.valid() && static_cast<size_t>(mask_image.size(0)) != size())
       throw Exception("Fixel image \"" + mask_image.name() + "\" has different number of fixels (" +
                       str(mask_image.size(0)) + ") to fixel-fixel connectivity matrix (" + str(size()) + ")");
   } catch (Exception &e) {
@@ -389,7 +389,7 @@ Reader::Reader(const std::string &path, const Image<bool> &mask) : directory(pat
   }
 }
 
-Reader::Reader(const std::string &path) : Reader(path, Image<bool>()) {}
+Reader::Reader(std::string_view path) : Reader(path, Image<bool>()) {}
 
 NormFixel Reader::operator[](const size_t i) const {
   // For thread-safety

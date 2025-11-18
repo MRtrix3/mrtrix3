@@ -13,6 +13,9 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <limits>
+
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "image.h"
@@ -21,7 +24,7 @@
 using namespace MR;
 using namespace App;
 
-const float PRECISION = Eigen::NumTraits<float>::dummy_precision();
+constexpr float precision = Eigen::NumTraits<float>::dummy_precision();
 
 // clang-format off
 void usage() {
@@ -47,8 +50,8 @@ void usage() {
                       " Default: (0,0,0).")
     + Argument ("coordinates").type_sequence_float()
   + Option ("tolerance", "numerical precision used for L2 matrix norm comparison."
-                         " Default: " + str(PRECISION) + ".")
-    + Argument ("value").type_float(PRECISION);
+                         " Default: " + str(precision) + ".")
+    + Argument ("value").type_float(precision);
 }
 // clang-format on
 
@@ -57,15 +60,15 @@ using value_type = float;
 class BoundsCheck {
 public:
   BoundsCheck(value_type tolerance, const Eigen::Matrix<value_type, 3, 1> &marker, size_t &total_count)
-      : precision(tolerance), vec(marker), counter(total_count), count(0), val({NaN, NaN, NaN}) {}
+      : precision(tolerance), vec(marker), counter(total_count), count(0), val(decltype(val)::Constant(NaNF)) {}
   BoundsCheck(const BoundsCheck &that)
-      : precision(that.precision), vec(that.vec), counter(that.counter), count(0), val({NaN, NaN, NaN}) {}
+      : precision(that.precision), vec(that.vec), counter(that.counter), count(0), val(decltype(val)::Constant(NaNF)) {}
   template <class ImageTypeIn, class ImageTypeOut> void operator()(ImageTypeIn &in, ImageTypeOut &out) {
     val = Eigen::Matrix<value_type, 3, 1>(in.row(3));
     if ((vec - val).isMuchSmallerThan(precision) || (vec.hasNaN() && val.hasNaN())) {
       count++;
       for (auto l = Loop(3)(out); l; ++l)
-        out.value() = NaN;
+        out.value() = std::numeric_limits<typename ImageTypeOut::value_type>::quiet_NaN();
     } else {
       for (auto l = Loop(3)(in, out); l; ++l)
         out.value() = in.value();
@@ -100,7 +103,7 @@ void run() {
       throw Exception("location option requires either single value or list of 3 values");
   }
 
-  const value_type precision = get_option_value("tolerance", PRECISION);
+  const value_type precision = get_option_value("tolerance", precision);
 
   size_t count(0);
   auto func = BoundsCheck(precision, oob_vector, count);

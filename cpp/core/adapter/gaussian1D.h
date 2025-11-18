@@ -66,7 +66,7 @@ public:
       value_type neighbour_value = base_type::value();
       if (std::isfinite(neighbour_value)) {
         av_weights += kernel[c];
-        result += value_type(base_type::value()) * kernel[c];
+        result += static_cast<value_type>(base_type::value()) * kernel[c];
       }
     }
     result /= av_weights;

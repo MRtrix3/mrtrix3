@@ -31,7 +31,8 @@ add_bash_binary_test(5tt2gmwmi/default)
 
 add_bash_binary_test(5tt2vis/default)
 
-add_bash_binary_test(5ttedit/default)
+add_bash_binary_test(5ttedit/onetissue)
+add_bash_binary_test(5ttedit/twotissues)
 
 add_bash_binary_test(amp2sh/default)
 
@@ -100,6 +101,15 @@ add_bash_binary_test(dwidenoise/noise_extent)
 add_bash_binary_test(dwiextract/bzero)
 add_bash_binary_test(dwiextract/default)
 
+add_bash_binary_test(dwirecon/combinepairs_pequad)
+add_bash_binary_test(dwirecon/combinepairs_reordered)
+add_bash_binary_test(dwirecon/combinepairs_rpepair)
+add_bash_binary_test(dwirecon/combinepairs_unbalanced)
+add_bash_binary_test(dwirecon/combinepredicted_exponent)
+add_bash_binary_test(dwirecon/combinepredicted_lmax)
+add_bash_binary_test(dwirecon/combinepredicted_pequad)
+add_bash_binary_test(dwirecon/combinepredicted_rpepair)
+
 add_bash_binary_test(fixel2peaks/input_afd)
 add_bash_binary_test(fixel2peaks/input_directions)
 add_bash_binary_test(fixel2peaks/input_directory)
@@ -131,9 +141,6 @@ add_bash_binary_test(fixelcfestats/masked)
 add_bash_binary_test(fixelconnectivity/masked)
 add_bash_binary_test(fixelconnectivity/weighted)
 
-add_bash_binary_test(fixelconvert/new_to_old)
-add_bash_binary_test(fixelconvert/old_to_new)
-
 add_bash_binary_test(fixelcorrespondence/default)
 
 add_bash_binary_test(fixelcrop/default)
@@ -146,6 +153,9 @@ add_bash_binary_test(fixelfilter/smooth_inputfile)
 add_bash_binary_test(fixelfilter/smooth_masked)
 
 add_bash_binary_test(fixelreorient/default)
+
+add_bash_binary_test(fixeltransform/default)
+add_bash_binary_test(fixeltransform/noop)
 
 add_bash_binary_test(fod2dec/anat_combo)
 add_bash_binary_test(fod2dec/anat_default)
@@ -386,11 +396,6 @@ add_bash_binary_test(sh2power/default)
 
 add_bash_binary_test(sh2response/default)
 
-add_bash_binary_test(shbasis/new2new)
-add_bash_binary_test(shbasis/new2old)
-add_bash_binary_test(shbasis/old2new)
-add_bash_binary_test(shbasis/old2old)
-
 add_bash_binary_test(shconv/default)
 add_bash_binary_test(shconv/msmt)
 
@@ -418,6 +423,7 @@ add_bash_binary_test(tckgen/algorithm_tensordet)
 add_bash_binary_test(tckgen/algorithm_tensorprob)
 add_bash_binary_test(tckgen/backtrack)
 add_bash_binary_test(tckgen/multithreading)
+add_bash_binary_test(tckgen/output_stats)
 add_bash_binary_test(tckgen/seed_dynamic)
 add_bash_binary_test(tckgen/seed_gmwmi)
 add_bash_binary_test(tckgen/seed_grid_per_voxel)

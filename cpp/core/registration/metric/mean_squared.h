@@ -20,9 +20,7 @@
 #include "registration/metric/linear_base.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 
 class MeanSquared : public LinearBase {
 public:
@@ -41,13 +39,13 @@ public:
     Eigen::Matrix<typename Params::Im2ValueType, 1, 3> im2_grad;
 
     params.im1_image_interp->value_and_gradient_wrt_scanner(im1_value, im1_grad);
-    if (std::isnan(default_type(im1_value)))
+    if (std::isnan(im1_value))
       return 0.0;
     params.im2_image_interp->value_and_gradient_wrt_scanner(im2_value, im2_grad);
-    if (std::isnan(default_type(im2_value)))
+    if (std::isnan(im2_value))
       return 0.0;
 
-    default_type diff = (default_type)im1_value - (default_type)im2_value;
+    const default_type diff = static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value);
 
     const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params(midway_point);
     const Eigen::Vector3d g = diff * (im1_grad + im2_grad);
@@ -55,7 +53,7 @@ public:
     gradient.segment<4>(4) += g(1) * jacobian_vec;
     gradient.segment<4>(8) += g(2) * jacobian_vec;
 
-    return diff * diff;
+    return Math::pow2(diff);
   }
 };
 
@@ -74,13 +72,13 @@ public:
     typename Params::Im2ValueType im2_value;
 
     im1_value = params.im1_image_interp->value();
-    if (std::isnan(default_type(im1_value)))
+    if (std::isnan(im1_value))
       return 0.0;
     im2_value = params.im2_image_interp->value();
-    if (std::isnan(default_type(im2_value)))
+    if (std::isnan(im2_value))
       return 0.0;
 
-    default_type diff = (default_type)im1_value - (default_type)im2_value;
+    default_type diff = static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value);
 
     return diff * diff;
   }
@@ -103,11 +101,11 @@ public:
     assert(!this->weighted && "FIXME: set_weights not implemented for 3D metric");
 
     typename Params::Im1ValueType im1_value;
-    default_type im2_value;
+    typename Params::Im2ValueType im2_value;
     Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad;
 
     params.im1_image_interp->value_and_gradient_wrt_scanner(im1_value, im1_grad);
-    if (std::isnan(default_type(im1_value)))
+    if (std::isnan(im1_value))
       return 0.0;
 
     assert(params.im2_image.index(0) ==
@@ -121,7 +119,7 @@ public:
     if (std::isnan(im2_value))
       return 0.0;
 
-    default_type diff = (default_type)im1_value - im2_value;
+    const default_type diff = static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value);
 
     const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params(im2_point);
     const Eigen::Vector3d g = 2.0 * diff * im1_grad;
@@ -129,7 +127,7 @@ public:
     gradient.segment<4>(4) += g(1) * jacobian_vec;
     gradient.segment<4>(8) += g(2) * jacobian_vec;
 
-    return diff * diff;
+    return Math::pow2(diff);
   }
 };
 
@@ -336,6 +334,5 @@ private:
   Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
   Eigen::VectorXd diff_values;
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+
+} // namespace MR::Registration::Metric

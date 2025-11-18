@@ -16,9 +16,7 @@
 
 #pragma once
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 
 class LinearBase {
 
@@ -65,6 +63,4 @@ protected:
   bool weighted;
 };
 
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Metric

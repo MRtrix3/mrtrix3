@@ -32,7 +32,7 @@ class FACT : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set), num_vec(source.size(3) / 3) {
 
       if (source.size(3) % 3)
@@ -44,7 +44,10 @@ public:
       if (rk4)
         throw Exception("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-      set_step_and_angle(Defaults::stepsize_voxels_firstorder, Defaults::angle_deterministic, false);
+      set_step_and_angle(Defaults::stepsize_voxels_firstorder,
+                         Defaults::angle_deterministic,
+                         intrinsic_integration_order_t::FIRST,
+                         curvature_constraint_t::POSTHOC_THRESHOLD);
       set_num_points();
       set_cutoff(Defaults::cutoff_fixel * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
       dot_threshold = std::cos(max_angle_1o);
@@ -76,15 +79,15 @@ public:
 
   term_t next() override {
     if (!get_data(source))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
 
     const float max_norm = select_fixel(dir);
 
     if (max_norm < S.threshold)
-      return MODEL;
+      return term_t::MODEL;
 
     pos += S.step_size * dir;
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {
@@ -107,7 +110,7 @@ protected:
       Eigen::Vector3f v(values[3 * n], values[3 * n + 1], values[3 * n + 2]);
       float norm = v.norm();
       float dot = v.dot(d) / norm;
-      float abs_dot = abs(dot);
+      float abs_dot = std::fabs(dot);
       if (abs_dot < S.dot_threshold)
         continue;
       if (max_abs_dot < abs_dot) {

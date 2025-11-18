@@ -21,7 +21,6 @@
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/welch_satterthwaite.h"
-#include "misc/bitset.h"
 #include "thread_queue.h"
 
 #define MRTRIX_USE_ZSTATISTIC_LOOKUP
@@ -30,18 +29,18 @@
 
 namespace MR::Math::Stats::GLM {
 
-const char *const column_ones_description =
-    "In some software packages, a column of ones is automatically added to the "
-    "GLM design matrix; the purpose of this column is to estimate the \"global "
-    "intercept\", which is the predicted value of the observed variable if all "
-    "explanatory variables were to be zero. However there are rare situations "
-    "where including such a column would not be appropriate for a particular "
-    "experimental design. Hence, in MRtrix3 statistical inference commands, "
-    "it is up to the user to determine whether or not this column of ones should "
-    "be included in their design matrix, and add it explicitly if necessary. "
-    "The contrast matrix must also reflect the presence of this additional column.";
+const std::string
+    column_ones_description("In some software packages, a column of ones is automatically added to the "
+                            "GLM design matrix; the purpose of this column is to estimate the \"global "
+                            "intercept\", which is the predicted value of the observed variable if all "
+                            "explanatory variables were to be zero. However there are rare situations "
+                            "where including such a column would not be appropriate for a particular "
+                            "experimental design. Hence, in MRtrix3 statistical inference commands, "
+                            "it is up to the user to determine whether or not this column of ones should "
+                            "be included in their design matrix, and add it explicitly if necessary. "
+                            "The contrast matrix must also reflect the presence of this additional column.");
 
-App::OptionGroup glm_options(const std::string &element_name) {
+App::OptionGroup glm_options(std::string_view element_name) {
   using namespace App;
   // clang-format off
   OptionGroup result =
@@ -62,7 +61,7 @@ App::OptionGroup glm_options(const std::string &element_name) {
                " do not perform statistical inference on entries in the contrast matrix")
       + Option("column",
                "add a column to the design matrix"
-               " corresponding to subject " + element_name + "-wise values"
+               " corresponding to subject " + std::string(element_name) + "-wise values"
                " (note that the contrast matrix must include an additional column for each use of this option);"
                " the text file provided via this option should contain a file name for each subject").allow_multiple()
         + Argument("path").type_file_in();
@@ -71,8 +70,7 @@ App::OptionGroup glm_options(const std::string &element_name) {
 }
 
 void check_design(const matrix_type &design, const bool extra_factors) {
-  Eigen::ColPivHouseholderQR<matrix_type> decomp;
-  decomp.setThreshold(1e-5);
+  Eigen::FullPivHouseholderQR<matrix_type> decomp;
   decomp = decomp.compute(design);
   if (decomp.rank() < design.cols()) {
     if (extra_factors) {
@@ -107,7 +105,7 @@ index_array_type load_variance_groups(const index_type num_inputs) {
     return index_array_type();
   try {
     auto data = File::Matrix::load_vector<index_type>(opt[0][0]);
-    if (index_type(data.size()) != num_inputs)
+    if (static_cast<index_type>(data.size()) != num_inputs)
       throw Exception("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\"" + //
                       " (" + str(data.size()) + ")" +                                                 //
                       " does not match number of inputs" +                                            //
@@ -122,9 +120,9 @@ index_array_type load_variance_groups(const index_type num_inputs) {
       return index_array_type();
     }
     std::vector<index_type> count_per_group(max_coeff + 1, 0);
-    for (index_type i = 0; i != index_type(data.size()); ++i)
+    for (Eigen::Index i = 0; i != data.size(); ++i)
       count_per_group[data[i]]++;
-    for (index_type vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
+    for (Eigen::Index vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
       if (!count_per_group[vg_index])
         throw Exception("No entries found for variance group " + str(vg_index));
     }
@@ -136,11 +134,11 @@ index_array_type load_variance_groups(const index_type num_inputs) {
   }
 }
 
-std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
+std::vector<Hypothesis> load_hypotheses(std::string_view file_path) {
   std::vector<Hypothesis> hypotheses;
   const matrix_type contrast_matrix = File::Matrix::load_matrix(file_path);
-  for (index_type row = 0; row != index_type(contrast_matrix.rows()); ++row)
-    hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), row));
+  for (Eigen::Index row = 0; row != contrast_matrix.rows(); ++row)
+    hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), static_cast<index_type>(row)));
   auto opt = App::get_options("ftests");
   if (!opt.empty()) {
     const matrix_type ftest_matrix = File::Matrix::load_matrix(opt[0][0]);
@@ -151,12 +149,12 @@ std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
                       " (" + str(contrast_matrix.rows()) + ")");            //
     if (!((ftest_matrix.array() == 0.0) + (ftest_matrix.array() == 1.0)).all())
       throw Exception("F-test array must contain ones and zeros only");
-    for (index_type ftest_index = 0; ftest_index != index_type(ftest_matrix.rows()); ++ftest_index) {
+    for (Eigen::Index ftest_index = 0; ftest_index != ftest_matrix.rows(); ++ftest_index) {
       if (!ftest_matrix.row(ftest_index).count())
         throw Exception("Row " + str(ftest_index + 1) + " of F-test matrix does not contain any ones");
       matrix_type this_f_matrix(ftest_matrix.row(ftest_index).count(), contrast_matrix.cols());
-      index_type ftest_row = 0;
-      for (index_type contrast_row = 0; contrast_row != index_type(contrast_matrix.rows()); ++contrast_row) {
+      Eigen::Index ftest_row = 0;
+      for (Eigen::Index contrast_row = 0; contrast_row != contrast_matrix.rows(); ++contrast_row) {
         if (ftest_matrix(ftest_index, contrast_row))
           this_f_matrix.row(ftest_row++) = contrast_matrix.row(contrast_row);
       }
@@ -164,7 +162,7 @@ std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
     }
     if (!App::get_options("fonly").empty()) {
       std::vector<Hypothesis> new_hypotheses;
-      for (index_type index = contrast_matrix.rows(); index != hypotheses.size(); ++index)
+      for (size_t index = static_cast<size_t>(contrast_matrix.rows()); index != hypotheses.size(); ++index)
         new_hypotheses.push_back(std::move(hypotheses[index]));
       std::swap(hypotheses, new_hypotheses);
     }
@@ -181,7 +179,7 @@ matrix_type solve_betas(const matrix_type &measurements, const matrix_type &desi
 
 vector_type abs_effect_size(const matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis) {
   if (hypothesis.is_F())
-    return vector_type::Constant(measurements.rows(), NaN);
+    return vector_type::Constant(measurements.rows(), std::numeric_limits<vector_type::Scalar>::quiet_NaN());
   else
     return hypothesis.matrix() * solve_betas(measurements, design);
 }
@@ -197,7 +195,7 @@ abs_effect_size(const matrix_type &measurements, const matrix_type &design, cons
 matrix_type stdev(const matrix_type &measurements, const matrix_type &design) {
   const matrix_type residuals = measurements - design * solve_betas(measurements, design);
   const matrix_type sse = residuals.colwise().squaredNorm();
-  return (sse.array() / value_type(design.rows() - Math::rank(design))).sqrt();
+  return (sse.array() / static_cast<value_type>(design.rows() - Math::rank(design))).sqrt();
 }
 
 matrix_type stdev(const matrix_type &measurements, const matrix_type &design, const index_array_type &variance_groups) {
@@ -215,13 +213,13 @@ matrix_type stdev(const matrix_type &measurements, const matrix_type &design, co
   // Sum of residual-forming matrix diagonal elements within each variance group
   //   will be equivalent across elements
   vector_type Rnn_sums(vector_type::Zero(num_vgs));
-  for (index_type i = 0; i != index_type(measurements.rows()); ++i)
+  for (Eigen::Index i = 0; i != measurements.rows(); ++i)
     Rnn_sums[variance_groups[i]] += R.diagonal()[i];
   // For each variance group, get the sum of squared residuals within that group
   matrix_type result(num_vgs, measurements.cols());
-  for (index_type ie = 0; ie != index_type(measurements.cols()); ++ie) {
+  for (Eigen::Index ie = 0; ie != measurements.cols(); ++ie) {
     vector_type sse(vector_type::Zero(num_vgs));
-    for (index_type i = 0; i != index_type(measurements.rows()); ++i)
+    for (Eigen::Index i = 0; i != measurements.rows(); ++i)
       sse[variance_groups[i]] += Math::pow2(e(i, ie));
     // (Rnn_sum / sse) is the inverse of the estimated variance
     result.col(ie) = (sse.array() / Rnn_sums.array()).sqrt();
@@ -231,7 +229,7 @@ matrix_type stdev(const matrix_type &measurements, const matrix_type &design, co
 
 vector_type std_effect_size(const matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis) {
   if (hypothesis.is_F())
-    return vector_type::Constant(measurements.cols(), NaN);
+    return vector_type::Constant(measurements.cols(), std::numeric_limits<vector_type::Scalar>::quiet_NaN());
   return abs_effect_size(measurements, design, hypothesis).array() / stdev(measurements, design).array().col(0);
 }
 
@@ -271,7 +269,7 @@ void all_stats(const matrix_type &measurements,
   abs_effect_size.resize(measurements.cols(), hypotheses.size());
   for (index_type ic = 0; ic != hypotheses.size(); ++ic) {
     if (hypotheses[ic].is_F()) {
-      abs_effect_size.col(ic).fill(NaN);
+      abs_effect_size.col(ic).fill(std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
     } else {
       abs_effect_size.col(ic) = (hypotheses[ic].matrix() * betas).row(0);
     }
@@ -301,7 +299,8 @@ void all_stats(const matrix_type &measurements,
     ++*progress;
 #endif
   if (variance_groups.size())
-    std_effect_size = matrix_type::Constant(measurements.cols(), hypotheses.size(), NaN);
+    std_effect_size = matrix_type::Constant(
+        measurements.cols(), hypotheses.size(), std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
   else
     std_effect_size = abs_effect_size.array().colwise() / stdev.transpose().array().col(0);
 #ifdef GLM_ALL_STATS_DEBUG
@@ -371,7 +370,7 @@ void all_stats(const matrix_type &measurements,
           global_std_effect_size(std_effect_size),
           global_stdev(stdev),
           num_vgs(variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1) {
-      assert(index_type(design_fixed.cols()) + extra_data.size() == index_type(hypotheses[0].cols()));
+      assert(design_fixed.cols() + extra_data.size() == hypotheses[0].cols());
     }
     bool operator()(const index_type &element_index) {
       const matrix_type element_data = data.col(element_index);
@@ -384,7 +383,7 @@ void all_stats(const matrix_type &measurements,
       // For each element-wise design matrix, remove any NaN values
       //   present in either the input data or imported from the element-wise design matrix column data
       index_type valid_rows = 0;
-      for (index_type row = 0; row != index_type(data.rows()); ++row) {
+      for (Eigen::Index row = 0; row != data.rows(); ++row) {
         if (std::isfinite(element_data(row)) && element_design.row(row).allFinite())
           ++valid_rows;
       }
@@ -409,7 +408,7 @@ void all_stats(const matrix_type &measurements,
         matrix_type element_design_finite(valid_rows, element_design.cols());
         index_array_type variance_groups_finite(variance_groups.size() ? valid_rows : 0);
         index_type output_row = 0;
-        for (index_type row = 0; row != index_type(data.rows()); ++row) {
+        for (Eigen::Index row = 0; row != data.rows(); ++row) {
           if (std::isfinite(element_data(row)) && element_design.row(row).allFinite()) {
             element_data_finite(output_row, 0) = element_data(row);
             element_design_finite.row(output_row) = element_design.row(row);
@@ -466,7 +465,8 @@ void all_stats(const matrix_type &measurements,
       local_stdev = matrix_type::Zero(num_vgs, 1);
       for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
         if (hypotheses[ih].is_F())
-          local_abs_effect_size(0, ih) = local_std_effect_size(0, ih) = NaN;
+          local_abs_effect_size(0, ih) = local_std_effect_size(0, ih) =
+              std::numeric_limits<matrix_type::Scalar>::quiet_NaN();
       }
     }
   };
@@ -548,7 +548,7 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(const matrix_type &measurements,
 void TestFixedHomoscedastic::operator()(const matrix_type &shuffling_matrix,
                                         matrix_type &stats,
                                         matrix_type &zstats) const {
-  assert(index_type(shuffling_matrix.rows()) == num_inputs());
+  assert(static_cast<index_type>(shuffling_matrix.rows()) == num_inputs());
   stats.resize(num_elements(), num_hypotheses());
   zstats.resize(num_elements(), num_hypotheses());
 
@@ -591,7 +591,7 @@ void TestFixedHomoscedastic::operator()(const matrix_type &shuffling_matrix,
     VAR(one_over_dof);
 #endif
     const index_type dof = num_inputs() - partitions[ih].rank_x - partitions[ih].rank_z;
-    const default_type one_over_dof = 1.0 / default_type(dof);
+    const default_type one_over_dof = 1.0 / static_cast<default_type>(dof);
     sse = (Rm * Sy).colwise().squaredNorm();
 #ifdef GLM_TEST_DEBUG
     VAR(dof);
@@ -652,7 +652,7 @@ TestFixedHeteroscedastic::TestFixedHeteroscedastic(const matrix_type &measuremen
   // Multiplication term for calculation of gamma; unique for each hypothesis
   for (index_type ih = 0; ih != c.size(); ++ih) {
     const index_type s = c[ih].rank();
-    gamma_weights[ih] = 2.0 * (s - 1) / default_type(s * (s + 2));
+    gamma_weights[ih] = 2.0 * (s - 1) / static_cast<default_type>(s * (s + 2));
   }
 #ifdef GLM_TEST_DEBUG
   VAR(gamma_weights);
@@ -662,7 +662,7 @@ TestFixedHeteroscedastic::TestFixedHeteroscedastic(const matrix_type &measuremen
 void TestFixedHeteroscedastic::operator()(const matrix_type &shuffling_matrix,
                                           matrix_type &stats,
                                           matrix_type &zstats) const {
-  assert(index_type(shuffling_matrix.rows()) == num_inputs());
+  assert(static_cast<index_type>(shuffling_matrix.rows()) == num_inputs());
   stats.resize(num_elements(), num_hypotheses());
   zstats.resize(num_elements(), num_hypotheses());
 
@@ -749,7 +749,7 @@ void TestFixedHeteroscedastic::operator()(const matrix_type &shuffling_matrix,
       } else {
         stats(ie, ih) = c[ih].is_F() ? G : std::sqrt(G) * ((c[ih].matrix() * lambdas.col(ie)).sum() > 0.0 ? 1.0 : -1.0);
         if (c[ih].is_F() && c[ih].rank() > 1) {
-          const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
+          const default_type dof = 2.0 * static_cast<default_type>(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
 #ifdef GLM_TEST_DEBUG
           VAR(dof);
 #endif
@@ -785,7 +785,7 @@ TestVariableHomoscedastic::TestVariableHomoscedastic(const std::vector<CohortDat
       nans_in_columns(nans_in_columns) {
   // Make sure that the specified contrast matrix reflects the full design matrix (with additional
   //   data loaded)
-  assert(index_type(hypotheses[0].cols()) == index_type(M.cols()) + importers.size());
+  assert(hypotheses[0].cols() == M.cols() + Eigen::Index(importers.size()));
 }
 
 void TestVariableHomoscedastic::operator()(const matrix_type &shuffling_matrix,
@@ -796,7 +796,7 @@ void TestVariableHomoscedastic::operator()(const matrix_type &shuffling_matrix,
 
   matrix_type dof(num_elements(), num_hypotheses());
   matrix_type extra_column_data(num_inputs(), importers.size());
-  BitSet element_mask(num_inputs());
+  element_mask_type element_mask(element_mask_type::Zero(num_inputs()));
   matrix_type shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
   vector_type y_masked, Sy, lambda;
   matrix_type XtX, beta;
@@ -838,7 +838,7 @@ void TestVariableHomoscedastic::operator()(const matrix_type &shuffling_matrix,
     if (finite_count < std::min(num_inputs(), 2 * num_factors())) {
       stats.row(ie).setZero();
       zstats.row(ie).setZero();
-      dof.row(ie).fill(NaN);
+      dof.row(ie).fill(std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
     } else {
       apply_mask(element_mask,
                  y.col(ie),
@@ -857,7 +857,7 @@ void TestVariableHomoscedastic::operator()(const matrix_type &shuffling_matrix,
       if (!std::isfinite(condition_number) || condition_number > 1e5) {
         stats.row(ie).fill(0.0);
         zstats.row(ie).fill(0.0);
-        dof.row(ie).fill(NaN);
+        dof.row(ie).fill(std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
       } else {
 
         pinvMfull_masked = Math::pinv(Mfull_masked);
@@ -917,8 +917,10 @@ void TestVariableHomoscedastic::operator()(const matrix_type &shuffling_matrix,
 
 } // End functor
 
-void TestVariableHomoscedastic::get_mask(const index_type ie, BitSet &mask, const matrix_type &extra_data) const {
-  mask.clear(true);
+void TestVariableHomoscedastic::get_mask(const index_type ie,
+                                         element_mask_type &mask,
+                                         const matrix_type &extra_data) const {
+  mask.setOnes();
   if (nans_in_data) {
     for (index_type row = 0; row != num_inputs(); ++row) {
       if (!std::isfinite(y(row, ie)))
@@ -933,7 +935,7 @@ void TestVariableHomoscedastic::get_mask(const index_type ie, BitSet &mask, cons
   }
 }
 
-void TestVariableHomoscedastic::apply_mask(const BitSet &mask,
+void TestVariableHomoscedastic::apply_mask(const element_mask_type &mask,
                                            matrix_type::ConstColXpr data,
                                            const matrix_type &shuffling_matrix,
                                            const matrix_type &extra_column_data,
@@ -955,7 +957,7 @@ void TestVariableHomoscedastic::apply_mask(const BitSet &mask,
 
     Mfull_masked.resize(finite_count, num_factors());
     data_masked.resize(finite_count);
-    BitSet perm_matrix_mask(num_inputs(), true);
+    element_mask_type perm_matrix_mask(element_mask_type::Ones(num_inputs()));
     index_type out_index = 0;
     for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
       if (mask[in_index]) {
@@ -966,7 +968,7 @@ void TestVariableHomoscedastic::apply_mask(const BitSet &mask,
         // Any row in the permutation matrix that contains a non-zero entry
         //   in the column corresponding to in_row needs to be removed
         //   from the permutation matrix
-        for (index_type perm_row = 0; perm_row != index_type(shuffling_matrix.rows()); ++perm_row) {
+        for (Eigen::Index perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
           if (shuffling_matrix(perm_row, in_index))
             perm_matrix_mask[perm_row] = false;
         }
@@ -1008,7 +1010,7 @@ TestVariableHeteroscedastic::TestVariableHeteroscedastic(const std::vector<Cohor
       gamma_weights(vector_type::Zero(num_hypotheses())) {
   for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
     const index_type s = c[ih].rank();
-    gamma_weights[ih] = 2.0 * (s - 1) / default_type(s * (s + 2));
+    gamma_weights[ih] = 2.0 * (s - 1) / static_cast<default_type>(s * (s + 2));
   }
 }
 
@@ -1019,7 +1021,7 @@ void TestVariableHeteroscedastic::operator()(const matrix_type &shuffling_matrix
   zstats.resize(num_elements(), num_hypotheses());
 
   matrix_type extra_column_data(num_inputs(), importers.size());
-  BitSet element_mask(num_inputs());
+  element_mask_type element_mask(num_inputs(), false);
   matrix_type Mfull_masked, shuffling_matrix_masked, pinvMfull_masked, Rm;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> W;
   index_array_type VG_masked, VG_counts;
@@ -1101,7 +1103,7 @@ void TestVariableHeteroscedastic::operator()(const matrix_type &shuffling_matrix
               stats(ie, ih) =
                   c[ih].is_F() ? G : std::sqrt(G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
               if (c[ih].is_F() && c[ih].rank() > 1) {
-                const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
+                const default_type dof = 2.0 * static_cast<default_type>(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
                 zstats(ie, ih) = stat2z->F2z(G, c[ih].rank(), dof);
               } else {
                 const default_type dof = Math::welch_satterthwaite(Wterms.inverse(), VG_counts);
@@ -1128,19 +1130,19 @@ void TestVariableHeteroscedastic::operator()(const matrix_type &shuffling_matrix
   } // End looping over elements
 }
 
-void TestVariableHeteroscedastic::apply_mask_VG(const BitSet &mask,
+void TestVariableHeteroscedastic::apply_mask_VG(const element_mask_type &mask,
                                                 index_array_type &VG_masked,
                                                 index_array_type &VG_counts) const {
   VG_masked.resize(mask.count());
   VG_counts = index_array_type::Zero(num_vgs);
-  index_type out_index = 0;
+  Eigen::Index out_index = 0;
   for (index_type in_index = 0; in_index != mask.size(); ++in_index) {
     if (mask[in_index]) {
       VG_masked[out_index++] = VG[in_index];
       VG_counts[VG[in_index]]++;
     }
   }
-  assert(out_index == index_type(VG_masked.size()));
+  assert(out_index == VG_masked.size());
 }
 
 } // namespace MR::Math::Stats::GLM

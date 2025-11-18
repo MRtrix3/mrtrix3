@@ -76,7 +76,7 @@ public:
     (*this)(3, 3) = 1.0f;
   }
   template <class M> mat4(const M &a) {
-    for (size_t i = 0; i != size_t(a.rows()); ++i) {
+    for (size_t i = 0; i != static_cast<size_t>(a.rows()); ++i) {
       for (size_t j = 0; j != 4; ++j)
         (*this)(i, j) = a(i, j);
     }

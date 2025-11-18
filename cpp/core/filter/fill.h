@@ -43,21 +43,19 @@ class Fill : public Base {
 
 public:
   template <class HeaderType>
-  Fill(const HeaderType &in) : Base(in), enabled_axes(ndim(), true), do_26_connectivity(false) {
+  Fill(const HeaderType &in) : Base(in), enabled_axes(axis_mask_type::Ones(ndim())), do_26_connectivity(false) {
     check_3D_nonunity(in);
     datatype_ = DataType::Bit;
   }
 
-  template <class HeaderType> Fill(const HeaderType &in, const std::string &message) : Fill(in) {
-    set_message(message);
-  }
+  template <class HeaderType> Fill(const HeaderType &in, std::string_view message) : Fill(in) { set_message(message); }
 
   void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());
     if (max_axis >= ndim())
       throw Exception("Requested axis for interior-filling filter (" + str(max_axis) +
                       " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
-    enabled_axes.assign(std::max(max_axis + 1, size_t(ndim())), false);
+    enabled_axes = axis_mask_type::Zero(std::max(max_axis + 1, static_cast<size_t>(ndim())));
     for (const auto &axis : i) {
       if (axis < 0)
         throw Exception("Cannot specify negative axis index for interior-filling filter");
@@ -87,7 +85,7 @@ public:
   }
 
 protected:
-  std::vector<bool> enabled_axes;
+  axis_mask_type enabled_axes;
   bool do_26_connectivity;
 };
 //! @}

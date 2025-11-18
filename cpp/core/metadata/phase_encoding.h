@@ -36,6 +36,8 @@ extern const App::OptionGroup ExportOptions;
 
 using scheme_type = Eigen::MatrixXd;
 
+constexpr default_type trt_tolerance = 1e-3;
+
 //! check that a phase-encoding table is valid
 void check(const scheme_type &PE);
 
@@ -89,9 +91,9 @@ scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header 
 void transform_for_nifti_write(KeyValues &keyval, const Header &H);
 scheme_type transform_for_nifti_write(const scheme_type &pe_scheme, const Header &H);
 
-void save_table(const scheme_type &PE, const std::string &path, bool write_command_history);
+void save_table(const scheme_type &PE, std::string_view path, bool write_command_history);
 
-template <class HeaderType> void save_table(const HeaderType &header, const std::string &path) {
+template <class HeaderType> void save_table(const HeaderType &header, std::string_view path) {
   const scheme_type scheme = get_scheme(header);
   if (scheme.rows() == 0)
     throw Exception("No phase encoding scheme in header of image \"" + header.name() + "\" to save");
@@ -103,7 +105,7 @@ template <class HeaderType> void save_table(const HeaderType &header, const std:
 //   only if the output target image is a NIfTI,
 //   for this function to operate as intended it is necessary for it to be executed
 //   after having set the output file name in the image header
-template <class HeaderType> void save_table(const scheme_type &PE, const HeaderType &header, const std::string &path) {
+template <class HeaderType> void save_table(const scheme_type &PE, const HeaderType &header, std::string_view path) {
   try {
     check(PE, header);
   } catch (Exception &e) {
@@ -113,7 +115,7 @@ template <class HeaderType> void save_table(const scheme_type &PE, const HeaderT
   if (Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
     // clang-format off
     WARN("External phase encoding table \"" + path + "\""
-         " for image \"" + header.name() + "\""
+         " for image \"" + std::string(header.name()) + "\""
          " may not be suitable for FSL topup;"
          " consider use of -export_pe_topup instead"
          " (see: mrtrix.readthedocs.org/en/"
@@ -127,7 +129,7 @@ template <class HeaderType> void save_table(const scheme_type &PE, const HeaderT
   }
 }
 
-template <class HeaderType> void save_topup(const scheme_type &PE, const HeaderType &header, const std::string &path) {
+template <class HeaderType> void save_topup(const scheme_type &PE, const HeaderType &header, std::string_view path) {
   try {
     check(PE, header);
   } catch (Exception &e) {
@@ -158,8 +160,8 @@ template <class HeaderType> void save_topup(const scheme_type &PE, const HeaderT
 template <class HeaderType>
 void save_eddy(const scheme_type &PE,
                const HeaderType &header,
-               const std::string &config_path,
-               const std::string &index_path) {
+               std::string_view config_path,
+               std::string_view index_path) {
   if (!Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
     WARN("Exporting phase encoding table to FSL eddy format"  //
          " in conjunction with format other than MGH / NIfTI" //
@@ -186,12 +188,12 @@ void save_eddy(const scheme_type &PE,
 void export_commandline(const Header &);
 
 //! Load a phase-encoding scheme from a matrix text file
-scheme_type load_table(const std::string &path, const Header &header);
+scheme_type load_table(std::string_view path, const Header &header);
 
 //! Load a phase-encoding scheme from a FSL topup format text file
-scheme_type load_topup(const std::string &path, const Header &header);
+scheme_type load_topup(std::string_view path, const Header &header);
 
 //! Load a phase-encoding scheme from an EDDY-format config / indices file pair
-scheme_type load_eddy(const std::string &config_path, const std::string &index_path, const Header &header);
+scheme_type load_eddy(std::string_view config_path, std::string_view index_path, const Header &header);
 
 } // namespace MR::Metadata::PhaseEncoding

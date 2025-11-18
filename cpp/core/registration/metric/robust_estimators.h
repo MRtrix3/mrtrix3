@@ -16,16 +16,15 @@
 
 #pragma once
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 template <typename T> inline int sgn(T val) { return (T(0) < val) - (val < T(0)); }
-} // namespace Math
-namespace Registration {
-namespace Metric {
+} // namespace MR::Math
+
+namespace MR::Registration::Metric {
 class L1 {
 public:
   void operator()(const default_type &x, default_type &residual, default_type &slope) {
-    residual = abs(x);
+    residual = std::fabs(x);
     slope = Math::sgn(x);
   }
 
@@ -63,8 +62,8 @@ public:
   LP() : power(1.2) {}
 
   void operator()(const default_type &x, default_type &residual, default_type &slope) {
-    residual = std::pow(abs(x), power);
-    slope = Math::sgn(x) * std::pow(abs(x), power - 1.0);
+    residual = std::pow(std::fabs(x), power);
+    slope = Math::sgn(x) * std::pow(std::fabs(x), power - 1.0);
   }
 
   void operator()(const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &x,
@@ -82,6 +81,4 @@ private:
   default_type power;
 };
 
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Metric

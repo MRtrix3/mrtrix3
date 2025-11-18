@@ -47,8 +47,8 @@ void usage() {
   + Fixel::format_description;
 
   ARGUMENTS
-  + Argument ("in",  "the input fixel information").type_various ()
-  + Argument ("out", "the output peaks image").type_image_out ();
+  + Argument ("in",  "the input fixel information").type_directory_in().type_image_in()
+  + Argument ("out", "the output peaks image").type_image_out();
 
   OPTIONS
   + Option ("number", "maximum number of fixels in each voxel"
@@ -84,7 +84,7 @@ void run() {
       index_header = Fixel::find_index_header(argument[0]);
       directions_header = Fixel::find_directions_header(argument[0]);
     } catch (Exception &e_asdir) {
-      Exception e("Could not locate fixel data based on input string \"" + argument[0] + "\"");
+      Exception e("Could not locate fixel data based on input string \"" + std::string(argument[0]) + "\"");
       e.push_back("Error when interpreting as image: ");
       for (size_t i = 0; i != e_asimage.num(); ++i)
         e.push_back("  " + e_asimage[i]);
@@ -107,7 +107,7 @@ void run() {
     max_fixel_count = opt[0][0];
   } else {
     for (auto l = Loop(index_image, 0, 3)(index_image); l; ++l)
-      max_fixel_count = std::max(max_fixel_count, index_type(index_image.value()));
+      max_fixel_count = std::max(max_fixel_count, static_cast<index_type>(index_image.value()));
     INFO("Maximum number of fixels in any given voxel: " + str(max_fixel_count));
   }
 
@@ -118,7 +118,7 @@ void run() {
   out_header.name() = std::string(argument[1]);
   Image<float> out_image(Image<float>::create(argument[1], out_header));
 
-  const float fill = !get_options("nan").empty() ? NaN : 0.0F;
+  const float fill = !get_options("nan").empty() ? NaNF : 0.0F;
 
   if (data_image.valid()) {
     for (auto l = Loop("converting fixel data file to peaks image", index_image, 0, 3)(index_image, out_image); l;

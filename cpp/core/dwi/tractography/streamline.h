@@ -68,6 +68,7 @@ template <typename ValueType = float>
 class Streamline : public std::vector<Eigen::Matrix<ValueType, 3, 1>>, public DataIndex {
 public:
   using point_type = Eigen::Matrix<ValueType, 3, 1>;
+  using tangent_type = point_type;
   using value_type = ValueType;
 
   Streamline() : weight(1.0f) {}
@@ -100,9 +101,6 @@ public:
     weight = 1.0;
   }
 
-  float calc_length() const;
-  float calc_length(const float step_size) const;
-
   float weight;
 };
 
@@ -113,6 +111,29 @@ template <typename PointType> typename PointType::Scalar length(const std::vecto
   for (size_t i = 1; i != tck.size(); ++i)
     value += (tck[i] - tck[i - 1]).norm();
   return value;
+}
+
+template <typename PointType> PointType tangent(const std::vector<PointType> &tck, const size_t index) {
+  assert(index < tck.size());
+  if (tck.size() < 2)
+    return PointType::Constant(std::numeric_limits<typename PointType::Scalar>::quiet_NaN());
+  if (!index)
+    return (tck[1] - tck[0]).normalized();
+  if (index == tck.size() - 1)
+    return (tck[index] - tck[index - 1]).normalized();
+  const PointType offset_prev = tck[index] - tck[index - 1];
+  const PointType offset_next = tck[index + 1] - tck[index];
+  const typename PointType::Scalar dist_prev = offset_prev.norm();
+  const typename PointType::Scalar dist_next = offset_next.norm();
+  if (dist_prev == typename PointType::Scalar(0)) {
+    return (dist_next == typename PointType::Scalar(0)
+                ? PointType::Constant(std::numeric_limits<typename PointType::Scalar>::quiet_NaN())
+                : offset_next.normalized());
+  } else if (dist_next == typename PointType::Scalar(0)) {
+    return offset_prev.normalized();
+  }
+  // Greater weight given to the shorter step
+  return (dist_next * offset_prev.normalized() + dist_prev * offset_next.normalized()).normalized();
 }
 
 } // namespace MR::DWI::Tractography

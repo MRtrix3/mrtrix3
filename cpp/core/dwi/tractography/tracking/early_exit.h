@@ -21,20 +21,15 @@
 #if EIGEN_VERSION_AT_LEAST(3, 3, 0)
 #define TCKGEN_EARLY_EXIT_USE_FULL_BINOMIAL
 #include <unsupported/Eigen/SpecialFunctions>
-#define TCKGEN_EARLY_EXIT_PROB_THRESHOLD 0.001
-#else
-#define TCKGEN_EARLY_EXIT_PROB_THRESHOLD 1e-6
-#define TCKGEN_EARLY_EXIT_ZVALUE -4.753408 // For a p-value of 1e-6; should be negative
 #endif
 
 #include "dwi/tractography/tracking/shared.h"
-
-#define TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE 0.20
 
 namespace MR::DWI::Tractography::Tracking {
 
 class EarlyExit {
 public:
+  static const default_type probability_threshold;
   EarlyExit(const SharedBase &shared)
       : max_num_seeds(shared.max_num_seeds),
         max_num_tracks(shared.max_num_tracks),
@@ -46,6 +41,9 @@ public:
 private:
   const size_t max_num_seeds, max_num_tracks;
   size_t counter, next_test;
+
+  static const default_type zvalue_threshold;
+  static const default_type cease_testing_percentage;
 };
 
 } // namespace MR::DWI::Tractography::Tracking

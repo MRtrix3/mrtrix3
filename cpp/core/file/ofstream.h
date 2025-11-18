@@ -32,11 +32,11 @@ namespace MR::File {
 class OFStream : public std::ofstream {
 public:
   OFStream() {}
-  OFStream(const std::string &path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary) {
+  OFStream(std::string_view path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary) {
     open(path, mode);
   }
 
-  void open(const std::string &path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
+  void open(std::string_view path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
 };
 
 } // namespace MR::File

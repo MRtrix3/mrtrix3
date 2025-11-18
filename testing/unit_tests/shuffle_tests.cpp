@@ -130,7 +130,7 @@ protected:
       blocks[block_indices[i]].insert(i);
   }
 
-  void TestPermutationWithin(Shuffler &in, const std::string &fail_msg) {
+  void TestPermutationWithin(Shuffler &in, std::string_view fail_msg) {
     in.reset();
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
@@ -144,7 +144,7 @@ protected:
     }
   }
 
-  void TestSignflipWhole(Shuffler &in, const std::string &fail_msg) {
+  void TestSignflipWhole(Shuffler &in, std::string_view fail_msg) {
     in.reset();
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
@@ -162,7 +162,7 @@ protected:
     }
   }
 
-  void TestPermutationWhole(Shuffler &in, const std::string &fail_msg) {
+  void TestPermutationWhole(Shuffler &in, std::string_view fail_msg) {
     in.reset();
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
@@ -185,7 +185,7 @@ protected:
     }
   }
 
-  void TestUnique(Shuffler &in, const std::string &fail_msg) {
+  void TestUnique(Shuffler &in, std::string_view fail_msg) {
     in.reset();
     std::vector<Shuffle> matrices;
     Shuffle temp;

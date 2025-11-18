@@ -23,8 +23,8 @@ class QColorButton : public QPushButton {
   Q_PROPERTY(QColor color READ color WRITE setColor)
 
 public:
-  QColorButton(QWidget *parent = NULL, const char *name = NULL);
-  QColorButton(const QColor &c, QWidget *parent = NULL, const char *name = NULL);
+  QColorButton(QWidget *parent = nullptr, const char *name = nullptr);                  // check_syntax off
+  QColorButton(const QColor &c, QWidget *parent = nullptr, const char *name = nullptr); // check_syntax off
   virtual ~QColorButton() {}
 
   QColor color() const { return (col); }

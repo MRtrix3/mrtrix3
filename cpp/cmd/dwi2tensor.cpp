@@ -30,17 +30,7 @@ using namespace App;
 
 using value_type = float;
 
-#define DEFAULT_NITER 2
-
-const char *const encoding_description[] = {
-    "The tensor coefficients are stored in the output image as follows:\n"
-    "volumes 0-5: D11, D22, D33, D12, D13, D23",
-    "If diffusion kurtosis is estimated using the -dkt option, these are stored as follows:\n"
-    "volumes 0-2: W1111, W2222, W3333\n"
-    "volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333\n"
-    "volumes 9-11: W1122, W1133, W2233\n"
-    "volumes 12-14: W1123, W1223, W1233",
-    nullptr};
+constexpr ssize_t default_iterations = 2;
 
 // clang-format off
 void usage() {
@@ -86,7 +76,13 @@ void usage() {
   + "* Monotonic signal decay in the b = [0 b_max] range"
     " (when the -dkt option is provided)."
 
-  + encoding_description;
+  + "The tensor coefficients are stored in the output image as follows:\n"
+    "volumes 0-5: D11, D22, D33, D12, D13, D23;\n"
+    "if diffusion kurtosis is estimated using the -dkt option, these are stored as follows:\n"
+    "volumes 0-2: W1111, W2222, W3333\n"
+    "volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333\n"
+    "volumes 9-11: W1122, W1133, W2233\n"
+    "volumes 12-14: W1123, W1223, W1233";
 
   ARGUMENTS
   + Argument("dwi", "the input dwi image.").type_image_in()
@@ -100,7 +96,7 @@ void usage() {
 
   + Option("iter",
            "number of iterative reweightings for IWLS algorithm"
-           " (default: " + str(DEFAULT_NITER) +")"
+           " (default: " + str(default_iterations) +")"
            " (see Description).")
     + Argument("integer").type_integer(0, 10)
 
@@ -112,7 +108,7 @@ void usage() {
   + Option("directions",
            "specify the directions along which to apply the constraints"
             " (by default, the built-in 300 direction set is used)."
-            " These should be supplied as a text file containing [ az el ] pairs for the directions.")
+            " These should be supplied as a text file containing [ az in ] pairs for the directions.")
     + Argument("file").type_file_in()
 
   + Option("mask",
@@ -290,7 +286,7 @@ void run() {
   const bool ols = !get_options("ols").empty();
 
   // depending on whether first (initialisation) loop should be considered an iteration
-  auto iter = get_option_value("iter", DEFAULT_NITER);
+  auto iter = get_option_value("iter", default_iterations);
 
   Header header_out(header_in);
   header_out.datatype() = DataType::Float32;

@@ -18,11 +18,6 @@
 #include "image.h"
 
 #include "file/matrix.h"
-#include "misc/bitset.h"
-
-#include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
-#include "fixel/legacy/keys.h"
 
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
@@ -40,7 +35,7 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
   for (size_t i = 1; i != fixels.size(); ++i)
     A += fixels[i].get_weight() * Math::pow2(fixels[i].get_FOD());
 
-  A /= double(num_tracks());
+  A /= static_cast<double>(num_tracks());
   INFO("Constant A scaling regularisation terms to match data term is " + str(A));
   reg_multiplier_tikhonov = lambda_tikhonov * A;
   reg_multiplier_tv = lambda_tv * A;
@@ -108,7 +103,7 @@ void TckFactor::test_streamline_length_scaling() {
   const double actual_TD_sum = TD_sum;
   std::ofstream out("mu.csv", std::ios_base::trunc);
   for (int i = -1000; i != 1000; ++i) {
-    const double factor = std::pow(10.0, double(i) / 1000.0);
+    const double factor = std::pow(10.0, static_cast<double>(i) / 1000.0);
     TD_sum = factor * actual_TD_sum;
     out << str(factor) << "," << str(calc_cost_function()) << "\n";
   }
@@ -157,7 +152,7 @@ void TckFactor::calc_afcsa() {
     const double fixed_mu;
   };
   {
-    SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
     Functor functor(*this);
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(functor));
   }
@@ -167,7 +162,7 @@ void TckFactor::calc_afcsa() {
     i->clear_mean_coeff();
   }
   {
-    SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
     FixelUpdater worker(*this);
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
   }
@@ -234,7 +229,7 @@ void TckFactor::estimate_factors() {
 
   // Logging which fixels need to be excluded from optimisation in subsequent iterations,
   //   due to driving streamlines to unwanted high weights
-  BitSet fixels_to_exclude(fixels.size());
+  fixel_mask_type fixels_to_exclude(fixel_mask_type::Zero(fixels.size()));
 
   do {
 
@@ -244,10 +239,10 @@ void TckFactor::estimate_factors() {
     // Line search to optimise each coefficient
     StreamlineStats step_stats, coefficient_stats;
     nonzero_streamlines = 0;
-    fixels_to_exclude.clear();
+    fixels_to_exclude.setZero();
     double sum_costs = 0.0;
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       // CoefficientOptimiserGSS worker (*this, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines,
       // fixels_to_exclude, sum_costs); CoefficientOptimiserQLS worker (*this, /*projected_steps,*/ step_stats,
       // coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
@@ -276,7 +271,7 @@ void TckFactor::estimate_factors() {
       i->clear_mean_coeff();
     }
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       FixelUpdater worker(*this);
       Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
     }
@@ -292,7 +287,7 @@ void TckFactor::estimate_factors() {
     // Log different regularisation costs separately
     double cf_reg_tik = 0.0, cf_reg_tv = 0.0;
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       RegularisationCalculator worker(*this, cf_reg_tik, cf_reg_tv);
       Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
     }
@@ -349,8 +344,8 @@ void TckFactor::report_entropy() const {
        str(equiv_N) + " equally-weighted streamlines");
 }
 
-void TckFactor::output_factors(const std::string &path) const {
-  if (size_t(coefficients.size()) != contributions.size())
+void TckFactor::output_factors(std::string_view path) const {
+  if (static_cast<size_t>(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
   decltype(coefficients) weights;
   try {
@@ -364,11 +359,11 @@ void TckFactor::output_factors(const std::string &path) const {
   File::Matrix::save_vector(weights, path);
 }
 
-void TckFactor::output_coefficients(const std::string &path) const { File::Matrix::save_vector(coefficients, path); }
+void TckFactor::output_coefficients(std::string_view path) const { File::Matrix::save_vector(coefficients, path); }
 
-void TckFactor::output_TD_images(const std::string &dirpath,
-                                 const std::string &origTD_path,
-                                 const std::string &count_path) const {
+void TckFactor::output_TD_images(std::string_view dirpath,
+                                 std::string_view origTD_path,
+                                 std::string_view count_path) const {
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_count;
   H_count.datatype() = DataType::native(DataType::UInt32);
@@ -381,7 +376,7 @@ void TckFactor::output_TD_images(const std::string &dirpath,
   }
 }
 
-void TckFactor::output_all_debug_images(const std::string &dirpath, const std::string &prefix) const {
+void TckFactor::output_all_debug_images(std::string_view dirpath, std::string_view prefix) const {
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 
@@ -417,7 +412,8 @@ void TckFactor::output_all_debug_images(const std::string &dirpath, const std::s
   for (size_t i = 1; i != fixels.size(); ++i) {
     if (!std::isfinite(mins[i]))
       mins[i] = std::numeric_limits<double>::quiet_NaN();
-    stdevs[i] = (fixels[i].get_count() > 1) ? (std::sqrt(stdevs[i] / float(fixels[i].get_count() - 1))) : 0.0;
+    stdevs[i] =
+        (fixels[i].get_count() > 1) ? (std::sqrt(stdevs[i] / static_cast<float>(fixels[i].get_count() - 1))) : 0.0;
     if (!std::isfinite(maxs[i]))
       maxs[i] = std::numeric_limits<double>::quiet_NaN();
   }

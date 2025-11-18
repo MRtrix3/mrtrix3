@@ -38,8 +38,12 @@ const App::OptionGroup ShellsOption =
       + App::Argument("bvalues").type_sequence_float();
 // clang-format on
 
+// CONF option: BValueEpsilon
+// CONF default: 80.0
+// CONF Specifies the difference between b-values necessary for image
+// CONF volumes to be classified as belonging to different shells.
 FORCE_INLINE default_type bvalue_epsilon() {
-  static const default_type value = File::Config::get_float("BValueEpsilon", DWI_SHELLS_EPSILON);
+  static const default_type value = File::Config::get_float("BValueEpsilon", default_shellclustering_epsilon);
   return value;
 }
 
@@ -52,7 +56,7 @@ Shell::Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices)
     min = std::min(min, b);
     max = std::max(min, b);
   }
-  mean /= default_type(volumes.size());
+  mean /= static_cast<default_type>(volumes.size());
   for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
     stdev += Math::pow2(grad(*i, 3) - mean);
   stdev = std::sqrt(stdev / (volumes.size() - 1));
@@ -91,7 +95,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
   if (force_without_bzero && force_with_bzero)
     throw Exception("Incompatible constraints: command tries to enforce proceeding both with and without b=0");
 
-  BitSet to_retain(count(), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> to_retain(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(count()));
 
   auto opt = App::get_options("shells");
   if (!opt.empty()) {
@@ -151,7 +155,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
           size_t best_shell = 0;
           bool ambiguous = false;
           for (size_t s = 0; s != count(); ++s) {
-            if (abs(*b - shells[s].get_mean()) <= 1.0) {
+            if (std::fabs(*b - shells[s].get_mean()) <= 1.0) {
               if (shell_selected) {
                 ambiguous = true;
               } else {
@@ -191,7 +195,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
               const default_type stdev =
                   (shells[s].is_bzero() ? 0.5 * bzero_threshold()
                                         : (zero_stdev ? std::sqrt(shells[s].get_mean()) : shells[s].get_stdev()));
-              const default_type num_stdev = abs((*b - shells[s].get_mean()) / stdev);
+              const default_type num_stdev = std::fabs((*b - shells[s].get_mean()) / stdev);
               if (num_stdev < best_num_stdevs) {
                 ambiguous = (num_stdev >= 0.1 * best_num_stdevs);
                 best_shell = s;
@@ -253,7 +257,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
         to_retain[0] = true;
     } else {
       // default: keep everything
-      to_retain.clear(true);
+      to_retain.setOnes();
     }
 
     if (force_with_bzero && !has_bzero())
@@ -263,7 +267,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
       to_retain[0] = false;
   }
 
-  if (to_retain.full()) {
+  if (to_retain.all()) {
     DEBUG("No DW shells to be removed");
     return *this;
   }
@@ -294,7 +298,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
   std::vector<size_t> clusters(bvals.size(), 0);
   const size_t num_shells = clusterBvalues(bvals, clusters);
 
-  if ((num_shells < 1) || (num_shells > std::sqrt(default_type(grad.rows()))))
+  if ((num_shells < 1) || (num_shells > std::sqrt(static_cast<default_type>(grad.rows()))))
     throw Exception("DWI volumes could not be classified into b-value shells; gradient encoding may not represent a "
                     "HARDI sequence");
 
@@ -338,7 +342,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
 }
 
 size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clusters) const {
-  BitSet visited(bvals.size(), false);
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(bvals.size()));
   size_t clusterIdx = 0;
 
   for (ssize_t ii = 0; ii != bvals.size(); ii++) {
@@ -357,7 +361,7 @@ size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clus
       std::vector<size_t> neighborIdx;
       regionQuery(bvals, b, neighborIdx);
 
-      if (b > bzero_threshold() && neighborIdx.size() < DWI_SHELLS_MIN_LINKAGE) {
+      if (b > bzero_threshold() && neighborIdx.size() < default_shellclustering_minlinkage) {
 
         clusters[ii] = 0;
 
@@ -369,7 +373,7 @@ size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clus
             visited[neighborIdx[i]] = true;
             std::vector<size_t> neighborIdx2;
             regionQuery(bvals, bvals[neighborIdx[i]], neighborIdx2);
-            if (neighborIdx2.size() >= DWI_SHELLS_MIN_LINKAGE)
+            if (neighborIdx2.size() >= default_shellclustering_minlinkage)
               for (size_t j = 0; j != neighborIdx2.size(); j++)
                 neighborIdx.push_back(neighborIdx2[j]);
           }
@@ -385,7 +389,7 @@ size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clus
 
 void Shells::regionQuery(const BValueList &bvals, const default_type b, std::vector<size_t> &idx) const {
   for (ssize_t i = 0; i < bvals.size(); i++) {
-    if (bvals[i] > bzero_threshold() && abs(b - bvals[i]) < bvalue_epsilon())
+    if (bvals[i] > bzero_threshold() && std::fabs(b - bvals[i]) < bvalue_epsilon())
       idx.push_back(i);
   }
 }

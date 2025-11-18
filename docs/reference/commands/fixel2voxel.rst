@@ -6,7 +6,7 @@ fixel2voxel
 Synopsis
 --------
 
-Convert a fixel-based sparse-data image into some form of scalar image
+Aggregate content from a fixel data file into a voxel scalar image
 
 Usage
 --------

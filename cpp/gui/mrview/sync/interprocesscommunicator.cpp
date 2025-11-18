@@ -44,7 +44,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
     // Search for a free id
     QLocalSocket *socket = new QLocalSocket(this);
     freeEntry = -1;
-    for (int i = 0; i < MAX_NO_ALLOWED; i++) {
+    for (int i = 0; i < maximum_instances; i++) {
       QString serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
       socket->connectToServer(serverName);
       socket->waitForConnected();
@@ -86,7 +86,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
   }
 
   // Set up outgoing connections
-  for (int i = 0; i < MAX_NO_ALLOWED; i++) {
+  for (int i = 0; i < maximum_instances; i++) {
     TryConnectTo(i);
   }
 }
@@ -129,13 +129,12 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
       senders.emplace_back(curCl);
 
       // Send it our id so that it connects back to us (i.e. two-way syncing)
-      char a[8];
-      Int32ToChar(a, (int)MessageKey::ConnectedID);
-      char *aOffset = a;
-      aOffset += 4;
-      Int32ToChar(aOffset, id);
+      std::array<char, 8> a;
+      const int32_t connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
+      memcpy(&a[0], &connected_id, 4);
+      memcpy(&a[4], &id, 4);
       QByteArray dat;
-      dat.insert(0, a, 8);
+      dat.insert(0, &a[0], 8);
       curCl->SendData(dat);
     }
     // else we couldn't connect - likely that there was nothing to connect to
@@ -150,28 +149,26 @@ void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteA
 
   for (size_t i = 0; i < allMessages.size(); i++) {
     std::shared_ptr<QByteArray> dat = allMessages[i];
-    char *data = dat->data();
     int dataLength = dat->size();
 
     if (dataLength < 4) {
       DEBUG("Bad data received to interprocesscommunicator: too short");
       continue;
     }
-    int code = CharTo32bitNum(data);
-    data += 4;
+    const int32_t code = *reinterpret_cast<int32_t *>(dat->data());
     dataLength -= 4;
 
     switch (code) {
-    case (int)MessageKey::ConnectedID: {
+    case static_cast<int32_t>(MessageKey::ConnectedID): {
       // The other process has told us to update it when we change our values
-      int idOfOtherProcess = CharTo32bitNum(data);
+      const int32_t idOfOtherProcess = *reinterpret_cast<int32_t *>(dat->data() + 4);
       TryConnectTo(idOfOtherProcess);
       break;
     }
-    case (int)MessageKey::SyncData: {
+    case static_cast<int32_t>(MessageKey::SyncData): {
       // The other process has sent information to sync with
       std::shared_ptr<QByteArray> trimmed = std::shared_ptr<QByteArray>(new QByteArray());
-      trimmed->insert(0, data, dataLength);
+      trimmed->insert(0, dat->data() + 4, dataLength);
       toSync.emplace_back(trimmed);
       break;
     }
@@ -201,10 +198,9 @@ bool InterprocessCommunicator::SendData(QByteArray dat) {
   if (QApplication::activeWindow() != 0 && QApplication::focusWidget() != 0) {
     // make an array: the message key followed by the message
     //--Key
-    char codeAsChar[4];
-    InterprocessCommunicator::Int32ToChar(codeAsChar, (int)MessageKey::SyncData);
+    const int32_t sync_data = static_cast<int32_t>(MessageKey::SyncData);
     QByteArray data;
-    data.insert(0, codeAsChar, 4);
+    data.insert(0, reinterpret_cast<const char *>(&sync_data), 4);
     //--Data
     data.insert(4, dat.data(), dat.size());
 
@@ -225,20 +221,6 @@ bool InterprocessCommunicator::SendData(QByteArray dat) {
     // We are not the active window
     return false;
   }
-}
-
-/**
- * Serialises int as char[]
- */
-void InterprocessCommunicator::Int32ToChar(char a[], int n) { memcpy(a, &n, 4); }
-
-/**
- * Deserialises char[] as int
- */
-int InterprocessCommunicator::CharTo32bitNum(char a[]) {
-  int n = 0;
-  memcpy(&n, a, 4);
-  return n;
 }
 
 } // namespace MR::GUI::MRView::Sync

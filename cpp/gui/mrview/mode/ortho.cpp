@@ -119,7 +119,7 @@ void Ortho::paint(Projection &projection) {
 
 const Projection *Ortho::get_current_projection() const {
   if (current_plane < 0 || current_plane > 2)
-    return NULL;
+    return nullptr;
   return &projections[current_plane];
 }
 

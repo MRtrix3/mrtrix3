@@ -58,7 +58,7 @@ Diffusion Kurtosis Imaging
 
 -  **-rk image** compute the radial kurtosis (RK) of the kurtosis tensor.
 
--  **-mk_dirs file** specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
+-  **-mk_dirs file** specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az in ] pairs for the directions.
 
 -  **-rk_ndirs integer** specify the number of directions used to numerically calculate radial kurtosis (by default, 300 directions are used).
 

@@ -21,9 +21,7 @@
 #include "adapter/gradient3D.h"
 #include "image_helpers.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 
 template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType> class Demons {
 public:
@@ -97,7 +95,7 @@ public:
     }
 
     default_type speed = im2_image.value() - im1_image.value();
-    if (abs(speed) < robustness_parameter)
+    if (std::fabs(speed) < robustness_parameter)
       speed = 0.0;
 
     default_type speed_squared = speed * speed;
@@ -109,7 +107,7 @@ public:
     Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad =
         (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
     default_type denominator = speed_squared / normaliser + grad.squaredNorm();
-    if (abs(speed) < intensity_difference_threshold || denominator < denominator_threshold) {
+    if (std::fabs(speed) < intensity_difference_threshold || denominator < denominator_threshold) {
       im1_update.row(3) = 0.0;
       im2_update.row(3) = 0.0;
     } else {
@@ -134,6 +132,5 @@ protected:
   Im1MaskType im1_mask;
   Im2MaskType im2_mask;
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+
+} // namespace MR::Registration::Metric

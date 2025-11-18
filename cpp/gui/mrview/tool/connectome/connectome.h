@@ -21,7 +21,6 @@
 #include "image.h"
 #include "types.h"
 
-#include "misc/bitset.h"
 #include "surface/mesh.h"
 
 #include "color_button.h"
@@ -274,7 +273,7 @@ private:
   node_alpha_t node_alpha;
 
   // Values that need to be stored locally w.r.t. node visualisation
-  BitSet selected_nodes;
+  Eigen::Array<bool, Eigen::Dynamic, 1> selected_nodes;
   node_t selected_node_count;
   NodeSelectionSettings node_selection_settings;
 
@@ -322,14 +321,14 @@ private:
   // Helper functions
   void clear_all();
   void enable_all(const bool);
-  void initialise(const std::string &);
+  void initialise(std::string_view);
   void add_matrices(const std::vector<std::string> &);
 
   void draw_nodes(const Projection &);
   void draw_edges(const Projection &);
 
-  bool import_vector_file(FileDataVector &, const std::string &);
-  bool import_matrix_file(FileDataVector &, const std::string &);
+  bool import_vector_file(FileDataVector &, std::string_view);
+  bool import_matrix_file(FileDataVector &, std::string_view);
 
   void load_properties();
 

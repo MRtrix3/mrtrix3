@@ -19,17 +19,11 @@
 #include <map> // Used for sorting FOD samples
 
 #include "algo/loop.h"
-#include "dwi/directions/mask.h"
+#include "dwi/directions/directions.h"
 #include "dwi/directions/set.h"
 #include "image.h"
 #include "math/SH.h"
 #include "memory.h"
-
-#define FMLS_INTEGRAL_THRESHOLD_DEFAULT 0.0 // By default, don't threshold by integral (tough to get a good number)
-#define FMLS_PEAK_VALUE_THRESHOLD_DEFAULT 0.1
-#define FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT                                                                        \
-  1.0 // By default, never perform merging of lobes generated from discrete peaks such that a single lobe contains
-      // multiple peaks
 
 // By default, the mean direction of each FOD lobe is calculated by taking a weighted average of the
 //   Euclidean unit vectors (weights are FOD amplitudes). This is not strictly mathematically correct, and
@@ -41,9 +35,18 @@
 namespace MR::DWI::FMLS {
 
 using DWI::Directions::index_type;
-using DWI::Directions::Mask;
+using DWI::Directions::mask_type;
 
 class Segmenter;
+
+// By default, don't threshold by integral (tough to get a good number)
+constexpr default_type default_integral_threshold = 0.0;
+
+constexpr default_type default_peakamp_threshold = 0.1;
+
+// By default, never perform merging of lobes generated from discrete peaks
+//   such that a single lobe contains multiple peaks
+constexpr default_type default_mergeratio_bridgetopeak = 1.0;
 
 // These are for configuring the FMLS segmenter at the command line, particularly for fod_metric command
 extern const App::OptionGroup FMLSSegmentOption;
@@ -52,13 +55,14 @@ void load_fmls_thresholds(Segmenter &);
 class FOD_lobe {
 
 public:
+  using mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
   FOD_lobe(const DWI::Directions::Set &dirs, const index_type seed, const default_type value, const default_type weight)
-      : mask(dirs),
+      : mask(mask_type::Zero(dirs.size())),
         values(Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero(dirs.size())),
-        max_peak_value(abs(value)),
+        max_peak_value(std::fabs(value)),
         peak_dirs(1, dirs.get_dir(seed)),
-        mean_dir(peak_dirs.front() * abs(value) * weight),
-        integral(abs(value * weight)),
+        mean_dir(peak_dirs.front() * std::fabs(value) * weight),
+        integral(std::fabs(value * weight)),
         neg(value <= 0.0) {
     mask[seed] = true;
     values[seed] = value;
@@ -66,21 +70,20 @@ public:
 
   // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
   //   assigned to any other lobe in the voxel
-  FOD_lobe(const DWI::Directions::Mask &i)
+  FOD_lobe(const mask_type &i)
       : mask(i),
         values(Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero(i.size())),
         max_peak_value(0.0),
         integral(0.0),
         neg(false) {}
 
-  void add(const index_type bin, const default_type value, const default_type weight) {
+  void add(const index_type bin, const Eigen::Vector3d &dir, const default_type value, const default_type weight) {
     assert((value <= 0.0 && neg) || (value >= 0.0 && !neg));
     mask[bin] = true;
     values[bin] = value;
-    const Eigen::Vector3d &dir = mask.get_dirs()[bin];
     const default_type multiplier = (mean_dir.dot(dir)) > 0.0 ? 1.0 : -1.0;
-    mean_dir += dir * multiplier * abs(value) * weight;
-    integral += abs(value * weight);
+    mean_dir += dir * multiplier * std::fabs(value) * weight;
+    integral += std::fabs(value * weight);
   }
 
   void revise_peak(const size_t index, const Eigen::Vector3d &revised_peak_dir, const default_type revised_peak_value) {
@@ -105,7 +108,7 @@ public:
 
   void merge(const FOD_lobe &that) {
     assert(neg == that.neg);
-    mask |= that.mask;
+    mask = mask || that.mask;
     for (size_t i = 0; i != mask.size(); ++i)
       values[i] += that.values[i];
     if (that.max_peak_value > max_peak_value) {
@@ -119,7 +122,7 @@ public:
     integral += that.integral;
   }
 
-  const DWI::Directions::Mask &get_mask() const { return mask; }
+  const mask_type &get_mask() const { return mask; }
   const Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
   default_type get_max_peak_value() const { return max_peak_value; }
   size_t num_peaks() const { return peak_dirs.size(); }
@@ -132,7 +135,7 @@ public:
   bool is_negative() const { return neg; }
 
 private:
-  DWI::Directions::Mask mask;
+  mask_type mask;
   Eigen::Array<default_type, Eigen::Dynamic, 1> values;
   default_type max_peak_value;
   std::vector<Eigen::Vector3d> peak_dirs;
@@ -195,7 +198,7 @@ class IntegrationWeights {
 public:
   IntegrationWeights(const DWI::Directions::Set &dirs);
   default_type operator[](const size_t i) {
-    assert(i < size_t(data.size()));
+    assert(i < static_cast<size_t>(data.size()));
     return data[i];
   }
 
@@ -206,6 +209,7 @@ private:
 class Segmenter {
 
 public:
+  using mask_type = DWI::Directions::mask_type;
   Segmenter(const DWI::Directions::FastLookupSet &, const size_t);
 
   bool operator()(const SH_coefs &, FOD_lobes &) const;

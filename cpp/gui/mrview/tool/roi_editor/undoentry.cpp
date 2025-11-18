@@ -86,7 +86,9 @@ bool ROI_UndoEntry::Shared::operator--() { return --count; }
 ROI_UndoEntry::ROI_UndoEntry(ROI_Item &roi, int current_axis, int current_slice) {
   from = {{0, 0, 0}};
   from[current_axis] = current_slice;
-  size = {{GLint(roi.header().size(0)), GLint(roi.header().size(1)), GLint(roi.header().size(2))}};
+  size = {{static_cast<GLint>(roi.header().size(0)),
+           static_cast<GLint>(roi.header().size(1)),
+           static_cast<GLint>(roi.header().size(2))}};
   size[current_axis] = 1;
 
   if (current_axis == 0) {
@@ -187,9 +189,8 @@ void ROI_UndoEntry::draw_line(ROI_Item &roi,
   Eigen::Vector3f p = roi.scanner2voxel() * prev_pos;
   const Eigen::Vector3f final_pos = roi.scanner2voxel() * pos;
   const Eigen::Vector3f dir((final_pos - p).normalized());
-  Eigen::Array3i v(int(std::round(p[0])), int(std::round(p[1])), int(std::round(p[2])));
-  const Eigen::Array3i final_vox(
-      int(std::round(final_pos[0])), int(std::round(final_pos[1])), int(std::round(final_pos[2])));
+  Eigen::Array3i v(p.array().round().cast<int>());
+  const Eigen::Array3i final_vox(final_pos.array().round().cast<int>());
   do {
     if (v[0] >= 0 && v[0] < roi.header().size(0) && v[1] >= 0 && v[1] < roi.header().size(1) && v[2] >= 0 &&
         v[2] < roi.header().size(2))
@@ -246,27 +247,27 @@ void ROI_UndoEntry::draw_thick_line(ROI_Item &roi,
   const float offset_norm(offset.norm());
   const Eigen::Vector3f dir(Eigen::Vector3f(offset).normalized());
 
-  std::array<int, 3> a = {{int(std::lround(std::min(start[0], end[0]))),
-                           int(std::lround(std::min(start[1], end[1]))),
-                           int(std::lround(std::min(start[2], end[2])))}};
-  std::array<int, 3> b = {{int(std::lround(std::max(start[0], end[0]))) + 1,
-                           int(std::lround(std::max(start[1], end[1]))) + 1,
-                           int(std::lround(std::max(start[2], end[2]))) + 1}};
+  std::array<int, 3> a = {{static_cast<int>(std::lround(std::min(start[0], end[0]))),
+                           static_cast<int>(std::lround(std::min(start[1], end[1]))),
+                           static_cast<int>(std::lround(std::min(start[2], end[2])))}};
+  std::array<int, 3> b = {{static_cast<int>(std::lround(std::max(start[0], end[0]))) + 1,
+                           static_cast<int>(std::lround(std::max(start[1], end[1]))) + 1,
+                           static_cast<int>(std::lround(std::max(start[2], end[2]))) + 1}};
 
-  int rad[2] = {int(std::ceil(radius / roi.header().spacing(slice_axes[0]))),
-                int(std::ceil(radius / roi.header().spacing(slice_axes[1])))};
+  std::array<int, 2> rad = {static_cast<int>(std::ceil(radius / roi.header().spacing(slice_axes[0]))),
+                            static_cast<int>(std::ceil(radius / roi.header().spacing(slice_axes[1])))};
   a[slice_axes[0]] = std::max(0, a[slice_axes[0]] - rad[0]);
   a[slice_axes[1]] = std::max(0, a[slice_axes[1]] - rad[1]);
-  b[slice_axes[0]] = std::min(int(roi.header().size(slice_axes[0])), b[slice_axes[0]] + rad[0]);
-  b[slice_axes[1]] = std::min(int(roi.header().size(slice_axes[1])), b[slice_axes[1]] + rad[1]);
+  b[slice_axes[0]] = std::min(static_cast<int>(roi.header().size(slice_axes[0])), b[slice_axes[0]] + rad[0]);
+  b[slice_axes[1]] = std::min(static_cast<int>(roi.header().size(slice_axes[1])), b[slice_axes[1]] + rad[1]);
 
   for (int k = a[2]; k < b[2]; ++k) {
     for (int j = a[1]; j < b[1]; ++j) {
       for (int i = a[0]; i < b[0]; ++i) {
 
-        const Eigen::Vector3f p{float(i), float(j), float(k)};
+        const Eigen::Vector3f p{static_cast<float>(i), static_cast<float>(j), static_cast<float>(k)};
         const Eigen::Vector3f v(p - start);
-        if ((v.dot(dir) > 0.0f) && (v.dot(dir) < offset_norm)) {
+        if ((v.dot(dir) > 0.0F) && (v.dot(dir) < offset_norm)) {
           Eigen::Vector3f d(v - (dir * v.dot(dir)));
           d[0] *= roi.header().spacing(0);
           d[1] *= roi.header().spacing(1);
@@ -305,15 +306,15 @@ void ROI_UndoEntry::draw_circle(ROI_Item &roi,
   const float radius_sq = Math::pow2(radius);
   const GLubyte value = insert_mode_value ? 1 : 0;
 
-  std::array<int, 3> a = {{int(std::lround(vox[0])), int(std::lround(vox[1])), int(std::lround(vox[2]))}};
-  std::array<int, 3> b = {{a[0] + 1, a[1] + 1, a[2] + 1}};
+  Eigen::Array3i a(vox.array().round().cast<int>());
+  Eigen::Array3i b = a + 1;
 
-  int rad[2] = {int(std::ceil(radius / roi.header().spacing(slice_axes[0]))),
-                int(std::ceil(radius / roi.header().spacing(slice_axes[1])))};
+  std::array<int, 2> rad = {static_cast<int>(std::ceil(radius / roi.header().spacing(slice_axes[0]))),
+                            static_cast<int>(std::ceil(radius / roi.header().spacing(slice_axes[1])))};
   a[slice_axes[0]] = std::max(0, a[slice_axes[0]] - rad[0]);
   a[slice_axes[1]] = std::max(0, a[slice_axes[1]] - rad[1]);
-  b[slice_axes[0]] = std::min(int(roi.header().size(slice_axes[0])), b[slice_axes[0]] + rad[0]);
-  b[slice_axes[1]] = std::min(int(roi.header().size(slice_axes[1])), b[slice_axes[1]] + rad[1]);
+  b[slice_axes[0]] = std::min(static_cast<int>(roi.header().size(slice_axes[0])), b[slice_axes[0]] + rad[0]);
+  b[slice_axes[1]] = std::min(static_cast<int>(roi.header().size(slice_axes[1])), b[slice_axes[1]] + rad[1]);
 
   for (int k = a[2]; k < b[2]; ++k)
     for (int j = a[1]; j < b[1]; ++j)
@@ -346,9 +347,9 @@ void ROI_UndoEntry::draw_rectangle(ROI_Item &roi,
                                    const bool insert_mode_value) {
   Eigen::Vector3f vox = roi.scanner2voxel() * from_pos;
   const GLubyte value = insert_mode_value ? 1 : 0;
-  std::array<int, 3> a = {{int(std::lround(vox[0])), int(std::lround(vox[1])), int(std::lround(vox[2]))}};
+  Eigen::Array3i a(vox.array().round().cast<int>());
   vox = roi.scanner2voxel() * to_pos;
-  std::array<int, 3> b = {{int(std::lround(vox[0])), int(std::lround(vox[1])), int(std::lround(vox[2]))}};
+  Eigen::Array3i b(vox.array().round().cast<int>());
 
   if (a[0] > b[0])
     std::swap(a[0], b[0]);
@@ -359,8 +360,8 @@ void ROI_UndoEntry::draw_rectangle(ROI_Item &roi,
 
   a[slice_axes[0]] = std::max(0, a[slice_axes[0]]);
   a[slice_axes[1]] = std::max(0, a[slice_axes[1]]);
-  b[slice_axes[0]] = std::min(int(roi.header().size(slice_axes[0]) - 1), b[slice_axes[0]]);
-  b[slice_axes[1]] = std::min(int(roi.header().size(slice_axes[1]) - 1), b[slice_axes[1]]);
+  b[slice_axes[0]] = std::min(static_cast<int>(roi.header().size(slice_axes[0]) - 1), b[slice_axes[0]]);
+  b[slice_axes[1]] = std::min(static_cast<int>(roi.header().size(slice_axes[1]) - 1), b[slice_axes[1]]);
 
   after = before;
   for (int k = a[2]; k <= b[2]; ++k)
@@ -386,13 +387,11 @@ void ROI_UndoEntry::draw_rectangle(ROI_Item &roi,
 }
 
 void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const bool insert_mode_value) {
-  const Eigen::Vector3f vox = roi.scanner2voxel() * pos;
-  const std::array<int, 3> seed_voxel = {
-      {int(std::lround(vox[0])), int(std::lround(vox[1])), int(std::lround(vox[2]))}};
+  const Eigen::Array3i seed_voxel = (roi.scanner2voxel() * pos).array().round().cast<int>();
   for (size_t axis = 0; axis != 3; ++axis) {
     if (seed_voxel[axis] < 0)
       return;
-    if (seed_voxel[axis] >= int(roi.header().size(axis)))
+    if (seed_voxel[axis] >= static_cast<int>(roi.header().size(axis)))
       return;
   }
   const GLubyte fill_value = insert_mode_value ? 1 : 0;
@@ -402,12 +401,12 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
   if (existing_value == insert_mode_value)
     return;
   after[seed_index] = fill_value;
-  std::vector<std::array<int, 3>> buffer(1, seed_voxel);
+  std::vector<Eigen::Array3i> buffer(1, seed_voxel);
   while (!buffer.empty()) {
-    const std::array<int, 3> v(buffer.back());
+    const Eigen::Array3i v(buffer.back());
     buffer.pop_back();
     for (size_t i = 0; i != 4; ++i) {
-      std::array<int, 3> adj(v);
+      Eigen::Array3i adj(v);
       switch (i) {
       case 0:
         adj[slice_axes[0]] -= 1;
@@ -422,8 +421,9 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
         adj[slice_axes[1]] += 1;
         break;
       }
-      if (adj[0] >= 0 && adj[0] < int(roi.header().size(0)) && adj[1] >= 0 && adj[1] < int(roi.header().size(1)) &&
-          adj[2] >= 0 && adj[2] < int(roi.header().size(2))) {
+      if (adj[0] >= 0 && adj[0] < static_cast<int>(roi.header().size(0)) && adj[1] >= 0 &&
+          adj[1] < static_cast<int>(roi.header().size(1)) && adj[2] >= 0 &&
+          adj[2] < static_cast<int>(roi.header().size(2))) {
         const size_t adj_index = adj[0] - from[0] + size[0] * (adj[1] - from[1] + size[1] * (adj[2] - from[2]));
         const bool adj_value = after[adj_index];
         if (adj_value != insert_mode_value) {

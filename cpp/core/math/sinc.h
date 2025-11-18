@@ -25,7 +25,11 @@ public:
   using value_type = T;
 
   Sinc(const size_t w)
-      : window_size(w), max_offset_from_kernel_centre((w - 1) / 2), indices(w), weights(w), current_pos(NAN) {
+      : window_size(w),
+        max_offset_from_kernel_centre((w - 1) / 2),
+        indices(w),
+        weights(w),
+        current_pos(std::numeric_limits<T>::quiet_NaN()) {
     assert(w % 2);
   }
 
@@ -43,11 +47,11 @@ public:
       if (voxel < 0)
         indices[i] = -voxel - 1;
       else if (voxel >= image.size(axis))
-        indices[i] = (2 * int(image.size(axis))) - voxel - 1;
+        indices[i] = (2 * static_cast<size_t>(image.size(axis))) - voxel - 1;
       else
         indices[i] = voxel;
 
-      const value_type offset = position - (value_type)voxel;
+      const value_type offset = position - static_cast<value_type>(voxel);
 
       const value_type sinc = offset ? std::sin(Math::pi * offset) / (Math::pi * offset) : 1.0;
 
@@ -55,7 +59,8 @@ public:
       // const value_type hann_factor   = (abs (hann_cos_term) < Math::pi) ? 0.5 * (1.0 + std::cos (hann_cos_term)) :
       // 0.0; const value_type this_weight   = hann_factor * sinc;
 
-      const value_type lanczos_sinc_term = abs(Math::pi * offset / (double(max_offset_from_kernel_centre) + 0.5));
+      const value_type lanczos_sinc_term = static_cast<value_type>(
+          std::fabs(Math::pi * offset / (static_cast<default_type>(max_offset_from_kernel_centre) + 0.5)));
       value_type lanczos_factor = 0.0;
       if (lanczos_sinc_term < Math::pi) {
         if (lanczos_sinc_term)
