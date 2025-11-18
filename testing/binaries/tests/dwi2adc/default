@@ -8,11 +8,7 @@
 # The updated interface involves writing a compulsory ADC image,
 #   and an optional S(0) volume written to a different image
 #   using explicit command-line option -szero.
-# In order to test the output of this command against the pre-existing reference
-#   without necessitating the re-generation of reference test data,
-#   these are explicitly concatenated before comparing to the reference data
 
 dwi2adc dwi2adc/in.mif tmp_adc.mif -szero tmp_szero.mif -force
-
-mrcat tmp_szero.mif tmp_adc.mif -axis 3 - | \
-testing_diff_image - dwi2adc/out.mif -frac 1e-5
+testing_diff_image tmp_adc.mif dwi2adc/adc.mif -frac 1e-5
+testing_diff_image tmp_szero.mif dwi2adc/szero.mif -frac 1e-5

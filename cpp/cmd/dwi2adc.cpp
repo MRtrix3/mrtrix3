@@ -48,7 +48,7 @@ void usage ()
     "adopts a 2-stage fitting strategy, in which the ADC is first estimated based on "
     "the DWI data with b > cutoff, and the other parameters are estimated subsequently. "
     "The output consists of 4 volumes, respectively S(0), D, f, and D'."
-    
+
   + "Note that this command ignores the gradient orientation entirely. "
     "If a conventional DWI series is provided as input, "
     "all volumes will contribute equally toward the model fit "
@@ -80,12 +80,13 @@ void usage ()
   REFERENCES
   + "Le Bihan, D.; Breton, E.; Lallemand, D.; Aubin, M.L.; Vignaud, J.; Laval-Jeantet, M. "
     "Separation of diffusion and perfusion in intravoxel incoherent motion MR imaging. "
-    "Radiology, 1988, 168, 497–505."
+    "Radiology, 1988, 168, 497-505."
 
-  + "Jalnefjord, O.; Andersson, M.; Montelius; M.; Starck, G.; Elf, A.; Johanson, V.; Svensson, J.; Ljungberg, M. "
+  + "If using -ivim option: "
+    "Jalnefjord, O.; Andersson, M.; Montelius; M.; Starck, G.; Elf, A.; Johanson, V.; Svensson, J.; Ljungberg, M. "
     "Comparison of methods for estimation of the intravoxel incoherent motion (IVIM) "
     "diffusion coefficient (D) and perfusion fraction (f). "
-    "Magn Reson Mater Phy, 2018, 31, 715–723.";
+    "Magn Reson Mater Phy, 2018, 31, 715-723.";
 }
 // clang-format on
 

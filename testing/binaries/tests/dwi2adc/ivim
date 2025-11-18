@@ -1,0 +1,14 @@
+#!/bin/bash
+# Test of operation of dwi2adc command
+#   when the -ivim option is used
+# Compares output to that generated from a prior software version
+
+dwi2adc dwi2adc/in.mif tmp_adc.mif \
+    -szero tmp_szero.mif \
+    -ivim tmp_ivimfrac.mif tmp_ivimd.mif \
+    -force
+
+testing_diff_image tmp_adc.mif dwi2adc/IVIM_adc.mif -frac 1e-5
+testing_diff_image tmp_szero.mif dwi2adc/IVIM_szero.mif -frac 1e-5
+testing_diff_image tmp_ivimfrac.mif dwi2adc/IVIM_fraction.mif -frac 1e-5
+testing_diff_image tmp_ivimd.mif dwi2adc/IVIM_D.mif -frac 1e-5
