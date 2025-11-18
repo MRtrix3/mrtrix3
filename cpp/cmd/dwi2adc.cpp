@@ -27,7 +27,7 @@ using namespace App;
 
 using value_type = float;
 
-constexpr value_type ivim_cutoff_default = value_type(120);
+constexpr value_type ivim_cutoff_default = 120.0F;
 
 // clang-format off
 void usage ()
@@ -107,9 +107,9 @@ public:
     binv = Math::pinv(b);
   }
 
-  void set_bzero_path(const std::string &path) { szero_image = Image<value_type>::create(path, H); }
+  void set_bzero_path(std::string_view path) { szero_image = Image<value_type>::create(path, H); }
 
-  void initialise_ivim(const std::string &ivimfrac_path, const std::string &ivimdiff_path, const value_type cutoff) {
+  void initialise_ivim(std::string_view ivimfrac_path, std::string_view ivimdiff_path, const value_type cutoff) {
     ivimfrac_image = Image<value_type>::create(ivimfrac_path, H);
     ivimdiff_image = Image<value_type>::create(ivimdiff_path, H);
     ivim_cutoff = cutoff;
@@ -135,12 +135,12 @@ public:
       logszero_and_adc = bsubinv * dwisub;
     }
 
-    adc_image.value() = value_type(logszero_and_adc[1]);
+    adc_image.value() = static_cast<value_type>(logszero_and_adc[1]);
 
     if (std::isnan(ivim_cutoff)) {
       if (szero_image.valid()) {
         assign_pos_of(adc_image).to(szero_image);
-        szero_image.value() = value_type(std::exp(logszero_and_adc[0]));
+        szero_image.value() = static_cast<value_type>(std::exp(logszero_and_adc[0]));
       }
       return;
     }
@@ -157,11 +157,11 @@ public:
     const double f = C / S0;
     if (szero_image.valid()) {
       assign_pos_of(adc_image).to(szero_image);
-      szero_image.value() = value_type(S0);
+      szero_image.value() = static_cast<value_type>(S0);
     }
     assign_pos_of(adc_image).to(ivimfrac_image, ivimdiff_image);
-    ivimfrac_image.value() = value_type(f);
-    ivimdiff_image.value() = value_type(Dstar);
+    ivimfrac_image.value() = static_cast<value_type>(f);
+    ivimdiff_image.value() = static_cast<value_type>(Dstar);
   }
 
 private:
