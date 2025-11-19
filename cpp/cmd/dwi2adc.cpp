@@ -53,7 +53,7 @@ void usage ()
     "If a conventional DWI series is provided as input, "
     "all volumes will contribute equally toward the model fit "
     "irrespective of direction of diffusion sensitisation; "
-    "DWI data should therefore ideally consist of isotropically-distributed gradient directions."
+    "DWI data should therefore ideally consist of isotropically-distributed gradient directions. "
     "The approach can alternatively be applied to mean DWI (trace-weighted) images.";
 
   ARGUMENTS
