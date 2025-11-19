@@ -74,6 +74,7 @@ add_bash_binary_test(dirrotate/default)
 add_bash_binary_test(dirrotate/onerotation)
 
 add_bash_binary_test(dwi2adc/default)
+add_bash_binary_test(dwi2adc/ivim)
 
 add_bash_binary_test(dwi2fod/csd_default)
 add_bash_binary_test(dwi2fod/csd_lmax)
