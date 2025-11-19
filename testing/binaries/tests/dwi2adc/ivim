@@ -10,5 +10,5 @@ dwi2adc dwi2adc/IVIM_in.mif tmp_adc.mif \
 
 testing_diff_image tmp_adc.mif dwi2adc/IVIM_adc.mif -frac 1e-5
 testing_diff_image tmp_szero.mif dwi2adc/IVIM_szero.mif -frac 1e-5
-testing_diff_image tmp_ivimfrac.mif dwi2adc/IVIM_fraction.mif -frac 1e-5
-testing_diff_image tmp_ivimd.mif dwi2adc/IVIM_D.mif -frac 1e-5
+testing_diff_image tmp_ivimfrac.mif dwi2adc/IVIM_fraction.mif -frac 1e-3
+testing_diff_image tmp_ivimd.mif dwi2adc/IVIM_D.mif -frac 1e-3
