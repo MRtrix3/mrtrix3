@@ -3,7 +3,7 @@
 #   when the -ivim option is used
 # Compares output to that generated from a prior software version
 
-dwi2adc dwi2adc/in.mif tmp_adc.mif \
+dwi2adc dwi2adc/IVIM_in.mif tmp_adc.mif \
     -szero tmp_szero.mif \
     -ivim tmp_ivimfrac.mif tmp_ivimd.mif \
     -force
