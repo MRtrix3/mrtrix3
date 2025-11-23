@@ -150,7 +150,7 @@ namespace MR
         //   Or perhaps truncation?
         if (App::log_level < 3)
           return;
-        DEBUG("Checking quantification of total tractogram density:")
+        DEBUG("Checking quantification of total tractogram density:");
         DEBUG("TD_sum after initial streamline mapping is " + str(TD_sum));
         value_type sum_from_fixels = 0.0, sum_from_fixels_weighted = 0.0;
 

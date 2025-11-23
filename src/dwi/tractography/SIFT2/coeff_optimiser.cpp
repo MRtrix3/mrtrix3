@@ -608,6 +608,8 @@ namespace MR {
                 case reg_fn_diff_t::DUALINVBARR: return line_search_functor.operator()<reg_basis_t::GROUP, reg_fn_diff_t::DUALINVBARR> (value);
               }
           }
+          assert(false);
+          return std::numeric_limits<value_type>::signaling_NaN();
         };
 
         auto get_cost_and_derivatives = [&](const value_type value) {
@@ -631,6 +633,10 @@ namespace MR {
               }
               break;
           }
+          assert(false);
+          CostAndDerivatives result;
+          result *= std::numeric_limits<value_type>::signaling_NaN();
+          return result;
         };
 
         value_type dDelta = 0.0;

@@ -245,7 +245,7 @@ namespace MR {
         } catch (Exception &e) {
           throw Exception(e, "Unable to read file \"" + path + "\" as streamline-to-group assignments");
         }
-        if (data.rows() != contributions.size())
+        if (data.rows() != static_cast<ssize_t>(contributions.size()))
           throw Exception ("Number of entries in streamline-to-group assignments file \"" + path + "\" (" + str(data.rows()) + ") "
                            "does not match number of streamlines in tractogram (" + str(contributions.size()) + ")");
         switch (data.cols()) {
@@ -282,7 +282,7 @@ namespace MR {
       void TckFactor::set_coefficients (const std::string& path)
       {
         coefficients = load_vector<value_type> (path);
-        if (coefficients.size() != contributions.size())
+        if (coefficients.size() != static_cast<ssize_t>(contributions.size()))
           throw Exception ("Number of entries in input weighting coefficients file \"" + path + "\" (" + str(coefficients.size()) + ")"
                            + "does not match number of streamlines read (" + str(contributions.size()) + ")");
         if (mask_absolute.size() == 0)
@@ -317,7 +317,7 @@ namespace MR {
       void TckFactor::set_factors (const std::string& path)
       {
         const Eigen::Array<value_type, Eigen::Dynamic, 1> factors = load_vector<value_type> (path);
-        if (factors.size() != contributions.size())
+        if (factors.size() != static_cast<ssize_t>(contributions.size()))
           throw Exception ("Number of entries in input weighting factors file \"" + path + "\" (" + str(coefficients.size()) + ")"
                            + "does not match number of streamlines read (" + str(contributions.size()) + ")");
         coefficients.resize (factors.size());
@@ -352,7 +352,7 @@ namespace MR {
 
       void TckFactor::set_deltacoeffs (const std::string &path) {
         deltacoeffs = load_vector<value_type> (path);
-        if (deltacoeffs.size() != contributions.size())
+        if (deltacoeffs.size() != static_cast<ssize_t>(contributions.size()))
           throw Exception (std::string("Number of entries in input delta coefficients file")
                            + " \"" + path + "\" (" + str(coefficients.size()) + ")"
                            + " does not match number of streamlines read"
@@ -392,7 +392,7 @@ namespace MR {
 
       void TckFactor::set_deltafactors (const std::string &path) {
         deltacoeffs = load_vector<value_type> (path);
-        if (deltacoeffs.size() != contributions.size())
+        if (deltacoeffs.size() != static_cast<ssize_t>(contributions.size()))
           throw Exception (std::string("Number of entries in input delta factors file")
                            + " \"" + path + "\" (" + str(coefficients.size()) + ")"
                            + " does not match number of streamlines read"
@@ -488,7 +488,7 @@ namespace MR {
       template <>
       void TckFactor::set_mask<operation_mode_t::ABSOLUTE> (const std::string &path) {
         mask_absolute = load_vector<bool>(path);
-        if (mask_absolute.size() != contributions.size())
+        if (mask_absolute.size() != static_cast<ssize_t>(contributions.size()))
           throw Exception ("Number of entries in streamline mask for absolute mode \"" + path + "\" (" + str(mask_absolute.size()) + ")"
                            + "does not match number of streamlines read (" + str(contributions.size()) + ")");
         INFO(str(mask_absolute.count()) + " of " + str(contributions.size()) + " streamlines present in mask for absolute mode");
@@ -497,7 +497,7 @@ namespace MR {
       template <>
       void TckFactor::set_mask<operation_mode_t::DIFFERENTIAL> (const std::string &path) {
         mask_differential = load_vector<bool>(path);
-        if (mask_differential.size() != contributions.size())
+        if (mask_differential.size() != static_cast<ssize_t>(contributions.size()))
           throw Exception ("Number of entries in streamline mask for differential mode \"" + path + "\" (" + str(mask_differential.size()) + ")"
                            + "does not match number of streamlines read (" + str(contributions.size()) + ")");
         INFO(str(mask_differential.count()) + " of " + str(contributions.size()) + " streamlines present in mask for differential mode");
