@@ -224,7 +224,7 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     wgpu::AdapterInfo adapter_info;
     wgpu_adapter.GetInfo(&adapter_info);
 
-    this->m_device_info = DeviceInfo{.subgroupMinSize = adapter_info.subgroupMinSize};
+    this->m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize};
   }
   this->m_slang_session_info->globalSession = std::move(slang_global_session_request.get());
 
@@ -531,7 +531,7 @@ Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
 
   const auto &slang_session = m_slang_session_info->session;
   const auto &[wgsl_shader_code, linked_slang_program] =
-      SlangCodegen::compile_kernel_code_to_wgsl(kernel_spec, slang_session.get(), m_shaderCache);
+      SlangCodegen::compile_kernel_code_to_wgsl(kernel_spec, slang_session.get(), m_shader_cache);
 
   const auto reflected_bindings_map = SlangCodegen::reflect_bindings(linked_slang_program->getLayout());
 
