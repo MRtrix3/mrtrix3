@@ -106,6 +106,8 @@ endif()
 
 # Dawn
 
+# Threads (required by Dawn exported targets)
+find_package(Threads REQUIRED)
 find_package(Dawn QUIET)
 
 if(NOT Dawn_FOUND)
