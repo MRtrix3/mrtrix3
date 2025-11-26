@@ -39,6 +39,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <filesystem>
 
 namespace MR::GPU {
 
@@ -241,7 +242,7 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
   const slang::TargetDesc target_desc{.format = SLANG_WGSL};
 
   const auto executable_path = MR::Platform::get_executable_path();
-  const std::string executable_dir_string = std::filesystem::path(executable_path).parent_path() / "shaders";
+  const std::string executable_dir_string = (std::filesystem::path(executable_path).parent_path() / "shaders").string();
   const char *executable_dir_cstr = executable_dir_string.c_str();
 
   std::vector<slang::CompilerOptionEntry> slang_compiler_options;
