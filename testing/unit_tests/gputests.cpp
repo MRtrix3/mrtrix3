@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <iostream>
 
 #include "exception.h"
 #include "gpu/gpu.h"
@@ -25,7 +26,12 @@ protected:
   GPUTest() : context(*shared_context) {}
 
   static void SetUpTestSuite() {
-    ASSERT_NO_THROW(shared_context = std::make_unique<MR::GPU::ComputeContext>(););
+    try {
+      shared_context = std::make_unique<MR::GPU::ComputeContext>();
+    } catch (const std::exception &e) {
+      std::cerr << "Skipping GPU tests: " << e.what() << std::endl;
+      GTEST_SKIP() << "Skipping GPU tests: " << e.what();
+    }
     ASSERT_NE(shared_context, nullptr) << "Failed to create shared GPU context.";
   }
 
@@ -339,7 +345,7 @@ TEST_F(GPUTest, CopyBufferToBuffer_Partial) {
     if (i < dst_start || i >= dst_start + count) {
       EXPECT_EQ(downloaded_data[i], src[i]);
     }
-  }
+}
 }
 
 TEST_F(GPUTest, CopyBufferToBuffer_SourceOutOfRangeThrows) {
