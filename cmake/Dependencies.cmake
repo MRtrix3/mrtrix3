@@ -194,9 +194,15 @@ if(NOT Slang_FOUND)
     )
     FetchContent_MakeAvailable(slang)
 
+    if(WIN32)
+        set(slang_DIR_PATH "${slang_SOURCE_DIR}/cmake")
+    else()
+        set(slang_DIR_PATH "${slang_SOURCE_DIR}/lib/cmake/slang")
+    endif()
+
     set(
       slang_DIR
-      "${slang_SOURCE_DIR}/lib/cmake/slang"
+      "${slang_DIR_PATH}"
       CACHE PATH "Folder containing SlangConfig.cmake"
       FORCE
     )
