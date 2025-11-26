@@ -151,8 +151,11 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     dawn_toggles_desc.enabledToggleCount = dawn_toggles.size();
 
     constexpr std::array<wgpu::InstanceFeatureName, 1> instance_features = {wgpu::InstanceFeatureName::TimedWaitAny};
-    const wgpu::InstanceDescriptor instance_descriptor{.nextInChain = nullptr,
-                                                       .requiredFeatures = instance_features.data()};
+    const wgpu::InstanceDescriptor instance_descriptor{
+        .nextInChain = nullptr,
+        .requiredFeatureCount = instance_features.size(),
+        .requiredFeatures = instance_features.data(),
+    };
 
     const wgpu::Instance wgpu_instance = wgpu::CreateInstance(&instance_descriptor);
     wgpu::Adapter wgpu_adapter;
