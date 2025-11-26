@@ -61,7 +61,7 @@ jobs:
       run: cd build && ctest -L cli --output-on-failure
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure --parallel 4
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: compatibility tests
       run: cd build && ctest -L compatibility --output-on-failure
@@ -126,7 +126,7 @@ jobs:
       run: cd build && ctest -L cli --output-on-failure
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure --parallel 4
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: compatibility tests
       run: cd build && ctest -L compatibility --output-on-failure
@@ -187,7 +187,7 @@ jobs:
       run: cd build && ctest -L cli --output-on-failure
 
     - name: unit tests
-      run: cd build && ctest -L unittest --output-on-failure --parallel 4
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: compatibility tests
       run: cd build && ctest -L compatibility --output-on-failure
@@ -265,7 +265,7 @@ jobs:
         run: cd build && ctest -L cli --output-on-failure
 
       - name: unit tests
-        run: cd build && ctest -L unittest --output-on-failure --parallel 4
+        run: cd build && ctest -L unittest --output-on-failure
 
       - name: compatibility tests
         run: cd build && ctest -L compatibility --output-on-failure
