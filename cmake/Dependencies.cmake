@@ -141,7 +141,8 @@ if(NOT Dawn_FOUND)
     )
     FetchContent_MakeAvailable(dawn)
 
-    if(LINUX)
+    # On Linux, Dawn prebuilt packages use lib64; others use lib
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         set(DAWN_LIB_DIR_NAME "lib64")
     else()
         set(DAWN_LIB_DIR_NAME "lib")
