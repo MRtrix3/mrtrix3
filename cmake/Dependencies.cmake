@@ -134,9 +134,9 @@ if(NOT Dawn_FOUND)
 
     FetchContent_Declare(
         dawn
-        URL ${DAWN_BINARIES_URL}
         DOWNLOAD_EXTRACT_TIMESTAMP   1
         DOWNLOAD_NO_PROGRESS         1
+        URL ${DAWN_BINARIES_URL}
     )
     FetchContent_MakeAvailable(dawn)
 
@@ -187,9 +187,9 @@ if(NOT Slang_FOUND)
 
     FetchContent_Declare(
       slang
-        URL                          ${SLANG_DOWNLOAD_LINK}
         DOWNLOAD_EXTRACT_TIMESTAMP   1
         DOWNLOAD_NO_PROGRESS         1
+        URL                          ${SLANG_DOWNLOAD_LINK}
     )
     FetchContent_MakeAvailable(slang)
 
