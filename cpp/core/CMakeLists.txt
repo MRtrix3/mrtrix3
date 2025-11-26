@@ -121,6 +121,14 @@ if(WIN32)
     set_target_properties(mrtrix-core PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
+
+    add_custom_command(TARGET mrtrix-core POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:dawn::webgpu_dawn>
+            $<TARGET_FILE:slang::slang>
+            $<TARGET_FILE_DIR:mrtrix-core>
+        COMMENT "Copying imported dependencies to output directory"
+    )
 endif()
 
 install(TARGETS mrtrix-core
