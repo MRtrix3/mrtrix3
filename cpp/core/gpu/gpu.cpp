@@ -191,10 +191,17 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     const std::vector<wgpu::FeatureName> required_device_features = {
         wgpu::FeatureName::R8UnormStorage, wgpu::FeatureName::Float32Filterable, wgpu::FeatureName::Subgroups};
 
+    wgpu::Limits supported_limits;
+    wgpu_adapter.GetLimits(&supported_limits);
+
+    const uint64_t desired_max_storage_buffer_binding_size = 1'073'741'824ULL; // 1 GiB
+    const uint64_t desired_max_buffer_size = 1'073'741'824ULL;                 // 1 GiB
+
     const wgpu::Limits required_device_limits{
         .maxStorageTexturesPerShaderStage = 8,
-        .maxStorageBufferBindingSize = 1'073'741'824, // 1 GiB
-        .maxBufferSize = 1'073'741'824,               // 1 GiB
+        .maxStorageBufferBindingSize =
+            std::min(desired_max_storage_buffer_binding_size, supported_limits.maxStorageBufferBindingSize),
+        .maxBufferSize = std::min(desired_max_buffer_size, supported_limits.maxBufferSize),
         .maxComputeWorkgroupStorageSize = 32768,
         .maxComputeInvocationsPerWorkgroup = 1024,
         .maxComputeWorkgroupSizeX = 1024,
