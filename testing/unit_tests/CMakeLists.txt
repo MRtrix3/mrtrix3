@@ -9,6 +9,7 @@ target_compile_definitions(gtest PRIVATE
 set(UNIT_TESTS_CPP_SRCS
     erfinv_tests.cpp
     icls_tests.cpp
+    gputests.cpp
     ordered_queue_tests.cpp
     parse_axes_tests.cpp
     parse_ints_tests.cpp
