@@ -26,7 +26,7 @@
 //   std::variant<int, std::string> v = 42;
 //   auto s = MR::match_v(v,
 //       [](int i) { return std::to_string(i); },
-//       [](const std::string& s) { return s; });
+//       [](const std::string& s) { return s; }); // check_syntax off
 //   // s == "42"
 
 namespace MR {
