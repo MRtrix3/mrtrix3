@@ -114,6 +114,7 @@ target_link_libraries(mrtrix-core PUBLIC
     nlohmann_json::nlohmann_json
     nifti::nifti
     slang::slang
+    tcb::span
 )
 
 # On Windows, the libraries need to be in the same directory as the executables

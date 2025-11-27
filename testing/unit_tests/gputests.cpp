@@ -3,7 +3,8 @@
 
 #include "exception.h"
 #include "gpu/gpu.h"
-#include "span.h"
+
+#include <tcb/span.hpp>
 
 #include <cstddef>
 #include <cstdint>

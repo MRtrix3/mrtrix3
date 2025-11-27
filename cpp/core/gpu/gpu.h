@@ -19,8 +19,8 @@
 #include "image.h"
 #include "match_variant.h"
 #include "shadercache.h"
-#include "span.h"
 
+#include <tcb/span.hpp>
 #include <webgpu/webgpu_cpp.h>
 
 #include <array>

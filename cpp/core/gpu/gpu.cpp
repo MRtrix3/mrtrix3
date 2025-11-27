@@ -20,7 +20,8 @@
 #include "match_variant.h"
 #include "platform.h"
 #include "slangcodegen.h"
-#include "span.h"
+
+#include <tcb/span.hpp>
 
 #include <cstdlib>
 #include <memory>
