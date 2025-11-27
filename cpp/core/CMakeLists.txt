@@ -129,6 +129,19 @@ if(WIN32)
             $<TARGET_FILE_DIR:mrtrix-core>
         COMMENT "Copying imported dependencies to output directory"
     )
+# In an MSYS2 environment, dawn fails to load the required vulkan-1.dll library when
+# creating a WebGPU instance. To remedy this, we copy the DLL from C:/Windows/System32
+# to the build output directory.
+# TODO: Investigate further and find a better solution.
+if(NOT MSVC)
+    add_custom_command(TARGET mrtrix-core POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $ENV{WINDIR}/System32/vulkan-1.dll
+            $<TARGET_FILE_DIR:mrtrix-core>
+        COMMENT "Copying vulkan-1.dll to output directory"
+    )
+endif()
+
 endif()
 
 install(TARGETS mrtrix-core
