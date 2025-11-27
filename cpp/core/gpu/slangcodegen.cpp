@@ -38,6 +38,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -66,14 +67,14 @@ std::string read_file(const std::filesystem::path &filePath, ReadFileMode mode =
   return result;
 }
 
-std::string hash_string(const std::string &input) {
+std::string hash_string(std::string_view input) {
   const std::hash<std::string> hasher;
-  const size_t hashValue = hasher(input);
+  const size_t hashValue = hasher(std::string(input));
   return std::to_string(hashValue);
 }
 
 void check_slang_result(SlangResult res,
-                        const std::string &errorMessage = "",
+                        std::string_view errorMessage = "",
                         const Slang::ComPtr<slang::IBlob> &diagnostics = nullptr) {
   if (SLANG_FAILED(res)) {
     std::string full_error = "Slang Error: " + errorMessage;
@@ -97,7 +98,7 @@ void find_bindings_in_variable_layout(slang::VariableLayoutReflection *varLayout
     return;
   }
 
-  const char *var_name = varLayout->getName();
+  const char *var_name = varLayout->getName(); // check_syntax off
 
   if (var_name != nullptr) {
     for (uint32_t i = 0; i < varLayout->getCategoryCount(); ++i) {
@@ -217,7 +218,7 @@ compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec, slang::ISessi
       std::transform(generic_type_args.begin(),
                      generic_type_args.end(),
                      slang_generic_args.begin(),
-                     [program_layout](const std::string &arg) {
+                     [program_layout](const std::string &arg) { // check_syntax off
                        auto *const spec_type = program_layout->findTypeByName(arg.c_str());
                        if (spec_type == nullptr) {
                          throw SlangCodeGenException("Failed to find specialization type: " + arg);

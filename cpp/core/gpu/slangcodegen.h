@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <future>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 
@@ -41,7 +42,8 @@ struct ReflectedBindingInfo {
 };
 
 struct SlangCodeGenException : public Exception {
-  explicit SlangCodeGenException(const std::string &message) : Exception("Slang codegen error: " + message) {}
+  explicit SlangCodeGenException(std::string_view message)
+      : Exception(std::string("Slang codegen error: ") + message.data()) {}
 };
 
 // Request a Slang global session asynchronously.

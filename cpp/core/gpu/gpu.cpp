@@ -76,27 +76,27 @@ uint32_t pixel_size_in_bytes(const TextureFormat format) {
 }
 
 wgpu::ShaderModule
-make_wgsl_shader_module(const std::string &name, const std::string &code, const wgpu::Device &device) {
+make_wgsl_shader_module(std::string_view name, std::string_view code, const wgpu::Device &device) {
   wgpu::ShaderSourceWGSL wgsl;
-  wgsl.code = code.c_str();
+  wgsl.code = code;
 
   const wgpu::ShaderModuleDescriptor shader_module_descriptor{
       .nextInChain = &wgsl,
-      .label = name.c_str(),
+      .label = name,
   };
 
   return device.CreateShaderModule(&shader_module_descriptor);
 }
 
 wgpu::ShaderModule
-make_spirv_shader_module(const std::string &name, tcb::span<const uint32_t> spirvCode, const wgpu::Device &device) {
+make_spirv_shader_module(std::string_view name, tcb::span<const uint32_t> spirvCode, const wgpu::Device &device) {
   wgpu::ShaderSourceSPIRV spirv;
   spirv.codeSize = spirvCode.size_bytes();
   spirv.code = spirvCode.data();
 
   const wgpu::ShaderModuleDescriptor shader_module_descriptor{
       .nextInChain = &spirv,
-      .label = name.c_str(),
+      .label = name,
   };
 
   return device.CreateShaderModule(&shader_module_descriptor);
@@ -141,7 +141,7 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     std::vector dawn_toggles{"allow_unsafe_apis", "enable_immediate_error_handling", "disable_robustness"};
 
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    const char *dawn_gpu_debug_env = std::getenv("MRTRIX_GPU_DEBUG_TRACE");
+    const char *dawn_gpu_debug_env = std::getenv("MRTRIX_GPU_DEBUG_TRACE"); // check_syntax off
     if (dawn_gpu_debug_env != nullptr && std::string(dawn_gpu_debug_env) == "1") {
       dawn_toggles.emplace_back("dump_shaders");
       dawn_toggles.emplace_back("disable_symbol_renaming");
@@ -217,9 +217,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     device_descriptor.SetDeviceLostCallback(
         wgpu::CallbackMode::AllowSpontaneous,
         [](const wgpu::Device &, wgpu::DeviceLostReason reason, wgpu::StringView message) {
-          const char *reasonName = "";
           if (reason != wgpu::DeviceLostReason::Destroyed) {
-            throw MR::Exception("GPU device lost: " + std::string(reasonName) + " : " + message.data);
+            throw MR::Exception(std::string("GPU device lost: ") + message.data);
           }
         });
     device_descriptor.SetUncapturedErrorCallback(
@@ -243,7 +242,7 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
 
   const auto executable_path = MR::Platform::get_executable_path();
   const std::string executable_dir_string = (std::filesystem::path(executable_path).parent_path() / "shaders").string();
-  const char *executable_dir_cstr = executable_dir_string.c_str();
+  const char *executable_dir_cstr = executable_dir_string.c_str(); // check_syntax off
 
   std::vector<slang::CompilerOptionEntry> slang_compiler_options;
   {
