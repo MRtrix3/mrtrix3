@@ -108,10 +108,9 @@ endif()
 
 # Threads (required by Dawn exported targets)
 find_package(Threads REQUIRED)
-find_package(Dawn QUIET)
 
-if(NOT Dawn_FOUND)
-    message(STATUS "Dawn not found, downloading prebuilt binaries...")
+if(NOT MRTRIX_USE_SYSTEM_DAWN)
+    message(STATUS "Downloading prebuilt binaries for Dawn...")
     include(FetchContent)
     set(FETCHCONTENT_QUIET OFF)
 
@@ -161,8 +160,8 @@ endif()
 
 find_package(slang QUIET)
 
-if(NOT Slang_FOUND)
-    message(STATUS "Slang not found, downloading prebuilt binaries...")
+if(NOT MRTRIX_USE_SYSTEM_SLANG)
+    message(STATUS "Downloading prebuilt binaries for Slang...")
     set(SLANG_VERSION "2025.22.1" CACHE STRING "Slang version to download from GitHub releases")
 
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
