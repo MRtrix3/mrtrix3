@@ -222,13 +222,12 @@ if(MRTRIX_USE_SYSTEM_TCB_SPAN)
     add_library(tcb::span ALIAS tcb_span)
 else()
     message(STATUS "Downloading tcb::span...")
-    FetchContent_Declare(
-        tcb_span
-        GIT_TAG 836dc6a0efd9849cb194e88e4aa2387436bb079b
-        GIT_REPOSITORY https://github.com/tcbrindle/span.git
-    )
 
-    FetchContent_MakeAvailable(tcb_span)
+    FetchContent_Populate(
+        tcb_span
+        GIT_REPOSITORY https://github.com/tcbrindle/span.git
+        GIT_TAG        836dc6a0efd9849cb194e88e4aa2387436bb079b
+    )
 
     add_library(tcb_span INTERFACE)
     target_include_directories(tcb_span INTERFACE ${tcb_span_SOURCE_DIR}/include)
