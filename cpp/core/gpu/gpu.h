@@ -193,44 +193,38 @@ struct ComputeContext {
   ComputeContext &operator=(ComputeContext &&) noexcept;
   ~ComputeContext();
 
-  [[nodiscard]]
-  static std::future<ComputeContext> request_async();
+  [[nodiscard]] static std::future<ComputeContext> request_async();
 
   // NOTE: For all buffer creation and write operations, it's safe to discard
   // the original data on the host side after the operation is complete as
   // the data is internally copied to a staging buffer by Dawn's implementation.
   template <typename T = float>
-  [[nodiscard]]
-  Buffer<T> new_empty_buffer(size_t size, BufferType buffer_type = BufferType::StorageBuffer) const {
+  [[nodiscard]] Buffer<T> new_empty_buffer(size_t size, BufferType buffer_type = BufferType::StorageBuffer) const {
     return {buffer_type, inner_new_empty_buffer(size * sizeof(T), buffer_type)};
   }
 
   template <typename T = float>
-  [[nodiscard]]
-  Buffer<T> new_buffer_from_host_memory(std::initializer_list<T> srcMemory,
-                                        BufferType bufferType = BufferType::StorageBuffer) const {
+  [[nodiscard]] Buffer<T> new_buffer_from_host_memory(std::initializer_list<T> srcMemory,
+                                                      BufferType bufferType = BufferType::StorageBuffer) const {
     return new_buffer_from_host_memory(tcb::span<const T>(srcMemory), bufferType);
   }
 
   template <typename T = float>
-  [[nodiscard]]
-  Buffer<T> new_buffer_from_host_memory(tcb::span<const T> src_memory,
-                                        BufferType buffer_type = BufferType::StorageBuffer) const {
+  [[nodiscard]] Buffer<T> new_buffer_from_host_memory(tcb::span<const T> src_memory,
+                                                      BufferType buffer_type = BufferType::StorageBuffer) const {
     return {buffer_type, inner_new_buffer_from_host_memory(src_memory.data(), src_memory.size_bytes(), buffer_type)};
   }
 
   template <typename T = float>
-  [[nodiscard]]
-  Buffer<T> new_buffer_from_host_memory(const void *src_memory,
-                                        size_t byte_size,
-                                        BufferType buffer_type = BufferType::StorageBuffer) const {
+  [[nodiscard]] Buffer<T> new_buffer_from_host_memory(const void *src_memory,
+                                                      size_t byte_size,
+                                                      BufferType buffer_type = BufferType::StorageBuffer) const {
     return {buffer_type, inner_new_buffer_from_host_memory(src_memory, byte_size, buffer_type)};
   }
 
   template <typename T = float>
-  [[nodiscard]]
-  Buffer<T> new_buffer_from_host_memory(const std::vector<tcb::span<const T>> &src_memory_regions,
-                                        BufferType bufferType = BufferType::StorageBuffer) const {
+  [[nodiscard]] Buffer<T> new_buffer_from_host_memory(const std::vector<tcb::span<const T>> &src_memory_regions,
+                                                      BufferType bufferType = BufferType::StorageBuffer) const {
     size_t totalBytes = 0;
     for (const auto &region : src_memory_regions)
       totalBytes += region.size_bytes();
@@ -245,9 +239,7 @@ struct ComputeContext {
   }
 
   // This function blocks until the download is complete.
-  template <typename T = float>
-  [[nodiscard]]
-  std::vector<T> download_buffer_as_vector(const Buffer<T> &buffer) const {
+  template <typename T = float> [[nodiscard]] std::vector<T> download_buffer_as_vector(const Buffer<T> &buffer) const {
     std::vector<T> result(buffer.wgpu_handle.GetSize() / sizeof(T));
     download_buffer(buffer, result.data(), result.size() * sizeof(T));
     return result;
@@ -289,14 +281,13 @@ struct ComputeContext {
     inner_clear_buffer(buffer.wgpu_handle);
   }
 
-  [[nodiscard]]
-  Texture new_empty_texture(const TextureSpec &textureSpec) const;
+  [[nodiscard]] Texture new_empty_texture(const TextureSpec &textureSpec) const;
 
-  [[nodiscard]]
-  Texture new_texture_from_host_memory(const TextureSpec &texture_desc, tcb::span<const float> src_memory_region) const;
+  [[nodiscard]] Texture new_texture_from_host_memory(const TextureSpec &texture_desc,
+                                                     tcb::span<const float> src_memory_region) const;
 
-  [[nodiscard]]
-  Texture new_texture_from_host_image(const MR::Image<float> &image, const TextureUsage &usage = {}) const;
+  [[nodiscard]] Texture new_texture_from_host_image(const MR::Image<float> &image,
+                                                    const TextureUsage &usage = {}) const;
 
   Buffer<float> new_buffer_from_host_image(const MR::Image<float> &image,
                                            BufferType bufferType = BufferType::StorageBuffer) const;
@@ -304,13 +295,11 @@ struct ComputeContext {
   // This function blocks until the download is complete.
   void download_texture(const Texture &texture, tcb::span<float> dst_memory_region) const;
 
-  [[nodiscard]]
-  Kernel new_kernel(const KernelSpec &kernel_spec) const;
+  [[nodiscard]] Kernel new_kernel(const KernelSpec &kernel_spec) const;
 
   void dispatch_kernel(const Kernel &kernel, const DispatchGrid &dispatch_grid) const;
 
-  [[nodiscard]]
-  Sampler new_linear_sampler() const;
+  [[nodiscard]] Sampler new_linear_sampler() const;
 
 private:
   wgpu::Buffer inner_new_empty_buffer(size_t byteSize, BufferType bufferType = BufferType::StorageBuffer) const;

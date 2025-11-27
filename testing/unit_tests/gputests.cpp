@@ -14,7 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include <gtest/gtest.h>
 #include <iostream>
 
@@ -363,7 +362,7 @@ TEST_F(GPUTest, CopyBufferToBuffer_Partial) {
     if (i < dst_start || i >= dst_start + count) {
       EXPECT_EQ(downloaded_data[i], src[i]);
     }
-}
+  }
 }
 
 TEST_F(GPUTest, CopyBufferToBuffer_SourceOutOfRangeThrows) {

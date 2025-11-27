@@ -35,12 +35,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <future>
 #include <limits>
 #include <string>
 #include <utility>
 #include <vector>
-#include <filesystem>
 
 namespace MR::GPU {
 
@@ -76,8 +76,7 @@ uint32_t pixel_size_in_bytes(const TextureFormat format) {
   }
 }
 
-wgpu::ShaderModule
-make_wgsl_shader_module(std::string_view name, std::string_view code, const wgpu::Device &device) {
+wgpu::ShaderModule make_wgsl_shader_module(std::string_view name, std::string_view code, const wgpu::Device &device) {
   wgpu::ShaderSourceWGSL wgsl;
   wgsl.code = code;
 
