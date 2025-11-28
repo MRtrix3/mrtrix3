@@ -788,7 +788,7 @@ std::string pydra_code() {
                                 "Fod",    "Label",  "Mask",      "Mesh",       "Mr",    "Mt",     "Peaks", "Sh",
                                 "Tck",    "Tensor", "Transform", "Tsf",        "Voxel", "Vector", "Warp"};
 
-  auto convert_to_pascal_case = [&](const std::string &input) {
+  auto convert_to_pascal_case = [&](const std::string_view input) {
     std::string result;
     bool capitalizeNext = true;
     for (char c : input) {
@@ -802,7 +802,7 @@ std::string pydra_code() {
         result += c;
         if (c == '2')
           capitalizeNext = true;
-        for (const std::string &prefix : CMD_PREFIXES) {
+        for (const std::string_view prefix : CMD_PREFIXES) {
           if (result == prefix) {
             capitalizeNext = true;
             break;
@@ -834,22 +834,22 @@ std::string pydra_code() {
 
   // Add import lines
   std::string s = std::string("# Auto-generated from MRtrix C++ command with '__print_pydra_code__' secret option\n\n");
-  s += "import typing as ty \n";
+  s += "from typing import Any \n";
   s += "from pathlib import Path  # noqa: F401\n";
   s += "from fileformats.generic import File, Directory  # noqa: F401\n";
   s += "from fileformats.vendor.mrtrix3.medimage import ImageIn, ImageOut, Tracks  # noqa: F401\n";
   s += "from pydra.compose import shell\n";
   s += "from pydra.utils.typing import MultiInputObj\n";
 
-  auto escape_id = [&](const std::string &id) {
-    std::string escaped = id;
+  auto escape_id = [&](const std::string_view id) {
+    std::string escaped(id);
     // Replace any spaces and periods with underscores
     std::replace(escaped.begin(), escaped.end(), ' ', '_');
     std::replace(escaped.begin(), escaped.end(), '.', '_');
     // Append any Python keywords with an underscore
     bool is_keyword = std::any_of(std::begin(PYTHON_KEYWORDS),
                                   std::end(PYTHON_KEYWORDS),
-                                  [&id](const std::string &kword) { return kword == id; });
+                                  [&id](const std::string_view kword) { return kword == id; });
     if (is_keyword)
       escaped += "_";
 
@@ -889,7 +889,7 @@ std::string pydra_code() {
     if (types[ArgTypeFlags::TracksOut])
       type += " | Tracks";
     if (type.empty())
-      type = "ty.Any";
+      type = "Any";
     else
       type = type.substr(3); // drop the preceding " | "
     return type;
@@ -931,7 +931,7 @@ std::string pydra_code() {
     return f;
   };
 
-  auto format_output_template = [&](const std::string &id, const ArgTypeFlags &types) {
+  auto format_output_template = [&](const std::string_view id, const ArgTypeFlags &types) {
     std::string tmpl(id);
     if (types[ArgTypeFlags::ImageOut]) {
       tmpl += ".mif";
@@ -945,12 +945,12 @@ std::string pydra_code() {
     return tmpl;
   };
 
-  auto format_output_templates = [&](const std::string &id, const Option &opt) {
+  auto format_output_templates = [&](const std::string_view id, const Option &opt) {
     if (opt.size() == 1)
       return "\"" + format_output_template(id, opt[0].types) + "\"";
     std::string tmpl = "(";
     for (size_t i = 0; i < opt.size(); ++i)
-      tmpl += "\"" + format_output_template(id + MR::str(i), opt[i].types) + "\",";
+      tmpl += "\"" + format_output_template(std::string(id) + MR::str(i), opt[i].types) + "\",";
     tmpl += ")";
     return tmpl;
   };
@@ -1026,7 +1026,7 @@ std::string pydra_code() {
     bool is_multi = type_string.length() > 19 && type_string.substr(0, 19) == "MultiInputObj";
     if (is_output && !is_multi) {
       type_string += "| bool | None";
-    } else if (opt.flags.optional() && type_string != "bool" && type_string != "ty.Any") {
+    } else if (opt.flags.optional() && type_string != "bool" && type_string != "Any") {
       type_string += " | None";
     }
     // Print type
