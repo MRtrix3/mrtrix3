@@ -15,7 +15,6 @@
 
 import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
 from keyword import kwlist as PYTHON_KEYWORDS
-from warnings import warn
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
 try:
