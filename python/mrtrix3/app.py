@@ -15,6 +15,7 @@
 
 import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
 from keyword import kwlist as PYTHON_KEYWORDS
+from warnings import warn
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
 try:
@@ -1521,8 +1522,6 @@ class Parser(argparse.ArgumentParser):
     def parse_type(type_, optional: bool = False):
       if type_ is str or type_ is None:
         type_str = "str"
-      elif isinstance(type_, Parser.Various):
-        type_str = "typing.Any"
       elif isinstance(type_, Parser.Bool):
         type_str = "bool"
       elif type(type_).__name__ == "IntBounded":
@@ -1552,7 +1551,8 @@ class Parser(argparse.ArgumentParser):
       elif isinstance(type_, Parser.TracksOut):
         type_str = "Tracks"
       else:
-        raise ValueError("Unrecognized type: " + str(type_))
+        warn("Unrecognized type: " + str(type_) + " defaulting to ty.Any")
+        type_str = "ty.Any"
       if optional:
         type_str += " | None"
       return type_str
@@ -1690,7 +1690,7 @@ class Parser(argparse.ArgumentParser):
         "import typing\n"
         "from pathlib import Path  # noqa: F401\n"
         "from fileformats.generic import FsObject, File, Directory  # noqa: F401\n"
-        "from fileformats.medimage_mrtrix3 import Tracks, ImageIn, ImageOut  # noqa: F401\n"
+        "from fileformats.vendor.mrtrix3.medimage import Tracks, ImageIn, ImageOut  # noqa: F401\n"
         "from pydra.utils.typing import MultiInputObj\n"
         "from pydra.compose import shell\n"
     )

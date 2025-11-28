@@ -837,7 +837,7 @@ std::string pydra_code() {
   s += "import typing as ty \n";
   s += "from pathlib import Path  # noqa: F401\n";
   s += "from fileformats.generic import File, Directory  # noqa: F401\n";
-  s += "from fileformats.medimage_mrtrix3 import ImageIn, ImageOut, Tracks  # noqa: F401\n";
+  s += "from fileformats.vendor.mrtrix3.medimage import ImageIn, ImageOut, Tracks  # noqa: F401\n";
   s += "from pydra.compose import shell\n";
   s += "from pydra.utils.typing import MultiInputObj\n";
 
@@ -888,8 +888,11 @@ std::string pydra_code() {
       type += " | Tracks";
     if (types[ArgTypeFlags::TracksOut])
       type += " | Tracks";
-    assert(type);
-    return type.substr(3); // drop the preceding " | "
+    if (type.empty())
+      type = "ty.Any";
+    else
+      type = type.substr(3); // drop the preceding " | "
+    return type;
   };
 
   auto format_option_type = [&](const Option &opt, bool for_output = false) {
