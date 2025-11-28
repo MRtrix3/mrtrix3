@@ -856,62 +856,56 @@ std::string pydra_code() {
     return escaped;
   };
 
-  auto format_type = [&](const ArgType &type, bool optional = false) {
-    switch (type) {
-    case Undefined:
-      return "ty.Any";
-    case Text:
-      return "str";
-    case Boolean:
-      return "bool";
-    case Integer:
-      return "int";
-    case Float:
-      return "float";
-    case ArgFileIn:
-      return "File";
-    case ArgFileOut:
-      return "File";
-    case ArgDirectoryIn:
-      return "Directory";
-    case ArgDirectoryOut:
-      return "Directory";
-    case Choice:
-      return "str";
-    case ImageIn:
-      return "ImageIn";
-    case ImageOut:
-      return "ImageOut";
-    case IntSeq:
-      return "list[int]";
-    case FloatSeq:
-      return "list[float]";
-    case TracksIn:
-      return "Tracks";
-    case TracksOut:
-      return "Tracks";
-    case Various:
-      return "ty.Any";
-    default:
-      assert(0);
-    }
-    return "not-reached";
+  auto format_type = [&](const ArgTypeFlags &types, bool optional = false) {
+    std::string type;
+    if (types[ArgTypeFlags::Text])
+      type += " | str";
+    if (types[ArgTypeFlags::Boolean])
+      type += " | bool";
+    if (types[ArgTypeFlags::Integer])
+      type += " | int";
+    if (types[ArgTypeFlags::Float])
+      type += " | float";
+    if (types[ArgTypeFlags::FileIn])
+      type += " | File";
+    if (types[ArgTypeFlags::FileOut])
+      type += " | File";
+    if (types[ArgTypeFlags::DirectoryIn])
+      type += " | Directory";
+    if (types[ArgTypeFlags::DirectoryOut])
+      type += " | Directory";
+    if (types[ArgTypeFlags::Choice])
+      type += " | str";
+    if (types[ArgTypeFlags::ImageIn])
+      type += " | ImageIn";
+    if (types[ArgTypeFlags::ImageOut])
+      type += " | ImageOut";
+    if (types[ArgTypeFlags::IntSeq])
+      type += " | list[int]";
+    if (types[ArgTypeFlags::FloatSeq])
+      type += " | list[float]";
+    if (types[ArgTypeFlags::TracksIn])
+      type += " | Tracks";
+    if (types[ArgTypeFlags::TracksOut])
+      type += " | Tracks";
+    assert(type);
+    return type.substr(3); // drop the preceding " | "
   };
 
   auto format_option_type = [&](const Option &opt, bool for_output = false) {
     std::string f;
-    bool is_multi = (opt.flags & AllowMultiple) && (!opt.size() || opt[0].type != ArgFileOut);
+    bool is_multi = (opt.flags.allow_multiple()) && (!opt.size() || !opt[0].types[ArgTypeFlags::FileOut]);
     if (is_multi) {
       f += "MultiInputObj[";
     }
     if (!opt.size()) {
       f += "bool";
     } else if (opt.size() == 1) {
-      f += format_type(opt[0].type, true);
+      f += format_type(opt[0].types, true);
     } else {
       f += "tuple[";
       for (size_t a = 0; a < opt.size(); ++a) {
-        f += format_type(opt[0].type, true);
+        f += format_type(opt[0].types, true);
         if (a != opt.size() - 1) {
           f += ", ";
         }
@@ -926,22 +920,21 @@ std::string pydra_code() {
 
   auto format_choices = [&](const Argument &arg) {
     std::string f = indent + "allowed_values=[";
-    std::vector<std::string> choices = std::get<std::vector<std::string>>(arg.limits);
-    f += "\"" + choices[0] + "\"";
-    for (int i = 1; i < choices.size(); ++i) {
-      f += ", \"" + choices[i] + "\"";
+    f += "\"" + arg.choices[0] + "\"";
+    for (int i = 1; i < arg.choices.size(); ++i) {
+      f += ", \"" + arg.choices[i] + "\"";
     }
     f += "],\n";
     return f;
   };
 
-  auto format_output_template = [&](const std::string &id, const ArgType &type) {
+  auto format_output_template = [&](const std::string &id, const ArgTypeFlags &types) {
     std::string tmpl(id);
-    if (type == ImageOut) {
+    if (types[ArgTypeFlags::ImageOut]) {
       tmpl += ".mif";
-    } else if (type == TracksOut) {
+    } else if (types[ArgTypeFlags::TracksOut]) {
       tmpl += ".tck";
-    } else if (type == ArgFileOut) {
+    } else if (types[ArgTypeFlags::FileOut]) {
       tmpl += ".txt";
     }
     // TODO: Add special cases for file-out based on the 'id' where the extension
@@ -951,10 +944,10 @@ std::string pydra_code() {
 
   auto format_output_templates = [&](const std::string &id, const Option &opt) {
     if (opt.size() == 1)
-      return "\"" + format_output_template(id, opt[0].type) + "\"";
+      return "\"" + format_output_template(id, opt[0].types) + "\"";
     std::string tmpl = "(";
     for (size_t i = 0; i < opt.size(); ++i)
-      tmpl += "\"" + format_output_template(id + MR::str(i), opt[i].type) + "\",";
+      tmpl += "\"" + format_output_template(id + MR::str(i), opt[i].types) + "\",";
     tmpl += ")";
     return tmpl;
   };
@@ -962,13 +955,13 @@ std::string pydra_code() {
   auto format_arg_name = [&](const Argument &arg) {
     std::string id = arg.id;
     std::string arg_name;
-    if (id == "input" && (arg.type == ImageIn || arg.type == ArgFileIn))
+    if (id == "input" && (arg.types[ArgTypeFlags::ImageIn] || arg.types[ArgTypeFlags::FileIn]))
       arg_name = "in_file";
-    else if (id == "input" && arg.type == ArgDirectoryIn)
+    else if (id == "input" && arg.types[ArgTypeFlags::DirectoryIn])
       arg_name = "in_dir";
-    else if (id == "output" && (arg.type == ImageOut || arg.type == ArgFileOut))
+    else if (id == "output" && (arg.types[ArgTypeFlags::ImageOut] || arg.types[ArgTypeFlags::FileOut]))
       arg_name = "out_file";
-    else if (id == "output" && arg.type == ArgDirectoryOut)
+    else if (id == "output" && arg.types[ArgTypeFlags::DirectoryOut])
       arg_name = "out_dir";
     else
       arg_name = escape_id(arg.id);
@@ -976,7 +969,7 @@ std::string pydra_code() {
   };
 
   auto format_argument = [&](const Argument &arg, int position, bool is_output = false) {
-    bool is_multi = (arg.flags & AllowMultiple) && (arg.type != ArgFileOut);
+    bool is_multi = (arg.flags.allow_multiple()) && (!arg.types[ArgTypeFlags::FileOut]);
     // Print name of field
     std::string f = "";
     std::string arg_name = format_arg_name(arg);
@@ -989,11 +982,11 @@ std::string pydra_code() {
       else
         type += "MultiInputObj[";
     }
-    type += format_type(arg.type);
+    type += format_type(arg.types);
     if (is_multi) {
       type += "]";
     }
-    if (arg.flags & Optional) {
+    if (arg.flags.optional()) {
       type += " | None";
     }
     f += type;
@@ -1004,19 +997,19 @@ std::string pydra_code() {
     // Print metadata fields
     f += indent + "argstr=\"\",\n";
     f += indent + "position=" + std::to_string(position) + ",\n";
-    if (arg.flags & Optional) {
-      if (arg.type == Boolean)
+    if (arg.flags.optional()) {
+      if (arg.types[ArgTypeFlags::Boolean])
         f += indent + "default=False,\n";
       else
         f += indent + "default=None,\n";
     }
     if (is_output) {
-      f += indent + "path_template=\"" + format_output_template(arg_name, arg.type) + "\",\n";
+      f += indent + "path_template=\"" + format_output_template(arg_name, arg.types) + "\",\n";
     }
 
     f += indent + "help=\"\"\"" + arg.desc + "\"\"\",\n";
 
-    if (arg.type == Choice) {
+    if (arg.types[ArgTypeFlags::Choice]) {
       f += format_choices(arg);
     }
     f += base_indent + ")\n";
@@ -1030,7 +1023,7 @@ std::string pydra_code() {
     bool is_multi = type_string.length() > 19 && type_string.substr(0, 19) == "MultiInputObj";
     if (is_output && !is_multi) {
       type_string += "| bool | None";
-    } else if (opt.flags & Optional && type_string != "bool" && type_string != "ty.Any") {
+    } else if (opt.flags.optional() && type_string != "bool" && type_string != "ty.Any") {
       type_string += " | None";
     }
     // Print type
@@ -1039,7 +1032,7 @@ std::string pydra_code() {
       f += " = shell.outarg(\n";
     else
       f += " = shell.arg(\n";
-    if (opt.flags & Optional) {
+    if (opt.flags.optional()) {
       if (type_string == "bool")
         f += indent + "default=False,\n";
       else
@@ -1051,12 +1044,12 @@ std::string pydra_code() {
       f += indent + "path_template=" + format_output_templates(escape_id(opt.id), opt) + ",\n";
     }
     f += indent + "help=\"\"\"" + opt.desc + "\"\"\",\n";
-    if (opt.size() == 1 && (opt[0].type == IntSeq || opt[0].type == FloatSeq)) {
+    if (opt.size() == 1 && (opt[0].types[ArgTypeFlags::IntSeq] || opt[0].types[ArgTypeFlags::FloatSeq])) {
       f += indent + "sep=\",\",\n";
     } else if (opt.size() > 1) {
       f += indent + "sep=\" \",\n";
     }
-    if (opt.size() == 1 && opt[0].type == Choice) {
+    if (opt.size() == 1 && opt[0].types[ArgTypeFlags::Choice]) {
       f += format_choices(opt[0]);
     }
     f += base_indent + ")\n";
@@ -1065,14 +1058,16 @@ std::string pydra_code() {
 
   auto option_is_output = [&](const Option &opt) {
     for (size_t i = 0; i < opt.size(); ++i) {
-      if (opt[i].type == ImageOut || opt[i].type == ArgFileOut || opt[i].type == ArgDirectoryOut)
+      if (opt[i].types[ArgTypeFlags::ImageOut] || opt[i].types[ArgTypeFlags::FileOut] ||
+          opt[i].types[ArgTypeFlags::DirectoryOut])
         return true;
     }
     return false;
   };
 
   auto argument_is_output = [&](const Argument &arg) {
-    return arg.type == ImageOut || arg.type == ArgFileOut || arg.type == ArgDirectoryOut;
+    return arg.types[ArgTypeFlags::ImageOut] || arg.types[ArgTypeFlags::FileOut] ||
+           arg.types[ArgTypeFlags::DirectoryOut];
   };
 
   // Create actual class
@@ -1098,7 +1093,7 @@ std::string pydra_code() {
   s += "\n" + base_indent + "References\n" + base_indent + "----------\n\n";
   for (size_t i = 0; i < REFERENCES.size(); ++i)
     s += indent + REFERENCES[i] + "\n\n";
-  s += indent + MRTRIX_CORE_REFERENCE + "\n\n";
+  s += indent + core_reference + "\n\n";
 
   s += "\n" + base_indent + "MRtrix\n" + base_indent + "------" + "\n\n" + base_indent + "Version:" + mrtrix_version +
        ", built " + build_date + "\n\n" + base_indent + "Author: " + AUTHOR + "\n\n" + base_indent +
