@@ -1,4 +1,4 @@
-name: Checks
+name: Pydra
 
 on:
   pull_request:
