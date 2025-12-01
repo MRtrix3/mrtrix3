@@ -91,9 +91,8 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
       for (size_t j = 0; j < 3; j++)
         cras[i] += 0.5 * header.size(axes[j]) * header.spacing(axes[j]) * M(i, j);
     }
-    for (size_t i = 0; i != V; ++i) {
+    for (size_t i = 0; i != V; ++i)
       vertices.push_back(in.vert(i) + cras);
-    }
     break;
   }
 

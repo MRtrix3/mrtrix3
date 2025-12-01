@@ -258,7 +258,7 @@ Writer::Writer(const Header &H, std::string_view filename)
   png_time modtime;
   png_convert_from_time_t(&modtime, std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
   png_set_tIME(png_ptr, info_ptr, &modtime);
-  png_text text[4];
+  std::array<png_text, 4> text;
   const std::string title_key("Title");
   const std::string title_text(filename);
   const std::string software_key("Software");
@@ -279,7 +279,7 @@ Writer::Writer(const Header &H, std::string_view filename)
   text[3].compression = PNG_TEXT_COMPRESSION_NONE;
   text[3].key = const_cast<char *>(url_key.c_str());
   text[3].text = const_cast<char *>(url_text.c_str());
-  png_set_text(png_ptr, info_ptr, text, 4);
+  png_set_text(png_ptr, info_ptr, text.data(), 4);
   png_write_info(png_ptr, info_ptr);
   // Note: png_set_packing NOT being called; this will result in 8 pixels per byte for mask images
   //   (if this function _were_ called, it would instead be spread over 1 byte per pixel)

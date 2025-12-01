@@ -113,8 +113,8 @@ public:
   bool to_draw() const { return (visible && (alpha > 0.0f) && (size > 0.0f)); }
 
 private:
-  const node_t node_indices[2];
-  const Eigen::Vector3f node_centres[2];
+  const std::array<node_t, 2> node_indices;
+  const std::array<Eigen::Vector3f, 2> node_centres;
   const Eigen::Vector3f dir;
 
   GLfloat *rot_matrix;
@@ -159,7 +159,7 @@ private:
     Exemplar() = delete;
 
   private:
-    const Eigen::Vector3f endpoints[2];
+    const std::array<Eigen::Vector3f, 2> endpoints;
     std::vector<Eigen::Vector3f> vertices, tangents, normals, binormals;
     friend class Streamline;
     friend class Streamtube;

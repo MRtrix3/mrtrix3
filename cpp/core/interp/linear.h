@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <complex>
 #include <type_traits>
 
@@ -137,9 +138,9 @@ public:
         f[i] = 0.0;
     }
 
-    coef_type x_weights[2] = {coef_type(1 - f[0]), coef_type(f[0])};
-    coef_type y_weights[2] = {coef_type(1 - f[1]), coef_type(f[1])};
-    coef_type z_weights[2] = {coef_type(1 - f[2]), coef_type(f[2])};
+    const std::array<coef_type, 2> x_weights = {coef_type(1 - f[0]), coef_type(f[0])};
+    const std::array<coef_type, 2> y_weights = {coef_type(1 - f[1]), coef_type(f[1])};
+    const std::array<coef_type, 2> z_weights = {coef_type(1 - f[2]), coef_type(f[2])};
 
     size_t i(0);
     for (ssize_t z = 0; z < 2; ++z) {
@@ -260,13 +261,13 @@ public:
         f[i] = 0.0;
     }
 
-    coef_type x_weights[2] = {coef_type(1 - f[0]), coef_type(f[0])};
-    coef_type y_weights[2] = {coef_type(1 - f[1]), coef_type(f[1])};
-    coef_type z_weights[2] = {coef_type(1 - f[2]), coef_type(f[2])};
+    const std::array<coef_type, 2> x_weights = {coef_type(1 - f[0]), coef_type(f[0])};
+    const std::array<coef_type, 2> y_weights = {coef_type(1 - f[1]), coef_type(f[1])};
+    const std::array<coef_type, 2> z_weights = {coef_type(1 - f[2]), coef_type(f[2])};
 
     // For linear interpolation gradient weighting is independent of direction
     // i.e. Simply looking at finite difference
-    coef_type diff_weights[2] = {-0.5, 0.5};
+    const std::array<coef_type, 2> diff_weights = {-0.5, 0.5};
 
     size_t i(0);
     for (ssize_t z = 0; z < 2; ++z) {
@@ -415,13 +416,13 @@ public:
         f[i] = 0.0;
     }
 
-    coef_type x_weights[2] = {coef_type(1 - f[0]), coef_type(f[0])};
-    coef_type y_weights[2] = {coef_type(1 - f[1]), coef_type(f[1])};
-    coef_type z_weights[2] = {coef_type(1 - f[2]), coef_type(f[2])};
+    const std::array<coef_type, 2> x_weights = {coef_type(1 - f[0]), coef_type(f[0])};
+    const std::array<coef_type, 2> y_weights = {coef_type(1 - f[1]), coef_type(f[1])};
+    const std::array<coef_type, 2> z_weights = {coef_type(1 - f[2]), coef_type(f[2])};
 
     // For linear interpolation gradient weighting is independent of direction
     // i.e. Simply looking at finite difference
-    coef_type diff_weights[2] = {coef_type(-0.5), coef_type(0.5)};
+    const std::array<coef_type, 2> diff_weights = {coef_type(-0.5), coef_type(0.5)};
 
     size_t i(0);
     for (ssize_t z = 0; z < 2; ++z) {

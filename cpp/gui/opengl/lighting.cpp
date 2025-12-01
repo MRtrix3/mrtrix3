@@ -15,6 +15,9 @@
  */
 
 #include "opengl/lighting.h"
+
+#include <array>
+
 #include "file/config.h"
 
 namespace MR::GUI::GL {
@@ -24,8 +27,8 @@ constexpr float DefaultAmbient = 0.5f;
 constexpr float DefaultDiffuse = 0.5f;
 constexpr float DefaultSpecular = 0.5f;
 constexpr float DefaultShine = 5.0f;
-constexpr float DefaultBackgroundColor[3] = {1.0f, 1.0f, 1.0f};
-constexpr float DefaultLightPosition[3] = {1.0f, 1.0f, 3.0f};
+const Eigen::Array3f DefaultBackgroundColor(1.0f, 1.0f, 1.0f);
+const Eigen::Array3f DefaultLightPosition(1.0f, 1.0f, 3.0f);
 
 } // namespace
 
@@ -34,20 +37,13 @@ void Lighting::load_defaults() {
   // CONF default: 1.0,1.0,1.0
   // CONF The default colour to use for the background in OpenGL panels, notably
   // CONF the SH viewer.
-  File::Config::get_RGB("BackgroundColor",
-                        background_color,
-                        DefaultBackgroundColor[0],
-                        DefaultBackgroundColor[1],
-                        DefaultBackgroundColor[2]);
+  background_color = File::Config::get_RGB("BackgroundColor", DefaultBackgroundColor);
 
   // CONF option: LightPosition
   // CONF default: 1.0,1.0,3.0
   // CONF The default position vector to use for the light in OpenGL
   // CONF renders.
-  File::Config::get_RGB(
-      "LightPosition", lightpos, DefaultLightPosition[0], DefaultLightPosition[1], DefaultBackgroundColor[2]);
-
-  Eigen::Map<Eigen::Vector3f>(lightpos).normalize();
+  lightpos = File::Config::get_RGB("LightPosition", DefaultLightPosition).matrix().normalized();
 
   // CONF option: AmbientIntensity
   // CONF default: 0.5

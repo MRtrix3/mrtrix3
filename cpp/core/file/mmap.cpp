@@ -136,12 +136,13 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
         if (!in)
           throw Exception("failed to open file \"" + Entry::name + "\": " + strerror(errno));
         in.seekg(start, in.beg);
-        in.read((char *)first, msize);
+        in.read(reinterpret_cast<char *>(first), msize);
         if (!in.good())
           throw Exception("error preloading contents of file \"" + Entry::name + "\": " + strerror(errno));
       } else
         memset(first, 0, msize);
-      DEBUG("file \"" + Entry::name + "\" held in RAM at " + str((void *)first) + ", size " + str(msize));
+      DEBUG("file \"" + Entry::name + "\" held in RAM at " + str(reinterpret_cast<void *>(first)) + ", size " +
+            str(msize));
 
       return;
     }
@@ -176,8 +177,8 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
   }
   first = addr + start;
 
-  DEBUG("file \"" + Entry::name + "\" mapped at " + str((void *)addr) + ", size " + str(msize) + " (read-" +
-        (readwrite ? "write" : "only") + ")");
+  DEBUG("file \"" + Entry::name + "\" mapped at " + str(reinterpret_cast<void *>(addr)) + ", size " + str(msize) +
+        " (read-" + (readwrite ? "write" : "only") + ")");
 }
 
 MMap::~MMap() {
@@ -198,7 +199,7 @@ MMap::~MMap() {
       try {
         File::OFStream out(Entry::name, std::ios::in | std::ios::out | std::ios::binary);
         out.seekp(start, out.beg);
-        out.write((const char *)first, msize);
+        out.write(reinterpret_cast<const char *>(first), msize);
         if (!out.good())
           throw 1;
       } catch (...) {

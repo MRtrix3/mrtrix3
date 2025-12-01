@@ -61,7 +61,8 @@ public:
 
   friend std::ostream &operator<<(std::ostream &stream, const MMap &m) {
     stream << "File::MMap { " << m.name() << " [" << m.fd << "], size: " << m.size() << ", mapped "
-           << (m.readwrite ? "RW" : "RO") << " at " << (void *)m.address() << ", offset " << m.start << " }";
+           << (m.readwrite ? "RW" : "RO") << " at " << reinterpret_cast<const void *>(m.address()) << ", offset "
+           << m.start << " }";
     return stream;
   }
 

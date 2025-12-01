@@ -15,6 +15,9 @@
  */
 
 #include "mrview/colourmap_button.h"
+
+#include <array>
+
 #include "gui.h"
 #include "math/rng.h"
 
@@ -174,7 +177,7 @@ void ColourMapButton::select_colour_slot() {
 }
 
 void ColourMapButton::select_random_colour_slot() {
-  size_t colour[3];
+  std::array<size_t, 3> colour;
   Math::RNG rng;
   std::uniform_int_distribution<unsigned char> uniform_int;
   constexpr size_t max_half = std::numeric_limits<unsigned char>::max() / 2;

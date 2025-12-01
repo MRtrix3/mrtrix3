@@ -20,9 +20,9 @@ namespace MR::DWI::Tractography::GT {
 
 ParticleGrid::ParticleGrid(const Header &H) {
   DEBUG("Initialise particle grid.");
-  dims[0] = Math::ceil<size_t>(H.size(0) * H.spacing(0) / (2.0 * Particle::L));
-  dims[1] = Math::ceil<size_t>(H.size(1) * H.spacing(1) / (2.0 * Particle::L));
-  dims[2] = Math::ceil<size_t>(H.size(2) * H.spacing(2) / (2.0 * Particle::L));
+  dims = {Math::ceil<size_t>(H.size(0) * H.spacing(0) / (2.0 * Particle::L)),
+          Math::ceil<size_t>(H.size(1) * H.spacing(1) / (2.0 * Particle::L)),
+          Math::ceil<size_t>(H.size(2) * H.spacing(2) / (2.0 * Particle::L))};
   grid.resize(dims[0] * dims[1] * dims[2]);
 
   // Initialise scanner-to-grid transform

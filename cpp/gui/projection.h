@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "crosshair.h"
 #include "gui.h"
 #include "opengl/font.h"
@@ -142,7 +144,7 @@ public:
 
 protected:
   GL::mat4 MV, iMV, P, iP, MVP, iMVP;
-  GLint viewport[4];
+  std::array<GLint, 4> viewport;
 };
 
 class Projection : public ModelViewProjection {

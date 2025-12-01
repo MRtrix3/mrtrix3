@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "types.h"
 
 // glutils.h must be included before gl_core_3_3.h since it include Qt OpenGL headers
@@ -57,14 +59,14 @@ public:
       p[0] = vertices[i1][0] + vertices[i2][0];
       p[1] = vertices[i1][1] + vertices[i2][1];
       p[2] = vertices[i1][2] + vertices[i2][2];
-      Eigen::Map<Eigen::Vector3f>(p).normalize();
+      p.normalize();
     }
 
     float &operator[](const int n) { return p[n]; }
     float operator[](const int n) const { return p[n]; }
 
   private:
-    float p[3];
+    Eigen::Vector3f p;
   };
 
   std::vector<Vertex> vertices;

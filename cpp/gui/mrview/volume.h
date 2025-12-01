@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "header.h"
 #include "transform.h"
 
@@ -124,8 +126,11 @@ protected:
   float _scale_factor;
   bool texture_mode_changed;
 
-  Eigen::Vector3f pos[4], tex[4], z, im_z;
-  Eigen::Vector3f vertices[8];
+  std::array<Eigen::Vector3f, 4> pos;
+  std::array<Eigen::Vector3f, 4> tex;
+  Eigen::Vector3f z;
+  Eigen::Vector3f im_z;
+  std::array<Eigen::Vector3f, 8> vertices;
 
   inline Eigen::Vector3f div(const Eigen::Vector3f &a, const Eigen::Vector3f &b) {
     return Eigen::Vector3f(a[0] / b[0], a[1] / b[1], a[2] / b[2]);

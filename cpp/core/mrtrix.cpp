@@ -30,7 +30,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
   if (spec.empty())
     throw Exception("floating-point sequence specifier is empty");
   std::string::size_type start = 0, end;
-  default_type range_spec[3];
+  std::array<default_type, 3> range_spec;
   int i = 0;
   try {
     do {
@@ -46,7 +46,9 @@ std::vector<default_type> parse_floats(std::string_view spec) {
         if (i) {
           if (i != 2)
             throw Exception("For floating-point ranges, must specify three numbers (start:step:end)");
-          default_type first = range_spec[0], inc = range_spec[1], last = range_spec[2];
+          const default_type first = range_spec[0];
+          const default_type inc = range_spec[1];
+          const default_type last = range_spec[2];
           if (!inc || (inc * (last - first) < 0.0) || !std::isfinite(first) || !std::isfinite(inc) ||
               !std::isfinite(last))
             throw Exception("Floating-point range does not form a finite set");

@@ -14,10 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "file/nifti_utils.h"
+#include <array>
+
 #include "file/config.h"
 #include "file/gz.h"
 #include "file/json_utils.h"
+#include "file/nifti_utils.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
@@ -180,7 +182,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   // voxel sizes:
-  double pixdim[8];
+  std::array<double, 8> pixdim;
   for (int i = 0; i < ndim; i++) {
     pixdim[i] = Raw::fetch_<float_type>(&NH.pixdim[i + 1], is_BE);
     if (pixdim[i] < 0.0) {

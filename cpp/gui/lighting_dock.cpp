@@ -66,8 +66,9 @@ LightingSettings::LightingSettings(QWidget *parent, GL::Lighting &lighting) : QF
 
   elevation_slider = new QSlider(Qt::Horizontal);
   elevation_slider->setRange(0, 1000);
-  elevation_slider->setSliderPosition(static_cast<int>(std::round(
-      (1000.0 / Math::pi) * acos(-info.lightpos[1] / Eigen::Map<Eigen::Matrix<float, 3, 1>>(info.lightpos).norm()))));
+  elevation_slider->setSliderPosition(static_cast<int>(
+      std::round((1000.0 / Math::pi) *
+                 acos(-info.lightpos[1] / Eigen::Map<Eigen::Matrix<float, 3, 1>>(info.lightpos.data()).norm()))));
   connect(elevation_slider, SIGNAL(valueChanged(int)), this, SLOT(light_position_slot()));
   grid_layout->addWidget(new QLabel("Light elevation"), 4, 0);
   grid_layout->addWidget(elevation_slider, 4, 1);

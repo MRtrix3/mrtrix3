@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
+
 #include "file/entry.h"
 #include "file/ofstream.h"
 #include "file/path.h"
@@ -37,7 +39,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   std::ifstream in(name.c_str());
   if (!in)
     throw Exception("error reading header file \"" + name + "\": " + strerror(errno));
-  int dim[3];
+  std::array<int, 3> dim;
   in >> dim[0] >> dim[1] >> dim[2] >> BE;
   H.size(0) = dim[1];
   H.size(1) = dim[0];

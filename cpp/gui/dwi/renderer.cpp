@@ -30,7 +30,7 @@ Renderer::Renderer(QOpenGLWidget *widget)
   // CONF default: 1,1,0 (yellow)
   // CONF The default colour to use for objects (i.e. SH glyphs) when not
   // CONF colouring by direction.
-  File::Config::get_RGB("ObjectColor", object_color, 1.0, 1.0, 0.0);
+  object_color = File::Config::get_RGB("ObjectColor", {1.0, 1.0, 0.0});
 }
 
 void Renderer::start(const Projection &projection,
@@ -62,13 +62,13 @@ void Renderer::start(const Projection &projection,
   gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
   if (colour_relative_to_projection)
     gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "rotation"), 1, gl::FALSE_, *colour_relative_to_projection);
-  gl::Uniform3fv(gl::GetUniformLocation(shader, "light_pos"), 1, lighting.lightpos);
+  gl::Uniform3fv(gl::GetUniformLocation(shader, "light_pos"), 1, lighting.lightpos.data());
   gl::Uniform1f(gl::GetUniformLocation(shader, "ambient"), lighting.ambient);
   gl::Uniform1f(gl::GetUniformLocation(shader, "diffuse"), lighting.diffuse);
   gl::Uniform1f(gl::GetUniformLocation(shader, "specular"), lighting.specular);
   gl::Uniform1f(gl::GetUniformLocation(shader, "shine"), lighting.shine);
   gl::Uniform1f(gl::GetUniformLocation(shader, "scale"), scale);
-  gl::Uniform3fv(gl::GetUniformLocation(shader, "constant_color"), 1, object_color);
+  gl::Uniform3fv(gl::GetUniformLocation(shader, "constant_color"), 1, object_color.data());
   reverse_ID = gl::GetUniformLocation(shader, "reverse");
   origin_ID = gl::GetUniformLocation(shader, "origin");
 }
@@ -226,15 +226,15 @@ std::string Renderer::Shader::geometry_shader_source() const {
               "uniform vec3 origin;\n"
               "uniform float scale;\n"
               "uniform int reverse;\n"
-              "in vec3 vertex_orig_direction[], vertex_orig_position[], vertex_orig_color[];\n"
-              "in float orig_amplitude[];\n"
+              "in vec3 vertex_orig_direction[], vertex_orig_position[], vertex_orig_color[];\n" // check_syntax off
+              "in float orig_amplitude[];\n"                                                    // check_syntax off
               "out vec3 vertex_position, vertex_color, vertex_normal;\n"
               "out float amplitude;\n"
               "void main() {\n"
               "  vec3 mean_dir = normalize (vertex_orig_direction[0] + vertex_orig_direction[1] + "
               "vertex_orig_direction[2]);\n"
-              "  vec3 vertices[3];\n"
-              "  vec3 positions[3];\n"
+              "  vec3 vertices[3];\n"  // check_syntax off
+              "  vec3 positions[3];\n" // check_syntax off
               "  for (int v = 0; v < 3; ++v) {\n"
               "    if (dot (mean_dir, vertex_orig_direction[v]) > 0.0)\n"
               "      vertices[v] = vertex_orig_position[v];\n"

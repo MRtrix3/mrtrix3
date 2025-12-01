@@ -62,7 +62,7 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeNodeSelectedColour
   // CONF default: 1.0,1.0,1.0
   // CONF The colour used to highlight those nodes currently selected.
-  File::Config::get_RGB("ConnectomeNodeSelectedColour", node_selected_colour.data(), 1.0f, 1.0f, 1.0f);
+  node_selected_colour = File::Config::get_RGB("ConnectomeNodeSelectedColour", {1.0F, 1.0F, 1.0F});
   // CONF option: ConnectomeNodeSelectedSizeMultiplier
   // CONF default: 1.0
   // CONF The multiplicative factor to apply to the size of selected nodes.
@@ -84,7 +84,7 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeEdgeSelectedColour
   // CONF default: 0.9,0.9,1.0
   // CONF The colour used to highlight the edges connected to two currently selected nodes.
-  File::Config::get_RGB("ConnectomeEdgeSelectedColour", edge_selected_colour.data(), 0.9f, 0.9f, 1.0f);
+  edge_selected_colour = File::Config::get_RGB("ConnectomeEdgeSelectedColour", {0.9F, 0.9F, 1.0F});
   // CONF option: ConnectomeEdgeSelectedSizeMultiplier
   // CONF default: 1.0
   // CONF The multiplicative factor to apply to the size of edges connected to two selected nodes.
@@ -103,7 +103,7 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeNodeAssociatedColour
   // CONF default: 0.0,0.0,0.0
   // CONF The colour mixed in to those nodes associated with any selected node.
-  File::Config::get_RGB("ConnectomeNodeAssociatedColour", node_associated_colour.data(), 0.0f, 0.0f, 0.0f);
+  node_associated_colour = File::Config::get_RGB("ConnectomeNodeAssociatedColour", {0.0F, 0.0F, 0.0F});
   // CONF option: ConnectomeNodeAssociatedSizeMultiplier
   // CONF default: 1.0
   // CONF The multiplicative factor to apply to the size of nodes associated with a selected node.
@@ -120,7 +120,7 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeEdgeAssociatedColour
   // CONF default: 0.0,0.0,0.0
   // CONF The colour mixed in to edges connected to one currently selected node.
-  File::Config::get_RGB("ConnectomeEdgeAssociatedColour", edge_associated_colour.data(), 0.0f, 0.0f, 0.0f);
+  edge_associated_colour = File::Config::get_RGB("ConnectomeEdgeAssociatedColour", {0.0F, 0.0F, 0.0F});
   // CONF option: ConnectomeEdgeAssociatedSizeMultiplier
   // CONF default: 1.0
   // CONF The multiplicative factor to apply to the size of edges connected to one selected node.
@@ -144,7 +144,7 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeNodeOtherColour
   // CONF default: 0.0,0.0,0.0
   // CONF The colour mixed in to those nodes currently not selected nor associated with any selected node.
-  File::Config::get_RGB("ConnectomeNodeOtherColour", node_other_colour.data(), 0.0f, 0.0f, 0.0f);
+  node_other_colour = File::Config::get_RGB("ConnectomeNodeOtherColour", {0.0F, 0.0F, 0.0F});
   // CONF option: ConnectomeNodeOtherSizeMultiplier
   // CONF default: 1.0
   // CONF The multiplicative factor to apply to the size of nodes not currently selected nor associated with a selected
@@ -167,7 +167,7 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeEdgeOtherColour
   // CONF default: 0.0,0.0,0.0
   // CONF The colour mixed in to edges not connected to any currently selected node.
-  File::Config::get_RGB("ConnectomeEdgeOtherColour", edge_other_colour.data(), 0.0f, 0.0f, 0.0f);
+  edge_other_colour = File::Config::get_RGB("ConnectomeEdgeOtherColour", {0.0F, 0.0F, 0.0F});
   // CONF option: ConnectomeEdgeOtherSizeMultiplier
   // CONF default: 1.0
   // CONF The multiplicative factor to apply to the size of edges not connected to any selected node.

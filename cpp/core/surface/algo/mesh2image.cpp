@@ -57,7 +57,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     if (!mesh.have_normals())
       mesh.calculate_normals();
 
-    static const Vox adj_voxels[6] = {{-1, 0, 0}, {+1, 0, 0}, {0, -1, 0}, {0, +1, 0}, {0, 0, -1}, {0, 0, +1}};
+    static const std::array<Vox, 6> adj_voxels = {
+        Vox(-1, 0, 0), Vox(+1, 0, 0), Vox(0, -1, 0), Vox(0, +1, 0), Vox(0, 0, -1), Vox(0, 0, +1)};
 
     // Compute normals for polygons
     polygon_normals.reserve(mesh.num_polygons());
@@ -118,14 +119,14 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           default_type poly_low = std::numeric_limits<default_type>::infinity();
           default_type poly_high = -std::numeric_limits<default_type>::infinity();
 
-          static const Eigen::Vector3d voxel_offsets[8] = {{-0.5, -0.5, -0.5},
-                                                           {-0.5, -0.5, 0.5},
-                                                           {-0.5, 0.5, -0.5},
-                                                           {-0.5, 0.5, 0.5},
-                                                           {0.5, -0.5, -0.5},
-                                                           {0.5, -0.5, 0.5},
-                                                           {0.5, 0.5, -0.5},
-                                                           {0.5, 0.5, 0.5}};
+          static const std::array<Eigen::Vector3d, 8> voxel_offsets = {Eigen::Vector3d(-0.5, -0.5, -0.5),
+                                                                       Eigen::Vector3d(-0.5, -0.5, 0.5),
+                                                                       Eigen::Vector3d(-0.5, 0.5, -0.5),
+                                                                       Eigen::Vector3d(-0.5, 0.5, 0.5),
+                                                                       Eigen::Vector3d(0.5, -0.5, -0.5),
+                                                                       Eigen::Vector3d(0.5, -0.5, 0.5),
+                                                                       Eigen::Vector3d(0.5, 0.5, -0.5),
+                                                                       Eigen::Vector3d(0.5, 0.5, 0.5)};
 
           for (size_t i = 0; i != 8; ++i) {
             const Eigen::Vector3d v(vox.matrix().cast<default_type>() + voxel_offsets[i]);

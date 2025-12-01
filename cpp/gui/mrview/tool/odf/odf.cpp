@@ -211,7 +211,7 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
 
   connect(lighting, SIGNAL(changed()), this, SLOT(updateGL()));
 
-  renderer = new DWI::Renderer((QOpenGLWidget *)Window::main->glarea);
+  renderer = new DWI::Renderer(static_cast<QOpenGLWidget *>(Window::main->glarea));
   renderer->initGL();
   colour_button->setColor(renderer->get_colour());
 

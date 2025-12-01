@@ -19,6 +19,8 @@
 #include <array>
 #include <map>
 
+#include <Eigen/Dense>
+
 #include "image_helpers.h"
 #include "transform.h"
 #include "types.h"
@@ -33,9 +35,15 @@ namespace MR::Surface::Algo {
 //   it therefore appears very 'blocky'
 template <class ImageType> void image2mesh_blocky(const ImageType &input_image, Mesh &out) {
 
-  static const Vox steps[6] = {Vox(0, 0, -1), Vox(0, -1, 0), Vox(-1, 0, 0), Vox(0, 0, 1), Vox(0, 1, 0), Vox(1, 0, 0)};
+  static const std::array<Vox, 6> steps = {
+      Vox(0, 0, -1), Vox(0, -1, 0), Vox(-1, 0, 0), Vox(0, 0, 1), Vox(0, 1, 0), Vox(1, 0, 0)};
 
-  static const int plane_axes[6][2] = {{1, 0}, {0, 2}, {2, 1}, {0, 1}, {2, 0}, {1, 2}};
+  static const std::array<std::array<int, 2>, 6> plane_axes{std::array<int, 2>{1, 0},
+                                                            std::array<int, 2>{0, 2},
+                                                            std::array<int, 2>{2, 1},
+                                                            std::array<int, 2>{0, 1},
+                                                            std::array<int, 2>{2, 0},
+                                                            std::array<int, 2>{1, 2}};
 
   if (input_image.ndim() != 3)
     throw Exception("Voxel-to-mesh conversion only works for 3D images");
@@ -125,10 +133,10 @@ template <class ImageType> void image2mesh_blocky(const ImageType &input_image, 
 
 // Image-to-mesh conversion function using the Marching Cubes algorithm
 template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh &out, const default_type threshold) {
-  static const Vox neighbour_offsets[] = {
+  static const std::array<Vox, 8> neighbour_offsets = {
       Vox(0, 0, 0), Vox(1, 0, 0), Vox(1, 1, 0), Vox(0, 1, 0), Vox(0, 0, 1), Vox(1, 0, 1), Vox(1, 1, 1), Vox(0, 1, 1)};
 
-  static const uint32_t cube_edge_flags[256] = {
+  static const std::array<uint32_t, 256> cube_edge_flags = {
       0x000, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c, 0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
       0x190, 0x099, 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c, 0x99c, 0x895, 0xb9f, 0xa96, 0xd9a, 0xc93, 0xf99, 0xe90,
       0x230, 0x339, 0x033, 0x13a, 0x636, 0x73f, 0x435, 0x53c, 0xa3c, 0xb35, 0x83f, 0x936, 0xe3a, 0xf33, 0xc39, 0xd30,
@@ -423,7 +431,7 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
   Transform transform(input_image);
 
   ImageType voxel(input_image);
-  float in_vertex_values[8];
+  std::array<float, 8> in_vertex_values;
   std::map<Vox, std::map<Vox, size_t>> input_vertex_pair_to_output_vertex_index_map;
   Vox lower_corner;
   for (lower_corner[2] = -1; lower_corner[2] != voxel.size(2); ++lower_corner[2]) {
@@ -434,7 +442,7 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
         uint8_t code = 0x00;
         for (size_t neighbour_index = 0; neighbour_index != 8; ++neighbour_index) {
           assign_pos_of(lower_corner + neighbour_offsets[neighbour_index]).to(voxel);
-          in_vertex_values[neighbour_index] = 0.0f;
+          in_vertex_values[neighbour_index] = 0.0F;
           if (!is_out_of_bounds(voxel))
             in_vertex_values[neighbour_index] = voxel.value();
           if (in_vertex_values[neighbour_index] > threshold)
@@ -499,10 +507,11 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
         // Note that flipping the last two vertex indices is deliberate; the provided
         //   lookup table does not use a right-hand rule axis convention, so this is necessary
         //   to calculate the correct surface normals
-        for (const int8_t *first_edge = cube_triangle_table[code]; *first_edge >= 0; first_edge += 3) {
-          const uint32_t indices[3]{edge_to_output_vertex[*first_edge],
-                                    edge_to_output_vertex[*(first_edge + 2)],
-                                    edge_to_output_vertex[*(first_edge + 1)]};
+        const auto &row = cube_triangle_table[code];
+        for (ssize_t first_edge_index = 0; row[first_edge_index] >= 0; first_edge_index += 3) {
+          const std::array<uint32_t, 3> indices{edge_to_output_vertex[row[first_edge_index]],
+                                                edge_to_output_vertex[row[first_edge_index + 2]],
+                                                edge_to_output_vertex[row[first_edge_index + 1]]};
           triangles.push_back(Triangle(indices));
         }
       }

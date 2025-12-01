@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "interp/base.h"
 #include "math/cubic_spline.h"
 #include "math/least_squares.h"
@@ -74,7 +76,7 @@ public:
       : Base<ImageType>(parent, value_when_out_of_bounds), H{SplineType(PType), SplineType(PType), SplineType(PType)} {}
 
 protected:
-  SplineType H[3];
+  std::array<SplineType, 3> H;
   Eigen::Vector3d P;
 
   ssize_t clamp(ssize_t x, ssize_t dim) const {
