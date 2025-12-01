@@ -1,4 +1,4 @@
-name: Pydra Code Generation
+name: Pydra code generation
 
 on:
   pull_request:

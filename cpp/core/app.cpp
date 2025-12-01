@@ -784,9 +784,9 @@ std::string restructured_text_usage() {
 
 std::string pydra_code() {
 
-  std::string CMD_PREFIXES[] = {"Fivett", "Afd",    "Amp",       "Connectome", "Dcm",   "Dir",    "Dwi",   "Fixel",
-                                "Fod",    "Label",  "Mask",      "Mesh",       "Mr",    "Mt",     "Peaks", "Sh",
-                                "Tck",    "Tensor", "Transform", "Tsf",        "Voxel", "Vector", "Warp"};
+  constexpr std::array<std::string_view, 23> CMD_PREFIXES = {
+      "Fivett", "Afd", "Amp",   "Connectome", "Dcm", "Dir",    "Dwi",       "Fixel", "Fod",   "Label",  "Mask", "Mesh",
+      "Mr",     "Mt",  "Peaks", "Sh",         "Tck", "Tensor", "Transform", "Tsf",   "Voxel", "Vector", "Warp"};
 
   auto convert_to_pascal_case = [&](const std::string_view input) {
     std::string result;
@@ -826,7 +826,7 @@ std::string pydra_code() {
   std::string base_indent("    ");
   std::string indent = base_indent + "    ";
 
-  std::string PYTHON_KEYWORDS[] = {
+  constexpr std::array<std::string_view, 39> PYTHON_KEYWORDS = {
       "and",    "as",     "assert", "break",   "class",    "continue", "def",       "del",   "elif",
       "else",   "except", "False",  "finally", "for",      "from",     "global",    "if",    "import",
       "in",     "is",     "lambda", "None",    "nonlocal", "not",      "or",        "pass",  "raise",
@@ -889,19 +889,21 @@ std::string pydra_code() {
     if (types[ArgTypeFlags::TracksOut])
       type += " | Tracks";
     if (type.empty())
-      type = "Any";
+      type = "str";
     else
       type = type.substr(3); // drop the preceding " | "
+    if (optional)
+      type += " | None";
     return type;
   };
 
-  auto format_option_type = [&](const Option &opt, bool for_output = false) {
+  auto format_option_type = [&](const Option &opt) {
     std::string f;
     bool is_multi = (opt.flags.allow_multiple()) && (!opt.size() || !opt[0].types[ArgTypeFlags::FileOut]);
     if (is_multi) {
       f += "MultiInputObj[";
     }
-    if (!opt.size()) {
+    if (opt.empty()) {
       f += "bool";
     } else if (opt.size() == 1) {
       f += format_type(opt[0].types, true);
@@ -1077,12 +1079,12 @@ std::string pydra_code() {
   s += "\n\n@shell.define\nclass " + name_string + "(shell.Task[\"" + name_string + ".Outputs\"]):\n";
   s += "    \"\"\"";
   // Add description
-  if (DESCRIPTION.size()) {
+  if (!DESCRIPTION.empty()) {
     for (size_t i = 0; i < DESCRIPTION.size(); ++i)
       s += base_indent + std::string(DESCRIPTION[i]) + "\n\n";
   }
 
-  if (EXAMPLES.size()) {
+  if (!EXAMPLES.empty()) {
     s += "\n" + base_indent + "Example usages\n" + base_indent + "--------------\n\n";
     for (size_t i = 0; i < EXAMPLES.size(); ++i) {
       s += "\n" + base_indent + EXAMPLES[i].title + ":\n\n";
@@ -1326,11 +1328,11 @@ void parse() {
   }
 
   if (num_optional_arguments && num_args_required > argument.size())
-    throw Exception("Expected at least " + str(num_args_required) + " arguments (" + str(argument.size()) +
+    throw Exception("Expected at least " + str(num_args_required) + " arguments (" + str(!argument.empty()) +
                     " supplied)");
 
   if (num_optional_arguments == 0 && num_args_required != argument.size()) {
-    Exception e("Expected exactly " + str(num_args_required) + " arguments (" + str(argument.size()) + " supplied)");
+    Exception e("Expected exactly " + str(num_args_required) + " arguments (" + str(!argument.empty()) + " supplied)");
     std::string s = "Usage: " + NAME;
     for (const auto &a : ARGUMENTS)
       s += " " + std::string(a.id);
