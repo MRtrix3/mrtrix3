@@ -856,7 +856,7 @@ std::string pydra_code() {
     return escaped;
   };
 
-  auto format_type = [&](const ArgTypeFlags &types, bool optional = false) {
+  auto format_type = [&](const ArgTypeFlags &types) {
     std::string type;
     if (types[ArgTypeFlags::Text])
       type += " | str";
@@ -892,8 +892,6 @@ std::string pydra_code() {
       type = "str";
     else
       type = type.substr(3); // drop the preceding " | "
-    if (optional)
-      type += " | None";
     return type;
   };
 
@@ -906,11 +904,11 @@ std::string pydra_code() {
     if (opt.empty()) {
       f += "bool";
     } else if (opt.size() == 1) {
-      f += format_type(opt[0].types, true);
+      f += format_type(opt[0].types);
     } else {
       f += "tuple[";
       for (size_t a = 0; a < opt.size(); ++a) {
-        f += format_type(opt[0].types, true);
+        f += format_type(opt[0].types);
         if (a != opt.size() - 1) {
           f += ", ";
         }
