@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 11.00 CACHE STRING "")
 project(mrtrix3 LANGUAGES CXX VERSION 3.0.7)
@@ -32,9 +32,7 @@ option(MRTRIX_USE_SYSTEM_NIFTI "Use system-installed NIfTI C headers" OFF)
 option(MRTRIX_USE_SYSTEM_GTEST "Use system-installed Google Test library" OFF)
 
 if(MRTRIX_BUILD_TESTS)
-    if(CMAKE_VERSION VERSION_GREATER 3.17)
-        list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
-    endif()
+    list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
     enable_testing()
 endif()
 
