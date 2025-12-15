@@ -47,6 +47,7 @@ else
   curl -s -O http://www.fftw.org/${FNAME}
   for ARCH in ${ARCHS}; do
     echo "building FFTW for ${ARCH}"
+    CC_BIN="clang -arch ${ARCH}"
     SIMD=""
     if [ "${ARCH}" = "x86_64" ]; then
       SIMD="--enable-sse2 --enable-avx --enable-avx2"
@@ -58,9 +59,9 @@ else
     cd ${DNAME}
     # In order to cross-compile for arm64 on a x86 host, we need to explicitly set the host
     if [ "${ARCH}" = "arm64" ] && [ "${HOST_ARCH}" = "i386" ]; then
-      CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD} --host=i386-apple-darwin
+      CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" CC=${CC_BIN} ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD} --host=i386-apple-darwin
     else
-      CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
+      CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" CC=${CC_BIN} ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
     fi
     make install > /dev/null
     cd ..
@@ -78,20 +79,6 @@ else
   rm -r ${PREFIX}-*/
   rm ${FNAME}
   FFTW_SECONDS=${SECONDS}
-
-  # EIGEN
-  SECONDS=0
-  DNAME=eigen-${EIGEN_VERSION}
-  FNAME=${DNAME}.tar.bz2
-  curl -s -O -L https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VERSION}/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  ${CMAKE} -B build -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH=/opt/homebrew
-  ${CMAKE} --build build
-  ${CMAKE} --install build
-  cd ..
-  rm -r ${FNAME} ${DNAME}
-  EIGEN_SECONDS=${SECONDS}
 
   # 7Z
   if [ "${OS}" = "linux" ]; then
@@ -139,7 +126,15 @@ SECONDS=0
 git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
-cmake -B build -G Ninja -DCMAKE_PREFIX_PATH=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/X11;/usr/X11R6" -DFFTW_USE_STATIC_LIBS=ON -DCMAKE_OSX_ARCHITECTURES=${CMAKE_ARCHS} -DPNG_PNG_INCLUDE_DIR=${PREFIX}/include/QtPng -DPNG_LIBRARY=${PREFIX}/lib/libQt6BundledLibpng.a -DCMAKE_INSTALL_PREFIX=${PREFIX} -DMRTRIX_USE_PCH=OFF -DMRTRIX_BUILD_NON_CORE_STATIC=ON
+cmake -B build -G Ninja \
+-DCMAKE_PREFIX_PATH=${PREFIX} \
+-DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/X11;/usr/X11R6" \
+-DFFTW_ROOT=${PREFIX} \
+-DFFTW_USE_STATIC_LIBS=ON -DCMAKE_OSX_ARCHITECTURES=${CMAKE_ARCHS} \
+-DPNG_PNG_INCLUDE_DIR=${PREFIX}/include/QtPng -DPNG_LIBRARY=${PREFIX}/lib/libQt6BundledLibpng.a \
+-DCMAKE_INSTALL_PREFIX=${PREFIX} \
+-DMRTRIX_USE_PCH=OFF
+
 cmake --build build
 cd ..
 MRTRIX_SECONDS=${SECONDS}
