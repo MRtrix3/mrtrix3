@@ -37,7 +37,7 @@ namespace gl {
 
 static void *AppleGLGetProcAddress(const char *name) {
   static void *image = nullptr;
-  if (image = nullptr)
+  if (image == nullptr)
     image = dlopen("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL", RTLD_LAZY);
 
   return (image ? dlsym(image, (const char *)name) : nullptr);
