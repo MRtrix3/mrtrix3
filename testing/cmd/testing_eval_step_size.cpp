@@ -14,8 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <limits>
+
 #include "command.h"
-#include "diff_images.h"
+#include "types.h"
+#include "dwi/tractography/file.h"
+#include "dwi/tractography/properties.h"
+#include "dwi/tractography/streamline.h"
+
+#define DEFAULT_HAUSDORFF 1e-5
+#define DEFAULT_MAXFAIL 0
 
 using namespace MR;
 using namespace App;
@@ -23,27 +31,32 @@ using namespace App;
 void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
-  SYNOPSIS = "Compare two images for differences in the basic contents of their headers";
+
+  SYNOPSIS = "Compute the step sizes within a track file";
 
   ARGUMENTS
-  + Argument ("header1", "an image.").type_image_in()
-  + Argument ("header2", "another image.").type_image_in();
-
-  OPTIONS
-  + Option ("keyval", "also test the contents of the key-value entries in the header");
-
+  + Argument ("tck", "the input track file").type_tracks_in ();
 }
+
 
 
 void run ()
 {
-  auto in1 = Header::open (argument[0]);
-  auto in2 = Header::open (argument[1]);
+  DWI::Tractography::Properties properties;
+  DWI::Tractography::Reader<> reader (argument[0], properties);
+  DWI::Tractography::Streamline<> tck;
 
-  check_headers (in1, in2);
-  if (get_options ("keyval").size())
-    check_keyvals (in1, in2);
+  while (reader (tck)) {
+    if (tck.size() < 2) {
+      std::cout << "NaN\n";
+    } else {
+      DWI::Tractography::Streamline<>::point_type p (tck[0]);
+      for (size_t i = 1; i != tck.size(); ++i) {
+        std::cout << (tck[i]-p).norm() << " ";
+        p = tck[i];
+      }
+      std::cout << "\n";
+    }
+  }
 
-  CONSOLE ("headers checked OK");
 }
-
