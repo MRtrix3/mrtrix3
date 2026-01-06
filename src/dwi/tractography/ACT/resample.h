@@ -45,15 +45,14 @@ namespace MR
             ResampleFunctor (Image<float>&, Image<float>&);
             ResampleFunctor (const ResampleFunctor&);
 
-            void operator() (const Iterator&);
+            bool operator() (Image<float>&);
 
           private:
             std::shared_ptr<transform_type> voxel2scanner;
             Interp::Linear<Image<float>> interp_anat;
-            Image<float> out;
 
             // Helper function for doing the regridding
-            Tissues ACT2pve (const Iterator&);
+            Tissues ACT2pve (const Eigen::Array3i&);
         };
 
 

@@ -207,7 +207,7 @@ namespace MR
             act_5tt = Image<float>::scratch (H_5tt, "5TT scratch buffer");
             auto threaded_loop = ThreadedLoop ("resampling ACT 5TT image to fixel dataset space", act_5tt, 0, 3);
             ACT::ResampleFunctor functor (in_5tt, act_5tt);
-            threaded_loop.run (functor);
+            threaded_loop.run (functor, act_5tt);
           }
         }
 
