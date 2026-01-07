@@ -201,7 +201,7 @@ std::string help_head(const bool format) {
   }
 
   const std::string version_string =
-      project_version.empty() ? std::string("MRtrix ") : ("Version " + project_version) + mrtrix_version;
+      project_version.empty() ? (std::string("MRtrix ") + mrtrix_version ): ("Version " + project_version);
 
   const std::string date(project_version.empty() ? build_date : project_build_date);
 
