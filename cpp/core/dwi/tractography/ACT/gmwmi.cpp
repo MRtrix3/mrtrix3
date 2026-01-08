@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/ACT/gmwmi.h"
 
+#include <array>
+
 namespace MR::DWI::Tractography::ACT {
 
 const default_type GMWMI_finder::perturbation_mm = 0.001;
@@ -194,11 +196,7 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
   const Eigen::Vector3f extrap((end ? (tck[last] - tck[last - 1]) : (tck[0] - tck[1])) + curvature);
   const Eigen::Vector3f p_extrap(p_end + extrap);
 
-  Eigen::Vector3f domain[4];
-  domain[0] = (end ? tck[last - 2] : tck[2]);
-  domain[1] = p_prev;
-  domain[2] = p_end;
-  domain[3] = p_extrap;
+  const std::array<Eigen::Vector3f, 4> domain{end ? tck[last - 2] : tck[2], p_prev, p_end, p_extrap};
 
   Math::Hermite<float> hermite(hermite_tension);
 

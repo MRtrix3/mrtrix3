@@ -113,22 +113,22 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
                        "uniform float downscale_factor;\n"
                        "uniform mat4 MV;\n"
 
-                       "in vec3 v_tangent[];\n"
-                       "in vec2 v_end[];\n";
+                       "in vec3 v_tangent[];\n" // check_syntax off
+                       "in vec2 v_end[];\n";    // check_syntax off
 
   if (threshold_type != TrackThresholdType::None)
-    source += "in float v_amp[];\n"
+    source += "in float v_amp[];\n" // check_syntax off
               "out float g_amp;\n";
 
   if (do_crop_to_slab)
-    source += "in float v_include[];\n"
+    source += "in float v_include[];\n" // check_syntax off
               "out float g_include;\n";
 
   if (use_lighting || color_type == TrackColourType::Direction)
     source += "out vec3 g_tangent;\n";
 
   if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
-    source += "in vec3 v_colour[];\n"
+    source += "in vec3 v_colour[];\n" // check_syntax off
               "out vec3 fColour;\n";
 
   if (use_lighting)
@@ -379,7 +379,7 @@ void Tractogram::render(const Projection &transform) {
 
   if (tractography_tool.use_lighting) {
     gl::UniformMatrix4fv(gl::GetUniformLocation(track_shader, "MV"), 1, gl::FALSE_, transform.modelview());
-    gl::Uniform3fv(gl::GetUniformLocation(track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos);
+    gl::Uniform3fv(gl::GetUniformLocation(track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos.data());
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "ambient"), tractography_tool.lighting->ambient);
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "diffuse"), tractography_tool.lighting->diffuse);
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "specular"), tractography_tool.lighting->specular);
@@ -389,10 +389,11 @@ void Tractogram::render(const Projection &transform) {
   if (!std::isfinite(original_fov)) {
     // set line thickness once upon loading, but don't touch it after that:
     // it shouldn't change when the background image changes
-    default_type dim[] = {window().image()->header().size(0) * window().image()->header().spacing(0),
-                          window().image()->header().size(1) * window().image()->header().spacing(1),
-                          window().image()->header().size(2) * window().image()->header().spacing(2)};
-    original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0f / 3.0f);
+    const std::array<default_type, 3> dim = {
+        window().image()->header().size(0) * window().image()->header().spacing(0),  //
+        window().image()->header().size(1) * window().image()->header().spacing(1),  //
+        window().image()->header().size(2) * window().image()->header().spacing(2)}; //
+    original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0F / 3.0F);
   }
 
   float line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3f * line_thickness) *

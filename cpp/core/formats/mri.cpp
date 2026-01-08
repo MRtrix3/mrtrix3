@@ -169,7 +169,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
     switch (type(current, is_BE)) {
     case mriformat_index_data:
       H.datatype() = fetch_datatype(data(current)[-4]);
-      data_offset = current + 5 - (uint8_t *)fmap.address();
+      data_offset = current + 5 - fmap.address();
       break;
     case mriformat_index_dimensions:
       H.size(0) = Raw::fetch_<uint32_t>(data(current), is_BE);

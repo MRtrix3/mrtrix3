@@ -761,8 +761,8 @@ Connectome::Connectome(Dock *parent)
 
   Edge::set_streamtube_LOD(3);
 
-  glGetIntegerv(gl::ALIASED_LINE_WIDTH_RANGE, line_thickness_range_aliased);
-  glGetIntegerv(gl::SMOOTH_LINE_WIDTH_RANGE, line_thickness_range_smooth);
+  glGetIntegerv(gl::ALIASED_LINE_WIDTH_RANGE, line_thickness_range_aliased.data());
+  glGetIntegerv(gl::SMOOTH_LINE_WIDTH_RANGE, line_thickness_range_smooth.data());
   GL_CHECK_ERROR;
 
   enable_all(false);
@@ -2670,7 +2670,7 @@ void Connectome::draw_nodes(const Projection &projection) {
       GLuint specular_ID = 0;
       if (use_lighting()) {
         gl::UniformMatrix4fv(gl::GetUniformLocation(node_shader, "MV"), 1, gl::FALSE_, projection.modelview());
-        gl::Uniform3fv(gl::GetUniformLocation(node_shader, "light_pos"), 1, lighting.lightpos);
+        gl::Uniform3fv(gl::GetUniformLocation(node_shader, "light_pos"), 1, lighting.lightpos.data());
         gl::Uniform1f(gl::GetUniformLocation(node_shader, "ambient"), lighting.ambient);
         gl::Uniform1f(gl::GetUniformLocation(node_shader, "diffuse"), lighting.diffuse);
         specular_ID = gl::GetUniformLocation(node_shader, "specular");
@@ -2804,7 +2804,7 @@ void Connectome::draw_edges(const Projection &projection) {
     GLuint specular_ID = 0;
     if (use_lighting()) {
       gl::UniformMatrix4fv(gl::GetUniformLocation(edge_shader, "MV"), 1, gl::FALSE_, projection.modelview());
-      gl::Uniform3fv(gl::GetUniformLocation(edge_shader, "light_pos"), 1, lighting.lightpos);
+      gl::Uniform3fv(gl::GetUniformLocation(edge_shader, "light_pos"), 1, lighting.lightpos.data());
       gl::Uniform1f(gl::GetUniformLocation(edge_shader, "ambient"), lighting.ambient);
       gl::Uniform1f(gl::GetUniformLocation(edge_shader, "diffuse"), lighting.diffuse);
       specular_ID = gl::GetUniformLocation(edge_shader, "specular");

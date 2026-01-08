@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <mutex>
 
 #include "dwi/tractography/file.h"
@@ -63,7 +64,7 @@ protected:
   std::vector<ParticleVectorType> grid;
   Math::RNG rng;
   transform_type T_s2g;
-  size_t dims[3];
+  std::array<size_t, 3> dims;
 
   inline size_t pos2idx(const Point_t &pos) const {
     size_t x, y, z;

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <map>
 
 #include "app.h"
@@ -117,23 +118,23 @@ protected:
     using namespace ByteOrder;
     switch (dtype()) {
     case DataType::Float32LE: {
-      float p[3];
-      in.read(reinterpret_cast<char *>(p), sizeof(p));
+      std::array<float, 3> p;
+      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
       return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
     }
     case DataType::Float32BE: {
-      float p[3];
-      in.read(reinterpret_cast<char *>(p), sizeof(p));
+      std::array<float, 3> p;
+      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
       return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
     }
     case DataType::Float64LE: {
-      double p[3];
-      in.read(reinterpret_cast<char *>(p), sizeof(p));
+      std::array<double, 3> p;
+      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
       return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
     }
     case DataType::Float64BE: {
-      double p[3];
-      in.read(reinterpret_cast<char *>(p), sizeof(p));
+      std::array<double, 3> p;
+      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
       return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
     }
     default:

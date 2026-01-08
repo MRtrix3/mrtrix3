@@ -26,7 +26,7 @@ std::unique_ptr<ImageIO::Base> RAM::read(Header &H) const {
   if (!Path::has_suffix(H.name(), ".R"))
     return std::unique_ptr<ImageIO::Base>();
 
-  Header *R_header = (Header *)to<size_t>(H.name().substr(0, H.name().size() - 2));
+  Header *R_header = reinterpret_cast<Header *>(to<size_t>(H.name().substr(0, H.name().size() - 2)));
   H = *R_header;
   return R_header->__get_handler();
 #else
@@ -49,7 +49,7 @@ std::unique_ptr<ImageIO::Base> RAM::create(Header &H) const {
   }
 
 #ifdef MRTRIX_AS_R_LIBRARY
-  Header *R_header = (Header *)to<size_t>(H.name().substr(0, H.name().size() - 2));
+  Header *R_header = reinterpret_cast<Header *>(to<size_t>(H.name().substr(0, H.name().size() - 2)));
   *R_header = H;
   std::unique_ptr<ImageIO::RAM> io_handler(new ImageIO::RAM(H));
   R_header->__set_handler(io_handler);

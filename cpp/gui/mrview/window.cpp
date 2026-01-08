@@ -1425,7 +1425,7 @@ void Window::initGL() {
   // CONF option: MRViewImageBackgroundColour
   // CONF default: 0,0,0 (black)
   // CONF The default image background colour in the main MRView window.
-  File::Config::get_RGB("MRViewImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
+  background_colour = File::Config::get_RGB("MRViewImageBackgroundColour", {0.0F, 0.0F, 0.0F});
   gl::ClearColor(background_colour[0], background_colour[1], background_colour[2], 1.0);
   mode.reset(dynamic_cast<Mode::__Action__ *>(mode_group->actions()[0])->create());
   set_mode_features();

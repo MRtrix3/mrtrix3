@@ -233,12 +233,10 @@ public:
     }
 
     Eigen::Vector3d eigval;
-    ssize_t ith_eig[3] = {2, 1, 0};
+    std::array<ssize_t, 3> ith_eig = {2, 1, 0};
     if (need_eigenvalues) {
       eigval = es.eigenvalues();
-      ith_eig[0] = 0;
-      ith_eig[1] = 1;
-      ith_eig[2] = 2;
+      ith_eig = {0, 1, 2};
       std::sort(std::begin(ith_eig), std::end(ith_eig), [&eigval](size_t a, size_t b) {
         return std::fabs(eigval[a]) > std::fabs(eigval[b]);
       });

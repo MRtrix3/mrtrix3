@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include <Eigen/Eigenvalues>
 #include <QOpenGLWidget>
 
@@ -83,7 +85,7 @@ public:
 
 protected:
   mode_t mode;
-  float object_color[3];
+  Eigen::Array3f object_color;
   mutable GLuint reverse_ID, origin_ID;
 
   class Shader : public GL::Shader::Program {

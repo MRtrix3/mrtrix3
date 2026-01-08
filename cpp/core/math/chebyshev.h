@@ -20,9 +20,11 @@
 
 namespace MR::Math::Chebyshev {
 
-template <typename T> inline T eval(const double *coef, const int order, const T lower, const T upper, const T x) {
-  T y = (2.0 * x - lower - upper) / (upper - lower);
-  T d = 0.0, dd = 0.0;
+template <class MatrixType, typename T>
+inline T eval(const MatrixType &coef, const int order, const T lower, const T upper, const T x) {
+  const T y = (2.0 * x - lower - upper) / (upper - lower);
+  T d = 0.0;
+  T dd = 0.0;
   for (int i = order; i >= 1; i--) {
     T temp = d;
     d = 2.0 * y * d - dd + coef[i];

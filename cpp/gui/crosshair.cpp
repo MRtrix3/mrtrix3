@@ -16,6 +16,8 @@
 
 #include "crosshair.h"
 
+#include <array>
+
 #include "projection.h"
 
 namespace MR::GUI {
@@ -50,14 +52,14 @@ void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &
   }
 
   Eigen::Vector3f F = MVP.model_to_screen(focus);
-  F[0] = std::round(F[0] - MVP.x_position()) - 0.5f;
-  F[1] = std::round(F[1] - MVP.y_position()) + 0.5f;
+  F[0] = std::round(F[0] - MVP.x_position()) - 0.5F;
+  F[1] = std::round(F[1] - MVP.y_position()) + 0.5F;
 
-  F[0] = 2.0f * F[0] / MVP.width() - 1.0f;
-  F[1] = 2.0f * F[1] / MVP.height() - 1.0f;
+  F[0] = 2.0F * F[0] / MVP.width() - 1.0F;
+  F[1] = 2.0F * F[1] / MVP.height() - 1.0F;
 
-  GLfloat data[] = {F[0], -1.0f, F[0], 1.0f, -1.0f, F[1], 1.0f, F[1]};
-  gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
+  const std::array<GLfloat, 8> data = {F[0], -1.0F, F[0], 1.0F, -1.0F, F[1], 1.0F, F[1]};
+  gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data.data(), gl::STATIC_DRAW);
 
   gl::DepthMask(gl::TRUE_);
   gl::Disable(gl::BLEND);

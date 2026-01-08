@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "opengl/shader.h"
 
 namespace MR::GUI::GL {
@@ -54,11 +56,13 @@ public:
 protected:
   const QFont font;
   GL::Texture tex;
-  GL::VertexBuffer vertex_buffer[2];
+  std::array<GL::VertexBuffer, 2> vertex_buffer;
   GL::VertexArrayObject vertex_array_object;
   GL::Shader::Program program;
-  int font_width[256], font_height;
-  float font_tex_pos[256], font_tex_width[256];
+  std::array<int, 256> font_width;
+  int font_height;
+  std::array<float, 256> font_tex_pos;
+  std::array<float, 256> font_tex_width;
 };
 
 } // namespace MR::GUI::GL
