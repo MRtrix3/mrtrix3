@@ -4,6 +4,8 @@ find_package(FFTW REQUIRED)
 find_package(Git QUIET)
 find_package(Threads REQUIRED)
 find_package(PNG QUIET)
+find_package(Dawn CONFIG REQUIRED)
+find_package(slang CONFIG REQUIRED)
 
 if(PNG_FOUND)
     message(STATUS "Found PNG: ${PNG_LIBRARIES}")
@@ -102,6 +104,7 @@ else()
 endif()
 
 target_link_libraries(mrtrix-core PUBLIC
+    dawn::webgpu_dawn
     Eigen3::Eigen
     ZLIB::ZLIB
     fftw3::fftw
@@ -110,6 +113,8 @@ target_link_libraries(mrtrix-core PUBLIC
     Threads::Threads
     nlohmann_json::nlohmann_json
     nifti::nifti
+    slang::slang
+    tcb::span
 )
 
 # On Windows, the libraries need to be in the same directory as the executables
@@ -117,6 +122,27 @@ if(WIN32)
     set_target_properties(mrtrix-core PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
+
+    add_custom_command(TARGET mrtrix-core POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:dawn::webgpu_dawn>
+            $<TARGET_FILE:slang::slang>
+            $<TARGET_FILE_DIR:mrtrix-core>
+        COMMENT "Copying imported dependencies to output directory"
+    )
+# In an MSYS2 environment, dawn fails to load the required vulkan-1.dll library when
+# creating a WebGPU instance. To remedy this, we copy the DLL from C:/Windows/System32
+# to the build output directory.
+# TODO: Investigate further and find a better solution.
+if(NOT MSVC)
+    add_custom_command(TARGET mrtrix-core POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $ENV{WINDIR}/System32/vulkan-1.dll
+            $<TARGET_FILE_DIR:mrtrix-core>
+        COMMENT "Copying vulkan-1.dll to output directory"
+    )
+endif()
+
 endif()
 
 install(TARGETS mrtrix-core

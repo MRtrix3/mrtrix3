@@ -30,6 +30,9 @@ option(MRTRIX_USE_SYSTEM_EIGEN "Use system-installed Eigen3 library" OFF)
 option(MRTRIX_USE_SYSTEM_JSON "Use system-installed Json for Modern C++ library" OFF)
 option(MRTRIX_USE_SYSTEM_NIFTI "Use system-installed NIfTI C headers" OFF)
 option(MRTRIX_USE_SYSTEM_GTEST "Use system-installed Google Test library" OFF)
+option(MRTRIX_USE_SYSTEM_DAWN "Use system-installed Dawn library" OFF)
+option(MRTRIX_USE_SYSTEM_SLANG "Use system-installed Slang library" OFF)
+option(MRTRIX_USE_SYSTEM_TCB_SPAN "Use system-installed TCB Span library" OFF)
 
 if(MRTRIX_BUILD_TESTS)
     list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
@@ -66,6 +69,10 @@ file(RELATIVE_PATH relDir
 )
 
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 include(BuildType)
 include(BuildInfo)
