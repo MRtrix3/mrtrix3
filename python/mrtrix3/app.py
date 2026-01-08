@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import argparse, datetime, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
 
@@ -56,7 +56,7 @@ CMDLINE = None
 
 # This is auto-populated by script "update_copyright"
 _DEFAULT_COPYRIGHT = \
-'''Copyright (c) 2008-2025 the MRtrix3 contributors.
+f'''Copyright (c) 2008-{datetime.date.today().year} the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -1016,6 +1016,8 @@ class Parser(argparse.ArgumentParser):
             ' are recognised and cited appropriately,'
             ' and that any relevant software usage licenses are not violated.')
     console('Consult the help page (-help option) for more information.')
+    console('Additional explanation can be found at the documentation page: '
+            f'https://mrtrix.readthedocs.io/en/{version.TAG}/installation/third_party_software.html')
     console('')
 
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
