@@ -7,91 +7,113 @@ on:
         description: 'Branch to release from'
         required: true
         default: 'dev'
+  schedule:
+  #  Every day at 00:00
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: write
 
 jobs:
-  linux-release:
-    runs-on: ubuntu-20.04
+  prepare:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.vars.outputs.branch }}
+      commit_sha: ${{ steps.sha.outputs.commit_sha }}
+      has_changes: ${{ steps.changes.outputs.has_changes }}
+      changelog: ${{ steps.changes.outputs.changelog }}
+      recent_commits: ${{ steps.changes.outputs.recent_commits }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Select branch
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "branch=${{ github.event.inputs.branch }}" >> "$GITHUB_OUTPUT"
+          else
+            # Nightly builds always from dev
+            echo "branch=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout selected branch
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.branch }}
-      
-      - name: Set env vars
-        id: envs
+          ref: ${{ steps.vars.outputs.branch }}
+
+      - name: Capture commit SHA
+        id: sha
+        run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Determine if there are new commits since last nightly
+        id: changes
         run: |
-          commit_sha=$(git rev-parse HEAD)
-          date=$(date +%Y_%m_%d)
-          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          echo "date=$date" >> $GITHUB_OUTPUT
-          echo "output_name=mrtrix3-linux-$commit_sha-$date" >> $GITHUB_OUTPUT
+          RECENT="$(git log --oneline --merges | grep -E 'Merge pull request #[0-9]+ from [^ ]+/' | head -n 15 || true)"
 
-      - name: Install Eigen3
-        run: |
-          git clone https://gitlab.com/libeigen/eigen.git && cd eigen && git checkout 3.4.0
-          cmake -B build && cmake --build build
-          sudo cmake --install build
+          if [ -n "$RECENT" ]; then
+            {
+              echo "recent_commits<<EOF"
+              echo "$RECENT"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "recent_commits=" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Install Qt 6
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.7.0'
-          set-env: true
+          # Manual runs always build
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "changelog=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-      - name: Run build
-        run: |
-          ./packaging/package-linux-tarball.sh .
-          mv mrtrix.tar.gz ${{ steps.envs.outputs.output_name }}.tar.gz
+          # Nightly run: compare HEAD of dev vs nightly tag
+          git fetch --tags origin
 
-      - name: Upload release artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.envs.outputs.output_name }}
-          path: ${{ steps.envs.outputs.output_name }}.tar.gz
+          if git rev-parse refs/tags/nightly >/dev/null 2>&1; then
+            LOG="$(git log --oneline refs/tags/nightly..HEAD || true)"
+          else
+            # If nightly tag doesn't exist yet, treat all recent commits as "new"
+            LOG="$(git log --oneline HEAD~50..HEAD || true)"
+          fi
 
-  macos-release:
-    runs-on: macos-latest
+          if [ -z "$LOG" ]; then
+            echo "No new commits since last nightly."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "changelog=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found new commits since last nightly."
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "changelog<<EOF"
+              echo "$LOG"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+  build-release:
+    needs: prepare
+    if: needs.prepare.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runs_on: ubuntu-22.04
+            artifact_ext: tar.gz
+          - platform: macos
+            runs_on: macos-latest
+            artifact_ext: tar.xz
+          - platform: windows
+            runs_on: windows-latest
+            artifact_ext: tar.zst
+    runs-on: ${{ matrix.runs_on }}
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.inputs.branch }}
-
-      - name: Set env vars
-        id: envs
-        run: |
-          commit_sha=$(git rev-parse HEAD)
-          date=$(date +%Y_%m_%d)
-          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          echo "date=$date" >> $GITHUB_OUTPUT
-          echo "output_name=mrtrix3-macos-$commit_sha-$date" >> $GITHUB_OUTPUT
-
-      - name: Install deps
-        run: brew install numpy cmake qt pkg-config libpng ninja
-
-      - name: Run build
-        run: |
-          cd ./packaging/macos
-          ./build ${{ github.event.inputs.branch }}
-          mv ./mrtrix3-macos-${{ github.event.inputs.branch }}.tar.xz ../../${{ steps.envs.outputs.output_name }}.tar.xz
-
-      - name: Upload release artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.envs.outputs.output_name }}
-          path: ${{ steps.envs.outputs.output_name }}.tar.xz
-
-  windows-release:
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
-
-    env:
-      MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
-
-    steps:
-      - uses: msys2/setup-msys2@v2
+      - name: Set up MSYS2 for Windows
+        if: matrix.platform == 'windows'
+        uses: msys2/setup-msys2@v2
+        env:
+          MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
         with:
           msystem: UCRT64
           install: |
@@ -113,25 +135,124 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.branch }}
-      
-      - name: Set env vars
-        id: envs
-        run: |
-          commit_sha=$(git rev-parse HEAD)
-          date=$(date +%Y_%m_%d)
-          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          echo "date=$date" >> $GITHUB_OUTPUT
-          echo "output_name=mrtrix3-windows-$commit_sha-$date" >> $GITHUB_OUTPUT
+          ref: ${{ needs.prepare.outputs.branch }}
 
-      - name: Run build
+      - name: Set output name
+        id: out
+        shell: pwsh
+        run: |
+          $commit_sha = (git rev-parse HEAD).Trim()
+          $date = (Get-Date -Format 'yyyyMMdd')
+          if ($env:GITHUB_EVENT_NAME -eq 'schedule') {
+            $output_name = "mrtrix3-${{ matrix.platform }}-$date"
+          } else {
+            $output_name = "mrtrix3-${{ matrix.platform }}-$commit_sha-$date"
+          }
+          "output_name=$output_name" >> $env:GITHUB_OUTPUT
+
+      - name: Install Qt 6 on Linux
+        if: matrix.platform == 'linux'
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.7.0'
+          set-env: true
+
+      - name: Install dependencies on macOS
+        if: matrix.platform == 'macos'
+        run: brew install numpy cmake qt pkg-config libpng ninja
+
+      - name: Run Linux build
+        if: matrix.platform == 'linux'
+        run: |
+          ./packaging/package-linux-tarball.sh .
+          mv mrtrix.tar.gz ${{ steps.out.outputs.output_name }}.${{ matrix.artifact_ext }}
+
+      - name: Run macOS build
+        if: matrix.platform == 'macos'
+        run: |
+          cd ./packaging/macos
+          ./build ${{ needs.prepare.outputs.branch }}
+          mv ./mrtrix3-macos-${{ needs.prepare.outputs.branch }}.${{ matrix.artifact_ext }} ../../${{ steps.out.outputs.output_name }}.${{ matrix.artifact_ext }}
+
+      - name: Run Windows build
+        if: matrix.platform == 'windows'
+        shell: msys2 {0}
         run: |
           cd packaging/mingw
-          ./run.sh ${{ steps.envs.outputs.commit_sha }} mrtrix3
-          mv mingw*.tar.zst ../../${{ steps.envs.outputs.output_name }}.tar.zst
+          ./run.sh ${{ needs.prepare.outputs.commit_sha }} ${{ github.repository_owner }}
+          mv mingw*.${{ matrix.artifact_ext }} ../../${{ steps.out.outputs.output_name }}.${{ matrix.artifact_ext }}
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.envs.outputs.output_name }}
-          path: ${{ steps.envs.outputs.output_name }}.tar.zst
+          name: ${{ steps.out.outputs.output_name }}
+          path: ${{ steps.out.outputs.output_name }}.${{ matrix.artifact_ext }}
+
+  nightly-release:
+    name: Create/update nightly release
+    needs:
+      - prepare
+      - build-release
+    if: github.event_name == 'schedule' && needs.prepare.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub CLI auth
+      RECENT_COMMITS: ${{ needs.prepare.outputs.recent_commits }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Show downloaded artifacts
+        run: ls -R dist
+
+      - name: Create or update nightly release
+        run: |
+          NOTES_FILE=notes.txt
+          {
+            echo "Nightly build for $(date -u +%Y-%m-%d)."
+            echo
+            echo "Latest changes:"
+            echo
+            if [ -n "$RECENT_COMMITS" ]; then
+              echo "$RECENT_COMMITS"
+            else
+              echo "No commits to display."
+            fi
+          } > "$NOTES_FILE"
+
+          # Ensure the nightly release exists and update its notes
+          if gh release view nightly >/dev/null 2>&1; then
+            gh release edit nightly --notes-file "$NOTES_FILE"
+          else
+            gh release create nightly --title "Nightly build" --notes-file "$NOTES_FILE"
+          fi
+
+          # Remove existing assets so we only keep artifacts from the latest run
+          EXISTING_ASSETS="$(gh release view nightly --json assets --jq '.assets[].name' || true)"
+          if [ -n "$EXISTING_ASSETS" ]; then
+            printf '%s\n' "$EXISTING_ASSETS" | while IFS= read -r asset; do
+              [ -z "$asset" ] && continue
+              gh release delete-asset nightly "$asset" --yes
+            done
+          fi
+
+          gh release upload nightly dist/*/* --clobber
+
+      - name: Move nightly tag forward
+        env:
+          NIGHTLY_COMMIT: ${{ needs.prepare.outputs.commit_sha }}
+        run: |
+          if [ -z "$NIGHTLY_COMMIT" ]; then
+            echo "Missing commit SHA for nightly tag update." >&2
+            exit 1
+          fi
+          git fetch origin
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f nightly "$NIGHTLY_COMMIT"
+          git push origin refs/tags/nightly --force
