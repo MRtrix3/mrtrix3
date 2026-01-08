@@ -17,7 +17,7 @@
 
 
 
-import errno, os, platform, random, re, string
+import errno, os, pathlib, platform, random, re, string
 from mrtrix3 import CONFIG
 
 
@@ -116,20 +116,21 @@ def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
 # If you want to create a temporary file / directory, use the make_temporary() function above.
 def name_temporary(suffix): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  dir_path = CONFIG['TmpFileDir'] if 'TmpFileDir' in CONFIG else (app.SCRATCH_DIR if app.SCRATCH_DIR else os.getcwd())
+  dir_path = pathlib.Path(CONFIG['TmpFileDir']) if 'TmpFileDir' in CONFIG else (app.SCRATCH_DIR if app.SCRATCH_DIR else pathlib.Path.cwd())
   prefix = CONFIG['TmpFilePrefix'] if 'TmpFilePrefix' in CONFIG else 'mrtrix-tmp-'
-  full_path = dir_path
-  suffix = suffix.lstrip('.')
-  while os.path.exists(full_path):
+  full_path = pathlib.Path(dir_path)
+  if suffix and not suffix[0] == '.':
+    suffix = f'.{suffix}'
+  while full_path.exists():
     random_string = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(6))
-    full_path = os.path.join(dir_path, f'{prefix}{random_string}.{suffix}')
+    full_path = dir_path / f'{prefix}{random_string}{suffix}'
   app.debug(full_path)
   return full_path
 
 
 # Make a temporary empty file / directory with a unique name
-# If the filesystem path separator is provided as the 'suffix' input, then the function will generate a new
-#   directory rather than a file.
+# If the filesystem path separator is provided as the 'suffix' input,
+#   then the function will generate a new directory rather than a file.
 def make_temporary(suffix): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   is_directory = suffix in '\\/' and len(suffix) == 1
@@ -137,7 +138,7 @@ def make_temporary(suffix): #pylint: disable=unused-variable
     temp_path = name_temporary(suffix)
     try:
       if is_directory:
-        os.makedirs(temp_path)
+        temp_path.mkdir()
       else:
         with open(temp_path, 'a', encoding='utf-8'):
           pass
@@ -146,16 +147,3 @@ def make_temporary(suffix): #pylint: disable=unused-variable
     except OSError as exception:
       if exception.errno != errno.EEXIST:
         raise
-
-
-
-# Make a directory if it doesn't exist; don't do anything if it does already exist
-def make_dir(path): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  try:
-    os.makedirs(path)
-    app.debug(f'Created directory {path}')
-  except OSError as exception:
-    if exception.errno != errno.EEXIST:
-      raise
-    app.debug(f'Directory "{path}" already exists')
