@@ -19,6 +19,11 @@ Usage
 -  *nodes_in*: the input node parcellation image
 -  *connectome_out*: the output file containing edge weights
 
+Description
+-----------
+
+The default mechanism by which streamlines are ascribed to connectome parcels is the "radial search" algorithm as described in reference (Smith et al., 2015), with a default maximal search distance of 4mm. For each streamline endpoint, if there is no voxel with a non-zero parcel index whose centre is closer to the streamline endpoint than the maximal search distance, then that streamline endpoint will not be assigned to any parcel, and the streamline will be omitted from the connectome matrix (unless the -keep_unassigned option is specified). The maximal search distance can be modified using the -assignment_radial_search option, or an alternative algorithm can be activated using one of the other -assignment_* options.
+
 Example usages
 --------------
 
@@ -129,7 +134,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
