@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 #include "header.h"
 #include "image.h"
@@ -264,7 +265,7 @@ private:
   GL::VertexBuffer regular_grid_threshold_buffer;
 
   // Index buffer for rendering slabs
-  vector<uint32_t> element_indices;
+  std::vector<uint32_t> element_indices;
 
   float voxel_size_length_multipler;
   float user_line_length_multiplier;
@@ -272,7 +273,6 @@ private:
 };
 
 // Wrapper to generically store fixel data
-
 template <typename ImageType> class FixelType : public BaseFixel {
 public:
   FixelType(std::string_view filename, Fixel &fixel_tool)
@@ -289,4 +289,5 @@ protected:
 
 using FixelImage4DType = MR::Image<float>;
 using FixelIndexImageType = MR::Image<uint32_t>;
+
 } // namespace MR::GUI::MRView::Tool

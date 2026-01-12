@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <vector>
+
 #include "header.h"
 #include "image.h"
 
@@ -58,7 +60,7 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   const double cf = calc_cost_function();
   SIFT::track_t excluded_count = 0, zero_TD_count = 0;
   double zero_TD_cf_sum = 0.0, excluded_cf_sum = 0.0;
-  vector<Fixel>::iterator i = fixels.begin(); // SKip first fixel, which is an intentional null in DWI::Fixel_map<>
+  std::vector<Fixel>::iterator i = fixels.begin(); // SKip first fixel, which is an intentional null in DWI::Fixel_map<>
   for (++i; i != fixels.end(); ++i) {
     if (!i->get_orig_TD()) {
       ++zero_TD_count;

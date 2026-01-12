@@ -16,6 +16,7 @@
 
 #include "mrview/mode/slice.h"
 
+#include "mrview/tool/roi_editor/item.h"
 #include "opengl/transformation.h"
 
 namespace MR::GUI::MRView::Mode {

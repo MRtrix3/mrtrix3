@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "dwi/tractography/properties.h"
 #include "mrview/displayable.h"
 #include "mrview/tool/tractography/tractography.h"
@@ -141,8 +143,8 @@ private:
   std::vector<size_t> num_tracks_per_buffer;
 
   // EBOs and indices for chunks of tracks
-  vector<GLuint> element_buffers;
-  vector<GLsizei> element_counts;
+  std::vector<GLuint> element_buffers;
+  std::vector<GLsizei> element_counts;
 
   GLint sample_stride;
   bool vao_dirty;

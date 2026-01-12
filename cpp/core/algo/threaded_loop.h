@@ -337,7 +337,10 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
     };
 
     MutexProtected<Shared> shared = {iterator, outer_loop(iterator)};
-
+    auto get_iterator = [](MutexProtected<Shared> &shared) {
+      auto guard = shared.lock();
+      return guard->iterator;
+    };
     struct PerThread {
       MutexProtected<Shared> &shared;
       Iterator pos;
@@ -351,7 +354,7 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
         while (shared.lock()->next(pos))
           func(pos);
       }
-    } loop_thread = {shared, shared.iterator, functor};
+    } loop_thread = {shared, get_iterator(shared), functor};
 
     auto threads = Thread::run(Thread::multi(loop_thread), "loop threads");
 

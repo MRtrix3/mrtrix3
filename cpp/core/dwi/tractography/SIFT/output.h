@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "header.h"
 #include "image.h"
 
@@ -204,7 +206,7 @@ template <class Fixel> void ModelBase<Fixel>::output_scatterplot(std::string_vie
   out << "# " << App::command_history_string << "\n";
   const default_type current_mu = mu();
   out << "#Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
-  typename vector<Fixel>::const_iterator i = fixels.begin(); // Skip first null fixel in DWI::Fixel_map<>
+  typename std::vector<Fixel>::const_iterator i = fixels.begin(); // Skip first null fixel in DWI::Fixel_map<>
   for (++i; i != fixels.end(); ++i)
     out << str(i->get_FOD()) << "," << str(i->get_TD()) << "," << str(i->get_TD() * current_mu) << ","
         << str(i->get_weight()) << ",\n";

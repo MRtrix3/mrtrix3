@@ -909,7 +909,7 @@ void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
   num_tracks_per_buffer.push_back(tck_count);
 
   // Build an index buffer for this chunk of tracks
-  vector<uint32_t> chunk_indices;
+  std::vector<uint32_t> chunk_indices;
   for (size_t t = 0; t < sizes.size(); ++t) {
     const GLint start = starts[t];
     const GLint n = sizes[t];
