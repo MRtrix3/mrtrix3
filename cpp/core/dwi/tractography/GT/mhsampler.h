@@ -45,7 +45,8 @@ public:
              static_cast<size_t>(dwiheader.size(1)),
              static_cast<size_t>(dwiheader.size(2))},
         mask(m),
-        lock(std::make_shared<SpatialLock<float>>(std::max(5.0F * Particle::L, float(2.0F * pGrid.spacing())))),
+        lock(std::make_shared<SpatialLock<float>>(
+            std::max(5.0F * Particle::L, static_cast<float>(2.0F * pGrid.spacing())))),
         sigpos(Particle::L / 8.),
         sigdir(0.2) {
     DEBUG("Initialise Metropolis Hastings sampler.");
