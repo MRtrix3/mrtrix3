@@ -37,8 +37,8 @@ int ROI_Item::new_roi_counter = 0;
 
 ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)), saved(true), current_undo(-1) {
   type = gl::UNSIGNED_BYTE;
-  format = gl::RED;
-  internal_format = gl::R8;
+  format = gl::RED_INTEGER;
+  internal_format = gl::R8UI;
   set_allowed_features(false, true, false);
   set_interpolate(false);
   set_use_transparency(true);

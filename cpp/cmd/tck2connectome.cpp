@@ -44,6 +44,9 @@ void usage() {
 
   SYNOPSIS = "Generate a connectome matrix from a streamlines file and a node parcellation image";
 
+  DESCRIPTION
+  + MR::DWI::Tractography::Connectome::tck2nodes_description;
+
   EXAMPLES
   + Example ("Default usage",
              "tck2connectome tracks.tck nodes.mif connectome.csv -tck_weights_in weights.csv -out_assignments assignments.txt",
@@ -122,7 +125,7 @@ void usage() {
                       " rather than a matrix of node-node connectivities");
 
   REFERENCES
-  + "If using the default streamline-parcel assignment mechanism"
+  + "If using the default \"radial search\" streamline-parcel assignment mechanism"
     " (or -assignment_radial_search option):\n" // Internal
     "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
     "The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. "

@@ -139,6 +139,11 @@ private:
   std::vector<std::vector<GLint>> original_track_sizes;
   std::vector<std::vector<GLint>> original_track_starts;
   std::vector<size_t> num_tracks_per_buffer;
+
+  // EBOs and indices for chunks of tracks
+  vector<GLuint> element_buffers;
+  vector<GLsizei> element_counts;
+
   GLint sample_stride;
   bool vao_dirty;
 
@@ -163,6 +168,7 @@ private:
 private slots:
   void on_FOV_changed() { should_update_stride = true; }
 };
+
 } // namespace Tool
 } // namespace MRView
 } // namespace MR::GUI

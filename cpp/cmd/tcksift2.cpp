@@ -120,7 +120,7 @@ void usage() {
     "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
     "Quantitative Streamlines Tractography:"
     " Methods and Inter-Subject Normalisation. "
-    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    "OHBM Aperture, 10.52294/ApertureNeuro.2022.2.NEOD9565.";
 
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()

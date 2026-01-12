@@ -32,19 +32,21 @@ std::string Slice::Shader::vertex_shader_source(const Displayable &) {
 }
 
 std::string Slice::Shader::fragment_shader_source(const Displayable &object) {
-  std::string source = object.declare_shader_variables() + "uniform sampler3D tex;\n"
-                                                           "in vec3 texcoord;\n"
-                                                           "out vec4 color;\n";
+  const auto *roi_item = dynamic_cast<const Tool::ROI_Item *>(&object);
+  const bool is_roi = roi_item != nullptr;
+  std::string source = object.declare_shader_variables();
+  source += (is_roi ? "uniform usampler3D tex;\n" : "uniform sampler3D tex;\n");
+  source += "in vec3 texcoord;\n"
+            "out vec4 color;\n";
 
   source += "void main() {\n"
             "  if (texcoord.s < 0.0 || texcoord.s > 1.0 ||\n"
             "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
-            "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
-            "  color = texture (tex, texcoord.stp);\n"
-            "  float amplitude = " +
-            std::string(ColourMap::maps[object.colourmap].amplitude) +
-            ";\n"
-            "  if (isnan(amplitude) || isinf(amplitude)) discard;\n";
+            "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n" +
+            (is_roi ? std::string("  uint ru = texture(tex, texcoord.stp).r;\n  color = vec4(ru > 0u ? 1.0 : 0.0);\n")
+                    : std::string("  color = texture (tex, texcoord.stp);\n"));
+  source += "  float amplitude = " + std::string(ColourMap::maps[object.colourmap].amplitude) + ";\n";
+  source += "  if (isnan(amplitude) || isinf(amplitude)) discard;\n";
 
   if (object.use_discard_lower())
     source += "  if (amplitude < lower) discard;\n";

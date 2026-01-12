@@ -66,7 +66,10 @@ public:
   /**
    * @brief Return number of Particles in the pool.
    */
-  inline size_t size() const { return pool.size() - avail.size(); }
+  inline size_t size() const {
+    std::lock_guard<std::mutex> lock(mutex);
+    return pool.size() - avail.size();
+  }
 
   /**
    * @brief Select random particle from the pool (uniformly).
@@ -95,7 +98,7 @@ public:
   }
 
 protected:
-  std::mutex mutex;
+  mutable std::mutex mutex;
   std::deque<Particle> pool;
   std::stack<Particle *, std::deque<Particle *>> avail;
   Math::RNG rng;

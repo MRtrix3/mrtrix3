@@ -119,7 +119,7 @@ void Cube::generate() {
   index_buffer.gen();
   index_buffer.bind();
   num_indices = polygons.size();
-  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, num_indices, polygons.data(), gl::STATIC_DRAW);
+  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, num_indices * sizeof(GLuint), polygons.data(), gl::STATIC_DRAW);
 }
 
 } // namespace MR::GUI::Shapes

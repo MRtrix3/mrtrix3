@@ -50,7 +50,7 @@ void MHSampler::next() {
 // PROPOSAL DISTRIBUTIONS -------------------------------------------------------
 
 void MHSampler::birth() {
-  // TRACE;
+  // std::cerr << 'b';
   stats.incN('b');
 
   Point_t pos;
@@ -72,7 +72,7 @@ void MHSampler::birth() {
 }
 
 void MHSampler::death() {
-  // TRACE;
+  // std::cerr << 'd';
   stats.incN('d');
 
   Particle *par;
@@ -95,7 +95,7 @@ void MHSampler::death() {
 }
 
 void MHSampler::randshift() {
-  // TRACE;
+  // std::cerr << 'r';
   stats.incN('r');
 
   Particle *par;
@@ -124,7 +124,7 @@ void MHSampler::randshift() {
 }
 
 void MHSampler::optshift() {
-  // TRACE;
+  // std::cerr << 'o';
   stats.incN('o');
 
   Particle *par;
@@ -153,9 +153,9 @@ void MHSampler::optshift() {
   }
 }
 
-void MHSampler::connect() // TODO Current implementation does not prevent loops.
-{
-  // TRACE;
+// TODO Current implementation does not prevent loops.
+void MHSampler::connect() {
+  // std::cerr << 'c';
   stats.incN('c');
 
   Particle *par;

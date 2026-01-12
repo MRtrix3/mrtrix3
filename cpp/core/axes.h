@@ -40,10 +40,7 @@ using flips_type = std::array<bool, 3>;
 class Shuffle {
 public:
   Shuffle() : permutations(), flips({false, false, false}) {}
-  bool is_identity() const {
-    return (permutations.is_identity() && //
-            !flips[0] && !flips[1] && !flips[2]);
-  }
+  bool is_identity() const { return (permutations.is_identity() && !std::max(flips.begin(), flips.end())); }
   bool valid() const { return permutations.valid(); }
   permutations_type permutations;
   flips_type flips;

@@ -433,6 +433,10 @@ add_bash_binary_test(tckgen/seed_random_per_voxel)
 add_bash_binary_test(tckgen/seed_rejection)
 add_bash_binary_test(tckgen/seed_sphere)
 
+add_bash_binary_test(tckglobal/default)
+add_bash_binary_test(tckglobal/masked)
+add_bash_binary_test(tckglobal/multitissue)
+
 add_bash_binary_test(tckmap/dec)
 add_bash_binary_test(tckmap/default_template)
 add_bash_binary_test(tckmap/default_vox)

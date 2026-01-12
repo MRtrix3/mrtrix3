@@ -96,16 +96,25 @@ public:
 
   double getText() const { return Text; }
 
-  double getTint() const { return Tint; }
+  double getTint() const {
+    std::lock_guard<std::mutex> lock(mutex);
+    return Tint;
+  }
 
   void setTint(double temp) {
     std::lock_guard<std::mutex> lock(mutex);
     Tint = temp;
   }
 
-  double getEextTotal() const { return EextTot; }
+  double getEextTotal() const {
+    std::lock_guard<std::mutex> lock(mutex);
+    return EextTot;
+  }
 
-  double getEintTotal() const { return EintTot; }
+  double getEintTotal() const {
+    std::lock_guard<std::mutex> lock(mutex);
+    return EintTot;
+  }
 
   void incEextTotal(double d) {
     std::lock_guard<std::mutex> lock(mutex);
@@ -215,7 +224,7 @@ public:
   friend std::ostream &operator<<(std::ostream &o, Stats const &stats);
 
 protected:
-  std::mutex mutex;
+  mutable std::mutex mutex;
   double Text, Tint;
   double EextTot, EintTot;
   double alpha;

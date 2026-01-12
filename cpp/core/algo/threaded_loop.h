@@ -340,6 +340,7 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
 
     struct PerThread {
       MutexProtected<Shared> &shared;
+      Iterator pos;
       PerThread(const PerThread &) = default;
       PerThread(PerThread &&) noexcept = default;
       PerThread &operator=(const PerThread &) = delete;
@@ -347,11 +348,10 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
       ~PerThread() = default;
       typename std::remove_reference<Functor>::type func;
       void execute() {
-        auto pos = shared.lock()->iterator;
         while (shared.lock()->next(pos))
           func(pos);
       }
-    } loop_thread = {shared, functor};
+    } loop_thread = {shared, shared.iterator, functor};
 
     auto threads = Thread::run(Thread::multi(loop_thread), "loop threads");
 

@@ -310,7 +310,7 @@ void ROI::save(ROI_Item *roi) {
     GL::assert_context_is_current();
     roi->texture().bind();
     gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
-    gl::GetTexImage(gl::TEXTURE_3D, 0, gl::RED, gl::UNSIGNED_BYTE, (void *)(&data[0]));
+    gl::GetTexImage(gl::TEXTURE_3D, 0, gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void *)(&data[0]));
     GL::assert_context_is_current();
   }
 
