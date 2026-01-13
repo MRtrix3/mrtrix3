@@ -23,12 +23,12 @@
 namespace MR::GUI::GL {
 namespace {
 
-constexpr float DefaultAmbient = 0.5f;
-constexpr float DefaultDiffuse = 0.5f;
-constexpr float DefaultSpecular = 0.5f;
-constexpr float DefaultShine = 5.0f;
-const Eigen::Array3f DefaultBackgroundColor(1.0f, 1.0f, 1.0f);
-const Eigen::Array3f DefaultLightPosition(1.0f, 1.0f, 3.0f);
+constexpr float DefaultAmbient = 0.5F;
+constexpr float DefaultDiffuse = 0.5F;
+constexpr float DefaultSpecular = 0.5F;
+constexpr float DefaultShine = 5.0F;
+const Eigen::Array3f DefaultBackgroundColor(1.0F, 1.0F, 1.0F);
+const Eigen::Array3f DefaultLightPosition(1.0F, 1.0F, 3.0F);
 
 } // namespace
 

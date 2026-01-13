@@ -55,7 +55,7 @@ void MeshMulti::load(std::string_view path) {
     if (prefix == "v") {
       if (index < 0)
         throw Exception("Malformed OBJ file: vertex outside object (line " + str(counter) + ")");
-      std::array<float, 4> values;
+      std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
     } else if (prefix == "vt") {

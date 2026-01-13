@@ -453,13 +453,13 @@ void Mesh::load_obj(std::string_view path) {
     const std::string prefix(line.substr(0, divider));
     std::string data(line.substr(divider + 1, line.npos));
     if (prefix == "v") {
-      std::array<float, 4> values;
+      std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
     } else if (prefix == "vt") {
       // Texture data; do nothing
     } else if (prefix == "vn") {
-      std::array<float, 3> values;
+      std::array<float, 3> values{};
       sscanf(data.c_str(), "%f %f %f", &values[0], &values[1], &values[2]);
       normals.push_back(Vertex(values[0], values[1], values[2]));
     } else if (prefix == "vp") {
@@ -638,7 +638,7 @@ void Mesh::load_fs(std::string_view path) {
     const int32_t num_polygons = FreeSurfer::get_int24_BE(in);
     vertices.reserve(num_vertices);
     for (int32_t i = 0; i != num_vertices; ++i) {
-      std::array<int16_t, 3> temp;
+      std::array<int16_t, 3> temp{};
       for (size_t axis = 0; axis != 3; ++axis)
         temp[axis] = FreeSurfer::get_BE<int16_t>(in);
       vertices.push_back(Vertex(0.01 * temp[0], 0.01 * temp[1], 0.01 * temp[2]));

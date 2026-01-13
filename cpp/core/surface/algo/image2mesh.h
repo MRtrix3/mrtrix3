@@ -431,7 +431,7 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
   Transform transform(input_image);
 
   ImageType voxel(input_image);
-  std::array<float, 8> in_vertex_values;
+  std::array<float, 8> in_vertex_values{};
   std::map<Vox, std::map<Vox, size_t>> input_vertex_pair_to_output_vertex_index_map;
   Vox lower_corner;
   for (lower_corner[2] = -1; lower_corner[2] != voxel.size(2); ++lower_corner[2]) {

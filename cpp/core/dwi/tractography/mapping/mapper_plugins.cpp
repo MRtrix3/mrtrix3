@@ -243,7 +243,7 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
   variance[0] /= denom;
   variance[1] /= denom;
 
-  if (variance[0] && variance[1])
+  if (variance[0] != 0.0 && variance[1] != 0.0)
     factors[0] = corr / std::sqrt(variance[0] * variance[1]);
 }
 

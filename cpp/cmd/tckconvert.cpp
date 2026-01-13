@@ -143,7 +143,7 @@ public:
         VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
       }
     } else {
-      std::array<float, 3> p;
+      std::array<float, 3> p{};
       for (const auto &pos : tck) {
         for (auto i = 0; i < 3; ++i)
           Raw::store_BE(pos[i], p.data(), i);
@@ -231,7 +231,8 @@ public:
 
       if (sscanf(line.c_str(), "POINTS %d float", &number_of_points) == 1) {
         points.resize(3 * number_of_points);
-        input.read(reinterpret_cast<char *>(points.data()), 3 * number_of_points * sizeof(float));
+        input.read(reinterpret_cast<char *>(points.data()),
+                   3uL * static_cast<unsigned long>(number_of_points) * sizeof(float));
 
         // swap
         for (int i = 0; i < 3 * number_of_points; i++)

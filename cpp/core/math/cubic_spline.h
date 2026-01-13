@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "math/math.h"
+
 namespace MR::Math {
 
 enum SplineProcessingType { Value = 1, Derivative = 2, ValueAndDerivative = Value | Derivative };

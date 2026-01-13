@@ -30,7 +30,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
   if (spec.empty())
     throw Exception("floating-point sequence specifier is empty");
   std::string::size_type start = 0, end;
-  std::array<default_type, 3> range_spec;
+  std::array<default_type, 3> range_spec{NaN, NaN, NaN};
   int i = 0;
   try {
     do {

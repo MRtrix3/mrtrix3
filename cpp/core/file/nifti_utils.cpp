@@ -182,7 +182,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   // voxel sizes:
-  std::array<double, 8> pixdim;
+  std::array<double, 8> pixdim{};
   for (int i = 0; i < ndim; i++) {
     pixdim[i] = Raw::fetch_<float_type>(&NH.pixdim[i + 1], is_BE);
     if (pixdim[i] < 0.0) {
