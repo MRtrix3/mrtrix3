@@ -299,10 +299,10 @@ void run() {
 
   opt = get_options("seeds");
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
-  if (!opt.empty())
-    dirs = File::Matrix::load_matrix<value_type>(opt[0][0]);
-  else
+  if (opt.empty())
     dirs = DWI::Directions::electrostatic_repulsion_60().cast<value_type>();
+  else
+    dirs = File::Matrix::load_matrix<value_type>(opt[0][0]);
   if (dirs.cols() != 2)
     throw Exception("expecting 2 columns for search directions matrix");
 
