@@ -13,9 +13,16 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
+from keyword import kwlist as PYTHON_KEYWORDS
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
+try:
+  import black.parsing
+except ImportError:
+  HAVE_BLACK = False
+else:
+  HAVE_BLACK = True
 
 
 
@@ -146,6 +153,9 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
     sys.exit(0)
   elif sys.argv[-1] == '__print_usage_rst__':
     CMDLINE.print_usage_rst()
+    sys.exit(0)
+  elif sys.argv[-1] == '__print_pydra_code__':
+    CMDLINE.print_pydra_code()
     sys.exit(0)
 
   # Do the main command-line input parsing
@@ -576,6 +586,7 @@ class ProgressBar: #pylint: disable=unused-variable
 #   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
 #   automated self-documentation.
 
+# pylint: disable=too-many-public-methods
 class Parser(argparse.ArgumentParser):
 
   # Function that will create a new class,
@@ -737,6 +748,20 @@ class Parser(argparse.ArgumentParser):
     @staticmethod
     def _metavar():
       return 'values'
+
+
+  # Would you mind if this is defined here instead of in commands.population_template.usage
+  # makes it much easiery to import and include in instance checks for pydra auto-gen??
+  class SequenceDirectoryOut(CustomTypeBase):
+    def __call__(self, input_value):
+      return [Parser.make_userpath_object(Parser._UserDirOutPathExtras, item) # pylint: disable=protected-access \
+              for item in input_value.split(',')]
+    @staticmethod
+    def _legacytypestring():
+      return 'SEQDIROUT'
+    @staticmethod
+    def _metavar():
+      return 'directory_list'
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
@@ -1469,6 +1494,242 @@ class Parser(argparse.ArgumentParser):
                           os.path.realpath(sys.argv[0]),
                           alg,
                           '__print_usage_rst__'])
+
+  def print_pydra_code(self):
+
+    if self._subparsers:
+
+      if len(sys.argv) == 3:
+        for alg in self._subparsers._group_actions[0].choices:
+          if alg == sys.argv[-2]:
+            self._subparsers._group_actions[0].choices[alg].print_pydra_code()
+            return
+        self.error('Invalid subparser nominated: ' + sys.argv[-2])
+      assert len(sys.argv) == 2
+      sys.stdout.write(",".join(self._subparsers._group_actions[0].choices))
+      sys.stdout.flush()
+      return
+
+    def get_arg_metadata(arg):
+      kwds = {
+        "help": arg.help,
+      }
+      if arg.choices:
+        kwds["allowed_values"] = list(arg.choices)
+      return kwds
+
+    def parse_type(type_, optional: bool = False):
+      if type_ is str or type_ is None:
+        type_str = "str"
+      elif isinstance(type_, Parser.Bool):
+        type_str = "bool"
+      elif type(type_).__name__ == "IntBounded":
+        type_str = "int"
+      elif type(type_).__name__ == "FloatBounded":
+        type_str = "float"
+      elif isinstance(type_, Parser.FileIn):
+        type_str = "File"
+      elif isinstance(type_, Parser.FileOut):
+        type_str = "File"
+      elif isinstance(type_, Parser.DirectoryIn):
+        type_str = "Directory"
+      elif isinstance(type_, Parser.DirectoryOut):
+        type_str = "Directory"
+      elif isinstance(type_, Parser.SequenceDirectoryOut):
+        type_str = "list[Directory]"
+      elif isinstance(type_, Parser.ImageIn):
+        type_str = "ImageIn"
+      elif isinstance(type_, Parser.ImageOut):
+        type_str = "ImageOut"
+      elif isinstance(type_, Parser.SequenceInt):
+        type_str = "list[int]"
+      elif isinstance(type_, Parser.SequenceFloat):
+        type_str = "list[float]"
+      elif isinstance(type_, Parser.TracksIn):
+        type_str = "Tracks"
+      elif isinstance(type_, Parser.TracksOut):
+        type_str = "Tracks"
+      else:
+        warn("Unrecognized type: " + str(type_) + " defaulting to Any")
+        type_str = "Any"
+      if optional:
+        type_str += " | None"
+      return type_str
+
+    def escape_id(id_: str) -> str:
+      if id_ == "input":
+        escaped = "in_file"
+      elif id_ == "output":
+        escaped = "out_file"
+      elif id_ in list(PYTHON_KEYWORDS) + ["container", "image", "container_xargs"]:
+        escaped = id_ + "_"
+      else:
+        escaped = id_
+      escaped = escaped.replace(".", '_')
+      return escaped
+
+    def is_output(arg_option) -> bool:
+      typ = arg_option.type
+      if isinstance(typ, (Parser.FileOut, Parser.DirectoryOut, Parser.ImageOut, Parser.SequenceDirectoryOut)):
+        return True
+      return hasattr(typ, "_legacytypestring") and typ._legacytypestring().endswith("OUT")
+
+    inputs = []
+    outputs = []
+    input_names = [a.dest for a in self._positionals._group_actions]
+    for pos, arg in enumerate(self._positionals._group_actions, start=1):
+      kwds = {
+        "position": pos,
+        "argstr": "",
+        "help": arg.help,
+      }
+      if arg.choices:
+        kwds["allowed_values"] = list(arg.choices)
+      arg_id = escape_id(arg.dest)
+      type_ = parse_type(arg.type)
+      if is_output(arg):
+        if isinstance(arg.type, Parser.ImageOut):
+          ext = ".mif"
+        elif isinstance(arg.type, Parser.FileOut):
+          ext = ".txt"
+        else:
+          ext = ""
+        kwds["path_template"] = arg_id + ext
+      (outputs if is_output(arg) else inputs).append(
+        (
+          arg_id,
+          type_,
+          kwds,
+        )
+      )
+    for group in reversed(self._action_groups):
+      for option in group._group_actions:
+        if option.dest in input_names:
+          continue
+        if isinstance(option, argparse._StoreTrueAction):
+          assert option.type is None
+          type_ = "bool"
+        else:
+          type_ = parse_type(option.type, optional=True)
+        if isinstance(option, argparse._AppendAction):
+          if is_output(option):
+            type_ = "list"
+          else:
+            type_ = "MultiInputObj"
+          type_ += f"[{type_}]"
+        kwds = get_arg_metadata(option)
+        kwds["argstr"] = "-" + option.dest
+        if type_ == "bool":
+          kwds["default"] = False
+        else:
+          kwds["default"] = None
+        if is_output(option):
+          if isinstance(option.type, Parser.ImageOut):
+            ext = ".mif"
+          elif isinstance(option.type, Parser.FileOut):
+            ext = ".txt"
+          else:
+            ext = ""
+          kwds["path_template"] = escape_id(option.dest) + ext
+        (outputs if is_output(option) else inputs).append(
+          (
+            escape_id(option.dest),
+            type_,
+            kwds,
+          )
+        )
+    # Replace # escapes
+    inputs_str = ""
+    outputs_str = ""
+    indent = "    "
+    md_indent = indent + "    "
+    for inpt_name, type_, kwds in inputs:
+      inputs_str += f"{indent}{inpt_name}: {type_} = shell.arg(\n{indent}    "
+      inputs_str += f"\n{md_indent}".join(f"{k}={v!r}," for k, v in kwds.items())
+      inputs_str += f"\n{indent})\n"
+    for outpt_name, type_, kwds in outputs:
+      outputs_str += f"{indent}    {outpt_name}: {type_} = shell.outarg(\n{indent}        "
+      outputs_str += f"\n{md_indent}    ".join(f"{k}={v!r}," for k, v in kwds.items())
+      outputs_str += f"\n{indent}    )\n"
+
+    def cmd_to_task_name(cmd_name: str) -> str:
+      """Get Task class name from cmd name"""
+      if cmd_name == "population_template":
+        return "PopulationTemplate"
+      task_name = cmd_name.replace(" ", "_")
+      if task_name[0] == "5":
+        task_name = "five" + task_name[1:]
+      cmd_prefixes = [
+        "fivett", "afd", "amp", "connectome", "dcm", "dir", "dwi",
+        "fixel", "fod", "label", "mask", "mesh", "mr", "mt",
+        "peaks", "response", "sh", "tck", "transform", "tsf", "voxel", "vector"
+      ]
+      # convert to PascalCase
+      task_name = "".join(
+        g.capitalize()
+        for g in re.match(rf"({'|'.join(cmd_prefixes)})(2?)([^_]+)(_?)(.*)", task_name).groups()
+      )
+      return task_name
+
+    task_name = cmd_to_task_name(self.prog)
+
+    if self._mutually_exclusive_option_groups:
+      xor = []
+      for group, required in self._mutually_exclusive_option_groups:
+        xor_set = list(group)
+        if not required:
+          xor_set.append(None)
+        xor.append(xor_set)
+      xor_str = f"(xor={xor!r})"
+    else:
+      xor_str = ""
+
+    text = (
+        "# Auto-generated by mrtrix3/app.py:print_pydra_code()\n\n"
+        "from typing import Any\n"
+        "from pathlib import Path  # noqa: F401\n"
+        "from fileformats.generic import FsObject, File, Directory  # noqa: F401\n"
+        "from fileformats.vendor.mrtrix3.medimage import Tracks, ImageIn, ImageOut  # noqa: F401\n"
+        "from pydra.utils.typing import MultiInputObj\n"
+        "from pydra.compose import shell\n"
+    )
+
+    text += f"\n\n@shell.define{xor_str}\nclass {task_name}(shell.Task[\"{task_name}.Outputs\"]):\n"
+    indent = "    "
+    text += indent + "\"\"\"\n"
+    text += indent + (self.description if self.description else "").replace("\n", "\n    ") + "\n"
+    text += indent + "References\n"
+    text += indent + "----------\n\n"
+    for ref in self._citation_list:
+      ref_text = indent + "* "
+      if ref[0]:
+        ref_text += ref[0] + ': '
+      ref_text += ref[1]
+      text += ref_text + '\n\n'
+    text += indent + _MRTRIX3_CORE_REFERENCE.replace("\n", "\n    ") + '\n\n'
+    text += indent + '--------------\n\n\n\n'
+    text += indent + '**Author:** ' + self._author + '\n\n'
+    text += indent + '**Copyright:** ' + self._copyright.replace("\n", "\n    ") + '\n\n'
+    text += indent + "\"\"\"\n"
+    if " " in self.prog:
+      executable = tuple(self.prog.split(" "))
+    else:
+      executable = self.prog
+    text += f"    executable={executable!r}\n\n"
+    text += inputs_str
+    if outputs_str:
+      text += f"\n\n{indent}class Outputs(shell.Outputs):\n"
+      text += outputs_str
+
+    if HAVE_BLACK:
+      try:
+        text = black.format_file_contents(
+            text, fast=False, mode=black.FileMode()
+        )
+      except black.parsing.InvalidInput:
+        pass
+    sys.stdout.write(text)
+    sys.stdout.flush()
 
   def print_version(self):
     text = f'== {self.prog} {self._git_version if self._is_project else version.VERSION} ==\n'

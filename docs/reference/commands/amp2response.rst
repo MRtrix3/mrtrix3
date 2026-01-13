@@ -13,11 +13,11 @@ Usage
 
 ::
 
-    amp2response [ options ]  amps mask directions response
+    amp2response [ options ]  amps mask fibre_directions response
 
 -  *amps*: the amplitudes image
 -  *mask*: the mask containing the voxels from which to estimate the response function
--  *directions*: a 4D image containing the estimated fibre directions
+-  *fibre_directions*: a 4D image containing the estimated fibre directions
 -  *response*: the output zonal spherical harmonic coefficients
 
 Description
