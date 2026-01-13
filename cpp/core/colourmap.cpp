@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,7 +77,7 @@ const std::vector<Entry> maps = {
                 c0 +
                 amplitude *
                     (c1 + amplitude * (c2 + amplitude * (c3 + amplitude * (c4 + amplitude * (c5 + amplitude * c6)))));
-            rgb = rgb.max(0.0).min(1.0);
+            rgb = rgb.max(0.0F).min(1.0F);
             return rgb;
           }),
 
@@ -103,7 +103,7 @@ const std::vector<Entry> maps = {
                 c0 +
                 amplitude *
                     (c1 + amplitude * (c2 + amplitude * (c3 + amplitude * (c4 + amplitude * (c5 + amplitude * c6)))));
-            rgb = rgb.max(0.0).min(1.0);
+            rgb = rgb.max(0.0F).min(1.0F);
             return rgb;
           }),
 

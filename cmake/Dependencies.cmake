@@ -60,25 +60,19 @@ if(MRTRIX_USE_SYSTEM_NIFTI)
 else()
     set(NIFTI1_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti1.h")
     set(NIFTI2_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h")
-    # DOWNLOAD_NO_EXTRACT for FetchContent is only available in CMake 3.18 and later
-    if(CMAKE_VERSION VERSION_LESS 3.18)
-        file(DOWNLOAD ${NIFTI1_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti1.h")
-        file(DOWNLOAD ${NIFTI2_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti2.h")
-        set(NIFTI_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/nifti")
-    else()
-        FetchContent_Declare(
-            nifti1
-            DOWNLOAD_NO_EXTRACT ON
-            URL ${NIFTI1_URL}
-        )
-        FetchContent_Declare(
-            nifti2
-            DOWNLOAD_NO_EXTRACT ON
-            URL ${NIFTI2_URL}
-        )
-        FetchContent_MakeAvailable(nifti1 nifti2)
-        set(NIFTI_INCLUDE_DIRS "${nifti1_SOURCE_DIR};${nifti2_SOURCE_DIR}")
-    endif()
+
+    FetchContent_Declare(
+        nifti1
+        DOWNLOAD_NO_EXTRACT ON
+        URL ${NIFTI1_URL}
+    )
+    FetchContent_Declare(
+        nifti2
+        DOWNLOAD_NO_EXTRACT ON
+        URL ${NIFTI2_URL}
+    )
+    FetchContent_MakeAvailable(nifti1 nifti2)
+    set(NIFTI_INCLUDE_DIRS "${nifti1_SOURCE_DIR};${nifti2_SOURCE_DIR}")
 endif()
 
 add_library(nifti INTERFACE)

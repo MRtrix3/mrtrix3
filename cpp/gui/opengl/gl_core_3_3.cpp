@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace gl {
 
 static void *AppleGLGetProcAddress(const char *name) {
   static void *image = nullptr;
-  if (image = nullptr)
+  if (image == nullptr)
     image = dlopen("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL", RTLD_LAZY);
 
   return (image ? dlsym(image, (const char *)name) : nullptr);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,6 +53,7 @@ BaseFixel::~BaseFixel() {
   regular_grid_dir_buffer.clear();
   regular_grid_colour_buffer.clear();
   regular_grid_val_buffer.clear();
+  element_index_buffer.clear();
 }
 
 std::string BaseFixel::Shader::vertex_shader_source(const Displayable &) {
@@ -232,14 +233,13 @@ void BaseFixel::render(const Projection &projection) {
 
   if (!fixel_tool.is_cropped_to_slab()) {
     vertex_array_object.bind();
-    for (size_t x = 0, N = slice_fixel_indices[0].size(); x < N; ++x) {
-      if (slice_fixel_counts[0][x])
-        gl::MultiDrawArrays(
-            gl::POINTS, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
-    }
+    if (element_indices_dirty)
+      rebuild_element_index_buffer();
+    element_index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
+    if (!element_indices.empty())
+      gl::DrawElements(gl::POINTS, static_cast<GLsizei>(element_indices.size()), gl::UNSIGNED_INT, (void *)0);
   } else {
     request_update_interp_image_buffer(projection);
-
     if (GLsizei points_count = regular_grid_buffer_pos.size())
       gl::DrawArrays(gl::POINTS, 0, points_count);
   }
@@ -446,6 +446,7 @@ void BaseFixel::load_image(std::string_view filename) {
   value_buffer.gen();
   colour_buffer.gen();
   threshold_buffer.gen();
+  element_index_buffer.gen();
 
   // voxel centres
   vertex_buffer.bind(gl::ARRAY_BUFFER);
@@ -454,12 +455,51 @@ void BaseFixel::load_image(std::string_view filename) {
   gl::EnableVertexAttribArray(0);
   gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)0);
 
+  rebuild_element_index_buffer();
+  element_indices_dirty = false;
+
   GL::assert_context_is_current();
 
   dir_buffer_dirty = true;
   value_buffer_dirty = true;
   colour_buffer_dirty = true;
   threshold_buffer_dirty = true;
+}
+
+void BaseFixel::rebuild_element_index_buffer() {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+
+  element_indices.clear();
+  if (!slice_fixel_indices.empty() && !slice_fixel_sizes.empty() && !slice_fixel_counts.empty()) {
+    const auto &starts_by_slice = slice_fixel_indices[0];
+    const auto &sizes_by_slice = slice_fixel_sizes[0];
+    const auto &counts_by_slice = slice_fixel_counts[0];
+    const size_t S = starts_by_slice.size();
+    for (size_t s = 0; s < S; ++s) {
+      const auto &starts = starts_by_slice[s];
+      const auto &sizes = sizes_by_slice[s];
+      const GLsizei draw_count = counts_by_slice[s];
+      if (!draw_count)
+        continue;
+      assert(starts.size() == sizes.size());
+      assert(static_cast<size_t>(draw_count) <= starts.size());
+      for (GLsizei d = 0; d < draw_count; ++d) {
+        const uint32_t start = static_cast<uint32_t>(starts[d]);
+        const uint32_t len = static_cast<uint32_t>(sizes[d]);
+        for (uint32_t i = 0; i < len; ++i)
+          element_indices.push_back(start + i);
+      }
+    }
+  }
+
+  vertex_array_object.bind();
+  element_index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
+  if (!element_indices.empty())
+    gl::BufferData(
+        gl::ELEMENT_ARRAY_BUFFER, element_indices.size() * sizeof(uint32_t), element_indices.data(), gl::STATIC_DRAW);
+
+  element_indices_dirty = false;
 }
 
 void BaseFixel::reload_directions_buffer() {

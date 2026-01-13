@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,15 +30,16 @@ ROI_UndoEntry::Shared::Shared() : count(1) {
                                    "void main() {\n"
                                    "  gl_Position = vec4 (vertpos,1);\n"
                                    "}\n");
-  GL::Shader::Fragment fragment_shader("uniform isampler3D tex;\n"
+  GL::Shader::Fragment fragment_shader("uniform usampler3D tex;\n"
                                        "uniform ivec3 position;\n"
                                        "uniform ivec2 axes;\n"
-                                       "layout (location = 0) out vec3 color0;\n"
+                                       "layout (location = 0) out float color0;\n"
                                        "void main() {\n"
                                        "  ivec3 pos = position;\n"
                                        "  pos[axes.x] = int(gl_FragCoord.x);\n"
                                        "  pos[axes.y] = int(gl_FragCoord.y);\n"
-                                       "  color0.r = texelFetch (tex, pos, 0).r;\n"
+                                       "  uint v = texelFetch(tex, pos, 0).r;\n"
+                                       "  color0 = (v > 0u) ? 1.0 : 0.0;\n"
                                        "}\n");
 
   program.attach(vertex_shader);
@@ -226,7 +227,7 @@ void ROI_UndoEntry::draw_line(ROI_Item &roi,
                     size[0],
                     size[1],
                     size[2],
-                    gl::RED,
+                    gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
                     (void *)(&after[0]));
   GL::assert_context_is_current();
@@ -290,7 +291,7 @@ void ROI_UndoEntry::draw_thick_line(ROI_Item &roi,
                     size[0],
                     size[1],
                     size[2],
-                    gl::RED,
+                    gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
                     (void *)(&after[0]));
   GL::assert_context_is_current();
@@ -335,7 +336,7 @@ void ROI_UndoEntry::draw_circle(ROI_Item &roi,
                     size[0],
                     size[1],
                     size[2],
-                    gl::RED,
+                    gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
                     (void *)(&after[0]));
   GL::assert_context_is_current();
@@ -380,7 +381,7 @@ void ROI_UndoEntry::draw_rectangle(ROI_Item &roi,
                     size[0],
                     size[1],
                     size[2],
-                    gl::RED,
+                    gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
                     (void *)(&after[0]));
   GL::assert_context_is_current();
@@ -444,7 +445,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
                     size[0],
                     size[1],
                     size[2],
-                    gl::RED,
+                    gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
                     (void *)(&after[0]));
   GL::assert_context_is_current();
@@ -462,7 +463,7 @@ void ROI_UndoEntry::undo(ROI_Item &roi) {
                     size[0],
                     size[1],
                     size[2],
-                    gl::RED,
+                    gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
                     (void *)(&before[0]));
   GL::assert_context_is_current();
@@ -480,7 +481,7 @@ void ROI_UndoEntry::redo(ROI_Item &roi) {
                     size[0],
                     size[1],
                     size[2],
-                    gl::RED,
+                    gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
                     (void *)(&after[0]));
   GL::assert_context_is_current();
@@ -499,7 +500,7 @@ void ROI_UndoEntry::copy(ROI_Item &roi, ROI_UndoEntry &source) {
                     size[0],
                     size[1],
                     size[2],
-                    gl::RED,
+                    gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
                     (void *)(&after[0]));
   GL::assert_context_is_current();
