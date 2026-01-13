@@ -232,7 +232,7 @@ public:
       if (sscanf(line.c_str(), "POINTS %d float", &number_of_points) == 1) {
         points.resize(3 * number_of_points);
         input.read(reinterpret_cast<char *>(points.data()),
-                   3uL * static_cast<unsigned long>(number_of_points) * sizeof(float));
+                   3UL * static_cast<unsigned long>(number_of_points) * sizeof(float));
 
         // swap
         for (int i = 0; i < 3 * number_of_points; i++)

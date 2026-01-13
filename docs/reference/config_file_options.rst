@@ -152,8 +152,8 @@ List of MRtrix3 configuration file options
 
     *default: 1.0*
 
-     The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with a
-     selected node.
+     The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with
+     a selected node.
 
 .. option:: ConnectomeNodeOtherColour
 
@@ -172,8 +172,8 @@ List of MRtrix3 configuration file options
 
     *default: 1.0*
 
-     The multiplicative factor to apply to the size of nodes not currently selected nor associated with a selected
-     node.
+     The multiplicative factor to apply to the size of nodes not currently selected nor associated with a
+     selected node.
 
 .. option:: ConnectomeNodeOtherVisibilityOverride
 
