@@ -51,7 +51,7 @@ inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(V
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[2];
+    uint8_t i[2]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[1]);
   return val.v;
@@ -62,7 +62,7 @@ inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(V
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[4];
+    uint8_t i[4]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[3]);
   std::swap(val.i[1], val.i[2]);
@@ -74,7 +74,7 @@ inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(V
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[8];
+    uint8_t i[8]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[7]);
   std::swap(val.i[1], val.i[6]);

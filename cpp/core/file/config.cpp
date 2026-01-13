@@ -124,7 +124,7 @@ float Config::get_float(std::string_view key, float default_value) {
   }
 }
 
-void Config::get_RGB(std::string_view key, float *ret, float default_R, float default_G, float default_B) {
+Eigen::Array3f Config::get_RGB(std::string_view key, const Eigen::Array3f &default_value) {
   const std::string value = get(std::string(key));
   if (!value.empty()) {
     try {
@@ -132,15 +132,12 @@ void Config::get_RGB(std::string_view key, float *ret, float default_R, float de
       if (V.size() < 3)
         throw Exception("malformed RGB entry \"" + value + "\" for key \"" + key +
                         "\" in configuration file - ignored");
-      ret[0] = V[0];
-      ret[1] = V[1];
-      ret[2] = V[2];
+      return {static_cast<float>(V[0]), static_cast<float>(V[1]), static_cast<float>(V[2])};
     } catch (Exception) {
+      return default_value;
     }
   } else {
-    ret[0] = default_R;
-    ret[1] = default_G;
-    ret[2] = default_B;
+    return default_value;
   }
 }
 

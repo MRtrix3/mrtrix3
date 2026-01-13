@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <array>
+#include <map>
+
 #include "file/key_value.h"
 #include "types.h"
-#include <map>
 
 namespace MR::File {
 class Config {
@@ -31,7 +33,7 @@ public:
   static bool get_bool(std::string_view key, bool default_value);
   static int get_int(std::string_view key, int default_value);
   static float get_float(std::string_view key, float default_value);
-  static void get_RGB(std::string_view key, float *ret, float default_R, float default_G, float default_B);
+  static Eigen::Array3f get_RGB(std::string_view key, const Eigen::Array3f &default_value);
 
 private:
   static KeyValues config;

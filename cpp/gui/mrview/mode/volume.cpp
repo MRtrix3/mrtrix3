@@ -348,16 +348,17 @@ void Volume::paint(Projection &projection) {
     gl::EnableVertexAttribArray(0);
     gl::VertexAttribPointer(0, 3, gl::BYTE, gl::FALSE_, 4 * sizeof(GLbyte), (void *)0);
 
-    GLbyte vertices[] = {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0,
-                         1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0};
-    gl::BufferData(gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STATIC_DRAW);
+    static const std::array<GLbyte, 32> vertices = {                                                 //
+                                                    0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0,  //
+                                                    1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0}; //
+    gl::BufferData(gl::ARRAY_BUFFER, sizeof(vertices), vertices.data(), gl::STATIC_DRAW);
   } else {
     volume_VAO.bind();
     volume_VI.bind(gl::ELEMENT_ARRAY_BUFFER);
   }
 
   GL_CHECK_ERROR;
-  GLubyte indices[12];
+  std::array<GLubyte, 12> indices;
 
   if (ray[0] < 0) {
     indices[0] = 4;
@@ -395,7 +396,7 @@ void Volume::paint(Projection &projection) {
     indices[11] = 4;
   }
 
-  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, gl::STREAM_DRAW);
+  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), gl::STREAM_DRAW);
 
   image()->update_texture3D();
   image()->set_use_transparency(true);
@@ -468,11 +469,12 @@ void Volume::paint(Projection &projection) {
   gl::DepthMask(gl::FALSE_);
   gl::ActiveTexture(gl::TEXTURE0);
 
-  const GLsizei counts[] = {4, 4, 4};
-  const GLvoid *starts[] = {reinterpret_cast<void *>(0), reinterpret_cast<void *>(4), reinterpret_cast<void *>(8)};
+  static const std::array<GLsizei, 3> counts = {4, 4, 4};
+  static const std::array<GLvoid *, 3> starts = {
+      reinterpret_cast<void *>(0), reinterpret_cast<void *>(4), reinterpret_cast<void *>(8)};
 
   GL_CHECK_ERROR;
-  gl::MultiDrawElements(gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
+  gl::MultiDrawElements(gl::TRIANGLE_FAN, counts.data(), gl::UNSIGNED_BYTE, starts.data(), 3);
   GL_CHECK_ERROR;
   image()->stop(volume_shader);
   GL_CHECK_ERROR;

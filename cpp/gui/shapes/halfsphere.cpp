@@ -74,7 +74,7 @@ public:
   GLuint &operator[](int n) { return index[n]; }
 
 protected:
-  GLuint index[3];
+  std::array<GLuint, 3> index;
 };
 
 class Edge {

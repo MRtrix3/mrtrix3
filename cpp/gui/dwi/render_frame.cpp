@@ -68,7 +68,7 @@ RenderFrame::RenderFrame(QWidget *parent)
       OS(0),
       OS_x(0),
       OS_y(0),
-      renderer((QOpenGLWidget *)this) {
+      renderer(static_cast<QOpenGLWidget *>(this)) {
   setMinimumSize(128, 128);
   lighting = new GL::Lighting(this);
   lighting->set_background = true;
@@ -108,10 +108,10 @@ void RenderFrame::initializeGL() {
   gl::EnableVertexAttribArray(1);
   gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
 
-  GLfloat axis_data[] = {-1.0, -1.0, -1.0, 1.0, 0.0, 0.0, 1.0,  -1.0, -1.0, 1.0, 0.0, 0.0,
-                         -1.0, -1.0, -1.0, 0.0, 1.0, 0.0, -1.0, 1.0,  -1.0, 0.0, 1.0, 0.0,
-                         -1.0, -1.0, -1.0, 0.0, 0.0, 1.0, -1.0, -1.0, 1.0,  0.0, 0.0, 1.0};
-  gl::BufferData(gl::ARRAY_BUFFER, sizeof(axis_data), axis_data, gl::STATIC_DRAW);
+  const std::array<GLfloat, 36> axis_data = {-1.0, -1.0, -1.0, 1.0, 0.0, 0.0, 1.0,  -1.0, -1.0, 1.0, 0.0, 0.0,  //
+                                             -1.0, -1.0, -1.0, 0.0, 1.0, 0.0, -1.0, 1.0,  -1.0, 0.0, 1.0, 0.0,  //
+                                             -1.0, -1.0, -1.0, 0.0, 0.0, 1.0, -1.0, -1.0, 1.0,  0.0, 0.0, 1.0}; //
+  gl::BufferData(gl::ARRAY_BUFFER, sizeof(axis_data), axis_data.data(), gl::STATIC_DRAW);
 
   GL::Shader::Vertex vertex_shader("layout(location = 0) in vec3 vertex_in;\n"
                                    "layout(location = 1) in vec3 color_in;\n"

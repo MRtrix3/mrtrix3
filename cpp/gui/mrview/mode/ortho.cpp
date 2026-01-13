@@ -88,10 +88,10 @@ void Ortho::paint(Projection &projection) {
     gl::EnableVertexAttribArray(0);
     gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, (void *)0);
 
-    GLfloat data[] = {-1.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f};
-
-    GLfloat data_row[] = {-1.0f / 3.0f, -1.0f, -1.0f / 3.0f, 1.0f, 1.0f / 3.0f, -1.0f, 1.0f / 3.0f, 2.0f};
-    gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), (show_as_row ? data_row : data), gl::STATIC_DRAW);
+    static const std::array<GLfloat, 8> data = {-1.0F, 0.0F, 1.0F, 0.0F, 0.0F, -1.0F, 0.0F, 1.0F};
+    static const std::array<GLfloat, 8> data_row = {
+        -1.0F / 3.0F, -1.0F, -1.0F / 3.0F, 1.0F, 1.0F / 3.0F, -1.0F, 1.0F / 3.0F, 2.0F};
+    gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), (show_as_row ? data_row.data() : data.data()), gl::STATIC_DRAW);
   } else
     frame_VAO.bind();
 

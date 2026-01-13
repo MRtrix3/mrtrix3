@@ -19,6 +19,8 @@
 #include <list>
 #include <set>
 
+#include <Eigen/Dense>
+
 #include "math/rng.h"
 
 namespace MR::DWI::Directions {
@@ -132,17 +134,19 @@ void Set::initialise_adjacency() {
     vertices.push_back(Vertex(*this, i, true));
   }
 
-  index_type extremum_indices[3][2] = {{0, 0}, {0, 0}, {0, 0}};
-  default_type extremum_values[3][2] = {{1.0, -1.0}, {1.0, -1.0}, {1.0, -1.0}};
+  Eigen::Array<index_type, 3, 2> extremum_indices = Eigen::Array<index_type, 3, 2>::Zero();
+  Eigen::Array<default_type, 3, 2> extremum_values;
+  extremum_values.col(0).setConstant(1.0);
+  extremum_values.col(1).setConstant(-1.0);
   for (size_t i = 0; i != vertices.size(); ++i) {
     for (size_t axis = 0; axis != 3; ++axis) {
-      if (vertices[i].dir[axis] < extremum_values[axis][0]) {
-        extremum_values[axis][0] = vertices[i].dir[axis];
-        extremum_indices[axis][0] = i;
+      if (vertices[i].dir[axis] < extremum_values(axis, 0)) {
+        extremum_values(axis, 0) = vertices[i].dir[axis];
+        extremum_indices(axis, 0) = i;
       }
-      if (vertices[i].dir[axis] > extremum_values[axis][1]) {
-        extremum_values[axis][1] = vertices[i].dir[axis];
-        extremum_indices[axis][1] = i;
+      if (vertices[i].dir[axis] > extremum_values(axis, 1)) {
+        extremum_values(axis, 1) = vertices[i].dir[axis];
+        extremum_indices(axis, 1) = i;
       }
     }
   }
@@ -150,8 +154,8 @@ void Set::initialise_adjacency() {
   // Find the two most distant points out of these six
   std::vector<index_type> all_extrema;
   for (size_t axis = 0; axis != 3; ++axis) {
-    all_extrema.push_back(extremum_indices[axis][0]);
-    all_extrema.push_back(extremum_indices[axis][1]);
+    all_extrema.push_back(extremum_indices(axis, 0));
+    all_extrema.push_back(extremum_indices(axis, 1));
   }
   std::pair<index_type, index_type> distant_pair;
   default_type max_dist_sq = 0.0;

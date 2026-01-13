@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <deque>
 #include <mutex>
 
@@ -90,7 +91,7 @@ protected:
   std::vector<ParticleContainer> grid;
   Math::RNG rng;
   transform_type T_s2g;
-  size_t dims[3];
+  std::array<size_t, 3> dims;
   default_type grid_spacing;
 
   inline size_t pos2idx(const Point_t &pos) const {

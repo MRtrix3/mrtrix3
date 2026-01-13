@@ -150,18 +150,18 @@ void ColourBars::render(size_t colourmap,
   const float scaled_width = width / static_cast<float>(max_bars_per_row);
   const float scaled_height = height / static_cast<float>(ncols);
 
-  GLfloat data[] = {0.0f,
-                    0.0f,
-                    min_frac,
-                    0.0f,
-                    scaled_height,
-                    max_frac,
-                    scaled_width,
-                    scaled_height,
-                    max_frac,
-                    scaled_width,
-                    0.0f,
-                    min_frac};
+  std::array<GLfloat, 12> data = {0.0f,
+                                  0.0f,
+                                  min_frac,
+                                  0.0f,
+                                  scaled_height,
+                                  max_frac,
+                                  scaled_width,
+                                  scaled_height,
+                                  max_frac,
+                                  scaled_width,
+                                  0.0f,
+                                  min_frac};
   float x_offset = 0.0f, y_offset = 0.0f;
   int halign = -1;
 
@@ -185,7 +185,7 @@ void ColourBars::render(size_t colourmap,
   data[9] += x_offset;
   data[10] += y_offset;
 
-  gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data, gl::STREAM_DRAW);
+  gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data.data(), gl::STREAM_DRAW);
 
   gl::DepthMask(gl::FALSE_);
   gl::LineWidth(1.0);

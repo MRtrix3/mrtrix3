@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include "mrtrix.h"
-
 #include "color_button.h"
+#include "mrtrix.h"
 #include "mrview/adjust_button.h"
 
 namespace MR::GUI::MRView::Tool {

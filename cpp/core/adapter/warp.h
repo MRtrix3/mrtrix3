@@ -74,7 +74,7 @@ public:
   ssize_t stride(size_t axis) const { return interp.stride(axis); }
 
   void reset() {
-    x[0] = x[1] = x[2] = 0;
+    x = {0, 0, 0};
     for (size_t n = 3; n < interp.ndim(); ++n)
       interp.index(n) = 0;
   }
@@ -103,18 +103,15 @@ public:
 
 private:
   Eigen::Vector3d get_position() {
-    warp.index(0) = x[0];
-    warp.index(1) = x[1];
-    warp.index(2) = x[2];
-
+    assign_pos_of(x).to(warp);
     return warp.row(3);
   }
 
   Interpolator<ImageType> interp;
   WarpType warp;
-  ssize_t x[3];
-  const ssize_t dim[3];
-  const default_type vox[3];
+  std::array<ssize_t, 3> x;
+  const std::array<ssize_t, 3> dim;
+  const std::array<default_type, 3> vox;
   const value_type value_when_out_of_bounds;
   const bool jac_modulate;
   Adapter::Jacobian<Image<default_type>> jacobian_adapter;

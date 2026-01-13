@@ -138,7 +138,7 @@ void NodeShader::update(const Connectome &parent) {
 
     geometry_shader_source += "layout(triangles) in;\n"
                               "layout(line_strip, max_vertices=2) out;\n"
-                              "in float depth[3];\n";
+                              "in float depth[3];\n"; // check_syntax off
 
     if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
       geometry_shader_source += "in vec3 normal" + GS_in +
@@ -370,7 +370,7 @@ void EdgeShader::update(const Connectome &parent) {
     case edge_geometry_t::STREAMLINE:
       geometry_shader_source += "layout(lines) in;\n"
                                 "layout(points, max_vertices=1) out;\n"
-                                "in float depth[2];\n";
+                                "in float depth[2];\n"; // check_syntax off
       if (use_lighting) {
         geometry_shader_source += "in vec3 tangent" + GS_in +
                                   "[2];\n"
@@ -382,7 +382,7 @@ void EdgeShader::update(const Connectome &parent) {
     case edge_geometry_t::STREAMTUBE:
       geometry_shader_source += "layout(triangles) in;\n"
                                 "layout(line_strip, max_vertices=2) out;\n"
-                                "in float depth[3];\n";
+                                "in float depth[3];\n"; // check_syntax off
       if (use_lighting) {
         geometry_shader_source += "in vec3 normal" + GS_in +
                                   "[3];\n"

@@ -15,6 +15,9 @@
  */
 
 #include "mrview/tool/tractography/tractography.h"
+
+#include <array>
+
 #include "dialog/file.h"
 #include "lighting_dock.h"
 #include "mrtrix.h"
@@ -503,15 +506,15 @@ void Tractography::randomise_track_colour_slot() {
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i) {
     Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
-    float colour[3];
+    std::array<float, 3> colour;
     Math::RNG::Uniform<float> rng;
     do {
       colour[0] = rng();
       colour[1] = rng();
       colour[2] = rng();
-    } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
+    } while (colour[0] < 0.5F && colour[1] < 0.5F && colour[2] < 0.5F);
     tractogram->set_color_type(TrackColourType::Manual);
-    QColor c(colour[0] * 255.0f, colour[1] * 255.0f, colour[2] * 255.0f);
+    QColor c(colour[0] * 255.0F, colour[1] * 255.0F, colour[2] * 255.0F);
     tractogram->set_colour(c);
     if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
       tractogram->set_threshold_type(TrackThresholdType::None);

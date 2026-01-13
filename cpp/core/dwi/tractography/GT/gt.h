@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -229,8 +230,8 @@ protected:
   double EextTot, EintTot;
   double alpha;
 
-  unsigned long n_gen[5];
-  unsigned long n_acc[5];
+  std::array<unsigned long, 5> n_gen;
+  std::array<unsigned long, 5> n_acc;
   unsigned long n_iter;
   const uint64_t n_max;
 

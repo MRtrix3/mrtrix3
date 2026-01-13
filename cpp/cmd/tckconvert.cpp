@@ -14,6 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
+#include <cstdio>
+#include <sstream>
+
 #include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -21,8 +25,6 @@
 #include "file/name_parser.h"
 #include "file/ofstream.h"
 #include "raw.h"
-#include <cstdio>
-#include <sstream>
 
 using namespace MR;
 using namespace App;
@@ -141,11 +143,11 @@ public:
         VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
       }
     } else {
-      float p[3];
+      std::array<float, 3> p{};
       for (const auto &pos : tck) {
         for (auto i = 0; i < 3; ++i)
-          Raw::store_BE(pos[i], p, i);
-        VTKout.write((char *)p, 3 * sizeof(float));
+          Raw::store_BE(pos[i], p.data(), i);
+        VTKout.write(reinterpret_cast<char *>(p.data()), sizeof(p));
       }
     }
     return true;
@@ -168,14 +170,14 @@ public:
         } else {
           int32_t buffer;
           buffer = ByteOrder::BE<int32_t>(track.second - track.first);
-          VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
 
           buffer = ByteOrder::BE<int32_t>(track.first);
-          VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
 
           for (size_t i = track.first + 1; i < track.second; ++i) {
             buffer = ByteOrder::BE<int32_t>(i);
-            VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+            VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
           }
         }
       }
@@ -207,7 +209,7 @@ private:
 
 template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &input, int number_of_line_indices) {
   std::vector<T> buffer(number_of_line_indices);
-  input.read((char *)&buffer[0], number_of_line_indices * sizeof(T));
+  input.read(reinterpret_cast<char *>(buffer.data()), number_of_line_indices * sizeof(T));
   lines.resize(number_of_line_indices);
   // swap from big endian
   for (int i = 0; i < number_of_line_indices; i++)
@@ -229,7 +231,8 @@ public:
 
       if (sscanf(line.c_str(), "POINTS %d float", &number_of_points) == 1) {
         points.resize(3 * number_of_points);
-        input.read((char *)points.data(), 3 * number_of_points * sizeof(float));
+        input.read(reinterpret_cast<char *>(points.data()),
+                   3UL * static_cast<unsigned long>(number_of_points) * sizeof(float));
 
         // swap
         for (int i = 0; i < 3 * number_of_points; i++)

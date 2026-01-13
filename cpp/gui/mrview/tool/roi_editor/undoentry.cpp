@@ -55,7 +55,7 @@ ROI_UndoEntry::Shared::Shared() : count(1) {
   gl::EnableVertexAttribArray(0);
   gl::VertexAttribIPointer(0, 3, gl::INT, 3 * sizeof(GLint), (void *)0);
 
-  GLint vertices[12] = {
+  static const std::array<GLint, 12> vertices = {
       -1,
       -1,
       0,
@@ -69,7 +69,7 @@ ROI_UndoEntry::Shared::Shared() : count(1) {
       -1,
       0,
   };
-  gl::BufferData(gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STREAM_DRAW);
+  gl::BufferData(gl::ARRAY_BUFFER, sizeof(vertices), vertices.data(), gl::STREAM_DRAW);
 }
 
 ROI_UndoEntry::Shared::~Shared() {

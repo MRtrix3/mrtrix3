@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "image_helpers.h"
 #include "transform.h"
 
@@ -180,7 +182,7 @@ public:
   bool operator!() const { return out_of_bounds; }
 
 protected:
-  default_type bounds[3];
+  std::array<default_type, 3> bounds;
   bool out_of_bounds;
 
   // Some helper functions

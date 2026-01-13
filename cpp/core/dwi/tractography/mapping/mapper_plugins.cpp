@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/mapping/mapper_plugins.h"
 
+#include <array>
+
 #include "algo/threaded_loop.h"
 #include "image_helpers.h"
 
@@ -168,24 +170,24 @@ void TWDFCStaticImagePlugin::load_factors(const Streamline<> &tck, std::vector<d
   }
 
   // Calculate the Pearson correlation coefficient
-  default_type sums[2] = {0.0, 0.0};
+  std::array<default_type, 2> sums = {0.0, 0.0};
   for (ssize_t i = 0; i != interp.size(3); ++i) {
     sums[0] += values[0][i];
     sums[1] += values[1][i];
   }
-  const default_type means[2] = {sums[0] / static_cast<default_type>(interp.size(3)),
-                                 sums[1] / static_cast<default_type>(interp.size(3))};
+  const std::array<default_type, 2> means = {sums[0] / static_cast<default_type>(interp.size(3)),
+                                             sums[1] / static_cast<default_type>(interp.size(3))};
 
   default_type product = 0.0;
-  default_type variances[2] = {0.0, 0.0};
+  std::array<default_type, 2> variances = {0.0, 0.0};
   for (ssize_t i = 0; i != interp.size(3); ++i) {
     product += ((values[0][i] - means[0]) * (values[1][i] - means[1]));
     variances[0] += Math::pow2(values[0][i] - means[0]);
     variances[1] += Math::pow2(values[1][i] - means[1]);
   }
   const default_type product_expectation = product / static_cast<default_type>(interp.size(3));
-  const default_type stdevs[2] = {std::sqrt(variances[0] / static_cast<default_type>(interp.size(3) - 1)),
-                                  std::sqrt(variances[1] / static_cast<default_type>(interp.size(3) - 1))};
+  const std::array<default_type, 2> stdevs = {std::sqrt(variances[0] / static_cast<default_type>(interp.size(3) - 1)),
+                                              std::sqrt(variances[1] / static_cast<default_type>(interp.size(3) - 1))};
 
   if (stdevs[0] && stdevs[1])
     factors[0] = product_expectation / (stdevs[0] * stdevs[1]);
@@ -197,7 +199,7 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
 
   // Use trilinear interpolation
   // Store values into local vectors, since it's a two-pass operation
-  std::vector<default_type> values[2];
+  std::array<std::vector<default_type>, 2> values;
   for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
     const ssize_t index = get_end_index(tck, tck_end_index);
     if (index < 0)
@@ -215,7 +217,7 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
   }
 
   // Calculate the Pearson correlation coefficient within the kernel window
-  default_type sums[2] = {0.0, 0.0};
+  std::array<default_type, 2> sums = {0.0, 0.0};
   default_type kernel_sum = 0.0, kernel_sq_sum = 0.0;
   for (size_t i = 0; i != kernel.size(); ++i) {
     if (std::isfinite(values[0][i])) {
@@ -225,23 +227,24 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
       kernel_sq_sum += Math::pow2(kernel[i]);
     }
   }
-  const default_type means[2] = {sums[0] / kernel_sum, sums[1] / kernel_sum};
+  const std::array<default_type, 2> means = {sums[0] / kernel_sum, sums[1] / kernel_sum};
   const default_type denom = kernel_sum - (kernel_sq_sum / kernel_sum);
 
-  default_type corr = 0.0, start_variance = 0.0, end_variance = 0.0;
+  default_type corr = 0.0;
+  std::array<default_type, 2> variance = {0.0, 0.0};
   for (size_t i = 0; i != kernel.size(); ++i) {
     if (std::isfinite(values[0][i])) {
       corr += kernel[i] * (values[0][i] - means[0]) * (values[1][i] - means[1]);
-      start_variance += kernel[i] * Math::pow2(values[0][i] - means[0]);
-      end_variance += kernel[i] * Math::pow2(values[1][i] - means[1]);
+      variance[0] += kernel[i] * Math::pow2(values[0][i] - means[0]);
+      variance[1] += kernel[i] * Math::pow2(values[1][i] - means[1]);
     }
   }
   corr /= denom;
-  start_variance /= denom;
-  end_variance /= denom;
+  variance[0] /= denom;
+  variance[1] /= denom;
 
-  if (start_variance && end_variance)
-    factors[0] = corr / std::sqrt(start_variance * end_variance);
+  if (variance[0] != 0.0 && variance[1] != 0.0)
+    factors[0] = corr / std::sqrt(variance[0] * variance[1]);
 }
 
 } // namespace MR::DWI::Tractography::Mapping

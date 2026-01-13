@@ -377,14 +377,14 @@ public:
   }
   void draw_buffers(size_t first) const {
     check_context();
-    GLenum list[1] = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first)};
-    gl::DrawBuffers(1, list);
+    const std::array<GLenum, 1> list = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first)};
+    gl::DrawBuffers(1, list.data());
   }
   void draw_buffers(size_t first, size_t second) const {
     check_context();
-    GLenum list[2] = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first),
-                      GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + second)};
-    gl::DrawBuffers(2, list);
+    const std::array<GLenum, 2> list = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first),
+                                        GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + second)};
+    gl::DrawBuffers(2, list.data());
   }
 
   void check() const {

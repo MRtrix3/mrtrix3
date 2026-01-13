@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <map>
 
 #include "image.h"
@@ -311,8 +312,8 @@ private:
   FileDataVector edge_values_from_file_alpha;
 
   // Limits on drawing line thicknesses from OpenGL
-  GLint line_thickness_range_aliased[2];
-  GLint line_thickness_range_smooth[2];
+  std::array<GLint, 2> line_thickness_range_aliased;
+  std::array<GLint, 2> line_thickness_range_smooth;
 
   // Classes to receive inputs from the colourmap buttons and act accordingly
   NodeColourObserver node_colourmap_observer;

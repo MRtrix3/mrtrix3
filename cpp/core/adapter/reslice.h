@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <type_traits>
 
 #include "image.h"
@@ -137,7 +138,7 @@ public:
         throw Exception("oversample factors must be greater than zero");
       if (is_nearest && (oversample[0] != 1 || oversample[1] != 1 || oversample[2] != 1)) {
         WARN("oversampling factors ignored for nearest neighbour interpolation");
-        OS[0] = OS[1] = OS[2] = 1;
+        OS = {1, 1, 1};
       } else {
         OS[0] = oversample[0];
         OS[1] = oversample[1];
@@ -145,9 +146,9 @@ public:
       }
     } else { // oversample is default
       if (is_nearest) {
-        OS[0] = OS[1] = OS[2] = 1;
+        OS = {1, 1, 1};
       } else {
-        Vector3d y = direct_transform * Vector3d(0.0, 0.0, 0.0);
+        const Vector3d y = direct_transform * Vector3d(0.0, 0.0, 0.0);
         Vector3d x0 = direct_transform * Vector3d(1.0, 0.0, 0.0);
         OS[0] = std::ceil((1.0 - std::numeric_limits<default_type>::epsilon()) * (y - x0).norm());
         x0 = direct_transform * Vector3d(0.0, 1.0, 0.0);
@@ -181,7 +182,7 @@ public:
   ssize_t stride(size_t axis) const { return interp.stride(axis); }
 
   void reset() {
-    x[0] = x[1] = x[2] = 0;
+    x = {0, 0, 0};
     for (size_t n = 3; n < interp.ndim(); ++n)
       interp.index(n) = 0;
   }
@@ -219,12 +220,13 @@ public:
 
 private:
   Interpolator<ImageType> interp;
-  ssize_t x[3];
-  const ssize_t dim[3];
-  const default_type vox[3];
+  std::array<ssize_t, 3> x;
+  const std::array<ssize_t, 3> dim;
+  const std::array<default_type, 3> vox;
   bool oversampling;
-  uint32_t OS[3];
-  default_type from[3], inc[3];
+  std::array<uint32_t, 3> OS;
+  std::array<default_type, 3> from;
+  std::array<default_type, 3> inc;
   default_type norm;
   const transform_type transform_, direct_transform;
 };

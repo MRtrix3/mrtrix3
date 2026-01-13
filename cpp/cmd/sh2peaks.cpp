@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
+
 #include "algo/loop.h"
 #include "command.h"
 #include "dwi/directions/predefined.h"
@@ -111,7 +113,7 @@ public:
 class Item {
 public:
   Eigen::VectorXf data;
-  ssize_t pos[3];
+  std::array<ssize_t, 3> pos;
 };
 
 class DataLoader {
@@ -285,8 +287,6 @@ private:
     return no_peaks;
   }
 };
-
-extern value_type default_directions[];
 
 void run() {
   auto SH_data = Image<value_type>::open(argument[0]).with_direct_io(3);

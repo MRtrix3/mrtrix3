@@ -21,13 +21,11 @@ namespace MR::DWI::Tractography::GT {
 ParticleGrid::ParticleGrid(const Header &H) {
   DEBUG("Initialise particle grid.");
   // define (isotropic) grid spacing
-  default_type vox = std::min({H.spacing(0), H.spacing(1), H.spacing(2)});
+  const default_type vox = std::min({H.spacing(0), H.spacing(1), H.spacing(2)});
   grid_spacing = std::max(2.0 * Particle::L, vox);
-
-  // set grid dimensions
-  dims[0] = Math::ceil<size_t>((H.size(0) - 1) * H.spacing(0) / grid_spacing) + 1;
-  dims[1] = Math::ceil<size_t>((H.size(1) - 1) * H.spacing(1) / grid_spacing) + 1;
-  dims[2] = Math::ceil<size_t>((H.size(2) - 1) * H.spacing(2) / grid_spacing) + 1;
+  dims = {Math::ceil<size_t, default_type>(static_cast<default_type>(H.size(0) - 1) * H.spacing(0) / grid_spacing) + 1,
+          Math::ceil<size_t, default_type>(static_cast<default_type>(H.size(1) - 1) * H.spacing(1) / grid_spacing) + 1,
+          Math::ceil<size_t, default_type>(static_cast<default_type>(H.size(2) - 1) * H.spacing(2) / grid_spacing) + 1};
   grid.resize(dims[0] * dims[1] * dims[2]);
 
   // Initialise scanner-to-grid transform

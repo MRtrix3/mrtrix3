@@ -82,10 +82,10 @@ std::string BaseFixel::Shader::geometry_shader_source(const Displayable &object)
 
   std::string source = "layout(points) in;\n"
                        "layout(triangle_strip, max_vertices = 4) out;\n"
-                       "in vec3 v_dir[];\n"
-                       "in float v_colour[];\n"
-                       "in float v_scale[];\n"
-                       "in float v_threshold[];\n"
+                       "in vec3 v_dir[];\n"        // check_syntax off
+                       "in float v_colour[];\n"    // check_syntax off
+                       "in float v_scale[];\n"     // check_syntax off
+                       "in float v_threshold[];\n" // check_syntax off
                        "uniform mat4 MVP;\n"
                        "uniform float length_mult;\n"
                        "uniform vec3 colourmap_colour;\n"
