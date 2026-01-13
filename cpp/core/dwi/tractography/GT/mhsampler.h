@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "header.h"
 #include "image.h"
 #include "transform.h"
 
@@ -34,15 +35,18 @@ namespace MR::DWI::Tractography::GT {
  */
 class MHSampler {
 public:
-  MHSampler(const Image<float> &dwi, Properties &p, Stats &s, ParticleGrid &pgrid, EnergyComputer *e, Image<bool> &m)
+  MHSampler(const Header &dwiheader, Properties &p, Stats &s, ParticleGrid &pgrid, EnergyComputer *e, Image<bool> &m)
       : props(p),
         stats(s),
         pGrid(pgrid),
         E(e),
-        T(dwi),
-        dims{static_cast<size_t>(dwi.size(0)), static_cast<size_t>(dwi.size(1)), static_cast<size_t>(dwi.size(2))},
+        T(dwiheader),
+        dims{static_cast<size_t>(dwiheader.size(0)),
+             static_cast<size_t>(dwiheader.size(1)),
+             static_cast<size_t>(dwiheader.size(2))},
         mask(m),
-        lock(std::make_shared<SpatialLock<float>>(5 * Particle::L)),
+        lock(std::make_shared<SpatialLock<float>>(
+            std::max(5.0F * Particle::L, static_cast<float>(2.0F * pGrid.spacing())))),
         sigpos(Particle::L / 8.),
         sigdir(0.2) {
     DEBUG("Initialise Metropolis Hastings sampler.");

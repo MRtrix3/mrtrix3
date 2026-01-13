@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -66,7 +66,10 @@ public:
   /**
    * @brief Return number of Particles in the pool.
    */
-  inline size_t size() const { return pool.size() - avail.size(); }
+  inline size_t size() const {
+    std::lock_guard<std::mutex> lock(mutex);
+    return pool.size() - avail.size();
+  }
 
   /**
    * @brief Select random particle from the pool (uniformly).
@@ -95,7 +98,7 @@ public:
   }
 
 protected:
-  std::mutex mutex;
+  mutable std::mutex mutex;
   std::deque<Particle> pool;
   std::stack<Particle *, std::deque<Particle *>> avail;
   Math::RNG rng;

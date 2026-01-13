@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -76,7 +76,7 @@ void usage() {
   REFERENCES
   + "Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. " // Internal
     "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
-    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    "OHBM Aperture, 10.52294/ApertureNeuro.2022.2.NEOD9565.";
 
 
   ARGUMENTS

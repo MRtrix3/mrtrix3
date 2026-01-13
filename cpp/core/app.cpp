@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -80,7 +80,7 @@ OptionGroup __standard_options =
 // clang-format on
 
 std::string AUTHOR{};
-std::string COPYRIGHT = "Copyright (c) 2008-2025 the MRtrix3 contributors.\n"
+std::string COPYRIGHT = "Copyright (c) 2008-2026 the MRtrix3 contributors.\n"
                         "\n"
                         "This Source Code Form is subject to the terms of the Mozilla Public\n"
                         "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -201,7 +201,7 @@ std::string help_head(const bool format) {
   }
 
   const std::string version_string =
-      project_version.empty() ? (std::string("MRtrix ") + mrtrix_version ): ("Version " + project_version);
+      project_version.empty() ? (std::string("MRtrix ") + mrtrix_version) : ("Version " + project_version);
 
   const std::string date(project_version.empty() ? build_date : project_build_date);
 

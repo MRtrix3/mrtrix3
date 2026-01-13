@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,7 +40,7 @@ void usage() {
 
   DESCRIPTION
   + "Peaks of the spherical harmonic function in each voxel are located"
-    " by commencing a Newton search along each of a set of pre-specified directions"
+    " by commencing a Newton search along each of a set of pre-specified directions."
 
   + "Within the output image,"
     " each successive triplet of volumes encodes the x, y & z components of a 3-vector;"

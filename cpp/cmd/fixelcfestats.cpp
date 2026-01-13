@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -73,6 +73,13 @@ void usage() {
     " when the output fixel directory is loaded in mrview."
     " Those fixels outside the processing mask will immediately disappear from view"
     " as soon as any data-file-based fixel colouring or thresholding is applied."
+
+  + "For Connectivity-based Fixel Enhancement,"
+    " use of the -nonstationarity option for empirical non-stationarity correction is generally discouraged,"
+    " unless the data are of exceptionally high quality."
+    " The intrinsic non-stationarity correction that is applied by default"
+    " (i.e. if the -cfe_legacy option is not used)"
+    " provides superior statistical power in most scenarios."
 
   + Math::Stats::GLM::column_ones_description
 

@@ -1,0 +1,10 @@
+# Ensure that the tckglobal command runs without error
+#   when isotropic tissue response functions are provided
+#   in addition to the isotropic fibre component
+tckglobal dwi2fod/msmt_csd/dwi.mif dwi2fod/msmt_csd/wm.txt tmp.tck \
+    -riso dwi2fod/msmt_csd/gm.txt \
+    -riso dwi2fod/msmt_csd/csf.txt \
+    -fiso tmp_fiso.mif \
+    -eext tmp_eext.mif \
+    -niter 100000 \
+    -force
