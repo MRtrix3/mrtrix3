@@ -120,7 +120,7 @@ Standard options
 References
 ^^^^^^^^^^
 
-If using the default streamline-parcel assignment mechanism (or -assignment_radial_search option): |br|
+If using the default "radial search" streamline-parcel assignment mechanism (or -assignment_radial_search option): |br|
   Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265
 
 If using -scale_invlength or -scale_invnodevol options: |br|
