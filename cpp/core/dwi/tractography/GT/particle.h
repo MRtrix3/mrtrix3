@@ -153,7 +153,6 @@ public:
     assert(p1 != nullptr);
     const std::lock_guard<SpinLock> lock(spinlock);
     setSuccessor_nolock(p1);
-    setSuccessor(p1);
     if (a1 == 1)
       p1->setSuccessor(this);
     if (a1 == -1)
