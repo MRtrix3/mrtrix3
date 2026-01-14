@@ -57,7 +57,7 @@ Options
 Regridding options (involves image interpolation, applied to spatial axes only)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-template image** match the input image grid (voxel spacing, image size, header transformation) to that of a reference image. The image resolution relative to the template image can be changed with one of -size, -voxel, -scale.
+-  **-template image** match the input image grid (voxel spacing, image size, header transformation) to that of a reference image. The image resolution relative to the template image can be changed with one of -size, -voxel, -scale. This option will not influence the axis data strides of the output image; these are determined based on the input image, or the input to the -strides option.
 
 -  **-size dims** define the size (number of voxels) in each spatial dimension for the output image. This should be specified as a comma-separated list.
 

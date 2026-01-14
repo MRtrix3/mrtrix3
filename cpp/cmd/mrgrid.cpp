@@ -110,7 +110,10 @@ void usage() {
                             " (voxel spacing, image size, header transformation)"
                             " to that of a reference image. "
                  "The image resolution relative to the template image can be changed"
-                 " with one of -size, -voxel, -scale." )
+                 " with one of -size, -voxel, -scale. "
+                 "This option will not influence the axis data strides of the output image;"
+                 " these are determined based on the input image, "
+                 "or the input to the -strides option.")
     + Argument ("image").type_image_in ()
 
     + Option   ("size", "define the size (number of voxels) in each spatial dimension for the output image."
@@ -273,11 +276,18 @@ void run() {
     if (!resize_option_count and !template_option_count)
       throw Exception("please use either the -scale, -voxel, -resolution or -template option to regrid the image");
     if (resize_option_count > 1)
-      throw Exception(
-          "only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
+      throw Exception("only a single method can be used to resize the image" //
+                      " (image resolution, voxel size or scale factor)");    //
 
     Header output_header(regrid_filter);
     Stride::set_from_command_line(output_header);
+    if (!get_options("template").empty() &&                                      //
+        get_options("strides").empty() &&                                        //
+        !Stride::spatial_stride_order_matches(template_header, output_header)) { //
+      WARN("Image stride order of the spatial dimensions do not match between template and output image."
+           " Provide the -stride option with the template image as argument"
+           " for compatibility with other software.");
+    }
     output_header.datatype() = DataType::from_command_line(
         interp == MR::Interp::interp_type::NEAREST ? input_header.datatype() : DataType::from<float>());
     auto output = Image<float>::create(argument[2], output_header);
