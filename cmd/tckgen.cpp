@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "version.h"
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
@@ -135,7 +136,10 @@ void usage ()
       "order of integration: for any first-order method, this angle corresponds to the "
       "deviation in streamline trajectory per step; for higher-order methods, this "
       "corresponds to the change in underlying fibre orientation between the start and "
-      "end points of each step.";
+      "end points of each step."
+
+    + "More information on the requisite data for option -act can be found at: "
+      "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/quantitative_structural_connectivity/act.html";
 
   REFERENCES
    + "References based on streamlines algorithm used:"
