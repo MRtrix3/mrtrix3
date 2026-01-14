@@ -17,7 +17,7 @@
 
 
 
-import ctypes, os, shutil, subprocess, time
+import ctypes, os, pathlib, shutil, subprocess, time
 
 
 
@@ -47,11 +47,9 @@ def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
 
 # Find data in the relevant directory
 # Some scripts come with additional requisite data files; this function makes it easy to find them.
-# For data that is stored in a named sub-directory specifically for a particular script, this function will
-#   need to be used in conjunction with scriptSubDirName()
 def shared_data_path(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
+  result = pathlib.Path(__file__).resolve().parents[2] / 'share' / 'mrtrix3'
   app.debug(result)
   return result
 
@@ -117,12 +115,12 @@ def wait_for(paths): #pylint: disable=unused-variable
 
   # Make sure the data we're dealing with is a list of strings;
   #   or make it a list of strings if it's just a single entry
-  if isinstance(paths, str):
+  if isinstance(paths, (str, pathlib.Path)):
     paths = [ paths ]
   else:
     assert isinstance(paths, list)
-    for entry in paths:
-      assert isinstance(entry, str)
+    assert all(isinstance(item, str) for item in paths) \
+        or all(isinstance(item, pathlib.Path) for item in paths)
 
   app.debug(str(paths))
 
