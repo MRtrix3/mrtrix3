@@ -331,11 +331,11 @@ void run() {
     output_header.transform() = template_header.transform();
   }
 
-  if (!get_options("strides").size()) {
-    if (!Stride::spatial_stride_order_matches(template_header, output_header))
-      WARN("image stride order of the spatial dimensions do not match between template and output image."
-           " Provide the -stride option with the template image as argument"
-           " for compatibility with other software.");
+  if (get_options("strides").empty() &&                                        //
+      !Stride::spatial_stride_order_matches(template_header, output_header)) { //
+    WARN("image stride order of the spatial dimensions do not match between template and output image."
+         " Provide the -stride option with the template image as argument"
+         " for compatibility with other software.");
   }
 
   // Warp 5D warp
