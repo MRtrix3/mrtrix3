@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,15 +20,15 @@
 #include "progressbar.h"
 #include "types.h"
 
-#include "misc/bitset.h"
-
 #include "math/stats/typedefs.h"
 #include <vector>
 
-#define DEFAULT_NUMBER_SHUFFLES 5000
-#define DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY 5000
-
 namespace MR::Math::Stats {
+
+// TODO Reconsider position
+// Perhaps these need to be with "permtest", while others remain with "shuffle"?
+constexpr ssize_t default_numshuffles_nulldist = 5000;
+constexpr ssize_t default_numshuffles_nonstationarity = 5000;
 
 // Generic command-line options:
 // - Set nature of errors
@@ -47,7 +47,8 @@ public:
 
 class Shuffler {
 public:
-  typedef std::vector<index_type> PermuteLabels;
+  using PermuteLabels = std::vector<index_type>;
+  using FlipSigns = Eigen::Array<bool, Eigen::Dynamic, 1>;
   enum class error_t { EE, ISE, BOTH };
 
   // First version reads command-line options in order to determine parameters prior to running initialise();
@@ -80,7 +81,7 @@ public:
 private:
   const index_type rows;
   std::vector<PermuteLabels> permutations;
-  std::vector<BitSet> signflips;
+  std::vector<FlipSigns> signflips;
   index_type nshuffles, counter;
   std::unique_ptr<ProgressBar> progress;
 
@@ -91,7 +92,7 @@ private:
                   const index_array_type &eb_whole);
 
   // For exchangeability blocks (either within or whole)
-  index_array_type load_blocks(const std::string &filename, const bool equal_sizes);
+  index_array_type load_blocks(std::string_view filename, const bool equal_sizes);
 
   // For generating unique permutations
   bool is_duplicate(const PermuteLabels &, const PermuteLabels &) const;
@@ -111,10 +112,10 @@ private:
                                  const index_array_type &eb_within,
                                  const index_array_type &eb_whole);
 
-  void load_permutations(const std::string &filename);
+  void load_permutations(std::string_view filename);
 
   // Similar functions required for sign-flipping
-  bool is_duplicate(const BitSet &) const;
+  bool is_duplicate(const FlipSigns &) const;
 
   void generate_random_signflips(const index_type num_signflips,
                                  const index_type num_rows,

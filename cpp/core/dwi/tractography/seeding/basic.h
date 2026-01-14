@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/base.h"
+#include "dwi/tractography/seeding/seeding.h"
 
 // By default, the rejection sampler will perform its sampling based on image intensity values,
 //   and then randomly select a position within that voxel
@@ -30,13 +31,13 @@ namespace MR::DWI::Tractography::Seeding {
 class Sphere : public Base {
 
 public:
-  Sphere(const std::string &in) : Base(in, "sphere", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
+  Sphere(std::string_view in) : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) {
     auto F = parse_floats(in);
     if (F.size() != 4)
       throw Exception("Could not parse seed \"" + in +
                       "\" as a spherical seed point; needs to be 4 comma-separated values (XYZ position, then radius)");
-    pos = {float(F[0]), float(F[1]), float(F[2])};
-    rad = F[3];
+    pos = {static_cast<float>(F[0]), static_cast<float>(F[1]), static_cast<float>(F[2])};
+    rad = static_cast<float>(F[3]);
     volume = 4.0 * Math::pi * Math::pow3(rad) / 3.0;
   }
 
@@ -50,7 +51,8 @@ private:
 class SeedMask : public Base {
 
 public:
-  SeedMask(const std::string &in) : Base(in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), mask(in) {
+  SeedMask(std::string_view in)
+      : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)), mask(in) {
     volume = get_count(mask) * mask.spacing(0) * mask.spacing(1) * mask.spacing(2);
   }
 
@@ -63,8 +65,8 @@ private:
 class Random_per_voxel : public Base {
 
 public:
-  Random_per_voxel(const std::string &in, const size_t num_per_voxel)
-      : Base(in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+  Random_per_voxel(std::string_view in, const size_t num_per_voxel)
+      : Base(in, "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
         mask(in),
         num(num_per_voxel),
         inc(0),
@@ -89,8 +91,8 @@ private:
 class Grid_per_voxel : public Base {
 
 public:
-  Grid_per_voxel(const std::string &in, const size_t os_factor)
-      : Base(in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+  Grid_per_voxel(std::string_view in, const size_t os_factor)
+      : Base(in, "grid per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
         mask(in),
         os(os_factor),
         pos(os, os, os),
@@ -114,7 +116,7 @@ private:
 class Rejection : public Base {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
-  Rejection(const std::string &);
+  Rejection(std::string_view);
 
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 

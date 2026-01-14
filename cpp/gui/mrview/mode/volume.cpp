@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,7 +55,10 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
     auto colour = parse_floats(clip_color_spec);
     if (colour.size() != 4)
       WARN("malformed config file entry for \"MRViewClipPlaneColour\" - expected 4 comma-separated values");
-    clip_color = {float(colour[0]), float(colour[1]), float(colour[2]), float(colour[3])};
+    clip_color = {static_cast<float>(colour[0]),
+                  static_cast<float>(colour[1]),
+                  static_cast<float>(colour[2]),
+                  static_cast<float>(colour[3])};
   }
 
   std::string source = object.declare_shader_variables() + "uniform sampler3D image_sampler;\n"
@@ -249,7 +252,7 @@ clip_real2tex(const GL::mat4 &T2S, const GL::mat4 &S2T, const Eigen::Vector3f &r
   GL::vec4 normal = T2S * GL::vec4(plane[0], plane[1], plane[2], 0.0);
   GL::vec4 on_plane = S2T * GL::vec4(plane[3] * plane[0], plane[3] * plane[1], plane[3] * plane[2], 1.0);
   normal[3] = on_plane[0] * normal[0] + on_plane[1] * normal[1] + on_plane[2] * normal[2];
-  float off_axis_thickness = abs(ray[0] * plane[0] + ray[1] * plane[1] + ray[2] * plane[2]);
+  float off_axis_thickness = std::fabs(ray[0] * plane[0] + ray[1] * plane[1] + ray[2] * plane[2]);
   normal[0] /= off_axis_thickness;
   normal[1] /= off_axis_thickness;
   normal[2] /= off_axis_thickness;
@@ -259,10 +262,10 @@ clip_real2tex(const GL::mat4 &T2S, const GL::mat4 &S2T, const Eigen::Vector3f &r
 
 inline GL::mat4 get_tex_to_scanner_matrix(const ImageBase &image) {
   const auto V2S = image.voxel2scanner();
-  const Eigen::Vector3f pos = V2S * Eigen::Vector3f{-0.5f, -0.5f, -0.5f};
-  const Eigen::Vector3f vec_X = V2S.linear() * Eigen::Vector3f{float(image.header().size(0)), 0.0f, 0.0f};
-  const Eigen::Vector3f vec_Y = V2S.linear() * Eigen::Vector3f{0.0f, float(image.header().size(1)), 0.0f};
-  const Eigen::Vector3f vec_Z = V2S.linear() * Eigen::Vector3f{0.0f, 0.0f, float(image.header().size(2))};
+  const Eigen::Vector3f pos = V2S * Eigen::Vector3f{-0.5F, -0.5F, -0.5F};
+  const Eigen::Vector3f vec_X = V2S.linear() * Eigen::Vector3f{static_cast<float>(image.header().size(0)), 0.0F, 0.0F};
+  const Eigen::Vector3f vec_Y = V2S.linear() * Eigen::Vector3f{0.0F, static_cast<float>(image.header().size(1)), 0.0F};
+  const Eigen::Vector3f vec_Z = V2S.linear() * Eigen::Vector3f{0.0F, 0.0F, static_cast<float>(image.header().size(2))};
   GL::mat4 T2S;
   T2S(0, 0) = vec_X[0];
   T2S(1, 0) = vec_X[1];
@@ -323,9 +326,9 @@ void Volume::paint(Projection &projection) {
   GL::mat4 M = projection.modelview_projection() * T2S;
   GL::mat4 S2T = GL::inv(T2S);
 
-  float step_size = 0.5f * std::min({float(image()->header().spacing(0)),
-                                     float(image()->header().spacing(1)),
-                                     float(image()->header().spacing(2))});
+  float step_size =
+      0.5F * static_cast<float>(
+                 std::min({image()->header().spacing(0), image()->header().spacing(1), image()->header().spacing(2)}));
   Eigen::Vector3f ray = image()->scanner2voxel().linear() * projection.screen_normal();
   Eigen::Vector3f ray_real_space = ray;
   ray *= step_size;
@@ -345,16 +348,17 @@ void Volume::paint(Projection &projection) {
     gl::EnableVertexAttribArray(0);
     gl::VertexAttribPointer(0, 3, gl::BYTE, gl::FALSE_, 4 * sizeof(GLbyte), (void *)0);
 
-    GLbyte vertices[] = {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0,
-                         1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0};
-    gl::BufferData(gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STATIC_DRAW);
+    static const std::array<GLbyte, 32> vertices = {                                                 //
+                                                    0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0,  //
+                                                    1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0}; //
+    gl::BufferData(gl::ARRAY_BUFFER, sizeof(vertices), vertices.data(), gl::STATIC_DRAW);
   } else {
     volume_VAO.bind();
     volume_VI.bind(gl::ELEMENT_ARRAY_BUFFER);
   }
 
   GL_CHECK_ERROR;
-  GLubyte indices[12];
+  std::array<GLubyte, 12> indices;
 
   if (ray[0] < 0) {
     indices[0] = 4;
@@ -392,7 +396,7 @@ void Volume::paint(Projection &projection) {
     indices[11] = 4;
   }
 
-  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, gl::STREAM_DRAW);
+  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), gl::STREAM_DRAW);
 
   image()->update_texture3D();
   image()->set_use_transparency(true);
@@ -465,11 +469,12 @@ void Volume::paint(Projection &projection) {
   gl::DepthMask(gl::FALSE_);
   gl::ActiveTexture(gl::TEXTURE0);
 
-  const GLsizei counts[] = {4, 4, 4};
-  const GLvoid *starts[] = {reinterpret_cast<void *>(0), reinterpret_cast<void *>(4), reinterpret_cast<void *>(8)};
+  static const std::array<GLsizei, 3> counts = {4, 4, 4};
+  static const std::array<GLvoid *, 3> starts = {
+      reinterpret_cast<void *>(0), reinterpret_cast<void *>(4), reinterpret_cast<void *>(8)};
 
   GL_CHECK_ERROR;
-  gl::MultiDrawElements(gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
+  gl::MultiDrawElements(gl::TRIANGLE_FAN, counts.data(), gl::UNSIGNED_BYTE, starts.data(), 3);
   GL_CHECK_ERROR;
   image()->stop(volume_shader);
   GL_CHECK_ERROR;
@@ -484,7 +489,7 @@ void Volume::paint(Projection &projection) {
 inline Tool::View *Volume::get_view_tool() const {
   Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(window().tools()->actions()[0])->dock;
   if (!dock)
-    return NULL;
+    return nullptr;
   return dynamic_cast<Tool::View *>(dock->tool);
 }
 

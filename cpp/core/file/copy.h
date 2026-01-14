@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@
 
 namespace MR::File {
 
-inline void copy(const std::string &source, const std::string &destination) {
+inline void copy(std::string_view source, std::string_view destination) {
   {
     DEBUG("copying file \"" + source + "\" to \"" + destination + "\"...");
     MMap input(source);

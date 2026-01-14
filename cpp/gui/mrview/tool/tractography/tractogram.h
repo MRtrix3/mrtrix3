@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "dwi/tractography/properties.h"
 #include "mrview/displayable.h"
 #include "mrview/tool/tractography/tractography.h"
@@ -31,7 +33,7 @@ class Tractogram : public Displayable {
   Q_OBJECT
 
 public:
-  Tractogram(Tractography &tool, const std::string &file_path);
+  Tractogram(Tractography &tool, std::string_view file_path);
 
   ~Tractogram();
 
@@ -47,8 +49,8 @@ public:
   void load_tracks();
 
   void load_end_colours();
-  void load_intensity_track_scalars(const std::string &);
-  void load_threshold_track_scalars(const std::string &);
+  void load_intensity_track_scalars(std::string_view);
+  void load_threshold_track_scalars(std::string_view);
   void erase_colour_data();
   void erase_intensity_scalar_data();
   void erase_threshold_scalar_data();
@@ -63,14 +65,14 @@ public:
   float get_threshold_rate() const {
     switch (threshold_type) {
     case TrackThresholdType::None:
-      return NaN;
+      return NaNF;
     case TrackThresholdType::UseColourFile:
       return scaling_rate();
     case TrackThresholdType::SeparateFile:
       return (1e-3 * (threshold_max - threshold_min));
     }
     assert(0);
-    return NaN;
+    return NaNF;
   }
   float get_threshold_min() const { return threshold_min; }
   float get_threshold_max() const { return threshold_max; }
@@ -139,6 +141,11 @@ private:
   std::vector<std::vector<GLint>> original_track_sizes;
   std::vector<std::vector<GLint>> original_track_starts;
   std::vector<size_t> num_tracks_per_buffer;
+
+  // EBOs and indices for chunks of tracks
+  std::vector<GLuint> element_buffers;
+  std::vector<GLsizei> element_counts;
+
   GLint sample_stride;
   bool vao_dirty;
 
@@ -163,6 +170,7 @@ private:
 private slots:
   void on_FOV_changed() { should_update_stride = true; }
 };
+
 } // namespace Tool
 } // namespace MRView
 } // namespace MR::GUI

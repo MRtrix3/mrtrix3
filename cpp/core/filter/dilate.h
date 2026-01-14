@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@ class Dilate : public Base {
 public:
   template <class HeaderType> Dilate(const HeaderType &in) : Base(in), npass(1) { datatype_ = DataType::Bit; }
 
-  template <class HeaderType> Dilate(const HeaderType &in, const std::string &message) : Base(in, message), npass(1) {
+  template <class HeaderType> Dilate(const HeaderType &in, std::string_view message) : Base(in, message), npass(1) {
     datatype_ = DataType::Bit;
   }
 

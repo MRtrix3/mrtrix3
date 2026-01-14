@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,10 +41,10 @@ void Projection::draw_orientation_labels() const {
   setup_render_text(1.0, 0.0, 0.0);
   std::sort(labels.begin(), labels.end());
   for (size_t i = 2; i < labels.size(); ++i) {
-    float pos[] = {labels[i].dir[0], labels[i].dir[1]};
-    float dist = std::min(width() / abs(pos[0]), height() / abs(pos[1])) / 2.0;
-    int x = std::round(width() / 2.0 + pos[0] * dist);
-    int y = std::round(height() / 2.0 + pos[1] * dist);
+    const std::array<float, 2> pos = {labels[i].dir[0], labels[i].dir[1]};
+    const float dist = std::min(width() / std::fabs(pos[0]), height() / std::fabs(pos[1])) / 2.0;
+    const int x = std::round(width() / 2.0 + pos[0] * dist);
+    const int y = std::round(height() / 2.0 + pos[1] * dist);
     render_text_inset(x, y, std::string(labels[i].label));
   }
   done_render_text();

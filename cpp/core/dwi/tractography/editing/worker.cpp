@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -104,11 +104,11 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   }
 
   // Stitch back together in preparation for sending down queue as a single track
-  out.push_back({NaN, NaN, NaN});
+  out.push_back({NaNF, NaNF, NaNF});
   for (const auto &i : cropped_tracks) {
     for (const auto &p : i)
       out.push_back(p);
-    out.push_back({NaN, NaN, NaN});
+    out.push_back({NaNF, NaNF, NaNF});
   }
   return true;
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixX
   assert(cols);
   // check input
   for (const auto &mat : mat_in) {
-    if (cols != (size_t)mat.cols() or rows != (size_t)mat.rows())
+    if (cols != static_cast<size_t>(mat.cols()) || rows != static_cast<size_t>(mat.rows()))
       throw Exception("matrix average cannot be computed for matrices of different size");
   }
   mat_avg.resize(rows, cols);

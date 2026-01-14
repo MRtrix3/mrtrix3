@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,8 +41,7 @@ class Median : public Base {
 public:
   template <class HeaderType> Median(const HeaderType &in) : Base(in), extent(1, 3) { datatype() = DataType::Float32; }
 
-  template <class HeaderType>
-  Median(const HeaderType &in, const std::string &message) : Base(in, message), extent(1, 3) {
+  template <class HeaderType> Median(const HeaderType &in, std::string_view message) : Base(in, message), extent(1, 3) {
     datatype() = DataType::Float32;
   }
 
@@ -52,7 +51,7 @@ public:
   }
 
   template <class HeaderType>
-  Median(const HeaderType &in, const std::string &message, const std::vector<uint32_t> &extent)
+  Median(const HeaderType &in, std::string_view message, const std::vector<uint32_t> &extent)
       : Base(in, message), extent(extent) {
     datatype() = DataType::Float32;
   }

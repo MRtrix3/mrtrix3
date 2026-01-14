@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,9 @@
  */
 
 #pragma once
+
+#include <string>
+#include <unordered_map>
 
 #include "cmdline_option.h"
 #include "half.h"
@@ -84,8 +87,8 @@ public:
 
   size_t bits() const;
   size_t bytes() const { return (bits() + 7) / 8; }
-  const char *description() const;
-  const char *specifier() const;
+  std::string description() const;
+  std::string specifier() const;
 
   void set_flag(uint8_t flag) { dt |= flag; }
   void unset_flag(uint8_t flag) { dt &= ~flag; }
@@ -96,8 +99,14 @@ public:
     dt.set_byte_order_native();
     return dt;
   }
-  static DataType parse(const std::string &spec);
+  static DataType parse(std::string_view spec);
   static DataType from_command_line(DataType default_datatype = Undefined);
+
+  struct Strings {
+    std::string specifier;
+    std::string description;
+  };
+  static const std::unordered_map<uint8_t, Strings> dt2str;
 
   static constexpr uint8_t Attributes = 0xF0U;
   static constexpr uint8_t Type = 0x0FU;
@@ -177,7 +186,7 @@ template <> inline DataType DataType::from<int32_t>() { return DataType::native(
 template <> inline DataType DataType::from<uint32_t>() { return DataType::native(DataType::UInt32); }
 template <> inline DataType DataType::from<int64_t>() { return DataType::native(DataType::Int64); }
 template <> inline DataType DataType::from<uint64_t>() { return DataType::native(DataType::UInt64); }
-template <> inline DataType DataType::from<half_float::half>() { return DataType::native(DataType::Float16); }
+template <> inline DataType DataType::from<Eigen::half>() { return DataType::native(DataType::Float16); }
 template <> inline DataType DataType::from<float>() { return DataType::native(DataType::Float32); }
 template <> inline DataType DataType::from<double>() { return DataType::native(DataType::Float64); }
 template <> inline DataType DataType::from<cfloat>() { return DataType::native(DataType::CFloat32); }

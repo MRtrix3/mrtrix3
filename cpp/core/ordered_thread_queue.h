@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -285,7 +285,7 @@ inline void run_ordered_queue(Source &&source,
                               Pipe &&pipe,
                               const Item2 &item2,
                               Sink &&sink,
-                              size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY) {
+                              size_t capacity = default_queue_capacity) {
   static_assert(job_is_single_threaded<Source>::value && job_is_single_threaded<Sink>::value,
                 "run_ordered_queue can only run with single-threaded source & sink");
 
@@ -304,7 +304,7 @@ inline void run_ordered_queue(Source &&source,
                               Pipe2 &&pipe2,
                               const Item3 &item3,
                               Sink &&sink,
-                              size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY) {
+                              size_t capacity = default_queue_capacity) {
   static_assert(job_is_single_threaded<Source>::value && job_is_single_threaded<Sink>::value,
                 "run_ordered_queue can only run with single-threaded source & sink");
 

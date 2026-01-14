@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -74,8 +74,8 @@ void run() {
         }
 
         for (size_t axis = 0; axis != 3; ++axis) {
-          lower_corners[index][axis] = std::min(lower_corners[index][axis], int(labels.index(axis)));
-          upper_corners[index][axis] = std::max(upper_corners[index][axis], int(labels.index(axis)));
+          lower_corners[index][axis] = std::min(lower_corners[index][axis], static_cast<int>(labels.index(axis)));
+          upper_corners[index][axis] = std::max(upper_corners[index][axis], static_cast<int>(labels.index(axis)));
         }
       }
     }

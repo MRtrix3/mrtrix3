@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,7 +49,7 @@ Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> init_amp_transform(con
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> ZSHT;
   ZSHT.resize(els.size(), ZSH::NforL(lmax));
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);
-  for (size_t i = 0; i != size_t(els.size()); i++) {
+  for (size_t i = 0; i != static_cast<size_t>(els.size()); i++) {
     Legendre::Plm_sph(AL, lmax, 0, std::cos(els[i]));
     for (size_t l = 0; l <= lmax; l += 2)
       ZSHT(i, index(l)) = AL[l];
@@ -68,11 +68,11 @@ Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> init_deriv_transform(c
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> dZSHdelT;
   dZSHdelT.resize(els.size(), ZSH::NforL(lmax));
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);
-  for (size_t i = 0; i != size_t(els.size()); i++) {
+  for (size_t i = 0; i != static_cast<size_t>(els.size()); i++) {
     Legendre::Plm_sph(AL, lmax, 1, std::cos(els[i]));
     dZSHdelT(i, index(0)) = 0.0;
     for (size_t l = 2; l <= lmax; l += 2)
-      dZSHdelT(i, index(l)) = AL[l] * sqrt(value_type(l * (l + 1)));
+      dZSHdelT(i, index(l)) = AL[l] * sqrt(static_cast<value_type>(l * (l + 1)));
   }
   return dZSHdelT;
 }
@@ -123,14 +123,14 @@ derivative(const VectorType &coefs, const typename VectorType::Scalar inclinatio
   Legendre::Plm_sph(AL, lmax, 1, std::cos(inclination));
   value_type dZSH_del = 0.0;
   for (size_t l = 2; l <= lmax; l += 2)
-    dZSH_del += AL[l] * coefs[index(l)] * sqrt(value_type(l * (l + 1)));
+    dZSH_del += AL[l] * coefs[index(l)] * sqrt(static_cast<value_type>(l * (l + 1)));
   return dZSH_del;
 }
 
 template <class VectorType1, class VectorType2> inline VectorType1 &ZSH2SH(VectorType1 &sh, const VectorType2 &zsh) {
   const size_t lmax = LforN(zsh.size());
   sh.resize(Math::SH::NforL(lmax));
-  for (size_t i = 0; i != size_t(sh.size()); ++i)
+  for (size_t i = 0; i != static_cast<size_t>(sh.size()); ++i)
     sh[i] = 0.0;
   for (size_t l = 0; l <= lmax; l += 2)
     sh[Math::SH::index(l, 0)] = zsh[index(l)];
@@ -182,7 +182,7 @@ inline Eigen::Matrix<typename VectorType::Scalar, Eigen::Dynamic, 1> ZSH2RH(cons
  * function \a RH, storing the results in place in vector \a zsh. */
 template <class VectorType1, class VectorType2> inline VectorType1 &zsconv(VectorType1 &zsh, const VectorType2 &RH) {
   assert(zsh.size() >= RH.size());
-  for (size_t i = 0; i != size_t(RH.size()); ++i)
+  for (size_t i = 0; i != static_cast<size_t>(RH.size()); ++i)
     zsh[i] *= RH[i];
   return zsh;
 }
@@ -194,7 +194,7 @@ template <class VectorType1, class VectorType2, class VectorType3>
 inline VectorType1 &zsconv(VectorType1 &C, const VectorType2 &RH, const VectorType3 &zsh) {
   assert(zsh.size() >= RH.size());
   C.resize(RH.size());
-  for (size_t i = 0; i != size_t(RH.size()); ++i)
+  for (size_t i = 0; i != static_cast<size_t>(RH.size()); ++i)
     C[i] = zsh[i] * RH[i];
   return C;
 }

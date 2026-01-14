@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,7 +75,7 @@ void parse_general_options(Registration::Linear &registration) {
 
   opt = get_options("linstage.optimiser.default");
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
     case 0:
       registration.set_stage_optimiser_default(Registration::OptimiserAlgoType::bbgd);
       break;
@@ -90,7 +90,7 @@ void parse_general_options(Registration::Linear &registration) {
 
   opt = get_options("linstage.optimiser.first");
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
     case 0:
       registration.set_stage_optimiser_first(Registration::OptimiserAlgoType::bbgd);
       break;
@@ -105,7 +105,7 @@ void parse_general_options(Registration::Linear &registration) {
 
   opt = get_options("linstage.optimiser.last");
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
     case 0:
       registration.set_stage_optimiser_last(Registration::OptimiserAlgoType::bbgd);
       break;

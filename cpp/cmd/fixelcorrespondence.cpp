@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ using namespace App;
 
 using Fixel::index_type;
 
-#define DEFAULT_ANGLE_THRESHOLD 45.0
+constexpr default_type default_angle_threshold = 45.0;
 
 // clang-format off
 void usage() {
@@ -53,13 +53,13 @@ void usage() {
 
   OPTIONS
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence"
-                     " (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
+                     " (Default: " + str(default_angle_threshold, 2) + " degrees)")
   + Argument ("value").type_float (0.0, 90.0);
 }
 // clang-format on
 
 void run() {
-  const float angular_threshold = get_option_value("angle", DEFAULT_ANGLE_THRESHOLD);
+  const float angular_threshold = get_option_value("angle", default_angle_threshold);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
 
   const std::string input_file(argument[0]);
@@ -115,7 +115,7 @@ void run() {
         templatedir.normalize();
         Eigen::Vector3f subjectdir = subject_directions.row(1);
         subjectdir.normalize();
-        float dp = abs(templatedir.dot(subjectdir));
+        float dp = std::fabs(templatedir.dot(subjectdir));
         if (dp > largest_dp) {
           largest_dp = dp;
           index_of_closest_fixel = s;

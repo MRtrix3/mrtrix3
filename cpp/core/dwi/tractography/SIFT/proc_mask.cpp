@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -87,7 +87,8 @@ void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Im
     } else {
 
       auto f = [](Image<float> &dwi, Image<float> &mask) {
-        mask.value() = (dwi.value() && std::isfinite((float)dwi.value())) ? 1.0 : 0.0;
+        mask.value() =
+            static_cast<float>(dwi.value()) != 0.0F && std::isfinite(static_cast<float>(dwi.value())) ? 1.0F : 0.0F;
       };
       ThreadedLoop("Creating homogeneous processing mask", in_dwi, 0, 3).run(f, in_dwi, out_mask);
     }
@@ -105,7 +106,7 @@ ResampleFunctor::ResampleFunctor(const ResampleFunctor &that)
 
 void ResampleFunctor::operator()(const Iterator &pos) {
   assign_pos_of(pos).to(dwi, out);
-  if (dwi.value() && std::isfinite((float)dwi.value())) {
+  if (static_cast<float>(dwi.value()) != 0.0F && std::isfinite(static_cast<float>(dwi.value()))) {
     const ACT::Tissues tissues = ACT2pve(pos);
     out.index(3) = 0;
     out.value() = tissues.get_cgm();
@@ -125,7 +126,7 @@ void ResampleFunctor::operator()(const Iterator &pos) {
 
 ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
   static const int os_ratio = 10;
-  static const float os_step = 1.0 / float(os_ratio);
+  static const float os_step = 1.0 / static_cast<float>(os_ratio);
   static const float os_offset = 0.5 * os_step;
 
   size_t cgm_count = 0, sgm_count = 0, wm_count = 0, csf_count = 0, path_count = 0, total_count = 0;
@@ -163,11 +164,11 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
   }
 
   if (total_count > Math::pow3<size_t>(os_ratio) / 2) {
-    return ACT::Tissues(cgm_count / float(total_count),
-                        sgm_count / float(total_count),
-                        wm_count / float(total_count),
-                        csf_count / float(total_count),
-                        path_count / float(total_count));
+    return ACT::Tissues(cgm_count / static_cast<float>(total_count),
+                        sgm_count / static_cast<float>(total_count),
+                        wm_count / static_cast<float>(total_count),
+                        csf_count / static_cast<float>(total_count),
+                        path_count / static_cast<float>(total_count));
   } else {
     return ACT::Tissues();
   }

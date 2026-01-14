@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,23 +27,23 @@ class Series;
 class Study : public std::vector<std::shared_ptr<Series>> {
 public:
   Study(Patient *parent,
-        const std::string &study_name,
-        const std::string &study_ID,
-        const std::string &study_UID,
-        const std::string &study_date,
-        const std::string &study_time)
+        std::string_view study_name,
+        std::string_view study_ID,
+        std::string_view study_UID,
+        std::string_view study_date,
+        std::string_view study_time)
       : patient(parent), name(study_name), ID(study_ID), UID(study_UID), date(study_date), time(study_time) {}
 
   Patient *patient;
   std::string name, ID, UID, date, time;
 
-  std::shared_ptr<Series> find(const std::string &series_name,
+  std::shared_ptr<Series> find(std::string_view series_name,
                                size_t series_number,
-                               const std::string &image_type,
-                               const std::string &series_ref_UID,
-                               const std::string &series_modality,
-                               const std::string &series_date,
-                               const std::string &series_time);
+                               std::string_view image_type,
+                               std::string_view series_ref_UID,
+                               std::string_view series_modality,
+                               std::string_view series_date,
+                               std::string_view series_time);
 
   bool operator<(const Study &s) const {
     if (date != s.date)

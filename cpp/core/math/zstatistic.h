@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,7 +58,7 @@ protected:
                         const default_type offset,
                         const default_type scale,
                         const array_type &data,
-                        std::function<default_type(default_type)> func) const;
+                        std::function<default_type(default_type)> func) const; // check_syntax off
   };
 
   class Lookup_t2z : public LookupBase {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,7 +50,7 @@ void run() {
   Fixel::check_fixel_directory(fixel_directory2);
 
   if (fixel_directory1 == fixel_directory2)
-    throw Exception("Input fixel directorys are the same");
+    throw Exception("Input fixel directories are the same");
 
   auto dir_walker1 = Path::Dir(fixel_directory1);
   std::string fname;

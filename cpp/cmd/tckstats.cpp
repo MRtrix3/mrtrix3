@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ void usage() {
 class LW {
 public:
   LW(const float l, const float w) : length(l), weight(w) {}
-  LW() : length(NaN), weight(NaN) {}
+  LW() : length(NaNF), weight(NaNF) {}
   bool operator<(const LW &that) const { return length < that.length; }
   float get_length() const { return length; }
   float get_weight() const { return weight; }
@@ -94,7 +94,7 @@ void run() {
 
   const bool weights_provided = !get_options("tck_weights_in").empty();
 
-  float step_size = NaN;
+  float step_size = NaNF;
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = -std::numeric_limits<float>::infinity();
@@ -163,11 +163,11 @@ void run() {
   if (count != header_count)
     WARN("expected " + str(header_count) + " tracks according to header; read " + str(count));
   if (!std::isfinite(min_length))
-    min_length = NaN;
+    min_length = NaNF;
   if (!std::isfinite(max_length))
-    max_length = NaN;
+    max_length = NaNF;
 
-  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaN;
+  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaNF;
 
   float median_length = 0.0f;
   if (count) {
@@ -184,13 +184,13 @@ void run() {
       median_length = Math::median(all_lengths).get_length();
     }
   } else {
-    median_length = NaN;
+    median_length = NaNF;
   }
 
   default_type ssd = 0.0;
   for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     ssd += i->get_weight() * Math::pow2(i->get_length() - mean_length);
-  const float stdev = sum_weights ? (std::sqrt(ssd / (((count - 1) / default_type(count)) * sum_weights))) : NaN;
+  const float stdev = sum_weights ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
 
   std::vector<std::string> fields;
   auto opt = get_options("output");

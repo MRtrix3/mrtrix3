@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,6 +42,10 @@ if sys.argv:
 CONFIG = {
   'Dwi2maskAlgorithm': 'legacy'
 }
+
+
+
+BZERO_THRESHOLD_DEFAULT = 22.5 #pylint: disable=unused-variable
 
 
 

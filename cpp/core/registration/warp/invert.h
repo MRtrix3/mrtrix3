@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,10 +36,10 @@ public:
       : displacement(displacement), transform(displacement_inverse), max_iter(max_iter), error_tolerance(error_tol) {}
 
   void operator()(Image<default_type> &displacement_inverse) {
-    Eigen::Vector3d voxel((default_type)displacement_inverse.index(0),
-                          (default_type)displacement_inverse.index(1),
-                          (default_type)displacement_inverse.index(2));
-    Eigen::Vector3d truth = transform.voxel2scanner * voxel;
+    const Eigen::Vector3d voxel{static_cast<default_type>(displacement_inverse.index(0)),
+                                static_cast<default_type>(displacement_inverse.index(1)),
+                                static_cast<default_type>(displacement_inverse.index(2))};
+    const Eigen::Vector3d truth = transform.voxel2scanner * voxel;
     Eigen::Vector3d current = truth + Eigen::Vector3d(displacement_inverse.row(3));
 
     size_t iter = 0;
@@ -75,9 +75,10 @@ public:
       : deform(deform), transform(inv_deform), max_iter(max_iter), error_tolerance(error_tol) {}
 
   void operator()(Image<default_type> &inv_deform) {
-    Eigen::Vector3d voxel(
-        (default_type)inv_deform.index(0), (default_type)inv_deform.index(1), (default_type)inv_deform.index(2));
-    Eigen::Vector3d truth = transform.voxel2scanner * voxel;
+    const Eigen::Vector3d voxel{static_cast<default_type>(inv_deform.index(0)),
+                                static_cast<default_type>(inv_deform.index(1)),
+                                static_cast<default_type>(inv_deform.index(2))};
+    const Eigen::Vector3d truth = transform.voxel2scanner * voxel;
     Eigen::Vector3d current = inv_deform.row(3);
 
     size_t iter = 0;

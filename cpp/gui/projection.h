@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <array>
 
 #include "crosshair.h"
 #include "gui.h"
@@ -142,7 +144,7 @@ public:
 
 protected:
   GL::mat4 MV, iMV, P, iP, MVP, iMVP;
-  GLint viewport[4];
+  std::array<GLint, 4> viewport;
 };
 
 class Projection : public ModelViewProjection {
@@ -166,9 +168,9 @@ public:
   }
   void done_render_text() const { font.stop(); }
 
-  void render_text(int x, int y, const std::string &text) const { font.render(text, x, y); }
+  void render_text(int x, int y, std::string_view text) const { font.render(text, x, y); }
 
-  void render_text_align(int x, int y, const std::string &text, int halign = 0, int valign = 0) const {
+  void render_text_align(int x, int y, std::string_view text, int halign = 0, int valign = 0) const {
     QString s(qstr(text));
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
     int w = font.metric.width(s);
@@ -187,7 +189,7 @@ public:
     render_text(x, y, text);
   }
 
-  void render_text_inset(int x, int y, const std::string &text, int inset = -1) const {
+  void render_text_inset(int x, int y, std::string_view text, int inset = -1) const {
     QString s(qstr(text));
     if (inset < 0)
       inset = font.metric.height() / 2;
@@ -208,7 +210,7 @@ public:
     render_text(x, y, text);
   }
 
-  void render_text(const std::string &text, int position, int line = 0) const {
+  void render_text(std::string_view text, int position, int line = 0) const {
     QString s(qstr(text));
     int x, y;
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,9 +30,6 @@
 #include "types.h"
 
 #include "stats/enhance.h"
-
-#define DEFAULT_NUMBER_PERMUTATIONS 5000
-#define DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY 5000
 
 namespace MR::Stats::PermTest {
 

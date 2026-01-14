@@ -6,26 +6,17 @@ target_compile_definitions(gtest PRIVATE
     $<TARGET_PROPERTY:mrtrix::common,INTERFACE_COMPILE_DEFINITIONS>
 )
 
-
 set(UNIT_TESTS_CPP_SRCS
-    bitset_tests.cpp
     erfinv_tests.cpp
     icls_tests.cpp
     ordered_queue_tests.cpp
+    parse_axes_tests.cpp
     parse_ints_tests.cpp
+    platform_tests.cpp
     roi_tests.cpp
     sh_precomputer_tests.cpp
     shuffle_tests.cpp
     to_tests.cpp
-)
-
-set(UNIT_TESTS_BASH_SRCS
-    cpp_cli
-    python_cli
-)
-set(UNIT_TESTS_NPY_BASH_SRCS
-    npyread
-    npywrite
 )
 
 get_filename_component(SOURCE_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
@@ -43,9 +34,6 @@ if(MINGW AND WIN32)
       )
 endif()
 
-find_package(Python3
-    COMPONENTS NumPy
-)
 find_package(Threads REQUIRED)
 
 include(DirsToUnix)
@@ -86,19 +74,6 @@ function (add_bash_unit_test FILE_SRC)
         PREFIX "unittest"
         WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
-        ENVIRONMENT "PYTHONPATH=${PYTHON_ENV_PATH}"
         LABELS "unittest;${NAME}"
     )
 endfunction()
-
-foreach(UNIT_TEST ${UNIT_TESTS_BASH_SRCS})
-    add_bash_unit_test(${UNIT_TEST})
-endforeach()
-
-if(${Python3_NumPy_FOUND})
-    foreach(UNIT_TEST ${UNIT_TESTS_NPY_BASH_SRCS})
-        add_bash_unit_test(${UNIT_TEST})
-    endforeach()
-else()
-    message(WARNING "Python numpy module not found; omitting .npy format support tests")
-endif()

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@ namespace MR::GUI {
 QWidget *App::main_window = nullptr;
 App *App::application = nullptr;
 
-App::App(int &cmdline_argc, char **cmdline_argv) : QApplication(cmdline_argc, cmdline_argv) {
+App::App(int &cmdline_argc, char **cmdline_argv) : QApplication(cmdline_argc, cmdline_argv) { // check_syntax off
   application = this;
   ::MR::File::Config::init();
   ::MR::GUI::GL::set_default_context();

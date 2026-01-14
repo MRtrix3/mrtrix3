@@ -46,7 +46,7 @@ Note that the behaviour of the -angle option varies slightly depending on the or
 Options
 -------
 
--  **-algorithm name** specify the tractography algorithm to use. Valid choices are: FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).
+-  **-algorithm name** specify the tractography algorithm to use. Valid choices are: fact, ifod1, ifod2, nulldist1, nulldist2, sd_stream, seedtest, tensor_det, tensor_prob (default: ifod2).
 
 Streamlines tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -103,8 +103,6 @@ Tractography seeding options and parameters
 
 -  **-seed_direction dir** specify a seeding direction for the tracking (this should be supplied as a vector of 3 comma-separated values.
 
--  **-output_seeds path** output the seed location of all successful streamlines to a file
-
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -134,6 +132,13 @@ Options specific to the iFOD2 tracking algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-samples number** set the number of FOD samples to take per step (Default: 4).
+
+Options for additional data export
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-output_seeds path** output the seed location of all successful streamlines to a text file
+
+-  **-output_stats path** output statistics on streamline generation to a JSON file
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -203,7 +208,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

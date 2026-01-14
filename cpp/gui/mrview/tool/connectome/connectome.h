@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,12 @@
 
 #pragma once
 
+#include <array>
 #include <map>
 
 #include "image.h"
 #include "types.h"
 
-#include "misc/bitset.h"
 #include "surface/mesh.h"
 
 #include "color_button.h"
@@ -274,7 +274,7 @@ private:
   node_alpha_t node_alpha;
 
   // Values that need to be stored locally w.r.t. node visualisation
-  BitSet selected_nodes;
+  Eigen::Array<bool, Eigen::Dynamic, 1> selected_nodes;
   node_t selected_node_count;
   NodeSelectionSettings node_selection_settings;
 
@@ -312,8 +312,8 @@ private:
   FileDataVector edge_values_from_file_alpha;
 
   // Limits on drawing line thicknesses from OpenGL
-  GLint line_thickness_range_aliased[2];
-  GLint line_thickness_range_smooth[2];
+  std::array<GLint, 2> line_thickness_range_aliased;
+  std::array<GLint, 2> line_thickness_range_smooth;
 
   // Classes to receive inputs from the colourmap buttons and act accordingly
   NodeColourObserver node_colourmap_observer;
@@ -322,14 +322,14 @@ private:
   // Helper functions
   void clear_all();
   void enable_all(const bool);
-  void initialise(const std::string &);
+  void initialise(std::string_view);
   void add_matrices(const std::vector<std::string> &);
 
   void draw_nodes(const Projection &);
   void draw_edges(const Projection &);
 
-  bool import_vector_file(FileDataVector &, const std::string &);
-  bool import_matrix_file(FileDataVector &, const std::string &);
+  bool import_vector_file(FileDataVector &, std::string_view);
+  bool import_matrix_file(FileDataVector &, std::string_view);
 
   void load_properties();
 

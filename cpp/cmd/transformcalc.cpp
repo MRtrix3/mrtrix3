@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -47,7 +47,7 @@ void usage() {
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("inputs", "the input(s) for the specified operation").allow_multiple()
+  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
                            " one of: " + join(operations, ", ") +
                            " (see description section for details).").type_choice (operations)
@@ -138,7 +138,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
   Eigen::VectorXd src_centre = src_vertices.colwise().mean();
   Eigen::MatrixXd trg_centred = trg_vertices.rowwise() - trg_centre.transpose();
   Eigen::MatrixXd src_centred = src_vertices.rowwise() - src_centre.transpose();
-  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / default_type(n - 1);
+  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / static_cast<default_type>(n - 1);
 
   Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
@@ -181,7 +181,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
 void run() {
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
+  const std::string_view output_path = argument.back();
 
   switch (op) {
   case 0: { // invert

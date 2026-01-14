@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,7 +42,7 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
   if first_stdout:
     try:
       job_id = int(first_stdout.rstrip().splitlines()[-1])
-    except ValueError:
+    except (IndexError, ValueError):
       app.debug('Unable to convert FIRST stdout contents to integer job ID')
   execution_verified = False
   if job_id:

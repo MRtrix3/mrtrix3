@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,8 +37,8 @@ int ROI_Item::new_roi_counter = 0;
 
 ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)), saved(true), current_undo(-1) {
   type = gl::UNSIGNED_BYTE;
-  format = gl::RED;
-  internal_format = gl::R8;
+  format = gl::RED_INTEGER;
+  internal_format = gl::R8UI;
   set_allowed_features(false, true, false);
   set_interpolate(false);
   set_use_transparency(true);
@@ -106,7 +106,7 @@ void ROI_Item::start(ROI_UndoEntry &&entry) {
   while (current_undo + 1 > int(undo_list.size()))
     undo_list.erase(undo_list.end() - 1);
   undo_list.push_back(std::move(entry));
-  while (undo_list.size() > size_t(number_of_undos))
+  while (undo_list.size() > static_cast<size_t>(number_of_undos))
     undo_list.erase(undo_list.begin());
   current_undo = undo_list.size() - 1;
 }

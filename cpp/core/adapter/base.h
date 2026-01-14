@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,7 +42,7 @@ public:
   FORCE_INLINE bool valid() const { return parent_.valid(); }
   FORCE_INLINE bool operator!() const { return !valid(); }
   FORCE_INLINE const ImageType &parent() const { return parent_; }
-  FORCE_INLINE const std::string &name() const { return parent_.name(); }
+  FORCE_INLINE std::string_view name() const { return parent_.name(); }
   FORCE_INLINE size_t ndim() const { return parent_.ndim(); }
   FORCE_INLINE ssize_t size(size_t axis) const { return parent_.size(axis); }
   FORCE_INLINE default_type spacing(size_t axis) const { return parent_.spacing(axis); }

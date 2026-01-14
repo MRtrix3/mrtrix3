@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,10 +20,12 @@
 
 #include "algo/loop.h"
 #include "fixel/helpers.h"
-#include "misc/bitset.h"
 #include "types.h"
 
 namespace MR::Fixel::Filter {
+
+const float Connect::default_value_threshold = 0.5;
+const float Connect::default_connectivity_threshold = 0.1;
 
 void Connect::operator()(Image<float> &input, Image<float> &output) const {
   Fixel::check_data_file(input);
@@ -31,7 +33,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
 
   check_dimensions(input, output);
 
-  if (size_t(input.size(0)) != matrix.size())
+  if (static_cast<size_t>(input.size(0)) != matrix.size())
     throw Exception("Size of fixel data file \"" + input.name() + "\" (" + str(input.size(0)) +
                     ") does not match fixel connectivity matrix (" + str(matrix.size()) + ")");
 
@@ -46,7 +48,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
   for (auto l = Loop(0)(output); l; ++l)
     output.value() = 0.0f;
 
-  BitSet processed(input.size(0));
+  Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(input.size(0)));
   using IndexAndSize = std::pair<size_t, size_t>;
   std::vector<IndexAndSize> cluster_sizes;
   for (index_type seed = 0; seed != input.size(0); ++seed) {

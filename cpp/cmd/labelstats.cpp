@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,7 +84,7 @@ void run() {
 
   auto opt = get_options("output");
   if (!opt.empty()) {
-    switch (int(opt[0][0])) {
+    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
     case 0:
       std::cout << masses;
       break;
@@ -102,7 +102,7 @@ void run() {
   std::stringstream com_stringstream;
   com_stringstream << coms.format(fmt);
   const std::vector<std::string> com_strings = split(com_stringstream.str(), "\n");
-  assert(com_strings.size() == size_t(masses.size()));
+  assert(com_strings.size() == static_cast<size_t>(masses.size()));
 
   // Find width of first non-empty string, in order to centralise header label
   size_t com_width = 0;

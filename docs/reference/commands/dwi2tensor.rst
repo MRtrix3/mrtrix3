@@ -36,9 +36,8 @@ By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted 
 * Monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided).
 
 The tensor coefficients are stored in the output image as follows: |br|
-volumes 0-5: D11, D22, D33, D12, D13, D23
-
-If diffusion kurtosis is estimated using the -dkt option, these are stored as follows: |br|
+volumes 0-5: D11, D22, D33, D12, D13, D23; |br|
+if diffusion kurtosis is estimated using the -dkt option, these are stored as follows: |br|
 volumes 0-2: W1111, W2222, W3333 |br|
 volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333 |br|
 volumes 9-11: W1122, W1133, W2233 |br|
@@ -53,7 +52,7 @@ Options
 
 -  **-constrain** constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).
 
--  **-directions file** specify the directions along which to apply the constraints (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
+-  **-directions file** specify the directions along which to apply the constraints (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az in ] pairs for the directions.
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
@@ -111,7 +110,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

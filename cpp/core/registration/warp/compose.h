@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,16 +63,17 @@ public:
       : disp1_transform(disp_input1), disp2_interp(disp_input2), step(step) {}
 
   void operator()(Image<default_type> &disp_input1, Image<default_type> &disp_output) {
-    Eigen::Vector3d voxel(
-        (default_type)disp_input1.index(0), (default_type)disp_input1.index(1), (default_type)disp_input1.index(2));
-    Eigen::Vector3d voxel_position = disp1_transform.voxel2scanner * voxel;
-    Eigen::Vector3d original_position = voxel_position + Eigen::Vector3d(disp_input1.row(3));
+    const Eigen::Vector3d voxel{static_cast<default_type>(disp_input1.index(0)),
+                                static_cast<default_type>(disp_input1.index(1)),
+                                static_cast<default_type>(disp_input1.index(2))};
+    const Eigen::Vector3d voxel_position = disp1_transform.voxel2scanner * voxel;
+    const Eigen::Vector3d original_position = voxel_position + Eigen::Vector3d(disp_input1.row(3));
     disp2_interp.scanner(original_position);
     if (!disp2_interp) {
       disp_output.row(3) = disp_input1.row(3);
     } else {
-      Eigen::Vector3d displacement(Eigen::Vector3d(disp2_interp.row(3)).array() * step);
-      Eigen::Vector3d new_position = displacement + original_position;
+      const Eigen::Vector3d displacement(Eigen::Vector3d(disp2_interp.row(3)).array() * step);
+      const Eigen::Vector3d new_position = displacement + original_position;
       disp_output.row(3) = new_position - voxel_position;
     }
   }
@@ -89,24 +90,27 @@ public:
                        DeformationField1Type &deform1,
                        DeformationField2Type &deform2,
                        const transform_type &linear2)
-      : linear1(linear1), deform1_interp(deform1), deform2_interp(deform2), linear2(linear2) {
-    out_of_bounds.setOnes();
-    out_of_bounds *= NaN;
-  }
+      : linear1(linear1),
+        deform1_interp(deform1),
+        deform2_interp(deform2),
+        linear2(linear2),
+        out_of_bounds(Eigen::Vector3d::Constant(NaN)) {}
 
   void operator()(Image<default_type> &deform) {
-    Eigen::Vector3d voxel((default_type)deform.index(0), (default_type)deform.index(1), (default_type)deform.index(2));
-    Eigen::Vector3d position = linear1 * voxel;
+    const Eigen::Vector3d voxel{static_cast<default_type>(deform.index(0)),
+                                static_cast<default_type>(deform.index(1)),
+                                static_cast<default_type>(deform.index(2))};
+    const Eigen::Vector3d position = linear1 * voxel;
     deform1_interp.scanner(position);
     if (!deform1_interp) {
       deform.row(3) = out_of_bounds;
     } else {
-      Eigen::Vector3d position2 = deform1_interp.row(3);
+      const Eigen::Vector3d position2 = deform1_interp.row(3);
       deform2_interp.scanner(position2);
       if (!deform2_interp) {
         deform.row(3) = out_of_bounds;
       } else {
-        Eigen::Vector3d position3 = deform2_interp.row(3);
+        const Eigen::Vector3d position3 = deform2_interp.row(3);
         deform.row(3) = linear2 * position3;
       }
     }

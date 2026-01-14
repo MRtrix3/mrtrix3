@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,8 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import app #pylint: disable=no-name-in-module
+import pathlib
+from mrtrix3 import app, utils #pylint: disable=no-name-in-module
 
 from . import AGGREGATION_MODES, \
               DEFAULT_AFFINE_LMAX, \
@@ -44,6 +45,22 @@ class SequenceDirectoryOut(app.Parser.CustomTypeBase):
     return 'directory_list'
 
 
+class DirectoryInOrImageOut(app.Parser.CustomTypeBase):
+  def __call__(self, input_value):
+    if input_value == '-':
+      input_value = utils.name_temporary('mif')
+      abspath = pathlib.Path(input_value)
+      app._STDOUT_IMAGES.append(abspath)
+      return abspath # pylint: disable=protected-access
+    return app.Parser.make_userpath_object(app.Parser._UserPathExtras, input_value) # pylint: disable=protected-access
+  @staticmethod
+  def _legacytypestring():
+    return 'DIRIN IMAGEOUT'
+  @staticmethod
+  def _metavar():
+    return 'directory_in'
+
+
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au)'
@@ -56,7 +73,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' then non-linear registration is used to optimise the template further.')
   cmdline.add_argument('input_dir',
                        nargs='+',
-                       type=app.Parser.Various(),
+                       type=DirectoryInOrImageOut(),
                        help='Input directory containing all images of a given contrast')
   cmdline.add_argument('template',
                        type=app.Parser.ImageOut(),

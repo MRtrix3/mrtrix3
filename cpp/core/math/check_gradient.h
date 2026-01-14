@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,7 +50,7 @@ check_function_gradient(Function &function,
   if (show_hessian) {
     hessian.resize(N, N);
     if (conditioner.size()) {
-      assert(conditioner.size() == (ssize_t)N && "conditioner size must equal number of parameters");
+      assert(static_cast<size_t>(conditioner.size()) == N && "conditioner size must equal number of parameters");
       for (size_t n = 0; n < N; ++n)
         conditioner[n] = std::sqrt(conditioner[n]);
     }
@@ -60,7 +60,7 @@ check_function_gradient(Function &function,
     value_type old_x = x[n];
     value_type inc = increment;
     if (conditioner.size()) {
-      assert(conditioner.size() == (ssize_t)N && "conditioner size must equal number of parameters");
+      assert(static_cast<size_t>(conditioner.size()) == N && "conditioner size must equal number of parameters");
       inc *= conditioner[n];
     }
 

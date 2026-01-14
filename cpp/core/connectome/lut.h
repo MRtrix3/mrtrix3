@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,29 +33,25 @@ class LUT_node {
 public:
   using RGB = Eigen::Array<uint8_t, 3, 1>;
 
-  LUT_node(const std::string &n) : name(n), colour(0, 0, 0), alpha(255) {}
+  LUT_node(std::string_view n) : name(n), colour(0, 0, 0), alpha(255) {}
 
-  LUT_node(const std::string &n, const std::string &sn) : name(n), short_name(sn), colour(0, 0, 0), alpha(255) {}
+  LUT_node(std::string_view n, std::string_view sn) : name(n), short_name(sn), colour(0, 0, 0), alpha(255) {}
 
-  LUT_node(const std::string &n, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255)
+  LUT_node(std::string_view n, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255)
       : name(n), colour(r, g, b), alpha(a) {}
 
-  LUT_node(const std::string &n,
-           const std::string &sn,
-           const uint8_t r,
-           const uint8_t g,
-           const uint8_t b,
-           const uint8_t a = 255)
+  LUT_node(
+      std::string_view n, std::string_view sn, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255)
       : name(n), short_name(sn), colour(r, g, b), alpha(a) {}
 
-  LUT_node(const std::string &n, const RGB &rgb, const uint8_t a = 255) : name(n), colour(rgb), alpha(a) {}
+  LUT_node(std::string_view n, const RGB &rgb, const uint8_t a = 255) : name(n), colour(rgb), alpha(a) {}
 
   void set_colour(const uint8_t r, const uint8_t g, const uint8_t b) { colour = RGB{r, g, b}; }
   void set_colour(const RGB &rgb) { colour = rgb; }
   void set_alpha(const uint8_t a) { alpha = a; }
 
-  const std::string &get_name() const { return name; }
-  const std::string &get_short_name() const { return !short_name.empty() ? short_name : name; }
+  std::string get_name() const { return name; }
+  std::string get_short_name() const { return !short_name.empty() ? short_name : name; }
   const RGB &get_colour() const { return colour; }
   uint8_t get_alpha() const { return alpha; }
 
@@ -71,20 +67,20 @@ class LUT : public std::multimap<node_t, LUT_node> {
 public:
   using map_type = std::multimap<node_t, LUT_node>;
   LUT() : exclusive(true) {}
-  LUT(const std::string &);
-  void load(const std::string &);
+  LUT(std::string_view);
+  void load(std::string_view);
   bool is_exclusive() const { return exclusive; }
 
 private:
   bool exclusive;
 
-  file_format guess_file_format(const std::string &);
+  file_format guess_file_format(std::string_view);
 
-  void parse_line_basic(const std::string &);
-  void parse_line_freesurfer(const std::string &);
-  void parse_line_aal(const std::string &);
-  void parse_line_itksnap(const std::string &);
-  void parse_line_mrtrix(const std::string &);
+  void parse_line_basic(const std::string &);      // check_syntax off
+  void parse_line_freesurfer(const std::string &); // check_syntax off
+  void parse_line_aal(const std::string &);        // check_syntax off
+  void parse_line_itksnap(const std::string &);    // check_syntax off
+  void parse_line_mrtrix(const std::string &);     // check_syntax off
 
   void check_and_insert(const node_t, const LUT_node &);
 };

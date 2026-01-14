@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,8 +25,6 @@
 #include "opengl/transformation.h"
 #include "projection.h"
 #include "types.h"
-
-#define MAX_LOD 8
 
 namespace MR::GUI::DWI {
 
@@ -76,7 +74,7 @@ public:
     scale = new_scale;
     update();
   }
-  void reset_scale() { set_scale(NaN); }
+  void reset_scale() { set_scale(NaNF); }
   void reset_view();
   void set_lmax(int lmax) {
     assert(mode == mode_t::SH);
@@ -107,7 +105,7 @@ public:
     recompute_mesh = recompute_amplitudes = true;
     update();
   }
-  void set_text(const std::string &text_to_display) {
+  void set_text(std::string_view text_to_display) {
     text = text_to_display;
     update();
   }
@@ -122,7 +120,7 @@ public:
   bool get_use_lighting() const { return use_lighting; }
   bool get_normalise() const { return normalise; }
 
-  void screenshot(int oversampling, const std::string &image_name);
+  void screenshot(int oversampling, std::string_view image_name);
 
 protected:
   float view_angle, distance, scale;

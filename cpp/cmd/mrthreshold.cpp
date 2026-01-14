@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -211,25 +211,25 @@ default_type calculate(Image<value_type> &in,
 
     auto data = get_data(in, mask, max_axis, ignore_zero);
     if (percentile == 100.0) {
-      return default_type(*std::max_element(data.begin(), data.end()));
+      return static_cast<default_type>(*std::max_element(data.begin(), data.end()));
     } else if (percentile == 0.0) {
-      return default_type(*std::min_element(data.begin(), data.end()));
+      return static_cast<default_type>(*std::min_element(data.begin(), data.end()));
     } else {
       const default_type interp_index = 0.01 * percentile * (data.size() - 1);
-      const size_t lower_index = size_t(std::floor(interp_index));
-      const default_type mu = interp_index - default_type(lower_index);
+      const size_t lower_index = static_cast<size_t>(std::floor(interp_index));
+      const default_type mu = interp_index - static_cast<default_type>(lower_index);
       std::nth_element(data.begin(), data.begin() + lower_index, data.end());
-      const default_type lower_value = default_type(data[lower_index]);
+      const default_type lower_value = static_cast<default_type>(data[lower_index]);
       std::nth_element(data.begin(), data.begin() + lower_index + 1, data.end());
-      const default_type upper_value = default_type(data[lower_index + 1]);
+      const default_type upper_value = static_cast<default_type>(data[lower_index + 1]);
       return (1.0 - mu) * lower_value + mu * upper_value;
     }
 
   } else if (std::max(bottom, top) >= 0) {
 
     auto data = get_data(in, mask, max_axis, ignore_zero);
-    const ssize_t index(bottom >= 0 ? size_t(bottom) - 1 : (ssize_t(data.size()) - ssize_t(top)));
-    if (index < 0 || index >= ssize_t(data.size()))
+    const ssize_t index(bottom >= 0 ? bottom - 1 : (static_cast<ssize_t>(data.size()) - top));
+    if (index < 0 || index >= static_cast<ssize_t>(data.size()))
       throw Exception("Number of valid input image values (" + str(data.size()) +
                       ") less than number of voxels requested via -" + (bottom >= 0 ? "bottom" : "top") + " option (" +
                       str(bottom >= 0 ? bottom : top) + ")");
@@ -240,12 +240,12 @@ default_type calculate(Image<value_type> &in,
       if (data[index - 1] == threshold_float)
         issue_degeneracy_warning = true;
     }
-    if (index < ssize_t(data.size()) - 1) {
+    if (index < static_cast<ssize_t>(data.size()) - 1) {
       std::nth_element(data.begin(), data.begin() + index + 1, data.end());
       if (data[index + 1] == threshold_float)
         issue_degeneracy_warning = true;
     }
-    return default_type(threshold_float);
+    return static_cast<default_type>(threshold_float);
 
   } else { // No explicit mechanism option: do automatic thresholding
 
@@ -298,7 +298,7 @@ void apply(Image<value_type> &in,
            const operator_type comp,
            const bool mask_out) {
   const T true_value = std::is_floating_point<T>::value ? 1.0 : true;
-  const T false_value = std::is_floating_point<T>::value ? NaN : false;
+  const T false_value = std::is_floating_point<T>::value ? std::numeric_limits<T>::quiet_NaN() : false;
 
   std::function<bool(value_type, value_type)> func;
   switch (comp) {
@@ -337,7 +337,7 @@ void apply(Image<value_type> &in,
 template <typename T>
 void execute(Image<value_type> &in,
              Image<bool> &mask,
-             const std::string &out_path,
+             std::string_view out_path,
              const default_type abs,
              const default_type percentile,
              const ssize_t bottom,
@@ -378,7 +378,7 @@ void execute(Image<value_type> &in,
         LogLevelLatch latch(App::log_level - 1);
         const default_type threshold = calculate(in, mask, 3, abs, percentile, bottom, top, ignore_zero);
         assign_pos_of(in, 3).to(out);
-        apply(in, mask, out, 3, value_type(threshold), op, mask_out);
+        apply(in, mask, out, 3, static_cast<value_type>(threshold), op, mask_out);
       }
     }
 
@@ -393,7 +393,7 @@ void execute(Image<value_type> &in,
   if (to_cout)
     std::cout << threshold;
   else
-    apply(in, mask, out, in.ndim(), value_type(threshold), op, mask_out);
+    apply(in, mask, out, in.ndim(), static_cast<value_type>(threshold), op, mask_out);
 }
 
 void run() {
@@ -421,8 +421,8 @@ void run() {
   bool mask_out = !get_options("out_masked").empty();
 
   auto opt = get_options("comparison");
-  operator_type comp =
-      !opt.empty() ? operator_type(int(opt[0][0])) : (bottom >= 0 ? operator_type::LE : operator_type::GE);
+  operator_type comp = !opt.empty() ? operator_type(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]))
+                                    : (bottom >= 0 ? operator_type::LE : operator_type::GE);
   if (invert) {
     switch (comp) {
     case operator_type::LT:

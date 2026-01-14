@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,43 +38,45 @@ LightingSettings::LightingSettings(QWidget *parent, GL::Lighting &lighting) : QF
 
   slider = new QSlider(Qt::Horizontal);
   slider->setRange(0, 1000);
-  slider->setSliderPosition(int(info.ambient * 1000.0));
+  slider->setSliderPosition(static_cast<int>(std::round(info.ambient * 1000.0)));
   connect(slider, SIGNAL(valueChanged(int)), this, SLOT(ambient_intensity_slot(int)));
   grid_layout->addWidget(new QLabel("Ambient intensity"), 0, 0);
   grid_layout->addWidget(slider, 0, 1);
 
   slider = new QSlider(Qt::Horizontal);
   slider->setRange(0, 1000);
-  slider->setSliderPosition(int(info.diffuse * 1000.0));
+  slider->setSliderPosition(static_cast<int>(std::round(info.diffuse * 1000.0)));
   connect(slider, SIGNAL(valueChanged(int)), this, SLOT(diffuse_intensity_slot(int)));
   grid_layout->addWidget(new QLabel("Diffuse intensity"), 1, 0);
   grid_layout->addWidget(slider, 1, 1);
 
   slider = new QSlider(Qt::Horizontal);
   slider->setRange(0, 1000);
-  slider->setSliderPosition(int(info.specular * 1000.0));
+  slider->setSliderPosition(static_cast<int>(std::round(info.specular * 1000.0)));
   connect(slider, SIGNAL(valueChanged(int)), this, SLOT(specular_intensity_slot(int)));
   grid_layout->addWidget(new QLabel("Specular intensity"), 2, 0);
   grid_layout->addWidget(slider, 2, 1);
 
   slider = new QSlider(Qt::Horizontal);
   slider->setRange(10, 10000);
-  slider->setSliderPosition(int(info.shine * 1000.0));
+  slider->setSliderPosition(static_cast<int>(std::round(info.shine * 1000.0)));
   connect(slider, SIGNAL(valueChanged(int)), this, SLOT(shine_slot(int)));
   grid_layout->addWidget(new QLabel("Specular exponent"), 3, 0);
   grid_layout->addWidget(slider, 3, 1);
 
   elevation_slider = new QSlider(Qt::Horizontal);
   elevation_slider->setRange(0, 1000);
-  elevation_slider->setSliderPosition(int(
-      (1000.0 / Math::pi) * acos(-info.lightpos[1] / Eigen::Map<Eigen::Matrix<float, 3, 1>>(info.lightpos).norm())));
+  elevation_slider->setSliderPosition(static_cast<int>(
+      std::round((1000.0 / Math::pi) *
+                 acos(-info.lightpos[1] / Eigen::Map<Eigen::Matrix<float, 3, 1>>(info.lightpos.data()).norm()))));
   connect(elevation_slider, SIGNAL(valueChanged(int)), this, SLOT(light_position_slot()));
   grid_layout->addWidget(new QLabel("Light elevation"), 4, 0);
   grid_layout->addWidget(elevation_slider, 4, 1);
 
   azimuth_slider = new QSlider(Qt::Horizontal);
   azimuth_slider->setRange(-1000, 1000);
-  azimuth_slider->setSliderPosition(int((1000.0 / Math::pi) * atan2(info.lightpos[0], info.lightpos[2])));
+  azimuth_slider->setSliderPosition(
+      static_cast<int>(std::round((1000.0 / Math::pi) * atan2(info.lightpos[0], info.lightpos[2]))));
   connect(azimuth_slider, SIGNAL(valueChanged(int)), this, SLOT(light_position_slot()));
   grid_layout->addWidget(new QLabel("Light azimuth"), 5, 0);
   grid_layout->addWidget(azimuth_slider, 5, 1);
@@ -85,22 +87,22 @@ LightingSettings::LightingSettings(QWidget *parent, GL::Lighting &lighting) : QF
 }
 
 void LightingSettings::ambient_intensity_slot(int value) {
-  info.ambient = float(value) / 1000.0;
+  info.ambient = static_cast<float>(value) / 1000.0;
   info.update();
 }
 
 void LightingSettings::diffuse_intensity_slot(int value) {
-  info.diffuse = float(value) / 1000.0;
+  info.diffuse = static_cast<float>(value) / 1000.0;
   info.update();
 }
 
 void LightingSettings::specular_intensity_slot(int value) {
-  info.specular = float(value) / 1000.0;
+  info.specular = static_cast<float>(value) / 1000.0;
   info.update();
 }
 
 void LightingSettings::shine_slot(int value) {
-  info.shine = float(value) / 1000.0;
+  info.shine = static_cast<float>(value) / 1000.0;
   info.update();
 }
 
@@ -113,7 +115,7 @@ void LightingSettings::light_position_slot() {
   info.update();
 }
 
-LightingDock::LightingDock(const std::string &title, GL::Lighting &lighting)
+LightingDock::LightingDock(std::string_view title, GL::Lighting &lighting)
     : QDockWidget(qstr(title)), settings(new LightingSettings(this, lighting)) {
   setWidget(settings);
 }

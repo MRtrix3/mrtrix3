@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,10 +18,10 @@
 
 namespace MR::GUI::GL::Shader {
 
-void print_log(bool is_program, const std::string &type_name, GLuint index) {
+void print_log(bool is_program, std::string_view type_name, GLuint index) {
   int length = 0;
   int chars = 0;
-  char *log;
+  std::string log;
 
   if (is_program)
     gl::GetProgramiv(index, gl::INFO_LOG_LENGTH, &length);
@@ -29,16 +29,15 @@ void print_log(bool is_program, const std::string &type_name, GLuint index) {
     gl::GetShaderiv(index, gl::INFO_LOG_LENGTH, &length);
 
   if (length > 0) {
-    log = new char[length];
+    log.resize(length + 1, '\0');
     if (is_program)
-      gl::GetProgramInfoLog(index, length, &chars, log);
+      gl::GetProgramInfoLog(index, length, &chars, &log[0]);
     else
-      gl::GetShaderInfoLog(index, length, &chars, log);
+      gl::GetShaderInfoLog(index, length, &chars, &log[0]);
+    log.resize(log.find('\0'));
 
-    if (strlen(log))
+    if (!log.empty())
       FAIL("GLSL log [" + type_name + "]: " + log);
-
-    delete[] log;
   }
 }
 

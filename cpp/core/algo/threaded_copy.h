@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,7 +52,7 @@ inline void threaded_copy(InputImageType &source,
 }
 
 template <class InputImageType, class OutputImageType>
-inline void threaded_copy_with_progress_message(const std::string &message,
+inline void threaded_copy_with_progress_message(std::string_view message,
                                                 InputImageType &source,
                                                 OutputImageType &destination,
                                                 const std::vector<size_t> &axes,
@@ -61,7 +61,7 @@ inline void threaded_copy_with_progress_message(const std::string &message,
 }
 
 template <class InputImageType, class OutputImageType>
-inline void threaded_copy_with_progress_message(const std::string &message,
+inline void threaded_copy_with_progress_message(std::string_view message,
                                                 InputImageType &source,
                                                 OutputImageType &destination,
                                                 size_t from_axis = 0,

@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 11.00 CACHE STRING "")
-project(mrtrix3 LANGUAGES CXX VERSION 3.0.7)
+project(mrtrix3 LANGUAGES CXX VERSION 3.0.8)
 
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
     message(WARNING "It is recommended to use the Ninja generator to build MRtrix3. "
@@ -26,19 +26,13 @@ option(MRTRIX_PYTHON_SOFTLINK "Build directory softlink to Python source code ra
 option(MRTRIX_BUILD_STATIC "Build MRtrix's library statically" OFF)
 option(MRTRIX_USE_LLD "Use lld as the linker" OFF)
 
-set(MRTRIX_DEPENDENCIES_DIR "" CACHE PATH
-    "An optional local directory containing all thirdparty dependencies:\n \
-    - Eigen3 https://gitlab.com/libeigen/eigen (version 3.4.0 in .tar.gz format)\n \
-    - Json for Modern C++ https://github.com/nlohmann/json (version 3.11.3 in .tar.xz format)\n \
-    - Half https://half.sourceforge.net/ (version 2.1.0 in zip format)\n \
-    - NIfTI C headers https://nifti.nimh.nih.gov/pub/dist/src/nifti2/ (nifti1.h and nifti2.h stored in nifti/ subdirectory)\n
-    - Google Test https://github.com/google/googletest (version 1.17.0 in .tar.gz format). Only required for tests.\n)"
-)
+option(MRTRIX_USE_SYSTEM_EIGEN "Use system-installed Eigen3 library" OFF)
+option(MRTRIX_USE_SYSTEM_JSON "Use system-installed Json for Modern C++ library" OFF)
+option(MRTRIX_USE_SYSTEM_NIFTI "Use system-installed NIfTI C headers" OFF)
+option(MRTRIX_USE_SYSTEM_GTEST "Use system-installed Google Test library" OFF)
 
 if(MRTRIX_BUILD_TESTS)
-    if(CMAKE_VERSION VERSION_GREATER 3.17)
-        list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
-    endif()
+    list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
     enable_testing()
 endif()
 

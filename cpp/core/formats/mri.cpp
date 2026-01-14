@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,17 +37,17 @@ contents:              unspecified  ('size' bytes)
 
 */
 
-#define MRI_DATA 0x01
-#define MRI_DIMENSIONS 0x02
-#define MRI_ORDER 0x03
-#define MRI_VOXELSIZE 0x04
-#define MRI_COMMENT 0x05
-#define MRI_TRANSFORM 0x06
-#define MRI_DWSCHEME 0x07
-
 namespace MR::Formats {
 
 namespace {
+
+constexpr uint32_t mriformat_index_data = 0x01;
+constexpr uint32_t mriformat_index_dimensions = 0x02;
+constexpr uint32_t mriformat_index_order = 0x03;
+constexpr uint32_t mriformat_index_voxelsize = 0x04;
+constexpr uint32_t mriformat_index_comment = 0x05;
+constexpr uint32_t mriformat_index_transform = 0x06;
+constexpr uint32_t mriformat_index_dwscheme = 0x07;
 
 inline size_t char2order(char item, bool &forward) {
   switch (item) {
@@ -105,7 +105,7 @@ inline char order2char(size_t axis, bool forward) {
   return ('\0');
 }
 
-inline size_t type(const uint8_t *pos, bool is_BE) { return (Raw::fetch_<uint32_t>(pos, is_BE)); }
+inline uint32_t type(const uint8_t *pos, bool is_BE) { return Raw::fetch_<uint32_t>(pos, is_BE); }
 inline size_t size(const uint8_t *pos, bool is_BE) { return (Raw::fetch_<uint32_t>(pos + sizeof(uint32_t), is_BE)); }
 inline const uint8_t *data(const uint8_t *pos) { return (pos + 2 * sizeof(uint32_t)); }
 
@@ -114,7 +114,7 @@ inline const uint8_t *next(const uint8_t *current_pos, bool is_BE) {
 }
 
 inline void write_tag(std::ostream &out, uint32_t Type, uint32_t Size, bool is_BE) {
-  Type = ByteOrder::swap<uint32_t>(Type, is_BE);
+  Type = ByteOrder::swap<uint32_t>(static_cast<uint32_t>(Type), is_BE);
   out.write((const char *)&Type, sizeof(uint32_t));
   Size = ByteOrder::swap<uint32_t>(Size, is_BE);
   out.write((const char *)&Size, sizeof(uint32_t));
@@ -131,7 +131,7 @@ DataType fetch_datatype(uint8_t c) {
   uint8_t t = c & ~(0x07U);
   if (d >= 0x05U)
     ++d;
-  return {uint8_t(d | t)};
+  return DataType(d | t);
 }
 
 uint8_t store_datatype(const DataType &dt) {
@@ -148,7 +148,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   if (!Path::has_suffix(H.name(), ".mri"))
     return std::unique_ptr<ImageIO::Base>();
 
-  File::MMap fmap(H.name());
+  File::MMap fmap(MR::File::Entry(H.name()));
 
   if (memcmp(fmap.address(), "MRI#", 4))
     throw Exception("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
@@ -162,27 +162,25 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   H.ndim() = 4;
 
   size_t data_offset = 0;
-  char *c;
   const uint8_t *current = fmap.address() + sizeof(int32_t) + sizeof(uint16_t);
   const uint8_t *last = fmap.address() + fmap.size() - 2 * sizeof(uint32_t);
 
   while (current <= last) {
     switch (type(current, is_BE)) {
-    case MRI_DATA:
+    case mriformat_index_data:
       H.datatype() = fetch_datatype(data(current)[-4]);
-      data_offset = current + 5 - (uint8_t *)fmap.address();
+      data_offset = current + 5 - fmap.address();
       break;
-    case MRI_DIMENSIONS:
+    case mriformat_index_dimensions:
       H.size(0) = Raw::fetch_<uint32_t>(data(current), is_BE);
       H.size(1) = Raw::fetch_<uint32_t>(data(current) + sizeof(uint32_t), is_BE);
       H.size(2) = Raw::fetch_<uint32_t>(data(current) + 2 * sizeof(uint32_t), is_BE);
       H.size(3) = Raw::fetch_<uint32_t>(data(current) + 3 * sizeof(uint32_t), is_BE);
       break;
-    case MRI_ORDER:
-      c = (char *)data(current);
+    case mriformat_index_order:
       for (size_t n = 0; n < 4; n++) {
         bool forward = true;
-        size_t ax = char2order(c[n], forward);
+        const size_t ax = char2order(*(reinterpret_cast<const char *>(data(current) + n)), forward);
         if (ax == std::numeric_limits<size_t>::max())
           throw Exception("invalid order specifier in MRI image \"" + H.name() + "\"");
         H.stride(ax) = n + 1;
@@ -190,21 +188,21 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
           H.stride(ax) = -H.stride(ax);
       }
       break;
-    case MRI_VOXELSIZE:
+    case mriformat_index_voxelsize:
       H.spacing(0) = Raw::fetch_<float32>(data(current), is_BE);
       H.spacing(1) = Raw::fetch_<float32>(data(current) + sizeof(float32), is_BE);
       H.spacing(2) = Raw::fetch_<float32>(data(current) + 2 * sizeof(float32), is_BE);
       break;
-    case MRI_COMMENT:
+    case mriformat_index_comment:
       add_line(H.keyval()["comments"],
                std::string(reinterpret_cast<const char *>(data(current)), size(current, is_BE)));
       break;
-    case MRI_TRANSFORM:
+    case mriformat_index_transform:
       for (size_t i = 0; i < 3; ++i)
         for (size_t j = 0; j < 4; ++j)
           H.transform()(i, j) = Raw::fetch_<float32>(data(current) + (i * 4 + j) * sizeof(float32), is_BE);
       break;
-    case MRI_DWSCHEME: {
+    case mriformat_index_dwscheme: {
       std::string dw_scheme;
       const size_t nrows = size(current, is_BE) / (4 * sizeof(float32));
       for (size_t i = 0; i < nrows; ++i)
@@ -215,8 +213,9 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       H.keyval()["dw_scheme"] = dw_scheme;
     } break;
     default:
-      WARN("unknown header entity (" + str(type(current, is_BE)) + ", offset " + str(current - fmap.address()) +
-           ") in image \"" + H.name() + "\" - ignored");
+      WARN("unknown header entity (" + str(static_cast<uint32_t>(type(current, is_BE))) + "," + //
+           " offset " + str(current - fmap.address()) + ")" +                                   //
+           " in image \"" + H.name() + "\" - ignored");                                         //
       break;
     }
 
@@ -259,22 +258,22 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   out.write("MRI#", 4);
   write<uint16_t>(out, 0x01U, is_BE);
 
-  write_tag(out, MRI_DIMENSIONS, 4 * sizeof(uint32_t), is_BE);
+  write_tag(out, mriformat_index_dimensions, 4 * sizeof(uint32_t), is_BE);
   write<uint32_t>(out, H.size(0), is_BE);
   write<uint32_t>(out, (H.ndim() > 1 ? H.size(1) : 1), is_BE);
   write<uint32_t>(out, (H.ndim() > 2 ? H.size(2) : 1), is_BE);
   write<uint32_t>(out, (H.ndim() > 3 ? H.size(3) : 1), is_BE);
 
-  write_tag(out, MRI_ORDER, 4 * sizeof(uint8_t), is_BE);
+  write_tag(out, mriformat_index_order, 4 * sizeof(uint8_t), is_BE);
   size_t n;
-  char order[4];
+  std::array<char, 4> order;
   for (n = 0; n < H.ndim(); ++n)
-    order[abs(H.stride(n)) - 1] = order2char(n, H.stride(n) > 0);
+    order[MR::abs(H.stride(n)) - 1] = order2char(n, H.stride(n) > 0);
   for (; n < 4; ++n)
     order[n] = order2char(n, true);
-  out.write(order, 4);
+  out.write(order.data(), 4);
 
-  write_tag(out, MRI_VOXELSIZE, 3 * sizeof(float32), is_BE);
+  write_tag(out, mriformat_index_voxelsize, 3 * sizeof(float32), is_BE);
   write<float>(out, H.spacing(0), is_BE);
   write<float>(out, (H.ndim() > 1 ? H.spacing(1) : 2.0f), is_BE);
   write<float>(out, (H.ndim() > 2 ? H.spacing(2) : 2.0f), is_BE);
@@ -284,13 +283,13 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
     for (const auto &comment : split_lines(comments->second)) {
       size_t l = comment.size();
       if (l) {
-        write_tag(out, MRI_COMMENT, l, is_BE);
+        write_tag(out, mriformat_index_comment, l, is_BE);
         out.write(comment.c_str(), l);
       }
     }
   }
 
-  write_tag(out, MRI_TRANSFORM, 16 * sizeof(float32), is_BE);
+  write_tag(out, mriformat_index_transform, 16 * sizeof(float32), is_BE);
   for (size_t i = 0; i < 3; ++i)
     for (size_t j = 0; j < 4; ++j)
       write<float>(out, H.transform()(i, j), is_BE);
@@ -302,16 +301,16 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   const auto dw_scheme = H.keyval().find("dw_scheme");
   if (dw_scheme != H.keyval().end()) {
     const auto rows = split_lines(dw_scheme->second);
-    write_tag(out, MRI_DWSCHEME, 4 * rows.size() * sizeof(float32), is_BE);
+    write_tag(out, mriformat_index_dwscheme, 4 * rows.size() * sizeof(float32), is_BE);
     for (const auto &row : rows)
       for (const auto val : parse_floats(row))
         write<float>(out, val, is_BE);
   }
 
-  write_tag(out, MRI_DATA, 1, is_BE);
+  write_tag(out, mriformat_index_data, 1, is_BE);
   out.put(store_datatype(H.datatype()));
 
-  size_t data_offset = int64_t(out.tellp());
+  size_t data_offset = static_cast<size_t>(out.tellp());
   out.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,7 @@
 
 #include "filter/reslice.h"
 #include "interp/cubic.h"
+#include "interp/interp.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/sinc.h"
@@ -37,10 +38,10 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_INTERP 1 // linear
-#define DEFAULT_SPACE 0  // voxel
-const std::vector<std::string> interp_choices = {"nearest", "linear", "cubic", "sinc"};
+constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::LINEAR;
 const std::vector<std::string> space_choices = {"voxel", "image1", "image2", "average"};
+enum class space_t { VOXEL, IMAGE1, IMAGE2, AVERAGE };
+constexpr space_t default_space = space_t::VOXEL;
 
 template <class ValueType>
 inline void
@@ -56,26 +57,26 @@ inline void meansquared(const Eigen::Matrix<ValueType, Eigen::Dynamic, 1> &value
 }
 
 template <class ImageType1, class ImageType2, class TransformType, class OversampleType, class ValueType>
-void reslice(size_t interp,
+void reslice(MR::Interp::interp_type interp,
              ImageType1 &input,
              ImageType2 &output,
              const TransformType &trafo = Adapter::NoTransform,
              const OversampleType &oversample = Adapter::AutoOverSample,
              const ValueType out_of_bounds_value = ValueType(0)) {
   switch (interp) {
-  case 0:
+  case MR::Interp::interp_type::NEAREST:
     Filter::reslice<Interp::Nearest>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
     DEBUG("Nearest");
     break;
-  case 1:
+  case MR::Interp::interp_type::LINEAR:
     Filter::reslice<Interp::Linear>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
     DEBUG("Linear");
     break;
-  case 2:
+  case MR::Interp::interp_type::CUBIC:
     Filter::reslice<Interp::Cubic>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
     DEBUG("Cubic");
     break;
-  case 3:
+  case MR::Interp::interp_type::SINC:
     Filter::reslice<Interp::Sinc>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
     DEBUG("Sinc");
     break;
@@ -194,13 +195,13 @@ void usage() {
                      " image2: scanner space of image 2;"
                      " average: scanner space of the average affine transformation"
                      " of image 1 and 2;"
-                     " default: " + space_choices[DEFAULT_SPACE] + ".")
+                     " default: " + space_choices[static_cast<ssize_t>(default_space)] + ".")
     + Argument ("iteration method").type_choice (space_choices)
 
   + Option ("interp", std::string("set the interpolation method to use when reslicing") +
                       " (choices: nearest, linear, cubic, sinc."
-                      " Default: " + interp_choices[DEFAULT_INTERP] + ").")
-    + Argument ("method").type_choice (interp_choices)
+                      " Default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
+    + Argument ("method").type_choice(MR::Interp::interp_choices)
 
   + Option ("metric",
             "define the dissimilarity metric used to calculate the cost."
@@ -229,16 +230,17 @@ using value_type = double;
 using MaskType = Image<bool>;
 
 void run() {
-  const int space = get_option_value("space", DEFAULT_SPACE);
-  const int interp = get_option_value("interp", DEFAULT_INTERP);
+  const space_t space = space_t(get_option_value<ssize_t>("space", static_cast<ssize_t>(default_space)));
+  const MR::Interp::interp_type interp =
+      MR::Interp::interp_type(get_option_value<ssize_t>("interp", static_cast<ssize_t>(default_interp)));
 
   MetricType metric_type = MetricType::MeanSquared;
   auto opt = get_options("metric");
   if (!opt.empty()) {
-    if (int(opt[0][0]) == 1) { // CC
-      if (space != 3)
+    if (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]) == 1) { // CC
+      if (space != space_t::AVERAGE)
         throw Exception("CC metric only implemented for use in average space");
-      if (interp != 1 and interp != 2)
+      if (interp != MR::Interp::interp_type::LINEAR && interp != MR::Interp::interp_type::CUBIC)
         throw Exception("CC metric only implemented for use with linear and cubic interpolation");
       metric_type = MetricType::CrossCorrelation;
     }
@@ -288,7 +290,7 @@ void run() {
   const value_type out_of_bounds_value = 0.0;
 
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> sos = Eigen::Matrix<value_type, Eigen::Dynamic, 1>::Zero(volumes, 1);
-  if (space == 0) {
+  if (space == space_t::VOXEL) {
     INFO("per-voxel");
     check_dimensions(input1, input2);
     if (!use_mask1 and !use_mask2)
@@ -302,7 +304,7 @@ void run() {
     MaskType output1mask;
     MaskType output2mask;
 
-    if (space == 1) {
+    if (space == space_t::IMAGE1) {
       INFO("space: image 1");
       output1 = input1;
       output1mask = mask1;
@@ -318,7 +320,7 @@ void run() {
           output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos);
     }
 
-    if (space == 2) {
+    if (space == space_t::IMAGE2) {
       INFO("space: image 2");
       output1 = Header::scratch(input2, "-").get_image<value_type>();
       output1mask = Header::scratch(input2, "-").get_image<bool>();
@@ -335,7 +337,7 @@ void run() {
           output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos);
     }
 
-    if (space == 3) {
+    if (space == space_t::AVERAGE) {
       INFO("space: average space");
 
       using ImageType1 = Image<value_type>;
@@ -395,17 +397,17 @@ void run() {
       ImageTypeM midway_image(midway_image_header);
 
       Eigen::VectorXd gradient = Eigen::VectorXd::Zero(1);
-      // interp == 1 or 2, metric, dimensions, interp
-      if (interp == 1 or interp == 2) {
+      // interp == linear or cubic, metric, dimensions, interp
+      if (interp == MR::Interp::interp_type::LINEAR or interp == MR::Interp::interp_type::CUBIC) {
         if (metric_type == MetricType::MeanSquared) {
           if (dimensions == 3) {
             Registration::Metric::MeanSquaredNoGradient metric;
-            if (interp == 1) {
+            if (interp == MR::Interp::interp_type::LINEAR) {
               LinearParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
               Registration::Metric::ThreadKernel<decltype(metric), LinearParamType> kernel(
                   metric, parameters, sos, gradient, &n_voxels);
               ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
-            } else if (interp == 2) {
+            } else if (interp == MR::Interp::interp_type::CUBIC) {
               CubicParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
               Registration::Metric::ThreadKernel<decltype(metric), CubicParamType> kernel(
                   metric, parameters, sos, gradient, &n_voxels);
@@ -413,12 +415,12 @@ void run() {
             }
           } else if (dimensions == 4) {
             Registration::Metric::MeanSquaredVectorNoGradient4D<ImageType1, ImageType2> metric(input1, input2);
-            if (interp == 1) {
+            if (interp == MR::Interp::interp_type::LINEAR) {
               LinearParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
               Registration::Metric::ThreadKernel<decltype(metric), LinearParamType> kernel(
                   metric, parameters, sos, gradient, &n_voxels);
               ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
-            } else if (interp == 2) {
+            } else if (interp == MR::Interp::interp_type::CUBIC) {
               CubicParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
               Registration::Metric::ThreadKernel<decltype(metric), CubicParamType> kernel(
                   metric, parameters, sos, gradient, &n_voxels);
@@ -429,13 +431,13 @@ void run() {
           }
         } else if (metric_type == MetricType::CrossCorrelation) {
           Registration::Metric::CrossCorrelationNoGradient metric;
-          if (interp == 1) {
+          if (interp == MR::Interp::interp_type::LINEAR) {
             LinearParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
             metric.precompute(parameters);
             Registration::Metric::ThreadKernel<decltype(metric), LinearParamType> kernel(
                 metric, parameters, sos, gradient, &n_voxels);
             ThreadedLoop(parameters.processed_image, 0, 3).run(kernel);
-          } else if (interp == 2) {
+          } else if (interp == MR::Interp::interp_type::CUBIC) {
             CubicParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
             metric.precompute(parameters);
             Registration::Metric::ThreadKernel<decltype(metric), CubicParamType> kernel(
@@ -443,7 +445,7 @@ void run() {
             ThreadedLoop(parameters.processed_image, 0, 3).run(kernel);
           }
         }
-      } else { // interp != 1 or 2 --> reslice and run voxel-wise comparison
+      } else { // interp != linear or cubic --> reslice and run voxel-wise comparison
         if (metric_type != MetricType::MeanSquared)
           throw Exception("Fixme: invalid metric choice ");
         output1mask = Header::scratch(midway_image_header, "-").get_image<bool>();

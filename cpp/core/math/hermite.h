@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <limits>
 
 #include "types.h"
@@ -40,13 +41,14 @@ public:
   value_type coef(size_t i) const { return (w[i]); }
 
   template <class S> S value(const S *vals) const { return (value(vals[0], vals[1], vals[2], vals[3])); }
+  template <class S> S value(const std::array<S, 4> vals) const { return (value(vals[0], vals[1], vals[2], vals[3])); }
 
   template <class S> S value(const S &a, const S &b, const S &c, const S &d) const {
     return (w[0] * a + w[1] * b + w[2] * c + w[3] * d);
   }
 
 private:
-  value_type w[4];
+  std::array<value_type, 4> w;
   value_type t;
 };
 

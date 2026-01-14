@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -202,7 +202,8 @@ void run_permutations(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_ca
                         global_uncorrected_pvalue_count);
     Thread::run_queue(shuffler, Math::Stats::Shuffle(), Thread::multi(processor));
   }
-  uncorrected_pvalues = global_uncorrected_pvalue_count.cast<default_type>() / default_type(shuffler.size());
+  uncorrected_pvalues =
+      global_uncorrected_pvalue_count.cast<default_type>() / static_cast<default_type>(shuffler.size());
 }
 
 } // namespace MR::Stats::PermTest

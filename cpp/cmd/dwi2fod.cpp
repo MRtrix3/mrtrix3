@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ const OptionGroup CommonOptions = OptionGroup ("Options common to more than one 
             "specify the directions over which to apply the non-negativity constraint"
             " (by default, the built-in 300 direction set is used)."
             " These should be supplied as a text file"
-            " containing [ az el ] pairs for the directions.")
+            " containing [ az in ] pairs for the directions.")
       + Argument ("file").type_file_in()
 
   + Option ("lmax",
@@ -55,7 +55,11 @@ const OptionGroup CommonOptions = OptionGroup ("Options common to more than one 
 
     + Option ("mask",
               "only perform computation within the specified binary brain mask image.")
-      + Argument ("image").type_image_in();
+      + Argument ("image").type_image_in()
+
+    + Option ("predicted_signal",
+              "output the predicted dwi image.")
+      + Argument ("image").type_image_out();
 
 void usage() {
 
@@ -111,7 +115,7 @@ void usage() {
     + Argument ("algorithm", "the algorithm to use for FOD estimation. "
                              "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
-    + Argument ("response odf", "pairs of input tissue response and output ODF images").allow_multiple();
+    + Argument ("response odf", "pairs of input tissue response and output ODF images").type_file_in().type_image_out().allow_multiple();
 
   OPTIONS
     + DWI::GradImportOptions()
@@ -125,13 +129,18 @@ void usage() {
 
 class CSD_Processor {
 public:
-  CSD_Processor(const DWI::SDeconv::CSD::Shared &shared, Image<bool> &mask)
-      : sdeconv(shared), data(shared.dwis.size()), mask(mask) {}
+  CSD_Processor(const DWI::SDeconv::CSD::Shared &shared, Image<bool> &mask, Image<float> dwi_modelled = Image<float>())
+      : sdeconv(shared), data(shared.dwis.size()), mask(mask), modelled_image(dwi_modelled) {}
 
   void operator()(Image<float> &dwi, Image<float> &fod) {
     if (!load_data(dwi)) {
       for (auto l = Loop(3)(fod); l; ++l)
         fod.value() = 0.0;
+      if (modelled_image.valid()) {
+        assign_pos_of(dwi, 0, 3).to(modelled_image);
+        for (auto l = Loop(3)(modelled_image); l; ++l)
+          modelled_image.value() = std::numeric_limits<float>::quiet_NaN();
+      }
       return;
     }
 
@@ -147,12 +156,26 @@ public:
            " ] did not reach full convergence");
 
     fod.row(3) = sdeconv.FOD();
+
+    if (modelled_image.valid()) {
+      assign_pos_of(fod, 0, 3).to(modelled_image);
+      data = sdeconv.shared.fconv * sdeconv.FOD();
+      assert(data.size() == sdeconv.shared.dwis.size());
+      for (auto l = Loop(3)(modelled_image); l; ++l)
+        modelled_image.value() = std::numeric_limits<float>::quiet_NaN();
+      for (size_t n = 0; n < sdeconv.shared.dwis.size(); n++) {
+        modelled_image.index(3) = sdeconv.shared.dwis[n];
+        modelled_image.value() = data[n];
+      }
+    }
   }
 
 private:
   DWI::SDeconv::CSD sdeconv;
   Eigen::VectorXd data;
   Image<bool> mask;
+  Image<float> modelled_image;
+  Eigen::VectorXd SH_predicted;
 
   bool load_data(Image<float> &dwi) {
     if (mask.valid()) {
@@ -241,6 +264,11 @@ void run() {
     check_dimensions(header_in, mask, 0, 3);
   }
 
+  Image<float> dwi_modelled;
+  opt = get_options("predicted_signal");
+  if (opt.size())
+    dwi_modelled = Image<float>::create(opt[0][0], header_out);
+
   int algorithm = argument[0];
   if (algorithm == 0) {
 
@@ -263,7 +291,7 @@ void run() {
     header_out.size(3) = shared.nSH();
     auto fod = Image<float>::create(argument[3], header_out);
 
-    CSD_Processor processor(shared, mask);
+    CSD_Processor processor(shared, mask, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io(3);
     ThreadedLoop("performing constrained spherical deconvolution", dwi, 0, 3).run(processor, dwi, fod);
 
@@ -300,11 +328,6 @@ void run() {
       header_out.size(3) = Math::SH::NforL(shared.lmax[i]);
       odfs.push_back(Image<float>(Image<float>::create(odf_paths[i], header_out)));
     }
-
-    Image<float> dwi_modelled;
-    auto opt = get_options("predicted_signal");
-    if (!opt.empty())
-      dwi_modelled = Image<float>::create(opt[0][0], header_in);
 
     MSMT_Processor processor(shared, mask, odfs, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io(3);

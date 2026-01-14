@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,9 +22,9 @@
 #include "progressbar.h"
 #include "thread.h"
 
-#define DEFAULT_POWER 1
-#define DEFAULT_NITER 10000
-#define DEFAULT_RESTARTS 10
+constexpr ssize_t default_power = 1;
+constexpr ssize_t default_number_iterations = 10000;
+constexpr ssize_t default_number_restarts = 10;
 
 using namespace MR;
 using namespace App;
@@ -59,20 +59,20 @@ void usage() {
 
   ARGUMENTS
     + Argument ("ndir", "the number of directions to generate.").type_integer(6, std::numeric_limits<int>::max())
-    + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
+    + Argument ("dirs", "the text file to write the directions to, as [ az in ] pairs.").type_file_out();
 
   OPTIONS
     + Option ("power", "specify exponent to use for repulsion power law"
-                       " (default: " + str(DEFAULT_POWER) + ")."
+                       " (default: " + str(default_power) + ")."
                        " This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).")
       + Argument ("exp").type_integer(1, std::numeric_limits<int>::max())
 
     + Option ("niter", "specify the maximum number of iterations to perform"
-                       " (default: " + str(DEFAULT_NITER) + ").")
+                       " (default: " + str(default_number_iterations) + ").")
       + Argument ("num").type_integer(1, std::numeric_limits<int>::max())
 
     + Option ("restarts", "specify the number of restarts to perform"
-                          " (default: " + str(DEFAULT_RESTARTS) + ").")
+                          " (default: " + str(default_number_restarts) + ").")
       + Argument ("num").type_integer (1, std::numeric_limits<int>::max())
 
     + Option ("fixed", "specify a fixed direction (comm-separateed floats)"
@@ -82,8 +82,7 @@ void usage() {
     + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model"
                           " rather than the bipolar model normally assumed in DWI")
 
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                           " instead of [az el].");
+    + DWI::Directions::cartesian_option;
 
 }
 // clang-format on
@@ -233,9 +232,9 @@ protected:
   static std::atomic<size_t> current_start;
 };
 
-size_t Energy::restarts(DEFAULT_RESTARTS);
-int Energy::target_power(DEFAULT_POWER);
-size_t Energy::niter(DEFAULT_NITER);
+size_t Energy::restarts(default_number_restarts);
+int Energy::target_power(default_power);
+size_t Energy::niter(default_number_iterations);
 std::mutex Energy::mutex;
 std::atomic<size_t> Energy::current_start(0);
 double Energy::best_E = std::numeric_limits<double>::infinity();
@@ -243,9 +242,9 @@ Eigen::VectorXd Energy::best_directions;
 std::vector<Eigen::Vector3d> Energy::fixed_directions;
 
 void run() {
-  Energy::restarts = get_option_value("restarts", DEFAULT_RESTARTS);
-  Energy::target_power = get_option_value("power", DEFAULT_POWER);
-  Energy::niter = get_option_value("niter", DEFAULT_NITER);
+  Energy::restarts = get_option_value("restarts", default_number_restarts);
+  Energy::target_power = get_option_value("power", default_power);
+  Energy::niter = get_option_value("niter", default_number_iterations);
 
   auto opt = get_options("fixed");
   for (size_t i = 0; i != opt.size(); ++i) {

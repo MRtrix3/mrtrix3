@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,9 +24,19 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 #include "exception.h"
 #include "types.h"
+
+template <typename StringTypeOne, typename StringTypeTwo>
+typename std::enable_if<MR::is_string_type<StringTypeOne>::value && MR::is_string_type<StringTypeTwo>::value,
+                        std::string>::type
+operator+(StringTypeOne left, StringTypeTwo right) {
+  std::string retval(left);
+  retval += right;
+  return retval;
+}
 
 namespace MR {
 
@@ -57,37 +67,35 @@ struct max_digits<X,
 };
 
 //! add a line to a string, taking care of inserting a newline if needed
-std::string &add_line(std::string &original, const std::string &new_line);
+std::string &add_line(std::string &original, std::string_view new_line);
 
 //! convert a long string to 'beginningofstring...endofstring' for display
-std::string shorten(const std::string &text, size_t longest = 40, size_t prefix = 10);
+std::string shorten(std::string_view text, size_t longest = 40, size_t prefix = 10);
 
 //! return lowercase version of string
-std::string lowercase(const std::string &string);
+std::string lowercase(std::string_view string);
 
 //! return uppercase version of string
-std::string uppercase(const std::string &string);
+std::string uppercase(std::string_view string);
 
-std::string printf(const char *format, ...);
+std::string printf(const char *format, ...); // check_syntax off
 
-std::string
-strip(const std::string &string, const std::string &ws = {" \0\t\r\n", 5}, bool left = true, bool right = true);
+std::string strip(std::string_view string, std::string_view ws = {" \0\t\r\n", 5}, bool left = true, bool right = true);
 
 //! Remove quotation marks only if surrounding entire string
-std::string unquote(const std::string &string);
+std::string unquote(std::string_view string);
 
 void replace(std::string &string, char orig, char final);
 
-void replace(std::string &str, const std::string &from, const std::string &to);
+void replace(std::string &str, std::string_view from, std::string_view to);
 
-std::vector<std::string> split(const std::string &string,
-                               const char *delimiters = " \t\n",
+std::vector<std::string> split(std::string_view string,
+                               std::string_view delimiters = " \t\n",
                                bool ignore_empty_fields = false,
                                size_t num = std::numeric_limits<size_t>::max());
 
-std::vector<std::string> split_lines(const std::string &string,
-                                     bool ignore_empty_fields = true,
-                                     size_t num = std::numeric_limits<size_t>::max());
+std::vector<std::string>
+split_lines(std::string_view string, bool ignore_empty_fields = true, size_t num = std::numeric_limits<size_t>::max());
 
 /*
 inline int round (default_type x)
@@ -96,12 +104,12 @@ inline int round (default_type x)
 }
 */
 
-bool match(const std::string &pattern, const std::string &text, bool ignore_case = false);
+bool match(std::string_view pattern, std::string_view text, bool ignore_case = false);
 
 //! match a dash or any Unicode character that looks like one
 /*! \note This returns the number of bytes taken up by the matched UTF8
  * character, zero if no match. */
-size_t char_is_dash(const char *arg);
+size_t dash_bytes(std::string_view arg);
 
 //! match whole string to a dash or any Unicode character that looks like one
 bool is_dash(std::string_view arg);
@@ -110,7 +118,7 @@ bool is_dash(std::string_view arg);
 bool starts_with_dash(std::string_view arg);
 
 //! returns string without leading dashes
-std::string_view without_leading_dash(std::string_view arg);
+std::string without_leading_dash(std::string_view arg);
 
 template <class T> inline std::string str(const T &value, int precision = 0) {
   std::ostringstream stream;
@@ -124,7 +132,7 @@ template <class T> inline std::string str(const T &value, int precision = 0) {
   return stream.str();
 }
 
-template <class T> inline T to(const std::string &string) {
+template <class T> inline T to(std::string_view string) {
   const std::string stripped(strip(string));
   std::istringstream stream(stripped);
   T value;
@@ -148,7 +156,7 @@ template <class T> inline T to(const std::string &string) {
   return value;
 }
 
-template <> inline bool to<bool>(const std::string &string) {
+template <> inline bool to<bool>(std::string_view string) {
   std::string value = lowercase(strip(string));
   if (value == "true" || value == "yes")
     return true;
@@ -169,18 +177,18 @@ template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
   return stream.str();
 }
 
-template <> inline cfloat to<cfloat>(const std::string &string) {
+template <> inline cfloat to<cfloat>(std::string_view string) {
   if (string.empty())
     throw Exception("cannot convert empty string to complex float");
 
   const std::string stripped = strip(string);
   std::vector<cfloat> candidates;
-  for (ssize_t i = -1; i <= ssize_t(stripped.size()); ++i) {
+  for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
     std::string first, second;
     if (i == -1) {
       first = "0";
       second = stripped;
-    } else if (i == ssize_t(stripped.size())) {
+    } else if (i == static_cast<ssize_t>(stripped.size())) {
       first = stripped;
       second = "0i";
     } else {
@@ -195,7 +203,7 @@ template <> inline cfloat to<cfloat>(const std::string &string) {
     if (second.empty() || second == "-" || second == "+")
       second.push_back('1');
     try {
-      candidates.push_back(cfloat(to<float>(first), to<float>(second)));
+      candidates.push_back(cfloat{to<float>(first), to<float>(second)});
     } catch (Exception &) {
     }
   }
@@ -226,18 +234,18 @@ template <> inline std::string str<cdouble>(const cdouble &value, int precision)
   return stream.str();
 }
 
-template <> inline cdouble to<cdouble>(const std::string &string) {
+template <> inline cdouble to<cdouble>(std::string_view string) {
   if (string.empty())
     throw Exception("cannot convert empty string to complex double");
 
   const std::string stripped = strip(string);
   std::vector<cdouble> candidates;
-  for (ssize_t i = -1; i <= ssize_t(stripped.size()); ++i) {
+  for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
     std::string first, second;
     if (i == -1) {
       first = "0";
       second = stripped;
-    } else if (i == ssize_t(stripped.size())) {
+    } else if (i == static_cast<ssize_t>(stripped.size())) {
       first = stripped;
       second = "0i";
     } else {
@@ -252,7 +260,7 @@ template <> inline cdouble to<cdouble>(const std::string &string) {
     if (second.empty() || second == "-" || second == "+")
       second.push_back('1');
     try {
-      candidates.push_back(cdouble(to<double>(first), to<double>(second)));
+      candidates.push_back(cdouble{to<double>(first), to<double>(second)});
     } catch (Exception &) {
     }
   }
@@ -272,10 +280,10 @@ template <> inline cdouble to<cdouble>(const std::string &string) {
   return candidates[0];
 }
 
-std::vector<default_type> parse_floats(const std::string &spec);
+std::vector<default_type> parse_floats(std::string_view spec);
 
 template <typename IntType>
-std::vector<IntType> parse_ints(const std::string &spec, const IntType last = std::numeric_limits<IntType>::max()) {
+std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std::numeric_limits<IntType>::max()) {
   typedef typename std::make_signed<IntType>::type SignedIntType;
   if (spec.empty())
     throw Exception("integer sequence specifier is empty");
@@ -305,7 +313,7 @@ std::vector<IntType> parse_ints(const std::string &spec, const IntType last = st
         num[i] = to<SignedIntType>(spec.substr(start, end - start));
 
       end = spec.find_first_not_of(" \t", end);
-      char last_char = end < spec.size() ? spec[end] : '\0';
+      const char last_char = end < spec.size() ? spec[end] : '\0';
       if (last_char == ':') {
         ++i;
         ++end;
@@ -342,14 +350,14 @@ std::vector<IntType> parse_ints(const std::string &spec, const IntType last = st
 }
 
 template <class ValueType = default_type>
-Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(const std::string &spec) {
+Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(std::string_view spec) {
   Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M;
   const auto lines = split_lines(spec);
   for (size_t row = 0; row < lines.size(); ++row) {
     const auto values = parse_floats(lines[row]);
     if (M.cols() == 0)
       M.resize(lines.size(), values.size());
-    else if (M.cols() != ssize_t(values.size()))
+    else if (M.cols() != static_cast<Eigen::Index>(values.size()))
       throw Exception("error converting string to matrix - uneven number of entries per row");
     for (size_t col = 0; col < values.size(); ++col)
       M(row, col) = values[col];
@@ -357,14 +365,14 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(const std:
   return M;
 }
 
-std::string join(const std::vector<std::string> &V, const std::string &delimiter);
+std::string join(const std::vector<std::string> &V, std::string_view delimiter);
 
-template <size_t N> inline std::string join(const std::array<std::string, N> &array, const std::string &delimiter) {
+template <size_t N> inline std::string join(const std::array<std::string, N> &array, std::string_view delimiter) {
   const auto v = std::vector<std::string>(array.begin(), array.end());
   return join(v, delimiter);
 }
 
-template <typename T> inline std::string join(const std::vector<T> &V, const std::string &delimiter) {
+template <typename T> inline std::string join(const std::vector<T> &V, std::string_view delimiter) {
   std::string ret;
   if (V.empty())
     return ret;
@@ -374,6 +382,6 @@ template <typename T> inline std::string join(const std::vector<T> &V, const std
   return ret;
 }
 
-std::string join(const char *const *null_terminated_array, const std::string &delimiter);
+std::string join(const char *const *null_terminated_array, std::string_view delimiter); // check_syntax off
 
 } // namespace MR

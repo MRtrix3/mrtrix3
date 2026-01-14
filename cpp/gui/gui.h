@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,12 +30,12 @@
 
 namespace MR::GUI {
 
-inline QString qstr(const std::string &s) { return QString::fromUtf8(s.c_str()); }
+inline QString qstr(std::string_view s) { return QString::fromUtf8(std::string(s).c_str()); }
 
 class App : public QApplication {
 
 public:
-  App(int &cmdline_argc, char **cmdline_argv);
+  App(int &cmdline_argc, char **cmdline_argv); // check_syntax off
 
   // this needs to be defined on a per-application basis:
   virtual bool event(QEvent *event) override;

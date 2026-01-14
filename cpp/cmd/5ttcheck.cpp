@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,7 @@
 using namespace MR;
 using namespace App;
 
-#define MAX_ERROR 0.001
+constexpr default_type maximum_deviation_unitysum = 1e-3;
 
 // clang-format off
 void usage()
@@ -62,7 +62,7 @@ void run() {
     H_out.ndim() = 3;
     H_out.datatype() = DataType::Bit;
     if (!voxels_prefix.empty())
-      voxels = Image<bool>::scratch(H_out, "Scratch image for " + argument[i]);
+      voxels = Image<bool>::scratch(H_out, "Scratch image for " + std::string(argument[i]));
 
     try {
 
@@ -87,7 +87,7 @@ void run() {
         }
         if (!sum)
           continue;
-        if (abs(sum - 1.0) > MAX_ERROR) {
+        if (std::fabs(sum - 1.0) > maximum_deviation_unitysum) {
           ++voxel_error_sum;
           if (voxels.valid()) {
             assign_pos_of(in, 0, 3).to(voxels);
@@ -104,15 +104,15 @@ void run() {
       }
 
       if (voxel_error_sum == 1) {
-        INFO("Image \"" + argument[i] +
+        INFO("Image \"" + std::string(argument[i]) +
              "\" contains just one isolated voxel with non-unity sum of partial volume fractions");
       } else if (voxel_error_sum) {
-        WARN("Image \"" + argument[i] + "\" contains " + str(voxel_error_sum) +
+        WARN("Image \"" + std::string(argument[i]) + "\" contains " + str(voxel_error_sum) +
              " brain voxels with non-unity sum of partial volume fractions");
         if (!voxel_error_abs)
           ++minor_error_count;
       } else if (!voxel_error_abs) {
-        INFO("Image \"" + argument[i] + "\" conforms to 5TT format");
+        INFO("Image \"" + std::string(argument[i]) + "\" conforms to 5TT format");
       }
 
       if ((voxel_error_sum || voxel_error_abs) && voxels.valid()) {
@@ -121,8 +121,8 @@ void run() {
           path += Path::basename(argument[i]);
         } else {
           bool has_extension = false;
-          for (auto p = MR::Formats::known_extensions; *p; ++p) {
-            if (Path::has_suffix(path, std::string(*p))) {
+          for (const auto &p : MR::Formats::known_extensions) {
+            if (Path::has_suffix(path, p)) {
               has_extension = true;
               break;
             }
@@ -135,12 +135,12 @@ void run() {
       }
 
       if (voxel_error_abs)
-        throw Exception("Image \"" + argument[i] + "\" contains " + str(voxel_error_abs) +
+        throw Exception("Image \"" + std::string(argument[i]) + "\" contains " + str(voxel_error_abs) +
                         " brain voxels with a non-physical partial volume fraction");
 
     } catch (Exception &e) {
       e.display();
-      WARN("Image \"" + argument[i] + "\" does not conform to fundamental 5TT format requirements");
+      WARN("Image \"" + std::string(argument[i]) + "\" does not conform to fundamental 5TT format requirements");
       ++major_error_count;
     }
   }

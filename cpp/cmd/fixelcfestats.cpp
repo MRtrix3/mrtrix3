@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,7 @@ using Math::Stats::value_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
-#define DEFAULT_EMPIRICAL_SKEW 1.0 // TODO Update from experience
+constexpr default_type default_empirical_skew = 1.0;
 
 // clang-format off
 void usage() {
@@ -73,6 +73,13 @@ void usage() {
     " when the output fixel directory is loaded in mrview."
     " Those fixels outside the processing mask will immediately disappear from view"
     " as soon as any data-file-based fixel colouring or thresholding is applied."
+
+  + "For Connectivity-based Fixel Enhancement,"
+    " use of the -nonstationarity option for empirical non-stationarity correction is generally discouraged,"
+    " unless the data are of exceptionally high quality."
+    " The intrinsic non-stationarity correction that is applied by default"
+    " (i.e. if the -cfe_legacy option is not used)"
+    " provides superior statistical power in most scenarios."
 
   + Math::Stats::GLM::column_ones_description
 
@@ -108,9 +115,7 @@ void usage() {
   + Argument ("contrast", "the contrast matrix,"
                           " specified as rows of weights").type_file_in ()
 
-  // .type_various() rather than .type_directory_in() to catch people trying to
-  //   pass a track file, and give a more informative error message
-  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_various ()
+  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_directory_in()
 
   + Argument ("out_fixel_directory", "the output directory where results will be saved."
                                      " Will be created if it does not exist").type_text();
@@ -121,7 +126,7 @@ void usage() {
   + Option ("mask", "provide a fixel data file containing a mask of those fixels to be used during processing")
     + Argument ("file").type_image_in()
 
-  + Math::Stats::shuffle_options(true, DEFAULT_EMPIRICAL_SKEW)
+  + Math::Stats::shuffle_options(true, default_empirical_skew)
 
   + Fixel::Filter::cfe_options
 
@@ -131,10 +136,10 @@ void usage() {
 // clang-format on
 
 template <class VectorType>
-void write_fixel_output(const std::string &filename, const VectorType &data, Image<bool> &mask, const Header &header) {
+void write_fixel_output(std::string_view filename, const VectorType &data, Image<bool> &mask, const Header &header) {
   auto output = Image<float>::create(filename, header);
   for (auto l = Loop(0)(output, mask); l; ++l)
-    output.value() = mask.value() ? data[output.index(0)] : NaN;
+    output.value() = mask.value() ? data[output.index(0)] : NaNF;
 }
 
 // Define data importer class that will obtain fixel data for a
@@ -142,7 +147,7 @@ void write_fixel_output(const std::string &filename, const VectorType &data, Ima
 //   that subject
 class SubjectFixelImport : public Math::Stats::SubjectDataImportBase {
 public:
-  SubjectFixelImport(const std::string &path)
+  SubjectFixelImport(std::string_view path)
       : Math::Stats::SubjectDataImportBase(path), H(Header::open(path)), data(H.get_image<float>()) {
     for (size_t axis = 1; axis < data.ndim(); ++axis) {
       if (data.size(axis) > 1)
@@ -160,7 +165,7 @@ public:
     Image<float> temp(data); // For thread-safety
     temp.index(0) = index;
     assert(!is_out_of_bounds(temp));
-    return default_type(temp.value());
+    return static_cast<default_type>(static_cast<float>(temp.value()));
   }
 
   Math::Stats::index_type size() const override { return data.size(0); }
@@ -173,12 +178,6 @@ private:
 };
 
 void run() {
-  if (Path::has_suffix(argument[4], ".tck"))
-    throw Exception("This version of fixelcfestats requires as input not a track file, but a "
-                    "pre-calculated fixel-fixel connectivity matrix; in addition, input fixel "
-                    "data must be pre-smoothed. Please check command / pipeline documentation "
-                    "specific to this software version.");
-
   const value_type cfe_dh = get_option_value("cfe_dh", Fixel::Filter::cfe_default_dh);
   const value_type cfe_e = get_option_value("cfe_e", Fixel::Filter::cfe_default_e);
   const value_type cfe_h = get_option_value("cfe_h", Fixel::Filter::cfe_default_h);
@@ -186,7 +185,7 @@ void run() {
   const bool cfe_legacy = !get_options("cfe_legacy").empty();
 
   const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
-  const default_type empirical_skew = get_option_value("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
+  const default_type empirical_skew = get_option_value("skew_nonstationarity", default_empirical_skew);
 
   const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header(input_fixel_directory);
@@ -252,7 +251,7 @@ void run() {
 
   // Load design matrix:
   const matrix_type design = File::Matrix::load_matrix(argument[2]);
-  if (size_t(design.rows()) != importer.size())
+  if (static_cast<MR::Math::Stats::index_type>(design.rows()) != importer.size())
     throw Exception("Number of input files does not match number of rows in design matrix");
 
   // Before validating the contrast matrix, we first need to see if there are any
@@ -358,7 +357,7 @@ void run() {
       if (!data.col(mask.index(0)).allFinite())
         nans_in_data = true;
     } else {
-      data.col(mask.index(0)).fill(NaN);
+      data.col(mask.index(0)).fill(std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
     }
   }
   if (nans_in_data) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,11 +24,11 @@ namespace {
 bool mismatched_UID_time_warning_issued = false;
 }
 
-std::shared_ptr<Study> Patient::find(const std::string &study_name,
-                                     const std::string &study_ID,
-                                     const std::string &study_UID,
-                                     const std::string &study_date,
-                                     const std::string &study_time) {
+std::shared_ptr<Study> Patient::find(std::string_view study_name,
+                                     std::string_view study_ID,
+                                     std::string_view study_UID,
+                                     std::string_view study_date,
+                                     std::string_view study_time) {
   for (size_t n = 0; n < size(); n++) {
     bool match = true;
     if (study_name == (*this)[n]->name) {

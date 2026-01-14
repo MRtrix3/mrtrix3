@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ namespace MR {
 template <class T> class Min_mem_array {
 
 public:
-  Min_mem_array() : n(0), d(NULL) {}
+  Min_mem_array() : n(0), d(nullptr) {}
 
   Min_mem_array(const T &i) : n(1), d(new T[1]) { d[0] = i; }
 
@@ -53,7 +53,7 @@ public:
 
   virtual ~Min_mem_array() {
     delete[] d;
-    d = NULL;
+    d = nullptr;
   }
 
   void add(const T &i) {
@@ -91,7 +91,7 @@ public:
   void erase() {
     if (d) {
       delete[] d;
-      d = NULL;
+      d = nullptr;
       n = 0;
     }
   }

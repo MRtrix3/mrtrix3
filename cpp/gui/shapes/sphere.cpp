@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,57 +18,51 @@
 
 #include <map>
 
-#define ONE .525731112119133606
-#define TAU .850650808352039932
-
-#define NUM_VERTICES 12
-#define NUM_INDICES 20
-
 namespace {
 
-static float initial_vertices[NUM_VERTICES][3] = {{-ONE, TAU, 0.0},
-                                                  {ONE, TAU, 0.0},
-                                                  {-ONE, -TAU, 0.0},
-                                                  {ONE, -TAU, 0.0},
+constexpr float one = .525731112119133606;
+constexpr float tau = .850650808352039932;
 
-                                                  {0.0, -ONE, TAU},
-                                                  {0.0, ONE, TAU},
-                                                  {0.0, -ONE, -TAU},
-                                                  {0.0, ONE, -TAU},
+constexpr float initial_vertices_data[]{-one, tau,  0.0,  //
+                                        one,  tau,  0.0,  //
+                                        -one, -tau, 0.0,  //
+                                        one,  -tau, 0.0,  //
+                                        0.0,  -one, tau,  //
+                                        0.0,  one,  tau,  //
+                                        0.0,  -one, -tau, //
+                                        0.0,  one,  -tau, //
+                                        tau,  0.0,  -one, //
+                                        tau,  0.0,  one,  //
+                                        -tau, 0.0,  -one, //
+                                        -tau, 0.0,  one}; //
 
-                                                  {TAU, 0.0, -ONE},
-                                                  {TAU, 0.0, ONE},
-                                                  {-TAU, 0.0, -ONE},
-                                                  {-TAU, 0.0, ONE}};
-
-static GLuint initial_indices[NUM_INDICES][3] = {
+// clang-format off
+constexpr GLuint initial_indices_data[]{
     // 5 faces around point 0
-    {0, 11, 5},
-    {0, 5, 1},
-    {0, 1, 7},
-    {0, 7, 10},
-    {0, 10, 11},
-
+    0, 11, 5,
+    0, 5, 1,
+    0, 1, 7,
+    0, 7, 10,
+    0, 10, 11,
     // 5 adjacent faces
-    {1, 5, 9},
-    {5, 11, 4},
-    {11, 10, 2},
-    {10, 7, 6},
-    {7, 1, 8},
-
+    1, 5, 9,
+    5, 11, 4,
+    11, 10, 2,
+    10, 7, 6,
+    7, 1, 8,
     // 5 faces around point 3
-    {3, 9, 4},
-    {3, 4, 2},
-    {3, 2, 6},
-    {3, 6, 8},
-    {3, 8, 9},
-
+    3, 9, 4,
+    3, 4, 2,
+    3, 2, 6,
+    3, 6, 8,
+    3, 8, 9,
     // 5 adjacent faces
-    {4, 9, 5},
-    {2, 4, 11},
-    {6, 2, 10},
-    {8, 6, 7},
-    {9, 8, 1}};
+    4, 9, 5,
+    2, 4, 11,
+    6, 2, 10,
+    8, 6, 7,
+    9, 8, 1};
+// clang-format on
 
 } // namespace
 
@@ -84,6 +78,11 @@ public:
     index[1] = x[1];
     index[2] = x[2];
   }
+  Triangle(Eigen::Map<const Eigen::Array<GLuint, 20, 3, Eigen::RowMajor>>::ConstRowXpr row) {
+    index[0] = row[0];
+    index[1] = row[1];
+    index[2] = row[2];
+  }
   Triangle(size_t i1, size_t i2, size_t i3) {
     index[0] = i1;
     index[1] = i2;
@@ -97,7 +96,7 @@ public:
   GLuint &operator[](int n) { return index[n]; }
 
 protected:
-  GLuint index[3];
+  std::array<GLuint, 3> index;
 };
 
 class Edge {
@@ -125,11 +124,14 @@ void Sphere::LOD(const size_t level_of_detail) {
   vertices.clear();
   std::vector<Triangle> indices;
 
-  for (size_t n = 0; n < NUM_VERTICES; n++)
-    vertices.push_back(initial_vertices[n]);
+  const Eigen::Map<const Eigen::Matrix<float, 12, 3, Eigen::RowMajor>> initial_vertices(initial_vertices_data);
+  const Eigen::Map<const Eigen::Array<uint32_t, 20, 3, Eigen::RowMajor>> initial_indices(initial_indices_data);
 
-  for (size_t n = 0; n < NUM_INDICES; n++)
-    indices.push_back(initial_indices[n]);
+  for (size_t n = 0; n < initial_vertices.rows(); n++)
+    vertices.push_back(initial_vertices.row(n));
+
+  for (size_t n = 0; n < initial_indices.rows(); n++)
+    indices.push_back(initial_indices.row(n));
 
   std::map<Edge, GLuint> edges;
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -135,7 +135,8 @@ public:
     if (statistic == MEAN) {
       // Take distance between points into account in mean calculation
       //   (Should help down-weight endpoints)
-      value_type integral = value_type(0), sum_lengths = value_type(0);
+      value_type integral = value_type(0);
+      value_type sum_lengths = value_type(0);
       for (size_t i = 0; i != tck.size(); ++i) {
         value_type length = value_type(0);
         if (i)
@@ -167,7 +168,7 @@ public:
     }
 
     if (!std::isfinite(out.second))
-      out.second = NaN;
+      out.second = std::numeric_limits<value_type>::quiet_NaN();
 
     return true;
   }
@@ -219,7 +220,7 @@ public:
     (*mapper)(tck, voxels);
 
     if (statistic == MEAN) {
-      value_type integral = value_type(0.0);
+      value_type integral = value_type(0);
       for (const auto &v : voxels) {
         assign_pos_of(v).to(image);
         integral += v.get_length() * (image.value() * get_tdi_multiplier(v));
@@ -257,14 +258,14 @@ public:
       out.second = std::numeric_limits<value_type>::infinity();
       for (const auto &v : voxels) {
         assign_pos_of(v).to(image);
-        out.second = std::min(out.second, value_type(image.value() * get_tdi_multiplier(v)));
+        out.second = std::min(out.second, static_cast<value_type>(image.value()) * get_tdi_multiplier(v));
         sum_lengths += v.get_length();
       }
     } else if (statistic == MAX) {
       out.second = -std::numeric_limits<value_type>::infinity();
       for (const auto &v : voxels) {
         assign_pos_of(v).to(image);
-        out.second = std::max(out.second, value_type(image.value() * get_tdi_multiplier(v)));
+        out.second = std::max(out.second, static_cast<value_type>(image.value()) * get_tdi_multiplier(v));
         sum_lengths += v.get_length();
       }
     } else {
@@ -272,7 +273,7 @@ public:
     }
 
     if (!std::isfinite(out.second))
-      out.second = NaN;
+      out.second = std::numeric_limits<value_type>::quiet_NaN();
 
     return true;
   }
@@ -323,14 +324,14 @@ public:
   Receiver_Statistic(const Receiver_Statistic &) = delete;
 
   bool operator()(std::pair<size_t, value_type> &in) {
-    if (in.first >= size_t(vector_data.size()))
+    if (in.first >= static_cast<size_t>(vector_data.size()))
       vector_data.conservativeResizeLike(vector_type::Zero(in.first + 1));
     vector_data[in.first] = in.second;
     ++(*this);
     return true;
   }
 
-  void save(const std::string &path) { File::Matrix::save_vector(vector_data, path); }
+  void save(std::string_view path) { File::Matrix::save_vector(vector_data, path); }
 
 private:
   vector_type vector_data;
@@ -338,9 +339,7 @@ private:
 
 class Receiver_NoStatistic : private ReceiverBase {
 public:
-  Receiver_NoStatistic(const std::string &path,
-                       const size_t num_tracks,
-                       const DWI::Tractography::Properties &properties)
+  Receiver_NoStatistic(std::string_view path, const size_t num_tracks, const DWI::Tractography::Properties &properties)
       : ReceiverBase(num_tracks) {
     if (Path::has_suffix(path, ".tsf")) {
       tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
@@ -379,7 +378,7 @@ void execute_nostat(DWI::Tractography::Reader<value_type> &reader,
                     const DWI::Tractography::Properties &properties,
                     const size_t num_tracks,
                     Image<value_type> &image,
-                    const std::string &path) {
+                    std::string_view path) {
   SamplerNonPrecise<InterpType> sampler(image, stat_tck::NONE, Image<value_type>());
   Receiver_NoStatistic receiver(path, num_tracks, properties);
   Thread::run_ordered_queue(reader,
@@ -395,7 +394,7 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
              Image<value_type> &image,
              const stat_tck statistic,
              Image<value_type> &tdi,
-             const std::string &path) {
+             std::string_view path) {
   SamplerType sampler(image, statistic, tdi);
   Receiver_Statistic receiver(num_tracks);
   Thread::run_ordered_queue(reader,
@@ -413,7 +412,8 @@ void run() {
   auto image = H.get_image<value_type>();
 
   auto opt = get_options("stat_tck");
-  const stat_tck statistic = !opt.empty() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
+  const stat_tck statistic =
+      !opt.empty() ? stat_tck(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : stat_tck::NONE;
   const bool nointerp = !get_options("nointerp").empty();
   const bool precise = !get_options("precise").empty();
   if (nointerp && precise)

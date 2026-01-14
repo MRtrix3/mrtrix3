@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ void ShaderBase::recompile(const Connectome &parent) {
   GL::Shader::Geometry geometry_shader(geometry_shader_source);
   GL::Shader::Fragment fragment_shader(fragment_shader_source);
   attach(vertex_shader);
-  if ((GLuint)geometry_shader)
+  if (static_cast<GLuint>(geometry_shader))
     attach(geometry_shader);
   attach(fragment_shader);
   link();
@@ -138,7 +138,7 @@ void NodeShader::update(const Connectome &parent) {
 
     geometry_shader_source += "layout(triangles) in;\n"
                               "layout(line_strip, max_vertices=2) out;\n"
-                              "in float depth[3];\n";
+                              "in float depth[3];\n"; // check_syntax off
 
     if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
       geometry_shader_source += "in vec3 normal" + GS_in +
@@ -370,7 +370,7 @@ void EdgeShader::update(const Connectome &parent) {
     case edge_geometry_t::STREAMLINE:
       geometry_shader_source += "layout(lines) in;\n"
                                 "layout(points, max_vertices=1) out;\n"
-                                "in float depth[2];\n";
+                                "in float depth[2];\n"; // check_syntax off
       if (use_lighting) {
         geometry_shader_source += "in vec3 tangent" + GS_in +
                                   "[2];\n"
@@ -382,7 +382,7 @@ void EdgeShader::update(const Connectome &parent) {
     case edge_geometry_t::STREAMTUBE:
       geometry_shader_source += "layout(triangles) in;\n"
                                 "layout(line_strip, max_vertices=2) out;\n"
-                                "in float depth[3];\n";
+                                "in float depth[3];\n"; // check_syntax off
       if (use_lighting) {
         geometry_shader_source += "in vec3 normal" + GS_in +
                                   "[3];\n"

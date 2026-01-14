@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,9 +22,7 @@
 #include "image.h"
 #include "transform.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 
 //! \cond skip
 namespace {
@@ -115,7 +113,9 @@ public:
                   typename cost_is_vector<U>::no = 0,
                   typename is_asymmetric<U>::no = 0) {
 
-    Eigen::Vector3d voxel_pos((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+    const Eigen::Vector3d voxel_pos{static_cast<default_type>(iter.index(0)),
+                                    static_cast<default_type>(iter.index(1)),
+                                    static_cast<default_type>(iter.index(2))};
     Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
 
     Eigen::Vector3d im2_point;
@@ -163,7 +163,9 @@ public:
                   typename cost_is_vector<U>::no = 0,
                   typename is_asymmetric<U>::yes = 0) {
 
-    Eigen::Vector3d voxel_pos((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+    const Eigen::Vector3d voxel_pos{static_cast<default_type>(iter.index(0)),
+                                    static_cast<default_type>(iter.index(1)),
+                                    static_cast<default_type>(iter.index(2))};
     Eigen::Vector3d im2_point = voxel2scanner * voxel_pos; // image 2 == midway_point == fixed image
 
     // shift voxel position as evaluate iterates over a subset of the image
@@ -228,7 +230,9 @@ public:
                   typename cost_is_vector<U>::yes = 0,
                   typename is_asymmetric<U>::no = 0) {
 
-    Eigen::Vector3d voxel_pos((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+    const Eigen::Vector3d voxel_pos{static_cast<default_type>(iter.index(0)),
+                                    static_cast<default_type>(iter.index(1)),
+                                    static_cast<default_type>(iter.index(2))};
 
     Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
 
@@ -286,7 +290,9 @@ public:
                   typename is_asymmetric<U>::no = 0) {
     assert(params.processed_image.valid());
 
-    Eigen::Vector3d voxel_pos((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+    const Eigen::Vector3d voxel_pos{static_cast<default_type>(iter.index(0)),
+                                    static_cast<default_type>(iter.index(1)),
+                                    static_cast<default_type>(iter.index(2))};
 
     if (params.processed_mask.valid()) {
       assign_pos_of(iter, 0, 3).to(params.processed_mask);
@@ -352,11 +358,11 @@ public:
     Iterator iterator(iter);
     assign_pos_of(iter).to(iterator);
     auto inner_loop = Random_loop<Iterator, std::default_random_engine>(
-        iterator, engine, inner_axes[1], (float)iterator.size(inner_axes[1]) * density);
-    for (auto j = inner_loop; j; ++j)
-      for (auto k = Loop(inner_axes[0])(iterator); k; ++k) {
+        iterator, engine, inner_axes[1], static_cast<default_type>(iterator.size(inner_axes[1])) * density);
+    for (auto j = inner_loop; j; ++j) {
+      for (auto k = Loop(inner_axes[0])(iterator); k; ++k)
         kern(iterator);
-      }
+    }
   }
 
 protected:
@@ -371,6 +377,5 @@ protected:
   Math::RNG rng;
   ssize_t *overlap_count;
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+
+} // namespace MR::Registration::Metric

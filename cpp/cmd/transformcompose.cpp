@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -92,7 +92,7 @@ void usage() {
   + Argument ("output", "the output file"
                         " (may be a linear transformation text file,"
                         " or a deformation warp field image,"
-                        " depending on usage)").type_various();
+                        " depending on usage)").type_file_out().type_image_out();
 
   OPTIONS
   + Option ("template", "define the output grid defined by a template image")
@@ -167,8 +167,9 @@ void run() {
 
     Transform template_transform(output);
     for (auto i = Loop("composing transformations", output, 0, 3)(output); i; ++i) {
-      Eigen::Vector3d voxel(
-          (default_type)output.index(0), (default_type)output.index(1), (default_type)output.index(2));
+      Eigen::Vector3d voxel(static_cast<double>(output.index(0)),
+                            static_cast<double>(output.index(1)),
+                            static_cast<double>(output.index(2)));
 
       Eigen::Vector3d position = template_transform.voxel2scanner * voxel;
       ssize_t index = transform_list.size() - 1;

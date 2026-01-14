@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -190,7 +190,7 @@ void run() {
     if (shells.count() > 1) {
       if (sh_data.ndim() < 5)
         throw Exception("multiple shells detected in gradient scheme, but only one shell in input data");
-      if (sh_data.size(4) != ssize_t(shells.count()))
+      if (sh_data.size(4) != static_cast<ssize_t>(shells.count()))
         throw Exception("number of shells differs between gradient scheme and input data");
     } else if (!(sh_data.ndim() == 4 || (sh_data.ndim() > 4 && (sh_data.size(4) != 1))))
       throw Exception("number of shells differs between gradient scheme and input data");

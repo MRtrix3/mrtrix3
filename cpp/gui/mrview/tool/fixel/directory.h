@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@
 namespace MR::GUI::MRView::Tool {
 class Directory : public FixelType<FixelIndexImageType> {
 public:
-  Directory(const std::string &filename, Fixel &fixel_tool)
+  Directory(std::string_view filename, Fixel &fixel_tool)
       : FixelType(MR::Fixel::find_index_header(Path::dirname(filename)).name(), fixel_tool) {
     value_types = {"unity"};
     colour_types = {"direction"};
@@ -31,9 +31,9 @@ public:
   }
 
   void load_image_buffer() override;
-  FixelValue &get_fixel_value(const std::string &key) const override;
+  FixelValue &get_fixel_value(std::string_view key) const override;
 
 protected:
-  void lazy_load_fixel_value_file(const std::string &key) const;
+  void lazy_load_fixel_value_file(std::string_view key) const;
 };
 } // namespace MR::GUI::MRView::Tool

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -263,16 +263,18 @@ void run() {
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
     auto image = Image<node_t>::open(opt[0][0]);
-    std::vector<Eigen::Vector3f> COMs(max_node_index + 1, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
+    std::vector<Eigen::Vector3d> COMs(max_node_index + 1, Eigen::Vector3d::Constant(0.0));
     std::vector<size_t> volumes(max_node_index + 1, 0);
     for (auto i = Loop()(image); i; ++i) {
       const node_t index = image.value();
       if (index) {
         while (index >= COMs.size()) {
-          COMs.push_back(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
+          COMs.push_back(Eigen::Vector3d::Constant(0.0));
           volumes.push_back(0);
         }
-        COMs[index] += Eigen::Vector3f(image.index(0), image.index(1), image.index(2));
+        COMs[index] += Eigen::Vector3d(static_cast<default_type>(image.index(0)),
+                                       static_cast<default_type>(image.index(1)),
+                                       static_cast<default_type>(image.index(2)));
         ++volumes[index];
       }
     }
@@ -286,10 +288,9 @@ void run() {
     Transform transform(image);
     for (node_t index = 1; index <= max_node_index; ++index) {
       if (volumes[index])
-        COMs[index] = (transform.voxel2scanner * (COMs[index] * (1.0f / float(volumes[index]))).cast<default_type>())
-                          .cast<float>();
+        COMs[index] = transform.voxel2scanner * (COMs[index] * (1.0 / static_cast<default_type>(volumes[index])));
       else
-        COMs[index][0] = COMs[index][1] = COMs[index][2] = NaN;
+        COMs[index].fill(NaN);
     }
 
     // If user specifies a subset of nodes, only a subset of exemplars need to be calculated

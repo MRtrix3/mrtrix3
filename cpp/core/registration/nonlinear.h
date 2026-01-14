@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 
 #include "filter/resize.h"
 #include "filter/warp.h"
+#include "interp/interp.h"
 #include "math/average_space.h"
 #include "registration/metric/cc_helper.h"
 #include "registration/metric/demons.h"
@@ -125,7 +126,7 @@ public:
 
       Filter::Resize resize_filter(midway_image_header);
       resize_filter.set_scale_factor(scale_factor[level]);
-      resize_filter.set_interp_type(1);
+      resize_filter.set_interp_type(MR::Interp::interp_type::LINEAR);
       resize_filter.datatype() = DataType::Float64; // for saving debug output with save()
 
       Header midway_image_header_resized = resize_filter;

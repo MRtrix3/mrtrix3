@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,12 +31,12 @@ public:
   public:
     Item() : seq_length(0) {}
 
-    void set_str(const std::string &s) {
+    void set_str(std::string_view s) {
       clear();
       str = s;
     }
 
-    void set_seq(const std::string &s) {
+    void set_seq(std::string_view s) {
       clear();
       if (!s.empty())
         seq = parse_ints<uint32_t>(s);
@@ -71,7 +71,7 @@ public:
     std::vector<uint32_t> seq;
   };
 
-  void parse(const std::string &imagename, size_t max_num_sequences = std::numeric_limits<size_t>::max());
+  void parse(std::string_view imagename, size_t max_num_sequences = std::numeric_limits<size_t>::max());
 
   size_t num() const { return (array.size()); }
 
@@ -85,7 +85,7 @@ public:
 
   size_t index_of_sequence(size_t number = 0) const { return (seq_index[number]); }
 
-  bool match(const std::string &file_name, std::vector<uint32_t> &indices) const;
+  bool match(std::string_view file_name, std::vector<uint32_t> &indices) const;
   void calculate_padding(const std::vector<uint32_t> &maxvals);
   std::string name(const std::vector<uint32_t> &indices);
   std::string get_next_match(std::vector<uint32_t> &indices, bool return_seq_index = false);
@@ -98,13 +98,13 @@ private:
   std::string folder_name, specification, current_name;
   std::unique_ptr<Path::Dir> folder;
 
-  void insert_str(const std::string &str) {
+  void insert_str(std::string_view str) {
     Item item;
     item.set_str(str);
     array.insert(array.begin(), item);
   }
 
-  void insert_seq(const std::string &str) {
+  void insert_seq(std::string_view str) {
     Item item;
     item.set_seq(str);
     array.insert(array.begin(), item);
@@ -115,13 +115,12 @@ private:
 //! a class to hold a parsed image filename
 class ParsedName {
 public:
-  ParsedName(const std::string &name, const std::vector<uint32_t> &index) : indices(index), filename(name) {}
+  ParsedName(std::string_view name, const std::vector<uint32_t> &index) : indices(index), filename(name) {}
 
   //! a class to hold a set of parsed image filenames
   class List {
   public:
-    std::vector<uint32_t> parse_scan_check(const std::string &specifier,
-                                           size_t max_num_sequences = std::numeric_limits<size_t>::max());
+    std::vector<uint32_t> parse_scan_check(std::string_view specifier);
 
     void scan(NameParser &parser);
 

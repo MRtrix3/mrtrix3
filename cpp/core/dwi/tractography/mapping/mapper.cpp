@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,20 +35,20 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
 
   switch (contrast) {
 
-  case TDI:
+  case contrast_t::TDI:
     out.factor = 1.0;
     break;
-  case LENGTH:
+  case contrast_t::LENGTH:
     out.factor = Tractography::length(tck);
     break;
-  case INVLENGTH:
+  case contrast_t::INVLENGTH:
     out.factor = 1.0 / Tractography::length(tck);
     break;
 
-  case SCALAR_MAP:
-  case SCALAR_MAP_COUNT:
-  case FOD_AMP:
-  case CURVATURE:
+  case contrast_t::SCALAR_MAP:
+  case contrast_t::SCALAR_MAP_COUNT:
+  case contrast_t::FOD_AMP:
+  case contrast_t::CURVATURE:
 
     factors.clear();
     factors.reserve(tck.size());
@@ -56,22 +56,22 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
 
     switch (track_statistic) {
 
-    case T_SUM:
+    case tck_stat_t::SUM:
       out.factor = 0.0;
       for (const auto &i : factors)
         if (std::isfinite(i))
           out.factor += i;
       break;
 
-    case T_MIN:
-      out.factor = INFINITY;
+    case tck_stat_t::MIN:
+      out.factor = Inf;
       for (const auto &i : factors) {
         if (std::isfinite(i))
           out.factor = std::min(out.factor, i);
       }
       break;
 
-    case T_MEAN:
+    case tck_stat_t::MEAN:
       out.factor = 0.0;
       for (const auto &i : factors) {
         if (std::isfinite(i)) {
@@ -79,18 +79,18 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
           ++count;
         }
       }
-      out.factor = (count ? (out.factor / default_type(count)) : 0.0);
+      out.factor = (count ? (out.factor / static_cast<default_type>(count)) : 0.0);
       break;
 
-    case T_MAX:
-      out.factor = -INFINITY;
+    case tck_stat_t::MAX:
+      out.factor = -Inf;
       for (const auto &i : factors) {
         if (std::isfinite(i))
           out.factor = std::max(out.factor, i);
       }
       break;
 
-    case T_MEDIAN:
+    case tck_stat_t::MEDIAN:
       if (factors.empty()) {
         out.factor = 0.0;
       } else {
@@ -99,7 +99,7 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
       }
       break;
 
-    case T_MEAN_NONZERO:
+    case tck_stat_t::MEAN_NONZERO:
       out.factor = 0.0;
       for (const auto &i : factors) {
         if (std::isfinite(i) && i) {
@@ -107,29 +107,29 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
           ++count;
         }
       }
-      out.factor = (count ? (out.factor / default_type(count)) : 0.0);
+      out.factor = (count ? (out.factor / static_cast<default_type>(count)) : 0.0);
       break;
 
-    case GAUSSIAN:
+    case tck_stat_t::GAUSSIAN:
       throw Exception("Gaussian track-wise statistic should not be used in TrackMapperTWI class; use "
                       "Mapping::Gaussian::TrackMapper instead");
 
-    case ENDS_MIN:
+    case tck_stat_t::ENDS_MIN:
       assert(factors.size() == 2);
-      out.factor = (abs(factors[0]) < abs(factors[1])) ? factors[0] : factors[1];
+      out.factor = (std::fabs(factors[0]) < std::fabs(factors[1])) ? factors[0] : factors[1];
       break;
 
-    case ENDS_MEAN:
+    case tck_stat_t::ENDS_MEAN:
       assert(factors.size() == 2);
       out.factor = 0.5 * (factors[0] + factors[1]);
       break;
 
-    case ENDS_MAX:
+    case tck_stat_t::ENDS_MAX:
       assert(factors.size() == 2);
-      out.factor = (abs(factors[0]) > abs(factors[1])) ? factors[0] : factors[1];
+      out.factor = (std::fabs(factors[0]) > std::fabs(factors[1])) ? factors[0] : factors[1];
       break;
 
-    case ENDS_PROD:
+    case tck_stat_t::ENDS_PROD:
       assert(factors.size() == 2);
       if ((factors[0] < 0.0 && factors[1] < 0.0) || (factors[0] > 0.0 && factors[1] > 0.0))
         out.factor = factors[0] * factors[1];
@@ -137,7 +137,7 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
         out.factor = 0.0;
       break;
 
-    case ENDS_CORR:
+    case tck_stat_t::ENDS_CORR:
       assert(factors.size() == 1);
       out.factor = factors.front();
       break;
@@ -147,9 +147,9 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
     }
     break;
 
-  case VECTOR_FILE:
+  case contrast_t::VECTOR_FILE:
     assert(vector_data);
-    assert(tck.get_index() < size_t(vector_data->size()));
+    assert(tck.get_index() < static_cast<size_t>(vector_data->size()));
     out.factor = (*vector_data)[tck.get_index()];
     break;
 
@@ -157,17 +157,17 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
     throw Exception("FIXME: Undefined / unsupported contrast mechanism in TrackMapperTWI::get_factor()");
   }
 
-  if (contrast == SCALAR_MAP_COUNT)
+  if (contrast == contrast_t::SCALAR_MAP_COUNT)
     out.factor = (out.factor ? 1.0 : 0.0);
 
   if (!std::isfinite(out.factor))
     out.factor = 0.0;
 }
 
-void TrackMapperTWI::add_scalar_image(const std::string &path) {
+void TrackMapperTWI::add_scalar_image(std::string_view path) {
   if (image_plugin)
     throw Exception("Cannot add more than one associated image to TWI");
-  if (contrast != SCALAR_MAP && contrast != SCALAR_MAP_COUNT)
+  if (contrast != contrast_t::SCALAR_MAP && contrast != contrast_t::SCALAR_MAP_COUNT)
     throw Exception("Cannot add a scalar image to TWI unless the contrast depends on it");
   image_plugin.reset(new TWIScalarImagePlugin(path, track_statistic));
 }
@@ -182,10 +182,10 @@ void TrackMapperTWI::set_backtrack() {
   ptr->set_backtrack();
 }
 
-void TrackMapperTWI::add_fod_image(const std::string &path) {
+void TrackMapperTWI::add_fod_image(std::string_view path) {
   if (image_plugin)
     throw Exception("Cannot add more than one associated image to TWI");
-  if (contrast != FOD_AMP)
+  if (contrast != contrast_t::FOD_AMP)
     throw Exception("Cannot add an FOD image to TWI unless the FOD_AMP contrast is used");
   image_plugin.reset(new TWIFODImagePlugin(path, track_statistic));
 }
@@ -193,9 +193,9 @@ void TrackMapperTWI::add_fod_image(const std::string &path) {
 void TrackMapperTWI::add_twdfc_static_image(Image<float> &image) {
   if (image_plugin)
     throw Exception("Cannot add more than one associated image to TWI");
-  if (contrast != SCALAR_MAP)
+  if (contrast != contrast_t::SCALAR_MAP)
     throw Exception("For fMRI correlation mapping, mapper must be set to SCALAR_MAP contrast");
-  if (track_statistic != ENDS_CORR)
+  if (track_statistic != tck_stat_t::ENDS_CORR)
     throw Exception("For fMRI correlation mapping, only the endpoint correlation track-wise statistic is valid");
   image_plugin.reset(new TWDFCStaticImagePlugin(image));
 }
@@ -205,38 +205,38 @@ void TrackMapperTWI::add_twdfc_dynamic_image(Image<float> &image,
                                              const ssize_t timepoint) {
   if (image_plugin)
     throw Exception("Cannot add more than one associated image to TWI");
-  if (contrast != SCALAR_MAP)
+  if (contrast != contrast_t::SCALAR_MAP)
     throw Exception("For sliding time-window fMRI mapping, mapper must be set to SCALAR_MAP contrast");
-  if (track_statistic != ENDS_CORR)
+  if (track_statistic != tck_stat_t::ENDS_CORR)
     throw Exception(
         "For sliding time-window fMRI mapping, only the endpoint correlation track-wise statistic is valid");
   image_plugin.reset(new TWDFCDynamicImagePlugin(image, kernel, timepoint));
 }
 
-void TrackMapperTWI::add_vector_data(const std::string &path) {
+void TrackMapperTWI::add_vector_data(std::string_view path) {
   if (image_plugin)
     throw Exception("Cannot add both an associated image and a vector data file to TWI");
-  if (contrast != VECTOR_FILE)
+  if (contrast != contrast_t::VECTOR_FILE)
     throw Exception("Cannot add a vector data file to TWI unless the VECTOR_FILE contrast is used");
   vector_data.reset(new Eigen::VectorXf(File::Matrix::load_vector<float>(path)));
 }
 
 void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
 
-  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
+  if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT) {
     assert(image_plugin);
     image_plugin->load_factors(tck, factors);
     return;
   }
-  if (contrast == FOD_AMP) {
+  if (contrast == contrast_t::FOD_AMP) {
     assert(image_plugin);
     image_plugin->load_factors(tck, factors);
     return;
   }
-  if (contrast != CURVATURE)
+  if (contrast != contrast_t::CURVATURE)
     throw Exception("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  std::vector<Eigen::Vector3d> tangents;
+  std::vector<Streamline<>::tangent_type> tangents;
   tangents.reserve(tck.size());
 
   // Would like to be able to manipulate the length over which the tangent calculation is affected
@@ -253,17 +253,11 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   step_sizes.reserve(tck.size());
 
   for (size_t i = 0; i != tck.size(); ++i) {
-    Eigen::Vector3d this_tangent;
-    if (i == 0)
-      this_tangent = ((tck[1] - tck[0]).cast<default_type>().normalized());
-    else if (i == tck.size() - 1)
-      this_tangent = ((tck[i] - tck[i - 1]).cast<default_type>().normalized());
-    else
-      this_tangent = ((tck[i + 1] - tck[i - 1]).cast<default_type>().normalized());
+    const Streamline<>::tangent_type this_tangent = Tractography::tangent(tck, i);
     if (this_tangent.allFinite())
       tangents.push_back(this_tangent);
     else
-      tangents.push_back({0.0, 0.0, 0.0});
+      tangents.push_back(Streamline<>::tangent_type::Zero());
     if (i)
       step_sizes.push_back((tck[i] - tck[i - 1]).norm());
   }
@@ -308,15 +302,15 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
-  std::vector<Eigen::Vector3d> smoothed_tangents;
+  std::vector<Streamline<>::tangent_type> smoothed_tangents;
   smoothed_tangents.reserve(tangents.size());
 
-  static const default_type gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt(2.0 * log(2.0)));
+  static const default_type gaussian_theta = curvature_smoothing_mm / (2.0 * sqrt(2.0 * log(2.0)));
   static const default_type gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    Eigen::Vector3d this_tangent(0.0, 0.0, 0.0);
+    Streamline<>::tangent_type this_tangent(Streamline<>::tangent_type::Zero());
 
     for (size_t j = 0; j != tck.size(); ++j) {
       const default_type distance = spline_distances(i, j);

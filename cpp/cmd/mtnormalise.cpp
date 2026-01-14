@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,10 +25,10 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_REFERENCE_VALUE 0.28209479177
-#define DEFAULT_MAIN_ITER_VALUE 15
-#define DEFAULT_BALANCE_MAXITER_VALUE 7
-#define DEFAULT_POLY_ORDER 3
+constexpr default_type default_reference_value = 0.28209479177387814347; // 1.0/sqrt(4pi)
+constexpr ssize_t default_main_iterations = 15;
+constexpr ssize_t default_balance_maxiterations = 7;
+constexpr ssize_t default_polynormial_order = 3;
 
 const std::vector<std::string> poly_order_choices = {"0", "1", "2", "3"};
 
@@ -72,7 +72,7 @@ void usage() {
 
   ARGUMENTS
   + Argument("input output", "list of all input and output tissue compartment files"
-                             " (see example usage).").type_various().allow_multiple();
+                             " (see example usage).").type_image_in().type_image_out().allow_multiple();
 
   OPTIONS
   + Option("mask", "the mask defines the data used to compute the intensity normalisation."
@@ -83,19 +83,19 @@ void usage() {
                     " used to fit the normalisation field in the log-domain."
                     " An order of 0 is equivalent to not allowing spatial variance"
                     " of the intensity normalisation factor."
-                    " (default: " + str(DEFAULT_POLY_ORDER) + ")")
+                    " (default: " + str(default_polynormial_order) + ")")
     + Argument("number").type_choice(poly_order_choices)
 
   + Option("niter", "set the number of iterations."
                     " The first (and potentially only) entry applies to the main loop."
                     " If supplied as a comma-separated list of integers,"
                     " the second entry applies to the inner loop to update the balance factors."
-                    " (default: " + str(DEFAULT_MAIN_ITER_VALUE) + "," + str(DEFAULT_BALANCE_MAXITER_VALUE) + ").")
+                    " (default: " + str(default_main_iterations) + "," + str(default_balance_maxiterations) + ").")
     + Argument("number").type_sequence_int()
 
   + Option("reference", "specify the (positive) reference value"
                         " to which the summed tissue compartments will be normalised."
-                        " (default: " +str(DEFAULT_REFERENCE_VALUE, 6) + ","
+                        " (default: " +str(default_reference_value, 6) + ","
                         " SH DC term for unit angular integral)")
     + Argument("number").type_float(std::numeric_limits<default_type>::min())
 
@@ -254,7 +254,7 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
   return basis;
 }
 
-void load_data(Eigen::MatrixXd &data, const std::string &image_name, IndexType &index) {
+void load_data(Eigen::MatrixXd &data, std::string_view image_name, IndexType &index) {
   static int num = 0;
 
   auto in = ImageType::open(image_name);
@@ -411,7 +411,7 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
   return out;
 }
 
-void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::string &output_file_name) {
+void write_weights(const Eigen::VectorXd &data, IndexType &index, std::string_view output_file_name) {
   Header header(index);
   header.datatype() = DataType::Float32;
 
@@ -430,8 +430,8 @@ void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::str
   ThreadedLoop(index, 0, 3).run(write, out, index);
 }
 
-void write_output(const std::string &original,
-                  const std::string &corrected,
+void write_output(std::string_view original,
+                  std::string_view corrected,
                   bool output_balanced,
                   double balance_factor,
                   ImageType &field,
@@ -471,12 +471,12 @@ void run() {
   if (argument.size() == 2)
     WARN("Only one contrast provided. If multi-tissue CSD was performed, provide all components to mtnormalise.");
 
-  const int order = get_option_value<int>("order", DEFAULT_POLY_ORDER);
-  const float reference_value = get_option_value("reference", DEFAULT_REFERENCE_VALUE);
+  const int order = get_option_value<int>("order", default_polynormial_order);
+  const float reference_value = static_cast<float>(get_option_value("reference", default_reference_value));
   const float log_ref_value = std::log(reference_value);
 
-  size_t max_iter = DEFAULT_MAIN_ITER_VALUE;
-  size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
+  size_t max_iter = default_main_iterations;
+  size_t max_balance_iter = default_balance_maxiterations;
   auto opt = get_options("niter");
   if (!opt.empty()) {
     std::vector<size_t> num = parse_ints<size_t>(opt[0][0]);
@@ -500,7 +500,7 @@ void run() {
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
     if (Path::exists(argument[2 * n + 1]) && !App::overwrite_files)
-      throw Exception("Output file \"" + argument[2 * n + 1] + "\" already exists." +
+      throw Exception("Output file \"" + std::string(argument[2 * n + 1]) + "\" already exists." +
                       " (use -force option to force overwrite)");
     load_data(data, argument[2 * n], index);
   }

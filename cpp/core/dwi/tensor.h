@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include "types.h"
+#include <array>
 
 #include "dwi/shells.h"
+#include "types.h"
 
 namespace MR::DWI {
 
@@ -95,7 +96,7 @@ template <class VectorType> inline typename VectorType::Scalar tensor2ADC(const 
 template <class VectorType> inline typename VectorType::Scalar tensor2FA(const VectorType &dt) {
   using T = typename VectorType::Scalar;
   T trace = tensor2ADC(dt);
-  T a[] = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
+  const std::array<T, 3> a = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
   trace = dt[0] * dt[0] + dt[1] * dt[1] + dt[2] * dt[2] + T(2.0) * (dt[3] * dt[3] + dt[4] * dt[4] + dt[5] * dt[5]);
   return trace ? std::sqrt(T(1.5) *
                            (a[0] * a[0] + a[1] * a[1] + a[2] * a[2] +
@@ -107,7 +108,7 @@ template <class VectorType> inline typename VectorType::Scalar tensor2FA(const V
 template <class VectorType> inline typename VectorType::Scalar tensor2RA(const VectorType &dt) {
   using T = typename VectorType::Scalar;
   T trace = tensor2ADC(dt);
-  T a[] = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
+  const std::array<T, 3> a = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
   return trace ? sqrt((a[0] * a[0] + a[1] * a[1] + a[2] * a[2] +
                        T(2.0) * (dt[3] * dt[3] + dt[4] * dt[4] + dt[5] * dt[5])) /
                       T(3.0)) /

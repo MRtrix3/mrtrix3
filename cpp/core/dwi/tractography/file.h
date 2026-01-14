@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <map>
 
 #include "app.h"
@@ -47,7 +48,7 @@ public:
 template <class ValueType = float> class Reader : public __ReaderBase__, public ReaderInterface<ValueType> {
 public:
   //! open the \c file for reading and load header into \c properties
-  Reader(const std::string &file, Properties &properties) {
+  Reader(std::string_view file, Properties &properties) {
     open(file, "tracks", properties);
     auto opt = App::get_options("tck_weights_in");
     if (!opt.empty())
@@ -79,7 +80,7 @@ public:
 
         if (weights.size()) {
 
-          if (tck.get_index() < size_t(weights.size())) {
+          if (tck.get_index() < static_cast<size_t>(weights.size())) {
             tck.weight = weights[tck.get_index()];
           } else {
             WARN("Streamline weights file contains less entries (" + str(weights.size()) +
@@ -117,37 +118,37 @@ protected:
     using namespace ByteOrder;
     switch (dtype()) {
     case DataType::Float32LE: {
-      float p[3];
-      in.read((char *)p, sizeof(p));
-      return {ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2]))};
+      std::array<float, 3> p{};
+      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
+      return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
     }
     case DataType::Float32BE: {
-      float p[3];
-      in.read((char *)p, sizeof(p));
-      return {ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2]))};
+      std::array<float, 3> p{};
+      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
+      return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
     }
     case DataType::Float64LE: {
-      double p[3];
-      in.read((char *)p, sizeof(p));
-      return {ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2]))};
+      std::array<double, 3> p{};
+      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
+      return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
     }
     case DataType::Float64BE: {
-      double p[3];
-      in.read((char *)p, sizeof(p));
-      return {ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2]))};
+      std::array<double, 3> p{};
+      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
+      return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
     }
     default:
       assert(0);
       break;
     }
-    return {NaN, NaN, NaN};
+    return Eigen::Matrix<ValueType, 3, 1>::Constant(std::numeric_limits<ValueType>::quiet_NaN());
   }
 
   //! Check that the weights file does not contain excess entries
   void check_excess_weights() {
     if (!weights.size())
       return;
-    if (size_t(weights.size()) > current_index) {
+    if (static_cast<size_t>(weights.size()) > current_index) {
       WARN("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" +
            str(current_index) + ")");
     }
@@ -183,7 +184,7 @@ public:
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(const std::string &file, const Properties &properties) : __WriterBase__<ValueType>(file) {
+  WriterUnbuffered(std::string_view file, const Properties &properties) : __WriterBase__<ValueType>(file) {
 
     if (!Path::has_suffix(name, ".tck"))
       throw Exception("output track files must use the .tck suffix");
@@ -204,7 +205,7 @@ public:
 
     vector_type x;
     format_point(barrier(), x);
-    out.write(reinterpret_cast<char *>(&x[0]), sizeof(x));
+    out.write(reinterpret_cast<const char *>(&x[0]), sizeof(x));
     if (!out.good())
       throw Exception("error writing tracks file \"" + name + "\": " + strerror(errno));
     open_success = true;
@@ -235,7 +236,7 @@ public:
   }
 
   //! set the path to the track weights
-  void set_weights_path(const std::string &path) {
+  void set_weights_path(std::string_view path) {
     if (!weights_name.empty())
       throw Exception("Cannot change output streamline weights file path");
     weights_name = path;
@@ -248,9 +249,9 @@ protected:
   int64_t barrier_addr;
 
   //! indicates end of track and start of new track
-  vector_type delimiter() const { return {ValueType(NaN), ValueType(NaN), ValueType(NaN)}; }
+  vector_type delimiter() const { return vector_type::Constant(std::numeric_limits<ValueType>::quiet_NaN()); }
   //! indicates end of data
-  vector_type barrier() const { return {ValueType(Inf), ValueType(Inf), ValueType(Inf)}; }
+  vector_type barrier() const { return vector_type::Constant(std::numeric_limits<ValueType>::infinity()); }
 
   //! perform per-point byte-swapping if required
   void format_point(const vector_type &src, vector_type &dest) {
@@ -262,7 +263,7 @@ protected:
   }
 
   //! write track weights data to file
-  void write_weights(const std::string &contents) {
+  void write_weights(std::string_view contents) {
     File::OFStream out(weights_name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out << contents;
     if (!out.good())
@@ -280,11 +281,11 @@ protected:
 
     format_point(barrier(), data[num_points]);
     File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-    out.write(reinterpret_cast<const char *const>(data + 1), sizeof(vector_type) * num_points);
+    out.write(reinterpret_cast<const char *>(data + 1), sizeof(vector_type) * num_points);
     verify_stream(out);
-    barrier_addr = int64_t(out.tellp()) - sizeof(vector_type);
+    barrier_addr = static_cast<int64_t>(out.tellp()) - sizeof(vector_type);
     out.seekp(prev_barrier_addr, out.beg);
-    out.write(reinterpret_cast<const char *const>(data), sizeof(vector_type));
+    out.write(reinterpret_cast<const char *>(data), sizeof(vector_type));
     verify_stream(out);
     update_counts(out);
   }
@@ -328,7 +329,7 @@ public:
   // CONF writing track files. MRtrix will store the output tracks in a
   // CONF relatively large buffer to limit the number of write() calls,
   // CONF avoid associated issues such as file fragmentation.
-  Writer(const std::string &file, const Properties &properties, size_t default_buffer_capacity = 16777216)
+  Writer(std::string_view file, const Properties &properties, size_t default_buffer_capacity = 16777216)
       : WriterUnbuffered<ValueType>(file, properties),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
         buffer(new vector_type[buffer_capacity]),

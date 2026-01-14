@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -68,7 +68,7 @@ void run() {
   if (!opt.empty()) {
     auto H = Header::open(opt[0][1]);
     auto transform = std::make_unique<Surface::Filter::VertexTransform>(H);
-    switch (int(opt[0][0])) {
+    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
     case 0:
       transform->set_first2real();
       break;

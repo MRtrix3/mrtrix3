@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,6 +34,9 @@ constexpr size_t pve_nsamples = Math::pow3(pve_os_ratio);
 
 void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
+  if (image.ndim() < 3)
+    throw Exception("Template voxel grid for mesh2image operation must be at least 3D");
+
   // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
   enum vox_mesh_t { UNDEFINED, ON_MESH, PRELIM_OUTSIDE, PRELIM_INSIDE, FILL_TEMP, OUTSIDE, INSIDE };
 
@@ -57,7 +60,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     if (!mesh.have_normals())
       mesh.calculate_normals();
 
-    static const Vox adj_voxels[6] = {{-1, 0, 0}, {+1, 0, 0}, {0, -1, 0}, {0, +1, 0}, {0, 0, -1}, {0, 0, +1}};
+    static const std::array<Vox, 6> adj_voxels = {
+        Vox(-1, 0, 0), Vox(+1, 0, 0), Vox(0, -1, 0), Vox(0, +1, 0), Vox(0, 0, -1), Vox(0, 0, +1)};
 
     // Compute normals for polygons
     polygon_normals.reserve(mesh.num_polygons());
@@ -70,6 +74,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     // Create some memory to work with:
     // Stores a flag for each voxel as encoded in enum vox_mesh_t
     Header H(image);
+    H.ndim() = 3;
     H.datatype() = DataType::UInt8;
     auto init_seg = Image<uint8_t>::scratch(H);
     for (auto l = Loop(init_seg)(init_seg); l; ++l)
@@ -98,7 +103,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       // Constrain to lie within the dimensions of the image
       for (size_t axis = 0; axis != 3; ++axis) {
         lower_bound[axis] = std::max(0, lower_bound[axis]);
-        upper_bound[axis] = std::min(int(H.size(axis) - 1), upper_bound[axis]);
+        upper_bound[axis] = std::min(static_cast<int>(H.size(axis) - 1), upper_bound[axis]);
       }
 
       // For all voxels within this rectangular region, assign this polygon to the map
@@ -118,14 +123,14 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           default_type poly_low = std::numeric_limits<default_type>::infinity();
           default_type poly_high = -std::numeric_limits<default_type>::infinity();
 
-          static const Eigen::Vector3d voxel_offsets[8] = {{-0.5, -0.5, -0.5},
-                                                           {-0.5, -0.5, 0.5},
-                                                           {-0.5, 0.5, -0.5},
-                                                           {-0.5, 0.5, 0.5},
-                                                           {0.5, -0.5, -0.5},
-                                                           {0.5, -0.5, 0.5},
-                                                           {0.5, 0.5, -0.5},
-                                                           {0.5, 0.5, 0.5}};
+          static const std::array<Eigen::Vector3d, 8> voxel_offsets = {Eigen::Vector3d(-0.5, -0.5, -0.5),
+                                                                       Eigen::Vector3d(-0.5, -0.5, 0.5),
+                                                                       Eigen::Vector3d(-0.5, 0.5, -0.5),
+                                                                       Eigen::Vector3d(-0.5, 0.5, 0.5),
+                                                                       Eigen::Vector3d(0.5, -0.5, -0.5),
+                                                                       Eigen::Vector3d(0.5, -0.5, 0.5),
+                                                                       Eigen::Vector3d(0.5, 0.5, -0.5),
+                                                                       Eigen::Vector3d(0.5, 0.5, 0.5)};
 
           for (size_t i = 0; i != 8; ++i) {
             const Eigen::Vector3d v(vox.matrix().cast<default_type>() + voxel_offsets[i]);
@@ -214,7 +219,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       for (adj_voxel[2] = centre_voxel[2] - 1; adj_voxel[2] <= centre_voxel[2] + 1; ++adj_voxel[2]) {
         for (adj_voxel[1] = centre_voxel[1] - 1; adj_voxel[1] <= centre_voxel[1] + 1; ++adj_voxel[1]) {
           for (adj_voxel[0] = centre_voxel[0] - 1; adj_voxel[0] <= centre_voxel[0] + 1; ++adj_voxel[0]) {
-            if (!is_out_of_bounds(H, adj_voxel) && (adj_voxel - centre_voxel).any()) {
+            if (!is_out_of_bounds(H, adj_voxel, 0, 3) && (adj_voxel - centre_voxel).any()) {
               const Eigen::Vector3d offset(adj_voxel.cast<default_type>().matrix() - mesh.vert(i));
               const default_type dp_normal = offset.dot(mesh.norm(i));
               const default_type offset_on_plane = (offset - (mesh.norm(i) * dp_normal)).norm();
@@ -375,11 +380,14 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       offsets_to_test.reset(new std::vector<Eigen::Vector3d>());
       offsets_to_test->reserve(pve_nsamples);
       for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
-        const default_type x = -0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
+        const default_type x =
+            -0.5 + ((static_cast<default_type>(x_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
         for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
-          const default_type y = -0.5 + ((default_type(y_idx) + 0.5) / default_type(pve_os_ratio));
+          const default_type y =
+              -0.5 + ((static_cast<default_type>(y_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
           for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
-            const default_type z = -0.5 + ((default_type(z_idx) + 0.5) / default_type(pve_os_ratio));
+            const default_type z =
+                -0.5 + ((static_cast<default_type>(z_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
             offsets_to_test->push_back(Vertex(x, y, z));
           }
         }
@@ -483,7 +491,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           }
 
           if (min_edge_distance_on_plane > 0.0) {
-            if (abs(distance_from_plane) < abs(best_min_distance_from_interior_projection)) {
+            if (std::fabs(distance_from_plane) < std::fabs(best_min_distance_from_interior_projection)) {
               best_min_distance_from_interior_projection = distance_from_plane;
               best_result_inside = is_inside;
             }
@@ -499,7 +507,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           ++inside_mesh_count;
       }
 
-      out = std::make_pair(voxel, (default_type)inside_mesh_count / (default_type)pve_nsamples);
+      out =
+          std::make_pair(voxel, static_cast<default_type>(inside_mesh_count) / static_cast<default_type>(pve_nsamples));
       return true;
     }
 

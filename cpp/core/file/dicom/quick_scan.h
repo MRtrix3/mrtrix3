@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@ namespace MR::File::Dicom {
 class QuickScan {
 
 public:
-  bool read(const std::string &file_name,
+  bool read(std::string_view file_name,
             bool print_DICOM_fields = false,
             bool print_CSA_fields = false,
             bool print_Phoenix = false,

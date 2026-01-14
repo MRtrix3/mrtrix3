@@ -45,7 +45,7 @@ Verify operation of the C++ command-line interface & parser
 
 + **-tracks_out output**<br>an output tractogram
 
-+ **-various spec**<br>an argument that could accept one of various forms
++ **-any spec**<br>an argument that could accept any of the various forms
 
 + **-nargs_two first second**<br>A command-line option that accepts two arguments
 
@@ -75,7 +75,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

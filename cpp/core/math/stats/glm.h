@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "app.h"
 #include "types.h"
 
@@ -25,13 +27,11 @@
 #include "math/stats/typedefs.h"
 #include "math/zstatistic.h"
 
-#include "misc/bitset.h"
-
 namespace MR::Math::Stats::GLM {
 
-extern const char *const column_ones_description;
+extern const std::string column_ones_description;
 
-App::OptionGroup glm_options(const std::string &element_name);
+App::OptionGroup glm_options(std::string_view element_name);
 
 // Define a base class to contain information regarding an individual hypothesis, and
 //   pre-compute as much as possible with regards to Freedman-Lane
@@ -95,7 +95,7 @@ void check_design(const matrix_type &, const bool);
 
 index_array_type load_variance_groups(const index_type num_inputs);
 
-std::vector<Hypothesis> load_hypotheses(const std::string &file_path);
+std::vector<Hypothesis> load_hypotheses(std::string_view file_path);
 
 /** \addtogroup Statistics
   @{ */
@@ -356,14 +356,14 @@ protected:
   const std::vector<CohortDataImport> &importers;
   const bool nans_in_data, nans_in_columns;
 
-  void get_mask(const index_type ie, BitSet &, const matrix_type &extra_columns) const;
-  void apply_mask(const BitSet &mask,
+  void get_mask(const index_type ie, element_mask_type &mask, const matrix_type &extra_columns) const;
+  void apply_mask(const element_mask_type &mask,
                   matrix_type::ConstColXpr data,
                   const matrix_type &shuffling_matrix,
                   const matrix_type &extra_column_data,
                   matrix_type &Mfull_masked,
                   matrix_type &shuffling_matrix_masked,
-                  vector_type &y_masked) const;
+                  vector_type &data_masked) const;
 };
 
 /** \addtogroup Statistics
@@ -412,7 +412,7 @@ protected:
   vector_type gamma_weights;
 
   // Need to apply the row selection mask to the variance groups in addition to other data
-  void apply_mask_VG(const BitSet &mask, index_array_type &VG_masked, index_array_type &VG_counts) const;
+  void apply_mask_VG(const element_mask_type &mask, index_array_type &VG_masked, index_array_type &VG_counts) const;
 };
 
 } // namespace MR::Math::Stats::GLM

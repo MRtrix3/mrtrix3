@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -125,7 +125,7 @@ public:
   }
   value_type result() const {
     if (!count)
-      return NAN;
+      return NaNF;
     return sum / count;
   }
   double sum;
@@ -156,7 +156,7 @@ public:
 
 class Product {
 public:
-  Product() : product(NAN) {}
+  Product() : product(NaN) {}
   void operator()(value_type val) {
     if (std::isfinite(val))
       product = std::isfinite(product) ? product * val : val;
@@ -176,7 +176,7 @@ public:
   }
   value_type result() const {
     if (!count)
-      return NAN;
+      return NaNF;
     return std::sqrt(sum / count);
   }
   double sum;
@@ -194,7 +194,7 @@ public:
   }
   value_type result() const {
     if (!count)
-      return NAN;
+      return NaNF;
     return std::sqrt(sum);
   }
   double sum;
@@ -216,7 +216,7 @@ public:
   }
   value_type result() const {
     if (count < 2)
-      return NAN;
+      return NaNF;
     return m2 / (static_cast<double>(count) - 1.0);
   }
   double delta, delta2, mean, m2;
@@ -236,7 +236,7 @@ public:
     if (std::isfinite(val) && val < min)
       min = val;
   }
-  value_type result() const { return std::isfinite(min) ? min : NAN; }
+  value_type result() const { return std::isfinite(min) ? min : NaNF; }
   value_type min;
 };
 
@@ -247,7 +247,7 @@ public:
     if (std::isfinite(val) && val > max)
       max = val;
   }
-  value_type result() const { return std::isfinite(max) ? max : NAN; }
+  value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -255,10 +255,10 @@ class AbsMax {
 public:
   AbsMax() : max(-std::numeric_limits<value_type>::infinity()) {}
   void operator()(value_type val) {
-    if (std::isfinite(val) && abs(val) > max)
-      max = abs(val);
+    if (std::isfinite(val) && std::fabs(val) > max)
+      max = std::fabs(val);
   }
-  value_type result() const { return std::isfinite(max) ? max : NAN; }
+  value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -267,10 +267,10 @@ public:
   MagMax() : max(-std::numeric_limits<value_type>::infinity()) {}
   MagMax(const int i) : max(-std::numeric_limits<value_type>::infinity()) {}
   void operator()(value_type val) {
-    if (std::isfinite(val) && (!std::isfinite(max) || abs(val) > abs(max)))
+    if (std::isfinite(val) && (!std::isfinite(max) || std::fabs(val) > std::fabs(max)))
       max = val;
   }
-  value_type result() const { return std::isfinite(max) ? max : NAN; }
+  value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -335,7 +335,7 @@ protected:
 void run() {
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
+  const std::string_view output_path = argument.back();
 
   auto opt = get_options("axis");
   if (!opt.empty()) {

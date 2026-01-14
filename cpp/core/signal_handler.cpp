@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@
 #include "file/path.h"
 
 #ifdef MRTRIX_WINDOWS
-#define STDERR_FILENO 2
+#define STDERR_FILENO 2 // check_syntax off
 #endif
 
 namespace MR::SignalHandler {
@@ -52,8 +52,8 @@ void handler(int i) noexcept {
     for (auto func : cleanup_operations)
       func();
 
-    const char *sig = nullptr;
-    const char *msg = nullptr;
+    const char *sig = nullptr; // check_syntax off
+    const char *msg = nullptr; // check_syntax off
     switch (i) {
 
 #define __SIGNAL(SIG, MSG)                                                                                             \
@@ -72,7 +72,7 @@ void handler(int i) noexcept {
 
     // Don't use std::cerr << here: Use basic C string-handling functions and a write() call to STDERR_FILENO
     // Don't attempt to use any terminal colouring
-    char str[256];
+    char str[256]; // check_syntax off
     str[255] = '\0';
     snprintf(str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
     if (write(STDERR_FILENO, str, strnlen(str, 256)) == 0)
@@ -117,14 +117,14 @@ void on_signal(cleanup_function_type func) {
   std::atexit(func);
 }
 
-void mark_file_for_deletion(const std::string &filename) {
+void mark_file_for_deletion(std::string_view filename) {
   while (!flag.test_and_set())
     ;
-  marked_files.push_back(filename);
+  marked_files.push_back(std::string(filename));
   flag.clear();
 }
 
-void unmark_file_for_deletion(const std::string &filename) {
+void unmark_file_for_deletion(std::string_view filename) {
   while (!flag.test_and_set())
     ;
   auto i = marked_files.begin();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,13 @@
 
 #include "color_button.h"
 
-QColorButton::QColorButton(QWidget *parent, const char *name) : QPushButton(name, parent) {
+QColorButton::QColorButton(QWidget *parent, const char *name) // check_syntax off
+    : QPushButton(name, parent) {
   connect(this, SIGNAL(clicked()), this, SLOT(chooseColor()));
 }
 
-QColorButton::QColorButton(const QColor &c, QWidget *parent, const char *name) : QPushButton(name, parent) {
+QColorButton::QColorButton(const QColor &c, QWidget *parent, const char *name) // check_syntax off
+    : QPushButton(name, parent) {
   setColor(c);
   connect(this, SIGNAL(clicked()), this, SLOT(chooseColor()));
 }
@@ -55,7 +57,7 @@ void QColorButton::paintEvent(QPaintEvent *p) {
 
   QPainter painter(this);
   QColor fillCol = isEnabled() ? col : palette().brush(QPalette::Window).color();
-  qDrawShadePanel(&painter, x, y, w, h, palette(), true, 1, NULL);
+  qDrawShadePanel(&painter, x, y, w, h, palette(), true, 1, nullptr);
   if (fillCol.isValid())
     painter.fillRect(x + 1, y + 1, w - 2, h - 2, fillCol);
 

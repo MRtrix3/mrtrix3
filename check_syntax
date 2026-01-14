@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,64 +33,135 @@ fi
 
 retval=0
 
-for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp'); do
+rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
 
-# files to ignore:
-  [[ "$f" -ef "src/gui/shview/icons.h" ||
-     "$f" -ef "src/gui/shview/icons.cpp" ||
-     "$f" -ef "src/gui/mrview/icons.h" ||
-     "$f" -ef "src/gui/mrview/icons.cpp" ||
-     "$f" -ef "core/file/mgh.h" ||
-     "$f" -ef "core/file/json.h" ||
-     "$f" -ef "core/file/nifti2.h" ||
-     "$f" -ef "core/signal_handler.h" ||
-     "$f" -ef "core/signal_handler.cpp" ]] && continue
+for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' | $grep -v 'gl_core_3_3' | sort); do
 
-
-
-
-# process the file to strip comments, macros, etc:
+######################################################################
+# Version of source code file omitting lines nominated to be ignored #
+######################################################################
   cat $f | \
-# remove C preprocessor macros:
+  $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
+
+# Check for use of #define for constants
+# Intended to catch integers, floats, scientific notation, hexadecimal, bitwise, and strings
+  res=$(
+    cat .check_syntax1.tmp | \
+    $grep -Po '^#define\s+[a-zA-Z_][a-zA-Z0-9_]*\s+(0x[\dA-F]+|0b[01]+|\".*\"|[-+]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)'
+  )
+
+# detect deprecated use of "#ifdef __headerpath__"
+  res="$res"$(
+    cat .check_syntax1.tmp | \
+    perl -pe 's|//.*$||' | \
+    tr '\n' ' ' | \
+    perl -pe 's|\s+| |g' | \
+    perl -pe 's|/\*.*?\*/||g' |
+    $grep -Po '\#ifndef\s+__.*__\s+\#define\s+__.*__'
+  )
+
+#############################################################
+# Process the file to strip macros and single-line comments #
+#############################################################
+  cat .check_syntax1.tmp | \
   $grep -v '^#' | \
-# remove C++ single-line comments:
-  perl -pe 's|//.*$||' | \
+  perl -pe 's|//.*$||' > .check_syntax2.tmp
+
+# Identify any uses of std::string_view as a function return
+  res="$res"$(
+    cat .check_syntax2.tmp | \
+    $grep -Po '^\s*(const\s+|)std::string_view\s?\&?([a-zA-Z_][a-zA-Z0-9_]*|operator.*)\s?\(.*\)'
+  )
+
+######################################
+# Further processing of file content #
+######################################
+  cat .check_syntax2.tmp | \
 # remove all newlines to make file one long line:
   tr '\n' ' ' | \
 # remove any duplicate spaces:
   perl -pe 's|\s+| |g' | \
 # remove C-style comments:
-  perl -pe 's|/\*.*?\*/||g' > .check_syntax2.tmp
-# remove quoted strings:
-  cat .check_syntax2.tmp | perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax.tmp
-
-
-# detect any instances of "using namespace std;":
-  res="$res"$(
-    cat .check_syntax.tmp | \
-# match for the parts we're interested in and output just the bits that match:
-    $grep -Po '\busing\s+namespace\s+std\s*;'
-  )
-
-# detect any instances of std::abs (outside of the SFINAE call in core/types.h):
-  if [[ ! "$f" -ef "core/types.h" ]]; then
-    res="$res"$(
-      cat .check_syntax.tmp | \
-# match for the parts we're interested in and output just the bits that match:
-      $grep -Po '(?<!::)std::abs\b'
-    )
-  fi
+  perl -pe 's|/\*.*?\*/||g' > .check_syntax3.tmp
 
 # detect any instances of %zu in a print() call (not supported on MSYS2):
   res="$res"$(
-    cat .check_syntax2.tmp | \
+    cat .check_syntax3.tmp | \
 # match for the parts we're interested in and output just the bits that match:
     $grep -Po '\w*print\w*.*?%\d?zu\b' |
     $grep -Po '\w*print(?!.*?print).*?$'
   )
 
+# Detect any instances of definition of C-style arrays
+# Note: Need to use version without removal of quoted strings
+#   so that keyval["key"] isn't a hit
+  res="$res"$(
+    cat .check_syntax3.tmp | \
+    $grep -Po '\b\w+(::\w+)*(?<!\breturn)(?<!\bnew)\s\w+(\[\d*\])+\s*[=;,]'
+  )
+
+#########################
+# Remove quoted strings #
+#########################
+  cat .check_syntax3.tmp | \
+  perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax4.tmp
+
+# - Detect any instances of char* or char item[],
+#   which does not look like a cast for compatibility with external code
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '(const\s+|)char(\s?\*([\s]*const|)\s?(?![>\(\)])|\s+[a-zA-Z_][a-zA-Z0-9_]*\[(\d*\]|))'
+  )
+
+# - Detect any instances of C-style string manipulation functions
+#   (need to permit strerror() for interfacing with external libraries)
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok)\s*\('
+  )
+
+# - Detect instances of const std::string &
+#   most can be changed to std::string_view,
+#   others would be safer to return a copy
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\bconst\sstd::string\s?\&'
+  )
+
+# - Detect namespaces that could have been nested
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\bnamespace [\w\:]+\s*\{(namespace [\w\:]+\s*\{)+'
+  )
+
+# - Detect any instances of "using namespace std;":
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\busing\snamespace\sstd\s?;'
+  )
+
+# - Detect any instances of C-style casts
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '(\((?!void\))[a-zA-Z][a-zA-Z0-9_]*\)[a-zA-Z][a-zA-Z0-9_]*|\([a-zA-Z][a-zA-Z0-9_]*\s?\*(\s?const)?\)[a-zA-Z][a-zA-Z0-9_]*|(?<!\bstd::function<)\b(GLint|GLfloat|c?float|c?double|(default|value|index)_type|[^\w_](unsigned\s+)?int|u?int(8|16|32|64)_t|s?size_t|ValueType|(?<!Scalar)::Scalar)\(\(*\**(?![\d\.]*\)))'
+  )
+
+# - Detect any instances of macros NULL (nullptr is better), NAN, INFINITY
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\b(NAN|INFINITY|NULL)\b'
+  )
+
+# detect any instances of std::abs() or non-disambiguated abs() (outside of the SFINAE call in core/types.h):
+  if [[ ! "$f" -ef "cpp/core/types.h" ]]; then
+    res="$res"$(
+      cat .check_syntax4.tmp | \
+      $grep -Po '((?<!::)std::|)(?<!MR::)(?<!\.)\babs\s?\('
+    )
+  fi
+
 # delete intermediate files
-rm -f .check_syntax.tmp .check_syntax2.tmp
+rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
 
 # if anything is left after that, show it:
   if [[ ! -z $res ]]; then
@@ -111,9 +182,17 @@ else
 
   echo "" >> $LOG
   echo "Please check the following syntax requirements:
-  - Add MEMALIGN() or NOMEMALIGN macro to any class declarations identified above;
-  - Replace all instances of std::abs() with MR::abs() (or just abs());
-  - Replace all instances of %zu in print() calls with PRI_SIZET." >> $LOG
+  - Use #pragma once rather than #ifndef __headername__;
+  - Use nested namespaces rather than sequentially-defined namespaces;
+  - Define numerical constants using constexpr rather than preprocessor macros;
+  - Use static_cast<>() rather than C-style casts;
+  - Use std::string (and optionally std::string_view) rather than C-style char* and relevant functions;
+  - Use std::string_view rather than const std::string& for function arguments, but std::string for function returns;
+  - Do not use \"using namespace std\";
+  - Replace all instances of std::abs() or naked abs() with either std::fabs() (for scalar floating-point only) or MR::abs() (for complex data, integers and template types);
+  - Replace all instances of %zu in print() calls with PRI_SIZET;
+  - Use nullptr rather than NULL macro;
+  - Use std::numeric_limits<> or MR::NaN(F) / MR::Inf(F) rather than macros NAN / INFINITY;
+  - Do not use C-style arrays (replace with eg. std::array<>)." >> $LOG
   exit 1
 fi
-

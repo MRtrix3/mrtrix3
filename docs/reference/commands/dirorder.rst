@@ -28,7 +28,9 @@ Options
 
 -  **-preserve num** preserve some number of directions in their position at the start of the set
 
--  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
+-  **-cartesian** Output directions in Cartesian coordinates [x y z] instead of spherical angles [az in].
+
+-  **-indices path** Write the indices of the reordered directions to file
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -60,7 +62,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

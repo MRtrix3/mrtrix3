@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,5 +27,6 @@ using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
 using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
 using index_type = uint32_t;
 using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
+using element_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
 } // namespace MR::Math::Stats

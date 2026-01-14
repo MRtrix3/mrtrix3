@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,16 +53,16 @@ public:
                   const std::vector<node_t> &,
                   const bool,
                   const node_t,
-                  const std::vector<Eigen::Vector3f> &);
+                  const std::vector<Eigen::Vector3d> &);
 
   bool operator()(const Tractography::Connectome::Streamline_nodepair &);
   bool operator()(const Tractography::Connectome::Streamline_nodelist &);
 
   void finalize();
 
-  void write(const node_t, const node_t, const std::string &, const std::string &);
-  void write(const node_t, const std::string &, const std::string &);
-  void write(const std::string &, const std::string &);
+  void write(const node_t, const node_t, std::string_view, std::string_view);
+  void write(const node_t, std::string_view, std::string_view);
+  void write(std::string_view, std::string_view);
 
 private:
   float step_size;
@@ -75,9 +75,9 @@ class WriterExtraction {
 public:
   WriterExtraction(const Tractography::Properties &, const std::vector<node_t> &, const bool, const bool);
 
-  void add(const node_t, const std::string &, const std::string);
-  void add(const node_t, const node_t, const std::string &, const std::string);
-  void add(const std::vector<node_t> &, const std::string &, const std::string);
+  void add(const node_t, std::string_view, const std::string);
+  void add(const node_t, const node_t, std::string_view, const std::string);
+  void add(const std::vector<node_t> &, std::string_view, const std::string);
 
   void clear();
 

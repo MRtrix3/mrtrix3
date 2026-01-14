@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,7 +51,7 @@ std::string vector2axisid(const axis_vector_type &dir) {
   }
 }
 
-axis_vector_type axisid2vector(const std::string &id) {
+axis_vector_type axisid2vector(std::string_view id) {
   if (id == "i-")
     return {-1, 0, 0};
   else if (id == "i")

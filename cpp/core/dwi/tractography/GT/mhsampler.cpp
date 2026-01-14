@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,7 +50,7 @@ void MHSampler::next() {
 // PROPOSAL DISTRIBUTIONS -------------------------------------------------------
 
 void MHSampler::birth() {
-  // TRACE;
+  // std::cerr << 'b';
   stats.incN('b');
 
   Point_t pos;
@@ -72,14 +72,14 @@ void MHSampler::birth() {
 }
 
 void MHSampler::death() {
-  // TRACE;
+  // std::cerr << 'd';
   stats.incN('d');
 
   Particle *par;
   SpatialLock<float>::Guard spatial_guard(*lock);
   do {
     par = pGrid.getRandom();
-    if (par == NULL || par->hasPredecessor() || par->hasSuccessor())
+    if (par == nullptr || par->hasPredecessor() || par->hasSuccessor())
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
@@ -95,14 +95,14 @@ void MHSampler::death() {
 }
 
 void MHSampler::randshift() {
-  // TRACE;
+  // std::cerr << 'r';
   stats.incN('r');
 
   Particle *par;
   SpatialLock<float>::Guard spatial_guard(*lock);
   do {
     par = pGrid.getRandom();
-    if (par == NULL)
+    if (par == nullptr)
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
@@ -124,14 +124,14 @@ void MHSampler::randshift() {
 }
 
 void MHSampler::optshift() {
-  // TRACE;
+  // std::cerr << 'o';
   stats.incN('o');
 
   Particle *par;
   SpatialLock<float>::Guard spatial_guard(*lock);
   do {
     par = pGrid.getRandom();
-    if (par == NULL)
+    if (par == nullptr)
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
@@ -153,16 +153,16 @@ void MHSampler::optshift() {
   }
 }
 
-void MHSampler::connect() // TODO Current implementation does not prevent loops.
-{
-  // TRACE;
+// TODO Current implementation does not prevent loops.
+void MHSampler::connect() {
+  // std::cerr << 'c';
   stats.incN('c');
 
   Particle *par;
   SpatialLock<float>::Guard spatial_guard(*lock);
   do {
     par = pGrid.getRandom();
-    if (par == NULL)
+    if (par == nullptr)
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
@@ -172,7 +172,7 @@ void MHSampler::connect() // TODO Current implementation does not prevent loops.
   pe0.alpha = alpha0;
 
   ParticleEnd pe2;
-  pe2.par = NULL;
+  pe2.par = nullptr;
   double dE = E->stageConnect(pe0, pe2);
   double R = exp(-dE);
   if (R > rng_uniform()) {
@@ -232,7 +232,7 @@ void MHSampler::moveRandom(const Particle *par, Point_t &pos, Point_t &dir) {
 }
 
 bool MHSampler::moveOptimal(const Particle *par, Point_t &pos, Point_t &dir) const {
-  // assert(par != NULL);
+  // assert(par != nullptr);
   if (par->hasPredecessor() && par->hasSuccessor()) {
     int a1 = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
     int a3 = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;

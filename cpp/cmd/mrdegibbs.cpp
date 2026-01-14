@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -149,11 +149,11 @@ void run() {
     } else {
       if (axes.size() != 2)
         throw Exception("slice axes must be specified as a comma-separated 2-vector");
-      if (size_t(std::max(axes[0], axes[1])) >= header.ndim())
+      slice_axes = {static_cast<size_t>(axes[0]), static_cast<size_t>(axes[1])};
+      if (std::max(slice_axes[0], slice_axes[1]) >= static_cast<size_t>(header.ndim()))
         throw Exception("slice axes must be within the dimensionality of the image");
       if (axes[0] == axes[1])
         throw Exception("two independent slice axes must be specified");
-      slice_axes = {size_t(axes[0]), size_t(axes[1])};
     }
   }
 

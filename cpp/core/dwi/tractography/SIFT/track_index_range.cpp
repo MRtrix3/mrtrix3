@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,13 +18,18 @@
 
 namespace MR::DWI::Tractography::SIFT {
 
-TrackIndexRangeWriter::TrackIndexRangeWriter(const track_t buffer_size,
+const track_t TrackIndexRangeWriter::default_batch_size = 10000;
+
+TrackIndexRangeWriter::TrackIndexRangeWriter(const track_t batch_size,
                                              const track_t num_tracks,
-                                             const std::string &message)
-    : size(buffer_size),
+                                             std::string_view message)
+    : size(batch_size),
       end(num_tracks),
       start(0),
-      progress(message.empty() ? NULL : new ProgressBar(message, ceil(float(end) / float(size)))) {}
+      progress(message.empty() ? nullptr
+                               : new ProgressBar(message,
+                                                 static_cast<size_t>(std::ceil(static_cast<default_type>(end) /
+                                                                               static_cast<default_type>(size))))) {}
 
 bool TrackIndexRangeWriter::operator()(TrackIndexRange &out) {
   if (start >= end)

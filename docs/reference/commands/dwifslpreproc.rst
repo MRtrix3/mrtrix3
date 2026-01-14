@@ -24,10 +24,10 @@ Description
 This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.
 
 More information on use of the dwifslpreproc command can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.7/dwi_preprocessing/dwifslpreproc.html
+https://mrtrix.readthedocs.io/en/3.0.8/dwi_preprocessing/dwifslpreproc.html
 
 Note that the MRtrix3 command dwi2mask will automatically be called to derive a processing mask for the FSL command "eddy", which determines which voxels contribute to the estimation of geometric distortion parameters and possibly also the classification of outlier slices. If FSL command "topup" is used to estimate a susceptibility field, then dwi2mask will be executed on the resuts of running FSL command "applytopup" to the input DWIs; otherwise it will be executed directly on the input DWIs. Alternatively, the -eddy_mask option can be specified in order to manually provide such a processing mask. More information on mask derivation from DWI data can be found at: 
-https://mrtrix.readthedocs.io/en/3.0.7/dwi_preprocessing/masking.html
+https://mrtrix.readthedocs.io/en/3.0.8/dwi_preprocessing/masking.html
 
 The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: 
 (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; 
@@ -52,6 +52,12 @@ Example usages
 
     Here the two individual b=0 volumes are concatenated into a single 4D image series, and this is provided to the script via the -se_epi option. Note that with the -rpe_pair option used here, which indicates that the SE-EPI image series contains one or more pairs of b=0 images with reversed phase encoding, the FIRST HALF of the volumes in the SE-EPI series must possess the same phase encoding as the input DWI series, while the second half are assumed to contain the opposite phase encoding direction but identical total readout time. Use of the -align_seepi option is advocated as long as its use is valid (more information in the Description section).
 
+-   *DWI gradient table split equally between two opposed phase encoding directions*::
+
+        $ mrcat DWI_AP.mif DWI_PA.mif DWI_in.mif -axis 3; dwifslpreproc DWI_in.mif DWI_out.mif -rpe_split -pe_dir ap -readout_time 0.72
+
+    Here the diffusion gradient table is presumed to have been split into two equally-sized halves, with the FIRST HALF of the volumes acquired with the phase encoding direction indicated using the -pe_dir option, and the SECOND HALF acquired with the opposite phase encoding direction. The number of volumes in the two halves must be identical (where this is specifically violated, see use of -rpe_header option elsewhere); however it is not a single set of diffusion sensitisations that has been acquired in two repeats (see use of -rpe_all option elsewhere); rather each of the two halves contains a unique set of diffusion sensitisations, each of which is reasonably well distributed independently but that form a more dense and optimal set upon their concatenation. For data acquired in this way, the output DWIs will be constructed from a weighted combination of the empirical data and the intensities predicted from other volumes, in order to restore spatial contrast in highly geometrically compressed regions. In the absence of use of the -se_epi option (which is recommended in this instance), the b=0 volumes will be extracted from these two halves of the input data and used to estimate the susceptibility distortion field.
+
 -   *All DWI directions & b-values are acquired twice, with the phase encoding direction of the second acquisition protocol being reversed with respect to the first*::
 
         $ mrcat DWI_lr.mif DWI_rl.mif DWI_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_all -pe_dir lr -readout_time 0.66
@@ -75,6 +81,8 @@ Options for specifying the acquisition phase-encoding design; note that one of t
 - **-rpe_none** Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only
 
 - **-rpe_pair** Specify that a set of images (typically b=0 volumes) will be provided for use in inhomogeneity field estimation only (using the -se_epi option)
+
+- **-rpe_split** Specify that input DWIs were split sequentially between two phase encoding directions
 
 - **-rpe_all** Specify that ALL DWIs have been acquired with opposing phase-encoding
 
@@ -119,7 +127,9 @@ Options for achieving correction of susceptibility distortions
 
 - **-topup_options " TopupOptions"** Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)
 
-- **-topup_files prefix** Provide files generated by prior execution of the FSL "topup" command to be utilised by eddy
+- **-topup_files prefix** Provide the primary output files generated by prior execution of the FSL "topup" command to be utilised by eddy
+
+- **-topup_field prefix** Provide the field offset image generated by prior execution of the FSL "topup" command to be utilised subsequent to eddy for volume reconstruction
 
 Options for manually specifying the phase encoding of the input DWIs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -181,7 +191,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

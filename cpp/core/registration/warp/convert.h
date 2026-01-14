@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,9 @@ namespace MR::Registration::Warp {
 template <class ImageType> void displacement2deformation(ImageType &input, ImageType &output) {
   MR::Transform transform(input);
   auto kernel = [&](ImageType &input, ImageType &output) {
-    Eigen::Vector3d voxel((default_type)input.index(0), (default_type)input.index(1), (default_type)input.index(2));
+    const Eigen::Vector3d voxel{static_cast<default_type>(input.index(0)),
+                                static_cast<default_type>(input.index(1)),
+                                static_cast<default_type>(input.index(2))};
     output.row(3) = (transform.voxel2scanner * voxel).template cast<typename ImageType::value_type>() +
                     Eigen::Vector3d(input.row(3));
   };
@@ -34,7 +36,9 @@ template <class ImageType> void displacement2deformation(ImageType &input, Image
 template <class ImageType> void deformation2displacement(ImageType &input, ImageType &output) {
   MR::Transform transform(input);
   auto kernel = [&](ImageType &input, ImageType &output) {
-    Eigen::Vector3d voxel((default_type)input.index(0), (default_type)input.index(1), (default_type)input.index(2));
+    const Eigen::Vector3d voxel{static_cast<default_type>(input.index(0)),
+                                static_cast<default_type>(input.index(1)),
+                                static_cast<default_type>(input.index(2))};
     output.row(3) = Eigen::Vector3d(input.row(3)) - transform.voxel2scanner * voxel;
   };
   ThreadedLoop(input, 0, 3).run(kernel, input, output);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,7 @@ void Base::set_centre(const Eigen::Vector3d &centre_in) {
 }
 
 void Base::set_optimiser_weights(Eigen::VectorXd &weights) {
-  assert(size() == (size_t)optimiser_weights.size());
+  assert(size() == static_cast<size_t>(optimiser_weights.size()));
   optimiser_weights = weights;
 }
 

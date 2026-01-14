@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ Renderer::Renderer(QOpenGLWidget *widget)
   // CONF default: 1,1,0 (yellow)
   // CONF The default colour to use for objects (i.e. SH glyphs) when not
   // CONF colouring by direction.
-  File::Config::get_RGB("ObjectColor", object_color, 1.0, 1.0, 0.0);
+  object_color = File::Config::get_RGB("ObjectColor", {1.0, 1.0, 0.0});
 }
 
 void Renderer::start(const Projection &projection,
@@ -62,15 +62,23 @@ void Renderer::start(const Projection &projection,
   gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
   if (colour_relative_to_projection)
     gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "rotation"), 1, gl::FALSE_, *colour_relative_to_projection);
-  gl::Uniform3fv(gl::GetUniformLocation(shader, "light_pos"), 1, lighting.lightpos);
+  gl::Uniform3fv(gl::GetUniformLocation(shader, "light_pos"), 1, lighting.lightpos.data());
   gl::Uniform1f(gl::GetUniformLocation(shader, "ambient"), lighting.ambient);
   gl::Uniform1f(gl::GetUniformLocation(shader, "diffuse"), lighting.diffuse);
   gl::Uniform1f(gl::GetUniformLocation(shader, "specular"), lighting.specular);
   gl::Uniform1f(gl::GetUniformLocation(shader, "shine"), lighting.shine);
   gl::Uniform1f(gl::GetUniformLocation(shader, "scale"), scale);
-  gl::Uniform3fv(gl::GetUniformLocation(shader, "constant_color"), 1, object_color);
+  gl::Uniform3fv(gl::GetUniformLocation(shader, "constant_color"), 1, object_color.data());
   reverse_ID = gl::GetUniformLocation(shader, "reverse");
   origin_ID = gl::GetUniformLocation(shader, "origin");
+}
+
+void Renderer::draw(const Eigen::Vector3f &origin, int /*buffer_ID*/) const {
+  gl::Uniform3fv(origin_ID, 1, origin.data());
+  gl::Uniform1i(reverse_ID, 0);
+  half_draw();
+  gl::Uniform1i(reverse_ID, 1);
+  half_draw();
 }
 
 void Renderer::Shader::start(mode_t mode,
@@ -95,7 +103,7 @@ void Renderer::Shader::start(mode_t mode,
     GL::Shader::Geometry geometry_shader(geometry_shader_source());
     GL::Shader::Fragment fragment_shader(fragment_shader_source());
     attach(vertex_shader);
-    if ((GLuint)geometry_shader)
+    if (static_cast<GLuint>(geometry_shader))
       attach(geometry_shader);
     attach(fragment_shader);
     link();
@@ -218,15 +226,15 @@ std::string Renderer::Shader::geometry_shader_source() const {
               "uniform vec3 origin;\n"
               "uniform float scale;\n"
               "uniform int reverse;\n"
-              "in vec3 vertex_orig_direction[], vertex_orig_position[], vertex_orig_color[];\n"
-              "in float orig_amplitude[];\n"
+              "in vec3 vertex_orig_direction[], vertex_orig_position[], vertex_orig_color[];\n" // check_syntax off
+              "in float orig_amplitude[];\n"                                                    // check_syntax off
               "out vec3 vertex_position, vertex_color, vertex_normal;\n"
               "out float amplitude;\n"
               "void main() {\n"
               "  vec3 mean_dir = normalize (vertex_orig_direction[0] + vertex_orig_direction[1] + "
               "vertex_orig_direction[2]);\n"
-              "  vec3 vertices[3];\n"
-              "  vec3 positions[3];\n"
+              "  vec3 vertices[3];\n"  // check_syntax off
+              "  vec3 positions[3];\n" // check_syntax off
               "  for (int v = 0; v < 3; ++v) {\n"
               "    if (dot (mean_dir, vertex_orig_direction[v]) > 0.0)\n"
               "      vertices[v] = vertex_orig_position[v];\n"
@@ -320,8 +328,7 @@ void Renderer::SH::bind() {
   half_sphere.index_buffer.bind();
 }
 
-void Renderer::SH::set_data(const vector_t &r_del_daz, int buffer_ID) const {
-  (void)buffer_ID; // to silence unused-parameter warnings
+void Renderer::SH::set_data(const vector_t &r_del_daz, int /*buffer_ID*/) const {
   surface_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, r_del_daz.size() * sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
   gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), (void *)0);
@@ -358,7 +365,7 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
 
     for (int l = 2; l <= lmax; l += 2) {
       const int idx(Math::SH::index(l, 0));
-      transform(3 * n + 1, idx) = transform(3 * n, idx + 1) * sqrt(float(l * (l + 1)));
+      transform(3 * n + 1, idx) = transform(3 * n, idx + 1) * sqrt(static_cast<float>(l * (l + 1)));
     }
 
     for (int m = 1; m <= lmax; m++) {
@@ -366,9 +373,9 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
       float saz = sin(m * az);
       for (int l = 2 * ((m + 1) / 2); l <= lmax; l += 2) {
         const int idx(Math::SH::index(l, m));
-        transform(3 * n + 1, idx) = -transform(3 * n, idx - 1) * sqrt(float((l + m) * (l - m + 1)));
+        transform(3 * n + 1, idx) = -transform(3 * n, idx - 1) * sqrt(static_cast<float>((l + m) * (l - m + 1)));
         if (l > m)
-          transform(3 * n + 1, idx) += transform(3 * n, idx + 1) * sqrt(float((l - m) * (l + m + 1)));
+          transform(3 * n + 1, idx) += transform(3 * n, idx + 1) * sqrt(static_cast<float>((l - m) * (l + m + 1)));
         transform(3 * n + 1, idx) /= 2.0;
 
         const int idx2(idx - 2 * m);
@@ -438,8 +445,7 @@ void Renderer::Tensor::update_mesh(const size_t lod) {
   QApplication::restoreOverrideCursor();
 }
 
-void Renderer::Tensor::set_data(const vector_t &data, int buffer_ID) const {
-  (void)buffer_ID; // to silence unused-parameter warnings
+void Renderer::Tensor::set_data(const vector_t &data, int /*buffer_ID*/) const {
   // For tensor overlay, send the (inverse) tensor coefficients and colour directly to the shader as a uniform
   assert(data.size() == 6);
   tensor_t D;
@@ -498,8 +504,7 @@ void Renderer::Dixel::bind() {
   VAO.bind();
 }
 
-void Renderer::Dixel::set_data(const vector_t &data, int buffer_ID) const {
-  (void)buffer_ID;
+void Renderer::Dixel::set_data(const vector_t &data, int /*buffer_ID*/) const {
   assert(data.size() == vertex_count);
 
   GL_CHECK_ERROR;
@@ -543,9 +548,9 @@ void Renderer::Dixel::update_dixels(const MR::DWI::Directions::Set &dirs) {
                 // Conform to right hand rule
                 const Eigen::Vector3d normal(((d[1] - d[0]).cross(d[2] - d[1])).normalized());
                 if (normal.dot(mean_dir) < 0.0)
-                  indices_data.push_back({{GLint(i), GLint(k), GLint(j)}});
+                  indices_data.push_back({{static_cast<GLint>(i), static_cast<GLint>(k), static_cast<GLint>(j)}});
                 else
-                  indices_data.push_back({{GLint(i), GLint(j), GLint(k)}});
+                  indices_data.push_back({{static_cast<GLint>(i), static_cast<GLint>(j), static_cast<GLint>(k)}});
               }
             }
           }

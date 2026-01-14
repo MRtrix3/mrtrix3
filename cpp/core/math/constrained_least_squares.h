@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,8 +23,7 @@
 
 // #define DEBUG_ICLS
 
-namespace MR {
-namespace Math {
+namespace MR::Math::ICLS {
 
 /** @addtogroup linalg
   @{ */
@@ -60,7 +59,6 @@ namespace Math {
  * account), while the vectors provided to the solver will be assumed to
  * contain \e H<sup>T</sup>b.
  */
-namespace ICLS {
 
 template <typename ValueType> class Problem {
 public:
@@ -171,7 +169,7 @@ public:
                 tolerance,
                 problem_in_standard_form) {
     if (equality_constraint_vector.size() || inequality_constraint_vector.size()) {
-      if (ssize_t(num_eq) != equality_constraint_vector.size())
+      if (num_eq != static_cast<size_t>(equality_constraint_vector.size()))
         throw Exception("FIXME: dimensions of equality constraint matrix and vector do not match (ICLS)");
     }
   }
@@ -217,7 +215,7 @@ public:
         lambda(c.size()),
         lambda_prev(c.size()),
         l(lambda.size()),
-        active(lambda.size(), false) {}
+        active(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(lambda.size())) {}
 
   size_t operator()(vector_type &x, const vector_type &b) {
 #ifdef MRTRIX_ICLS_DEBUG
@@ -238,9 +236,8 @@ public:
     lambda.setZero();
     lambda_prev.setZero();
     // set active set empty:
-    std::fill(active.begin(), active.end(), false);
-    if (num_eq > 0)
-      std::fill(active.begin() + num_ineq, active.end(), true);
+    active.setZero();
+    active.tail(num_ineq).setOnes();
 
     // initial estimate of constraint values:
     c = c_u;
@@ -318,9 +315,7 @@ public:
 
 #ifdef MRTRIX_ICLS_DEBUG
       l_stream << lambda << "\n";
-      for (const auto &a : active)
-        n_stream << a << " ";
-      n_stream << "\n";
+      n_stream << active.transpose() << "\n";
 #endif
 
       ++niter;
@@ -344,13 +339,10 @@ protected:
   const Problem<value_type> &P;
   matrix_type BtB, B;
   vector_type y_u, c, c_u, lambda, lambda_prev, l;
-  std::vector<bool> active;
+  Eigen::Array<bool, Eigen::Dynamic, 1> active;
 };
 
-} // namespace ICLS
-
 /** @} */
 /** @} */
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::ICLS

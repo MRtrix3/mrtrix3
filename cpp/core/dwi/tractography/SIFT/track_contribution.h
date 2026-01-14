@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,14 +28,15 @@ namespace MR::DWI::Tractography::SIFT {
 class Track_fixel_contribution {
 public:
   Track_fixel_contribution(const uint32_t fixel_index, const float length) {
-    const uint32_t length_as_int = std::min(uint32_t(255), uint32_t(std::round(scale_to_storage * length)));
+    const uint32_t length_as_int =
+        std::min(uint32_t(255), static_cast<uint32_t>(std::round(scale_to_storage * length)));
     data = (fixel_index & 0x00FFFFFF) | (length_as_int << 24);
   }
 
   Track_fixel_contribution() : data(0) {}
 
   uint32_t get_fixel_index() const { return (data & 0x00FFFFFF); }
-  float get_length() const { return (uint32_t((data & 0xFF000000) >> 24) * scale_from_storage); }
+  float get_length() const { return (static_cast<uint32_t>((data & 0xFF000000) >> 24) * scale_from_storage); }
 
   bool add(const float length) {
     // Allow summing of multiple contributions to a fixel, UNLESS it would cause truncation, in which

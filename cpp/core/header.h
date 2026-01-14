@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,7 +55,6 @@ public:
 
   Header()
       : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)), //
-        format_(nullptr),                                             //
         offset_(0.0),                                                 //
         scale_(1.0) {}                                                //
 
@@ -115,7 +114,6 @@ public:
       : transform_(original.transform()),
         name_(original.name()),
         keyval_(original.keyval()),
-        format_(nullptr),
         datatype_(DataType::from<typename HeaderType::value_type>()),
         offset_(0.0),
         scale_(1.0) {
@@ -166,7 +164,7 @@ public:
     transform_ = original.transform();
     name_ = original.name();
     keyval_ = original.keyval();
-    format_ = nullptr;
+    format_.clear();
     datatype_ = DataType::from<typename HeaderType::value_type>();
     offset_ = 0.0;
     scale_ = 1.0;
@@ -189,12 +187,12 @@ public:
   bool operator!() const { return !valid(); }
 
   //! get the name of the image
-  const std::string &name() const { return name_; }
+  std::string name() const { return name_; }
   //! get/set the name of the image
   std::string &name() { return name_; }
 
   //! return the format of the image
-  const char *format() const { return format_; }
+  std::string format() const { return format_; }
 
   //! get the 4x4 affine transformation matrix mapping image to world coordinates
   const transform_type &transform() const { return transform_; }
@@ -387,10 +385,9 @@ public:
   //! merge key/value entries from another dictionary
   void merge_keyval(const KeyValues &);
 
-  static Header open(const std::string &image_name);
-  static Header
-  create(const std::string &image_name, const Header &template_header, bool add_to_command_history = true);
-  static Header scratch(const Header &template_header, const std::string &label = "scratch image");
+  static Header open(std::string_view image_name);
+  static Header create(std::string_view image_name, const Header &template_header, bool add_to_command_history = true);
+  static Header scratch(const Header &template_header, std::string_view label = "scratch image");
 
   /*! use to prevent automatic realignment of transform matrix into
    * near-standard (RAS) coordinate system. */
@@ -406,7 +403,7 @@ protected:
   transform_type transform_;
   std::string name_;
   KeyValues keyval_;
-  const char *format_;
+  std::string format_;
 
   //! additional information relevant for images stored on file
   std::unique_ptr<ImageIO::Base> io;

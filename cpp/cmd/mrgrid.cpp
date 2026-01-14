@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 #include "filter/reslice.h"
 #include "image.h"
 #include "interp/cubic.h"
+#include "interp/interp.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/sinc.h"
@@ -30,8 +31,7 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_INTERP 2 // cubic
-const std::vector<std::string> interp_choices = {"nearest", "linear", "cubic", "sinc"};
+constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
 const std::vector<std::string> operation_choices = {"regrid", "crop", "pad"};
 
 // clang-format off
@@ -130,10 +130,10 @@ void usage() {
                          " or as a comma-separated list of scale factors for each dimension.")
     + Argument ("factor").type_sequence_float()
 
-    + Option ("interp", std::string("set the interpolation method to use when reslicing") +
-                        " (choices: nearest, linear, cubic, sinc;"
-                        " default: " + interp_choices[DEFAULT_INTERP] + ").")
-    + Argument ("method").type_choice (interp_choices)
+    + Option ("interp", std::string("set the interpolation method to use when reslicing")
+                        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
+                        " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
+    + Argument ("method").type_choice (MR::Interp::interp_choices)
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -217,7 +217,8 @@ void run() {
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
     size_t template_option_count = 0;
-    const int interp = get_option_value("interp", DEFAULT_INTERP);
+    const MR::Interp::interp_type interp =
+        MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
 
     // over-sampling
     std::vector<uint32_t> oversample = Adapter::AutoOverSample;
@@ -287,10 +288,8 @@ void run() {
            " Provide the -stride option with the template image as argument"
            " for compatibility with other software.");
     }
-    if (interp == 0)
-      output_header.datatype() = DataType::from_command_line(input_header.datatype());
-    else
-      output_header.datatype() = DataType::from_command_line(DataType::from<float>());
+    output_header.datatype() = DataType::from_command_line(
+        interp == MR::Interp::interp_type::NEAREST ? input_header.datatype() : DataType::from<float>());
     auto output = Image<float>::create(argument[2], output_header);
 
     auto input = input_header.get_image<float>();
