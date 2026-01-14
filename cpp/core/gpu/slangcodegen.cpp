@@ -321,7 +321,17 @@ compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec, slang::ISessi
     shaderCache.insert(hash_key, wgsl_code);
   }
 
-  DEBUG(kernelSpec.compute_shader.name + " WGSL code:\n" + wgsl_code);
+  auto add_line_numbers = [](const std::string &code) {
+    std::stringstream ss(code);
+    std::string line;
+    std::string result;
+    int line_number = 1;
+    while (std::getline(ss, line)) {
+      result += std::to_string(line_number++) + ": " + line + "\n";
+    }
+    return result;
+  };
+  DEBUG(kernelSpec.compute_shader.name + " WGSL code:\n" + add_line_numbers(wgsl_code));
   return {wgsl_code, linked_slang_program};
 }
 
