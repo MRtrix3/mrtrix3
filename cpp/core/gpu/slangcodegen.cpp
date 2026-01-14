@@ -279,6 +279,7 @@ compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec, slang::ISessi
     for (const auto &[name, value] : kernelSpec.compute_shader.constants) {
       MR::match_v(
           value,
+          [&oss, name = name](bool v) { oss << "export static const bool " << name << " = " << v << ";\n"; },
           [&oss, name = name](int32_t v) { oss << "export static const int32_t " << name << " = " << v << ";\n"; },
           [&oss, name = name](uint32_t v) { oss << "export static const uint32_t " << name << " = " << v << ";\n"; },
           [&oss, name = name](float v) { oss << "export static const float " << name << " = " << v << ";\n"; });
