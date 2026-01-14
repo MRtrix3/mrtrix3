@@ -27,7 +27,7 @@ This registration should be rigid-body only:
 if the DWI distortion correction is effective,
 a higher-order registration is likely to only introduce errors.
 
-:: NOTE ..:
+.. note::
 
     Earlier versions of this documentation suggested transformation of the T1-weighted image to align with the DWI series.
     The justification for this process is that it obviates the danger of applying a spatial transformation to diffusion-weighted image data
