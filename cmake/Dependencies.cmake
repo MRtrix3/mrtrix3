@@ -42,11 +42,11 @@ endif()
 
 # Nifti headers
 if(MRTRIX_USE_SYSTEM_NIFTI)
-    find_path(NIFTI1_INCLUDE_DIR 
+    find_path(NIFTI1_INCLUDE_DIR
         NAMES nifti1.h
         PATHS ${NIFTI_DIR} /usr/include /usr/local/include
     )
-    find_path(NIFTI2_INCLUDE_DIR 
+    find_path(NIFTI2_INCLUDE_DIR
         NAMES nifti2.h
         PATHS ${NIFTI_DIR} /usr/include /usr/local/include
     )
@@ -234,3 +234,15 @@ else()
     add_library(tcb::span ALIAS tcb_span)
 endif()
 
+# magic_enum
+if(MRTRIX_USE_SYSTEM_MAGIC_ENUM)
+    find_package(magic_enum 0.9.7 CONFIG REQUIRED)
+else()
+    set(magic_enum_url "https://github.com/Neargye/magic_enum/archive/refs/tags/v0.9.7.tar.gz")
+    FetchContent_Declare(
+        magic_enum
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        URL ${magic_enum_url}
+    )
+    FetchContent_MakeAvailable(magic_enum)
+endif()

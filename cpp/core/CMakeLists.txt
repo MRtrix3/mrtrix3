@@ -115,6 +115,7 @@ target_link_libraries(mrtrix-core PUBLIC
     nifti::nifti
     slang::slang
     tcb::span
+    magic_enum::magic_enum
 )
 
 # On Windows, the libraries need to be in the same directory as the executables
