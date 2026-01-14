@@ -20,6 +20,7 @@
 #include "gpu/gpu.h"
 #include "match_variant.h"
 #include "shadercache.h"
+#include "platform.h"
 
 #include <functional>
 #include <slang-com-ptr.h>
@@ -50,15 +51,27 @@ namespace {
 enum ReadFileMode : uint8_t { Text, Binary };
 std::string read_file(const std::filesystem::path &filePath, ReadFileMode mode = ReadFileMode::Text) {
   using namespace std::string_literals;
-  if (!std::filesystem::exists(filePath)) {
+
+  std::filesystem::path path_to_open = filePath;
+  if (!std::filesystem::exists(path_to_open)) {
+    // Try to find the file relative to the executable path
+    const auto exe_path = MR::Platform::get_executable_path();
+    const auto exe_dir = exe_path.parent_path();
+    const auto relative_path = exe_dir / filePath;
+    if (std::filesystem::exists(relative_path)) {
+      path_to_open = relative_path;
+    }
+  }
+
+  if (!std::filesystem::exists(path_to_open)) {
     throw std::runtime_error("File not found: "s + filePath.string());
   }
 
   const auto openMode = (mode == ReadFileMode::Binary) ? std::ios::in | std::ios::binary : std::ios::in;
-  std::ifstream f(filePath, std::ios::in | openMode);
-  const auto fileSize64 = std::filesystem::file_size(filePath);
+  std::ifstream f(path_to_open, std::ios::in | openMode);
+  const auto fileSize64 = std::filesystem::file_size(path_to_open);
   if (fileSize64 > static_cast<uintmax_t>(std::numeric_limits<std::streamsize>::max())) {
-    throw std::runtime_error("File too large to read into memory: "s + filePath.string());
+    throw std::runtime_error("File too large to read into memory: "s + path_to_open.string());
   }
   const std::streamsize fileSize = static_cast<std::streamsize>(fileSize64);
   std::string result(static_cast<std::string::size_type>(fileSize), '\0');
