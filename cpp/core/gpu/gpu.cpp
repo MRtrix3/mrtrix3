@@ -242,7 +242,11 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
 
   const auto executable_path = MR::Platform::get_executable_path();
   const std::string executable_dir_string = (std::filesystem::path(executable_path).parent_path() / "shaders").string();
+  // TODO: this is a hack to find the modules in shader registration code. We'll find a better way to do this later.
+  const std::string registration_dir_string = (std::filesystem::path(executable_path).parent_path() / "shaders/registration").string();
   const char *executable_dir_cstr = executable_dir_string.c_str(); // check_syntax off
+  const char *registration_dir_cstr = registration_dir_string.c_str(); // check_syntax off
+  std::array<const char *, 2> search_paths = {executable_dir_cstr, registration_dir_cstr};
 
   std::vector<slang::CompilerOptionEntry> slang_compiler_options;
   {
@@ -257,8 +261,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
       .targets = &target_desc,
       .targetCount = 1,
       .defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR,
-      .searchPaths = &executable_dir_cstr,
-      .searchPathCount = 1,
+      .searchPaths = search_paths.data(),
+      .searchPathCount = search_paths.size(),
       .compilerOptionEntries = slang_compiler_options.data(),
   };
 
