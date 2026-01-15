@@ -24,9 +24,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <numeric>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace MR;
@@ -79,14 +81,25 @@ TEST_F(GPUTest, BufferFromHostMemory) {
   EXPECT_EQ(downloaded_data, host_data);
 }
 
-TEST_F(GPUTest, BufferFromHostMemoryVoidPtr) {
-  std::vector<float> host_data = {1.0F, 2.5F, -3.0F};
-  const Buffer<float> buffer =
-      context.new_buffer_from_host_memory<float>(host_data.data(), host_data.size() * sizeof(float));
+TEST_F(GPUTest, BufferFromHostMemoryObject) {
+  struct Data {
+    float a;
+    float b;
+    float c;
+  };
 
-  std::vector<float> downloaded_data(host_data.size());
-  context.download_buffer<float>(buffer, downloaded_data);
-  EXPECT_EQ(downloaded_data, host_data);
+  const Data host_data{1.0F, 2.5F, -3.0F};
+  const Buffer<std::byte> buffer = context.new_buffer_from_host_object(host_data);
+
+  std::vector<std::byte> downloaded_bytes(sizeof(Data));
+  context.download_buffer<std::byte>(buffer, downloaded_bytes);
+
+  Data downloaded_data{};
+  std::memcpy(&downloaded_data, downloaded_bytes.data(), sizeof(Data));
+
+  EXPECT_EQ(downloaded_data.a, host_data.a);
+  EXPECT_EQ(downloaded_data.b, host_data.b);
+  EXPECT_EQ(downloaded_data.c, host_data.c);
 }
 
 TEST_F(GPUTest, BufferFromHostMemoryMultipleRegions) {

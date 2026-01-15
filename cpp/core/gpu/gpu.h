@@ -215,11 +215,13 @@ struct ComputeContext {
     return {buffer_type, inner_new_buffer_from_host_memory(src_memory.data(), src_memory.size_bytes(), buffer_type)};
   }
 
-  template <typename T = float>
-  [[nodiscard]] Buffer<T> new_buffer_from_host_memory(const void *src_memory,
-                                                      size_t byte_size,
-                                                      BufferType buffer_type = BufferType::StorageBuffer) const {
-    return {buffer_type, inner_new_buffer_from_host_memory(src_memory, byte_size, buffer_type)};
+  // Creates a GPU buffer by copying the raw bytes of a host-side object into device memory.
+  // Intended for uploading small POD-like structs that live on the stack.
+  template<typename Object>
+  [[nodiscard]] Buffer<std::byte> new_buffer_from_host_object(const Object& object, BufferType buffer_type = BufferType::StorageBuffer) const {
+    static_assert(std::is_trivially_copyable_v<Object>, "Object must be trivially copyable");
+    static_assert(std::is_standard_layout_v<Object>, "Object must be standard layout");
+    return {buffer_type, inner_new_buffer_from_host_memory(&object, sizeof(object), buffer_type)};
   }
 
   template <typename T = float>
