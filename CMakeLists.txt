@@ -32,6 +32,7 @@ option(MRTRIX_USE_SYSTEM_NIFTI "Use system-installed NIfTI C headers" OFF)
 option(MRTRIX_USE_SYSTEM_GTEST "Use system-installed Google Test library" OFF)
 option(MRTRIX_USE_SYSTEM_DAWN "Use system-installed Dawn library" OFF)
 option(MRTRIX_USE_SYSTEM_SLANG "Use system-installed Slang library" OFF)
+option(MRTRIX_USE_SYSTEM_MAGIC_ENUM "Use system-installed Magic Enum library" OFF)
 option(MRTRIX_USE_SYSTEM_TCB_SPAN "Use system-installed TCB Span library" OFF)
 
 if(MRTRIX_BUILD_TESTS)

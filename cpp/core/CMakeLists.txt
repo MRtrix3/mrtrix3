@@ -115,6 +115,7 @@ target_link_libraries(mrtrix-core PUBLIC
     nifti::nifti
     slang::slang
     tcb::span
+    magic_enum::magic_enum
 )
 
 # On Windows, the libraries need to be in the same directory as the executables
@@ -144,6 +145,20 @@ if(NOT MSVC)
 endif()
 
 endif()
+
+# TODO: Add install rules for shaders
+set(GPU_SHADER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/gpu/shaders")
+set(SHADER_BIN_DEST "${PROJECT_BINARY_DIR}/bin/shaders")
+
+# Custom target to symlink shaders to the build/bin/shaders directory
+add_custom_target(copy-gpu-shaders ALL
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${GPU_SHADER_SRC} ${SHADER_BIN_DEST}
+    COMMENT "Symlinking GPU shaders to build directory"
+    VERBATIM
+)
+
+# Ensure the core library depends on this target
+add_dependencies(mrtrix-core copy-gpu-shaders)
 
 install(TARGETS mrtrix-core
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
