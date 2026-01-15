@@ -260,12 +260,7 @@ struct ComputeContext {
   // Writes to the buffer at the specified offset.
   template <typename T = float>
   void write_to_buffer(const Buffer<T> &buffer, tcb::span<const T> src_memory_region, uint64_t offset = 0) const {
-    write_to_buffer(buffer, src_memory_region.data(), src_memory_region.size_bytes(), offset * sizeof(T));
-  }
-
-  template <typename T = float>
-  void write_to_buffer(const Buffer<T> &buffer, const void *data, size_t size, uint64_t bytesOffset = 0) const {
-    inner_write_to_buffer(buffer.wgpu_handle, data, size, bytesOffset);
+    inner_write_to_buffer(buffer.wgpu_handle, src_memory_region.data(), src_memory_region.size_bytes(), offset * sizeof(T));
   }
 
   // Copy bytes from a source buffer to a destination buffer.
