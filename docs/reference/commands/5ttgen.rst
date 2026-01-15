@@ -15,7 +15,7 @@ Usage
 
     5ttgen algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: deep_atropos, freesurfer, fsl, gif, hsvs
+-  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: deep_atropos, dhcp, freesurfer, fsl, gif, hsvs, mcrib
 
 Description
 -----------
@@ -188,6 +188,120 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 **Author:** Lucius S. Fekonja (lucius.fekonja[at]charite.de) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+
+.. _5ttgen_dhcp:
+
+5ttgen dhcp
+===========
+
+Synopsis
+--------
+
+Use ANTs commands, the output of the dHCP pipeline, and the M-CRIB atlas, to generate the 5TT image of a neonatal subject based on a T2-weighted image
+
+Usage
+-----
+
+::
+
+    5ttgen dhcp input output [ options ]
+
+-  *input*: The input path of the derivates folder (anat/) obtained from the dHCP pipeline
+-  *output*: The output 5TT image
+
+Description
+-----------
+
+Derivation of the 5TT image is principally based on the segmentation already performed in the dHCP pipeline. The M-CRIB atlas will only be used to introduce additional sub-cortical grey matter parcels into the tissue segmentation. By default, the algorithm will use the tissue probability maps obtained from the dHCP. However, if the pipeline was executed without the -additional command-line flag, the algorithm will use the hard segmentation.
+
+Options
+-------
+
+Options specific to the 'dhcp' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-mcrib_path directory** Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")
+
+- **-parcellation image** Additionally export the M-CRIB parcellation warped to the subject data
+
+- **-quick** Specify the use of quick registration parameters
+
+- **-hard_segmentation** Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT
+
+- **-ants_parallel value** Control for parallel computation for antsJointLabelFusion (default 0): 0 == run serially; 1 == SGE qsub; 2 == use PEXEC (localhost); 3 == Apple XGrid; 4 == PBS qsub; 5 == SLURM.
+
+Options common to all 5ttgen algorithms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
+
+- **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+* Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
+
+* Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P. Hierarchical complexity of the macro-scale neonatal brain. Cerebral Cortex, 2021, 4, 2071-2084
+
+* Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. Medical Image Analysis, 2008, 41, 12-26
+
+* Wang, H.; Suh, J.W.; Das, S.R.; Pluta, J.B.; Craige, C. & Yushkevich, P.A. Multi-atlas segmentation with joint label fusion. IEEE Trans Pattern Anal Mach Intell., 2013, 35, 611-623.
+
+* Alexander, B.; Murray, A.L.; Loh, W.Y.; Matthews, L.G.; Adamson, C.; Beare, R.; Chen, J.; Kelly, C.E.; Rees, S.; Warfield, S.K.; Anderson, P.J.; Doyle, L.W.; Spittle, A.J.; Cheong, J.L.Y; Seal, M.L. & Thompson, D.K. A new neonatal cortical and subcortical brain atlas: the Melbourne Children's Regional Infant Brain (m-crib) atlas. NeuroImage, 2017, 852, 147-841.
+
+* Makropoulos, A., Robinson, E.C., Schuh, A., Wright, R., Fitzgibbon, S., Bozek, J., Counsell, S.J., Steinweg, J., Vecchiato, K., Passerat-Palmbach, J., Lenz, G., Mortari, F., Tenev, T., Duff, E.P., Bastiani, M., Cordero-Grande, L., Hughes, E., Tusor, N., Tournier, J.D., Hutter, J., Price, A.N., Teixeira, R.P.A.G., Murgasova, M., Victor, S., Kelly, C., Rutherford, M.A., Smith, S.M., Edwards, A.D., Hajnal, J.V., Jenkinson, M. & Rueckert, D. The developing human connectome project: A minimal processing pipeline for neonatal cortical surface reconstruction. NeuroImage, 2018, 173, 88-112.
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+--------------
+
+
+
+**Author:** Manuel Blesa (manuel.blesa@ed.ac.uk) and Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -582,6 +696,142 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+
+.. _5ttgen_mcrib:
+
+5ttgen mcrib
+============
+
+Synopsis
+--------
+
+Use ANTs commands and the M-CRIB atlas to generate the 5TT image of a neonatal subject based on a T1-weighted or T2-weighted image
+
+Usage
+-----
+
+::
+
+    5ttgen mcrib input modality output [ options ]
+
+-  *input*: The input structural image
+-  *modality*: Specify the modality of the input image, either "t1w" or "t2w"
+-  *output*: The output 5TT image
+
+Description
+-----------
+
+The M-CRIB atlas is required for this command, as its segmentations are used to project tissue segmentation information to the input image. These data can be downloaded from: https://osf.io/2yx8u/. The command can be informed of the location of these data in one of two ways: either explicit use of the -mcrib_path option, or through setting the value of MCRIBPath in an MRtrix config file.
+
+It is a necessary component in the production of a 5TT image that a brain mask be determined in some manner. In this algorithm, there are multiple possible mechanisms by which such a mask may arise. Use of the -mask option allows the user to provide as input a pre-calculated mask. Use of the -premasked option indicates that the input image has already been zero-filled outside of the brain. In the absence of either of these options, the command will perform an internal brain mask computation. If the -mask_hdbet option is specified, then the HD-BET method will be used for this purpose; otherwise, the ANTs brain extraction script will be used.
+
+Options
+-------
+
+Options that affect the output of the 'mcrib' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-white_stem** Classify the brainstem as white matter; streamlines will not be permitted to terminate within this region
+
+- **-parcellation image** Additionally export the M-CRIB parcellation warped to the subject data
+
+- **-hard_segmentation** Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT (not recommended)
+
+Options that affect the internal execution of ANTs within the 'mcrib' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-ants_quick** Specify the use of "quick" registration parameters in ANTs: results are a little bit less accurate, but much faster
+
+- **-ants_parallel value** Control for parallel computation for antsJointLabelFusion (default 0): 0 == run serially; 1 == SGE qsub; 2 == use PEXEC (localhost); 3 == Apple XGrid; 4 == PBS qsub; 5 == SLURM.
+
+Options relating to masking for the 'mcrib' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-mask image** Manually provide a brain mask, rather than having the script generate one automatically
+
+- **-premasked** Indicate that brain masking has already been applied to the input image
+
+- **-mask_hdbet** Use HD-BET to compute the required brain mask from the input image
+
+Option for providing template data to the 'mcrib' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-mcrib_path directory** Provide the path of the M-CRIB atlas
+
+Options common to all 5ttgen algorithms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
+
+- **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+* Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
+
+* Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P. Hierarchical complexity of the macro-scale neonatal brain. Cerebral Cortex, 2021, 4, 2071-2084
+
+* Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. Medical Image Analysis, 2008, 41, 12-26
+
+* Wang, H.; Suh, J.W.; Das, S.R.; Pluta, J.B.; Craige, C. & Yushkevich, P.A. Multi-atlas segmentation with joint label fusion. IEEE Trans Pattern Anal Mach Intell., 2013, 35, 611-623.
+
+* Alexander, B.; Murray, A.L.; Loh, W.Y.; Matthews, L.G.; Adamson, C.; Beare, R.; Chen, J.; Kelly, C.E.; Rees, S.; Warfield, S.K.; Anderson, P.J.; Doyle, L.W.; Spittle, A.J.; Cheong, J.L.Y; Seal, M.L. & Thompson, D.K. A new neonatal cortical and subcortical brain atlas: the Melbourne Children's Regional Infant Brain (m-crib) atlas. NeuroImage, 2017, 852, 147-841.
+
+* If -mask_hdbet option is used: Isensee, F.; Schell, M.; Tursunova, I.; Brugnara, G.; Bonekamp, D.; Neuberger, U.; Wick, A.; Schlemmer, H.P.; Heiland, S.; Wick, W.; Bendszus, M.; Maier-Hein, K.H.; Kickingereder, P. Automated brain extraction of multi-sequence MRI using artificial neural networks. Hum Brain Mapp. 2019; 2019; 40: 4952-4964.
+
+* If -premasked or -mask or -mask_hdbet options are not provided: Avants, B.; Tustison, N.J.; Wu, J.; Cook, P.A. & Gee, J.C. An open source multivariate framework for n-tissue segmentation with evaluation on public data. Neuroinformatics, 2011, 9(4), 381-400
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+--------------
+
+
+
+**Author:** Manuel Blesa (manuel.blesa@ed.ac.uk) and Paola Galdi (paola.galdi@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
