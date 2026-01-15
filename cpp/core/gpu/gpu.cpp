@@ -195,8 +195,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     wgpu::Limits supported_limits;
     wgpu_adapter.GetLimits(&supported_limits);
 
-    const uint64_t desired_max_storage_buffer_binding_size = 1'073'741'824ULL; // 1 GiB
-    const uint64_t desired_max_buffer_size = 1'073'741'824ULL;                 // 1 GiB
+    constexpr uint64_t desired_max_storage_buffer_binding_size = 1'073'741'824ULL; // 1 GiB
+    constexpr uint64_t desired_max_buffer_size = 1'073'741'824ULL;                 // 1 GiB
 
     const wgpu::Limits required_device_limits{
         .maxStorageTexturesPerShaderStage = 8,
