@@ -129,7 +129,7 @@ struct DispatchGrid {
   }
 };
 
-// Absolute/relative (to working dir) path  of a WGSL file.
+// Absolute/relative (to working dir) path  of a Slang file.
 struct ShaderFile {
   std::filesystem::path file_path;
 };
