@@ -228,15 +228,15 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
           throw MR::Exception("Uncaptured gpu error: " + std::string(message));
         });
 
-    this->m_instance = wgpu_instance;
-    this->m_adapter = wgpu_adapter;
-    this->m_device = wgpu_adapter.CreateDevice(&device_descriptor);
+    m_instance = wgpu_instance;
+    m_adapter = wgpu_adapter;
+    m_device = wgpu_adapter.CreateDevice(&device_descriptor);
     wgpu::AdapterInfo adapter_info;
     wgpu_adapter.GetInfo(&adapter_info);
 
-    this->m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize};
+    m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize};
   }
-  this->m_slang_session_info->globalSession = std::move(slang_global_session_request.get());
+  m_slang_session_info->globalSession = std::move(slang_global_session_request.get());
 
   const slang::TargetDesc target_desc{.format = SLANG_WGSL};
 
@@ -263,8 +263,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
   };
 
   {
-    const SlangResult slang_res = this->m_slang_session_info->globalSession->createSession(
-        slang_session_desc, this->m_slang_session_info->session.writeRef());
+    const SlangResult slang_res = m_slang_session_info->globalSession->createSession(
+        slang_session_desc, m_slang_session_info->session.writeRef());
     if (SLANG_FAILED(slang_res)) {
       throw MR::Exception("Failed to create Slang session!");
     }
