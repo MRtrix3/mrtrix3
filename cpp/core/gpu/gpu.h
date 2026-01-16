@@ -286,7 +286,7 @@ struct ComputeContext {
   [[nodiscard]] Texture new_texture_from_host_image(const MR::Image<float> &image,
                                                     const TextureUsage &usage = {}) const;
 
-  Buffer<float> new_buffer_from_host_image(const MR::Image<float> &image,
+  [[nodiscard]] Buffer<float> new_buffer_from_host_image(const MR::Image<float> &image,
                                            BufferType bufferType = BufferType::StorageBuffer) const;
 
   // This function blocks until the download is complete.
