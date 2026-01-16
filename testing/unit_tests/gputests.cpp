@@ -179,6 +179,54 @@ TEST_F(GPUTest, EmptyTexture) {
   }
 }
 
+TEST_F(GPUTest, KernelWithUniformBuffer) {
+  const std::string shaderCode = R"slang(
+        struct Params {
+            float scale;
+            float bias;
+        };
+
+        [shader("compute")]
+        [numthreads(1, 1, 1)]
+        void main(
+            uint32_t3 id : SV_DispatchThreadID,
+            RWStructuredBuffer<float> data,
+            ConstantBuffer<Params> params
+        ){
+            let idx = id.x;
+            uint32_t element_count, stride;
+            data.GetDimensions(element_count, stride);
+            if (idx < element_count) {
+                data[idx] = data[idx] * params.scale + params.bias;
+            }
+        }
+    )slang";
+
+  struct Params {
+    float scale = 0.0F;
+    float bias = 0.0F;
+  };
+
+  const Params params{.scale = 3.0F, .bias = 1.0F};
+  const Buffer<std::byte> params_buffer = context.new_buffer_from_host_object(params, BufferType::UniformBuffer);
+
+  const std::vector<float> host_data = {1.0F, 2.0F, 3.0F, 4.0F};
+  const std::vector<float> expected_data = {4.0F, 7.0F, 10.0F, 13.0F};
+  Buffer<float> buffer = context.new_buffer_from_host_memory<float>(host_data);
+
+  const KernelSpec kernel_spec{
+      .compute_shader = {.shader_source = InlineShaderText{shaderCode}},
+      .bindings_map = {{"data", buffer}, {"params", params_buffer}},
+  };
+  const Kernel kernel = context.new_kernel(kernel_spec);
+  const DispatchGrid dispatch_grid = {static_cast<uint32_t>(host_data.size()), 1, 1};
+  context.dispatch_kernel(kernel, dispatch_grid);
+
+  std::vector<float> result_data(host_data.size());
+  context.download_buffer<float>(buffer, result_data);
+  EXPECT_EQ(result_data, expected_data);
+}
+
 TEST_F(GPUTest, KernelWithInlineShader) {
   const std::string shaderCode = R"slang(
         [shader("compute")]
