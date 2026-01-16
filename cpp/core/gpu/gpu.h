@@ -313,6 +313,7 @@ private:
 
   struct DeviceInfo {
     uint32_t subgroup_min_size = 0;
+    wgpu::Limits limits;
   };
 
   DeviceInfo m_device_info;

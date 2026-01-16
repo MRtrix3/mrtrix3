@@ -234,7 +234,10 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     wgpu::AdapterInfo adapter_info;
     wgpu_adapter.GetInfo(&adapter_info);
 
-    m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize};
+    wgpu::Limits device_limits;
+    m_device.GetLimits(&device_limits);
+
+    m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize, .limits = device_limits};
   }
   m_slang_session_info->globalSession = std::move(slang_global_session_request.get());
 
@@ -393,19 +396,21 @@ void ComputeContext::inner_write_to_buffer(const wgpu::Buffer &buffer,
                                            const void *data,
                                            size_t srcByteSize,
                                            uint64_t offset) const {
-  if (buffer.GetUsage() & wgpu::BufferUsage::Uniform) {
-    // TODO: fix
-    if (offset != 0) {
-      throw MR::Exception("Cannot write to a uniform buffer with non-zero offset");
-    }
-    const size_t original_size = srcByteSize;
-    const size_t padded_size = next_multiple_of(original_size, 16);
-    std::vector<std::byte> padded_data(padded_size);
-    std::memcpy(padded_data.data(), data, original_size);
-    m_device.GetQueue().WriteBuffer(buffer, 0, padded_data.data(), padded_size);
-  } else {
-    m_device.GetQueue().WriteBuffer(buffer, offset, data, srcByteSize);
+
+  // WebGPU requirement is that srcByteSize is a multiple of 4
+  // See https://www.w3.org/TR/webgpu/#dom-gpuqueue-writebuffer
+  if ((offset & 3u) != 0u || (srcByteSize & 3u) != 0u) {
+    throw MR::Exception("Buffer writes require 4-byte aligned offset and size");
   }
+  if (buffer.GetUsage() & wgpu::BufferUsage::Uniform) {
+    const uint64_t align = m_device_info.limits.minUniformBufferOffsetAlignment;
+    if (align != 0 && (offset % align) != 0) {
+      const std::string min_offset_alignment = std::to_string(align);
+      throw MR::Exception("Uniform buffer offset must be aligned to minUniformBufferOffsetAlignment: " +
+                          min_offset_alignment);
+    }
+  }
+  m_device.GetQueue().WriteBuffer(buffer, offset, data, srcByteSize);
 }
 
 void ComputeContext::inner_clear_buffer(const wgpu::Buffer &buffer) const {
