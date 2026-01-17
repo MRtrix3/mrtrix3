@@ -40,7 +40,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace MR::GPU::SlangCodegen {
@@ -124,7 +123,12 @@ EntryPointSelection select_entry_point(slang::ProgramLayout *programLayout, std:
       continue;
     }
 
-    const std::string resolved_name = (name_override != nullptr) ? name_override : (name != nullptr) ? name : "";
+    std::string resolved_name;
+    if (name_override != nullptr) {
+      resolved_name = name_override;
+    } else if (name != nullptr) {
+      resolved_name = name;
+    }
     return EntryPointSelection{.index = i, .layout = entry_point_layout, .name = resolved_name};
   }
 
