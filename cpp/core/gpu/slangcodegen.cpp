@@ -225,9 +225,9 @@ std::future<Slang::ComPtr<slang::IGlobalSession>> request_slang_global_session_a
   return r;
 }
 
-CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec,
+CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel_spec,
                                                slang::ISession *session,
-                                               ShaderCache &shaderCache) {
+                                               ShaderCache &shader_cache) {
   Slang::ComPtr<slang::IBlob> diagnostics;
   Slang::ComPtr<slang::IModule> shader_module;
 
@@ -242,7 +242,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
   };
 
   MR::match_v(
-      kernelSpec.compute_shader.shader_source,
+      kernel_spec.compute_shader.shader_source,
       [&](const ShaderFile &shaderFile) {
         const auto shader_path_string = shaderFile.file_path.string();
         const std::string module_name = std::filesystem::path(shader_path_string).stem().string();
@@ -259,16 +259,16 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
       });
   log_diagnostics();
   if (shader_module == nullptr) {
-    throw SlangCodeGenException("Failed to load shader module: " + kernelSpec.compute_shader.name);
+    throw SlangCodeGenException("Failed to load shader module: " + kernel_spec.compute_shader.name);
   }
 
   Slang::ComPtr<slang::IEntryPoint> entry_point;
   check_slang_result(
-      shader_module->findEntryPointByName(kernelSpec.compute_shader.entryPoint.c_str(), entry_point.writeRef()),
+      shader_module->findEntryPointByName(kernel_spec.compute_shader.entryPoint.c_str(), entry_point.writeRef()),
       "Slang failed to findEntryPointByName",
       diagnostics);
 
-  const auto &generic_type_args = kernelSpec.compute_shader.entry_point_args;
+  const auto &generic_type_args = kernel_spec.compute_shader.entry_point_args;
 
   // Specialisation arguments
   Slang::ComPtr<slang::IComponentType> specialized_entry_point;
@@ -304,8 +304,8 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
     shader_components.push_back(entry_point.get());
   }
 
-  if (kernelSpec.compute_shader.workgroup_size.has_value()) {
-    const auto &wg_size = *kernelSpec.compute_shader.workgroup_size;
+  if (kernel_spec.compute_shader.workgroup_size.has_value()) {
+    const auto &wg_size = *kernel_spec.compute_shader.workgroup_size;
     std::ostringstream oss;
     oss << "export static const uint kWorkgroupSizeX = " << wg_size.x << ";\n"
         << "export static const uint kWorkgroupSizeY = " << wg_size.y << ";\n"
@@ -322,9 +322,9 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
     shader_components.push_back(workgroup_size_constants_module.get());
   }
 
-  if (!kernelSpec.compute_shader.constants.empty()) {
+  if (!kernel_spec.compute_shader.constants.empty()) {
     std::ostringstream oss;
-    for (const auto &[name, value] : kernelSpec.compute_shader.constants) {
+    for (const auto &[name, value] : kernel_spec.compute_shader.constants) {
       MR::match_v(
           value,
           [&oss, name = name](int32_t v) { oss << "export static const int32_t " << name << " = " << v << ";\n"; },
@@ -351,7 +351,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
                      diagnostics);
 
   const auto entry_point_selection = select_entry_point(linked_slang_program->getLayout(),
-                                                        kernelSpec.compute_shader.entryPoint);
+                                                        kernel_spec.compute_shader.entryPoint);
 
   Slang::ComPtr<slang::IBlob> hash_blob;
   linked_slang_program->getEntryPointHash(entry_point_selection.index, 0, hash_blob.writeRef());
@@ -360,8 +360,8 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
 
   std::string wgsl_code;
   Slang::ComPtr<slang::IBlob> slang_kernel_blob;
-  if (shaderCache.contains(hash_key)) {
-    wgsl_code = shaderCache.get(hash_key);
+  if (shader_cache.contains(hash_key)) {
+    wgsl_code = shader_cache.get(hash_key);
   } else {
     check_slang_result(
         linked_slang_program->getEntryPointCode(entry_point_selection.index,
@@ -372,21 +372,21 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
         diagnostics);
     wgsl_code = std::string(static_cast<const char *>(slang_kernel_blob->getBufferPointer()),
                             slang_kernel_blob->getBufferSize());
-    shaderCache.insert(hash_key, wgsl_code);
+    shader_cache.insert(hash_key, wgsl_code);
   }
 
-  DEBUG(kernelSpec.compute_shader.name + " WGSL code:\n" + wgsl_code);
+  DEBUG(kernel_spec.compute_shader.name + " WGSL code:\n" + wgsl_code);
   return CompiledKernelWGSL{.wgsl_source = wgsl_code,
                             .linked_program = linked_slang_program,
                             .entry_point_name = entry_point_selection.name};
 }
 
-std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::ProgramLayout *programLayout,
+std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::ProgramLayout *program_layout,
                                                                        std::string_view entry_point_name) {
   std::unordered_map<std::string, ReflectedBindingInfo> bindings_map;
-  const auto entry_point_selection = select_entry_point(programLayout, entry_point_name);
+  const auto entry_point_selection = select_entry_point(program_layout, entry_point_name);
 
-  auto *global_var_layout = programLayout->getGlobalParamsVarLayout();
+  auto *global_var_layout = program_layout->getGlobalParamsVarLayout();
   if (global_var_layout != nullptr) {
     // If the program has global variables, we can find bindings in them.
     find_bindings_in_variable_layout(global_var_layout, bindings_map);
@@ -409,8 +409,8 @@ std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::Pr
   return bindings_map;
 }
 
-std::array<uint32_t, 3> workgroup_size(slang::ProgramLayout *programLayout, std::string_view entry_point_name) {
-  const auto entry_point_selection = select_entry_point(programLayout, entry_point_name);
+std::array<uint32_t, 3> workgroup_size(slang::ProgramLayout *program_layout, std::string_view entry_point_name) {
+  const auto entry_point_selection = select_entry_point(program_layout, entry_point_name);
   auto *entry_point_layout = entry_point_selection.layout;
 
   std::array<SlangUInt, 3> wg_size{};

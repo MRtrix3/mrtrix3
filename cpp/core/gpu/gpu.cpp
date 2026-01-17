@@ -430,7 +430,7 @@ Texture ComputeContext::new_empty_texture(const TextureSpec &textureSpec) const 
 }
 
 Texture ComputeContext::new_texture_from_host_memory(const TextureSpec &texture_desc,
-                                                     tcb::span<const float> srcMemoryRegion) const {
+                                                     tcb::span<const float> src_memory_region) const {
   const Texture texture = new_empty_texture(texture_desc);
   const wgpu::TexelCopyTextureInfo image_copy_texture{.texture = texture.wgpu_handle};
   const wgpu::TexelCopyBufferLayout texture_data_layout{
@@ -440,7 +440,7 @@ Texture ComputeContext::new_texture_from_host_memory(const TextureSpec &texture_
 
   const wgpu::Extent3D texture_size{texture_desc.width, texture_desc.height, texture_desc.depth};
   m_device.GetQueue().WriteTexture(
-      &image_copy_texture, srcMemoryRegion.data(), srcMemoryRegion.size_bytes(), &texture_data_layout, &texture_size);
+      &image_copy_texture, src_memory_region.data(), src_memory_region.size_bytes(), &texture_data_layout, &texture_size);
   return texture;
 }
 
