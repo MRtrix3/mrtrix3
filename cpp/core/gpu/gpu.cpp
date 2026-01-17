@@ -39,6 +39,7 @@
 #include <future>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
