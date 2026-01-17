@@ -399,7 +399,7 @@ void ComputeContext::inner_write_to_buffer(const wgpu::Buffer &buffer,
 
   // WebGPU requirement is that srcByteSize is a multiple of 4
   // See https://www.w3.org/TR/webgpu/#dom-gpuqueue-writebuffer
-  if ((offset & 3u) != 0u || (srcByteSize & 3u) != 0u) {
+  if ((offset & 3U) != 0U || (srcByteSize & 3U) != 0U) {
     throw MR::Exception("Buffer writes require 4-byte aligned offset and size");
   }
   if (buffer.GetUsage() & wgpu::BufferUsage::Uniform) {
