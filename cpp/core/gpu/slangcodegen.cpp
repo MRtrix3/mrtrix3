@@ -92,6 +92,66 @@ void check_slang_result(SlangResult res,
 void find_bindings_in_type_layout(slang::TypeLayoutReflection *typeLayout,
                                   std::unordered_map<std::string, ReflectedBindingInfo> &bindings);
 
+struct EntryPointSelection {
+  SlangUInt index = 0;
+  slang::EntryPointLayout *layout = nullptr;
+  std::string name;
+};
+
+EntryPointSelection select_entry_point(slang::ProgramLayout *programLayout, std::string_view requested_entry_point) {
+  if (programLayout == nullptr) {
+    throw SlangCodeGenException("Slang program layout is null!");
+  }
+
+  const SlangUInt entry_point_count = programLayout->getEntryPointCount();
+  if (entry_point_count == 0) {
+    throw SlangCodeGenException("Slang program layout has no entry points!");
+  }
+
+  for (SlangUInt i = 0; i < entry_point_count; ++i) {
+    auto *entry_point_layout = programLayout->getEntryPointByIndex(i);
+    if (entry_point_layout == nullptr) {
+      continue;
+    }
+
+    const char *const name_override = entry_point_layout->getNameOverride(); // check_syntax off
+    const char *const name = entry_point_layout->getName();                  // check_syntax off
+
+    const bool override_matches = (name_override != nullptr) && (requested_entry_point == name_override);
+    const bool name_matches = (name != nullptr) && (requested_entry_point == name);
+
+    if (!override_matches && !name_matches) {
+      continue;
+    }
+
+    const std::string resolved_name = (name_override != nullptr) ? name_override : (name != nullptr) ? name : "";
+    return EntryPointSelection{.index = i, .layout = entry_point_layout, .name = resolved_name};
+  }
+
+  // Produce a human-readable list of available entry points
+  std::string available;
+  for (SlangUInt i = 0; i < entry_point_count; ++i) {
+    auto *entry_point_layout = programLayout->getEntryPointByIndex(i);
+    if (entry_point_layout == nullptr) {
+      continue;
+    }
+    const char *const name_override = entry_point_layout->getNameOverride(); // check_syntax off
+    const char *const name = entry_point_layout->getName();                  // check_syntax off
+    const char *const resolved = (name_override != nullptr) ? name_override : name;
+    if (resolved == nullptr) {
+      continue;
+    }
+
+    if (!available.empty()) {
+      available += ", ";
+    }
+    available += resolved;
+  }
+
+  throw SlangCodeGenException("Failed to find entry point '" + std::string(requested_entry_point) +
+                              "' in linked Slang program layout. Available entry points: [" + available + "]");
+}
+
 void find_bindings_in_variable_layout(slang::VariableLayoutReflection *varLayout,
                                       std::unordered_map<std::string, ReflectedBindingInfo> &bindings) {
   if (varLayout == nullptr) {
@@ -165,8 +225,9 @@ std::future<Slang::ComPtr<slang::IGlobalSession>> request_slang_global_session_a
   return r;
 }
 
-std::pair<std::string, Slang::ComPtr<slang::IComponentType>>
-compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec, slang::ISession *session, ShaderCache &shaderCache) {
+CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec,
+                                               slang::ISession *session,
+                                               ShaderCache &shaderCache) {
   Slang::ComPtr<slang::IBlob> diagnostics;
   Slang::ComPtr<slang::IModule> shader_module;
 
@@ -289,8 +350,11 @@ compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec, slang::ISessi
                      "Slang failed to link program",
                      diagnostics);
 
+  const auto entry_point_selection = select_entry_point(linked_slang_program->getLayout(),
+                                                        kernelSpec.compute_shader.entryPoint);
+
   Slang::ComPtr<slang::IBlob> hash_blob;
-  linked_slang_program->getEntryPointHash(0, 0, hash_blob.writeRef());
+  linked_slang_program->getEntryPointHash(entry_point_selection.index, 0, hash_blob.writeRef());
   const std::string hash_key =
       std::string(static_cast<const char *>(hash_blob->getBufferPointer()), hash_blob->getBufferSize());
 
@@ -300,7 +364,10 @@ compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec, slang::ISessi
     wgsl_code = shaderCache.get(hash_key);
   } else {
     check_slang_result(
-        linked_slang_program->getEntryPointCode(0, 0, slang_kernel_blob.writeRef(), diagnostics.writeRef()),
+        linked_slang_program->getEntryPointCode(entry_point_selection.index,
+                                                0,
+                                                slang_kernel_blob.writeRef(),
+                                                diagnostics.writeRef()),
         "Slang failed to get entry point code",
         diagnostics);
     wgsl_code = std::string(static_cast<const char *>(slang_kernel_blob->getBufferPointer()),
@@ -309,15 +376,15 @@ compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernelSpec, slang::ISessi
   }
 
   DEBUG(kernelSpec.compute_shader.name + " WGSL code:\n" + wgsl_code);
-  return {wgsl_code, linked_slang_program};
+  return CompiledKernelWGSL{.wgsl_source = wgsl_code,
+                            .linked_program = linked_slang_program,
+                            .entry_point_name = entry_point_selection.name};
 }
 
-std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::ProgramLayout *programLayout) {
+std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::ProgramLayout *programLayout,
+                                                                       std::string_view entry_point_name) {
   std::unordered_map<std::string, ReflectedBindingInfo> bindings_map;
-  if (programLayout->getEntryPointCount() == 0) {
-    assert(false && "Slang program layout has no entry points!");
-    return bindings_map;
-  }
+  const auto entry_point_selection = select_entry_point(programLayout, entry_point_name);
 
   auto *global_var_layout = programLayout->getGlobalParamsVarLayout();
   if (global_var_layout != nullptr) {
@@ -325,12 +392,7 @@ std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::Pr
     find_bindings_in_variable_layout(global_var_layout, bindings_map);
   }
 
-  // TODO: Handle multiple entry points properly.
-  auto *entry_point_layout = programLayout->getEntryPointByIndex(0);
-  if (entry_point_layout == nullptr) {
-    assert(false && "Slang program layout has no entry point!");
-    return bindings_map;
-  }
+  auto *entry_point_layout = entry_point_selection.layout;
 
   auto *entry_point_root_variable_layout = entry_point_layout->getVarLayout();
   if (entry_point_root_variable_layout == nullptr) {
@@ -340,21 +402,16 @@ std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::Pr
 
   auto *entry_point_root_type_layout = entry_point_root_variable_layout->getTypeLayout();
   if (entry_point_root_type_layout == nullptr) {
-    assert(false && "Slang entry point variable layout has no type layout!");
-    return bindings_map;
+    throw SlangCodeGenException("Slang entry point variable layout has no type layout!");
   }
 
   find_bindings_in_variable_layout(entry_point_root_variable_layout, bindings_map);
   return bindings_map;
 }
 
-std::array<uint32_t, 3> workgroup_size(slang::ProgramLayout *programLayout) {
-  // TODO: Handle multiple entry points and choose the correct one.
-  auto *entry_point_layout = programLayout->getEntryPointByIndex(0);
-  if (entry_point_layout == nullptr) {
-    assert(false && "Slang program layout has no entry point!");
-    return {0, 0, 0};
-  }
+std::array<uint32_t, 3> workgroup_size(slang::ProgramLayout *programLayout, std::string_view entry_point_name) {
+  const auto entry_point_selection = select_entry_point(programLayout, entry_point_name);
+  auto *entry_point_layout = entry_point_selection.layout;
 
   std::array<SlangUInt, 3> wg_size{};
   entry_point_layout->getComputeThreadGroupSize(3, wg_size.data());

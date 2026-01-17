@@ -545,12 +545,14 @@ Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
   BindingEntries binding_entries;
 
   const auto &slang_session = m_slang_session_info->session;
-  const auto &[wgsl_shader_code, linked_slang_program] =
+  const auto compiled_kernel =
       SlangCodegen::compile_kernel_code_to_wgsl(kernel_spec, slang_session.get(), m_shader_cache);
 
-  const auto reflected_bindings_map = SlangCodegen::reflect_bindings(linked_slang_program->getLayout());
+  const auto reflected_bindings_map =
+      SlangCodegen::reflect_bindings(compiled_kernel.linked_program->getLayout(), compiled_kernel.entry_point_name);
 
-  const auto reflected_wg_size = SlangCodegen::workgroup_size(linked_slang_program->getLayout());
+  const auto reflected_wg_size =
+      SlangCodegen::workgroup_size(compiled_kernel.linked_program->getLayout(), compiled_kernel.entry_point_name);
 
   for (const auto &[name, resource] : kernel_spec.bindings_map) {
     auto it = reflected_bindings_map.find(name);
@@ -663,8 +665,9 @@ Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
   const wgpu::ComputePipelineDescriptor compute_pipeline_desc{
       .label = compute_pipeline_label.c_str(),
       .layout = pipeline_layout,
-      .compute = {.module = make_wgsl_shader_module(kernel_spec.compute_shader.name, wgsl_shader_code, m_device),
-                  .entryPoint = kernel_spec.compute_shader.entryPoint.c_str()}};
+      .compute = {.module =
+                      make_wgsl_shader_module(kernel_spec.compute_shader.name, compiled_kernel.wgsl_source, m_device),
+                  .entryPoint = compiled_kernel.entry_point_name.c_str()}};
 
   const wgpu::BindGroupDescriptor bind_group_desc{
       .layout = bind_group_layout,
@@ -677,7 +680,7 @@ Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
   return Kernel{.name = kernel_spec.compute_shader.name,
                 .pipeline = m_device.CreateComputePipeline(&compute_pipeline_desc),
                 .bind_group = m_device.CreateBindGroup(&bind_group_desc),
-                .shader_source = wgsl_shader_code,
+                .shader_source = compiled_kernel.wgsl_source,
                 .workgroup_size = wg_size};
 }
 void ComputeContext::dispatch_kernel(const Kernel &kernel, const DispatchGrid &dispatch_grid) const {

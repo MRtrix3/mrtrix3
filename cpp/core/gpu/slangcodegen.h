@@ -41,6 +41,12 @@ struct ReflectedBindingInfo {
   slang::ParameterCategory category = slang::ParameterCategory::None;
 };
 
+struct CompiledKernelWGSL {
+  std::string wgsl_source;
+  Slang::ComPtr<slang::IComponentType> linked_program;
+  std::string entry_point_name;
+};
+
 struct SlangCodeGenException : public Exception {
   explicit SlangCodeGenException(std::string_view message)
       : Exception(std::string("Slang codegen error: ") + message.data()) {}
@@ -50,15 +56,16 @@ struct SlangCodeGenException : public Exception {
 std::future<Slang::ComPtr<slang::IGlobalSession>> request_slang_global_session_async();
 
 // Compile a Slang kernel to WGSL.
-// Returns a pair containing the WGSL source string and the linked component type
-// for subsequent reflection.
-std::pair<std::string, Slang::ComPtr<slang::IComponentType>> compile_kernel_code_to_wgsl(
+// Returns the WGSL source string, the linked component type for subsequent
+// reflection, and the resolved entry point name for pipeline creation.
+CompiledKernelWGSL compile_kernel_code_to_wgsl(
     const MR::GPU::KernelSpec &kernel_spec, slang::ISession *session, ShaderCache &shader_cache);
 
 // Reflect resource bindings from a linked Slang program layout.
 // Produces a map from binding names to their binding index and layout details.
-std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::ProgramLayout *program_layout);
+std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::ProgramLayout *program_layout,
+                                                                       std::string_view entry_point_name);
 
 // Returns the workgroup size specified in the compiled Slang program layout.
-std::array<uint32_t, 3> workgroup_size(slang::ProgramLayout *program_layout);
+std::array<uint32_t, 3> workgroup_size(slang::ProgramLayout *program_layout, std::string_view entry_point_name);
 } // namespace MR::GPU::SlangCodegen
