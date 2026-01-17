@@ -298,11 +298,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
   Slang::ComPtr<slang::IComponentType> slang_program;
   std::vector<slang::IComponentType *> shader_components;
   shader_components.push_back(shader_module.get());
-  if (!generic_type_args.empty()) {
-    shader_components.push_back(specialized_entry_point.get());
-  } else {
-    shader_components.push_back(entry_point.get());
-  }
+  shader_components.push_back(generic_type_args.empty() ? entry_point.get() : specialized_entry_point.get());
 
   if (kernel_spec.compute_shader.workgroup_size.has_value()) {
     const auto &wg_size = *kernel_spec.compute_shader.workgroup_size;
