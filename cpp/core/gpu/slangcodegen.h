@@ -58,8 +58,9 @@ std::future<Slang::ComPtr<slang::IGlobalSession>> request_slang_global_session_a
 // Compile a Slang kernel to WGSL.
 // Returns the WGSL source string, the linked component type for subsequent
 // reflection, and the resolved entry point name for pipeline creation.
-CompiledKernelWGSL compile_kernel_code_to_wgsl(
-    const MR::GPU::KernelSpec &kernel_spec, slang::ISession *session, ShaderCache &shader_cache);
+CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel_spec,
+                                               slang::ISession *session,
+                                               ShaderCache &shader_cache);
 
 // Reflect resource bindings from a linked Slang program layout.
 // Produces a map from binding names to their binding index and layout details.

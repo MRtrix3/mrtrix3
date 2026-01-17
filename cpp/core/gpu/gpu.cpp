@@ -439,8 +439,11 @@ Texture ComputeContext::new_texture_from_host_memory(const TextureSpec &texture_
   };
 
   const wgpu::Extent3D texture_size{texture_desc.width, texture_desc.height, texture_desc.depth};
-  m_device.GetQueue().WriteTexture(
-      &image_copy_texture, src_memory_region.data(), src_memory_region.size_bytes(), &texture_data_layout, &texture_size);
+  m_device.GetQueue().WriteTexture(&image_copy_texture,
+                                   src_memory_region.data(),
+                                   src_memory_region.size_bytes(),
+                                   &texture_data_layout,
+                                   &texture_size);
   return texture;
 }
 

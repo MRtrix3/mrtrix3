@@ -217,8 +217,9 @@ struct ComputeContext {
 
   // Creates a GPU buffer by copying the raw bytes of a host-side object into device memory.
   // Intended for uploading small POD-like structs that live on the stack.
-  template<typename Object>
-  [[nodiscard]] Buffer<std::byte> new_buffer_from_host_object(const Object& object, BufferType buffer_type = BufferType::StorageBuffer) const {
+  template <typename Object>
+  [[nodiscard]] Buffer<std::byte>
+  new_buffer_from_host_object(const Object &object, BufferType buffer_type = BufferType::StorageBuffer) const {
     static_assert(std::is_trivially_copyable_v<Object>, "Object must be trivially copyable");
     static_assert(std::is_standard_layout_v<Object>, "Object must be standard layout");
     return {buffer_type, inner_new_buffer_from_host_memory(&object, sizeof(object), buffer_type)};
@@ -260,7 +261,8 @@ struct ComputeContext {
   // Writes to the buffer at the specified offset.
   template <typename T = float>
   void write_to_buffer(const Buffer<T> &buffer, tcb::span<const T> src_memory_region, uint64_t offset = 0) const {
-    inner_write_to_buffer(buffer.wgpu_handle, src_memory_region.data(), src_memory_region.size_bytes(), offset * sizeof(T));
+    inner_write_to_buffer(
+        buffer.wgpu_handle, src_memory_region.data(), src_memory_region.size_bytes(), offset * sizeof(T));
   }
 
   // Copy bytes from a source buffer to a destination buffer.
@@ -287,7 +289,7 @@ struct ComputeContext {
                                                     const TextureUsage &usage = {}) const;
 
   [[nodiscard]] Buffer<float> new_buffer_from_host_image(const MR::Image<float> &image,
-                                           BufferType bufferType = BufferType::StorageBuffer) const;
+                                                         BufferType bufferType = BufferType::StorageBuffer) const;
 
   // This function blocks until the download is complete.
   void download_texture(const Texture &texture, tcb::span<float> dst_memory_region) const;

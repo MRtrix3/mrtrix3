@@ -350,8 +350,8 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
                      "Slang failed to link program",
                      diagnostics);
 
-  const auto entry_point_selection = select_entry_point(linked_slang_program->getLayout(),
-                                                        kernel_spec.compute_shader.entryPoint);
+  const auto entry_point_selection =
+      select_entry_point(linked_slang_program->getLayout(), kernel_spec.compute_shader.entryPoint);
 
   Slang::ComPtr<slang::IBlob> hash_blob;
   linked_slang_program->getEntryPointHash(entry_point_selection.index, 0, hash_blob.writeRef());
@@ -363,22 +363,18 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
   if (shader_cache.contains(hash_key)) {
     wgsl_code = shader_cache.get(hash_key);
   } else {
-    check_slang_result(
-        linked_slang_program->getEntryPointCode(entry_point_selection.index,
-                                                0,
-                                                slang_kernel_blob.writeRef(),
-                                                diagnostics.writeRef()),
-        "Slang failed to get entry point code",
-        diagnostics);
+    check_slang_result(linked_slang_program->getEntryPointCode(
+                           entry_point_selection.index, 0, slang_kernel_blob.writeRef(), diagnostics.writeRef()),
+                       "Slang failed to get entry point code",
+                       diagnostics);
     wgsl_code = std::string(static_cast<const char *>(slang_kernel_blob->getBufferPointer()),
                             slang_kernel_blob->getBufferSize());
     shader_cache.insert(hash_key, wgsl_code);
   }
 
   DEBUG(kernel_spec.compute_shader.name + " WGSL code:\n" + wgsl_code);
-  return CompiledKernelWGSL{.wgsl_source = wgsl_code,
-                            .linked_program = linked_slang_program,
-                            .entry_point_name = entry_point_selection.name};
+  return CompiledKernelWGSL{
+      .wgsl_source = wgsl_code, .linked_program = linked_slang_program, .entry_point_name = entry_point_selection.name};
 }
 
 std::unordered_map<std::string, ReflectedBindingInfo> reflect_bindings(slang::ProgramLayout *program_layout,
