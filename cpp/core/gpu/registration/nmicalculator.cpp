@@ -115,25 +115,28 @@ NMICalculator::NMICalculator(const Config &config)
   // comparisons match float ordering and atomics work for negative intensities too.
   // TODO: Should we use shared memory reduction instead of atomics for better performance?
   m_min_max_uniforms_buffer =
-      m_compute_context->new_empty_buffer<std::byte>(sizeof(MinMaxUniforms), BufferType::UniformBuffer);
+      m_compute_context->new_buffer_from_host_object(MinMaxUniforms{}, BufferType::UniformBuffer);
   m_min_max_intensity_fixed_buffer =
-      m_compute_context->new_buffer_from_host_memory<uint32_t>(initialMinMax.data(), sizeof(initialMinMax));
+      m_compute_context->new_buffer_from_host_memory<uint32_t>(tcb::span<const uint32_t>(initialMinMax));
   m_min_max_intensity_moving_buffer =
-      m_compute_context->new_buffer_from_host_memory<uint32_t>(initialMinMax.data(), sizeof(initialMinMax));
+      m_compute_context->new_buffer_from_host_memory<uint32_t>(tcb::span<const uint32_t>(initialMinMax));
   m_raw_joint_histogram_buffer = m_compute_context->new_empty_buffer<uint32_t>(m_num_bins * m_num_bins);
   m_smoothed_joint_histogram_buffer = m_compute_context->new_empty_buffer<float>(m_num_bins * m_num_bins);
   m_joint_histogram_mass_buffer = m_compute_context->new_empty_buffer<float>(1);
   m_joint_histogram_uniforms_buffer =
-      m_compute_context->new_empty_buffer<std::byte>(sizeof(JointHistogramUniforms), BufferType::UniformBuffer);
+      m_compute_context->new_buffer_from_host_object(JointHistogramUniforms{}, BufferType::UniformBuffer);
   m_precomputed_coefficients_buffer = m_compute_context->new_empty_buffer<float>(m_num_bins * m_num_bins);
   m_mutual_information_buffer = m_compute_context->new_empty_buffer<float>(1);
 
   if (m_output == CalculatorOutput::CostAndGradients) {
     m_gradients_dispatch_grid = DispatchGrid::element_wise_texture(m_fixed, gradientsWorkgroupSize);
-    const uint32_t gradients_uniform_size =
-        is_affine ? sizeof(AffineGradientsUniforms) : sizeof(RigidGradientsUniforms);
-    m_gradients_uniforms_buffer =
-        m_compute_context->new_empty_buffer<std::byte>(gradients_uniform_size, BufferType::UniformBuffer);
+    if (is_affine) {
+      m_gradients_uniforms_buffer =
+          m_compute_context->new_buffer_from_host_object(AffineGradientsUniforms{}, BufferType::UniformBuffer);
+    } else {
+      m_gradients_uniforms_buffer =
+          m_compute_context->new_buffer_from_host_object(RigidGradientsUniforms{}, BufferType::UniformBuffer);
+    }
     m_gradients_buffer =
         m_compute_context->new_empty_buffer<float>(m_degrees_of_freedom * m_gradients_dispatch_grid.workgroup_count());
   }
@@ -152,7 +155,8 @@ NMICalculator::NMICalculator(const Config &config)
   const MinMaxUniforms min_max_fixed_uniforms{
       .dispatch_grid = fixed_dispatch_grid,
   };
-  m_compute_context->write_to_buffer(m_min_max_uniforms_buffer, &min_max_fixed_uniforms, sizeof(min_max_fixed_uniforms));
+  m_compute_context->write_to_buffer(m_min_max_uniforms_buffer,
+                                     tcb::as_bytes(tcb::span<const MinMaxUniforms>(&min_max_fixed_uniforms, 1)));
   m_compute_context->dispatch_kernel(min_max_fixed_kernel, fixed_dispatch_grid);
 
   const KernelSpec min_max_moving_kernel_spec{
@@ -171,7 +175,8 @@ NMICalculator::NMICalculator(const Config &config)
   const MinMaxUniforms min_max_moving_uniforms{
       .dispatch_grid = moving_dispatch_grid,
   };
-  m_compute_context->write_to_buffer(m_min_max_uniforms_buffer, &min_max_moving_uniforms, sizeof(MinMaxUniforms));
+  m_compute_context->write_to_buffer(m_min_max_uniforms_buffer,
+                                     tcb::as_bytes(tcb::span<const MinMaxUniforms>(&min_max_moving_uniforms, 1)));
   m_compute_context->dispatch_kernel(m_min_max_moving_kernel, moving_dispatch_grid);
 
   const std::vector<uint32_t> min_max_fixed_bits =
@@ -193,7 +198,8 @@ NMICalculator::NMICalculator(const Config &config)
       .transformation_matrix = {},
   };
   m_compute_context->write_to_buffer(
-      m_joint_histogram_uniforms_buffer, &joint_histogram_uniforms, sizeof(JointHistogramUniforms));
+      m_joint_histogram_uniforms_buffer,
+      tcb::as_bytes(tcb::span<const JointHistogramUniforms>(&joint_histogram_uniforms, 1)));
   const uint32_t jointHistogramPartialsSize = (m_num_bins * m_num_bins) * m_joint_histogram_dispatch_grid.workgroup_count();
   m_joint_histogram_kernel = m_compute_context->new_kernel({
       .compute_shader =
@@ -299,7 +305,8 @@ void NMICalculator::update(const GlobalTransform &transformation) {
       .transformation_matrix = EigenHelpers::to_array(transformation_matrix_voxel_space),
   };
   m_compute_context->write_to_buffer(
-      m_joint_histogram_uniforms_buffer, &joint_histogram_uniforms, sizeof(joint_histogram_uniforms));
+      m_joint_histogram_uniforms_buffer,
+      tcb::as_bytes(tcb::span<const JointHistogramUniforms>(&joint_histogram_uniforms, 1)));
   m_compute_context->dispatch_kernel(m_joint_histogram_kernel, m_joint_histogram_dispatch_grid);
 
   const WorkgroupSize smoothWGSize{8, 8, 1};
@@ -329,7 +336,9 @@ void NMICalculator::update(const GlobalTransform &transformation) {
           .voxel_scanner_matrices = m_voxel_scanner_matrices,
       };
 
-      m_compute_context->write_to_buffer(m_gradients_uniforms_buffer, &gradients_uniforms, sizeof(AffineGradientsUniforms));
+      m_compute_context->write_to_buffer(
+          m_gradients_uniforms_buffer,
+          tcb::as_bytes(tcb::span<const AffineGradientsUniforms>(&gradients_uniforms, 1)));
     } else {
       std::array<float, 6> params;
       const auto current = transformation.parameters();
@@ -341,7 +350,9 @@ void NMICalculator::update(const GlobalTransform &transformation) {
           .current_transform = params,
           .voxel_scanner_matrices = m_voxel_scanner_matrices,
       };
-      m_compute_context->write_to_buffer(m_gradients_uniforms_buffer, &gradients_uniforms, sizeof(RigidGradientsUniforms));
+      m_compute_context->write_to_buffer(
+          m_gradients_uniforms_buffer,
+          tcb::as_bytes(tcb::span<const RigidGradientsUniforms>(&gradients_uniforms, 1)));
     }
 
     m_compute_context->dispatch_kernel(m_gradients_kernel, m_gradients_dispatch_grid);

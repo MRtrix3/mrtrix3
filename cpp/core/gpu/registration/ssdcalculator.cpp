@@ -63,8 +63,11 @@ SSDCalculator::SSDCalculator(const Config &config)
 
   m_dispatch_grid = DispatchGrid::element_wise_texture(m_fixed, ssd_workgroup_size);
 
-  const uint32_t uniforms_size = is_rigid ? sizeof(RigidSSDUniforms) : sizeof(AffineSSDUniforms);
-  m_uniforms_buffer = m_compute_context->new_empty_buffer<std::byte>(uniforms_size, BufferType::UniformBuffer);
+  if (is_rigid) {
+    m_uniforms_buffer = m_compute_context->new_buffer_from_host_object(RigidSSDUniforms{}, BufferType::UniformBuffer);
+  } else {
+    m_uniforms_buffer = m_compute_context->new_buffer_from_host_object(AffineSSDUniforms{}, BufferType::UniformBuffer);
+  }
 
   const size_t params_per_workgroup = 1U + m_degrees_of_freedom;
   m_partials_buffer = m_compute_context->new_empty_buffer<float>(params_per_workgroup * m_dispatch_grid.workgroup_count());
@@ -107,7 +110,8 @@ void SSDCalculator::update(const GlobalTransform &transformation) {
         .currentTransform = params,
         .voxelScannerMatrices = m_voxel_scanner_matrices,
     };
-    m_compute_context->write_to_buffer(m_uniforms_buffer, &uniforms, sizeof(AffineSSDUniforms));
+    m_compute_context->write_to_buffer(m_uniforms_buffer,
+                                       tcb::as_bytes(tcb::span<const AffineSSDUniforms>(&uniforms, 1)));
   } else {
     std::array<float, 6> params;
     const auto current = transformation.parameters();
@@ -118,7 +122,8 @@ void SSDCalculator::update(const GlobalTransform &transformation) {
         .currentTransform = params,
         .voxelScannerMatrices = m_voxel_scanner_matrices,
     };
-    m_compute_context->write_to_buffer(m_uniforms_buffer, &uniforms, sizeof(RigidSSDUniforms));
+    m_compute_context->write_to_buffer(m_uniforms_buffer,
+                                       tcb::as_bytes(tcb::span<const RigidSSDUniforms>(&uniforms, 1)));
   }
 
   m_compute_context->dispatch_kernel(m_kernel, m_dispatch_grid);

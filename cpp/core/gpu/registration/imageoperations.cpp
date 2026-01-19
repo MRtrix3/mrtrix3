@@ -103,7 +103,7 @@ Eigen::Matrix3f computeScannerMoments(const Texture &texture,
       .centre = {centreScanner.x(), centreScanner.y(), centreScanner.z(), 0.0f},
   };
   const Buffer<std::byte> centreBuffer =
-      context.new_buffer_from_host_memory<std::byte>(&uniforms, sizeof(uniforms), BufferType::UniformBuffer);
+      context.new_buffer_from_host_object(uniforms, BufferType::UniformBuffer);
 
   Buffer<uint32_t> momentBuffer = context.new_empty_buffer<uint32_t>(kMomentCount);
   context.clear_buffer(momentBuffer);

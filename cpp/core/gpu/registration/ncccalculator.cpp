@@ -62,7 +62,7 @@ void upload_uniforms(const ComputeContext &context,
   const auto params = transform.parameters();
   std::copy_n(params.begin(), N, uniforms.current_transform.begin());
   uniforms.voxel_scanner_matrices = matrices;
-  context.write_to_buffer(buffer, &uniforms, sizeof(uniforms));
+  context.write_to_buffer(buffer, tcb::as_bytes(tcb::span<const NCCUniforms<N>>(&uniforms, 1)));
 }
 
 } // namespace
@@ -86,8 +86,11 @@ NCCCalculator::NCCCalculator(const Config &config)
   m_terms_per_workgroup = 1U + m_degrees_of_freedom;
   m_global_terms_per_workgroup = 5U + 3U * m_degrees_of_freedom;
 
-  const size_t uniformsSize = is_rigid ? sizeof(RigidNCCUniforms) : sizeof(AffineNCCUniforms);
-  m_uniforms_buffer = m_compute_context->new_empty_buffer<std::byte>(uniformsSize, BufferType::UniformBuffer);
+  if (is_rigid) {
+    m_uniforms_buffer = m_compute_context->new_buffer_from_host_object(RigidNCCUniforms{}, BufferType::UniformBuffer);
+  } else {
+    m_uniforms_buffer = m_compute_context->new_buffer_from_host_object(AffineNCCUniforms{}, BufferType::UniformBuffer);
+  }
   m_num_contributing_voxels_buffer = m_compute_context->new_empty_buffer<uint32_t>(1);
 
   if (m_use_local_window) {
