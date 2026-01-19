@@ -141,7 +141,7 @@ EntryPointSelection select_entry_point(slang::ProgramLayout *programLayout, std:
     }
     const char *const name_override = entry_point_layout->getNameOverride(); // check_syntax off
     const char *const name = entry_point_layout->getName();                  // check_syntax off
-    const char *const resolved = (name_override != nullptr) ? name_override : name;
+    const char *const resolved = (name_override != nullptr) ? name_override : name; // check_syntax off
     if (resolved == nullptr) {
       continue;
     }
