@@ -222,6 +222,7 @@ struct ComputeContext {
   new_buffer_from_host_object(const Object &object, BufferType buffer_type = BufferType::StorageBuffer) const {
     static_assert(std::is_trivially_copyable_v<Object>, "Object must be trivially copyable");
     static_assert(std::is_standard_layout_v<Object>, "Object must be standard layout");
+    static_assert(sizeof(Object) % 4 == 0, "Object size must be a multiple of 4 bytes");
     return {buffer_type, inner_new_buffer_from_host_memory(&object, sizeof(object), buffer_type)};
   }
 
@@ -246,6 +247,7 @@ struct ComputeContext {
   void write_object_to_buffer(const Buffer<std::byte> &buffer, const Object &object, uint64_t offset_bytes = 0) const {
     static_assert(std::is_trivially_copyable_v<Object>, "Object must be trivially copyable");
     static_assert(std::is_standard_layout_v<Object>, "Object must be standard layout");
+    static_assert(sizeof(Object) % 4 == 0, "Object size must be a multiple of 4 bytes");
     const auto bytes = tcb::as_bytes(tcb::span<const Object>(&object, 1));
     write_to_buffer<std::byte>(buffer, bytes, offset_bytes);
   }
