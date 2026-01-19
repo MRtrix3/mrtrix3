@@ -139,8 +139,8 @@ EntryPointSelection select_entry_point(slang::ProgramLayout *programLayout, std:
     if (entry_point_layout == nullptr) {
       continue;
     }
-    const char *const name_override = entry_point_layout->getNameOverride(); // check_syntax off
-    const char *const name = entry_point_layout->getName();                  // check_syntax off
+    const char *const name_override = entry_point_layout->getNameOverride();        // check_syntax off
+    const char *const name = entry_point_layout->getName();                         // check_syntax off
     const char *const resolved = (name_override != nullptr) ? name_override : name; // check_syntax off
     if (resolved == nullptr) {
       continue;
@@ -352,9 +352,10 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
 
   const auto entry_point_selection =
       select_entry_point(linked_slang_program->getLayout(), kernel_spec.compute_shader.entryPoint);
+  const auto entry_point_index = static_cast<SlangInt>(entry_point_selection.index);
 
   Slang::ComPtr<slang::IBlob> hash_blob;
-  linked_slang_program->getEntryPointHash(entry_point_selection.index, 0, hash_blob.writeRef());
+  linked_slang_program->getEntryPointHash(entry_point_index, 0, hash_blob.writeRef());
   const std::string hash_key =
       std::string(static_cast<const char *>(hash_blob->getBufferPointer()), hash_blob->getBufferSize());
 
@@ -364,7 +365,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
     wgsl_code = shader_cache.get(hash_key);
   } else {
     check_slang_result(linked_slang_program->getEntryPointCode(
-                           entry_point_selection.index, 0, slang_kernel_blob.writeRef(), diagnostics.writeRef()),
+                           entry_point_index, 0, slang_kernel_blob.writeRef(), diagnostics.writeRef()),
                        "Slang failed to get entry point code",
                        diagnostics);
     wgsl_code = std::string(static_cast<const char *>(slang_kernel_blob->getBufferPointer()),
