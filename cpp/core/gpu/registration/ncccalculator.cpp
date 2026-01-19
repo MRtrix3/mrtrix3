@@ -62,7 +62,7 @@ void upload_uniforms(const ComputeContext &context,
   const auto params = transform.parameters();
   std::copy_n(params.begin(), N, uniforms.current_transform.begin());
   uniforms.voxel_scanner_matrices = matrices;
-  context.write_to_buffer(buffer, tcb::as_bytes(tcb::span<const NCCUniforms<N>>(&uniforms, 1)));
+  context.write_object_to_buffer(buffer, uniforms);
 }
 
 } // namespace

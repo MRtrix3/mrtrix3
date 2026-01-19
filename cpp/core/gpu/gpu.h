@@ -241,6 +241,15 @@ struct ComputeContext {
     return Buffer<T>{bufferType, std::move(buffer)};
   }
 
+  // Writes a POD-like object into a byte buffer (e.g. uniform buffers).
+  template <typename Object>
+  void write_object_to_buffer(const Buffer<std::byte> &buffer, const Object &object, uint64_t offset_bytes = 0) const {
+    static_assert(std::is_trivially_copyable_v<Object>, "Object must be trivially copyable");
+    static_assert(std::is_standard_layout_v<Object>, "Object must be standard layout");
+    const auto bytes = tcb::as_bytes(tcb::span<const Object>(&object, 1));
+    write_to_buffer<std::byte>(buffer, bytes, offset_bytes);
+  }
+
   // This function blocks until the download is complete.
   template <typename T = float> [[nodiscard]] std::vector<T> download_buffer_as_vector(const Buffer<T> &buffer) const {
     std::vector<T> result(buffer.wgpu_handle.GetSize() / sizeof(T));

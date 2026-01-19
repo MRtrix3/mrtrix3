@@ -155,8 +155,7 @@ NMICalculator::NMICalculator(const Config &config)
   const MinMaxUniforms min_max_fixed_uniforms{
       .dispatch_grid = fixed_dispatch_grid,
   };
-  m_compute_context->write_to_buffer(m_min_max_uniforms_buffer,
-                                     tcb::as_bytes(tcb::span<const MinMaxUniforms>(&min_max_fixed_uniforms, 1)));
+  m_compute_context->write_object_to_buffer(m_min_max_uniforms_buffer, min_max_fixed_uniforms);
   m_compute_context->dispatch_kernel(min_max_fixed_kernel, fixed_dispatch_grid);
 
   const KernelSpec min_max_moving_kernel_spec{
@@ -175,8 +174,7 @@ NMICalculator::NMICalculator(const Config &config)
   const MinMaxUniforms min_max_moving_uniforms{
       .dispatch_grid = moving_dispatch_grid,
   };
-  m_compute_context->write_to_buffer(m_min_max_uniforms_buffer,
-                                     tcb::as_bytes(tcb::span<const MinMaxUniforms>(&min_max_moving_uniforms, 1)));
+  m_compute_context->write_object_to_buffer(m_min_max_uniforms_buffer, min_max_moving_uniforms);
   m_compute_context->dispatch_kernel(m_min_max_moving_kernel, moving_dispatch_grid);
 
   const std::vector<uint32_t> min_max_fixed_bits =
@@ -197,9 +195,7 @@ NMICalculator::NMICalculator(const Config &config)
       .intensities = m_intensities,
       .transformation_matrix = {},
   };
-  m_compute_context->write_to_buffer(
-      m_joint_histogram_uniforms_buffer,
-      tcb::as_bytes(tcb::span<const JointHistogramUniforms>(&joint_histogram_uniforms, 1)));
+  m_compute_context->write_object_to_buffer(m_joint_histogram_uniforms_buffer, joint_histogram_uniforms);
   const uint32_t jointHistogramPartialsSize = (m_num_bins * m_num_bins) * m_joint_histogram_dispatch_grid.workgroup_count();
   m_joint_histogram_kernel = m_compute_context->new_kernel({
       .compute_shader =
@@ -304,9 +300,7 @@ void NMICalculator::update(const GlobalTransform &transformation) {
       .intensities = m_intensities,
       .transformation_matrix = EigenHelpers::to_array(transformation_matrix_voxel_space),
   };
-  m_compute_context->write_to_buffer(
-      m_joint_histogram_uniforms_buffer,
-      tcb::as_bytes(tcb::span<const JointHistogramUniforms>(&joint_histogram_uniforms, 1)));
+  m_compute_context->write_object_to_buffer(m_joint_histogram_uniforms_buffer, joint_histogram_uniforms);
   m_compute_context->dispatch_kernel(m_joint_histogram_kernel, m_joint_histogram_dispatch_grid);
 
   const WorkgroupSize smoothWGSize{8, 8, 1};
@@ -336,9 +330,7 @@ void NMICalculator::update(const GlobalTransform &transformation) {
           .voxel_scanner_matrices = m_voxel_scanner_matrices,
       };
 
-      m_compute_context->write_to_buffer(
-          m_gradients_uniforms_buffer,
-          tcb::as_bytes(tcb::span<const AffineGradientsUniforms>(&gradients_uniforms, 1)));
+      m_compute_context->write_object_to_buffer(m_gradients_uniforms_buffer, gradients_uniforms);
     } else {
       std::array<float, 6> params;
       const auto current = transformation.parameters();
@@ -350,9 +342,7 @@ void NMICalculator::update(const GlobalTransform &transformation) {
           .current_transform = params,
           .voxel_scanner_matrices = m_voxel_scanner_matrices,
       };
-      m_compute_context->write_to_buffer(
-          m_gradients_uniforms_buffer,
-          tcb::as_bytes(tcb::span<const RigidGradientsUniforms>(&gradients_uniforms, 1)));
+      m_compute_context->write_object_to_buffer(m_gradients_uniforms_buffer, gradients_uniforms);
     }
 
     m_compute_context->dispatch_kernel(m_gradients_kernel, m_gradients_dispatch_grid);

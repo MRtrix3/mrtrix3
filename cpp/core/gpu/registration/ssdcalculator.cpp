@@ -110,8 +110,7 @@ void SSDCalculator::update(const GlobalTransform &transformation) {
         .currentTransform = params,
         .voxelScannerMatrices = m_voxel_scanner_matrices,
     };
-    m_compute_context->write_to_buffer(m_uniforms_buffer,
-                                       tcb::as_bytes(tcb::span<const AffineSSDUniforms>(&uniforms, 1)));
+    m_compute_context->write_object_to_buffer(m_uniforms_buffer, uniforms);
   } else {
     std::array<float, 6> params;
     const auto current = transformation.parameters();
@@ -122,8 +121,7 @@ void SSDCalculator::update(const GlobalTransform &transformation) {
         .currentTransform = params,
         .voxelScannerMatrices = m_voxel_scanner_matrices,
     };
-    m_compute_context->write_to_buffer(m_uniforms_buffer,
-                                       tcb::as_bytes(tcb::span<const RigidSSDUniforms>(&uniforms, 1)));
+    m_compute_context->write_object_to_buffer(m_uniforms_buffer, uniforms);
   }
 
   m_compute_context->dispatch_kernel(m_kernel, m_dispatch_grid);
