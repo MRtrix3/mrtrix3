@@ -237,7 +237,9 @@ public:
     lambda_prev.setZero();
     // set active set empty:
     active.setZero();
-    active.tail(num_ineq).setOnes();
+    if (num_eq > 0) {
+      active.tail(num_eq).setOnes();
+    }
 
     // initial estimate of constraint values:
     c = c_u;
