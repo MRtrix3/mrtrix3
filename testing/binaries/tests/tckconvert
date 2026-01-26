@@ -17,3 +17,9 @@ tckconvert tckconvert/tracks-binary.vtk tmp.vtk -ascii -force && awk '/POINTS/{s
 # convert binary vtk -> tck:
 tckconvert tckconvert/tracks-binary.vtk tmp.tck -force && testing_diff_tck tmp.tck tracks.tck
 
+# convert TRX -> tck (compressed + directory):
+tckconvert tckconvert/gs.trx tmp.tck -force && testing_diff_tck tmp.tck tckconvert/gs.tck
+tckconvert tckconvert/gs_fldr.trx tmp.tck -force && testing_diff_tck tmp.tck tckconvert/gs.tck
+
+# convert tck -> TRX -> tck (compressed output):
+tckconvert tckconvert/gs.tck tmp.trx -force && tckconvert tmp.trx tmp.tck -force && testing_diff_tck tmp.tck tckconvert/gs.tck

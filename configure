@@ -158,6 +158,12 @@ ENVIRONMENT VARIABLES
     FFTW_LINKFLAGS
         Any flags required to link with the FFTW library.
 
+    TRX_CFLAGS
+        Any flags required to compile with the trx-cpp library and its headers.
+
+    TRX_LINKFLAGS
+        Any flags required to link with the trx-cpp library and its dependencies.
+
     QMAKE
         The command to invoke Qt's qmake (default: qmake).
 
@@ -1061,6 +1067,27 @@ int main (int argc, char* argv[])
 
 
 
+
+
+# trx-cpp (optional)
+
+trx_cflags = get_flags ([], 'TRX_CFLAGS')
+trx_ldflags = get_flags ([], 'TRX_LINKFLAGS')
+
+if 'TRX_CFLAGS' in os.environ.keys() or 'TRX_LINKFLAGS' in os.environ.keys():
+  compile_check ('trx-cpp library', 'trx-cpp',
+    cpp_flags + eigen_cflags + trx_cflags, ld_flags + trx_ldflags, '''
+#include <string>
+#include <trx/trx.h>
+int main() {
+  auto ext = trxmmap::get_ext("file.trx");
+  return ext.empty();
+}
+''', 'TRX_CFLAGS', '"-I/path/to/trx-cpp/include"', 'TRX_LINKFLAGS', '"-L/path/to/lib -ltrx"')
+
+  cpp_flags += trx_cflags
+  ld_flags += trx_ldflags
+  ld_lib_flags += trx_ldflags
 
 
 # TIFF:

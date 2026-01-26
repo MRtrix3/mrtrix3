@@ -21,7 +21,9 @@ Usage
 Description
 -----------
 
-The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), and RenderMan RIB (export only).
+The program currently supports MRtrix .tck files (input/output), TRX .trx files (input/output), ascii text files (input/output), VTK polydata files (input/output), and RenderMan RIB (export only).
+
+TRX files can include data per streamline (dps), data per vertex (dpv), data per group (dpg), and group membership. tckconvert only operates on streamline geometry: these fields are discarded when converting to other formats that do not support them. When applying a coordinate transform, only the streamline positions are modified; any TRX metadata values are left unchanged.
 
 Note that ascii files will be stored with one streamline per numbered file. To support this, the command will use the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, for example:
 
