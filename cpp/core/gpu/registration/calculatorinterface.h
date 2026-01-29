@@ -38,7 +38,7 @@ public:
     MR::Transform fixed_transform;
     MR::Transform moving_transform;
     float downscale_factor;
-    Metric metric;
+    GlobalMetric metric;
   };
 
   void update(const GlobalTransform &transformation) {

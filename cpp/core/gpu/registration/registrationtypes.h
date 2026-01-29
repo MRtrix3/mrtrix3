@@ -115,7 +115,7 @@ struct NCCMetric {
   uint32_t window_radius = 0U;
 };
 
-using Metric = std::variant<NMIMetric, SSDMetric, NCCMetric>;
+using GlobalMetric = std::variant<NMIMetric, SSDMetric, NCCMetric>;
 
 enum class MetricType : uint8_t { NMI, SSD, NCC };
 enum class InitTranslationChoice : uint8_t { None, Mass, Geometric };
@@ -124,7 +124,7 @@ enum class InitRotationChoice : uint8_t { None, Search, Moments };
 struct InitialisationOptions {
   InitTranslationChoice translation_choice = InitTranslationChoice::Mass;
   InitRotationChoice rotation_choice = InitRotationChoice::None;
-  Metric cost_metric = NMIMetric{};
+  GlobalMetric cost_metric = NMIMetric{};
   // Limits the maximum sampled rotation angle (degrees) for search-based initialisation.
   float max_search_angle_degrees = 90.0F;
 };
@@ -143,7 +143,7 @@ struct RegistrationConfig {
   std::vector<ChannelConfig> channels;
   TransformationType transformation_type;
   InitialGuess initial_guess;
-  Metric metric;
+  GlobalMetric metric;
   uint32_t max_iterations = 500;
 };
 

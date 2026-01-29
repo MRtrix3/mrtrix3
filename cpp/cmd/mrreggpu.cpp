@@ -286,7 +286,7 @@
      const InitRotationChoice init_rotation =
          from_name<InitRotationChoice>(get_option_value<std::string>("init_rotation", "none"));
      const float init_rotation_max_angle = get_option_value<float>("init_rotation_max_angle", default_max_search_angle);
-     Metric init_metric;
+     GlobalMetric init_metric;
      switch (metric_type) {
      case MetricType::NMI:
        init_metric = NMIMetric{};
@@ -350,7 +350,7 @@
      ++index;
    }
 
-   Metric metric;
+   GlobalMetric metric;
    switch (metric_type) {
    case MetricType::NMI:
      metric = NMIMetric{};
