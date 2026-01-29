@@ -20,5 +20,5 @@
 #include "gpu/registration/registrationtypes.h"
 
 namespace MR::GPU {
-RegistrationResult run_registration(const RegistrationConfig &config, const GPU::ComputeContext &context);
+RegistrationResult run_registration(const GlobalRegistrationConfig &config, const GPU::ComputeContext &context);
 }

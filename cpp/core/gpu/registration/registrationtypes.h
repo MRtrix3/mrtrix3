@@ -139,7 +139,7 @@ struct ChannelConfig {
   float weight = 1.0F;
 };
 
-struct RegistrationConfig {
+struct GlobalRegistrationConfig {
   std::vector<ChannelConfig> channels;
   TransformationType transformation_type;
   InitialGuess initial_guess;

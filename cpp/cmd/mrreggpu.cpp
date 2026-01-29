@@ -365,7 +365,7 @@
      throw Exception("Unsupported metric type");
    }
 
-   const RegistrationConfig registration_config{
+   const GlobalRegistrationConfig registration_config{
        .channels = channels,
        .transformation_type = transform_type,
        .initial_guess = initial_guess,

@@ -127,7 +127,7 @@ struct ChannelData {
   float weight = 1.0F;
 };
 
-RegistrationResult run_registration(const RegistrationConfig &config, const GPU::ComputeContext &context) {
+RegistrationResult run_registration(const GlobalRegistrationConfig &config, const GPU::ComputeContext &context) {
   constexpr uint32_t num_levels = 3U;
   const bool is_affine = config.transformation_type == TransformationType::Affine;
   const uint32_t degrees_of_freedom = is_affine ? 12U : 6U;
