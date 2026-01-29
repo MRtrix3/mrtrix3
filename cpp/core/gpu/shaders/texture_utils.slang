@@ -36,11 +36,7 @@ public enum SamplingCoordinateSystem {
     Texel
 }
 
-public typealias TexelSamplingField = VolumeSamplingField<SamplingCoordinateSystem.Texel>;
-public typealias VoxelSamplingField = VolumeSamplingField<SamplingCoordinateSystem.Voxel>;
-
-
-// A convenient class for sampling and gradient computation on 3D images.
+// A convenient class for sampling and gradient computation on scalar 3D images.
 public struct VolumeSamplingField<let coordSys: SamplingCoordinateSystem> {
     Texture3D<float> image;
     uint3 dimensions;
@@ -52,13 +48,25 @@ public struct VolumeSamplingField<let coordSys: SamplingCoordinateSystem> {
         image.GetDimensions(dimensions.x, dimensions.y, dimensions.z);
     }
 
-    public float sample(float3 coord) {
+    float3 normalisedCoords(float3 coord) {
         if (coordSys == SamplingCoordinateSystem.Voxel) {
-            return image.SampleLevel(sampler, (coord + 0.5F) / float3(dimensions), 0.0F);
-        } else if (coordSys == SamplingCoordinateSystem.Texel) {
-            return image.SampleLevel(sampler, coord / float3(dimensions), 0.0F);
+            return (coord + 0.5F) / float3(dimensions);
         }
-        return 0.0F;
+        return coord / float3(dimensions);
+    }
+
+    public float sample(float3 coord) {
+        return image.SampleLevel(sampler, normalisedCoords(coord), 0.0F);
+    }
+
+    public float sampleWithZeroBorder(float3 coord) {
+        if (coord.x < 0.0F || coord.y < 0.0F || coord.z < 0.0F ||
+            coord.x >= float(dimensions.x) ||
+            coord.y >= float(dimensions.y) ||
+            coord.z >= float(dimensions.z)) {
+            return 0.0F;
+        }
+        return sample(coord);
     }
 
     public bool maskAccepts(float3 coord, bool useMask) {
@@ -116,6 +124,39 @@ public struct VolumeSamplingField<let coordSys: SamplingCoordinateSystem> {
         return float3(ddx, ddy, ddz);
     }
 }
+
+// Vector sampling helper for float3/float4 fields.
+public struct VectorVolumeSamplingField<let coordSys: SamplingCoordinateSystem, typename VecT>
+    where VecT : ITexelElement
+{
+    Texture3D<VecT> image;
+    uint3 dimensions;
+    SamplerState sampler;
+
+    public __init(Texture3D<VecT> img, SamplerState smpl) {
+        image = img;
+        sampler = smpl;
+        image.GetDimensions(dimensions.x, dimensions.y, dimensions.z);
+    }
+
+    float3 normalisedCoords(float3 coord) {
+        if (coordSys == SamplingCoordinateSystem.Voxel) {
+            return (coord + 0.5F) / float3(dimensions);
+        }
+        return coord / float3(dimensions);
+    }
+
+    public VecT sample(float3 coord) {
+        return image.SampleLevel(sampler, normalisedCoords(coord), 0.0F);
+    }
+}
+
+public typealias TexelSamplingField = VolumeSamplingField<SamplingCoordinateSystem.Texel>;
+public typealias VoxelSamplingField = VolumeSamplingField<SamplingCoordinateSystem.Voxel>;
+public typealias TexelSamplingFieldFloat3 = VectorVolumeSamplingField<SamplingCoordinateSystem.Texel, float3>;
+public typealias TexelSamplingFieldFloat4 = VectorVolumeSamplingField<SamplingCoordinateSystem.Texel, float4>;
+public typealias VoxelSamplingFieldFloat3 = VectorVolumeSamplingField<SamplingCoordinateSystem.Voxel, float3>;
+public typealias VoxelSamplingFieldFloat4 = VectorVolumeSamplingField<SamplingCoordinateSystem.Voxel, float4>;
 
 
 public struct GradientSamplingField {
