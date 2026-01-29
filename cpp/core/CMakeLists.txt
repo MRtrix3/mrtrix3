@@ -4,8 +4,6 @@ find_package(FFTW REQUIRED)
 find_package(Git QUIET)
 find_package(Threads REQUIRED)
 find_package(PNG QUIET)
-find_package(Dawn CONFIG REQUIRED)
-find_package(slang CONFIG REQUIRED)
 
 if(PNG_FOUND)
     message(STATUS "Found PNG: ${PNG_LIBRARIES}")
@@ -22,6 +20,14 @@ if(NOT MRTRIX_HAVE_LGAMMA_R)
 endif()
 
 file(GLOB_RECURSE HEADLESS_SOURCES *.h *.cpp)
+
+
+if(MRTRIX_ENABLE_GPU)
+    find_package(Dawn CONFIG REQUIRED)
+    find_package(slang CONFIG REQUIRED)
+else()
+    list(FILTER HEADLESS_SOURCES EXCLUDE REGEX "${CMAKE_CURRENT_LIST_DIR}/gpu/.*")
+endif()
 
 find_package(Git QUIET)
 
@@ -104,7 +110,6 @@ else()
 endif()
 
 target_link_libraries(mrtrix-core PUBLIC
-    dawn::webgpu_dawn
     Eigen3::Eigen
     ZLIB::ZLIB
     fftw3::fftw
@@ -113,9 +118,12 @@ target_link_libraries(mrtrix-core PUBLIC
     Threads::Threads
     nlohmann_json::nlohmann_json
     nifti::nifti
-    slang::slang
     tcb::span
 )
+
+if(MRTRIX_ENABLE_GPU)
+    target_link_libraries(mrtrix-core PUBLIC dawn::webgpu_dawn slang::slang)
+endif()
 
 # On Windows, the libraries need to be in the same directory as the executables
 if(WIN32)

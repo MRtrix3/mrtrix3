@@ -104,107 +104,109 @@ if(MRTRIX_BUILD_TESTS)
 endif()
 
 
-# Dawn
+if(MRTRIX_ENABLE_GPU)
+    # Dawn
 
-# Threads (required by Dawn exported targets)
-find_package(Threads REQUIRED)
+    # Threads (required by Dawn exported targets)
+    find_package(Threads REQUIRED)
 
-if(NOT MRTRIX_USE_SYSTEM_DAWN)
-    message(STATUS "Downloading prebuilt binaries for Dawn...")
-    include(FetchContent)
-    set(FETCHCONTENT_QUIET OFF)
+    if(NOT MRTRIX_USE_SYSTEM_DAWN)
+        message(STATUS "Downloading prebuilt binaries for Dawn...")
+        include(FetchContent)
+        set(FETCHCONTENT_QUIET OFF)
 
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(DAWN_PLATFORM "linux")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        set(DAWN_PLATFORM "macos")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(DAWN_PLATFORM "windows-msys2")
-    else()
-        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(DAWN_PLATFORM "linux")
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+            set(DAWN_PLATFORM "macos")
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+            set(DAWN_PLATFORM "windows-msys2")
+        else()
+            message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+        endif()
+
+        set(DAWN_VERSION 7495)
+
+
+        set(DAWN_BINARIES_URL_PREFIX
+            "https://github.com/mrtrix3/webgpu-dawn-binaries/releases/download/chromium")
+        set(DAWN_BINARIES_URL
+            ${DAWN_BINARIES_URL_PREFIX}-${DAWN_VERSION}/webgpu-dawn-chromium-${DAWN_VERSION}-${DAWN_PLATFORM}.zip
+        )
+
+        FetchContent_Declare(
+            dawn
+            DOWNLOAD_NO_PROGRESS         1
+            URL ${DAWN_BINARIES_URL}
+        )
+        FetchContent_MakeAvailable(dawn)
+
+        # On Linux, Dawn prebuilt packages use lib64; others use lib
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(DAWN_LIB_DIR_NAME "lib64")
+        else()
+            set(DAWN_LIB_DIR_NAME "lib")
+        endif()
+        set(
+          Dawn_DIR
+          "${dawn_SOURCE_DIR}/${DAWN_LIB_DIR_NAME}/cmake/Dawn"
+          CACHE PATH "Folder containing DawnConfig.cmake"
+          FORCE
+        )
+        set(FETCHCONTENT_QUIET ON)
     endif()
 
-    set(DAWN_VERSION 7495)
 
+    # Slang
 
-    set(DAWN_BINARIES_URL_PREFIX
-        "https://github.com/mrtrix3/webgpu-dawn-binaries/releases/download/chromium")
-    set(DAWN_BINARIES_URL
-        ${DAWN_BINARIES_URL_PREFIX}-${DAWN_VERSION}/webgpu-dawn-chromium-${DAWN_VERSION}-${DAWN_PLATFORM}.zip
-    )
+    find_package(slang QUIET)
 
-    FetchContent_Declare(
-        dawn
-        DOWNLOAD_NO_PROGRESS         1
-        URL ${DAWN_BINARIES_URL}
-    )
-    FetchContent_MakeAvailable(dawn)
+    if(NOT MRTRIX_USE_SYSTEM_SLANG)
+        message(STATUS "Downloading prebuilt binaries for Slang...")
+        set(SLANG_VERSION "2025.22.1" CACHE STRING "Slang version to download from GitHub releases")
 
-    # On Linux, Dawn prebuilt packages use lib64; others use lib
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(DAWN_LIB_DIR_NAME "lib64")
-    else()
-        set(DAWN_LIB_DIR_NAME "lib")
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(SLANG_OS "linux")
+        elseif(APPLE)
+            set(SLANG_OS "macos")
+        else()
+            set(SLANG_OS "windows")
+        endif()
+
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+            set(SLANG_ARCH "aarch64")
+        else()
+            set(SLANG_ARCH "x86_64")
+        endif()
+
+        set(SLANG_SUBSTRING "-${SLANG_OS}-${SLANG_ARCH}")
+
+        set(SLANG_DOWNLOAD_LINK
+          "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}/slang-${SLANG_VERSION}${SLANG_SUBSTRING}.zip"
+        )
+
+        message(STATUS "Downloading Slang ${SLANG_VERSION} (${SLANG_OS}/${SLANG_ARCH})...")
+
+        FetchContent_Declare(
+          slang
+            DOWNLOAD_NO_PROGRESS         1
+            URL                          ${SLANG_DOWNLOAD_LINK}
+        )
+        FetchContent_MakeAvailable(slang)
+
+        if(WIN32)
+            set(slang_DIR_PATH "${slang_SOURCE_DIR}/cmake")
+        else()
+            set(slang_DIR_PATH "${slang_SOURCE_DIR}/lib/cmake/slang")
+        endif()
+
+        set(
+          slang_DIR
+          "${slang_DIR_PATH}"
+          CACHE PATH "Folder containing SlangConfig.cmake"
+          FORCE
+        )
     endif()
-    set(
-      Dawn_DIR
-      "${dawn_SOURCE_DIR}/${DAWN_LIB_DIR_NAME}/cmake/Dawn"
-      CACHE PATH "Folder containing DawnConfig.cmake"
-      FORCE
-    )
-    set(FETCHCONTENT_QUIET ON)
-endif()
-
-
-# Slang
-
-find_package(slang QUIET)
-
-if(NOT MRTRIX_USE_SYSTEM_SLANG)
-    message(STATUS "Downloading prebuilt binaries for Slang...")
-    set(SLANG_VERSION "2025.22.1" CACHE STRING "Slang version to download from GitHub releases")
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(SLANG_OS "linux")
-    elseif(APPLE)
-        set(SLANG_OS "macos")
-    else()
-        set(SLANG_OS "windows")
-    endif()
-
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
-        set(SLANG_ARCH "aarch64")
-    else()
-        set(SLANG_ARCH "x86_64")
-    endif()
-
-    set(SLANG_SUBSTRING "-${SLANG_OS}-${SLANG_ARCH}")
-
-    set(SLANG_DOWNLOAD_LINK
-      "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}/slang-${SLANG_VERSION}${SLANG_SUBSTRING}.zip"
-    )
-
-    message(STATUS "Downloading Slang ${SLANG_VERSION} (${SLANG_OS}/${SLANG_ARCH})...")
-
-    FetchContent_Declare(
-      slang
-        DOWNLOAD_NO_PROGRESS         1
-        URL                          ${SLANG_DOWNLOAD_LINK}
-    )
-    FetchContent_MakeAvailable(slang)
-
-    if(WIN32)
-        set(slang_DIR_PATH "${slang_SOURCE_DIR}/cmake")
-    else()
-        set(slang_DIR_PATH "${slang_SOURCE_DIR}/lib/cmake/slang")
-    endif()
-
-    set(
-      slang_DIR
-      "${slang_DIR_PATH}"
-      CACHE PATH "Folder containing SlangConfig.cmake"
-      FORCE
-    )
 endif()
 
 # tcb::span
