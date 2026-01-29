@@ -17,6 +17,7 @@
 #pragma once
 
 #include "image.h"
+#include <cstddef>
 #include <tcb/span.hpp>
 #include "types.h"
 
