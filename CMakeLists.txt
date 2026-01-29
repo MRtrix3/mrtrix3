@@ -76,6 +76,8 @@ include(Dependencies)
 include(CompilerCache)
 use_compiler_cache()
 
+find_package(trx-cpp CONFIG REQUIRED)
+
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
     message(WARNING
         "pre-commit git hook for clang-format not found!\n"
