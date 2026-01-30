@@ -80,7 +80,7 @@ NCCCalculator::NCCCalculator(const Config &config)
       m_use_fixed_mask(config.fixed_mask.has_value()),
       m_use_moving_mask(config.moving_mask.has_value()) {
   assert(m_compute_context != nullptr);
-  const bool is_rigid = config.transformation_type == TransformationType::Rigid;
+  const bool is_rigid = config.transformation_type == GlobalRegistrationType::Rigid;
   m_degrees_of_freedom = is_rigid ? 6U : 12U;
   m_dispatch_grid = DispatchGrid::element_wise_texture(m_fixed, ncc_workgroup_size);
   m_terms_per_workgroup = 1U + m_degrees_of_freedom;

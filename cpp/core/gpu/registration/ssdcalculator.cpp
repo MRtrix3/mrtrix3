@@ -58,7 +58,7 @@ SSDCalculator::SSDCalculator(const Config &config)
       m_use_moving_mask(config.moving_mask.has_value()),
       m_voxel_scanner_matrices(config.voxel_scanner_matrices) {
   assert(m_compute_context != nullptr);
-  const bool is_rigid = config.transformation_type == TransformationType::Rigid;
+  const bool is_rigid = config.transformation_type == GlobalRegistrationType::Rigid;
   m_degrees_of_freedom = is_rigid ? 6U : 12U;
 
   m_dispatch_grid = DispatchGrid::element_wise_texture(m_fixed, ssd_workgroup_size);

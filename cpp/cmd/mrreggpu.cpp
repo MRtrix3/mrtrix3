@@ -25,6 +25,7 @@
  #include "gpu/gpu.h"
  #include "gpu/registration/eigenhelpers.h"
  #include "gpu/registration/globalregistration.h"
+ #include "gpu/registration/nonlinearregistration.h"
  #include "gpu/registration/registrationtypes.h"
  #include "gpu/registration/imageoperations.h"
  #include "gpu/registration/imageoperations.h"
@@ -83,12 +84,13 @@
  }
 
  constexpr float default_max_search_angle = 45.0F;
- constexpr TransformationType default_transformation_type = TransformationType::Affine;
+ constexpr TransformModel default_registration_mode = TransformModel::Global;
  constexpr MetricType default_metric_type = MetricType::NMI;
  constexpr uint32_t default_ncc_window_radius = 0U;
  constexpr uint32_t default_max_iterations = 500;
- const std::vector<std::string> supported_metric_types = lowercase_enum_names<MetricType>();
- const std::vector<std::string> supported_transform_types = lowercase_enum_names<TransformationType>();
+ const std::vector<std::string> supported_global_metric_types = lowercase_enum_names<MetricType>();
+ const std::vector<std::string> supported_nonlinear_metric_types = {"ssd", "ncc"};
+ const std::vector<std::string> supported_registration_modes = lowercase_enum_names<TransformModel>();
  const std::vector<std::string> supported_init_translations = lowercase_enum_names<InitTranslationChoice>();
  const std::vector<std::string> supported_init_rotations = lowercase_enum_names<InitRotationChoice>();
 
@@ -152,11 +154,14 @@
          + Option ("matrix_2tomidway", "write the transformation matrix used for reslicing image2 into midway space.")
              + Argument("filename").type_file_out()
 
-         + Option ("type", "type of transform (rigid, affine)")
-             + Argument("name").type_choice(supported_transform_types)
+         + Option ("type", "type of transform (global, nonlinear)")
+             + Argument("name").type_choice(supported_registration_modes)
 
-         + Option ("metric", "similarity metric to use (nmi, ssd, ncc)")
-             + Argument("name").type_choice(supported_metric_types)
+         + Option ("global_metric", "similarity metric to use for rigid/affine registrations (nmi, ssd, ncc)")
+             + Argument("name").type_choice(supported_global_metric_types)
+
+         + Option ("nonlinear_metric", "similarity metric to use for nonlinear registration (ssd, ncc)")
+             + Argument("name").type_choice(supported_nonlinear_metric_types)
 
          // TODO: Should we mention that using a large window radius (> 3) is not recommended
          // as it's computationally expensive and usually does not improve results?
@@ -240,11 +245,35 @@
      check_3D_nonunity(header2);
    }
 
-   const TransformationType transform_type = from_name<TransformationType>(
-       get_option_value<std::string>("type", enum_name_lowercase(default_transformation_type)));
+   const TransformModel transform_model =
+       from_name<TransformModel>(get_option_value<std::string>("type", enum_name_lowercase(default_registration_mode)));
+   const bool has_global_registration = (transform_model == TransformModel::Global);
+   const bool has_nonlinear_registration = (transform_model == TransformModel::NonLinear);
 
-   const MetricType metric_type =
-       from_name<MetricType>(get_option_value<std::string>("metric", enum_name_lowercase(default_metric_type)));
+   const auto global_metric_options = get_options("global_metric");
+   const auto nonlinear_metric_options = get_options("nonlinear_metric");
+
+   if (!has_nonlinear_registration && !nonlinear_metric_options.empty()) {
+     throw Exception("nonlinear_metric is only valid when using nonlinear registration.");
+   }
+
+   std::optional<GlobalRegistrationType> transform_type;
+   if (transform_model == TransformModel::Global) {
+     transform_type = GlobalRegistrationType::Affine;
+   }
+
+   MetricType metric_type = default_metric_type;
+   if (has_global_registration) {
+     metric_type =
+         from_name<MetricType>(get_option_value<std::string>("global_metric", enum_name_lowercase(default_metric_type)));
+   }
+
+   std::optional<MetricType> nonlinear_metric_type;
+   if (has_nonlinear_registration) {
+     const std::string default_nonlinear_metric = "ncc";
+     nonlinear_metric_type =
+         from_name<MetricType>(get_option_value<std::string>("nonlinear_metric", default_nonlinear_metric));
+   }
 
    const uint32_t ncc_window_radius = get_option_value<uint32_t>("ncc_radius", default_ncc_window_radius);
 
@@ -350,6 +379,33 @@
      ++index;
    }
 
+   if (has_nonlinear_registration) {
+     NonLinearMetric nonlinear_metric;
+     switch (*nonlinear_metric_type) {
+     case MetricType::SSD:
+       nonlinear_metric = SSDMetric{};
+       break;
+     case MetricType::NCC:
+       nonlinear_metric = NCCMetric{.window_radius = ncc_window_radius};
+       break;
+     default:
+       throw Exception("Unsupported nonlinear metric type");
+     }
+
+     const NonLinearRegistrationConfig nonlinear_config{
+         .channels = channels,
+         .initial_guess = initial_guess,
+         .metric = nonlinear_metric,
+         .max_iterations = max_iterations,
+     };
+     auto gpu_compute_context = gpu_context_request.get();
+     (void)GPU::run_nonlinear_registration(nonlinear_config, gpu_compute_context);
+   }
+
+   if (!has_global_registration) {
+     throw Exception("Registration type is not supported.");
+   }
+
    GlobalMetric metric;
    switch (metric_type) {
    case MetricType::NMI:
@@ -367,7 +423,7 @@
 
    const GlobalRegistrationConfig registration_config{
        .channels = channels,
-       .transformation_type = transform_type,
+       .transformation_type = *transform_type,
        .initial_guess = initial_guess,
        .metric = metric,
        .max_iterations = max_iterations,

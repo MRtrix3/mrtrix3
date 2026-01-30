@@ -31,10 +31,10 @@
 namespace MR {
 // using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
 namespace {
-constexpr size_t param_count_for_type(TransformationType type) { return type == TransformationType::Rigid ? 6U : 12U; }
+constexpr size_t param_count_for_type(GlobalRegistrationType type) { return type == GlobalRegistrationType::Rigid ? 6U : 12U; }
 } // namespace
 
-TransformationType GlobalTransform::type() const { return m_type; }
+GlobalRegistrationType GlobalTransform::type() const { return m_type; }
 
 tcb::span<const float> GlobalTransform::parameters() const {
   return tcb::span<const float>(m_params.data(), m_param_count);
@@ -91,7 +91,7 @@ transform_type GlobalTransform::to_affine_compact() const {
   return transform_type(final_affine_transform);
 }
 
-GlobalTransform::GlobalTransform(tcb::span<const float> params, TransformationType type, const Eigen::Vector3f &pivot)
+GlobalTransform::GlobalTransform(tcb::span<const float> params, GlobalRegistrationType type, const Eigen::Vector3f &pivot)
     : m_type(type), m_pivot(pivot) {
   const size_t expected = param_count_for_type(type);
   if (params.size() != expected) {
@@ -124,7 +124,7 @@ GlobalTransform GlobalTransform::as_rigid() const {
     return *this;
   }
   const std::array<float, 6> rigid_params{m_params[0], m_params[1], m_params[2], m_params[3], m_params[4], m_params[5]};
-  return GlobalTransform(rigid_params, TransformationType::Rigid, m_pivot);
+  return GlobalTransform(rigid_params, GlobalRegistrationType::Rigid, m_pivot);
 }
 
 // Ensures scale defaults to 1 and shear to 0 when promoting a rigid transform to affine.
@@ -138,12 +138,12 @@ GlobalTransform GlobalTransform::as_affine() const {
   affine_params[6] = 1.0F;
   affine_params[7] = 1.0F;
   affine_params[8] = 1.0F;
-  return GlobalTransform(affine_params, TransformationType::Affine, m_pivot);
+  return GlobalTransform(affine_params, GlobalRegistrationType::Affine, m_pivot);
 }
 
-bool GlobalTransform::is_rigid() const { return m_type == TransformationType::Rigid; }
+bool GlobalTransform::is_rigid() const { return m_type == GlobalRegistrationType::Rigid; }
 
-bool GlobalTransform::is_affine() const { return m_type == TransformationType::Affine; }
+bool GlobalTransform::is_affine() const { return m_type == GlobalRegistrationType::Affine; }
 
 size_t GlobalTransform::param_count() const { return m_param_count; }
 
@@ -218,7 +218,7 @@ Eigen::Vector3f GlobalTransform::shear() const {
 // TODO: also should we use Eigen::ColPivHouseholderQR instead?
 GlobalTransform GlobalTransform::from_affine_compact(const transform_type &transform,
                                                      const Eigen::Vector3f &pivot,
-                                                     TransformationType type) {
+                                                     GlobalRegistrationType type) {
   using Scalar = typename transform_type::Scalar;
   using Vector3 = Eigen::Matrix<Scalar, 3, 1>;
   using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
@@ -230,7 +230,7 @@ GlobalTransform GlobalTransform::from_affine_compact(const transform_type &trans
   const Vector3 globalTranslation = translationPart - pivotVector + linearPart * pivotVector;
 
   std::vector<float> parameters;
-  const size_t N = (type == TransformationType::Rigid) ? 6 : 12;
+  const size_t N = (type == GlobalRegistrationType::Rigid) ? 6 : 12;
   parameters.resize(N, 0.0F);
 
   parameters[0] = static_cast<float>(globalTranslation.x());

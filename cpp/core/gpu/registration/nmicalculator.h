@@ -38,7 +38,7 @@ struct Intensities {
 class NMICalculator {
 public:
   struct Config {
-    TransformationType transformation_type = TransformationType::Affine;
+    GlobalRegistrationType transformation_type = GlobalRegistrationType::Affine;
     Texture fixed;
     Texture moving;
     std::optional<Texture> fixed_mask;

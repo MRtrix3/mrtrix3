@@ -30,7 +30,8 @@
 
 namespace MR {
 
-enum class TransformationType : uint8_t { Rigid, Affine };
+enum class GlobalRegistrationType : uint8_t { Rigid, Affine };
+enum class TransformModel : uint8_t { Global, NonLinear };
 
 // The parameters in order:
 // - 3 translations
@@ -44,7 +45,7 @@ struct GlobalTransform {
 
   // Throws if params.size() does not match type
   explicit GlobalTransform(tcb::span<const float> params,
-                           TransformationType type,
+                           GlobalRegistrationType type,
                            const Eigen::Vector3f &pivot = Eigen::Vector3f::Zero());
 
   GlobalTransform inverse() const;
@@ -55,7 +56,7 @@ struct GlobalTransform {
   // If type is specified as rigid, scale and shear components are ignored.
   static GlobalTransform from_affine_compact(const transform_type &tform,
                                              const Eigen::Vector3f &pivot,
-                                             TransformationType type = TransformationType::Affine);
+                                             GlobalRegistrationType type = GlobalRegistrationType::Affine);
 
   // Returns a copy that keeps translation and axis-angle rotation, dropping any scale/shear terms.
   GlobalTransform as_rigid() const;
@@ -63,7 +64,7 @@ struct GlobalTransform {
   // zero shear appended.
   GlobalTransform as_affine() const;
 
-  TransformationType type() const;
+  GlobalRegistrationType type() const;
 
   tcb::span<const float> parameters() const;
   void set_params(tcb::span<const float> params);
@@ -94,7 +95,7 @@ struct GlobalTransform {
   void set_shear(const Eigen::Vector3f &shear);
 
 private:
-  TransformationType m_type;
+  GlobalRegistrationType m_type;
   // We allocate space for the maximum number of parameters.
   std::array<float, 12> m_params{};
   size_t m_param_count = 0U;
@@ -117,6 +118,7 @@ struct NCCMetric {
 };
 
 using GlobalMetric = std::variant<NMIMetric, SSDMetric, NCCMetric>;
+using NonLinearMetric = std::variant<SSDMetric, NCCMetric>;
 
 enum class MetricType : uint8_t { NMI, SSD, NCC };
 enum class InitTranslationChoice : uint8_t { None, Mass, Geometric };
@@ -142,10 +144,21 @@ struct ChannelConfig {
 
 struct GlobalRegistrationConfig {
   std::vector<ChannelConfig> channels;
-  TransformationType transformation_type;
+  GlobalRegistrationType transformation_type;
   InitialGuess initial_guess;
   GlobalMetric metric;
   uint32_t max_iterations = 500;
+};
+
+struct NonLinearRegistrationConfig {
+  std::vector<ChannelConfig> channels;
+  InitialGuess initial_guess;
+  NonLinearMetric metric;
+  uint32_t max_iterations = 500;
+};
+
+struct NonLinearRegistrationResult {
+  std::optional<Image<float>> displacement;
 };
 
 struct RegistrationResult {

@@ -106,8 +106,8 @@ NMICalculator::NMICalculator(const Config &config)
 
 {
   assert(m_compute_context != nullptr);
-  const bool is_rigid = config.transformation_type == TransformationType::Rigid;
-  const bool is_affine = config.transformation_type == TransformationType::Affine;
+  const bool is_rigid = config.transformation_type == GlobalRegistrationType::Rigid;
+  const bool is_affine = config.transformation_type == GlobalRegistrationType::Affine;
   m_degrees_of_freedom = is_rigid ? 6 : 12;
 
   // The min/max reduction runs on encoded uint32_t values. We map floats to an order-preserving

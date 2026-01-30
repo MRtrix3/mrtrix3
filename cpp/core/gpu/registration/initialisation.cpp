@@ -135,7 +135,7 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
   const Eigen::Vector4f com_target_scanner = voxel_to_scanner_fixed * com_target.homogeneous();
 
   const std::array<float, 6> rigid_identity = {0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F};
-  GlobalTransform initial_transform(rigid_identity, TransformationType::Rigid, com_target_scanner.head<3>());
+  GlobalTransform initial_transform(rigid_identity, GlobalRegistrationType::Rigid, com_target_scanner.head<3>());
 
   switch (options.translation_choice) {
   case InitTranslationChoice::None:
@@ -185,7 +185,7 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
             const std::optional<Texture> fixed_mask = target_mask;
             const std::optional<Texture> moving_mask_opt = moving_mask;
             const NMICalculator::Config nmi_config{
-                .transformation_type = TransformationType::Rigid,
+                .transformation_type = GlobalRegistrationType::Rigid,
                 .fixed = target_texture,
                 .moving = moving_texture,
                 .fixed_mask = fixed_mask,
@@ -201,7 +201,7 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
             const std::optional<Texture> fixed_mask = target_mask;
             const std::optional<Texture> moving_mask_opt = moving_mask;
             const SSDCalculator::Config ssd_config{
-                .transformation_type = TransformationType::Rigid,
+                .transformation_type = GlobalRegistrationType::Rigid,
                 .fixed = target_texture,
                 .moving = moving_texture,
                 .fixed_mask = fixed_mask,
@@ -216,7 +216,7 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
             const std::optional<Texture> fixed_mask = target_mask;
             const std::optional<Texture> moving_mask_opt = moving_mask;
             const NCCCalculator::Config ncc_config{
-                .transformation_type = TransformationType::Rigid,
+                .transformation_type = GlobalRegistrationType::Rigid,
                 .fixed = target_texture,
                 .moving = moving_texture,
                 .fixed_mask = fixed_mask,

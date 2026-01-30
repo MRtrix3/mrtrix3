@@ -129,7 +129,7 @@ struct ChannelData {
 
 RegistrationResult run_registration(const GlobalRegistrationConfig &config, const GPU::ComputeContext &context) {
   constexpr uint32_t num_levels = 3U;
-  const bool is_affine = config.transformation_type == TransformationType::Affine;
+  const bool is_affine = config.transformation_type == GlobalRegistrationType::Affine;
   const uint32_t degrees_of_freedom = is_affine ? 12U : 6U;
 
   std::vector<ChannelData> channels_data;
@@ -309,7 +309,7 @@ RegistrationResult run_registration(const GlobalRegistrationConfig &config, cons
 
           const auto rigid = initialise_transformation(init_config, context);
 
-          return config.transformation_type == TransformationType::Rigid ? rigid.as_rigid() : rigid.as_affine();
+          return config.transformation_type == GlobalRegistrationType::Rigid ? rigid.as_rigid() : rigid.as_affine();
         });
   }();
 
