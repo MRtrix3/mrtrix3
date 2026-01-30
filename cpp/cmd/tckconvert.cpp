@@ -17,6 +17,7 @@
 #include <array>
 #include <cstdio>
 #include <filesystem>
+#include <memory>
 
 #include "command.h"
 #include "dwi/tractography/file.h"
@@ -428,13 +429,13 @@ public:
     try {
       const std::string filename(file);
       if (is_trx_directory(filename)) {
-        trx = trxmmap::load_from_directory<float>(filename);
+        trx.reset(trxmmap::load_from_directory<float>(filename));
       } else {
-        trx = trxmmap::load_from_zip<float>(filename);
+        trx.reset(trxmmap::load_from_zip<float>(filename));
       }
       if (trx && trx->streamlines && trx->streamlines->_offsets.size() > 0)
         num_streamlines = trx->streamlines->_offsets.size() - 1;
-      has_aux_data = trx_has_aux_data(trx);
+      has_aux_data = trx_has_aux_data(trx.get());
     } catch (const std::exception &e) {
       throw Exception(e.what());
     }
@@ -463,8 +464,7 @@ public:
       return;
     try {
       trx->close();
-      delete trx;
-      trx = nullptr;
+      trx.reset();
     } catch (const std::exception &e) {
       Exception(e.what()).display();
       App::exit_error_code = 1;
@@ -474,7 +474,7 @@ public:
   bool has_metadata() const { return has_aux_data; }
 
 private:
-  trxmmap::TrxFile<float> *trx;
+  std::unique_ptr<trxmmap::TrxFile<float>> trx;
   Eigen::Index current;
   Eigen::Index num_streamlines;
   bool has_aux_data;
@@ -495,7 +495,7 @@ public:
         current_streamline(0),
         current_vertex(0) {
     try {
-      trx = new trxmmap::TrxFile<float>(static_cast<int>(nb_vertices), static_cast<int>(nb_streamlines), nullptr);
+      trx.reset(new trxmmap::TrxFile<float>(static_cast<int>(nb_vertices), static_cast<int>(nb_streamlines), nullptr));
       if (trx->streamlines && trx->streamlines->_offsets.size() > 0)
         trx->streamlines->_offsets(0, 0) = 0;
       for (const auto &spec : dps_specs) {
@@ -540,8 +540,7 @@ public:
         }
       }
       trx->close();
-      delete trx;
-      trx = nullptr;
+      trx.reset();
     } catch (const std::exception &e) {
       Exception(e.what()).display();
       App::exit_error_code = 1;
@@ -552,7 +551,7 @@ private:
   std::string output;
   std::string final_output;
   bool rename_on_save;
-  trxmmap::TrxFile<float> *trx = nullptr;
+  std::unique_ptr<trxmmap::TrxFile<float>> trx;
   Eigen::Index current_streamline;
   Eigen::Index current_vertex;
 };
@@ -966,19 +965,19 @@ void run() {
   }
 
   if (input_is_trx && output_is_trx) {
-    trxmmap::TrxFile<float> *trx = nullptr;
+    std::unique_ptr<trxmmap::TrxFile<float>> trx;
     try {
       if (input_is_trx_dir) {
-        trx = trxmmap::load_from_directory<float>(argument[0]);
+        trx.reset(trxmmap::load_from_directory<float>(argument[0]));
       } else {
-        trx = trxmmap::load_from_zip<float>(argument[0]);
+        trx.reset(trxmmap::load_from_zip<float>(argument[0]));
       }
     } catch (const std::exception &e) {
       throw Exception(e.what());
     }
     if (!trx)
       throw Exception("Failed to load TRX input.");
-    apply_transform_to_trx(trx, T);
+    apply_transform_to_trx(trx.get(), T);
     for (const auto &spec : dps_specs) {
       trxmmap::add_dps_from_text(*trx, spec.name, spec.dtype, spec.path);
     }
@@ -996,12 +995,9 @@ void run() {
         }
       }
       trx->close();
-      delete trx;
     } catch (const std::exception &e) {
-      if (trx) {
+      if (trx)
         trx->close();
-        delete trx;
-      }
       throw Exception(e.what());
     }
     return;

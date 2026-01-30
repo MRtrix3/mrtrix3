@@ -1,0 +1,3 @@
+#!/bin/bash
+# convert TRX (uncompressed directory) -> tck:
+tckconvert gs_fldr.trx tmp.tck -force && testing_diff_tck tmp.tck gs.tck

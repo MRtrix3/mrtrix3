@@ -80,6 +80,20 @@ add_library(nifti::nifti ALIAS nifti)
 
 target_include_directories(nifti INTERFACE "${NIFTI_INCLUDE_DIRS}")
 
+# TRX Format
+if(MRTRIX_USE_SYSTEM_TRXCPP)
+    find_package(trx-cpp CONFIG REQUIRED)
+else()
+    set(trxcpp_url "https://github.com/tee-ar-ex/trx-cpp")
+    FetchContent_Declare(
+        trx-cpp
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        GIT_REPOSITORY ${trxcpp_url}
+        GIT_TAG ea9ebcbf4b08e047e6493eb8077f789cdfac36b7
+    )
+    FetchContent_MakeAvailable(trx-cpp)
+endif()
+
 # Google Test
 if(MRTRIX_BUILD_TESTS)
     set(googletest_version 1.17.0)
