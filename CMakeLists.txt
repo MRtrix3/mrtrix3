@@ -25,6 +25,7 @@ option(MRTRIX_USE_PCH "Use precompiled headers" ON)
 option(MRTRIX_PYTHON_SOFTLINK "Build directory softlink to Python source code rather than copying" ON)
 option(MRTRIX_BUILD_STATIC "Build MRtrix's library statically" OFF)
 option(MRTRIX_USE_LLD "Use lld as the linker" OFF)
+option(MRTRIX_IGNORE_VERSION_MISMATCH "Ignore version mismatch between git tag and MRtrix base version" OFF)
 
 option(MRTRIX_USE_SYSTEM_EIGEN "Use system-installed Eigen3 library" OFF)
 option(MRTRIX_USE_SYSTEM_JSON "Use system-installed Json for Modern C++ library" OFF)
