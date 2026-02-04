@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include "mrtrix.h"
-
 #include "color_button.h"
+#include "mrtrix.h"
 #include "mrview/adjust_button.h"
 
 namespace MR::GUI::MRView::Tool {

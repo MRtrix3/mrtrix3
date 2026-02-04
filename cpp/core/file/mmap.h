@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,7 +61,8 @@ public:
 
   friend std::ostream &operator<<(std::ostream &stream, const MMap &m) {
     stream << "File::MMap { " << m.name() << " [" << m.fd << "], size: " << m.size() << ", mapped "
-           << (m.readwrite ? "RW" : "RO") << " at " << (void *)m.address() << ", offset " << m.start << " }";
+           << (m.readwrite ? "RW" : "RO") << " at " << reinterpret_cast<const void *>(m.address()) << ", offset "
+           << m.start << " }";
     return stream;
   }
 

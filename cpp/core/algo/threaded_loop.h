@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -337,9 +337,13 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
     };
 
     MutexProtected<Shared> shared = {iterator, outer_loop(iterator)};
-
+    auto get_iterator = [](MutexProtected<Shared> &shared) {
+      auto guard = shared.lock();
+      return guard->iterator;
+    };
     struct PerThread {
       MutexProtected<Shared> &shared;
+      Iterator pos;
       PerThread(const PerThread &) = default;
       PerThread(PerThread &&) noexcept = default;
       PerThread &operator=(const PerThread &) = delete;
@@ -347,11 +351,10 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
       ~PerThread() = default;
       typename std::remove_reference<Functor>::type func;
       void execute() {
-        auto pos = shared.lock()->iterator;
         while (shared.lock()->next(pos))
           func(pos);
       }
-    } loop_thread = {shared, functor};
+    } loop_thread = {shared, get_iterator(shared), functor};
 
     auto threads = Thread::run(Thread::multi(loop_thread), "loop threads");
 

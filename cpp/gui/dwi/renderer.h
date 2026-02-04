@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <array>
 
 #include <Eigen/Eigenvalues>
 #include <QOpenGLWidget>
@@ -83,7 +85,7 @@ public:
 
 protected:
   mode_t mode;
-  float object_color[3];
+  Eigen::Array3f object_color;
   mutable GLuint reverse_ID, origin_ID;
 
   class Shader : public GL::Shader::Program {

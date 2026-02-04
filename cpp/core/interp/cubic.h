@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <array>
 
 #include "interp/base.h"
 #include "math/cubic_spline.h"
@@ -74,7 +76,7 @@ public:
       : Base<ImageType>(parent, value_when_out_of_bounds), H{SplineType(PType), SplineType(PType), SplineType(PType)} {}
 
 protected:
-  SplineType H[3];
+  std::array<SplineType, 3> H;
   Eigen::Vector3d P;
 
   ssize_t clamp(ssize_t x, ssize_t dim) const {

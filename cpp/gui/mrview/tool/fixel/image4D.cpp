@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,6 +49,7 @@ void Image4D::reload_image_buffer() {
   pos_buffer_store.clear();
   dir_buffer_store.clear();
   fixel_val_store.clear();
+  element_indices_dirty = true;
 
   for (size_t axis = 0; axis < 3; ++axis) {
     std::fill(slice_fixel_indices[axis].begin(), slice_fixel_indices[axis].end(), std::vector<GLint>());

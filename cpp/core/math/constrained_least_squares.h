@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -237,7 +237,9 @@ public:
     lambda_prev.setZero();
     // set active set empty:
     active.setZero();
-    active.tail(num_ineq).setOnes();
+    if (num_eq > 0) {
+      active.tail(num_eq).setOnes();
+    }
 
     // initial estimate of constraint values:
     c = c_u;

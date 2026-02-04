@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include "surface/mesh_multi.h"
 
+#include <array>
 #include <ios>
 #include <iostream>
 
@@ -54,7 +55,7 @@ void MeshMulti::load(std::string_view path) {
     if (prefix == "v") {
       if (index < 0)
         throw Exception("Malformed OBJ file: vertex outside object (line " + str(counter) + ")");
-      float values[4];
+      std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
     } else if (prefix == "vt") {

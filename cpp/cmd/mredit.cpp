@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
 #include <set>
 
 #include "command.h"
@@ -87,7 +88,8 @@ public:
   }
 };
 
-const Vox voxel_offsets[6] = {{0, 0, -1}, {0, 0, 1}, {0, -1, 0}, {0, 1, 0}, {-1, 0, 0}, {1, 0, 0}};
+const std::array<Vox, 6> voxel_offsets = {
+    Vox(0, 0, -1), Vox(0, 0, 1), Vox(0, -1, 0), Vox(0, 1, 0), Vox(-1, 0, 0), Vox(1, 0, 0)};
 
 void run() {
   bool inplace = (argument.size() == 1);

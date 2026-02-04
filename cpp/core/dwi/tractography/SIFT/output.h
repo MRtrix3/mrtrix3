@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <vector>
 
 #include "header.h"
 #include "image.h"
@@ -204,7 +206,8 @@ template <class Fixel> void ModelBase<Fixel>::output_scatterplot(std::string_vie
   out << "# " << App::command_history_string << "\n";
   const default_type current_mu = mu();
   out << "#Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
-  for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
+  typename std::vector<Fixel>::const_iterator i = fixels.begin(); // Skip first null fixel in DWI::Fixel_map<>
+  for (++i; i != fixels.end(); ++i)
     out << str(i->get_FOD()) << "," << str(i->get_TD()) << "," << str(i->get_TD() * current_mu) << ","
         << str(i->get_weight()) << ",\n";
   out.close();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <array>
 
 #include "adapter/base.h"
 
@@ -52,16 +54,16 @@ public:
   }
 
   value_type value() {
-    const ssize_t old_pos[3] = {index(0), index(1), index(2)};
+    const std::array<ssize_t, 3> old_pos = {index(0), index(1), index(2)};
     pos_value = base_type::value();
     nelements = 0;
 
-    const ssize_t from[3] = {index(0) < extent[0] ? 0 : index(0) - extent[0],
-                             index(1) < extent[1] ? 0 : index(1) - extent[1],
-                             index(2) < extent[2] ? 0 : index(2) - extent[2]};
-    const ssize_t to[3] = {index(0) >= size(0) - extent[0] ? size(0) : index(0) + extent[0] + 1,
-                           index(1) >= size(1) - extent[1] ? size(1) : index(1) + extent[1] + 1,
-                           index(2) >= size(2) - extent[2] ? size(2) : index(2) + extent[2] + 1};
+    const std::array<ssize_t, 3> from = {index(0) < extent[0] ? 0 : index(0) - extent[0],
+                                         index(1) < extent[1] ? 0 : index(1) - extent[1],
+                                         index(2) < extent[2] ? 0 : index(2) - extent[2]};
+    const std::array<ssize_t, 3> to = {index(0) >= size(0) - extent[0] ? size(0) : index(0) + extent[0] + 1,
+                                       index(1) >= size(1) - extent[1] ? size(1) : index(1) + extent[1] + 1,
+                                       index(2) >= size(2) - extent[2] ? size(2) : index(2) + extent[2] + 1};
 
     mean = 0.0;
 
