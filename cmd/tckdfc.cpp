@@ -46,6 +46,8 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 
+using SetVoxel = Mapping::Set<Mapping::Voxel>;
+
 
 
 const char* windows[] = { "rectangle", "triangle", "cosine", "hann", "hamming", "lanczos", nullptr };
@@ -148,7 +150,7 @@ OPTIONS
 // Instead, the one timepoint volume generated during this iteration is written
 //   into the one large buffer that contains the entire TW-dFC time series
 class Receiver
-{ 
+{
 
   public:
     Receiver (const Header& header, const vox_stat_t stat_vox) :
@@ -165,7 +167,7 @@ class Receiver
     }
 
 
-    bool operator() (const Mapping::SetVoxel&);
+    bool operator() (const SetVoxel&);
     void scale_by_count (Image<uint32_t>&);
     void write (Image<float>&);
 
@@ -178,7 +180,7 @@ class Receiver
 
 
 
-bool Receiver::operator() (const Mapping::SetVoxel& in)
+bool Receiver::operator() (const SetVoxel& in)
 {
   const float factor = in.factor;
   for (const auto& i : in) {
@@ -219,11 +221,11 @@ void Receiver::write (Image<float>& out)
 
 // Separate class for generating TDI i.e. receive SetVoxel & write directly to counts
 class Count_receiver
-{ 
+{
   public:
     Count_receiver (Image<uint32_t>& out) :
         v (out) { }
-    bool operator() (const Mapping::SetVoxel& in) {
+    bool operator() (const SetVoxel& in) {
       for (const auto& i : in) {
         assign_pos_of (i, 0, 3).to (v);
         v.value() = v.value() + 1;
@@ -375,7 +377,7 @@ void run ()
     mapper.set_upsample_ratio (upsample_ratio);
     mapper.add_twdfc_static_image (fmri_image);
     Mapping::MapWriter<float> writer (header, argument[2], stat_vox);
-    Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), writer);
+    Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (SetVoxel()), writer);
     writer.finalise();
 
   } else {
@@ -388,7 +390,7 @@ void run ()
       Mapping::TrackMapperBase mapper (H_3D);
       mapper.set_upsample_ratio (upsample_ratio);
       Count_receiver receiver (counts);
-      Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), receiver);
+      Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (SetVoxel()), receiver);
     }
 
     Image<float> out_image (Image<float>::create (argument[2], header));
@@ -403,7 +405,7 @@ void run ()
         mapper.set_upsample_ratio (upsample_ratio);
         mapper.add_twdfc_dynamic_image (fmri_image, window, timepoint);
         Receiver receiver (H_3D, stat_vox);
-        Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), receiver);
+        Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (SetVoxel()), receiver);
 
         if (stat_vox == V_MEAN)
           receiver.scale_by_count (counts);

@@ -17,6 +17,8 @@
 #ifndef __math_sphere_set_weights_h__
 #define __math_sphere_set_weights_h__
 
+#include <cassert>
+
 #include "types.h"
 
 

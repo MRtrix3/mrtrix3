@@ -54,10 +54,17 @@ namespace MR
         Tractography::Properties properties;
         Tractography::Reader<> file (path, properties);
 
-        const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+        const auto count_it = properties.find("count");
+        if (count_it == properties.end())
+          throw Exception ("Cannot map streamlines: "
+                           "header of track file " + Path::basename(path) + " does not report streamline count");
+        const track_t count = to<track_t>(count_it->second);
         if (!count)
-          throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
+          throw Exception ("Cannot map streamlines: "
+                           "header of track file " + Path::basename(path) + " reports zero streamlines");
 
+        fixels.col(td_column).setZero();
+        fixels.col(track_count_column).setZero();
         contributions.assign (count, nullptr);
         TD_sum = 0.0;
 
@@ -68,6 +75,7 @@ namespace MR
                              Thread::batch (Tractography::Streamline<>()),
                              Thread::multi (worker));
         }
+        update_dynamic_mu();
 
         if (!contributions.back()) {
           track_t num_tracks = 0, max_index = 0;
@@ -122,6 +130,7 @@ namespace MR
             TD_sum += fixel.weight() * fixel.td();
           }
         }
+        update_dynamic_mu();
 
         INFO (str(exclude_untracked_count) + " fixels had weight reset to zero due to not being tracked");
         INFO (str(below_fd_threshold_count) + " fixels had weight reset to zero due to FD being below threshold");
@@ -139,7 +148,10 @@ namespace MR
         // TODO Some small discrepancy;
         //   is this due to an imbalance in the track fixel contribution compression?
         //   Or perhaps truncation?
-        VAR (TD_sum);
+        if (App::log_level < 3)
+          return;
+        DEBUG("Checking quantification of total tractogram density:");
+        DEBUG("TD_sum after initial streamline mapping is " + str(TD_sum));
         value_type sum_from_fixels = 0.0, sum_from_fixels_weighted = 0.0;
 
         for (size_t i = 0; i != nfixels(); ++i) {
@@ -147,14 +159,14 @@ namespace MR
           sum_from_fixels          += fixel.td();
           sum_from_fixels_weighted += fixel.td() * fixel.weight();
         }
-        VAR (sum_from_fixels);
-        VAR (sum_from_fixels_weighted);
+        DEBUG("Sum of all track densities from all fixels: " + str(sum_from_fixels));
+        DEBUG("TD_sum aggregated across fixels accounting for fixel model weights: " + str(sum_from_fixels_weighted));
         value_type sum_from_tracks = 0.0;
         for (vector<TrackContribution*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i)
             sum_from_tracks += (*i)->get_total_contribution();
         }
-        VAR (sum_from_tracks);
+        DEBUG("Sum of total contributions from all streamlines: " + str(sum_from_tracks));
       }
 
 
@@ -190,7 +202,9 @@ namespace MR
           fixel_counts (master.nfixels(), 0)
       {
         mapper.set_upsample_ratio (upsample_ratio);
-        mapper.set_use_precise_mapping (true);
+        mapper.set_algorithm (App::get_options("blur_streamlines").empty()
+                              ? Mapping::algorithm_t::PRECISE
+                              : Mapping::algorithm_t::BLURRED);
       }
 
 
@@ -221,7 +235,7 @@ namespace MR
 
         try {
 
-          Mapping::SetFixel fixels;
+          Mapping::Set<Mapping::Fixel> fixels;
           mapper (in, fixels);
 
           vector<Track_fixel_contribution> masked_contributions;

@@ -35,29 +35,27 @@ namespace MR
 
         ResampleFunctor::ResampleFunctor (Image<float>& anat, Image<float>& out) :
             voxel2scanner (new transform_type (Transform(out).voxel2scanner.cast<float>())),
-            interp_anat (anat),
-            out (out) { }
+            interp_anat (anat) { }
 
         ResampleFunctor::ResampleFunctor (const ResampleFunctor& that) :
             voxel2scanner (that.voxel2scanner),
-            interp_anat (that.interp_anat),
-            out (that.out) { }
+            interp_anat (that.interp_anat) { }
 
 
 
-        void ResampleFunctor::operator() (const Iterator& pos)
-        {
-          const Tissues tissues = ACT2pve (pos);
+        bool ResampleFunctor::operator() (Image<float>& out) {
+          const Tissues tissues = ACT2pve (Eigen::Array3i(out.index(0), out.index(1), out.index(2)));
           out.index (3) = 0; out.value() = tissues.get_cgm();
           out.index (3) = 1; out.value() = tissues.get_sgm();
           out.index (3) = 2; out.value() = tissues.get_wm();
           out.index (3) = 3; out.value() = tissues.get_csf();
           out.index (3) = 4; out.value() = tissues.get_path();
+          return true;
         }
 
 
 
-        Tissues ResampleFunctor::ACT2pve (const Iterator& pos)
+        Tissues ResampleFunctor::ACT2pve (const Eigen::Array3i& pos)
         {
           // TODO Move
           static const int os_ratio = 10;
@@ -69,11 +67,11 @@ namespace MR
           Eigen::Array3i i;
           Eigen::Vector3f subvoxel_pos_dwi;
           for (i[2] = 0; i[2] != os_ratio; ++i[2]) {
-            subvoxel_pos_dwi[2] = pos.index(2) - 0.5 + os_offset + (i[2] * os_step);
+            subvoxel_pos_dwi[2] = pos[2] - 0.5 + os_offset + (i[2] * os_step);
             for (i[1] = 0; i[1] != os_ratio; ++i[1]) {
-              subvoxel_pos_dwi[1] = pos.index(1) - 0.5 + os_offset + (i[1] * os_step);
+              subvoxel_pos_dwi[1] = pos[1] - 0.5 + os_offset + (i[1] * os_step);
               for (i[0] = 0; i[0] != os_ratio; ++i[0]) {
-                subvoxel_pos_dwi[0] = pos.index(0) - 0.5 + os_offset + (i[0] * os_step);
+                subvoxel_pos_dwi[0] = pos[0] - 0.5 + os_offset + (i[0] * os_step);
 
                 const auto p_scanner (*voxel2scanner * subvoxel_pos_dwi);
                 if (interp_anat.scanner (p_scanner)) {

@@ -43,13 +43,18 @@ namespace MR
 
 
 
-
         ModelBase::ModelBase (const std::string& fd_path) :
             MR::Fixel::Dataset (Path::dirname (fd_path)),
             // TODO More robust way to define initial number of columns
+#ifndef NDEBUG
             fixels (nfixels(), 4),
+#else
+            fixels (decltype(fixels)::Constant(nfixels(), 4, std::numeric_limits<value_type>::signaling_NaN())),
+#endif
             FD_sum (0.0),
             TD_sum (0.0),
+            dynamic_mu (std::numeric_limits<value_type>::signaling_NaN()),
+            fixed_mu (std::numeric_limits<value_type>::signaling_NaN()),
             dummy_dixelmask (have_fixel_masks() ?
                              Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic>() :
                              Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic>::Zero (1, 1))
@@ -65,11 +70,26 @@ namespace MR
           MR::Fixel::check_data_file (fd_image, nfixels());
           if (fd_image.size(1) != 1)
             throw Exception ("Input fibre density fixel data file must be 1D");
+          MR::Fixel::index_type nonfinite_count = 0;
           for (auto l = MR::Loop(0) (fd_image); l; ++l) {
             FixelBase fixel ((*this)[fd_image.index(0)]);
-            fixel.set_fd(fd_image.value());
-            FD_sum += fixel.fd() * fixel.weight();
+            const value_type fd = fd_image.value();
+            fixel.set_fd(fd);
+            if (std::isnan(fd)) {
+              fixel.set_weight(0.0);
+              ++nonfinite_count;
+            } else if (!std::isfinite(fd)) {
+              throw Exception ("Input fibre density fixel data file \"" + fd_path + "\" contains infinite values; "
+                               "check derivation");
+            } else {
+              FD_sum += fd * fixel.weight();
+            }
           }
+          if (nonfinite_count) {
+            WARN(str(nonfinite_count) + " fixels with non-zero model weights but NaN fibre density values; "
+                 "fixels omitted from analysis mask");
+          }
+
         }
 
 
@@ -86,21 +106,27 @@ namespace MR
           if (!count)
             throw Exception ("Cannot map streamlines: track file \"" + Path::basename(path) + "\" is empty");
 
+          fixels.col(td_column).setZero();
+          fixels.col(track_count_column).setZero();
+
           Mapping::TrackLoader loader (file, count);
           // The base class is used _both_:
           //   - To define the voxel grid as the target for mapping
           //   - To provide the target fixels
           Mapping::TrackMapperBase mapper (*this, *this);
           mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (*this, properties, 0.1));
-          mapper.set_use_precise_mapping (true);
+          mapper.set_algorithm (App::get_options("blur_streamlines").empty()
+                                ? Mapping::algorithm_t::PRECISE
+                                : Mapping::algorithm_t::BLURRED);
           Thread::run_queue (
               loader,
               Thread::batch (Tractography::Streamline<float>()),
               Thread::multi (mapper),
-              Thread::batch (Mapping::SetFixel()),
+              Thread::batch (Mapping::Set<Mapping::Fixel>()),
               *this);
 
-          INFO ("Proportionality coefficient after streamline mapping is " + str (mu()));
+          update_dynamic_mu();
+          INFO ("Proportionality coefficient after streamline mapping is " + str (dynamic_mu));
 
           tractogram_path = path;
         }
@@ -120,15 +146,18 @@ namespace MR
             const value_type multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
             for (auto f : value()) {
               FixelBase fixel ((*this)[f]);
-              fixel.set_fd(fixel.fd() * multiplier);
-              FD_sum += fixel.weight() * fixel.fd();
+              if (fixel.weight()) {
+                fixel.set_fd(fixel.fd() * multiplier);
+                FD_sum += fixel.weight() * fixel.fd();
+              }
             }
           }
+          update_dynamic_mu();
         }
 
 
 
-        bool ModelBase::operator() (const Mapping::SetFixel& in)
+        bool ModelBase::operator() (const Mapping::Set<Mapping::Fixel>& in)
         {
           value_type total_contribution = 0.0;
           for (const auto& i : in) {
@@ -178,7 +207,7 @@ namespace MR
             act_5tt = Image<float>::scratch (H_5tt, "5TT scratch buffer");
             auto threaded_loop = ThreadedLoop ("resampling ACT 5TT image to fixel dataset space", act_5tt, 0, 3);
             ACT::ResampleFunctor functor (in_5tt, act_5tt);
-            threaded_loop.run (functor);
+            threaded_loop.run (functor, act_5tt);
           }
         }
 
@@ -301,6 +330,7 @@ namespace MR
 
         void ModelBase::output_all_debug_images (const std::string& dirpath, const std::string& prefix) const
         {
+          output_model_weights (Path::join (dirpath, prefix + "_modelweights.mif"));
           output_tdi_voxel (Path::join (dirpath, prefix + "_tdi_voxel.mif"));
 #ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
           output_tdi_sh (Path::join (dirpath, prefix + "_tdi_sh.mif"));
@@ -320,6 +350,14 @@ namespace MR
 
 
 
+
+      void ModelBase::output_model_weights (const std::string& path) const
+      {
+        Header H (MR::Fixel::data_header_from_nfixels (nfixels()));
+        Image<float> image (Image<float>::create (path, H));
+        for (auto l = Loop(0) (image); l; ++l)
+          image.value() = (*this)[image.index(0)].weight();
+      }
 
       void ModelBase::output_target_voxel (const std::string& path) const
       {

@@ -21,7 +21,7 @@
 #include "types.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
-#include "dwi/tractography/SIFT/types.h"
+#include "dwi/tractography/SIFT2/types.h"
 
 
 namespace MR {
@@ -33,26 +33,86 @@ namespace MR {
       class TckFactor;
 
 
-      class FixelUpdater
+
+      class FixelUpdaterBase
       {
 
         public:
           using value_type = SIFT::value_type;
 
-          FixelUpdater (TckFactor&);
-          ~FixelUpdater();
+          FixelUpdaterBase (TckFactor&, vector<value_type> &);
+          virtual ~FixelUpdaterBase();
 
-          bool operator() (const SIFT::TrackIndexRange& range);
+          virtual bool operator() (const SIFT::TrackIndexRange& range) = 0;
 
-        private:
+        protected:
           TckFactor& master;
+          vector<value_type> &sum_normalisation;
 
           // Each thread needs a local copy of these
-          vector<value_type> fixel_coeff_sums;
-          vector<value_type> fixel_TDs;
-          vector<SIFT::track_t> fixel_counts;
+          vector<value_type> local_sum_contributions;
+          // Previously, each fixel's "orig_TD" was used to normalise the sum of weighting parameters within each fixel
+          // However in the scenario where some streamlines have invalid values
+          //   (not in terms of being omitted from the optimisation mask,
+          //    but having eg. absolute coefficient of -inf or deltacoeff of +-1),
+          //   the normalisation needs to be performed treating these as entirely absent
+          vector<value_type> local_sum_normalisation;
+      };
+
+
+
+      class FixelUpdaterAbsolute : public FixelUpdaterBase
+      {
+
+        public:
+          FixelUpdaterAbsolute (TckFactor&, vector<value_type> &);
+          ~FixelUpdaterAbsolute();
+
+          bool operator() (const SIFT::TrackIndexRange& range) final;
+
+        private:
+          vector<value_type> local_sum_coeffs;
+          vector<SIFT::track_t> local_counts;
 
       };
+
+
+
+      class FixelUpdaterDifferential : public FixelUpdaterBase
+      {
+        public:
+          FixelUpdaterDifferential (TckFactor&, vector<value_type> &);
+          ~FixelUpdaterDifferential();
+
+          bool operator() (const SIFT::TrackIndexRange& range) final;
+
+        private:
+          vector<value_type> local_sum_deltacoeffs;
+
+      };
+
+
+
+      // TODO SFINAE a FixelUpdaterSelector that can yield the type based on template operation_mode_t
+      // template <class T>
+      // struct FixelUpdaterSelector<T, std::enable_if<std::equal_to<operation_mode_t::ABSOLUTE, T>::type>> {
+      //   using type = FixelUpdaterAbsolute;
+      // }
+      // template <class T>
+      // struct FixelUpdaterSelector<T, std::enable_if<std::equal_to<operation_mode_t::DIFFERENTIAL, T>::type>> {
+      //   using type = FixelUpdaterDifferential;
+      // }
+      template <operation_mode_t Mode>
+      struct FixelUpdaterSelector;
+      template <>
+      struct FixelUpdaterSelector<operation_mode_t::ABSOLUTE> {
+        using type = FixelUpdaterAbsolute;
+      };
+      template <>
+      struct FixelUpdaterSelector<operation_mode_t::DIFFERENTIAL> {
+        using type = FixelUpdaterDifferential;
+      };
+
 
 
 

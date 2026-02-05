@@ -15,6 +15,7 @@
  */
 
 #include "dwi/tractography/SIFT/sift.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "math/math.h"
 
 namespace MR {

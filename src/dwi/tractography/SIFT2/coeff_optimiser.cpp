@@ -17,6 +17,7 @@
 #include <mutex>
 
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
+#include "dwi/tractography/SIFT2/cost_and_derivatives.h"
 #include "dwi/tractography/SIFT2/line_search.h"
 #include "dwi/tractography/SIFT2/tckfactor.h"
 
@@ -32,7 +33,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
+      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, SIFT::track_t& participating_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
             master (tckfactor),
             mu (tckfactor.mu()),
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
@@ -44,13 +45,12 @@ namespace MR {
 #endif
             step_stats (step_stats),
             coefficient_stats (coefficient_stats),
-            nonzero_streamlines (nonzero_streamlines),
+            participating_streamlines (participating_streamlines),
             fixels_to_exclude (fixels_to_exclude),
             sum_costs (sum_costs),
             local_stats_steps (),
             local_stats_coefficients (),
-            local_nonzero_count (0),
-            local_to_exclude (fixels_to_exclude.size()),
+            local_participation_count (0),
             local_sum_costs (0.0) { }
 
 
@@ -67,13 +67,12 @@ namespace MR {
 #endif
             step_stats (that.step_stats),
             coefficient_stats (that.coefficient_stats),
-            nonzero_streamlines (that.nonzero_streamlines),
+            participating_streamlines (that.participating_streamlines),
             fixels_to_exclude (that.fixels_to_exclude),
             sum_costs (that.sum_costs),
             local_stats_steps (),
             local_stats_coefficients (),
-            local_nonzero_count (0),
-            local_to_exclude (fixels_to_exclude.size()),
+            local_participation_count (0),
             local_sum_costs (0.0) { }
 
 
@@ -86,8 +85,11 @@ namespace MR {
 #endif
         step_stats += local_stats_steps;
         coefficient_stats += local_stats_coefficients;
-        nonzero_streamlines += local_nonzero_count;
-        fixels_to_exclude |= local_to_exclude;
+        participating_streamlines += local_participation_count;
+        for (auto i : local_streamlines_to_exclude)
+          master.mask_absolute[i] = false;
+        for (auto f : local_fixels_to_exclude)
+          fixels_to_exclude[f] = true;
         sum_costs += local_sum_costs;
       }
 
@@ -97,6 +99,8 @@ namespace MR {
       {
 
         for (auto track_index : range) {
+          if (!master.mask_absolute[track_index])
+            continue;
 
           value_type dFs = get_coeff_change (track_index);
 
@@ -119,8 +123,9 @@ namespace MR {
           const value_type old_coefficient = master.coefficients[track_index];
           value_type new_coefficient = old_coefficient + dFs;
           if (new_coefficient < master.min_coeff) {
-            new_coefficient = master.min_coeff;
+            new_coefficient = -std::numeric_limits<value_type>::infinity();
             dFs = master.min_coeff - old_coefficient;
+            local_streamlines_to_exclude.push_back(track_index);
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
             ++coeff_truncated;
 #endif
@@ -138,18 +143,19 @@ namespace MR {
           local_stats_steps += dFs;
           local_stats_coefficients += new_coefficient;
           if (master.contributions[track_index] && master.contributions[track_index]->dim() && new_coefficient > master.min_coeff)
-            ++local_nonzero_count;
+            ++local_participation_count;
 
 #ifdef STREAMLINE_OF_INTEREST
           if (track_index == STREAMLINE_OF_INTEREST) {
 
             {
               std::ofstream out ("soi_general.csv", std::ios_base::out | std::ios_base::app | std::ios_base::ate);
-              out << old_coefficient << "," << this_projected_step << "," << dFs << "," << new_coefficient << "\n";
+              out << old_coefficient /*<< "," << this_projected_step*/ << "," << dFs << "," << new_coefficient << "\n";
             }
+/*
             {
               std::ofstream out ("soi_ls_coeff.csv", std::ios_base::out | std::ios_base::app | std::ios_base::ate);
-              LineSearchFunctor line_search_functor (track_index, master, this_projected_step);
+              LineSearchFunctorAbsolute line_search_functor (track_index, master, this_projected_step);
               for (size_t i = 0; i != 2001; ++i) {
                 const float dFs = 0.001 * (float(i) - 1000.0);
                 if (i)
@@ -158,7 +164,7 @@ namespace MR {
               }
               out << "\n";
             }
-
+*/
           }
 #endif
 
@@ -194,7 +200,7 @@ namespace MR {
         }
 
         if (index_to_exclude)
-          local_to_exclude[index_to_exclude] = true;
+          local_fixels_to_exclude.push_back(index_to_exclude);
         else
           return 0.0;
 
@@ -224,16 +230,16 @@ namespace MR {
 
 
 
-
-      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) { }
+/*
+      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, SIFT::track_t& participating_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs) { }
 
       CoefficientOptimiserGSS::CoefficientOptimiserGSS (const CoefficientOptimiserGSS& that) :
             CoefficientOptimiserBase (that) { }
 
       SIFT::value_type CoefficientOptimiserGSS::get_coeff_change (const SIFT::track_t track_index) const
       {
-        LineSearchFunctor line_search_functor (track_index, master);
+        LineSearchFunctorAbsolute line_search_functor (track_index, master);
         const value_type dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, 0.0, master.max_coeff_step, 0.001 / (2.0 * master.max_coeff_step));
         const value_type cost = line_search_functor (dFs);
         // The Golden Section Search doesn't check the endpoints; do that here
@@ -244,15 +250,15 @@ namespace MR {
           return -master.max_coeff_step;
         return dFs;
       }
+*/
 
 
 
 
 
-
-
-      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
+/*
+      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, SIFT::track_t& participating_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs),
             qls (-master.max_coeff_step, master.max_coeff_step)
       {
         qls.set_exit_if_outside_bounds (false);
@@ -269,7 +275,7 @@ namespace MR {
 
       SIFT::value_type CoefficientOptimiserQLS::get_coeff_change (const SIFT::track_t track_index) const
       {
-        LineSearchFunctor line_search_functor (track_index, master);
+        LineSearchFunctorAbsolute line_search_functor (track_index, master);
 
         value_type dFs = qls (line_search_functor);
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
@@ -289,6 +295,7 @@ namespace MR {
 
         return dFs;
       }
+*/
 
 
 
@@ -296,9 +303,8 @@ namespace MR {
 
 
 
-
-      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs)
+      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, SIFT::track_t& participating_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, participating_streamlines, fixels_to_exclude, sum_costs)
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
       , iter_count (0)
 #endif
@@ -322,58 +328,502 @@ namespace MR {
       SIFT::value_type CoefficientOptimiserIterative::get_coeff_change (const SIFT::track_t track_index) const
       {
 
-        LineSearchFunctor line_search_functor (track_index, master);
+        LineSearchFunctorAbsolute line_search_functor (track_index, master);
 
         value_type dFs = 0.0;
-        value_type change = 0.0;
+        value_type applied_change = 0.0;
         size_t iter = 0;
         do {
 
-          const LineSearchFunctor::Result result = line_search_functor.get (dFs);
+          // TODO For the sake of getting things working initially,
+          //   let's branch here based on the regularisation;
+          //   once things are compiling again,
+          //   we can then move the template realisation further out for optimisation
+          CostAndDerivatives cost_and_derivatives;
+          switch (master.reg_basis_abs) {
+            case reg_basis_t::STREAMLINE: {
+              switch (master.reg_fn_abs) {
+                case reg_fn_abs_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF>  (dFs); break;
+                case reg_fn_abs_t::FACTOR: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR> (dFs); break;
+                case reg_fn_abs_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA>  (dFs); break;
+              }
+            }
+            break;
+            case reg_basis_t::FIXEL: {
+              switch (master.reg_fn_abs) {
+                case reg_fn_abs_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF>  (dFs); break;
+                case reg_fn_abs_t::FACTOR: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR> (dFs); break;
+                case reg_fn_abs_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA>  (dFs); break;
+              }
+            }
+            break;
+            case reg_basis_t::GROUP: {
+              switch (master.reg_fn_abs) {
+                case reg_fn_abs_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::GROUP, reg_fn_abs_t::COEFF>  (dFs); break;
+                case reg_fn_abs_t::FACTOR: cost_and_derivatives = line_search_functor.get<reg_basis_t::GROUP, reg_fn_abs_t::FACTOR> (dFs); break;
+                case reg_fn_abs_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::GROUP, reg_fn_abs_t::GAMMA>  (dFs); break;
+              }
+            }
+            break;
+          }
 
           // Newton update
-          change = result.second_deriv ? (-result.first_deriv / result.second_deriv) : 0.0;
-          if (result.second_deriv < 0.0)
-            change = -change;
+          applied_change = cost_and_derivatives.second_deriv ? (-cost_and_derivatives.first_deriv / cost_and_derivatives.second_deriv) : 0.0;
+          if (cost_and_derivatives.second_deriv < 0.0)
+            applied_change = -applied_change;
 
           // Halley update
-          //const value_type numerator   = 2.0 * result.first_deriv * result.second_deriv;
-          //const value_type denominator = (2.0 * Math::pow2 (result.second_deriv)) - (result.first_deriv * result.third_deriv);
+          //const value_type numerator   = 2.0 * cost_and_derivatives.first_deriv * cost_and_derivatives.second_deriv;
+          //const value_type denominator = (2.0 * Math::pow2 (cost_and_derivatives.second_deriv)) - (cost_and_derivatives.first_deriv * cost_and_derivatives.third_deriv);
           //change = denominator ? (-numerator / denominator) : 0.0;
           // Can't detect heading toward a maximum in Halley's method!
 
           // Sometimes at the first step the desired coefficient change is huge;
           //   so huge that on the second iteration the exponential term results in NAN
-          if (!std::isfinite (change))
-            change = 0.0;
+          if (!std::isfinite (applied_change))
+            applied_change = 0.0;
 
           // Stop rare cases where a huge initial step is taken
-          if (change > master.max_coeff_step)
-            change = master.max_coeff_step;
-          else if (change < -master.max_coeff_step)
-            change = -master.max_coeff_step;
+          if (applied_change > master.max_coeff_step)
+            applied_change = master.max_coeff_step;
+          else if (applied_change < -master.max_coeff_step)
+            applied_change = -master.max_coeff_step;
 
           // Early exit if outside permitted range & are continuing to move further out
-          if (dFs >= master.max_coeff_step && change > 0.0) {
+          if (dFs >= master.max_coeff_step && applied_change > 0.0) {
             dFs = master.max_coeff_step;
-            change = 0.0;
-          } else if (dFs <= -master.max_coeff_step && change < 0.0) {
+            applied_change = 0.0;
+          } else if (dFs <= -master.max_coeff_step && applied_change < 0.0) {
             dFs = -master.max_coeff_step;
-            change = 0.0;
+            applied_change = 0.0;
           } else {
-            dFs += change;
+            dFs += applied_change;
           }
 
-        } while ((++iter < 100) && (abs (change) > 0.001));
+        } while ((++iter < 100) && (abs (applied_change) > 0.001));
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
         iter_count += iter;
 #endif
 
-        local_sum_costs += line_search_functor (0.0);
+        // TODO Remove once template instantiation is moved out
+        switch (master.reg_basis_abs) {
+          case reg_basis_t::STREAMLINE: {
+            switch (master.reg_fn_abs) {
+              case reg_fn_abs_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF>  (dFs); break;
+              case reg_fn_abs_t::FACTOR: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR> (dFs); break;
+              case reg_fn_abs_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA>  (dFs); break;
+            }
+          }
+          break;
+          case reg_basis_t::FIXEL: {
+            switch (master.reg_fn_abs) {
+              case reg_fn_abs_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF>  (dFs); break;
+              case reg_fn_abs_t::FACTOR: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR> (dFs); break;
+              case reg_fn_abs_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA>  (dFs); break;
+            }
+          }
+          break;
+          case reg_basis_t::GROUP: {
+            switch (master.reg_fn_abs) {
+              case reg_fn_abs_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::GROUP, reg_fn_abs_t::COEFF>  (dFs); break;
+              case reg_fn_abs_t::FACTOR: local_sum_costs += line_search_functor.operator()<reg_basis_t::GROUP, reg_fn_abs_t::FACTOR> (dFs); break;
+              case reg_fn_abs_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::GROUP, reg_fn_abs_t::GAMMA>  (dFs); break;
+            }
+          }
+          break;
+        }
 
         return dFs;
       }
+
+
+
+
+      template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
+      SIFT::value_type CoefficientOptimiserBBGD<RegBasis, RegFn>::get_coeff_change (const SIFT::track_t track_index) const
+      {
+        // TODO Manually calculate gradient since:
+        // - We don't want to do the fractional attribution of fixel-wise cost to the intersecting streamlines
+        // - We are not including the correlation term
+        // - Avoid the computational expense of calculating higher-order derivatives
+
+        // TODO If pursuing this further,
+        //   would need to ensure compatibility with streamline-group-wise regularisation
+
+        const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+        const value_type reg_multiplier = master.reg_multiplier_abs * (RegBasis == reg_basis_t::FIXEL ? (1.0 / this_contribution.get_total_contribution()) : 1.0);
+        const WeightingCoeffAndFactor WCF = WeightingCoeffAndFactor::from_coeff (master.coefficients[track_index]);
+        value_type gradient = 0.0;
+        for (size_t j = 0; j != this_contribution.dim(); ++j) {
+          const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
+          const float length = this_contribution[j].get_length();
+          const TckFactor::Fixel fixel (master, fixel_index);
+          if (!fixel.excluded()) {
+
+            // Data term
+            // TD = (orig_TD - length) + (length * e^coeff)
+            // dTD/dcoeff = length * e^coeff (= length * streamline weighting factor)
+            // diff = mu.TD - FD
+            // cost = fixel_weight * diff^2
+            // dcost/dTD = dcost/ddiff * ddiff/dTD = (2.0 * fixel_weight * diff) * mu
+            // dcost/dcoeff = dcost/dTD * dTD/dcoeff = (2.0 * fixel_weight * diff * mu) * length * factor
+            gradient += 2.0 * fixel.weight() * fixel.get_diff (mu) * mu * length * WCF.factor();
+
+            // Regularisation term when fixel-wise
+            if (RegBasis == reg_basis_t::FIXEL) {
+              // Need to consider fraction of fixel regularisation going to that streamline, and the term itself
+              gradient += reg_multiplier * fixel.weight() * (length / fixel.orig_TD()) * SIFT2::dreg_dcoeff<RegFn> (WCF, WeightingCoeffAndFactor::from_coeff (fixel.mean_coeff()));
+            }
+
+          }
+        }
+
+        // Regularisation term when streamline-wise
+        switch (RegBasis) {
+          case reg_basis_t::STREAMLINE:
+            gradient += reg_multiplier * SIFT2::dreg_dcoeff<RegFn> (WCF);
+            break;
+          case reg_basis_t::FIXEL:
+            // Nothing else to do; contributions have been cumulated across intersected fixels
+            break;
+          case reg_basis_t::GROUP:
+            gradient += reg_multiplier * SIFT2::dreg_dcoeff<RegFn> (WCF, WeightingCoeffAndFactor::from_coeff (master.group_means_absolute[track_index]));
+        }
+
+        gradients[track_index] = gradient;
+
+        // TODO Verify gradient calculations using finite difference?
+        // - On a per-streamline basis
+        // - Using the whole image, perturbing just that one streamline weight?
+
+        return (-step_size * gradient);
+      }
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_abs_t::COEFF>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_abs_t::FACTOR>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::STREAMLINE, reg_fn_abs_t::GAMMA>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_abs_t::COEFF>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_abs_t::FACTOR>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::FIXEL, reg_fn_abs_t::GAMMA>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::GROUP, reg_fn_abs_t::COEFF>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::GROUP, reg_fn_abs_t::FACTOR>::get_coeff_change (const SIFT::track_t) const;
+      template SIFT::value_type CoefficientOptimiserBBGD<reg_basis_t::GROUP, reg_fn_abs_t::GAMMA>::get_coeff_change (const SIFT::track_t) const;
+
+
+
+
+
+
+
+      DeltaOptimiserIterative::DeltaOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& delta_stats, value_type& sum_costs) :
+          master (tckfactor),
+          mu (tckfactor.mu()),
+          step_stats (step_stats),
+          delta_stats (delta_stats),
+          sum_costs (sum_costs),
+          local_stats_steps (),
+          local_stats_deltas (),
+          local_sum_costs (0.0)
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+          , total (0),
+          step_truncated (0),
+          delta_truncated (0)
+#endif
+      {}
+
+
+
+      DeltaOptimiserIterative::~DeltaOptimiserIterative()
+      {
+        std::lock_guard<std::mutex> lock (master.mutex);
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+        fprintf (stderr, "Of %ld initial searches failed: %ld steps truncated, %ld deltas truncated\n", total, step_truncated, delta_truncated);
+#endif
+        step_stats += local_stats_steps;
+        delta_stats += local_stats_deltas;
+        sum_costs += local_sum_costs;
+      }
+
+
+
+
+      bool DeltaOptimiserIterative::operator() (const SIFT::TrackIndexRange& range)
+      {
+
+        for (auto track_index : range) {
+
+          if (!master.mask_differential[track_index])
+            continue;
+
+          value_type dDelta = (*this) (track_index);
+
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+          ++total;
+#endif
+
+          const value_type old_deltacoeff = master.deltacoeffs[track_index];
+          value_type new_deltacoeff = old_deltacoeff + dDelta;
+          master.deltacoeffs[track_index] = new_deltacoeff;
+
+          // Update the stats
+          local_stats_steps += dDelta;
+          local_stats_deltas += new_deltacoeff;
+
+        }
+
+        return true;
+      }
+
+
+
+
+
+      value_type DeltaOptimiserIterative::operator() (const SIFT::track_t track_index) const
+      {
+        LineSearchFunctorDifferential line_search_functor (track_index, master);
+        const value_type delta = master.deltacoeffs[track_index];
+
+#ifdef STREAMLINE_OF_INTEREST
+        if (track_index == STREAMLINE_OF_INTEREST) {
+          std::cerr << "\n\nNew iteration for streamline " << STREAMLINE_OF_INTEREST << "\n";
+          std::cerr << "Initial delta coefficient: " << std::setprecision(16) << delta << "\n";
+        }
+#endif
+
+        auto get_cost = [&](const value_type value) {
+          switch (master.reg_basis_diff) {
+            case reg_basis_t::STREAMLINE:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::DELTACOEFF:  return line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF>  (value);
+                case reg_fn_diff_t::DUALINVBARR: return line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DUALINVBARR> (value);
+              }
+            case reg_basis_t::FIXEL:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::DELTACOEFF:  return line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF>  (value);
+                case reg_fn_diff_t::DUALINVBARR: return line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DUALINVBARR> (value);
+              }
+            case reg_basis_t::GROUP:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::DELTACOEFF:  return line_search_functor.operator()<reg_basis_t::GROUP, reg_fn_diff_t::DELTACOEFF>  (value);
+                case reg_fn_diff_t::DUALINVBARR: return line_search_functor.operator()<reg_basis_t::GROUP, reg_fn_diff_t::DUALINVBARR> (value);
+              }
+          }
+          assert(false);
+          return std::numeric_limits<value_type>::signaling_NaN();
+        };
+
+        auto get_cost_and_derivatives = [&](const value_type value) {
+          switch (master.reg_basis_diff) {
+            case reg_basis_t::STREAMLINE:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::DELTACOEFF:  return line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF>  (value);
+                case reg_fn_diff_t::DUALINVBARR: return line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_diff_t::DUALINVBARR> (value);
+              }
+              break;
+            case reg_basis_t::FIXEL:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::DELTACOEFF:  return line_search_functor.get<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF>  (value);
+                case reg_fn_diff_t::DUALINVBARR: return line_search_functor.get<reg_basis_t::FIXEL, reg_fn_diff_t::DUALINVBARR> (value);
+              }
+              break;
+            case reg_basis_t::GROUP:
+              switch (master.reg_fn_diff) {
+                case reg_fn_diff_t::DELTACOEFF:  return line_search_functor.get<reg_basis_t::GROUP, reg_fn_diff_t::DELTACOEFF>  (value);
+                case reg_fn_diff_t::DUALINVBARR: return line_search_functor.get<reg_basis_t::GROUP, reg_fn_diff_t::DUALINVBARR> (value);
+              }
+              break;
+          }
+          assert(false);
+          CostAndDerivatives result;
+          result *= std::numeric_limits<value_type>::signaling_NaN();
+          return result;
+        };
+
+        value_type dDelta = 0.0;
+        value_type polynomial_change = 0.0;
+        value_type applied_change = 0.0;
+#ifdef STREAMLINE_OF_INTEREST
+        bool lower_barrier_violation = false;
+        bool upper_barrier_violation = false;
+        size_t change_halvenings = 0;
+#endif
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+        bool this_step_truncated = false;
+        bool this_delta_truncated = false;
+#endif
+        size_t iter = 0;
+        CostAndDerivatives cost_and_derivatives;
+        do {
+          cost_and_derivatives = get_cost_and_derivatives(dDelta);
+
+          switch (master.reg_fn_diff) {
+            case reg_fn_diff_t::DELTACOEFF:
+              // Newton update
+              polynomial_change = cost_and_derivatives.second_deriv ? (-cost_and_derivatives.first_deriv / cost_and_derivatives.second_deriv) : 0.0;
+              break;
+            case reg_fn_diff_t::DUALINVBARR: {
+              // Halley update
+              // Function is highly non-quadratic close to the barriers
+              const value_type numerator   = 2.0 * cost_and_derivatives.first_deriv * cost_and_derivatives.second_deriv;
+              const value_type denominator = (2.0 * Math::pow2 (cost_and_derivatives.second_deriv)) - (cost_and_derivatives.first_deriv * cost_and_derivatives.third_deriv);
+              polynomial_change = denominator ? (-numerator / denominator) : 0.0;
+            } break;
+          }
+          applied_change = cost_and_derivatives.second_deriv < 0.0 ? -polynomial_change : polynomial_change;
+
+          if (!std::isfinite (applied_change)) {
+            applied_change = 0.0;
+          } else if (dDelta + applied_change > master.max_deltacoeff_step) {
+            applied_change = master.max_deltacoeff_step - dDelta;
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+            this_step_truncated = true;
+#endif
+          } else if (dDelta + applied_change < -master.max_deltacoeff_step) {
+            applied_change = -master.max_deltacoeff_step - dDelta;
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+            this_step_truncated = true;
+          } else {
+            this_step_truncated = false;
+#endif
+          }
+
+          // Whether or not bounds are being violated if a value of *exactly* -1.0 or +1.0 is achieved
+          //   depends on which functional form of regularisation is being used
+          // We however want to set a boolean here to know whether such a violation has happened,
+          //   as this may trigger subsequent further manipulations,
+          //   and we don't want to rely on floating-point precision playing ball
+#ifdef STREAMLINE_OF_INTEREST
+          change_halvenings = 0;
+          lower_barrier_violation = false;
+          upper_barrier_violation = false;
+#endif
+          switch (master.reg_fn_diff) {
+            case reg_fn_diff_t::DELTACOEFF: {
+              if (delta + dDelta + applied_change < -1.0) {
+                applied_change = -(delta + dDelta + 1.0);
+#ifdef STREAMLINE_OF_INTEREST
+                lower_barrier_violation = true;
+#endif
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+                this_delta_truncated = true;
+#endif
+              } else if (delta + dDelta + applied_change > 1.0) {
+                applied_change = -(delta + dDelta - 1.0);
+#ifdef STREAMLINE_OF_INTEREST
+                upper_barrier_violation = true;
+#endif
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+                this_delta_truncated = true;
+              } else {
+                this_delta_truncated = false;
+#endif
+              }
+            } break;
+            case reg_fn_diff_t::DUALINVBARR: {
+              if (delta + dDelta + applied_change <= -1.0) {
+                applied_change = -0.5 * (delta + dDelta + 1.0);
+#ifdef STREAMLINE_OF_INTEREST
+                lower_barrier_violation = true;
+#endif
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+                this_delta_truncated = true;
+#endif
+              } else if (delta + dDelta + applied_change >= 1.0) {
+                applied_change = -0.5 * (delta + dDelta - 1.0);
+#ifdef STREAMLINE_OF_INTEREST
+                upper_barrier_violation = true;
+#endif
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+                this_delta_truncated = true;
+              } else {
+                this_delta_truncated = false;
+#endif
+              }
+              // We may be getting close to the barrier,
+              //   and a quadratic update is resulting in cost function blowout;
+              //   if this happens, bypass the outer Newton / Halley loop,
+              //   and just keep halving the change until the cost function decreases
+              value_type prev_cost = get_cost(dDelta);
+              value_type new_cost = get_cost(dDelta + applied_change);
+              while (new_cost > prev_cost) {
+                applied_change *= 0.5;
+                new_cost = get_cost(dDelta + applied_change);
+#ifdef STREAMLINE_OF_INTEREST
+                ++change_halvenings;
+#endif
+              }
+            } break;
+          }
+
+#ifdef STREAMLINE_OF_INTEREST
+          if (track_index == STREAMLINE_OF_INTEREST) {
+            std::cerr << "Cost and derivatives at dDelta=" << std::setprecision(16) << dDelta << ": " << cost_and_derivatives << "\n";
+            std::cerr << "Projected update from polynomial fit: " << std::setprecision(16) << polynomial_change << "\n";
+            std::cerr << "Change to dDelta: " << std::setprecision(16) << applied_change << "\n";
+            std::cerr << "New dDelta: " << std::setprecision(16) << dDelta + applied_change << "\n";
+            std::cerr << "New delta coefficient: " << std::setprecision(16) << delta + dDelta + applied_change << "\n";
+            if (lower_barrier_violation)
+              std::cerr << "Lower barrier was violated\n";
+            else if (upper_barrier_violation)
+              std::cerr << "Upper barrier was violated\n";
+            if (change_halvenings > 0)
+              std::cerr << "Change halvenings: " << change_halvenings << "\n";
+            std::cerr << "New cost: " << std::setprecision(16) << get_cost(dDelta + applied_change) << "\n";
+          }
+#endif
+
+          dDelta += applied_change;
+
+        } while ((++iter < 100) && (abs (applied_change) > 1e-5));
+
+        switch (master.reg_basis_diff) {
+          case reg_basis_t::STREAMLINE:
+            switch (master.reg_fn_diff) {
+              case reg_fn_diff_t::DELTACOEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DELTACOEFF>  (dDelta); break;
+              case reg_fn_diff_t::DUALINVBARR: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_diff_t::DUALINVBARR> (dDelta); break;
+            }
+            break;
+          case reg_basis_t::FIXEL:
+            switch (master.reg_fn_diff) {
+              case reg_fn_diff_t::DELTACOEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DELTACOEFF>  (dDelta); break;
+              case reg_fn_diff_t::DUALINVBARR: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_diff_t::DUALINVBARR> (dDelta); break;
+            }
+            break;
+          case reg_basis_t::GROUP:
+            switch (master.reg_fn_diff) {
+              case reg_fn_diff_t::DELTACOEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::GROUP, reg_fn_diff_t::DELTACOEFF>  (dDelta); break;
+              case reg_fn_diff_t::DUALINVBARR: local_sum_costs += line_search_functor.operator()<reg_basis_t::GROUP, reg_fn_diff_t::DUALINVBARR> (dDelta); break;
+            }
+            break;
+
+        }
+
+#ifdef STREAMLINE_OF_INTEREST
+        if (track_index == STREAMLINE_OF_INTEREST) {
+          std::ofstream stream("soi.csv", std::ios_base::trunc);
+          stream << "deltacoeff,ddelta,cost,first_deriv,second_deriv,third_deriv\n";
+          for (int i = -1000; i <= 1000; ++i) {
+            const default_type v = 0.001 * i;
+            const default_type step = v - delta;
+            cost_and_derivatives = get_cost_and_derivatives(step);
+            stream << v << "," << step << "," << cost_and_derivatives.cost << "," << cost_and_derivatives.first_deriv << "," << cost_and_derivatives.second_deriv << "," << cost_and_derivatives.third_deriv << "\n";
+          }
+        }
+#endif
+
+#ifdef SIFT2_DELTA_OPTIMISER_DEBUG
+        if (this_step_truncated)
+          ++step_truncated;
+        if (this_delta_truncated)
+          ++delta_truncated;
+#endif
+
+        return dDelta;
+      }
+
+
+
+
 
 
 

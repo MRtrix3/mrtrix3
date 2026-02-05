@@ -22,6 +22,7 @@
 #include "dwi/tractography/SIFT/types.h"
 
 #include "dwi/tractography/SIFT2/regularisation.h"
+#include "dwi/tractography/SIFT2/tckfactor.h"
 
 
 namespace MR {
@@ -30,30 +31,58 @@ namespace MR {
       namespace SIFT2 {
 
 
-      class TckFactor;
 
 
-      class RegularisationCalculator
+
+      class RegularisationCalculatorBase
       {
-
         public:
           using value_type = SIFT::value_type;
 
-          RegularisationCalculator (TckFactor&, value_type&, value_type&);
-          ~RegularisationCalculator();
+          RegularisationCalculatorBase (TckFactor& tckfactor, value_type& global_sum) :
+              master (tckfactor),
+              global_sum (global_sum),
+              local_sum (value_type(0.0)) { }
 
-          bool operator() (const SIFT::TrackIndexRange& range);
+          ~RegularisationCalculatorBase()
+          {
+            std::lock_guard<std::mutex> lock (master.mutex);
+            global_sum += local_sum;
+          }
 
+          // TODO Should be possible to define this in the base class,
+          //   and just execute a per-index functor for the derived class
+          virtual bool operator() (const SIFT::TrackIndexRange& range) = 0;
 
-        private:
+        protected:
           TckFactor& master;
-          value_type& cf_reg_tik;
-          value_type& cf_reg_tv;
-
-          // Each thread needs a local copy of these
-          value_type tikhonov_sum, tv_sum;
-
+          value_type& global_sum;
+          value_type local_sum;
       };
+
+
+
+      template <reg_basis_t RegBasis, reg_fn_abs_t RegFn>
+      class RegularisationCalculatorAbsolute : public RegularisationCalculatorBase
+      {
+        public:
+          RegularisationCalculatorAbsolute (TckFactor& tckfactor, value_type& global_sum) :
+              RegularisationCalculatorBase (tckfactor, global_sum) { }
+          bool operator() (const SIFT::TrackIndexRange& range) override;
+      };
+
+
+
+
+      template <reg_basis_t RegBasis, reg_fn_diff_t RegFn>
+      class RegularisationCalculatorDifferential : public RegularisationCalculatorBase
+      {
+        public:
+          RegularisationCalculatorDifferential (TckFactor& tckfactor, value_type& global_sum) :
+              RegularisationCalculatorBase (tckfactor, global_sum) { }
+          bool operator() (const SIFT::TrackIndexRange& range) override;
+      };
+
 
 
 

@@ -31,6 +31,14 @@ namespace MR {
 
 
 
+        extern const App::Option BlurStreamlinesOption;
+
+
+
+        enum class algorithm_t { BLURRED, ENDPOINTS, NEAREST, PRECISE };
+
+
+
         // Convenience functions to figure out an appropriate upsampling ratio for streamline mapping
         size_t determine_upsample_ratio (const Header&, const float, const float);
         size_t determine_upsample_ratio (const Header&, const std::string&, const float);

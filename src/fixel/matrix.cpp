@@ -126,7 +126,8 @@ namespace MR
           const std::string& track_filename,
           Image<index_type>& index_image,
           Image<bool>& fixel_mask,
-          const float angular_threshold)
+          const float angular_threshold,
+          const bool blur_streamlines)
       {
 
         class TrackProcessor {
@@ -147,7 +148,7 @@ namespace MR
                              vector<index_type>& out) const
             {
               using direction_type = Eigen::Vector3d;
-              using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
+              using SetVoxelDir = DWI::Tractography::Mapping::Set<DWI::Tractography::Mapping::VoxelDir>;
 
               SetVoxelDir in;
               mapper (tck, in);
@@ -204,7 +205,9 @@ namespace MR
         DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "computing fixel-fixel connectivity matrix");
         DWI::Tractography::Mapping::TrackMapperBase mapper (index_image);
         mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (index_image, properties, 0.333f));
-        mapper.set_use_precise_mapping (true);
+        mapper.set_algorithm (blur_streamlines
+                              ? DWI::Tractography::Mapping::algorithm_t::PRECISE
+                              : DWI::Tractography::Mapping::algorithm_t::BLURRED);
         TrackProcessor track_processor (mapper, index_image, directions_image, fixel_mask, angular_threshold);
         init_matrix_type connectivity_matrix (Fixel::get_number_of_fixels (index_image));
         Thread::run_queue (loader,

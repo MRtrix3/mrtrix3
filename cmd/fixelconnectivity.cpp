@@ -16,6 +16,7 @@
 
 
 #include "command.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/index_remapper.h"
@@ -60,7 +61,9 @@ void usage ()
     + Argument ("value").type_float (0.0, 90.0)
 
   + Option ("mask", "provide a fixel data file containing a mask of those fixels to be computed; fixels outside the mask will be empty in the output matrix")
-    + Argument ("file").type_image_in();
+    + Argument ("file").type_image_in()
+
+  + Mapping::BlurStreamlinesOption;
 
 }
 
