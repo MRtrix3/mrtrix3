@@ -19,6 +19,10 @@ set(UNIT_TESTS_CPP_SRCS
     to_tests.cpp
 )
 
+if(MRTRIX_ENABLE_GPU)
+    list(APPEND UNIT_TESTS_CPP_SRCS gputests.cpp)
+endif()
+
 get_filename_component(SOURCE_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 set(DATA_DIR ${SOURCE_PARENT_DIR}/data)
 
