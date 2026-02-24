@@ -17,9 +17,9 @@
 #pragma once
 
 #include "image.h"
+#include "types.h"
 #include <cstddef>
 #include <tcb/span.hpp>
-#include "types.h"
 
 #include <array>
 #include <cmath>
@@ -152,13 +152,12 @@ struct GlobalRegistrationConfig {
 
 struct NonLinearRegistrationConfig {
   std::vector<ChannelConfig> channels;
-  InitialGuess initial_guess;
   NonLinearMetric metric;
   uint32_t max_iterations = 500;
 };
 
 struct NonLinearRegistrationResult {
-  std::optional<Image<float>> displacement;
+  std::optional<Image<float>> warp;
 };
 
 struct RegistrationResult {
