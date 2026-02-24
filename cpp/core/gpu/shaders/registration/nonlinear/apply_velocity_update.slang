@@ -2,6 +2,7 @@
 // where v is the velocity field, u is the update field, and gamma is a step size parameter.
 // This is an approximation of the Baker-Campbell update scheme for diffeomorphic log-demons,
 // which states that log(exp(v) o exp(u)) ~= v + u + (1/2)[v,u] + ...
+// where [v,u] = Jacobian(v) * u - Jacobian(u) * v is the Lie bracket of the two vector fields.
 // Here we simply ignore the Lie bracket term and higher order terms, which is reasonable
 // for small updates u.
 import texture_utils;
