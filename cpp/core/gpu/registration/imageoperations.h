@@ -65,4 +65,29 @@ GPU::Texture downsampleTexture(const GPU::Texture &texture, const GPU::ComputeCo
 
 std::vector<GPU::Texture>
 createDownsampledPyramid(const GPU::Texture &fullResTexture, int numLevels, const GPU::ComputeContext &context);
+
+struct GaussianSmoothingParams {
+  uint32_t radius = 0U;
+  float sigma = 0.0F;
+};
+
+// Separable Gaussian smoothing for 3D textures.
+// The pipeline uses two bound textures with ping-pong scheduling:
+// pass X: a -> b, pass Y: b -> a, pass Z: a -> b.
+// After run(), the smoothed result is in texture b.
+class SeparableGaussianBlurPipeline {
+public:
+  SeparableGaussianBlurPipeline(const ComputeContext &context,
+                                const Texture &texture_a,
+                                const Texture &texture_b,
+                                const GaussianSmoothingParams &params);
+
+  void run(const ComputeContext &context) const;
+
+private:
+  DispatchGrid m_dispatch_grid;
+  Kernel m_blur_x;
+  Kernel m_blur_y;
+  Kernel m_blur_z;
+};
 } // namespace MR::GPU

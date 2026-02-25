@@ -30,6 +30,9 @@
 #include <vector>
 
 namespace MR::GPU {
+namespace {
+constexpr WorkgroupSize gaussian_blur_workgroup_size{.x = 8U, .y = 4U, .z = 4U};
+}
 using Coordinate3D = std::array<float, 3>;
 
 struct MomentUniforms {
@@ -210,6 +213,67 @@ createDownsampledPyramid(const Texture &fullResTexture, int32_t numLevels, const
     pyramid[level] = downsampleTexture(pyramid[level + 1], context);
   }
   return pyramid;
+}
+
+SeparableGaussianBlurPipeline::SeparableGaussianBlurPipeline(const ComputeContext &context,
+                                                             const Texture &texture_a,
+                                                             const Texture &texture_b,
+                                                             const GaussianSmoothingParams &params)
+    : m_dispatch_grid(DispatchGrid::element_wise_texture(texture_a, gaussian_blur_workgroup_size)) {
+  if (texture_a.spec.width != texture_b.spec.width || texture_a.spec.height != texture_b.spec.height ||
+      texture_a.spec.depth != texture_b.spec.depth) {
+    throw Exception("Input textures must have matching dimensions.");
+  }
+  if (texture_a.spec.format != texture_b.spec.format) {
+    throw Exception("Input textures must have matching formats.");
+  }
+  if (params.sigma <= 0.0F) {
+    throw Exception("Sigma must be > 0.");
+  }
+
+  const bool is_scalar = texture_a.spec.format == TextureFormat::R32Float;
+  const std::string blur_x_entrypoint = is_scalar ? "blurXScalar" : "blurXRGBA";
+  const std::string blur_y_entrypoint = is_scalar ? "blurYScalar" : "blurYRGBA";
+  const std::string blur_z_entrypoint = is_scalar ? "blurZScalar" : "blurZRGBA";
+  const ShaderFile shader_source{"shaders/registration/nonlinear/gaussian_blur_update.slang"};
+
+  const ShaderEntry blur_x_shader{
+      .shader_source = shader_source,
+      .entryPoint = blur_x_entrypoint,
+      .workgroup_size = gaussian_blur_workgroup_size,
+      .constants = {{"kKernelRadius", params.radius}, {"kSigma", params.sigma}},
+  };
+  const ShaderEntry blur_y_shader{
+      .shader_source = shader_source,
+      .entryPoint = blur_y_entrypoint,
+      .workgroup_size = gaussian_blur_workgroup_size,
+      .constants = {{"kKernelRadius", params.radius}, {"kSigma", params.sigma}},
+  };
+  const ShaderEntry blur_z_shader{
+      .shader_source = shader_source,
+      .entryPoint = blur_z_entrypoint,
+      .workgroup_size = gaussian_blur_workgroup_size,
+      .constants = {{"kKernelRadius", params.radius}, {"kSigma", params.sigma}},
+  };
+
+  m_blur_x = context.new_kernel({
+      .compute_shader = blur_x_shader,
+      .bindings_map = {{"inputUpdate", texture_a}, {"outputUpdate", texture_b}},
+  });
+  m_blur_y = context.new_kernel({
+      .compute_shader = blur_y_shader,
+      .bindings_map = {{"inputUpdate", texture_b}, {"outputUpdate", texture_a}},
+  });
+  m_blur_z = context.new_kernel({
+      .compute_shader = blur_z_shader,
+      .bindings_map = {{"inputUpdate", texture_a}, {"outputUpdate", texture_b}},
+  });
+}
+
+void SeparableGaussianBlurPipeline::run(const ComputeContext &context) const {
+  context.dispatch_kernel(m_blur_x, m_dispatch_grid);
+  context.dispatch_kernel(m_blur_y, m_dispatch_grid);
+  context.dispatch_kernel(m_blur_z, m_dispatch_grid);
 }
 
 } // namespace MR::GPU
