@@ -16,13 +16,11 @@
 
 #include "gpu/registration/nonlinearregistration.h"
 
-#include "algo/loop.h"
+#include "algo/threaded_loop.h"
 #include "datatype.h"
 #include "exception.h"
 #include "gpu/registration/eigenhelpers.h"
 #include "transform.h"
-
-#include <tcb/span.hpp>
 
 #include <Eigen/Core>
 
@@ -30,7 +28,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
-#include <vector>
 
 namespace {
 using namespace MR::GPU;
@@ -44,8 +41,8 @@ constexpr float velocity_step_size = 0.25F;
 constexpr float velocity_clamp_max = 0.5F;
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
 
-// Performs the scaling and squaring steps to exponentiate the velocity field, writing the output to the displacement texture.
-// We use a ping-pong approach with two velocity and two displacement textures to avoid read-write conflicts.
+// Performs the scaling and squaring steps to exponentiate the velocity field, writing the output to the displacement
+// texture. We use a ping-pong approach with two velocity and two displacement textures to avoid read-write conflicts.
 void exponentiate_velocity(bool velocity_is_1,
                            const Kernel &init_from_v1,
                            const Kernel &init_from_v2,
@@ -108,8 +105,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       .format = TextureFormat::RGBA32Float,
       .usage = {.storage_binding = true, .render_target = false},
   };
-  const size_t voxel_count =
-      static_cast<size_t>(fixed_texture.spec.width) * fixed_texture.spec.height * fixed_texture.spec.depth;
   const Transform moving_transform(channel.image1);
   const Texture velocity1 = context.new_empty_texture(vector_texture_spec);
   const Texture velocity2 = context.new_empty_texture(vector_texture_spec);
@@ -194,15 +189,35 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   exponentiate_velocity(
       velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
 
-  std::vector<float> displacement_host(voxel_count * 4U, 0.0F);
-  context.download_texture(displacement1, tcb::span<float>(displacement_host.data(), displacement_host.size()));
+  Header displacement_header(channel.image2);
+  displacement_header.ndim() = 4;
+  displacement_header.size(3) = 3;
+  displacement_header.datatype() = DataType::from<float>();
+  Image<float> displacement_image =
+      context.download_texture_as_image(displacement1,
+                                        displacement_header,
+                                        "nonlinear displacement",
+                                        ComputeContext::DownloadTextureAlphaMode::IgnoreAlpha);
 
   Header warp_header(channel.image2);
   warp_header.ndim() = 4;
   warp_header.size(3) = 3;
-  warp_header.datatype() = DataType::from<default_type>();
-  Image<default_type> warp_image = Image<default_type>::scratch(warp_header, "nonlinear warp").with_direct_io();
-  // TODO: write warp
+  warp_header.datatype() = DataType::from<float>();
+
+  Image<float> warp_image = Image<float>::scratch(warp_header, "nonlinear warp").with_direct_io();
+  const Eigen::Matrix4f moving_voxel_to_scanner = EigenHelpers::to_homogeneous_mat4f(moving_transform.voxel2scanner);
+
+  auto write_warp = [&](Image<float> &warp, Image<float> &displacement) {
+    const Eigen::Vector3f displacement_voxel(displacement.row(3));
+    const Eigen::Vector4f moving_voxel(static_cast<float>(warp.index(0)) + displacement_voxel.x(),
+                                       static_cast<float>(warp.index(1)) + displacement_voxel.y(),
+                                       static_cast<float>(warp.index(2)) + displacement_voxel.z(),
+                                       1.0F);
+    const Eigen::Vector4f moving_scanner = moving_voxel_to_scanner * moving_voxel;
+    warp.row(3) = moving_scanner.head<3>();
+  };
+  ThreadedLoop("writing nonlinear warp", warp_image, 0, 3).run(write_warp, warp_image, displacement_image);
+
   return NonLinearRegistrationResult{.warp = std::move(warp_image)};
 }
 
