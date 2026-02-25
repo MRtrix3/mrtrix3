@@ -305,6 +305,20 @@ struct ComputeContext {
   // This function blocks until the download is complete.
   void download_texture(const Texture &texture, tcb::span<float> dst_memory_region) const;
 
+  enum class DownloadTextureAlphaMode : uint8_t {
+    IgnoreAlpha,
+    KeepAlpha,
+  };
+
+  // This function blocks until the download is complete.
+  // The returned image will have the same strides as the provided header.
+  // The texture data is downloaded in a strict row-major format (Channels -> X -> Y -> Z)
+  // and then reshuffled to match the requested strides.
+  [[nodiscard]] Image<float> download_texture_as_image(const Texture &texture,
+                                                       const Header &header,
+                                                       std::string_view label,
+                                                       DownloadTextureAlphaMode alpha_mode) const;
+
   [[nodiscard]] Kernel new_kernel(const KernelSpec &kernel_spec) const;
 
   void dispatch_kernel(const Kernel &kernel, const DispatchGrid &dispatch_grid) const;
