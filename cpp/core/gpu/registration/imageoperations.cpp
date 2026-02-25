@@ -15,11 +15,12 @@
  */
 
 #include "gpu/registration/imageoperations.h"
-#include "gpu/registration/eigenhelpers.h"
+#include "exception.h"
 #include "gpu/gpu.h"
-#include <tcb/span.hpp>
-#include "types.h"
+#include "gpu/registration/eigenhelpers.h"
 #include "gpu/registration/utils.h"
+#include "types.h"
+#include <tcb/span.hpp>
 
 #include <Eigen/Core>
 #include <array>
@@ -27,6 +28,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <vector>
 
 namespace MR::GPU {
