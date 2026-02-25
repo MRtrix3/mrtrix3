@@ -15,6 +15,8 @@
  */
 
 #include "gpu.h"
+#include "adapter/extract.h"
+#include "algo/threaded_copy.h"
 #include "exception.h"
 #include "image_helpers.h"
 #include "match_variant.h"
@@ -72,6 +74,17 @@ uint32_t pixel_size_in_bytes(const TextureFormat format) {
     return 4;
   case TextureFormat::RGBA32Float:
     return 16;
+  default:
+    throw MR::Exception("Only R32Float and RGBA32Float textures are supported!");
+  }
+}
+
+uint32_t texture_channels_count(const TextureFormat format) {
+  switch (format) {
+  case TextureFormat::R32Float:
+    return 1;
+  case TextureFormat::RGBA32Float:
+    return 4;
   default:
     throw MR::Exception("Only R32Float and RGBA32Float textures are supported!");
   }
@@ -534,6 +547,88 @@ void ComputeContext::download_texture(const Texture &texture, tcb::span<float> d
   }
 
   staging_buffer.Unmap();
+}
+
+Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
+                                                       const Header &header,
+                                                       std::string_view label,
+                                                       DownloadTextureAlphaMode alpha_mode) const {
+  Image<float> image = Image<float>::scratch(header, label);
+  const uint32_t texture_channels = texture_channels_count(texture.spec.format);
+  const uint32_t texture_dims = [&texture]() {
+    switch (texture.wgpu_handle.GetDimension()) {
+    case wgpu::TextureDimension::e2D:
+      return 2U;
+    case wgpu::TextureDimension::e3D:
+      return 3U;
+    default:
+      throw MR::Exception("Unsupported texture dimension");
+    }
+  }();
+
+  const uint32_t header_dims = static_cast<uint32_t>(header.ndim());
+  const bool has_channel_axis = header_dims == (texture_dims + 1U);
+  if (texture_dims != header_dims && !has_channel_axis) {
+    throw MR::Exception("Texture dimension (" + std::to_string(texture_dims) + ") does not match header dimension (" +
+                        std::to_string(header_dims) + ")");
+  }
+
+  const uint32_t texture_width = texture.spec.width;
+  const uint32_t texture_height = texture.spec.height;
+  const uint32_t texture_depth = texture.spec.depth;
+
+  if (header.size(0) != static_cast<ssize_t>(texture_width) || header.size(1) != static_cast<ssize_t>(texture_height) ||
+      (texture_dims == 3U && header.size(2) != static_cast<ssize_t>(texture_depth))) {
+    throw MR::Exception("Header dimensions do not match texture size");
+  }
+
+  const uint32_t expected_channels = [&]() -> uint32_t {
+    switch (texture_channels) {
+    case 1U:
+      return 1U;
+    case 4U:
+      return alpha_mode == DownloadTextureAlphaMode::KeepAlpha ? 4U : 3U;
+    default:
+      throw MR::Exception("Unsupported texture channel count");
+    }
+  }();
+
+  if (has_channel_axis) {
+    if (header.size(texture_dims) != static_cast<ssize_t>(expected_channels)) {
+      throw MR::Exception("Header channel axis does not match expected channel count");
+    }
+  } else if (expected_channels != 1U) {
+    throw MR::Exception("Header must include a channel axis for multi-channel textures");
+  }
+
+  const size_t voxel_count = static_cast<size_t>(texture_width) * texture_height * texture_depth;
+  Header source_header(header);
+  if (has_channel_axis) {
+    source_header.size(texture_dims) = static_cast<ssize_t>(texture_channels);
+  }
+
+  // Force the strides to match the memory layout written by download_texture:
+  // Channel (if present) is fastest, then X, then Y, then Z.
+  for (size_t i = 0; i < texture_dims; ++i) {
+    source_header.stride(i) = has_channel_axis ? i + 2 : i + 1;
+  }
+  if (has_channel_axis) {
+    source_header.stride(texture_dims) = 1;
+  }
+
+  Image<float> source_image = Image<float>::scratch(source_header);
+
+  download_texture(texture, tcb::span<float>(source_image.address(), voxel_count * texture_channels));
+
+  if (texture_channels == 4U && alpha_mode == DownloadTextureAlphaMode::IgnoreAlpha) {
+    const std::vector<uint32_t> rgb_channels = {0U, 1U, 2U};
+    Adapter::Extract1D source_rgb(source_image, texture_dims, rgb_channels);
+    threaded_copy(source_rgb, image);
+  } else {
+    threaded_copy(source_image, image);
+  }
+
+  return image;
 }
 
 Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
