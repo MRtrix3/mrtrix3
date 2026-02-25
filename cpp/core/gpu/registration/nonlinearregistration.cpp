@@ -20,6 +20,7 @@
 #include "datatype.h"
 #include "exception.h"
 #include "gpu/registration/eigenhelpers.h"
+#include "gpu/registration/imageoperations.h"
 #include "transform.h"
 
 #include <Eigen/Core>
@@ -37,6 +38,8 @@ constexpr uint32_t exponentiate_steps = 6U;
 constexpr float update_alpha = 1.0F;
 constexpr float update_epsilon = 1.0e-5F;
 constexpr float update_max_magnitude = 0.5F;
+constexpr uint32_t fluid_blur_radius = 2U;
+constexpr float fluid_blur_sigma = 1.5F;
 constexpr float velocity_step_size = 0.25F;
 constexpr float velocity_clamp_max = 0.5F;
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
@@ -77,10 +80,13 @@ namespace MR::GPU {
 
 NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrationConfig &config,
                                                        const GPU::ComputeContext &context) {
-  // Draft non-linear registration pipeline:
+  // Non-linear registration pipeline:
   // 1. Validate inputs and allocate GPU textures for velocity, displacement, and local updates.
-  // 2. Iterate: exponentiate the current velocity (scaling and squaring), compute an SSD-based update,
-  //    then apply that update back to the velocity field.
+  // 2. Iterate:
+  //    - exponentiate the current velocity (scaling and squaring)
+  //    - compute an SSD-based local update
+  //    - regularise that update via Gaussian smoothing (fluid-like regularisation)
+  //    - apply the update to the velocity field
   // 3. Exponentiate the final velocity, download displacement, and write the output warp in scanner space.
   if (config.channels.empty()) {
     throw Exception("At least one channel must be provided for registration");
@@ -110,10 +116,17 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   const Texture velocity2 = context.new_empty_texture(vector_texture_spec);
   const Texture displacement1 = context.new_empty_texture(vector_texture_spec);
   const Texture displacement2 = context.new_empty_texture(vector_texture_spec);
-  const Texture update_field = context.new_empty_texture(vector_texture_spec);
+  const Texture raw_update_field = context.new_empty_texture(vector_texture_spec);
+  const Texture smoothed_update_field = context.new_empty_texture(vector_texture_spec);
 
   const Sampler linear_sampler = context.new_linear_sampler();
   const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(fixed_texture, workgroup_size);
+  const GaussianSmoothingParams fluid_smoothing_params{
+      .radius = fluid_blur_radius,
+      .sigma = fluid_blur_sigma,
+  };
+  const SeparableGaussianBlurPipeline fluid_update_blur(
+      context, raw_update_field, smoothed_update_field, fluid_smoothing_params);
 
   const ShaderEntry exp_init_shader{
       .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
@@ -155,7 +168,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                                        .bindings_map = {{"fixedImage", fixed_texture},
                                                                         {"movingImage", moving_texture},
                                                                         {"displacement", displacement1},
-                                                                        {"outputUpdate", update_field},
+                                                                        {"outputUpdate", raw_update_field},
                                                                         {"linearSampler", linear_sampler}}});
 
   const ShaderEntry apply_update_shader{
@@ -168,16 +181,17 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   };
   const Kernel apply_update_12 = context.new_kernel(
       {.compute_shader = apply_update_shader,
-       .bindings_map = {{"velocity", velocity1}, {"update", update_field}, {"outputVelocity", velocity2}}});
+       .bindings_map = {{"velocity", velocity1}, {"update", smoothed_update_field}, {"outputVelocity", velocity2}}});
   const Kernel apply_update_21 = context.new_kernel(
       {.compute_shader = apply_update_shader,
-       .bindings_map = {{"velocity", velocity2}, {"update", update_field}, {"outputVelocity", velocity1}}});
+       .bindings_map = {{"velocity", velocity2}, {"update", smoothed_update_field}, {"outputVelocity", velocity1}}});
 
   bool velocity_is_1 = true;
   for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
     exponentiate_velocity(
         velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
     context.dispatch_kernel(ssd_update_kernel, dispatch_grid);
+    fluid_update_blur.run(context);
     if (velocity_is_1) {
       context.dispatch_kernel(apply_update_12, dispatch_grid);
     } else {
