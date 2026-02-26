@@ -46,6 +46,11 @@ constexpr float velocity_step_size = 0.25F;
 constexpr float velocity_clamp_max = 0.5F;
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
 
+struct SSDEvalUniforms {
+  alignas(16) DispatchGrid dispatch_grid{};
+};
+static_assert(sizeof(SSDEvalUniforms) % 16 == 0, "SSDEvalUniforms must be 16-byte aligned.");
+
 // Performs the scaling and squaring steps to exponentiate the velocity field, writing the output to the displacement
 // texture. We use a ping-pong approach with two velocity and two displacement textures to avoid read-write conflicts.
 void exponentiate_velocity(bool velocity_is_1,
@@ -199,10 +204,46 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       {.compute_shader = apply_update_shader,
        .bindings_map = {{"velocity", velocity2}, {"update", smoothed_update_field}, {"outputVelocity", velocity1}}});
 
+  const ShaderEntry ssd_cost_shader{
+      .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
+      .entryPoint = "main",
+      .workgroup_size = workgroup_size,
+      .constants = {{"kIncludeOutOfBounds", uint32_t{0}}},
+  };
+  const SSDEvalUniforms ssd_uniforms{
+      .dispatch_grid = dispatch_grid,
+  };
+  const Buffer<std::byte> ssd_uniforms_buffer =
+      context.new_buffer_from_host_object(ssd_uniforms, BufferType::UniformBuffer);
+  const Buffer<float> ssd_partials_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
+  const Buffer<float> ssd_counts_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
+  const Kernel ssd_cost_kernel = context.new_kernel({.compute_shader = ssd_cost_shader,
+                                                     .bindings_map = {{"uniforms", ssd_uniforms_buffer},
+                                                                      {"fixedImage", fixed_texture},
+                                                                      {"movingImage", moving_texture},
+                                                                      {"displacement", displacement1},
+                                                                      {"linearSampler", linear_sampler},
+                                                                      {"ssdPartials", ssd_partials_buffer},
+                                                                      {"ssdCounts", ssd_counts_buffer}}});
+
+  const auto evaluate_ssd_cost = [&]() {
+    context.dispatch_kernel(ssd_cost_kernel, dispatch_grid);
+    const std::vector<float> partials = context.download_buffer_as_vector(ssd_partials_buffer);
+    const std::vector<float> counts = context.download_buffer_as_vector(ssd_counts_buffer);
+
+    double total_cost = std::reduce(partials.begin(), partials.end(), 0.0);
+    double total_count = std::reduce(counts.begin(), counts.end(), 0.0);
+    return static_cast<float>(total_cost / total_count);
+  };
+
   bool velocity_is_1 = true;
+  exponentiate_velocity(
+      velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
   for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
-    exponentiate_velocity(
-        velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
+    const float cost = evaluate_ssd_cost();
+    INFO("Non-linear registration: level 1/1 iteration " + std::to_string(iter + 1U) + "/" +
+         std::to_string(config.max_iterations) + " cost=" + std::to_string(cost));
+
     context.dispatch_kernel(ssd_update_kernel, dispatch_grid);
     fluid_update_blur.run(context);
     if (velocity_is_1) {
@@ -219,10 +260,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       diffusion_velocity_blur_21.run(context);
     }
     velocity_is_1 = !velocity_is_1;
+    exponentiate_velocity(
+        velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
   }
-
-  exponentiate_velocity(
-      velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
 
   Header displacement_header(channel.image2);
   displacement_header.ndim() = 4;
