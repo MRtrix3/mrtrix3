@@ -56,6 +56,7 @@ static_assert(sizeof(SSDEvalUniforms) % 16 == 0, "SSDEvalUniforms must be 16-byt
 
 // Performs the scaling and squaring steps to exponentiate the velocity field, writing the output to the displacement
 // texture. We use a ping-pong approach with two velocity and two displacement textures to avoid read-write conflicts.
+// This is required because GPU kernels generally can’t safely read and write the same texture in one dispatch.
 void exponentiate_velocity(bool velocity_is_1,
                            const Kernel &init_from_v1,
                            const Kernel &init_from_v2,
