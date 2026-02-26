@@ -1,6 +1,7 @@
 // Compute SSD cost between fixed image and warped moving image, given a displacement field.
 import reduction_utils;
 import texture_utils;
+import voxelscannermatrices;
 
 extern static const uint32_t kWorkgroupSizeX = 8U;
 extern static const uint32_t kWorkgroupSizeY = 4U;
@@ -22,6 +23,7 @@ void main(
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
     Texture3D<float4> displacement,
+    ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
     RWStructuredBuffer<float> ssdPartials,
     RWStructuredBuffer<float> ssdCounts)
@@ -38,14 +40,17 @@ void main(
     if (globalId.x < fixedDim.x && globalId.y < fixedDim.y && globalId.z < fixedDim.z) {
         let fixedValue = fixedImage.Load(int32_t4(globalId, 0)).r;
         let disp = displacement.Load(int32_t4(globalId, 0)).xyz;
-        let warpedCoord = float3(globalId) + disp;
-        let inBounds = warpedCoord.x >= 0.0F && warpedCoord.y >= 0.0F && warpedCoord.z >= 0.0F &&
-                       warpedCoord.x <= float(movingDim.x - 1) &&
-                       warpedCoord.y <= float(movingDim.y - 1) &&
-                       warpedCoord.z <= float(movingDim.z - 1);
+        let fixedVoxel = float3(globalId);
+        let fixedScanner = mul(voxelScannerMatrices.targetVoxelToScanner, float4(fixedVoxel, 1.0F)).xyz;
+        let movingScanner = fixedScanner + disp;
+        let movingVoxel = mul(voxelScannerMatrices.sourceScannerToVoxel, float4(movingScanner, 1.0F)).xyz;
+        let inBounds = movingVoxel.x >= 0.0F && movingVoxel.y >= 0.0F && movingVoxel.z >= 0.0F &&
+                       movingVoxel.x <= float(movingDim.x - 1) &&
+                       movingVoxel.y <= float(movingDim.y - 1) &&
+                       movingVoxel.z <= float(movingDim.z - 1);
 
         let movingField = VoxelSamplingField(movingImage, linearSampler);
-        let movingValue = movingField.sampleWithZeroBorder(warpedCoord);
+        let movingValue = movingField.sampleWithZeroBorder(movingVoxel);
         let error = fixedValue - movingValue;
 
         let includeOutOfBounds = (kIncludeOutOfBounds != 0U);

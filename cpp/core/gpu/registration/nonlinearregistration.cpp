@@ -21,6 +21,7 @@
 #include "exception.h"
 #include "gpu/registration/eigenhelpers.h"
 #include "gpu/registration/imageoperations.h"
+#include "gpu/registration/voxelscannermatrices.h"
 #include "transform.h"
 
 #include <Eigen/Core>
@@ -40,13 +41,13 @@ constexpr WorkgroupSize workgroup_size{.x = 8U, .y = 4U, .z = 4U};
 constexpr uint32_t exponentiate_steps = 6U;
 constexpr float update_alpha = 1.0F;
 constexpr float update_epsilon = 1.0e-5F;
-constexpr float update_max_magnitude = 0.5F;
+constexpr float update_max_magnitude = 0.5F; // in scanner space units (mm)
 constexpr uint32_t fluid_blur_radius = 2U;
 constexpr float fluid_blur_sigma = 1.5F;
 constexpr uint32_t diffusion_blur_radius = 2U;
 constexpr float diffusion_blur_sigma = 1.5F;
 constexpr float velocity_step_size = 0.25F;
-constexpr float velocity_clamp_max = 0.5F;
+constexpr float velocity_clamp_max = 0.5F; // in scanner space units (mm)
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
 
 struct SSDEvalUniforms {
@@ -125,7 +126,10 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       .format = TextureFormat::RGBA32Float,
       .usage = {.storage_binding = true, .render_target = false},
   };
-  const Transform moving_transform(channel.image1);
+  const VoxelScannerMatrices voxel_scanner_matrices =
+      VoxelScannerMatrices::from_image_pair(channel.image1, channel.image2);
+  const Buffer<std::byte> voxel_scanner_buffer =
+      context.new_buffer_from_host_object(voxel_scanner_matrices, BufferType::UniformBuffer);
   const Texture velocity1 = context.new_empty_texture(vector_texture_spec);
   const Texture velocity2 = context.new_empty_texture(vector_texture_spec);
   const Texture displacement1 = context.new_empty_texture(vector_texture_spec);
@@ -172,10 +176,12 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   const Kernel exp_square_12 = context.new_kernel({.compute_shader = exp_square_shader,
                                                    .bindings_map = {{"inputDisplacement", displacement1},
                                                                     {"outputDisplacement", displacement2},
+                                                                    {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                     {"linearSampler", linear_sampler}}});
   const Kernel exp_square_21 = context.new_kernel({.compute_shader = exp_square_shader,
                                                    .bindings_map = {{"inputDisplacement", displacement2},
                                                                     {"outputDisplacement", displacement1},
+                                                                    {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                     {"linearSampler", linear_sampler}}});
 
   const ShaderEntry ssd_update_shader{
@@ -190,6 +196,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                                        .bindings_map = {{"fixedImage", fixed_texture},
                                                                         {"movingImage", moving_texture},
                                                                         {"displacement", displacement1},
+                                                                        {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                         {"outputUpdate", raw_update_field},
                                                                         {"linearSampler", linear_sampler}}});
 
@@ -226,6 +233,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                                                       {"fixedImage", fixed_texture},
                                                                       {"movingImage", moving_texture},
                                                                       {"displacement", displacement1},
+                                                                      {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                       {"linearSampler", linear_sampler},
                                                                       {"ssdPartials", ssd_partials_buffer},
                                                                       {"ssdCounts", ssd_counts_buffer}}});
@@ -284,16 +292,16 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   warp_header.datatype() = DataType::from<float>();
 
   Image<float> warp_image = Image<float>::scratch(warp_header, "nonlinear warp").with_direct_io();
-  const Eigen::Matrix4f moving_voxel_to_scanner = EigenHelpers::to_homogeneous_mat4f(moving_transform.voxel2scanner);
+  const Transform fixed_transform(channel.image2);
+  const Eigen::Matrix4f fixed_voxel_to_scanner = EigenHelpers::to_homogeneous_mat4f(fixed_transform.voxel2scanner);
 
   auto write_warp = [&](Image<float> &warp, Image<float> &displacement) {
-    const Eigen::Vector3f displacement_voxel(displacement.row(3));
-    const Eigen::Vector4f moving_voxel(static_cast<float>(warp.index(0)) + displacement_voxel.x(),
-                                       static_cast<float>(warp.index(1)) + displacement_voxel.y(),
-                                       static_cast<float>(warp.index(2)) + displacement_voxel.z(),
-                                       1.0F);
-    const Eigen::Vector4f moving_scanner = moving_voxel_to_scanner * moving_voxel;
-    warp.row(3) = moving_scanner.head<3>();
+    const Eigen::Vector3f displacement_scanner(displacement.row(3));
+    const Eigen::Vector4f fixed_voxel(
+        static_cast<float>(warp.index(0)), static_cast<float>(warp.index(1)), static_cast<float>(warp.index(2)), 1.0F);
+    const Eigen::Vector4f fixed_scanner = fixed_voxel_to_scanner * fixed_voxel;
+    const Eigen::Vector3f moving_scanner = fixed_scanner.head<3>() + displacement_scanner;
+    warp.row(3) = moving_scanner;
   };
   ThreadedLoop("writing nonlinear warp", warp_image, 0, 3).run(write_warp, warp_image, displacement_image);
 
