@@ -154,6 +154,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
   {
     std::vector dawn_toggles{"allow_unsafe_apis", "enable_immediate_error_handling", "disable_robustness"};
 
+    // On MacOS, MRTRIX_GPU_DEBUG_TRACE can be enabled together with METAL_CAPTURE_ENABLED=1 and DAWN_TRACE_FILE_BASE to
+    // produce a GPU trace that can be opened in Xcode for profile and debugging.
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     const char *dawn_gpu_debug_env = std::getenv("MRTRIX_GPU_DEBUG_TRACE"); // check_syntax off
     if (dawn_gpu_debug_env != nullptr && std::string(dawn_gpu_debug_env) == "1") {
