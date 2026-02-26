@@ -15,6 +15,7 @@
  */
 
  #include "adapter/reslice.h"
+ #include "algo/threaded_copy.h"
  #include "app.h"
  #include "cmdline_option.h"
  #include "command.h" // IWYU pragma: keep
@@ -22,6 +23,7 @@
  #include "exception.h"
  #include "file/matrix.h"
  #include "filter/reslice.h"
+ #include "filter/warp.h"
  #include "gpu/gpu.h"
  #include "gpu/registration/eigenhelpers.h"
  #include "gpu/registration/globalregistration.h"
@@ -89,7 +91,7 @@
  constexpr uint32_t default_ncc_window_radius = 0U;
  constexpr uint32_t default_max_iterations = 500;
  const std::vector<std::string> supported_global_metric_types = lowercase_enum_names<MetricType>();
- const std::vector<std::string> supported_nonlinear_metric_types = {"ssd", "ncc"};
+ const std::vector<std::string> supported_nonlinear_metric_types = {"ssd"};
  const std::vector<std::string> supported_registration_modes = lowercase_enum_names<TransformModel>();
  const std::vector<std::string> supported_init_translations = lowercase_enum_names<InitTranslationChoice>();
  const std::vector<std::string> supported_init_rotations = lowercase_enum_names<InitRotationChoice>();
@@ -139,6 +141,9 @@
              .allow_multiple()
              + Argument("image").type_image_out().optional()
 
+         + Option ("nl_warp", "write the non-linear warp field (4D, x/y/z in 4th axis).")
+             + Argument("image").type_image_out()
+
          + Option ("transformed_midway", "image1 and image2 after registration transformed and regridded to the midway space."
                                         " Note that -transformed_midway needs to be repeated for each contrast.")
              .allow_multiple()
@@ -160,7 +165,7 @@
          + Option ("global_metric", "similarity metric to use for rigid/affine registrations (nmi, ssd, ncc)")
              + Argument("name").type_choice(supported_global_metric_types)
 
-         + Option ("nonlinear_metric", "similarity metric to use for nonlinear registration (ssd, ncc)")
+         + Option ("nl_metric", "similarity metric to use for nonlinear registration (ssd)")
              + Argument("name").type_choice(supported_nonlinear_metric_types)
 
          // TODO: Should we mention that using a large window radius (> 3) is not recommended
@@ -251,10 +256,13 @@
    const bool has_nonlinear_registration = (transform_model == TransformModel::NonLinear);
 
    const auto global_metric_options = get_options("global_metric");
-   const auto nonlinear_metric_options = get_options("nonlinear_metric");
+   const auto nl_metric_options = get_options("nl_metric");
 
-   if (!has_nonlinear_registration && !nonlinear_metric_options.empty()) {
-     throw Exception("nonlinear_metric is only valid when using nonlinear registration.");
+   if (!has_nonlinear_registration && !nl_metric_options.empty()) {
+     throw Exception("nl_metric is only valid when using nonlinear registration.");
+   }
+   if (has_global_registration && !get_option_value<std::string>("nl_warp", "").empty()) {
+     throw Exception("nl_warp output is only valid when using nonlinear registration.");
    }
 
    std::optional<GlobalRegistrationType> transform_type;
@@ -270,9 +278,9 @@
 
    std::optional<MetricType> nonlinear_metric_type;
    if (has_nonlinear_registration) {
-     const std::string default_nonlinear_metric = "ncc";
+     const std::string default_nonlinear_metric = "ssd";
      nonlinear_metric_type =
-         from_name<MetricType>(get_option_value<std::string>("nonlinear_metric", default_nonlinear_metric));
+         from_name<MetricType>(get_option_value<std::string>("nl_metric", default_nonlinear_metric));
    }
 
    const uint32_t ncc_window_radius = get_option_value<uint32_t>("ncc_radius", default_ncc_window_radius);
@@ -380,26 +388,95 @@
    }
 
    if (has_nonlinear_registration) {
+     if (mask1 || mask2) {
+       throw Exception("Non-linear registration draft does not yet support masks.");
+     }
+
+     const std::string matrix_filename = get_option_value<std::string>("matrix", "");
+     const std::string matrix_1tomid_filename = get_option_value<std::string>("matrix_1tomidway", "");
+     const std::string matrix_2tomid_filename = get_option_value<std::string>("matrix_2tomidway", "");
+     if (!matrix_filename.empty() || !matrix_1tomid_filename.empty() || !matrix_2tomid_filename.empty()) {
+       throw Exception("Matrix outputs are not yet supported when using nonlinear registration.");
+     }
+
+     const auto transformed_midway_option = get_options("transformed_midway");
+     if (!transformed_midway_option.empty()) {
+       throw Exception("transformed_midway outputs are not yet supported when using nonlinear registration.");
+     }
+
      NonLinearMetric nonlinear_metric;
      switch (*nonlinear_metric_type) {
      case MetricType::SSD:
        nonlinear_metric = SSDMetric{};
        break;
      case MetricType::NCC:
-       nonlinear_metric = NCCMetric{.window_radius = ncc_window_radius};
-       break;
+       throw Exception("Non-linear registration currently supports SSD metric only.");
      default:
        throw Exception("Unsupported nonlinear metric type");
      }
 
      const NonLinearRegistrationConfig nonlinear_config{
          .channels = channels,
-         .initial_guess = initial_guess,
          .metric = nonlinear_metric,
          .max_iterations = max_iterations,
      };
      auto gpu_compute_context = gpu_context_request.get();
-     (void)GPU::run_nonlinear_registration(nonlinear_config, gpu_compute_context);
+     const NonLinearRegistrationResult nonlinear_result =
+         GPU::run_nonlinear_registration(nonlinear_config, gpu_compute_context);
+
+     const auto transformed_option = get_options("transformed");
+     std::vector<std::filesystem::path> transformed_filenames;
+     if (!transformed_option.empty()) {
+       if (transformed_option.size() > header_pairs.size()) {
+         throw Exception("Number of -transformed images exceeds number of contrasts");
+       }
+       if (transformed_option.size() < header_pairs.size()) {
+         WARN("Number of -transformed images is less than number of contrasts.");
+       }
+       for (size_t i = 0; i < transformed_option.size(); ++i) {
+         const std::filesystem::path output_path(transformed_option[i][0]);
+         transformed_filenames.push_back(output_path);
+         const auto input1_path = std::filesystem::path(header_pairs[i].header1.name());
+         INFO(input1_path.filename().string() + ", transformed to space of image2, will be saved to " +
+              output_path.string());
+       }
+     }
+
+     const std::string warp_filename = get_option_value<std::string>("nl_warp", "");
+     std::optional<Image<float>> warp_image;
+     if (!warp_filename.empty() || !transformed_filenames.empty()) {
+       if (!nonlinear_result.warp) {
+         throw Exception("Non-linear registration did not return a warp field.");
+       }
+       warp_image = nonlinear_result.warp.value();
+     }
+
+     if (!warp_filename.empty()) {
+       Image<float> output_warp = Image<float>::create(warp_filename, warp_image.value()).with_direct_io();
+       threaded_copy(warp_image.value(), output_warp);
+     }
+
+     if (!transformed_filenames.empty()) {
+       Header transformed_warp_header(warp_image.value());
+       transformed_warp_header.datatype() = DataType::from<default_type>();
+       Image<default_type> transformed_warp =
+           Image<default_type>::scratch(transformed_warp_header, "nonlinear transformed warp").with_direct_io();
+       threaded_copy(warp_image.value(), transformed_warp);
+
+       const size_t transforms_to_write = std::min(transformed_filenames.size(), header_pairs.size());
+       for (size_t idx = 0; idx < transforms_to_write; ++idx) {
+         const auto &[header1, header2] = header_pairs[idx];
+
+         Image<float> input_image = Image<float>::open(header1.name());
+         Header output_header(header2);
+         output_header.datatype() = DataType::from<float>();
+         auto output_image = Image<float>::create(transformed_filenames[idx].string(), output_header).with_direct_io();
+
+         Filter::warp<Interp::Cubic>(input_image, output_image, transformed_warp, 0.0F);
+       }
+     }
+
+     return;
    }
 
    if (!has_global_registration) {
