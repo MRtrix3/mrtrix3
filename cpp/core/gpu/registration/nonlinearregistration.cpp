@@ -28,6 +28,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <numeric>
+#include <string>
 #include <utility>
 
 namespace {
