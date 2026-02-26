@@ -4,7 +4,9 @@ import texture_utils;
 extern static const uint32_t kWorkgroupSizeX = 8U;
 extern static const uint32_t kWorkgroupSizeY = 4U;
 extern static const uint32_t kWorkgroupSizeZ = 4U;
-extern static const float kScale;
+extern static const float kScaleX;
+extern static const float kScaleY;
+extern static const float kScaleZ;
 
 [shader("compute")]
 [numthreads(kWorkgroupSizeX, kWorkgroupSizeY, kWorkgroupSizeZ)]
@@ -20,8 +22,7 @@ void main(
 
     let coarseSampler = VoxelSamplingFieldFloat4(coarseVelocity, linearSampler);
     let fineCoord = float3(globalId);
-    let coarseCoord = fineCoord / kScale;
+    let coarseCoord = float3(fineCoord.x / kScaleX, fineCoord.y / kScaleY, fineCoord.z / kScaleZ);
     let sampled = coarseSampler.sample(coarseCoord).xyz;
-    let scaled = sampled * kScale;
-    outputVelocity.Store(uint32_t3(globalId), float4(scaled, 0.0F));
+    outputVelocity.Store(uint32_t3(globalId), float4(sampled, 0.0F));
 }
