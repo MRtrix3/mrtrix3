@@ -180,6 +180,12 @@ namespace MR {
           }
           else size = Raw::fetch_<uint16_t> (start+6, is_BE);
 
+          // try to get around some badly formatted data:
+          if (type() == OTHER && size == 0) {
+            VR = VR_UN;
+            size = Raw::fetch_<uint32_t> (start+4, is_BE);
+          }
+
           // try figuring out VR from dictionary if vendors haven't bothered
           // filling it in...
           if (VR == VR_UN) {
@@ -322,6 +328,7 @@ namespace MR {
       Element::Type Element::type () const
       {
         if (!VR) return INVALID;
+        if (VR == VR_UN) return UNKNOWN;
         if (VR == VR_FD || VR == VR_FL) return FLOAT;
         if (VR == VR_SL || VR == VR_SS) return INT;
         if (VR == VR_UL || VR == VR_US) return UINT;

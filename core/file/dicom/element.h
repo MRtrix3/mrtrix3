@@ -104,6 +104,7 @@ namespace MR {
             DATETIME,
             STRING,
             SEQ,
+            UNKNOWN,
             OTHER
           } Type;
 
