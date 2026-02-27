@@ -125,7 +125,7 @@ namespace MR {
           std::string tag_name () const {
             if (dict.empty()) init_dict();
             const char* s = dict[tag()];
-            return (s ? s : "");
+            return (s != nullptr ? s : "");
           }
 
           uint32_t tag () const {

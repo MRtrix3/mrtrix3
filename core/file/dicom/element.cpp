@@ -546,9 +546,15 @@ namespace MR {
       {
         //return "TYPE  GROUP ELEMENT VR  SIZE  OFFSET  NAME                               CONTENTS";
 
+        auto VR_char = [](uint16_t VR, int n) {
+          const char c = reinterpret_cast<const char*> (&VR)[n];
+          return std::isprint (c) ? c : '?';
+        };
+
+
         const std::string& name (item.tag_name());
         stream << printf ("[DCM] %04X %04X %c%c % 8u % 8llu ", item.group, item.element,
-            reinterpret_cast<const char*> (&item.VR)[1], reinterpret_cast<const char*> (&item.VR)[0],
+            VR_char (item.VR,1), VR_char (item.VR,0),
             ( item.size == LENGTH_UNDEFINED ? uint32_t(0) : item.size ), item.offset (item.start));
 
         std::string tmp;
