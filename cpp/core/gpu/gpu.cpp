@@ -471,7 +471,23 @@ Texture ComputeContext::new_texture_from_host_image(const MR::Image<float> &imag
       .usage = usage,
   };
   const auto image_size = MR::voxel_count(image);
-  return new_texture_from_host_memory(textureSpec, tcb::span<float>(image.address(), image_size));
+  // We need to pack the image data into a contiguous buffer in the layout expected by the GPU texture.
+  // TODO: we cannot rely on Image::with_direct_io() to do this packing for us
+  // See discussion at https://github.com/MRtrix3/mrtrix3/pull/3108
+  std::vector<float> contiguous_host_data(image_size, 0.0F);
+  auto source = image;
+  const size_t width = static_cast<size_t>(source.size(0));
+  const size_t height = static_cast<size_t>(source.size(1));
+  const auto pack_voxel = [&contiguous_host_data, width, height](auto &vox) {
+    const size_t x = static_cast<size_t>(vox.index(0));
+    const size_t y = static_cast<size_t>(vox.index(1));
+    const size_t z = static_cast<size_t>(vox.index(2));
+    const size_t linear_offset = x + width * (y + height * z);
+    contiguous_host_data[linear_offset] = vox.value();
+  };
+  ThreadedLoop(source, 0, 3).run(pack_voxel, source);
+
+  return new_texture_from_host_memory(textureSpec, contiguous_host_data);
 }
 
 void ComputeContext::download_texture(const Texture &texture, tcb::span<float> dst_memory_region) const {
