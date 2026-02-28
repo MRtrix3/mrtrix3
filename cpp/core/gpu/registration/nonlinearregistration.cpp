@@ -53,6 +53,9 @@ constexpr float velocity_step_size = 0.25F;
 constexpr float velocity_clamp_max = 0.5F; // in scanner space units (mm)
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
 constexpr uint32_t num_levels = 3U;
+constexpr uint32_t convergence_window = 5U;
+constexpr float convergence_min_relative_improvement = 1.0e-4F;
+constexpr float convergence_cost_floor = 1.0e-6F;
 
 struct SSDEvalUniforms {
   alignas(16) DispatchGrid dispatch_grid{};
@@ -291,11 +294,34 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
     exponentiate_velocity(
         velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
+    std::vector<float> recent_costs;
+    recent_costs.reserve(convergence_window + 1U);
     for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
       const float cost = evaluate_ssd_cost();
+      recent_costs.push_back(cost);
+      if (recent_costs.size() > (convergence_window + 1U)) {
+        recent_costs.erase(recent_costs.begin());
+      }
       INFO("Non-linear registration: level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels) +
            " iteration " + std::to_string(iter + 1U) + "/" + std::to_string(config.max_iterations) +
            " cost=" + std::to_string(cost));
+
+      // Compute the relative improvement over the convergence window
+      if (recent_costs.size() == (convergence_window + 1U)) {
+        const float window_start_cost = recent_costs.front();
+        const float window_end_cost = recent_costs.back();
+        const float absolute_start_cost = std::fabs(window_start_cost);
+        const float denominator =
+            absolute_start_cost > convergence_cost_floor ? absolute_start_cost : convergence_cost_floor;
+        const float relative_improvement = (window_start_cost - window_end_cost) / denominator;
+        if (relative_improvement < convergence_min_relative_improvement) {
+          CONSOLE("Non-linear registration: convergence reached at level " + std::to_string(level + 1U) + "/" +
+                  std::to_string(num_levels) + " after " + std::to_string(iter + 1U) +
+                  " iterations (relative cost improvement over last " + std::to_string(convergence_window) +
+                  " iterations: " + std::to_string(relative_improvement) + ").");
+          break;
+        }
+      }
 
       context.dispatch_kernel(ssd_update_kernel, dispatch_grid);
       fluid_update_blur.run(context);
