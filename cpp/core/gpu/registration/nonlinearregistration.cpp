@@ -42,17 +42,17 @@ namespace {
 using namespace MR::GPU;
 
 constexpr WorkgroupSize workgroup_size{.x = 8U, .y = 4U, .z = 4U};
-// Scaling-and-squaring threshold in target-voxel units.
+// Scaling-and-squaring threshold in target voxel units.
 // We choose the number of squaring steps so that max(||v / 2^n||) <= this value before composition.
 constexpr float exponentiation_max_velocity_norm_voxels = 0.5F;
 constexpr float update_alpha = 1.0F;
 constexpr float update_epsilon = 1.0e-5F;
 constexpr float update_max_magnitude = 0.5F; // in scanner space units (mm)
-constexpr uint32_t fluid_blur_radius = 2U;
-constexpr float fluid_blur_sigma = 1.5F;
-constexpr uint32_t diffusion_blur_radius = 2U;
-constexpr float diffusion_blur_sigma = 1.5F;
-constexpr float velocity_step_size = 0.25F;
+constexpr uint32_t fluid_blur_radius = 1U;
+constexpr float fluid_blur_sigma = 1.0F;
+constexpr uint32_t diffusion_blur_radius = 1U;
+constexpr float diffusion_blur_sigma = 1.0F;
+constexpr float velocity_step_size = 1.0F;
 constexpr float velocity_clamp_max = 0.5F; // in scanner space units (mm)
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
 constexpr uint32_t num_levels = 3U;
