@@ -242,7 +242,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
         .entryPoint = "main",
         .workgroup_size = workgroup_size,
-        .constants = {{"kIncludeOutOfBounds", uint32_t{0}}},
+        .constants = {{"kIncludeOutOfBounds", uint32_t{1}}},
     };
     const SSDEvalUniforms ssd_uniforms{
         .dispatch_grid = dispatch_grid,
