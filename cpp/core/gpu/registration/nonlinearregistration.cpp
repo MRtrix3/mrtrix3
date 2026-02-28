@@ -27,12 +27,15 @@
 #include <Eigen/Core>
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace {
 using namespace MR::GPU;
@@ -49,6 +52,7 @@ constexpr float diffusion_blur_sigma = 1.5F;
 constexpr float velocity_step_size = 0.25F;
 constexpr float velocity_clamp_max = 0.5F; // in scanner space units (mm)
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
+constexpr uint32_t num_levels = 3U;
 
 struct SSDEvalUniforms {
   alignas(16) DispatchGrid dispatch_grid{};
@@ -118,162 +122,211 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
   const Texture moving_texture = context.new_texture_from_host_image(channel.image1);
   const Texture fixed_texture = context.new_texture_from_host_image(channel.image2);
-
-  const TextureSpec vector_texture_spec{
-      .width = fixed_texture.spec.width,
-      .height = fixed_texture.spec.height,
-      .depth = fixed_texture.spec.depth,
-      .format = TextureFormat::RGBA32Float,
-      .usage = {.storage_binding = true, .render_target = false},
-  };
-  const VoxelScannerMatrices voxel_scanner_matrices =
-      VoxelScannerMatrices::from_image_pair(channel.image1, channel.image2);
-  const Buffer<std::byte> voxel_scanner_buffer =
-      context.new_buffer_from_host_object(voxel_scanner_matrices, BufferType::UniformBuffer);
-  const Texture velocity1 = context.new_empty_texture(vector_texture_spec);
-  const Texture velocity2 = context.new_empty_texture(vector_texture_spec);
-  const Texture displacement1 = context.new_empty_texture(vector_texture_spec);
-  const Texture displacement2 = context.new_empty_texture(vector_texture_spec);
-  const Texture raw_update_field = context.new_empty_texture(vector_texture_spec);
-  const Texture smoothed_update_field = context.new_empty_texture(vector_texture_spec);
-
+  const std::vector<Texture> moving_pyramid =
+      createDownsampledPyramid(moving_texture, static_cast<int32_t>(num_levels), context);
+  const std::vector<Texture> fixed_pyramid =
+      createDownsampledPyramid(fixed_texture, static_cast<int32_t>(num_levels), context);
   const Sampler linear_sampler = context.new_linear_sampler();
-  const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(fixed_texture, workgroup_size);
-  const GaussianSmoothingParams fluid_smoothing_params{
-      .radius = fluid_blur_radius,
-      .sigma = fluid_blur_sigma,
-  };
-  const GaussianSmoothingParams diffusion_smoothing_params{
-      .radius = diffusion_blur_radius,
-      .sigma = diffusion_blur_sigma,
-  };
-  const SeparableGaussianBlurPipeline fluid_update_blur(
-      context, raw_update_field, smoothed_update_field, fluid_smoothing_params);
-  const SeparableGaussianBlurPipeline diffusion_velocity_blur_12(
-      context, velocity1, velocity2, diffusion_smoothing_params);
-  const SeparableGaussianBlurPipeline diffusion_velocity_blur_21(
-      context, velocity2, velocity1, diffusion_smoothing_params);
+  std::optional<Texture> previous_level_velocity;
+  std::optional<Texture> previous_level_fixed;
+  std::optional<Texture> final_displacement;
 
-  const ShaderEntry exp_init_shader{
-      .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
-      .entryPoint = "initialise",
-      .workgroup_size = workgroup_size,
-      .constants = {{"kNumSteps", exponentiate_steps}},
-  };
-  // Velocity ping-pongs between two textures, so we keep one init kernel per source texture.
-  const Kernel exp_init_from_v1 = context.new_kernel(
-      {.compute_shader = exp_init_shader, .bindings_map = {{"velocityTexture", velocity1}, {"output", displacement1}}});
-  const Kernel exp_init_from_v2 = context.new_kernel(
-      {.compute_shader = exp_init_shader, .bindings_map = {{"velocityTexture", velocity2}, {"output", displacement1}}});
+  for (uint32_t level = 0U; level < num_levels; ++level) {
+    INFO("Non-linear registration: processing level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels));
+    const Texture &moving_level = moving_pyramid[level];
+    const Texture &fixed_level = fixed_pyramid[level];
+    const float level_downscale = std::exp2f(static_cast<float>(num_levels - 1U - level));
 
-  const ShaderEntry exp_square_shader{
-      .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
-      .entryPoint = "square",
-      .workgroup_size = workgroup_size,
-  };
-  // Squaring kernel cannot read and write the same displacement texture in one dispatch.
-  // These two kernels implement ping-pong writes: 1->2 then 2->1.
-  const Kernel exp_square_12 = context.new_kernel({.compute_shader = exp_square_shader,
-                                                   .bindings_map = {{"inputDisplacement", displacement1},
-                                                                    {"outputDisplacement", displacement2},
-                                                                    {"voxelScannerMatrices", voxel_scanner_buffer},
-                                                                    {"linearSampler", linear_sampler}}});
-  const Kernel exp_square_21 = context.new_kernel({.compute_shader = exp_square_shader,
-                                                   .bindings_map = {{"inputDisplacement", displacement2},
-                                                                    {"outputDisplacement", displacement1},
-                                                                    {"voxelScannerMatrices", voxel_scanner_buffer},
-                                                                    {"linearSampler", linear_sampler}}});
+    const TextureSpec vector_texture_spec{
+        .width = fixed_level.spec.width,
+        .height = fixed_level.spec.height,
+        .depth = fixed_level.spec.depth,
+        .format = TextureFormat::RGBA32Float,
+        .usage = {.storage_binding = true, .render_target = false},
+    };
+    const VoxelScannerMatrices voxel_scanner_matrices =
+        VoxelScannerMatrices::from_image_pair(channel.image1, channel.image2, level_downscale);
+    const Buffer<std::byte> voxel_scanner_buffer =
+        context.new_buffer_from_host_object(voxel_scanner_matrices, BufferType::UniformBuffer);
+    const Texture velocity1 = context.new_empty_texture(vector_texture_spec);
+    const Texture velocity2 = context.new_empty_texture(vector_texture_spec);
+    const Texture displacement1 = context.new_empty_texture(vector_texture_spec);
+    const Texture displacement2 = context.new_empty_texture(vector_texture_spec);
+    const Texture raw_update_field = context.new_empty_texture(vector_texture_spec);
+    const Texture smoothed_update_field = context.new_empty_texture(vector_texture_spec);
 
-  const ShaderEntry ssd_update_shader{
-      .shader_source = ShaderFile{"shaders/registration/nonlinear/local_ssd_update.slang"},
-      .entryPoint = "main",
-      .workgroup_size = workgroup_size,
-      .constants = {{"kAlpha", update_alpha},
-                    {"kEpsilon", update_epsilon},
-                    {"kMaxUpdateMagnitude", update_max_magnitude}},
-  };
-  const Kernel ssd_update_kernel = context.new_kernel({.compute_shader = ssd_update_shader,
-                                                       .bindings_map = {{"fixedImage", fixed_texture},
-                                                                        {"movingImage", moving_texture},
+    const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(fixed_level, workgroup_size);
+    const GaussianSmoothingParams fluid_smoothing_params{
+        .radius = fluid_blur_radius,
+        .sigma = fluid_blur_sigma,
+    };
+    const GaussianSmoothingParams diffusion_smoothing_params{
+        .radius = diffusion_blur_radius,
+        .sigma = diffusion_blur_sigma,
+    };
+    const SeparableGaussianBlurPipeline fluid_update_blur(
+        context, raw_update_field, smoothed_update_field, fluid_smoothing_params);
+    const SeparableGaussianBlurPipeline diffusion_velocity_blur_12(
+        context, velocity1, velocity2, diffusion_smoothing_params);
+    const SeparableGaussianBlurPipeline diffusion_velocity_blur_21(
+        context, velocity2, velocity1, diffusion_smoothing_params);
+
+    const ShaderEntry exp_init_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
+        .entryPoint = "initialise",
+        .workgroup_size = workgroup_size,
+        .constants = {{"kNumSteps", exponentiate_steps}},
+    };
+    // Velocity ping-pongs between two textures, so we keep one init kernel per source texture.
+    const Kernel exp_init_from_v1 =
+        context.new_kernel({.compute_shader = exp_init_shader,
+                            .bindings_map = {{"velocityTexture", velocity1}, {"output", displacement1}}});
+    const Kernel exp_init_from_v2 =
+        context.new_kernel({.compute_shader = exp_init_shader,
+                            .bindings_map = {{"velocityTexture", velocity2}, {"output", displacement1}}});
+
+    const ShaderEntry exp_square_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
+        .entryPoint = "square",
+        .workgroup_size = workgroup_size,
+    };
+    // Squaring kernel cannot read and write the same displacement texture in one dispatch.
+    // These two kernels implement ping-pong writes: 1->2 then 2->1.
+    const Kernel exp_square_12 = context.new_kernel({.compute_shader = exp_square_shader,
+                                                     .bindings_map = {{"inputDisplacement", displacement1},
+                                                                      {"outputDisplacement", displacement2},
+                                                                      {"voxelScannerMatrices", voxel_scanner_buffer},
+                                                                      {"linearSampler", linear_sampler}}});
+    const Kernel exp_square_21 = context.new_kernel({.compute_shader = exp_square_shader,
+                                                     .bindings_map = {{"inputDisplacement", displacement2},
+                                                                      {"outputDisplacement", displacement1},
+                                                                      {"voxelScannerMatrices", voxel_scanner_buffer},
+                                                                      {"linearSampler", linear_sampler}}});
+
+    const ShaderEntry ssd_update_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/local_ssd_update.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+        .constants = {{"kAlpha", update_alpha},
+                      {"kEpsilon", update_epsilon},
+                      {"kMaxUpdateMagnitude", update_max_magnitude}},
+    };
+    const Kernel ssd_update_kernel =
+        context.new_kernel({.compute_shader = ssd_update_shader,
+                            .bindings_map = {{"fixedImage", fixed_level},
+                                             {"movingImage", moving_level},
+                                             {"displacement", displacement1},
+                                             {"voxelScannerMatrices", voxel_scanner_buffer},
+                                             {"outputUpdate", raw_update_field},
+                                             {"linearSampler", linear_sampler}}});
+
+    const ShaderEntry apply_update_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/apply_velocity_update.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+        .constants = {{"kStepSize", velocity_step_size},
+                      {"kMaxUpdateMagnitude", velocity_clamp_max},
+                      {"kClampEpsilon", velocity_clamp_epsilon}},
+    };
+    const Kernel apply_update_12 = context.new_kernel(
+        {.compute_shader = apply_update_shader,
+         .bindings_map = {{"velocity", velocity1}, {"update", smoothed_update_field}, {"outputVelocity", velocity2}}});
+    const Kernel apply_update_21 = context.new_kernel(
+        {.compute_shader = apply_update_shader,
+         .bindings_map = {{"velocity", velocity2}, {"update", smoothed_update_field}, {"outputVelocity", velocity1}}});
+
+    const ShaderEntry ssd_cost_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+        .constants = {{"kIncludeOutOfBounds", uint32_t{0}}},
+    };
+    const SSDEvalUniforms ssd_uniforms{
+        .dispatch_grid = dispatch_grid,
+    };
+    const Buffer<std::byte> ssd_uniforms_buffer =
+        context.new_buffer_from_host_object(ssd_uniforms, BufferType::UniformBuffer);
+    const Buffer<float> ssd_partials_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
+    const Buffer<float> ssd_counts_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
+    const Kernel ssd_cost_kernel = context.new_kernel({.compute_shader = ssd_cost_shader,
+                                                       .bindings_map = {{"uniforms", ssd_uniforms_buffer},
+                                                                        {"fixedImage", fixed_level},
+                                                                        {"movingImage", moving_level},
                                                                         {"displacement", displacement1},
                                                                         {"voxelScannerMatrices", voxel_scanner_buffer},
-                                                                        {"outputUpdate", raw_update_field},
-                                                                        {"linearSampler", linear_sampler}}});
+                                                                        {"linearSampler", linear_sampler},
+                                                                        {"ssdPartials", ssd_partials_buffer},
+                                                                        {"ssdCounts", ssd_counts_buffer}}});
 
-  const ShaderEntry apply_update_shader{
-      .shader_source = ShaderFile{"shaders/registration/nonlinear/apply_velocity_update.slang"},
-      .entryPoint = "main",
-      .workgroup_size = workgroup_size,
-      .constants = {{"kStepSize", velocity_step_size},
-                    {"kMaxUpdateMagnitude", velocity_clamp_max},
-                    {"kClampEpsilon", velocity_clamp_epsilon}},
-  };
-  const Kernel apply_update_12 = context.new_kernel(
-      {.compute_shader = apply_update_shader,
-       .bindings_map = {{"velocity", velocity1}, {"update", smoothed_update_field}, {"outputVelocity", velocity2}}});
-  const Kernel apply_update_21 = context.new_kernel(
-      {.compute_shader = apply_update_shader,
-       .bindings_map = {{"velocity", velocity2}, {"update", smoothed_update_field}, {"outputVelocity", velocity1}}});
+    const auto evaluate_ssd_cost = [&]() {
+      context.dispatch_kernel(ssd_cost_kernel, dispatch_grid);
+      const std::vector<float> partials = context.download_buffer_as_vector(ssd_partials_buffer);
+      const std::vector<float> counts = context.download_buffer_as_vector(ssd_counts_buffer);
 
-  const ShaderEntry ssd_cost_shader{
-      .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
-      .entryPoint = "main",
-      .workgroup_size = workgroup_size,
-      .constants = {{"kIncludeOutOfBounds", uint32_t{0}}},
-  };
-  const SSDEvalUniforms ssd_uniforms{
-      .dispatch_grid = dispatch_grid,
-  };
-  const Buffer<std::byte> ssd_uniforms_buffer =
-      context.new_buffer_from_host_object(ssd_uniforms, BufferType::UniformBuffer);
-  const Buffer<float> ssd_partials_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
-  const Buffer<float> ssd_counts_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
-  const Kernel ssd_cost_kernel = context.new_kernel({.compute_shader = ssd_cost_shader,
-                                                     .bindings_map = {{"uniforms", ssd_uniforms_buffer},
-                                                                      {"fixedImage", fixed_texture},
-                                                                      {"movingImage", moving_texture},
-                                                                      {"displacement", displacement1},
-                                                                      {"voxelScannerMatrices", voxel_scanner_buffer},
-                                                                      {"linearSampler", linear_sampler},
-                                                                      {"ssdPartials", ssd_partials_buffer},
-                                                                      {"ssdCounts", ssd_counts_buffer}}});
+      const double total_cost = std::reduce(partials.begin(), partials.end(), 0.0);
+      const double total_count = std::reduce(counts.begin(), counts.end(), 0.0);
+      return static_cast<float>(total_cost / total_count);
+    };
 
-  const auto evaluate_ssd_cost = [&]() {
-    context.dispatch_kernel(ssd_cost_kernel, dispatch_grid);
-    const std::vector<float> partials = context.download_buffer_as_vector(ssd_partials_buffer);
-    const std::vector<float> counts = context.download_buffer_as_vector(ssd_counts_buffer);
-
-    double total_cost = std::reduce(partials.begin(), partials.end(), 0.0);
-    double total_count = std::reduce(counts.begin(), counts.end(), 0.0);
-    return static_cast<float>(total_cost / total_count);
-  };
-
-  bool velocity_is_1 = true;
-  exponentiate_velocity(
-      velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
-  for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
-    const float cost = evaluate_ssd_cost();
-    INFO("Non-linear registration: level 1/1 iteration " + std::to_string(iter + 1U) + "/" +
-         std::to_string(config.max_iterations) + " cost=" + std::to_string(cost));
-
-    context.dispatch_kernel(ssd_update_kernel, dispatch_grid);
-    fluid_update_blur.run(context);
-    if (velocity_is_1) {
-      context.dispatch_kernel(apply_update_12, dispatch_grid);
-    } else {
-      context.dispatch_kernel(apply_update_21, dispatch_grid);
+    bool velocity_is_1 = true;
+    if (previous_level_velocity && previous_level_fixed) {
+      const float scale_x =
+          static_cast<float>(fixed_level.spec.width) / static_cast<float>(previous_level_fixed->spec.width);
+      const float scale_y =
+          static_cast<float>(fixed_level.spec.height) / static_cast<float>(previous_level_fixed->spec.height);
+      const float scale_z =
+          static_cast<float>(fixed_level.spec.depth) / static_cast<float>(previous_level_fixed->spec.depth);
+      const ShaderEntry upsample_shader{
+          .shader_source = ShaderFile{"shaders/registration/nonlinear/upsample_velocity.slang"},
+          .entryPoint = "main",
+          .workgroup_size = workgroup_size,
+          .constants = {{"kScaleX", scale_x}, {"kScaleY", scale_y}, {"kScaleZ", scale_z}},
+      };
+      const Kernel upsample_kernel = context.new_kernel({.compute_shader = upsample_shader,
+                                                         .bindings_map = {{"coarseVelocity", *previous_level_velocity},
+                                                                          {"outputVelocity", velocity1},
+                                                                          {"linearSampler", linear_sampler}}});
+      context.dispatch_kernel(upsample_kernel, dispatch_grid);
     }
 
-    // After the local update is applied, smooth the velocity field itself (diffusion regularisation).
-    velocity_is_1 = !velocity_is_1;
-    if (velocity_is_1) {
-      diffusion_velocity_blur_12.run(context);
-    } else {
-      diffusion_velocity_blur_21.run(context);
-    }
-    velocity_is_1 = !velocity_is_1;
     exponentiate_velocity(
         velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
+    for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
+      const float cost = evaluate_ssd_cost();
+      INFO("Non-linear registration: level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels) +
+           " iteration " + std::to_string(iter + 1U) + "/" + std::to_string(config.max_iterations) +
+           " cost=" + std::to_string(cost));
+
+      context.dispatch_kernel(ssd_update_kernel, dispatch_grid);
+      fluid_update_blur.run(context);
+      if (velocity_is_1) {
+        context.dispatch_kernel(apply_update_12, dispatch_grid);
+      } else {
+        context.dispatch_kernel(apply_update_21, dispatch_grid);
+      }
+
+      // After the local update is applied, smooth the velocity field itself (diffusion regularisation).
+      velocity_is_1 = !velocity_is_1;
+      if (velocity_is_1) {
+        diffusion_velocity_blur_12.run(context);
+      } else {
+        diffusion_velocity_blur_21.run(context);
+      }
+      velocity_is_1 = !velocity_is_1;
+      exponentiate_velocity(
+          velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
+    }
+
+    if (level == (num_levels - 1U)) {
+      final_displacement = displacement1;
+    } else {
+      previous_level_velocity = velocity_is_1 ? velocity1 : velocity2;
+      previous_level_fixed = fixed_level;
+    }
+  }
+
+  if (!final_displacement) {
+    throw Exception("Non-linear registration: final displacement was not computed.");
   }
 
   Header displacement_header(channel.image2);
@@ -281,7 +334,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   displacement_header.size(3) = 3;
   displacement_header.datatype() = DataType::from<float>();
   Image<float> displacement_image =
-      context.download_texture_as_image(displacement1,
+      context.download_texture_as_image(*final_displacement,
                                         displacement_header,
                                         "nonlinear displacement",
                                         ComputeContext::DownloadTextureAlphaMode::IgnoreAlpha);
