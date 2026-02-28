@@ -26,6 +26,7 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -41,7 +42,9 @@ namespace {
 using namespace MR::GPU;
 
 constexpr WorkgroupSize workgroup_size{.x = 8U, .y = 4U, .z = 4U};
-constexpr uint32_t exponentiate_steps = 6U;
+// Scaling-and-squaring threshold in target-voxel units.
+// We choose the number of squaring steps so that max(||v / 2^n||) <= this value before composition.
+constexpr float exponentiation_max_velocity_norm_voxels = 0.5F;
 constexpr float update_alpha = 1.0F;
 constexpr float update_epsilon = 1.0e-5F;
 constexpr float update_max_magnitude = 0.5F; // in scanner space units (mm)
@@ -57,15 +60,33 @@ constexpr uint32_t convergence_window = 5U;
 constexpr float convergence_min_relative_improvement = 1.0e-4F;
 constexpr float convergence_cost_floor = 1.0e-6F;
 
-struct SSDEvalUniforms {
+struct DispatchGridUniforms {
   alignas(16) DispatchGrid dispatch_grid{};
 };
-static_assert(sizeof(SSDEvalUniforms) % 16 == 0, "SSDEvalUniforms must be 16-byte aligned.");
+static_assert(sizeof(DispatchGridUniforms) % 16 == 0, "DispatchGridUniforms must be 16-byte aligned.");
+
+struct alignas(16) ExponentiateInitUniforms {
+  uint32_t num_steps = 0U;
+};
+static_assert(sizeof(ExponentiateInitUniforms) % 16 == 0, "ExponentiateInitUniforms must be 16-byte aligned.");
+
+uint32_t compute_exponentiation_steps(float max_velocity_norm_voxels) {
+  if (!(max_velocity_norm_voxels > exponentiation_max_velocity_norm_voxels)) {
+    return 0U;
+  }
+
+  const float scale_ratio = max_velocity_norm_voxels / exponentiation_max_velocity_norm_voxels;
+  const float required_steps = std::ceil(std::log2(scale_ratio));
+  const uint32_t rounded_steps = required_steps > 0.0F ? static_cast<uint32_t>(required_steps) : 0U;
+  // Force an even number of squaring steps so displacement ping-pong always ends in displacement1.
+  return (rounded_steps % 2U) == 0U ? rounded_steps : (rounded_steps + 1U);
+}
 
 // Performs the scaling and squaring steps to exponentiate the velocity field, writing the output to the displacement
 // texture. We use a ping-pong approach with two velocity and two displacement textures to avoid read-write conflicts.
 // This is required because GPU kernels generally can’t safely read and write the same texture in one dispatch.
 void exponentiate_velocity(bool velocity_is_1,
+                           uint32_t num_steps,
                            const Kernel &init_from_v1,
                            const Kernel &init_from_v2,
                            const Kernel &square_12,
@@ -79,7 +100,7 @@ void exponentiate_velocity(bool velocity_is_1,
   }
 
   bool displacement_is_1 = true;
-  for (uint32_t step = 0U; step < exponentiate_steps; ++step) {
+  for (uint32_t step = 0U; step < num_steps; ++step) {
     if (displacement_is_1) {
       context.dispatch_kernel(square_12, dispatch_grid);
     } else {
@@ -179,15 +200,18 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
         .entryPoint = "initialise",
         .workgroup_size = workgroup_size,
-        .constants = {{"kNumSteps", exponentiate_steps}},
     };
-    // Velocity ping-pongs between two textures, so we keep one init kernel per source texture.
-    const Kernel exp_init_from_v1 =
-        context.new_kernel({.compute_shader = exp_init_shader,
-                            .bindings_map = {{"velocityTexture", velocity1}, {"output", displacement1}}});
-    const Kernel exp_init_from_v2 =
-        context.new_kernel({.compute_shader = exp_init_shader,
-                            .bindings_map = {{"velocityTexture", velocity2}, {"output", displacement1}}});
+    const Buffer<std::byte> exp_init_uniforms_buffer =
+        context.new_buffer_from_host_object(ExponentiateInitUniforms{}, BufferType::UniformBuffer);
+    // We always use an even number of squaring steps, so initialising into displacement1 is sufficient.
+    const Kernel exp_init_from_v1 = context.new_kernel({.compute_shader = exp_init_shader,
+                                                        .bindings_map = {{"uniforms", exp_init_uniforms_buffer},
+                                                                         {"velocityTexture", velocity1},
+                                                                         {"output", displacement1}}});
+    const Kernel exp_init_from_v2 = context.new_kernel({.compute_shader = exp_init_shader,
+                                                        .bindings_map = {{"uniforms", exp_init_uniforms_buffer},
+                                                                         {"velocityTexture", velocity2},
+                                                                         {"output", displacement1}}});
 
     const ShaderEntry exp_square_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
@@ -245,15 +269,15 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .workgroup_size = workgroup_size,
         .constants = {{"kIncludeOutOfBounds", uint32_t{1}}},
     };
-    const SSDEvalUniforms ssd_uniforms{
+    const DispatchGridUniforms dispatch_uniforms{
         .dispatch_grid = dispatch_grid,
     };
-    const Buffer<std::byte> ssd_uniforms_buffer =
-        context.new_buffer_from_host_object(ssd_uniforms, BufferType::UniformBuffer);
+    const Buffer<std::byte> dispatch_uniforms_buffer =
+        context.new_buffer_from_host_object(dispatch_uniforms, BufferType::UniformBuffer);
     const Buffer<float> ssd_partials_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
     const Buffer<float> ssd_counts_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
     const Kernel ssd_cost_kernel = context.new_kernel({.compute_shader = ssd_cost_shader,
-                                                       .bindings_map = {{"uniforms", ssd_uniforms_buffer},
+                                                       .bindings_map = {{"uniforms", dispatch_uniforms_buffer},
                                                                         {"fixedImage", fixed_level},
                                                                         {"movingImage", moving_level},
                                                                         {"displacement", displacement1},
@@ -261,6 +285,25 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                                                         {"linearSampler", linear_sampler},
                                                                         {"ssdPartials", ssd_partials_buffer},
                                                                         {"ssdCounts", ssd_counts_buffer}}});
+    const ShaderEntry velocity_max_norm_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/velocity_max_norm.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+    };
+    const Buffer<float> velocity_max_norm_sq_partials_buffer =
+        context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
+    const Kernel velocity_max_norm_v1_kernel =
+        context.new_kernel({.compute_shader = velocity_max_norm_shader,
+                            .bindings_map = {{"uniforms", dispatch_uniforms_buffer},
+                                             {"velocityTexture", velocity1},
+                                             {"voxelScannerMatrices", voxel_scanner_buffer},
+                                             {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}}});
+    const Kernel velocity_max_norm_v2_kernel =
+        context.new_kernel({.compute_shader = velocity_max_norm_shader,
+                            .bindings_map = {{"uniforms", dispatch_uniforms_buffer},
+                                             {"velocityTexture", velocity2},
+                                             {"voxelScannerMatrices", voxel_scanner_buffer},
+                                             {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}}});
 
     const auto evaluate_ssd_cost = [&]() {
       context.dispatch_kernel(ssd_cost_kernel, dispatch_grid);
@@ -270,6 +313,34 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       const double total_cost = std::reduce(partials.begin(), partials.end(), 0.0);
       const double total_count = std::reduce(counts.begin(), counts.end(), 0.0);
       return static_cast<float>(total_cost / total_count);
+    };
+    const auto evaluate_exponentiation_steps = [&](bool current_velocity_is_1) {
+      if (current_velocity_is_1) {
+        context.dispatch_kernel(velocity_max_norm_v1_kernel, dispatch_grid);
+      } else {
+        context.dispatch_kernel(velocity_max_norm_v2_kernel, dispatch_grid);
+      }
+      const std::vector<float> partial_max_norm_sq =
+          context.download_buffer_as_vector(velocity_max_norm_sq_partials_buffer);
+      const auto max_norm_sq_it = std::max_element(partial_max_norm_sq.begin(), partial_max_norm_sq.end());
+      const float max_norm_sq = max_norm_sq_it == partial_max_norm_sq.end() ? 0.0F : *max_norm_sq_it;
+      const float max_norm = std::sqrt(std::max(0.0F, max_norm_sq));
+      return compute_exponentiation_steps(max_norm);
+    };
+    const auto exponentiate_current_velocity = [&](bool current_velocity_is_1) {
+      const uint32_t num_steps = evaluate_exponentiation_steps(current_velocity_is_1);
+      const ExponentiateInitUniforms exp_init_uniforms{
+          .num_steps = num_steps,
+      };
+      context.write_object_to_buffer(exp_init_uniforms_buffer, exp_init_uniforms);
+      exponentiate_velocity(current_velocity_is_1,
+                            num_steps,
+                            exp_init_from_v1,
+                            exp_init_from_v2,
+                            exp_square_12,
+                            exp_square_21,
+                            dispatch_grid,
+                            context);
     };
 
     bool velocity_is_1 = true;
@@ -293,8 +364,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       context.dispatch_kernel(upsample_kernel, dispatch_grid);
     }
 
-    exponentiate_velocity(
-        velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
+    exponentiate_current_velocity(velocity_is_1);
     std::vector<float> recent_costs;
     recent_costs.reserve(convergence_window + 1U);
     for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
@@ -340,8 +410,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         diffusion_velocity_blur_21.run(context);
       }
       velocity_is_1 = !velocity_is_1;
-      exponentiate_velocity(
-          velocity_is_1, exp_init_from_v1, exp_init_from_v2, exp_square_12, exp_square_21, dispatch_grid, context);
+      exponentiate_current_velocity(velocity_is_1);
     }
 
     if (level == (num_levels - 1U)) {

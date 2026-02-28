@@ -9,12 +9,16 @@ import voxelscannermatrices;
 extern static const uint32_t kWorkgroupSizeX = 8U;
 extern static const uint32_t kWorkgroupSizeY = 4U;
 extern static const uint32_t kWorkgroupSizeZ = 4U;
-extern static const uint32_t kNumSteps = 6U;
+
+struct InitUniforms {
+    uint32_t numSteps;
+};
 
 [shader("compute")]
 [numthreads(kWorkgroupSizeX, kWorkgroupSizeY, kWorkgroupSizeZ)]
 void initialise(
     uint32_t3 globalId : SV_DispatchThreadID,
+    ConstantBuffer<InitUniforms> uniforms,
     Texture3D<float4> velocityTexture,
     WTexture3D<float4> output)
 {
@@ -24,7 +28,7 @@ void initialise(
         return;
 
     let velocity = velocityTexture.Load(int32_t4(globalId, 0)).xyz;
-    let scaled = exp2(-float(kNumSteps));
+    let scaled = exp2(-float(uniforms.numSteps));
 
     output.Store(uint32_t3(globalId), float4(velocity * scaled, 0.0F));
 }
