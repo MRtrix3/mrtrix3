@@ -129,8 +129,10 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   //    - apply the update to the velocity field
   //    - regularise the velocity field via Gaussian smoothing (diffusion-like regularisation)
   // 3. Exponentiate the final velocity, download displacement, and write the output warp in scanner space.
-  // See Symmetric Log-Domain Diffeomorphic Registration: A Demons-based Approach by Vercauteren et al.
-  // and An ITK Implementation of the Symmetric Log-Domain Diffeomorphic Demons Algorithm by Dru & Vercauteren.
+  // See the following papers:
+  // - Symmetric Log-Domain Diffeomorphic Registration: A Demons-based Approach by Vercauteren et al.
+  // - Diffeomorphic demons: Efficient non-parametric image registration by Vercauteren et al.
+  // - An ITK Implementation of the Symmetric Log-Domain Diffeomorphic Demons Algorithm by Dru & Vercauteren.
 
   if (config.channels.empty()) {
     throw Exception("At least one channel must be provided for registration");
