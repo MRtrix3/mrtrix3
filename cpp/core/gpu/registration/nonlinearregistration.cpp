@@ -59,6 +59,8 @@ constexpr uint32_t num_levels = 3U;
 constexpr uint32_t convergence_window = 5U;
 constexpr float convergence_min_relative_improvement = 1.0e-4F;
 constexpr float convergence_cost_floor = 1.0e-6F;
+constexpr uint32_t symmetric_direction_forward = 0U;
+constexpr uint32_t symmetric_direction_backward = 1U;
 
 struct DispatchGridUniforms {
   alignas(16) DispatchGrid dispatch_grid{};
@@ -85,19 +87,13 @@ uint32_t compute_exponentiation_steps(float max_velocity_norm_voxels) {
 // Performs the scaling and squaring steps to exponentiate the velocity field, writing the output to the displacement
 // texture. We use a ping-pong approach with two velocity and two displacement textures to avoid read-write conflicts.
 // This is required because GPU kernels generally can’t safely read and write the same texture in one dispatch.
-void exponentiate_velocity(bool velocity_is_1,
+void exponentiate_velocity(const Kernel &init_kernel,
                            uint32_t num_steps,
-                           const Kernel &init_from_v1,
-                           const Kernel &init_from_v2,
                            const Kernel &square_12,
                            const Kernel &square_21,
                            const DispatchGrid &dispatch_grid,
                            const ComputeContext &context) {
-  if (velocity_is_1) {
-    context.dispatch_kernel(init_from_v1, dispatch_grid);
-  } else {
-    context.dispatch_kernel(init_from_v2, dispatch_grid);
-  }
+  context.dispatch_kernel(init_kernel, dispatch_grid);
 
   bool displacement_is_1 = true;
   for (uint32_t step = 0U; step < num_steps; ++step) {
@@ -120,15 +116,19 @@ namespace MR::GPU {
 
 NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrationConfig &config,
                                                        const GPU::ComputeContext &context) {
-  // Non-linear registration pipeline:
+  // Symmetric log-domain non-linear registration pipeline (ZA update):
   // 1. Validate inputs and allocate GPU textures for velocity, displacement, and local updates.
   // 2. Iterate:
-  //    - exponentiate the current velocity (scaling and squaring)
-  //    - compute an SSD-based local update
-  //    - regularise that update via Gaussian smoothing (fluid-like regularisation)
-  //    - apply the update to the velocity field
-  //    - regularise the velocity field via Gaussian smoothing (diffusion-like regularisation)
-  // 3. Exponentiate the final velocity, download displacement, and write the output warp in scanner space.
+  //    - exponentiate v to get forward displacement exp(v) via scaling-and-squaring
+  //    - compute forward SSD cost and forward local demons update
+  //    - negate velocity and exponentiate -v to get backward displacement exp(-v)
+  //    - compute backward SSD cost and backward local demons update
+  //    - combine updates as u = 0.5 * (u_fwd - u_bwd)
+  //    - regularise u via Gaussian smoothing (fluid-like regularisation)
+  //    - apply u to velocity
+  //    - regularise velocity via Gaussian smoothing (diffusion-like regularisation)
+  //    - evaluate convergence using symmetric SSD: 0.5 * (cost_fwd + cost_bwd)
+  // 3. Exponentiate the final velocity, download forward displacement, and write the output warp in scanner space.
   // See the following papers:
   // - Symmetric Log-Domain Diffeomorphic Registration: A Demons-based Approach by Vercauteren et al.
   // - Diffeomorphic demons: Efficient non-parametric image registration by Vercauteren et al.
@@ -177,8 +177,11 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         context.new_buffer_from_host_object(voxel_scanner_matrices, BufferType::UniformBuffer);
     const Texture velocity1 = context.new_empty_texture(vector_texture_spec);
     const Texture velocity2 = context.new_empty_texture(vector_texture_spec);
+    const Texture negated_velocity = context.new_empty_texture(vector_texture_spec);
     const Texture displacement1 = context.new_empty_texture(vector_texture_spec);
     const Texture displacement2 = context.new_empty_texture(vector_texture_spec);
+    const Texture forward_update_field = context.new_empty_texture(vector_texture_spec);
+    const Texture backward_update_field = context.new_empty_texture(vector_texture_spec);
     const Texture raw_update_field = context.new_empty_texture(vector_texture_spec);
     const Texture smoothed_update_field = context.new_empty_texture(vector_texture_spec);
 
@@ -214,6 +217,10 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                                         .bindings_map = {{"uniforms", exp_init_uniforms_buffer},
                                                                          {"velocityTexture", velocity2},
                                                                          {"output", displacement1}}});
+    const Kernel exp_init_from_negated = context.new_kernel({.compute_shader = exp_init_shader,
+                                                             .bindings_map = {{"uniforms", exp_init_uniforms_buffer},
+                                                                              {"velocityTexture", negated_velocity},
+                                                                              {"output", displacement1}}});
 
     const ShaderEntry exp_square_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
@@ -233,43 +240,72 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                                                       {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                       {"linearSampler", linear_sampler}}});
 
-    const ShaderEntry ssd_update_shader{
+    const ShaderEntry ssd_forward_update_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/local_ssd_update.slang"},
         .entryPoint = "main",
         .workgroup_size = workgroup_size,
-        .constants = {{"kAlpha", update_alpha},
+        .constants = {{"kSymmetricDirection", symmetric_direction_forward},
+                      {"kAlpha", update_alpha},
                       {"kEpsilon", update_epsilon},
                       {"kMaxUpdateMagnitude", update_max_magnitude}},
     };
-    const Kernel ssd_update_kernel =
-        context.new_kernel({.compute_shader = ssd_update_shader,
+    const Kernel ssd_forward_update_kernel =
+        context.new_kernel({.compute_shader = ssd_forward_update_shader,
                             .bindings_map = {{"fixedImage", fixed_level},
                                              {"movingImage", moving_level},
                                              {"displacement", displacement1},
                                              {"voxelScannerMatrices", voxel_scanner_buffer},
-                                             {"outputUpdate", raw_update_field},
+                                             {"outputUpdate", forward_update_field},
+                                             {"linearSampler", linear_sampler}}});
+    const ShaderEntry ssd_backward_update_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/local_ssd_update.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+        .constants = {{"kSymmetricDirection", symmetric_direction_backward},
+                      {"kAlpha", update_alpha},
+                      {"kEpsilon", update_epsilon},
+                      {"kMaxUpdateMagnitude", update_max_magnitude}},
+    };
+    const Kernel ssd_backward_update_kernel =
+        context.new_kernel({.compute_shader = ssd_backward_update_shader,
+                            .bindings_map = {{"fixedImage", fixed_level},
+                                             {"movingImage", moving_level},
+                                             {"displacement", displacement1},
+                                             {"voxelScannerMatrices", voxel_scanner_buffer},
+                                             {"outputUpdate", backward_update_field},
                                              {"linearSampler", linear_sampler}}});
 
     const ShaderEntry apply_update_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/apply_velocity_update.slang"},
         .entryPoint = "main",
         .workgroup_size = workgroup_size,
-        .constants = {{"kStepSize", velocity_step_size},
-                      {"kMaxUpdateMagnitude", velocity_clamp_max},
-                      {"kClampEpsilon", velocity_clamp_epsilon}},
+        .constants =
+            {
+                {"kStepSize", velocity_step_size},
+                {"kMaxUpdateMagnitude", velocity_clamp_max},
+                {"kClampEpsilon", velocity_clamp_epsilon},
+            },
     };
-    const Kernel apply_update_12 = context.new_kernel(
-        {.compute_shader = apply_update_shader,
-         .bindings_map = {{"velocity", velocity1}, {"update", smoothed_update_field}, {"outputVelocity", velocity2}}});
-    const Kernel apply_update_21 = context.new_kernel(
-        {.compute_shader = apply_update_shader,
-         .bindings_map = {{"velocity", velocity2}, {"update", smoothed_update_field}, {"outputVelocity", velocity1}}});
+    const Kernel apply_update_12 = context.new_kernel({
+        .compute_shader = apply_update_shader,
+        .bindings_map = {{"velocity", velocity1}, {"update", smoothed_update_field}, {"outputVelocity", velocity2}},
+    });
+    const Kernel apply_update_21 = context.new_kernel({
+        .compute_shader = apply_update_shader,
+        .bindings_map = {{"velocity", velocity2}, {"update", smoothed_update_field}, {"outputVelocity", velocity1}},
+    });
 
-    const ShaderEntry ssd_cost_shader{
+    const ShaderEntry ssd_forward_cost_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
         .entryPoint = "main",
         .workgroup_size = workgroup_size,
-        .constants = {{"kIncludeOutOfBounds", uint32_t{1}}},
+        .constants = {{"kIncludeOutOfBounds", uint32_t{1}}, {"kSymmetricDirection", symmetric_direction_forward}},
+    };
+    const ShaderEntry ssd_backward_cost_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+        .constants = {{"kIncludeOutOfBounds", uint32_t{1}}, {"kSymmetricDirection", symmetric_direction_backward}},
     };
     const DispatchGridUniforms dispatch_uniforms{
         .dispatch_grid = dispatch_grid,
@@ -278,15 +314,50 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         context.new_buffer_from_host_object(dispatch_uniforms, BufferType::UniformBuffer);
     const Buffer<float> ssd_partials_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
     const Buffer<float> ssd_counts_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
-    const Kernel ssd_cost_kernel = context.new_kernel({.compute_shader = ssd_cost_shader,
-                                                       .bindings_map = {{"uniforms", dispatch_uniforms_buffer},
-                                                                        {"fixedImage", fixed_level},
-                                                                        {"movingImage", moving_level},
-                                                                        {"displacement", displacement1},
-                                                                        {"voxelScannerMatrices", voxel_scanner_buffer},
-                                                                        {"linearSampler", linear_sampler},
-                                                                        {"ssdPartials", ssd_partials_buffer},
-                                                                        {"ssdCounts", ssd_counts_buffer}}});
+    const Kernel ssd_forward_cost_kernel = context.new_kernel({.compute_shader = ssd_forward_cost_shader,
+                                                               .bindings_map = {
+                                                                   {"uniforms", dispatch_uniforms_buffer},
+                                                                   {"fixedImage", fixed_level},
+                                                                   {"movingImage", moving_level},
+                                                                   {"displacement", displacement1},
+                                                                   {"voxelScannerMatrices", voxel_scanner_buffer},
+                                                                   {"linearSampler", linear_sampler},
+                                                                   {"ssdPartials", ssd_partials_buffer},
+                                                                   {"ssdCounts", ssd_counts_buffer},
+                                                               }});
+    const Kernel ssd_backward_cost_kernel = context.new_kernel({.compute_shader = ssd_backward_cost_shader,
+                                                                .bindings_map = {
+                                                                    {"uniforms", dispatch_uniforms_buffer},
+                                                                    {"fixedImage", fixed_level},
+                                                                    {"movingImage", moving_level},
+                                                                    {"displacement", displacement1},
+                                                                    {"voxelScannerMatrices", voxel_scanner_buffer},
+                                                                    {"linearSampler", linear_sampler},
+                                                                    {"ssdPartials", ssd_partials_buffer},
+                                                                    {"ssdCounts", ssd_counts_buffer},
+                                                                }});
+    const ShaderEntry negate_velocity_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/negate_velocity.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+    };
+    const Kernel negate_velocity_v1 =
+        context.new_kernel({.compute_shader = negate_velocity_shader,
+                            .bindings_map = {{"velocity", velocity1}, {"outputVelocity", negated_velocity}}});
+    const Kernel negate_velocity_v2 =
+        context.new_kernel({.compute_shader = negate_velocity_shader,
+                            .bindings_map = {{"velocity", velocity2}, {"outputVelocity", negated_velocity}}});
+    const ShaderEntry symmetric_combine_updates_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/symmetric_combine_updates.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+    };
+    const Kernel symmetric_combine_updates_kernel = context.new_kernel({
+        .compute_shader = symmetric_combine_updates_shader,
+        .bindings_map = {{"forwardUpdate", forward_update_field},
+                         {"backwardUpdate", backward_update_field},
+                         {"outputUpdate", raw_update_field}},
+    });
     const ShaderEntry velocity_max_norm_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/velocity_max_norm.slang"},
         .entryPoint = "main",
@@ -300,14 +371,15 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                              {"velocityTexture", velocity1},
                                              {"voxelScannerMatrices", voxel_scanner_buffer},
                                              {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}}});
-    const Kernel velocity_max_norm_v2_kernel =
-        context.new_kernel({.compute_shader = velocity_max_norm_shader,
-                            .bindings_map = {{"uniforms", dispatch_uniforms_buffer},
-                                             {"velocityTexture", velocity2},
-                                             {"voxelScannerMatrices", voxel_scanner_buffer},
-                                             {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}}});
+    const Kernel velocity_max_norm_v2_kernel = context.new_kernel({
+        .compute_shader = velocity_max_norm_shader,
+        .bindings_map = {{"uniforms", dispatch_uniforms_buffer},
+                         {"velocityTexture", velocity2},
+                         {"voxelScannerMatrices", voxel_scanner_buffer},
+                         {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}},
+    });
 
-    const auto evaluate_ssd_cost = [&]() {
+    const auto evaluate_ssd_cost = [&](const Kernel &ssd_cost_kernel) {
       context.dispatch_kernel(ssd_cost_kernel, dispatch_grid);
       const std::vector<float> partials = context.download_buffer_as_vector(ssd_partials_buffer);
       const std::vector<float> counts = context.download_buffer_as_vector(ssd_counts_buffer);
@@ -317,11 +389,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       return static_cast<float>(total_cost / total_count);
     };
     const auto evaluate_exponentiation_steps = [&](bool current_velocity_is_1) {
-      if (current_velocity_is_1) {
-        context.dispatch_kernel(velocity_max_norm_v1_kernel, dispatch_grid);
-      } else {
-        context.dispatch_kernel(velocity_max_norm_v2_kernel, dispatch_grid);
-      }
+      const Kernel &velocity_max_norm_kernel =
+          current_velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
+      context.dispatch_kernel(velocity_max_norm_kernel, dispatch_grid);
       const std::vector<float> partial_max_norm_sq =
           context.download_buffer_as_vector(velocity_max_norm_sq_partials_buffer);
       const auto max_norm_sq_it = std::max_element(partial_max_norm_sq.begin(), partial_max_norm_sq.end());
@@ -329,20 +399,21 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       const float max_norm = std::sqrt(std::max(0.0F, max_norm_sq));
       return compute_exponentiation_steps(max_norm);
     };
-    const auto exponentiate_current_velocity = [&](bool current_velocity_is_1) {
-      const uint32_t num_steps = evaluate_exponentiation_steps(current_velocity_is_1);
+    const auto exponentiate_from_kernel = [&](const Kernel &exp_init_kernel, uint32_t num_steps) {
       const ExponentiateInitUniforms exp_init_uniforms{
           .num_steps = num_steps,
       };
       context.write_object_to_buffer(exp_init_uniforms_buffer, exp_init_uniforms);
-      exponentiate_velocity(current_velocity_is_1,
-                            num_steps,
-                            exp_init_from_v1,
-                            exp_init_from_v2,
-                            exp_square_12,
-                            exp_square_21,
-                            dispatch_grid,
-                            context);
+      exponentiate_velocity(exp_init_kernel, num_steps, exp_square_12, exp_square_21, dispatch_grid, context);
+    };
+    const auto exponentiate_current_velocity = [&](bool current_velocity_is_1) {
+      const uint32_t num_steps = evaluate_exponentiation_steps(current_velocity_is_1);
+      const Kernel &init_kernel = current_velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
+      exponentiate_from_kernel(init_kernel, num_steps);
+      return num_steps;
+    };
+    const auto exponentiate_negated_velocity = [&](uint32_t num_steps) {
+      exponentiate_from_kernel(exp_init_from_negated, num_steps);
     };
 
     bool velocity_is_1 = true;
@@ -366,18 +437,30 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       context.dispatch_kernel(upsample_kernel, dispatch_grid);
     }
 
-    exponentiate_current_velocity(velocity_is_1);
     std::vector<float> recent_costs;
     recent_costs.reserve(convergence_window + 1U);
     for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
-      const float cost = evaluate_ssd_cost();
+      const uint32_t exponentiation_steps = exponentiate_current_velocity(velocity_is_1);
+      const float forward_cost = evaluate_ssd_cost(ssd_forward_cost_kernel);
+      context.dispatch_kernel(ssd_forward_update_kernel, dispatch_grid);
+
+      if (velocity_is_1) {
+        context.dispatch_kernel(negate_velocity_v1, dispatch_grid);
+      } else {
+        context.dispatch_kernel(negate_velocity_v2, dispatch_grid);
+      }
+      exponentiate_negated_velocity(exponentiation_steps);
+      const float backward_cost = evaluate_ssd_cost(ssd_backward_cost_kernel);
+      context.dispatch_kernel(ssd_backward_update_kernel, dispatch_grid);
+
+      const float cost = 0.5F * (forward_cost + backward_cost);
       recent_costs.push_back(cost);
       if (recent_costs.size() > (convergence_window + 1U)) {
         recent_costs.erase(recent_costs.begin());
       }
       INFO("Non-linear registration: level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels) +
            " iteration " + std::to_string(iter + 1U) + "/" + std::to_string(config.max_iterations) +
-           " cost=" + std::to_string(cost));
+           " cost_sym=" + std::to_string(cost));
 
       // Compute the relative improvement over the convergence window
       if (recent_costs.size() == (convergence_window + 1U)) {
@@ -396,7 +479,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         }
       }
 
-      context.dispatch_kernel(ssd_update_kernel, dispatch_grid);
+      context.dispatch_kernel(symmetric_combine_updates_kernel, dispatch_grid);
       fluid_update_blur.run(context);
       if (velocity_is_1) {
         context.dispatch_kernel(apply_update_12, dispatch_grid);
@@ -412,10 +495,10 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         diffusion_velocity_blur_21.run(context);
       }
       velocity_is_1 = !velocity_is_1;
-      exponentiate_current_velocity(velocity_is_1);
     }
 
     if (level == (num_levels - 1U)) {
+      (void)exponentiate_current_velocity(velocity_is_1);
       final_displacement = displacement1;
     } else {
       previous_level_velocity = velocity_is_1 ? velocity1 : velocity2;

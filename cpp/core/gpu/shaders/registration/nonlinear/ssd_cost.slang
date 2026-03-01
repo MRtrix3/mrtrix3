@@ -7,6 +7,7 @@ extern static const uint32_t kWorkgroupSizeX = 8U;
 extern static const uint32_t kWorkgroupSizeY = 4U;
 extern static const uint32_t kWorkgroupSizeZ = 4U;
 extern static const uint32_t kIncludeOutOfBounds;
+extern static const uint32_t kSymmetricDirection; // 0 = forward, 1 = backward
 static const uint32_t workgroupInvocations = kWorkgroupSizeX * kWorkgroupSizeY * kWorkgroupSizeZ;
 
 struct Uniforms {
@@ -32,26 +33,39 @@ void main(
     static groupshared Array<float, workgroupInvocations> localCounts;
 
     let localIndex = localId.x + localId.y * kWorkgroupSizeX + localId.z * kWorkgroupSizeX * kWorkgroupSizeY;
-    let fixedDim = textureSize(fixedImage);
-    let movingDim = textureSize(movingImage);
+    let fixedDims = textureSize(fixedImage);
+    let movingDims = textureSize(movingImage);
 
     var cost = 0.0F;
     var count = 0.0F;
-    if (globalId.x < fixedDim.x && globalId.y < fixedDim.y && globalId.z < fixedDim.z) {
-        let fixedValue = fixedImage.Load(int32_t4(globalId, 0)).r;
-        let disp = displacement.Load(int32_t4(globalId, 0)).xyz;
+    if (globalId.x < fixedDims.x && globalId.y < fixedDims.y && globalId.z < fixedDims.z) {
+        let directionBackward = (kSymmetricDirection != 0U);
+
         let fixedVoxel = float3(globalId);
         let fixedScanner = mul(voxelScannerMatrices.targetVoxelToScanner, float4(fixedVoxel, 1.0F)).xyz;
-        let movingScanner = fixedScanner + disp;
-        let movingVoxel = mul(voxelScannerMatrices.sourceScannerToVoxel, float4(movingScanner, 1.0F)).xyz;
-        let inBounds = movingVoxel.x >= 0.0F && movingVoxel.y >= 0.0F && movingVoxel.z >= 0.0F &&
-                       movingVoxel.x <= float(movingDim.x - 1) &&
-                       movingVoxel.y <= float(movingDim.y - 1) &&
-                       movingVoxel.z <= float(movingDim.z - 1);
+        let displacementValue = displacement.Load(int32_t4(globalId, 0)).xyz;
+        let movedScanner = fixedScanner + displacementValue;
+        let movedMovingVoxel = mul(voxelScannerMatrices.sourceScannerToVoxel, float4(movedScanner, 1.0F)).xyz;
+        let movedFixedVoxel = mul(voxelScannerMatrices.targetScannerToVoxel, float4(movedScanner, 1.0F)).xyz;
+        let baseMovingVoxel = mul(voxelScannerMatrices.sourceScannerToVoxel, float4(fixedScanner, 1.0F)).xyz;
 
+        let inBoundsMovedMoving = movedMovingVoxel.x >= 0.0F && movedMovingVoxel.y >= 0.0F &&
+                                  movedMovingVoxel.z >= 0.0F && movedMovingVoxel.x <= float(movingDims.x - 1) &&
+                                  movedMovingVoxel.y <= float(movingDims.y - 1) &&
+                                  movedMovingVoxel.z <= float(movingDims.z - 1);
+        let inBoundsMovedFixed = movedFixedVoxel.x >= 0.0F && movedFixedVoxel.y >= 0.0F &&
+                                 movedFixedVoxel.z >= 0.0F && movedFixedVoxel.x <= float(fixedDims.x - 1) &&
+                                 movedFixedVoxel.y <= float(fixedDims.y - 1) &&
+                                 movedFixedVoxel.z <= float(fixedDims.z - 1);
+        let inBounds = directionBackward ? inBoundsMovedFixed : inBoundsMovedMoving;
+
+        let fixedField = VoxelSamplingField(fixedImage, linearSampler);
         let movingField = VoxelSamplingField(movingImage, linearSampler);
-        let movingValue = movingField.sampleWithZeroBorder(movingVoxel);
-        let error = fixedValue - movingValue;
+        let fixedValue = fixedField.sampleWithZeroBorder(fixedVoxel);
+        let movingValueMoved = movingField.sampleWithZeroBorder(movedMovingVoxel);
+        let movingValueBase = movingField.sampleWithZeroBorder(baseMovingVoxel);
+        let fixedValueMoved = fixedField.sampleWithZeroBorder(movedFixedVoxel);
+        let error = directionBackward ? (movingValueBase - fixedValueMoved) : (fixedValue - movingValueMoved);
 
         let includeOutOfBounds = (kIncludeOutOfBounds != 0U);
         let includeCount = includeOutOfBounds ? 1.0F : (inBounds ? 1.0F : 0.0F);
