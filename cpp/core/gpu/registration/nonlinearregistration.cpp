@@ -388,9 +388,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       const double total_count = std::reduce(counts.begin(), counts.end(), 0.0);
       return static_cast<float>(total_cost / total_count);
     };
-    const auto evaluate_exponentiation_steps = [&](bool current_velocity_is_1) {
-      const Kernel &velocity_max_norm_kernel =
-          current_velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
+    const auto evaluate_exponentiation_steps = [&](const Kernel &velocity_max_norm_kernel) {
       context.dispatch_kernel(velocity_max_norm_kernel, dispatch_grid);
       const std::vector<float> partial_max_norm_sq =
           context.download_buffer_as_vector(velocity_max_norm_sq_partials_buffer);
@@ -405,15 +403,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       };
       context.write_object_to_buffer(exp_init_uniforms_buffer, exp_init_uniforms);
       exponentiate_velocity(exp_init_kernel, num_steps, exp_square_12, exp_square_21, dispatch_grid, context);
-    };
-    const auto exponentiate_current_velocity = [&](bool current_velocity_is_1) {
-      const uint32_t num_steps = evaluate_exponentiation_steps(current_velocity_is_1);
-      const Kernel &init_kernel = current_velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
-      exponentiate_from_kernel(init_kernel, num_steps);
-      return num_steps;
-    };
-    const auto exponentiate_negated_velocity = [&](uint32_t num_steps) {
-      exponentiate_from_kernel(exp_init_from_negated, num_steps);
     };
 
     bool velocity_is_1 = true;
@@ -440,16 +429,17 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     std::vector<float> recent_costs;
     recent_costs.reserve(convergence_window + 1U);
     for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
-      const uint32_t exponentiation_steps = exponentiate_current_velocity(velocity_is_1);
+      const Kernel &velocity_max_norm_kernel = velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
+      const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
+      const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
+      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps);
       const float forward_cost = evaluate_ssd_cost(ssd_forward_cost_kernel);
       context.dispatch_kernel(ssd_forward_update_kernel, dispatch_grid);
 
-      if (velocity_is_1) {
-        context.dispatch_kernel(negate_velocity_v1, dispatch_grid);
-      } else {
-        context.dispatch_kernel(negate_velocity_v2, dispatch_grid);
-      }
-      exponentiate_negated_velocity(exponentiation_steps);
+      const Kernel &negate_velocity_kernel = velocity_is_1 ? negate_velocity_v1 : negate_velocity_v2;
+      context.dispatch_kernel(negate_velocity_kernel, dispatch_grid);
+
+      exponentiate_from_kernel(exp_init_from_negated, exponentiation_steps);
       const float backward_cost = evaluate_ssd_cost(ssd_backward_cost_kernel);
       context.dispatch_kernel(ssd_backward_update_kernel, dispatch_grid);
 
@@ -481,24 +471,21 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
       context.dispatch_kernel(symmetric_combine_updates_kernel, dispatch_grid);
       fluid_update_blur.run(context);
-      if (velocity_is_1) {
-        context.dispatch_kernel(apply_update_12, dispatch_grid);
-      } else {
-        context.dispatch_kernel(apply_update_21, dispatch_grid);
-      }
+      const Kernel &apply_update_kernel = velocity_is_1 ? apply_update_12 : apply_update_21;
+      context.dispatch_kernel(apply_update_kernel, dispatch_grid);
 
       // After the local update is applied, smooth the velocity field itself (diffusion regularisation).
       velocity_is_1 = !velocity_is_1;
-      if (velocity_is_1) {
-        diffusion_velocity_blur_12.run(context);
-      } else {
-        diffusion_velocity_blur_21.run(context);
-      }
+      const auto& diffusion_blur = velocity_is_1 ? diffusion_velocity_blur_12 : diffusion_velocity_blur_21;
+      diffusion_blur.run(context);
       velocity_is_1 = !velocity_is_1;
     }
 
     if (level == (num_levels - 1U)) {
-      (void)exponentiate_current_velocity(velocity_is_1);
+      const Kernel &velocity_max_norm_kernel = velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
+      const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
+      const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
+      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps);
       final_displacement = displacement1;
     } else {
       previous_level_velocity = velocity_is_1 ? velocity1 : velocity2;
