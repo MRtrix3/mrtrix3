@@ -206,7 +206,13 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
 
     wgpu_adapter = request_adapter_result.adapter;
     const std::vector<wgpu::FeatureName> required_device_features = {
-        wgpu::FeatureName::R8UnormStorage, wgpu::FeatureName::Float32Filterable, wgpu::FeatureName::Subgroups};
+        wgpu::FeatureName::R8UnormStorage,
+        wgpu::FeatureName::Float32Filterable,
+        wgpu::FeatureName::Subgroups,
+        // Require for read-write support for RGBA32Float textures in shaders.
+        // Should be ubiquitous on modern desktop GPUs.
+        wgpu::FeatureName::TextureFormatsTier2,
+    };
 
     wgpu::Limits supported_limits;
     wgpu_adapter.GetLimits(&supported_limits);
