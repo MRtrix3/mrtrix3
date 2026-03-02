@@ -91,7 +91,7 @@
  constexpr uint32_t default_ncc_window_radius = 0U;
  constexpr uint32_t default_max_iterations = 500;
  const std::vector<std::string> supported_global_metric_types = lowercase_enum_names<MetricType>();
- const std::vector<std::string> supported_nonlinear_metric_types = {"ssd"};
+const std::vector<std::string> supported_nonlinear_metric_types = {"ssd", "ncc"};
  const std::vector<std::string> supported_registration_modes = lowercase_enum_names<TransformModel>();
  const std::vector<std::string> supported_init_translations = lowercase_enum_names<InitTranslationChoice>();
  const std::vector<std::string> supported_init_rotations = lowercase_enum_names<InitRotationChoice>();
@@ -165,7 +165,7 @@
          + Option ("global_metric", "similarity metric to use for rigid/affine registrations (nmi, ssd, ncc)")
              + Argument("name").type_choice(supported_global_metric_types)
 
-         + Option ("nl_metric", "similarity metric to use for nonlinear registration (ssd)")
+        + Option ("nl_metric", "similarity metric to use for nonlinear registration (ssd, ncc)")
              + Argument("name").type_choice(supported_nonlinear_metric_types)
 
          // TODO: Should we mention that using a large window radius (> 3) is not recommended
@@ -410,7 +410,11 @@
        nonlinear_metric = SSDMetric{};
        break;
      case MetricType::NCC:
-       throw Exception("Non-linear registration currently supports SSD metric only.");
+       if (ncc_window_radius == 0U) {
+         throw Exception("Non-linear registration with NCC metric requires ncc_radius >= 1.");
+       }
+      nonlinear_metric = NCCMetric{.window_radius = ncc_window_radius};
+      break;
      default:
        throw Exception("Unsupported nonlinear metric type");
      }
