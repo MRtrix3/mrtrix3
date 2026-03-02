@@ -68,6 +68,7 @@ constexpr float convergence_min_relative_improvement = 1.0e-4F;
 constexpr float convergence_cost_floor = 1.0e-6F;
 constexpr uint32_t symmetric_direction_forward = 0U;
 constexpr uint32_t symmetric_direction_backward = 1U;
+constexpr float inertia_weight = 0.9F;
 
 struct DispatchGridUniforms {
   alignas(16) DispatchGrid dispatch_grid{};
@@ -123,14 +124,15 @@ namespace MR::GPU {
 
 NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrationConfig &config,
                                                        const GPU::ComputeContext &context) {
-  // Symmetric log-domain non-linear registration pipeline (ZA update):
+  // Symmetric log-domain non-linear registration pipeline with inertial local updates:
   // 1. Validate inputs and allocate GPU textures for velocity, displacement, and local updates.
   // 2. Iterate:
   //    - exponentiate v to get forward displacement exp(v) via scaling-and-squaring
   //    - compute forward metric cost and forward local demons update
   //    - negate velocity and exponentiate -v to get backward displacement exp(-v)
   //    - compute backward metric cost and backward local demons update
-  //    - combine updates as u = 0.5 * (u_fwd - u_bwd)
+  //    - combine updates as u_raw = 0.5 * (u_fwd - u_bwd)
+  //    - apply inertia as u = u_raw + alpha * u_prev
   //    - regularise u via Gaussian smoothing (fluid-like regularisation)
   //    - apply u to velocity
   //    - regularise velocity via Gaussian smoothing (diffusion-like regularisation)
@@ -192,7 +194,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     const Texture displacement2 = context.new_empty_texture(vector_texture_spec);
     const Texture forward_update_field = context.new_empty_texture(vector_texture_spec);
     const Texture backward_update_field = context.new_empty_texture(vector_texture_spec);
-    const Texture raw_update_field = context.new_empty_texture(vector_texture_spec);
+    const Texture inertial_update_field = context.new_empty_texture(vector_texture_spec);
     const Texture smoothed_update_field = context.new_empty_texture(vector_texture_spec);
 
     const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(fixed_level, workgroup_size);
@@ -205,7 +207,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .sigma = diffusion_blur_sigma,
     };
     const SeparableGaussianBlurPipeline fluid_update_blur(
-        context, raw_update_field, smoothed_update_field, fluid_smoothing_params);
+        context, inertial_update_field, smoothed_update_field, fluid_smoothing_params);
     const SeparableGaussianBlurPipeline diffusion_velocity_blur_12(
         context, velocity1, velocity2, diffusion_smoothing_params);
     const SeparableGaussianBlurPipeline diffusion_velocity_blur_21(
@@ -439,12 +441,13 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .shader_source = ShaderFile{"shaders/registration/nonlinear/symmetric_combine_updates.slang"},
         .entryPoint = "main",
         .workgroup_size = workgroup_size,
+        .constants = {{"kInertiaWeight", inertia_weight}},
     };
     const Kernel symmetric_combine_updates_kernel = context.new_kernel({
         .compute_shader = symmetric_combine_updates_shader,
         .bindings_map = {{"forwardUpdate", forward_update_field},
                          {"backwardUpdate", backward_update_field},
-                         {"outputUpdate", raw_update_field}},
+                         {"update", inertial_update_field}},
     });
     const ShaderEntry velocity_max_norm_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/velocity_max_norm.slang"},
