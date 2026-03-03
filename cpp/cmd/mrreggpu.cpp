@@ -87,7 +87,7 @@ template <typename Enum> Enum from_name(std::string_view name) {
 constexpr float default_max_search_angle = 45.0F;
 constexpr TransformModel default_registration_mode = TransformModel::Global;
 constexpr MetricType default_metric_type = MetricType::NMI;
-constexpr uint32_t default_ncc_window_radius = 0U;
+constexpr uint32_t default_ncc_window_radius = 2U;
 constexpr uint32_t default_max_iterations = 500;
 const std::vector<std::string> supported_global_metric_types = lowercase_enum_names<MetricType>();
 const std::vector<std::string> supported_nonlinear_metric_types = {"ssd", "ncc"};
