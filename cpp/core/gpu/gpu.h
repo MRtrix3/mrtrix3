@@ -276,6 +276,21 @@ struct ComputeContext {
                              const BufferVariant &dstBuffer,
                              const BufferCopyInfo &info) const;
 
+  // Copy a region from a source texture to a destination texture.
+  // if width, height and depth are all 0, as much as possible is copied.
+  struct TextureCopyInfo {
+    uint32_t srcX = 0;
+    uint32_t srcY = 0;
+    uint32_t srcZ = 0;
+    uint32_t dstX = 0;
+    uint32_t dstY = 0;
+    uint32_t dstZ = 0;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t depth = 0;
+  };
+  void copy_texture_to_texture(const Texture &srcTexture, const Texture &dstTexture, const TextureCopyInfo &info) const;
+
   template <typename T = float> void clear_buffer(const Buffer<T> &buffer) const {
     inner_clear_buffer(buffer.wgpu_handle);
   }
