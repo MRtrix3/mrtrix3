@@ -575,6 +575,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       context.dispatch_kernel(upsample_kernel, dispatch_grid);
     }
 
+    bool converged_this_level = false;
     std::vector<float> recent_costs;
     recent_costs.reserve(convergence_window + 1U);
     for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
@@ -606,6 +607,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       }
       INFO("Non-linear registration: level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels) +
            " iteration " + std::to_string(iter + 1U) + "/" + std::to_string(config.max_iterations) +
+           " cost_fwd=" + std::to_string(forward_cost) + " cost_bwd=" + std::to_string(backward_cost) +
            " cost_sym=" + std::to_string(cost));
 
       // Compute the relative improvement over the convergence window
@@ -617,6 +619,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
             absolute_start_cost > convergence_cost_floor ? absolute_start_cost : convergence_cost_floor;
         const float relative_improvement = (window_start_cost - window_end_cost) / denominator;
         if (relative_improvement < convergence_min_relative_improvement) {
+          converged_this_level = true;
           CONSOLE("Non-linear registration: convergence reached at level " + std::to_string(level + 1U) + "/" +
                   std::to_string(num_levels) + " after " + std::to_string(iter + 1U) +
                   " iterations (relative cost improvement over last " + std::to_string(convergence_window) +
@@ -635,6 +638,11 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       const auto &diffusion_blur = velocity_is_1 ? diffusion_velocity_blur_12 : diffusion_velocity_blur_21;
       diffusion_blur.run(context);
       velocity_is_1 = !velocity_is_1;
+    }
+    if (!converged_this_level) {
+      CONSOLE("Non-linear registration: max iterations reached without convergence at level " +
+           std::to_string(level + 1U) + "/" + std::to_string(num_levels) + " (" +
+           std::to_string(config.max_iterations) + " iterations).");
     }
 
     if (level == (num_levels - 1U)) {
