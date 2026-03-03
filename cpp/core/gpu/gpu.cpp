@@ -268,8 +268,9 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
   const auto executable_path = MR::Platform::get_executable_path();
   const std::string executable_dir_string = (std::filesystem::path(executable_path).parent_path() / "shaders").string();
   // TODO: this is a hack to find the modules in shader registration code. We'll find a better way to do this later.
-  const std::string registration_dir_string = (std::filesystem::path(executable_path).parent_path() / "shaders/registration").string();
-  const char *executable_dir_cstr = executable_dir_string.c_str(); // check_syntax off
+  const std::string registration_dir_string =
+      (std::filesystem::path(executable_path).parent_path() / "shaders/registration").string();
+  const char *executable_dir_cstr = executable_dir_string.c_str();     // check_syntax off
   const char *registration_dir_cstr = registration_dir_string.c_str(); // check_syntax off
   std::array<const char *, 2> search_paths = {executable_dir_cstr, registration_dir_cstr};
 
@@ -348,6 +349,79 @@ void ComputeContext::copy_buffer_to_buffer(const BufferVariant &srcBuffer,
   const wgpu::CommandEncoder command_encoder = m_device.CreateCommandEncoder();
   command_encoder.CopyBufferToBuffer(
       src_handle, static_cast<uint64_t>(info.srcOffset), dst_handle, info.dstOffset, final_byte_size);
+  const wgpu::CommandBuffer command_buffer = command_encoder.Finish();
+  m_device.GetQueue().Submit(1, &command_buffer);
+}
+
+void ComputeContext::copy_texture_to_texture(const Texture &srcTexture,
+                                             const Texture &dstTexture,
+                                             const TextureCopyInfo &info) const {
+  assert(dstTexture.wgpu_handle.GetUsage() & wgpu::TextureUsage::CopyDst &&
+         "Destination texture must have CopyDst usage for copyTextureToTexture");
+
+  if (srcTexture.spec.format != dstTexture.spec.format) {
+    throw MR::Exception("copyTextureToTexture: source and destination formats must match");
+  }
+
+  uint32_t final_width = info.width;
+  uint32_t final_height = info.height;
+  uint32_t final_depth = info.depth;
+
+  const bool copy_full_extent = info.width == 0 && info.height == 0 && info.depth == 0;
+  if (copy_full_extent) {
+    if (info.srcX >= srcTexture.spec.width || info.srcY >= srcTexture.spec.height ||
+        info.srcZ >= srcTexture.spec.depth || info.dstX >= dstTexture.spec.width ||
+        info.dstY >= dstTexture.spec.height || info.dstZ >= dstTexture.spec.depth) {
+      return;
+    }
+
+    final_width = std::min(srcTexture.spec.width - info.srcX, dstTexture.spec.width - info.dstX);
+    final_height = std::min(srcTexture.spec.height - info.srcY, dstTexture.spec.height - info.dstY);
+    final_depth = std::min(srcTexture.spec.depth - info.srcZ, dstTexture.spec.depth - info.dstZ);
+  } else if (info.width == 0 || info.height == 0 || info.depth == 0) {
+    throw MR::Exception("copyTextureToTexture: width, height and depth must all be non-zero unless all are zero");
+  }
+
+  if (final_width == 0 || final_height == 0 || final_depth == 0) {
+    return;
+  }
+
+  const auto range_exceeds = [](const uint32_t offset, const uint32_t size, const uint32_t limit) {
+    return static_cast<uint64_t>(offset) + size > limit;
+  };
+
+  if (range_exceeds(info.srcX, final_width, srcTexture.spec.width) ||
+      range_exceeds(info.srcY, final_height, srcTexture.spec.height) ||
+      range_exceeds(info.srcZ, final_depth, srcTexture.spec.depth)) {
+    throw MR::Exception("copyTextureToTexture: source range out of bounds");
+  }
+
+  if (range_exceeds(info.dstX, final_width, dstTexture.spec.width) ||
+      range_exceeds(info.dstY, final_height, dstTexture.spec.height) ||
+      range_exceeds(info.dstZ, final_depth, dstTexture.spec.depth)) {
+    throw MR::Exception("copyTextureToTexture: destination range out of bounds");
+  }
+
+  const wgpu::TexelCopyTextureInfo src_copy{
+      .texture = srcTexture.wgpu_handle,
+      .mipLevel = 0,
+      .origin = {.x = info.srcX, .y = info.srcY, .z = info.srcZ},
+      .aspect = wgpu::TextureAspect::All,
+  };
+  const wgpu::TexelCopyTextureInfo dst_copy{
+      .texture = dstTexture.wgpu_handle,
+      .mipLevel = 0,
+      .origin = {.x = info.dstX, .y = info.dstY, .z = info.dstZ},
+      .aspect = wgpu::TextureAspect::All,
+  };
+  const wgpu::Extent3D copy_size{
+      .width = final_width,
+      .height = final_height,
+      .depthOrArrayLayers = final_depth,
+  };
+
+  const wgpu::CommandEncoder command_encoder = m_device.CreateCommandEncoder();
+  command_encoder.CopyTextureToTexture(&src_copy, &dst_copy, &copy_size);
   const wgpu::CommandBuffer command_buffer = command_encoder.Finish();
   m_device.GetQueue().Submit(1, &command_buffer);
 }
