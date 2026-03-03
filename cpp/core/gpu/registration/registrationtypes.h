@@ -157,7 +157,8 @@ struct NonLinearRegistrationConfig {
 };
 
 struct NonLinearRegistrationResult {
-  std::optional<Image<float>> warp;
+  std::optional<Image<float>> warp1;
+  std::optional<Image<float>> warp2;
 };
 
 struct RegistrationResult {

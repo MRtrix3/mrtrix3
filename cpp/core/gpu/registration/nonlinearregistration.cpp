@@ -22,6 +22,7 @@
 #include "gpu/registration/eigenhelpers.h"
 #include "gpu/registration/imageoperations.h"
 #include "gpu/registration/voxelscannermatrices.h"
+#include "interp/linear.h"
 #include "transform.h"
 
 #include <Eigen/Core>
@@ -77,6 +78,29 @@ struct alignas(16) ExponentiateInitUniforms {
   uint32_t num_steps = 0U;
 };
 static_assert(sizeof(ExponentiateInitUniforms) % 16 == 0, "ExponentiateInitUniforms must be 16-byte aligned.");
+
+class BackwardWarpThreadKernel {
+public:
+  BackwardWarpThreadKernel(MR::Image<float> &backward_displacement,
+                           const Eigen::Matrix4f &moving_voxel_to_scanner_matrix)
+      : backward_displacement(backward_displacement, 0.0F), moving_voxel_to_scanner(moving_voxel_to_scanner_matrix) {}
+
+  void operator()(MR::Image<float> &warp) {
+    const Eigen::Vector4f moving_voxel(
+        static_cast<float>(warp.index(0)), static_cast<float>(warp.index(1)), static_cast<float>(warp.index(2)), 1.0F);
+    const Eigen::Vector4f moving_scanner = moving_voxel_to_scanner * moving_voxel;
+    Eigen::Vector3f displacement_scanner = Eigen::Vector3f::Zero();
+    if (backward_displacement.scanner(moving_scanner.head<3>().cast<double>())) {
+      displacement_scanner = backward_displacement.row(3).cast<float>();
+    }
+    const Eigen::Vector3f fixed_scanner = moving_scanner.head<3>() + displacement_scanner;
+    warp.row(3) = fixed_scanner;
+  }
+
+private:
+  MR::Interp::Linear<MR::Image<float>> backward_displacement;
+  const Eigen::Matrix4f moving_voxel_to_scanner;
+};
 
 uint32_t compute_exponentiation_steps(float max_velocity_norm_voxels) {
   if (!(max_velocity_norm_voxels > exponentiation_max_velocity_norm_voxels)) {
@@ -166,7 +190,8 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   const Sampler linear_sampler = context.new_linear_sampler();
   std::optional<Texture> previous_level_velocity;
   std::optional<Texture> previous_level_fixed;
-  std::optional<Texture> final_displacement;
+  std::optional<Texture> final_forward_displacement;
+  std::optional<Texture> final_backward_displacement;
 
   for (uint32_t level = 0U; level < num_levels; ++level) {
     INFO("Non-linear registration: processing level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels));
@@ -379,15 +404,13 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .shader_source = ShaderFile{"shaders/registration/nonlinear/lncc_cost.slang"},
         .entryPoint = "lncc_cost_forward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kWindowRadius", lncc_window_radius},
-                      {"kMomentEpsilon", lncc_moment_epsilon}},
+        .constants = {{"kWindowRadius", lncc_window_radius}, {"kMomentEpsilon", lncc_moment_epsilon}},
     };
     const ShaderEntry lncc_backward_cost_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/lncc_cost.slang"},
         .entryPoint = "lncc_cost_backward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kWindowRadius", lncc_window_radius},
-                      {"kMomentEpsilon", lncc_moment_epsilon}},
+        .constants = {{"kWindowRadius", lncc_window_radius}, {"kMomentEpsilon", lncc_moment_epsilon}},
     };
     const DispatchGrid backward_cost_dispatch_grid = moving_dispatch_grid;
     const DispatchGridUniforms forward_dispatch_uniforms{
@@ -569,8 +592,10 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       context.dispatch_kernel(negate_velocity_kernel, dispatch_grid);
 
       exponentiate_from_kernel(exp_init_from_negated, exponentiation_steps);
-      const float backward_cost = evaluate_symmetric_cost(
-          backward_cost_kernel, backward_cost_dispatch_grid, backward_cost_partials_buffer, backward_cost_counts_buffer);
+      const float backward_cost = evaluate_symmetric_cost(backward_cost_kernel,
+                                                          backward_cost_dispatch_grid,
+                                                          backward_cost_partials_buffer,
+                                                          backward_cost_counts_buffer);
       context.dispatch_kernel(backward_update_kernel, backward_update_dispatch_grid);
       context.dispatch_kernel(resample_backward_update_kernel, dispatch_grid);
 
@@ -618,33 +643,50 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
       const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
       exponentiate_from_kernel(exp_init_kernel, exponentiation_steps);
-      final_displacement = displacement1;
+      context.copy_texture_to_texture(displacement1, forward_displacement_cache, {});
+
+      const Kernel &negate_velocity_kernel = velocity_is_1 ? negate_velocity_v1 : negate_velocity_v2;
+      context.dispatch_kernel(negate_velocity_kernel, dispatch_grid);
+      exponentiate_from_kernel(exp_init_from_negated, exponentiation_steps);
+
+      final_forward_displacement = forward_displacement_cache;
+      final_backward_displacement = displacement1;
     } else {
       previous_level_velocity = velocity_is_1 ? velocity1 : velocity2;
       previous_level_fixed = fixed_level;
     }
   }
 
-  if (!final_displacement) {
-    throw Exception("Non-linear registration: final displacement was not computed.");
+  if (!final_forward_displacement || !final_backward_displacement) {
+    throw Exception("Non-linear registration: final forward/backward displacements were not computed.");
   }
 
-  Header displacement_header(channel.image2);
-  displacement_header.ndim() = 4;
-  displacement_header.size(3) = 3;
-  displacement_header.datatype() = DataType::from<float>();
-  Image<float> displacement_image =
-      context.download_texture_as_image(*final_displacement,
-                                        displacement_header,
-                                        "nonlinear displacement",
+  Header forward_displacement_header(channel.image2);
+  forward_displacement_header.ndim() = 4;
+  forward_displacement_header.size(3) = 3;
+  forward_displacement_header.datatype() = DataType::from<float>();
+  Image<float> forward_displacement_image =
+      context.download_texture_as_image(*final_forward_displacement,
+                                        forward_displacement_header,
+                                        "nonlinear forward displacement",
                                         ComputeContext::DownloadTextureAlphaMode::IgnoreAlpha);
 
-  Header warp_header(channel.image2);
-  warp_header.ndim() = 4;
-  warp_header.size(3) = 3;
-  warp_header.datatype() = DataType::from<float>();
+  Header backward_displacement_header(channel.image2);
+  backward_displacement_header.ndim() = 4;
+  backward_displacement_header.size(3) = 3;
+  backward_displacement_header.datatype() = DataType::from<float>();
+  Image<float> backward_displacement_image =
+      context.download_texture_as_image(*final_backward_displacement,
+                                        backward_displacement_header,
+                                        "nonlinear backward displacement",
+                                        ComputeContext::DownloadTextureAlphaMode::IgnoreAlpha);
 
-  Image<float> warp_image = Image<float>::scratch(warp_header, "nonlinear warp").with_direct_io();
+  Header warp1_header(channel.image2);
+  warp1_header.ndim() = 4;
+  warp1_header.size(3) = 3;
+  warp1_header.datatype() = DataType::from<float>();
+
+  Image<float> warp1_image = Image<float>::scratch(warp1_header, "nonlinear warp1").with_direct_io();
   const Transform fixed_transform(channel.image2);
   const Eigen::Matrix4f fixed_voxel_to_scanner = EigenHelpers::to_homogeneous_mat4f(fixed_transform.voxel2scanner);
 
@@ -656,9 +698,24 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     const Eigen::Vector3f moving_scanner = fixed_scanner.head<3>() + displacement_scanner;
     warp.row(3) = moving_scanner;
   };
-  ThreadedLoop("writing nonlinear warp", warp_image, 0, 3).run(write_warp, warp_image, displacement_image);
+  ThreadedLoop("writing nonlinear warp1", warp1_image, 0, 3).run(write_warp, warp1_image, forward_displacement_image);
 
-  return NonLinearRegistrationResult{.warp = std::move(warp_image)};
+  Header warp2_header(channel.image1);
+  warp2_header.ndim() = 4;
+  warp2_header.size(3) = 3;
+  warp2_header.datatype() = DataType::from<float>();
+  Image<float> warp2_image = Image<float>::scratch(warp2_header, "nonlinear warp2").with_direct_io();
+  const Transform moving_transform(channel.image1);
+  const Eigen::Matrix4f moving_voxel_to_scanner = EigenHelpers::to_homogeneous_mat4f(moving_transform.voxel2scanner);
+  // warp2 is defined as a deformation field on image1 voxel grid, but the GPU backward displacement we have at the end
+  // is stored on the image2 (fixed) grid.
+  ThreadedLoop("writing nonlinear warp2", warp2_image, 0, 3)
+      .run(BackwardWarpThreadKernel(backward_displacement_image, moving_voxel_to_scanner), warp2_image);
+
+  return NonLinearRegistrationResult{
+      .warp1 = std::move(warp1_image),
+      .warp2 = std::move(warp2_image),
+  };
 }
 
 } // namespace MR::GPU
