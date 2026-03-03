@@ -18,6 +18,16 @@ public uint3 textureSize<T>(WTexture3D<T> tex) where T : ITexelElement {
     return size;
 }
 
+public bool inBoundsVoxel(float3 voxel, uint32_t3 dims) {
+    return voxel.x >= 0.0F && voxel.y >= 0.0F && voxel.z >= 0.0F &&
+           voxel.x <= float(dims.x - 1U) && voxel.y <= float(dims.y - 1U) && voxel.z <= float(dims.z - 1U);
+}
+
+public bool inBoundsIndex(int32_t3 index, uint32_t3 dims) {
+    return index.x >= 0 && index.y >= 0 && index.z >= 0 &&
+           index.x < int32_t(dims.x) && index.y < int32_t(dims.y) && index.z < int32_t(dims.z);
+}
+
 
 // Defines different coordinate systems for 3D volume sampling.
 // The underlying texture sampler always expects normalized coordinates [0,1],
