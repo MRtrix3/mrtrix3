@@ -31,10 +31,10 @@ public:
   using base_type::spacing;
 
   Gaussian1D(const ImageType &parent,
-             default_type stdev_in = 1.0,
-             size_t axis_in = 0,
-             size_t extent = 0,
-             bool zero_boundary = false)
+             const default_type stdev_in = 1.0,
+             const Eigen::Index axis_in = 0,
+             const Eigen::Index extent = 0,
+             const bool zero_boundary = false)
       : base_type(parent), stdev(stdev_in), axis(axis_in), zero_boundary(zero_boundary) {
     if (!extent)
       radius = ceil(2 * stdev / spacing(axis));
@@ -49,21 +49,22 @@ public:
     if (kernel.empty())
       return base_type::value();
 
-    const ssize_t pos = index(axis);
+    const Axes::index_type pos = index(axis);
 
     if (zero_boundary)
       if (pos == 0 || pos == size(axis) - 1)
         return 0.0;
 
-    const ssize_t from = (pos < radius) ? 0 : pos - radius;
-    const ssize_t to = (pos + radius) >= size(axis) ? size(axis) - 1 : pos + radius;
+    const Axes::index_type from = (pos < radius) ? Axes::index_type(0) : pos - radius;
+    const Axes::index_type to =
+        (pos + radius) >= size(axis) ? static_cast<Axes::index_type>(size(axis) - 1) : pos + radius;
 
     value_type result = 0.0;
     value_type av_weights = 0.0;
-    ssize_t c = (pos < radius) ? radius - pos : 0;
-    for (ssize_t k = from; k <= to; ++k, ++c) {
+    Axes::index_type c = (pos < radius) ? radius - pos : 0;
+    for (Axes::index_type k = from; k <= to; ++k, ++c) {
       index(axis) = k;
-      value_type neighbour_value = base_type::value();
+      const value_type neighbour_value = base_type::value();
       if (std::isfinite(neighbour_value)) {
         av_weights += kernel[c];
         result += static_cast<value_type>(base_type::value()) * kernel[c];
@@ -81,18 +82,18 @@ protected:
       return;
     kernel.resize(2 * radius + 1);
     default_type norm_factor = 0.0;
-    for (size_t c = 0; c < kernel.size(); ++c) {
+    for (Axes::index_type c = 0; c < kernel.size(); ++c) {
       kernel[c] = exp(-((c - radius) * (c - radius) * spacing(axis) * spacing(axis)) / (2 * stdev * stdev));
       norm_factor += kernel[c];
     }
-    for (size_t c = 0; c < kernel.size(); c++) {
+    for (Eigen::Index c = 0; c < kernel.size(); c++) {
       kernel[c] /= norm_factor;
     }
   }
 
-  default_type stdev;
-  ssize_t radius;
-  size_t axis;
+  const default_type stdev;
+  Axes::index_type radius;
+  const Eigen::Index axis;
   std::vector<default_type> kernel;
   const bool zero_boundary;
 };

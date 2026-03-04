@@ -168,12 +168,11 @@ void print_spacing(const Header &header) {
 
 void print_strides(const Header &header) {
   std::string buffer;
-  std::vector<ssize_t> strides(Stride::get(header));
-  Stride::symbolise(strides);
+  const Stride::Symbolic symbolic(header);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
       buffer += " ";
-    buffer += header.stride(i) ? str(strides[i]) : "?";
+    buffer += header.stride(i) ? str(symbolic[i]) : "?";
   }
   std::cout << buffer << "\n";
 }
@@ -241,9 +240,7 @@ void header2json(const Header &header, nlohmann::json &json) {
   }
   json["size"] = size;
   json["spacing"] = spacing;
-  std::vector<ssize_t> strides(Stride::get(header));
-  Stride::symbolise(strides);
-  json["strides"] = strides;
+  json["strides"] = static_cast<Stride::ListType>(Stride::Symbolic(header));
   json["format"] = header.format();
   json["datatype"] = header.datatype().specifier();
   json["intensity_offset"] = header.intensity_offset();

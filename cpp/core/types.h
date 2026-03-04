@@ -151,7 +151,7 @@ template <typename T> struct container_cast : public T {
   template <typename U> container_cast(const U &x) : T(x.begin(), x.end()) {}
 };
 
-//! the default type used throughout MRtrix
+//! the default floating-point type used throughout MRtrix
 using default_type = double;
 
 constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();

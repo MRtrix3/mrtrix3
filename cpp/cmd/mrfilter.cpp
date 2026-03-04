@@ -16,6 +16,7 @@
 
 #include <complex>
 
+#include "axes.h"
 #include "command.h"
 #include "filter/base.h"
 #include "filter/demodulate.h"
@@ -162,10 +163,10 @@ void run() {
     if (!H.datatype().is_complex())
       throw Exception("Phase demodulation filter applicable to complex images only");
 
-    std::vector<size_t> axes;
+    Axes::Subset axes;
     auto opt = get_options("axes");
     if (!opt.empty()) {
-      axes = parse_ints<size_t>(opt[0][0]);
+      axes = Axes::Subset(parse_ints<Axes::Subset::Index>(opt[0][0]));
       for (const auto axis : axes)
         if (axis >= H.ndim())
           throw Exception("axis provided with -axes option is out of range");
@@ -176,7 +177,7 @@ void run() {
       } else {
         auto slice_encoding_direction_onehot = Metadata::BIDS::axisid2vector(slice_encoding_direction_it->second);
         axes.reserve(2);
-        for (size_t axis = 0; axis != 3; ++axis) {
+        for (Axes::Subset::Index axis = 0; axis != 3; ++axis) {
           if (slice_encoding_direction_onehot[axis] == 0)
             axes.push_back(axis);
         }
@@ -198,10 +199,10 @@ void run() {
     //   convert between cfloat and cdouble...
     auto input = Image<cdouble>::open(argument[0]);
 
-    std::vector<size_t> axes = {0, 1, 2};
+    std::vector<Axes::Subset::Index> axes = {0, 1, 2};
     auto opt = get_options("axes");
     if (!opt.empty()) {
-      axes = parse_ints<size_t>(opt[0][0]);
+      axes = parse_ints<Axes::Subset::Index>(opt[0][0]);
       for (const auto axis : axes)
         if (axis >= input.ndim())
           throw Exception("axis provided with -axes option is out of range");
@@ -217,7 +218,7 @@ void run() {
     double scale = 1.0;
 
     Image<cdouble> in(input), out;
-    for (size_t n = 0; n < axes.size(); ++n) {
+    for (Eigen::Index n = 0; n < axes.size(); ++n) {
       scale *= in.size(axes[n]);
       if (n >= (axes.size() - 1) && !magnitude) {
         out = output;
@@ -261,7 +262,7 @@ void run() {
         throw Exception("unexpected number of elements specified in Gaussian stdev");
     } else {
       stdev.resize(3, 0.0);
-      for (size_t dim = 0; dim != 3; ++dim)
+      for (Eigen::Index dim = 0; dim != 3; ++dim)
         stdev[dim] = filter.spacing(dim);
     }
     filter.compute_wrt_scanner(!get_options("scanner").empty());
@@ -281,7 +282,7 @@ void run() {
 
     auto opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
+      filter.set_extent(parse_ints<Eigen::Index>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
@@ -311,7 +312,7 @@ void run() {
     }
     opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
+      filter.set_extent(parse_ints<Eigen::Index>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
@@ -329,7 +330,7 @@ void run() {
 
     auto opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
+      filter.set_extent(parse_ints<Eigen::Index>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
@@ -355,9 +356,7 @@ void run() {
     Stride::set_from_command_line(filter);
 
     filter.set_voxels_to_bridge(get_option_value("bridge", 4));
-    float zlower = get_option_value("zlower", 2.5);
-    float zupper = get_option_value("zupper", 2.5);
-    filter.set_zlim(zlower, zupper);
+    filter.set_zlim(get_option_value("zlower", 2.5), get_option_value("zupper", 2.5));
 
     auto output = Image<float>::create(argument[2], filter);
     filter(input, maskin, output);

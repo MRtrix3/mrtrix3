@@ -511,7 +511,7 @@ public:
       throw Exception("CC radius needs to be larger than 1");
     use_cc = true;
     INFO("Cross correlation radius: " + str(radius));
-    cc_extent = std::vector<size_t>(3, radius * 2 + 1);
+    cc_extent = std::vector<Eigen::Index>(3, radius * 2 + 1);
   }
 
   void set_diagnostics_image(const std::basic_string<char> &path) { diagnostics_image_prefix = path; }
@@ -545,7 +545,7 @@ protected:
   bool use_cc;
   std::basic_string<char> diagnostics_image_prefix;
 
-  std::vector<size_t> cc_extent;
+  std::vector<Eigen::Index> cc_extent;
 
   transform_type im1_to_mid_linear;
   transform_type im2_to_mid_linear;

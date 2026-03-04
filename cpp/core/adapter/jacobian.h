@@ -32,15 +32,15 @@ public:
   using base_type::size;
   using base_type::spacing;
 
-  Jacobian(const WarpType &parent, bool wrt_scanner = true)
+  Jacobian(const WarpType &parent, const bool wrt_scanner = true)
       : base_type(parent), gradient1D(parent, 0, wrt_scanner), transform(parent), wrt_scanner(wrt_scanner) {}
 
   value_type value() {
-    for (size_t dim = 0; dim < 3; ++dim)
+    for (Eigen::Index dim = 0; dim < 3; ++dim)
       gradient1D.index(dim) = index(dim);
-    for (size_t i = 0; i < 3; ++i) {
-      gradient1D.index(3) = i;
-      for (size_t j = 0; j < 3; ++j) {
+    for (Eigen::Index i = 0; i < 3; ++i) {
+      gradient1D.index(3) = static_cast<Axes::index_type>(i);
+      for (Eigen::Index j = 0; j < 3; ++j) {
         gradient1D.set_axis(j);
         jacobian(i, j) = gradient1D.value();
       }

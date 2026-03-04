@@ -36,7 +36,7 @@ public:
     assert(extent.size() == ndim());
     from_.resize(original.ndim());
     size_.resize(original.ndim());
-    for (size_t i = 0; i < ndim(); ++i) {
+    for (Eigen::Index i = 0; i < ndim(); ++i) {
       from_[i] = (iter_.index(i) - extent[i] < 0) ? 0 : iter_.index(i) - extent[i];
       size_[i] = (from_[i] + extent[i] >= original.size(i)) ? original.size(i) - from_[i] - 1 : extent[i];
       assert(from_[n] + size_[n] < original.size(n));
@@ -46,26 +46,26 @@ public:
     //   if (from_[n] + size_[n] > original.size(n))
     //     throw Exception ("FIXME: dimensions requested for NeighbourhoodCoord adapter are out of bounds!");
 
-    for (size_t j = 0; j < 3; ++j)
-      for (size_t i = 0; i < 3; ++i)
+    for (Eigen::Index j = 0; j < 3; ++j)
+      for (Eigen::Index i = 0; i < 3; ++i)
         transform_(i, 3) += from_[j] * spacing(j) * transform_(i, j);
   }
 
   void reset() {
-    for (size_t n = 0; n < ndim(); ++n)
+    for (Eigen::Index n = 0; n < ndim(); ++n)
       set_pos(n, 0);
   }
 
-  size_t ndim() const { return size_.size(); }
-  ssize_t size(size_t axis) const { return size_[axis]; }
-  const transform_type &transform() const { return transform_; }
+  Eigen::Index ndim() const override { return size_.size(); }
+  Eigen::Index size(const Eigen::Index axis) const override { return size_[axis]; }
+  const transform_type &transform() const override { return transform_; }
 
-  ssize_t get_index(size_t axis) const { return parent().index(axis) - from_[axis]; }
-  void move_index(size_t axis, ssize_t increment) { parent().index(axis) += increment; }
+  Axes::index_type get_index(const Eigen::Index axis) const override { return parent().index(axis) - from_[axis]; }
+  void move_index(const Eigen::Index axis, const Axes::index_type increment) { parent().index(axis) += increment; }
 
 protected:
   using base_type::parent;
-  std::vector<ssize_t> from_, size_;
+  std::vector<Axes::index_type> from_, size_;
   Iterator iter_;
   transform_type transform_;
 };

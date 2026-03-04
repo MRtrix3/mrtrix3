@@ -90,11 +90,11 @@ public:
     }
   }
 
-  void set_size(const std::vector<uint32_t> &image_res) {
+  void set_size(const std::vector<Eigen::Index> &image_res) {
     if (image_res.size() != 3)
       throw Exception("the image resolution must be defined for 3 spatial dimensions");
     std::vector<default_type> new_voxel_size(3);
-    for (size_t d = 0; d < 3; ++d) {
+    for (Eigen::Index d = 0; d < 3; ++d) {
       if (image_res[d] <= 0)
         throw Exception("the image resolution must be larger than zero for all 3 spatial dimensions");
       new_voxel_size[d] = (this->size(d) * this->spacing(d)) / image_res[d];
@@ -108,7 +108,7 @@ public:
     if (scale.size() != 3)
       throw Exception("a scale factor for each spatial dimension is required");
     std::vector<default_type> new_voxel_size(3);
-    for (size_t d = 0; d < 3; ++d) {
+    for (Eigen::Index d = 0; d < 3; ++d) {
       if (scale[d] <= 0.0)
         throw Exception("the scale factor must be larger than zero");
       new_voxel_size[d] = (this->size(d) * this->spacing(d)) / std::ceil(this->size(d) * scale[d]);
@@ -116,7 +116,7 @@ public:
     set_voxel_size(new_voxel_size);
   }
 
-  void set_oversample(std::vector<uint32_t> oversample) {
+  void set_oversample(std::vector<Eigen::Index> oversample) {
     if (oversample.size() == 1)
       oversample.resize(3, oversample[0]);
     else if (oversample.size() != 3 and !oversample.empty())
@@ -165,7 +165,7 @@ public:
 protected:
   MR::Interp::interp_type interp_type;
   transform_type transformation;
-  std::vector<uint32_t> oversampling;
+  std::vector<Eigen::Index> oversampling;
   default_type *out_of_bounds_value;
 };
 //! @}

@@ -31,8 +31,8 @@ template <class ImageType, class RandomEngine> class Random_loop {
 public:
   Random_loop(ImageType &in,
               RandomEngine &random_engine,
-              const size_t &axis = 0,
-              const size_t &number_iterations = std::numeric_limits<ssize_t>::max())
+              const ssize_t axis = 0,
+              const size_t number_iterations = std::numeric_limits<ssize_t>::max())
       : image(in),
         engine(random_engine),
         ax(axis),
@@ -68,7 +68,7 @@ public:
 private:
   ImageType &image;
   RandomEngine &engine;
-  size_t ax;
+  ssize_t ax;
   std::vector<size_t> idx;
   std::vector<size_t>::iterator it;
   std::vector<size_t>::iterator stop;
@@ -81,11 +81,11 @@ private:
 template <class ImageType> class Random_sparse_loop {
 public:
   Random_sparse_loop(ImageType &in,
-                     const size_t &axis = 0,
-                     const size_t &number_iterations = std::numeric_limits<ssize_t>::max(),
+                     const ssize_t axis = 0,
+                     const size_t number_iterations = std::numeric_limits<ssize_t>::max(),
                      const bool repeat = false,
-                     const ssize_t &min_index = 0,
-                     const ssize_t &max_index = std::numeric_limits<ssize_t>::max())
+                     const ssize_t min_index = 0,
+                     const ssize_t max_index = std::numeric_limits<ssize_t>::max())
       : image(in), repeat_(repeat), status(true), ax(axis), cnt(0), min_idx(min_index) {
     if (max_index < image.size(ax))
       range = max_index - min_idx + 1;
@@ -137,7 +137,7 @@ private:
   ImageType &image;
   bool repeat_;
   bool status;
-  size_t ax;
+  ssize_t ax;
   size_t cnt;
   ssize_t min_idx;
   size_t range;
@@ -151,8 +151,8 @@ public:
   Iterator_loop(ImageType &in,
                 IterType first,
                 IterType last,
-                const size_t &axis = 0,
-                const size_t &number_iterations = std::numeric_limits<ssize_t>::max())
+                const ssize_t axis = 0,
+                const size_t number_iterations = std::numeric_limits<ssize_t>::max())
       : image(in), ax(axis), start(first), stop(last), max_cnt(number_iterations), status(true), cnt(0) {
     set_next_index();
   }
@@ -173,7 +173,7 @@ public:
 
 private:
   ImageType &image;
-  size_t ax;
+  ssize_t ax;
   IterType &start;
   IterType &stop;
   size_t max_cnt;

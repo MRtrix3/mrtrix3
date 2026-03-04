@@ -48,17 +48,19 @@ public:
         transform_(i, 3) += from[j] * spacing(j) * transform_(i, j);
   }
 
-  void reset() {
+  void reset() override {
     for (size_t n = 0; n < ndim(); ++n)
       set_pos(n, 0);
   }
 
-  size_t ndim() const { return size_.size(); }
-  ssize_t size(size_t axis) const { return size_[axis]; }
-  const transform_type &transform() const { return transform_; }
+  Eigen::Index ndim() const override { return size_.size(); }
+  Eigen::Index size(const Eigen::Index axis) const override { return size_[axis]; }
+  const transform_type &transform() const override { return transform_; }
 
-  ssize_t get_index(size_t axis) const { return parent().index(axis) - from_[axis]; }
-  void move_index(size_t axis, ssize_t increment) { parent().index(axis) += increment; }
+  Axes::index_type get_index(const Eigen::Index axis) const override { return parent().index(axis) - from_[axis]; }
+  void move_index(const Eigen::Index axis, const Axes::index_type increment) override {
+    parent().index(axis) += increment;
+  }
 
 protected:
   using base_type::parent;

@@ -119,10 +119,12 @@ void run() {
   if (responses[0].rows() > 1) {
     header.ndim() = 5;
     header.size(4) = responses[0].rows();
-  } else
+    Stride::set_from_command_line(header, Stride::Permutation({2, 2, 2, 0, 1}));
+  } else {
     header.ndim() = 4;
+    Stride::set_from_command_line(header, Stride::Permutation::volume_contiguous);
+  }
   header.size(3) = Math::SH::NforL(lmax);
-  Stride::set_from_command_line(header, Stride::contiguous_along_axis(3, header));
   header.datatype() = DataType::from_command_line(DataType::Float32);
 
   auto output = Image<value_type>::create(argument[argument.size() - 1], header);

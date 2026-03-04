@@ -257,8 +257,8 @@ void run() {
       throw Exception("image dimensionality other than 3 or 4 are not supported. image " + str(input1[i].name()) +
                       " is " + str(input1[i].ndim()) + " dimensional");
 
-    const size_t nvols1 = input1[i].ndim() == 3 ? 1 : input1[i].size(3);
-    const size_t nvols2 = input2[i].ndim() == 3 ? 1 : input2[i].size(3);
+    const Eigen::Index nvols1 = input1[i].ndim() == 3 ? 1 : input1[i].size(3);
+    const Eigen::Index nvols2 = input2[i].ndim() == 3 ? 1 : input2[i].size(3);
     if (nvols1 != nvols2)
       throw Exception("input images do not have the same number of volumes: " + str(input2[i].name()) + " and " +
                       str(input1[i].name()));
@@ -287,7 +287,7 @@ void run() {
     mc_params[i].image_nvols = input1[i].ndim() < 4 ? 1 : input1[i].size(3);
   }
 
-  ssize_t max_mc_image_lmax =
+  const ssize_t max_mc_image_lmax =
       std::max_element(mc_params.begin(),
                        mc_params.end(),
                        [](const Registration::MultiContrastSetting &x, const Registration::MultiContrastSetting &y) {
@@ -891,7 +891,7 @@ void run() {
     } else { // 3D
       if (rigid_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        std::vector<size_t> extent(3, 3);
+        const std::vector<Eigen::Index> extent(3, 3);
         rigid_registration.set_extent(extent);
         rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
       } else if (rigid_metric == Registration::Diff) {
@@ -966,7 +966,7 @@ void run() {
     } else { // 3D
       if (affine_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        std::vector<size_t> extent(3, 3);
+        const std::vector<Eigen::Index> extent(3, 3);
         affine_registration.set_extent(extent);
         affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
       } else if (affine_metric == Registration::Diff) {

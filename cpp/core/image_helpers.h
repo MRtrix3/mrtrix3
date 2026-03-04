@@ -17,61 +17,65 @@
 #pragma once
 
 #include "apply.h"
+#include "axes.h"
 #include "datatype.h"
 #include "debug.h"
+#include "stride.h"
 
 namespace MR {
 
 //! \cond skip
 namespace {
 
-template <class AxesType> FORCE_INLINE auto __ndim(const AxesType &axes) -> decltype(axes.size(), size_t()) {
+template <class AxesType> FORCE_INLINE auto __ndim(const AxesType &axes) -> decltype(axes.size(), Eigen::Index()) {
   return axes.size();
 }
 
-template <class AxesType> FORCE_INLINE auto __ndim(const AxesType &axes) -> decltype(axes.ndim(), size_t()) {
+template <class AxesType> FORCE_INLINE auto __ndim(const AxesType &axes) -> decltype(axes.ndim(), Eigen::Index()) {
   return axes.ndim();
 }
 
 template <class AxesType>
-FORCE_INLINE auto __get_index(const AxesType &axes, size_t axis) -> decltype(axes.size(), ssize_t()) {
+FORCE_INLINE auto __get_index(const AxesType &axes, const Eigen::Index axis) -> decltype(axes.size(), Eigen::Index()) {
   return axes[axis];
 }
 
 template <class AxesType>
-FORCE_INLINE auto __get_index(const AxesType &axes, size_t axis) -> decltype(axes.ndim(), ssize_t()) {
+FORCE_INLINE auto __get_index(const AxesType &axes, const Eigen::Index axis) -> decltype(axes.ndim(), Eigen::Index()) {
   return axes.index(axis);
 }
 
 template <class AxesType>
-FORCE_INLINE auto __set_index(AxesType &axes, size_t axis, ssize_t index) -> decltype(axes.size(), void()) {
+FORCE_INLINE auto __set_index(AxesType &axes, const Eigen::Index axis, const Axes::index_type index)
+    -> decltype(axes.size(), void()) {
   axes[axis] = index;
 }
 
 template <class AxesType>
-FORCE_INLINE auto __set_index(AxesType &axes, size_t axis, ssize_t index) -> decltype(axes.ndim(), void()) {
+FORCE_INLINE auto __set_index(AxesType &axes, const Eigen::Index axis, const Axes::index_type index)
+    -> decltype(axes.ndim(), void()) {
   axes.index(axis) = index;
 }
 
 template <class... DestImageType> struct __assign {
-  __assign(size_t axis, ssize_t index) : axis(axis), index(index) {}
-  const size_t axis;
-  const ssize_t index;
+  __assign(const Eigen::Index axis, const Axes::index_type index) : axis(axis), index(index) {}
+  const Eigen::Index axis;
+  const Axes::index_type index;
   template <class ImageType> FORCE_INLINE void operator()(ImageType &x) { __set_index(x, axis, index); }
 };
 
 template <class... DestImageType> struct __assign<std::tuple<DestImageType...>> {
-  __assign(size_t axis, ssize_t index) : axis(axis), index(index) {}
-  const size_t axis;
-  const ssize_t index;
+  __assign(const Eigen::Index axis, const Axes::index_type index) : axis(axis), index(index) {}
+  const Eigen::Index axis;
+  const Axes::index_type index;
   template <class ImageType> FORCE_INLINE void operator()(ImageType &x) {
     MR::apply_for_each(__assign<DestImageType...>(axis, index), x);
   }
 };
 
 template <class... DestImageType> struct __max_axis {
-  __max_axis(size_t &axis) : axis(axis) {}
-  size_t &axis;
+  __max_axis(Eigen::Index &axis) : axis(axis) {}
+  Eigen::Index &axis;
   template <class ImageType> FORCE_INLINE void operator()(ImageType &x) {
     if (axis > __ndim(x))
       axis = __ndim(x);
@@ -79,8 +83,8 @@ template <class... DestImageType> struct __max_axis {
 };
 
 template <class... DestImageType> struct __max_axis<std::tuple<DestImageType...>> {
-  __max_axis(size_t &axis) : axis(axis) {}
-  size_t &axis;
+  __max_axis(Eigen::Index &axis) : axis(axis) {}
+  Eigen::Index &axis;
   template <class ImageType> FORCE_INLINE void operator()(ImageType &x) {
     MR::apply_for_each(__max_axis<DestImageType...>(axis), x);
   }
@@ -88,22 +92,23 @@ template <class... DestImageType> struct __max_axis<std::tuple<DestImageType...>
 
 template <class ImageType> struct __assign_pos_axis_range {
   template <class... DestImageType> FORCE_INLINE void to(DestImageType &...dest) const {
-    size_t last_axis = to_axis;
+    Eigen::Index last_axis = to_axis;
     MR::apply_for_each(__max_axis<DestImageType...>(last_axis), std::tie(ref, dest...));
-    for (size_t n = from_axis; n < last_axis; ++n)
+    for (Eigen::Index n = from_axis; n < last_axis; ++n)
       MR::apply_for_each(__assign<DestImageType...>(n, __get_index(ref, n)), std::tie(dest...));
   }
   const ImageType &ref;
-  const size_t from_axis, to_axis;
+  const Eigen::Index from_axis;
+  const Eigen::Index to_axis;
 };
 
-template <class ImageType, typename IntType> struct __assign_pos_axes {
+template <class ImageType> struct __assign_pos_axes {
   template <class... DestImageType> FORCE_INLINE void to(DestImageType &...dest) const {
     for (auto a : axes)
       MR::apply_for_each(__assign<DestImageType...>(a, __get_index(ref, a)), std::tie(dest...));
   }
   const ImageType &ref;
-  const std::vector<IntType> axes;
+  const Axes::Subset &axes;
 };
 } // namespace
 
@@ -161,12 +166,17 @@ template <class ImageType> struct is_adapter_type {
  * assign_pos_of (src_image, 0, 3).to (dest_image1, dest_image2);
  * \endcode
  *
- * This function will accept both ImageType objects (i.e. with ndim() &
- * index(size_t) methods) or VectorType objects (i.e. with size() &
- * operator[](size_t) methods). */
+ * This function will accept both ImageType objects
+ * (i.e. with ndim() & index(Eigen::Index) methods)
+ * or VectorType objects
+ * (i.e. with size() & operator[](Eigen::Index) methods). */
+// TODO Implementation is not faithful to description above
+// TODO Retry with using max() rather than -1
 template <class ImageType>
 FORCE_INLINE __assign_pos_axis_range<ImageType>
-assign_pos_of(const ImageType &reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) {
+assign_pos_of(const ImageType &reference,
+              const Eigen::Index from_axis = 0,
+              const Eigen::Index to_axis = std::numeric_limits<Eigen::Index>::max()) {
   return {reference, from_axis, to_axis};
 }
 
@@ -177,25 +187,24 @@ assign_pos_of(const ImageType &reference, size_t from_axis = 0, size_t to_axis =
  * assign_pos (src_image, axes) (dest_image1, dest_image2);
  * \endcode
  *
- * This function will accept both ImageType objects (i.e. with ndim() &
- * index(size_t) methods) or VectorType objects (i.e. with size() &
- * operator[](size_t) methods). */
-template <class ImageType, typename IntType>
-FORCE_INLINE __assign_pos_axes<ImageType, IntType> assign_pos_of(const ImageType &reference,
-                                                                 const std::vector<IntType> &axes) {
+ * This function will accept both ImageType objects
+ * (i.e. with ndim() & index(Eigen::Index) methods)
+ * or VectorType objects
+ * (i.e. with size() & operator[](Eigen::Index) methods). */
+template <class ImageType>
+FORCE_INLINE __assign_pos_axes<ImageType> assign_pos_of(const ImageType &reference, const Axes::Subset &axes) {
   return {reference, axes};
 }
 
-template <class ImageType, typename IntType>
-FORCE_INLINE __assign_pos_axes<ImageType, IntType> assign_pos_of(const ImageType &reference,
-                                                                 const std::vector<IntType> &&axes) {
+template <class ImageType>
+FORCE_INLINE __assign_pos_axes<ImageType> assign_pos_of(const ImageType &reference, const Axes::Subset &&axes) {
   return assign_pos_of(reference, axes);
 }
 
 template <class ImageType>
 FORCE_INLINE bool
-is_out_of_bounds(const ImageType &image, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) {
-  for (size_t n = from_axis; n < std::min<size_t>(to_axis, image.ndim()); ++n)
+is_out_of_bounds(const ImageType &image, const Eigen::Index from_axis = 0, const Eigen::Index to_axis = -1) {
+  for (Eigen::Index n = from_axis; n < (to_axis == -1 ? image.ndim() : std::min(to_axis, image.ndim())); ++n)
     if (image.index(n) < 0 || image.index(n) >= image.size(n))
       return true;
   return false;
@@ -205,9 +214,9 @@ template <class HeaderType, class VectorType>
 FORCE_INLINE typename std::enable_if<!std::is_arithmetic<VectorType>::value, bool>::type
 is_out_of_bounds(const HeaderType &header,
                  const VectorType &pos,
-                 size_t from_axis = 0,
-                 size_t to_axis = std::numeric_limits<size_t>::max()) {
-  for (size_t n = from_axis; n < std::min<size_t>(to_axis, header.ndim()); ++n)
+                 const Eigen::Index from_axis = 0,
+                 const Eigen::Index to_axis = -1) {
+  for (Eigen::Index n = from_axis; n < (to_axis == -1 ? header.ndim() : std::min(to_axis, header.ndim())); ++n)
     if (pos[n] < 0 || pos[n] >= header.size(n))
       return true;
   return false;
@@ -225,10 +234,11 @@ template <class HeaderType> FORCE_INLINE void check_3D_nonunity(const HeaderType
 //! error if the image has dimensionality of at least \a N, allowing for higher singleton dimensions.
 //! For example, [ x y z ], [ x y z 1 1 ] can both be considered 3D,
 //! but [ x y z 1 n ] will throw an exception.
-template <class HeaderType> FORCE_INLINE void check_effective_dimensionality(const HeaderType &in, size_t N) {
+template <class HeaderType>
+FORCE_INLINE void check_effective_dimensionality(const HeaderType &in, const Eigen::Index N) {
   if (in.ndim() < N)
     throw Exception("Image \"" + in.name() + "\" does not represent " + str(N) + "D data (too few dimensions)");
-  for (size_t i = N; i < in.ndim(); ++i)
+  for (Eigen::Index i = N; i < in.ndim(); ++i)
     if (in.size(i) != 1)
       throw Exception("Image \"" + in.name() + "\" does not represent " + str(N) + "D data (axis " + str(i) +
                       " has size " + str(in.size(i)) + ")");
@@ -236,56 +246,47 @@ template <class HeaderType> FORCE_INLINE void check_effective_dimensionality(con
 
 //! returns the number of voxel in the data set, or a relevant subvolume
 template <class HeaderType>
-inline size_t
-voxel_count(const HeaderType &in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) {
-  if (to_axis > in.ndim())
-    to_axis = in.ndim();
-  assert(from_axis < to_axis);
+inline size_t voxel_count(const HeaderType &in,              //
+                          const Eigen::Index from_axis = 0,  //
+                          const Eigen::Index to_axis = -1) { //
+  const Eigen::Index last_axis = to_axis == -1 ? in.ndim() : std::min(in.ndim(), to_axis);
+  assert(from_axis < last_axis);
   size_t fp = 1;
-  for (size_t n = from_axis; n < to_axis; ++n)
+  for (Eigen::Index n = from_axis; n < last_axis; ++n)
     fp *= in.size(n);
   return fp;
 }
 
 //! returns the number of voxel in the relevant subvolume of the data set
-template <class HeaderType> inline size_t voxel_count(const HeaderType &in, const std::initializer_list<size_t> axes) {
+template <class HeaderType> inline size_t voxel_count(const HeaderType &in, const Axes::Subset &axes) {
   size_t fp = 1;
-  for (auto n : axes) {
-    assert(n < in.ndim());
-    fp *= in.size(n);
+  for (auto axis : axes) {
+    assert(axis >= 0);
+    assert(axis < in.ndim());
+    fp *= in.size(axis);
   }
   return fp;
 }
 
-//! returns the number of voxel in the relevant subvolume of the data set
-template <class HeaderType> inline int64_t voxel_count(const HeaderType &in, const std::vector<size_t> &axes) {
-  int64_t fp = 1;
-  for (size_t n = 0; n < axes.size(); ++n) {
-    assert(axes[n] < in.ndim());
-    fp *= in.size(axes[n]);
-  }
-  return fp;
-}
+template <typename ValueType> inline std::ptrdiff_t footprint(const size_t count) { return count * sizeof(ValueType); }
 
-template <typename ValueType> inline int64_t footprint(int64_t count) { return count * sizeof(ValueType); }
+template <> inline std::ptrdiff_t footprint<bool>(const size_t count) { return (count + 7) / 8; }
 
-template <> inline int64_t footprint<bool>(int64_t count) { return (count + 7) / 8; }
-
-inline int64_t footprint(int64_t count, DataType dtype) {
+inline std::ptrdiff_t footprint(const size_t count, const DataType dtype) {
   return dtype == DataType::Bit ? (count + 7) / 8 : count * dtype.bytes();
 }
 
 //! returns the memory footprint of an Image
 template <class HeaderType>
-inline typename std::enable_if<std::is_class<HeaderType>::value, int64_t>::type
-footprint(const HeaderType &in, size_t from_dim = 0, size_t up_to_dim = std::numeric_limits<size_t>::max()) {
+inline typename std::enable_if<std::is_class<HeaderType>::value, std::ptrdiff_t>::type
+footprint(const HeaderType &in, const Eigen::Index from_dim = 0, const Eigen::Index up_to_dim = -1) {
   return footprint(voxel_count(in, from_dim, up_to_dim), in.datatype());
 }
 
 //! returns the memory footprint of an Image
 template <class HeaderType>
-inline typename std::enable_if<std::is_class<HeaderType>::value, int64_t>::type
-footprint(const HeaderType &in, const std::initializer_list<size_t> axes) {
+inline typename std::enable_if<std::is_class<HeaderType>::value, std::ptrdiff_t>::type
+footprint(const HeaderType &in, const Axes::Subset &axes) {
   return footprint(voxel_count(in, axes), in.datatype());
 }
 
@@ -293,19 +294,7 @@ template <class HeaderType1, class HeaderType2>
 inline bool spacings_match(const HeaderType1 &in1, const HeaderType2 &in2, const double tol = 0.0) {
   if (in1.ndim() != in2.ndim())
     return false;
-  for (size_t n = 0; n < in1.ndim(); ++n)
-    if (std::fabs(in1.spacing(n) - in2.spacing(n)) > tol * 0.5 * (in1.spacing(n) + in2.spacing(n)))
-      return false;
-  return true;
-}
-
-template <class HeaderType1, class HeaderType2>
-inline bool spacings_match(
-    const HeaderType1 &in1, const HeaderType2 &in2, size_t from_axis, size_t to_axis, const double tol = 0.0) {
-  assert(from_axis < to_axis);
-  if (to_axis > in1.ndim() || to_axis > in2.ndim())
-    return false;
-  for (size_t n = from_axis; n < to_axis; ++n)
+  for (Eigen::Index n = 0; n < in1.ndim(); ++n)
     if (std::fabs(in1.spacing(n) - in2.spacing(n)) > tol * 0.5 * (in1.spacing(n) + in2.spacing(n)))
       return false;
   return true;
@@ -314,13 +303,27 @@ inline bool spacings_match(
 template <class HeaderType1, class HeaderType2>
 inline bool spacings_match(const HeaderType1 &in1,
                            const HeaderType2 &in2,
-                           const std::vector<size_t> &axes,
+                           const Eigen::Index from_axis,
+                           const Eigen::Index to_axis,
                            const double tol = 0.0) {
-  for (size_t n = 0; n < axes.size(); ++n) {
-    if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
+  assert(from_axis < to_axis);
+  if (to_axis > std::min(in1.ndim(), in2.ndim()))
+    return false;
+  for (Eigen::Index n = from_axis; n < to_axis; ++n)
+    if (std::fabs(in1.spacing(n) - in2.spacing(n)) > tol * 0.5 * (in1.spacing(n) + in2.spacing(n)))
       return false;
-    if (std::fabs(in1.spacing(axes[n]) - in2.spacing(axes[n])) >
-        tol * 0.5 * (in1.spacing(axes[n]) + in2.spacing(axes[n])))
+  return true;
+}
+
+template <class HeaderType1, class HeaderType2>      //
+inline bool spacings_match(const HeaderType1 &in1,   //
+                           const HeaderType2 &in2,   //
+                           const Axes::Subset &axes, //
+                           const double tol = 0.0) { //
+  for (auto axis : axes) {
+    if (axis >= std::min(in1.ndim(), in2.ndim()))
+      return false;
+    if (std::fabs(in1.spacing(axis) - in2.spacing(axis)) > tol * 0.5 * (in1.spacing(axis) + in2.spacing(axis)))
       return false;
   }
   return true;
@@ -330,29 +333,32 @@ template <class HeaderType1, class HeaderType2>
 inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2) {
   if (in1.ndim() != in2.ndim())
     return false;
-  for (size_t n = 0; n < in1.ndim(); ++n)
+  for (Eigen::Index n = 0; n < in1.ndim(); ++n)
     if (in1.size(n) != in2.size(n))
       return false;
   return true;
 }
 
 template <class HeaderType1, class HeaderType2>
-inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, size_t from_axis, size_t to_axis) {
+inline bool dimensions_match(const HeaderType1 &in1,
+                             const HeaderType2 &in2,
+                             const Eigen::Index from_axis,
+                             const Eigen::Index to_axis) {
   assert(from_axis < to_axis);
-  if (to_axis > in1.ndim() || to_axis > in2.ndim())
+  if (to_axis > std::min(in1.ndim(), in2.ndim()))
     return false;
-  for (size_t n = from_axis; n < to_axis; ++n)
+  for (Eigen::Index n = from_axis; n < to_axis; ++n)
     if (in1.size(n) != in2.size(n))
       return false;
   return true;
 }
 
 template <class HeaderType1, class HeaderType2>
-inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, const std::vector<size_t> &axes) {
-  for (size_t n = 0; n < axes.size(); ++n) {
-    if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
+inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, const Axes::Subset &axes) {
+  for (auto axis : axes) {
+    if (axis >= std::min(in1.ndim(), in2.ndim()))
       return false;
-    if (in1.size(axes[n]) != in2.size(axes[n]))
+    if (in1.size(axis) != in2.size(axis))
       return false;
   }
   return true;
@@ -361,7 +367,7 @@ inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, con
 namespace {
 template <class HeaderType> std::string dim2str(const HeaderType &in) {
   std::string msg = str(in.size(0));
-  for (size_t axis = 1; axis != in.ndim(); ++axis)
+  for (Eigen::Index axis = 1; axis != in.ndim(); ++axis)
     msg += "," + str(in.size(axis));
   return msg;
 }
@@ -375,14 +381,17 @@ inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2) {
 }
 
 template <class HeaderType1, class HeaderType2>
-inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, size_t from_axis, size_t to_axis) {
+inline void check_dimensions(const HeaderType1 &in1,
+                             const HeaderType2 &in2,
+                             const Eigen::Index from_axis,
+                             const Eigen::Index to_axis) {
   if (!dimensions_match(in1, in2, from_axis, to_axis))
     throw Exception("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\" between axes " +
                     str(from_axis) + " and " + str(to_axis - 1) + " (" + dim2str(in1) + " vs. " + dim2str(in2) + ")");
 }
 
 template <class HeaderType1, class HeaderType2>
-inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, const std::vector<size_t> &axes) {
+inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, const Axes::Subset &axes) {
   if (!dimensions_match(in1, in2, axes))
     throw Exception("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\" for axes [" +
                     join(axes, ",") + "]" + " (" + dim2str(in1) + " vs. " + dim2str(in2) + ")");
@@ -424,8 +433,8 @@ voxel_grids_match_in_scanner_space(const HeaderType1 in1, const HeaderType2 in2,
   return diff_in_scannercoord < (0.5 * (vs1 + vs2)).minCoeff() * tol;
 }
 
-template <class HeaderType> inline void squeeze_dim(HeaderType &in, size_t from_axis = 3) {
-  size_t n = in.ndim();
+template <class HeaderType> inline void squeeze_dim(HeaderType &in, const Eigen::Index from_axis = 3) {
+  Eigen::Index n = in.ndim();
   while (in.size(n - 1) <= 1 && n > from_axis)
     --n;
   in.ndim() = n;
@@ -435,40 +444,42 @@ namespace Helper {
 
 template <class ImageType> class Index {
 public:
-  FORCE_INLINE Index(ImageType &image, size_t axis) : image(image), axis(axis) { assert(axis < image.ndim()); }
+  FORCE_INLINE Index(ImageType &image, const Eigen::Index axis) : image(image), axis(axis) {
+    assert(axis < image.ndim());
+  }
   Index() = delete;
   Index(const Index &) = delete;
   FORCE_INLINE Index(Index &&) = default;
 
-  FORCE_INLINE operator ssize_t() const { return get(); }
-  FORCE_INLINE ssize_t operator++() {
+  FORCE_INLINE operator Axes::index_type() const { return get(); }
+  FORCE_INLINE Axes::index_type operator++() {
     move(1);
     return get();
   }
-  FORCE_INLINE ssize_t operator--() {
+  FORCE_INLINE Axes::index_type operator--() {
     move(-1);
     return get();
   }
-  FORCE_INLINE ssize_t operator++(int) {
+  FORCE_INLINE Axes::index_type operator++(int) {
     auto p = get();
     move(1);
     return p;
   }
-  FORCE_INLINE ssize_t operator--(int) {
+  FORCE_INLINE Axes::index_type operator--(int) {
     auto p = get();
     move(-1);
     return p;
   }
-  FORCE_INLINE ssize_t operator+=(ssize_t increment) {
+  FORCE_INLINE Axes::index_type operator+=(const Axes::index_type increment) {
     move(increment);
     return get();
   }
-  FORCE_INLINE ssize_t operator-=(ssize_t increment) {
+  FORCE_INLINE Axes::index_type operator-=(const Axes::index_type increment) {
     move(-increment);
     return get();
   }
-  FORCE_INLINE ssize_t operator=(ssize_t position) { return (*this += position - get()); }
-  FORCE_INLINE ssize_t operator=(Index &&position) { return (*this = position.get()); }
+  FORCE_INLINE Axes::index_type operator=(const Axes::index_type position) { return (*this += position - get()); }
+  FORCE_INLINE Axes::index_type operator=(Index &&position) { return (*this = position.get()); }
   friend std::ostream &operator<<(std::ostream &stream, const Index &p) {
     stream << p.get();
     return stream;
@@ -476,9 +487,9 @@ public:
 
 protected:
   ImageType &image;
-  const size_t axis;
-  FORCE_INLINE ssize_t get() const { return image.get_index(axis); }
-  FORCE_INLINE void move(ssize_t amount) { image.move_index(axis, amount); }
+  const Eigen::Index axis;
+  FORCE_INLINE Axes::index_type get() const { return image.get_index(axis); }
+  FORCE_INLINE void move(const Axes::index_type amount) { image.move_index(axis, amount); }
 };
 
 template <class ImageType> class Value {
@@ -508,6 +519,7 @@ private:
   ImageType &image;
   FORCE_INLINE value_type get() const { return image.get_value(); }
   FORCE_INLINE value_type set(value_type value) {
+    assert(!is_out_of_bounds(image));
     image.set_value(value);
     return value;
   }
@@ -515,13 +527,13 @@ private:
 
 template <class ImageType> class ConstRow {
 public:
-  ConstRow(ImageType &image, size_t axis) : axis(axis), image(image) { assert(axis < image.ndim()); }
-  ssize_t size() const { return image.size(axis); }
-  typename ImageType::value_type operator[](ssize_t n) const {
+  ConstRow(ImageType &image, const Eigen::Index axis) : axis(axis), image(image) { assert(axis < image.ndim()); }
+  Eigen::Index size() const { return image.size(axis); }
+  typename ImageType::value_type operator[](const Axes::index_type n) const {
     image.index(axis) = n;
     return image.value();
   }
-  const size_t axis;
+  const Eigen::Index axis;
 
 protected:
   ImageType &image;
@@ -534,7 +546,7 @@ template <class ImageType> class Row : public ConstRow<ImageType> {
 public:
   using value_type = typename ImageType::value_type;
 
-  Row(ImageType &image, size_t axis) : ConstRow<ImageType>(image, axis) {}
+  Row(ImageType &image, const Eigen::Index axis) : ConstRow<ImageType>(image, axis) {}
 
   template <class OtherImageType> Row(ConstRow<OtherImageType> &&other) {
     assert(image.size(axis) == other.image.size(other.axis));
@@ -596,8 +608,10 @@ template <class Derived, typename ValueType> class ImageBase {
 public:
   using value_type = ValueType;
 
-  FORCE_INLINE Helper::Index<Derived> index(size_t axis) { return {static_cast<Derived &>(*this), axis}; }
-  FORCE_INLINE ssize_t index(size_t axis) const { return static_cast<const Derived *>(this)->get_index(axis); }
+  FORCE_INLINE Helper::Index<Derived> index(const Eigen::Index axis) { return {static_cast<Derived &>(*this), axis}; }
+  FORCE_INLINE Axes::index_type index(const Eigen::Index axis) const {
+    return static_cast<const Derived *>(this)->get_index(axis);
+  }
 
   FORCE_INLINE Helper::Value<Derived> value() { return {static_cast<Derived &>(*this)}; }
   FORCE_INLINE ValueType value() const { return static_cast<const Derived *>(this)->get_value(); }
@@ -616,8 +630,10 @@ public:
    * out.row(3) += M*Eigen::Vector3f(in.row(3)) + Eigen::VectorXf (other.row(3));
    * \code
    * */
-  FORCE_INLINE Helper::ConstRow<Derived> row(size_t axis) const { return {static_cast<Derived &>(*this), axis}; }
-  FORCE_INLINE Helper::Row<Derived> row(size_t axis) { return {static_cast<Derived &>(*this), axis}; }
+  FORCE_INLINE Helper::ConstRow<Derived> row(const Eigen::Index axis) const {
+    return {static_cast<Derived &>(*this), axis};
+  }
+  FORCE_INLINE Helper::Row<Derived> row(const Eigen::Index axis) { return {static_cast<Derived &>(*this), axis}; }
 };
 
 } // namespace MR

@@ -232,7 +232,7 @@ public:
     }
   }
 
-  void set_extent(const std::vector<size_t> extent) {
+  void set_extent(const std::vector<Eigen::Index> &extent) {
     for (size_t d = 0; d < extent.size(); ++d) {
       if (extent[d] < 1)
         throw Exception("the neighborhood kernel extent must be at least 1 voxel");
@@ -574,7 +574,7 @@ public:
 protected:
   std::vector<StageSetting> stages;
   std::vector<MultiContrastSetting> contrasts, stage_contrasts;
-  std::vector<size_t> kernel_extent;
+  std::vector<Eigen::Index> kernel_extent;
   default_type grad_tolerance;
   default_type step_tolerance;
   std::streambuf *log_stream;

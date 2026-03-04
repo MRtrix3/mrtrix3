@@ -32,6 +32,7 @@ namespace MR {
 //   with any number of axes, to an index within a 1D vector of data.
 class Voxel2Vector {
 public:
+  // TODO Consider promoting
   typedef uint32_t index_t;
 
   static const index_t invalid = std::numeric_limits<index_t>::max();
@@ -98,8 +99,13 @@ Voxel2Vector::Voxel2Vector(MaskType &mask, const Header &data)
       forward.value() = invalid;
     }
   }
-  DEBUG("Voxel2vector class for image \"" + data.name() + "\" of size " + join(pos(), "x") + " initialised with " +
-        str(reverse.size()) + " elements");
+  std::ostringstream oss;
+  oss << forward.size(0);
+  for (Eigen::Index axis = 0; axis != forward.ndim(); ++axis)
+    oss << "x" << forward.size(axis);
+  DEBUG("Voxel2vector class for image \"" + data.name() + "\"" +   //
+        " of size " + oss.str() +                                  //
+        " initialised with " + str(reverse.size()) + " elements"); //
 }
 
 } // namespace MR

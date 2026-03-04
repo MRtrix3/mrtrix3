@@ -218,10 +218,10 @@ void run() {
         MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
 
     // over-sampling
-    std::vector<uint32_t> oversample = Adapter::AutoOverSample;
+    std::vector<Eigen::Index> oversample = Adapter::AutoOverSample;
     auto opt = get_options("oversample");
     if (!opt.empty())
-      oversample = parse_ints<uint32_t>(opt[0][0]);
+      oversample = parse_ints<Eigen::Index>(opt[0][0]);
 
     Header template_header;
     opt = get_options("template");
@@ -252,10 +252,10 @@ void run() {
       ++resize_option_count;
     }
 
-    std::vector<uint32_t> image_size;
+    std::vector<Eigen::Index> image_size;
     opt = get_options("size");
     if (!opt.empty()) {
-      image_size = parse_ints<uint32_t>(opt[0][0]);
+      image_size = parse_ints<Eigen::Index>(opt[0][0]);
       regrid_filter.set_size(image_size);
       ++resize_option_count;
     }

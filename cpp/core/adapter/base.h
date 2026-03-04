@@ -39,29 +39,33 @@ public:
   template <class U> const Base &operator=(const U &V) { return parent_ = V; }
 
   FORCE_INLINE ImageType &parent() { return parent_; }
-  FORCE_INLINE bool valid() const { return parent_.valid(); }
   FORCE_INLINE bool operator!() const { return !valid(); }
   FORCE_INLINE const ImageType &parent() const { return parent_; }
-  FORCE_INLINE std::string_view name() const { return parent_.name(); }
-  FORCE_INLINE size_t ndim() const { return parent_.ndim(); }
-  FORCE_INLINE ssize_t size(size_t axis) const { return parent_.size(axis); }
-  FORCE_INLINE default_type spacing(size_t axis) const { return parent_.spacing(axis); }
-  FORCE_INLINE ssize_t stride(size_t axis) const { return parent_.stride(axis); }
-  FORCE_INLINE const transform_type &transform() const { return parent_.transform(); }
-  FORCE_INLINE const KeyValues &keyval() const { return parent_.keyval(); }
 
-  FORCE_INLINE ssize_t get_index(size_t axis) const { return parent_.index(axis); }
-  FORCE_INLINE void move_index(size_t axis, ssize_t increment) { parent_.index(axis) += increment; }
+  FORCE_INLINE virtual std::string_view name() const { return parent_.name(); }
+  FORCE_INLINE virtual bool valid() const { return parent_.valid(); }
 
-  FORCE_INLINE value_type get_value() const { return parent_.value(); }
-  FORCE_INLINE void set_value(value_type val) { parent_.value() = val; }
+  FORCE_INLINE virtual Eigen::Index ndim() const { return parent_.ndim(); }
+  FORCE_INLINE virtual Eigen::Index size(const Eigen::Index axis) const { return parent_.size(axis); }
+  FORCE_INLINE virtual default_type spacing(const Eigen::Index axis) const { return parent_.spacing(axis); }
+  FORCE_INLINE virtual std::ptrdiff_t stride(const Eigen::Index axis) const { return parent_.stride(axis); }
+  FORCE_INLINE virtual const transform_type &transform() const { return parent_.transform(); }
+  FORCE_INLINE virtual const KeyValues &keyval() const { return parent_.keyval(); }
 
-  FORCE_INLINE void reset() { parent_.reset(); }
+  FORCE_INLINE virtual Axes::index_type get_index(const Eigen::Index axis) const { return parent_.index(axis); }
+  FORCE_INLINE virtual void move_index(const Eigen::Index axis, const Axes::index_type increment) {
+    parent_.index(axis) += increment;
+  }
+
+  FORCE_INLINE virtual value_type get_value() const { return parent_.value(); }
+  FORCE_INLINE virtual void set_value(value_type val) { parent_.value() = val; }
+
+  FORCE_INLINE virtual void reset() { parent_.reset(); }
 
   friend std::ostream &operator<<(std::ostream &stream, const Base &V) {
     stream << "image adapter \"" << V.name() << "\", datatype " << MR::DataType::from<value_type>().specifier()
            << ", position [ ";
-    for (size_t n = 0; n < V.ndim(); ++n)
+    for (Eigen::Index n = 0; n < V.ndim(); ++n)
       stream << V[n] << " ";
     stream << "], value = " << V.value();
     return stream;

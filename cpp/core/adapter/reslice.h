@@ -66,7 +66,8 @@ template <typename value_type> struct summing_type<is_complex<value_type>> {
 } // namespace
 
 extern const transform_type NoTransform;
-extern const std::vector<uint32_t> AutoOverSample;
+extern const std::vector<Eigen::Index> AutoOverSample;
+extern const std::vector<Eigen::Index> NoOverSample;
 
 //! \addtogroup interp
 // @{
@@ -119,7 +120,7 @@ public:
   Reslice(const ImageType &original,
           const HeaderType &reference,
           const transform_type &transform = NoTransform,
-          const std::vector<uint32_t> &oversample = AutoOverSample,
+          const std::vector<Eigen::Index> &oversample = AutoOverSample,
           const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value())
       : interp(original, value_when_out_of_bounds),
         x{0, 0, 0},
@@ -172,14 +173,14 @@ public:
       oversampling = false;
   }
 
-  size_t ndim() const { return interp.ndim(); }
+  Eigen::Index ndim() const { return interp.ndim(); }
   bool valid() const { return interp.valid(); }
-  int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
-  default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
+  Eigen::Index size(const Eigen::Index axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
+  default_type spacing(const Eigen::Index axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
   const transform_type &transform() const { return transform_; }
-  std::string name() const { return interp.name(); }
+  std::string_view name() const { return interp.name(); }
 
-  ssize_t stride(size_t axis) const { return interp.stride(axis); }
+  std::ptrdiff_t stride(const Eigen::Index axis) const { return interp.stride(axis); }
 
   void reset() {
     x = {0, 0, 0};
@@ -190,14 +191,14 @@ public:
   value_type value() {
     using namespace Eigen;
     if (oversampling) {
-      Vector3d d(x[0] + from[0], x[1] + from[1], x[2] + from[2]);
+      const Vector3d d(x[0] + from[0], x[1] + from[1], x[2] + from[2]);
       typename summing_type<value_type>::type sum(0);
       Vector3d s;
-      for (uint32_t z = 0; z < OS[2]; ++z) {
+      for (Eigen::Index z = 0; z < OS[2]; ++z) {
         s[2] = d[2] + z * inc[2];
-        for (uint32_t y = 0; y < OS[1]; ++y) {
+        for (Eigen::Index y = 0; y < OS[1]; ++y) {
           s[1] = d[1] + y * inc[1];
-          for (uint32_t x = 0; x < OS[0]; ++x) {
+          for (Eigen::Index x = 0; x < OS[0]; ++x) {
             s[0] = d[0] + x * inc[0];
             if (interp.voxel(direct_transform * s))
               sum += interp.value();
@@ -210,8 +211,8 @@ public:
     return interp.value();
   }
 
-  ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
-  void move_index(size_t axis, ssize_t increment) {
+  Axes::index_type get_index(const Eigen::Index axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
+  void move_index(const Eigen::Index axis, const Axes::index_type increment) {
     if (axis < 3)
       x[axis] += increment;
     else
@@ -220,11 +221,11 @@ public:
 
 private:
   Interpolator<ImageType> interp;
-  std::array<ssize_t, 3> x;
-  const std::array<ssize_t, 3> dim;
+  std::array<Axes::index_type, 3> x;
+  const std::array<Eigen::Index, 3> dim;
   const std::array<default_type, 3> vox;
   bool oversampling;
-  std::array<uint32_t, 3> OS;
+  std::array<Eigen::Index, 3> OS;
   std::array<default_type, 3> from;
   std::array<default_type, 3> inc;
   default_type norm;

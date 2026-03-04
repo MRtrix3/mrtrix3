@@ -138,55 +138,60 @@ template <typename ValueType> inline void store_native(const ValueType value, vo
   *as<ValueType>(address) = value;
 }
 
+// TODO Should functions below use pointer arithmetic rather than [] operator?
+
 //! fetch \a value in little-endian format from offset \a i from \a data
-template <typename ValueType> inline ValueType fetch_LE(const void *data, size_t i) {
+template <typename ValueType> inline ValueType fetch_LE(const void *data, const std::ptrdiff_t i) {
   return ByteOrder::LE(as<ValueType>(data)[i]);
 }
 
 //! fetch \a value in big-endian format from offset \a i from \a data
-template <typename ValueType> inline ValueType fetch_BE(const void *data, size_t i) {
+template <typename ValueType> inline ValueType fetch_BE(const void *data, const std::ptrdiff_t i) {
   return ByteOrder::BE(as<ValueType>(data)[i]);
 }
 
 //! fetch \a value in format \a is_big_endian from offset \a i from \a data
 template <typename ValueType>
-inline ValueType fetch(const void *data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) {
+inline ValueType fetch(const void *data, const std::ptrdiff_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) {
   return ByteOrder::swap(as<ValueType>(data)[i], is_big_endian);
 }
 
 //! fetch \a value in native format from offset \a i from \a data
-template <typename ValueType> inline ValueType fetch_native(const void *data, size_t i) {
+template <typename ValueType> inline ValueType fetch_native(const void *data, const std::ptrdiff_t i) {
   return as<ValueType>(data)[i];
 }
 
 //! store \a value in little-endian format at offset \a i from \a data
-template <typename ValueType> inline void store_LE(const ValueType value, void *data, size_t i) {
+template <typename ValueType> inline void store_LE(const ValueType value, void *data, const std::ptrdiff_t i) {
   as<ValueType>(data)[i] = ByteOrder::LE(value);
 }
 
 //! store \a value in big-endian format at offset \a i from \a data
-template <typename ValueType> inline void store_BE(const ValueType value, void *data, size_t i) {
+template <typename ValueType> inline void store_BE(const ValueType value, void *data, const std::ptrdiff_t i) {
   as<ValueType>(data)[i] = ByteOrder::BE(value);
 }
 
 //! store \a value in format \a is_big_endian at offset \a i from \a data
-template <typename ValueType>
-inline void store(const ValueType value, void *data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) {
+template <typename ValueType>                                  //
+inline void store(const ValueType value,                       //
+                  void *data,                                  //
+                  const std::ptrdiff_t i,                      //
+                  bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { //
   as<ValueType>(data)[i] = ByteOrder::swap(value, is_big_endian);
 }
 
 //! store \a value in native format at offset \a i from \a data
-template <typename ValueType> inline void store_native(const ValueType value, void *data, size_t i) {
+template <typename ValueType> inline void store_native(const ValueType value, void *data, const std::ptrdiff_t i) {
   as<ValueType>(data)[i] = value;
 }
 
 //! \cond skip
 
-template <> inline bool fetch_native<bool>(const void *data, size_t i) {
+template <> inline bool fetch_native<bool>(const void *data, const std::ptrdiff_t i) {
   return (as<uint8_t>(data)[i / 8]) & (BITMASK >> i % 8);
 }
 
-template <> inline void store_native<bool>(const bool value, void *data, size_t i) {
+template <> inline void store_native<bool>(const bool value, void *data, const std::ptrdiff_t i) {
   // bit of a hack - assume lock-free atomic operations on bytes, and that
   // atomic<uint8_t> genuinely is one byte. Both now checked in thread
   // initialisation (in Thread::__Backend() constructor)
@@ -200,9 +205,11 @@ template <> inline void store_native<bool>(const bool value, void *data, size_t 
   } while (!at->compare_exchange_weak(prev, new_value));
 }
 
-template <> inline bool fetch<bool>(const void *data, size_t i, bool) { return fetch_native<bool>(data, i); }
+template <> inline bool fetch<bool>(const void *data, const std::ptrdiff_t i, bool) {
+  return fetch_native<bool>(data, i);
+}
 
-template <> inline void store<bool>(const bool value, void *data, size_t i, bool) {
+template <> inline void store<bool>(const bool value, void *data, const std::ptrdiff_t i, bool) {
   store_native<bool>(value, data, i);
 }
 

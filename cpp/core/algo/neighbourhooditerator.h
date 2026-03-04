@@ -17,6 +17,7 @@
 #pragma once
 
 #include "algo/iterator.h"
+#include "axes.h"
 #include "types.h"
 
 namespace MR {
@@ -38,7 +39,7 @@ class NeighbourhoodIterator {
 public:
   NeighbourhoodIterator() = delete;
   template <class IteratorType>
-  NeighbourhoodIterator(const IteratorType &iter, const std::vector<size_t> &extent)
+  NeighbourhoodIterator(const IteratorType &iter, const std::vector<Eigen::Index> &extent)
       : dim(iter.ndim()),
         offset(iter.ndim()),
         // pos (iter.ndim()),
@@ -59,18 +60,18 @@ public:
     }
   }
 
-  size_t ndim() const { return dim.size(); }
-  ssize_t size(size_t axis) const { return dim[axis]; }
+  Eigen::Index ndim() const { return dim.size(); }
+  Eigen::Index size(const Eigen::Index axis) const { return dim[axis]; }
 
-  const ssize_t &index(size_t axis) const { return pos[axis]; }
-  ssize_t &index(size_t axis) { return pos[axis]; }
+  const Axes::index_type &index(const Eigen::Index axis) const { return pos[axis]; }
+  Axes::index_type &index(const Eigen::Index axis) { return pos[axis]; }
 
-  const Eigen::Matrix<ssize_t, 1, Eigen::Dynamic> get_pos() const { return pos; }
+  const Eigen::Matrix<Axes::index_type, 1, Eigen::Dynamic> get_pos() const { return pos; }
 
-  const ssize_t &extent(size_t axis) const { return dim[axis]; }
-  const ssize_t &centre(size_t axis) const { return offset[axis]; }
+  const Eigen::Index &extent(const Eigen::Index axis) const { return dim[axis]; }
+  const Axes::index_type &centre(const Eigen::Index axis) const { return offset[axis]; }
 
-  void reset(size_t axis) { pos[axis] = pos_orig[axis]; }
+  void reset(const Eigen::Index axis) { pos[axis] = pos_orig[axis]; }
 
   bool loop() {
     if (not this->has_next_) {
@@ -104,8 +105,11 @@ public:
   }
 
 private:
-  std::vector<ssize_t> dim, offset, pos_orig, ext;
-  Eigen::Matrix<ssize_t, 1, Eigen::Dynamic> pos;
+  std::vector<Eigen::Index> dim;
+  std::vector<Axes::index_type> offset;
+  std::vector<Axes::index_type> pos_orig;
+  std::vector<Eigen::Index> ext;
+  Eigen::Matrix<Axes::index_type, 1, Eigen::Dynamic> pos;
   bool has_next_;
 
   void value() const { assert(0); }

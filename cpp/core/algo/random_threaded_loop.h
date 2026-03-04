@@ -18,6 +18,7 @@
 
 #include "algo/iterator.h"
 #include "algo/loop.h"
+#include "axes.h"
 #include "debug.h"
 #include "exception.h"
 #include "math/rng.h"
@@ -32,25 +33,25 @@ namespace MR {
 namespace {
 
 template <int N, class Functor, class... ImageType> struct RandomThreadedLoopRunInner {
-  const std::vector<size_t> &outer_axes;
+  const Axes::Subset &outer_axes;
   decltype(Loop(outer_axes)) loop;
   typename std::remove_reference<Functor>::type func;
   double density;
   Math::RNG::Uniform<double> rng;
-  const std::vector<size_t> dims;
+  const std::vector<Eigen::Index> sizes;
   std::tuple<ImageType...> vox;
 
-  RandomThreadedLoopRunInner(const std::vector<size_t> &outer_axes,
-                             const std::vector<size_t> &inner_axes,
+  RandomThreadedLoopRunInner(const Axes::Subset &outer_axes,
+                             const Axes::Subset &inner_axes,
                              const Functor &functor,
                              const double voxel_density,
-                             const std::vector<size_t> dimensions,
+                             const std::vector<Eigen::Index> sizes,
                              ImageType &...voxels)
       : outer_axes(outer_axes),
         loop(Loop(inner_axes)),
         func(functor),
         density(voxel_density),
-        dims(dimensions),
+        sizes(sizes),
         vox(voxels...) {}
 
   void operator()(const Iterator &pos) {
@@ -67,8 +68,8 @@ template <int N, class Functor, class... ImageType> struct RandomThreadedLoopRun
 };
 
 template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0, Functor, ImageType...> {
-  const std::vector<size_t> &outer_axes;
-  const std::vector<size_t> inner;
+  const Axes::Subset &outer_axes;
+  const Axes::Subset inner;
   decltype(Loop(outer_axes)) loop;
   // Random_loop<Iterator, std::default_random_engine>  random_loop;
   typename std::remove_reference<Functor>::type func;
@@ -77,35 +78,35 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
   size_t cnt;
   // Math::RNG::Uniform<double> rng;
   std::default_random_engine random_engine;
-  std::vector<size_t> idx;
-  std::vector<size_t>::iterator it;
-  std::vector<size_t>::iterator stop;
-  const std::vector<size_t> dims;
+  std::vector<Axes::index_type> idx;
+  std::vector<Axes::index_type>::iterator it;
+  std::vector<Axes::index_type>::iterator stop;
+  const std::vector<Eigen::Index> sizes;
   // ImageType& image;
   // RandomEngine& engine;
   // size_t max_cnt;
   // bool status;
   // size_t cnt;
 
-  RandomThreadedLoopRunInner(const std::vector<size_t> &outer_axes,
-                             const std::vector<size_t> &inner_axes,
+  RandomThreadedLoopRunInner(const Axes::Subset &outer_axes,
+                             const Axes::Subset &inner_axes,
                              const Functor &functor,
                              const double voxel_density,
-                             const std::vector<size_t> &dimensions,
+                             const std::vector<Eigen::Index> &sizes,
                              ImageType &...voxels)
       : outer_axes(outer_axes),
         inner(inner_axes),
         loop(Loop(inner_axes)),
         func(functor),
         density(voxel_density),
-        dims(dimensions) {
+        sizes(sizes) {
     assert(inner_axes.size() == 1);
     // VAR(inner_axes);
     // VAR(outer_axes);
     Math::RNG rng;
     typename std::default_random_engine::result_type seed = rng.get_seed();
     random_engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
-    idx = std::vector<size_t>(dims[inner_axes[0]]);
+    idx = std::vector<Eigen::Index>(sizes[inner_axes[0]]);
     std::iota(std::begin(idx), std::end(idx), 0);
   }
 
@@ -114,7 +115,7 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
     cnt = 0;
     it = std::begin(idx);
     stop = std::end(idx);
-    max_cnt = static_cast<size_t>(std::ceil(density * dims[inner[0]]));
+    max_cnt = static_cast<size_t>(std::ceil(density * sizes[inner[0]]));
     // VAR(max_cnt);
     for (size_t i = 0; i < max_cnt; ++i) {
       pos.index(inner[0]) = *it;
@@ -130,18 +131,18 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
       func(pos);
       ++cnt;
     }
-    pos.index(inner[0]) = dims[inner[0]];
+    pos.index(inner[0]) = sizes[inner[0]];
   }
 };
 
 template <class OuterLoopType> struct RandomThreadedLoopRunOuter {
   Iterator iterator;
   OuterLoopType outer_loop;
-  std::vector<size_t> inner_axes;
+  Axes::Subset inner_axes;
 
   //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
   template <class Functor>
-  void run_outer(Functor &&functor, const double voxel_density, const std::vector<size_t> &dimensions) {
+  void run_outer(Functor &&functor, const double voxel_density, const std::vector<Eigen::Index> &dimensions) {
     if (Thread::threads_to_execute() == 0) {
       for (auto i = outer_loop(iterator); i; ++i) {
         // std::cerr << "outer: " << str(iterator) << " " << voxel_density << " " << dimensions << std::endl;
@@ -179,8 +180,11 @@ template <class OuterLoopType> struct RandomThreadedLoopRunOuter {
   }
 
   //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
-  template <class Functor, class... ImageType>
-  void run(Functor &&functor, const double voxel_density, std::vector<size_t> dimensions, ImageType &&...vox) {
+  template <class Functor, class... ImageType>          //
+  void run(Functor &&functor,                           //
+           const double voxel_density,                  //
+           const std::vector<Eigen::Index> &dimensions, //
+           ImageType &&...vox) {                        //
     RandomThreadedLoopRunInner<sizeof...(ImageType),
                                typename std::remove_reference<Functor>::type,
                                typename std::remove_reference<ImageType>::type...>
@@ -192,23 +196,23 @@ template <class OuterLoopType> struct RandomThreadedLoopRunOuter {
 } // namespace
 
 template <class HeaderType>
-inline RandomThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))> RandomThreadedLoop(
-    const HeaderType &source, const std::vector<size_t> &outer_axes, const std::vector<size_t> &inner_axes) {
+inline RandomThreadedLoopRunOuter<decltype(Loop(Axes::Subset()))>
+RandomThreadedLoop(const HeaderType &source, const Axes::Subset &outer_axes, const Axes::Subset &inner_axes) {
   return {source, Loop(outer_axes), inner_axes};
 }
 
 template <class HeaderType>
-inline RandomThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))>
-RandomThreadedLoop(const HeaderType &source, const std::vector<size_t> &axes, size_t num_inner_axes = 1) {
+inline RandomThreadedLoopRunOuter<decltype(Loop(Axes::Subset()))>
+RandomThreadedLoop(const HeaderType &source, const Axes::Subset &axes, const Eigen::Index num_inner_axes = 1) {
   return {source, Loop(get_outer_axes(axes, num_inner_axes)), get_inner_axes(axes, num_inner_axes)};
 }
 
 template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))>
 RandomThreadedLoop(const HeaderType &source,
-                   size_t from_axis = 0,
-                   size_t to_axis = std::numeric_limits<size_t>::max(),
-                   size_t num_inner_axes = 1) {
+                   const Eigen::Index from_axis = 0,
+                   const Eigen::Index to_axis = -1,
+                   const Eigen::Index num_inner_axes = 1) {
   return {source,
           Loop(get_outer_axes(source, num_inner_axes, from_axis, to_axis)),
           get_inner_axes(source, num_inner_axes, from_axis, to_axis)};
@@ -218,8 +222,8 @@ template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
 RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
-                   const std::vector<size_t> &outer_axes,
-                   const std::vector<size_t> &inner_axes) {
+                   const Axes::Subset &outer_axes,
+                   const Axes::Subset &inner_axes) {
   return {source, Loop(progress_message, outer_axes), inner_axes};
 }
 
@@ -227,8 +231,8 @@ template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
 RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
-                   const std::vector<size_t> &axes,
-                   size_t num_inner_axes = 1) {
+                   const Axes::Subset &axes,
+                   const Eigen::Index num_inner_axes = 1) {
   return {source, Loop(progress_message, get_outer_axes(axes, num_inner_axes)), get_inner_axes(axes, num_inner_axes)};
 }
 
@@ -236,9 +240,9 @@ template <class HeaderType>
 inline RandomThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
 RandomThreadedLoop(std::string_view progress_message,
                    const HeaderType &source,
-                   size_t from_axis = 0,
-                   size_t to_axis = std::numeric_limits<size_t>::max(),
-                   size_t num_inner_axes = 1) {
+                   const Eigen::Index from_axis = 0,
+                   const Eigen::Index to_axis = -1,
+                   const Eigen::Index num_inner_axes = 1) {
   return {source,
           Loop(progress_message, get_outer_axes(source, num_inner_axes, from_axis, to_axis)),
           get_inner_axes(source, num_inner_axes, from_axis, to_axis)};

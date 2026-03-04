@@ -20,6 +20,7 @@
 
 #include "algo/copy.h"
 #include "algo/loop.h"
+#include "axes.h"
 #include "filter/base.h"
 #include "filter/kspace.h"
 #include "filter/smooth.h"
@@ -40,7 +41,7 @@ namespace MR::Filter {
 class Demodulate : public Base {
 public:
   template <class ImageType>
-  Demodulate(ImageType &in, const std::vector<size_t> &inner_axes, const bool linear)
+  Demodulate(ImageType &in, const Axes::Subset &inner_axes, const bool linear)
       : Base(in),
         phase(Image<cfloat>::scratch(in,                                     //
                                      std::string("Scratch image storing ")   //
@@ -53,8 +54,8 @@ public:
 
     ImageType input(in);
 
-    std::vector<size_t> outer_axes;
-    std::vector<size_t>::const_iterator it = inner_axes.begin();
+    Axes::Subset outer_axes;
+    Axes::Subset::const_iterator it = inner_axes.begin();
     for (size_t axis = 0; axis != input.ndim(); ++axis) {
       if (it != inner_axes.end() && *it == axis)
         ++it;
@@ -98,7 +99,7 @@ public:
       }
     }
 
-    auto gen_linear_phase = [&](Image<cdouble> &kspace, Image<cfloat> &phase, const std::vector<size_t> &axes) {
+    auto gen_linear_phase = [&](Image<cdouble> &kspace, Image<cfloat> &phase, const Axes::Subset &axes) {
       std::array<bool, 3> axis_mask({false, false, false});
       for (auto axis : axes) {
         if (axis > 2)
@@ -107,7 +108,7 @@ public:
       }
 
       std::vector<ssize_t> index_of_max(kspace.ndim());
-      std::vector<size_t>::const_iterator it = axes.begin();
+      Axes::Subset::const_iterator it = axes.begin();
       for (ssize_t axis = 0; axis != kspace.ndim(); ++axis) {
         if (it != axes.end() && *it == axis) {
           index_of_max[axis] = -1;
@@ -180,10 +181,10 @@ public:
       }
     }; // End of gen_linear_phase()
 
-    auto gen_nonlinear_phase = [&](Image<value_type> &input,          //
-                                   Image<cdouble> &kspace,            //
-                                   Image<cfloat> &phase,              //
-                                   const std::vector<size_t> &axes) { //
+    auto gen_nonlinear_phase = [&](Image<value_type> &input,   //
+                                   Image<cdouble> &kspace,     //
+                                   Image<cfloat> &phase,       //
+                                   const Axes::Subset &axes) { //
       Image<double> window = Filter::KSpace::window_hann(input, axes);
       Adapter::Replicate<Image<double>> replicating_window(window, in);
       for (auto l = Loop(kspace)(kspace, replicating_window); l; ++l)

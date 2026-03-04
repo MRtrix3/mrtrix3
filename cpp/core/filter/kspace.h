@@ -108,10 +108,10 @@ public:
   // Generic function to multiply 1D kernel to individual axis
   static void apply_window1D(Image<double> &windowND,
                              Eigen::Array<double, Eigen::Dynamic, 1> &window1D,
-                             const size_t axis,
-                             const std::vector<size_t> &inner_axes) {
+                             const ssize_t axis,
+                             const Axes::Subset &inner_axes) {
     // Need to loop over all inner axes other than the current one
-    std::vector<size_t> inner_excluding_axis;
+    Axes::Subset inner_excluding_axis;
     for (auto a : inner_axes) {
       if (a != axis)
         inner_excluding_axis.push_back(a);
@@ -126,9 +126,9 @@ public:
     }
   }
 
-  static Image<double> window_tukey(const Header &header,                  //
-                                    const std::vector<size_t> &inner_axes, //
-                                    const default_type cosine_frac) {      //
+  static Image<double> window_tukey(const Header &header,             //
+                                    const Axes::Subset &inner_axes,   //
+                                    const default_type cosine_frac) { //
     assert(cosine_frac >= 0.0 && cosine_frac <= 1.0);
     Image<double> window = Image<double>::scratch(make_window_header(header, inner_axes),
                                                   "Scratch Tukey filter window with alpha=" + str(cosine_frac));
@@ -151,11 +151,11 @@ public:
     return window;
   }
 
-  static Image<double> window_flattop(const Header &header,                    //
-                                      const std::vector<size_t> &inner_axes) { //
-    Image<double> window =                                                     //
-        Image<double>::scratch(make_window_header(header, inner_axes),         //
-                               "Scratch Flat-top filter window");              //
+  static Image<double> window_flattop(const Header &header,             //
+                                      const Axes::Subset &inner_axes) { //
+    Image<double> window =                                              //
+        Image<double>::scratch(make_window_header(header, inner_axes),  //
+                               "Scratch Flat-top filter window");       //
     for (auto l = Loop(window)(window); l; ++l)
       window.value() = 1.0;
     for (auto axis : inner_axes) {
@@ -179,8 +179,8 @@ public:
     return window;
   }
 
-  static Image<double> window_hann(const Header &header,                    //
-                                   const std::vector<size_t> &inner_axes) { //
+  static Image<double> window_hann(const Header &header,             //
+                                   const Axes::Subset &inner_axes) { //
     Image<double> window = Image<double>::scratch(make_window_header(header, inner_axes), "Scratch Hann filter window");
     for (auto l = Loop(window)(window); l; ++l)
       window.value() = 1.0;
@@ -195,9 +195,9 @@ public:
     return window;
   }
 
-  static Image<double> window_gaussian(const Header &header,                  //
-                                       const std::vector<size_t> &inner_axes, //
-                                       const default_type sigma) {            //
+  static Image<double> window_gaussian(const Header &header,           //
+                                       const Axes::Subset &inner_axes, //
+                                       const default_type sigma) {     //
     Image<double> window =
         Image<double>::scratch(make_window_header(header, inner_axes), "Scratch Gaussian filter window");
     for (auto l = Loop(window)(window); l; ++l)
@@ -215,17 +215,17 @@ public:
 
 protected:
   Image<double> window;
-  std::vector<size_t> inner_axes;
-  std::vector<size_t> outer_axes;
+  Axes::Subset inner_axes;
+  Axes::Subset outer_axes;
 
   template <class ImageType>
   typename std::enable_if<std::is_same<typename ImageType::value_type, cdouble>::value, void>::type
-  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const size_t axis) {
+  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ssize_t axis) {
     Math::FFT(kspace, out, axis, FFTW_BACKWARD, false);
   }
   template <class ImageType>
   typename std::enable_if<std::is_same<typename ImageType::value_type, cfloat>::value, void>::type
-  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const size_t axis) {
+  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ssize_t axis) {
     assert(scratch.valid());
     Math::FFT(kspace, scratch, axis, FFTW_BACKWARD, false);
     for (auto l = Loop(out)(scratch, out); l; ++l)
@@ -234,18 +234,18 @@ protected:
   }
   template <class ImageType>
   typename std::enable_if<!MR::is_complex<typename ImageType::value_type>::value, void>::type
-  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const size_t axis) {
+  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ssize_t axis) {
     assert(scratch.valid());
     Math::FFT(kspace, scratch, axis, FFTW_BACKWARD, false);
     for (auto l = Loop(out)(scratch, out); l; ++l)
       out.value() = MR::abs(static_cast<cdouble>(scratch.value()));
   }
 
-  static Header make_window_header(const Header &header, const std::vector<size_t> &inner_axes) {
+  static Header make_window_header(const Header &header, const Axes::Subset &inner_axes) {
     Header H(header);
     H.datatype() = DataType::Float64;
     H.datatype().set_byte_order_native();
-    std::vector<size_t>::const_iterator it = inner_axes.begin();
+    Axes::Subset::const_iterator it = inner_axes.begin();
     for (size_t axis = 0; axis != header.ndim(); ++axis) {
       if (it != inner_axes.end() && *it == axis)
         ++it;

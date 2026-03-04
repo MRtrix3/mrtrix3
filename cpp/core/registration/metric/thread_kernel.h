@@ -19,6 +19,7 @@
 #include "algo/iterator.h"
 #include "algo/random_loop.h"
 #include "algo/random_threaded_loop.h"
+#include "axes.h"
 #include "image.h"
 #include "transform.h"
 
@@ -323,7 +324,7 @@ protected:
 
 template <class MetricType, class ParamType> struct StochasticThreadKernel {
 public:
-  StochasticThreadKernel(const std::vector<size_t> &inner_axes,
+  StochasticThreadKernel(const Axes::Subset &inner_axes,
                          const default_type density,
                          const MetricType &metric,
                          const ParamType &parameters,
@@ -366,7 +367,7 @@ public:
   }
 
 protected:
-  std::vector<size_t> inner_axes;
+  Axes::Subset inner_axes;
   default_type density;
   MetricType metric;
   ParamType params;

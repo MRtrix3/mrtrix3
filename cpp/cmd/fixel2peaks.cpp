@@ -121,8 +121,10 @@ void run() {
   const float fill = !get_options("nan").empty() ? NaNF : 0.0F;
 
   if (data_image.valid()) {
-    for (auto l = Loop("converting fixel data file to peaks image", index_image, 0, 3)(index_image, out_image); l;
-         ++l) {
+    for (auto l = Loop("converting fixel data file to peaks image", index_image, 0, 3) //
+         (index_image, out_image);                                                     //
+         l;                                                                            //
+         ++l) {                                                                        //
       out_image.index(3) = 0;
       for (auto f = Fixel::Loop(index_image)(directions_image, data_image); f && out_image.index(3) < out_image.size(3);
            ++f) {
@@ -136,9 +138,11 @@ void run() {
         out_image.value() = fill;
     }
   } else {
-    for (auto l = Loop("converting fixels to peaks image", index_image, 0, 3)(index_image, out_image); l; ++l) {
+    auto l = Loop("converting fixels to peaks image", index_image, 0, 3)(index_image, out_image);
+    for (; l; ++l) {
       out_image.index(3) = 0;
-      for (auto f = Fixel::Loop(index_image)(directions_image); f && out_image.index(3) < out_image.size(3); ++f) {
+      auto f = Fixel::Loop(index_image)(directions_image);
+      for (; f && out_image.index(3) < out_image.size(3); ++f) {
         for (directions_image.index(1) = 0; directions_image.index(1) != 3; ++directions_image.index(1)) {
           out_image.value() = directions_image.value();
           ++out_image.index(3);

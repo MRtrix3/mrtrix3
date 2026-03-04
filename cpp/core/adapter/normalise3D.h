@@ -32,18 +32,20 @@ public:
   using base_type::name;
   using base_type::size;
 
-  Normalise3D(const ImageType &parent) : base_type(parent) { set_extent(std::vector<int>(1, 3)); }
+  Normalise3D(const ImageType &parent) : base_type(parent) { set_extent(std::vector<Eigen::Index>(1, 3)); }
 
-  Normalise3D(const ImageType &parent, const std::vector<uint32_t> &extent) : base_type(parent) { set_extent(extent); }
+  Normalise3D(const ImageType &parent, const std::vector<Eigen::Index> &extent) : base_type(parent) {
+    set_extent(extent);
+  }
 
-  void set_extent(const std::vector<uint32_t> &ext) {
-    for (size_t i = 0; i < ext.size(); ++i)
-      if (!(ext[i] & uint32_t(1)))
+  void set_extent(const std::vector<Eigen::Index> &ext) {
+    for (Eigen::Index i = 0; i < ext.size(); ++i)
+      if (!(ext[i] & Eigen::Index(1)))
         throw Exception("expected odd number for extent");
     if (ext.size() != 1 && ext.size() != 3)
       throw Exception("unexpected number of elements specified in extent");
     if (ext.size() == 1)
-      extent = std::vector<uint32_t>(3, ext[0]);
+      extent = std::vector<Eigen::Index>(3, ext[0]);
     else
       extent = ext;
 
@@ -54,16 +56,16 @@ public:
   }
 
   value_type value() {
-    const std::array<ssize_t, 3> old_pos = {index(0), index(1), index(2)};
+    const std::array<Axes::index_type, 3> old_pos = {index(0), index(1), index(2)};
     pos_value = base_type::value();
     nelements = 0;
 
-    const std::array<ssize_t, 3> from = {index(0) < extent[0] ? 0 : index(0) - extent[0],
-                                         index(1) < extent[1] ? 0 : index(1) - extent[1],
-                                         index(2) < extent[2] ? 0 : index(2) - extent[2]};
-    const std::array<ssize_t, 3> to = {index(0) >= size(0) - extent[0] ? size(0) : index(0) + extent[0] + 1,
-                                       index(1) >= size(1) - extent[1] ? size(1) : index(1) + extent[1] + 1,
-                                       index(2) >= size(2) - extent[2] ? size(2) : index(2) + extent[2] + 1};
+    const std::array<Axes::index_type, 3> from = {index(0) < extent[0] ? 0 : index(0) - extent[0],
+                                                  index(1) < extent[1] ? 0 : index(1) - extent[1],
+                                                  index(2) < extent[2] ? 0 : index(2) - extent[2]};
+    const std::array<Axes::index_type, 3> to = {index(0) >= size(0) - extent[0] ? size(0) : index(0) + extent[0] + 1,
+                                                index(1) >= size(1) - extent[1] ? size(1) : index(1) + extent[1] + 1,
+                                                index(2) >= size(2) - extent[2] ? size(2) : index(2) + extent[2] + 1};
 
     mean = 0.0;
 
@@ -73,7 +75,7 @@ public:
           mean += base_type::value();
           nelements += 1;
         }
-    mean /= nelements;
+    mean /= static_cast<value_type>(nelements);
 
     index(0) = old_pos[0];
     index(1) = old_pos[1];
@@ -83,10 +85,10 @@ public:
   }
 
 protected:
-  std::vector<uint32_t> extent;
+  std::vector<Eigen::Index> extent;
   value_type mean;
   value_type pos_value;
-  size_t nelements;
+  Eigen::Index nelements;
 };
 
 } // namespace MR::Adapter

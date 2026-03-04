@@ -35,10 +35,6 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
     out.index(2) = pos[2];
     out.index(3) = 0;
 
-    int nmax = extent[0] * extent[1] * extent[2];
-    Eigen::VectorXd n1 = Eigen::VectorXd(nmax);
-    Eigen::VectorXd n2 = Eigen::VectorXd(nmax);
-
     using value_type = typename ImageType3::value_type;
     in1.index(0) = pos[0];
     in1.index(1) = pos[1];
@@ -59,10 +55,11 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
       return;
     }
 
-    n1.setZero();
-    n2.setZero();
+    const Eigen::Index nmax = extent[0] * extent[1] * extent[2];
+    Eigen::VectorXd n1 = Eigen::VectorXd::Zero(nmax);
+    Eigen::VectorXd n2 = Eigen::VectorXd::Zero(nmax);
     auto niter = NeighbourhoodIterator(mask, extent);
-    size_t cnt = 0;
+    Eigen::Index cnt = 0;
     while (niter.loop()) {
       mask.index(0) = niter.index(0);
       mask.index(1) = niter.index(1);
@@ -110,12 +107,12 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
                      .finished();
   }
 
-  LCCPrecomputeFunctorMasked_Naive(const std::vector<size_t> &ext, ImageType1 &adapter1, ImageType2 &adapter2)
+  LCCPrecomputeFunctorMasked_Naive(const std::vector<Eigen::Index> &ext, ImageType1 &adapter1, ImageType2 &adapter2)
       : extent(ext), in1(adapter1), in2(adapter2) { /* TODO check dimensions and extent */
   }
 
 protected:
-  std::vector<size_t> extent;
+  std::vector<Eigen::Index> extent;
   ImageType1 in1; // store reslice adapter in functor to avoid iterating over it when mask is false
   ImageType2 in2; // TODO: cache interpolated values for neighbourhood iteration
 };
@@ -159,9 +156,7 @@ public:
     ProcessedMaskType cc_mask;
     auto cc_mask_header = Header::scratch(parameters.midway_image);
 
-    auto cc_image =
-        cc_image_header.template get_image<ProcessedImageValueType>().with_direct_io(Stride::contiguous_along_axis(3));
-    std::vector<uint32_t> NoOversample;
+    auto cc_image = cc_image_header.template get_image<ProcessedImageValueType>().with_direct_io(3);
     {
       LogLevelLatch log_level(0);
       if (parameters.im1_mask.valid() or parameters.im2_mask.valid())
@@ -175,9 +170,9 @@ public:
                                          Adapter::AutoOverSample);
       else if (parameters.im1_mask.valid() and parameters.im2_mask.valid()) {
         Adapter::Reslice<Interp::Nearest, Im1MaskType> mask_reslicer1(
-            parameters.im1_mask, cc_mask_header, parameters.transformation.get_transform_half(), NoOversample);
+            parameters.im1_mask, cc_mask_header, parameters.transformation.get_transform_half());
         Adapter::Reslice<Interp::Nearest, Im2MaskType> mask_reslicer2(
-            parameters.im2_mask, cc_mask_header, parameters.transformation.get_transform_half_inverse(), NoOversample);
+            parameters.im2_mask, cc_mask_header, parameters.transformation.get_transform_half_inverse());
         // TODO should be faster to just loop over m1:
         //    if (m1.value())
         //     assign_pos_of(m1).to(m2); cc_mask.value() = m2.value()
@@ -190,13 +185,13 @@ public:
     Adapter::Reslice<Interp::Linear, Im1Type> interp1(parameters.im1_image,
                                                       midway_header,
                                                       parameters.transformation.get_transform_half(),
-                                                      NoOversample,
+                                                      Adapter::NoOverSample,
                                                       std::numeric_limits<typename Im1Type::value_type>::quiet_NaN());
 
     Adapter::Reslice<Interp::Linear, Im2Type> interp2(parameters.im2_image,
                                                       midway_header,
                                                       parameters.transformation.get_transform_half_inverse(),
-                                                      NoOversample,
+                                                      Adapter::NoOverSample,
                                                       std::numeric_limits<typename Im2Type::value_type>::quiet_NaN());
 
     const auto extent = parameters.get_extent();

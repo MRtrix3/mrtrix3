@@ -33,9 +33,9 @@ void cc_precompute(Im1ImageType &im1_image,
                    DerivedImageType &C,
                    DerivedImageType &im1_meansubtr,
                    DerivedImageType &im2_meansubtr,
-                   const std::vector<size_t> &extent) {
+                   const std::vector<Eigen::Index> &extent) {
   // TODO check extent
-  int nmax = extent[0] * extent[1] * extent[2];
+  const Eigen::Index nmax = extent[0] * extent[1] * extent[2];
   Eigen::VectorXd n1 = Eigen::VectorXd(nmax);
   Eigen::VectorXd n2 = Eigen::VectorXd(nmax);
   Eigen::Vector3d pos;
@@ -50,7 +50,7 @@ void cc_precompute(Im1ImageType &im1_image,
     n1.setZero();
     n2.setZero();
 
-    int nvox(0);
+    Eigen::Index nvox(0);
     auto niter = NeighbourhoodIterator(im1_image, extent);
     while (niter.loop()) {
       if (im1_mask.valid()) {

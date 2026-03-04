@@ -35,15 +35,15 @@ public:
         from_(container_cast<decltype(from_)>(from)),
         size_(container_cast<decltype(size_)>(size)),
         index_invalid_lower_upper([&] {
-          std::vector<std::vector<ssize_t>> v;
+          std::vector<std::vector<Axes::index_type>> v;
           for (size_t d = 0; d < from_.size(); ++d) {
-            v.push_back(std::vector<ssize_t>{from_[d] < 0 ? -from_[d] - 1 : -1, original.size(d) - from_[d]});
+            v.push_back(std::vector<Axes::index_type>{from_[d] < 0 ? -from_[d] - 1 : -1, original.size(d) - from_[d]});
           }
           return v;
         }()),
         index_requires_bound_check([&] {
           Eigen::Array<bool, Eigen::Dynamic, 1> v(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(from_.size()));
-          for (size_t d = 0; d < from_.size(); ++d)
+          for (Eigen::Index d = 0; d < from_.size(); ++d)
             v[d] = from_[d] < 0 || size_[d] > original.size(d) - from_[d];
           return v;
         }()),
@@ -53,30 +53,30 @@ public:
     assert(from_.size() == size_.size());
     assert(from_.size() == ndim());
 
-    for (size_t n = 0; n < ndim(); ++n)
+    for (Eigen::Index n = 0; n < ndim(); ++n)
       if (size_[n] < 0)
         throw Exception("FIXME: negative size in Regrid adapter");
 
     // adjust location of origin
-    for (size_t j = 0; j < 3; ++j)
-      for (size_t i = 0; i < 3; ++i)
+    for (Eigen::Index j = 0; j < 3; ++j)
+      for (Eigen::Index i = 0; i < 3; ++i)
         transform_(i, 3) += from[j] * spacing(j) * transform_(i, j);
   }
 
-  void reset() {
-    for (size_t n = 0; n < ndim(); ++n)
+  void reset() override {
+    for (Eigen::Index n = 0; n < ndim(); ++n)
       set_pos(n, 0);
   }
 
-  size_t ndim() const { return size_.size(); }
-  ssize_t size(size_t axis) const { return size_[axis]; }
-  const transform_type &transform() const { return transform_; }
+  Eigen::Index ndim() const override { return size_.size(); }
+  Eigen::Index size(const Eigen::Index axis) const override { return size_[axis]; }
+  const transform_type &transform() const override { return transform_; }
 
-  ssize_t get_index(size_t axis) const {
+  Axes::index_type get_index(const Eigen::Index axis) const override {
     return index_requires_bound_check[axis] ? index_[axis] : parent().index(axis) - from_[axis];
   }
 
-  void move_index(size_t axis, ssize_t increment) {
+  void move_index(const Eigen::Index axis, const Axes::index_type increment) override {
     if (index_requires_bound_check[axis]) {
       index_[axis] += increment;
       if (increment > 0) {
@@ -98,8 +98,8 @@ public:
 
 protected:
   using base_type::parent;
-  const std::vector<ssize_t> from_, size_;
-  const std::vector<std::vector<ssize_t>> index_invalid_lower_upper;
+  const std::vector<Axes::index_type> from_, size_;
+  const std::vector<std::vector<Axes::index_type>> index_invalid_lower_upper;
   const Eigen::Array<bool, Eigen::Dynamic, 1> index_requires_bound_check;
   const value_type fill_;
   transform_type transform_;

@@ -111,7 +111,7 @@ inline void FFT(ImageTypeIn &in, ImageTypeOut &out, size_t axis, int direction, 
     const bool centre_FFT;
   };
 
-  auto outer_axes = Stride::order(in);
+  Axes::Subset outer_axes = static_cast<Axes::Subset>(Stride::Permutation(in).order());
   outer_axes.erase(std::find(outer_axes.begin(), outer_axes.end(), axis));
   outer_axes.insert(outer_axes.begin(), axis);
 

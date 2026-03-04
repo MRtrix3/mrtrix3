@@ -65,36 +65,36 @@ public:
     assert(warp.size(3) == 3);
   }
 
-  size_t ndim() const { return interp.ndim(); }
+  Eigen::Index ndim() const { return interp.ndim(); }
   bool valid() const { return interp.valid(); }
-  int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
-  default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
-  std::string name() const { return interp.name(); }
+  Eigen::Index size(const Eigen::Index axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
+  default_type spacing(const Eigen::Index axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
+  std::string_view name() const { return interp.name(); }
 
-  ssize_t stride(size_t axis) const { return interp.stride(axis); }
+  std::ptrdiff_t stride(const Eigen::Index axis) const { return interp.stride(axis); }
 
   void reset() {
     x = {0, 0, 0};
-    for (size_t n = 3; n < interp.ndim(); ++n)
+    for (Eigen::Index n = 3; n < interp.ndim(); ++n)
       interp.index(n) = 0;
   }
 
   value_type value() {
-    Eigen::Vector3d pos = get_position();
+    const Eigen::Vector3d pos = get_position();
     if (std::isnan(pos[0]) || std::isnan(pos[1]) || std::isnan(pos[2]))
       return value_when_out_of_bounds;
     interp.scanner(pos);
     default_type val = interp.value();
     if (jac_modulate && val != 0.0) {
-      for (size_t dim = 0; dim < 3; ++dim)
-        jacobian_adapter.index(dim) = x[dim];
+      for (Eigen::Index axis = 0; axis < 3; ++axis)
+        jacobian_adapter.index(axis) = x[axis];
       val *= jacobian_adapter.value().template cast<default_type>().determinant();
     }
     return static_cast<value_type>(val);
   }
 
-  ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
-  void move_index(size_t axis, ssize_t increment) {
+  Axes::index_type get_index(const Eigen::Index axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
+  void move_index(const Eigen::Index axis, const Axes::index_type increment) {
     if (axis < 3)
       x[axis] += increment;
     else
@@ -109,8 +109,8 @@ private:
 
   Interpolator<ImageType> interp;
   WarpType warp;
-  std::array<ssize_t, 3> x;
-  const std::array<ssize_t, 3> dim;
+  std::array<Axes::index_type, 3> x;
+  const std::array<Eigen::Index, 3> dim;
   const std::array<default_type, 3> vox;
   const value_type value_when_out_of_bounds;
   const bool jac_modulate;

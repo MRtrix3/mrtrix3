@@ -24,7 +24,7 @@ namespace MR::File {
 
 class Entry {
 public:
-  Entry(std::string_view fname, int64_t offset = 0) : name(fname), start(offset) {}
+  Entry(std::string_view fname, off_t offset = 0) : name(fname), start(offset) {}
 
   Entry(const Entry &) = default;
   Entry(Entry &&) noexcept = default;
@@ -35,7 +35,7 @@ public:
   }
 
   std::string name;
-  int64_t start;
+  off_t start;
 };
 
 inline std::ostream &operator<<(std::ostream &stream, const Entry &e) {

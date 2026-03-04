@@ -552,14 +552,13 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
 }
 
 Axes::Shuffle axes_on_write(const Header &H) {
-  Stride::List strides = Stride::get(H);
-  strides.resize(3);
-  auto order = Stride::order(strides);
+  const Stride::Symbolic symbolic(Stride::Symbolic(H).resized(3));
+  const Stride::Permutation order(symbolic);
   Axes::Shuffle result;
   result.permutations[0] = order[0];
   result.permutations[1] = order[1];
   result.permutations[2] = order[2];
-  result.flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
+  result.flips = {symbolic[order[0]] < 0, symbolic[order[1]] < 0, symbolic[order[2]] < 0};
   return result;
 }
 
@@ -609,15 +608,28 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
     if (H.size(i) < 1)
       H.size(i) = 1;
 
-  // ensure first 3 axes correspond to spatial dimensions
-  // while preserving original strides as much as possible
-  ssize_t max_spatial_stride = 0;
-  for (size_t n = 0; n < 3; ++n)
-    if (MR::abs(H.stride(n)) > max_spatial_stride)
-      max_spatial_stride = MR::abs(H.stride(n));
-  for (size_t n = 3; n < H.ndim(); ++n)
-    H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
-  Stride::symbolise(H);
+  // Ensure first 3 axes correspond to spatial dimensions
+  //   while preserving original strides as much as possible
+  // TODO Refactor
+  // TODO The code that loops over image formats
+  //   to find the one that "claims" responsibility for writing the image
+  //   is here relying on mutability of the provided image header;
+  //   this is however an obfuscated side-effect.
+  //   Better (as would likely be the case elsewhere in the code base also)
+  //   would be for the return value of the function to be a struct
+  //   that encapsulates all of the derivatives of the function
+  //   (in this case that would be the symbolic strides of the output image,
+  //   which would be better encoded as a Stride::Symbolic rather than MR::Header::stride())
+  // TODO This function previously ensured that the sign of supra-spatial axes was preserved;
+  //   however I don't think this makes any sense given the NIfTI format doesn't support such?
+  // TODO Test this design
+  const Stride::Symbolic spatial_symbolic = Stride::Symbolic(H).resized(3).sanitised();
+  Stride::ListType nonspatial_permutation = Stride::Permutation::canonical(num_axes);
+  for (ssize_t spatial_axis = 0; spatial_axis != 3; ++spatial_axis)
+    nonspatial_permutation[spatial_axis] = 0;
+  const Stride::Symbolic output_symbolic =
+      spatial_symbolic.resized(H.ndim()).reordered(Stride::Permutation(nonspatial_permutation));
+  output_symbolic.actualise(H);
 
   // by default, prevent output of bitwise data in NIfTI, since most 3rd
   // party software package can't handle them

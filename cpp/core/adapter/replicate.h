@@ -32,8 +32,10 @@ public:
   using base_type::spacing;
 
   Replicate(ImageType &original, const Header &replication_template)
-      : base_type(original), header_(replication_template), pos_(std::max<size_t>(parent().ndim(), header_.ndim()), 0) {
-    for (size_t n = 0; n < std::min<size_t>(parent().ndim(), header_.ndim()); ++n) {
+      : base_type(original),
+        header_(replication_template),
+        pos_(std::max<size_t>(parent().ndim(), header_.ndim()), Axes::index_type(0)) {
+    for (Eigen::Index n = 0; n < std::min<Eigen::Index>(parent().ndim(), header_.ndim()); ++n) {
       if (n < parent().ndim())
         parent().index(n) = 0;
       if (parent().size(n) > 1 && parent().size(n) != header_.size(n))
@@ -41,13 +43,15 @@ public:
     }
   }
 
-  size_t ndim() const { return header_.ndim(); }
-  ssize_t size(size_t axis) const { return header_.size(axis); }
-  float spacing(size_t axis) const { return header_.spacing(axis); }
-  ssize_t stride(size_t axis) const { return axis < parent().ndim() ? parent().stride(axis) : 0; }
+  Eigen::Index ndim() const override { return header_.ndim(); }
+  Eigen::Index size(const Eigen::Index axis) const override { return header_.size(axis); }
+  default_type spacing(const Eigen::Index axis) const override { return header_.spacing(axis); }
+  std::ptrdiff_t stride(const Eigen::Index axis) const override {
+    return axis < parent().ndim() ? parent().stride(axis) : std::ptrdiff_t(0);
+  }
 
-  ssize_t get_index(size_t axis) const { return pos_[axis]; }
-  void move_index(size_t axis, ssize_t increment) {
+  Axes::index_type get_index(const Eigen::Index axis) const override { return pos_[axis]; }
+  void move_index(const Eigen::Index axis, const Axes::index_type increment) override {
     pos_[axis] += increment;
     if (axis < parent().ndim())
       if (parent().size(axis) > 1)
@@ -57,7 +61,7 @@ public:
 protected:
   using base_type::parent;
   Header header_;
-  std::vector<ssize_t> pos_;
+  std::vector<Axes::index_type> pos_;
 };
 
 } // namespace MR::Adapter

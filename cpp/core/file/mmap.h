@@ -48,11 +48,11 @@ public:
    * non-zero, then only the region of size \a mapped_size starting from
    * the byte offset specified in \a entry will be mapped.
    */
-  MMap(const Entry &entry, bool readwrite = false, bool preload = true, int64_t mapped_size = -1);
+  MMap(const Entry &entry, bool readwrite = false, bool preload = true, off_t mapped_size = -1);
   ~MMap();
 
   std::string name() const { return Entry::name; }
-  int64_t size() const { return msize; }
+  off_t size() const { return msize; }
   uint8_t *address() { return first; }
   const uint8_t *address() const { return first; }
 
@@ -70,7 +70,7 @@ protected:
   int fd;
   uint8_t *addr;  /**< The address in memory where the file has been mapped. */
   uint8_t *first; /**< The address in memory to the start of the region of interest. */
-  int64_t msize;  /**< The size of the file. */
+  off_t msize;    /**< The size of the file. */
   time_t mtime;   /**< The modification time of the file at the last check. */
   bool readwrite;
 

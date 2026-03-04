@@ -135,7 +135,7 @@ void run() {
   Header H_out(H_in);
   H_out.ndim() = 4;
   H_out.size(3) = 3;
-  Stride::set(H_out, Stride::contiguous_along_axis(3, H_out));
+  Stride::Symbolic(H_out).reordered(Stride::Permutation::volume_contiguous).actualise(H_out).to(H_out);
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
   auto out = Image<float>::create(argument[2], H_out);

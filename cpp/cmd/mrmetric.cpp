@@ -246,8 +246,8 @@ void run() {
     }
   }
 
-  auto input1 = Image<value_type>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
-  auto input2 = Image<value_type>::open(argument[1]).with_direct_io(Stride::contiguous_along_axis(3));
+  auto input1 = Image<value_type>::open(argument[0]).with_direct_io(3);
+  auto input2 = Image<value_type>::open(argument[1]).with_direct_io(3);
 
   const size_t dimensions = input1.ndim();
   if (input1.ndim() != input2.ndim())

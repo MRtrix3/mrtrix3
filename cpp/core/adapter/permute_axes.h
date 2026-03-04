@@ -28,10 +28,10 @@ public:
   using base_type::parent;
   using base_type::size;
 
-  PermuteAxes(const ImageType &original, const std::vector<int> &axes) : base_type(original), axes_(axes) {
-    for (int i = 0; i < static_cast<int>(parent().ndim()); ++i) {
-      for (size_t a = 0; a < axes_.size(); ++a) {
-        if (axes_[a] >= static_cast<int>(parent().ndim()))
+  PermuteAxes(const ImageType &original, const std::vector<Eigen::Index> &axes) : base_type(original), axes_(axes) {
+    for (Eigen::Index i = 0; i < parent().ndim(); ++i) {
+      for (Eigen::Index a = 0; a < axes_.size(); ++a) {
+        if (axes_[a] >= parent().ndim())
           throw Exception("axis " + str(axes_[a]) + " exceeds image dimensionality");
         if (axes_[a] == i)
           goto next_axis;
@@ -51,20 +51,20 @@ public:
     }
   }
 
-  size_t ndim() const { return axes_.size(); }
-  ssize_t size(size_t axis) const { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
-  default_type spacing(size_t axis) const {
+  Eigen::Index ndim() const override { return axes_.size(); }
+  Eigen::Index size(const Eigen::Index axis) const override { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
+  default_type spacing(const Eigen::Index axis) const override {
     return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent().spacing(axes_[axis]);
   }
-  ssize_t stride(size_t axis) const { return axes_[axis] < 0 ? 0 : parent().stride(axes_[axis]); }
+  std::ptrdiff_t stride(const Eigen::Index axis) const override {
+    return axes_[axis] < 0 ? 0 : parent().stride(axes_[axis]);
+  }
 
-  void reset() { parent().reset(); }
-
-  ssize_t get_index(size_t axis) const {
+  Axes::index_type get_index(const Eigen::Index axis) const override {
     const auto a = axes_[axis];
     return a < 0 ? non_existent_axes[-1 - a] : parent().index(a);
   }
-  void move_index(size_t axis, ssize_t increment) {
+  void move_index(const Eigen::Index axis, const Axes::index_type increment) override {
     const auto a = axes_[axis];
     if (a < 0)
       non_existent_axes[-1 - a] += increment;
@@ -73,8 +73,8 @@ public:
   }
 
 private:
-  std::vector<int> axes_;
-  std::vector<size_t> non_existent_axes;
+  std::vector<Eigen::Index> axes_;
+  std::vector<Axes::index_type> non_existent_axes;
 };
 
 } // namespace MR::Adapter

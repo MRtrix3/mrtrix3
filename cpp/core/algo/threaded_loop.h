@@ -18,6 +18,7 @@
 
 #include "algo/iterator.h"
 #include "algo/loop.h"
+#include "axes.h"
 #include "debug.h"
 #include "mutexprotected.h"
 #include "thread.h"
@@ -239,35 +240,48 @@ namespace MR {
  */
 
 namespace {
-
-inline std::vector<size_t> get_inner_axes(const std::vector<size_t> &axes, size_t num_inner_axes) {
-  return {axes.begin(), axes.begin() + num_inner_axes};
+// TODO Might be possible to remove some of these
+//   (or move some of the complexity from the calling code into here?)
+template <class StrideOrderType>
+Axes::Subset get_inner_axes(const StrideOrderType &axes, const Eigen::Index num_inner_axes) {
+  assert(num_inner_axes > 0);
+  return static_cast<Axes::Subset>(axes.head(num_inner_axes));
 }
 
-inline std::vector<size_t> get_outer_axes(const std::vector<size_t> &axes, size_t num_inner_axes) {
-  return {axes.begin() + num_inner_axes, axes.end()};
+template <class StrideOrderType>
+Axes::Subset get_outer_axes(const StrideOrderType &axes, const Eigen::Index num_inner_axes) {
+  assert(num_inner_axes > 0);
+  return static_cast<Axes::Subset>(axes.tail(axes.size() - num_inner_axes));
 }
 
 template <class HeaderType>
-inline std::vector<size_t>
-get_inner_axes(const HeaderType &source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
-  return get_inner_axes(Stride::order(source, from_axis, to_axis), num_inner_axes);
+Axes::Subset get_inner_axes(const HeaderType &source,
+                            const Eigen::Index num_inner_axes,
+                            const Eigen::Index from_axis,
+                            const Eigen::Index to_axis) {
+  // TODO This is slightly trickier:
+  // Need to FIRST select a subset of axes,
+  //   and only THEN sort the axes by shortest stride
+  //   and choose a subset to perform the inner loop over
+  return get_inner_axes(Stride::Symbolic(source).block(from_axis, to_axis).order(), num_inner_axes);
 }
 
 template <class HeaderType>
-inline std::vector<size_t>
-get_outer_axes(const HeaderType &source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
-  return get_outer_axes(Stride::order(source, from_axis, to_axis), num_inner_axes);
+Axes::Subset get_outer_axes(const HeaderType &source,
+                            const Eigen::Index num_inner_axes,
+                            const Eigen::Index from_axis,
+                            const Eigen::Index to_axis) {
+  return get_outer_axes(Stride::Symbolic(source).block(from_axis, to_axis).order(), num_inner_axes);
 }
 
 template <int N, class Functor, class... ImageType> struct ThreadedLoopRunInner {
-  const std::vector<size_t> &outer_axes;
+  const Axes::Subset &outer_axes;
   decltype(Loop(outer_axes)) loop;
   typename std::remove_reference<Functor>::type func;
   std::tuple<ImageType...> vox;
 
-  ThreadedLoopRunInner(const std::vector<size_t> &outer_axes,
-                       const std::vector<size_t> &inner_axes,
+  ThreadedLoopRunInner(const Axes::Subset &outer_axes,
+                       const Axes::Subset &inner_axes,
                        const Functor &functor,
                        ImageType &...voxels)
       : outer_axes(outer_axes), loop(Loop(inner_axes)), func(functor), vox(voxels...) {}
@@ -280,12 +294,12 @@ template <int N, class Functor, class... ImageType> struct ThreadedLoopRunInner 
 };
 
 template <class Functor, class... ImageType> struct ThreadedLoopRunInner<0, Functor, ImageType...> {
-  const std::vector<size_t> &outer_axes;
+  const Axes::Subset &outer_axes;
   decltype(Loop(outer_axes)) loop;
   typename std::remove_reference<Functor>::type func;
 
-  ThreadedLoopRunInner(const std::vector<size_t> &outer_axes,
-                       const std::vector<size_t> &inner_axes,
+  ThreadedLoopRunInner(const Axes::Subset &outer_axes,
+                       const Axes::Subset &inner_axes,
                        const Functor &functor,
                        ImageType &.../*voxels*/)
       : outer_axes(outer_axes), loop(Loop(inner_axes)), func(functor) {}
@@ -306,7 +320,7 @@ inline auto __manage_progress(const LoopType *loop, const ThreadType *threads)
 template <class OuterLoopType> struct ThreadedLoopRunOuter {
   Iterator iterator;
   OuterLoopType outer_loop;
-  std::vector<size_t> inner_axes;
+  Axes::Subset inner_axes;
 
   //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
   template <class Functor> void run_outer(Functor &&functor) {
@@ -378,62 +392,63 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))>
-ThreadedLoop(const HeaderType &source, const std::vector<size_t> &outer_axes, const std::vector<size_t> &inner_axes) {
+inline ThreadedLoopRunOuter<decltype(Loop(Axes::Subset()))>
+ThreadedLoop(const HeaderType &source, const Axes::Subset &outer_axes, const Axes::Subset &inner_axes) {
   return {source, Loop(outer_axes), inner_axes};
 }
 
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))>
-ThreadedLoop(const HeaderType &source, const std::vector<size_t> &axes, size_t num_inner_axes = 1) {
-  return {source, Loop(get_outer_axes(axes, num_inner_axes)), get_inner_axes(axes, num_inner_axes)};
+inline ThreadedLoopRunOuter<decltype(Loop(Axes::Subset()))>
+ThreadedLoop(const HeaderType &source, const Axes::Subset &axes, const Eigen::Index num_inner_axes = 1) {
+  return {source,                                     //
+          Loop(get_outer_axes(axes, num_inner_axes)), //
+          get_inner_axes(axes, num_inner_axes)};      //
+}
+
+//! Multi-threaded loop object
+//* \sa image_thread_looping for details */
+// TODO Note that order of "from_axis / to_axis" and "num_inner_axes" flips here;
+//   would be safer to define a class encapsulating an axis range
+template <class HeaderType>
+inline ThreadedLoopRunOuter<decltype(Loop(Axes::Subset()))> ThreadedLoop(const HeaderType &source,
+                                                                         const Eigen::Index from_axis = 0,
+                                                                         const Eigen::Index to_axis = -1,
+                                                                         const Eigen::Index num_inner_axes = 1) {
+  return {source,                                                           //
+          Loop(get_outer_axes(source, num_inner_axes, from_axis, to_axis)), //
+          get_inner_axes(source, num_inner_axes, from_axis, to_axis)};      //
 }
 
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))>
-ThreadedLoop(const HeaderType &source,
-             size_t from_axis = 0,
-             size_t to_axis = std::numeric_limits<size_t>::max(),
-             size_t num_inner_axes = 1) {
-  return {source,
-          Loop(get_outer_axes(source, num_inner_axes, from_axis, to_axis)),
-          get_inner_axes(source, num_inner_axes, from_axis, to_axis)};
-}
-
-//! Multi-threaded loop object
-//* \sa image_thread_looping for details */
-template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-ThreadedLoop(std::string_view progress_message,
-             const HeaderType &source,
-             const std::vector<size_t> &outer_axes,
-             const std::vector<size_t> &inner_axes) {
+inline ThreadedLoopRunOuter<decltype(Loop("", Axes::Subset()))> ThreadedLoop(std::string_view progress_message,
+                                                                             const HeaderType &source,
+                                                                             const Axes::Subset &outer_axes,
+                                                                             const Axes::Subset &inner_axes) {
   return {source, Loop(progress_message, outer_axes), inner_axes};
 }
 
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop(std::string_view progress_message,
-                                                                                    const HeaderType &source,
-                                                                                    const std::vector<size_t> &axes,
-                                                                                    size_t num_inner_axes = 1) {
+inline ThreadedLoopRunOuter<decltype(Loop("", Axes::Subset()))> ThreadedLoop(std::string_view progress_message,
+                                                                             const HeaderType &source,
+                                                                             const Axes::Subset &axes,
+                                                                             const Eigen::Index num_inner_axes = 1) {
   return {source, Loop(progress_message, get_outer_axes(axes, num_inner_axes)), get_inner_axes(axes, num_inner_axes)};
 }
 
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-ThreadedLoop(std::string_view progress_message,
-             const HeaderType &source,
-             size_t from_axis = 0,
-             size_t to_axis = std::numeric_limits<size_t>::max(),
-             size_t num_inner_axes = 1) {
+inline ThreadedLoopRunOuter<decltype(Loop("", Axes::Subset()))> ThreadedLoop(std::string_view progress_message,
+                                                                             const HeaderType &source,
+                                                                             const Eigen::Index from_axis = 0,
+                                                                             const Eigen::Index to_axis = -1,
+                                                                             const Eigen::Index num_inner_axes = 1) {
   return {source,
           Loop(progress_message, get_outer_axes(source, num_inner_axes, from_axis, to_axis)),
           get_inner_axes(source, num_inner_axes, from_axis, to_axis)};
