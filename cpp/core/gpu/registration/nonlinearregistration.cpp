@@ -180,6 +180,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   if (use_lncc_metric && lncc_window_radius == 0U) {
     throw Exception("Non-linear registration: NCC metric requires ncc_radius >= 1.");
   }
+  if (use_lncc_metric) {
+    INFO("Non-linear registration: using LNCC with box radius " + std::to_string(lncc_window_radius));
+  }
 
   const Texture moving_texture = context.new_texture_from_host_image(channel.image1);
   const Texture fixed_texture = context.new_texture_from_host_image(channel.image2);
@@ -641,8 +644,8 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     }
     if (!converged_this_level) {
       CONSOLE("Non-linear registration: max iterations reached without convergence at level " +
-           std::to_string(level + 1U) + "/" + std::to_string(num_levels) + " (" +
-           std::to_string(config.max_iterations) + " iterations).");
+              std::to_string(level + 1U) + "/" + std::to_string(num_levels) + " (" +
+              std::to_string(config.max_iterations) + " iterations).");
     }
 
     if (level == (num_levels - 1U)) {

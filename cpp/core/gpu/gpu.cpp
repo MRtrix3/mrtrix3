@@ -307,7 +307,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     wgpu::Limits device_limits;
     m_device.GetLimits(&device_limits);
 
-    INFO("\nFound GPU:");
+    INFO("");
+    INFO("Found GPU:");
     INFO("  adapter: " + to_string(adapter_info.description));
     INFO("  details: backend=" + to_string(adapter_info.backendType) + ", type=" + to_string(adapter_info.adapterType) +
          ", vendor=" + to_string(adapter_info.vendor) + ", architecture=" + to_string(adapter_info.architecture) +
@@ -315,8 +316,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     INFO("  identifiers: vendor_id=" + std::to_string(adapter_info.vendorID) +
          ", device_id=" + std::to_string(adapter_info.deviceID));
     INFO("  subgroups: min=" + std::to_string(adapter_info.subgroupMinSize) +
-         ", max=" + std::to_string(adapter_info.subgroupMaxSize)) +
-        "\n";
+         ", max=" + std::to_string(adapter_info.subgroupMaxSize));
+    INFO("");
 
     m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize, .limits = device_limits};
   }
