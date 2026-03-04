@@ -140,6 +140,54 @@ wgpu::TextureUsage to_wgpu_usage(const MR::GPU::TextureUsage &usage) {
   return textureUsage;
 }
 
+std::string to_string(const wgpu::StringView value) {
+  if (value.data == nullptr) {
+    return "unknown";
+  }
+  if (value.length == wgpu::kStrlen) {
+    return std::string(value.data);
+  }
+  return std::string(value.data, value.length);
+}
+
+std::string to_string(const wgpu::BackendType backend_type) {
+  switch (backend_type) {
+  case wgpu::BackendType::Null:
+    return "Null";
+  case wgpu::BackendType::WebGPU:
+    return "WebGPU";
+  case wgpu::BackendType::D3D11:
+    return "D3D11";
+  case wgpu::BackendType::D3D12:
+    return "D3D12";
+  case wgpu::BackendType::Metal:
+    return "Metal";
+  case wgpu::BackendType::Vulkan:
+    return "Vulkan";
+  case wgpu::BackendType::OpenGL:
+    return "OpenGL";
+  case wgpu::BackendType::OpenGLES:
+    return "OpenGLES";
+  case wgpu::BackendType::Undefined:
+  default:
+    return "Undefined";
+  }
+}
+
+std::string to_string(const wgpu::AdapterType adapter_type) {
+  switch (adapter_type) {
+  case wgpu::AdapterType::DiscreteGPU:
+    return "DiscreteGPU";
+  case wgpu::AdapterType::IntegratedGPU:
+    return "IntegratedGPU";
+  case wgpu::AdapterType::CPU:
+    return "CPU";
+  case wgpu::AdapterType::Unknown:
+  default:
+    return "Unknown";
+  }
+}
+
 std::future<Slang::ComPtr<slang::IGlobalSession>> request_slang_global_session_async() {
   return SlangCodegen::request_slang_global_session_async();
 }
@@ -258,6 +306,17 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
 
     wgpu::Limits device_limits;
     m_device.GetLimits(&device_limits);
+
+    INFO("\nFound GPU:");
+    INFO("  adapter: " + to_string(adapter_info.description));
+    INFO("  details: backend=" + to_string(adapter_info.backendType) + ", type=" + to_string(adapter_info.adapterType) +
+         ", vendor=" + to_string(adapter_info.vendor) + ", architecture=" + to_string(adapter_info.architecture) +
+         ", device=" + to_string(adapter_info.device));
+    INFO("  identifiers: vendor_id=" + std::to_string(adapter_info.vendorID) +
+         ", device_id=" + std::to_string(adapter_info.deviceID));
+    INFO("  subgroups: min=" + std::to_string(adapter_info.subgroupMinSize) +
+         ", max=" + std::to_string(adapter_info.subgroupMaxSize)) +
+        "\n";
 
     m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize, .limits = device_limits};
   }
