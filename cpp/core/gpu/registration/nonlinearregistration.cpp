@@ -66,8 +66,6 @@ constexpr uint32_t num_levels = 3U;
 constexpr uint32_t convergence_window = 5U;
 constexpr float convergence_min_relative_improvement = 1.0e-4F;
 constexpr float convergence_cost_floor = 1.0e-6F;
-constexpr uint32_t symmetric_direction_forward = 0U;
-constexpr uint32_t symmetric_direction_backward = 1U;
 constexpr float inertia_weight = 0.9F;
 
 struct DispatchGridUniforms {
@@ -183,6 +181,13 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .format = TextureFormat::RGBA32Float,
         .usage = {.storage_binding = true, .render_target = false},
     };
+    const TextureSpec moving_vector_texture_spec{
+        .width = moving_level.spec.width,
+        .height = moving_level.spec.height,
+        .depth = moving_level.spec.depth,
+        .format = TextureFormat::RGBA32Float,
+        .usage = {.storage_binding = true, .render_target = false},
+    };
     const VoxelScannerMatrices voxel_scanner_matrices =
         VoxelScannerMatrices::from_image_pair(channel.image1, channel.image2, level_downscale);
     const Buffer<std::byte> voxel_scanner_buffer =
@@ -192,12 +197,15 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     const Texture negated_velocity = context.new_empty_texture(vector_texture_spec);
     const Texture displacement1 = context.new_empty_texture(vector_texture_spec);
     const Texture displacement2 = context.new_empty_texture(vector_texture_spec);
+    const Texture forward_displacement_cache = context.new_empty_texture(vector_texture_spec);
     const Texture forward_update_field = context.new_empty_texture(vector_texture_spec);
+    const Texture backward_update_field_moving = context.new_empty_texture(moving_vector_texture_spec);
     const Texture backward_update_field = context.new_empty_texture(vector_texture_spec);
     const Texture inertial_update_field = context.new_empty_texture(vector_texture_spec);
     const Texture smoothed_update_field = context.new_empty_texture(vector_texture_spec);
 
     const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(fixed_level, workgroup_size);
+    const DispatchGrid moving_dispatch_grid = DispatchGrid::element_wise_texture(moving_level, workgroup_size);
     const GaussianSmoothingParams fluid_smoothing_params{
         .radius = fluid_blur_radius,
         .sigma = fluid_blur_sigma,
@@ -254,10 +262,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
     const ShaderEntry ssd_forward_update_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/local_ssd_update.slang"},
-        .entryPoint = "main",
+        .entryPoint = "ssd_update_forward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kSymmetricDirection", symmetric_direction_forward},
-                      {"kAlpha", update_alpha},
+        .constants = {{"kAlpha", update_alpha},
                       {"kEpsilon", update_epsilon},
                       {"kMaxUpdateMagnitude", update_max_magnitude}},
     };
@@ -271,10 +278,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                              {"linearSampler", linear_sampler}}});
     const ShaderEntry ssd_backward_update_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/local_ssd_update.slang"},
-        .entryPoint = "main",
+        .entryPoint = "ssd_update_backward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kSymmetricDirection", symmetric_direction_backward},
-                      {"kAlpha", update_alpha},
+        .constants = {{"kAlpha", update_alpha},
                       {"kEpsilon", update_epsilon},
                       {"kMaxUpdateMagnitude", update_max_magnitude}},
     };
@@ -282,16 +288,15 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         context.new_kernel({.compute_shader = ssd_backward_update_shader,
                             .bindings_map = {{"fixedImage", fixed_level},
                                              {"movingImage", moving_level},
-                                             {"displacement", displacement1},
+                                             {"displacementBackward", displacement1},
                                              {"voxelScannerMatrices", voxel_scanner_buffer},
-                                             {"outputUpdate", backward_update_field},
+                                             {"outputUpdate", backward_update_field_moving},
                                              {"linearSampler", linear_sampler}}});
     const ShaderEntry lncc_forward_update_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/local_lncc_update.slang"},
-        .entryPoint = "main",
-        .workgroup_size = WorkgroupSize { 8, 8, 4 },
-        .constants = {{"kSymmetricDirection", symmetric_direction_forward},
-                      {"kWindowRadius", lncc_window_radius},
+        .entryPoint = "lncc_update_forward",
+        .workgroup_size = WorkgroupSize{8, 8, 4},
+        .constants = {{"kWindowRadius", lncc_window_radius},
                       {"kSigmaRatio", lncc_sigma_ratio},
                       {"kMomentEpsilon", lncc_moment_epsilon},
                       {"kRhoEpsilon", lncc_rho_epsilon},
@@ -308,10 +313,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                              {"linearSampler", linear_sampler}}});
     const ShaderEntry lncc_backward_update_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/local_lncc_update.slang"},
-        .entryPoint = "main",
+        .entryPoint = "lncc_update_backward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kSymmetricDirection", symmetric_direction_backward},
-                      {"kWindowRadius", lncc_window_radius},
+        .constants = {{"kWindowRadius", lncc_window_radius},
                       {"kSigmaRatio", lncc_sigma_ratio},
                       {"kMomentEpsilon", lncc_moment_epsilon},
                       {"kRhoEpsilon", lncc_rho_epsilon},
@@ -322,7 +326,19 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         context.new_kernel({.compute_shader = lncc_backward_update_shader,
                             .bindings_map = {{"fixedImage", fixed_level},
                                              {"movingImage", moving_level},
-                                             {"displacement", displacement1},
+                                             {"displacementBackward", displacement1},
+                                             {"voxelScannerMatrices", voxel_scanner_buffer},
+                                             {"outputUpdate", backward_update_field_moving},
+                                             {"linearSampler", linear_sampler}}});
+    const ShaderEntry resample_backward_update_shader{
+        .shader_source = ShaderFile{"shaders/registration/nonlinear/resample_update_moving_to_fixed.slang"},
+        .entryPoint = "main",
+        .workgroup_size = workgroup_size,
+    };
+    const Kernel resample_backward_update_kernel =
+        context.new_kernel({.compute_shader = resample_backward_update_shader,
+                            .bindings_map = {{"movingUpdate", backward_update_field_moving},
+                                             {"forwardDisplacement", forward_displacement_cache},
                                              {"voxelScannerMatrices", voxel_scanner_buffer},
                                              {"outputUpdate", backward_update_field},
                                              {"linearSampler", linear_sampler}}});
@@ -349,82 +365,90 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
     const ShaderEntry ssd_forward_cost_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
-        .entryPoint = "main",
+        .entryPoint = "ssd_cost_forward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kIncludeOutOfBounds", uint32_t{1}}, {"kSymmetricDirection", symmetric_direction_forward}},
+        .constants = {{"kIncludeOutOfBounds", uint32_t{1}}},
     };
     const ShaderEntry ssd_backward_cost_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
-        .entryPoint = "main",
+        .entryPoint = "ssd_cost_backward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kIncludeOutOfBounds", uint32_t{1}}, {"kSymmetricDirection", symmetric_direction_backward}},
+        .constants = {{"kIncludeOutOfBounds", uint32_t{1}}},
     };
     const ShaderEntry lncc_forward_cost_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/lncc_cost.slang"},
-        .entryPoint = "main",
+        .entryPoint = "lncc_cost_forward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kSymmetricDirection", symmetric_direction_forward},
-                      {"kWindowRadius", lncc_window_radius},
+        .constants = {{"kWindowRadius", lncc_window_radius},
                       {"kMomentEpsilon", lncc_moment_epsilon}},
     };
     const ShaderEntry lncc_backward_cost_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/lncc_cost.slang"},
-        .entryPoint = "main",
+        .entryPoint = "lncc_cost_backward",
         .workgroup_size = workgroup_size,
-        .constants = {{"kSymmetricDirection", symmetric_direction_backward},
-                      {"kWindowRadius", lncc_window_radius},
+        .constants = {{"kWindowRadius", lncc_window_radius},
                       {"kMomentEpsilon", lncc_moment_epsilon}},
     };
-    const DispatchGridUniforms dispatch_uniforms{
+    const DispatchGrid backward_cost_dispatch_grid = moving_dispatch_grid;
+    const DispatchGridUniforms forward_dispatch_uniforms{
         .dispatch_grid = dispatch_grid,
     };
-    const Buffer<std::byte> dispatch_uniforms_buffer =
-        context.new_buffer_from_host_object(dispatch_uniforms, BufferType::UniformBuffer);
-    const Buffer<float> ssd_partials_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
-    const Buffer<float> ssd_counts_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
+    const DispatchGridUniforms backward_dispatch_uniforms{
+        .dispatch_grid = backward_cost_dispatch_grid,
+    };
+    const Buffer<std::byte> forward_dispatch_uniforms_buffer =
+        context.new_buffer_from_host_object(forward_dispatch_uniforms, BufferType::UniformBuffer);
+    const Buffer<std::byte> backward_dispatch_uniforms_buffer =
+        context.new_buffer_from_host_object(backward_dispatch_uniforms, BufferType::UniformBuffer);
+    const Buffer<float> forward_cost_partials_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
+    const Buffer<float> forward_cost_counts_buffer = context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
+    const Buffer<float> backward_cost_partials_buffer =
+        context.new_empty_buffer<float>(backward_cost_dispatch_grid.workgroup_count());
+    const Buffer<float> backward_cost_counts_buffer =
+        context.new_empty_buffer<float>(backward_cost_dispatch_grid.workgroup_count());
     const Kernel ssd_forward_cost_kernel = context.new_kernel({.compute_shader = ssd_forward_cost_shader,
                                                                .bindings_map = {
-                                                                   {"uniforms", dispatch_uniforms_buffer},
+                                                                   {"uniforms", forward_dispatch_uniforms_buffer},
                                                                    {"fixedImage", fixed_level},
                                                                    {"movingImage", moving_level},
                                                                    {"displacement", displacement1},
                                                                    {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                    {"linearSampler", linear_sampler},
-                                                                   {"ssdPartials", ssd_partials_buffer},
-                                                                   {"ssdCounts", ssd_counts_buffer},
+                                                                   {"ssdPartials", forward_cost_partials_buffer},
+                                                                   {"ssdCounts", forward_cost_counts_buffer},
                                                                }});
     const Kernel ssd_backward_cost_kernel = context.new_kernel({.compute_shader = ssd_backward_cost_shader,
                                                                 .bindings_map = {
-                                                                    {"uniforms", dispatch_uniforms_buffer},
+                                                                    {"uniforms", backward_dispatch_uniforms_buffer},
                                                                     {"fixedImage", fixed_level},
                                                                     {"movingImage", moving_level},
-                                                                    {"displacement", displacement1},
+                                                                    {"displacementBackward", displacement1},
                                                                     {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                     {"linearSampler", linear_sampler},
-                                                                    {"ssdPartials", ssd_partials_buffer},
-                                                                    {"ssdCounts", ssd_counts_buffer},
+                                                                    {"ssdPartials", backward_cost_partials_buffer},
+                                                                    {"ssdCounts", backward_cost_counts_buffer},
                                                                 }});
     const Kernel lncc_forward_cost_kernel = context.new_kernel({.compute_shader = lncc_forward_cost_shader,
                                                                 .bindings_map = {
-                                                                    {"uniforms", dispatch_uniforms_buffer},
+                                                                    {"uniforms", forward_dispatch_uniforms_buffer},
                                                                     {"fixedImage", fixed_level},
                                                                     {"movingImage", moving_level},
                                                                     {"displacement", displacement1},
                                                                     {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                     {"linearSampler", linear_sampler},
-                                                                    {"ssdPartials", ssd_partials_buffer},
-                                                                    {"ssdCounts", ssd_counts_buffer},
+                                                                    {"ssdPartials", forward_cost_partials_buffer},
+                                                                    {"ssdCounts", forward_cost_counts_buffer},
                                                                 }});
     const Kernel lncc_backward_cost_kernel = context.new_kernel({.compute_shader = lncc_backward_cost_shader,
                                                                  .bindings_map = {
-                                                                     {"uniforms", dispatch_uniforms_buffer},
+                                                                     {"uniforms", backward_dispatch_uniforms_buffer},
                                                                      {"fixedImage", fixed_level},
                                                                      {"movingImage", moving_level},
                                                                      {"displacement", displacement1},
                                                                      {"voxelScannerMatrices", voxel_scanner_buffer},
                                                                      {"linearSampler", linear_sampler},
-                                                                     {"ssdPartials", ssd_partials_buffer},
-                                                                     {"ssdCounts", ssd_counts_buffer},
+                                                                     {"ssdPartials", backward_cost_partials_buffer},
+                                                                     {"ssdCounts", backward_cost_counts_buffer},
                                                                  }});
     const ShaderEntry negate_velocity_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/negate_velocity.slang"},
@@ -458,26 +482,30 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         context.new_empty_buffer<float>(dispatch_grid.workgroup_count());
     const Kernel velocity_max_norm_v1_kernel =
         context.new_kernel({.compute_shader = velocity_max_norm_shader,
-                            .bindings_map = {{"uniforms", dispatch_uniforms_buffer},
+                            .bindings_map = {{"uniforms", forward_dispatch_uniforms_buffer},
                                              {"velocityTexture", velocity1},
                                              {"voxelScannerMatrices", voxel_scanner_buffer},
                                              {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}}});
     const Kernel velocity_max_norm_v2_kernel = context.new_kernel({
         .compute_shader = velocity_max_norm_shader,
-        .bindings_map = {{"uniforms", dispatch_uniforms_buffer},
+        .bindings_map = {{"uniforms", forward_dispatch_uniforms_buffer},
                          {"velocityTexture", velocity2},
                          {"voxelScannerMatrices", voxel_scanner_buffer},
                          {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}},
     });
     const Kernel &forward_update_kernel = use_lncc_metric ? lncc_forward_update_kernel : ssd_forward_update_kernel;
     const Kernel &backward_update_kernel = use_lncc_metric ? lncc_backward_update_kernel : ssd_backward_update_kernel;
+    const DispatchGrid &backward_update_dispatch_grid = moving_dispatch_grid;
     const Kernel &forward_cost_kernel = use_lncc_metric ? lncc_forward_cost_kernel : ssd_forward_cost_kernel;
     const Kernel &backward_cost_kernel = use_lncc_metric ? lncc_backward_cost_kernel : ssd_backward_cost_kernel;
 
-    const auto evaluate_symmetric_cost = [&](const Kernel &cost_kernel) {
-      context.dispatch_kernel(cost_kernel, dispatch_grid);
-      const std::vector<float> partials = context.download_buffer_as_vector(ssd_partials_buffer);
-      const std::vector<float> counts = context.download_buffer_as_vector(ssd_counts_buffer);
+    const auto evaluate_symmetric_cost = [&](const Kernel &cost_kernel,
+                                             const DispatchGrid &cost_dispatch_grid,
+                                             const Buffer<float> &cost_partials_buffer,
+                                             const Buffer<float> &cost_counts_buffer) {
+      context.dispatch_kernel(cost_kernel, cost_dispatch_grid);
+      const std::vector<float> partials = context.download_buffer_as_vector(cost_partials_buffer);
+      const std::vector<float> counts = context.download_buffer_as_vector(cost_counts_buffer);
 
       const double total_cost = std::reduce(partials.begin(), partials.end(), 0.0);
       const double total_count = std::reduce(counts.begin(), counts.end(), 0.0);
@@ -527,19 +555,24 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     std::vector<float> recent_costs;
     recent_costs.reserve(convergence_window + 1U);
     for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
-      const Kernel &velocity_max_norm_kernel = velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
+      const Kernel &velocity_max_norm_kernel =
+          velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
       const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
       const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
       exponentiate_from_kernel(exp_init_kernel, exponentiation_steps);
-      const float forward_cost = evaluate_symmetric_cost(forward_cost_kernel);
+      const float forward_cost = evaluate_symmetric_cost(
+          forward_cost_kernel, dispatch_grid, forward_cost_partials_buffer, forward_cost_counts_buffer);
       context.dispatch_kernel(forward_update_kernel, dispatch_grid);
+      context.copy_texture_to_texture(displacement1, forward_displacement_cache, {});
 
       const Kernel &negate_velocity_kernel = velocity_is_1 ? negate_velocity_v1 : negate_velocity_v2;
       context.dispatch_kernel(negate_velocity_kernel, dispatch_grid);
 
       exponentiate_from_kernel(exp_init_from_negated, exponentiation_steps);
-      const float backward_cost = evaluate_symmetric_cost(backward_cost_kernel);
-      context.dispatch_kernel(backward_update_kernel, dispatch_grid);
+      const float backward_cost = evaluate_symmetric_cost(
+          backward_cost_kernel, backward_cost_dispatch_grid, backward_cost_partials_buffer, backward_cost_counts_buffer);
+      context.dispatch_kernel(backward_update_kernel, backward_update_dispatch_grid);
+      context.dispatch_kernel(resample_backward_update_kernel, dispatch_grid);
 
       const float cost = 0.5F * (forward_cost + backward_cost);
       recent_costs.push_back(cost);
@@ -574,13 +607,14 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
       // After the local update is applied, smooth the velocity field itself (diffusion regularisation).
       velocity_is_1 = !velocity_is_1;
-      const auto& diffusion_blur = velocity_is_1 ? diffusion_velocity_blur_12 : diffusion_velocity_blur_21;
+      const auto &diffusion_blur = velocity_is_1 ? diffusion_velocity_blur_12 : diffusion_velocity_blur_21;
       diffusion_blur.run(context);
       velocity_is_1 = !velocity_is_1;
     }
 
     if (level == (num_levels - 1U)) {
-      const Kernel &velocity_max_norm_kernel = velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
+      const Kernel &velocity_max_norm_kernel =
+          velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
       const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
       const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
       exponentiate_from_kernel(exp_init_kernel, exponentiation_steps);
