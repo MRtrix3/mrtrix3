@@ -67,7 +67,7 @@ constexpr uint32_t num_levels = 3U;
 constexpr uint32_t convergence_window = 5U;
 constexpr float convergence_min_relative_improvement = 1.0e-4F;
 constexpr float convergence_cost_floor = 1.0e-6F;
-constexpr float inertia_weight = 0.9F;
+constexpr float inertia_weight = 0.2F;
 
 struct DispatchGridUniforms {
   alignas(16) DispatchGrid dispatch_grid{};
