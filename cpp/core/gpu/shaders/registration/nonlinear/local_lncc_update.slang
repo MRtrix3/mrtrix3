@@ -32,16 +32,6 @@ extern static const float kRhoEpsilon;
 extern static const float kDenominatorEpsilon;
 extern static const float kMaxUpdateMagnitude = 0.0F;
 
-void writeZeroUpdate(WTexture3D<float4> outputUpdate, uint32_t3 voxelId)
-{
-    outputUpdate.Store(voxelId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-}
-
-void writeUpdate(WTexture3D<float4> outputUpdate, uint32_t3 voxelId, float3 update)
-{
-    outputUpdate.Store(voxelId, float4(update, 0.0F));
-}
-
 struct LnccWeightedSums
 {
     float sumReference = 0.0F;
@@ -121,20 +111,20 @@ struct LnccWeightedSums
     }
 };
 
-bool mapFixedVoxelToMovedMovingVoxel(
+bool mapFixedVoxelToWarpedMovingVoxel(
     float3 fixedVoxel,
     int32_t3 fixedVoxelInt,
     Texture3D<float4> displacement,
     float4x4 targetVoxelToScanner,
     float4x4 sourceScannerToVoxel,
     uint32_t3 movingDims,
-    out float3 movedMovingVoxel)
+    out float3 warpedMovingVoxel)
 {
     let fixedScanner = mul(targetVoxelToScanner, float4(fixedVoxel, 1.0F)).xyz;
     let displacementValue = displacement.Load(int32_t4(fixedVoxelInt, 0)).xyz;
     let movedScanner = fixedScanner + displacementValue;
-    movedMovingVoxel = mul(sourceScannerToVoxel, float4(movedScanner, 1.0F)).xyz;
-    return inBoundsVoxel(movedMovingVoxel, movingDims);
+    warpedMovingVoxel = mul(sourceScannerToVoxel, float4(movedScanner, 1.0F)).xyz;
+    return inBoundsVoxel(warpedMovingVoxel, movingDims);
 }
 
 bool mapMovingVoxelToMovedFixedVoxel(
@@ -180,21 +170,21 @@ void accumulateForwardLnccWindow(
                 }
 
                 let neighborFixedVoxel = float3(neighborInt);
-                var neighborMovedMovingVoxel = float3(0.0F, 0.0F, 0.0F);
-                if (!mapFixedVoxelToMovedMovingVoxel(
+                var neighborWarpedMovingVoxel = float3(0.0F, 0.0F, 0.0F);
+                if (!mapFixedVoxelToWarpedMovingVoxel(
                         neighborFixedVoxel,
                         neighborInt,
                         displacement,
                         targetVoxelToScanner,
                         sourceScannerToVoxel,
                         movingDims,
-                        neighborMovedMovingVoxel)) {
+                    neighborWarpedMovingVoxel)) {
                     continue;
                 }
 
                 let referenceValue = fixedField.sampleWithZeroBorder(neighborFixedVoxel);
-                let movingValue = movingField.sampleWithZeroBorder(neighborMovedMovingVoxel);
-                let gradMovingVoxel = movingField.spatialGradient(neighborMovedMovingVoxel);
+                let movingValue = movingField.sampleWithZeroBorder(neighborWarpedMovingVoxel);
+                let gradMovingVoxel = movingField.spatialGradient(neighborWarpedMovingVoxel);
                 let gradMovingScanner = mul(float4(gradMovingVoxel, 0.0F), sourceScannerToVoxel).xyz;
 
                 sums.accumulate(referenceValue, movingValue, gradMovingScanner, 1.0F);
@@ -269,16 +259,16 @@ void lncc_update_forward(
     let targetVoxelToScanner = voxelScannerMatrices.targetVoxelToScanner;
     let sourceScannerToVoxel = voxelScannerMatrices.sourceScannerToVoxel;
 
-    var centerMovedMovingVoxel = float3(0.0F, 0.0F, 0.0F);
-    if (!mapFixedVoxelToMovedMovingVoxel(
+    var centerWarpedMovingVoxel = float3(0.0F, 0.0F, 0.0F);
+    if (!mapFixedVoxelToWarpedMovingVoxel(
             float3(globalId),
             int32_t3(globalId),
             displacement,
             targetVoxelToScanner,
             sourceScannerToVoxel,
             movingDims,
-            centerMovedMovingVoxel)) {
-        writeZeroUpdate(outputUpdate, globalId);
+            centerWarpedMovingVoxel)) {
+        outputUpdate.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
@@ -296,11 +286,11 @@ void lncc_update_forward(
 
     var update = float3(0.0F, 0.0F, 0.0F);
     if (!sums.solve(update)) {
-        writeZeroUpdate(outputUpdate, globalId);
+        outputUpdate.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
-    writeUpdate(outputUpdate, globalId, update);
+    outputUpdate.Store(globalId, float4(update, 0.0F));
 }
 
 [shader("compute")]
@@ -334,7 +324,7 @@ void lncc_update_backward(
             targetScannerToVoxel,
             fixedDims,
             centerMovedFixedVoxel)) {
-        writeZeroUpdate(outputUpdate, globalId);
+        outputUpdate.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
@@ -352,9 +342,9 @@ void lncc_update_backward(
 
     var update = float3(0.0F, 0.0F, 0.0F);
     if (!sums.solve(update)) {
-        writeZeroUpdate(outputUpdate, globalId);
+        outputUpdate.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
-    writeUpdate(outputUpdate, globalId, update);
+    outputUpdate.Store(globalId, float4(update, 0.0F));
 }
