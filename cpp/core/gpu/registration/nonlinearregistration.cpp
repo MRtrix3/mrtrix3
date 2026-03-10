@@ -263,12 +263,18 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .radius = diffusion_blur_radius,
         .sigma = diffusion_blur_sigma,
     };
-    const SeparableGaussianBlurPipeline fluid_update_blur(
-        context, inertial_update_field, smoothed_update_field, fluid_smoothing_params);
-    const SeparableGaussianBlurPipeline diffusion_velocity_blur_12(
-        context, velocity1, velocity2, diffusion_smoothing_params);
-    const SeparableGaussianBlurPipeline diffusion_velocity_blur_21(
-        context, velocity2, velocity1, diffusion_smoothing_params);
+    const bool use_fluid_smoothing = fluid_blur_sigma != 0.0F;
+    const bool use_diffusion_smoothing = diffusion_blur_sigma != 0.0F;
+    std::optional<SeparableGaussianBlurPipeline> fluid_update_blur;
+    std::optional<SeparableGaussianBlurPipeline> diffusion_velocity_blur_12;
+    std::optional<SeparableGaussianBlurPipeline> diffusion_velocity_blur_21;
+    if (use_fluid_smoothing) {
+      fluid_update_blur.emplace(context, inertial_update_field, smoothed_update_field, fluid_smoothing_params);
+    }
+    if (use_diffusion_smoothing) {
+      diffusion_velocity_blur_12.emplace(context, velocity1, velocity2, diffusion_smoothing_params);
+      diffusion_velocity_blur_21.emplace(context, velocity2, velocity1, diffusion_smoothing_params);
+    }
 
     const ShaderEntry exp_init_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
@@ -365,13 +371,14 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                 {"kClampEpsilon", velocity_clamp_epsilon},
             },
     };
+    const Texture &velocity_update_field = use_fluid_smoothing ? smoothed_update_field : inertial_update_field;
     const Kernel apply_update_12 = context.new_kernel({
         .compute_shader = apply_update_shader,
-        .bindings_map = {{"velocity", velocity1}, {"update", smoothed_update_field}, {"outputVelocity", velocity2}},
+        .bindings_map = {{"velocity", velocity1}, {"update", velocity_update_field}, {"outputVelocity", velocity2}},
     });
     const Kernel apply_update_21 = context.new_kernel({
         .compute_shader = apply_update_shader,
-        .bindings_map = {{"velocity", velocity2}, {"update", smoothed_update_field}, {"outputVelocity", velocity1}},
+        .bindings_map = {{"velocity", velocity2}, {"update", velocity_update_field}, {"outputVelocity", velocity1}},
     });
 
     const ShaderEntry ssd_forward_cost_shader{
@@ -606,15 +613,19 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       }
 
       context.dispatch_kernel(symmetric_combine_updates_kernel, dispatch_grid);
-      fluid_update_blur.run(context);
+      if (fluid_update_blur) {
+        fluid_update_blur->run(context);
+      }
       const Kernel &apply_update_kernel = velocity_is_1 ? apply_update_12 : apply_update_21;
       context.dispatch_kernel(apply_update_kernel, dispatch_grid);
 
       // After the local update is applied, smooth the velocity field itself (diffusion regularisation).
       velocity_is_1 = !velocity_is_1;
-      const auto &diffusion_blur = velocity_is_1 ? diffusion_velocity_blur_12 : diffusion_velocity_blur_21;
-      diffusion_blur.run(context);
-      velocity_is_1 = !velocity_is_1;
+      if (use_diffusion_smoothing) {
+        const auto &diffusion_blur = velocity_is_1 ? *diffusion_velocity_blur_12 : *diffusion_velocity_blur_21;
+        diffusion_blur.run(context);
+        velocity_is_1 = !velocity_is_1;
+      }
     }
     if (!converged_this_level) {
       CONSOLE("Non-linear registration: max iterations reached without convergence at level " +
