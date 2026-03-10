@@ -54,23 +54,23 @@ constexpr float update_alpha = 1.0F;
 constexpr float update_epsilon = 1.0e-5F;
 constexpr float update_max_magnitude = 0.5F; // in scanner space units (mm)
 // Larger values make updates more conservative; smaller values allow more aggressive updates.
-constexpr float lncc_sigma_ratio = 0.05F;
+constexpr float lncc_sigma_ratio = 0.25F;
 constexpr float lncc_moment_epsilon = 1.0e-6F;
 constexpr float lncc_rho_epsilon = 1.0e-6F;
 constexpr float lncc_denominator_epsilon = 1.0e-6F;
 // Gaussian kernel truncation factor used to derive the effective radius of the local update kernels from their sigma
 // values.
 constexpr float gaussian_blur_k = 2.0F;
-constexpr float fluid_blur_sigma = 1.5F; // in voxel units
+constexpr float fluid_blur_sigma = 1.0F; // in voxel units
 const uint32_t fluid_blur_radius = static_cast<uint32_t>(std::ceil(gaussian_blur_k * fluid_blur_sigma));
 constexpr float diffusion_blur_sigma = 1.5F; // in voxel units
 const uint32_t diffusion_blur_radius = static_cast<uint32_t>(std::ceil(gaussian_blur_k * diffusion_blur_sigma));
-constexpr float velocity_step_size = 1.0F;
+constexpr float velocity_step_size = 0.85F;
 constexpr float velocity_clamp_max = 0.5F; // in scanner space units (mm)
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
 constexpr uint32_t num_levels = 3U;
 constexpr uint32_t convergence_window = 5U;
-constexpr float convergence_min_relative_improvement = 1.0e-5F;
+constexpr float convergence_min_relative_improvement = 1.0e-4F;
 constexpr float convergence_cost_floor = 1.0e-6F;
 constexpr float inertia_weight = 0.5F;
 
