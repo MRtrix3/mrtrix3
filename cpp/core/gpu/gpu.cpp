@@ -794,6 +794,32 @@ Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
   return image;
 }
 
+void ComputeContext::wait_for_all_queue_operations() const {
+  bool callback_invoked = false;
+  wgpu::QueueWorkDoneStatus queue_status = wgpu::QueueWorkDoneStatus::Error;
+  std::string queue_message;
+  const wgpu::Future queue_done_future = m_device.GetQueue().OnSubmittedWorkDone(
+      wgpu::CallbackMode::WaitAnyOnly,
+      [&callback_invoked, &queue_status, &queue_message](wgpu::QueueWorkDoneStatus status, const char *message) {
+        callback_invoked = true;
+        queue_status = status;
+        if (message != nullptr) {
+          queue_message = message;
+        }
+      });
+  const wgpu::WaitStatus wait_status = m_instance.WaitAny(queue_done_future, std::numeric_limits<uint64_t>::max());
+  if (wait_status != wgpu::WaitStatus::Success) {
+    throw MR::Exception("Failed to wait for submitted GPU queue work: wgpu::Instance::WaitAny failed");
+  }
+  if (!callback_invoked) {
+    throw MR::Exception("Failed to wait for submitted GPU queue work: callback was not invoked");
+  }
+  if (queue_status != wgpu::QueueWorkDoneStatus::Success) {
+    const std::string suffix = queue_message.empty() ? std::string() : (": " + queue_message);
+    throw MR::Exception("Failed while waiting for submitted GPU queue work" + suffix);
+  }
+}
+
 void ComputeContext::reduce_memory_usage() const { dawn::native::ReduceMemoryUsage(m_device.Get()); }
 
 Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {

@@ -340,6 +340,9 @@ struct ComputeContext {
 
   [[nodiscard]] Sampler new_linear_sampler() const;
 
+  // Block until all queued GPU work has completed.
+  void wait_for_all_queue_operations() const;
+
   // Ask Dawn to free unused GPU memory (e.g. staging/cached resources).
   void reduce_memory_usage() const;
 
