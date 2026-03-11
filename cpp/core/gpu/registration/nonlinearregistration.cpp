@@ -474,7 +474,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         .shader_source = ShaderFile{"shaders/registration/nonlinear/symmetric_combine_updates.slang"},
         .entryPoint = "main",
         .workgroup_size = workgroup_size,
-        .constants = {{"kInertiaWeight", inertia_weight}},
+      .constants = {{"kInertiaWeight", (level == (num_levels - 1U)) ? 0.0F : inertia_weight}},
     };
     const Kernel symmetric_combine_updates_kernel = context.new_kernel({
         .compute_shader = symmetric_combine_updates_shader,
