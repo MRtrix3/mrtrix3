@@ -193,9 +193,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
   const Texture moving_texture = context.new_texture_from_host_image(channel.image1);
   const Texture fixed_texture = context.new_texture_from_host_image(channel.image2);
-  const std::vector<Texture> moving_pyramid =
+  std::vector<Texture> moving_pyramid =
       createDownsampledPyramid(moving_texture, static_cast<int32_t>(num_levels), context);
-  const std::vector<Texture> fixed_pyramid =
+  std::vector<Texture> fixed_pyramid =
       createDownsampledPyramid(fixed_texture, static_cast<int32_t>(num_levels), context);
   const Sampler linear_sampler = context.new_linear_sampler();
   std::optional<Texture> previous_level_velocity;
@@ -205,6 +205,15 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
   for (uint32_t level = 0U; level < num_levels; ++level) {
     INFO("Non-linear registration: processing level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels));
+    // Synchronize at level boundaries, then ask Dawn to release unused memory from the previous level before allocating
+    // resources for the current level. On some hardware (e.g. AMD Radeon RX 590), this can help reduce peak memory usage.
+    if (level > 0U) {
+      moving_pyramid[level - 1U] = {};
+      fixed_pyramid[level - 1U] = {};
+      context.reduce_memory_usage();
+      context.wait_for_all_queue_operations();
+    }
+
     const Texture &moving_level = moving_pyramid[level];
     const Texture &fixed_level = fixed_pyramid[level];
     const float level_downscale = std::exp2f(static_cast<float>(num_levels - 1U - level));
