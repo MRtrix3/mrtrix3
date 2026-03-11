@@ -284,7 +284,7 @@ void run() {
 
   std::optional<MetricType> nonlinear_metric_type;
   if (has_nonlinear_registration) {
-    const std::string default_nonlinear_metric = "ssd";
+    const std::string default_nonlinear_metric = "ncc";
     nonlinear_metric_type = from_name<MetricType>(get_option_value<std::string>("nl_metric", default_nonlinear_metric));
   }
 
