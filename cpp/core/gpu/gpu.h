@@ -340,6 +340,9 @@ struct ComputeContext {
 
   [[nodiscard]] Sampler new_linear_sampler() const;
 
+  // Ask Dawn to free unused GPU memory (e.g. staging/cached resources).
+  void reduce_memory_usage() const;
+
 private:
   wgpu::Buffer inner_new_empty_buffer(size_t byteSize, BufferType bufferType = BufferType::StorageBuffer) const;
   wgpu::Buffer inner_new_buffer_from_host_memory(const void *srcMemory,

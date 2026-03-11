@@ -26,6 +26,7 @@
 #include <tcb/span.hpp>
 
 #include <cstdlib>
+#include <dawn/native/DawnNative.h>
 #include <memory>
 #include <slang-com-ptr.h>
 #include <slang.h>
@@ -792,6 +793,8 @@ Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
 
   return image;
 }
+
+void ComputeContext::reduce_memory_usage() const { dawn::native::ReduceMemoryUsage(m_device.Get()); }
 
 Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
   struct BindingEntries {
