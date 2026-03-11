@@ -50,6 +50,16 @@ const OptionGroup SIFT2RegularisationOption = OptionGroup ("Regularisation optio
     + Argument ("value").type_float (0.0)
 
   + Option ("reg_tv", "provide coefficient for regularising variance of streamline weighting coefficient to fixels along its length (Total Variation regularisation) (default: " + str(SIFT2_REGULARISATION_TV_DEFAULT, 2) + ")")
+    + Argument ("value").type_float (0.0)
+
+  + Option ("microstructure_weighting", "provide a text file containing per-streamline microstructure weighting values (MicroAF); "
+                                        "when provided, adds a prior term to the objective that penalises high weights on streamlines "
+                                        "with low microstructure values. The file should contain one value per streamline, in the same "
+                                        "order as the input tractogram.")
+    + Argument ("file").type_file_in()
+
+  + Option ("microstructure_lambda", "strength of the microstructure prior term; only has effect when -microstructure_weighting is provided "
+                                     "(default: " + str(SIFT2_REGULARISATION_MICRO_DEFAULT, 2) + ")")
     + Argument ("value").type_float (0.0);
 
 
@@ -194,7 +204,17 @@ void run ()
 
     const float reg_tikhonov = get_option_value ("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
     const float reg_tv = get_option_value ("reg_tv", SIFT2_REGULARISATION_TV_DEFAULT);
-    tckfactor.set_reg_lambdas (reg_tikhonov, reg_tv);
+
+    auto opt_micro = get_options ("microstructure_weighting");
+    double reg_micro = 0.0;
+    if (opt_micro.size()) {
+      tckfactor.load_microstructure_weights (opt_micro[0][0]);
+      reg_micro = get_option_value ("microstructure_lambda", SIFT2_REGULARISATION_MICRO_DEFAULT);
+    } else if (get_options ("microstructure_lambda").size()) {
+      WARN ("-microstructure_lambda specified without -microstructure_weighting; the lambda value will be ignored");
+    }
+
+    tckfactor.set_reg_lambdas (reg_tikhonov, reg_tv, reg_micro);
 
     opt = get_options ("min_iters");
     if (opt.size())

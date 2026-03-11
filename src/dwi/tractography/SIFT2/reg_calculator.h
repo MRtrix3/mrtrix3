@@ -37,7 +37,7 @@ namespace MR {
       { NOMEMALIGN
 
         public:
-          RegularisationCalculator (TckFactor&, double&, double&);
+          RegularisationCalculator (TckFactor&, double&, double&, double&);
           ~RegularisationCalculator();
 
           bool operator() (const SIFT::TrackIndexRange& range);
@@ -47,9 +47,10 @@ namespace MR {
           TckFactor& master;
           double& cf_reg_tik;
           double& cf_reg_tv;
+          double& cf_reg_micro;
 
           // Each thread needs a local copy of these
-          double tikhonov_sum, tv_sum;
+          double tikhonov_sum, tv_sum, micro_sum;
 
       };
 

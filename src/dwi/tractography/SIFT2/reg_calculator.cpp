@@ -31,29 +31,35 @@ namespace MR {
 
 
 
-      RegularisationCalculator::RegularisationCalculator (TckFactor& tckfactor, double& cf_reg_tik, double& cf_reg_tv) :
+      RegularisationCalculator::RegularisationCalculator (TckFactor& tckfactor, double& cf_reg_tik, double& cf_reg_tv, double& cf_reg_micro) :
         master (tckfactor),
         cf_reg_tik (cf_reg_tik),
         cf_reg_tv (cf_reg_tv),
+        cf_reg_micro (cf_reg_micro),
         tikhonov_sum (0.0),
-        tv_sum (0.0) { }
+        tv_sum (0.0),
+        micro_sum (0.0) { }
 
 
 
       RegularisationCalculator::~RegularisationCalculator()
       {
         std::lock_guard<std::mutex> lock (master.mutex);
-        cf_reg_tik += tikhonov_sum;
-        cf_reg_tv  += tv_sum;
+        cf_reg_tik   += tikhonov_sum;
+        cf_reg_tv    += tv_sum;
+        cf_reg_micro += micro_sum;
       }
 
 
 
       bool RegularisationCalculator::operator() (const SIFT::TrackIndexRange& range)
       {
+        const bool has_micro = master.has_microstructure_weights();
         for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
           const double coefficient = master.coefficients[track_index];
           tikhonov_sum += Math::pow2 (coefficient);
+          if (has_micro)
+            micro_sum += std::exp (coefficient) / master.microstructure_weights[track_index];
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           const double contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
           double this_tv_sum = 0.0;

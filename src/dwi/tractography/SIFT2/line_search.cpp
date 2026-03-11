@@ -35,7 +35,9 @@ namespace MR {
         reg_tik (tckfactor.reg_multiplier_tikhonov),
         // Pre-scale reg_tv by total streamline contribution; each fixel then contributes (PM * length),
         //   and the whole thing is appropriately normalised
-        reg_tv  (tckfactor.reg_multiplier_tv / tckfactor.contributions[track_index]->get_total_contribution())
+        reg_tv  (tckfactor.reg_multiplier_tv / tckfactor.contributions[track_index]->get_total_contribution()),
+        reg_micro (tckfactor.reg_multiplier_micro),
+        micro_af (tckfactor.has_microstructure_weights() ? tckfactor.microstructure_weights[track_index] : 1.0)
       {
         const SIFT::TrackContribution& track_contribution = *tckfactor.contributions[track_index];
         for (size_t i = 0; i != track_contribution.dim(); ++i) {
@@ -82,6 +84,19 @@ namespace MR {
 
         data_result += tik_result;
         data_result += tv_result;
+
+        // Microstructure prior term: reg_micro * exp(coefficient) / MicroAF
+        // All derivatives of exp(c)/MicroAF w.r.t. c are identical: exp(c)/MicroAF
+        if (reg_micro > 0.0) {
+          const double micro_term = reg_micro * factor / micro_af;
+          Result micro_result;
+          micro_result.cost         = micro_term;
+          micro_result.first_deriv  = micro_term;
+          micro_result.second_deriv = micro_term;
+          micro_result.third_deriv  = micro_term;
+          data_result += micro_result;
+        }
+
         return data_result;
       }
 
@@ -96,7 +111,8 @@ namespace MR {
           cf_reg_tv += i->SL_eff * SIFT2::tvreg (Fs+dFs, i->meanFs);
         }
         const double cf_reg_tik = Math::pow2 (Fs+dFs);
-        return (cf_data + (reg_tik * cf_reg_tik) + (reg_tv * cf_reg_tv));
+        const double cf_reg_micro = (reg_micro > 0.0) ? (reg_micro * std::exp (Fs+dFs) / micro_af) : 0.0;
+        return (cf_data + (reg_tik * cf_reg_tik) + (reg_tv * cf_reg_tv) + cf_reg_micro);
       }
 
 

@@ -77,7 +77,8 @@ namespace MR {
           const SIFT::track_t track_index;
           const double mu;
           const double Fs;
-          const double reg_tik, reg_tv;
+          const double reg_tik, reg_tv, reg_micro;
+          const double micro_af;
 
           vector<Fixel> fixels;
 

@@ -45,7 +45,7 @@ namespace MR {
 
 
 
-      void TckFactor::set_reg_lambdas (const double lambda_tikhonov, const double lambda_tv)
+      void TckFactor::set_reg_lambdas (const double lambda_tikhonov, const double lambda_tv, const double lambda_micro)
       {
         assert (num_tracks());
         double A = 0.0;
@@ -56,6 +56,32 @@ namespace MR {
         INFO ("Constant A scaling regularisation terms to match data term is " + str(A));
         reg_multiplier_tikhonov = lambda_tikhonov * A;
         reg_multiplier_tv       = lambda_tv * A;
+        reg_multiplier_micro    = lambda_micro * A;
+      }
+
+
+
+      void TckFactor::load_microstructure_weights (const std::string& path)
+      {
+        microstructure_weights = load_vector<default_type> (path);
+        if (size_t(microstructure_weights.size()) != num_tracks())
+          throw Exception ("Microstructure weighting file contains " + str(microstructure_weights.size()) +
+                           " values, but tractogram contains " + str(num_tracks()) + " streamlines");
+
+        size_t clamped_count = 0;
+        for (Eigen::Index i = 0; i != microstructure_weights.size(); ++i) {
+          if (microstructure_weights[i] < SIFT2_MICRO_AF_EPSILON) {
+            microstructure_weights[i] = SIFT2_MICRO_AF_EPSILON;
+            ++clamped_count;
+          }
+        }
+        if (clamped_count)
+          WARN (str(clamped_count) + " streamlines had MicroAF values below epsilon (" +
+                str(SIFT2_MICRO_AF_EPSILON) + ") and were clamped");
+
+        INFO ("Loaded microstructure weighting values for " + str(microstructure_weights.size()) + " streamlines"
+              " (range: " + str(microstructure_weights.minCoeff()) + " - " + str(microstructure_weights.maxCoeff()) +
+              ", mean: " + str(microstructure_weights.mean()) + ")");
       }
 
 
@@ -310,16 +336,17 @@ namespace MR {
           // Calculate the cost of regularisation, given the updates to both the
           //   streamline weighting coefficients and the new fixel mean coefficients
           // Log different regularisation costs separately
-          double cf_reg_tik = 0.0, cf_reg_tv = 0.0;
+          double cf_reg_tik = 0.0, cf_reg_tv = 0.0, cf_reg_micro = 0.0;
           {
             SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
-            RegularisationCalculator worker (*this, cf_reg_tik, cf_reg_tv);
+            RegularisationCalculator worker (*this, cf_reg_tik, cf_reg_tv, cf_reg_micro);
             Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
           }
-          cf_reg_tik *= reg_multiplier_tikhonov;
-          cf_reg_tv  *= reg_multiplier_tv;
+          cf_reg_tik   *= reg_multiplier_tikhonov;
+          cf_reg_tv    *= reg_multiplier_tv;
+          cf_reg_micro *= reg_multiplier_micro;
 
-          cf_reg = cf_reg_tik + cf_reg_tv;
+          cf_reg = cf_reg_tik + cf_reg_tv + cf_reg_micro;
 
           new_cf = cf_data + cf_reg;
 
