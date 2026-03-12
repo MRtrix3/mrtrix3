@@ -248,7 +248,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     const Texture backward_update_field_moving = context.new_empty_texture(moving_vector_texture_spec);
     const Texture backward_update_field = context.new_empty_texture(vector_texture_spec);
     const Texture inertial_update_field = context.new_empty_texture(vector_texture_spec);
-    const Texture smoothed_update_field = context.new_empty_texture(vector_texture_spec);
+    // NOTE: backward_update_field is no longer needed after symmetric_combine_updates_kernel in each iteration,
+    // so we reuse it as the fluid-smoothed update output to reduce memory usage.
+    const Texture &smoothed_update_field = backward_update_field;
 
     const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(fixed_level, workgroup_size);
     const DispatchGrid moving_dispatch_grid = DispatchGrid::element_wise_texture(moving_level, workgroup_size);
