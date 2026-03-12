@@ -80,6 +80,8 @@ static_assert(sizeof(DispatchGridUniforms) % 16 == 0, "DispatchGridUniforms must
 
 struct alignas(16) ExponentiateInitUniforms {
   uint32_t num_steps = 0U;
+  float velocity_sign = 1.0F;
+  std::array<uint32_t, 2> padding = {0U, 0U};
 };
 static_assert(sizeof(ExponentiateInitUniforms) % 16 == 0, "ExponentiateInitUniforms must be 16-byte aligned.");
 
@@ -155,7 +157,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   // 2. Iterate:
   //    - exponentiate v to get forward displacement exp(v) via scaling-and-squaring
   //    - compute forward metric cost and forward local demons update
-  //    - negate velocity and exponentiate -v to get backward displacement exp(-v)
+  //    - exponentiate -v to get backward displacement exp(-v)
   //    - compute backward metric cost and backward local demons update
   //    - combine updates as u_raw = 0.5 * (u_fwd - u_bwd)
   //    - apply inertia as u = u_raw + alpha * u_prev
@@ -206,7 +208,8 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   for (uint32_t level = 0U; level < num_levels; ++level) {
     INFO("Non-linear registration: processing level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels));
     // Synchronize at level boundaries, then ask Dawn to release unused memory from the previous level before allocating
-    // resources for the current level. On some hardware (e.g. AMD Radeon RX 590), this can help reduce peak memory usage.
+    // resources for the current level. On some hardware (e.g. AMD Radeon RX 590), this can help reduce peak memory
+    // usage.
     if (level > 0U) {
       moving_pyramid[level - 1U] = {};
       fixed_pyramid[level - 1U] = {};
@@ -238,7 +241,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         context.new_buffer_from_host_object(voxel_scanner_matrices, BufferType::UniformBuffer);
     const Texture velocity1 = context.new_empty_texture(vector_texture_spec);
     const Texture velocity2 = context.new_empty_texture(vector_texture_spec);
-    const Texture negated_velocity = context.new_empty_texture(vector_texture_spec);
     const Texture displacement1 = context.new_empty_texture(vector_texture_spec);
     const Texture displacement2 = context.new_empty_texture(vector_texture_spec);
     const Texture forward_displacement_cache = context.new_empty_texture(vector_texture_spec);
@@ -287,10 +289,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                                         .bindings_map = {{"uniforms", exp_init_uniforms_buffer},
                                                                          {"velocityTexture", velocity2},
                                                                          {"output", displacement1}}});
-    const Kernel exp_init_from_negated = context.new_kernel({.compute_shader = exp_init_shader,
-                                                             .bindings_map = {{"uniforms", exp_init_uniforms_buffer},
-                                                                              {"velocityTexture", negated_velocity},
-                                                                              {"output", displacement1}}});
 
     const ShaderEntry exp_square_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/exponentiate.slang"},
@@ -400,17 +398,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       };
       lncc_pipeline.emplace(context, lncc_pipeline_config);
     }
-    const ShaderEntry negate_velocity_shader{
-        .shader_source = ShaderFile{"shaders/registration/nonlinear/negate_velocity.slang"},
-        .entryPoint = "main",
-        .workgroup_size = workgroup_size,
-    };
-    const Kernel negate_velocity_v1 =
-        context.new_kernel({.compute_shader = negate_velocity_shader,
-                            .bindings_map = {{"velocity", velocity1}, {"outputVelocity", negated_velocity}}});
-    const Kernel negate_velocity_v2 =
-        context.new_kernel({.compute_shader = negate_velocity_shader,
-                            .bindings_map = {{"velocity", velocity2}, {"outputVelocity", negated_velocity}}});
     const ShaderEntry symmetric_combine_updates_shader{
         .shader_source = ShaderFile{"shaders/registration/nonlinear/symmetric_combine_updates.slang"},
         .entryPoint = "main",
@@ -452,9 +439,10 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       const float max_norm = std::sqrt(std::max(0.0F, max_norm_sq));
       return compute_exponentiation_steps(max_norm);
     };
-    const auto exponentiate_from_kernel = [&](const Kernel &exp_init_kernel, uint32_t num_steps) {
+    const auto exponentiate_from_kernel = [&](const Kernel &exp_init_kernel, uint32_t num_steps, float velocity_sign) {
       const ExponentiateInitUniforms exp_init_uniforms{
           .num_steps = num_steps,
+          .velocity_sign = velocity_sign,
       };
       context.write_object_to_buffer(exp_init_uniforms_buffer, exp_init_uniforms);
       exponentiate_velocity(exp_init_kernel, num_steps, exp_square_12, exp_square_21, dispatch_grid, context);
@@ -489,7 +477,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
           velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
       const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
       const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
-      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps);
+      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, 1.0F);
       const float forward_cost = use_lncc_metric ? lncc_pipeline->evaluate_forward_cost(context)
                                                  : ssd_pipeline->evaluate_forward_cost(context);
       if (use_lncc_metric) {
@@ -499,10 +487,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       }
       context.copy_texture_to_texture(displacement1, forward_displacement_cache, {});
 
-      const Kernel &negate_velocity_kernel = velocity_is_1 ? negate_velocity_v1 : negate_velocity_v2;
-      context.dispatch_kernel(negate_velocity_kernel, dispatch_grid);
-
-      exponentiate_from_kernel(exp_init_from_negated, exponentiation_steps);
+      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, -1.0F);
       const float backward_cost = use_lncc_metric ? lncc_pipeline->evaluate_backward_cost(context)
                                                   : ssd_pipeline->evaluate_backward_cost(context);
       if (use_lncc_metric) {
@@ -566,12 +551,10 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
           velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
       const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
       const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
-      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps);
+      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, 1.0F);
       context.copy_texture_to_texture(displacement1, forward_displacement_cache, {});
 
-      const Kernel &negate_velocity_kernel = velocity_is_1 ? negate_velocity_v1 : negate_velocity_v2;
-      context.dispatch_kernel(negate_velocity_kernel, dispatch_grid);
-      exponentiate_from_kernel(exp_init_from_negated, exponentiation_steps);
+      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, -1.0F);
 
       final_forward_displacement = forward_displacement_cache;
       final_backward_displacement = displacement1;

@@ -12,6 +12,8 @@ extern static const uint32_t kWorkgroupSizeZ = 4U;
 
 struct InitUniforms {
     uint32_t numSteps;
+    float velocitySign;
+    uint32_t2 padding;
 };
 
 [shader("compute")]
@@ -30,7 +32,7 @@ void initialise(
     let velocity = velocityTexture.Load(int32_t4(globalId, 0)).xyz;
     let scaled = exp2(-float(uniforms.numSteps));
 
-    output.Store(uint32_t3(globalId), float4(velocity * scaled, 0.0F));
+    output.Store(uint32_t3(globalId), float4(velocity * uniforms.velocitySign * scaled, 0.0F));
 }
 
 [shader("compute")]
