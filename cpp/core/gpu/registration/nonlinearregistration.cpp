@@ -155,10 +155,11 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   // Symmetric log-domain non-linear registration pipeline with inertial local updates:
   // 1. Validate inputs and allocate GPU textures for velocity, displacement, and local updates.
   // 2. Iterate:
-  //    - exponentiate v to get forward displacement exp(v) via scaling-and-squaring
-  //    - compute forward metric cost and forward local demons update
-  //    - exponentiate -v to get backward displacement exp(-v)
+  //    - exponentiate -v to get backward displacement exp(-v) via scaling-and-squaring
   //    - compute backward metric cost and backward local demons update
+  //    - exponentiate v to get forward displacement exp(v)
+  //    - compute forward metric cost and forward local demons update
+  //    - resample backward update from moving lattice to fixed lattice using exp(v)
   //    - combine updates as u_raw = 0.5 * (u_fwd - u_bwd)
   //    - apply inertia as u = u_raw + alpha * u_prev
   //    - regularise u via Gaussian smoothing (fluid-like regularisation)
@@ -243,7 +244,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     const Texture velocity2 = context.new_empty_texture(vector_texture_spec);
     const Texture displacement1 = context.new_empty_texture(vector_texture_spec);
     const Texture displacement2 = context.new_empty_texture(vector_texture_spec);
-    const Texture forward_displacement_cache = context.new_empty_texture(vector_texture_spec);
     const Texture forward_update_field = context.new_empty_texture(vector_texture_spec);
     const Texture backward_update_field_moving = context.new_empty_texture(moving_vector_texture_spec);
     const Texture backward_update_field = context.new_empty_texture(vector_texture_spec);
@@ -316,7 +316,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     const Kernel resample_backward_update_kernel =
         context.new_kernel({.compute_shader = resample_backward_update_shader,
                             .bindings_map = {{"movingUpdate", backward_update_field_moving},
-                                             {"forwardDisplacement", forward_displacement_cache},
+                                             {"forwardDisplacement", displacement1},
                                              {"voxelScannerMatrices", voxel_scanner_buffer},
                                              {"outputUpdate", backward_update_field},
                                              {"linearSampler", linear_sampler}}});
@@ -477,16 +477,9 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
           velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
       const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
       const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
-      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, 1.0F);
-      const float forward_cost = use_lncc_metric ? lncc_pipeline->evaluate_forward_cost(context)
-                                                 : ssd_pipeline->evaluate_forward_cost(context);
-      if (use_lncc_metric) {
-        lncc_pipeline->compute_forward_update(context);
-      } else {
-        ssd_pipeline->compute_forward_update(context);
-      }
-      context.copy_texture_to_texture(displacement1, forward_displacement_cache, {});
-
+      // NOTE: Backward must run first because resampling the moving-lattice backward update requires exp(v), and by
+      // keeping exp(v) in displacement1 at this point we avoid a per-iteration full-volume forward displacement
+      // cache/copy.
       exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, -1.0F);
       const float backward_cost = use_lncc_metric ? lncc_pipeline->evaluate_backward_cost(context)
                                                   : ssd_pipeline->evaluate_backward_cost(context);
@@ -494,6 +487,15 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         lncc_pipeline->compute_backward_update(context);
       } else {
         ssd_pipeline->compute_backward_update(context);
+      }
+
+      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, 1.0F);
+      const float forward_cost = use_lncc_metric ? lncc_pipeline->evaluate_forward_cost(context)
+                                                 : ssd_pipeline->evaluate_forward_cost(context);
+      if (use_lncc_metric) {
+        lncc_pipeline->compute_forward_update(context);
+      } else {
+        ssd_pipeline->compute_forward_update(context);
       }
       context.dispatch_kernel(resample_backward_update_kernel, dispatch_grid);
 
@@ -551,13 +553,13 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
           velocity_is_1 ? velocity_max_norm_v1_kernel : velocity_max_norm_v2_kernel;
       const Kernel &exp_init_kernel = velocity_is_1 ? exp_init_from_v1 : exp_init_from_v2;
       const uint32_t exponentiation_steps = evaluate_exponentiation_steps(velocity_max_norm_kernel);
-      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, 1.0F);
-      context.copy_texture_to_texture(displacement1, forward_displacement_cache, {});
-
       exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, -1.0F);
+      context.copy_texture_to_texture(displacement1, backward_update_field, {});
 
-      final_forward_displacement = forward_displacement_cache;
-      final_backward_displacement = displacement1;
+      exponentiate_from_kernel(exp_init_kernel, exponentiation_steps, 1.0F);
+
+      final_forward_displacement = displacement1;
+      final_backward_displacement = backward_update_field;
     } else {
       previous_level_velocity = velocity_is_1 ? velocity1 : velocity2;
       previous_level_fixed = fixed_level;
