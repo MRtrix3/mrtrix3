@@ -2,6 +2,12 @@
 
 TAGNAME="$1"
 
+# Optional desired archive root directory name.
+OUTNAME="$2"
+if [ -z "$OUTNAME" ]; then
+  OUTNAME="mrtrix3"
+fi
+
 CMAKE=$(which cmake)
 ORIG_PATH=${PATH}
 PATH=$(getconf PATH)
@@ -171,8 +177,10 @@ cd ${PREFIX}/bin/shview.app/Contents
 ln -s ../../../bin/plugins
 
 cd ${PREFIX}/..
-tar cfJ mrtrix3-${OS}-${TAGNAME}.tar.xz mrtrix3
-rm -rf ${PREFIX}
+
+mv mrtrix3 "${OUTNAME}"
+tar cfJ "${OUTNAME}.tar.xz" "${OUTNAME}"
+rm -rf "${OUTNAME}"
 
 TOTAL_SECONDS=$((FFTW_SECONDS + EIGEN_SECONDS + QT_SECONDS + MRTRIX_SECONDS))
 if [[ ! -n "$DEPCACHE" ]]; then

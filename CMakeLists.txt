@@ -25,11 +25,16 @@ option(MRTRIX_USE_PCH "Use precompiled headers" ON)
 option(MRTRIX_PYTHON_SOFTLINK "Build directory softlink to Python source code rather than copying" ON)
 option(MRTRIX_BUILD_STATIC "Build MRtrix's library statically" OFF)
 option(MRTRIX_USE_LLD "Use lld as the linker" OFF)
+option(MRTRIX_ENABLE_GPU "Enable GPU computing features" ON)
+option(MRTRIX_IGNORE_VERSION_MISMATCH "Ignore version mismatch between git tag and MRtrix base version" OFF)
 
 option(MRTRIX_USE_SYSTEM_EIGEN "Use system-installed Eigen3 library" OFF)
 option(MRTRIX_USE_SYSTEM_JSON "Use system-installed Json for Modern C++ library" OFF)
 option(MRTRIX_USE_SYSTEM_NIFTI "Use system-installed NIfTI C headers" OFF)
 option(MRTRIX_USE_SYSTEM_GTEST "Use system-installed Google Test library" OFF)
+option(MRTRIX_USE_SYSTEM_DAWN "Use system-installed Dawn library" OFF)
+option(MRTRIX_USE_SYSTEM_SLANG "Use system-installed Slang library" OFF)
+option(MRTRIX_USE_SYSTEM_TCB_SPAN "Use system-installed TCB Span library" OFF)
 
 if(MRTRIX_BUILD_TESTS)
     list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
@@ -66,6 +71,10 @@ file(RELATIVE_PATH relDir
 )
 
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 include(BuildType)
 include(BuildInfo)
