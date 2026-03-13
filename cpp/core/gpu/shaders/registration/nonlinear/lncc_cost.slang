@@ -80,6 +80,20 @@ bool solveLnccCost(LnccMomentSums sums, out float cost)
     return true;
 }
 
+struct CostAndCount {
+    float cost;
+    float count;
+};
+
+struct ReduceCostAndCountOp : IReduceOp<CostAndCount> {
+    static CostAndCount identityElement() {
+        return CostAndCount(0.0F, 0.0F);
+    }
+    static CostAndCount reduce(CostAndCount a, CostAndCount b) {
+        return CostAndCount(a.cost + b.cost, a.count + b.count);
+    }
+};
+
 // For each voxel compute and store 6 moments: R, M, R^2, M^2, R*M, and the sum of weights W.
 // To do this we use two RGBA float4 3D textures as output, where the first texture stores R, M, R^2, and M^2
 // and the second texture stores R*M, W, and two unused channels.
@@ -310,8 +324,7 @@ void lnccCostForwardReduceZ(
     RWStructuredBuffer<float> ssdPartials,
     RWStructuredBuffer<float> ssdCounts)
 {
-    static groupshared Array<float, workgroupInvocations> localCosts;
-    static groupshared Array<float, workgroupInvocations> localCounts;
+    static groupshared Array<CostAndCount, workgroupInvocations> localCostAndCounts;
 
     static_assert(kWindowRadius > 0U, "LNCC cost doesn't make sense for a window radius of 0.");
 
@@ -340,20 +353,19 @@ void lnccCostForwardReduceZ(
         }
     }
 
-    localCosts[localIndex] = cost;
-    localCounts[localIndex] = count;
+    localCostAndCounts[localIndex] = CostAndCount(cost, count);
     GroupMemoryBarrierWithGroupSync();
 
-    let reducedCost = workgroupReduce<float, SumFloatOp, workgroupInvocations>(localCosts, localIndex);
-    let reducedCount = workgroupReduce<float, SumFloatOp, workgroupInvocations>(localCounts, localIndex);
+    let reducedCostAndCount = workgroupReduce<CostAndCount, ReduceCostAndCountOp, workgroupInvocations>(
+        localCostAndCounts, localIndex);
 
     if (localIndex == 0U) {
         let globalWorkgroupZ = workgroupId.z + slabUniforms.reduceWorkgroupZOffset;
         let wgIndex = workgroupId.x
                     + workgroupId.y * uniforms.dispatchGrid.x
                     + globalWorkgroupZ * uniforms.dispatchGrid.x * uniforms.dispatchGrid.y;
-        ssdPartials[wgIndex] = reducedCost;
-        ssdCounts[wgIndex] = reducedCount;
+        ssdPartials[wgIndex] = reducedCostAndCount.cost;
+        ssdCounts[wgIndex] = reducedCostAndCount.count;
     }
 
 }
@@ -372,8 +384,7 @@ void lnccCostBackwardReduceZ(
     RWStructuredBuffer<float> ssdPartials,
     RWStructuredBuffer<float> ssdCounts)
 {
-    static groupshared Array<float, workgroupInvocations> localCosts;
-    static groupshared Array<float, workgroupInvocations> localCounts;
+    static groupshared Array<CostAndCount, workgroupInvocations> localCostAndCounts;
 
     static_assert(kWindowRadius > 0U, "LNCC cost doesn't make sense for a window radius of 0.");
 
@@ -402,19 +413,17 @@ void lnccCostBackwardReduceZ(
         }
     }
 
-    localCosts[localIndex] = cost;
-    localCounts[localIndex] = count;
+    localCostAndCounts[localIndex] = CostAndCount(cost, count);
     GroupMemoryBarrierWithGroupSync();
 
-    let reducedCost = workgroupReduce<float, SumFloatOp, workgroupInvocations>(localCosts, localIndex);
-    let reducedCount = workgroupReduce<float, SumFloatOp, workgroupInvocations>(localCounts, localIndex);
+    let reduced = workgroupReduce<CostAndCount, ReduceCostAndCountOp, workgroupInvocations>(localCostAndCounts, localIndex);
 
     if (localIndex == 0U) {
         let globalWorkgroupZ = workgroupId.z + slabUniforms.reduceWorkgroupZOffset;
         let wgIndex = workgroupId.x
                     + workgroupId.y * uniforms.dispatchGrid.x
                     + globalWorkgroupZ * uniforms.dispatchGrid.x * uniforms.dispatchGrid.y;
-        ssdPartials[wgIndex] = reducedCost;
-        ssdCounts[wgIndex] = reducedCount;
+        ssdPartials[wgIndex] = reduced.cost;
+        ssdCounts[wgIndex] = reduced.count;
     }
 }
