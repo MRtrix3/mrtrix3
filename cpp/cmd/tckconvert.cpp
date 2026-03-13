@@ -392,7 +392,7 @@ static std::vector<DpvSpec> get_dpv_specs() {
   return specs;
 }
 
-static bool trx_has_aux_data(const trxmmap::TrxFile<float> *trx) {
+static bool trx_has_aux_data(const trx::TrxFile<float> *trx) {
   if (!trx)
     return false;
   return !(trx->groups.empty() && trx->data_per_streamline.empty() && trx->data_per_vertex.empty() &&
@@ -401,13 +401,13 @@ static bool trx_has_aux_data(const trxmmap::TrxFile<float> *trx) {
 
 static bool is_trx_directory(std::string_view path) {
   try {
-    return trxmmap::is_trx_directory(std::string(path));
+    return trx::is_trx_directory(std::string(path));
   } catch (const std::exception &) {
     return false;
   }
 }
 
-static void apply_transform_to_trx(trxmmap::TrxFile<float> *trx, const transform_type &T) {
+static void apply_transform_to_trx(trx::TrxFile<float> *trx, const transform_type &T) {
   if (!trx || !trx->streamlines)
     return;
   if (T.isApprox(transform_type::Identity()))
@@ -429,9 +429,9 @@ public:
     try {
       const std::string filename(file);
       if (is_trx_directory(filename)) {
-        trx.reset(trxmmap::load_from_directory<float>(filename));
+        trx = trx::load_from_directory<float>(filename);
       } else {
-        trx.reset(trxmmap::load_from_zip<float>(filename));
+        trx = trx::load_from_zip<float>(filename);
       }
       if (trx && trx->streamlines && trx->streamlines->_offsets.size() > 0)
         num_streamlines = trx->streamlines->_offsets.size() - 1;
@@ -474,7 +474,7 @@ public:
   bool has_metadata() const { return has_aux_data; }
 
 private:
-  std::unique_ptr<trxmmap::TrxFile<float>> trx;
+  std::unique_ptr<trx::TrxFile<float>> trx;
   Eigen::Index current;
   Eigen::Index num_streamlines;
   bool has_aux_data;
@@ -495,14 +495,14 @@ public:
         current_streamline(0),
         current_vertex(0) {
     try {
-      trx.reset(new trxmmap::TrxFile<float>(static_cast<int>(nb_vertices), static_cast<int>(nb_streamlines), nullptr));
+      trx.reset(new trx::TrxFile<float>(static_cast<int>(nb_vertices), static_cast<int>(nb_streamlines), nullptr));
       if (trx->streamlines && trx->streamlines->_offsets.size() > 0)
         trx->streamlines->_offsets(0, 0) = 0;
       for (const auto &spec : dps_specs) {
-        trxmmap::add_dps_from_text(*trx, spec.name, spec.dtype, spec.path);
+        trx->add_dps_from_text(spec.name, spec.dtype, spec.path);
       }
       for (const auto &spec : dpv_specs) {
-        trxmmap::add_dpv_from_tsf(*trx, spec.name, spec.dtype, spec.path);
+        trx->add_dpv_from_tsf(spec.name, spec.dtype, spec.path);
       }
     } catch (const std::exception &e) {
       throw Exception(e.what());
@@ -530,7 +530,7 @@ public:
     if (!trx)
       return;
     try {
-      trxmmap::save(*trx, output, ZIP_CM_STORE);
+      trx->save(output, ZIP_CM_STORE);
       if (rename_on_save) {
         std::error_code ec;
         std::filesystem::remove_all(final_output, ec);
@@ -551,7 +551,7 @@ private:
   std::string output;
   std::string final_output;
   bool rename_on_save;
-  std::unique_ptr<trxmmap::TrxFile<float>> trx;
+  std::unique_ptr<trx::TrxFile<float>> trx;
   Eigen::Index current_streamline;
   Eigen::Index current_vertex;
 };
@@ -965,12 +965,12 @@ void run() {
   }
 
   if (input_is_trx && output_is_trx) {
-    std::unique_ptr<trxmmap::TrxFile<float>> trx;
+    std::unique_ptr<trx::TrxFile<float>> trx;
     try {
       if (input_is_trx_dir) {
-        trx.reset(trxmmap::load_from_directory<float>(argument[0]));
+        trx = trx::load_from_directory<float>(argument[0]);
       } else {
-        trx.reset(trxmmap::load_from_zip<float>(argument[0]));
+        trx = trx::load_from_zip<float>(argument[0]);
       }
     } catch (const std::exception &e) {
       throw Exception(e.what());
@@ -979,13 +979,13 @@ void run() {
       throw Exception("Failed to load TRX input.");
     apply_transform_to_trx(trx.get(), T);
     for (const auto &spec : dps_specs) {
-      trxmmap::add_dps_from_text(*trx, spec.name, spec.dtype, spec.path);
+      trx->add_dps_from_text(spec.name, spec.dtype, spec.path);
     }
     for (const auto &spec : dpv_specs) {
-      trxmmap::add_dpv_from_tsf(*trx, spec.name, spec.dtype, spec.path);
+      trx->add_dpv_from_tsf(spec.name, spec.dtype, spec.path);
     }
     try {
-      trxmmap::save(*trx, trx_save_path, ZIP_CM_STORE);
+      trx->save(trx_save_path, ZIP_CM_STORE);
       if (rename_trx_directory) {
         std::error_code ec;
         std::filesystem::remove_all(trx_output, ec);

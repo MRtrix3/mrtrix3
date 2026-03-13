@@ -89,7 +89,7 @@ else()
         trx-cpp
         DOWNLOAD_EXTRACT_TIMESTAMP ON
         GIT_REPOSITORY ${trxcpp_url}
-        GIT_TAG ea9ebcbf4b08e047e6493eb8077f789cdfac36b7
+        GIT_TAG b628275c51f37f9c9070aff29d906e29453be3ce
     )
     FetchContent_MakeAvailable(trx-cpp)
 endif()
