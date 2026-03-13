@@ -19,6 +19,7 @@
 #include "adapter/base.h"
 #include "header.h"
 #include "image_helpers.h"
+#include "stride.h"
 
 namespace MR::Adapter {
 
@@ -34,8 +35,8 @@ public:
   Replicate(ImageType &original, const Header &replication_template)
       : base_type(original),
         header_(replication_template),
-        pos_(std::max<size_t>(parent().ndim(), header_.ndim()), Axes::index_type(0)) {
-    for (Eigen::Index n = 0; n < std::min<Eigen::Index>(parent().ndim(), header_.ndim()); ++n) {
+        pos_(std::max<size_t>(parent().ndim(), header_.ndim()), VoxelIndex(0)) {
+    for (ArrayIndex n = 0; n < std::min<ArrayIndex>(parent().ndim(), header_.ndim()); ++n) {
       if (n < parent().ndim())
         parent().index(n) = 0;
       if (parent().size(n) > 1 && parent().size(n) != header_.size(n))
@@ -43,15 +44,15 @@ public:
     }
   }
 
-  Eigen::Index ndim() const override { return header_.ndim(); }
-  Eigen::Index size(const Eigen::Index axis) const override { return header_.size(axis); }
-  default_type spacing(const Eigen::Index axis) const override { return header_.spacing(axis); }
-  std::ptrdiff_t stride(const Eigen::Index axis) const override {
-    return axis < parent().ndim() ? parent().stride(axis) : std::ptrdiff_t(0);
+  size_t ndim() const override { return header_.ndim(); }
+  size_t size(const ArrayIndex axis) const override { return header_.size(axis); }
+  default_type spacing(const ArrayIndex axis) const override { return header_.spacing(axis); }
+  Stride::Actual::value_type stride(const ArrayIndex axis) const override {
+    return axis < parent().ndim() ? parent().stride(axis) : Stride::Actual::value_type(0);
   }
 
-  Axes::index_type get_index(const Eigen::Index axis) const override { return pos_[axis]; }
-  void move_index(const Eigen::Index axis, const Axes::index_type increment) override {
+  VoxelIndex get_index(const ArrayIndex axis) const override { return pos_[axis]; }
+  void move_index(const ArrayIndex axis, const VoxelIndex increment) override {
     pos_[axis] += increment;
     if (axis < parent().ndim())
       if (parent().size(axis) > 1)
@@ -61,7 +62,7 @@ public:
 protected:
   using base_type::parent;
   Header header_;
-  std::vector<Axes::index_type> pos_;
+  std::vector<VoxelIndex> pos_;
 };
 
 } // namespace MR::Adapter

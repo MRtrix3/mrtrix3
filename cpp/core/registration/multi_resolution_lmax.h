@@ -58,12 +58,12 @@ FORCE_INLINE ImageType multi_resolution_lmax(ImageType &input,
                                              const std::vector<MultiContrastSetting> &contrast,
                                              // TODO Can this be changed to smart pointer or std::optional?
                                              std::vector<MultiContrastSetting> *contrast_updated = nullptr) {
-  std::vector<Axes::index_type> volume_indices;
-  Axes::index_type start = 0;
+  std::vector<VoxelIndex> volume_indices;
+  VoxelIndex start = 0;
   for (size_t ic = 0; ic < contrast.size(); ic++) {
     const auto &mc = contrast[ic];
     assert(mc.nvols > 0);
-    for (size_t i = 0; i < mc.nvols; i++)
+    for (VoxelIndex i = 0; i < mc.nvols; i++)
       volume_indices.push_back(mc.start + i);
     // adjust start index to be relative to subset
     if (contrast_updated)
@@ -74,7 +74,7 @@ FORCE_INLINE ImageType multi_resolution_lmax(ImageType &input,
 
   Filter::Smooth smooth_filter(subset);
   std::vector<default_type> stdev(3);
-  for (Eigen::Index dim = 0; dim < 3; ++dim)
+  for (ArrayIndex dim = 0; dim < 3; ++dim)
     stdev[dim] = input.spacing(dim) / (2.0 * scale_factor);
 
   smooth_filter.set_stdev(stdev);

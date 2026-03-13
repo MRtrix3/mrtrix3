@@ -38,16 +38,16 @@ template <class InputImageType, class OutputImageType>
 inline void threaded_copy(InputImageType &source,
                           OutputImageType &destination,
                           const Axes::Subset &axes,
-                          const Eigen::Index num_axes_in_thread = 1) {
+                          const size_t num_axes_in_thread = 1) {
   ThreadedLoop(source, axes, num_axes_in_thread).run(__copy_func(), source, destination);
 }
 
 template <class InputImageType, class OutputImageType>
 inline void threaded_copy(InputImageType &source,
                           OutputImageType &destination,
-                          const Eigen::Index from_axis = 0,
-                          const Eigen::Index to_axis = -1,
-                          const Eigen::Index num_axes_in_thread = 1) {
+                          const ArrayIndex from_axis = 0,
+                          const ArrayIndex to_axis = -1,
+                          const size_t num_axes_in_thread = 1) {
   ThreadedLoop(source, from_axis, to_axis, num_axes_in_thread).run(__copy_func(), source, destination);
 }
 
@@ -56,7 +56,7 @@ inline void threaded_copy_with_progress_message(std::string_view message,
                                                 InputImageType &source,
                                                 OutputImageType &destination,
                                                 const Axes::Subset &axes,
-                                                const Eigen::Index num_axes_in_thread = 1) {
+                                                const size_t num_axes_in_thread = 1) {
   ThreadedLoop(message, source, axes, num_axes_in_thread).run(__copy_func(), source, destination);
 }
 
@@ -64,9 +64,9 @@ template <class InputImageType, class OutputImageType>
 inline void threaded_copy_with_progress_message(std::string_view message,
                                                 InputImageType &source,
                                                 OutputImageType &destination,
-                                                const Eigen::Index from_axis = 0,
-                                                const Eigen::Index to_axis = -1,
-                                                const Eigen::Index num_axes_in_thread = 1) {
+                                                const ArrayIndex from_axis = 0,
+                                                const ArrayIndex to_axis = -1,
+                                                const size_t num_axes_in_thread = 1) {
   ThreadedLoop(message, source, from_axis, to_axis, num_axes_in_thread).run(__copy_func(), source, destination);
 }
 
@@ -74,7 +74,7 @@ template <class InputImageType, class OutputImageType>
 inline void threaded_copy_with_progress(InputImageType &source,
                                         OutputImageType &destination,
                                         const Axes::Subset &axes,
-                                        const Eigen::Index num_axes_in_thread = 1) {
+                                        const size_t num_axes_in_thread = 1) {
   threaded_copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" +
                                           shorten(destination.name()) + "\"",
                                       source,
@@ -86,9 +86,9 @@ inline void threaded_copy_with_progress(InputImageType &source,
 template <class InputImageType, class OutputImageType>
 inline void threaded_copy_with_progress(InputImageType &source,
                                         OutputImageType &destination,
-                                        const Eigen::Index from_axis = 0,
-                                        const Eigen::Index to_axis = -1,
-                                        const Eigen::Index num_axes_in_thread = 1) {
+                                        const ArrayIndex from_axis = 0,
+                                        const ArrayIndex to_axis = -1,
+                                        const size_t num_axes_in_thread = 1) {
   threaded_copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" +
                                           shorten(destination.name()) + "\"",
                                       source,

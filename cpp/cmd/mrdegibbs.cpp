@@ -143,12 +143,14 @@ void run() {
   auto opt = get_options("axes");
   const bool axes_set_manually = !opt.empty();
   if (!opt.empty()) {
-    const Axes::Subset user_axes(parse_ints<Eigen::Index>(opt[0][0]));
+    const Axes::Subset user_axes(parse_ints<ArrayIndex>(opt[0][0]));
     if (user_axes == Axes::Subset({0, 1, 2})) {
       mode = 1;
     } else {
       if (user_axes.size() != 2)
         throw Exception("slice axes must be specified as a comma-separated 2-vector");
+      if (std::min(user_axes[0], user_axes[1]) < 0)
+        throw Exception("slice axes must be non-negative");
       if (std::max(user_axes[0], user_axes[1]) >= static_cast<ssize_t>(header.ndim()))
         throw Exception("slice axes must be within the dimensionality of the image");
       if (user_axes[0] == user_axes[1])

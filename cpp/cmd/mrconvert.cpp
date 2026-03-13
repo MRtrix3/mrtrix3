@@ -250,14 +250,14 @@ void usage() {
 }
 // clang-format on
 
-void permute_DW_scheme(Header &H, const std::vector<Eigen::Index> &axes) {
+void permute_DW_scheme(Header &H, const Stride::Order &axes) {
   auto in = DWI::parse_DW_scheme(H);
   if (!in.rows())
     return;
 
   Transform T(H);
   Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
-  for (Eigen::Index axis = 0; axis != 3; ++axis)
+  for (ArrayIndex axis = 0; axis != 3; ++axis)
     permute(axes[axis], axis) = 1.0;
   const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
 
@@ -270,13 +270,13 @@ void permute_DW_scheme(Header &H, const std::vector<Eigen::Index> &axes) {
   DWI::set_DW_scheme(H, out);
 }
 
-void permute_PE_scheme(Header &H, const std::vector<Eigen::Index> &axes) {
+void permute_PE_scheme(Header &H, const Stride::Order &axes) {
   auto in = Metadata::PhaseEncoding::parse_scheme(H.keyval(), H);
   if (!in.rows())
     return;
 
   Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
-  for (Eigen::Index axis = 0; axis != 3; ++axis)
+  for (ArrayIndex axis = 0; axis != 3; ++axis)
     permute(axes[axis], axis) = 1.0;
 
   Eigen::MatrixXd out(in.rows(), in.cols());
@@ -288,7 +288,7 @@ void permute_PE_scheme(Header &H, const std::vector<Eigen::Index> &axes) {
   Metadata::PhaseEncoding::set_scheme(H.keyval(), out);
 }
 
-void permute_slice_direction(Header &H, const std::vector<Eigen::Index> &axes) {
+void permute_slice_direction(Header &H, const Stride::Order &axes) {
   using Metadata::BIDS::axis_vector_type;
   auto slice_encoding_it = H.keyval().find("SliceEncodingDirection");
   auto slice_timing_it = H.keyval().find("SliceTiming");
@@ -308,9 +308,9 @@ void permute_slice_direction(Header &H, const std::vector<Eigen::Index> &axes) {
   slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
 }
 
-template <class ImageType> inline std::vector<Eigen::Index> set_header(Header &header, const ImageType &input) {
+template <class ImageType> inline Stride::Order set_header(Header &header, const ImageType &input) {
   header.ndim() = input.ndim();
-  for (Eigen::Index n = 0; n < header.ndim(); ++n) {
+  for (ArrayIndex n = 0; n < header.ndim(); ++n) {
     header.size(n) = input.size(n);
     header.spacing(n) = input.spacing(n);
     header.stride(n) = input.stride(n);
@@ -318,27 +318,22 @@ template <class ImageType> inline std::vector<Eigen::Index> set_header(Header &h
   header.transform() = input.transform();
 
   auto opt = get_options("axes");
-  std::vector<Eigen::Index> axes;
+  Stride::Order result(Stride::Order::canonical(input.ndim()));
   if (!opt.empty()) {
-    axes = parse_ints<Eigen::Index>(opt[0][0]);
+    const Stride::Order::vector_type axes(parse_ints<Stride::Order::value_type>(opt[0][0]));
     header.ndim() = axes.size();
-    for (Eigen::Index i = 0; i < axes.size(); ++i) {
-      if (axes[i] >= input.ndim())
-        throw Exception("axis supplied to option -axes is out of bounds");
+    for (StdIndex i = 0; i < axes.size(); ++i) {
+      if (axes[i] >= static_cast<Stride::Order::value_type>(input.ndim()))
+        throw Exception("axis supplied to option -axes (" + str(axes[i]) + ")" +
+                        " is beyond dimensionality of input image (" + str(input.ndim()) + ")");
       header.size(i) = axes[i] < 0 ? 1 : input.size(axes[i]);
       header.spacing(i) = axes[i] < 0 ? NaN : input.spacing(axes[i]);
       header.stride(i) = axes[i] < 0 ? 0 : input.stride(axes[i]);
     }
-    permute_DW_scheme(header, axes);
-    permute_PE_scheme(header, axes);
-    permute_slice_direction(header, axes);
-  } else {
-    header.ndim() = input.ndim();
-    axes.assign(input.ndim(), 0);
-    for (Eigen::Index i = 0; i < axes.size(); ++i) {
-      axes[i] = i;
-      header.size(i) = input.size(i);
-    }
+    result = Stride::Order(axes);
+    permute_DW_scheme(header, result);
+    permute_PE_scheme(header, result);
+    permute_slice_direction(header, result);
   }
 
   opt = get_options("vox");
@@ -348,7 +343,7 @@ template <class ImageType> inline std::vector<Eigen::Index> set_header(Header &h
       throw Exception("too many axes supplied to -vox option");
     if (vox.size() == 1)
       vox.resize(3, vox[0]);
-    for (Eigen::Index n = 0; n < vox.size(); ++n) {
+    for (ArrayIndex n = 0; n < vox.size(); ++n) {
       if (std::isfinite(vox[n]))
         header.spacing(n) = vox[n];
     }
@@ -356,14 +351,13 @@ template <class ImageType> inline std::vector<Eigen::Index> set_header(Header &h
 
   Stride::set_from_command_line(header);
 
-  return axes;
+  return result;
 }
 
 template <typename T, class InputType>
 void copy_permute(const InputType &in, Header &header_out, std::string_view output_filename) {
   const auto axes = set_header(header_out, in);
   auto out = Image<T>::create(output_filename, header_out, add_to_command_history);
-  VAR(out.ndim());
   DWI::export_grad_commandline(out);
   Metadata::PhaseEncoding::export_commandline(out);
   auto perm = Adapter::make<Adapter::PermuteAxes>(in, axes);
@@ -373,7 +367,7 @@ void copy_permute(const InputType &in, Header &header_out, std::string_view outp
 template <typename T>
 void extract(Header &header_in,
              Header &header_out,
-             const std::vector<std::vector<Eigen::Index>> &pos,
+             const std::vector<std::vector<VoxelIndex>> &pos,
              std::string_view output_filename) {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
@@ -425,7 +419,7 @@ void run() {
   }
 
   opt = get_options("clear_property");
-  for (Eigen::Index n = 0; n < opt.size(); ++n) {
+  for (StdIndex n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
     auto entry = header_out.keyval().find(opt[n][0]);
@@ -439,30 +433,32 @@ void run() {
   }
 
   opt = get_options("set_property");
-  for (Eigen::Index n = 0; n < opt.size(); ++n) {
+  for (StdIndex n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
     header_out.keyval()[std::string(opt[n][0])] = std::string(opt[n][1]);
   }
 
   opt = get_options("append_property");
-  for (Eigen::Index n = 0; n < opt.size(); ++n) {
+  for (StdIndex n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
     add_line(header_out.keyval()[std::string(opt[n][0])], std::string(opt[n][1]));
   }
 
   opt = get_options("coord");
-  std::vector<std::vector<Eigen::Index>> pos;
+  std::vector<std::vector<VoxelIndex>> pos;
   if (!opt.empty()) {
-    pos.assign(header_in.ndim(), std::vector<Eigen::Index>());
-    for (Eigen::Index n = 0; n < opt.size(); n++) {
-      const Eigen::Index axis = opt[n][0];
+    pos.assign(header_in.ndim(), std::vector<VoxelIndex>());
+    for (StdIndex n = 0; n < opt.size(); n++) {
+      const ArrayIndex axis = opt[n][0];
+      if (axis < 0)
+        throw Exception("axis provided with -coord option must be non-negative");
       if (axis >= header_in.ndim())
         throw Exception("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (!pos[axis].empty())
         throw Exception("\"coord\" option specified twice for axis " + str(axis));
-      pos[axis] = parse_ints<Eigen::Index>(opt[n][1], header_in.size(axis) - 1);
+      pos[axis] = parse_ints<VoxelIndex>(opt[n][1], header_in.size(axis) - 1);
 
       auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*minval < 0)
@@ -483,7 +479,7 @@ void run() {
             DWI::clear_DW_scheme(header_out);
           } else {
             Eigen::MatrixXd extract_grad(pos[3].size(), grad.cols());
-            for (Eigen::Index dir = 0; dir != pos[3].size(); ++dir)
+            for (ArrayIndex dir = 0; dir != pos[3].size(); ++dir)
               extract_grad.row(dir) = grad.row(pos[3][dir]);
             DWI::set_DW_scheme(header_out, extract_grad);
           }
@@ -493,7 +489,7 @@ void run() {
           pe_scheme = Metadata::PhaseEncoding::get_scheme(header_in);
           if (pe_scheme.rows()) {
             Eigen::MatrixXd extract_scheme(pos[3].size(), pe_scheme.cols());
-            for (Eigen::Index vol = 0; vol != pos[3].size(); ++vol)
+            for (ArrayIndex vol = 0; vol != pos[3].size(); ++vol)
               extract_scheme.row(vol) = pe_scheme.row(pos[3][vol]);
             Metadata::PhaseEncoding::set_scheme(header_out.keyval(), extract_scheme);
           }
@@ -505,11 +501,11 @@ void run() {
       }
     }
 
-    for (Eigen::Index n = 0; n < header_in.ndim(); ++n) {
+    for (ArrayIndex n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
         pos[n].resize(header_in.size(n));
-        for (Eigen::Index i = 0; i < pos[n].size(); i++)
-          pos[n][i] = static_cast<Eigen::Index>(i);
+        for (VoxelIndex i = 0; i < pos[n].size(); i++)
+          pos[n][i] = i;
       }
     }
   }

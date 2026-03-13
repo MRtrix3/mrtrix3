@@ -624,7 +624,7 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
   //   however I don't think this makes any sense given the NIfTI format doesn't support such?
   // TODO Test this design
   const Stride::Symbolic spatial_symbolic = Stride::Symbolic(H).resized(3).sanitised();
-  Stride::ListType nonspatial_permutation = Stride::Permutation::canonical(num_axes);
+  Stride::Permutation::vector_type nonspatial_permutation(Stride::Permutation::canonical(num_axes));
   for (ssize_t spatial_axis = 0; spatial_axis != 3; ++spatial_axis)
     nonspatial_permutation[spatial_axis] = 0;
   const Stride::Symbolic output_symbolic =

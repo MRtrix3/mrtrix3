@@ -157,29 +157,18 @@ List __from_command_line(const List &current) {
 
 namespace MR::Stride {
 
-std::ostream &operator<<(std::ostream &stream, const Base &base) {
-  if (base.empty()) {
-    stream << "<NULL>";
-    return stream;
-  }
-  stream << base[0];
-  for (Eigen::Index axis = 1; axis != base.size(); ++axis)
-    stream << "," << base[axis];
-  return stream;
-}
-
 Order::Order(const Permutation &permutation) : Base(permutation.size(), Order::invalid) {
   assert(permutation.valid());
-  for (Eigen::Index axis = 0; axis != permutation.size(); ++axis)
+  for (ArrayIndex axis = 0; axis != permutation.size(); ++axis)
     data_[permutation[axis]] = axis;
 }
 
-Order::Order(const ListType &data) : Base(data) {}
+Order::Order(const std::vector<Order::value_type> &data) : Base(data) {}
 
 Order::operator Axes::Subset() const { return Axes::Subset(data_.begin(), data_.end()); }
 
 bool Order::is_canonical() const {
-  for (Eigen::Index axis = 0; axis != size(); ++axis) {
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
     if (data_[axis] != axis)
       return false;
   }
@@ -197,8 +186,8 @@ bool Order::is_sanitised() const {
 }
 
 void Order::sanitise() {
-  std::multimap<Eigen::Index, Eigen::Index> sorter;
-  for (Eigen::Index axis = 0; axis != size(); ++axis)
+  std::multimap<value_type, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
     sorter.insert({data_[axis], axis});
   data_.clear();
   for (const auto &item : sorter)
@@ -211,18 +200,12 @@ bool Order::valid() const {
     return false;
   if (*std::min_element(data_.begin(), data_.end()) < 0)
     return false;
-  if (std::set<Eigen::Index>(data_.begin(), data_.end()).size() != size())
+  if (std::set<ArrayIndex>(data_.begin(), data_.end()).size() != size())
     return false;
   return true;
 }
 
-// Axes::Subset Order::block(const Eigen::Index from_axis, const Eigen::Index to_axis) const {
-//   assert(from_axis >= 0);
-//   assert(from_axis < to_axis);
-//   return Axes::Subset(data_.begin() + from_axis, data_.begin() + std::min(size(), to_axis));
-// }
-
-Axes::Subset Order::head(const Eigen::Index num_axes) const {
+Axes::Subset Order::head(const size_t num_axes) const {
   assert(num_axes >= 0);
   assert(num_axes <= size());
   return Axes::Subset(data_.begin(), data_.begin() + num_axes);
@@ -239,7 +222,7 @@ Axes::Subset Order::subset(const Axes::Subset &axes) const {
   return result;
 }
 
-Axes::Subset Order::subset(const Eigen::Index from_axis, const Eigen::Index to_axis) const {
+Axes::Subset Order::subset(const ArrayIndex from_axis, const ArrayIndex to_axis) const {
   assert(from_axis >= 0);
   assert(to_axis == -1 || to_axis > from_axis);
   Axes::Subset result;
@@ -250,51 +233,43 @@ Axes::Subset Order::subset(const Eigen::Index from_axis, const Eigen::Index to_a
   return result;
 }
 
-Axes::Subset Order::tail(const Eigen::Index num_axes) const {
+Axes::Subset Order::tail(const size_t num_axes) const {
   assert(num_axes >= 0);
   assert(num_axes <= size());
-  return Axes::Subset(ListType(data_.begin() + (size() - num_axes), data_.end()));
+  return Axes::Subset(std::vector<value_type>(data_.begin() + (size() - num_axes), data_.end()));
 }
 
-Order Order::canonical(const Eigen::Index num_axes) {
-  ListType order(num_axes);
-  for (Eigen::Index axis = 0; axis != num_axes; ++axis)
+Order Order::canonical(const size_t num_axes) {
+  vector_type order(num_axes);
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(num_axes); ++axis)
     order[axis] = axis;
   Order result(order);
   assert(result.is_sanitised());
   return result;
 }
 
-Permutation::Permutation(const ListType &permutation) : Base(permutation) {
-  // TODO From user input?
-  // May include "-1" values indicating insertion of an axis?
-}
+Permutation::Permutation(const Permutation::vector_type &permutation) : Base(permutation) {}
 
 Permutation::Permutation(const Order &order)
-    : Base(1 + *std::max_element(static_cast<ListType>(order).begin(), static_cast<ListType>(order).end()),
+    : Base(1 + *std::max_element(static_cast<Order::vector_type>(order).begin(),
+                                 static_cast<Order::vector_type>(order).end()),
            Permutation::invalid) {
-  for (Eigen::Index index = 0; index != order.size(); ++index)
+  for (ArrayIndex index = 0; index != static_cast<ArrayIndex>(order.size()); ++index)
     data_[order[index]] = index;
   assert(!is_degenerate());
 }
 
-// TODO Note that the origin function took from_axis and to_axis arguments;
-//   it may however be preferable to force an initial extraction of those axes
-//   prior to establishing their order,
-//   rather than doing it within the ordering function?
 // TODO Confirm that this preserves duplicate symbolic strides
 //   (irrespective of sign) as duplicates in order?
-// TODO Think that zeroes need to be detected here,
-//   and assigned a value one larger than the maximal absolute non-zero symbolic
 Permutation::Permutation(const Symbolic &symbolic) : Base(symbolic.size(), Permutation::invalid) {
   assert(symbolic.valid());
-  // TODO Update type following CRTP transition
-  std::multimap<Eigen::Index, Eigen::Index> sorter;
-  for (Eigen::Index axis = 0; axis != size(); ++axis)
-    sorter.insert({MR::abs(symbolic[axis]), axis});
-  // TODO Preserve ties in the conversion?
-  Eigen::Index perm_index = 0;
-  Eigen::Index last_symbolic = Symbolic::invalid;
+  std::multimap<Symbolic::value_type, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
+    sorter.insert({symbolic[axis] == Symbolic::invalid ? std::numeric_limits<Symbolic::value_type>::max()
+                                                       : MR::abs(symbolic[axis]),
+                   axis});
+  ArrayIndex perm_index = 0;
+  Symbolic::value_type last_symbolic = Symbolic::invalid;
   for (const auto &item : sorter) {
     if (item.first != last_symbolic) {
       if (last_symbolic != Symbolic::invalid)
@@ -309,7 +284,7 @@ Permutation::Permutation(const Symbolic &symbolic) : Base(symbolic.size(), Permu
 Permutation::Permutation(const Actual &actual) : Permutation(Symbolic(actual)) {}
 
 bool Permutation::is_canonical() const {
-  for (Eigen::Index axis = 0; axis != size(); ++axis) {
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
     if (data_[axis] != axis)
       return false;
   }
@@ -317,8 +292,8 @@ bool Permutation::is_canonical() const {
 }
 
 bool Permutation::is_degenerate() const {
-  std::set<Eigen::Index> valid_indices;
-  for (Eigen::Index axis = 0; axis != size(); ++axis) {
+  std::set<ArrayIndex> valid_indices;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
     if (data_[axis] != invalid) {
       if (valid_indices.find(data_[axis]) != valid_indices.end())
         return true;
@@ -344,10 +319,10 @@ bool Permutation::is_sanitised() const {
 }
 
 void Permutation::sanitise() {
-  std::multimap<Eigen::Index, Eigen::Index> sorter;
-  for (Eigen::Index axis = 0; axis != size(); ++axis)
+  std::multimap<value_type, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
     sorter.insert({data_[axis], axis});
-  Eigen::Index axis = 0;
+  value_type axis = 0;
   std::ostringstream oss;
   oss << "Sanitised permutation [" << *this << "]";
   for (const auto &sorted : sorter)
@@ -367,7 +342,7 @@ bool Permutation::valid() const {
   return true;
 }
 
-Permutation Permutation::head(const Eigen::Index num_axes) const {
+Permutation Permutation::head(const size_t num_axes) const {
   assert(num_axes >= 0);
   assert(num_axes <= size());
   Permutation result(*this);
@@ -377,7 +352,7 @@ Permutation Permutation::head(const Eigen::Index num_axes) const {
 
 Order Permutation::order() const { return Order(*this); }
 
-void Permutation::resize(const Eigen::Index num_axes) { data_.resize(num_axes, Permutation::invalid); }
+void Permutation::resize(const size_t num_axes) { data_.resize(num_axes, Permutation::invalid); }
 
 Permutation Permutation::sanitised() const {
   Permutation result(*this);
@@ -385,52 +360,55 @@ Permutation Permutation::sanitised() const {
   return result;
 }
 
-Permutation Permutation::axis_range(const Eigen::Index from, const Eigen::Index to) {
+Permutation Permutation::axis_range(const ArrayIndex from, const ArrayIndex to) {
   assert(to > from);
-  ListType permutation(to - from, Permutation::invalid);
-  for (Eigen::Index i = 0; i != permutation.size(); ++i)
+  vector_type permutation(to - from, Permutation::invalid);
+  for (ArrayIndex i = 0; i != permutation.size(); ++i)
     permutation[i] = from + i;
   const Permutation result(permutation);
   assert(result.is_sanitised());
   return result;
 }
 
-Permutation Permutation::canonical(const Eigen::Index num_axes) {
-  ListType permutation(num_axes);
-  for (Eigen::Index axis = 0; axis != num_axes; ++axis)
+Permutation Permutation::canonical(const size_t num_axes) {
+  vector_type permutation(num_axes);
+  for (ArrayIndex axis = 0; axis != num_axes; ++axis)
     permutation[axis] = axis;
   const Permutation result(permutation);
   assert(result.is_sanitised());
   return result;
 }
 
-Permutation Permutation::contiguous_along_axis(const Eigen::Index num_axes, const Eigen::Index axis) {
+Permutation Permutation::contiguous_along_axis(const size_t num_axes, const ArrayIndex axis) {
   assert(axis >= 0);
   assert(axis < num_axes);
-  ListType permutation(num_axes, 1);
+  vector_type permutation(num_axes, 1);
   permutation[axis] = 0;
+  return Permutation(permutation);
+}
+
+Permutation Permutation::contiguous_along_spatial_axes(const size_t num_axes) {
+  Permutation::vector_type permutation(num_axes, 0);
+  for (ArrayIndex nonspatial_axis = 3; nonspatial_axis < static_cast<ArrayIndex>(num_axes); ++nonspatial_axis)
+    permutation[nonspatial_axis] = 1;
   return Permutation(permutation);
 }
 
 const Permutation Permutation::volume_contiguous({1, 1, 1, 0});
 
-Symbolic::Symbolic(const ListType &in) : Base(in) { sanitise(); }
+Symbolic::Symbolic(const Symbolic::vector_type &in) : Base(in) { sanitise(); }
 
 Symbolic::Symbolic(const Actual &actual) : Base(actual.size(), Symbolic::invalid) {
-  // TODO Would prefer to be able to restore this assertion
-  // ... But this might be getting called based on an Actual initialised from a template input,
-  //   in which case there's no guarantee that those data are in fact valid Actual...
-  // assert(actual.valid());
-  std::multimap<Eigen::Index, Eigen::Index> sorter;
+  std::multimap<Actual::value_type, ArrayIndex> sorter;
   // Where actual strides are tied,
   //   order axes from last to first
   // TODO This should be an arbitrary preference;
-  //   code shouldn't break based on this change... (awaiting to see if it fixes current issue)
-  // TODO I think that elements that are zero here
-  //   may need to be put at the end of the list rather than the start?
-  for (Eigen::Index axis = size() - 1; axis >= 0; --axis)
-    sorter.insert({actual[axis] == 0 ? std::numeric_limits<Eigen::Index>::max() : MR::abs(actual[axis]), axis});
-  Eigen::Index index = 1;
+  //   code shouldn't break based on this change...
+  for (ArrayIndex axis = size() - 1; axis >= 0; --axis)
+    sorter.insert(
+        {actual[axis] == Actual::invalid ? std::numeric_limits<Actual::value_type>::max() : MR::abs(actual[axis]),
+         axis});
+  value_type index = 1;
   std::ostringstream oss;
   oss << "From actual strides [" << actual << "],";
   for (const auto &item : sorter)
@@ -441,7 +419,7 @@ Symbolic::Symbolic(const Actual &actual) : Base(actual.size(), Symbolic::invalid
 }
 
 bool Symbolic::is_canonical() const {
-  for (Eigen::Index axis = 0; axis != size(); ++axis) {
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
     if (data_[axis] != axis + 1)
       return false;
   }
@@ -449,8 +427,8 @@ bool Symbolic::is_canonical() const {
 }
 
 bool Symbolic::is_degenerate() const {
-  std::set<Eigen::Index> nonzero_magnitudes;
-  for (Eigen::Index axis = 0; axis != size(); ++axis) {
+  std::set<ArrayIndex> nonzero_magnitudes;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
     if (data_[axis] != invalid) {
       if (nonzero_magnitudes.find(MR::abs(data_[axis])) != nonzero_magnitudes.end())
         return true;
@@ -465,8 +443,8 @@ bool Symbolic::is_sanitised() const {
     return false;
   if (is_degenerate())
     return false;
-  std::set<Eigen::Index> magnitudes;
-  for (Eigen::Index axis = 0; axis != size(); ++axis)
+  std::set<ArrayIndex> magnitudes;
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
     magnitudes.insert(MR::abs(data_[axis]));
   if (*std::min_element(magnitudes.begin(), magnitudes.end()) != 1)
     return false;
@@ -478,30 +456,30 @@ bool Symbolic::is_sanitised() const {
 bool Symbolic::valid() const {
   if (empty())
     return false;
-  if (std::any_of(data_.begin(), data_.end(), [](const Eigen::Index value) { return value == invalid; }))
+  if (std::any_of(data_.begin(), data_.end(), [](const value_type value) { return value == invalid; }))
     return false;
   return true;
 }
 
-Symbolic Symbolic::block(const Eigen::Index from_axis, const Eigen::Index to_axis) const {
+Symbolic Symbolic::block(const ArrayIndex from_axis, const ArrayIndex to_axis) const {
   assert(from_axis >= 0);
   assert(from_axis < size());
   if (to_axis == -1)
-    return Symbolic(ListType(data_.begin() + from_axis, data_.end()));
+    return Symbolic(vector_type(data_.begin() + from_axis, data_.end()));
   assert(from_axis < to_axis);
-  return Symbolic(ListType(data_.begin() + from_axis, data_.begin() + std::min(size(), to_axis)));
+  return Symbolic(
+      vector_type(data_.begin() + from_axis, data_.begin() + std::min(static_cast<ArrayIndex>(size()), to_axis)));
 }
 
 void Symbolic::conform(const Symbolic &in) {
-  // TODO Technically might be possible to relax
   assert(in.size() == size());
   class Data {
   public:
-    Data(const Eigen::Index axis_index, const Eigen::Index current_stride, const Eigen::Index requested_stride)
+    Data(const ArrayIndex axis_index, const value_type current_stride, const value_type requested_stride)
         : axis_index(axis_index), current_stride(current_stride), requested_stride(requested_stride) {}
-    Eigen::Index axis_index;
-    Eigen::Index current_stride;   // TODO Update to reflect CRTP
-    Eigen::Index requested_stride; // TODO Update to reflect CRTP
+    ArrayIndex axis_index;
+    value_type current_stride;
+    value_type requested_stride;
     bool operator<(const Data &in) const {
       if (requested_stride != 0 && in.requested_stride == 0)
         return true;
@@ -516,13 +494,13 @@ void Symbolic::conform(const Symbolic &in) {
     }
   };
   std::vector<Data> sorter;
-  for (Eigen::Index axis = 0; axis != size(); ++axis)
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
     sorter.emplace_back(Data(axis, data_[axis], in[axis]));
   std::sort(sorter.begin(), sorter.end());
   std::ostringstream oss;
   oss << "Initial symbolic strides [" << *this << "],"
       << " conformed to symbolic stride request [" << in << "]";
-  for (Eigen::Index index = 0; index != size(); ++index)
+  for (ArrayIndex index = 0; index != size(); ++index)
     data_[sorter[index].axis_index] = (index + 1) * (data_[sorter[index].axis_index] < 0 ? -1 : 1);
   oss << " is [" << *this << "]";
   DEBUG(oss.str());
@@ -535,45 +513,18 @@ Symbolic Symbolic::conformed(const Symbolic &in) const {
   return result;
 }
 
+Symbolic Symbolic::head(const ArrayIndex num_axes) const {
+  assert(num_axes <= size());
+  return Symbolic(vector_type(data_.begin(), data_.begin() + num_axes));
+}
+
 Order Symbolic::order() const { return permutation().order(); }
-
-//! remove duplicate and invalid strides.
-/*! sanitise the strides of HeaderType \a header by identifying invalid (i.e.
- * zero) or duplicate (absolute) strides, and assigning to each a
- * suitable value. The value chosen for each sanitised stride is the
- * lowest number greater than any of the currently valid strides. */
-// TODO The origin of this function included checks for image axes of size 1;
-//   perhaps rather than being integrated here,
-//   it would be preferable to instead define a separate explicit function
-//   that shuffles unity-size axes to the (smallest or largest) strides
-// void Symbolic::sanitise() {
-//   // remove duplicates
-//   for (size_t i = 0; i < size() - 1; ++i) {
-//     if (data_[i] == ssize_t(0))
-//       continue;
-//     for (size_t j = i + 1; j < size(); ++j) {
-//       if (!data_[j])
-//         continue;
-//       if (MR::abs(data_[i]) == MR::abs(data_[j]))
-//         data_[j] = 0;
-//     }
-//   }
-
-//   ssize_t max = 0;
-//   for (size_t i = 0; i < size(); ++i)
-//     max = std::max(max, MR::abs(data_[i]));
-
-//   for (size_t i = 0; i < size(); ++i) {
-//     if (data_[i] == 0)
-//       data_[i] = ++max;
-//   }
-// }
 
 Permutation Symbolic::permutation() const { return Permutation(*this); }
 
-void Symbolic::resize(const Eigen::Index num_axes) { data_.resize(num_axes, Symbolic::invalid); }
+void Symbolic::resize(const size_t num_axes) { data_.resize(num_axes, Symbolic::invalid); }
 
-Symbolic Symbolic::resized(const Eigen::Index num_axes) const {
+Symbolic Symbolic::resized(const size_t num_axes) const {
   Symbolic result(*this);
   result.resize(num_axes);
   return result;
@@ -586,14 +537,13 @@ void Symbolic::sanitise() {
   //     (contingent on earlier axes being the same)
   //   - If currently non-zero,
   //     they will be ordered
-  std::multimap<Eigen::Index, Eigen::Index> sorter;
-  for (Eigen::Index axis = 0; axis != size(); ++axis)
+  std::multimap<value_type, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
     sorter.insert({MR::abs(data_[axis]), axis});
-  ListType result(size());
-  Eigen::Index axis = 1;
-  // TODO Double-check
+  vector_type result(size());
+  ArrayIndex axis = 0;
   for (const auto &item : sorter)
-    result[item.second] = axis++ * (data_[item.second] < 0 ? -1 : 1);
+    result[item.second] = ++axis * (data_[item.second] < 0 ? -1 : 1);
   if (result != data_) {
     std::ostringstream oss;
     oss << "Symbolic strides [" << *this << "]";
@@ -604,27 +554,17 @@ void Symbolic::sanitise() {
   assert(is_sanitised());
 }
 
-// TODO By the revised definitions,
-//   this is no longer reordering the symbolic strides based on a specified "order";
-//   rather, it is specifying a desired permutation
-
-// TODO This may not be doing as intended
-// What is actually needed is:
-// - For each unique permutation index in incrementing order:
-//   - Sort axes within that group by existing symbolic strides
-//   - Set symbolic strides
 void Symbolic::reorder(const Permutation &permutation) {
 
-  // TODO Revise to
   assert(permutation.size() == size());
 
   class Data {
   public:
-    Data(const Eigen::Index axis_index, const Eigen::Index current_symbolic, const Eigen::Index permutation_group)
+    Data(const ArrayIndex axis_index, const value_type current_symbolic, const ArrayIndex permutation_group)
         : axis_index(axis_index), current_symbolic(current_symbolic), permutation_group(permutation_group) {}
-    Eigen::Index axis_index;
-    Eigen::Index current_symbolic; // TODO Update type for CRTP
-    Eigen::Index permutation_group;
+    ArrayIndex axis_index;
+    value_type current_symbolic;
+    ArrayIndex permutation_group;
     bool operator<(const Data &that) const {
       if (permutation_group != that.permutation_group)
         return permutation_group < that.permutation_group;
@@ -635,61 +575,19 @@ void Symbolic::reorder(const Permutation &permutation) {
     }
   };
   std::vector<Data> sorted;
-  for (Eigen::Index axis = 0; axis != size(); ++axis)
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
     sorted.emplace_back(Data(axis, data_[axis], permutation[axis]));
   std::sort(sorted.begin(), sorted.end());
   std::ostringstream oss;
   oss << "Symbolic strides [" << *this << "]"
       << " following application of permutation [" << permutation << "]";
-  for (Eigen::Index order_indexed = 0; order_indexed != size(); ++order_indexed)
+  for (ArrayIndex order_indexed = 0; order_indexed != size(); ++order_indexed)
     data_[sorted[order_indexed].axis_index] =
         (order_indexed + 1) * (sorted[order_indexed].current_symbolic < 0 ? -1 : 1);
   oss << " are [" << *this << "]";
   DEBUG(oss.str());
   assert(valid());
 }
-
-// void Symbolic::reorder(const Permutation &permutation) {
-//   assert(permutation.size() == size());
-//   // TODO Based on a requested reording of axes,
-//   //   derive a new set of symbolic strides
-//   // TODO Ensure tests are present that if this is provided with a Stride::Order
-//   //   that was derived from itself,
-//   //   there is no effect on the symbolic strides
-//   // TODO Should be possible to provide this with something like Order::contiguous_along_axis(),
-//   //   which relies on specifying zeroes to say "relative order of these axes should remain unchanged"
-//   //   -> NO IT DOESN'T!
-//   // Does this need to be a duplicate of "get_nearest_match()"?
-//   // -> Not convinced that the logic there is correct anyways...
-//   // -> This might take as input a (potentially invalid) set of symbolic strides,
-//   //    and include zero values specified by the user
-//   ListType result(size(), Symbolic::invalid);
-//   // Map requested permutation to input axis;
-//   //   possible that there may be entries in the input requested permutation that are equal but non-zero,
-//   //   in which case they will just be sorted by axis index
-//   // TODO Change type once CRTP'd
-//   std::multimap<Eigen::Index, Eigen::Index> sort_nonzero;
-//   for (Eigen::Index axis = 0; axis != size(); ++axis) {
-//     // Permutation doesn't need to be completely valid,
-//     //   but it certainly can't contain negative values
-//     assert(permutation[axis] >= 0);
-//     if (permutation[axis] != 0)
-//       sort_nonzero.insert({data_[axis], axis});
-//   }
-//   Eigen::Index nonzero_index = 0;
-//   for (const auto &nonzero : sort_nonzero)
-//     result[nonzero.second] = nonzero_index++ * (data_[nonzero.second] < 0 ? -1 : 1);
-//   // Now for the axes that were specified as zero in the input requested permutation:
-//   //   they should be preserved in relative order to one another,
-//   //   and preserve their original sign,
-//   //   but *after* all of the axes that were non-zero in the input requested order
-//   for (Eigen::Index axis = 0; axis != size(); ++axis) {
-//     if (permutation[axis] == 0)
-//       result[axis] = (MR::abs(data_[axis]) + sort_nonzero.size()) * (data_[axis] < 0 ? -1 : 1);
-//   }
-//   data_ = result;
-//   assert(valid());
-// }
 
 Symbolic Symbolic::reordered(const Permutation &order) const {
   Symbolic result(*this);
@@ -703,57 +601,35 @@ Symbolic Symbolic::sanitised() const {
   return result;
 }
 
-// Duplicate of previous MR::Header::<anonymous>::check_strides_match()
-// TODO Confirm whether this is suitable as a generic function
-bool Symbolic::operator==(const Symbolic &that) const {
-  Eigen::Index n = 0;
-  for (; n < std::min(size(), that.size()); ++n)
-    if ((*this)[n] != that[n])
-      return false;
-  for (Eigen::Index i = n; i < size(); ++i)
-    if ((*this)[i] > 1)
-      return false;
-  for (Eigen::Index i = n; i < that.size(); ++i)
-    if (that[i] > 1)
-      return false;
-  return true;
-}
-
-bool Symbolic::operator!=(const Symbolic &that) const { return !operator==(that); }
-
-Symbolic Symbolic::canonical(const Eigen::Index axes) {
-  ListType result(axes);
-  for (Eigen::Index axis = 0; axis != axes; ++axis)
+Symbolic Symbolic::canonical(const size_t num_axes) {
+  vector_type result(num_axes);
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(num_axes); ++axis)
     result[axis] = axis + 1;
   const Symbolic symbolic(result);
   assert(symbolic.valid());
   return symbolic;
 }
 
-// TODO Consider moving function
-// Maybe should be a constructor for Actual that takes as input Symbolic and sizes
-Actual Symbolic::actualise_from_sizes(const std::vector<Eigen::Index> &sizes) const {
-  assert(is_sanitised());
-  assert(size() == sizes.size());
-  const Order x(order());
-  ListType actual(size(), Actual::invalid);
-  Eigen::Index skip = 1;
-  for (Eigen::Index i = 0; i < size(); ++i) {
-    actual[x[i]] = data_[x[i]] < 0 ? -skip : skip;
+Actual::Actual(const Actual::vector_type &data) : Base(data) {}
+
+Actual::Actual(const Symbolic &symbolic, const std::vector<size_t> &sizes)
+    : Base<value_type>(symbolic.size(), invalid) {
+  assert(symbolic.is_sanitised());
+  assert(symbolic.size() == sizes.size());
+  const Order x(symbolic.order());
+  value_type skip = 1;
+  for (ArrayIndex i = 0; i < size(); ++i) {
+    data_[x[i]] = symbolic[x[i]] < 0 ? -skip : skip;
     skip *= sizes[x[i]];
   }
-  const Actual result(actual);
-  DEBUG("Symbolic strides [" + str(*this) + "]" + //
-        " actualised using sizes " + str(sizes) + //
-        " as [" + str(result) + "]");             //
-  return result;
+  DEBUG("Symbolic strides [" + str(symbolic) + "]" + //
+        " actualised using sizes " + str(sizes) +    //
+        " as [" + str(*this) + "]");                 //
 }
 
-Actual::Actual(const ListType data) : Base(data) {}
-
 bool Actual::is_canonical() const {
-  Eigen::Index last = 0;
-  for (Eigen::Index axis = 0; axis != size(); ++axis) {
+  value_type last = 0;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
     // Permissive of equality:
     //   axis of unity size will result in two sequential axes having equal actual strides
     if (data_[axis] < last)
@@ -766,12 +642,12 @@ bool Actual::is_canonical() const {
 bool Actual::valid() const {
   if (empty())
     return false;
-  const std::set<Eigen::Index> data_as_set(data_.begin(), data_.end());
+  const std::set<value_type> data_as_set(data_.begin(), data_.end());
   // Duplicates present -> invalid
   if (data_as_set.size() != data_.size())
     return false;
   // At least one stride of zero present -> invalid
-  if (data_as_set.find(Eigen::Index(0)) != data_as_set.end())
+  if (data_as_set.find(value_type(0)) != data_as_set.end())
     return false;
   return true;
 }
@@ -791,14 +667,29 @@ std::optional<Symbolic> __from_command_line(const Symbolic &current) {
   Symbolic user_specification;
   try {
     user_specification = Symbolic(Header::open(opt[0][0]));
-  } catch (Exception &E) {
-    E.display(3);
+  } catch (Exception &E_asimage) {
+    E_asimage.display(3);
     try {
-      user_specification = Symbolic(parse_ints<Eigen::Index>(opt[0][0]));
-    } catch (Exception &E) {
-      E.display(3);
-      throw Exception("argument \"" + static_cast<std::string>(opt[0][0]) + "\"" +
-                      " to option \"-strides\" is not a list of strides or an image");
+      const auto intseq = parse_ints<MR::App::ParsedArgument::IntType>(opt[0][0]);
+      if (*std::min_element(intseq.begin(), intseq.end()) < std::numeric_limits<Symbolic::value_type>::min() ||
+          *std::max_element(intseq.begin(), intseq.end()) > std::numeric_limits<Symbolic::value_type>::max())
+        throw Exception("Integer sequence \"" + str(intseq) +
+                        "\" exceeds permissible range for symbolic strides"
+                        " ([" +
+                        str(std::numeric_limits<Symbolic::value_type>::min()) + " - " +
+                        str(std::numeric_limits<Symbolic::value_type>::max()) + "])");
+      const Symbolic::vector_type temp = MR::container_cast<Symbolic::vector_type>(intseq);
+      user_specification = Symbolic(temp);
+    } catch (Exception &E_asstrides) {
+      Exception e("Argument \"" + static_cast<std::string>(opt[0][0]) + "\"" +
+                  " to option \"-strides\" could not be properly interpreted");
+      e.push_back("Error when attempting to interpret as image:");
+      for (ArrayIndex i = 0; i != E_asimage.num(); ++i)
+        e.push_back(E_asimage[i]);
+      e.push_back("Error when attempting to interpret as sequence of integers:");
+      for (ArrayIndex i = 0; i != E_asstrides.num(); ++i)
+        e.push_back(E_asstrides[i]);
+      throw e;
     }
     if (user_specification.size() > current.size()) {
       INFO("template image provided to -strides option has more axes than the image being modified;"
@@ -815,8 +706,8 @@ std::optional<Symbolic> __from_command_line(const Symbolic &user_specification, 
   if (user_specification.size() > current.size())
     throw Exception("too many axes supplied to -strides option");
 
-  for (Eigen::Index axis = 0; axis != user_specification.size(); ++axis) {
-    if (MR::abs(const_cast<const Symbolic *const>(&user_specification)->operator[](axis)) > current.size())
+  for (ArrayIndex axis = 0; axis != user_specification.size(); ++axis) {
+    if (MR::abs(user_specification[axis]) > current.size())
       throw Exception(std::string("strides specified exceed image dimensions:") + //
                       " got " + str(user_specification) + "," +                   //
                       " but image has " + str(current.size()) + " axes");         //
@@ -825,27 +716,22 @@ std::optional<Symbolic> __from_command_line(const Symbolic &user_specification, 
   if (user_specification.is_degenerate())
     throw Exception("duplicate entries provided to \"-strides\" option: " + str(user_specification));
 
-  // TODO From here need to figure out preceding logic
-  // In particular do we need to consider the prospect that what the user provides at the command-line
-  //   could technically be *either* symbolic strides *or* an order?
-  // Think that rather than replicating the steps of the code as-is,
-  //   derive appropriate logic from scratch:
   // 1. For all non-zero entries in the user specification,
   //    place in sequential order,
   //    preserving sign
   // 2. For all zero entries in the user specification,
   //    place in sequential order atop step 1,
-  //    preserving sign
-  ListType new_symbolic(current.size(), Symbolic::invalid);
-  std::multimap<Eigen::Index, Eigen::Index> order_userspec;
-  std::multimap<Eigen::Index, Eigen::Index> order_current;
-  for (Eigen::Index axis = 0; axis != current.size(); ++axis) {
-    if (const_cast<const Symbolic *const>(&user_specification)->operator[](axis) == 0)
+  //    preserving sign from current image attributes
+  Symbolic::vector_type new_symbolic(current.size(), Symbolic::invalid);
+  std::multimap<Symbolic::value_type, Symbolic::value_type> order_userspec;
+  std::multimap<Symbolic::value_type, Symbolic::value_type> order_current;
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(current.size()); ++axis) {
+    if (user_specification[axis] == 0)
       order_current.insert({MR::abs(current[axis]), axis});
     else
-      order_userspec.insert({MR::abs(const_cast<const Symbolic *const>(&user_specification)->operator[](axis)), axis});
+      order_userspec.insert({MR::abs(user_specification[axis]), axis});
   }
-  Eigen::Index out_absstride = 1;
+  Symbolic::value_type out_absstride = 1;
   for (const auto &item : order_userspec)
     new_symbolic[item.second] = out_absstride++ * (user_specification[item.second] < 0 ? -1 : 1);
   for (const auto &item : order_current)

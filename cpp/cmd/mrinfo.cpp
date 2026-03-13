@@ -240,7 +240,7 @@ void header2json(const Header &header, nlohmann::json &json) {
   }
   json["size"] = size;
   json["spacing"] = spacing;
-  json["strides"] = static_cast<Stride::ListType>(Stride::Symbolic(header));
+  json["strides"] = static_cast<Stride::Symbolic::vector_type>(Stride::Symbolic(header));
   json["format"] = header.format();
   json["datatype"] = header.datatype().specifier();
   json["intensity_offset"] = header.intensity_offset();

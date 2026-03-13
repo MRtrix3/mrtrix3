@@ -35,15 +35,16 @@ public:
         from_(container_cast<decltype(from_)>(from)),
         size_(container_cast<decltype(size_)>(size)),
         index_invalid_lower_upper([&] {
-          std::vector<std::vector<Axes::index_type>> v;
+          std::vector<std::vector<VoxelIndex>> v;
           for (size_t d = 0; d < from_.size(); ++d) {
-            v.push_back(std::vector<Axes::index_type>{from_[d] < 0 ? -from_[d] - 1 : -1, original.size(d) - from_[d]});
+            v.push_back(std::vector<VoxelIndex>{from_[d] < 0 ? -from_[d] - 1 : -1,
+                                                static_cast<VoxelIndex>(original.size(d)) - from_[d]});
           }
           return v;
         }()),
         index_requires_bound_check([&] {
           Eigen::Array<bool, Eigen::Dynamic, 1> v(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(from_.size()));
-          for (Eigen::Index d = 0; d < from_.size(); ++d)
+          for (ArrayIndex d = 0; d < from_.size(); ++d)
             v[d] = from_[d] < 0 || size_[d] > original.size(d) - from_[d];
           return v;
         }()),
@@ -53,30 +54,30 @@ public:
     assert(from_.size() == size_.size());
     assert(from_.size() == ndim());
 
-    for (Eigen::Index n = 0; n < ndim(); ++n)
+    for (StdIndex n = 0; n < ndim(); ++n)
       if (size_[n] < 0)
         throw Exception("FIXME: negative size in Regrid adapter");
 
     // adjust location of origin
-    for (Eigen::Index j = 0; j < 3; ++j)
-      for (Eigen::Index i = 0; i < 3; ++i)
+    for (ArrayIndex j = 0; j < 3; ++j)
+      for (ArrayIndex i = 0; i < 3; ++i)
         transform_(i, 3) += from[j] * spacing(j) * transform_(i, j);
   }
 
   void reset() override {
-    for (Eigen::Index n = 0; n < ndim(); ++n)
+    for (ArrayIndex n = 0; n < ndim(); ++n)
       set_pos(n, 0);
   }
 
-  Eigen::Index ndim() const override { return size_.size(); }
-  Eigen::Index size(const Eigen::Index axis) const override { return size_[axis]; }
+  size_t ndim() const override { return size_.size(); }
+  size_t size(const ArrayIndex axis) const override { return size_[axis]; }
   const transform_type &transform() const override { return transform_; }
 
-  Axes::index_type get_index(const Eigen::Index axis) const override {
+  VoxelIndex get_index(const ArrayIndex axis) const override {
     return index_requires_bound_check[axis] ? index_[axis] : parent().index(axis) - from_[axis];
   }
 
-  void move_index(const Eigen::Index axis, const Axes::index_type increment) override {
+  void move_index(const ArrayIndex axis, const VoxelIndex increment) override {
     if (index_requires_bound_check[axis]) {
       index_[axis] += increment;
       if (increment > 0) {
@@ -89,7 +90,7 @@ public:
   }
 
   value_type value() {
-    for (size_t axis = 0; axis < index_.size(); ++axis)
+    for (StdIndex axis = 0; axis < index_.size(); ++axis)
       if (index_requires_bound_check[axis] &&
           (index_[axis] >= index_invalid_lower_upper[axis][1] || index_[axis] <= index_invalid_lower_upper[axis][0]))
         return fill_;
@@ -98,12 +99,12 @@ public:
 
 protected:
   using base_type::parent;
-  const std::vector<Axes::index_type> from_, size_;
-  const std::vector<std::vector<Axes::index_type>> index_invalid_lower_upper;
+  const std::vector<VoxelIndex> from_, size_;
+  const std::vector<std::vector<VoxelIndex>> index_invalid_lower_upper;
   const Eigen::Array<bool, Eigen::Dynamic, 1> index_requires_bound_check;
   const value_type fill_;
   transform_type transform_;
-  std::vector<ssize_t> index_;
+  std::vector<VoxelIndex> index_;
 };
 
 } // namespace MR::Adapter

@@ -36,11 +36,11 @@ public:
       : base_type(parent), gradient1D(parent, 0, wrt_scanner), transform(parent), wrt_scanner(wrt_scanner) {}
 
   value_type value() {
-    for (Eigen::Index dim = 0; dim < 3; ++dim)
+    for (VoxelIndex dim = 0; dim < 3; ++dim)
       gradient1D.index(dim) = index(dim);
-    for (Eigen::Index i = 0; i < 3; ++i) {
-      gradient1D.index(3) = static_cast<Axes::index_type>(i);
-      for (Eigen::Index j = 0; j < 3; ++j) {
+    for (VoxelIndex i = 0; i < 3; ++i) {
+      gradient1D.index(3) = static_cast<VoxelIndex>(i);
+      for (ArrayIndex j = 0; j < 3; ++j) {
         gradient1D.set_axis(j);
         jacobian(i, j) = gradient1D.value();
       }

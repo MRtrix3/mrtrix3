@@ -99,68 +99,68 @@ inline
 
 // for single-byte types:
 
-template <typename RAMType, typename DiskType> RAMType __fetch(const void *data, const std::ptrdiff_t i) {
+template <typename RAMType, typename DiskType> RAMType __fetch(const void *data, const MemIndex i) {
   return round_func<RAMType>(Raw::fetch<DiskType>(data, i));
 }
 
-template <typename RAMType, typename DiskType> void __store(RAMType val, void *data, const std::ptrdiff_t i) {
+template <typename RAMType, typename DiskType> void __store(RAMType val, void *data, const MemIndex i) {
   return Raw::store<DiskType>(round_func<DiskType>(val), data, i);
 }
 
 template <typename RAMType, typename DiskType>
-RAMType __fetch_scale(const void *data, const std::ptrdiff_t i, default_type offset, default_type scale) {
+RAMType __fetch_scale(const void *data, const MemIndex i, default_type offset, default_type scale) {
   return round_func<RAMType>(scale_from_storage(Raw::fetch<DiskType>(data, i), offset, scale));
 }
 
 template <typename RAMType, typename DiskType>
-void __scale_store(RAMType val, void *data, const std::ptrdiff_t i, default_type offset, default_type scale) {
+void __scale_store(RAMType val, void *data, const MemIndex i, default_type offset, default_type scale) {
   return Raw::store<DiskType>(round_func<DiskType>(scale_to_storage(val, offset, scale)), data, i);
 }
 
 // for little-endian multi-byte types:
 
-template <typename RAMType, typename DiskType> RAMType __fetch_LE(const void *data, const std::ptrdiff_t i) {
+template <typename RAMType, typename DiskType> RAMType __fetch_LE(const void *data, const MemIndex i) {
   return round_func<RAMType>(Raw::fetch_LE<DiskType>(data, i));
 }
 
-template <typename RAMType, typename DiskType> void __store_LE(RAMType val, void *data, const std::ptrdiff_t i) {
+template <typename RAMType, typename DiskType> void __store_LE(RAMType val, void *data, const MemIndex i) {
   return Raw::store_LE<DiskType>(round_func<DiskType>(val), data, i);
 }
 
 template <typename RAMType, typename DiskType>
-RAMType __fetch_scale_LE(const void *data, const std::ptrdiff_t i, default_type offset, default_type scale) {
+RAMType __fetch_scale_LE(const void *data, const MemIndex i, default_type offset, default_type scale) {
   return round_func<RAMType>(scale_from_storage(Raw::fetch_LE<DiskType>(data, i), offset, scale));
 }
 
 template <typename RAMType, typename DiskType>
-void __scale_store_LE(RAMType val, void *data, const std::ptrdiff_t i, default_type offset, default_type scale) {
+void __scale_store_LE(RAMType val, void *data, const MemIndex i, default_type offset, default_type scale) {
   return Raw::store_LE<DiskType>(round_func<DiskType>(scale_to_storage(val, offset, scale)), data, i);
 }
 
 // for big-endian multi-byte types:
 
-template <typename RAMType, typename DiskType> RAMType __fetch_BE(const void *data, const std::ptrdiff_t i) {
+template <typename RAMType, typename DiskType> RAMType __fetch_BE(const void *data, const MemIndex i) {
   return round_func<RAMType>(Raw::fetch_BE<DiskType>(data, i));
 }
 
-template <typename RAMType, typename DiskType> void __store_BE(RAMType val, void *data, const std::ptrdiff_t i) {
+template <typename RAMType, typename DiskType> void __store_BE(RAMType val, void *data, const MemIndex i) {
   return Raw::store_BE<DiskType>(round_func<DiskType>(val), data, i);
 }
 
 template <typename RAMType, typename DiskType>
-RAMType __fetch_scale_BE(const void *data, const std::ptrdiff_t i, default_type offset, default_type scale) {
+RAMType __fetch_scale_BE(const void *data, const MemIndex i, default_type offset, default_type scale) {
   return round_func<RAMType>(scale_from_storage(Raw::fetch_BE<DiskType>(data, i), offset, scale));
 }
 
 template <typename RAMType, typename DiskType>
-void __scale_store_BE(RAMType val, void *data, const std::ptrdiff_t i, default_type offset, default_type scale) {
+void __scale_store_BE(RAMType val, void *data, const MemIndex i, default_type offset, default_type scale) {
   return Raw::store_BE<DiskType>(round_func<DiskType>(scale_to_storage(val, offset, scale)), data, i);
 }
 
 } // namespace
 
 template <typename ValueType>
-typename std::enable_if<is_data_type<ValueType>::value, std::function<ValueType(const void *, std::ptrdiff_t)>>::type
+typename std::enable_if<is_data_type<ValueType>::value, std::function<ValueType(const void *, MemIndex)>>::type
 __set_fetch_function(const DataType datatype) {
   switch (datatype()) {
   case DataType::Bit:
@@ -219,7 +219,7 @@ __set_fetch_function(const DataType datatype) {
 }
 
 template <typename ValueType>
-typename std::enable_if<is_data_type<ValueType>::value, std::function<void(ValueType, void *, std::ptrdiff_t)>>::type
+typename std::enable_if<is_data_type<ValueType>::value, std::function<void(ValueType, void *, MemIndex)>>::type
 __set_store_function(const DataType datatype) {
   switch (datatype()) {
   case DataType::Bit:
@@ -279,8 +279,8 @@ __set_store_function(const DataType datatype) {
 
 template <typename ValueType>
 typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_store_scale_functions(
-    std::function<ValueType(const void *, std::ptrdiff_t, default_type, default_type)> &fetch_func,
-    std::function<void(ValueType, void *, std::ptrdiff_t, default_type, default_type)> &store_func,
+    std::function<ValueType(const void *, MemIndex, default_type, default_type)> &fetch_func,
+    std::function<void(ValueType, void *, MemIndex, default_type, default_type)> &store_func,
     const DataType datatype) {
 
   switch (datatype()) {
@@ -391,13 +391,11 @@ typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_
 
 // explicit instantiation of fetch/store methods for all types:
 #define __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(ValueType)                                                             \
-  template std::function<ValueType(const void *, std::ptrdiff_t)> __set_fetch_function<ValueType>(                     \
-      const DataType datatype);                                                                                        \
-  template std::function<void(ValueType, void *, std::ptrdiff_t)> __set_store_function<ValueType>(                     \
-      const DataType datatype);                                                                                        \
+  template std::function<ValueType(const void *, MemIndex)> __set_fetch_function<ValueType>(const DataType datatype);  \
+  template std::function<void(ValueType, void *, MemIndex)> __set_store_function<ValueType>(const DataType datatype);  \
   template void __set_fetch_store_scale_functions<ValueType>(                                                          \
-      std::function<ValueType(const void *, std::ptrdiff_t, default_type, default_type)> & fetch_func,                 \
-      std::function<void(ValueType, void *, std::ptrdiff_t, default_type, default_type)> & store_func,                 \
+      std::function<ValueType(const void *, MemIndex, default_type, default_type)> & fetch_func,                       \
+      std::function<void(ValueType, void *, MemIndex, default_type, default_type)> & store_func,                       \
       const DataType datatype)
 
 __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(bool);

@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include "adapter/base.h"
 #include "image.h"
+#include "misc/cuboid_extent.h"
+#include "types.h"
 
 namespace MR::Adapter {
 
@@ -29,14 +30,13 @@ public:
   using base_type::name;
   using base_type::spacing;
 
-  template <class VectorType>
-  NeighbourhoodCoord(const ImageType &original, const VectorType &extent, const Iterator &iter)
+  NeighbourhoodCoord(const ImageType &original, const CuboidExtent &extent, const Iterator &iter)
       : base_type(original), iter_(iter), transform_(original.transform()) {
 
     assert(extent.size() == ndim());
     from_.resize(original.ndim());
     size_.resize(original.ndim());
-    for (Eigen::Index i = 0; i < ndim(); ++i) {
+    for (ArrayIndex i = 0; i < ndim(); ++i) {
       from_[i] = (iter_.index(i) - extent[i] < 0) ? 0 : iter_.index(i) - extent[i];
       size_[i] = (from_[i] + extent[i] >= original.size(i)) ? original.size(i) - from_[i] - 1 : extent[i];
       assert(from_[n] + size_[n] < original.size(n));
@@ -46,26 +46,26 @@ public:
     //   if (from_[n] + size_[n] > original.size(n))
     //     throw Exception ("FIXME: dimensions requested for NeighbourhoodCoord adapter are out of bounds!");
 
-    for (Eigen::Index j = 0; j < 3; ++j)
-      for (Eigen::Index i = 0; i < 3; ++i)
+    for (ArrayIndex j = 0; j < 3; ++j)
+      for (ArrayIndex i = 0; i < 3; ++i)
         transform_(i, 3) += from_[j] * spacing(j) * transform_(i, j);
   }
 
   void reset() {
-    for (Eigen::Index n = 0; n < ndim(); ++n)
+    for (ArrayIndex n = 0; n < ndim(); ++n)
       set_pos(n, 0);
   }
 
-  Eigen::Index ndim() const override { return size_.size(); }
-  Eigen::Index size(const Eigen::Index axis) const override { return size_[axis]; }
+  size_t ndim() const override { return size_.size(); }
+  size_t size(const ArrayIndex axis) const override { return size_[axis]; }
   const transform_type &transform() const override { return transform_; }
 
-  Axes::index_type get_index(const Eigen::Index axis) const override { return parent().index(axis) - from_[axis]; }
-  void move_index(const Eigen::Index axis, const Axes::index_type increment) { parent().index(axis) += increment; }
+  VoxelIndex get_index(const ArrayIndex axis) const override { return parent().index(axis) - from_[axis]; }
+  void move_index(const ArrayIndex axis, const VoxelIndex increment) { parent().index(axis) += increment; }
 
 protected:
   using base_type::parent;
-  std::vector<Axes::index_type> from_, size_;
+  std::vector<VoxelIndex> from_, size_;
   Iterator iter_;
   transform_type transform_;
 };

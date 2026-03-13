@@ -22,6 +22,7 @@
 #include "image.h"
 #include "interp/base.h"
 #include "interp/nearest.h"
+#include "stride.h"
 #include "transform.h"
 #include "types.h"
 
@@ -66,8 +67,12 @@ template <typename value_type> struct summing_type<is_complex<value_type>> {
 } // namespace
 
 extern const transform_type NoTransform;
-extern const std::vector<Eigen::Index> AutoOverSample;
-extern const std::vector<Eigen::Index> NoOverSample;
+
+// TODO Consider defining as a class rather than a typedef
+// (and extern consts would become static consts)
+using oversample_type = std::vector<ArrayIndex>;
+extern const oversample_type AutoOverSample;
+extern const oversample_type NoOverSample;
 
 //! \addtogroup interp
 // @{
@@ -120,7 +125,7 @@ public:
   Reslice(const ImageType &original,
           const HeaderType &reference,
           const transform_type &transform = NoTransform,
-          const std::vector<Eigen::Index> &oversample = AutoOverSample,
+          const oversample_type &oversample = AutoOverSample,
           const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value())
       : interp(original, value_when_out_of_bounds),
         x{0, 0, 0},
@@ -173,14 +178,14 @@ public:
       oversampling = false;
   }
 
-  Eigen::Index ndim() const { return interp.ndim(); }
+  size_t ndim() const { return interp.ndim(); }
   bool valid() const { return interp.valid(); }
-  Eigen::Index size(const Eigen::Index axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
-  default_type spacing(const Eigen::Index axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
+  size_t size(const ArrayIndex axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
+  default_type spacing(const ArrayIndex axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
   const transform_type &transform() const { return transform_; }
   std::string_view name() const { return interp.name(); }
 
-  std::ptrdiff_t stride(const Eigen::Index axis) const { return interp.stride(axis); }
+  Stride::Actual::value_type stride(const ArrayIndex axis) const { return interp.stride(axis); }
 
   void reset() {
     x = {0, 0, 0};
@@ -194,11 +199,11 @@ public:
       const Vector3d d(x[0] + from[0], x[1] + from[1], x[2] + from[2]);
       typename summing_type<value_type>::type sum(0);
       Vector3d s;
-      for (Eigen::Index z = 0; z < OS[2]; ++z) {
+      for (ArrayIndex z = 0; z < OS[2]; ++z) {
         s[2] = d[2] + z * inc[2];
-        for (Eigen::Index y = 0; y < OS[1]; ++y) {
+        for (ArrayIndex y = 0; y < OS[1]; ++y) {
           s[1] = d[1] + y * inc[1];
-          for (Eigen::Index x = 0; x < OS[0]; ++x) {
+          for (ArrayIndex x = 0; x < OS[0]; ++x) {
             s[0] = d[0] + x * inc[0];
             if (interp.voxel(direct_transform * s))
               sum += interp.value();
@@ -211,8 +216,8 @@ public:
     return interp.value();
   }
 
-  Axes::index_type get_index(const Eigen::Index axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
-  void move_index(const Eigen::Index axis, const Axes::index_type increment) {
+  VoxelIndex get_index(const ArrayIndex axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
+  void move_index(const ArrayIndex axis, const VoxelIndex increment) {
     if (axis < 3)
       x[axis] += increment;
     else
@@ -221,11 +226,11 @@ public:
 
 private:
   Interpolator<ImageType> interp;
-  std::array<Axes::index_type, 3> x;
-  const std::array<Eigen::Index, 3> dim;
+  std::array<VoxelIndex, 3> x;
+  const std::array<size_t, 3> dim;
   const std::array<default_type, 3> vox;
   bool oversampling;
-  std::array<Eigen::Index, 3> OS;
+  std::array<size_t, 3> OS;
   std::array<default_type, 3> from;
   std::array<default_type, 3> inc;
   default_type norm;

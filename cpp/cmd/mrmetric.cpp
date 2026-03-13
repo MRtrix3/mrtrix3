@@ -246,25 +246,28 @@ void run() {
     }
   }
 
-  auto input1 = Image<value_type>::open(argument[0]).with_direct_io(3);
-  auto input2 = Image<value_type>::open(argument[1]).with_direct_io(3);
+  auto input1 = Image<value_type>::open(argument[0]);
+  auto input2 = Image<value_type>::open(argument[1]);
 
   const size_t dimensions = input1.ndim();
   if (input1.ndim() != input2.ndim())
     throw Exception("both images have to have the same number of dimensions");
   DEBUG("dimensions: " + str(dimensions));
-  if (dimensions > 4)
-    throw Exception("images have to be 3 or 4 dimensional");
-
-  if (dimensions != 3 and metric_type == MetricType::CrossCorrelation)
-    throw Exception("CC metric requires 3D images");
-
   size_t volumes(1);
-  if (dimensions == 4) {
+  switch (dimensions) {
+  case 3:
+    break;
+  case 4:
+    if (metric_type == MetricType::CrossCorrelation)
+      throw Exception("CC metric requires 3D images");
     volumes = input1.size(3);
-    if (input1.size(3) != input2.size(3)) {
+    if (input2.size(3) != volumes)
       throw Exception("both images have to have the same number of volumes");
-    }
+    input1 = input1.with_direct_io(3);
+    input2 = input2.with_direct_io(3);
+    break;
+  default:
+    throw Exception("images have to be 3 or 4 dimensional");
   }
   INFO("volumes: " + str(volumes));
 

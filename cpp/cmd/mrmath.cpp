@@ -301,10 +301,7 @@ protected:
   class ProcessFunctor {
   public:
     ProcessFunctor(ImageKernel &master) : master(master) {}
-    template <class ImageType> void operator()(ImageType &in) const {
-      const uint32_t index = master.v2v(in);
-      master.data[index](in.value());
-    }
+    template <class ImageType> void operator()(ImageType &in) const { master.data[master.v2v(in)](in.value()); }
 
   protected:
     ImageKernel &master;

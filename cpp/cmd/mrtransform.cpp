@@ -249,7 +249,7 @@ void apply_warp(Image<float> &input,
                 Image<default_type> &warp,
                 const MR::Interp::interp_type interp,
                 const float out_of_bounds_value,
-                const std::vector<Eigen::Index> &oversample,
+                const Adapter::oversample_type &oversample,
                 const bool jacobian_modulate = false) {
   switch (interp) {
   case MR::Interp::interp_type::NEAREST:
@@ -364,11 +364,12 @@ void run() {
   if (!opt.empty()) {
     if (warp.valid())
       throw Exception("only one warp field can be input with either -warp or -warp_mid");
-    warp = Image<default_type>::open(opt[0][0]).with_direct_io(3);
+    warp = Image<default_type>::open(opt[0][0]);
     if (warp.ndim() != 4)
       throw Exception("the input -warp file must be a 4D deformation field");
     if (warp.size(3) != 3)
       throw Exception("the input -warp file must have 3 volumes in the 4th dimension (x,y,z positions)");
+    warp = warp.with_direct_io(3);
   }
 
   // Inverse
@@ -576,13 +577,13 @@ void run() {
   }
 
   // over-sampling
-  std::vector<Eigen::Index> oversample = Adapter::AutoOverSample;
+  Adapter::oversample_type oversample = Adapter::AutoOverSample;
   opt = get_options("oversample");
   if (!opt.empty()) {
     if (!template_header.valid() && !warp)
       throw Exception("-oversample option applies only to regridding using the template option"
                       " or to non-linear transformations");
-    oversample = parse_ints<Eigen::Index>(opt[0][0]);
+    oversample = parse_ints<Adapter::oversample_type::value_type>(opt[0][0]);
     if (oversample.size() == 1)
       oversample.resize(3, oversample[0]);
     else if (oversample.size() != 3)

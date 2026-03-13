@@ -388,7 +388,7 @@ void ODF::get_values(Eigen::VectorXf &values, ODF_Item &item, const Eigen::Vecto
     auto linear_interp = Interp::make_linear(image.image);
     if (linear_interp.scanner(pos)) {
       for (linear_interp.index(3) = 0;
-           linear_interp.index(3) < std::min(static_cast<ssize_t>(values.size()), linear_interp.size(3));
+           linear_interp.index(3) < std::min(static_cast<size_t>(values.size()), linear_interp.size(3));
            ++linear_interp.index(3))
         values[linear_interp.index(3)] = linear_interp.value().real();
     }
@@ -396,7 +396,7 @@ void ODF::get_values(Eigen::VectorXf &values, ODF_Item &item, const Eigen::Vecto
     auto nearest_interp = Interp::make_nearest(image.image);
     if (nearest_interp.scanner(pos)) {
       for (nearest_interp.index(3) = 0;
-           nearest_interp.index(3) < std::min(static_cast<ssize_t>(values.size()), nearest_interp.size(3));
+           nearest_interp.index(3) < std::min(static_cast<size_t>(values.size()), nearest_interp.size(3));
            ++nearest_interp.index(3))
         values[nearest_interp.index(3)] = nearest_interp.value().real();
     }

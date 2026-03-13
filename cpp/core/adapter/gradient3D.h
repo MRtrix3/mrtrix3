@@ -31,7 +31,7 @@ public:
 
   value_type value() {
     value_type grad;
-    for (Eigen::Index i = 0; i < 3; ++i) {
+    for (ArrayIndex i = 0; i < 3; ++i) {
       Gradient1D<ImageType>::set_axis(i);
       grad[i] = Gradient1D<ImageType>::value();
     }

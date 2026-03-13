@@ -446,7 +446,7 @@ public:
 
 class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
 public:
-  ThreadLocalStorage(const Axes::Subset &axes, const std::vector<ssize_t> &sizes)
+  ThreadLocalStorage(const Axes::Subset &axes, const std::vector<size_t> &sizes)
       : iter(nullptr), axes(axes), sizes(sizes) {}
 
   void load(Chunk &chunk, Image<complex_type> &image) {
@@ -482,7 +482,7 @@ public:
 
   const Iterator *iter;
   const Axes::Subset axes;
-  const std::vector<ssize_t> sizes;
+  const std::vector<size_t> sizes;
 
 private:
   size_t current;

@@ -26,18 +26,12 @@
 // TODO Rename to "SpatialAxes"?
 namespace MR::Axes {
 
-// Type to be used when encoding a voxel index position along an axis
-// Needs to support values below -1
-// TODO Consider rename; eg. "voxidx_t"?
-// TODO Consider moving to types.h
-using index_type = int64_t;
-
-class Subset : public std::vector<Eigen::Index> {
+class Subset : public std::vector<ArrayIndex> {
 public:
-  using Base = std::vector<Eigen::Index>;
-  using Index = Eigen::Index;
+  using Base = std::vector<ArrayIndex>;
+  using Index = ArrayIndex;
   using Base::Base;
-  Subset(const Base &that) : Base(that) {}
+  explicit Subset(const Base &that) : Base(that) {}
   Subset head(const ssize_t count) const;
   Subset tail(const ssize_t count) const;
 };

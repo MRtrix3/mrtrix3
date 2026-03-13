@@ -25,6 +25,7 @@
 #include "math/SH.h"
 #include "math/average_space.h"
 #include "math/sphere.h"
+#include "misc/cuboid_extent.h"
 #include "registration/linear.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/difference_robust.h"
@@ -257,8 +258,8 @@ void run() {
       throw Exception("image dimensionality other than 3 or 4 are not supported. image " + str(input1[i].name()) +
                       " is " + str(input1[i].ndim()) + " dimensional");
 
-    const Eigen::Index nvols1 = input1[i].ndim() == 3 ? 1 : input1[i].size(3);
-    const Eigen::Index nvols2 = input2[i].ndim() == 3 ? 1 : input2[i].size(3);
+    const size_t nvols1 = input1[i].ndim() == 3 ? 1 : input1[i].size(3);
+    const size_t nvols2 = input2[i].ndim() == 3 ? 1 : input2[i].size(3);
     if (nvols1 != nvols2)
       throw Exception("input images do not have the same number of volumes: " + str(input2[i].name()) + " and " +
                       str(input1[i].name()));
@@ -891,8 +892,7 @@ void run() {
     } else { // 3D
       if (rigid_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        const std::vector<Eigen::Index> extent(3, 3);
-        rigid_registration.set_extent(extent);
+        rigid_registration.set_extent(CuboidExtent(3));
         rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
       } else if (rigid_metric == Registration::Diff) {
         if (rigid_estimator == Registration::None) {
@@ -966,8 +966,7 @@ void run() {
     } else { // 3D
       if (affine_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        const std::vector<Eigen::Index> extent(3, 3);
-        affine_registration.set_extent(extent);
+        affine_registration.set_extent(CuboidExtent(3));
         affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
       } else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {

@@ -354,31 +354,20 @@ namespace MR::Stride {
 
 extern const App::OptionGroup Options;
 
-// Note that some code may be predicated on this typedef
-//   being identical to Axes::Subset
-//   (particularly looping constructs:
-//    sometimes, but not always,
-//    axes over which a loop is performed is based on those with shortest strides)
-using ListType = std::vector<Eigen::Index>;
-
-// TODO Consider using CRTP to permit definition of standard functions
-// TODO Consider templating value type:
-// - Eigen::Index for axis subset indices
-// - Eigen::Index for axis permutation order
-// - int8_t for symbolic strides
-// - off_t for actualised strides
-class Base {
+template <typename ValueType> class Base {
 public:
-  Base(const ListType &data) : data_(data) {}
-  Base(const Eigen::Index num_axes, const Eigen::Index invalid_value) : data_(num_axes, invalid_value) {}
+  using value_type = ValueType;
+  using vector_type = std::vector<ValueType>;
+  Base(const vector_type &data) : data_(data) { assert(size() <= 5); }
+  Base(const size_t num_axes, const ValueType invalid_value) : data_(num_axes, invalid_value) { assert(size() <= 5); }
   Base(const Base &) = default;
   Base() = default;
 
   bool empty() const { return data_.empty(); }
-  Eigen::Index size() const { return data_.size(); }
+  size_t size() const { return data_.size(); }
 
-  operator const ListType &() const { return data_; }
-  Eigen::Index operator[](const Eigen::Index index) const {
+  operator const vector_type &() const { return data_; }
+  ValueType operator[](const ArrayIndex index) const {
     assert(index >= 0 && index < size());
     return data_[index];
   }
@@ -396,17 +385,31 @@ public:
   virtual bool valid() const = 0;
 
 protected:
-  ListType data_;
-
-  Eigen::Index &operator[](const Eigen::Index index) {
-    assert(index >= 0 && index < size());
-    return data_[index];
-  }
+  vector_type data_;
 };
 
-std::ostream &operator<<(std::ostream &stream, const Base &base);
+namespace {
+template <class, typename Fallback, typename = void> struct type_or_default {
+  using type = Fallback;
+};
+template <class C, typename F> struct type_or_default<C, F, std::void_t<typename C::type>> {
+  using type = typename C::type;
+};
+} // namespace
 
-// TODO Consider moving block() / head() / tail() to intermediate Base class
+template <typename ValueType> std::ostream &operator<<(std::ostream &stream, const Base<ValueType> &base) {
+  if (base.empty()) {
+    stream << "<NULL>";
+    return stream;
+  }
+  // Explicitly cast Symbolic's int8_t to > 1 byte
+  //   so as to not attempt to print as a character
+  using IntType = typename type_or_default<ValueType, int>::type;
+  stream << static_cast<IntType>(base[0]);
+  for (ArrayIndex axis = 1; axis != static_cast<ArrayIndex>(base.size()); ++axis)
+    stream << "," << static_cast<IntType>(base[axis]);
+  return stream;
+}
 
 // Forward definition of classes and explanation:
 // Imagine a DICOM dataset (LPS) that has been converted to have volume contiguous in memory
@@ -417,8 +420,6 @@ std::ostream &operator<<(std::ostream &stream, const Base &base);
 class Order;
 // "Permutation": Contains for each axis its relative position in that order
 //   In the above example: [1 2 3 0]
-// Note that in some circumstances,
-//   these data will be specified
 class Permutation;
 // "Symbolic": The presentation of strides as many are accustomed to seeing them,
 //   encoding for each axis both its relative ordering and sign
@@ -429,12 +430,14 @@ class Symbolic;
 //   In the above example (assuming a 32x32x20x10 dataset): [-10 -320 10240 1]
 class Actual;
 
-class Order : public Base {
+class Order : public Base<ArrayIndex> {
 public:
-  static constexpr Eigen::Index invalid = -1;
+  using Base<ArrayIndex>::value_type;
+  using Base<ArrayIndex>::vector_type;
+  static constexpr value_type invalid = -1;
 
   explicit Order(const Permutation &permutation);
-  explicit Order(const ListType &data);
+  explicit Order(const vector_type &data);
   Order(const Order &) = default;
 
   using Base::operator=;
@@ -446,26 +449,22 @@ public:
   void sanitise() override;
   bool valid() const override;
 
-  // TODO Change these to yield another Order instance?
-
-  // TODO Not sure that this operation makes sense at all...
-  // Axes::Subset block(const Eigen::Index from_axis, const Eigen::Index to_axis = -1) const;
-  Axes::Subset head(const Eigen::Index num_axes) const;
+  Axes::Subset head(const size_t num_axes) const;
   Permutation permutation() const;
-  // TODO Want an alternative operation:
-  //   Once the axes are ordered, select only a specific set of axes
   Axes::Subset subset(const Axes::Subset &axes) const;
-  Axes::Subset subset(const Eigen::Index from_axis, const Eigen::Index to_axis = -1) const;
-  Axes::Subset tail(const Eigen::Index num_axes) const;
+  Axes::Subset subset(const ArrayIndex from_axis, const ArrayIndex to_axis = -1) const;
+  Axes::Subset tail(const size_t num_axes) const;
 
-  static Order canonical(const Eigen::Index num_axes);
+  static Order canonical(const size_t num_axes);
 };
 
-class Permutation : public Base {
+class Permutation : public Base<ArrayIndex> {
 public:
-  static constexpr Eigen::Index invalid = -1;
+  using Base<ArrayIndex>::value_type;
+  using Base<ArrayIndex>::vector_type;
+  static constexpr value_type invalid = -1;
 
-  explicit Permutation(const ListType &order);
+  explicit Permutation(const vector_type &data);
   explicit Permutation(const Order &order);
   explicit Permutation(const Symbolic &symbolic);
   explicit Permutation(const Actual &actual);
@@ -481,32 +480,28 @@ public:
   void sanitise() override;
   bool valid() const override;
 
-  Permutation head(const Eigen::Index num_axes) const;
+  Permutation head(const size_t num_axes) const;
   Order order() const;
-  void resize(const Eigen::Index num_axes);
+  void resize(const size_t num_axes);
   Permutation sanitised() const;
 
-  static Permutation axis_range(const Eigen::Index from, const Eigen::Index to);
-  static Permutation canonical(const Eigen::Index num_axes);
-  static Permutation contiguous_along_axis(const Eigen::Index num_axes, const Eigen::Index axis);
+  static Permutation axis_range(const ArrayIndex from, const ArrayIndex to);
+  static Permutation canonical(const size_t num_axes);
+  static Permutation contiguous_along_axis(const size_t num_axes, const ArrayIndex axis);
+  static Permutation contiguous_along_spatial_axes(const size_t num_axes);
   static const Permutation volume_contiguous;
-  // TODO Consider changing to this to take as input just an axis count
-  // TODO Would _omission_ of supra-spatial axes serve the same purpose?
-  // - Can't confirm this until tests are in place
-  template <class HeaderType> static Permutation contiguous_along_spatial_axes(const HeaderType &header);
 
   friend class Actual;
 };
 
-class Symbolic : public Base {
+class Symbolic : public Base<int8_t> {
 public:
-  static constexpr Eigen::Index invalid = 0;
+  using Base<int8_t>::value_type;
+  using Base<int8_t>::vector_type;
+  static constexpr value_type invalid = 0;
 
-  explicit Symbolic(const ListType &in);
-
+  explicit Symbolic(const vector_type &in);
   template <class HeaderType> explicit Symbolic(const HeaderType &header);
-
-  // TODO Check if this is duplicated as Actual.symbolic()
   explicit Symbolic(const Actual &actual);
   Symbolic(const Symbolic &) = default;
   explicit Symbolic() {}
@@ -520,34 +515,33 @@ public:
   bool valid() const override;
 
   template <class HeaderType> Actual actualise(HeaderType &header) const;
-  Symbolic block(const Eigen::Index from_axis, const Eigen::Index to_axis = -1) const;
+  Symbolic block(const ArrayIndex from_axis, const ArrayIndex to_axis = -1) const;
   void conform(const Symbolic &in);
   Symbolic conformed(const Symbolic &in) const;
-  void extend(const Eigen::Index num_axes);
+  void extend(const size_t num_axes);
+  Symbolic head(const ArrayIndex num_axes) const;
   Order order() const;
   Permutation permutation() const;
-  void resize(const Eigen::Index num_axes);
-  Symbolic resized(const Eigen::Index num_axes) const;
+  void resize(const size_t num_axes);
+  Symbolic resized(const size_t num_axes) const;
   void reorder(const Permutation &order);
   Symbolic reordered(const Permutation &order) const;
   Symbolic sanitised() const;
-  bool operator==(const Symbolic &that) const;
-  bool operator!=(const Symbolic &that) const;
 
-  static Symbolic canonical(const Eigen::Index num_axes);
-
-protected:
-  Actual actualise_from_sizes(const std::vector<Eigen::Index> &sizes) const;
+  static Symbolic canonical(const size_t num_axes);
 };
 
-class Actual : public Base {
+class Actual : public Base<MemIndex> {
 public:
-  static constexpr Eigen::Index invalid = 0;
+  using Base<MemIndex>::value_type;
+  using Base<MemIndex>::vector_type;
+  static constexpr value_type invalid = 0;
 
-  explicit Actual(const ListType data);
+  explicit Actual(const vector_type &data);
   Actual(const Actual &) = default;
   Actual() = delete;
   template <class HeaderType> Actual(const HeaderType &header);
+  Actual(const Symbolic &symbolic, const std::vector<size_t> &sizes);
 
   using Base::operator=;
 
@@ -568,29 +562,21 @@ public:
   template <class HeaderType> void to(HeaderType &header) const;
 };
 
-template <class HeaderType> Permutation Permutation::contiguous_along_spatial_axes(const HeaderType &header) {
-  ListType order(static_cast<ListType>(Permutation(header)));
-  for (ssize_t nonspatial_axis = 3; nonspatial_axis < header.ndim(); ++nonspatial_axis)
-    order[nonspatial_axis] = Permutation::invalid;
-  return Permutation(order);
-}
-
-// TODO When the header is a template,
+// When the header is a template,
 //   have no way of knowing whether the input is actual or symbolic;
 //   best compatibility is achieved by assuming the latter
 template <class HeaderType> Symbolic::Symbolic(const HeaderType &header) : Base(header.ndim(), Symbolic::invalid) {
-  ListType strides(header.ndim(), Actual::invalid);
-  for (ssize_t axis = 0; axis != header.ndim(); ++axis)
+  Actual::vector_type strides(header.ndim(), Actual::invalid);
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(header.ndim()); ++axis)
     strides[axis] = header.stride(axis);
-  const Actual actual(strides);
-  *this = actual.symbolic();
+  *this = Actual(strides).symbolic();
 }
 
 template <class HeaderType> Actual Symbolic::actualise(HeaderType &header) const {
-  std::vector<Eigen::Index> sizes(header.ndim());
-  for (ssize_t axis = 0; axis != header.ndim(); ++axis)
+  std::vector<size_t> sizes(header.ndim());
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(header.ndim()); ++axis)
     sizes[axis] = header.size(axis);
-  return actualise_from_sizes(sizes);
+  return Actual(sanitised(), sizes);
 }
 
 template <class HeaderType> Actual::Actual(const HeaderType &header) : Base(Symbolic(header).actualise(header)) {}
@@ -601,67 +587,40 @@ template <class HeaderType> bool Actual::match(const HeaderType &header) const {
 
 template <class HeaderType> void Actual::to(HeaderType &header) const {
   assert(header.ndim() >= size());
-  ssize_t n = 0;
-  for (; n < std::min<ssize_t>(header.ndim(), size()); ++n)
+  ArrayIndex n = 0;
+  for (; n < std::min(static_cast<size_t>(header.ndim()), size()); ++n)
     header.stride(n) = data_[n];
   for (; n < header.ndim(); ++n)
     header.stride(n) = Actual::invalid;
 }
 
-// TODO Re-think where offset() functions should reside
-// TODO Consider checking in debug mode that the strides in use are indeed actualised strides
-
-//! calculate offset to start of data
-/*! this function caculate the offset (in number of voxels) from the start of the data region
- * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]). */
-// template <class HeaderType> size_t offset(const HeaderType &header) {
-//   size_t offset = 0;
-//   for (size_t i = 0; i < header.ndim(); ++i)
-//     if (header.stride(i) < 0)
-//       offset += static_cast<size_t>(-header.stride(i)) * (header.size(i) - 1);
-//   return offset;
-// }
-
-// TODO Is this version required?
-
-//! calculate offset to start of data
-/*! this function caculate the offset (in number of voxels) from the start of the data region
- * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]), assuming the
- * strides in \a strides and HeaderType dimensions of \a header. */
-// template <class HeaderType> size_t offset(List &strides, const HeaderType &header) {
-//   InfoWrapper<HeaderType> wrapper(strides, header);
-//   return offset(wrapper);
-// }
-
-template <class HeaderType> std::ptrdiff_t offset(const Stride::Actual &strides, const HeaderType &header) {
+template <class HeaderType> MemIndex offset(const Stride::Actual &strides, const HeaderType &header) {
   assert(strides.size() == header.ndim());
-  std::ptrdiff_t offset = 0;
-  for (Eigen::Index axis = 0; axis < header.ndim(); ++axis)
+  MemIndex offset = 0;
+  for (ArrayIndex axis = 0; axis < static_cast<ArrayIndex>(header.ndim()); ++axis)
     if (strides[axis] < 0)
-      // TODO Can remove static_cast once Stride is CRTP'd
-      offset += static_cast<std::ptrdiff_t>(-strides[axis]) * (header.size(axis) - 1);
+      offset += static_cast<MemIndex>(-strides[axis]) * (header.size(axis) - 1);
   return offset;
 }
 
-template <class HeaderType> std::ptrdiff_t offset(const HeaderType &header) {
+template <class HeaderType> MemIndex offset(const HeaderType &header) {
   // Don't compute a data offset for a HeaderType
   //   for which the strides have not been actualised
   assert(Actual(header).match(header));
-  std::ptrdiff_t offset = 0;
-  for (Eigen::Index axis = 0; axis != header.ndim(); ++axis)
+  MemIndex offset = 0;
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(header.ndim()); ++axis)
     if (header.stride(axis) < 0)
-      offset += static_cast<std::ptrdiff_t>(-header.stride(axis)) * (header.size(axis) - 1);
+      offset -= header.stride(axis) * (header.size(axis) - 1);
   return offset;
 }
 
-// TODO Split into two functions so that the operation that works on the user input can be validated
 std::optional<Symbolic> __from_command_line(const Symbolic &current);
 std::optional<Symbolic> __from_command_line(const Symbolic &user_specification, const Symbolic &current);
 
 template <class HeaderType>
 inline void set_from_command_line(HeaderType &header, const Permutation &default_order = Permutation()) {
   auto cmdline_strides = __from_command_line(Symbolic(header));
-  if (static_cast<bool>(cmdline_strides))
+  if (cmdline_strides.has_value())
     cmdline_strides->actualise(header);
   else if (!default_order.empty())
     Stride::Symbolic(header).reordered(default_order).actualise(header);

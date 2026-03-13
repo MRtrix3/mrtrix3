@@ -29,7 +29,7 @@ public:
   using base_type::parent;
   using base_type::spacing;
 
-  Extract1D(const ImageType &original, const Eigen::Index axis, const std::vector<Axes::index_type> &indices)
+  Extract1D(const ImageType &original, const ArrayIndex axis, const std::vector<VoxelIndex> &indices)
       : base_type(original), extract_axis(axis), indices(indices), nsize(indices.size()), trans(original.transform()) {
     assert(*std::min_element(indices.begin(), indices.end()) >= 0);
     assert(*std::max_element(indices.begin(), indices.end()) < original.size(axis));
@@ -46,27 +46,21 @@ public:
   }
 
   void reset() {
-    for (Eigen::Index axis = 0; axis < ndim(); ++axis)
+    for (ArrayIndex axis = 0; axis < ndim(); ++axis)
       parent().index(axis) = (axis == extract_axis ? indices[0] : 0);
     current_pos = 0;
   }
 
-  Eigen::Index size(const Eigen::Index axis) const { return (axis == extract_axis ? nsize : base_type::size(axis)); }
+  size_t size(const ArrayIndex axis) const { return (axis == extract_axis ? nsize : base_type::size(axis)); }
 
   const transform_type &transform() const { return trans; }
 
-  Axes::index_type get_index(const Eigen::Index axis) const {
+  VoxelIndex get_index(const ArrayIndex axis) const {
     return (axis == extract_axis ? current_pos : parent().index(axis));
   }
-  void move_index(const Eigen::Index axis, const Axes::index_type increment) {
-    // VAR(extract_axis);
-    // VAR(indices);
-    // VAR(nsize);
-    // VAR(current_pos);
-    // VAR(axis);
-    // VAR(increment);
+  void move_index(const ArrayIndex axis, const VoxelIndex increment) {
     if (axis == extract_axis) {
-      const Axes::index_type prev_pos = current_pos < nsize ? indices[current_pos] : 0;
+      const VoxelIndex prev_pos = current_pos < nsize ? indices[current_pos] : 0;
       current_pos += increment;
       if (current_pos < nsize)
         parent().index(axis) += indices[current_pos] - prev_pos;
@@ -75,24 +69,22 @@ public:
     } else {
       parent().index(axis) += increment;
     }
-    // VAR(current_pos);
-    // VAR(parent().index(axis));
   }
 
   friend std::ostream &operator<<(std::ostream &stream, const Extract1D &V) {
     stream << "Extract1D adapter for image \"" << V.name() << "\", position [ ";
-    for (Eigen::Index n = 0; n < V.ndim(); ++n)
+    for (ArrayIndex n = 0; n < V.ndim(); ++n)
       stream << V.index(n) << " ";
     stream << "], value = " << V.value();
     return stream;
   }
 
 private:
-  const Eigen::Index extract_axis;
-  std::vector<Axes::index_type> indices;
-  const Eigen::Index nsize;
+  const ArrayIndex extract_axis;
+  std::vector<VoxelIndex> indices;
+  const ArrayIndex nsize;
   transform_type trans;
-  Axes::index_type current_pos;
+  VoxelIndex current_pos;
 };
 
 template <class ImageType> class Extract : public Base<Extract<ImageType>, ImageType> {
@@ -104,7 +96,7 @@ public:
   using base_type::parent;
   using base_type::spacing;
 
-  Extract(const ImageType &original, const std::vector<std::vector<Axes::index_type>> &indices)
+  Extract(const ImageType &original, const std::vector<std::vector<VoxelIndex>> &indices)
       : base_type(original), current_pos(ndim()), indices(indices), trans(original.transform()) {
     reset();
     trans.translation() = trans * Eigen::Vector3d(indices[0][0] * spacing(0),  //
@@ -115,19 +107,19 @@ public:
       sizes.push_back(i.size());
   }
 
-  Eigen::Index size(const Eigen::Index axis) const { return sizes[axis]; }
+  size_t size(const ArrayIndex axis) const { return sizes[axis]; }
 
   const transform_type &transform() const { return trans; }
 
   void reset() {
-    for (Eigen::Index n = 0; n < ndim(); ++n) {
+    for (ArrayIndex n = 0; n < ndim(); ++n) {
       current_pos[n] = 0;
       parent().index(n) = indices[n][0];
     }
   }
 
-  Axes::index_type get_index(const Eigen::Index axis) const { return current_pos[axis]; }
-  void move_index(const Eigen::Index axis, const Axes::index_type increment) {
+  VoxelIndex get_index(const ArrayIndex axis) const { return current_pos[axis]; }
+  void move_index(const ArrayIndex axis, const VoxelIndex increment) {
     current_pos[axis] += increment;
     if (current_pos[axis] < 0)
       parent().index(axis) = -1;
@@ -138,9 +130,9 @@ public:
   }
 
 private:
-  std::vector<Axes::index_type> current_pos;
-  std::vector<std::vector<Axes::index_type>> indices;
-  std::vector<Eigen::Index> sizes;
+  std::vector<VoxelIndex> current_pos;
+  std::vector<std::vector<VoxelIndex>> indices;
+  std::vector<ArrayIndex> sizes;
   transform_type trans;
 };
 

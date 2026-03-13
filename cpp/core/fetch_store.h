@@ -22,29 +22,29 @@
 namespace MR {
 
 template <typename ValueType>
-typename std::enable_if<!is_data_type<ValueType>::value, std::function<ValueType(const void *, std::ptrdiff_t)>>::type
+typename std::enable_if<!is_data_type<ValueType>::value, std::function<ValueType(const void *, MemIndex)>>::type
 __set_fetch_function(const DataType /*datatype*/) {}
 template <typename ValueType>
-typename std::enable_if<is_data_type<ValueType>::value, std::function<ValueType(const void *, std::ptrdiff_t)>>::type
+typename std::enable_if<is_data_type<ValueType>::value, std::function<ValueType(const void *, MemIndex)>>::type
 __set_fetch_function(const DataType datatype);
 
 template <typename ValueType>
-typename std::enable_if<!is_data_type<ValueType>::value, std::function<void(ValueType, void *, std::ptrdiff_t)>>::type
+typename std::enable_if<!is_data_type<ValueType>::value, std::function<void(ValueType, void *, MemIndex)>>::type
 __set_store_function(const DataType /*datatype*/) {}
 template <typename ValueType>
-typename std::enable_if<is_data_type<ValueType>::value, std::function<void(ValueType, void *, std::ptrdiff_t)>>::type
+typename std::enable_if<is_data_type<ValueType>::value, std::function<void(ValueType, void *, MemIndex)>>::type
 __set_store_function(const DataType datatype);
 
 template <typename ValueType>
 typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_fetch_store_scale_functions(
-    std::function<ValueType(const void *, std::ptrdiff_t, default_type, default_type)> & /*fetch_func*/,
-    std::function<void(ValueType, void *, std::ptrdiff_t, default_type, default_type)> & /*store_func*/,
+    std::function<ValueType(const void *, MemIndex, default_type, default_type)> & /*fetch_func*/,
+    std::function<void(ValueType, void *, MemIndex, default_type, default_type)> & /*store_func*/,
     const DataType /*datatype*/) {}
 
 template <typename ValueType>
 typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_store_scale_functions(
-    std::function<ValueType(const void *, std::ptrdiff_t, default_type, default_type)> &fetch_func,
-    std::function<void(ValueType, void *, std::ptrdiff_t, default_type, default_type)> &store_func,
+    std::function<ValueType(const void *, MemIndex, default_type, default_type)> &fetch_func,
+    std::function<void(ValueType, void *, MemIndex, default_type, default_type)> &store_func,
     const DataType datatype);
 
 } // namespace MR

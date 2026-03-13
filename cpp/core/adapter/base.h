@@ -16,7 +16,10 @@
 
 #pragma once
 
+#include <vector>
+
 #include "image_helpers.h"
+#include "stride.h"
 #include "types.h"
 
 namespace MR {
@@ -45,15 +48,15 @@ public:
   FORCE_INLINE virtual std::string_view name() const { return parent_.name(); }
   FORCE_INLINE virtual bool valid() const { return parent_.valid(); }
 
-  FORCE_INLINE virtual Eigen::Index ndim() const { return parent_.ndim(); }
-  FORCE_INLINE virtual Eigen::Index size(const Eigen::Index axis) const { return parent_.size(axis); }
-  FORCE_INLINE virtual default_type spacing(const Eigen::Index axis) const { return parent_.spacing(axis); }
-  FORCE_INLINE virtual std::ptrdiff_t stride(const Eigen::Index axis) const { return parent_.stride(axis); }
+  FORCE_INLINE virtual size_t ndim() const { return parent_.ndim(); }
+  FORCE_INLINE virtual size_t size(const ArrayIndex axis) const { return parent_.size(axis); }
+  FORCE_INLINE virtual default_type spacing(const ArrayIndex axis) const { return parent_.spacing(axis); }
+  FORCE_INLINE virtual Stride::Actual::value_type stride(const ArrayIndex axis) const { return parent_.stride(axis); }
   FORCE_INLINE virtual const transform_type &transform() const { return parent_.transform(); }
   FORCE_INLINE virtual const KeyValues &keyval() const { return parent_.keyval(); }
 
-  FORCE_INLINE virtual Axes::index_type get_index(const Eigen::Index axis) const { return parent_.index(axis); }
-  FORCE_INLINE virtual void move_index(const Eigen::Index axis, const Axes::index_type increment) {
+  FORCE_INLINE virtual VoxelIndex get_index(const ArrayIndex axis) const { return parent_.index(axis); }
+  FORCE_INLINE virtual void move_index(const ArrayIndex axis, const VoxelIndex increment) {
     parent_.index(axis) += increment;
   }
 
@@ -65,7 +68,7 @@ public:
   friend std::ostream &operator<<(std::ostream &stream, const Base &V) {
     stream << "image adapter \"" << V.name() << "\", datatype " << MR::DataType::from<value_type>().specifier()
            << ", position [ ";
-    for (Eigen::Index n = 0; n < V.ndim(); ++n)
+    for (StdIndex n = 0; n < V.ndim(); ++n)
       stream << V[n] << " ";
     stream << "], value = " << V.value();
     return stream;

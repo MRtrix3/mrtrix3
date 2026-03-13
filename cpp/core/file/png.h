@@ -85,8 +85,8 @@ private:
 
 template <typename T>
 void Writer::fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, const size_t num_elements) {
-  std::function<default_type(const void *, std::ptrdiff_t, default_type, default_type)> fetch_func;
-  std::function<void(default_type, void *, std::ptrdiff_t, default_type, default_type)> store_func;
+  std::function<default_type(const void *, MemIndex, default_type, default_type)> fetch_func;
+  std::function<void(default_type, void *, MemIndex, default_type, default_type)> store_func;
   __set_fetch_store_scale_functions<default_type>(fetch_func, store_func, data_type);
   for (size_t i = 0; i != num_elements; ++i) {
     Raw::store_BE<T>(std::min(static_cast<default_type>(std::numeric_limits<T>::max()),                 //

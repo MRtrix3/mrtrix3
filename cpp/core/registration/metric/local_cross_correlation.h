@@ -21,6 +21,7 @@
 #include "algo/neighbourhooditerator.h"
 #include "algo/threaded_loop.h"
 #include "filter/reslice.h"
+#include "misc/cuboid_extent.h"
 #include "transform.h"
 
 namespace MR::Registration::Metric {
@@ -55,11 +56,11 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
       return;
     }
 
-    const Eigen::Index nmax = extent[0] * extent[1] * extent[2];
+    const size_t nmax = extent[0] * extent[1] * extent[2];
     Eigen::VectorXd n1 = Eigen::VectorXd::Zero(nmax);
     Eigen::VectorXd n2 = Eigen::VectorXd::Zero(nmax);
     auto niter = NeighbourhoodIterator(mask, extent);
-    Eigen::Index cnt = 0;
+    size_t cnt = 0;
     while (niter.loop()) {
       mask.index(0) = niter.index(0);
       mask.index(1) = niter.index(1);
@@ -107,12 +108,12 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
                      .finished();
   }
 
-  LCCPrecomputeFunctorMasked_Naive(const std::vector<Eigen::Index> &ext, ImageType1 &adapter1, ImageType2 &adapter2)
+  LCCPrecomputeFunctorMasked_Naive(const CuboidExtent &ext, ImageType1 &adapter1, ImageType2 &adapter2)
       : extent(ext), in1(adapter1), in2(adapter2) { /* TODO check dimensions and extent */
   }
 
 protected:
-  std::vector<Eigen::Index> extent;
+  CuboidExtent extent;
   ImageType1 in1; // store reslice adapter in functor to avoid iterating over it when mask is false
   ImageType2 in2; // TODO: cache interpolated values for neighbourhood iteration
 };

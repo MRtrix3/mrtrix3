@@ -242,35 +242,33 @@ namespace MR {
 namespace {
 // TODO Might be possible to remove some of these
 //   (or move some of the complexity from the calling code into here?)
-template <class StrideOrderType>
-Axes::Subset get_inner_axes(const StrideOrderType &axes, const Eigen::Index num_inner_axes) {
+template <class StrideOrderType> Axes::Subset get_inner_axes(const StrideOrderType &axes, const size_t num_inner_axes) {
   assert(num_inner_axes > 0);
   return static_cast<Axes::Subset>(axes.head(num_inner_axes));
 }
 
-template <class StrideOrderType>
-Axes::Subset get_outer_axes(const StrideOrderType &axes, const Eigen::Index num_inner_axes) {
+template <class StrideOrderType> Axes::Subset get_outer_axes(const StrideOrderType &axes, const size_t num_inner_axes) {
   assert(num_inner_axes > 0);
   return static_cast<Axes::Subset>(axes.tail(axes.size() - num_inner_axes));
 }
 
 template <class HeaderType>
 Axes::Subset get_inner_axes(const HeaderType &source,
-                            const Eigen::Index num_inner_axes,
-                            const Eigen::Index from_axis,
-                            const Eigen::Index to_axis) {
-  // TODO This is slightly trickier:
-  // Need to FIRST select a subset of axes,
-  //   and only THEN sort the axes by shortest stride
+                            const ArrayIndex from_axis,
+                            const ArrayIndex to_axis,
+                            const size_t num_inner_axes) {
+  // Order of operations matters:
+  //   need to first select a subset of axes,
+  //   and only then sort the axes by shortest stride
   //   and choose a subset to perform the inner loop over
   return get_inner_axes(Stride::Symbolic(source).block(from_axis, to_axis).order(), num_inner_axes);
 }
 
 template <class HeaderType>
 Axes::Subset get_outer_axes(const HeaderType &source,
-                            const Eigen::Index num_inner_axes,
-                            const Eigen::Index from_axis,
-                            const Eigen::Index to_axis) {
+                            const ArrayIndex from_axis,
+                            const ArrayIndex to_axis,
+                            const size_t num_inner_axes) {
   return get_outer_axes(Stride::Symbolic(source).block(from_axis, to_axis).order(), num_inner_axes);
 }
 
@@ -401,7 +399,7 @@ ThreadedLoop(const HeaderType &source, const Axes::Subset &outer_axes, const Axe
 //* \sa image_thread_looping for details */
 template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop(Axes::Subset()))>
-ThreadedLoop(const HeaderType &source, const Axes::Subset &axes, const Eigen::Index num_inner_axes = 1) {
+ThreadedLoop(const HeaderType &source, const Axes::Subset &axes, const size_t num_inner_axes = 1) {
   return {source,                                     //
           Loop(get_outer_axes(axes, num_inner_axes)), //
           get_inner_axes(axes, num_inner_axes)};      //
@@ -413,12 +411,12 @@ ThreadedLoop(const HeaderType &source, const Axes::Subset &axes, const Eigen::In
 //   would be safer to define a class encapsulating an axis range
 template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop(Axes::Subset()))> ThreadedLoop(const HeaderType &source,
-                                                                         const Eigen::Index from_axis = 0,
-                                                                         const Eigen::Index to_axis = -1,
-                                                                         const Eigen::Index num_inner_axes = 1) {
+                                                                         const ArrayIndex from_axis = 0,
+                                                                         const ArrayIndex to_axis = -1,
+                                                                         const size_t num_inner_axes = 1) {
   return {source,                                                           //
-          Loop(get_outer_axes(source, num_inner_axes, from_axis, to_axis)), //
-          get_inner_axes(source, num_inner_axes, from_axis, to_axis)};      //
+          Loop(get_outer_axes(source, from_axis, to_axis, num_inner_axes)), //
+          get_inner_axes(source, from_axis, to_axis, num_inner_axes)};      //
 }
 
 //! Multi-threaded loop object
@@ -437,7 +435,7 @@ template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop("", Axes::Subset()))> ThreadedLoop(std::string_view progress_message,
                                                                              const HeaderType &source,
                                                                              const Axes::Subset &axes,
-                                                                             const Eigen::Index num_inner_axes = 1) {
+                                                                             const size_t num_inner_axes = 1) {
   return {source, Loop(progress_message, get_outer_axes(axes, num_inner_axes)), get_inner_axes(axes, num_inner_axes)};
 }
 
@@ -446,12 +444,12 @@ inline ThreadedLoopRunOuter<decltype(Loop("", Axes::Subset()))> ThreadedLoop(std
 template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop("", Axes::Subset()))> ThreadedLoop(std::string_view progress_message,
                                                                              const HeaderType &source,
-                                                                             const Eigen::Index from_axis = 0,
-                                                                             const Eigen::Index to_axis = -1,
-                                                                             const Eigen::Index num_inner_axes = 1) {
+                                                                             const ArrayIndex from_axis = 0,
+                                                                             const ArrayIndex to_axis = -1,
+                                                                             const size_t num_inner_axes = 1) {
   return {source,
-          Loop(progress_message, get_outer_axes(source, num_inner_axes, from_axis, to_axis)),
-          get_inner_axes(source, num_inner_axes, from_axis, to_axis)};
+          Loop(progress_message, get_outer_axes(source, from_axis, to_axis, num_inner_axes)),
+          get_inner_axes(source, from_axis, to_axis, num_inner_axes)};
 }
 
 } // namespace MR

@@ -65,17 +65,17 @@ public:
     assert(warp.size(3) == 3);
   }
 
-  Eigen::Index ndim() const { return interp.ndim(); }
+  size_t ndim() const { return interp.ndim(); }
   bool valid() const { return interp.valid(); }
-  Eigen::Index size(const Eigen::Index axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
-  default_type spacing(const Eigen::Index axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
+  size_t size(const ArrayIndex axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
+  default_type spacing(const ArrayIndex axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
   std::string_view name() const { return interp.name(); }
 
-  std::ptrdiff_t stride(const Eigen::Index axis) const { return interp.stride(axis); }
+  Stride::Actual::value_type stride(const ArrayIndex axis) const { return interp.stride(axis); }
 
   void reset() {
     x = {0, 0, 0};
-    for (Eigen::Index n = 3; n < interp.ndim(); ++n)
+    for (ArrayIndex n = 3; n < interp.ndim(); ++n)
       interp.index(n) = 0;
   }
 
@@ -86,15 +86,15 @@ public:
     interp.scanner(pos);
     default_type val = interp.value();
     if (jac_modulate && val != 0.0) {
-      for (Eigen::Index axis = 0; axis < 3; ++axis)
+      for (ArrayIndex axis = 0; axis < 3; ++axis)
         jacobian_adapter.index(axis) = x[axis];
       val *= jacobian_adapter.value().template cast<default_type>().determinant();
     }
     return static_cast<value_type>(val);
   }
 
-  Axes::index_type get_index(const Eigen::Index axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
-  void move_index(const Eigen::Index axis, const Axes::index_type increment) {
+  VoxelIndex get_index(const ArrayIndex axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
+  void move_index(const ArrayIndex axis, const VoxelIndex increment) {
     if (axis < 3)
       x[axis] += increment;
     else
@@ -109,8 +109,8 @@ private:
 
   Interpolator<ImageType> interp;
   WarpType warp;
-  std::array<Axes::index_type, 3> x;
-  const std::array<Eigen::Index, 3> dim;
+  std::array<VoxelIndex, 3> x;
+  const std::array<size_t, 3> dim;
   const std::array<default_type, 3> vox;
   const value_type value_when_out_of_bounds;
   const bool jac_modulate;

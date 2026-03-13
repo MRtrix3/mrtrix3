@@ -17,15 +17,15 @@
 #pragma once
 
 #include "algo/loop.h"
-#include "debug.h"
+#include "types.h"
 
 namespace MR {
 
 template <class InputImageType, class OutputImageType>
 void copy(InputImageType &&source,
           OutputImageType &&destination,
-          size_t from_axis = 0,
-          size_t to_axis = std::numeric_limits<size_t>::max()) {
+          const ArrayIndex from_axis = 0,
+          const ArrayIndex to_axis = -1) {
   for (auto i = Loop(source, from_axis, to_axis)(source, destination); i; ++i)
     destination.value() = source.value();
 }
@@ -33,8 +33,8 @@ void copy(InputImageType &&source,
 template <class InputImageType, class OutputImageType>
 void copy_with_progress(InputImageType &&source,
                         OutputImageType &&destination,
-                        size_t from_axis = 0,
-                        size_t to_axis = std::numeric_limits<size_t>::max()) {
+                        const ArrayIndex from_axis = 0,
+                        const ArrayIndex to_axis = -1) {
   copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" + shorten(destination.name()) +
                                  "\"...",
                              source,
@@ -47,8 +47,8 @@ template <class InputImageType, class OutputImageType>
 void copy_with_progress_message(std::string_view message,
                                 InputImageType &&source,
                                 OutputImageType &&destination,
-                                size_t from_axis = 0,
-                                size_t to_axis = std::numeric_limits<size_t>::max()) {
+                                const ArrayIndex from_axis = 0,
+                                const ArrayIndex to_axis = -1) {
   for (auto i = Loop(message, source, from_axis, to_axis)(source, destination); i; ++i)
     destination.value() = source.value();
 }

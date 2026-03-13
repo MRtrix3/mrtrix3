@@ -64,24 +64,24 @@ public:
   FORCE_INLINE std::string_view name() const { return buffer->name(); }
   FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
 
-  FORCE_INLINE Eigen::Index ndim() const { return buffer->ndim(); }
-  FORCE_INLINE Eigen::Index size(const Eigen::Index axis) const { return buffer->size(axis); }
-  FORCE_INLINE default_type spacing(const Eigen::Index axis) const { return buffer->spacing(axis); }
-  FORCE_INLINE std::ptrdiff_t stride(const Eigen::Index axis) const { return strides[axis]; } // TODO Refactor
+  FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
+  FORCE_INLINE size_t size(const ArrayIndex axis) const { return buffer->size(axis); }
+  FORCE_INLINE default_type spacing(const ArrayIndex axis) const { return buffer->spacing(axis); }
+  FORCE_INLINE Stride::Actual::value_type stride(const ArrayIndex axis) const { return strides[axis]; } // TODO Refactor
 
   //! offset to current voxel from start of data
-  FORCE_INLINE std::ptrdiff_t offset() const { return data_offset; }
+  FORCE_INLINE MemIndex offset() const { return data_offset; }
 
   //! reset index to zero (origin)
   FORCE_INLINE void reset() {
-    for (Eigen::Index n = 0; n < ndim(); ++n)
+    for (ArrayIndex n = 0; n < ndim(); ++n)
       this->index(n) = 0;
   }
 
   //! get position of current voxel location along \a axis
-  FORCE_INLINE Axes::index_type get_index(const Eigen::Index axis) const { return x[axis]; }
+  FORCE_INLINE VoxelIndex get_index(const ArrayIndex axis) const { return x[axis]; }
   //! move position of current voxel location along \a axis
-  FORCE_INLINE void move_index(const Eigen::Index axis, const Axes::index_type increment) {
+  FORCE_INLINE void move_index(const ArrayIndex axis, const VoxelIndex increment) {
     // TODO Was it attempting to include these that was resulting in compilation failure?
     // -> No...
     // VAR(axis);
@@ -117,7 +117,7 @@ public:
   //! use for debugging
   friend std::ostream &operator<<(std::ostream &stream, const Image &V) {
     stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
-    for (Eigen::Index n = 0; n < V.ndim(); ++n)
+    for (ArrayIndex n = 0; n < V.ndim(); ++n)
       stream << V.index(n) << " ";
     stream << "], current offset = " << V.offset() << ", ";
     if (is_out_of_bounds(V))
@@ -166,7 +166,7 @@ public:
    * \note this invalidates the invoking Image; do not use the original
    * image in subsequent code.*/
   Image with_direct_io(const Stride::Permutation &with_permutation);
-  Image with_direct_io(const Eigen::Index contiguous_axis);
+  Image with_direct_io(const ArrayIndex contiguous_axis);
   Image with_direct_io(const Stride::Symbolic &with_symbolic);
   Image with_direct_io();
 
@@ -196,11 +196,11 @@ protected:
   //! pointer to data address whether in RAM or MMap
   void *data_pointer;
   //! voxel indices
-  std::vector<Axes::index_type> x;
+  std::vector<VoxelIndex> x;
   //! voxel indices
   Stride::Actual strides;
   //! offset to currently pointed-to voxel
-  std::ptrdiff_t data_offset;
+  MemIndex data_offset;
 };
 
 template <typename ValueType> class Image<ValueType>::Buffer : public Header {
@@ -213,13 +213,13 @@ public:
   Buffer &operator=(Buffer &&) = default;
   Buffer(const Buffer &b) : Header(b), fetch_func(b.fetch_func), store_func(b.store_func) {}
 
-  FORCE_INLINE ValueType get_value(const std::ptrdiff_t offset) const {
-    const Eigen::Index nseg = offset / io->segment_size();
+  FORCE_INLINE ValueType get_value(const MemIndex offset) const {
+    const size_t nseg = offset / io->segment_size();
     return fetch_func(io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
 
-  FORCE_INLINE void set_value(const std::ptrdiff_t offset, const ValueType val) const {
-    const Eigen::Index nseg = offset / io->segment_size();
+  FORCE_INLINE void set_value(const MemIndex offset, const ValueType val) const {
+    const size_t nseg = offset / io->segment_size();
     store_func(val, io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
 
@@ -229,8 +229,8 @@ public:
   FORCE_INLINE ImageIO::Base *get_io() const { return io.get(); }
 
 protected:
-  std::function<ValueType(const void *, std::ptrdiff_t, default_type, default_type)> fetch_func;
-  std::function<void(ValueType, void *, std::ptrdiff_t, default_type, default_type)> store_func;
+  std::function<ValueType(const void *, MemIndex, default_type, default_type)> fetch_func;
+  std::function<void(ValueType, void *, MemIndex, default_type, default_type)> store_func;
 
   void set_fetch_store_functions() { __set_fetch_store_scale_functions(fetch_func, store_func, datatype()); }
 };
@@ -245,27 +245,27 @@ template <typename ValueType> struct TmpImage : public ImageBase<TmpImage<ValueT
 
   TmpImage(const typename Image<ValueType>::Buffer &b,
            void *const data,
-           const std::vector<Axes::index_type> &x,
+           const std::vector<VoxelIndex> &x,
            const Stride::Actual &strides,
-           const std::ptrdiff_t offset)
+           const MemIndex offset)
       : b(b), data(data), x(x), strides(strides), offset(offset) {
     assert(strides.valid());
   }
 
   const typename Image<ValueType>::Buffer &b;
   void *const data;
-  std::vector<Axes::index_type> x;
+  std::vector<VoxelIndex> x;
   const Stride::Actual &strides;
-  std::ptrdiff_t offset;
+  MemIndex offset;
 
   bool valid() const { return true; }
   const std::string name() const { return "direct IO buffer"; }
-  FORCE_INLINE Eigen::Index ndim() const { return b.ndim(); }
-  FORCE_INLINE Eigen::Index size(const Eigen::Index axis) const { return b.size(axis); }
-  FORCE_INLINE std::ptrdiff_t stride(const Eigen::Index axis) const { return strides[axis]; }
+  FORCE_INLINE size_t ndim() const { return b.ndim(); }
+  FORCE_INLINE size_t size(const ArrayIndex axis) const { return b.size(axis); }
+  FORCE_INLINE Stride::Actual::value_type stride(const ArrayIndex axis) const { return strides[axis]; }
 
-  FORCE_INLINE Axes::index_type get_index(const Eigen::Index axis) const { return x[axis]; }
-  FORCE_INLINE void move_index(const Eigen::Index axis, const Axes::index_type increment) {
+  FORCE_INLINE VoxelIndex get_index(const ArrayIndex axis) const { return x[axis]; }
+  FORCE_INLINE void move_index(const ArrayIndex axis, const VoxelIndex increment) {
     offset += stride(axis) * increment;
     x[axis] += increment;
   }
@@ -314,18 +314,18 @@ template <typename ValueType> Image<ValueType> Header::get_image(bool read_write
   return Image<ValueType>(buffer, std::nullopt);
 }
 
-template <typename ValueType>          //
-FORCE_INLINE Image<ValueType>::Image() //
-    : data_pointer(nullptr),           //
-      data_offset(0),                  //
-      strides(Stride::ListType()) {}   //
+template <typename ValueType>                   //
+FORCE_INLINE Image<ValueType>::Image()          //
+    : data_pointer(nullptr),                    //
+      data_offset(0),                           //
+      strides(Stride::Actual::vector_type()) {} //
 
 template <typename ValueType>
 Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_p,
                         std::optional<const Stride::Symbolic> desired_strides)
     : buffer(buffer_p),
       data_pointer(buffer->get_data_pointer()),
-      x(ndim(), Axes::index_type(0)),
+      x(ndim(), VoxelIndex(0)),
       strides((desired_strides.has_value() ? *desired_strides : Stride::Symbolic(*buffer)).actualise(*this)),
       data_offset(Stride::offset(*this)) {
   assert(buffer);
@@ -342,11 +342,8 @@ template <typename ValueType> Image<ValueType>::~Image() {
     if (buffer->get_io()) {
       if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
         auto data_buffer = std::move(buffer->data_buffer);
-        TmpImage<ValueType> src = {*buffer,
-                                   data_buffer.get(),
-                                   std::vector<Axes::index_type>(ndim(), Axes::index_type(0)),
-                                   strides,
-                                   Stride::offset(*this)};
+        TmpImage<ValueType> src = {
+            *buffer, data_buffer.get(), std::vector<VoxelIndex>(ndim(), VoxelIndex(0)), strides, Stride::offset(*this)};
         Image<ValueType> dest(buffer);
         threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
       }
@@ -363,7 +360,7 @@ Image<ValueType> Image<ValueType>::with_direct_io(const Stride::Permutation &wit
   return with_direct_io(Stride::Symbolic(*this).reordered(with_permutation));
 }
 
-template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(const Eigen::Index contiguous_axis) {
+template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(const ArrayIndex contiguous_axis) {
   return with_direct_io(Stride::Permutation::contiguous_along_axis(ndim(), contiguous_axis));
 }
 
@@ -397,7 +394,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
     auto src(*this);
     TmpImage<ValueType> dest = {*buffer,
                                 buffer->data_buffer.get(),
-                                std::vector<Axes::index_type>(ndim(), Axes::index_type(0)),
+                                std::vector<VoxelIndex>(ndim(), VoxelIndex(0)),
                                 with_actual,
                                 Stride::offset(with_actual, *this)};
     threaded_copy_with_progress_message("preloading data for \"" + name() + "\"", src, dest);

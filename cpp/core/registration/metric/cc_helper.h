@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include "adapter/reslice.h"
 #include "algo/neighbourhooditerator.h"
 #include "debug.h"
 #include "image_helpers.h"
 #include "math/math.h"
+#include "misc/cuboid_extent.h"
 
 namespace MR::Registration::Metric {
 
@@ -33,9 +35,8 @@ void cc_precompute(Im1ImageType &im1_image,
                    DerivedImageType &C,
                    DerivedImageType &im1_meansubtr,
                    DerivedImageType &im2_meansubtr,
-                   const std::vector<Eigen::Index> &extent) {
-  // TODO check extent
-  const Eigen::Index nmax = extent[0] * extent[1] * extent[2];
+                   const CuboidExtent &extent) {
+  const size_t nmax = extent.nvoxels();
   Eigen::VectorXd n1 = Eigen::VectorXd(nmax);
   Eigen::VectorXd n2 = Eigen::VectorXd(nmax);
   Eigen::Vector3d pos;
@@ -50,7 +51,7 @@ void cc_precompute(Im1ImageType &im1_image,
     n1.setZero();
     n2.setZero();
 
-    Eigen::Index nvox(0);
+    size_t nvox(0);
     auto niter = NeighbourhoodIterator(im1_image, extent);
     while (niter.loop()) {
       if (im1_mask.valid()) {

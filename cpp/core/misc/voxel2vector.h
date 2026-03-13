@@ -101,7 +101,7 @@ Voxel2Vector::Voxel2Vector(MaskType &mask, const Header &data)
   }
   std::ostringstream oss;
   oss << forward.size(0);
-  for (Eigen::Index axis = 0; axis != forward.ndim(); ++axis)
+  for (ArrayIndex axis = 0; axis != forward.ndim(); ++axis)
     oss << "x" << forward.size(axis);
   DEBUG("Voxel2vector class for image \"" + data.name() + "\"" +   //
         " of size " + oss.str() +                                  //

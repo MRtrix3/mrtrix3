@@ -20,6 +20,7 @@
 #include "image.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
+#include "misc/cuboid_extent.h"
 #include "registration/multi_contrast.h"
 
 namespace MR::Registration::Metric {
@@ -68,7 +69,8 @@ public:
         loop_density(1.0),
         control_point_exent(10.0, 10.0, 10.0),
         robust_estimate_subset(false),
-        robust_estimate_use_score(false) {
+        robust_estimate_use_score(false),
+        extent(1) {
     im1_image_interp.reset(new Im1ImageInterpType(im1_image));
     im2_image_interp.reset(new Im2ImageInterpType(im2_image));
     if (im1_mask.valid())
@@ -78,7 +80,7 @@ public:
     update_control_points();
   }
 
-  void set_extent(std::vector<Eigen::Index> extent_vector) { extent = extent_vector; }
+  void set_extent(const CuboidExtent &extent_vector) { extent = extent_vector; }
 
   void set_mc_settings(const std::vector<MultiContrastSetting> &mc_vector) {
     mc_settings = mc_vector;
@@ -122,7 +124,7 @@ public:
     control_points.block<3, 4>(0, 0).colwise() += centre;
   }
 
-  const std::vector<Eigen::Index> &get_extent() const { return extent; }
+  const CuboidExtent &get_extent() const { return extent; }
 
   template <class OptimiserType> void optimiser_update(OptimiserType &optim, const ssize_t overlap_count) {
     DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
@@ -228,7 +230,7 @@ public:
   MR::copy_ptr<Interp::Linear<Image<float>>> robust_estimate_score2_interp;
 
   Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
-  std::vector<Eigen::Index> extent;
+  CuboidExtent extent;
   std::vector<MultiContrastSetting> mc_settings;
 
   ProcImageType processed_image;

@@ -104,13 +104,13 @@ void Image4D::reload_image_buffer() {
 
 void Image4D::update_image_buffers() {
   if (trackable()) {
-    ssize_t target_volume = 0;
+    VoxelIndex target_volume = 0;
     if (tracking) {
       if (Window::main->image()) {
         const auto image = Window::main->image()->image;
         if (image.ndim() >= 4)
           target_volume = image.index(3);
-        target_volume = std::min(target_volume, fixel_data->size(4) - 1);
+        target_volume = std::min(target_volume, static_cast<VoxelIndex>(fixel_data->size(4) - 1));
       }
     }
     if (fixel_data->index(4) != target_volume) {

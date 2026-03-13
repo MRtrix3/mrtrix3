@@ -30,28 +30,28 @@ public:
   using base_type::size;
   using base_type::spacing;
 
-  Gradient1D(const ImageType &parent, const Eigen::Index axis = 0, const bool wrt_spacing = false)
+  Gradient1D(const ImageType &parent, const ArrayIndex axis = 0, const bool wrt_spacing = false)
       : base_type(parent),
         axis(axis),
         wrt_spacing(wrt_spacing),
         derivative_weights(3, 1.0),
         half_derivative_weights(3, 0.5) {
     if (wrt_spacing) {
-      for (Eigen::Index dim = 0; dim < 3; ++dim) {
+      for (ArrayIndex dim = 0; dim < 3; ++dim) {
         derivative_weights[dim] /= spacing(dim);
         half_derivative_weights[dim] /= spacing(dim);
       }
     }
   }
 
-  void set_axis(const Eigen::Index val) { axis = val; }
+  void set_axis(const ArrayIndex val) { axis = val; }
 
   /**
    * @brief computes the image gradient at the current index along the dimension defined by set_axis();
    * @return the image gradient
    */
   value_type value() {
-    const Axes::index_type pos = index(axis);
+    const VoxelIndex pos = index(axis);
     result = value_type(0);
 
     if (pos == 0) {
@@ -74,7 +74,7 @@ public:
   }
 
 protected:
-  Eigen::Index axis;
+  ArrayIndex axis;
   value_type result;
   const bool wrt_spacing;
   std::vector<value_type> derivative_weights;

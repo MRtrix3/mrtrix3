@@ -216,7 +216,7 @@ void run() {
     Filter::Median filter(input_image, std::string("applying median filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<Eigen::Index>(opt[0][0]));
+      filter.set_extent(parse_ints<VoxelIndex>(opt[0][0]));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;

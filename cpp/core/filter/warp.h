@@ -63,7 +63,7 @@ void warp(ImageTypeSource &source,
           WarpType &warp,
           const typename ImageTypeDestination::value_type value_when_out_of_bounds =
               Interpolator<ImageTypeSource>::default_out_of_bounds_value(),
-          const std::vector<Eigen::Index> oversample = Adapter::AutoOverSample,
+          const Adapter::oversample_type &oversample = Adapter::AutoOverSample,
           const bool jacobian_modulate = false) {
 
   // reslice warp onto destination grid

@@ -22,6 +22,8 @@
 #include "filter/base.h"
 #include "image.h"
 #include "memory.h"
+#include "misc/cuboid_extent.h"
+#include "types.h"
 
 namespace MR::Filter {
 /** \addtogroup Filters
@@ -44,7 +46,7 @@ class Smooth : public Base {
 
 public:
   template <class HeaderType>
-  Smooth(const HeaderType &in) : Base(in), extent(3, 0), stdev(3, 0.0), stride_permutation(in), zero_boundary(false) {
+  Smooth(const HeaderType &in) : Base(in), stdev(3, 0.0), stride_permutation(in), zero_boundary(false) {
     for (int i = 0; i < 3; i++)
       stdev[i] = in.spacing(i);
     datatype() = DataType::Float32;
@@ -52,29 +54,13 @@ public:
 
   template <class HeaderType>
   Smooth(const HeaderType &in, const std::vector<default_type> &stdev_in)
-      : Base(in), extent(3, 0), stdev(3, 0.0), stride_permutation(in) {
+      : Base(in), stdev(3, 0.0), stride_permutation(in) {
     set_stdev(stdev_in);
     datatype() = DataType::Float32;
   }
 
   //! Set the extent of smoothing kernel in voxels.
-  //! This can be set as a single value to be used for the first 3 dimensions
-  //! or separate values, one for each dimension. (Default: 4 standard deviations)
-  void set_extent(const std::vector<Eigen::Index> &new_extent) {
-    if (new_extent.size() != 1 && new_extent.size() != 3)
-      throw Exception("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
-    for (size_t i = 0; i < new_extent.size(); ++i) {
-      if (new_extent[i] < 1)
-        throw Exception("smoothing filter extent must be positive");
-      if (!(new_extent[i] & Eigen::Index(1)))
-        throw Exception("expected odd number for extent");
-    }
-    if (new_extent.size() == 1)
-      for (size_t i = 0; i < 3; i++)
-        extent[i] = new_extent[0];
-    else
-      extent = new_extent;
-  }
+  void set_extent(const CuboidExtent &new_extent) { extent = new_extent; }
 
   void set_stdev(default_type stdev_in) { set_stdev(std::vector<default_type>(3, stdev_in)); }
 
@@ -109,14 +95,14 @@ public:
 
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
-      Eigen::Index axes_to_smooth = 0;
+      size_t axes_to_smooth = 0;
       for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
           ++axes_to_smooth;
       progress.reset(new ProgressBar(message, axes_to_smooth + 1));
     }
 
-    for (Eigen::Index dim = 0; dim < 3; dim++) {
+    for (ArrayIndex dim = 0; dim < 3; dim++) {
       if (stdev[dim] > 0) {
         DEBUG("creating scratch image for smoothing image along dimension " + str(dim));
         out = std::make_shared<Image<ValueType>>(Image<ValueType>::scratch(input));
@@ -134,18 +120,18 @@ public:
   template <class ImageType> void operator()(ImageType &in_and_output) {
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
-      Eigen::Index axes_to_smooth = 0;
+      size_t axes_to_smooth = 0;
       for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
           ++axes_to_smooth;
       progress.reset(new ProgressBar(message, axes_to_smooth + 1));
     }
 
-    for (Eigen::Index dim = 0; dim < 3; dim++) {
+    for (ArrayIndex dim = 0; dim < 3; dim++) {
       if (stdev[dim] > 0) {
         Axes::Subset axes(in_and_output.ndim(), dim);
-        Eigen::Index axdim = 1;
-        for (Eigen::Index i = 0; i < in_and_output.ndim(); ++i) {
+        ArrayIndex axdim = 1;
+        for (StdIndex i = 0; i < in_and_output.ndim(); ++i) {
           if (stride_permutation[i] == dim)
             continue;
           axes[axdim++] = stride_permutation[i];
@@ -160,7 +146,7 @@ public:
   }
 
 protected:
-  std::vector<Eigen::Index> extent;
+  CuboidExtent extent;
   std::vector<default_type> stdev;
   const Stride::Permutation stride_permutation;
   bool zero_boundary;
@@ -169,8 +155,8 @@ protected:
   public:
     SmoothFunctor1D(ImageType &image,
                     const default_type stdev_in = 1.0,
-                    const Eigen::Index axis_in = 0,
-                    const Eigen::Index extent = 0,
+                    const ArrayIndex axis_in = 0,
+                    const size_t extent = 0,
                     bool zero_boundary_in = false)
         : stdev(stdev_in),
           axis(axis_in),
@@ -178,7 +164,7 @@ protected:
           spacing(image.spacing(axis_in)),
           buffer_size(image.size(axis_in)) {
       buffer.resize(buffer_size);
-      if (!extent)
+      if (extent == 0)
         radius = std::ceil(2 * stdev / spacing);
       else if (extent == 1)
         radius = 0;
@@ -194,11 +180,11 @@ protected:
         return;
       kernel.resize(2 * radius + 1);
       default_type norm_factor = 0.0;
-      for (Axes::index_type c = 0; c < kernel.size(); ++c) {
+      for (VoxelIndex c = 0; c < kernel.size(); ++c) {
         kernel[c] = exp(-(Math::pow2(c - radius) * Math::pow2(spacing)) / (2 * Math::pow2(stdev)));
         norm_factor += kernel[c];
       }
-      for (size_t c = 0; c < kernel.size(); c++) {
+      for (StdIndex c = 0; c < kernel.size(); c++) {
         kernel[c] /= norm_factor;
       }
     }
@@ -210,11 +196,11 @@ protected:
       if (!kernel.size())
         return;
 
-      const Axes::index_type pos = image.index(axis);
+      const VoxelIndex pos = image.index(axis);
 
       // fill buffer for current image line if necessary
       if (pos == 0) {
-        for (Axes::index_type k = 0; k < buffer_size; ++k) {
+        for (VoxelIndex k = 0; k < buffer_size; ++k) {
           image.index(axis) = k;
           buffer(k) = image.value();
         }
@@ -227,18 +213,18 @@ protected:
           return;
         }
 
-      const Axes::index_type from = (pos < radius) ? 0 : pos - radius;
-      const Axes::index_type to = (pos + radius) >= image.size(axis) ? image.size(axis) - 1 : pos + radius;
+      const VoxelIndex from = (pos < radius) ? 0 : pos - radius;
+      const VoxelIndex to = (pos + radius) >= image.size(axis) ? image.size(axis) - 1 : pos + radius;
 
-      Axes::index_type c = (pos < radius) ? radius - pos : 0;
-      Axes::index_type kernel_size = to - from + 1;
+      VoxelIndex c = (pos < radius) ? radius - pos : 0;
+      VoxelIndex kernel_size = to - from + 1;
 
       value_type result = kernel.segment(c, kernel_size).dot(buffer.segment(from, kernel_size));
 
       if (!std::isfinite(result)) {
         result = 0.0;
         value_type av_weights = 0.0;
-        for (Axes::index_type k = from; k <= to; ++k, ++c) {
+        for (VoxelIndex k = from; k <= to; ++k, ++c) {
           value_type neighbour_value = buffer(k);
           if (std::isfinite(neighbour_value)) {
             av_weights += kernel[c];
@@ -254,12 +240,12 @@ protected:
 
   private:
     const default_type stdev;
-    Eigen::Index radius;
-    Eigen::Index axis;
+    size_t radius;
+    ArrayIndex axis;
     Eigen::VectorXd kernel;
     const bool zero_boundary;
     const default_type spacing;
-    Eigen::Index buffer_size;
+    size_t buffer_size;
     Eigen::VectorXd buffer;
   };
 };

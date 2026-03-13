@@ -27,16 +27,16 @@ namespace MR {
 namespace {
 
 struct set_pos {
-  FORCE_INLINE set_pos(const Eigen::Index axis, const Eigen::Index index) : axis(axis), index(index) {}
+  FORCE_INLINE set_pos(const ArrayIndex axis, const VoxelIndex index) : axis(axis), index(index) {}
   template <class ImageType> FORCE_INLINE void operator()(ImageType &vox) { vox.index(axis) = index; }
-  Eigen::Index axis;
-  Eigen::Index index;
+  ArrayIndex axis;
+  VoxelIndex index;
 };
 
 struct inc_pos {
-  FORCE_INLINE inc_pos(const Eigen::Index axis) : axis(axis) {}
+  FORCE_INLINE inc_pos(const ArrayIndex axis) : axis(axis) {}
   template <class ImageType> FORCE_INLINE void operator()(ImageType &vox) { ++vox.index(axis); }
-  Eigen::Index axis;
+  ArrayIndex axis;
 };
 
 } // namespace
@@ -179,13 +179,13 @@ struct inc_pos {
  *@{ */
 
 struct LoopAlongSingleAxis {
-  const Eigen::Index axis;
+  const ArrayIndex axis;
 
   template <class... ImageType> struct Run {
-    const Eigen::Index axis;
+    const ArrayIndex axis;
     const std::tuple<ImageType &...> vox;
-    const Eigen::Index size0;
-    FORCE_INLINE Run(const Eigen::Index axis, const std::tuple<ImageType &...> &vox)
+    const VoxelIndex size0;
+    FORCE_INLINE Run(const ArrayIndex axis, const std::tuple<ImageType &...> &vox)
         : axis(axis), vox(vox), size0(std::get<0>(vox).size(axis)) {
       MR::apply_for_each(set_pos(axis, 0), vox);
     }
@@ -201,14 +201,14 @@ struct LoopAlongSingleAxis {
 
 struct LoopAlongSingleAxisProgress {
   const std::string text;
-  const Eigen::Index axis;
+  const ArrayIndex axis;
 
   template <class... ImageType> struct Run {
     MR::ProgressBar progress;
-    const Eigen::Index axis;
+    const ArrayIndex axis;
     const std::tuple<ImageType &...> vox;
-    const Eigen::Index size0;
-    FORCE_INLINE Run(std::string_view text, const Eigen::Index axis, const std::tuple<ImageType &...> &vox)
+    const VoxelIndex size0;
+    FORCE_INLINE Run(std::string_view text, const ArrayIndex axis, const std::tuple<ImageType &...> &vox)
         : progress(text, std::get<0>(vox).size(axis)), axis(axis), vox(vox), size0(std::get<0>(vox).size(axis)) {
       MR::apply_for_each(set_pos(axis, 0), vox);
     }
@@ -226,21 +226,21 @@ struct LoopAlongSingleAxisProgress {
 };
 
 struct LoopAlongAxisRange {
-  const Eigen::Index from, to;
+  const ArrayIndex from, to;
 
   template <class... ImageType> struct Run {
-    const Eigen::Index from;
-    const Eigen::Index to;
+    const ArrayIndex from;
+    const ArrayIndex to;
     const std::tuple<ImageType &...> vox;
-    const Eigen::Index size0;
+    const VoxelIndex size0;
     bool ok;
-    FORCE_INLINE Run(const Eigen::Index axis_from, const Eigen::Index axis_to, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(const ArrayIndex axis_from, const ArrayIndex axis_to, const std::tuple<ImageType &...> &vox)
         : from(axis_from),
           to(axis_to ? axis_to : std::get<0>(vox).ndim()),
           vox(vox),
           size0(std::get<0>(vox).size(from)),
           ok(true) {
-      for (Eigen::Index n = from; n < to; ++n)
+      for (ArrayIndex n = from; n < to; ++n)
         MR::apply_for_each(set_pos(n, 0), vox);
     }
     FORCE_INLINE operator bool() const { return ok; }
@@ -250,7 +250,7 @@ struct LoopAlongAxisRange {
         return;
 
       MR::apply_for_each(set_pos(from, 0), vox);
-      Eigen::Index axis = from + 1;
+      ArrayIndex axis = from + 1;
       while (axis < to) {
         MR::apply_for_each(inc_pos(axis), vox);
         if (std::get<0>(vox).index(axis) < std::get<0>(vox).size(axis))
@@ -270,13 +270,13 @@ struct LoopAlongAxisRange {
 
 struct LoopAlongAxisRangeProgress : public LoopAlongAxisRange {
   const std::string text;
-  LoopAlongAxisRangeProgress(std::string_view text, const Eigen::Index from, const Eigen::Index to)
+  LoopAlongAxisRangeProgress(std::string_view text, const ArrayIndex from, const ArrayIndex to)
       : LoopAlongAxisRange({from, to}), text(text) {}
 
   template <class... ImageType> struct Run : public LoopAlongAxisRange::Run<ImageType...> {
     MR::ProgressBar progress;
     FORCE_INLINE
-    Run(std::string_view text, const Eigen::Index from, const Eigen::Index to, const std::tuple<ImageType &...> &vox)
+    Run(std::string_view text, const ArrayIndex from, const ArrayIndex to, const std::tuple<ImageType &...> &vox)
         : LoopAlongAxisRange::Run<ImageType...>(from, to, vox),
           progress(text, MR::voxel_count(std::get<0>(vox), from, to)) {}
     FORCE_INLINE void operator++() {
@@ -294,7 +294,7 @@ struct LoopAlongAxisRangeProgress : public LoopAlongAxisRange {
 struct LoopAlongAxes {
   template <class... ImageType>
   FORCE_INLINE LoopAlongAxisRange::Run<ImageType...> operator()(ImageType &...images) const {
-    return {0, std::get<0>(std::tie(images...)).ndim(), std::tie(images...)};
+    return {0, static_cast<ArrayIndex>(std::get<0>(std::tie(images...)).ndim()), std::tie(images...)};
   }
 };
 
@@ -302,7 +302,7 @@ struct LoopAlongAxesProgress {
   const std::string text;
   template <class... ImageType>
   FORCE_INLINE LoopAlongAxisRangeProgress::Run<ImageType...> operator()(ImageType &...images) const {
-    return {text, 0, std::get<0>(std::tie(images...)).ndim(), std::tie(images...)};
+    return {text, 0, static_cast<ArrayIndex>(std::get<0>(std::tie(images...)).ndim()), std::tie(images...)};
   }
 };
 
@@ -312,12 +312,12 @@ struct LoopAlongDynamicAxes {
   template <class... ImageType> struct Run {
     const Axes::Subset axes;
     const std::tuple<ImageType &...> vox;
-    const Eigen::Index from;
-    const Eigen::Index size0;
+    const ArrayIndex from;
+    const VoxelIndex size0;
     bool ok;
     FORCE_INLINE Run(const Axes::Subset &axes, const std::tuple<ImageType &...> &vox)
         : axes(axes), vox(vox), from(axes[0]), size0(std::get<0>(vox).size(from)), ok(true) {
-      for (Eigen::Index i = 0; i != axes.size(); ++i)
+      for (StdIndex i = 0; i != axes.size(); ++i)
         MR::apply_for_each(set_pos(axes[i], 0), vox);
     }
     FORCE_INLINE operator bool() const { return ok; }
@@ -369,19 +369,19 @@ FORCE_INLINE LoopAlongAxes Loop() { return {}; }
 
 FORCE_INLINE LoopAlongAxesProgress Loop(std::string_view progress_message) { return {std::string(progress_message)}; }
 
-FORCE_INLINE LoopAlongSingleAxis Loop(const Eigen::Index axis) { return {axis}; }
+FORCE_INLINE LoopAlongSingleAxis Loop(const ArrayIndex axis) { return {axis}; }
 
-FORCE_INLINE LoopAlongSingleAxisProgress Loop(std::string_view progress_message, const Eigen::Index axis) {
+FORCE_INLINE LoopAlongSingleAxisProgress Loop(std::string_view progress_message, const ArrayIndex axis) {
   return {std::string(progress_message), axis};
 }
 
-FORCE_INLINE LoopAlongAxisRange Loop(const Eigen::Index axis_from, const Eigen::Index axis_to) {
+FORCE_INLINE LoopAlongAxisRange Loop(const ArrayIndex axis_from, const ArrayIndex axis_to) {
   return {axis_from, axis_to};
 }
 
 FORCE_INLINE LoopAlongAxisRangeProgress Loop(std::string_view progress_message,
-                                             const Eigen::Index axis_from,
-                                             const Eigen::Index axis_to) {
+                                             const ArrayIndex axis_from,
+                                             const ArrayIndex axis_to) {
   return {std::string(progress_message), axis_from, axis_to};
 }
 
@@ -394,8 +394,8 @@ FORCE_INLINE LoopAlongDynamicAxesProgress Loop(std::string_view progress_message
 template <class ImageType>
 FORCE_INLINE LoopAlongDynamicAxes
 Loop(const ImageType &source,
-     const Eigen::Index axis_from = 0,
-     const Eigen::Index axis_to = -1,
+     const ArrayIndex axis_from = 0,
+     const ArrayIndex axis_to = -1,
      typename std::enable_if<std::is_class<ImageType>::value && !std::is_same<ImageType, std::string>::value,
                              int>::type = 0) {
   // TODO Pretty sure this is flawed order:
@@ -408,8 +408,8 @@ template <class ImageType>
 FORCE_INLINE LoopAlongDynamicAxesProgress
 Loop(std::string_view progress_message,
      const ImageType &source,
-     const Eigen::Index axis_from = 0,
-     const Eigen::Index axis_to = -1,
+     const ArrayIndex axis_from = 0,
+     const ArrayIndex axis_to = -1,
      typename std::enable_if<std::is_class<ImageType>::value && !std::is_same<ImageType, std::string>::value,
                              int>::type = 0) {
   return {std::string(progress_message),

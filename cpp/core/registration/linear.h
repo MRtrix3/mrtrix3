@@ -33,6 +33,7 @@
 // #include "registration/metric/local_cross_correlation.h"
 #include "math/gradient_descent.h"
 #include "math/gradient_descent_bb.h"
+#include "misc/cuboid_extent.h"
 #include "registration/metric/evaluate.h"
 #include "registration/transform/initialiser.h"
 // #include "math/check_gradient.h"
@@ -99,7 +100,7 @@ public:
 
   Linear()
       : stages(3),
-        kernel_extent(3, 1),
+        kernel_extent(1),
         grad_tolerance(1.0e-6),
         step_tolerance(1.0e-10),
         log_stream(nullptr),
@@ -232,13 +233,7 @@ public:
     }
   }
 
-  void set_extent(const std::vector<Eigen::Index> &extent) {
-    for (size_t d = 0; d < extent.size(); ++d) {
-      if (extent[d] < 1)
-        throw Exception("the neighborhood kernel extent must be at least 1 voxel");
-    }
-    kernel_extent = extent;
-  }
+  void set_extent(const CuboidExtent &extent) { kernel_extent = extent; }
 
   void set_init_translation_type(Transform::Init::InitType type) { init_translation_type = type; }
 
@@ -574,7 +569,7 @@ public:
 protected:
   std::vector<StageSetting> stages;
   std::vector<MultiContrastSetting> contrasts, stage_contrasts;
-  std::vector<Eigen::Index> kernel_extent;
+  CuboidExtent kernel_extent;
   default_type grad_tolerance;
   default_type step_tolerance;
   std::streambuf *log_stream;

@@ -18,7 +18,6 @@
 
 #include "axes.h"
 #include "command.h"
-#include "filter/base.h"
 #include "filter/demodulate.h"
 #include "filter/gradient.h"
 #include "filter/median.h"
@@ -28,6 +27,7 @@
 #include "image.h"
 #include "math/fft.h"
 #include "metadata/bids.h"
+#include "misc/cuboid_extent.h"
 
 using namespace MR;
 using namespace App;
@@ -218,7 +218,7 @@ void run() {
     double scale = 1.0;
 
     Image<cdouble> in(input), out;
-    for (Eigen::Index n = 0; n < axes.size(); ++n) {
+    for (StdIndex n = 0; n < axes.size(); ++n) {
       scale *= in.size(axes[n]);
       if (n >= (axes.size() - 1) && !magnitude) {
         out = output;
@@ -262,7 +262,7 @@ void run() {
         throw Exception("unexpected number of elements specified in Gaussian stdev");
     } else {
       stdev.resize(3, 0.0);
-      for (Eigen::Index dim = 0; dim != 3; ++dim)
+      for (ArrayIndex dim = 0; dim != 3; ++dim)
         stdev[dim] = filter.spacing(dim);
     }
     filter.compute_wrt_scanner(!get_options("scanner").empty());
@@ -282,7 +282,7 @@ void run() {
 
     auto opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<Eigen::Index>(opt[0][0]));
+      filter.set_extent(parse_ints<CuboidExtent::value_type>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
@@ -312,7 +312,7 @@ void run() {
     }
     opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<Eigen::Index>(opt[0][0]));
+      filter.set_extent(parse_ints<CuboidExtent::value_type>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
@@ -330,7 +330,7 @@ void run() {
 
     auto opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<Eigen::Index>(opt[0][0]));
+      filter.set_extent(parse_ints<CuboidExtent::value_type>(opt[0][0]));
     filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);

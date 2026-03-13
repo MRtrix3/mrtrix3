@@ -179,7 +179,6 @@ scheme_type parse_scheme(const KeyValues &keyval, const Header &header) {
 }
 
 scheme_type get_scheme(const Header &header) {
-  DEBUG("searching for suitable phase encoding data...");
   using namespace App;
 
   const auto opt_table = get_options("import_pe_table");

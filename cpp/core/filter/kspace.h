@@ -37,7 +37,7 @@ namespace MR::Filter {
 class KSpace : public Base {
 public:
   KSpace(const Header &H, Image<double> &window) : Base(H), window(window) {
-    for (size_t axis = 0; axis != H.ndim(); ++axis) {
+    for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(H.ndim()); ++axis) {
       if (axis < window.ndim() && window.size(axis) > 1)
         inner_axes.push_back(axis);
       else
@@ -51,7 +51,7 @@ public:
     Image<cdouble> kspace;
     Image<cdouble> temp;
     {
-      for (ssize_t n = 0; n != inner_axes.size(); ++n) {
+      for (StdIndex n = 0; n != inner_axes.size(); ++n) {
         switch (n) {
         case 0:
           kspace = Image<cdouble>::scratch(in,
@@ -83,7 +83,7 @@ public:
         kspace.value() *= static_cast<double>(window.value());
     }
 
-    for (ssize_t n = 0; n != inner_axes.size(); ++n) {
+    for (StdIndex n = 0; n != inner_axes.size(); ++n) {
       if (n == inner_axes.size() - 1) {
         // Final FFT:
         //   use output image if applicable;
@@ -108,7 +108,7 @@ public:
   // Generic function to multiply 1D kernel to individual axis
   static void apply_window1D(Image<double> &windowND,
                              Eigen::Array<double, Eigen::Dynamic, 1> &window1D,
-                             const ssize_t axis,
+                             const ArrayIndex axis,
                              const Axes::Subset &inner_axes) {
     // Need to loop over all inner axes other than the current one
     Axes::Subset inner_excluding_axis;
@@ -119,7 +119,7 @@ public:
     windowND.reset();
     const size_t N = windowND.size(axis);
     for (auto l = Loop(inner_excluding_axis)(windowND); l; ++l) {
-      for (size_t n = 0; n != N; ++n) {
+      for (VoxelIndex n = 0; n != N; ++n) {
         windowND.index(axis) = n;
         windowND.value() *= window1D[n];
       }
@@ -140,7 +140,7 @@ public:
       const default_type transition_lower = 0.5 - 0.5 * cosine_frac;
       const default_type transition_upper = 0.5 + 0.5 * cosine_frac;
       // Beware of FFT being non-centred
-      for (size_t n = 0; n != N; ++n) {
+      for (StdIndex n = 0; n != N; ++n) {
         const default_type pos = static_cast<default_type>(n) / static_cast<default_type>(N);
         if (pos > transition_lower && pos < transition_upper)
           window1d[n] = 0.5 + 0.5 * std::cos(2.0 * Math::pi * (pos - transition_lower) / cosine_frac);
@@ -161,8 +161,8 @@ public:
     for (auto axis : inner_axes) {
       const size_t N = header.size(axis);
       Eigen::Array<double, Eigen::Dynamic, 1> window1d(N);
-      for (size_t n_centred = 0; n_centred != N; ++n_centred) {
-        size_t n = n_centred + (N + 2) / 2;
+      for (StdIndex n_centred = 0; n_centred != N; ++n_centred) {
+        StdIndex n = n_centred + (N + 2) / 2;
         if (n >= N)
           n -= N;
         // Values from MatLab:
@@ -187,7 +187,7 @@ public:
     for (auto axis : inner_axes) {
       const size_t N = header.size(axis);
       Eigen::Array<double, Eigen::Dynamic, 1> window1d(N);
-      for (size_t n = 0; n != N; ++n)
+      for (StdIndex n = 0; n != N; ++n)
         window1d[n] = Math::pow2(std::cos(Math::pi * n / N));
       window1d *= 1.0 / static_cast<double>(N);
       apply_window1D(window, window1d, axis, inner_axes);
@@ -205,7 +205,7 @@ public:
     for (auto axis : inner_axes) {
       const size_t N = header.size(axis);
       Eigen::Array<double, Eigen::Dynamic, 1> window1d(N);
-      for (size_t n = 0; n != N; ++n)
+      for (StdIndex n = 0; n != N; ++n)
         window1d[n] = std::exp(-0.5 * Math::pow2(n / (sigma * N)));
       window1d *= 1.0 / window1d.sum();
       apply_window1D(window, window1d, axis, inner_axes);
@@ -220,12 +220,12 @@ protected:
 
   template <class ImageType>
   typename std::enable_if<std::is_same<typename ImageType::value_type, cdouble>::value, void>::type
-  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ssize_t axis) {
+  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ArrayIndex axis) {
     Math::FFT(kspace, out, axis, FFTW_BACKWARD, false);
   }
   template <class ImageType>
   typename std::enable_if<std::is_same<typename ImageType::value_type, cfloat>::value, void>::type
-  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ssize_t axis) {
+  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ArrayIndex axis) {
     assert(scratch.valid());
     Math::FFT(kspace, scratch, axis, FFTW_BACKWARD, false);
     for (auto l = Loop(out)(scratch, out); l; ++l)
@@ -234,7 +234,7 @@ protected:
   }
   template <class ImageType>
   typename std::enable_if<!MR::is_complex<typename ImageType::value_type>::value, void>::type
-  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ssize_t axis) {
+  do_final_fft(ImageType &out, Image<cdouble> &kspace, Image<cdouble> &scratch, const ArrayIndex axis) {
     assert(scratch.valid());
     Math::FFT(kspace, scratch, axis, FFTW_BACKWARD, false);
     for (auto l = Loop(out)(scratch, out); l; ++l)
@@ -246,7 +246,7 @@ protected:
     H.datatype() = DataType::Float64;
     H.datatype().set_byte_order_native();
     Axes::Subset::const_iterator it = inner_axes.begin();
-    for (size_t axis = 0; axis != header.ndim(); ++axis) {
+    for (ArrayIndex axis = 0; axis != header.ndim(); ++axis) {
       if (it != inner_axes.end() && *it == axis)
         ++it;
       else

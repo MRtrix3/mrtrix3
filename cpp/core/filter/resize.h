@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <optional>
+
+#include "adapter/reslice.h"
 #include "algo/copy.h"
 #include "filter/base.h"
 #include "filter/reslice.h"
@@ -61,9 +64,9 @@ public:
         interp_type(MR::Interp::interp_type::CUBIC),
         transformation(Adapter::NoTransform),
         oversampling(Adapter::AutoOverSample),
-        out_of_bounds_value(nullptr) {}
+        out_of_bounds_value(std::nullopt) {}
 
-  ~Resize() { delete out_of_bounds_value; }
+  ~Resize() {}
 
   void set_voxel_size(default_type size) {
     std::vector<default_type> voxel_size(3, size);
@@ -90,11 +93,11 @@ public:
     }
   }
 
-  void set_size(const std::vector<Eigen::Index> &image_res) {
+  void set_size(const std::vector<size_t> &image_res) {
     if (image_res.size() != 3)
       throw Exception("the image resolution must be defined for 3 spatial dimensions");
     std::vector<default_type> new_voxel_size(3);
-    for (Eigen::Index d = 0; d < 3; ++d) {
+    for (ArrayIndex d = 0; d < 3; ++d) {
       if (image_res[d] <= 0)
         throw Exception("the image resolution must be larger than zero for all 3 spatial dimensions");
       new_voxel_size[d] = (this->size(d) * this->spacing(d)) / image_res[d];
@@ -108,7 +111,7 @@ public:
     if (scale.size() != 3)
       throw Exception("a scale factor for each spatial dimension is required");
     std::vector<default_type> new_voxel_size(3);
-    for (Eigen::Index d = 0; d < 3; ++d) {
+    for (ArrayIndex d = 0; d < 3; ++d) {
       if (scale[d] <= 0.0)
         throw Exception("the scale factor must be larger than zero");
       new_voxel_size[d] = (this->size(d) * this->spacing(d)) / std::ceil(this->size(d) * scale[d]);
@@ -116,7 +119,7 @@ public:
     set_voxel_size(new_voxel_size);
   }
 
-  void set_oversample(std::vector<Eigen::Index> oversample) {
+  void set_oversample(Adapter::oversample_type oversample) {
     if (oversample.size() == 1)
       oversample.resize(3, oversample[0]);
     else if (oversample.size() != 3 and !oversample.empty())
@@ -133,15 +136,12 @@ public:
 
   void set_transform(const transform_type &trafo) { transform_ = trafo; }
 
-  void set_out_of_bounds_value(default_type value) {
-    out_of_bounds_value = new default_type;
-    *out_of_bounds_value = value;
-  }
+  void set_out_of_bounds_value(default_type value) { out_of_bounds_value = value; }
 
   template <class InputImageType, class OutputImageType>
   void operator()(InputImageType &input, OutputImageType &output) {
     const typename InputImageType::value_type oob =
-        out_of_bounds_value ? *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
+        out_of_bounds_value.value_or(Interp::Base<InputImageType>::default_out_of_bounds_value());
     switch (interp_type) {
     case MR::Interp::interp_type::NEAREST:
       // Use of oversampling is prevented in reslice adapter
@@ -165,8 +165,8 @@ public:
 protected:
   MR::Interp::interp_type interp_type;
   transform_type transformation;
-  std::vector<Eigen::Index> oversampling;
-  default_type *out_of_bounds_value;
+  Adapter::oversample_type oversampling;
+  std::optional<default_type> out_of_bounds_value;
 };
 //! @}
 } // namespace MR::Filter

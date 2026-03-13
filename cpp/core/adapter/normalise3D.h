@@ -19,6 +19,8 @@
 #include <array>
 
 #include "adapter/base.h"
+#include "misc/cuboid_extent.h"
+#include "types.h"
 
 namespace MR::Adapter {
 
@@ -32,40 +34,32 @@ public:
   using base_type::name;
   using base_type::size;
 
-  Normalise3D(const ImageType &parent) : base_type(parent) { set_extent(std::vector<Eigen::Index>(1, 3)); }
+  Normalise3D(const ImageType &parent) : base_type(parent), extent(3) { update_halfextent(); }
 
-  Normalise3D(const ImageType &parent, const std::vector<Eigen::Index> &extent) : base_type(parent) {
-    set_extent(extent);
+  Normalise3D(const ImageType &parent, const CuboidExtent &extent) : base_type(parent), extent(extent) {
+    update_halfextent();
   }
 
-  void set_extent(const std::vector<Eigen::Index> &ext) {
-    for (Eigen::Index i = 0; i < ext.size(); ++i)
-      if (!(ext[i] & Eigen::Index(1)))
-        throw Exception("expected odd number for extent");
-    if (ext.size() != 1 && ext.size() != 3)
-      throw Exception("unexpected number of elements specified in extent");
-    if (ext.size() == 1)
-      extent = std::vector<Eigen::Index>(3, ext[0]);
-    else
-      extent = ext;
-
-    DEBUG("normalise3D adapter for image \"" + name() + "\" initialised with extent " + str(extent));
-
-    for (size_t i = 0; i < 3; ++i)
-      extent[i] = (extent[i] - 1) / 2;
+  void set_extent(const CuboidExtent &ext) {
+    extent = ext;
+    update_halfextent();
   }
 
   value_type value() {
-    const std::array<Axes::index_type, 3> old_pos = {index(0), index(1), index(2)};
+    const std::array<VoxelIndex, 3> old_pos = {index(0), index(1), index(2)};
     pos_value = base_type::value();
     nelements = 0;
 
-    const std::array<Axes::index_type, 3> from = {index(0) < extent[0] ? 0 : index(0) - extent[0],
-                                                  index(1) < extent[1] ? 0 : index(1) - extent[1],
-                                                  index(2) < extent[2] ? 0 : index(2) - extent[2]};
-    const std::array<Axes::index_type, 3> to = {index(0) >= size(0) - extent[0] ? size(0) : index(0) + extent[0] + 1,
-                                                index(1) >= size(1) - extent[1] ? size(1) : index(1) + extent[1] + 1,
-                                                index(2) >= size(2) - extent[2] ? size(2) : index(2) + extent[2] + 1};
+    const std::array<VoxelIndex, 3> from = {index(0) < halfextent[0] ? 0 : index(0) - halfextent[0],
+                                            index(1) < halfextent[1] ? 0 : index(1) - halfextent[1],
+                                            index(2) < halfextent[2] ? 0 : index(2) - halfextent[2]};
+    const std::array<VoxelIndex, 3> to = {
+        index(0) >= static_cast<VoxelIndex>(size(0)) - halfextent[0] ? static_cast<VoxelIndex>(size(0))
+                                                                     : index(0) + halfextent[0] + 1,
+        index(1) >= static_cast<VoxelIndex>(size(1)) - halfextent[1] ? static_cast<VoxelIndex>(size(1))
+                                                                     : index(1) + halfextent[1] + 1,
+        index(2) >= static_cast<VoxelIndex>(size(2)) - halfextent[2] ? static_cast<VoxelIndex>(size(2))
+                                                                     : index(2) + halfextent[2] + 1};
 
     mean = 0.0;
 
@@ -85,10 +79,16 @@ public:
   }
 
 protected:
-  std::vector<Eigen::Index> extent;
+  CuboidExtent extent;
+  std::array<VoxelIndex, 3> halfextent;
   value_type mean;
   value_type pos_value;
-  Eigen::Index nelements;
+  size_t nelements;
+
+  void update_halfextent() {
+    for (StdIndex i = 0; i < 3; ++i)
+      halfextent[i] = (extent[i] - 1) / 2;
+  }
 };
 
 } // namespace MR::Adapter

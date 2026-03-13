@@ -44,7 +44,7 @@ template <template <class ImageType> class Interpolator, class ImageTypeDestinat
 void reslice(ImageTypeSource &source,
              ImageTypeDestination &destination,
              const transform_type &transform = Adapter::NoTransform,
-             const std::vector<Eigen::Index> &oversampling = Adapter::AutoOverSample,
+             const Adapter::oversample_type &oversampling = Adapter::AutoOverSample,
              const typename ImageTypeDestination::value_type value_when_out_of_bounds =
                  Interp::Base<ImageTypeDestination>::default_out_of_bounds_value()) {
   Adapter::Reslice<Interpolator, ImageTypeSource> interp(
