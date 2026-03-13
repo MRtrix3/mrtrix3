@@ -27,6 +27,12 @@ struct Uniforms {
     uint32_t3 dispatchGrid;
 };
 
+struct CostSlabUniforms {
+    int32_t slabInputZStart;
+    uint32_t reduceChunkDepth;
+    uint32_t reduceWorkgroupZOffset;
+};
+
 struct LnccMomentSums
 {
     float sumReference; // Σ_i w_i * r_i
@@ -88,18 +94,29 @@ void lnccPrepareRawMomentsForward(
     Texture3D<float4> displacement,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
+    ConstantBuffer<CostSlabUniforms> slabUniforms,
     WTexture3D<float4> outputMoments1,
     WTexture3D<float4> outputMoments2)
 {
-    let fixedDims = textureSize(fixedImage);
-    if (globalId.x >= fixedDims.x || globalId.y >= fixedDims.y || globalId.z >= fixedDims.z) {
+    let slabDims = textureSize(outputMoments1);
+    if (!inBoundsIndex(int32_t3(globalId), slabDims)) {
         return;
     }
+
+    let fixedDims = textureSize(fixedImage);
+    let globalZ = slabUniforms.slabInputZStart + int32_t(globalId.z);
+    let globalCoord = int32_t3(int32_t(globalId.x), int32_t(globalId.y), globalZ);
+    if (!inBoundsIndex(globalCoord, fixedDims)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
+
     let movingDims = textureSize(movingImage);
     let movingField = VoxelSamplingField(movingImage, linearSampler);
-    let centreFixedVoxel = float3(globalId);
+    let centreFixedVoxel = float3(float(globalCoord.x), float(globalCoord.y), float(globalCoord.z));
     let centreFixedScanner = mul(voxelScannerMatrices.targetVoxelToScanner, float4(centreFixedVoxel, 1.0F)).xyz;
-    let centreDisplacement = displacement.Load(int32_t4(globalId, 0)).xyz;
+    let centreDisplacement = displacement.Load(int32_t4(globalCoord, 0)).xyz;
     let centreWarpedScanner = centreFixedScanner + centreDisplacement;
     let centreWarpedMovingVoxel = mul(voxelScannerMatrices.sourceScannerToVoxel, float4(centreWarpedScanner, 1.0F)).xyz;
     if (!inBoundsVoxel(centreWarpedMovingVoxel, movingDims)) {
@@ -108,7 +125,7 @@ void lnccPrepareRawMomentsForward(
         return;
     }
 
-    let fixedValue = fixedImage.Load(int32_t4(globalId, 0));
+    let fixedValue = fixedImage.Load(int32_t4(globalCoord, 0));
     let movingValue = movingField.sample(centreWarpedMovingVoxel);
     let R = fixedValue; let M = movingValue;
     let R2 = fixedValue * fixedValue; let M2 = movingValue * movingValue;
@@ -130,11 +147,21 @@ void lnccPrepareRawMomentsBackward(
     Texture3D<float4> displacement,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
+    ConstantBuffer<CostSlabUniforms> slabUniforms,
     WTexture3D<float4> outputMoments1,
     WTexture3D<float4> outputMoments2)
 {
+    let slabDims = textureSize(outputMoments1);
+    if (!inBoundsIndex(int32_t3(globalId), slabDims)) {
+        return;
+    }
+
     let movingDims = textureSize(movingImage);
-    if (globalId.x >= movingDims.x || globalId.y >= movingDims.y || globalId.z >= movingDims.z) {
+    let globalZ = slabUniforms.slabInputZStart + int32_t(globalId.z);
+    let globalCoord = int32_t3(int32_t(globalId.x), int32_t(globalId.y), globalZ);
+    if (!inBoundsIndex(globalCoord, movingDims)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
@@ -142,7 +169,7 @@ void lnccPrepareRawMomentsBackward(
     let fixedField = VoxelSamplingField(fixedImage, linearSampler);
     let displacementField = VoxelSamplingFieldFloat4(displacement, linearSampler);
 
-    let centreMovingVoxel = float3(globalId);
+    let centreMovingVoxel = float3(float(globalCoord.x), float(globalCoord.y), float(globalCoord.z));
     let centreMovingScanner = mul(voxelScannerMatrices.sourceVoxelToScanner, float4(centreMovingVoxel, 1.0F)).xyz;
     let centreDisplacementSampleVoxel = mul(voxelScannerMatrices.targetScannerToVoxel, float4(centreMovingScanner, 1.0F)).xyz;
 
@@ -162,7 +189,7 @@ void lnccPrepareRawMomentsBackward(
         return;
     }
 
-    let referenceValue = movingImage.Load(int32_t4(globalId, 0));
+    let referenceValue = movingImage.Load(int32_t4(globalCoord, 0));
     let movingValue = fixedField.sample(centreMovedFixedVoxel);
 
     let R = referenceValue;
@@ -179,14 +206,14 @@ void lnccPrepareRawMomentsBackward(
 
 void lnccFilterAlongAxis(
     uint32_t3 globalId,
-    uint32_t3 textureDims,
+    uint32_t3 filterDims,
     int32_t3 axisOffset,
     Texture3D<float4> inputMoments1,
     Texture3D<float4> inputMoments2,
     WTexture3D<float4> outputMoments1,
     WTexture3D<float4> outputMoments2)
 {
-    if (globalId.x >= textureDims.x || globalId.y >= textureDims.y || globalId.z >= textureDims.z) {
+    if (globalId.x >= filterDims.x || globalId.y >= filterDims.y || globalId.z >= filterDims.z) {
         return;
     }
 
@@ -196,7 +223,7 @@ void lnccFilterAlongAxis(
     var sumMoments2 = float4(0.0F, 0.0F, 0.0F, 0.0F);
     for (int32_t i = -radius; i <= radius; ++i) {
         let sampleCoord = baseCoord + axisOffset * i;
-        if(!inBoundsIndex(sampleCoord, textureDims)) {
+        if(!inBoundsIndex(sampleCoord, filterDims)) {
             continue;
         }
         let texelCoord = int32_t4(sampleCoord, 0);
@@ -208,7 +235,7 @@ void lnccFilterAlongAxis(
 }
 
 void lnccAccumulateZSlabs(
-    uint32_t3 globalId,
+    int32_t3 baseCoord,
     uint32_t3 textureDims,
     Texture3D<float4> inputMoments1,
     Texture3D<float4> inputMoments2,
@@ -216,7 +243,6 @@ void lnccAccumulateZSlabs(
 )
 {
     let radius = int32_t(kWindowRadius);
-    let baseCoord = int32_t3(globalId);
     for (int32_t dz = -radius; dz <= radius; ++dz) {
         let sliceCoord = baseCoord + int32_t3(0, 0, dz);
         if(!inBoundsIndex(sliceCoord, textureDims)) {
@@ -246,8 +272,10 @@ void lnccCostFilterXPass(
     WTexture3D<float4> outputMoments1,
     WTexture3D<float4> outputMoments2)
 {
-    let textureDims = textureSize(latticeImage);
-    lnccFilterAlongAxis(globalId, textureDims, int32_t3(1, 0, 0), inputMoments1, inputMoments2, outputMoments1, outputMoments2);
+    let latticeDims = textureSize(latticeImage);
+    let scratchDims = textureSize(inputMoments1);
+    let filterDims = uint32_t3(latticeDims.x, latticeDims.y, scratchDims.z);
+    lnccFilterAlongAxis(globalId, filterDims, int32_t3(1, 0, 0), inputMoments1, inputMoments2, outputMoments1, outputMoments2);
 }
 
 [shader("compute")]
@@ -262,8 +290,10 @@ void lnccCostFilterYPass(
     WTexture3D<float4> outputMoments1,
     WTexture3D<float4> outputMoments2)
 {
-    let textureDims = textureSize(latticeImage);
-    lnccFilterAlongAxis(globalId, textureDims, int32_t3(0, 1, 0), inputMoments1, inputMoments2, outputMoments1, outputMoments2);
+    let latticeDims = textureSize(latticeImage);
+    let scratchDims = textureSize(inputMoments1);
+    let filterDims = uint32_t3(latticeDims.x, latticeDims.y, scratchDims.z);
+    lnccFilterAlongAxis(globalId, filterDims, int32_t3(0, 1, 0), inputMoments1, inputMoments2, outputMoments1, outputMoments2);
 }
 
 [shader("compute")]
@@ -273,6 +303,7 @@ void lnccCostForwardReduceZ(
     uint32_t3 localId : SV_GroupThreadID,
     uint32_t3 workgroupId : SV_GroupID,
     ConstantBuffer<Uniforms> uniforms,
+    ConstantBuffer<CostSlabUniforms> slabUniforms,
     Texture3D<float> fixedImage,
     Texture3D<float4> xyFilteredMoments1, // contains summed R, M, R^2, M^2 over X and Y
     Texture3D<float4> xyFilteredMoments2, // contains summed R*M, W over X and Y
@@ -288,17 +319,24 @@ void lnccCostForwardReduceZ(
                    + localId.y * kWorkgroupSizeX
                    + localId.z * kWorkgroupSizeX * kWorkgroupSizeY;
 
-    let textureDims = textureSize(fixedImage);
+    let latticeDims = textureSize(fixedImage);
+    let scratchDims = textureSize(xyFilteredMoments1);
+    let reduceDims = uint32_t3(latticeDims.x, latticeDims.y, slabUniforms.reduceChunkDepth);
 
     var cost = 0.0F;
     var count = 0.0F;
 
-    if (inBoundsIndex(int32_t3(globalId), textureDims)) {
-        var sums = initLnccMomentSums();
-        lnccAccumulateZSlabs(globalId, textureDims, xyFilteredMoments1, xyFilteredMoments2, sums);
+    if (inBoundsIndex(int32_t3(globalId), reduceDims)) {
+        let globalZ = slabUniforms.slabInputZStart + int32_t(kWindowRadius) + int32_t(globalId.z);
+        if (globalZ >= 0 && globalZ < int32_t(latticeDims.z)) {
+            let slabDims = uint32_t3(latticeDims.x, latticeDims.y, scratchDims.z);
+            let slabCenterCoord = int32_t3(int32_t(globalId.x), int32_t(globalId.y), int32_t(globalId.z) + int32_t(kWindowRadius));
+            var sums = initLnccMomentSums();
+            lnccAccumulateZSlabs(slabCenterCoord, slabDims, xyFilteredMoments1, xyFilteredMoments2, sums);
 
-        if (solveLnccCost(sums, cost)) {
-            count = 1.0F;
+            if (solveLnccCost(sums, cost)) {
+                count = 1.0F;
+            }
         }
     }
 
@@ -310,9 +348,10 @@ void lnccCostForwardReduceZ(
     let reducedCount = workgroupReduce<float, SumFloatOp, workgroupInvocations>(localCounts, localIndex);
 
     if (localIndex == 0U) {
+        let globalWorkgroupZ = workgroupId.z + slabUniforms.reduceWorkgroupZOffset;
         let wgIndex = workgroupId.x
                     + workgroupId.y * uniforms.dispatchGrid.x
-                    + workgroupId.z * uniforms.dispatchGrid.x * uniforms.dispatchGrid.y;
+                    + globalWorkgroupZ * uniforms.dispatchGrid.x * uniforms.dispatchGrid.y;
         ssdPartials[wgIndex] = reducedCost;
         ssdCounts[wgIndex] = reducedCount;
     }
@@ -326,6 +365,7 @@ void lnccCostBackwardReduceZ(
     uint32_t3 localId : SV_GroupThreadID,
     uint32_t3 workgroupId : SV_GroupID,
     ConstantBuffer<Uniforms> uniforms,
+    ConstantBuffer<CostSlabUniforms> slabUniforms,
     Texture3D<float> movingImage,
     Texture3D<float4> xyFilteredMoments1, // contains summed R, M, R^2, M^2 over X and Y
     Texture3D<float4> xyFilteredMoments2, // contains summed R*M, W over X and Y
@@ -341,17 +381,24 @@ void lnccCostBackwardReduceZ(
                    + localId.y * kWorkgroupSizeX
                    + localId.z * kWorkgroupSizeX * kWorkgroupSizeY;
 
-    let textureDims = textureSize(movingImage);
+    let latticeDims = textureSize(movingImage);
+    let scratchDims = textureSize(xyFilteredMoments1);
+    let reduceDims = uint32_t3(latticeDims.x, latticeDims.y, slabUniforms.reduceChunkDepth);
 
     var cost = 0.0F;
     var count = 0.0F;
 
-    if (inBoundsIndex(int32_t3(globalId), textureDims)) {
-        var sums = initLnccMomentSums();
-        lnccAccumulateZSlabs(globalId, textureDims, xyFilteredMoments1, xyFilteredMoments2, sums);
+    if (inBoundsIndex(int32_t3(globalId), reduceDims)) {
+        let globalZ = slabUniforms.slabInputZStart + int32_t(kWindowRadius) + int32_t(globalId.z);
+        if (globalZ >= 0 && globalZ < int32_t(latticeDims.z)) {
+            let slabDims = uint32_t3(latticeDims.x, latticeDims.y, scratchDims.z);
+            let slabCenterCoord = int32_t3(int32_t(globalId.x), int32_t(globalId.y), int32_t(globalId.z) + int32_t(kWindowRadius));
+            var sums = initLnccMomentSums();
+            lnccAccumulateZSlabs(slabCenterCoord, slabDims, xyFilteredMoments1, xyFilteredMoments2, sums);
 
-        if (solveLnccCost(sums, cost)) {
-            count = 1.0F;
+            if (solveLnccCost(sums, cost)) {
+                count = 1.0F;
+            }
         }
     }
 
@@ -363,9 +410,10 @@ void lnccCostBackwardReduceZ(
     let reducedCount = workgroupReduce<float, SumFloatOp, workgroupInvocations>(localCounts, localIndex);
 
     if (localIndex == 0U) {
+        let globalWorkgroupZ = workgroupId.z + slabUniforms.reduceWorkgroupZOffset;
         let wgIndex = workgroupId.x
                     + workgroupId.y * uniforms.dispatchGrid.x
-                    + workgroupId.z * uniforms.dispatchGrid.x * uniforms.dispatchGrid.y;
+                    + globalWorkgroupZ * uniforms.dispatchGrid.x * uniforms.dispatchGrid.y;
         ssdPartials[wgIndex] = reducedCost;
         ssdCounts[wgIndex] = reducedCount;
     }

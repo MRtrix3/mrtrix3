@@ -89,10 +89,15 @@ private:
                        const Buffer<std::byte> &voxel_scanner_buffer,
                        const Sampler &linear_sampler);
 
+    uint32_t window_radius = 0U;
+    uint32_t lattice_width = 0U;
+    uint32_t lattice_height = 0U;
+    uint32_t lattice_depth = 0U;
+    uint32_t slab_depth = 0U;
+    Buffer<std::byte> slab_uniforms_buffer;
     DispatchGrid prepare_dispatch_grid;
     DispatchGrid filter_x_dispatch_grid;
     DispatchGrid filter_y_dispatch_grid;
-    DispatchGrid reduce_dispatch_grid;
     Buffer<float> cost_partials_buffer;
     Buffer<float> cost_counts_buffer;
     Kernel prepare_raw_moments_kernel;
@@ -126,13 +131,17 @@ private:
                          std::string_view prepare_entry_point,
                          std::string_view reduce_entry_point,
                          const Texture &lattice_image,
-                         const DispatchGrid &dispatch_grid,
                          const Texture &output_update);
 
+    uint32_t window_radius = 0U;
+    uint32_t lattice_width = 0U;
+    uint32_t lattice_height = 0U;
+    uint32_t lattice_depth = 0U;
+    uint32_t slab_depth = 0U;
+    Buffer<std::byte> slab_uniforms_buffer;
     DispatchGrid prepare_dispatch_grid;
     DispatchGrid filter_x_dispatch_grid;
     DispatchGrid filter_y_dispatch_grid;
-    DispatchGrid reduce_dispatch_grid;
     Texture moments_ping_1;
     Texture moments_ping_2;
     Texture moments_ping_3;
