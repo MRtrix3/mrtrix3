@@ -54,7 +54,7 @@ public:
 private:
   default_type update(Eigen::Vector3d &current, const Eigen::Vector3d &truth) {
     displacement.scanner(current);
-    Eigen::Vector3d discrepancy = truth - (current + Eigen::Vector3d(displacement.row(3)));
+    const Eigen::Vector3d discrepancy = truth - (current + Eigen::Vector3d(displacement.vec3(3)));
     current += discrepancy;
     return discrepancy.dot(discrepancy);
   }
@@ -93,7 +93,7 @@ public:
 private:
   default_type update(Eigen::Vector3d &current, const Eigen::Vector3d &truth) {
     deform.scanner(current);
-    Eigen::Vector3d discrepancy = truth - Eigen::Vector3d(deform.row(3));
+    const Eigen::Vector3d discrepancy = truth - Eigen::Vector3d(deform.vec3(3));
     current += discrepancy;
     return discrepancy.dot(discrepancy);
   }
