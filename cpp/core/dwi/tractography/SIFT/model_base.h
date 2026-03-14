@@ -262,10 +262,8 @@ template <class Fixel> void ModelBase<Fixel>::initialise_debug_image_output(std:
   H_directions.size(0) = fixels.size();
   H_directions.size(1) = 3;
   H_directions.size(2) = 1;
-  H_directions.stride(0) = 2;
-  H_directions.stride(1) = 1;
-  H_directions.stride(2) = 3;
   H_directions.spacing(0) = H_directions.spacing(1) = H_directions.spacing(2) = 1.0;
+  H_directions.strides() = Stride::Symbolic({2, 1, 3});
   H_directions.transform().setIdentity();
   H_directions.datatype() = DataType::native(DataType::from<float>());
   Image<uint64_t> index_image = Image<uint64_t>::create(Path::join(dirpath, "index.mif"), H_index);

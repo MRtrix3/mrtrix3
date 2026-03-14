@@ -279,7 +279,7 @@ void run() {
       auto dec_hdr = Header(fod_img);
       dec_hdr.ndim() = 4;
       dec_hdr.size(3) = 3;
-      Stride::Symbolic(dec_hdr).reordered(Stride::Permutation::volume_contiguous).actualise(dec_hdr).to(dec_hdr);
+      dec_hdr.strides().reorder(Stride::Permutation::volume_contiguous);
       dec_img = Image<value_type>::scratch(dec_hdr, "DEC map");
 
       Eigen::Matrix<double, 1281, 2> dirs = DWI::Directions::tesselation_1281();
@@ -304,7 +304,7 @@ void run() {
     out_hdr.datatype() = DataType::Float32;
     out_hdr.ndim() = 4;
     out_hdr.size(3) = 3;
-    Stride::Symbolic(out_hdr).reordered(Stride::Permutation::volume_contiguous).actualise(out_hdr).to(out_hdr);
+    out_hdr.strides().reorder(Stride::Permutation::volume_contiguous);
     out_img = Image<value_type>::create(argument[1], out_hdr);
 
     if (needtoslice)

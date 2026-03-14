@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <optional>
 #include <vector>
 
@@ -350,6 +351,10 @@ inline void set_from_command_line(HeaderType &header, const List &default_stride
 
 } // namespace MR::Stride::Legacy
 
+namespace MR {
+class Header;
+} // namespace MR
+
 namespace MR::Stride {
 
 extern const App::OptionGroup Options;
@@ -360,6 +365,7 @@ public:
   using vector_type = std::vector<ValueType>;
   Base(const vector_type &data) : data_(data) { assert(size() <= 5); }
   Base(const size_t num_axes, const ValueType invalid_value) : data_(num_axes, invalid_value) { assert(size() <= 5); }
+  Base(std::initializer_list<value_type> data) : data_(data) {}
   Base(const Base &) = default;
   Base() = default;
 
@@ -375,6 +381,10 @@ public:
   bool operator!=(const Base &that) const { return that.data_ != data_; }
   Base &operator=(const Base &that) {
     data_ = that.data_;
+    return *this;
+  }
+  Base &operator=(std::initializer_list<ValueType> data) {
+    data_ = data;
     return *this;
   }
 
@@ -439,6 +449,7 @@ public:
   explicit Order(const Permutation &permutation);
   explicit Order(const vector_type &data);
   Order(const Order &) = default;
+  explicit Order() = default;
 
   using Base::operator=;
   operator Axes::Subset() const;
@@ -469,7 +480,7 @@ public:
   explicit Permutation(const Symbolic &symbolic);
   explicit Permutation(const Actual &actual);
   Permutation(const Permutation &) = default;
-  explicit Permutation() {}
+  explicit Permutation() = default;
   template <class HeaderType> explicit Permutation(const HeaderType &header) : Permutation(Actual(header)) {}
 
   using Base::operator=;
@@ -501,10 +512,10 @@ public:
   static constexpr value_type invalid = 0;
 
   explicit Symbolic(const vector_type &in);
-  template <class HeaderType> explicit Symbolic(const HeaderType &header);
+  template <class HeaderType> explicit Symbolic(const HeaderType &image);
   explicit Symbolic(const Actual &actual);
   Symbolic(const Symbolic &) = default;
-  explicit Symbolic() {}
+  explicit Symbolic() = default;
 
   using Base::operator=;
 
@@ -514,12 +525,12 @@ public:
   void sanitise() override;
   bool valid() const override;
 
-  template <class HeaderType> Actual actualise(HeaderType &header) const;
   Symbolic block(const ArrayIndex from_axis, const ArrayIndex to_axis = -1) const;
   void conform(const Symbolic &in);
   Symbolic conformed(const Symbolic &in) const;
-  void extend(const size_t num_axes);
+  void flip(const ArrayIndex axis);
   Symbolic head(const ArrayIndex num_axes) const;
+  void invalidate(const ArrayIndex axis);
   Order order() const;
   Permutation permutation() const;
   void resize(const size_t num_axes);
@@ -540,8 +551,9 @@ public:
   explicit Actual(const vector_type &data);
   Actual(const Actual &) = default;
   Actual() = delete;
-  template <class HeaderType> Actual(const HeaderType &header);
-  Actual(const Symbolic &symbolic, const std::vector<size_t> &sizes);
+  template <class HeaderType> explicit Actual(const HeaderType &header);
+  template <class HeaderType> explicit Actual(const Symbolic &symbolic, const HeaderType &header);
+  explicit Actual(const Symbolic &symbolic, const std::vector<size_t> &sizes);
 
   using Base::operator=;
 
@@ -559,7 +571,8 @@ public:
   Permutation permutation() const;
   Symbolic symbolic() const;
 
-  template <class HeaderType> void to(HeaderType &header) const;
+private:
+  template <class HeaderType> std::vector<size_t> get_sizes(const HeaderType &) const;
 };
 
 // When the header is a template,
@@ -572,58 +585,43 @@ template <class HeaderType> Symbolic::Symbolic(const HeaderType &header) : Base(
   *this = Actual(strides).symbolic();
 }
 
-template <class HeaderType> Actual Symbolic::actualise(HeaderType &header) const {
-  std::vector<size_t> sizes(header.ndim());
-  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(header.ndim()); ++axis)
-    sizes[axis] = header.size(axis);
-  return Actual(sanitised(), sizes);
+template <class HeaderType>
+Actual::Actual(const Symbolic &symbolic, const HeaderType &image) : Actual(symbolic, get_sizes(image)) {}
+
+template <class HeaderType>
+Actual::Actual(const HeaderType &image) : Actual(Stride::Symbolic(image), get_sizes(image)) {}
+
+template <class HeaderType> bool Actual::match(const HeaderType &image) const { return *this == Actual(image); }
+
+template <class HeaderType> std::vector<size_t> Actual::get_sizes(const HeaderType &image) const {
+  std::vector<size_t> result(image.ndim());
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(image.ndim()); ++axis)
+    result[axis] = image.size(axis);
+  return result;
 }
 
-template <class HeaderType> Actual::Actual(const HeaderType &header) : Base(Symbolic(header).actualise(header)) {}
-
-template <class HeaderType> bool Actual::match(const HeaderType &header) const {
-  return *this == Symbolic(header).actualise(header);
-}
-
-template <class HeaderType> void Actual::to(HeaderType &header) const {
-  assert(header.ndim() >= size());
-  ArrayIndex n = 0;
-  for (; n < std::min(static_cast<size_t>(header.ndim()), size()); ++n)
-    header.stride(n) = data_[n];
-  for (; n < header.ndim(); ++n)
-    header.stride(n) = Actual::invalid;
-}
-
-template <class HeaderType> MemIndex offset(const Stride::Actual &strides, const HeaderType &header) {
-  assert(strides.size() == header.ndim());
+template <class HeaderType> MemIndex offset(const Stride::Actual &strides, const HeaderType &image) {
+  assert(strides.size() == image.ndim());
   MemIndex offset = 0;
-  for (ArrayIndex axis = 0; axis < static_cast<ArrayIndex>(header.ndim()); ++axis)
+  for (ArrayIndex axis = 0; axis < static_cast<ArrayIndex>(image.ndim()); ++axis)
     if (strides[axis] < 0)
-      offset += static_cast<MemIndex>(-strides[axis]) * (header.size(axis) - 1);
+      offset += static_cast<MemIndex>(-strides[axis]) * (image.size(axis) - 1);
   return offset;
 }
 
-template <class HeaderType> MemIndex offset(const HeaderType &header) {
+template <class HeaderType> MemIndex offset(const HeaderType &image) {
   // Don't compute a data offset for a HeaderType
   //   for which the strides have not been actualised
-  assert(Actual(header).match(header));
+  assert(Actual(image).match(image));
   MemIndex offset = 0;
-  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(header.ndim()); ++axis)
-    if (header.stride(axis) < 0)
-      offset -= header.stride(axis) * (header.size(axis) - 1);
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(image.ndim()); ++axis)
+    if (image.stride(axis) < 0)
+      offset -= image.stride(axis) * (image.size(axis) - 1);
   return offset;
 }
 
 std::optional<Symbolic> __from_command_line(const Symbolic &current);
 std::optional<Symbolic> __from_command_line(const Symbolic &user_specification, const Symbolic &current);
-
-template <class HeaderType>
-inline void set_from_command_line(HeaderType &header, const Permutation &default_order = Permutation()) {
-  auto cmdline_strides = __from_command_line(Symbolic(header));
-  if (cmdline_strides.has_value())
-    cmdline_strides->actualise(header);
-  else if (!default_order.empty())
-    Stride::Symbolic(header).reordered(default_order).actualise(header);
-}
+void set_from_command_line(Header &header, const Permutation &default_order = Permutation());
 
 } // namespace MR::Stride

@@ -24,8 +24,8 @@
 
 namespace MR::Formats {
 
-std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
-  std::vector<ssize_t> parsed(ndim);
+Stride::Symbolic parse_layout(const size_t ndim, std::string_view specifier) {
+  Stride::Symbolic::vector_type parsed(ndim);
 
   size_t sub = 0;
   size_t lim = 0;
@@ -59,9 +59,14 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
       if (current == ndim)
         throw Exception("incorrect number of axes in axes specification \"" + specifier + "\"");
 
-      parsed[current] = to<ssize_t>(specifier.substr(sub, lim - sub)) + 1;
+      intmax_t stride = to<intmax_t>(specifier.substr(sub, lim - sub)) + 1;
       if (!pos)
-        parsed[current] = -parsed[current];
+        stride *= -1;
+      if (stride < std::numeric_limits<Stride::Symbolic::value_type>::min() ||
+          stride > std::numeric_limits<Stride::Symbolic::value_type>::max())
+        throw Exception("axis \"" + str(stride) + "\" in axes specification \"" + specifier +
+                        "\" out of numerical range");
+      parsed[current] = static_cast<Stride::Symbolic::value_type>(stride);
 
       // move to character after comma or end
       sub = (lim < end) ? (lim + 1) : lim;
@@ -86,7 +91,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
         throw Exception("duplicate axis ordering (" + str(MR::abs(parsed[n])) + ")");
   }
 
-  return parsed;
+  return Stride::Symbolic(parsed);
 }
 
 bool next_keyvalue(File::KeyValue::Reader &kv, std::string &key, std::string &value) {
@@ -206,9 +211,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
 
   if (layout.empty())
     throw Exception("missing \"layout\" specification for MRtrix image \"" + H.name() + "\"");
-  auto ax = parse_axes(H.ndim(), layout);
-  for (size_t i = 0; i < ax.size(); ++i)
-    H.stride(i) = ax[i];
+  H.strides() = parse_layout(H.ndim(), layout);
 
   if (!transform.empty()) {
 

@@ -280,10 +280,7 @@ FORCE_INLINE Header data_header_from_nfixels(const size_t nfixels) {
   header.size(1) = 1;
   header.size(2) = 1;
   header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
-  header.stride(0) = 1;
-  header.stride(1) = 2;
-  header.stride(2) = 3;
-  header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
+  header.strides() = Stride::Symbolic::canonical(3);
   header.transform().setIdentity();
   header.datatype() = DataType::native(DataType::Float32);
   return header;
@@ -302,8 +299,7 @@ template <class IndexHeaderType> FORCE_INLINE Header data_header_from_index(Inde
 FORCE_INLINE Header directions_header_from_nfixels(const size_t nfixels) {
   Header header = data_header_from_nfixels(nfixels);
   header.size(1) = 3;
-  header.stride(0) = 2;
-  header.stride(1) = 1;
+  header.strides() = {2, 1, 3};
   return header;
 }
 
@@ -313,8 +309,7 @@ template <class IndexHeaderType> FORCE_INLINE Header directions_header_from_inde
   for (size_t axis = 0; axis != 3; ++axis)
     header.spacing(axis) = index.spacing(axis);
   header.size(1) = 3;
-  header.stride(0) = 2;
-  header.stride(1) = 1;
+  header.strides() = {2, 1, 3};
   return header;
 }
 

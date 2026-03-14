@@ -268,11 +268,8 @@ template <class MatrixType> void Writer<MatrixType>::save(std::string_view path)
   index_header.size(1) = 1;
   index_header.size(2) = 1;
   index_header.size(3) = 2;
-  index_header.stride(0) = 2;
-  index_header.stride(1) = 3;
-  index_header.stride(2) = 4;
-  index_header.stride(3) = 1;
   index_header.spacing(0) = index_header.spacing(1) = index_header.spacing(2) = 1.0;
+  index_header.strides() = Stride::Symbolic({2, 3, 4, 1});
   index_header.transform() = transform_type::Identity();
   index_header.keyval() = keyvals;
   index_header.keyval()["nfixels"] = str(matrix.size());
@@ -299,10 +296,8 @@ template <class MatrixType> void Writer<MatrixType>::save(std::string_view path)
   fixel_header.size(0) = num_connections;
   fixel_header.size(1) = 1;
   fixel_header.size(2) = 1;
-  fixel_header.stride(0) = 1;
-  fixel_header.stride(1) = 2;
-  fixel_header.stride(2) = 3;
   fixel_header.spacing(0) = fixel_header.spacing(1) = fixel_header.spacing(2) = 1.0;
+  fixel_header.strides() = Stride::Symbolic::canonical(3);
   fixel_header.transform() = transform_type::Identity();
   fixel_header.keyval() = keyvals;
   fixel_header.keyval()["nfixels"] = str(matrix.size());

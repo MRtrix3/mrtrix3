@@ -177,17 +177,23 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       H.size(2) = Raw::fetch_<uint32_t>(data(current) + 2 * sizeof(uint32_t), is_BE);
       H.size(3) = Raw::fetch_<uint32_t>(data(current) + 3 * sizeof(uint32_t), is_BE);
       break;
-    case mriformat_index_order:
+    case mriformat_index_order: {
+      Stride::Permutation::vector_type permutation(4, Stride::Permutation::invalid);
+      std::array<bool, 4> flip;
       for (size_t n = 0; n < 4; n++) {
         bool forward = true;
         const size_t ax = char2order(*(reinterpret_cast<const char *>(data(current) + n)), forward);
         if (ax == std::numeric_limits<size_t>::max())
           throw Exception("invalid order specifier in MRI image \"" + H.name() + "\"");
-        H.stride(ax) = n + 1;
-        if (!forward)
-          H.stride(ax) = -H.stride(ax);
+        permutation[ax] = n;
+        flip[ax] = !forward;
       }
-      break;
+      H.strides() = Stride::Symbolic::canonical(4).reordered(Stride::Permutation(permutation));
+      for (ArrayIndex axis = 0; axis != 4; ++axis) {
+        if (flip[axis])
+          H.strides().flip(axis);
+      }
+    } break;
     case mriformat_index_voxelsize:
       H.spacing(0) = Raw::fetch_<float32>(data(current), is_BE);
       H.spacing(1) = Raw::fetch_<float32>(data(current) + sizeof(float32), is_BE);

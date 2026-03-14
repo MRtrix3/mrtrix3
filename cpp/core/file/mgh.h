@@ -213,8 +213,7 @@ template <class Input> void read_header(Header &H, Input &in) {
   H.spacing(1) = fetch<float32>(in);
   H.spacing(2) = fetch<float32>(in);
 
-  for (size_t i = 0; i != ndim; ++i)
-    H.stride(i) = i + 1;
+  H.strides() = Stride::Symbolic::canonical(ndim);
 
   DataType dtype;
   switch (type) {

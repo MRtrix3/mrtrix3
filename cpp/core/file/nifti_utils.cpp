@@ -178,8 +178,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     }
     if (!H.size(i))
       H.size(i) = 1;
-    H.stride(i) = i + 1;
   }
+  H.strides() = Stride::Symbolic::canonical(ndim);
 
   // voxel sizes:
   std::array<double, 8> pixdim{};
@@ -336,7 +336,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     // CONF should be assumed to be in LAS orientation (default) or RAS
     // CONF (when this is option is turned on).
     if (!File::Config::get_bool("AnalyseLeftToRight", false))
-      H.stride(0) = -H.stride(0);
+      H.strides().flip(0);
     if (!File::NIfTI::right_left_warning_issued) {
       INFO("assuming Analyse images are encoded " + std::string(H.stride(0) > 0 ? "left to right" : "right to left"));
       File::NIfTI::right_left_warning_issued = true;
@@ -629,7 +629,7 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
     nonspatial_permutation[spatial_axis] = 0;
   const Stride::Symbolic output_symbolic =
       spatial_symbolic.resized(H.ndim()).reordered(Stride::Permutation(nonspatial_permutation));
-  output_symbolic.actualise(H);
+  H.strides() = output_symbolic;
 
   // by default, prevent output of bitwise data in NIfTI, since most 3rd
   // party software package can't handle them

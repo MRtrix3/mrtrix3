@@ -326,7 +326,7 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
     : buffer(buffer_p),
       data_pointer(buffer->get_data_pointer()),
       x(ndim(), VoxelIndex(0)),
-      strides((desired_strides.has_value() ? *desired_strides : Stride::Symbolic(*buffer)).actualise(*this)),
+      strides(desired_strides.has_value() ? Stride::Actual(*desired_strides, *buffer) : Stride::Actual(*buffer)),
       data_offset(Stride::offset(*this)) {
   assert(buffer);
   assert(data_pointer || buffer->get_io());
@@ -375,7 +375,10 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 
   bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
   const Stride::Actual current_actual(Stride::Actual(*this));
-  const Stride::Actual with_actual(with_symbolic.empty() ? current_actual : with_symbolic.actualise(*this));
+  std::vector<size_t> sizes(ndim());
+  for (ArrayIndex axis = 0; axis != ndim(); ++axis)
+    sizes[axis] = size(axis);
+  const Stride::Actual with_actual(with_symbolic.empty() ? current_actual : Stride::Actual(with_symbolic, sizes));
   preload |= (with_actual != current_actual);
 
   if (!preload)

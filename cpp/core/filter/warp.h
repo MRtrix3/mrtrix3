@@ -73,7 +73,7 @@ void warp(ImageTypeSource &source,
     Header header(destination);
     header.ndim() = 4;
     header.size(3) = 3;
-    Stride::Symbolic(header).reordered(Stride::Permutation::volume_contiguous).actualise(header).to(header);
+    header.strides().reorder(Stride::Permutation::volume_contiguous);
     auto warp_resliced = Image<typename WarpType::value_type>::scratch(header);
     reslice<Interp::Cubic>(warp, warp_resliced, Adapter::NoTransform, oversample);
 

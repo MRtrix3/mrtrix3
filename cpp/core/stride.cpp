@@ -513,9 +513,19 @@ Symbolic Symbolic::conformed(const Symbolic &in) const {
   return result;
 }
 
+void Symbolic::flip(const ArrayIndex axis) {
+  assert(axis >= 0 && axis < size());
+  data_[axis] *= -1;
+}
+
 Symbolic Symbolic::head(const ArrayIndex num_axes) const {
   assert(num_axes <= size());
   return Symbolic(vector_type(data_.begin(), data_.begin() + num_axes));
+}
+
+void Symbolic::invalidate(const ArrayIndex axis) {
+  assert(axis >= 0 && axis < size());
+  data_[axis] = Symbolic::invalid;
 }
 
 Order Symbolic::order() const { return permutation().order(); }
@@ -538,12 +548,18 @@ void Symbolic::sanitise() {
   //   - If currently non-zero,
   //     they will be ordered
   std::multimap<value_type, ArrayIndex> sorter;
-  for (ArrayIndex axis = 0; axis != size(); ++axis)
-    sorter.insert({MR::abs(data_[axis]), axis});
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] != Symbolic::invalid)
+      sorter.insert({MR::abs(data_[axis]), axis});
+  }
   vector_type result(size());
-  ArrayIndex axis = 0;
+  ArrayIndex counter = 0;
   for (const auto &item : sorter)
-    result[item.second] = ++axis * (data_[item.second] < 0 ? -1 : 1);
+    result[item.second] = ++counter * (data_[item.second] < 0 ? -1 : 1);
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] == Symbolic::invalid)
+      result[axis] = ++counter;
+  }
   if (result != data_) {
     std::ostringstream oss;
     oss << "Symbolic strides [" << *this << "]";
@@ -568,8 +584,13 @@ void Symbolic::reorder(const Permutation &permutation) {
     bool operator<(const Data &that) const {
       if (permutation_group != that.permutation_group)
         return permutation_group < that.permutation_group;
-      if (MR::abs(current_symbolic) != MR::abs(that.current_symbolic))
+      if (MR::abs(current_symbolic) != MR::abs(that.current_symbolic)) {
+        if (that.current_symbolic == Symbolic::invalid)
+          return true;
+        if (current_symbolic == Symbolic::invalid)
+          return false;
         return MR::abs(current_symbolic) < MR::abs(that.current_symbolic);
+      }
       assert(axis_index != that.axis_index);
       return axis_index < that.axis_index;
     }
@@ -741,6 +762,14 @@ std::optional<Symbolic> __from_command_line(const Symbolic &user_specification, 
   DEBUG("Current symbolic strides [" + str(current) + "]" + " conformed to user specification [" +
         str(user_specification) + "]" + " as [" + str(result) + "]");
   return {result};
+}
+
+void set_from_command_line(Header &header, const Permutation &default_order) {
+  auto cmdline_strides = __from_command_line(header.strides());
+  if (cmdline_strides.has_value())
+    header.strides() = *cmdline_strides;
+  else if (!default_order.empty())
+    header.strides() = header.strides().reordered(default_order);
 }
 
 } // namespace MR::Stride

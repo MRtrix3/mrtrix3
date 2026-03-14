@@ -46,23 +46,16 @@ public:
       : Base(in), smoother(in), wrt_scanner(true), magnitude(magnitude), stdev(1, 0) {
     if (in.ndim() == 4) {
       if (!magnitude) {
-        axes_.resize(5);
-        axes_[3].size = 3;
-        axes_[4].size = in.size(3);
-        axes_[0].stride = 2;
-        axes_[1].stride = 3;
-        axes_[2].stride = 4;
-        axes_[3].stride = 1;
-        axes_[4].stride = 5;
+        ndim() = 5;
+        size(3) = 3;
+        size(4) = in.size(3);
+        strides().reorder(Stride::Permutation({2, 2, 2, 0, 1}));
       }
     } else if (in.ndim() == 3) {
       if (!magnitude) {
-        axes_.resize(4);
-        axes_[3].size = 3;
-        axes_[0].stride = 2;
-        axes_[1].stride = 3;
-        axes_[2].stride = 4;
-        axes_[3].stride = 1;
+        ndim() = 4;
+        size(3) = 3;
+        strides().reorder(Stride::Permutation::volume_contiguous);
       }
     } else {
       throw Exception("input image must be 3D or 4D");

@@ -63,18 +63,10 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
   }
 
   H.size(0) = png.get_width();
-  H.stride(0) = -2;
-
   H.size(1) = png.get_height();
-  H.stride(1) = -3;
-
   H.size(2) = 1;
-  H.stride(2) = 4;
-
-  if (H.ndim() == 4)
-    H.stride(3) = 1;
-
   H.spacing(0) = H.spacing(1) = H.spacing(2) = 1.0;
+  H.strides() = H.ndim() == 4 ? Stride::Symbolic({-2, -3, 4, 1}) : Stride::Symbolic({-1, -2, 3});
   H.transform().setIdentity();
 
   H.datatype() = DataType::Undefined;
@@ -193,22 +185,29 @@ bool PNG::check(Header &H, size_t num_axes) const {
   // - Data should run across width of image, then height
   // - Strides should be reversed if necessary in order for image orientations to be
   //     as expected compared to e.g. mrview
-  H.stride(0) = -2;
   H.spacing(0) = 1.0;
-  H.stride(1) = -3;
   H.spacing(1) = 1.0;
-  if (H.ndim() > 2) {
-    H.stride(2) = -4;
+  if (H.ndim() > 2)
     H.spacing(2) = 1.0;
-  }
-  if (H.ndim() > 3) {
-    H.stride(3) = 1;
+  if (H.ndim() > 3)
     H.spacing(3) = NaN;
+  switch (H.ndim()) {
+  case 2:
+    H.strides() = Stride::Symbolic({-1, -2});
+    break;
+  case 3:
+    H.strides() = Stride::Symbolic({-1, -2, -3});
+    break;
+  case 4:
+    H.strides() = Stride::Symbolic({-2, -3, -4, 1});
+    break;
+  default:
+    assert(false);
   }
 
   // Set axis that will be consumed by NameParser
   if (axis_to_zero != 3)
-    H.stride(axis_to_zero) = 0;
+    H.strides().invalidate(axis_to_zero);
 
   H.transform().setIdentity();
 

@@ -31,6 +31,7 @@ public:
 
   Extract1D(const ImageType &original, const ArrayIndex axis, const std::vector<VoxelIndex> &indices)
       : base_type(original), extract_axis(axis), indices(indices), nsize(indices.size()), trans(original.transform()) {
+    assert(axis < original.ndim());
     assert(*std::min_element(indices.begin(), indices.end()) >= 0);
     assert(*std::max_element(indices.begin(), indices.end()) < original.size(axis));
 

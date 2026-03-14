@@ -212,30 +212,24 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 
   H.ndim() = 3 + (dim[0] * dim[2] > 1) + (nchannels > 1);
 
-  size_t current_axis = 0;
-
-  if (nchannels > 1) {
-    H.stride(3) = 1;
-    H.size(3) = nchannels;
-    ++current_axis;
-  }
-
-  H.stride(0) = ++current_axis;
+  H.ndim() = 3;
   H.size(0) = frame.dim[0];
   H.spacing(0) = frame.pixel_size[0];
-
-  H.stride(1) = ++current_axis;
   H.size(1) = frame.dim[1];
   H.spacing(1) = frame.pixel_size[1];
-
-  H.stride(2) = ++current_axis;
   H.size(2) = dim[1];
   H.spacing(2) = slice_separation;
 
+  if (nchannels > 1) {
+    H.ndim() = 4;
+    H.size(3) = nchannels;
+    H.strides().reorder(Stride::Permutation::volume_contiguous);
+  }
+
   if (dim[0] * dim[2] > 1) {
-    H.stride(current_axis) = current_axis + 1;
-    H.size(current_axis) = dim[0] * dim[2];
-    ++current_axis;
+    H.ndim() = H.ndim() + 1;
+    H.size(H.ndim() - 1) = dim[0] * dim[2];
+    H.strides().sanitise();
   }
 
   if (frame.bits_alloc == 8)

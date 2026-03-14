@@ -342,7 +342,7 @@ void run() {
     writer_type = writer_dim::DEC;
     header.ndim() = 4;
     header.size(3) = 3;
-    Stride::Symbolic(header).reordered(Stride::Permutation::volume_contiguous).actualise(header).to(header);
+    header.strides().reorder(Stride::Permutation::volume_contiguous);
   }
 
   std::unique_ptr<Directions::FastLookupSet> dirs;
@@ -357,7 +357,7 @@ void run() {
       dirs.reset(new Directions::FastLookupSet(to<size_t>(opt[0][0])));
     header.ndim() = 4;
     header.size(3) = dirs->size();
-    Stride::Symbolic(header).reordered(Stride::Permutation::volume_contiguous).actualise(header).to(header);
+    header.strides().reorder(Stride::Permutation::volume_contiguous);
     // Write directions to image header as diffusion encoding
     Eigen::MatrixXd grad(dirs->size(), 4);
     for (size_t row = 0; row != dirs->size(); ++row) {
@@ -379,7 +379,7 @@ void run() {
       throw Exception("lmax for TODI must be an even number");
     header.ndim() = 4;
     header.size(3) = Math::SH::NforL(lmax);
-    Stride::Symbolic(header).reordered(Stride::Permutation::volume_contiguous).actualise(header).to(header);
+    header.strides().reorder(Stride::Permutation::volume_contiguous);
   }
 
   header.keyval()["twi_dimensionality"] = Mapping::output_dimension_names.at(writer_type);

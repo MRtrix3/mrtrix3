@@ -379,23 +379,25 @@ Header Header::create(std::string_view image_name, const Header &template_header
     }
 
     if (!Pdim.empty()) {
-      int a = 0, n = 0;
+      ArrayIndex n = 0;
       Stride::Symbolic::value_type next_stride = 0;
       for (size_t i = 0; i < H.ndim(); ++i) {
-        if (H.stride(i)) {
+        if (H.stride(i) != Stride::Symbolic::invalid) {
           ++n;
           next_stride = std::max(next_stride, MR::abs(H.stride(i)));
         }
       }
 
-      H.axes_.resize(n + Pdim.size());
+      H.ndim() = n + Pdim.size();
 
-      for (size_t i = 0; i < Pdim.size(); ++i) {
-        while (H.stride(a))
+      ArrayIndex a = 0;
+      for (size_t i = 0; i < Pdim.size(); ++i, ++a) {
+        while (H.stride(a) != Stride::Symbolic::invalid)
           ++a;
         H.size(a) = Pdim[i];
-        H.stride(a) = ++next_stride;
       }
+
+      H.strides().sanitise();
 
       H.name() = image_name;
     }
@@ -622,7 +624,7 @@ void Header::realign_transform() {
                                      col_applied[realignment_.permutation(2)]);
 
     if (realignment_.flip(i))
-      stride(i) = -stride(i);
+      strides().flip(i);
   }
 
   // copy back transform:
@@ -698,8 +700,7 @@ Header concatenate(const std::vector<Header> &headers,    //
     result.ndim() = axis_to_concat + 1;
     for (ArrayIndex unary_axis = result.ndim(); unary_axis <= axis_to_concat; ++unary_axis)
       result.size(unary_axis) = 1;
-    for (ArrayIndex axis = 0; axis != result.ndim(); ++axis)
-      result.stride(axis) = symbolic[axis];
+    result.strides() = symbolic;
   }
 
   for (ArrayIndex axis = 0; axis != result.ndim(); ++axis) {

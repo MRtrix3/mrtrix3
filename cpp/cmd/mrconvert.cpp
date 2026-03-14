@@ -313,8 +313,8 @@ template <class ImageType> inline Stride::Order set_header(Header &header, const
   for (ArrayIndex n = 0; n < header.ndim(); ++n) {
     header.size(n) = input.size(n);
     header.spacing(n) = input.spacing(n);
-    header.stride(n) = input.stride(n);
   }
+  header.strides() = Stride::Symbolic(input);
   header.transform() = input.transform();
 
   auto opt = get_options("axes");
@@ -322,15 +322,17 @@ template <class ImageType> inline Stride::Order set_header(Header &header, const
   if (!opt.empty()) {
     const Stride::Order::vector_type axes(parse_ints<Stride::Order::value_type>(opt[0][0]));
     header.ndim() = axes.size();
+    Stride::Symbolic::vector_type strides(axes.size(), 0);
     for (StdIndex i = 0; i < axes.size(); ++i) {
       if (axes[i] >= static_cast<Stride::Order::value_type>(input.ndim()))
         throw Exception("axis supplied to option -axes (" + str(axes[i]) + ")" +
                         " is beyond dimensionality of input image (" + str(input.ndim()) + ")");
       header.size(i) = axes[i] < 0 ? 1 : input.size(axes[i]);
       header.spacing(i) = axes[i] < 0 ? NaN : input.spacing(axes[i]);
-      header.stride(i) = axes[i] < 0 ? 0 : input.stride(axes[i]);
+      strides[i] = axes[i] < 0 ? 0 : input.stride(axes[i]);
     }
     result = Stride::Order(axes);
+    header.strides() = Stride::Symbolic(strides);
     permute_DW_scheme(header, result);
     permute_PE_scheme(header, result);
     permute_slice_direction(header, result);

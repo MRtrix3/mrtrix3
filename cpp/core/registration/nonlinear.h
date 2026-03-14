@@ -470,11 +470,7 @@ public:
     output_header.ndim() = 5;
     output_header.size(3) = 3;
     output_header.size(4) = 4;
-    output_header.stride(0) = 1;
-    output_header.stride(1) = 2;
-    output_header.stride(2) = 3;
-    output_header.stride(3) = 4;
-    output_header.stride(4) = 5;
+    output_header.strides().reorder(Stride::Permutation({1, 1, 1, 0, 2}));
     return output_header;
   }
 
