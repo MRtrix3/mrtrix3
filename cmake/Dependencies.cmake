@@ -230,3 +230,16 @@ else()
     add_library(tcb::span ALIAS tcb_span)
 endif()
 
+# magic_enum
+set(MAGIC_ENUM_VERSION 0.9.7)
+if(MRTRIX_USE_SYSTEM_MAGIC_ENUM)
+    find_package(magic_enum ${MAGIC_ENUM_VERSION} CONFIG REQUIRED)
+else()
+    set(magic_enum_url "https://github.com/Neargye/magic_enum/archive/refs/tags/v${MAGIC_ENUM_VERSION}.tar.gz")
+    FetchContent_Declare(
+        magic_enum
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        URL ${magic_enum_url}
+    )
+    FetchContent_MakeAvailable(magic_enum)
+endif()
