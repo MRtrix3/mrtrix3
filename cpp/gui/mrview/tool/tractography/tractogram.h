@@ -16,11 +16,15 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+#include <string>
 #include <vector>
 
 #include "dwi/tractography/properties.h"
 #include "mrview/displayable.h"
 #include "mrview/tool/tractography/tractography.h"
+#include "trx/trx.h"
 
 namespace MR::GUI {
 class Projection;
@@ -54,6 +58,26 @@ public:
   void erase_colour_data();
   void erase_intensity_scalar_data();
   void erase_threshold_scalar_data();
+
+  // TRX-specific helpers
+  bool is_trx() const;
+  const std::vector<std::string> &trx_dps_fields() const;
+  const std::vector<std::string> &trx_dpv_fields() const;
+  const std::vector<std::string> &trx_group_names() const;
+  void load_trx_scalar_field(const std::string &field_name, bool is_dpv);
+  void load_trx_group_colours();
+  void init_group_states();
+  void reload_group_colours();
+
+  struct GroupState {
+    bool visible = true;
+    Eigen::Vector3f color{0.5f, 0.5f, 0.5f};
+    size_t count = 0;
+  };
+  std::map<std::string, GroupState> group_states;
+  std::vector<std::string> group_order;
+  bool show_ungrouped;
+  GroupMultiPolicy group_multi_policy;
 
   void set_color_type(const TrackColourType);
   void set_threshold_type(const TrackThresholdType);
@@ -145,6 +169,17 @@ private:
   // EBOs and indices for chunks of tracks
   std::vector<GLuint> element_buffers;
   std::vector<GLsizei> element_counts;
+
+  // TRX metadata and file cached at load time to avoid re-loading on every
+  // field change (especially important for float16 files which require a
+  // full decode pass and print a warning on every load).
+  bool colour_buffers_from_groups;
+  std::vector<std::string> cached_trx_dps_names;
+  std::vector<std::string> cached_trx_dpv_names;
+  std::vector<std::string> cached_trx_group_names;
+  std::unique_ptr<trx::TrxFile<float>> cached_trx;
+
+  trx::TrxFile<float> *get_cached_trx();
 
   GLint sample_stride;
   bool vao_dirty;

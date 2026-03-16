@@ -30,6 +30,7 @@
 #include "dwi/directions/set.h"
 
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/trx_utils.h"
 
 #include "dwi/tractography/ACT/tissues.h"
 
@@ -183,13 +184,13 @@ template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
 
 template <class Fixel> void ModelBase<Fixel>::map_streamlines(std::string_view path) {
   Tractography::Properties properties;
-  Tractography::Reader<> file(path, properties);
+  auto reader = TRX::open_tractogram(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
     throw Exception("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
 
-  Mapping::TrackLoader loader(file, count);
+  Mapping::TrackLoader loader(*reader, count);
   Mapping::TrackMapperBase mapper(Fixel_map<Fixel>::header(), dirs);
   mapper.set_upsample_ratio(Mapping::determine_upsample_ratio(Fixel_map<Fixel>::header(), properties, 0.1));
   mapper.set_use_precise_mapping(true);

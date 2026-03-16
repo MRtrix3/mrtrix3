@@ -27,7 +27,7 @@ namespace MR::DWI::Tractography::Mapping {
 class TrackLoader {
 
 public:
-  TrackLoader(Reader<> &file, const size_t to_load = 0, std::string_view msg = "mapping tracks to image")
+  TrackLoader(ReaderInterface<float> &file, const size_t to_load = 0, std::string_view msg = "mapping tracks to image")
       : reader(file),
         tracks_to_load(to_load),
         progress(!msg.empty() ? new ProgressBar(msg, tracks_to_load) : nullptr) {}
@@ -49,7 +49,7 @@ public:
   }
 
 protected:
-  Reader<> &reader;
+  ReaderInterface<float> &reader;
   const size_t tracks_to_load;
   std::unique_ptr<ProgressBar> progress;
 };

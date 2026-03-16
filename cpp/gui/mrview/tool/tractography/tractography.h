@@ -20,6 +20,7 @@
 #include "mrview/adjust_button.h"
 #include "mrview/combo_box_error.h"
 #include "mrview/tool/base.h"
+#include "mrview/tool/tractography/track_group_options.h"
 #include "mrview/tool/tractography/track_scalar_file.h"
 #include "projection.h"
 
@@ -82,6 +83,7 @@ private slots:
   void randomise_track_colour_slot();
   void set_track_colour_slot();
   void colour_by_scalar_file_slot();
+  void colour_track_by_trx_groups_slot();
   void colour_mode_selection_slot(int);
   void colour_button_slot();
   void geom_type_selection_slot(int);
@@ -100,6 +102,7 @@ protected:
   QSlider *thickness_slider;
 
   TrackScalarFileOptions *scalar_file_options;
+  TrackGroupOptions *group_options;
   LightingDock *lighting_dock;
 
   QGroupBox *slab_group_box;

@@ -119,6 +119,7 @@ target_link_libraries(mrtrix-core PUBLIC
     nlohmann_json::nlohmann_json
     nifti::nifti
     tcb::span
+    trx-cpp::trx
 )
 
 if(MRTRIX_ENABLE_GPU)

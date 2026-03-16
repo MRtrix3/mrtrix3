@@ -30,6 +30,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/trx_utils.h"
 #include "dwi/tractography/weights.h"
 
 using namespace MR;
@@ -38,6 +39,7 @@ using namespace MR::Connectome;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Connectome;
+using namespace MR::DWI::Tractography::TRX;
 
 const std::vector<std::string> file_outputs = {"per_edge", "per_node", "single"};
 
@@ -90,7 +92,22 @@ void usage() {
     " (most typically there will be two entries per streamline,"
     " one for each endpoint;"
     " but this is not strictly a requirement)."
-    " This file will most typically be generated using the tck2connectome command with the -out_assignments option.";
+    " This file will most typically be generated using the tck2connectome command with the -out_assignments option."
+
+  // TRX mode: when the input tractogram is a TRX file that has been labeled by
+  // trxlabel, the external assignments file can be skipped entirely.  Pass "-"
+  // as assignments_in to trigger group-based assignment derivation.  Node indices
+  // are recovered from the group names: if names parse as integers (trxlabel
+  // without -lut), the integer is used directly, so -nodes 1,2 refers to the same
+  // atlas indices as in the tck2connectome workflow.  For LUT-based names, groups
+  // are ordered alphabetically and assigned 1-based indices (matching
+  // trx2connectome's convention).
+  + "For TRX input: pass \"-\" as assignments_in to derive node assignments directly"
+    " from the groups embedded in the TRX file (as created by trxlabel),"
+    " eliminating the need for a separate assignments file."
+    " Alternatively, pass a pre-existing text assignments file as normal — both modes work with TRX input."
+    " Use -group_prefix to restrict extraction to groups from one specific atlas"
+    " when a TRX file contains groups from multiple atlases.";
 
   EXAMPLES
   + Example ("Default usage",
@@ -149,69 +166,207 @@ void usage() {
              "connectome2tck tracks.tck assignments.txt exemplars.tck -files single -exemplars nodes.mif",
              "This produces the track file that is required as input"
              " when attempting to display connectome edges using the streamlines or streamtubes geometries"
-             " within the mrview connectome tool.");
+             " within the mrview connectome tool.")
+
+  + Example ("TRX input: derive assignments from embedded groups (no assignments file needed)",
+             "trxlabel tracks.trx nodes.mif labeled.trx; connectome2tck labeled.trx - edge-",
+             "Pass \"-\" as the assignments argument when the input TRX has been labeled by trxlabel."
+             " Group names that are plain integers (default when trxlabel is run without -lut)"
+             " map directly to node indices, so -nodes 1,2 selects the same nodes as the TCK workflow.")
+
+  + Example ("TRX input with multiple atlases: restrict to one atlas via -group_prefix",
+             "connectome2tck labeled.trx - edge- -group_prefix dk -nodes 1,2 -exclusive -files single",
+             "When a TRX file has groups from multiple atlases (e.g. dk_1, dk_2, aal_1, aal_2),"
+             " -group_prefix restricts extraction to a single atlas."
+             " The prefix is stripped when deriving node indices, so dk_1 → node 1.");
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file_in()
-  + Argument ("assignments_in", "input text file containing the node assignments for each streamline").type_file_in()
+  + Argument ("assignments_in", "input text file containing the node assignments for each streamline"
+                                " (as produced by tck2connectome -out_assignments);"
+                                " for TRX input, pass \"-\" to derive assignments from embedded groups"
+                                " (requires prior labeling with trxlabel)").type_text()
   + Argument ("prefix_out",     "the output file / prefix").type_text();
 
 
   OPTIONS
   + TrackOutputOptions
-  + TrackWeightsOptions;
+  + TrackWeightsOptions
+
+  // TRX-specific option: filter to a single atlas when the TRX contains groups
+  // from multiple atlases (each labeled with a different -prefix in trxlabel).
+  + Option ("group_prefix", "when input is a TRX file with groups from multiple atlases,"
+                            " only include groups whose name begins with this prefix;"
+                            " the prefix (and trailing underscore) is stripped when computing node indices."
+                            " Has no effect when assignments_in is a text file.")
+    + Argument ("prefix").type_text();
 
 }
 // clang-format on
 
+// Derive per-streamline node assignments from TRX group membership.
+//
+// This is the inverse of the group-building pass performed by trxlabel, and
+// produces the same assignments_lists structure that the text-file parser below
+// produces from a tck2connectome -out_assignments file — so the rest of run()
+// is identical regardless of which source was used.
+//
+// Node index assignment strategy:
+//   - If all group names (after stripping the prefix) parse as integers, the
+//     integer values are used directly as node_t indices.  This is the common
+//     case when trxlabel is used without -lut, and means -nodes 1,2 refers to
+//     the same atlas parcels as in the tck2connectome / tck2nodes workflow.
+//   - Otherwise (LUT-based names) groups are sorted alphabetically and assigned
+//     1-based indices, matching trx2connectome's ordering convention.
+static std::vector<std::vector<node_t>>
+assignments_from_trx_groups(const std::string &trx_path, const std::string &prefix_filter, node_t &max_node_index) {
+  auto trx = load_trx(trx_path);
+  if (!trx || !trx->streamlines)
+    throw Exception("Failed to load TRX file: " + trx_path);
+  if (trx->groups.empty())
+    throw Exception("TRX file has no groups; run trxlabel to assign streamlines to nodes first");
+
+  const std::string prefix = prefix_filter.empty() ? "" : prefix_filter + "_";
+  const size_t n_streamlines = trx->num_streamlines();
+
+  // Collect group names that match the prefix (trx->groups is a sorted std::map)
+  std::vector<std::string> group_names;
+  for (const auto &[name, _] : trx->groups) {
+    if (prefix.empty() || name.substr(0, prefix.size()) == prefix)
+      group_names.push_back(name);
+  }
+  if (group_names.empty())
+    throw Exception("No TRX groups match prefix '" + prefix_filter + "'");
+
+  // Try to parse all names as integers after stripping the prefix.
+  // Succeeds for the common case of trxlabel without -lut.
+  bool all_integers = true;
+  std::map<std::string, node_t> name_to_node;
+  for (const auto &name : group_names) {
+    const std::string stripped = prefix.empty() ? name : name.substr(prefix.size());
+    try {
+      const node_t idx = to<node_t>(stripped);
+      name_to_node[name] = idx;
+      max_node_index = std::max(max_node_index, idx);
+    } catch (...) {
+      all_integers = false;
+      break;
+    }
+  }
+
+  if (!all_integers) {
+    // Non-integer names (LUT-based): assign 1-based indices in alphabetical order.
+    // group_names is already sorted (came from std::map keys).
+    name_to_node.clear();
+    for (size_t i = 0; i < group_names.size(); ++i) {
+      const node_t idx = static_cast<node_t>(i + 1);
+      name_to_node[group_names[i]] = idx;
+      max_node_index = std::max(max_node_index, idx);
+    }
+    INFO("TRX group names are non-integer; assigning 1-based indices in alphabetical order");
+  }
+
+  // Invert the group → streamline mapping to build per-streamline node lists
+  std::vector<std::vector<node_t>> assignments(n_streamlines);
+  for (const auto &[name, _] : trx->groups) {
+    auto it = name_to_node.find(name);
+    if (it == name_to_node.end())
+      continue; // filtered out by prefix
+    const node_t node_id = it->second;
+    const auto *members = trx->get_group_members(name);
+    if (!members)
+      continue;
+    for (Eigen::Index r = 0; r < members->_matrix.rows(); ++r) {
+      const uint32_t idx = static_cast<uint32_t>(members->_matrix(r, 0));
+      if (idx < n_streamlines)
+        assignments[idx].push_back(node_id);
+    }
+  }
+
+  // Sort each streamline's node list for deterministic pair ordering downstream
+  for (auto &nodes : assignments)
+    std::sort(nodes.begin(), nodes.end());
+
+  return assignments;
+}
+
 void run() {
 
+  // TRX mode: when input is TRX and assignments_in is "-" (or another TRX path),
+  // skip the external assignments file and derive node assignments from the groups
+  // embedded in the TRX by trxlabel.  All downstream logic (pair optimisation,
+  // node filtering, exemplar generation, track extraction) is identical.
+  const bool trx_in = is_trx(std::string(argument[0]));
+  const std::string assignments_arg(argument[1]);
+  const bool derive_from_groups = trx_in && (assignments_arg == "-" || is_trx(assignments_arg));
+
   Tractography::Properties properties;
-  Tractography::Reader<float> reader(argument[0], properties);
+  // open_tractogram handles both TCK and TRX transparently and populates
+  // properties["count"] in both cases, replacing Reader<float>(path, properties).
+  auto reader = open_tractogram(argument[0], properties);
 
   std::vector<std::vector<node_t>> assignments_lists;
   assignments_lists.reserve(to<size_t>(properties["count"]));
   std::vector<NodePair> assignments_pairs;
   bool nonpair_found = false;
   node_t max_node_index = 0;
-  {
-    std::ifstream stream(argument[1]);
-    std::string line;
-    ProgressBar progress("reading streamline assignments file");
-    while (std::getline(stream, line)) {
-      line = strip(line.substr(0, line.find_first_of('#')));
-      if (line.empty())
-        continue;
-      std::stringstream line_stream(line);
-      std::vector<node_t> nodes;
-      while (1) {
-        node_t n;
-        line_stream >> n;
-        if (!line_stream)
-          break;
-        nodes.push_back(n);
-        max_node_index = std::max(max_node_index, n);
-      }
-      if (nodes.size() != 2)
+
+  if (derive_from_groups) {
+    // TRX group mode: invert the embedded group → streamline mapping.
+    // -group_prefix restricts to one atlas when the TRX contains groups from several.
+    std::string group_prefix;
+    auto opt = get_options("group_prefix");
+    if (!opt.empty())
+      group_prefix = std::string(opt[0][0]);
+
+    assignments_lists = assignments_from_trx_groups(std::string(argument[0]), group_prefix, max_node_index);
+
+    for (const auto &nodes : assignments_lists)
+      if (nodes.size() != 2) {
         nonpair_found = true;
-      assignments_lists.push_back(std::move(nodes));
-      ++progress;
+        break;
+      }
+  } else {
+    // Text file mode: read the assignments file produced by tck2connectome -out_assignments.
+    if (!Path::exists(assignments_arg))
+      throw Exception("Assignments file not found: " + assignments_arg +
+                      (trx_in ? " (for TRX input without an assignments file, pass \"-\" as assignments_in)" : ""));
+    {
+      std::ifstream stream(assignments_arg);
+      std::string line;
+      ProgressBar progress("reading streamline assignments file");
+      while (std::getline(stream, line)) {
+        line = strip(line.substr(0, line.find_first_of('#')));
+        if (line.empty())
+          continue;
+        std::stringstream line_stream(line);
+        std::vector<node_t> nodes;
+        while (1) {
+          node_t n;
+          line_stream >> n;
+          if (!line_stream)
+            break;
+          nodes.push_back(n);
+          max_node_index = std::max(max_node_index, n);
+        }
+        if (nodes.size() != 2)
+          nonpair_found = true;
+        assignments_lists.push_back(std::move(nodes));
+        ++progress;
+      }
     }
   }
-  INFO("Maximum node index in assignments file is " + str(max_node_index));
+
+  INFO("Maximum node index in assignments is " + str(max_node_index));
 
   const size_t count = to<size_t>(properties["count"]);
   if (assignments_lists.size() != count)
-    throw Exception("Assignments file contains " + str(assignments_lists.size()) + " entries; track file contains " +
+    throw Exception("Assignments contain " + str(assignments_lists.size()) + " entries; track file contains " +
                     str(count) + " tracks");
 
-  // If the node assignments have been performed in such a way that each streamline is
-  //   assigned to precisely two nodes, use the assignments_pairs class which is
-  //   designed as such. This _should_ be the majority of cases, but the situation
-  //   where each streamline could potentially be assigned to any number of nodes is
-  //   now supported.
+  // If every streamline maps to exactly two nodes, use the pair-optimised path
   if (!nonpair_found) {
-    INFO("Assignments file contains node pair for every streamline; operating accordingly");
+    INFO("Assignments contain node pair for every streamline; operating accordingly");
     assignments_pairs.reserve(assignments_lists.size());
     for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i)
       assignments_pairs.push_back(NodePair((*i)[0], (*i)[1]));
@@ -281,8 +436,7 @@ void run() {
     if (COMs.size() > max_node_index + 1) {
       WARN("Parcellation image \"" + std::string(opt[0][0]) +
            "\" provided via -exemplars option contains more nodes (" + str(COMs.size() - 1) +
-           ") than are present in input assignments file \"" + std::string(argument[1]) + "\" (" + str(max_node_index) +
-           ")");
+           ") than are present in input assignments (" + str(max_node_index) + ")");
       max_node_index = COMs.size() - 1;
     }
     Transform transform(image);
@@ -301,7 +455,7 @@ void run() {
       ProgressBar progress("generating exemplars for connectome", count);
       if (!assignments_pairs.empty()) {
         auto loader = [&](Tractography::Connectome::Streamline_nodepair &out) {
-          if (!reader(out))
+          if (!(*reader)(out))
             return false;
           out.set_nodes(assignments_pairs[out.get_index()]);
           return true;
@@ -316,7 +470,7 @@ void run() {
             loader, Thread::batch(Tractography::Connectome::Streamline_nodepair()), Thread::multi(worker));
       } else {
         auto loader = [&](Tractography::Connectome::Streamline_nodelist &out) {
-          if (!reader(out))
+          if (!(*reader)(out))
             return false;
           out.set_nodes(assignments_lists[out.get_index()]);
           return true;
@@ -425,14 +579,14 @@ void run() {
     ProgressBar progress("Extracting tracks from connectome", count);
     if (assignments_pairs.empty()) {
       Tractography::Connectome::Streamline_nodelist tck;
-      while (reader(tck)) {
+      while ((*reader)(tck)) {
         tck.set_nodes(assignments_lists[tck.get_index()]);
         writer(tck);
         ++progress;
       }
     } else {
       Tractography::Connectome::Streamline_nodepair tck;
-      while (reader(tck)) {
+      while ((*reader)(tck)) {
         tck.set_nodes(assignments_pairs[tck.get_index()]);
         writer(tck);
         ++progress;

@@ -17,6 +17,7 @@
 #include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/trx_utils.h"
 #include "file/ofstream.h"
 #include "progressbar.h"
 
@@ -32,7 +33,7 @@ void usage() {
   SYNOPSIS = "Print out information about a track file";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_tracks_in().allow_multiple();
+  + Argument ("tracks", "the input track file.").type_tracks_in().type_file_in().type_directory_in().allow_multiple();
 
   OPTIONS
   + Option ("count", "count number of tracks in file explicitly, ignoring the header");
@@ -44,11 +45,20 @@ void run() {
   const bool actual_count = !get_options("count").empty();
 
   for (size_t i = 0; i < argument.size(); ++i) {
-    Tractography::Properties properties;
-    Tractography::Reader<float> file(argument[i], properties);
-
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << argument[i] << "\"\n";
+
+    if (Tractography::TRX::is_trx(argument[i])) {
+      auto trx = Tractography::TRX::load_trx(argument[i]);
+      if (!trx)
+        throw Exception("Failed to load TRX file: " + std::string(argument[i]));
+      Tractography::TRX::print_info(std::cout, *trx);
+      trx->close();
+      continue;
+    }
+
+    Tractography::Properties properties;
+    Tractography::Reader<float> file(argument[i], properties);
 
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S(i->first + ':');

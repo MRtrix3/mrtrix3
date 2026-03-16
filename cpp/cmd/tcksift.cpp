@@ -25,6 +25,8 @@
 #include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
 #include "dwi/tractography/SIFT/sifter.h"
+#include "dwi/tractography/trx_utils.h"
+#include "file/path.h"
 
 using namespace MR;
 using namespace App;
@@ -48,10 +50,10 @@ void usage() {
     "NeuroImage, 2013, 67, 298-312";
 
   ARGUMENTS
-  + Argument ("in_tracks", "the input track file").type_tracks_in()
+  + Argument ("in_tracks", "the input track file").type_tracks_in().type_file_in().type_directory_in()
   + Argument ("in_fod", "input image containing the spherical harmonics"
                         " of the fibre orientation distributions").type_image_in()
-  + Argument ("out_tracks", "the output filtered tracks file").type_tracks_out();
+  + Argument ("out_tracks", "the output filtered tracks file").type_file_out();
 
   OPTIONS
 
@@ -128,7 +130,18 @@ void run() {
     if (!debug_path.empty())
       sifter.output_all_debug_images(debug_path, "after");
 
-    sifter.output_filtered_tracks(argument[0], argument[2]);
+    const std::string out_path(argument[2]);
+    if (Tractography::TRX::is_trx(out_path)) {
+      const std::string in_path(argument[0]);
+      if (!Tractography::TRX::is_trx(in_path))
+        throw Exception("TRX output requires TRX input (input is not a TRX file)");
+      auto input_trx = Tractography::TRX::load_trx(in_path);
+      auto selected = sifter.get_selected_indices();
+      auto output_trx = input_trx->subset_streamlines(selected);
+      output_trx->save(out_path);
+    } else {
+      sifter.output_filtered_tracks(argument[0], argument[2]);
+    }
 
     opt = get_options("out_selection");
     if (!opt.empty())

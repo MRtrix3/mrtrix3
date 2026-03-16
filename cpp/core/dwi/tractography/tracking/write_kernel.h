@@ -35,11 +35,22 @@
 
 namespace MR::DWI::Tractography::Tracking {
 
+// Abstract base for the format-specific track writer held by WriteKernel.
+// Concrete implementations (TCKWriterAdapter, TRXWriterAdapter) live in write_kernel.cpp
+// so that TRX headers do not propagate to all consumers of this header.
+struct AbstractTrackWriter {
+  uint64_t count = 0;
+  uint64_t total_count = 0;
+  virtual bool operator()(const Streamline<float> &tck) = 0;
+  virtual void skip() = 0;
+  virtual ~AbstractTrackWriter() = default;
+};
+
 class WriteKernel {
 public:
   WriteKernel(const SharedBase &shared, std::string_view output_file, const DWI::Tractography::Properties &properties)
       : S(shared),
-        writer(output_file, properties),
+        writer(create_writer(output_file, properties)),
         always_increment(S.properties.seeds.is_finite() || !S.max_num_tracks),
         warn_on_max_seeds(S.implicit_max_num_seeds),
         seeds(0),
@@ -63,8 +74,8 @@ public:
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
     progress.set_text(
         printf("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected));
-    if (warn_on_max_seeds && writer.total_count == S.max_num_seeds && S.max_num_tracks &&
-        writer.count < S.max_num_tracks) {
+    if (warn_on_max_seeds && writer->total_count == S.max_num_seeds && S.max_num_tracks &&
+        writer->count < S.max_num_tracks) {
       WARN("less than desired streamline number due to implicit maximum number of seeds; set -seeds 0 to override");
     }
     if (output_seeds) {
@@ -97,9 +108,13 @@ public:
     return ((S.max_num_tracks && selected >= S.max_num_tracks) || (S.max_num_seeds && seeds >= S.max_num_seeds));
   }
 
+private:
+  static std::unique_ptr<AbstractTrackWriter> create_writer(std::string_view path,
+                                                            const DWI::Tractography::Properties &properties);
+
 protected:
   const SharedBase &S;
-  Writer<> writer;
+  std::unique_ptr<AbstractTrackWriter> writer;
   const bool always_increment, warn_on_max_seeds;
   size_t seeds, streamlines, selected;
   std::unique_ptr<File::OFStream> output_seeds;

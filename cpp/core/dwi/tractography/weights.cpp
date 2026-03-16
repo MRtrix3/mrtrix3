@@ -23,8 +23,9 @@ using namespace App;
 // clang-format off
 const Option TrackWeightsInOption =
     Option("tck_weights_in",
-           "specify a text scalar file containing the streamline weights")
-      + Argument("path").type_file_in();
+           "specify a text scalar file containing the streamline weights, "
+           "or (for TRX inputs) the name of a data_per_streamline field")
+      + Argument("path").type_text();
 
 const Option TrackWeightsOutOption =
     Option("tck_weights_out",

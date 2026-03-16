@@ -29,6 +29,7 @@
 #include "dwi/tractography/SIFT/sift.h"
 
 #include "dwi/tractography/SIFT2/tckfactor.h"
+#include "dwi/tractography/trx_utils.h"
 
 using namespace MR;
 using namespace App;
@@ -125,7 +126,9 @@ void usage() {
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()
   + Argument ("in_fod", "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
-  + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_file_out();
+  + Argument ("out_weights", "output text file containing the per-streamline weighting factor, "
+                             "or a bare field name (no extension) to embed the weights as a dps field "
+                             "directly in the input TRX file (TRX input only)").type_file_out();
 
   OPTIONS
 
@@ -222,7 +225,13 @@ void run() {
 
   tckfactor.report_entropy();
 
-  tckfactor.output_factors(argument[2]);
+  const std::string out_weights(argument[2]);
+  if (Tractography::TRX::is_trx_field_name(argument[0], out_weights)) {
+    auto factors = tckfactor.get_factors();
+    Tractography::TRX::append_dps(std::string(argument[0]), out_weights, factors);
+  } else {
+    tckfactor.output_factors(out_weights);
+  }
 
   auto opt = get_options("out_coeffs");
   if (!opt.empty())

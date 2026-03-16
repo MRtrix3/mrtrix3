@@ -37,6 +37,7 @@
 #include "dwi/tractography/SIFT/track_contribution.h"
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
+#include "dwi/tractography/trx_utils.h"
 
 namespace MR::DWI::Tractography::SIFT {
 
@@ -134,6 +135,21 @@ template <class Fixel> Model<Fixel>::~Model() {
 }
 
 template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path) {
+  if (TRX::is_trx(path)) {
+    TRX::TRXReader reader(path);
+    const track_t count = static_cast<track_t>(reader.num_streamlines());
+    if (!count)
+      throw Exception("Cannot map streamlines: TRX file " + Path::basename(path) + " is empty");
+    contributions.assign(count, nullptr);
+    Tractography::Properties properties;
+    reader.populate_properties(properties);
+    TrackMappingWorker worker(*this, Mapping::determine_upsample_ratio(Fixel_map<Fixel>::header(), properties, 0.1f));
+    Thread::run_queue(reader, Thread::batch(Tractography::Streamline<>()), Thread::multi(worker));
+    tck_file_path = path;
+    INFO("Proportionality coefficient after streamline mapping is " + str(mu()));
+    return;
+  }
+
   Tractography::Properties properties;
   Tractography::Reader<> file(path, properties);
 

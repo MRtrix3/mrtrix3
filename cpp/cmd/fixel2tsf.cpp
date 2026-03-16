@@ -25,6 +25,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/trx_utils.h"
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
@@ -52,8 +53,9 @@ void usage() {
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in ()
   + Argument ("tracks",   "the input track file").type_tracks_in ()
-  + Argument ("tsf",      "the output track scalar file").type_file_out ();
-
+  + Argument ("tsf",      "the output track scalar file (.tsf), "
+                          "or a bare field name (no extension) to embed as a dpv field "
+                          "directly in the input TRX file (TRX input only)").type_file_out ();
 
   OPTIONS
   + Option ("angle", "the max anglular threshold for computing correspondence"
@@ -78,17 +80,25 @@ void run() {
       Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io();
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> reader(argument[1], properties);
+  auto reader_ptr = DWI::Tractography::TRX::open_tractogram(argument[1], properties);
+  auto &reader = *reader_ptr;
   properties.comments.push_back("Created using fixel2tsf");
   properties.comments.push_back("Source fixel image: " + Path::basename(argument[0]));
   properties.comments.push_back("Source track file: " + Path::basename(argument[1]));
 
-  DWI::Tractography::ScalarWriter<float> tsf_writer(argument[2], properties);
+  // Determine output mode: bare field name → embed as dpv in TRX input; otherwise write TSF.
+  const std::string out_arg(argument[2]);
+  const bool embed_dpv = DWI::Tractography::TRX::is_trx_field_name(argument[1], out_arg);
+  std::unique_ptr<DWI::Tractography::ScalarWriter<float>> tsf_writer;
+  if (!embed_dpv)
+    tsf_writer.reset(new DWI::Tractography::ScalarWriter<float>(out_arg, properties));
 
   const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int>(properties["count"]);
+
+  std::vector<float> dpv_values;
 
   DWI::Tractography::Mapping::TrackMapperBase mapper(in_index_image);
   mapper.set_use_precise_mapping(true);
@@ -135,10 +145,7 @@ void run() {
           if (largest_dp > angular_threshold_dp) {
             in_data_image.index(0) = offset + closest_fixel_index;
             const float value = in_data_image.value();
-            if (std::isfinite(value))
-              scalars[p] = in_data_image.value();
-            else
-              scalars[p] = 0.0f;
+            scalars[p] = std::isfinite(value) ? value : 0.0f;
           } else {
             scalars[p] = 0.0f;
           }
@@ -146,7 +153,13 @@ void run() {
         }
       }
     }
-    tsf_writer(scalars);
+    if (tsf_writer)
+      (*tsf_writer)(scalars);
+    if (embed_dpv)
+      dpv_values.insert(dpv_values.end(), scalars.begin(), scalars.end());
     progress++;
   }
+
+  if (embed_dpv)
+    DWI::Tractography::TRX::append_dpv(std::string(argument[1]), out_arg, dpv_values);
 }

@@ -15,6 +15,7 @@
  */
 
 #include "dwi/tractography/SIFT/sifter.h"
+#include "dwi/tractography/trx_utils.h"
 
 #include "memory.h"
 #include "progressbar.h"
@@ -345,6 +346,23 @@ void SIFTer::perform_filtering() {
 }
 
 void SIFTer::output_filtered_tracks(std::string_view input_path, std::string_view output_path) const {
+  if (TRX::is_trx(input_path)) {
+    Tractography::Properties p;
+    p["SIFT_mu"] = str(mu());
+    Tractography::Writer<float> writer(output_path, p);
+    TRX::TRXReader reader(input_path);
+    track_t tck_counter = 0;
+    Tractography::Streamline<float> tck;
+    ProgressBar progress("Writing filtered tracks output file", contributions.size());
+    while (reader(tck) && tck_counter < contributions.size()) {
+      if (contributions[tck_counter++])
+        writer(tck);
+      else
+        writer.skip();
+      ++progress;
+    }
+    return;
+  }
   Tractography::Properties p;
   Tractography::Reader<float> reader(input_path, p);
   p["SIFT_mu"] = str(mu());

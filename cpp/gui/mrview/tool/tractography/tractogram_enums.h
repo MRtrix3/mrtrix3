@@ -17,7 +17,8 @@
 #pragma once
 
 namespace MR::GUI::MRView::Tool {
-enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
+enum class TrackColourType { Direction, Ends, Manual, ScalarFile, Group };
 enum class TrackGeometryType { Pseudotubes, Lines, Points };
 enum class TrackThresholdType { None, UseColourFile, SeparateFile };
+enum class GroupMultiPolicy { FirstMatch, LastMatch };
 } // namespace MR::GUI::MRView::Tool

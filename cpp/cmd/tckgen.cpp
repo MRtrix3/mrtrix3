@@ -236,6 +236,12 @@ void usage() {
     + Option ("output_stats", "output statistics on streamline generation to a JSON file")
       + Argument ("path").type_file_out()
 
+  + OptionGroup("TRX output options")
+    + Option ("trx_float16",
+              "when writing TRX output, store streamline coordinates as float16 instead of the default float32."
+              " Reduces file size by ~50%% at the cost of ~0.02-0.05 mm coordinate precision."
+              " Has no effect when writing TCK output.")
+
   + DWI::GradImportOptions();
 
 }
@@ -265,6 +271,9 @@ void run() {
   auto opt = get_options("output_seeds");
   if (!opt.empty())
     properties["seed_output"] = std::string(opt[0][0]);
+
+  if (!get_options("trx_float16").empty())
+    properties["trx_positions_dtype"] = "float16";
 
   // load ROIs and tractography specific options
   // NB must occur before seed check below due to -select option override

@@ -90,6 +90,7 @@ Tractography::Tractography(Dock *parent)
       not_3D(true),
       line_opacity(1.0),
       scalar_file_options(nullptr),
+      group_options(nullptr),
       lighting_dock(nullptr) {
 
   float voxel_size;
@@ -170,6 +171,7 @@ Tractography::Tractography(Dock *parent)
   colour_combobox->addItem("Random");
   colour_combobox->addItem("Manual");
   colour_combobox->addItem("File");
+  colour_combobox->addItem("TRX Groups");
   colour_combobox->setEnabled(false);
   connect(colour_combobox, SIGNAL(activated(int)), this, SLOT(colour_mode_selection_slot(int)));
   hlayout->addWidget(colour_combobox);
@@ -215,6 +217,9 @@ Tractography::Tractography(Dock *parent)
 
   scalar_file_options = new TrackScalarFileOptions(this);
   main_box->addWidget(scalar_file_options);
+
+  group_options = new TrackGroupOptions(this);
+  main_box->addWidget(group_options);
 
   QGroupBox *general_groupbox = new QGroupBox("General options");
   GridLayout *general_opt_grid = new GridLayout;
@@ -349,7 +354,7 @@ size_t Tractography::visible_number_colourbars() {
 void Tractography::tractogram_open_slot() {
 
   std::vector<std::string> list =
-      Dialog::File::get_files(this, "Select tractograms to open", "Tractograms (*.tck)", &current_folder);
+      Dialog::File::get_files(this, "Select tractograms to open", "Tractograms (*.tck *.trx)", &current_folder);
   add_tractogram(list);
 }
 
@@ -394,6 +399,8 @@ void Tractography::tractogram_close_slot() {
   }
   scalar_file_options->set_tractogram(nullptr);
   scalar_file_options->update_UI();
+  group_options->set_tractogram(nullptr);
+  group_options->update_UI();
   window().updateGL();
 }
 
@@ -568,7 +575,7 @@ void Tractography::colour_by_scalar_file_slot() {
   Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
   scalar_file_options->set_tractogram(tractogram);
   if (tractogram->intensity_scalar_filename.empty()) {
-    if (!scalar_file_options->open_intensity_track_scalar_file_slot()) {
+    auto revert_combobox = [&]() {
       colour_combobox->blockSignals(true);
       switch (tractogram->get_color_type()) {
       case TrackColourType::Direction:
@@ -583,9 +590,23 @@ void Tractography::colour_by_scalar_file_slot() {
       case TrackColourType::ScalarFile:
         colour_combobox->setCurrentIndex(4);
         break;
+      case TrackColourType::Group:
+        colour_combobox->setCurrentIndex(5);
+        break;
       }
       colour_combobox->clearError();
       colour_combobox->blockSignals(false);
+    };
+    if (tractogram->is_trx()) {
+      // No scalar loaded yet — revert combobox without crashing. The "TRX
+      // field…" button in the scalar file options panel is always visible for
+      // TRX files, so the user can pick a field from there directly.
+      revert_combobox();
+      update_scalar_options();
+      return;
+    }
+    if (!scalar_file_options->open_intensity_track_scalar_file_slot()) {
+      revert_combobox();
       return;
     }
   }
@@ -617,6 +638,7 @@ void Tractography::colour_mode_selection_slot(int) {
     colour_by_scalar_file_slot();
     break;
   case 5:
+    colour_track_by_trx_groups_slot();
     break;
   default:
     assert(0);
@@ -704,6 +726,10 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
       colour_combobox->setCurrentIndex(4);
       colour_button->setEnabled(false);
       break;
+    case TrackColourType::Group:
+      colour_combobox->setCurrentIndex(5);
+      colour_button->setEnabled(false);
+      break;
     }
     colour_combobox->clearError();
     colour_combobox->blockSignals(false);
@@ -737,11 +763,11 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
 
 void Tractography::update_scalar_options() {
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  if (indices.size() == 1)
-    scalar_file_options->set_tractogram(tractogram_list_model->get_tractogram(indices[0]));
-  else
-    scalar_file_options->set_tractogram(nullptr);
+  Tractogram *t = (indices.size() == 1) ? tractogram_list_model->get_tractogram(indices[0]) : nullptr;
+  scalar_file_options->set_tractogram(t);
   scalar_file_options->update_UI();
+  group_options->set_tractogram(t);
+  group_options->update_UI();
 }
 
 void Tractography::update_geometry_type_gui() {
@@ -1060,4 +1086,40 @@ bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOp
   }
   return false;
 }
+
+void Tractography::colour_track_by_trx_groups_slot() {
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  bool any_trx = false;
+  for (int i = 0; i < indices.size(); ++i) {
+    Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
+    if (!tractogram->is_trx()) {
+      QMessageBox::warning(QApplication::activeWindow(),
+                           tr("TRX Groups"),
+                           tr("TRX group colouring is only available for TRX files."),
+                           QMessageBox::Ok,
+                           QMessageBox::Ok);
+      continue;
+    }
+    if (tractogram->trx_group_names().empty()) {
+      QMessageBox::information(
+          QApplication::activeWindow(), tr("TRX Groups"), tr("This TRX file has no groups."), QMessageBox::Ok);
+      continue;
+    }
+    tractogram->load_trx_group_colours();
+    tractogram->set_color_type(TrackColourType::Group);
+    if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
+      tractogram->set_threshold_type(TrackThresholdType::None);
+    any_trx = true;
+  }
+  if (any_trx) {
+    colour_combobox->blockSignals(true);
+    colour_combobox->setCurrentIndex(5);
+    colour_combobox->clearError();
+    colour_combobox->blockSignals(false);
+    colour_button->setEnabled(false);
+    update_scalar_options();
+    window().updateGL();
+  }
+}
+
 } // namespace MR::GUI::MRView::Tool

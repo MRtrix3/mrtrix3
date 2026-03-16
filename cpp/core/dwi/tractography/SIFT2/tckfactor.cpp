@@ -362,6 +362,16 @@ void TckFactor::output_factors(std::string_view path) const {
   File::Matrix::save_vector(weights, path);
 }
 
+std::vector<float> TckFactor::get_factors() const {
+  if (static_cast<size_t>(coefficients.size()) != contributions.size())
+    throw Exception("Cannot get weighting factors if they have not first been estimated!");
+  std::vector<float> weights(num_tracks());
+  for (SIFT::track_t i = 0; i != num_tracks(); ++i)
+    weights[i] = static_cast<float>(
+        (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ? 0.0 : std::exp(coefficients[i]));
+  return weights;
+}
+
 void TckFactor::output_coefficients(std::string_view path) const { File::Matrix::save_vector(coefficients, path); }
 
 void TckFactor::output_TD_images(std::string_view dirpath,

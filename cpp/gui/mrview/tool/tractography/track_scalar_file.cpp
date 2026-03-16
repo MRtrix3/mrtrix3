@@ -18,6 +18,7 @@
 
 #include "dialog/file.h"
 #include "mrview/tool/tractography/tractogram.h"
+#include "mrview/tool/tractography/tractography.h"
 
 namespace MR::GUI::MRView::Tool {
 
@@ -30,6 +31,14 @@ TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
   vlayout->setContentsMargins(0, 0, 0, 0);
   vlayout->setSpacing(0);
   colour_groupbox->setLayout(vlayout);
+
+  // "TRX field…" button lives outside colour_groupbox so it is always visible
+  // when a TRX tractogram is selected, regardless of the current colour mode.
+  trx_field_button = new QPushButton("TRX field\u2026", this);
+  trx_field_button->setToolTip(tr("Select an embedded TRX dps or dpv field for colouring streamlines"));
+  connect(trx_field_button, SIGNAL(clicked()), this, SLOT(open_trx_scalar_field_slot()));
+  trx_field_button->setVisible(false);
+  main_box->addWidget(trx_field_button);
 
   Tool::Base::HBoxLayout *hlayout = new Tool::Base::HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
@@ -130,6 +139,7 @@ void TrackScalarFileOptions::update_UI() {
     return;
   }
   setVisible(true);
+  trx_field_button->setVisible(tractogram->is_trx());
 
   if (tractogram->get_color_type() == TrackColourType::ScalarFile) {
 
@@ -144,9 +154,13 @@ void TrackScalarFileOptions::update_UI() {
     colourmap_button->set_scale_inverted(tractogram->scale_inverted());
     colourmap_button->set_show_colourbar(tractogram->show_colour_bar);
 
-    assert(tractogram->intensity_scalar_filename.length());
-    intensity_file_button->setText(qstr(shorten(Path::basename(tractogram->intensity_scalar_filename), 35, 0)));
-    intensity_file_button->setToolTip(qstr(tractogram->intensity_scalar_filename));
+    if (tractogram->intensity_scalar_filename.empty()) {
+      intensity_file_button->setText(tr("(no file)"));
+      intensity_file_button->setToolTip(tr("Open (track) scalar file for colouring streamlines"));
+    } else {
+      intensity_file_button->setText(qstr(shorten(Path::basename(tractogram->intensity_scalar_filename), 35, 0)));
+      intensity_file_button->setToolTip(qstr(tractogram->intensity_scalar_filename));
+    }
 
   } else {
     colour_groupbox->setVisible(false);
@@ -387,6 +401,41 @@ void TrackScalarFileOptions::toggle_invert_colourmap(bool invert, const ColourMa
     tractogram->set_invert_scale(invert);
     window().updateGL();
   }
+}
+
+void TrackScalarFileOptions::open_trx_scalar_field_slot() {
+  if (!tractogram || !tractogram->is_trx())
+    return;
+
+  // Build item list: "DPS: name" for per-streamline, "DPV: name" for per-vertex
+  QStringList items;
+  for (const auto &f : tractogram->trx_dps_fields())
+    items << QString("DPS: %1").arg(QString::fromStdString(f));
+  for (const auto &f : tractogram->trx_dpv_fields())
+    items << QString("DPV: %1").arg(QString::fromStdString(f));
+
+  if (items.isEmpty()) {
+    QMessageBox::information(this, tr("TRX scalar field"), tr("This TRX file has no embedded dps or dpv fields."));
+    return;
+  }
+
+  bool ok = false;
+  QString chosen = QInputDialog::getItem(this, tr("Select TRX scalar field"), tr("Field:"), items, 0, false, &ok);
+  if (!ok || chosen.isEmpty())
+    return;
+
+  const bool is_dpv = chosen.startsWith("DPV: ");
+  const std::string field_name = chosen.mid(5).toStdString(); // strip "DPS: " or "DPV: "
+
+  try {
+    tractogram->load_trx_scalar_field(field_name, is_dpv);
+    tractogram->set_color_type(TrackColourType::ScalarFile);
+  } catch (Exception &e) {
+    e.display();
+    return;
+  }
+  update_UI();
+  window().updateGL();
 }
 
 } // namespace MR::GUI::MRView::Tool

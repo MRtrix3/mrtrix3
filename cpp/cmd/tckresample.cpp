@@ -24,6 +24,7 @@
 #include "dwi/tractography/resampling/fixed_step_size.h"
 #include "dwi/tractography/resampling/resampling.h"
 #include "dwi/tractography/resampling/upsampler.h"
+#include "dwi/tractography/trx_utils.h"
 #include "image.h"
 #include "math/math.h"
 #include "ordered_thread_queue.h"
@@ -54,10 +55,15 @@ void usage() {
     " the magnitude of the difference will typically depend on"
     " the discrepancy in the number of vertices,"
     " with less vertices leading to a shorter length"
-    " (due to taking chordal lengths of curved trajectories).";
+    " (due to taking chordal lengths of curved trajectories)."
+
+  + "When the input is a TRX file and the output is also TRX,"
+    " per-streamline data (dps) and groups are preserved."
+    " Per-vertex data (dpv) cannot be preserved because resampling changes"
+    " the number of vertices per streamline and will be discarded with a warning.";
 
   ARGUMENTS
-  + Argument ("in_tracks", "the input track file").type_tracks_in()
+  + Argument ("in_tracks", "the input track file").type_tracks_in().type_directory_in()
   + Argument ("out_tracks", "the output resampled tracks").type_tracks_out();
 
   OPTIONS
@@ -87,34 +93,74 @@ private:
 class Receiver {
 public:
   Receiver(std::string_view path, const Properties &properties)
-      : writer(path, properties), progress("resampling streamlines") {}
+      : output_path(path), progress("resampling streamlines"), count_(0) {
+    if (TRX::is_trx(path)) {
+      trx_stream = std::make_unique<trx::TrxStream>("float32");
+    } else {
+      tck_writer = std::make_unique<Writer<value_type>>(path, properties);
+    }
+  }
+
+  ~Receiver() {
+    if (trx_stream) {
+      try {
+        trx_stream->finalize(output_path, trx::TrxSaveOptions{});
+      } catch (const std::exception &e) {
+        Exception(e.what()).display();
+        App::exit_error_code = 1;
+      }
+    }
+  }
 
   bool operator()(const Streamline<value_type> &tck) {
-    auto progress_message = [&]() {
-      return "resampling streamlines (count: " + str(writer.count) +
-             ", skipped: " + str(writer.total_count - writer.count) + ")";
-    };
-    writer(tck);
-    progress.set_text(progress_message());
+    if (trx_stream) {
+      std::vector<std::array<float, 3>> pts(tck.size());
+      for (size_t i = 0; i < tck.size(); ++i)
+        pts[i] = {tck[i][0], tck[i][1], tck[i][2]};
+      trx_stream->push_streamline(pts);
+      ++count_;
+      progress.set_text("resampling streamlines (count: " + str(count_) + ")");
+    } else {
+      auto progress_message = [&]() {
+        return "resampling streamlines (count: " + str(tck_writer->count) +
+               ", skipped: " + str(tck_writer->total_count - tck_writer->count) + ")";
+      };
+      (*tck_writer)(tck);
+      progress.set_text(progress_message());
+    }
     return true;
   }
 
 private:
-  Writer<value_type> writer;
+  std::string output_path;
   ProgressBar progress;
+  size_t count_;
+  std::unique_ptr<trx::TrxStream> trx_stream;
+  std::unique_ptr<Writer<value_type>> tck_writer;
 };
 
 void run() {
   Properties properties;
-  Reader<value_type> read(argument[0], properties);
+  auto reader = TRX::open_tractogram(argument[0], properties);
+
+  const bool trx_to_trx = TRX::is_trx(argument[0]) && TRX::is_trx(argument[1]);
+  if (trx_to_trx) {
+    auto src = TRX::load_trx(argument[0]);
+    if (src && !src->data_per_vertex.empty())
+      WARN(str(src->data_per_vertex.size()) + " per-vertex data field(s) will be discarded:"
+                                              " vertex count changes after resampling");
+  }
 
   const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler());
 
   Worker worker(resampler);
   Receiver receiver(argument[1], properties);
-  Thread::run_ordered_queue(read,
+  Thread::run_ordered_queue(*reader,
                             Thread::batch(Streamline<value_type>()),
                             Thread::multi(worker),
                             Thread::batch(Streamline<value_type>()),
                             receiver);
+
+  if (trx_to_trx)
+    TRX::copy_trx_sidecar_data(argument[0], argument[1], false);
 }

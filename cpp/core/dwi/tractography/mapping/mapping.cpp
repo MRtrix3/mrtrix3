@@ -15,8 +15,13 @@
  */
 
 #include "dwi/tractography/mapping/mapping.h"
+#include "dwi/tractography/trx_utils.h"
 
 namespace MR::DWI::Tractography::Mapping {
+
+// Bring open_tractogram into scope so both string-path overloads below can use
+// it without repeating the full namespace path.
+using MR::DWI::Tractography::TRX::open_tractogram;
 
 size_t determine_upsample_ratio(const Header &header, const float step_size, const float ratio) {
   size_t upsample_ratio = 1;
@@ -28,7 +33,7 @@ size_t determine_upsample_ratio(const Header &header, const float step_size, con
 
 size_t determine_upsample_ratio(const Header &header, std::string_view tck_path, const float ratio) {
   Properties properties;
-  Reader<> reader(tck_path, properties);
+  auto reader = open_tractogram(tck_path, properties);
   return determine_upsample_ratio(header, properties, ratio);
 }
 
@@ -38,10 +43,7 @@ size_t determine_upsample_ratio(const Header &header, const Tractography::Proper
   return determine_upsample_ratio(header, properties.get_stepsize(), ratio);
 }
 
-void generate_header(Header &header, std::string_view tck_file_path, const std::vector<default_type> &voxel_size) {
-
-  Properties properties;
-  Reader<> file(tck_file_path, properties);
+void generate_header(Header &header, ReaderInterface<float> &reader, const std::vector<default_type> &voxel_size) {
 
   Streamline<> tck;
   size_t track_counter = 0;
@@ -51,7 +53,7 @@ void generate_header(Header &header, std::string_view tck_file_path, const std::
 
   {
     ProgressBar progress("creating new template image", 0);
-    while (file(tck) && track_counter++ < streamlines_for_bounding_box) {
+    while (reader(tck) && track_counter++ < streamlines_for_bounding_box) {
       for (const auto &i : tck) {
         min_values[0] = std::min(min_values[0], i[0]);
         max_values[0] = std::max(max_values[0], i[0]);
@@ -78,7 +80,14 @@ void generate_header(Header &header, std::string_view tck_file_path, const std::
 
   header.transform().matrix().setIdentity();
   header.transform().translation() = min_values.cast<double>();
-  file.close();
+}
+
+void generate_header(Header &header, std::string_view tck_file_path, const std::vector<default_type> &voxel_size) {
+  Properties properties;
+  // open_tractogram handles both TCK and TRX; the reader is local so the caller's
+  // reader object is never consumed (no re-open needed in the calling command).
+  auto reader = open_tractogram(tck_file_path, properties);
+  generate_header(header, *reader, voxel_size);
 }
 
 void oversample_header(Header &header, const std::vector<default_type> &voxel_size) {

@@ -22,12 +22,12 @@
 #include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/trx_utils.h"
 #include "file/matrix.h"
 #include "file/name_parser.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "raw.h"
-#include <trx/trx.h>
 
 using namespace MR;
 using namespace App;
@@ -392,21 +392,6 @@ static std::vector<DpvSpec> get_dpv_specs() {
   return specs;
 }
 
-static bool trx_has_aux_data(const trx::TrxFile<float> *trx) {
-  if (!trx)
-    return false;
-  return !(trx->groups.empty() && trx->data_per_streamline.empty() && trx->data_per_vertex.empty() &&
-           trx->data_per_group.empty());
-}
-
-static bool is_trx_directory(std::string_view path) {
-  try {
-    return trx::is_trx_directory(std::string(path));
-  } catch (const std::exception &) {
-    return false;
-  }
-}
-
 static void apply_transform_to_trx(trx::TrxFile<float> *trx, const transform_type &T) {
   if (!trx || !trx->streamlines)
     return;
@@ -422,139 +407,6 @@ static void apply_transform_to_trx(trx::TrxFile<float> *trx, const transform_typ
     data(i, 2) = pos[2];
   }
 }
-
-class TRXReader : public ReaderInterface<float> {
-public:
-  explicit TRXReader(std::string_view file) : trx(nullptr), current(0), num_streamlines(0), has_aux_data(false) {
-    try {
-      const std::string filename(file);
-      if (is_trx_directory(filename)) {
-        trx = trx::load_from_directory<float>(filename);
-      } else {
-        trx = trx::load_from_zip<float>(filename);
-      }
-      if (trx && trx->streamlines && trx->streamlines->_offsets.size() > 0)
-        num_streamlines = trx->streamlines->_offsets.size() - 1;
-      has_aux_data = trx_has_aux_data(trx.get());
-    } catch (const std::exception &e) {
-      throw Exception(e.what());
-    }
-  }
-
-  bool operator()(Streamline<float> &tck) {
-    tck.clear();
-    if (!trx || current >= num_streamlines)
-      return false;
-    const Eigen::Index start = trx->streamlines->_offsets(current, 0);
-    const Eigen::Index end = trx->streamlines->_offsets(current + 1, 0);
-    tck.reserve(end - start);
-    for (Eigen::Index i = start; i < end; ++i) {
-      Eigen::Vector3f p;
-      p[0] = trx->streamlines->_data(i, 0);
-      p[1] = trx->streamlines->_data(i, 1);
-      p[2] = trx->streamlines->_data(i, 2);
-      tck.push_back(p);
-    }
-    ++current;
-    return true;
-  }
-
-  ~TRXReader() {
-    if (!trx)
-      return;
-    try {
-      trx->close();
-      trx.reset();
-    } catch (const std::exception &e) {
-      Exception(e.what()).display();
-      App::exit_error_code = 1;
-    }
-  }
-
-  bool has_metadata() const { return has_aux_data; }
-
-private:
-  std::unique_ptr<trx::TrxFile<float>> trx;
-  Eigen::Index current;
-  Eigen::Index num_streamlines;
-  bool has_aux_data;
-};
-
-class TRXWriter : public WriterInterface<float> {
-public:
-  TRXWriter(std::string_view file,
-            size_t nb_streamlines,
-            size_t nb_vertices,
-            const std::vector<DpsSpec> &dps_specs,
-            const std::vector<DpvSpec> &dpv_specs,
-            std::string_view final_output,
-            bool rename_on_save)
-      : output(file),
-        final_output(final_output),
-        rename_on_save(rename_on_save),
-        current_streamline(0),
-        current_vertex(0) {
-    try {
-      trx.reset(new trx::TrxFile<float>(static_cast<int>(nb_vertices), static_cast<int>(nb_streamlines), nullptr));
-      if (trx->streamlines && trx->streamlines->_offsets.size() > 0)
-        trx->streamlines->_offsets(0, 0) = 0;
-      for (const auto &spec : dps_specs) {
-        trx->add_dps_from_text(spec.name, spec.dtype, spec.path);
-      }
-      for (const auto &spec : dpv_specs) {
-        trx->add_dpv_from_tsf(spec.name, spec.dtype, spec.path);
-      }
-    } catch (const std::exception &e) {
-      throw Exception(e.what());
-    }
-  }
-
-  bool operator()(const Streamline<float> &tck) {
-    if (!trx || !trx->streamlines)
-      return false;
-    const Eigen::Index tck_size = static_cast<Eigen::Index>(tck.size());
-    for (Eigen::Index i = 0; i < tck_size; ++i) {
-      const auto &pos = tck[static_cast<size_t>(i)];
-      trx->streamlines->_data(current_vertex + i, 0) = pos[0];
-      trx->streamlines->_data(current_vertex + i, 1) = pos[1];
-      trx->streamlines->_data(current_vertex + i, 2) = pos[2];
-    }
-    trx->streamlines->_lengths(current_streamline, 0) = static_cast<uint32_t>(tck_size);
-    trx->streamlines->_offsets(current_streamline + 1, 0) = static_cast<uint64_t>(current_vertex + tck_size);
-    current_vertex += tck_size;
-    ++current_streamline;
-    return true;
-  }
-
-  ~TRXWriter() {
-    if (!trx)
-      return;
-    try {
-      trx->save(output, ZIP_CM_STORE);
-      if (rename_on_save) {
-        std::error_code ec;
-        std::filesystem::remove_all(final_output, ec);
-        std::filesystem::rename(output, final_output, ec);
-        if (ec) {
-          throw std::runtime_error("Failed to rename TRX directory to " + final_output + ": " + ec.message());
-        }
-      }
-      trx->close();
-      trx.reset();
-    } catch (const std::exception &e) {
-      Exception(e.what()).display();
-      App::exit_error_code = 1;
-    }
-  }
-
-private:
-  std::string output;
-  std::string final_output;
-  bool rename_on_save;
-  std::unique_ptr<trx::TrxFile<float>> trx;
-  Eigen::Index current_streamline;
-  Eigen::Index current_vertex;
-};
 
 class PLYWriter : public WriterInterface<float> {
 public:
@@ -907,8 +759,7 @@ private:
 };
 
 void run() {
-  const bool input_is_trx_dir = is_trx_directory(argument[0]);
-  const bool input_is_trx = Path::has_suffix(argument[0], ".trx") || input_is_trx_dir;
+  const bool input_is_trx = TRX::is_trx(argument[0]);
   const bool write_trx_directory = get_options("trxdirectory").size();
   const bool output_is_trx = Path::has_suffix(argument[1], ".trx") || write_trx_directory;
   std::string trx_output = std::string(argument[1]);
@@ -967,11 +818,7 @@ void run() {
   if (input_is_trx && output_is_trx) {
     std::unique_ptr<trx::TrxFile<float>> trx;
     try {
-      if (input_is_trx_dir) {
-        trx = trx::load_from_directory<float>(argument[0]);
-      } else {
-        trx = trx::load_from_zip<float>(argument[0]);
-      }
+      trx = TRX::load_trx(argument[0]);
     } catch (const std::exception &e) {
       throw Exception(e.what());
     }
@@ -1006,7 +853,7 @@ void run() {
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
-  TRXReader *trx_reader = nullptr;
+  TRX::TRXReader *trx_reader = nullptr;
   if (Path::has_suffix(argument[0], ".tck")) {
     reader.reset(new Reader<float>(argument[0], properties));
   } else if (Path::has_suffix(argument[0], ".txt")) {
@@ -1014,7 +861,7 @@ void run() {
   } else if (Path::has_suffix(argument[0], ".vtk")) {
     reader.reset(new VTKReader(argument[0]));
   } else if (input_is_trx) {
-    auto *trx_reader_ptr = new TRXReader(argument[0]);
+    auto *trx_reader_ptr = new TRX::TRXReader(argument[0]);
     reader.reset(trx_reader_ptr);
     trx_reader = trx_reader_ptr;
   } else {
@@ -1049,7 +896,7 @@ void run() {
     } else if (Path::has_suffix(argument[0], ".vtk")) {
       count_reader.reset(new VTKReader(argument[0]));
     } else if (input_is_trx) {
-      count_reader.reset(new TRXReader(argument[0]));
+      count_reader.reset(new TRX::TRXReader(argument[0]));
     } else {
       throw Exception("Unsupported input file type.");
     }
@@ -1057,8 +904,23 @@ void run() {
       nb_streamlines++;
       nb_vertices += count_tck.size();
     }
-    writer.reset(new TRXWriter(
-        trx_save_path, nb_streamlines, nb_vertices, dps_specs, dpv_specs, trx_output, rename_trx_directory));
+    auto *trx_writer = new TRX::TRXWriter(trx_save_path, nb_streamlines, nb_vertices, trx_output, rename_trx_directory);
+    try {
+      for (const auto &spec : dps_specs)
+        trx_writer->get_trx()->add_dps_from_text(spec.name, spec.dtype, spec.path);
+      for (const auto &spec : dpv_specs)
+        trx_writer->get_trx()->add_dpv_from_tsf(spec.name, spec.dtype, spec.path);
+    } catch (const std::exception &e) {
+      throw Exception(e.what());
+    }
+    // Copy TCK properties into the TRX header as "metadata"
+    if (!properties.empty()) {
+      json::object meta;
+      for (const auto &[key, val] : properties)
+        meta[key] = json(val);
+      trx_writer->get_trx()->header = trx::_json_set(trx_writer->get_trx()->header, "metadata", json(meta));
+    }
+    writer.reset(trx_writer);
   } else {
     throw Exception("Unsupported output file type.");
   }

@@ -53,6 +53,7 @@ public slots:
   bool open_intensity_track_scalar_file_slot(std::string);
 
 private slots:
+  void open_trx_scalar_field_slot();
   void on_set_scaling_slot();
   bool threshold_scalar_file_slot(int);
   void threshold_lower_changed(int unused);
@@ -69,6 +70,7 @@ protected:
   QAction *invert_scale;
   ColourMapButton *colourmap_button;
   QPushButton *intensity_file_button;
+  QPushButton *trx_field_button;
   AdjustButton *max_entry, *min_entry;
   QComboBox *threshold_file_combobox;
   AdjustButton *threshold_lower, *threshold_upper;

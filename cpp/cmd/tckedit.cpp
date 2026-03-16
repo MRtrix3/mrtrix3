@@ -20,11 +20,13 @@
 #include "exception.h"
 #include "mrtrix.h"
 #include "ordered_thread_queue.h"
+#include "progressbar.h"
 #include "types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
+#include "dwi/tractography/trx_utils.h"
 #include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/editing/editing.h"
@@ -89,8 +91,8 @@ void usage() {
 
 
   ARGUMENTS
-  + Argument ("tracks_in",  "the input track file(s)").type_tracks_in().allow_multiple()
-  + Argument ("tracks_out", "the output track file").type_tracks_out();
+  + Argument ("tracks_in",  "the input track file(s)").type_tracks_in().type_file_in().type_directory_in().allow_multiple()
+  + Argument ("tracks_out", "the output track file").type_file_out();
 
   OPTIONS
   + ROIOption
@@ -124,10 +126,117 @@ void erase_if_present(Tractography::Properties &p, const std::string s) {
     p.erase(i);
 }
 
+// Receiver for TRX mask mode: pushes cropped streamline segments into a TrxStream.
+// Used when -mask is specified; metadata (dps/dpv/groups) is not preserved since
+// mask cropping changes streamline topology.
+class TRXStreamReceiver {
+public:
+  TRXStreamReceiver(trx::TrxStream &stream, const size_t n, const size_t s)
+      : stream(stream), number(n), skip(s), count(0), total_count(0), progress("       0 read,        0 written") {}
+
+  TRXStreamReceiver(const TRXStreamReceiver &) = delete;
+
+  ~TRXStreamReceiver() {
+    progress.set_text(str(total_count) + " read, " + str(count) + " written");
+    if (number && count != number)
+      WARN("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
+  }
+
+  bool operator()(const Streamline<> &in) {
+    if (number && count == number)
+      return false;
+    ++total_count;
+    if (in.empty())
+      return true;
+    if (in[0].allFinite()) {
+      // Single unbroken streamline
+      if (skip) {
+        --skip;
+        return true;
+      }
+      push_segment(in);
+      ++count;
+    } else {
+      // Mask-split: NaN-delimited segments — replicate Receiver's behaviour
+      Streamline<> seg;
+      for (const auto &p : in) {
+        if (p.allFinite()) {
+          seg.push_back(p);
+        } else if (!seg.empty()) {
+          push_segment(seg);
+          seg.clear();
+        }
+      }
+      ++count;
+    }
+    return !(number && count == number);
+  }
+
+private:
+  void push_segment(const Streamline<> &seg) {
+    std::vector<std::array<float, 3>> pts;
+    pts.reserve(seg.size());
+    for (const auto &p : seg)
+      pts.push_back({p[0], p[1], p[2]});
+    stream.push_streamline(pts);
+  }
+
+  trx::TrxStream &stream;
+  const size_t number;
+  size_t skip, count, total_count;
+  ProgressBar progress;
+};
+
+// Receiver for TRX mode: collects original streamline indices instead of writing to file
+class TRXIndexCollector {
+public:
+  TRXIndexCollector(const size_t n, const size_t s)
+      : number(n), skip(s), count(0), total_count(0), progress("       0 read,        0 written") {}
+
+  TRXIndexCollector(const TRXIndexCollector &) = delete;
+
+  ~TRXIndexCollector() {
+    progress.set_text(str(total_count) + " read, " + str(count) + " written");
+    if (number && count != number)
+      WARN("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
+  }
+
+  bool operator()(const Streamline<> &in) {
+    if (number && count == number)
+      return false;
+    ++total_count;
+    if (in.empty())
+      return true;
+    if (skip) {
+      --skip;
+      return true;
+    }
+    indices.push_back(static_cast<uint32_t>(in.get_index()));
+    ++count;
+    return !(number && count == number);
+  }
+
+  const std::vector<uint32_t> &get_indices() const { return indices; }
+
+private:
+  const size_t number;
+  size_t skip, count, total_count;
+  std::vector<uint32_t> indices;
+  ProgressBar progress;
+};
+
 void run() {
 
   const size_t num_inputs = argument.size() - 1;
   const std::string output_path = argument[num_inputs];
+
+  const bool trx_out = TRX::is_trx(output_path);
+  const bool trx_in = (num_inputs == 1) && TRX::is_trx(std::string(argument[0]));
+
+  if (trx_out && !trx_in)
+    throw Exception("TRX output requires a single TRX input file");
+  if (trx_in && !trx_out)
+    throw Exception("TRX input requires TRX output to preserve metadata; use .trx extension for output");
 
   // Make sure configuration is sensible
   if (!get_options("tck_weights_in").empty() && num_inputs > 1)
@@ -138,46 +247,51 @@ void run() {
   size_t count = 0;
   std::vector<std::string> input_file_list;
 
-  for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
+  if (trx_in) {
+    input_file_list.push_back(std::string(argument[0]));
+    count = TRX::count_trx(std::string(argument[0])).first;
+  } else {
+    for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
 
-    input_file_list.push_back(argument[file_index]);
+      input_file_list.push_back(argument[file_index]);
 
-    Properties p;
-    Reader<float>(argument[file_index], p);
+      Properties p;
+      Reader<float>(argument[file_index], p);
 
-    for (const auto &i : p.comments) {
-      bool present = false;
-      for (const auto &j : properties.comments)
-        if ((present = (i == j)))
-          break;
-      if (!present)
-        properties.comments.push_back(i);
-    }
-
-    for (const auto &i : p.prior_rois) {
-      const auto potential_matches = properties.prior_rois.equal_range(i.first);
-      bool present = false;
-      for (auto j = potential_matches.first; !present && j != potential_matches.second; ++j)
-        present = (i.second == j->second);
-      if (!present)
-        properties.prior_rois.insert(i);
-    }
-
-    size_t this_count = 0;
-
-    for (const auto &i : p) {
-      if (i.first == "count") {
-        this_count = to<float>(i.second);
-      } else {
-        auto existing = properties.find(i.first);
-        if (existing == properties.end())
-          properties.insert(i);
-        else if (i.second != existing->second)
-          existing->second = "variable";
+      for (const auto &i : p.comments) {
+        bool present = false;
+        for (const auto &j : properties.comments)
+          if ((present = (i == j)))
+            break;
+        if (!present)
+          properties.comments.push_back(i);
       }
-    }
 
-    count += this_count;
+      for (const auto &i : p.prior_rois) {
+        const auto potential_matches = properties.prior_rois.equal_range(i.first);
+        bool present = false;
+        for (auto j = potential_matches.first; !present && j != potential_matches.second; ++j)
+          present = (i.second == j->second);
+        if (!present)
+          properties.prior_rois.insert(i);
+      }
+
+      size_t this_count = 0;
+
+      for (const auto &i : p) {
+        if (i.first == "count") {
+          this_count = to<float>(i.second);
+        } else {
+          auto existing = properties.find(i.first);
+          if (existing == properties.end())
+            properties.insert(i);
+          else if (i.second != existing->second)
+            existing->second = "variable";
+        }
+      }
+
+      count += this_count;
+    }
   }
 
   DEBUG("estimated number of input tracks: " + str(count));
@@ -208,10 +322,40 @@ void run() {
   const size_t number = get_option_value("number", size_t(0));
   const size_t skip = get_option_value("skip", size_t(0));
 
-  Loader loader(input_file_list);
-  Worker worker(properties, inverse, ends_only);
-  Receiver receiver(output_path, properties, number, skip);
-
-  Thread::run_ordered_queue(
-      loader, Thread::batch(Streamline<>()), Thread::multi(worker), Thread::batch(Streamline<>()), receiver);
+  if (trx_out) {
+    TRX::TRXReader trx_loader(input_file_list[0]);
+    Worker worker(properties, inverse, ends_only);
+    if (properties.mask.size()) {
+      // -mask crops streamlines at vertex level: use TrxStream to write cropped geometry.
+      // dps/dpv/groups cannot be preserved as the streamline-to-vertex mapping changes.
+      // TRX coordinates are already RAS+, so no affine is needed on the stream.
+      {
+        auto input_trx = TRX::load_trx(input_file_list[0]);
+        if (TRX::has_aux_data(input_trx.get()))
+          WARN("TRX metadata (dps/dpv/groups) is not preserved when -mask is used,"
+               " as mask cropping changes streamline topology");
+      }
+      trx::TrxStream stream;
+      TRXStreamReceiver stream_receiver(stream, number, skip);
+      Thread::run_ordered_queue(trx_loader,
+                                Thread::batch(Streamline<>()),
+                                Thread::multi(worker),
+                                Thread::batch(Streamline<>()),
+                                stream_receiver);
+      stream.finalize<float>(output_path);
+    } else {
+      TRXIndexCollector collector(number, skip);
+      Thread::run_ordered_queue(
+          trx_loader, Thread::batch(Streamline<>()), Thread::multi(worker), Thread::batch(Streamline<>()), collector);
+      auto input_trx = TRX::load_trx(input_file_list[0]);
+      auto output_trx = input_trx->subset_streamlines(collector.get_indices());
+      output_trx->save(output_path);
+    }
+  } else {
+    Loader loader(input_file_list);
+    Worker worker(properties, inverse, ends_only);
+    Receiver receiver(output_path, properties, number, skip);
+    Thread::run_ordered_queue(
+        loader, Thread::batch(Streamline<>()), Thread::multi(worker), Thread::batch(Streamline<>()), receiver);
+  }
 }
