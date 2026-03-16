@@ -786,7 +786,8 @@ Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
   if (texture_channels == 4U && alpha_mode == DownloadTextureAlphaMode::IgnoreAlpha) {
     const std::vector<uint32_t> rgb_channels = {0U, 1U, 2U};
     Adapter::Extract1D source_rgb(source_image, texture_dims, rgb_channels);
-    threaded_copy(source_rgb, image);
+    // Use 2 inner axes so tiny channel loops don't dominate with threading overhead.
+    threaded_copy(source_rgb, image, 0, source_rgb.ndim(), 2);
   } else {
     threaded_copy(source_image, image);
   }
