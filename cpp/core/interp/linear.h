@@ -238,9 +238,7 @@ public:
   }
 
   //! Convenience wrapper for row<3>(axis) to avoid dynamic allocation when only 3 values are required
-  FORCE_INLINE Eigen::Matrix<value_type, 3, 1> vec3(size_t axis) {
-    return row<3>(axis);
-  }
+  FORCE_INLINE Eigen::Matrix<value_type, 3, 1> vec3(size_t axis) { return row<3>(axis); }
 
 protected:
   Eigen::Matrix<coef_type, 8, 1> factors;
