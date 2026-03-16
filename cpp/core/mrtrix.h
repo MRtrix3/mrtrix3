@@ -28,6 +28,7 @@
 
 #include "exception.h"
 #include "types.h"
+#include <magic_enum/magic_enum.hpp>
 
 template <typename StringTypeOne, typename StringTypeTwo>
 typename std::enable_if<MR::is_string_type<StringTypeOne>::value && MR::is_string_type<StringTypeTwo>::value,
@@ -384,4 +385,29 @@ template <typename T> inline std::string join(const std::vector<T> &V, std::stri
 
 std::string join(const char *const *null_terminated_array, std::string_view delimiter); // check_syntax off
 
+template <typename Enum> inline std::string enum_name(Enum value) { return std::string(magic_enum::enum_name(value)); }
+
+template <typename Enum> inline std::vector<std::string> lower_case_enums() {
+  static constexpr auto names = magic_enum::enum_names<Enum>();
+  std::vector<std::string> result;
+  result.reserve(names.size());
+  for (const auto &name : names)
+    result.push_back(MR::lowercase(std::string(name)));
+  return result;
+}
+
+template <typename Enum> inline std::string lowercase_enum_name(Enum value) {
+  return MR::lowercase(std::string(magic_enum::enum_name(value)));
+}
+
+template <typename Enum> inline Enum enum_from_name(std::string_view name) {
+  const auto value = magic_enum::enum_cast<Enum>(name, magic_enum::case_insensitive);
+  if (!value.has_value()) {
+    std::string error = "Unsupported value '" + std::string(name) + "'. Supported values are: ";
+    const auto names = lower_case_enums<Enum>();
+    error += MR::join(names, ", ");
+    throw Exception(error);
+  }
+  return value.value();
+}
 } // namespace MR
