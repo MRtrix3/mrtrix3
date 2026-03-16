@@ -32,6 +32,7 @@
 #include "thread.h"
 
 #include <optional>
+#include <tcb/span.hpp>
 
 using namespace MR;
 using namespace App;
@@ -130,7 +131,9 @@ public:
   }
 
   bool operator()(DWI::Tractography::Streamline<value_type> &tck, std::pair<size_t, value_type> &out) {
-    assert(statistic.has_value());
+    if (!statistic.has_value()) {
+      throw Exception("A statistic must be specified if not using precise mapping");
+    }
     out.first = tck.get_index();
 
     DWI::Tractography::TrackScalar<value_type> values;
@@ -159,7 +162,8 @@ public:
     case Statistic::MEDIAN: {
       // Don't bother with a weighted median here
       std::vector<value_type> data;
-      data.assign(values.data(), values.data() + values.size());
+      tcb::span<const value_type> values_span(values.data(), values.size());
+      data.assign(values_span.begin(), values_span.end());
       out.second = Math::median(data);
       break;
     }
@@ -198,7 +202,7 @@ private:
   Interp interp;
   std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
   Image<value_type> tdi;
-  const std::optional<Statistic> statistic;
+  std::optional<Statistic> statistic;
 
   value_type get_tdi_multiplier(const DWI::Tractography::Mapping::Voxel &v) {
     if (!tdi.valid())
@@ -289,7 +293,7 @@ private:
   Image<value_type> image;
   std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
   Image<value_type> tdi;
-  const Statistic statistic;
+  Statistic statistic;
 
   value_type get_tdi_multiplier(const DWI::Tractography::Mapping::Voxel &v) {
     if (!tdi.valid())

@@ -452,7 +452,7 @@ void run() {
   const Operation op = enum_from_name<Operation>(argument[1]);
 
   const index_type max_fixels = get_option_value("number", 0);
-  if (max_fixels && op == Operation::COUNT)
+  if ((max_fixels != 0U) && op == Operation::COUNT)
     throw Exception(
         "\"count\" statistic is meaningless if constraining the number of fixels per voxel using the -number option");
 

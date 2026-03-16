@@ -371,7 +371,7 @@ private:
   Image<value_type> ak_img;
   Image<value_type> rk_img;
   std::vector<uint32_t> vals;
-  const ModulateChoice modulate;
+  ModulateChoice modulate;
   Eigen::MatrixXd mk_dirs;
   Eigen::MatrixXd mk_bmat, rk_bmat;
   Eigen::MatrixXd rk_dirs;
