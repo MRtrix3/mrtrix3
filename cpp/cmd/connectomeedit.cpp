@@ -23,8 +23,8 @@ using namespace MR::Connectome;
 using namespace MR::Math;
 using namespace App;
 
-const std::vector<std::string> operations = {
-    "to_symmetric", "upper_triangular", "lower_triangular", "transpose", "zero_diagonal"};
+enum class Operation { TO_SYMMETRIC, UPPER_TRIANGULAR, LOWER_TRIANGULAR, TRANSPOSE, ZERO_DIAGONAL };
+const std::vector<std::string> operations = lower_case_enums<Operation>();
 
 // clang-format off
 void usage() {
@@ -47,26 +47,26 @@ void usage() {
 void run() {
   MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
   MR::Connectome::check(connectome);
-  const int op = argument[1];
+  const Operation op = enum_from_name<Operation>(argument[1]);
   const std::string_view output_path = argument[2];
 
-  INFO("Applying \'" + str(operations[op]) + "\' transformation to the input connectome.");
+  INFO("Applying \'" + lowercase_enum_name(op) + "\' transformation to the input connectome.");
 
   switch (op) {
-  case 0:
+  case Operation::TO_SYMMETRIC:
     MR::Connectome::to_symmetric(connectome);
     break;
-  case 1:
+  case Operation::UPPER_TRIANGULAR:
     MR::Connectome::to_upper(connectome);
     break;
-  case 2:
+  case Operation::LOWER_TRIANGULAR:
     MR::Connectome::to_upper(connectome);
     connectome.transposeInPlace();
     break;
-  case 3:
+  case Operation::TRANSPOSE:
     connectome.transposeInPlace();
     break;
-  case 4:
+  case Operation::ZERO_DIAGONAL:
     connectome.matrix().diagonal().setZero();
     break;
   default:

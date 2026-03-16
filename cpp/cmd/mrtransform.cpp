@@ -40,11 +40,14 @@
 #include "registration/warp/compose.h"
 #include "registration/warp/helpers.h"
 
+#include <optional>
+
 using namespace MR;
 using namespace App;
 
 constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
-const std::vector<std::string> modulation_choices = {"fod", "jac"};
+enum class Modulation { FOD, JAC };
+const std::vector<std::string> modulation_choices = lower_case_enums<Modulation>();
 
 // clang-format off
 void usage() {
@@ -455,8 +458,10 @@ void run() {
 
   // Intensity / FOD modulation
   opt = get_options("modulate");
-  const bool modulate_fod = !opt.empty() && static_cast<int>(opt[0][0]) == 0;
-  const bool modulate_jac = !opt.empty() && static_cast<int>(opt[0][0]) == 1;
+  const std::optional<Modulation> modulation =
+      opt.empty() ? std::nullopt : std::optional<Modulation>(enum_from_name<Modulation>(opt[0][0]));
+  const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
+  const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 
   const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)

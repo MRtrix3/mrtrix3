@@ -29,7 +29,8 @@ using namespace App;
 
 constexpr ssize_t default_clean_scale = 2;
 
-const std::vector<std::string> filters = {"clean", "connect", "dilate", "erode", "fill", "median"};
+enum class FilterType { CLEAN, CONNECT, DILATE, ERODE, FILL, MEDIAN };
+const std::vector<std::string> filters = lower_case_enums<FilterType>();
 
 // clang-format off
 const OptionGroup CleanOption =
@@ -118,9 +119,10 @@ void run() {
 
   auto input_image = Image<value_type>::open(argument[0]);
 
-  int filter_index = argument[1];
+  const FilterType filter_index = enum_from_name<FilterType>(argument[1]);
 
-  if (filter_index == 0) { // Mask clean
+  switch (filter_index) {
+  case FilterType::CLEAN: { // Mask clean
     Filter::MaskClean filter(input_image,
                              std::string("applying mask cleaning filter to image ") + Path::basename(argument[0]));
     filter.set_scale(get_option_value("scale", default_clean_scale));
@@ -132,7 +134,7 @@ void run() {
     return;
   }
 
-  if (filter_index == 1) { // Connected components
+  case FilterType::CONNECT: { // Connected components
     Filter::ConnectedComponents filter(
         input_image, std::string("applying connected-component filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
@@ -168,7 +170,7 @@ void run() {
     return;
   }
 
-  if (filter_index == 2) { // Dilate
+  case FilterType::DILATE: { // Dilate
     Filter::Dilate filter(input_image, std::string("applying dilate filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
@@ -182,7 +184,7 @@ void run() {
     return;
   }
 
-  if (filter_index == 3) { // Erode
+  case FilterType::ERODE: { // Erode
     Filter::Erode filter(input_image, std::string("applying erode filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
@@ -196,7 +198,7 @@ void run() {
     return;
   }
 
-  if (filter_index == 4) { // Fill
+  case FilterType::FILL: { // Fill
     Filter::Fill filter(input_image, std::string("filling interior of image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
     if (!opt.empty()) {
@@ -212,7 +214,7 @@ void run() {
     return;
   }
 
-  if (filter_index == 5) { // Median
+  case FilterType::MEDIAN: { // Median
     Filter::Median filter(input_image, std::string("applying median filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("extent");
     if (!opt.empty())
@@ -224,5 +226,8 @@ void run() {
     auto output_image = Image<value_type>::create(argument[2], filter);
     filter(input_image, output_image);
     return;
+  }
+  default:
+    throw Exception("Unsupported mask filter");
   }
 }

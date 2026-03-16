@@ -27,8 +27,8 @@
 using namespace MR;
 using namespace App;
 
-enum class operator_type { LT, LE, GE, GT, UNDEFINED };
-const std::vector<std::string> operator_list = {"lt", "le", "ge", "gt"};
+enum class operator_type { LT, LE, GE, GT };
+const std::vector<std::string> operator_list = lower_case_enums<operator_type>();
 
 // clang-format off
 void usage() {
@@ -314,8 +314,6 @@ void apply(Image<value_type> &in,
   case operator_type::GT:
     func = [](const value_type in, const value_type ref) { return in > ref; };
     break;
-  case operator_type::UNDEFINED:
-    assert(0);
   }
 
   if (mask_out) {
@@ -421,8 +419,8 @@ void run() {
   bool mask_out = !get_options("out_masked").empty();
 
   auto opt = get_options("comparison");
-  operator_type comp = !opt.empty() ? operator_type(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]))
-                                    : (bottom >= 0 ? operator_type::LE : operator_type::GE);
+  operator_type comp =
+      !opt.empty() ? enum_from_name<operator_type>(opt[0][0]) : (bottom >= 0 ? operator_type::LE : operator_type::GE);
   if (invert) {
     switch (comp) {
     case operator_type::LT:
@@ -437,8 +435,6 @@ void run() {
     case operator_type::GT:
       comp = operator_type::LE;
       break;
-    case operator_type::UNDEFINED:
-      assert(0);
     }
   }
 
@@ -448,7 +444,6 @@ void run() {
     }
     if (!opt.empty()) {
       WARN("Option -comparison ignored: has no influence when no output image is specified");
-      comp = operator_type::UNDEFINED;
     }
     if (invert) {
       WARN("Option -invert ignored: has no influence when no output image is specified");

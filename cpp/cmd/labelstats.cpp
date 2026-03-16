@@ -28,7 +28,8 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> field_choices = {"mass", "centre"};
+enum class FieldChoice { MASS, CENTRE };
+const std::vector<std::string> field_choices = lower_case_enums<FieldChoice>();
 
 // clang-format off
 void usage() {
@@ -84,11 +85,11 @@ void run() {
 
   auto opt = get_options("output");
   if (!opt.empty()) {
-    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
-    case 0:
+    switch (enum_from_name<FieldChoice>(opt[0][0])) {
+    case FieldChoice::MASS:
       std::cout << masses;
       break;
-    case 1:
+    case FieldChoice::CENTRE:
       std::cout << coms;
       break;
     default:

@@ -28,7 +28,8 @@ using namespace MR;
 using namespace App;
 
 using value_type = float;
-const std::vector<std::string> modulate_choices = {"none", "fa", "eigval"};
+enum class ModulateChoice { NONE, FA, EIGVAL };
+const std::vector<std::string> modulate_choices = lower_case_enums<ModulateChoice>();
 constexpr ssize_t default_rk_numdirections = 300;
 
 // clang-format off
@@ -155,7 +156,7 @@ public:
             Image<value_type> &ak_img,
             Image<value_type> &rk_img,
             std::vector<uint32_t> &vals,
-            int modulate,
+            ModulateChoice modulate,
             Eigen::MatrixXd mk_dirs,
             int rk_ndirs)
       : mask_img(mask_img),
@@ -210,7 +211,7 @@ public:
     }
 
     double fa = 0.0;
-    if (fa_img.valid() || (vector_img.valid() && (modulate == 1)))
+    if (fa_img.valid() || (vector_img.valid() && (modulate == ModulateChoice::FA)))
       fa = DWI::tensor2FA(dt);
 
     /* output fa */
@@ -294,10 +295,18 @@ public:
       auto l = Loop(3)(vector_img);
       for (size_t i = 0; i < vals.size(); i++) {
         double fact = 1.0;
-        if (modulate == 1)
+        switch (modulate) {
+        case ModulateChoice::NONE:
+          break;
+        case ModulateChoice::FA:
           fact = fa;
-        else if (modulate == 2)
+          break;
+        case ModulateChoice::EIGVAL:
           fact = eigval(ith_eig[vals[i]]);
+          break;
+        default:
+          throw Exception("Unsupported modulation mode");
+        }
         vector_img.value() = eigvec(0, ith_eig[vals[i]]) * fact;
         l++;
         vector_img.value() = eigvec(1, ith_eig[vals[i]]) * fact;
@@ -362,7 +371,7 @@ private:
   Image<value_type> ak_img;
   Image<value_type> rk_img;
   std::vector<uint32_t> vals;
-  const int modulate;
+  const ModulateChoice modulate;
   Eigen::MatrixXd mk_dirs;
   Eigen::MatrixXd mk_bmat, rk_bmat;
   Eigen::MatrixXd rk_dirs;
@@ -463,7 +472,9 @@ void run() {
         throw Exception("eigenvalue/eigenvector number is out of bounds");
   }
 
-  float modulate = get_option_value("modulate", 1);
+  auto opt_modulate = get_options("modulate");
+  const ModulateChoice modulate =
+      opt_modulate.empty() ? ModulateChoice::FA : enum_from_name<ModulateChoice>(opt_modulate[0][0]);
 
   auto value_img = Image<value_type>();
   opt = get_options("value");

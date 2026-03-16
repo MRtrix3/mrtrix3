@@ -39,8 +39,8 @@ using namespace MR;
 using namespace App;
 
 constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::LINEAR;
-const std::vector<std::string> space_choices = {"voxel", "image1", "image2", "average"};
 enum class space_t { VOXEL, IMAGE1, IMAGE2, AVERAGE };
+const std::vector<std::string> space_choices = lower_case_enums<space_t>();
 constexpr space_t default_space = space_t::VOXEL;
 
 template <class ValueType>
@@ -170,7 +170,8 @@ void evaluate_voxelwise_msq(InType1 &in1,
 }
 
 enum MetricType { MeanSquared, CrossCorrelation };
-const std::vector<std::string> metric_choices = {"diff", "cc"};
+enum class MetricChoice { DIFF, CC };
+const std::vector<std::string> metric_choices = lower_case_enums<MetricChoice>();
 
 // clang-format off
 void usage() {
@@ -195,7 +196,7 @@ void usage() {
                      " image2: scanner space of image 2;"
                      " average: scanner space of the average affine transformation"
                      " of image 1 and 2;"
-                     " default: " + space_choices[static_cast<ssize_t>(default_space)] + ".")
+                     " default: " + lowercase_enum_name(default_space) + ".")
     + Argument ("iteration method").type_choice (space_choices)
 
   + Option ("interp", std::string("set the interpolation method to use when reslicing") +
@@ -230,14 +231,16 @@ using value_type = double;
 using MaskType = Image<bool>;
 
 void run() {
-  const space_t space = space_t(get_option_value<ssize_t>("space", static_cast<ssize_t>(default_space)));
+  auto opt = get_options("space");
+  const space_t space = opt.empty() ? default_space : enum_from_name<space_t>(opt[0][0]);
   const MR::Interp::interp_type interp =
       MR::Interp::interp_type(get_option_value<ssize_t>("interp", static_cast<ssize_t>(default_interp)));
 
   MetricType metric_type = MetricType::MeanSquared;
-  auto opt = get_options("metric");
+  opt = get_options("metric");
   if (!opt.empty()) {
-    if (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]) == 1) { // CC
+    const MetricChoice metric_choice = enum_from_name<MetricChoice>(opt[0][0]);
+    if (metric_choice == MetricChoice::CC) {
       if (space != space_t::AVERAGE)
         throw Exception("CC metric only implemented for use in average space");
       if (interp != MR::Interp::interp_type::LINEAR && interp != MR::Interp::interp_type::CUBIC)

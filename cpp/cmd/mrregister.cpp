@@ -39,8 +39,6 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> transformation_choices = {
-    "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear"};
 enum class transformation_t {
   RIGID,
   AFFINE,
@@ -50,6 +48,7 @@ enum class transformation_t {
   AFFINE_NONLINEAR,
   RIGID_AFFINE_NONLINEAR
 };
+const std::vector<std::string> transformation_choices = lower_case_enums<transformation_t>();
 constexpr transformation_t default_transformation_type = transformation_t::AFFINE_NONLINEAR;
 
 // clang-format off
@@ -112,7 +111,7 @@ void usage() {
   + Option ("type", std::string("the registration type.") +
                     " Valid choices are: "
                     + join(transformation_choices, ", ")
-                    + " (default: " + transformation_choices[static_cast<ssize_t>(default_transformation_type)] + ")")
+                    + " (default: " + lowercase_enum_name(default_transformation_type) + ")")
     + Argument ("choice").type_choice (transformation_choices)
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
@@ -180,8 +179,9 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
+  auto opt = get_options("type");
   const transformation_t registration_type =
-      transformation_t(get_option_value("type", static_cast<ssize_t>(default_transformation_type)));
+      opt.empty() ? default_transformation_type : enum_from_name<transformation_t>(opt[0][0]);
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;
@@ -223,7 +223,7 @@ void run() {
   bool do_reorientation = !reorientation_forbidden;
 
   Eigen::MatrixXd directions_cartesian;
-  auto opt = get_options("directions");
+  opt = get_options("directions");
   if (!opt.empty())
     directions_cartesian = Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(opt[0][0])).transpose();
 

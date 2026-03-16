@@ -24,7 +24,8 @@ using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
-const std::vector<std::string> transform_choices = {"first2real", "real2first", "voxel2real", "real2voxel", "fs2real"};
+enum class TransformChoice { First2Real, Real2First, Voxel2Real, Real2Voxel, Fs2Real };
+const std::vector<std::string> transform_choices = lower_case_enums<TransformChoice>();
 
 // clang-format off
 void usage() {
@@ -68,20 +69,20 @@ void run() {
   if (!opt.empty()) {
     auto H = Header::open(opt[0][1]);
     auto transform = std::make_unique<Surface::Filter::VertexTransform>(H);
-    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
-    case 0:
+    switch (enum_from_name<TransformChoice>(opt[0][0])) {
+    case TransformChoice::First2Real:
       transform->set_first2real();
       break;
-    case 1:
+    case TransformChoice::Real2First:
       transform->set_real2first();
       break;
-    case 2:
+    case TransformChoice::Voxel2Real:
       transform->set_voxel2real();
       break;
-    case 3:
+    case TransformChoice::Real2Voxel:
       transform->set_real2voxel();
       break;
-    case 4:
+    case TransformChoice::Fs2Real:
       transform->set_fs2real();
       break;
     default:

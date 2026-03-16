@@ -29,7 +29,8 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> choices = {"scale", "linear", "nonlinear"};
+enum class MatchType { SCALE, LINEAR, NONLINEAR };
+const std::vector<std::string> choices = lower_case_enums<MatchType>();
 
 // clang-format off
 void usage() {
@@ -200,14 +201,14 @@ void run() {
     check_dimensions(target, mask_target, 0, 3);
   }
 
-  switch (static_cast<MR::App::ParsedArgument::IntType>(argument[0])) {
-  case 0: // Scale
+  switch (enum_from_name<MatchType>(argument[0])) {
+  case MatchType::SCALE:
     match_linear(input, target, mask_input, mask_target, false);
     break;
-  case 1: // Linear
+  case MatchType::LINEAR:
     match_linear(input, target, mask_input, mask_target, true);
     break;
-  case 2: // Non-linear
+  case MatchType::NONLINEAR:
     match_nonlinear(input, target, mask_input, mask_target, get_option_value("bins", 0));
     break;
   default:

@@ -27,7 +27,8 @@ using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
-const std::vector<std::string> filters = {"smooth"};
+enum class FilterType { SMOOTH };
+const std::vector<std::string> filters = lower_case_enums<FilterType>();
 
 // clang-format off
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
@@ -86,8 +87,8 @@ void run() {
 
   // Apply the relevant filter
   std::unique_ptr<Filter::Base> filter;
-  int filter_index = argument[1];
-  if (filter_index == 0) {
+  const FilterType selected_filter = enum_from_name<FilterType>(argument[1]);
+  if (selected_filter == FilterType::SMOOTH) {
     const default_type spatial = get_option_value("smooth_spatial", Filter::default_smoothing_spatial_factor);
     const default_type influence = get_option_value("smooth_influence", Filter::default_smoothing_influence_factor);
     const std::string msg = in.size() > 1 ? "Applying smoothing filter to multiple meshes" : "";

@@ -31,7 +31,8 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> filters = {"demodulate", "fft", "gradient", "median", "smooth", "normalise", "zclean"};
+enum class FilterType { DEMODULATE, FFT, GRADIENT, MEDIAN, SMOOTH, NORMALISE, ZCLEAN };
+const std::vector<std::string> filters = lower_case_enums<FilterType>();
 
 // clang-format off
 const OptionGroup DemodulateOption = OptionGroup ("Options for demodulate filter")
@@ -151,12 +152,13 @@ void usage() {
 
 void run() {
 
-  const size_t filter_index = argument[1];
+  const FilterType filter_index = enum_from_name<FilterType>(argument[1]);
+  const std::string filter_name = lowercase_enum_name(filter_index);
 
   switch (filter_index) {
 
   // Phase demodulation
-  case 0: {
+  case FilterType::DEMODULATE: {
 
     Header H = Header::open(argument[0]);
     if (!H.datatype().is_complex())
@@ -193,7 +195,7 @@ void run() {
   }
 
   // FFT
-  case 1: {
+  case FilterType::FFT: {
     // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
     //   convert between cfloat and cdouble...
     auto input = Image<cdouble>::open(argument[0]);
@@ -246,7 +248,7 @@ void run() {
   }
 
   // Gradient
-  case 2: {
+  case FilterType::GRADIENT: {
     auto input = Image<float>::open(argument[0]);
     Filter::Gradient filter(input, !get_options("magnitude").empty());
 
@@ -265,7 +267,7 @@ void run() {
         stdev[dim] = filter.spacing(dim);
     }
     filter.compute_wrt_scanner(!get_options("scanner").empty());
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
     filter.set_stdev(stdev);
@@ -275,14 +277,14 @@ void run() {
   }
 
   // Median
-  case 3: {
+  case FilterType::MEDIAN: {
     auto input = Image<float>::open(argument[0]);
     Filter::Median filter(input);
 
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
@@ -292,7 +294,7 @@ void run() {
   }
 
   // Smooth
-  case 4: {
+  case FilterType::SMOOTH: {
     auto input = Image<float>::open(argument[0]);
     Filter::Smooth filter(input);
 
@@ -312,7 +314,7 @@ void run() {
     opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
@@ -323,14 +325,14 @@ void run() {
   }
 
   // Normalisation
-  case 5: {
+  case FilterType::NORMALISE: {
     auto input = Image<float>::open(argument[0]);
     Filter::Normalise filter(input);
 
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
@@ -340,17 +342,17 @@ void run() {
   }
 
   // Zclean
-  case 6: {
+  case FilterType::ZCLEAN: {
     auto input = Image<float>::open(argument[0]);
     Filter::ZClean filter(input);
 
     auto opt = get_options("maskin");
     if (opt.empty())
-      throw Exception(std::string(argument[1]) + " filter requires initial mask");
+      throw Exception(filter_name + " filter requires initial mask");
     Image<float> maskin = Image<float>::open(opt[0][0]);
     check_dimensions(maskin, input, 0, 3);
 
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 

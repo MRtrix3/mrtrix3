@@ -35,7 +35,8 @@ using namespace MR::DWI::Tractography;
 // TODO Make compatible with stats generic options?
 // - Some features would not be compatible due to potential presence of track weights
 
-const std::vector<std::string> field_choices = {"mean", "median", "std", "min", "max", "count"};
+enum class FieldChoice { MEAN, MEDIAN, STD, MIN, MAX, COUNT };
+const std::vector<std::string> field_choices = lower_case_enums<FieldChoice>();
 
 // clang-format off
 void usage() {
@@ -192,25 +193,25 @@ void run() {
     ssd += i->get_weight() * Math::pow2(i->get_length() - mean_length);
   const float stdev = sum_weights ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
 
-  std::vector<std::string> fields;
+  std::vector<FieldChoice> fields;
   auto opt = get_options("output");
   for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back(opt[n][0]);
+    fields.push_back(enum_from_name<FieldChoice>(opt[n][0]));
 
   if (!fields.empty()) {
 
     for (size_t n = 0; n < fields.size(); ++n) {
-      if (fields[n] == "mean")
+      if (fields[n] == FieldChoice::MEAN)
         std::cout << str(mean_length) << " ";
-      else if (fields[n] == "median")
+      else if (fields[n] == FieldChoice::MEDIAN)
         std::cout << str(median_length) << " ";
-      else if (fields[n] == "std")
+      else if (fields[n] == FieldChoice::STD)
         std::cout << str(stdev) << " ";
-      else if (fields[n] == "min")
+      else if (fields[n] == FieldChoice::MIN)
         std::cout << str(min_length) << " ";
-      else if (fields[n] == "max")
+      else if (fields[n] == FieldChoice::MAX)
         std::cout << str(max_length) << " ";
-      else if (fields[n] == "count")
+      else if (fields[n] == FieldChoice::COUNT)
         std::cout << count << " ";
     }
     std::cout << "\n";

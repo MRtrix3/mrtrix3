@@ -23,8 +23,10 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> dtypes = {"float32", "float64"};
-const std::vector<std::string> estimators = {"exp1", "exp2"};
+enum class DType { FLOAT32, FLOAT64 };
+enum class Estimator { EXP1, EXP2 };
+const std::vector<std::string> dtypes = lower_case_enums<DType>();
+const std::vector<std::string> estimators = lower_case_enums<Estimator>();
 
 // clang-format off
 void usage() {
@@ -339,7 +341,10 @@ void run() {
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
-  bool exp1 = get_option_value("estimator", 1) == 0; // default: Exp2 (unbiased estimator)
+  opt = get_options("estimator");
+  const Estimator estimator =
+      opt.empty() ? Estimator::EXP2 : enum_from_name<Estimator>(opt[0][0]); // default: Exp2 (unbiased estimator
+  const bool exp1 = estimator == Estimator::EXP1;
 
   if (std::min<uint32_t>(dwi.size(3), extent[0] * extent[1] * extent[2]) < 15) {
     WARN("The number of volumes or the patch size is small. This may lead to discretisation effects "
@@ -365,15 +370,17 @@ void run() {
     rank = Image<uint16_t>::create(opt[0][0], header);
   }
 
-  int prec = get_option_value("datatype", 0); // default: single precision
+  opt = get_options("datatype");
+  const DType precision = opt.empty() ? DType::FLOAT32 : enum_from_name<DType>(opt[0][0]); // default: single precision
+  int prec = static_cast<int>(precision);
   if (dwi.datatype().is_complex())
     prec += 2; // support complex input data
   switch (prec) {
-  case 0:
+  case static_cast<int>(DType::FLOAT32):
     INFO("select real float32 for processing");
     process_image<float>(dwi, mask, noise, rank, argument[1], extent, exp1);
     break;
-  case 1:
+  case static_cast<int>(DType::FLOAT64):
     INFO("select real float64 for processing");
     process_image<double>(dwi, mask, noise, rank, argument[1], extent, exp1);
     break;

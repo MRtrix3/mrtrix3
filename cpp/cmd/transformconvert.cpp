@@ -27,7 +27,8 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> operations = {"flirt_import", "itk_import"};
+enum class Operation { FLIRT_IMPORT, ITK_IMPORT };
+const std::vector<std::string> operations = lower_case_enums<Operation>();
 
 // clang-format off
 void usage() {
@@ -177,11 +178,11 @@ void parse_itk_trafo(std::string_view itk_file,
 
 void run() {
   const size_t num_inputs = argument.size() - 2;
-  const int op = argument[num_inputs];
+  const Operation op = enum_from_name<Operation>(argument[num_inputs]);
   const std::string_view output_path = argument.back();
 
   switch (op) {
-  case 0: { // flirt_import
+  case Operation::FLIRT_IMPORT: {
     if (num_inputs != 3)
       throw Exception("flirt_import requires 3 inputs");
     transform_type transform = File::Matrix::load_transform(argument[0]);
@@ -202,7 +203,7 @@ void run() {
     File::Matrix::save_transform(forward_transform.inverse(), output_path);
     break;
   }
-  case 1: { // ITK import
+  case Operation::ITK_IMPORT: {
     if (num_inputs != 1)
       throw Exception("itk_import requires 1 input, " + str(num_inputs) + " provided.");
 

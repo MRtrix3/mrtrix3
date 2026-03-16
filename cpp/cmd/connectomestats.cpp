@@ -41,7 +41,9 @@ using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
-const std::vector<std::string> algorithms = {"nbs", "tfnbs", "none"};
+enum class Algorithm { NBS, TFNBS, None };
+
+const std::vector<std::string> algorithms = lower_case_enums<Algorithm>();
 
 constexpr default_type default_tfnbs_dh = 0.1;
 constexpr default_type default_tfnbs_e = 0.4;
@@ -184,21 +186,21 @@ void run() {
 
   // Initialise enhancement algorithm
   std::shared_ptr<Stats::EnhancerBase> enhancer;
-  switch (static_cast<MR::App::ParsedArgument::IntType>(argument[1])) {
-  case 0: {
+  switch (enum_from_name<Algorithm>(argument[1])) {
+  case Algorithm::NBS: {
     auto opt = get_options("threshold");
     if (opt.empty())
       throw Exception("For NBS algorithm, -threshold option must be provided");
     enhancer.reset(new MR::Connectome::Enhance::NBS(num_nodes, opt[0][0]));
   } break;
-  case 1: {
+  case Algorithm::TFNBS: {
     std::shared_ptr<Stats::TFCE::EnhancerBase> base(new MR::Connectome::Enhance::NBS(num_nodes));
     enhancer.reset(new Stats::TFCE::Wrapper(base));
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
     if (!get_options("threshold").empty())
-      WARN(std::string(argument[1]) + " is a threshold-free algorithm; -threshold option ignored");
+      WARN(lowercase_enum_name(Algorithm::TFNBS) + " is a threshold-free algorithm; -threshold option ignored");
   } break;
-  case 2: {
+  case Algorithm::None: {
     enhancer.reset(new MR::Connectome::Enhance::PassThrough());
     if (!get_options("threshold").empty())
       WARN("No enhancement algorithm being used; -threshold option ignored");
