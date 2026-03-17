@@ -32,7 +32,6 @@ using namespace MR;
 using namespace App;
 
 enum class FilterType { DEMODULATE, FFT, GRADIENT, MEDIAN, SMOOTH, NORMALISE, ZCLEAN };
-const std::vector<std::string> filters = lower_case_enums<FilterType>();
 
 // clang-format off
 const OptionGroup DemodulateOption = OptionGroup ("Options for demodulate filter")
@@ -127,14 +126,13 @@ void usage() {
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are:"
-    " demodulate, fft, gradient, median, smooth, normalise, zclean."
+  + "The available filters are: " + join_enum<FilterType>() + "."
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
-  + Argument ("filter", "the type of filter to be applied").type_choice (filters)
+  + Argument ("filter", "the type of filter to be applied").type_choice<FilterType>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS

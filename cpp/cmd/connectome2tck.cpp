@@ -40,7 +40,7 @@ using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Connectome;
 
 enum class FileOutput { PER_EDGE, PER_NODE, SINGLE };
-const std::vector<std::string> file_outputs = lower_case_enums<FileOutput>();
+constexpr FileOutput default_file_output = FileOutput::PER_EDGE;
 
 // clang-format off
 const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the content / format of output files")
@@ -52,8 +52,8 @@ const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the
     + Option ("exclusive", "only select tracks that exclusively connect nodes from within the list of nodes of interest")
 
     + Option ("files", "select how the resulting streamlines will be grouped in output files."
-                       " Options are: per_edge, per_node, single (default: per_edge)")
-      + Argument ("option").type_choice (file_outputs)
+                       " Options are: " + MR::join_enum<FileOutput>(", ") + ". Default: " + MR::lowercase_enum_name(default_file_output) + ".")
+      + Argument ("option").type_choice<FileOutput>()
 
     + Option ("exemplars", "generate a mean connection exemplar per edge,"
                            " rather than keeping all streamlines "
@@ -254,7 +254,7 @@ void run() {
     WARN("List of nodes of interest not provided; -exclusive option will have no effect");
 
   opt = get_options("files");
-  const FileOutput file_format = opt.empty() ? FileOutput::PER_EDGE : enum_from_name<FileOutput>(opt[0][0]);
+  const FileOutput file_format = get_option_choice<FileOutput>("files", default_file_output);
 
   opt = get_options("exemplars");
   if (!opt.empty()) {

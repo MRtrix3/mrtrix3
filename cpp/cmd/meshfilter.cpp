@@ -62,7 +62,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
   + Argument ("filter", "the filter to apply;"
-                        " options are: smooth").type_choice (filters)
+                        " options are: " + join_enum<FilterType>() + ".").type_choice<FilterType>()
   + Argument ("output", "the output mesh file").type_file_out();
 
   OPTIONS

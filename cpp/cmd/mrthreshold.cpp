@@ -28,7 +28,6 @@ using namespace MR;
 using namespace App;
 
 enum class operator_type { LT, LE, GE, GT };
-const std::vector<std::string> operator_list = lower_case_enums<operator_type>();
 
 // clang-format off
 void usage() {
@@ -126,9 +125,9 @@ void usage() {
   + OptionGroup ("Threshold application modifiers")
 
   + Option ("comparison", "comparison operator to use when applying the threshold; "
-                          "options are: " + join(operator_list, ",")
+                          "options are: " + join_enum<operator_type>()
                           + " (default = \"le\" for -bottom; \"ge\" otherwise)")
-    + Argument ("choice").type_choice (operator_list)
+    + Argument ("choice").type_choice<operator_type>()
 
   + Option ("invert", "invert the output binary mask "
                       "(equivalent to flipping the operator;"
@@ -418,9 +417,8 @@ void run() {
 
   bool mask_out = !get_options("out_masked").empty();
 
-  auto opt = get_options("comparison");
-  operator_type comp =
-      !opt.empty() ? enum_from_name<operator_type>(opt[0][0]) : (bottom >= 0 ? operator_type::LE : operator_type::GE);
+  const operator_type default_comp = bottom >= 0 ? operator_type::LE : operator_type::GE;
+  operator_type comp = get_option_choice<operator_type>("comparison", default_comp);
   if (invert) {
     switch (comp) {
     case operator_type::LT:

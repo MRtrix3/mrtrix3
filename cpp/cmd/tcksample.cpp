@@ -38,7 +38,6 @@ using namespace MR;
 using namespace App;
 
 enum class Statistic { MEAN, MEDIAN, MIN, MAX };
-const std::vector<std::string> statistics = lower_case_enums<Statistic>();
 
 enum interp_type { NEAREST, LINEAR, PRECISE };
 
@@ -65,8 +64,8 @@ void usage() {
 
   OPTIONS
   + Option ("stat_tck", "compute some statistic from the values along each streamline;"
-                        " (options are: " + join(statistics, ",") + ")")
-    + Argument ("statistic").type_choice (statistics)
+                        " (options are: " + join_enum<Statistic>(",") + ")")
+    + Argument ("statistic").type_choice<Statistic>()
 
   + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
 
@@ -424,7 +423,7 @@ void run() {
 
   auto opt = get_options("stat_tck");
   const std::optional<Statistic> statistic =
-      !opt.empty() ? std::optional<Statistic>(enum_from_name<Statistic>(opt[0][0])) : std::nullopt;
+      opt.empty() ? std::nullopt : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
   const bool nointerp = !get_options("nointerp").empty();
   const bool precise = !get_options("precise").empty();
   if (nointerp && precise)

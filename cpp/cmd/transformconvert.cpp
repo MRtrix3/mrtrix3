@@ -28,7 +28,6 @@ using namespace MR;
 using namespace App;
 
 enum class Operation { FLIRT_IMPORT, ITK_IMPORT };
-const std::vector<std::string> operations = lower_case_enums<Operation>();
 
 // clang-format off
 void usage() {
@@ -59,7 +58,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
-                           " one of: " + join(operations, ", ")).type_choice (operations)
+                           " one of: " + join_enum<Operation>(", ")).type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 }

@@ -43,8 +43,6 @@ using Stats::PermTest::count_matrix_type;
 
 enum class Algorithm { NBS, TFNBS, None };
 
-const std::vector<std::string> algorithms = lower_case_enums<Algorithm>();
-
 constexpr default_type default_tfnbs_dh = 0.1;
 constexpr default_type default_tfnbs_e = 0.4;
 constexpr default_type default_tfnbs_h = 3.0;
@@ -84,7 +82,7 @@ void usage() {
   + Argument ("input", "a text file listing the file names of the input connectomes").type_file_in ()
 
   + Argument ("algorithm", "the algorithm to use in network-based clustering/enhancement."
-                           " Options are: " + join(algorithms, ", ")).type_choice (algorithms)
+                           " Options are: " + join_enum<Algorithm>() + ".").type_choice<Algorithm>()
 
   + Argument ("design", "the design matrix").type_file_in ()
 

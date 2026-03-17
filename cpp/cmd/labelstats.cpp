@@ -29,7 +29,6 @@ using namespace MR;
 using namespace App;
 
 enum class FieldChoice { MASS, CENTRE };
-const std::vector<std::string> field_choices = lower_case_enums<FieldChoice>();
 
 // clang-format off
 void usage() {
@@ -43,8 +42,8 @@ void usage() {
 
   OPTIONS
   + Option ("output", "output only the field specified;"
-                      " options are: " + join(field_choices, ","))
-    + Argument ("choice").type_choice (field_choices)
+                      " options are: " + join_enum<FieldChoice>() + ".")
+    + Argument ("choice").type_choice<FieldChoice>()
 
   + Option ("voxelspace", "report parcel centres of mass in voxel space"
                           " rather than scanner space");

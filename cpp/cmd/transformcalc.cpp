@@ -40,7 +40,6 @@ enum class Operation {
   ALIGN_VERTICES_RIGID,
   ALIGN_VERTICES_RIGID_SCALE
 };
-const std::vector<std::string> operations = lower_case_enums<Operation>();
 
 // clang-format off
 void usage() {
@@ -52,8 +51,8 @@ void usage() {
   ARGUMENTS
   + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
-                           " one of: " + join(operations, ", ") +
-                           " (see description section for details).").type_choice (operations)
+                           " one of: " + join_enum<Operation>(", ") +
+                           " (see description section for details).").type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
   EXAMPLES

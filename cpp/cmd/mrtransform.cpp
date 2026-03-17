@@ -47,7 +47,6 @@ using namespace App;
 
 constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
 enum class Modulation { FOD, JAC };
-const std::vector<std::string> modulation_choices = lower_case_enums<Modulation>();
 
 // clang-format off
 void usage() {
@@ -205,7 +204,7 @@ void usage() {
     + OptionGroup ("Fibre orientation distribution handling options")
 
     + Option ("modulate",
-        "Valid choices are:"
+        "Valid choices are: " + join_enum<Modulation>(", ") + "."
         " fod:"
         " modulate FODs during reorientation"
         " to preserve the apparent fibre density across fibre bundle widths"
@@ -214,7 +213,7 @@ void usage() {
         " modulate the image intensity with the determinant of the Jacobian"
         " of the warp of linear transformation "
         " to preserve the total intensity before and after the transformation.")
-      + Argument ("method").type_choice(modulation_choices)
+      + Argument ("method").type_choice<Modulation>()
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions"
@@ -459,7 +458,8 @@ void run() {
   // Intensity / FOD modulation
   opt = get_options("modulate");
   const std::optional<Modulation> modulation =
-      opt.empty() ? std::nullopt : std::optional<Modulation>(enum_from_name<Modulation>(opt[0][0]));
+      opt.empty() ? std::nullopt
+                  : std::optional<Modulation>(get_option_choice<Modulation>("modulate", Modulation::FOD));
   const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
   const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 

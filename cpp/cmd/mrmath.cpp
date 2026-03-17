@@ -34,7 +34,6 @@ using namespace MR;
 using namespace App;
 
 enum class Operation { MEAN, MEDIAN, SUM, PRODUCT, RMS, NORM, VAR, STD, MIN, MAX, ABSMAX, MAGMAX };
-const std::vector<std::string> operations = lower_case_enums<Operation>();
 
 // clang-format off
 void usage() {
@@ -86,7 +85,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
   + Argument ("operation", "the operation to apply;"
-                           " one of: " + join(operations, ", ") + ".").type_choice (operations)
+                           " options are: " + join_enum<Operation>() + ".").type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
