@@ -161,7 +161,7 @@ public:
     case Statistic::MEDIAN: {
       // Don't bother with a weighted median here
       std::vector<value_type> data;
-      tcb::span<const value_type> values_span(values.data(), values.size());
+      const tcb::span<const value_type> values_span(values.data(), values.size());
       data.assign(values_span.begin(), values_span.end());
       out.second = Math::median(data);
       break;
