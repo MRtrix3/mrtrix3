@@ -207,9 +207,10 @@ public:
     if (Base<ImageType>::out_of_bounds) {
       Vec out;
       if constexpr (N == Eigen::Dynamic) {
-        out.resize(ImageType::size(axis));
+        out = Vec::Constant(ImageType::size(axis), Base<ImageType>::out_of_bounds_value);
+      } else {
+        out.setConstant(Base<ImageType>::out_of_bounds_value);
       }
-      out.setConstant(Base<ImageType>::out_of_bounds_value);
       return out;
     }
 
@@ -237,8 +238,8 @@ public:
     return out;
   }
 
-  //! Convenience wrapper for row<3>(axis) to avoid dynamic allocation when only 3 values are required
-  FORCE_INLINE Eigen::Matrix<value_type, 3, 1> vec3(size_t axis) { return row<3>(axis); }
+  //! Convenience wrapper for row<3>(3) to avoid dynamic allocation when only 3 values are required
+  FORCE_INLINE Eigen::Matrix<value_type, 3, 1> vec3() { return row<3>(3); }
 
 protected:
   Eigen::Matrix<coef_type, 8, 1> factors;
