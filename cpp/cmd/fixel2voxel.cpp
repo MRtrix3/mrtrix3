@@ -493,11 +493,20 @@ void run() {
     check_dimensions(in_data, in_vol);
   }
 
-  if (op == Operation::PRODUCT || op == Operation::MIN || op == Operation::MAX || op == Operation::ABSMAX ||
-      op == Operation::MAGMAX || op == Operation::COUNT || op == Operation::COMPLEXITY || op == Operation::SF ||
-      op == Operation::NONE) {
+  switch (op) {
+  case Operation::PRODUCT:
+  case Operation::MIN:
+  case Operation::MAX:
+  case Operation::ABSMAX:
+  case Operation::MAGMAX:
+  case Operation::COUNT:
+  case Operation::COMPLEXITY:
+  case Operation::SF:
+  case Operation::NONE:
     if (in_vol.valid())
       WARN("Option -weighted has no meaningful interpretation for the operation specified; ignoring");
+    break;
+  default: break;
   }
 
   opt = get_options("fill");
