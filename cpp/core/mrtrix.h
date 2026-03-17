@@ -396,6 +396,12 @@ template <typename Enum> inline std::vector<std::string> lower_case_enums() {
   return result;
 }
 
+// Returns a concatenated string of the enum lowercase names, separated by the specified delimiter
+template <typename Enum> inline std::string join_enum(std::string_view delimeter = ",") {
+  const auto names = lower_case_enums<Enum>();
+  return join(std::vector<std::string>(names.begin(), names.end()), delimeter);
+}
+
 template <typename Enum> inline std::string lowercase_enum_name(Enum value) {
   return MR::lowercase(std::string(magic_enum::enum_name(value)));
 }
