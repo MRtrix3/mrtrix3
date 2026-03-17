@@ -209,7 +209,7 @@ void usage() {
             " cc (non-normalised negative cross correlation aka negative cross covariance)."
             " Default: diff)."
             " cc is only implemented for -space average and -interp linear and cubic.")
-    + Argument ("method").type_choice<MetricChoice>();
+    + Argument ("method").type_choice<MetricChoice>()
 
   + Option ("mask1", "mask for image 1")
     + Argument ("image").type_image_in ()
