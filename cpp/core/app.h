@@ -372,6 +372,27 @@ template <typename T> inline T get_option_value(std::string_view name, const T d
   }
 }
 
+//! Returns the enum choice selected for an option, and the default otherwise.
+/*! Only be used for command-line options that do not specify
+ * .allow_multiple(), and that have only one associated Argument declared
+ * using Argument::type_choice<Enum>().
+ */
+template <typename Enum> inline Enum get_option_choice(std::string_view name, const Enum default_value) {
+  static_assert(std::is_enum_v<Enum>, "Template parameter must be an enum type");
+
+  auto opt = get_options(name);
+  switch (opt.size()) {
+  case 0:
+    return default_value;
+  case 1:
+    if (opt[0].opt->size() == 1)
+      return enum_from_name<Enum>(std::string_view(opt[0][0]));
+  default:
+    assert(false);
+    throw Exception("Internal error parsing command-line option \"-" + name + "\"");
+  }
+}
+
 //! convenience function provided mostly to ease writing Exception strings
 std::string operator+(const char *const left, const App::ParsedArgument &right); // check_syntax off
 
