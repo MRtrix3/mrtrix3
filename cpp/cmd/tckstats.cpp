@@ -36,7 +36,6 @@ using namespace MR::DWI::Tractography;
 // - Some features would not be compatible due to potential presence of track weights
 
 enum class FieldChoice { MEAN, MEDIAN, STD, MIN, MAX, COUNT };
-const std::vector<std::string> field_choices = lower_case_enums<FieldChoice>();
 
 // clang-format off
 void usage() {
@@ -52,9 +51,9 @@ void usage() {
 
   + Option ("output", "output only the field specified."
                       " Multiple such options can be supplied if required."
-                      " Choices are: " + join (field_choices, ", ") + "."
+                      " Choices are: " + join_enum<FieldChoice>() + "."
                       " Useful for use in scripts.").allow_multiple()
-    + Argument ("field").type_choice(field_choices)
+    + Argument ("field").type_choice<FieldChoice>()
 
   + Option ("histogram", "output a histogram of streamline lengths")
     + Argument ("path").type_file_out()

@@ -31,7 +31,6 @@ enum class ConversionType {
   WarpFull2Deformation,
   WarpFull2Displacement
 };
-const std::vector<std::string> conversion_types = lower_case_enums<ConversionType>();
 
 // clang-format off
 void usage() {
@@ -54,7 +53,7 @@ void usage() {
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in()
   + Argument ("type", "the conversion type required;"
-                      " valid choices are: " + join(conversion_types, ", ")).type_choice(conversion_types)
+                      " valid choices are: " + join_enum<ConversionType>()).type_choice<ConversionType>()
   + Argument ("out", "the output warp image.").type_image_out();
 
   OPTIONS

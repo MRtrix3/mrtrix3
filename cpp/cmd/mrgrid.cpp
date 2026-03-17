@@ -33,7 +33,6 @@ using namespace App;
 
 constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
 enum class Operation { REGRID, CROP, PAD };
-const std::vector<std::string> operation_choices = lower_case_enums<Operation>();
 
 // clang-format off
 void usage() {
@@ -101,7 +100,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
   + Argument ("operation", "the operation to be performed;"
-                           " one of: " + join(operation_choices, ", ") + ".").type_choice (operation_choices)
+                           " one of: " + join_enum<Operation>() + ".").type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -210,7 +209,7 @@ void run() {
   // Out of bounds value
   const default_type out_of_bounds_value = get_option_value("fill", 0.0);
 
-  if (op == Operation::REGRID) { // regrid
+  if (op == Operation::REGRID) {
     INFO("operation: " + operation_name);
     Filter::Resize regrid_filter(input_header);
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);

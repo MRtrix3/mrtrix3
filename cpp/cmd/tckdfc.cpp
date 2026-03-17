@@ -40,7 +40,6 @@ using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 
 enum class WindowShape { RECTANGLE, TRIANGLE, COSINE, HANN, HAMMING, LANCZOS };
-const std::vector<std::string> windows = lower_case_enums<WindowShape>();
 
 constexpr default_type maximum_ratio_stepsize_voxelsize = 1.0 / 3.0;
 
@@ -99,7 +98,7 @@ void usage () {
   + Option ("dynamic", "generate a \"dynamic\" (4D) output image;"
                        " must additionally provide the shape and width (in volumes)"
                        " of the sliding window.")
-    + Argument ("shape").type_choice(windows)
+    + Argument ("shape").type_choice<WindowShape>()
     + Argument ("width").type_integer(3)
 
   + OptionGroup ("Options for setting the properties of the output image")
@@ -244,31 +243,31 @@ void run() {
 
     switch (window_shape) {
 
-    case WindowShape::RECTANGLE: // rectangular
+    case WindowShape::RECTANGLE:
       window.assign(window_width, 1.0);
       break;
 
-    case WindowShape::TRIANGLE: // triangle
+    case WindowShape::TRIANGLE:
       for (ssize_t i = 0; i != window_width; ++i)
         window[i] = 1.0 - (std::fabs(i - centre) / static_cast<default_type>(halfwidth));
       break;
 
-    case WindowShape::COSINE: // cosine
+    case WindowShape::COSINE:
       for (ssize_t i = 0; i != window_width; ++i)
         window[i] = std::sin(i * Math::pi / static_cast<default_type>(window_width - 1));
       break;
 
-    case WindowShape::HANN: // hann
+    case WindowShape::HANN:
       for (ssize_t i = 0; i != window_width; ++i)
         window[i] = 0.5 * (1.0 - std::cos(2.0 * Math::pi * i / static_cast<default_type>(window_width - 1)));
       break;
 
-    case WindowShape::HAMMING: // hamming
+    case WindowShape::HAMMING:
       for (ssize_t i = 0; i != window_width; ++i)
         window[i] = 0.53836 - (0.46164 * std::cos(2.0 * Math::pi * i / static_cast<default_type>(window_width - 1)));
       break;
 
-    case WindowShape::LANCZOS: // lanczos
+    case WindowShape::LANCZOS:
       for (ssize_t i = 0; i != window_width; ++i) {
         const default_type v = 2.0 * Math::pi * std::fabs(i - centre) / static_cast<default_type>(window_width - 1);
         window[i] = v ? std::max(0.0, (std::sin(v) / v)) : 1.0;

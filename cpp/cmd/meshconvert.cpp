@@ -25,7 +25,6 @@ using namespace App;
 using namespace MR::Surface;
 
 enum class TransformChoice { First2Real, Real2First, Voxel2Real, Real2Voxel, Fs2Real };
-const std::vector<std::string> transform_choices = lower_case_enums<TransformChoice>();
 
 // clang-format off
 void usage() {
@@ -43,8 +42,8 @@ void usage() {
 
   + Option ("transform", "transform vertices from one coordinate space to another,"
                          " based on a template image;"
-                         " options are: " + join(transform_choices, ", "))
-    + Argument ("mode").type_choice (transform_choices)
+                         " options are: " + join_enum<TransformChoice>() + ".")
+    + Argument ("mode").type_choice<TransformChoice>()
     + Argument ("image").type_image_in();
 
 }

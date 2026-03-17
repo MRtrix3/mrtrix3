@@ -41,7 +41,6 @@ using namespace MR;
 using namespace App;
 
 enum class algorithm_t { FACT, IFOD1, IFOD2, NULLDIST1, NULLDIST2, SD_STREAM, SEEDTEST, TENSOR_DET, TENSOR_PROB };
-const std::vector<std::string> algorithms = lower_case_enums<algorithm_t>();
 constexpr algorithm_t default_algorithm = algorithm_t::IFOD2;
 
 // clang-format off
@@ -212,9 +211,9 @@ void usage() {
   + Option ("algorithm",
             "specify the tractography algorithm to use."
             " Valid choices are: "
-            + join(algorithms, ", ")
+            + join_enum<algorithm_t>()
             + " (default: " + lowercase_enum_name(default_algorithm) + ").")
-    + Argument ("name").type_choice(algorithms)
+    + Argument ("name").type_choice<algorithm_t>()
 
   + DWI::Tractography::Tracking::TrackOption
 
@@ -248,8 +247,7 @@ void run() {
 
   Properties properties;
 
-  auto opt = get_options("algorithm");
-  const algorithm_t algorithm = opt.empty() ? default_algorithm : enum_from_name<algorithm_t>(opt[0][0]);
+  const algorithm_t algorithm = get_option_choice<algorithm_t>("algorithm", default_algorithm);
 
   ACT::load_act_properties(properties);
 
@@ -261,7 +259,7 @@ void run() {
   if (algorithm == algorithm_t::IFOD2)
     Algorithms::load_iFOD2_options(properties);
 
-  opt = get_options("output_seeds");
+  auto opt = get_options("output_seeds");
   if (!opt.empty())
     properties["seed_output"] = std::string(opt[0][0]);
 

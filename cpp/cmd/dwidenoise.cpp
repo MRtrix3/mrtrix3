@@ -25,8 +25,6 @@ using namespace App;
 
 enum class DType { FLOAT32, FLOAT64 };
 enum class Estimator { EXP1, EXP2 };
-const std::vector<std::string> dtypes = lower_case_enums<DType>();
-const std::vector<std::string> estimators = lower_case_enums<Estimator>();
 
 // clang-format off
 void usage() {
@@ -105,7 +103,7 @@ void usage() {
            " (single or double precision). "
            "For complex input data,"
            " this will select complex float32 or complex float64 datatypes.")
-    + Argument("float32/float64").type_choice(dtypes)
+    + Argument("float32/float64").type_choice<DType>()
 
   + Option("estimator",
            "Select the noise level estimator"
@@ -113,7 +111,7 @@ void usage() {
            " either: \n"
            "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
            "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
-    + Argument("Exp1/Exp2").type_choice(estimators);
+    + Argument("Exp1/Exp2").type_choice<Estimator>();
 
   COPYRIGHT =
       "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
@@ -341,9 +339,8 @@ void run() {
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
-  opt = get_options("estimator");
   const Estimator estimator =
-      opt.empty() ? Estimator::EXP2 : enum_from_name<Estimator>(opt[0][0]); // default: Exp2 (unbiased estimator
+      get_option_choice<Estimator>("estimator", Estimator::EXP2); // default: Exp2 (unbiased estimator)
   const bool exp1 = estimator == Estimator::EXP1;
 
   if (std::min<uint32_t>(dwi.size(3), extent[0] * extent[1] * extent[2]) < 15) {
@@ -370,8 +367,7 @@ void run() {
     rank = Image<uint16_t>::create(opt[0][0], header);
   }
 
-  opt = get_options("datatype");
-  const DType precision = opt.empty() ? DType::FLOAT32 : enum_from_name<DType>(opt[0][0]); // default: single precision
+  const DType precision = get_option_choice<DType>("datatype", DType::FLOAT32); // default: single precision
   int prec = static_cast<int>(precision);
   if (dwi.datatype().is_complex())
     prec += 2; // support complex input data

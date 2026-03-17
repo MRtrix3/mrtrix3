@@ -30,7 +30,6 @@ using namespace App;
 constexpr ssize_t default_clean_scale = 2;
 
 enum class FilterType { CLEAN, CONNECT, DILATE, ERODE, FILL, MEDIAN };
-const std::vector<std::string> filters = lower_case_enums<FilterType>();
 
 // clang-format off
 const OptionGroup CleanOption =
@@ -98,7 +97,7 @@ void usage() {
   ARGUMENTS
   + Argument("input", "the input mask.").type_image_in()
   + Argument("filter", "the name of the filter to be applied;"
-                       " options are: " + join(filters, ", ")).type_choice(filters)
+                       " options are: " + join_enum<FilterType>() + ".").type_choice<FilterType>()
   + Argument("output", "the output mask.").type_image_out();
 
   OPTIONS
@@ -122,7 +121,7 @@ void run() {
   const FilterType filter_index = enum_from_name<FilterType>(argument[1]);
 
   switch (filter_index) {
-  case FilterType::CLEAN: { // Mask clean
+  case FilterType::CLEAN: {
     Filter::MaskClean filter(input_image,
                              std::string("applying mask cleaning filter to image ") + Path::basename(argument[0]));
     filter.set_scale(get_option_value("scale", default_clean_scale));
@@ -134,7 +133,7 @@ void run() {
     return;
   }
 
-  case FilterType::CONNECT: { // Connected components
+  case FilterType::CONNECT: {
     Filter::ConnectedComponents filter(
         input_image, std::string("applying connected-component filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
@@ -170,7 +169,7 @@ void run() {
     return;
   }
 
-  case FilterType::DILATE: { // Dilate
+  case FilterType::DILATE: {
     Filter::Dilate filter(input_image, std::string("applying dilate filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
@@ -184,7 +183,7 @@ void run() {
     return;
   }
 
-  case FilterType::ERODE: { // Erode
+  case FilterType::ERODE: {
     Filter::Erode filter(input_image, std::string("applying erode filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
@@ -198,7 +197,7 @@ void run() {
     return;
   }
 
-  case FilterType::FILL: { // Fill
+  case FilterType::FILL: {
     Filter::Fill filter(input_image, std::string("filling interior of image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
     if (!opt.empty()) {
@@ -214,7 +213,7 @@ void run() {
     return;
   }
 
-  case FilterType::MEDIAN: { // Median
+  case FilterType::MEDIAN: {
     Filter::Median filter(input_image, std::string("applying median filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("extent");
     if (!opt.empty())

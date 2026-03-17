@@ -37,7 +37,7 @@ void usage() {
   + Argument ("input", "the input connectome.").type_file_in()
 
   + Argument ("operation", "the operation to apply,"
-                           " one of: " + join(operations, ", ") + ".").type_choice (operations)
+                           " one of: " + join_enum<Operation>() + ".").type_choice<Operation>()
 
   + Argument ("output", "the output connectome.").type_file_out();
 

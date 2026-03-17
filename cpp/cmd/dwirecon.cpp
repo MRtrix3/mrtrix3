@@ -41,7 +41,6 @@ constexpr default_type condition_number_product_threshold = 1000.0;
 // - "leave-one-out": Predict each intensity based on all observations excluding that one
 // - SHARD recon
 enum class Operation { COMBINE_PAIRS, COMBINE_PREDICTED };
-const std::vector<std::string> operations = lower_case_enums<Operation>();
 constexpr default_type default_combinepredicted_exponent = 1.0;
 
 // clang-format off
@@ -126,7 +125,7 @@ void usage() {
   ARGUMENTS
     + Argument ("input", "the input DWI series").type_image_in()
     + Argument ("operation", "the way in which output DWIs will be reconstructed;"
-                " one of: " + join(operations, ", ")).type_choice(operations)
+                " one of: " + join_enum<Operation>() + ")").type_choice<Operation>()
     + Argument ("output", "the output DWI series").type_image_out();
 
   OPTIONS

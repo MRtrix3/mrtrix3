@@ -30,7 +30,6 @@ using namespace MR;
 using namespace App;
 
 enum class MatchType { SCALE, LINEAR, NONLINEAR };
-const std::vector<std::string> choices = lower_case_enums<MatchType>();
 
 // clang-format off
 void usage() {
@@ -41,7 +40,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("type", "type of histogram matching to perform;"
-                        " options are: " + join(choices, ",")).type_choice (choices)
+                        " options are: " + join_enum<MatchType>() + ".").type_choice<MatchType>()
     + Argument ("input", "the input image to be modified").type_image_in ()
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();

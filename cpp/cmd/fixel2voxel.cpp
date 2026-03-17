@@ -52,7 +52,6 @@ enum class Operation {
   DEC_SCALED,
   NONE
 };
-const std::vector<std::string> operations = lower_case_enums<Operation>();
 
 // clang-format off
 
@@ -92,7 +91,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file").type_image_in()
-  + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice(operations)
+  + Argument ("operation", "the operation to apply, one of: " + join_enum<Operation>() + ".").type_choice<Operation>()
   + Argument ("image_out", "the output scalar image.").type_image_out();
 
   OPTIONS
@@ -460,7 +459,7 @@ void run() {
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
   H_out.keyval().erase(Fixel::n_fixels_key);
-  if (op == Operation::COUNT) { // count
+  if (op == Operation::COUNT) {
     H_out.ndim() = 3;
     H_out.datatype() = DataType::UInt8;
   } else if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) { // dec
@@ -538,12 +537,7 @@ void run() {
     loop.run(MagMax(in_data, max_fixels), in_index_image, out);
     break;
   case Operation::COUNT:
-    loop.run(
-        [](Image<index_type> &index, Image<float> &out) { // count
-          out.value() = index.value();
-        },
-        in_index_image,
-        out);
+    loop.run([](Image<index_type> &index, Image<float> &out) { out.value() = index.value(); }, in_index_image, out);
     break;
   case Operation::COMPLEXITY:
     loop.run(Complexity(in_data, max_fixels), in_index_image, out);

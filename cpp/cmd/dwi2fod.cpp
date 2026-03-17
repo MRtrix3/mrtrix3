@@ -30,7 +30,6 @@ using namespace MR;
 using namespace App;
 
 enum class Algorithm { CSD, MSMT_CSD };
-const std::vector<std::string> algorithms = lower_case_enums<Algorithm>();
 
 // clang-format off
 const OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
@@ -114,7 +113,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("algorithm", "the algorithm to use for FOD estimation. "
-                             "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
+                             "(options are: " + join_enum<Algorithm>() + ")").type_choice<Algorithm>()
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
     + Argument ("response odf", "pairs of input tissue response and output ODF images").type_file_in().type_image_out().allow_multiple();
 

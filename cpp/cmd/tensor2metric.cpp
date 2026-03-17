@@ -29,7 +29,7 @@ using namespace App;
 
 using value_type = float;
 enum class ModulateChoice { NONE, FA, EIGVAL };
-const std::vector<std::string> modulate_choices = lower_case_enums<ModulateChoice>();
+constexpr ModulateChoice default_modulate_choice = ModulateChoice::FA;
 constexpr ssize_t default_rk_numdirections = 300;
 
 // clang-format off
@@ -77,10 +77,9 @@ void usage() {
 
     + Option("modulate",
              "specify how to modulate the magnitude of the eigenvectors."
-             " Valid choices are:"
-             " none, FA, eigval"
-             " (default = FA).")
-      + Argument("choice").type_choice(modulate_choices)
+             " Valid choices are: " + join_enum<ModulateChoice>() +
+             " (default = " + lowercase_enum_name(default_modulate_choice) + ").")
+      + Argument("choice").type_choice<ModulateChoice>()
 
     + Option("cl",
              "compute the linearity metric of the diffusion tensor."
@@ -472,9 +471,7 @@ void run() {
         throw Exception("eigenvalue/eigenvector number is out of bounds");
   }
 
-  auto opt_modulate = get_options("modulate");
-  const ModulateChoice modulate =
-      opt_modulate.empty() ? ModulateChoice::FA : enum_from_name<ModulateChoice>(opt_modulate[0][0]);
+  const ModulateChoice modulate = get_option_choice<ModulateChoice>("modulate", default_modulate_choice);
 
   auto value_img = Image<value_type>();
   opt = get_options("value");
