@@ -506,7 +506,8 @@ void run() {
     if (in_vol.valid())
       WARN("Option -weighted has no meaningful interpretation for the operation specified; ignoring");
     break;
-  default: break;
+  default:
+    break;
   }
 
   opt = get_options("fill");
