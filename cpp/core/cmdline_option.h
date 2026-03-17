@@ -262,7 +262,7 @@ public:
   template <typename Enum> Argument &type_choice() {
     static_assert(std::is_enum_v<Enum>, "Template parameter must be an enum type");
     types.set(ArgTypeFlags::Choice);
-    choices = MR::lower_case_enums<Enum>();
+    choices = MR::lower_case_enum_names<Enum>();
     return *this;
   }
 

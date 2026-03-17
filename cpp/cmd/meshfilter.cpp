@@ -28,7 +28,7 @@ using namespace App;
 using namespace MR::Surface;
 
 enum class FilterType { SMOOTH };
-const std::vector<std::string> filters = lower_case_enums<FilterType>();
+const std::vector<std::string> filters = lower_case_enum_names<FilterType>();
 
 // clang-format off
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")

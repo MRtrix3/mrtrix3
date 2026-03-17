@@ -24,7 +24,7 @@ using namespace MR::Math;
 using namespace App;
 
 enum class Operation { TO_SYMMETRIC, UPPER_TRIANGULAR, LOWER_TRIANGULAR, TRANSPOSE, ZERO_DIAGONAL };
-const std::vector<std::string> operations = lower_case_enums<Operation>();
+const std::vector<std::string> operations = lower_case_enum_names<Operation>();
 
 // clang-format off
 void usage() {
