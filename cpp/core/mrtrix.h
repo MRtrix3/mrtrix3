@@ -385,9 +385,8 @@ template <typename T> inline std::string join(const std::vector<T> &V, std::stri
 
 std::string join(const char *const *null_terminated_array, std::string_view delimiter); // check_syntax off
 
-template <typename Enum> inline std::string enum_name(Enum value) { return std::string(magic_enum::enum_name(value)); }
-
-template <typename Enum> inline std::vector<std::string> lower_case_enums() {
+// Returns a vector of the lowercase names of the enum values, in the order they are defined in the enum.
+template <typename Enum> inline std::vector<std::string> lower_case_enum_names() {
   static constexpr auto names = magic_enum::enum_names<Enum>();
   std::vector<std::string> result;
   result.reserve(names.size());
@@ -396,21 +395,27 @@ template <typename Enum> inline std::vector<std::string> lower_case_enums() {
   return result;
 }
 
-// Returns a concatenated string of the enum lowercase names, separated by the specified delimiter
+// Returns a concatenated string of the enum lowercase names, separated by the specified delimiter.
 template <typename Enum> inline std::string join_enum(std::string_view delimeter = ",") {
-  const auto names = lower_case_enums<Enum>();
+  const auto names = lower_case_enum_names<Enum>();
   return join(std::vector<std::string>(names.begin(), names.end()), delimeter);
 }
 
+// Returns the case-sensitive name of the enum value.
+template <typename Enum> inline std::string enum_name(Enum value) { return std::string(magic_enum::enum_name(value)); }
+
+// Returns the lowercase name of the enum value.
 template <typename Enum> inline std::string lowercase_enum_name(Enum value) {
   return MR::lowercase(std::string(magic_enum::enum_name(value)));
 }
 
+// Converts a string to the corresponding enum value, ignoring case.
+// If no matching enum value is found, throws an exception.
 template <typename Enum> inline Enum enum_from_name(std::string_view name) {
   const auto value = magic_enum::enum_cast<Enum>(name, magic_enum::case_insensitive);
   if (!value.has_value()) {
     std::string error = "Unsupported value '" + std::string(name) + "'. Supported values are: ";
-    const auto names = lower_case_enums<Enum>();
+    const auto names = lower_case_enum_names<Enum>();
     error += MR::join(names, ", ");
     throw Exception(error);
   }
