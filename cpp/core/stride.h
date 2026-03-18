@@ -545,7 +545,6 @@ public:
   static Symbolic canonical(const size_t num_axes);
 };
 
-// TODO Consider whether axes of unity size should be given an actual stride of zero
 class Actual : public Base<MemIndex> {
 public:
   using Base<MemIndex>::value_type;
@@ -576,13 +575,7 @@ private:
   template <class HeaderType> std::vector<ArrayIndex> get_sizes(const HeaderType &) const;
 };
 
-// TODO Consider a class that stores stride information as specified by the user at the command-line
-// Here it may be important to disambiguate between:
-// - An explicit negative value
-// - An explicit positive value (need to detect the presence of "+")
-// - An implicit positive value (treat as permutation rather than symbolic)
-
-// When the header is a template,
+// When the input is a template HeaderType (but not an MR::Header),
 //   have no way of knowing whether the input is actual or symbolic;
 //   best compatibility is achieved by assuming the latter
 template <class HeaderType> Symbolic::Symbolic(const HeaderType &header) : Base(header.ndim(), Symbolic::invalid) {

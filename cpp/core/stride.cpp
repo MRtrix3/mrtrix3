@@ -177,22 +177,16 @@ bool Order::is_canonical() const {
   return true;
 }
 
-bool Order::is_sanitised() const {
-  if (!valid())
-    return false;
-  if (*std::min_element(data_.begin(), data_.end()) != 0)
-    return false;
-  if (*std::max_element(data_.begin(), data_.end()) != size() - 1)
-    return false;
-  return true;
-}
+bool Order::is_sanitised() const { return (valid()); }
 
 void Order::sanitise() { throw Exception("Cannot apply sanitise() operation to Stride::Order"); }
 
 bool Order::valid() const {
   if (empty())
     return false;
-  if (*std::min_element(data_.begin(), data_.end()) < 0)
+  if (*std::min_element(data_.begin(), data_.end()) != 0)
+    return false;
+  if (*std::max_element(data_.begin(), data_.end()) != size() - 1)
     return false;
   if (std::set<ArrayIndex>(data_.begin(), data_.end()).size() != size())
     return false;
@@ -257,8 +251,6 @@ Permutation::Permutation(const Order &order) {
   assert(!is_degenerate());
 }
 
-// TODO Confirm that this preserves duplicate symbolic strides
-//   (irrespective of sign) as duplicates in order?
 Permutation::Permutation(const Symbolic &symbolic) : Base(symbolic.size(), Permutation::invalid) {
   std::multimap<Symbolic::value_type, ArrayIndex> sorter;
   for (ArrayIndex axis = 0; axis != size(); ++axis) {
@@ -659,6 +651,8 @@ Actual::Actual(const Symbolic &symbolic, const std::vector<VoxelIndex> &sizes)
 }
 
 bool Actual::is_canonical() const {
+  if (!valid())
+    return false;
   value_type last = 0;
   for (ArrayIndex axis = 0; axis != size(); ++axis) {
     // Permissive of equality:
@@ -687,11 +681,7 @@ bool Actual::is_degenerate() const {
 bool Actual::valid() const {
   if (empty())
     return false;
-  const std::set<value_type> data_as_set(data_.begin(), data_.end());
-  // At least one stride of zero present -> invalid
-  if (data_as_set.find(value_type(0)) != data_as_set.end())
-    return false;
-  return true;
+  return (!std::any_of(data_.begin(), data_.end(), [](value_type value) { return value == Actual::invalid; }));
 }
 
 Order Actual::order() const { return permutation().order(); }

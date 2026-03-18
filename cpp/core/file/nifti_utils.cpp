@@ -610,19 +610,6 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
 
   // Ensure first 3 axes correspond to spatial dimensions
   //   while preserving original strides as much as possible
-  // TODO Refactor
-  // TODO The code that loops over image formats
-  //   to find the one that "claims" responsibility for writing the image
-  //   is here relying on mutability of the provided image header;
-  //   this is however an obfuscated side-effect.
-  //   Better (as would likely be the case elsewhere in the code base also)
-  //   would be for the return value of the function to be a struct
-  //   that encapsulates all of the derivatives of the function
-  //   (in this case that would be the symbolic strides of the output image,
-  //   which would be better encoded as a Stride::Symbolic rather than MR::Header::stride())
-  // TODO This function previously ensured that the sign of supra-spatial axes was preserved;
-  //   however I don't think this makes any sense given the NIfTI format doesn't support such?
-  // TODO Test this design
   const Stride::Symbolic spatial_symbolic = Stride::Symbolic(H).resized(3).sanitised();
   Stride::Permutation::vector_type nonspatial_permutation(Stride::Permutation::canonical(num_axes));
   for (ssize_t spatial_axis = 0; spatial_axis != 3; ++spatial_axis)

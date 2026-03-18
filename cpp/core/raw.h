@@ -138,8 +138,6 @@ template <typename ValueType> inline void store_native(const ValueType value, vo
   *as<ValueType>(address) = value;
 }
 
-// TODO Should functions below use pointer arithmetic rather than [] operator?
-
 //! fetch \a value in little-endian format from offset \a i from \a data
 template <typename ValueType> inline ValueType fetch_LE(const void *data, const MemIndex i) {
   return ByteOrder::LE(as<ValueType>(data)[i]);

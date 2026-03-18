@@ -36,9 +36,6 @@
 
 namespace MR {
 
-// TODO Remove?
-// constexpr int SpatiallyContiguous = -1;
-
 template <typename ValueType> class Image : public ImageBase<Image<ValueType>, ValueType> {
 public:
   using value_type = ValueType;
@@ -52,7 +49,6 @@ public:
   ~Image();
 
   //! used internally to instantiate Image objects
-  // TODO Check how Stride::List was being used here
   Image(const std::shared_ptr<Buffer> &, std::optional<const Stride::Symbolic> = std::nullopt);
 
   FORCE_INLINE bool valid() const { return bool(buffer); }
@@ -67,7 +63,7 @@ public:
   FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
   FORCE_INLINE VoxelIndex size(const ArrayIndex axis) const { return buffer->size(axis); }
   FORCE_INLINE default_type spacing(const ArrayIndex axis) const { return buffer->spacing(axis); }
-  FORCE_INLINE Stride::Actual::value_type stride(const ArrayIndex axis) const { return strides[axis]; } // TODO Refactor
+  FORCE_INLINE Stride::Actual::value_type stride(const ArrayIndex axis) const { return strides[axis]; }
 
   //! offset to current voxel from start of data
   FORCE_INLINE MemIndex offset() const { return data_offset; }
@@ -82,18 +78,8 @@ public:
   FORCE_INLINE VoxelIndex get_index(const ArrayIndex axis) const { return x[axis]; }
   //! move position of current voxel location along \a axis
   FORCE_INLINE void move_index(const ArrayIndex axis, const VoxelIndex increment) {
-    // TODO Was it attempting to include these that was resulting in compilation failure?
-    // -> No...
-    // VAR(axis);
-    // VAR(increment);
-    // VAR(data_offset);
-    // VAR(x);
     data_offset += stride(axis) * increment;
-    // VAR(data_offset);
     x[axis] += increment;
-    // VAR(x);
-    // if (increment != 0)
-    //   throw Exception();
   }
 
   FORCE_INLINE bool is_direct_io() const { return data_pointer; }
@@ -155,7 +141,6 @@ public:
   /*!
    * this will preload the data into RAM if the datatype on file doesn't
    * match that on file (or if any scaling is applied to the data).
-   * TODO This function isn't actually checking for any prescaling!
    * The optional \a with_strides argument is used to additionally enforce
    * preloading if the strides aren't compatible with those specified.
    *
@@ -351,9 +336,6 @@ template <typename ValueType> Image<ValueType>::~Image() {
   }
 }
 
-// TODO Might need to split into two functions:
-// - In some circumstances one may only wish to assert a particular order of axes;
-// - In others it may be very specific symbolic strides that are desired
 template <typename ValueType>
 Image<ValueType> Image<ValueType>::with_direct_io(const Stride::Permutation &with_permutation) {
   assert(with_permutation.valid());
@@ -373,7 +355,8 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
   if (!buffer.unique())
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
-  bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
+  bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1) ||
+                 !(buffer->intensity_offset() == 0.0 && buffer->intensity_scale() == 1.0);
   const Stride::Actual current_actual(Stride::Actual(*this));
   std::vector<VoxelIndex> sizes(ndim());
   for (ArrayIndex axis = 0; axis != ndim(); ++axis)

@@ -32,7 +32,6 @@ namespace MR {
 //   with any number of axes, to an index within a 1D vector of data.
 class Voxel2Vector {
 public:
-  // TODO Consider promoting
   typedef uint32_t index_t;
 
   static const index_t invalid = std::numeric_limits<index_t>::max();
@@ -43,7 +42,10 @@ public:
 
   Voxel2Vector(const Header &header)
       : forward(Image<index_t>::scratch(header, "Voxel to vector index conversion scratch image")) {
-    reverse.reserve(voxel_count(header));
+    const auto num_voxels = voxel_count(header);
+    if (static_cast<index_t>(num_voxels) > std::numeric_limits<index_t>::max())
+      throw Exception("Too many voxels in image to support serialisation");
+    reverse.reserve(num_voxels);
     index_t counter = 0;
     for (auto l = Loop(header)(forward); l; ++l) {
       forward.value() = counter++;

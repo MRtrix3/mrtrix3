@@ -240,8 +240,6 @@ namespace MR {
  */
 
 namespace {
-// TODO Might be possible to remove some of these
-//   (or move some of the complexity from the calling code into here?)
 template <class StrideOrderType> Axes::Subset get_inner_axes(const StrideOrderType &axes, const size_t num_inner_axes) {
   assert(num_inner_axes > 0);
   return static_cast<Axes::Subset>(axes.head(num_inner_axes));
@@ -407,8 +405,6 @@ ThreadedLoop(const HeaderType &source, const Axes::Subset &axes, const size_t nu
 
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
-// TODO Note that order of "from_axis / to_axis" and "num_inner_axes" flips here;
-//   would be safer to define a class encapsulating an axis range
 template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop(Axes::Subset()))> ThreadedLoop(const HeaderType &source,
                                                                          const ArrayIndex from_axis = 0,

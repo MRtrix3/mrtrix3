@@ -65,41 +65,36 @@ TEST_F(StrideOrderTest, ConstructFromPermutation) {
   EXPECT_TRUE(order.is_canonical());
 }
 
-TEST_F(StrideOrderTest, IsCanonical) {
-  Stride::Order canonical_order(std::vector<ArrayIndex>{0, 1, 2, 3});
-  EXPECT_TRUE(canonical_order.is_canonical());
+TEST_F(StrideOrderTest, StatusFunctions) {
+  Stride::Order canonical(std::vector<ArrayIndex>{0, 1, 2, 3});
+  EXPECT_TRUE(canonical.is_canonical());
+  EXPECT_TRUE(canonical.is_sanitised());
+  EXPECT_TRUE(canonical.valid());
 
-  Stride::Order non_canonical(std::vector<ArrayIndex>{3, 0, 1, 2});
-  EXPECT_FALSE(non_canonical.is_canonical());
-}
-
-TEST_F(StrideOrderTest, IsSanitised) {
-  Stride::Order sanitised(std::vector<ArrayIndex>{0, 1, 2, 3});
-  EXPECT_TRUE(sanitised.is_sanitised());
+  Stride::Order noncanonical(std::vector<ArrayIndex>{3, 0, 1, 2});
+  EXPECT_FALSE(noncanonical.is_canonical());
+  EXPECT_TRUE(noncanonical.is_sanitised());
+  EXPECT_TRUE(noncanonical.valid());
 
   Stride::Order invalid_min(std::vector<ArrayIndex>{1, 2, 3, 4});
+  EXPECT_FALSE(invalid_min.is_canonical());
   EXPECT_FALSE(invalid_min.is_sanitised());
+  EXPECT_FALSE(invalid_min.valid());
 
   Stride::Order invalid_max(std::vector<ArrayIndex>{0, 1, 2, 4});
+  EXPECT_FALSE(invalid_max.is_canonical());
   EXPECT_FALSE(invalid_max.is_sanitised());
+  EXPECT_FALSE(invalid_max.valid());
 
   Stride::Order duplicate(std::vector<ArrayIndex>{0, 1, 1, 3});
+  EXPECT_FALSE(duplicate.is_canonical());
   EXPECT_FALSE(duplicate.is_sanitised());
-
-  Stride::Order uninitialised(std::vector<ArrayIndex>{0, 1, 2, -1});
-  EXPECT_FALSE(uninitialised.is_sanitised());
-}
-
-// TODO Sort out distinction between is_sanitised() and valid() for Order class
-TEST_F(StrideOrderTest, Valid) {
-  Stride::Order valid_order(std::vector<ArrayIndex>{2, 0, 1, 3});
-  EXPECT_TRUE(valid_order.valid());
-
-  Stride::Order duplicate(std::vector<ArrayIndex>{0, 1, 1, 3});
   EXPECT_FALSE(duplicate.valid());
 
-  Stride::Order negative(std::vector<ArrayIndex>{-1, 0, 1, 2});
-  EXPECT_FALSE(negative.valid());
+  Stride::Order uninitialised(std::vector<ArrayIndex>{0, 1, 2, -1});
+  EXPECT_FALSE(uninitialised.is_canonical());
+  EXPECT_FALSE(uninitialised.is_sanitised());
+  EXPECT_FALSE(uninitialised.valid());
 }
 
 TEST_F(StrideOrderTest, HeadAndTail) {
@@ -187,40 +182,58 @@ TEST_F(StridePermutationTest, ConstructFromSymbolicInvalid) {
   EXPECT_EQ(perm[4], 0);
 }
 
-TEST_F(StridePermutationTest, IsCanonical) {
+TEST_F(StridePermutationTest, ConstructFromSymbolicTies) {
+  Stride::Symbolic symbolic({1, 1, 1, 2});
+  Stride::Permutation perm(symbolic);
+  EXPECT_EQ(perm.size(), 4);
+  EXPECT_EQ(perm[0], 0);
+  EXPECT_EQ(perm[1], 0);
+  EXPECT_EQ(perm[2], 0);
+  EXPECT_EQ(perm[3], 1);
+}
+
+TEST_F(StridePermutationTest, StatusFunctions) {
   Stride::Permutation canonical({0, 1, 2, 3});
   EXPECT_TRUE(canonical.is_canonical());
+  EXPECT_FALSE(canonical.is_degenerate());
+  EXPECT_TRUE(canonical.is_sanitised());
+  EXPECT_TRUE(canonical.valid());
 
-  Stride::Permutation non_canonical({1, 0, 2, 3});
-  EXPECT_FALSE(non_canonical.is_canonical());
-}
-
-TEST_F(StridePermutationTest, IsDegenerate) {
-  Stride::Permutation valid({0, 1, 2, 3});
-  EXPECT_FALSE(valid.is_degenerate());
+  Stride::Permutation noncanonical({1, 0, 2, 3});
+  EXPECT_FALSE(noncanonical.is_canonical());
+  EXPECT_FALSE(noncanonical.is_degenerate());
+  EXPECT_TRUE(noncanonical.is_sanitised());
+  EXPECT_TRUE(noncanonical.valid());
 
   Stride::Permutation degenerate_one({0, 1, 1, 2});
+  EXPECT_FALSE(degenerate_one.is_canonical());
   EXPECT_TRUE(degenerate_one.is_degenerate());
+  EXPECT_FALSE(degenerate_one.is_sanitised());
+  EXPECT_TRUE(degenerate_one.valid());
 
   Stride::Permutation degenerate_two({0, 1, 1, 3});
+  EXPECT_FALSE(degenerate_two.is_canonical());
   EXPECT_TRUE(degenerate_two.is_degenerate());
-}
-
-TEST_F(StridePermutationTest, IsSanitised) {
-  Stride::Permutation sanitised({0, 1, 2, 3});
-  EXPECT_TRUE(sanitised.is_sanitised());
+  EXPECT_FALSE(degenerate_two.is_sanitised());
+  EXPECT_TRUE(degenerate_two.valid());
 
   Stride::Permutation invalid_min({1, 2, 3, 4});
+  EXPECT_FALSE(invalid_min.is_canonical());
+  EXPECT_FALSE(invalid_min.is_degenerate());
   EXPECT_FALSE(invalid_min.is_sanitised());
+  EXPECT_TRUE(invalid_min.valid());
 
   Stride::Permutation invalid_max({0, 1, 2, 5});
+  EXPECT_FALSE(invalid_max.is_canonical());
+  EXPECT_FALSE(invalid_max.is_degenerate());
   EXPECT_FALSE(invalid_max.is_sanitised());
-
-  Stride::Permutation duplicate({0, 1, 1, 3});
-  EXPECT_FALSE(duplicate.is_sanitised());
+  EXPECT_TRUE(invalid_max.valid());
 
   Stride::Permutation invalid_present({0, 1, 2, -1});
+  EXPECT_FALSE(invalid_present.is_canonical());
+  EXPECT_FALSE(invalid_present.is_degenerate());
   EXPECT_FALSE(invalid_present.is_sanitised());
+  EXPECT_FALSE(invalid_present.valid());
 }
 
 TEST_F(StridePermutationTest, SanitiseNoChange) {
@@ -253,15 +266,6 @@ TEST_F(StridePermutationTest, SanitiseDuplicate) {
 TEST_F(StridePermutationTest, SanitiseInvalidPresent) {
   Stride::Permutation invalid_present({2, 0, -1, 1});
   EXPECT_THROW(invalid_present.sanitise(), MR::Exception);
-}
-
-// TODO Sort out difference between is_sanitised() and valid() for Permutation
-TEST_F(StridePermutationTest, Valid) {
-  Stride::Permutation valid({0, 1, 2, 3});
-  EXPECT_TRUE(valid.valid());
-
-  Stride::Permutation negative({-1, 0, 1, 2});
-  EXPECT_FALSE(negative.valid());
 }
 
 TEST_F(StridePermutationTest, Head) {
@@ -357,53 +361,48 @@ TEST_F(StrideSymbolicTest, ConstructFromActualWithTies) {
   EXPECT_TRUE(symbolic.is_degenerate());
 }
 
-TEST_F(StrideSymbolicTest, IsCanonical) {
+TEST_F(StrideSymbolicTest, StatusFunctions) {
   Stride::Symbolic canonical({1, 2, 3, 4});
   EXPECT_TRUE(canonical.is_canonical());
+  EXPECT_FALSE(canonical.is_degenerate());
+  EXPECT_TRUE(canonical.is_sanitised());
+  EXPECT_TRUE(canonical.valid());
 
   Stride::Symbolic permuted({3, 1, 2, 4});
   EXPECT_FALSE(permuted.is_canonical());
+  EXPECT_FALSE(permuted.is_degenerate());
+  EXPECT_TRUE(permuted.is_sanitised());
+  EXPECT_TRUE(permuted.valid());
 
   Stride::Symbolic negative({-1, 2, 3, 4});
   EXPECT_FALSE(negative.is_canonical());
-}
+  EXPECT_FALSE(negative.is_degenerate());
+  EXPECT_TRUE(negative.is_sanitised());
+  EXPECT_TRUE(negative.valid());
 
-// TODO Is is_degenerate() really required, or is the valid() / is_sanitised() adequate?
-TEST_F(StrideSymbolicTest, IsDegenerate) {
-  Stride::Symbolic valid({1, 2, 3, 4});
-  EXPECT_FALSE(valid.is_degenerate());
+  Stride::Symbolic degenerate_exact({1, 2, 2, 4});
+  EXPECT_FALSE(degenerate_exact.is_canonical());
+  EXPECT_TRUE(degenerate_exact.is_degenerate());
+  EXPECT_FALSE(degenerate_exact.is_sanitised());
+  EXPECT_TRUE(degenerate_exact.valid());
 
-  Stride::Symbolic::vector_type degenerate_vec{1, 2, 2, 4};
-  auto degenerate = Stride::Symbolic(degenerate_vec);
-  EXPECT_TRUE(degenerate.is_degenerate());
-  degenerate.sanitise();
-  EXPECT_FALSE(degenerate.is_degenerate());
-}
+  Stride::Symbolic degenerate_flipped({1, 2, -2, 4});
+  EXPECT_FALSE(degenerate_flipped.is_canonical());
+  EXPECT_TRUE(degenerate_flipped.is_degenerate());
+  EXPECT_FALSE(degenerate_flipped.is_sanitised());
+  EXPECT_TRUE(degenerate_flipped.valid());
 
-TEST_F(StrideSymbolicTest, IsSanitised) {
-  Stride::Symbolic sanitised({1, 2, 3, 4});
-  EXPECT_TRUE(sanitised.is_sanitised());
-
-  Stride::Symbolic invalid_min({0, 2, 3, 4});
-  EXPECT_FALSE(invalid_min.is_sanitised());
+  Stride::Symbolic invalid_present({0, 2, 3, 4});
+  EXPECT_FALSE(invalid_present.is_canonical());
+  EXPECT_FALSE(invalid_present.is_degenerate());
+  EXPECT_FALSE(invalid_present.is_sanitised());
+  EXPECT_FALSE(invalid_present.valid());
 
   Stride::Symbolic invalid_max({1, 2, 3, 5});
+  EXPECT_FALSE(invalid_max.is_canonical());
+  EXPECT_FALSE(invalid_max.is_degenerate());
   EXPECT_FALSE(invalid_max.is_sanitised());
-
-  Stride::Symbolic duplicate({1, 2, 2, 4});
-  EXPECT_FALSE(duplicate.is_sanitised());
-}
-
-TEST_F(StrideSymbolicTest, Valid) {
-  Stride::Symbolic valid({1, 2, 3, 4});
-  EXPECT_TRUE(valid.valid());
-
-  Stride::Symbolic::vector_type invalid_vec{1, 0, 3, 4};
-  Stride::Symbolic invalid(invalid_vec);
-  EXPECT_FALSE(invalid.valid());
-
-  invalid.sanitise();
-  EXPECT_TRUE(invalid.valid());
+  EXPECT_TRUE(invalid_max.valid());
 }
 
 TEST_F(StrideSymbolicTest, Flip) {
@@ -505,12 +504,6 @@ TEST_F(StrideSymbolicTest, Conform) {
     EXPECT_EQ(symbolic[2], 3);
     EXPECT_EQ(symbolic[3], 4);
   }
-  // TODO Suspect this is different:
-  //   the claim in MR::Stride::Legacy seems to refer to a permutation rather than a symbolic conformation
-  // TODO There might be a way to disambiguate this at the command-line:
-  //   use a custom parser that tracks whether a positive symbolic stride is implicit or explicit;
-  //   if implicit, treat as an axis permutation;
-  //   if explicit, force that symbolic stride
   {
     Stride::Symbolic symbolic({-1, 2, -3, 4});
     Stride::Symbolic desired({1, 2, 3, 0});
@@ -630,27 +623,37 @@ TEST_F(StrideActualTest, ConstructFromMockHeader) {
   EXPECT_EQ(actual[2], 200);
 }
 
-TEST_F(StrideActualTest, IsCanonical) {
+TEST_F(StrideActualTest, StatusFunctions) {
   Stride::Actual canonical({1, 10, 100, 1000});
   EXPECT_TRUE(canonical.is_canonical());
+  EXPECT_FALSE(canonical.is_degenerate());
+  EXPECT_TRUE(canonical.is_sanitised());
+  EXPECT_TRUE(canonical.valid());
 
   // Perfectly sane result if the third axis were of size 1
   Stride::Actual duplicate({1, 10, 100, 100});
   EXPECT_TRUE(duplicate.is_canonical());
+  EXPECT_TRUE(duplicate.is_degenerate());
+  EXPECT_TRUE(duplicate.is_sanitised());
+  EXPECT_TRUE(duplicate.valid());
 
   Stride::Actual permuted({100, 1, 10, 1000});
   EXPECT_FALSE(permuted.is_canonical());
+  EXPECT_FALSE(permuted.is_degenerate());
+  EXPECT_TRUE(permuted.is_sanitised());
+  EXPECT_TRUE(permuted.valid());
 
   Stride::Actual negative({-1, 10, 100, 1000});
   EXPECT_FALSE(negative.is_canonical());
-}
+  EXPECT_FALSE(negative.is_degenerate());
+  EXPECT_TRUE(negative.is_sanitised());
+  EXPECT_TRUE(negative.valid());
 
-TEST_F(StrideActualTest, Valid) {
-  Stride::Actual valid({1, 10, 100, 1000});
-  EXPECT_TRUE(valid.valid());
-
-  Stride::Actual with_zero({0, 10, 100, 1000});
-  EXPECT_FALSE(with_zero.valid());
+  Stride::Actual invalid_present({0, 10, 100, 1000});
+  EXPECT_FALSE(invalid_present.is_canonical());
+  EXPECT_FALSE(invalid_present.is_degenerate());
+  EXPECT_FALSE(invalid_present.is_sanitised());
+  EXPECT_FALSE(invalid_present.valid());
 }
 
 TEST_F(StrideActualTest, ToSymbolicCanonical) {

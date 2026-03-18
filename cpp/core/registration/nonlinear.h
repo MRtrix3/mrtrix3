@@ -509,7 +509,6 @@ public:
       throw Exception("CC radius needs to be larger than 1");
     use_cc = true;
     INFO("Cross correlation radius: " + str(radius));
-    // TODO Should this be floor(), round(), ceil()?
     cc_extent = CuboidExtent(radius * 2 + 1);
   }
 

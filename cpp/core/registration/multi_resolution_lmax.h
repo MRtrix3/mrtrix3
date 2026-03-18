@@ -62,7 +62,6 @@ ImageType multi_resolution_lmax(ImageType &input,
                                 const default_type scale_factor,
                                 const bool do_reorientation,
                                 const std::vector<MultiContrastSetting> &contrast,
-                                // TODO Can this be changed to smart pointer or std::optional?
                                 std::vector<MultiContrastSetting> *contrast_updated = nullptr) {
 
   if (input.ndim() == 3)

@@ -398,9 +398,6 @@ Loop(const ImageType &source,
      const ArrayIndex axis_to = -1,
      typename std::enable_if<std::is_class<ImageType>::value && !std::is_same<ImageType, std::string>::value,
                              int>::type = 0) {
-  // TODO Pretty sure this is flawed order:
-  // Need to first get the order of all axes,
-  //   and only then remove from that ordered list the unwanted axes
   return {static_cast<Axes::Subset>(Stride::Symbolic(source).order().subset(axis_from, axis_to))};
 }
 

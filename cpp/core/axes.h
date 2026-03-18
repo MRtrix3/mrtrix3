@@ -23,7 +23,6 @@
 
 #include "types.h"
 
-// TODO Rename to "SpatialAxes"?
 namespace MR::Axes {
 
 class Subset : public std::vector<ArrayIndex> {
@@ -36,7 +35,6 @@ public:
   Subset tail(const ssize_t count) const;
 };
 
-// TODO Change to 8-bit integer & define invalid value
 class permutations_type : public std::array<uint8_t, 3> {
 public:
   using BaseType = std::array<uint8_t, 3>;
