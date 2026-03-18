@@ -47,8 +47,8 @@ SPHERICAL_OPERATION_SETS = (['convert'],
 DEFAULT_NUMBER = 10000
 DEFAULT_THRESHOLD = 0.95
 
-FORMATS = ('spherical', 'unitspherical', '3vector', 'unit3vector')
-DEFAULT_FORMAT = '3vector'
+FORMATS = ('spherical', 'unitspherical', 'cartesian', 'unitcartesian')
+DEFAULT_FORMAT = 'cartesian'
 REFERENCES = ('xyz', 'ijk', 'fsl')
 DEFAULT_REFERENCE = 'xyz'
 
@@ -199,9 +199,9 @@ class EuclideanTransform(Operation):
   def cmd(self, _, in_path, out_path):
     run.command(['peaksconvert', in_path, out_path,
                  '-in_reference', self.reference,
-                 '-in_format', '3vector',
+                 '-in_format', 'cartesian',
                  '-out_reference', 'xyz',
-                 '-out_format', '3vector']
+                 '-out_format', 'cartesian']
                 + NO_REALIGN_OPTIONLIST)
 
 class SphericalShuffle(Operation):
@@ -298,7 +298,7 @@ class Spherical2Cartesian(Operation):
   def cmd(self, _, in_path, out_path):
     run.command(['peaksconvert', in_path, out_path,
                  '-in_format', 'unitspherical' if self.is_unit else 'spherical',
-                 '-out_format', 'unit3vector' if self.is_unit else '3vector']
+                 '-out_format', 'unitcartesian' if self.is_unit else 'cartesian']
                 + NO_REALIGN_OPTIONLIST)
 
 
@@ -342,7 +342,7 @@ def execute(): #pylint: disable=unused-variable
   if min(image_dimensions) == 1:
     raise MRtrixError('Cannot perform tractography on an image with a unity dimension')
   num_volumes = image_dimensions[3]
-  if app.ARGS.format in ('unit3vector', '3vector'):
+  if app.ARGS.format in ('unitcartesian', 'cartesian'):
     num_fixels = num_volumes // 3
     if 3 * num_fixels != num_volumes:
       raise MRtrixError(f'Number of input volumes ({num_volumes})'
@@ -363,7 +363,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     assert False
 
-  is_unit = app.ARGS.format in ('unitspherical', 'unit3vector')
+  is_unit = app.ARGS.format in ('unitspherical', 'unitcartesian')
 
   app.activate_scratch_dir()
 
@@ -390,7 +390,7 @@ def execute(): #pylint: disable=unused-variable
   number_option = ['-select', str(app.ARGS.number)]
 
   operation_sets = THREEVECTOR_OPERATION_SETS \
-                   if app.ARGS.format in ('unit3vector', '3vector') \
+                   if app.ARGS.format in ('unitcartesian', 'cartesian') \
                    else SPHERICAL_OPERATION_SETS
 
   # To facilitate looping in order to generate all possible variants,
