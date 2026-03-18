@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,8 +32,8 @@ struct alignas(16) VoxelScannerMatrices {
   std::array<float, 16> scanner_to_voxel_moving;
   std::array<float, 16> scanner_to_voxel_fixed;
 
-  static VoxelScannerMatrices from_image_pair(const Image<float> &moving, const Image<float> &fixed,
-                                            float scale_factor = 1.0F) {
+  static VoxelScannerMatrices
+  from_image_pair(const Image<float> &moving, const Image<float> &fixed, float scale_factor = 1.0F) {
     const Eigen::Matrix4f scale_matrix = EigenHelpers::make_scaling_mat4f(scale_factor);
 
     const auto moving_transform = MR::Transform(moving);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -107,8 +107,7 @@ Eigen::Matrix3f computeScannerMoments(const Texture &texture,
   const MomentUniforms uniforms{
       .centre = {centreScanner.x(), centreScanner.y(), centreScanner.z(), 0.0f},
   };
-  const Buffer<std::byte> centreBuffer =
-      context.new_buffer_from_host_object(uniforms, BufferType::UniformBuffer);
+  const Buffer<std::byte> centreBuffer = context.new_buffer_from_host_object(uniforms, BufferType::UniformBuffer);
 
   Buffer<uint32_t> momentBuffer = context.new_empty_buffer<uint32_t>(kMomentCount);
   context.clear_buffer(momentBuffer);
@@ -158,8 +157,7 @@ Texture transformTexture(const Texture &texture,
   const Texture outputTexture = context.new_empty_texture(outputTextureSpec);
 
   const KernelSpec transformKernelSpec{
-      .compute_shader = {.shader_source = ShaderFile{"shaders/transform_image.slang"},
-                         .workgroup_size = workgroupSize},
+      .compute_shader = {.shader_source = ShaderFile{"shaders/transform_image.slang"}, .workgroup_size = workgroupSize},
       .bindings_map = {{"transformationMatrix", transformationMatrixBuffer},
                        {"inputImage", texture},
                        {"outputImage", outputTexture},
@@ -187,10 +185,9 @@ Texture downsampleTexture(const Texture &texture, const ComputeContext &context)
                                       .usage = {.storage_binding = true, .render_target = false}};
   const Texture outputTexture = context.new_empty_texture(outputTextureSpec);
 
-  const KernelSpec transformKernelSpec{
-      .compute_shader = {.shader_source = ShaderFile{"shaders/downsample_image.slang"},
-                         .workgroup_size = workgroupSize},
-      .bindings_map = {{"inputTexture", texture}, {"outputTexture", outputTexture}}};
+  const KernelSpec transformKernelSpec{.compute_shader = {.shader_source = ShaderFile{"shaders/downsample_image.slang"},
+                                                          .workgroup_size = workgroupSize},
+                                       .bindings_map = {{"inputTexture", texture}, {"outputTexture", outputTexture}}};
   const Kernel transformKernel = context.new_kernel(transformKernelSpec);
   const DispatchGrid dispatch_grid{
       .x = Utils::nextMultipleOf(outputTextureSpec.width / workgroupSize.x, workgroupSize.x),

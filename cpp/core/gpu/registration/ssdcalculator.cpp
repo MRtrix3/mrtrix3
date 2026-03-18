@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,10 +16,10 @@
 
 #include "gpu/registration/ssdcalculator.h"
 
-#include "gpu/registration/calculatoroutput.h"
-#include "gpu/registration/eigenhelpers.h"
 #include "exception.h"
 #include "gpu/gpu.h"
+#include "gpu/registration/calculatoroutput.h"
+#include "gpu/registration/eigenhelpers.h"
 #include "gpu/registration/registrationtypes.h"
 #include "gpu/registration/voxelscannermatrices.h"
 
@@ -70,7 +70,8 @@ SSDCalculator::SSDCalculator(const Config &config)
   }
 
   const size_t params_per_workgroup = 1U + m_degrees_of_freedom;
-  m_partials_buffer = m_compute_context->new_empty_buffer<float>(params_per_workgroup * m_dispatch_grid.workgroup_count());
+  m_partials_buffer =
+      m_compute_context->new_empty_buffer<float>(params_per_workgroup * m_dispatch_grid.workgroup_count());
   m_num_contributing_voxels_buffer = m_compute_context->new_empty_buffer<uint32_t>(1);
 
   m_kernel = m_compute_context->new_kernel({

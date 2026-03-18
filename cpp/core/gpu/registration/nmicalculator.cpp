@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,9 @@
 
 #include "gpu/registration/nmicalculator.h"
 
+#include "gpu/gpu.h"
 #include "gpu/registration/calculatoroutput.h"
 #include "gpu/registration/eigenhelpers.h"
-#include "gpu/gpu.h"
 #include "gpu/registration/registrationtypes.h"
 #include "gpu/registration/utils.h"
 #include "gpu/registration/voxelscannermatrices.h"
@@ -142,8 +142,7 @@ NMICalculator::NMICalculator(const Config &config)
   }
 
   const KernelSpec min_max_fixed_kernel_spec{
-      .compute_shader = {.shader_source = ShaderFile{"shaders/reduction_image.slang"},
-                         .entryPoint = "minMaxAtomic"},
+      .compute_shader = {.shader_source = ShaderFile{"shaders/reduction_image.slang"}, .entryPoint = "minMaxAtomic"},
       .bindings_map = {{"uniforms", m_min_max_uniforms_buffer},
                        {"inputTexture", m_fixed},
                        {"outputBuffer", m_min_max_intensity_fixed_buffer},
@@ -159,8 +158,7 @@ NMICalculator::NMICalculator(const Config &config)
   m_compute_context->dispatch_kernel(min_max_fixed_kernel, fixed_dispatch_grid);
 
   const KernelSpec min_max_moving_kernel_spec{
-      .compute_shader = {.shader_source = ShaderFile{"shaders/reduction_image.slang"},
-                         .entryPoint = "minMaxAtomic"},
+      .compute_shader = {.shader_source = ShaderFile{"shaders/reduction_image.slang"}, .entryPoint = "minMaxAtomic"},
       .bindings_map = {
           {"uniforms", m_min_max_uniforms_buffer},
           {"inputTexture", m_moving},
@@ -196,7 +194,8 @@ NMICalculator::NMICalculator(const Config &config)
       .transformation_matrix = {},
   };
   m_compute_context->write_object_to_buffer(m_joint_histogram_uniforms_buffer, joint_histogram_uniforms);
-  const uint32_t jointHistogramPartialsSize = (m_num_bins * m_num_bins) * m_joint_histogram_dispatch_grid.workgroup_count();
+  const uint32_t jointHistogramPartialsSize =
+      (m_num_bins * m_num_bins) * m_joint_histogram_dispatch_grid.workgroup_count();
   m_joint_histogram_kernel = m_compute_context->new_kernel({
       .compute_shader =
           {
@@ -285,7 +284,8 @@ void NMICalculator::update(const GlobalTransform &transformation) {
   m_compute_context->clear_buffer(m_joint_histogram_mass_buffer);
 
   assert(transformation.param_count() == m_degrees_of_freedom);
-  const auto moving_dispatch_grid = DispatchGrid::element_wise_texture(m_moving, m_min_max_moving_kernel.workgroup_size);
+  const auto moving_dispatch_grid =
+      DispatchGrid::element_wise_texture(m_moving, m_min_max_moving_kernel.workgroup_size);
   const auto fixed_dispatch_grid = DispatchGrid::element_wise_texture(m_fixed, m_joint_histogram_kernel.workgroup_size);
 
   const auto transformation_matrix = transformation.to_matrix4f();

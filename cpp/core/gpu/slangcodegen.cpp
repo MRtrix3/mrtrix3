@@ -19,8 +19,8 @@
 #include "exception.h"
 #include "gpu/gpu.h"
 #include "match_variant.h"
-#include "shadercache.h"
 #include "platform.h"
+#include "shadercache.h"
 
 #include <functional>
 #include <slang-com-ptr.h>

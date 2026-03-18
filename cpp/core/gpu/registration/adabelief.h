@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <tcb/span.hpp>
 #include <cstdint>
+#include <tcb/span.hpp>
 #include <vector>
 
 // AdaBelief is an improved version of Adam that takes into account the curvature of the loss function.

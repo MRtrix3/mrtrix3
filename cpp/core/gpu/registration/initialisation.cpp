@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,20 +15,20 @@
  */
 
 #include "gpu/registration/initialisation.h"
+#include "gpu/gpu.h"
 #include "gpu/registration/calculatorinterface.h"
 #include "gpu/registration/eigenhelpers.h"
-#include "gpu/gpu.h"
 #include "gpu/registration/imageoperations.h"
 #include "gpu/registration/initialisation_rotation_search.h"
-#include "match_variant.h"
-#include "math/math.h"
-#include "mrtrix.h"
 #include "gpu/registration/ncccalculator.h"
 #include "gpu/registration/nmicalculator.h"
 #include "gpu/registration/registrationtypes.h"
-#include <tcb/span.hpp>
 #include "gpu/registration/ssdcalculator.h"
+#include "match_variant.h"
+#include "math/math.h"
+#include "mrtrix.h"
 #include "types.h"
+#include <tcb/span.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
@@ -43,7 +43,6 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include <utility>
 #include <vector>
 
@@ -129,8 +128,8 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
   const auto &target_mask = config.target_mask;
   const InitialisationOptions &options = config.options;
 
-  const auto com_target = EigenHelpers::to_vector3f(
-      centerOfMass(target_texture, context, transform_type::Identity(), target_mask));
+  const auto com_target =
+      EigenHelpers::to_vector3f(centerOfMass(target_texture, context, transform_type::Identity(), target_mask));
   const Eigen::Map<const Eigen::Matrix4f> voxel_to_scanner_fixed(voxel_scanner_matrices.voxel_to_scanner_fixed.data());
   const Eigen::Vector4f com_target_scanner = voxel_to_scanner_fixed * com_target.homogeneous();
 
@@ -142,8 +141,8 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
     break;
   case MR::InitTranslationChoice::Mass: {
     INFO("Computing initial translation using center of mass.");
-    const auto com_moving = EigenHelpers::to_vector3f(
-        centerOfMass(moving_texture, context, transform_type::Identity(), moving_mask));
+    const auto com_moving =
+        EigenHelpers::to_vector3f(centerOfMass(moving_texture, context, transform_type::Identity(), moving_mask));
     const Eigen::Map<const Eigen::Matrix4f> voxel_to_scanner_moving(
         voxel_scanner_matrices.voxel_to_scanner_moving.data());
     const Eigen::Vector4f com_moving_scanner = voxel_to_scanner_moving * com_moving.homogeneous();

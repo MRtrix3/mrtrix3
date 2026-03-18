@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,12 +15,12 @@
  */
 
 #include "gpu/registration/adabelief.h"
-#include <tcb/span.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <numeric>
+#include <tcb/span.hpp>
 #include <vector>
 
 AdaBelief::AdaBelief(const std::vector<Parameter> &parameters, float beta1, float beta2, float epsilon)

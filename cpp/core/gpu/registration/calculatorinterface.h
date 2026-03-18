@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "match_variant.h"
 #include "gpu/registration/ncccalculator.h"
 #include "gpu/registration/nmicalculator.h"
 #include "gpu/registration/registrationtypes.h"
 #include "gpu/registration/ssdcalculator.h"
+#include "match_variant.h"
 
 #include <cassert>
 #include <variant>

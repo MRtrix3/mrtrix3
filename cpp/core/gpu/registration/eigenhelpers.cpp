@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,13 +61,9 @@ std::array<float, 16> to_array(const Eigen::Matrix4f &matrix) {
   return array;
 }
 
-std::array<float, 16> to_array(const transform_type &transform) {
-  return to_array(to_homogeneous_mat4f(transform));
-}
+std::array<float, 16> to_array(const transform_type &transform) { return to_array(to_homogeneous_mat4f(transform)); }
 
-Eigen::Vector3f to_vector3f(const std::array<float, 3> &array) {
-  return Eigen::Vector3f(array[0], array[1], array[2]);
-}
+Eigen::Vector3f to_vector3f(const std::array<float, 3> &array) { return Eigen::Vector3f(array[0], array[1], array[2]); }
 
 std::array<float, 3> to_array(const Eigen::Vector3f &vector) { return {vector.x(), vector.y(), vector.z()}; }
 

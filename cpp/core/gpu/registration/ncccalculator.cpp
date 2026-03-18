@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,9 @@
 
 #include "gpu/registration/ncccalculator.h"
 
+#include "gpu/gpu.h"
 #include "gpu/registration/calculatoroutput.h"
 #include "gpu/registration/eigenhelpers.h"
-#include "gpu/gpu.h"
 #include "gpu/registration/registrationtypes.h"
 #include "gpu/registration/voxelscannermatrices.h"
 
@@ -153,9 +153,11 @@ void NCCCalculator::update(const GlobalTransform &transformation) {
   }
 
   if (transformation.is_affine()) {
-    upload_uniforms<12>(*m_compute_context, m_uniforms_buffer, m_dispatch_grid, transformation, m_voxel_scanner_matrices);
+    upload_uniforms<12>(
+        *m_compute_context, m_uniforms_buffer, m_dispatch_grid, transformation, m_voxel_scanner_matrices);
   } else {
-    upload_uniforms<6>(*m_compute_context, m_uniforms_buffer, m_dispatch_grid, transformation, m_voxel_scanner_matrices);
+    upload_uniforms<6>(
+        *m_compute_context, m_uniforms_buffer, m_dispatch_grid, transformation, m_voxel_scanner_matrices);
   }
 
   m_compute_context->clear_buffer(m_num_contributing_voxels_buffer);

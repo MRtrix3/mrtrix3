@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,26 +31,25 @@
  */
 
 #include "gpu/registration/globalregistration.h"
+#include "exception.h"
+#include "gpu/gpu.h"
 #include "gpu/registration/adabelief.h"
 #include "gpu/registration/calculatorinterface.h"
 #include "gpu/registration/convergencechecker.h"
 #include "gpu/registration/eigenhelpers.h"
-#include "exception.h"
-#include "gpu/gpu.h"
-#include "header.h"
-#include "image.h"
 #include "gpu/registration/imageoperations.h"
 #include "gpu/registration/initialisation.h"
-#include "match_variant.h"
 #include "gpu/registration/ncccalculator.h"
 #include "gpu/registration/nmicalculator.h"
 #include "gpu/registration/registrationtypes.h"
-#include <tcb/span.hpp>
 #include "gpu/registration/ssdcalculator.h"
 #include "gpu/registration/voxelscannermatrices.h"
+#include "header.h"
+#include "image.h"
+#include "match_variant.h"
+#include <tcb/span.hpp>
 
 #include <Eigen/Core>
-#include <unsupported/Eigen/MatrixFunctions>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -59,6 +58,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <unsupported/Eigen/MatrixFunctions>
 #include <utility>
 #include <vector>
 
@@ -230,8 +230,7 @@ RegistrationResult run_registration(const GlobalRegistrationConfig &config, cons
                   .moving = pyramid2[level],
                   .fixed_mask = level_moving_mask,
                   .moving_mask = level_fixed_mask,
-                  .voxel_scanner_matrices =
-                      VoxelScannerMatrices::from_image_pair(image2, image1, level_downscale),
+                  .voxel_scanner_matrices = VoxelScannerMatrices::from_image_pair(image2, image1, level_downscale),
                   .num_bins = nmi_metric.num_bins,
                   .output = CalculatorOutput::CostAndGradients,
                   .context = &context,
@@ -245,8 +244,7 @@ RegistrationResult run_registration(const GlobalRegistrationConfig &config, cons
                   .moving = pyramid2[level],
                   .fixed_mask = level_moving_mask,
                   .moving_mask = level_fixed_mask,
-                  .voxel_scanner_matrices =
-                      VoxelScannerMatrices::from_image_pair(image2, image1, level_downscale),
+                  .voxel_scanner_matrices = VoxelScannerMatrices::from_image_pair(image2, image1, level_downscale),
                   .output = CalculatorOutput::CostAndGradients,
                   .context = &context,
               };
@@ -259,8 +257,7 @@ RegistrationResult run_registration(const GlobalRegistrationConfig &config, cons
                   .moving = pyramid2[level],
                   .fixed_mask = level_moving_mask,
                   .moving_mask = level_fixed_mask,
-                  .voxel_scanner_matrices =
-                      VoxelScannerMatrices::from_image_pair(image2, image1, level_downscale),
+                  .voxel_scanner_matrices = VoxelScannerMatrices::from_image_pair(image2, image1, level_downscale),
                   .window_radius = ncc_metric.window_radius,
                   .output = CalculatorOutput::CostAndGradients,
                   .context = &context,
@@ -268,13 +265,12 @@ RegistrationResult run_registration(const GlobalRegistrationConfig &config, cons
               return NCCCalculator(ncc_config);
             });
       }
-      levels.emplace_back(
-          LevelData{pyramid1[level],
-                    pyramid2[level],
-                    level_moving_mask,
-                    level_fixed_mask,
-                    std::move(calculator),
-                    std::move(reverse_calculator)});
+      levels.emplace_back(LevelData{pyramid1[level],
+                                    pyramid2[level],
+                                    level_moving_mask,
+                                    level_fixed_mask,
+                                    std::move(calculator),
+                                    std::move(reverse_calculator)});
     }
     channels_data.emplace_back(ChannelData{.levels = levels, .weight = channel_config.weight});
   }
@@ -359,8 +355,8 @@ RegistrationResult run_registration(const GlobalRegistrationConfig &config, cons
           best_transform_level = current_transform;
         }
 
-        INFO("Current transformation matrix at level " + std::to_string(level) + " iteration " +
-             std::to_string(iter) + ":\n" + EigenHelpers::to_string(current_transform.to_matrix4f()));
+        INFO("Current transformation matrix at level " + std::to_string(level) + " iteration " + std::to_string(iter) +
+             ":\n" + EigenHelpers::to_string(current_transform.to_matrix4f()));
 
         INFO("Level " + std::to_string(level) + ", Iteration " + std::to_string(iter) +
              ", Cost: " + std::to_string(total_cost));
@@ -432,13 +428,12 @@ RegistrationResult run_registration(const GlobalRegistrationConfig &config, cons
       INFO("Current transformation matrix (bwd) at level " + std::to_string(level) + " iteration " +
            std::to_string(iter) + ":\n" + EigenHelpers::to_string(current_transform_bwd.to_matrix4f()));
 
-      INFO("Level " + std::to_string(level) + ", Iteration " + std::to_string(iter) +
-           ", Cost (fwd+bwd): " + std::to_string(total_cost_fwd) + "+" + std::to_string(total_cost_bwd) +
-           " = " + std::to_string(total_cost));
+      INFO("Level " + std::to_string(level) + ", Iteration " + std::to_string(iter) + ", Cost (fwd+bwd): " +
+           std::to_string(total_cost_fwd) + "+" + std::to_string(total_cost_bwd) + " = " + std::to_string(total_cost));
 
       if (convergence_checker.has_converged(current_transform_fwd.parameters(), total_cost)) {
-        CONSOLE("Convergence reached at level " + std::to_string(level) + " after " +
-                std::to_string(iter) + " iterations.");
+        CONSOLE("Convergence reached at level " + std::to_string(level) + " after " + std::to_string(iter) +
+                " iterations.");
         break;
       }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,8 @@
  */
 
 #include "gpu/registration/registrationtypes.h"
-#include <tcb/span.hpp>
 #include "types.h"
+#include <tcb/span.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -31,7 +31,9 @@
 namespace MR {
 // using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
 namespace {
-constexpr size_t param_count_for_type(GlobalRegistrationType type) { return type == GlobalRegistrationType::Rigid ? 6U : 12U; }
+constexpr size_t param_count_for_type(GlobalRegistrationType type) {
+  return type == GlobalRegistrationType::Rigid ? 6U : 12U;
+}
 } // namespace
 
 GlobalRegistrationType GlobalTransform::type() const { return m_type; }
@@ -91,7 +93,9 @@ transform_type GlobalTransform::to_affine_compact() const {
   return transform_type(final_affine_transform);
 }
 
-GlobalTransform::GlobalTransform(tcb::span<const float> params, GlobalRegistrationType type, const Eigen::Vector3f &pivot)
+GlobalTransform::GlobalTransform(tcb::span<const float> params,
+                                 GlobalRegistrationType type,
+                                 const Eigen::Vector3f &pivot)
     : m_type(type), m_pivot(pivot) {
   const size_t expected = param_count_for_type(type);
   if (params.size() != expected) {
