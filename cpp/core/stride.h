@@ -447,6 +447,7 @@ public:
   static constexpr value_type invalid = -1;
 
   explicit Order(const Permutation &permutation);
+  explicit Order(const Symbolic &symbolic);
   explicit Order(const vector_type &data);
   Order(const Order &) = default;
   explicit Order() = default;
@@ -493,8 +494,8 @@ public:
 
   Permutation head(const size_t num_axes) const;
   Order order() const;
-  void resize(const size_t num_axes);
   Permutation sanitised() const;
+  Symbolic symbolic() const;
 
   static Permutation axis_range(const ArrayIndex from, const ArrayIndex to);
   static Permutation canonical(const size_t num_axes);
@@ -512,6 +513,8 @@ public:
   static constexpr value_type invalid = 0;
 
   explicit Symbolic(const vector_type &in);
+  explicit Symbolic(const Permutation &in);
+  explicit Symbolic(const Header &header);
   template <class HeaderType> explicit Symbolic(const HeaderType &image);
   explicit Symbolic(const Actual &actual);
   Symbolic(const Symbolic &) = default;
@@ -542,6 +545,7 @@ public:
   static Symbolic canonical(const size_t num_axes);
 };
 
+// TODO Consider whether axes of unity size should be given an actual stride of zero
 class Actual : public Base<MemIndex> {
 public:
   using Base<MemIndex>::value_type;
@@ -557,11 +561,8 @@ public:
 
   using Base::operator=;
 
-  // It is possible for an axity with an axis of unity size
-  //   to have two axes with actual strides of equal absolute value;
-  //   this is however not actually a problem
   bool is_canonical() const override;
-  bool is_degenerate() const override { return false; }
+  bool is_degenerate() const override;
   bool is_sanitised() const override { return valid(); }
   void sanitise() override { assert(false); }
   bool valid() const override;
@@ -574,6 +575,12 @@ public:
 private:
   template <class HeaderType> std::vector<size_t> get_sizes(const HeaderType &) const;
 };
+
+// TODO Consider a class that stores stride information as specified by the user at the command-line
+// Here it may be important to disambiguate between:
+// - An explicit negative value
+// - An explicit positive value (need to detect the presence of "+")
+// - An implicit positive value (treat as permutation rather than symbolic)
 
 // When the header is a template,
 //   have no way of knowing whether the input is actual or symbolic;
