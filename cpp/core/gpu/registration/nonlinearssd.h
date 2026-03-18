@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 namespace MR::GPU {
@@ -32,6 +33,8 @@ struct NonlinearSsdPipelineConfig {
   Texture fixed_image{};
   Texture moving_image{};
   Texture displacement{};
+  std::optional<Texture> fixed_mask;
+  std::optional<Texture> moving_mask;
 
   Buffer<std::byte> forward_dispatch_uniforms_buffer{};
   Buffer<std::byte> backward_dispatch_uniforms_buffer{};

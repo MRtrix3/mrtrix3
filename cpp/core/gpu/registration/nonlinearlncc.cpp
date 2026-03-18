@@ -112,6 +112,10 @@ NonlinearLnccPipeline::CostPhaseResources::CostPhaseResources(const ComputeConte
                                                               const Buffer<std::byte> &dispatch_uniforms_buffer,
                                                               const Texture &fixed_image,
                                                               const Texture &moving_image,
+                                                              const Texture &fixed_mask,
+                                                              const Texture &moving_mask,
+                                                              bool use_fixed_mask,
+                                                              bool use_moving_mask,
                                                               const Texture &displacement,
                                                               const Buffer<std::byte> &voxel_scanner_buffer,
                                                               const Sampler &linear_sampler)
@@ -126,26 +130,31 @@ NonlinearLnccPipeline::CostPhaseResources::CostPhaseResources(const ComputeConte
           workgroup_size)),
       cost_partials_buffer(context.new_empty_buffer<float>(dispatch_grid.workgroup_count())),
       cost_counts_buffer(context.new_empty_buffer<float>(dispatch_grid.workgroup_count())),
-      prepare_raw_moments_kernel(context.new_kernel(
-          {.compute_shader =
-               ShaderEntry{
-                   .shader_source = ShaderFile{"shaders/registration/nonlinear/lncc_cost.slang"},
-                   .entryPoint = std::string(prepare_entry_point),
-                   .workgroup_size = workgroup_size,
-                   .constants = {{"kWindowRadius", shader_window_radius}, {"kMomentEpsilon", moment_epsilon}},
-               },
-           .bindings_map =
-               {
-                   {"fixedImage", fixed_image},
-                   {"movingImage", moving_image},
-                   {"displacement", displacement},
-                   {"voxelScannerMatrices", voxel_scanner_buffer},
-                   {"linearSampler", linear_sampler},
-                   {"slabUniforms", slab_uniforms_buffer},
-                   // Cost pass reuses the shared scratch pool.
-                   {"outputMoments1", scratch.moments_ping_1},
-                   {"outputMoments2", scratch.moments_ping_2},
-               }})),
+      prepare_raw_moments_kernel(
+          context.new_kernel({.compute_shader =
+                                  ShaderEntry{
+                                      .shader_source = ShaderFile{"shaders/registration/nonlinear/lncc_cost.slang"},
+                                      .entryPoint = std::string(prepare_entry_point),
+                                      .workgroup_size = workgroup_size,
+                                      .constants = {{"kWindowRadius", shader_window_radius},
+                                                    {"kMomentEpsilon", moment_epsilon},
+                                                    {"kUseFixedMask", static_cast<uint32_t>(use_fixed_mask)},
+                                                    {"kUseMovingMask", static_cast<uint32_t>(use_moving_mask)}},
+                                  },
+                              .bindings_map =
+                                  {
+                                      {"fixedImage", fixed_image},
+                                      {"movingImage", moving_image},
+                                      {"fixedMask", fixed_mask},
+                                      {"movingMask", moving_mask},
+                                      {"displacement", displacement},
+                                      {"voxelScannerMatrices", voxel_scanner_buffer},
+                                      {"linearSampler", linear_sampler},
+                                      {"slabUniforms", slab_uniforms_buffer},
+                                      // Cost pass reuses the shared scratch pool.
+                                      {"outputMoments1", scratch.moments_ping_1},
+                                      {"outputMoments2", scratch.moments_ping_2},
+                                  }})),
       filter_x_kernel(context.new_kernel(
           {.compute_shader =
                ShaderEntry{.shader_source = ShaderFile{"shaders/registration/nonlinear/lncc_cost.slang"},
@@ -239,12 +248,21 @@ NonlinearLnccPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeC
       .shader_source = ShaderFile{"shaders/registration/nonlinear/local_lncc_update.slang"},
       .entryPoint = std::string(prepare_entry_point),
       .workgroup_size = workgroup_size,
-      .constants = lncc_update_constants(config),
+      .constants = {{"kWindowRadius", config.window_radius},
+                    {"kSigmaRatio", config.sigma_ratio},
+                    {"kMomentEpsilon", config.moment_epsilon},
+                    {"kRhoEpsilon", config.rho_epsilon},
+                    {"kDenominatorEpsilon", config.denominator_epsilon},
+                    {"kMaxUpdateMagnitude", config.max_update_magnitude},
+                    {"kUseFixedMask", static_cast<uint32_t>(config.fixed_mask.has_value())},
+                    {"kUseMovingMask", static_cast<uint32_t>(config.moving_mask.has_value())}},
   };
   prepare_raw_moments_kernel = context.new_kernel({.compute_shader = prepare_shader,
                                                    .bindings_map = {
                                                        {"fixedImage", config.fixed_image},
                                                        {"movingImage", config.moving_image},
+                                                       {"fixedMask", config.fixed_mask.value_or(config.fixed_image)},
+                                                       {"movingMask", config.moving_mask.value_or(config.moving_image)},
                                                        {"displacement", config.displacement},
                                                        {"voxelScannerMatrices", config.voxel_scanner_buffer},
                                                        {"linearSampler", config.linear_sampler},
@@ -346,10 +364,9 @@ float NonlinearLnccPipeline::evaluate_cost_phase(const ComputeContext &context, 
 void NonlinearLnccPipeline::dispatch_update_phase(const ComputeContext &context, const UpdatePhaseResources &phase) {
   for (uint32_t z_chunk_start = 0U; z_chunk_start < phase.lattice_depth; z_chunk_start += z_slab_chunk_depth) {
     const uint32_t chunk_depth = std::min(z_slab_chunk_depth, phase.lattice_depth - z_chunk_start);
-    const UpdateSlabDispatchUniforms slab_uniforms{
-        .slab_input_z_start = static_cast<int32_t>(z_chunk_start) - static_cast<int32_t>(phase.window_radius),
-        .reduce_chunk_depth = chunk_depth
-    };
+    const UpdateSlabDispatchUniforms slab_uniforms{.slab_input_z_start = static_cast<int32_t>(z_chunk_start) -
+                                                                         static_cast<int32_t>(phase.window_radius),
+                                                   .reduce_chunk_depth = chunk_depth};
     context.write_object_to_buffer(phase.slab_uniforms_buffer, slab_uniforms);
 
     const DispatchGrid reduce_dispatch_grid = DispatchGrid::element_wise({static_cast<size_t>(phase.lattice_width),
@@ -379,6 +396,10 @@ NonlinearLnccPipeline::NonlinearLnccPipeline(const ComputeContext &context, cons
                            config.forward_dispatch_uniforms_buffer,
                            config.fixed_image,
                            config.moving_image,
+                           config.fixed_mask.value_or(config.fixed_image),
+                           config.moving_mask.value_or(config.moving_image),
+                           config.fixed_mask.has_value(),
+                           config.moving_mask.has_value(),
                            config.displacement,
                            config.voxel_scanner_buffer,
                            config.linear_sampler),
@@ -394,6 +415,10 @@ NonlinearLnccPipeline::NonlinearLnccPipeline(const ComputeContext &context, cons
                             config.backward_dispatch_uniforms_buffer,
                             config.fixed_image,
                             config.moving_image,
+                            config.fixed_mask.value_or(config.fixed_image),
+                            config.moving_mask.value_or(config.moving_image),
+                            config.fixed_mask.has_value(),
+                            config.moving_mask.has_value(),
                             config.displacement,
                             config.voxel_scanner_buffer,
                             config.linear_sampler),

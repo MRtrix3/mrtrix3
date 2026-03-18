@@ -177,9 +177,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   }
 
   const ChannelConfig &channel = config.channels.front();
-  if (channel.image1Mask || channel.image2Mask) {
-    throw Exception("Non-linear registration draft does not yet support masks.");
-  }
 
   const NCCMetric *const ncc_metric = std::get_if<NCCMetric>(&config.metric);
   const bool use_lncc_metric = ncc_metric != nullptr;
@@ -196,10 +193,26 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
   const Texture moving_texture = context.new_texture_from_host_image(channel.image1);
   const Texture fixed_texture = context.new_texture_from_host_image(channel.image2);
+  std::optional<Texture> moving_mask_texture;
+  if (channel.image1Mask) {
+    moving_mask_texture = context.new_texture_from_host_image(*channel.image1Mask);
+  }
+  std::optional<Texture> fixed_mask_texture;
+  if (channel.image2Mask) {
+    fixed_mask_texture = context.new_texture_from_host_image(*channel.image2Mask);
+  }
   std::vector<Texture> moving_pyramid =
       createDownsampledPyramid(moving_texture, static_cast<int32_t>(num_levels), context);
   std::vector<Texture> fixed_pyramid =
       createDownsampledPyramid(fixed_texture, static_cast<int32_t>(num_levels), context);
+  std::vector<Texture> moving_mask_pyramid;
+  if (moving_mask_texture) {
+    moving_mask_pyramid = createDownsampledPyramid(*moving_mask_texture, static_cast<int32_t>(num_levels), context);
+  }
+  std::vector<Texture> fixed_mask_pyramid;
+  if (fixed_mask_texture) {
+    fixed_mask_pyramid = createDownsampledPyramid(*fixed_mask_texture, static_cast<int32_t>(num_levels), context);
+  }
   const Sampler linear_sampler = context.new_linear_sampler();
   std::optional<Texture> previous_level_velocity;
   std::optional<Texture> previous_level_fixed;
@@ -214,12 +227,26 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     if (level > 0U) {
       moving_pyramid[level - 1U] = {};
       fixed_pyramid[level - 1U] = {};
+      if (!moving_mask_pyramid.empty()) {
+        moving_mask_pyramid[level - 1U] = {};
+      }
+      if (!fixed_mask_pyramid.empty()) {
+        fixed_mask_pyramid[level - 1U] = {};
+      }
       context.reduce_memory_usage();
       context.wait_for_all_queue_operations();
     }
 
     const Texture &moving_level = moving_pyramid[level];
     const Texture &fixed_level = fixed_pyramid[level];
+    std::optional<Texture> moving_mask_level;
+    if (!moving_mask_pyramid.empty()) {
+      moving_mask_level = moving_mask_pyramid[level];
+    }
+    std::optional<Texture> fixed_mask_level;
+    if (!fixed_mask_pyramid.empty()) {
+      fixed_mask_level = fixed_mask_pyramid[level];
+    }
     const float level_downscale = std::exp2f(static_cast<float>(num_levels - 1U - level));
 
     const TextureSpec vector_texture_spec{
@@ -364,6 +391,8 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
           .fixed_image = fixed_level,
           .moving_image = moving_level,
           .displacement = displacement1,
+          .fixed_mask = fixed_mask_level,
+          .moving_mask = moving_mask_level,
           .forward_dispatch_uniforms_buffer = forward_dispatch_uniforms_buffer,
           .backward_dispatch_uniforms_buffer = backward_dispatch_uniforms_buffer,
           .voxel_scanner_buffer = voxel_scanner_buffer,
@@ -389,6 +418,8 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
           .fixed_image = fixed_level,
           .moving_image = moving_level,
           .displacement = displacement1,
+          .fixed_mask = fixed_mask_level,
+          .moving_mask = moving_mask_level,
           .forward_dispatch_uniforms_buffer = forward_dispatch_uniforms_buffer,
           .backward_dispatch_uniforms_buffer = backward_dispatch_uniforms_buffer,
           .voxel_scanner_buffer = voxel_scanner_buffer,

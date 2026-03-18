@@ -24,6 +24,8 @@ extern static const float kMomentEpsilon;
 extern static const float kRhoEpsilon;
 extern static const float kDenominatorEpsilon;
 extern static const float kMaxUpdateMagnitude = 0.0F;
+extern static const uint32_t kUseFixedMask;
+extern static const uint32_t kUseMovingMask;
 
 struct UpdateSlabUniforms {
     int32_t slabInputZStart; // Global Z index where the current slab starts in the full volume
@@ -223,6 +225,8 @@ void lnccUpdatePrepareRawMomentsForward(
     uint32_t3 globalId : SV_DispatchThreadID,
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
+    Texture3D<float> fixedMask,
+    Texture3D<float> movingMask,
     Texture3D<float4> displacement,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
@@ -251,8 +255,17 @@ void lnccUpdatePrepareRawMomentsForward(
     let movingDims = textureSize(movingImage);
     let fixedField = VoxelSamplingField(fixedImage, linearSampler);
     let movingField = VoxelSamplingField(movingImage, linearSampler);
+    let fixedMaskField = VoxelSamplingField(fixedMask, linearSampler);
+    let movingMaskField = VoxelSamplingField(movingMask, linearSampler);
 
     let fixedVoxel = float3(float(globalCoord.x), float(globalCoord.y), float(globalCoord.z));
+    if (!fixedMaskField.maskAccepts(fixedVoxel, kUseFixedMask != 0U)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
     var warpedMovingVoxel = float3(0.0F, 0.0F, 0.0F);
     if (!mapFixedVoxelToWarpedMovingVoxel(
             fixedVoxel,
@@ -262,6 +275,13 @@ void lnccUpdatePrepareRawMomentsForward(
             voxelScannerMatrices.sourceScannerToVoxel,
             movingDims,
             warpedMovingVoxel)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
+    if (!movingMaskField.maskAccepts(warpedMovingVoxel, kUseMovingMask != 0U)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
@@ -295,6 +315,8 @@ void lnccUpdatePrepareRawMomentsBackward(
     uint32_t3 globalId : SV_DispatchThreadID,
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
+    Texture3D<float> fixedMask,
+    Texture3D<float> movingMask,
     Texture3D<float4> displacement,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
@@ -323,9 +345,18 @@ void lnccUpdatePrepareRawMomentsBackward(
     let fixedDims = textureSize(fixedImage);
     let fixedField = VoxelSamplingField(fixedImage, linearSampler);
     let movingField = VoxelSamplingField(movingImage, linearSampler);
+    let fixedMaskField = VoxelSamplingField(fixedMask, linearSampler);
+    let movingMaskField = VoxelSamplingField(movingMask, linearSampler);
     let displacementField = VoxelSamplingFieldFloat4(displacement, linearSampler);
 
     let movingVoxel = float3(float(globalCoord.x), float(globalCoord.y), float(globalCoord.z));
+    if (!movingMaskField.maskAccepts(movingVoxel, kUseMovingMask != 0U)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
     var movedFixedVoxel = float3(0.0F, 0.0F, 0.0F);
     if (!mapMovingVoxelToMovedFixedVoxel(
             movingVoxel,
@@ -334,6 +365,13 @@ void lnccUpdatePrepareRawMomentsBackward(
             voxelScannerMatrices.targetScannerToVoxel,
             fixedDims,
             movedFixedVoxel)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
+    if (!fixedMaskField.maskAccepts(movedFixedVoxel, kUseFixedMask != 0U)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));

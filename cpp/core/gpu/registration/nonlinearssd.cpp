@@ -54,24 +54,28 @@ NonlinearSsdPipeline::CostPhaseResources::CostPhaseResources(const ComputeContex
     : dispatch_grid(dispatch_grid),
       cost_partials_buffer(context.new_empty_buffer<float>(dispatch_grid.workgroup_count())),
       cost_counts_buffer(context.new_empty_buffer<float>(dispatch_grid.workgroup_count())),
-      cost_kernel(
-          context.new_kernel({.compute_shader =
-                                  ShaderEntry{
-                                      .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
-                                      .entryPoint = std::string(cost_entry_point),
-                                      .workgroup_size = workgroup_size,
-                                      .constants = {{"kIncludeOutOfBounds", uint32_t{1}}},
-                                  },
-                              .bindings_map = {
-                                  {"uniforms", dispatch_uniforms_buffer},
-                                  {"fixedImage", config.fixed_image},
-                                  {"movingImage", config.moving_image},
-                                  {std::string(displacement_binding_name), config.displacement},
-                                  {"voxelScannerMatrices", config.voxel_scanner_buffer},
-                                  {"linearSampler", config.linear_sampler},
-                                  {"ssdPartials", cost_partials_buffer},
-                                  {"ssdCounts", cost_counts_buffer},
-                              }})) {}
+      cost_kernel(context.new_kernel(
+          {.compute_shader =
+               ShaderEntry{
+                   .shader_source = ShaderFile{"shaders/registration/nonlinear/ssd_cost.slang"},
+                   .entryPoint = std::string(cost_entry_point),
+                   .workgroup_size = workgroup_size,
+                   .constants = {{"kIncludeOutOfBounds", uint32_t{1}},
+                                 {"kUseFixedMask", static_cast<uint32_t>(config.fixed_mask.has_value())},
+                                 {"kUseMovingMask", static_cast<uint32_t>(config.moving_mask.has_value())}},
+               },
+           .bindings_map = {
+               {"uniforms", dispatch_uniforms_buffer},
+               {"fixedImage", config.fixed_image},
+               {"movingImage", config.moving_image},
+               {"fixedMask", config.fixed_mask.value_or(config.fixed_image)},
+               {"movingMask", config.moving_mask.value_or(config.moving_image)},
+               {std::string(displacement_binding_name), config.displacement},
+               {"voxelScannerMatrices", config.voxel_scanner_buffer},
+               {"linearSampler", config.linear_sampler},
+               {"ssdPartials", cost_partials_buffer},
+               {"ssdCounts", cost_counts_buffer},
+           }})) {}
 
 NonlinearSsdPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeContext &context,
                                                                  const NonlinearSsdPipelineConfig &config,
@@ -88,12 +92,16 @@ NonlinearSsdPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeCo
                   .workgroup_size = workgroup_size,
                   .constants = {{"kAlpha", config.alpha},
                                 {"kEpsilon", config.epsilon},
-                                {"kMaxUpdateMagnitude", config.max_update_magnitude}},
+                                {"kMaxUpdateMagnitude", config.max_update_magnitude},
+                                {"kUseFixedMask", static_cast<uint32_t>(config.fixed_mask.has_value())},
+                                {"kUseMovingMask", static_cast<uint32_t>(config.moving_mask.has_value())}},
               },
           .bindings_map =
               {
                   {"fixedImage", config.fixed_image},
                   {"movingImage", config.moving_image},
+                  {"fixedMask", config.fixed_mask.value_or(config.fixed_image)},
+                  {"movingMask", config.moving_mask.value_or(config.moving_image)},
                   {std::string(displacement_binding_name), config.displacement},
                   {"voxelScannerMatrices", config.voxel_scanner_buffer},
                   {"outputUpdate", output_update},

@@ -21,6 +21,8 @@ extern static const uint32_t kWorkgroupSizeY = 4U;
 extern static const uint32_t kWorkgroupSizeZ = 4U;
 extern static const uint32_t kWindowRadius;
 extern static const float kMomentEpsilon;
+extern static const uint32_t kUseFixedMask;
+extern static const uint32_t kUseMovingMask;
 static const uint32_t workgroupInvocations = kWorkgroupSizeX * kWorkgroupSizeY * kWorkgroupSizeZ;
 
 struct Uniforms {
@@ -105,6 +107,8 @@ void lnccPrepareRawMomentsForward(
     uint32_t3 workgroupId : SV_GroupID,
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
+    Texture3D<float> fixedMask,
+    Texture3D<float> movingMask,
     Texture3D<float4> displacement,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
@@ -128,12 +132,24 @@ void lnccPrepareRawMomentsForward(
 
     let movingDims = textureSize(movingImage);
     let movingField = VoxelSamplingField(movingImage, linearSampler);
+    let fixedMaskField = VoxelSamplingField(fixedMask, linearSampler);
+    let movingMaskField = VoxelSamplingField(movingMask, linearSampler);
     let centreFixedVoxel = float3(float(globalCoord.x), float(globalCoord.y), float(globalCoord.z));
+    if (!fixedMaskField.maskAccepts(centreFixedVoxel, kUseFixedMask != 0U)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
     let centreFixedScanner = mul(voxelScannerMatrices.targetVoxelToScanner, float4(centreFixedVoxel, 1.0F)).xyz;
     let centreDisplacement = displacement.Load(int32_t4(globalCoord, 0)).xyz;
     let centreWarpedScanner = centreFixedScanner + centreDisplacement;
     let centreWarpedMovingVoxel = mul(voxelScannerMatrices.sourceScannerToVoxel, float4(centreWarpedScanner, 1.0F)).xyz;
     if (!inBoundsVoxel(centreWarpedMovingVoxel, movingDims)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
+    if (!movingMaskField.maskAccepts(centreWarpedMovingVoxel, kUseMovingMask != 0U)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
@@ -158,6 +174,8 @@ void lnccPrepareRawMomentsBackward(
 
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
+    Texture3D<float> fixedMask,
+    Texture3D<float> movingMask,
     Texture3D<float4> displacement,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
@@ -181,9 +199,16 @@ void lnccPrepareRawMomentsBackward(
 
     let fixedDims = textureSize(fixedImage);
     let fixedField = VoxelSamplingField(fixedImage, linearSampler);
+    let fixedMaskField = VoxelSamplingField(fixedMask, linearSampler);
+    let movingMaskField = VoxelSamplingField(movingMask, linearSampler);
     let displacementField = VoxelSamplingFieldFloat4(displacement, linearSampler);
 
     let centreMovingVoxel = float3(float(globalCoord.x), float(globalCoord.y), float(globalCoord.z));
+    if (!movingMaskField.maskAccepts(centreMovingVoxel, kUseMovingMask != 0U)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
     let centreMovingScanner = mul(voxelScannerMatrices.sourceVoxelToScanner, float4(centreMovingVoxel, 1.0F)).xyz;
     let centreDisplacementSampleVoxel = mul(voxelScannerMatrices.targetScannerToVoxel, float4(centreMovingScanner, 1.0F)).xyz;
 
@@ -198,6 +223,11 @@ void lnccPrepareRawMomentsBackward(
     let centreMovedFixedVoxel = mul(voxelScannerMatrices.targetScannerToVoxel, float4(centreMovedScanner, 1.0F)).xyz;
 
     if (!inBoundsVoxel(centreMovedFixedVoxel, fixedDims)) {
+        outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
+        return;
+    }
+    if (!fixedMaskField.maskAccepts(centreMovedFixedVoxel, kUseFixedMask != 0U)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;

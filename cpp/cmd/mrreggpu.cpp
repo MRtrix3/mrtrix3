@@ -393,10 +393,6 @@ void run() {
   }
 
   if (has_nonlinear_registration) {
-    if (mask1 || mask2) {
-      throw Exception("Non-linear registration draft does not yet support masks.");
-    }
-
     const std::string matrix_filename = get_option_value<std::string>("matrix", "");
     const std::string matrix_1tomid_filename = get_option_value<std::string>("matrix_1tomidway", "");
     const std::string matrix_2tomid_filename = get_option_value<std::string>("matrix_2tomidway", "");

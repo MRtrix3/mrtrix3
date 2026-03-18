@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 namespace MR::GPU {
@@ -38,6 +39,8 @@ struct NonlinearLnccPipelineConfig {
   Texture fixed_image{};
   Texture moving_image{};
   Texture displacement{};
+  std::optional<Texture> fixed_mask;
+  std::optional<Texture> moving_mask;
 
   Buffer<std::byte> forward_dispatch_uniforms_buffer{};
   Buffer<std::byte> backward_dispatch_uniforms_buffer{};
@@ -85,6 +88,10 @@ private:
                        const Buffer<std::byte> &dispatch_uniforms_buffer,
                        const Texture &fixed_image,
                        const Texture &moving_image,
+                       const Texture &fixed_mask,
+                       const Texture &moving_mask,
+                       bool use_fixed_mask,
+                       bool use_moving_mask,
                        const Texture &displacement,
                        const Buffer<std::byte> &voxel_scanner_buffer,
                        const Sampler &linear_sampler);

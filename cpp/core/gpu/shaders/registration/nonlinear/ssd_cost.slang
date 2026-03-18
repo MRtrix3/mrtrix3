@@ -11,6 +11,8 @@ extern static const uint32_t kWorkgroupSizeX = 8U;
 extern static const uint32_t kWorkgroupSizeY = 4U;
 extern static const uint32_t kWorkgroupSizeZ = 4U;
 extern static const uint32_t kIncludeOutOfBounds;
+extern static const uint32_t kUseFixedMask;
+extern static const uint32_t kUseMovingMask;
 static const uint32_t workgroupInvocations = kWorkgroupSizeX * kWorkgroupSizeY * kWorkgroupSizeZ;
 
 struct Uniforms {
@@ -47,6 +49,8 @@ void ssd_cost_forward(
     ConstantBuffer<Uniforms> uniforms,
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
+    Texture3D<float> fixedMask,
+    Texture3D<float> movingMask,
     Texture3D<float4> displacement,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
@@ -65,6 +69,8 @@ void ssd_cost_forward(
     if (globalId.x < fixedDims.x && globalId.y < fixedDims.y && globalId.z < fixedDims.z) {
         let fixedField = VoxelSamplingField(fixedImage, linearSampler);
         let movingField = VoxelSamplingField(movingImage, linearSampler);
+        let fixedMaskField = VoxelSamplingField(fixedMask, linearSampler);
+        let movingMaskField = VoxelSamplingField(movingMask, linearSampler);
 
         let fixedVoxel = float3(globalId);
         let fixedScanner = mul(voxelScannerMatrices.targetVoxelToScanner, float4(fixedVoxel, 1.0F)).xyz;
@@ -72,13 +78,17 @@ void ssd_cost_forward(
         let movedScanner = fixedScanner + displacementValue;
         let movedMovingVoxel = mul(voxelScannerMatrices.sourceScannerToVoxel, float4(movedScanner, 1.0F)).xyz;
         let inBoundsMovedMoving = inBoundsVoxel(movedMovingVoxel, movingDims);
+        let fixedMaskAccepted = fixedMaskField.maskAccepts(fixedVoxel, kUseFixedMask != 0U);
+        let movingMaskAccepted = (kUseMovingMask == 0U)
+                               || (inBoundsMovedMoving && movingMaskField.maskAccepts(movedMovingVoxel, true));
 
         let fixedValue = fixedField.sampleWithZeroBorder(fixedVoxel);
         let movingValueMoved = movingField.sampleWithZeroBorder(movedMovingVoxel);
         let error = fixedValue - movingValueMoved;
 
         let includeOutOfBounds = (kIncludeOutOfBounds != 0U);
-        let includeCount = includeOutOfBounds ? 1.0F : (inBoundsMovedMoving ? 1.0F : 0.0F);
+        let masksAccept = fixedMaskAccepted && movingMaskAccepted;
+        let includeCount = masksAccept ? (includeOutOfBounds ? 1.0F : (inBoundsMovedMoving ? 1.0F : 0.0F)) : 0.0F;
         cost = error * error * includeCount;
         count = includeCount;
     }
@@ -104,6 +114,8 @@ void ssd_cost_backward(
     ConstantBuffer<Uniforms> uniforms,
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
+    Texture3D<float> fixedMask,
+    Texture3D<float> movingMask,
     Texture3D<float4> displacementBackward,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     SamplerState linearSampler,
@@ -122,6 +134,8 @@ void ssd_cost_backward(
     if (globalId.x < movingDims.x && globalId.y < movingDims.y && globalId.z < movingDims.z) {
         let fixedField = VoxelSamplingField(fixedImage, linearSampler);
         let movingField = VoxelSamplingField(movingImage, linearSampler);
+        let fixedMaskField = VoxelSamplingField(fixedMask, linearSampler);
+        let movingMaskField = VoxelSamplingField(movingMask, linearSampler);
         let displacementField = VoxelSamplingFieldFloat4(displacementBackward, linearSampler);
 
         let movingVoxel = float3(globalId);
@@ -135,13 +149,17 @@ void ssd_cost_backward(
             movedFixedVoxel = mul(voxelScannerMatrices.targetScannerToVoxel, float4(movedScanner, 1.0F)).xyz;
             inBoundsMovedFixed = inBoundsVoxel(movedFixedVoxel, fixedDims);
         }
+        let movingMaskAccepted = movingMaskField.maskAccepts(movingVoxel, kUseMovingMask != 0U);
+        let fixedMaskAccepted = (kUseFixedMask == 0U)
+                              || (inBoundsMovedFixed && fixedMaskField.maskAccepts(movedFixedVoxel, true));
 
         let movingValue = movingField.sampleWithZeroBorder(movingVoxel);
         let fixedValueMoved = fixedField.sampleWithZeroBorder(movedFixedVoxel);
         let error = movingValue - fixedValueMoved;
 
         let includeOutOfBounds = (kIncludeOutOfBounds != 0U);
-        let includeCount = includeOutOfBounds ? 1.0F : (inBoundsMovedFixed ? 1.0F : 0.0F);
+        let masksAccept = movingMaskAccepted && fixedMaskAccepted;
+        let includeCount = masksAccept ? (includeOutOfBounds ? 1.0F : (inBoundsMovedFixed ? 1.0F : 0.0F)) : 0.0F;
         cost = error * error * includeCount;
         count = includeCount;
     }

@@ -21,6 +21,8 @@ extern static const uint32_t kWorkgroupSizeY = 4U;
 extern static const uint32_t kWorkgroupSizeZ = 4U;
 extern static const float kAlpha;
 extern static const float kEpsilon;
+extern static const uint32_t kUseFixedMask;
+extern static const uint32_t kUseMovingMask;
 // Controls maximum allowed magnitude of update vector; set to 0.0 to disable.
 // Units are mm in scanner space.
 extern static const float kMaxUpdateMagnitude = 0.0F;
@@ -50,6 +52,8 @@ void ssd_update_forward(
     uint32_t3 globalId : SV_DispatchThreadID,
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
+    Texture3D<float> fixedMask,
+    Texture3D<float> movingMask,
     Texture3D<float4> displacement,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     WTexture3D<float4> outputUpdate,
@@ -62,6 +66,11 @@ void ssd_update_forward(
 
     let movingDims = textureSize(movingImage);
     let fixedVoxel = float3(globalId);
+    let fixedMaskField = VoxelSamplingField(fixedMask, linearSampler);
+    if (!fixedMaskField.maskAccepts(fixedVoxel, kUseFixedMask != 0U)) {
+        writeZeroUpdate(outputUpdate, globalId);
+        return;
+    }
     let fixedScanner = mul(voxelScannerMatrices.targetVoxelToScanner, float4(fixedVoxel, 1.0F)).xyz;
     let displacementValue = displacement.Load(int32_t4(globalId, 0)).xyz;
     let movedScanner = fixedScanner + displacementValue;
@@ -73,6 +82,11 @@ void ssd_update_forward(
 
     let fixedField = VoxelSamplingField(fixedImage, linearSampler);
     let movingField = VoxelSamplingField(movingImage, linearSampler);
+    let movingMaskField = VoxelSamplingField(movingMask, linearSampler);
+    if (!movingMaskField.maskAccepts(movedMovingVoxel, kUseMovingMask != 0U)) {
+        writeZeroUpdate(outputUpdate, globalId);
+        return;
+    }
 
     let fixedValue = fixedField.sampleWithZeroBorder(fixedVoxel);
     let movingValueMoved = movingField.sampleWithZeroBorder(movedMovingVoxel);
@@ -93,6 +107,8 @@ void ssd_update_backward(
     uint32_t3 globalId : SV_DispatchThreadID,
     Texture3D<float> fixedImage,
     Texture3D<float> movingImage,
+    Texture3D<float> fixedMask,
+    Texture3D<float> movingMask,
     Texture3D<float4> displacementBackward,
     ConstantBuffer<VoxelScannerMatrices> voxelScannerMatrices,
     WTexture3D<float4> outputUpdate,
@@ -106,9 +122,15 @@ void ssd_update_backward(
     let fixedDims = textureSize(fixedImage);
     let fixedField = VoxelSamplingField(fixedImage, linearSampler);
     let movingField = VoxelSamplingField(movingImage, linearSampler);
+    let fixedMaskField = VoxelSamplingField(fixedMask, linearSampler);
+    let movingMaskField = VoxelSamplingField(movingMask, linearSampler);
     let displacementField = VoxelSamplingFieldFloat4(displacementBackward, linearSampler);
 
     let movingVoxel = float3(globalId);
+    if (!movingMaskField.maskAccepts(movingVoxel, kUseMovingMask != 0U)) {
+        writeZeroUpdate(outputUpdate, globalId);
+        return;
+    }
     let movingScanner = mul(voxelScannerMatrices.sourceVoxelToScanner, float4(movingVoxel, 1.0F)).xyz;
     let displacementSampleVoxel = mul(voxelScannerMatrices.targetScannerToVoxel, float4(movingScanner, 1.0F)).xyz;
     if (!inBoundsVoxel(displacementSampleVoxel, fixedDims)) {
@@ -120,6 +142,10 @@ void ssd_update_backward(
     let movedScanner = movingScanner + displacementValue;
     let movedFixedVoxel = mul(voxelScannerMatrices.targetScannerToVoxel, float4(movedScanner, 1.0F)).xyz;
     if (!inBoundsVoxel(movedFixedVoxel, fixedDims)) {
+        writeZeroUpdate(outputUpdate, globalId);
+        return;
+    }
+    if (!fixedMaskField.maskAccepts(movedFixedVoxel, kUseFixedMask != 0U)) {
         writeZeroUpdate(outputUpdate, globalId);
         return;
     }
