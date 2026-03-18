@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify that tckinfo correctly reads and displays metadata from a TRX file
+tckinfo tckconvert/gs.trx | grep -q "TRX streamlines:.*13" && \
+tckinfo tckconvert/gs.trx | grep -q "Data per streamline" && \
+tckinfo tckconvert/gs.trx | grep -q "Data per vertex"

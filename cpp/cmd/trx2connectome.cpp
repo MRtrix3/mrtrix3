@@ -56,7 +56,8 @@ void usage() {
     "encoded as groups in the TRX file. SIFT2 weights can be applied by pointing "
     "-tck_weights_in at either an external text file or a dps field name in the TRX file."
 
-  + "The output matrix rows and columns correspond to groups in alphabetical order. "
+  + "If all group names are integer-valued (after optional prefix stripping), those integers are used as node IDs. "
+    "Otherwise rows and columns follow alphabetical group order with 1-based IDs. "
     "Use -out_node_names to write the ordered list of group names alongside the matrix.";
 
   EXAMPLES
@@ -103,7 +104,7 @@ void usage() {
 // clang-format on
 
 template <typename T>
-void execute(const node_t n_groups,
+void execute(const node_t max_node_index,
              const stat_edge statistic,
              const std::vector<std::vector<node_t>> &streamline_groups,
              const std::vector<float> &weights,
@@ -113,47 +114,31 @@ void execute(const node_t n_groups,
   const bool symmetric = !get_options("symmetric").empty();
   const bool zero_diagonal = !get_options("zero_diagonal").empty();
 
-  // Matrix uses 1-indexed nodes (0 = unassigned); max valid node index = n_groups
-  Matrix<T> connectome(n_groups, statistic, /*vector_output=*/false, /*track_assignments=*/false);
+  // Matrix uses 1-indexed nodes (0 = unassigned); max valid node index = max_node_index.
+  Matrix<T> connectome(max_node_index, statistic, /*vector_output=*/false, /*track_assignments=*/false);
 
   {
     ProgressBar progress("Building connectome from TRX groups", streamline_groups.size());
     for (size_t i = 0; i < streamline_groups.size(); ++i) {
       const auto &grps = streamline_groups[i];
       const float w = weights.empty() ? 1.0f : weights[i];
-
-      if (grps.empty()) {
-        // Unassigned: accumulate at (0, 0) — discarded unless -keep_unassigned
-        Mapped_track_nodepair mapped;
-        mapped.set_track_index(i);
-        mapped.set_factor(1.0f);
-        mapped.set_weight(w);
-        mapped.set_first_node(0);
-        mapped.set_second_node(0);
-        connectome(mapped);
-      } else if (grps.size() == 1) {
-        // One endpoint unassigned: accumulate at (0, grp)
-        Mapped_track_nodepair mapped;
-        mapped.set_track_index(i);
-        mapped.set_factor(1.0f);
-        mapped.set_weight(w);
-        mapped.set_first_node(0);
-        mapped.set_second_node(grps[0]);
-        connectome(mapped);
-      } else {
-        // Two or more groups: add all unique pairs
-        for (size_t a = 0; a < grps.size(); ++a) {
-          for (size_t b = a + 1; b < grps.size(); ++b) {
-            Mapped_track_nodepair mapped;
-            mapped.set_track_index(i);
-            mapped.set_factor(1.0f);
-            mapped.set_weight(w);
-            mapped.set_first_node(grps[a]);
-            mapped.set_second_node(grps[b]);
-            connectome(mapped);
-          }
-        }
+      // Each streamline's group list contains one entry per endpoint assignment.
+      // Deduplicate and take the first two distinct nodes as the edge endpoints;
+      // using Mapped_track_nodepair ensures exactly one edge per streamline
+      // (Mapped_track_nodelist would add spurious self-connections).
+      std::vector<node_t> unique_grps;
+      for (const auto n : grps) {
+        if (std::find(unique_grps.begin(), unique_grps.end(), n) == unique_grps.end())
+          unique_grps.push_back(n);
       }
+      const node_t n1 = unique_grps.size() >= 1 ? unique_grps[0] : node_t(0);
+      const node_t n2 = unique_grps.size() >= 2 ? unique_grps[1] : node_t(0);
+      Mapped_track_nodepair mapped;
+      mapped.set_track_index(i);
+      mapped.set_factor(1.0f);
+      mapped.set_weight(w);
+      mapped.set_nodes(NodePair(n1, n2));
+      connectome(mapped);
       ++progress;
     }
   }
@@ -185,7 +170,7 @@ void run() {
   if (trx->groups.empty())
     throw Exception("TRX file has no groups; run trxlabel to assign streamlines to parcellation nodes first");
 
-  // Determine which groups to include (optionally filtered by prefix)
+  // Determine which groups to include (optionally filtered by prefix).
   std::string group_prefix;
   {
     auto opt = get_options("group_prefix");
@@ -193,49 +178,22 @@ void run() {
       group_prefix = std::string(opt[0][0]) + "_";
   }
 
-  // Build sorted list of group names (trx->groups is a std::map, so keys are already alphabetical)
-  std::vector<std::string> group_names;
-  for (const auto &[name, _] : trx->groups) {
-    if (group_prefix.empty() || name.substr(0, group_prefix.size()) == group_prefix)
-      group_names.push_back(name);
-  }
+  std::vector<std::string> group_names = collect_group_names(*trx, group_prefix);
 
   if (group_names.empty())
     throw Exception("No groups match the specified prefix '" + group_prefix + "'; check the group names with tckinfo");
 
-  // Map group name → 1-based node index (for use with Matrix<T>)
-  const node_t n_groups = static_cast<node_t>(group_names.size());
-  std::map<std::string, node_t> group_to_id;
-  for (node_t i = 0; i < n_groups; ++i)
-    group_to_id[group_names[i]] = i + 1; // 1-indexed; 0 = unassigned
+  GroupNodeMapping mapping = build_group_node_mapping(group_names, group_prefix);
+  const node_t max_node_index = static_cast<node_t>(mapping.max_node_index);
 
-  // Build per-streamline group membership (invert the group → index mapping)
-  const size_t n_streamlines = trx->num_streamlines();
-  std::vector<std::vector<node_t>> streamline_groups(n_streamlines);
-
-  {
-    ProgressBar progress("Inverting group membership", trx->groups.size());
-    for (const auto &[name, _] : trx->groups) {
-      auto it = group_to_id.find(name);
-      if (it == group_to_id.end()) {
-        ++progress;
-        continue; // group excluded by prefix filter
-      }
-      const node_t gid = it->second;
-      // Groups are lazily loaded; use get_group_members() to trigger the mmap
-      const auto *members = trx->get_group_members(name);
-      if (!members) {
-        ++progress;
-        continue;
-      }
-      for (Eigen::Index row = 0; row < members->_matrix.rows(); ++row) {
-        const uint32_t idx = static_cast<uint32_t>(members->_matrix(row, 0));
-        if (idx < n_streamlines)
-          streamline_groups[idx].push_back(gid);
-      }
-      ++progress;
-    }
+  const auto streamline_groups_u32 = invert_group_memberships(*trx, mapping.group_to_node);
+  std::vector<std::vector<node_t>> streamline_groups(streamline_groups_u32.size());
+  for (size_t i = 0; i < streamline_groups_u32.size(); ++i) {
+    streamline_groups[i].reserve(streamline_groups_u32[i].size());
+    for (const auto n : streamline_groups_u32[i])
+      streamline_groups[i].push_back(static_cast<node_t>(n));
   }
+  const size_t n_streamlines = streamline_groups.size();
 
   // Release TRX mmap before building connectome (reduces peak memory)
   trx->close();
@@ -260,16 +218,16 @@ void run() {
       statistic = stat_edge(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]));
   }
 
-  // Strip prefix from group_names for the -out_node_names output
+  // Node names for -out_node_names: index 1..N, index 0 is unassigned.
   std::vector<std::string> display_names;
-  display_names.reserve(n_groups);
-  for (const auto &name : group_names)
-    display_names.push_back(group_prefix.empty() ? name : name.substr(group_prefix.size()));
+  display_names.reserve(static_cast<size_t>(max_node_index));
+  for (node_t n = 1; n <= max_node_index; ++n)
+    display_names.push_back(mapping.ordered_display_names[static_cast<size_t>(n)]);
 
-  if (n_groups >= node_count_ram_limit) {
+  if (max_node_index >= node_count_ram_limit) {
     INFO("Very large number of nodes detected; using single-precision floating-point storage");
-    execute<float>(n_groups, statistic, streamline_groups, weights, display_names, output_path);
+    execute<float>(max_node_index, statistic, streamline_groups, weights, display_names, output_path);
   } else {
-    execute<double>(n_groups, statistic, streamline_groups, weights, display_names, output_path);
+    execute<double>(max_node_index, statistic, streamline_groups, weights, display_names, output_path);
   }
 }

@@ -82,7 +82,9 @@ void usage() {
 
   ARGUMENTS
   + Argument ("tracks_in",  "the input TRX tractogram").type_tracks_in()
-  + Argument ("tracks_out", "the output TRX tractogram (can be the same as tracks_in to label in-place)").type_file_out();
+  + Argument ("tracks_out", "the output TRX tractogram (can be the same as tracks_in to label in-place)")
+      .type_tracks_out()
+      .type_directory_out();
 
   OPTIONS
   + Option ("nodes", "parcellation image defining the nodes; can be specified multiple times for multiple atlases").allow_multiple()

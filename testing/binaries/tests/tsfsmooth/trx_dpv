@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that tsfsmooth on a TRX dpv field appends a smoothed dpv field.
+cp tracks.trx tmp_tsfsmo.trx
+tcksample tmp_tsfsmo.trx tcksample/fa.mif fa
+# Smooth the dpv field in-place (add fa_smooth)
+tsfsmooth tmp_tsfsmo.trx tmp_tsfsmo.trx -field_in fa -field_out fa_smooth -force
+# Verify both fields now exist
+tsfinfo tmp_tsfsmo.trx 2>&1 | grep -q "fa:"
+tsfinfo tmp_tsfsmo.trx 2>&1 | grep -q "fa_smooth:"

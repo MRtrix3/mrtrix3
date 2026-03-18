@@ -41,6 +41,7 @@ public:
   void set_scaling(default_type min, default_type max);
   void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
   void set_colourmap(int colourmap_index) { colourmap_button->set_colourmap_index(colourmap_index); }
+  bool open_trx_scalar_field_by_name(const std::string &field_spec);
 
   void selected_colourmap(size_t, const ColourMapButton &) override;
   void selected_custom_colour(const QColor &, const ColourMapButton &) override;

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that fixel2tsf embeds per-vertex fixel values as a dpv field directly
+# in the input TRX file when a bare field name is given as the output argument.
+cp tracks.trx tmp_fixel_trx.trx
+fixel2tsf fixel_image/afd.mif tmp_fixel_trx.trx afd
+tckinfo tmp_fixel_trx.trx | grep -q "afd:"

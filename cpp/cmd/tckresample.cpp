@@ -154,12 +154,14 @@ void run() {
   const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler());
 
   Worker worker(resampler);
-  Receiver receiver(argument[1], properties);
-  Thread::run_ordered_queue(*reader,
-                            Thread::batch(Streamline<value_type>()),
-                            Thread::multi(worker),
-                            Thread::batch(Streamline<value_type>()),
-                            receiver);
+  {
+    Receiver receiver(argument[1], properties);
+    Thread::run_ordered_queue(*reader,
+                              Thread::batch(Streamline<value_type>()),
+                              Thread::multi(worker),
+                              Thread::batch(Streamline<value_type>()),
+                              receiver);
+  } // receiver destructs here: TrxStream::finalize() creates the output TRX file
 
   if (trx_to_trx)
     TRX::copy_trx_sidecar_data(argument[0], argument[1], false);

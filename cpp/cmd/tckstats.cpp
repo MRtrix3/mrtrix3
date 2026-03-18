@@ -59,14 +59,12 @@ void usage() {
   + Option ("histogram", "output a histogram of streamline lengths")
     + Argument ("path").type_file_out()
 
-  + Option ("dump", "dump the streamlines lengths to a text file")
+  + Option ("dump", "dump the streamlines lengths to a text file,"
+                      " or embed them as a dps field in the input TRX file when a bare field name"
+                      " (no extension) is given and the input is a TRX file")
     + Argument ("path").type_file_out()
 
   + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
-
-  + Option ("trx_dps", "append per-streamline lengths as a data_per_streamline field to an existing TRX file")
-    + Argument ("path").type_tracks_in().type_directory_in()
-    + Argument ("name").type_text()
 
   + Tractography::TrackWeightsInOption;
 
@@ -109,7 +107,7 @@ void run() {
   std::vector<LW> all_lengths;
   all_lengths.reserve(header_count);
 
-  // dump is declared outside the reader scope so it is available for -trx_dps output
+  // dump is declared outside the reader scope so it is available for -dump TRX field output
   std::vector<float> dump;
 
   {
@@ -153,9 +151,17 @@ void run() {
       ++progress;
     }
 
+  }
+
+  {
     auto opt = get_options("dump");
-    if (!opt.empty())
-      File::Matrix::save_vector(dump, opt[0][0]);
+    if (!opt.empty()) {
+      const std::string dump_arg(opt[0][0]);
+      if (DWI::Tractography::TRX::is_trx_field_name(argument[0], dump_arg))
+        DWI::Tractography::TRX::append_dps<float>(argument[0], dump_arg, dump);
+      else
+        File::Matrix::save_vector(dump, dump_arg);
+    }
   }
 
   if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
@@ -259,7 +265,4 @@ void run() {
     out << "\n";
   }
 
-  opt = get_options("trx_dps");
-  if (!opt.empty())
-    append_dps<float>(opt[0][0], opt[0][1], dump);
 }

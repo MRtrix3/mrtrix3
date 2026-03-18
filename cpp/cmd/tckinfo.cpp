@@ -36,13 +36,20 @@ void usage() {
   + Argument ("tracks", "the input track file.").type_tracks_in().type_file_in().type_directory_in().allow_multiple();
 
   OPTIONS
-  + Option ("count", "count number of tracks in file explicitly, ignoring the header");
+  + Option ("count", "count number of tracks in file explicitly, ignoring the header")
+  + Option ("prefix_depth", "for TRX files, collapse groups by the first N underscore-delimited "
+                            "tokens of their name. Defaults to 1, which groups by atlas name prefix. "
+                            "Use 0 to list all groups individually, or higher values for finer detail.")
+    + Argument ("N").type_integer(0);
 
 }
 // clang-format on
 
 void run() {
   const bool actual_count = !get_options("count").empty();
+  const auto prefix_depth_opt = get_options("prefix_depth");
+  const bool prefix_depth_specified = !prefix_depth_opt.empty();
+  const int prefix_depth = prefix_depth_specified ? int(prefix_depth_opt[0][0]) : 1;
 
   for (size_t i = 0; i < argument.size(); ++i) {
     std::cout << "***********************************\n";
@@ -52,7 +59,7 @@ void run() {
       auto trx = Tractography::TRX::load_trx(argument[i]);
       if (!trx)
         throw Exception("Failed to load TRX file: " + std::string(argument[i]));
-      Tractography::TRX::print_info(std::cout, *trx);
+      Tractography::TRX::print_info(std::cout, *trx, prefix_depth, !prefix_depth_specified);
       trx->close();
       continue;
     }

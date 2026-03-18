@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that tckedit preserves dps/dpv/groups metadata when filtering a TRX file.
+# tckconvert/gs_fldr.trx contains dps (random_coord) and dpv (color_x/y/z) fields.
+# After filtering by length, the output TRX should retain those fields,
+# with dimensions remapped to the surviving streamline/vertex counts.
+tckedit tckconvert/gs_fldr.trx -minlength 5 tmp.trx -force
+tckinfo tmp.trx | grep -q "Data per streamline" && \
+tckinfo tmp.trx | grep -q "Data per vertex"

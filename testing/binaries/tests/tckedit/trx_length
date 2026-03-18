@@ -1,0 +1,10 @@
+#!/bin/bash
+# Validate that tckedit correctly filters TRX streamlines by length,
+# producing the same result as filtering the equivalent TCK file
+tckedit tckedit/in.trx -minlength 10 tmp.trx -force
+tckconvert tmp.trx tmp.tck -force
+testing_diff_tck tmp.tck tckedit/upper.tck
+
+tckedit tckedit/in.trx -maxlength 10 tmp.trx -force
+tckconvert tmp.trx tmp.tck -force
+testing_diff_tck tmp.tck tckedit/lower.tck

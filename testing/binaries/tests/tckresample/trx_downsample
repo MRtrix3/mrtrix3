@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify that tckresample produces the same geometry on TRX input as TCK input,
+# and that dps metadata is preserved through the resampling step.
+tckconvert tracks.tck tmp_in.trx -force
+tckstats tmp_in.trx -dump lengths
+tckresample tmp_in.trx tmp_out.trx -downsample 2 -force
+# geometry must match the TCK reference
+tckconvert tmp_out.trx tmp_out.tck -force
+testing_diff_tck tmp_out.tck tckresample/downsample.tck
+# dps field must be preserved in the output
+tckinfo tmp_out.trx | grep -q "lengths:"

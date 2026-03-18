@@ -1,0 +1,25 @@
+#!/bin/bash
+# Verify that connectome2tck with TRX input (assignments_in = "-") produces the
+# same edge TCK as the standard TCK + text-file assignments workflow.
+#
+# TCK path: tck2connectome -out_assignments → connectome2tck with text file
+# TRX path: trxlabel → connectome2tck with "-" (derive from groups)
+#
+# Both use the default radial-search assignment mechanism. The SIFT phantom has
+# two active edges (1-2 and 3-4); we extract edge 1-2 as a single file and
+# compare streamline geometry with -unordered (order may differ between paths).
+
+# TCK path: generate assignments file then extract edge 1-2
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_matrix.csv \
+    -out_assignments tmp_asgn.csv -force
+connectome2tck SIFT_phantom/tracks.tck tmp_asgn.csv tmp_tck_edge12 \
+    -nodes 1,2 -exclusive -files single -force
+
+# TRX path: label the TRX then extract using "-" to skip the assignments file
+trxlabel SIFT_phantom/tracks.trx tmp_labeled.trx \
+    -nodes SIFT_phantom/parc.mif -force
+connectome2tck tmp_labeled.trx - tmp_trx_edge12 \
+    -nodes 1,2 -exclusive -files single -force
+
+# Edge 1-2 should contain identical streamlines regardless of path
+testing_diff_tck tmp_tck_edge12.tck tmp_trx_edge12.tck -unordered

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify that fixelconnectivity produces the same output with TRX input as with TCK input.
+tckconvert SIFT_phantom/tracks.tck tmp_tracks.trx -force
+fixelconnectivity SIFT_phantom/fixels/ tmp_tracks.trx tmp/ \
+-count tmp-count.mif \
+-extent tmp-extent.mif \
+-force
+testing_diff_image tmp/index.mif fixelconnectivity/default/index.mif
+testing_diff_image tmp/fixels.mif fixelconnectivity/default/fixels.mif
+testing_diff_image tmp/values.mif fixelconnectivity/default/values.mif
+testing_diff_image tmp-count.mif fixelconnectivity/default_count.mif
+testing_diff_image tmp-extent.mif fixelconnectivity/default_extent.mif

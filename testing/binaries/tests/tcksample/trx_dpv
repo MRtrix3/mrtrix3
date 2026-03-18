@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that tcksample embeds per-vertex sampled values as a dpv field directly
+# in the input TRX file when a bare field name is given as the output argument.
+cp tracks.trx tmp_samp_trx.trx
+tcksample tmp_samp_trx.trx tcksample/fa.mif fa
+tckinfo tmp_samp_trx.trx | grep -q "fa:"

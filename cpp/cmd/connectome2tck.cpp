@@ -181,7 +181,7 @@ void usage() {
              " The prefix is stripped when deriving node indices, so dk_1 → node 1.");
 
   ARGUMENTS
-  + Argument ("tracks_in",      "the input track file").type_file_in()
+  + Argument ("tracks_in",      "the input track file").type_tracks_in().type_directory_in()
   + Argument ("assignments_in", "input text file containing the node assignments for each streamline"
                                 " (as produced by tck2connectome -out_assignments);"
                                 " for TRX input, pass \"-\" to derive assignments from embedded groups"
@@ -227,66 +227,24 @@ assignments_from_trx_groups(const std::string &trx_path, const std::string &pref
     throw Exception("TRX file has no groups; run trxlabel to assign streamlines to nodes first");
 
   const std::string prefix = prefix_filter.empty() ? "" : prefix_filter + "_";
-  const size_t n_streamlines = trx->num_streamlines();
-
-  // Collect group names that match the prefix (trx->groups is a sorted std::map)
-  std::vector<std::string> group_names;
-  for (const auto &[name, _] : trx->groups) {
-    if (prefix.empty() || name.substr(0, prefix.size()) == prefix)
-      group_names.push_back(name);
-  }
+  std::vector<std::string> group_names = collect_group_names(*trx, prefix);
   if (group_names.empty())
     throw Exception("No TRX groups match prefix '" + prefix_filter + "'");
 
-  // Try to parse all names as integers after stripping the prefix.
-  // Succeeds for the common case of trxlabel without -lut.
-  bool all_integers = true;
-  std::map<std::string, node_t> name_to_node;
-  for (const auto &name : group_names) {
-    const std::string stripped = prefix.empty() ? name : name.substr(prefix.size());
-    try {
-      const node_t idx = to<node_t>(stripped);
-      name_to_node[name] = idx;
-      max_node_index = std::max(max_node_index, idx);
-    } catch (...) {
-      all_integers = false;
-      break;
-    }
-  }
-
-  if (!all_integers) {
-    // Non-integer names (LUT-based): assign 1-based indices in alphabetical order.
-    // group_names is already sorted (came from std::map keys).
-    name_to_node.clear();
-    for (size_t i = 0; i < group_names.size(); ++i) {
-      const node_t idx = static_cast<node_t>(i + 1);
-      name_to_node[group_names[i]] = idx;
-      max_node_index = std::max(max_node_index, idx);
-    }
+  GroupNodeMapping mapping = build_group_node_mapping(group_names, prefix);
+  if (!mapping.integer_names) {
     INFO("TRX group names are non-integer; assigning 1-based indices in alphabetical order");
   }
+  max_node_index = std::max(max_node_index, mapping.max_node_index);
 
-  // Invert the group → streamline mapping to build per-streamline node lists
-  std::vector<std::vector<node_t>> assignments(n_streamlines);
-  for (const auto &[name, _] : trx->groups) {
-    auto it = name_to_node.find(name);
-    if (it == name_to_node.end())
-      continue; // filtered out by prefix
-    const node_t node_id = it->second;
-    const auto *members = trx->get_group_members(name);
-    if (!members)
-      continue;
-    for (Eigen::Index r = 0; r < members->_matrix.rows(); ++r) {
-      const uint32_t idx = static_cast<uint32_t>(members->_matrix(r, 0));
-      if (idx < n_streamlines)
-        assignments[idx].push_back(node_id);
-    }
+  const auto memberships_u32 = invert_group_memberships(*trx, mapping.group_to_node);
+  std::vector<std::vector<node_t>> assignments;
+  assignments.resize(memberships_u32.size());
+  for (size_t i = 0; i < memberships_u32.size(); ++i) {
+    assignments[i].reserve(memberships_u32[i].size());
+    for (const auto n : memberships_u32[i])
+      assignments[i].push_back(static_cast<node_t>(n));
   }
-
-  // Sort each streamline's node list for deterministic pair ordering downstream
-  for (auto &nodes : assignments)
-    std::sort(nodes.begin(), nodes.end());
-
   return assignments;
 }
 

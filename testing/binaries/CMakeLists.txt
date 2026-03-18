@@ -36,6 +36,11 @@ add_bash_binary_test(5ttedit/twotissues)
 
 add_bash_binary_test(amp2sh/default)
 
+add_bash_binary_test(connectome2tck/trx_all_voxels_parity)
+add_bash_binary_test(connectome2tck/trx_default)
+add_bash_binary_test(connectome2tck/trx_forward_search)
+add_bash_binary_test(connectome2tck/trx_group_prefix)
+
 add_bash_binary_test(connectomeedit/lower_triangular_from_asymmetric)
 add_bash_binary_test(connectomeedit/lower_triangular_from_lower_triangular)
 add_bash_binary_test(connectomeedit/lower_triangular_from_symmetric)
@@ -119,6 +124,7 @@ add_bash_binary_test(fixel2sh/default)
 add_bash_binary_test(fixel2sh/lmax)
 
 add_bash_binary_test(fixel2tsf/default)
+add_bash_binary_test(fixel2tsf/trx_dpv)
 
 add_bash_binary_test(fixel2voxel/absmax)
 add_bash_binary_test(fixel2voxel/complexity)
@@ -139,6 +145,7 @@ add_bash_binary_test(fixelcfestats/legacy)
 add_bash_binary_test(fixelcfestats/masked)
 
 add_bash_binary_test(fixelconnectivity/masked)
+add_bash_binary_test(fixelconnectivity/trx_default)
 add_bash_binary_test(fixelconnectivity/weighted)
 
 add_bash_binary_test(fixelcorrespondence/default)
@@ -407,6 +414,11 @@ add_bash_binary_test(tckconvert/rib_write)
 add_bash_binary_test(tckconvert/scanner2voxel)
 add_bash_binary_test(tckconvert/text_read_range)
 add_bash_binary_test(tckconvert/text_write)
+add_bash_binary_test(tckconvert/trx_read)
+add_bash_binary_test(tckconvert/trx_uncompressed_read)
+add_bash_binary_test(tckconvert/trx_write_dps_float16)
+add_bash_binary_test(tckconvert/trx_write_dps_float32)
+add_bash_binary_test(tckconvert/trx_write_dps_float64)
 add_bash_binary_test(tckconvert/vtk_read_binary)
 add_bash_binary_test(tckconvert/vtk_read_empty)
 add_bash_binary_test(tckconvert/vtk_write_ascii)
@@ -416,6 +428,8 @@ add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)
 add_bash_binary_test(tckedit/length)
 add_bash_binary_test(tckedit/mask)
+add_bash_binary_test(tckedit/trx_length)
+add_bash_binary_test(tckedit/trx_preserves_metadata)
 
 add_bash_binary_test(tckgen/act_terminations)
 add_bash_binary_test(tckgen/algorithm_ifod2)
@@ -432,20 +446,28 @@ add_bash_binary_test(tckgen/seed_image)
 add_bash_binary_test(tckgen/seed_random_per_voxel)
 add_bash_binary_test(tckgen/seed_rejection)
 add_bash_binary_test(tckgen/seed_sphere)
+add_bash_binary_test(tckgen/trx_float16)
+add_bash_binary_test(tckgen/trx_output)
 
 add_bash_binary_test(tckglobal/default)
 add_bash_binary_test(tckglobal/masked)
 add_bash_binary_test(tckglobal/multitissue)
 
+add_bash_binary_test(tckinfo/trx_metadata)
+
 add_bash_binary_test(tckmap/dec)
 add_bash_binary_test(tckmap/default_template)
 add_bash_binary_test(tckmap/default_vox)
 add_bash_binary_test(tckmap/tod)
+add_bash_binary_test(tckmap/trx_dps_weights)
+add_bash_binary_test(tckmap/trx_length_contrast)
+add_bash_binary_test(tckmap/trx_tdi)
 
 add_bash_binary_test(tckresample/downsample)
 add_bash_binary_test(tckresample/endpoints)
 add_bash_binary_test(tckresample/num_points)
 add_bash_binary_test(tckresample/step_size)
+add_bash_binary_test(tckresample/trx_downsample)
 add_bash_binary_test(tckresample/upsample)
 
 add_bash_binary_test(tcksample/precise)
@@ -456,11 +478,20 @@ add_bash_binary_test(tcksample/statmin)
 add_bash_binary_test(tcksample/statnone_text)
 add_bash_binary_test(tcksample/statnone_tsf)
 add_bash_binary_test(tcksample/tdifraction)
+add_bash_binary_test(tcksample/trx_dps_mean)
+add_bash_binary_test(tcksample/trx_dpv)
 
 add_bash_binary_test(tcksift/default)
+add_bash_binary_test(tcksift/trx_subset)
 
 add_bash_binary_test(tcksift2/default)
+add_bash_binary_test(tcksift2/trx_dps)
 
+add_bash_binary_test(tckstats/trx_dps)
+add_bash_binary_test(tckstats/trx_stats)
+
+add_bash_binary_test(tcktransform/trx_geometry)
+add_bash_binary_test(tcktransform/trx_preserves_metadata)
 add_bash_binary_test(tcktransform/unitwarp)
 
 add_bash_binary_test(tensor2metric/adc)
@@ -483,14 +514,30 @@ add_bash_binary_test(transformconvert/itk_ants)
 add_bash_binary_test(transformconvert/itk_ants_zero)
 add_bash_binary_test(transformconvert/itk_slicer)
 
+add_bash_binary_test(trx2connectome/all_voxels_parity)
+add_bash_binary_test(trx2connectome/default)
+add_bash_binary_test(trx2connectome/forward_search)
+add_bash_binary_test(trx2connectome/group_prefix)
+
+add_bash_binary_test(trxlabel/default)
+add_bash_binary_test(trxlabel/multiple_atlases)
+
 add_bash_binary_test(tsfdivide/default)
+add_bash_binary_test(tsfdivide/trx_dpv)
+
+add_bash_binary_test(tsfinfo/trx_dpv)
 
 add_bash_binary_test(tsfmult/default)
+add_bash_binary_test(tsfmult/trx_dpv)
 
 add_bash_binary_test(tsfsmooth/default)
+add_bash_binary_test(tsfsmooth/trx_dpv)
 
 add_bash_binary_test(tsfthreshold/default)
 add_bash_binary_test(tsfthreshold/invert)
+add_bash_binary_test(tsfthreshold/trx_dpv)
+
+add_bash_binary_test(tsfvalidate/trx_dpv)
 
 add_bash_binary_test(vectorstats/0)
 add_bash_binary_test(vectorstats/1)

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that tckstats reports identical statistics for TRX and TCK inputs
+# containing the same streamlines.
+tckstats SIFT_phantom/tracks.tck -output count -output mean -output std -output min -output max > tmp_tck.txt
+tckstats SIFT_phantom/tracks.trx -output count -output mean -output std -output min -output max > tmp_trx.txt
+testing_diff_matrix tmp_tck.txt tmp_trx.txt -abs 1e-4

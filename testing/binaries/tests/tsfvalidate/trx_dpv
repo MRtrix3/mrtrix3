@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that tsfvalidate -field checks a TRX dpv field for consistency.
+cp tracks.trx tmp_tsfval.trx
+tcksample tmp_tsfval.trx tcksample/fa.mif fa
+# Valid field: should succeed
+tsfvalidate tmp_tsfval.trx tmp_tsfval.trx -field fa

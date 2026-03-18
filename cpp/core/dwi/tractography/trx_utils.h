@@ -16,10 +16,14 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "app.h"
 #include "dwi/tractography/file.h"
@@ -55,14 +59,11 @@ inline bool is_trx_field_name(std::string_view input_path, std::string_view outp
          output_arg.find('\\') == std::string_view::npos;
 }
 
-// Load a TRX file, auto-detecting zip vs directory format.
-// For float32 files this is a direct mmap load (zero-copy for positions).
-// For float16 or float64 files, positions are copy-converted to float32: the
-// file is loaded once as float32 (which gives correct structure, dps, dpv, and
-// groups via trx-cpp's own dtype casting), then positions are re-loaded from a
-// second pass with the native dtype and written into an owned float32 buffer
-// that shadows the (wrongly-typed) mmap.  The double-load is only incurred for
-// non-float32 files; the float32 path is unchanged.
+// Load a TRX file, auto-detecting zip vs directory format, and expose positions
+// as float32.
+//
+// For non-float32 positions, conversion is performed in bounded chunks directly
+// into the loaded float32 matrix to avoid allocating a second full-size copy.
 inline std::unique_ptr<trx::TrxFile<float>> load_trx(std::string_view path) {
   const std::string filename(path);
   const auto dtype = trx::detect_positions_scalar_type(filename, trx::TrxScalarType::Float32);
@@ -73,27 +74,27 @@ inline std::unique_ptr<trx::TrxFile<float>> load_trx(std::string_view path) {
   } else {
     WARN("TRX file '" + filename + "' has float64 positions; converting to float32 (precision loss)");
   }
-  // Load as float32 to get structure, dps, dpv, and groups (trx-cpp copy-casts
-  // those fields correctly).  Positions in _data are garbage at this point
-  // (float16/float64 bytes reinterpreted as float32) but _data is not accessed
-  // until we remap it below.
   auto trx_f32 = trx::load<float>(filename);
   if (!trx_f32 || !trx_f32->streamlines)
     return trx_f32;
-  const auto nv = static_cast<Eigen::Index>(trx_f32->num_vertices());
-  auto &owned = trx_f32->streamlines->_data_owned;
-  owned.resize(static_cast<size_t>(nv * 3));
-  // Second pass with the correct native dtype to get proper coordinate values.
+  const Eigen::Index n_vertices = static_cast<Eigen::Index>(trx_f32->num_vertices());
+  if (n_vertices <= 0)
+    return trx_f32;
+  const Eigen::Index chunk_rows = static_cast<Eigen::Index>(1) << 20;
   trx::with_trx_reader(filename, [&](auto &reader, trx::TrxScalarType) -> int {
     const auto &src = reader->streamlines->_data;
-    for (Eigen::Index i = 0; i < nv; ++i) {
-      owned[static_cast<size_t>(i * 3 + 0)] = static_cast<float>(src(i, 0));
-      owned[static_cast<size_t>(i * 3 + 1)] = static_cast<float>(src(i, 1));
-      owned[static_cast<size_t>(i * 3 + 2)] = static_cast<float>(src(i, 2));
+    if (src.rows() != n_vertices || src.cols() != 3)
+      throw Exception("unexpected TRX positions shape while converting to float32");
+    for (Eigen::Index row0 = 0; row0 < n_vertices; row0 += chunk_rows) {
+      const Eigen::Index row1 = std::min<Eigen::Index>(n_vertices, row0 + chunk_rows);
+      for (Eigen::Index r = row0; r < row1; ++r) {
+        trx_f32->streamlines->_data(r, 0) = static_cast<float>(src(r, 0));
+        trx_f32->streamlines->_data(r, 1) = static_cast<float>(src(r, 1));
+        trx_f32->streamlines->_data(r, 2) = static_cast<float>(src(r, 2));
+      }
     }
     return 0;
   });
-  trx::detail::remap(trx_f32->streamlines->_data, owned.data(), static_cast<int>(nv), 3);
   return trx_f32;
 }
 
@@ -103,6 +104,107 @@ inline std::pair<size_t, size_t> count_trx(std::string_view path) {
   if (!trx)
     throw Exception("Failed to load TRX file: " + std::string(path));
   return {trx->num_streamlines(), trx->num_vertices()};
+}
+
+struct GroupNodeMapping {
+  std::map<std::string, uint32_t> group_to_node;
+  std::vector<std::string> ordered_display_names; // 1-based node display names, index 0 unused
+  uint32_t max_node_index = 0;
+  bool integer_names = false;
+};
+
+inline bool parse_group_node_id(const std::string &group_name, const std::string &prefix, uint32_t &out_node) {
+  const std::string stripped = prefix.empty() ? group_name : group_name.substr(prefix.size());
+  try {
+    const uint32_t parsed = to<uint32_t>(stripped);
+    if (parsed <= 0)
+      return false;
+    out_node = parsed;
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
+inline GroupNodeMapping build_group_node_mapping(const std::vector<std::string> &group_names,
+                                                 const std::string &prefix) {
+  GroupNodeMapping mapping;
+  if (group_names.empty())
+    return mapping;
+
+  bool all_integer = true;
+  std::map<uint32_t, std::string> reverse;
+  for (const auto &name : group_names) {
+    uint32_t parsed = 0;
+    if (!parse_group_node_id(name, prefix, parsed)) {
+      all_integer = false;
+      break;
+    }
+    if (reverse.count(parsed)) {
+      all_integer = false;
+      break;
+    }
+    reverse.emplace(parsed, prefix.empty() ? name : name.substr(prefix.size()));
+  }
+
+  if (all_integer) {
+    mapping.integer_names = true;
+    mapping.max_node_index = reverse.rbegin()->first;
+    mapping.ordered_display_names.assign(static_cast<size_t>(mapping.max_node_index) + 1, "");
+    for (const auto &[node, display] : reverse)
+      mapping.ordered_display_names[static_cast<size_t>(node)] = display;
+    for (const auto &name : group_names) {
+      uint32_t parsed = 0;
+      parse_group_node_id(name, prefix, parsed);
+      mapping.group_to_node[name] = parsed;
+    }
+    return mapping;
+  }
+
+  mapping.integer_names = false;
+  mapping.max_node_index = static_cast<uint32_t>(group_names.size());
+  mapping.ordered_display_names.assign(static_cast<size_t>(mapping.max_node_index) + 1, "");
+  for (size_t i = 0; i < group_names.size(); ++i) {
+    const uint32_t node = static_cast<uint32_t>(i + 1);
+    mapping.group_to_node[group_names[i]] = node;
+    mapping.ordered_display_names[static_cast<size_t>(node)] =
+        prefix.empty() ? group_names[i] : group_names[i].substr(prefix.size());
+  }
+  return mapping;
+}
+
+inline std::vector<std::string> collect_group_names(const trx::TrxFile<float> &trx, const std::string &prefix) {
+  std::vector<std::string> names;
+  for (const auto &[name, _] : trx.groups) {
+    if (prefix.empty() || name.substr(0, prefix.size()) == prefix)
+      names.push_back(name);
+  }
+  return names;
+}
+
+inline std::vector<std::vector<uint32_t>>
+invert_group_memberships(const trx::TrxFile<float> &trx, const std::map<std::string, uint32_t> &group_to_node) {
+  const size_t n_streamlines = trx.num_streamlines();
+  std::vector<std::vector<uint32_t>> memberships(n_streamlines);
+  for (const auto &[name, _] : trx.groups) {
+    auto it = group_to_node.find(name);
+    if (it == group_to_node.end())
+      continue;
+    const uint32_t node_id = it->second;
+    const auto *members = trx.get_group_members(name);
+    if (!members)
+      continue;
+    for (Eigen::Index r = 0; r < members->_matrix.rows(); ++r) {
+      const auto idx = static_cast<size_t>(members->_matrix(r, 0));
+      if (idx < n_streamlines)
+        memberships[idx].push_back(node_id);
+    }
+  }
+  for (auto &nodes : memberships) {
+    std::sort(nodes.begin(), nodes.end());
+    nodes.erase(std::unique(nodes.begin(), nodes.end()), nodes.end());
+  }
+  return memberships;
 }
 
 // Construct a TypedArray from a std::vector, copying the raw bytes into owned storage
@@ -273,8 +375,32 @@ inline bool has_aux_data(const trx::TrxFile<float> *trx) {
            trx->data_per_group.empty());
 }
 
-// Print TRX file information to an output stream
-inline void print_info(std::ostream &out, const trx::TrxFile<float> &trx) {
+// Print TRX file information to an output stream.
+// Choose the most granular prefix depth whose output stays within max_lines.
+// Returns 0 if the flat group list already fits, or the largest depth value
+// (starting from 1) where the collapsed output has ≤ max_lines lines.
+// If even depth 1 exceeds max_lines, depth 1 is returned as the most compact
+// option available. group_counts maps each group name to its streamline count.
+inline int auto_prefix_depth(const std::map<std::string, size_t> &group_counts, size_t max_lines = 100) {
+  if (group_counts.size() <= max_lines)
+    return 0;
+  int best = 1;
+  for (int depth = 1; depth <= 20; ++depth) {
+    const std::string s = trx::format_groups_summary(group_counts, depth);
+    const size_t n_lines = static_cast<size_t>(std::count(s.begin(), s.end(), '\n')) + 1;
+    if (n_lines > max_lines)
+      break; // line count is non-decreasing with depth; no higher depth will help
+    best = depth;
+  }
+  return best;
+}
+
+// When prefix_depth > 0, groups are collapsed by their underscore-delimited
+// name prefix to the given depth (see trx::format_groups_summary).
+// Set depth_auto = true when the depth was chosen automatically; a note is
+// then appended to the Groups header line to inform the user.
+inline void
+print_info(std::ostream &out, const trx::TrxFile<float> &trx, int prefix_depth = 0, bool depth_auto = false) {
   out << "    TRX streamlines:      " << trx.num_streamlines() << "\n";
   out << "    TRX vertices:         " << trx.num_vertices() << "\n";
 
@@ -315,13 +441,16 @@ inline void print_info(std::ostream &out, const trx::TrxFile<float> &trx) {
   }
 
   if (!trx.groups.empty()) {
-    out << "    Groups (" << trx.groups.size() << "):\n";
+    out << "    Groups (" << trx.groups.size() << ")";
+    if (depth_auto && prefix_depth > 0)
+      out << " [use -prefix_depth 0 to see all, or -prefix_depth N for a different depth]";
+    out << ":\n";
+    std::map<std::string, size_t> group_counts;
     for (const auto &kv : trx.groups) {
-      // Groups are lazily loaded; use get_group_members() to trigger the load
       const auto *members = trx.get_group_members(kv.first);
-      size_t count = members ? static_cast<size_t>(members->_matrix.rows()) : 0;
-      out << "      " << kv.first << ": " << count << " streamlines\n";
+      group_counts[kv.first] = members ? static_cast<size_t>(members->_matrix.rows()) : 0;
     }
+    out << trx::format_groups_summary(group_counts, prefix_depth, "      ") << "\n";
   }
 
   if (!trx.data_per_streamline.empty()) {
@@ -365,7 +494,13 @@ inline void print_info(std::ostream &out, const trx::TrxFile<float> &trx) {
 class TRXReader : public ReaderInterface<float> {
 public:
   explicit TRXReader(std::string_view file, std::vector<float> weights = {})
-      : trx(nullptr), current(0), num_streamlines_(0), has_aux_data_(false), weights_(std::move(weights)) {
+      : trx(nullptr),
+        current(0),
+        num_streamlines_(0),
+        has_aux_data_(false),
+        weights_(std::move(weights)),
+        warned_short_weights_(false),
+        warned_excess_weights_(false) {
     try {
       trx = load_trx(file);
       if (trx && trx->streamlines && trx->streamlines->_offsets.size() > 0)
@@ -378,12 +513,31 @@ public:
 
   bool operator()(Streamline<float> &tck) override {
     tck.clear();
-    if (!trx || current >= num_streamlines_)
+    if (!trx || current >= num_streamlines_) {
+      if (!warned_excess_weights_ && !weights_.empty() && weights_.size() > static_cast<size_t>(num_streamlines_)) {
+        WARN("Streamline weights file contains more entries (" + str(weights_.size()) + ") than TRX file (" +
+             str(num_streamlines_) + ")");
+        warned_excess_weights_ = true;
+      }
       return false;
+    }
     tck.set_index(static_cast<size_t>(current));
     // Inject per-streamline weight if weights were resolved at construction time
-    if (!weights_.empty() && static_cast<size_t>(current) < weights_.size())
-      tck.weight = weights_[static_cast<size_t>(current)];
+    if (!weights_.empty()) {
+      if (static_cast<size_t>(current) < weights_.size()) {
+        tck.weight = weights_[static_cast<size_t>(current)];
+      } else {
+        if (!warned_short_weights_) {
+          WARN("Streamline weights file contains less entries (" + str(weights_.size()) +
+               ") than TRX file; ceasing reading of streamline data");
+          warned_short_weights_ = true;
+        }
+        tck.clear();
+        return false;
+      }
+    } else {
+      tck.weight = 1.0f;
+    }
     const Eigen::Index start = trx->streamlines->_offsets(current, 0);
     const Eigen::Index end = trx->streamlines->_offsets(current + 1, 0);
     tck.reserve(end - start);
@@ -438,6 +592,8 @@ private:
   Eigen::Index num_streamlines_;
   bool has_aux_data_;
   std::vector<float> weights_; // per-streamline weights injected into tck.weight during iteration
+  bool warned_short_weights_;
+  bool warned_excess_weights_;
 };
 
 // Writer class that accumulates streamlines into a preallocated TrxFile

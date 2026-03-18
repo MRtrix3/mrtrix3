@@ -146,6 +146,8 @@ Tractography tool options
 
 -  **-tractography.tsf_load tsf** *(multiple uses permitted)* Load the specified tractography scalar file.
 
+-  **-tractography.trx_scalar field** *(multiple uses permitted)* Load an embedded TRX scalar field for the selected tractogram. Accepts either ``name``, ``dps:name``, or ``dpv:name``. If ``name`` exists in both dps and dpv, use the explicit prefix.
+
 -  **-tractography.tsf_range RangeMin,RangeMax** *(multiple uses permitted)* Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
 -  **-tractography.tsf_thresh ThresholdMin,ThresholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.

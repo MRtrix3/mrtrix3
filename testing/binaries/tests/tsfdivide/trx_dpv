@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify that tsfdivide on TRX dpv fields appends the ratio as a new dpv field.
+cp tracks.trx tmp_tsfdiv.trx
+tcksample tmp_tsfdiv.trx tcksample/fa.mif fa
+# Create a second dpv field (smoothed) to divide by
+tsfsmooth tmp_tsfdiv.trx tmp_tsfdiv.trx -field_in fa -field_out fa_smooth -force
+# Divide fa / fa_smooth
+tsfdivide tmp_tsfdiv.trx tmp_tsfdiv.trx tmp_tsfdiv.trx \
+    -field1 fa -field2 fa_smooth -field_out fa_ratio -force
+# Verify the ratio field was added
+tsfinfo tmp_tsfdiv.trx 2>&1 | grep -q "fa_ratio:"
+# Regression: TSF/TSF→TSF path still works
+tsfsmooth tcksample/out.tsf tmp_tsfdiv_smooth.tsf -force
+tsfdivide tcksample/out.tsf tmp_tsfdiv_smooth.tsf tmp_tsfdiv_ref.tsf -force
+tsfinfo tmp_tsfdiv_ref.tsf 2>&1 | grep -q "count:.*500"

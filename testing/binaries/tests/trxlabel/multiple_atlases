@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify that trxlabel can process two atlases in a single invocation using -prefix.
+# Both atlases are the same parc.mif here; with different prefixes the groups
+# should have distinct names (a_1, a_2, a_3, a_4, b_1, b_2, b_3, b_4 = 8 groups total).
+trxlabel SIFT_phantom/tracks.trx tmp.trx \
+    -nodes SIFT_phantom/parc.mif \
+    -nodes SIFT_phantom/parc.mif \
+    -prefix a \
+    -prefix b \
+    -force
+# 8 groups expected (4 nodes × 2 atlases)
+tckinfo tmp.trx -prefix_depth 0 | grep -q "Groups (8)"
+tckinfo tmp.trx -prefix_depth 0 | grep -q "a_1:"
+tckinfo tmp.trx -prefix_depth 0 | grep -q "b_1:"

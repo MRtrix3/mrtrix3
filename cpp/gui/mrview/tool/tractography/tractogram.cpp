@@ -1059,12 +1059,17 @@ void Tractogram::load_trx_scalar_field(const std::string &field_name, bool is_dp
     if (it == trx->data_per_streamline.end() || !it->second)
       throw Exception("TRX file has no dps field named \"" + field_name + "\"");
     const auto &mat = it->second->_matrix;
+    if (mat.cols() != 1)
+      throw Exception("TRX dps field \"" + field_name + "\" must have exactly 1 column for scalar display");
+    if (mat.rows() != static_cast<Eigen::Index>(trx->num_streamlines())) {
+      throw Exception("TRX dps field \"" + field_name + "\" length (" + str(mat.rows()) +
+                      ") does not match streamline count (" + str(trx->num_streamlines()) + ")");
+    }
 
     for (size_t buf_idx = 0; buf_idx != vertex_buffers.size(); ++buf_idx) {
       size_t n = num_tracks_per_buffer[buf_idx];
       for (size_t ti = 0; ti < n; ++ti, ++global_idx) {
-        const float v =
-            (static_cast<Eigen::Index>(global_idx) < mat.rows()) ? mat(static_cast<Eigen::Index>(global_idx), 0) : 0.0f;
+        const float v = mat(static_cast<Eigen::Index>(global_idx), 0);
         const size_t len = static_cast<size_t>(original_track_sizes[buf_idx][ti]);
         for (int i = 0; i < track_padding; ++i)
           buffer.push_back(v);
@@ -1085,6 +1090,12 @@ void Tractogram::load_trx_scalar_field(const std::string &field_name, bool is_dp
     if (it == trx->data_per_vertex.end() || !it->second)
       throw Exception("TRX file has no dpv field named \"" + field_name + "\"");
     const auto &dpv = it->second->_data;
+    if (dpv.cols() != 1)
+      throw Exception("TRX dpv field \"" + field_name + "\" must have exactly 1 column for scalar display");
+    if (dpv.rows() != static_cast<Eigen::Index>(trx->num_vertices())) {
+      throw Exception("TRX dpv field \"" + field_name + "\" length (" + str(dpv.rows()) +
+                      ") does not match vertex count (" + str(trx->num_vertices()) + ")");
+    }
     const auto &offsets = trx->streamlines->_offsets;
 
     for (size_t buf_idx = 0; buf_idx != vertex_buffers.size(); ++buf_idx) {
@@ -1092,12 +1103,14 @@ void Tractogram::load_trx_scalar_field(const std::string &field_name, bool is_dp
       for (size_t ti = 0; ti < n; ++ti, ++global_idx) {
         const Eigen::Index si = static_cast<Eigen::Index>(global_idx);
         const Eigen::Index v0 = offsets(si, 0), v1 = offsets(si + 1, 0);
-        const float front = (v0 < dpv.rows()) ? dpv(v0, 0) : 0.0f;
-        const float back = (v1 - 1 >= 0 && v1 - 1 < dpv.rows()) ? dpv(v1 - 1, 0) : 0.0f;
+        if (v1 <= v0)
+          throw Exception("Invalid streamline offsets encountered while loading TRX dpv field \"" + field_name + "\"");
+        const float front = dpv(v0, 0);
+        const float back = dpv(v1 - 1, 0);
         for (int i = 0; i < track_padding; ++i)
           buffer.push_back(front);
         for (Eigen::Index vi = v0; vi < v1; ++vi) {
-          const float val = (vi < dpv.rows()) ? dpv(vi, 0) : 0.0f;
+          const float val = dpv(vi, 0);
           buffer.push_back(val);
           if (std::isfinite(val)) {
             value_max = std::max(value_max, val);

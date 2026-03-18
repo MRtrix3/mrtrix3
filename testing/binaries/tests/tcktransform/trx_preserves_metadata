@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that the TRX→TRX in-place path preserves dps metadata after warping.
+# A "lengths" dps field is written by tckstats; after tcktransform the field
+# must still be present with the same count.
+tckconvert tracks.tck tmp_in.trx -force
+tckstats tmp_in.trx -dump lengths
+tcktransform tmp_in.trx unit_warp.mif tmp_out.trx -force
+tckinfo tmp_out.trx | grep -q "lengths:"

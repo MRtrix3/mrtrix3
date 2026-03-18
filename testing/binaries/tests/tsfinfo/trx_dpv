@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify that tsfinfo prints dpv field info for a TRX file.
+cp tracks.trx tmp_tsfinfo.trx
+tcksample tmp_tsfinfo.trx tcksample/fa.mif fa
+tsfinfo tmp_tsfinfo.trx 2>&1 | grep -q "Streamlines:"
+tsfinfo tmp_tsfinfo.trx 2>&1 | grep -q "DPV fields"
+tsfinfo tmp_tsfinfo.trx 2>&1 | grep -q "fa:"

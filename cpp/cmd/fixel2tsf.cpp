@@ -81,7 +81,6 @@ void run() {
 
   DWI::Tractography::Properties properties;
   auto reader_ptr = DWI::Tractography::TRX::open_tractogram(argument[1], properties);
-  auto &reader = *reader_ptr;
   properties.comments.push_back("Created using fixel2tsf");
   properties.comments.push_back("Source fixel image: " + Path::basename(argument[0]));
   properties.comments.push_back("Source track file: " + Path::basename(argument[1]));
@@ -111,7 +110,7 @@ void run() {
   Eigen::Vector3d voxel_pos_float;
   Eigen::Vector3i voxel_pos_int;
 
-  while (reader(tck)) {
+  while ((*reader_ptr)(tck)) {
     SetVoxelDir dixels;
     mapper(tck, dixels);
     scalars.clear();
@@ -160,6 +159,8 @@ void run() {
     progress++;
   }
 
-  if (embed_dpv)
+  if (embed_dpv) {
+    reader_ptr.reset(); // release TRX mmap before modifying the same zip file
     DWI::Tractography::TRX::append_dpv(std::string(argument[1]), out_arg, dpv_values);
+  }
 }

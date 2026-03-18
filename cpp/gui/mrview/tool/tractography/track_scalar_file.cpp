@@ -16,6 +16,8 @@
 
 #include "mrview/tool/tractography/track_scalar_file.h"
 
+#include <algorithm>
+
 #include "dialog/file.h"
 #include "mrview/tool/tractography/tractogram.h"
 #include "mrview/tool/tractography/tractography.h"
@@ -436,6 +438,56 @@ void TrackScalarFileOptions::open_trx_scalar_field_slot() {
   }
   update_UI();
   window().updateGL();
+}
+
+bool TrackScalarFileOptions::open_trx_scalar_field_by_name(const std::string &field_spec) {
+  if (!tractogram || !tractogram->is_trx())
+    throw Exception("TRX scalar field selection requires one selected TRX tractogram");
+
+  std::string field_name = field_spec;
+  bool force_dps = false;
+  bool force_dpv = false;
+
+  // Allow explicit type disambiguation via dps:<name> or dpv:<name>.
+  if (field_spec.rfind("dps:", 0) == 0) {
+    force_dps = true;
+    field_name = field_spec.substr(4);
+  } else if (field_spec.rfind("dpv:", 0) == 0) {
+    force_dpv = true;
+    field_name = field_spec.substr(4);
+  }
+
+  if (field_name.empty())
+    throw Exception("TRX scalar field name cannot be empty");
+
+  const auto &dps_fields = tractogram->trx_dps_fields();
+  const auto &dpv_fields = tractogram->trx_dpv_fields();
+  const bool has_dps = std::find(dps_fields.begin(), dps_fields.end(), field_name) != dps_fields.end();
+  const bool has_dpv = std::find(dpv_fields.begin(), dpv_fields.end(), field_name) != dpv_fields.end();
+
+  bool is_dpv = false;
+  if (force_dps) {
+    if (!has_dps)
+      throw Exception("TRX file has no dps field named \"" + field_name + "\"");
+    is_dpv = false;
+  } else if (force_dpv) {
+    if (!has_dpv)
+      throw Exception("TRX file has no dpv field named \"" + field_name + "\"");
+    is_dpv = true;
+  } else {
+    if (!has_dps && !has_dpv)
+      throw Exception("TRX file has no scalar field named \"" + field_name + "\"");
+    if (has_dps && has_dpv)
+      throw Exception("TRX scalar field name \"" + field_name +
+                      "\" exists in both dps and dpv; use dps:<name> or dpv:<name>");
+    is_dpv = has_dpv;
+  }
+
+  tractogram->load_trx_scalar_field(field_name, is_dpv);
+  tractogram->set_color_type(TrackColourType::ScalarFile);
+  update_UI();
+  window().updateGL();
+  return true;
 }
 
 } // namespace MR::GUI::MRView::Tool

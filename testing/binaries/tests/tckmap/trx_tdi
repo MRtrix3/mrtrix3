@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that tckmap produces identical TDI when given a TRX file vs. the
+# equivalent TCK file (same streamlines, no weights).
+# Convert TCK to TRX first to guarantee identical streamline data.
+tckconvert SIFT_phantom/tracks.tck tmp_from_tck.trx -force
+tckmap SIFT_phantom/tracks.tck -template SIFT_phantom/mask.mif tmp_tck_tdi.mif -force
+tckmap tmp_from_tck.trx -template SIFT_phantom/mask.mif tmp_trx_tdi.mif -force
+testing_diff_image tmp_tck_tdi.mif tmp_trx_tdi.mif -abs 1.5
