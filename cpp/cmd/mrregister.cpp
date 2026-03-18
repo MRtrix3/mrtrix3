@@ -1091,8 +1091,11 @@ void run() {
                 deform_field,
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
-          Filter::reslice<Interp::Cubic>(
-              im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, out_of_bounds_value);
+          Filter::reslice<Interp::Cubic>(im1_image,
+                                         im1_transformed,
+                                         affine.get_transform(),
+                                         Adapter::OversampleFactors::Auto,
+                                         out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting FODs",
@@ -1102,7 +1105,7 @@ void run() {
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else { // rigid
           Filter::reslice<Interp::Cubic>(
-              im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, out_of_bounds_value);
+              im1_image, im1_transformed, rigid.get_transform(), Adapter::OversampleFactors::Auto, out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting FODs",
@@ -1160,8 +1163,11 @@ void run() {
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
           auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx], midway_header);
-          Filter::reslice<Interp::Cubic>(
-              im1_image, im1_midway, affine.get_transform_half(), Adapter::AutoOverSample, out_of_bounds_value);
+          Filter::reslice<Interp::Cubic>(im1_image,
+                                         im1_midway,
+                                         affine.get_transform_half(),
+                                         Adapter::OversampleFactors::Auto,
+                                         out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting ODFs",
@@ -1172,7 +1178,7 @@ void run() {
         } else { // rigid
           auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx], midway_header);
           Filter::reslice<Interp::Cubic>(
-              im1_image, im1_midway, rigid.get_transform_half(), Adapter::AutoOverSample, out_of_bounds_value);
+              im1_image, im1_midway, rigid.get_transform_half(), Adapter::OversampleFactors::Auto, out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting ODFs",
@@ -1214,8 +1220,11 @@ void run() {
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
           auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);
-          Filter::reslice<Interp::Cubic>(
-              im2_image, im2_midway, affine.get_transform_half_inverse(), Adapter::AutoOverSample, out_of_bounds_value);
+          Filter::reslice<Interp::Cubic>(im2_image,
+                                         im2_midway,
+                                         affine.get_transform_half_inverse(),
+                                         Adapter::OversampleFactors::Auto,
+                                         out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting ODFs",
@@ -1225,8 +1234,11 @@ void run() {
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else { // rigid
           auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);
-          Filter::reslice<Interp::Cubic>(
-              im2_image, im2_midway, rigid.get_transform_half_inverse(), Adapter::AutoOverSample, out_of_bounds_value);
+          Filter::reslice<Interp::Cubic>(im2_image,
+                                         im2_midway,
+                                         rigid.get_transform_half_inverse(),
+                                         Adapter::OversampleFactors::Auto,
+                                         out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting ODFs",

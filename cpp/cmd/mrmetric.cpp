@@ -56,28 +56,28 @@ inline void meansquared(const Eigen::Matrix<ValueType, Eigen::Dynamic, 1> &value
   cost.array() += (value1 - value2).array().square();
 }
 
-template <class ImageType1, class ImageType2, class TransformType, class OversampleType, class ValueType>
+template <class ImageType1, class ImageType2, class TransformType, class ValueType>
 void reslice(MR::Interp::interp_type interp,
              ImageType1 &input,
              ImageType2 &output,
              const TransformType &trafo = Adapter::NoTransform,
-             const OversampleType &oversample = Adapter::AutoOverSample,
+             const Adapter::OversampleFactors &oversample = Adapter::OversampleFactors::Auto,
              const ValueType out_of_bounds_value = ValueType(0)) {
   switch (interp) {
   case MR::Interp::interp_type::NEAREST:
-    Filter::reslice<Interp::Nearest>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+    Filter::reslice<Interp::Nearest>(input, output, trafo, oversample, out_of_bounds_value);
     DEBUG("Nearest");
     break;
   case MR::Interp::interp_type::LINEAR:
-    Filter::reslice<Interp::Linear>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+    Filter::reslice<Interp::Linear>(input, output, trafo, oversample, out_of_bounds_value);
     DEBUG("Linear");
     break;
   case MR::Interp::interp_type::CUBIC:
-    Filter::reslice<Interp::Cubic>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+    Filter::reslice<Interp::Cubic>(input, output, trafo, oversample, out_of_bounds_value);
     DEBUG("Cubic");
     break;
   case MR::Interp::interp_type::SINC:
-    Filter::reslice<Interp::Sinc>(input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+    Filter::reslice<Interp::Sinc>(input, output, trafo, oversample, out_of_bounds_value);
     DEBUG("Sinc");
     break;
   default:
@@ -315,9 +315,10 @@ void run() {
       output2mask = Header::scratch(input1, "-").get_image<bool>();
       {
         LogLevelLatch log_level(0);
-        reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+        reslice(interp, input2, output2, Adapter::NoTransform, Adapter::OversampleFactors::Auto, out_of_bounds_value);
         if (use_mask2)
-          Filter::reslice<Interp::Nearest>(mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+          Filter::reslice<Interp::Nearest>(
+              mask2, output2mask, Adapter::NoTransform, Adapter::OversampleFactors::Auto, 0);
       }
       evaluate_voxelwise_msq(
           output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos);
@@ -331,9 +332,10 @@ void run() {
       output2mask = mask2;
       {
         LogLevelLatch log_level(0);
-        reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+        reslice(interp, input1, output1, Adapter::NoTransform, Adapter::OversampleFactors::Auto, out_of_bounds_value);
         if (use_mask1)
-          Filter::reslice<Interp::Nearest>(mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+          Filter::reslice<Interp::Nearest>(
+              mask1, output1mask, Adapter::NoTransform, Adapter::OversampleFactors::Auto, 0);
       }
       n_voxels = input2.size(0) * input2.size(1) * input2.size(2);
       evaluate_voxelwise_msq(
@@ -469,12 +471,14 @@ void run() {
         output2 = Header::scratch(new_header, "-").get_image<value_type>();
         {
           LogLevelLatch log_level(0);
-          reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
-          reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          reslice(interp, input1, output1, Adapter::NoTransform, Adapter::OversampleFactors::Auto, out_of_bounds_value);
+          reslice(interp, input2, output2, Adapter::NoTransform, Adapter::OversampleFactors::Auto, out_of_bounds_value);
           if (use_mask1)
-            Filter::reslice<Interp::Nearest>(mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+            Filter::reslice<Interp::Nearest>(
+                mask1, output1mask, Adapter::NoTransform, Adapter::OversampleFactors::Auto, 0);
           if (use_mask2)
-            Filter::reslice<Interp::Nearest>(mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+            Filter::reslice<Interp::Nearest>(
+                mask2, output2mask, Adapter::NoTransform, Adapter::OversampleFactors::Auto, 0);
         }
         n_voxels = output1.size(0) * output1.size(1) * output1.size(2);
         evaluate_voxelwise_msq(

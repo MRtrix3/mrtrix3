@@ -68,11 +68,68 @@ template <typename value_type> struct summing_type<is_complex<value_type>> {
 
 extern const transform_type NoTransform;
 
-// TODO Consider defining as a class rather than a typedef
-// (and extern consts would become static consts)
-using oversample_type = std::vector<ArrayIndex>;
-extern const oversample_type AutoOverSample;
-extern const oversample_type NoOverSample;
+class OversampleFactors {
+public:
+  using value_type = ssize_t;
+  OversampleFactors() : data({0, 0, 0}) {}
+  OversampleFactors(const value_type factor) : data({factor, factor, factor}) {
+    if (factor < 1)
+      throw Exception("Oversampling factors must be positive");
+  }
+  OversampleFactors(const std::vector<value_type> &factors) {
+    switch (factors.size()) {
+    case 0:
+      data = {-1, -1, -1};
+      break;
+    case 1:
+      if (factors[0] < 1)
+        throw Exception("Oversampling factors must be positive");
+      data = {factors[0], factors[0], factors[0]};
+      break;
+    case 3:
+      data = {factors[0], factors[1], factors[2]};
+      if (data != std::array<value_type, 3>({-1, -1, -1})) {
+        for (StdIndex axis = 0; axis != 3; ++axis) {
+          if (data[axis] < 1)
+            throw Exception("Oversampling factors must be positive");
+        }
+      }
+      break;
+    default:
+      throw Exception("Oversampling factor must be provided either as a single integer,"
+                      "or a triplet of integers");
+      if (std::min({data[0], data[1], data[2]}) < 1)
+        throw Exception("Oversampling factors must be positive");
+    }
+  }
+  ssize_t product() const {
+    if (data == std::array<value_type, 3>({-1, -1, -1}))
+      return -1;
+    return data[0] * data[1] * data[2];
+  }
+  bool valid() const {
+    return data == std::array<value_type, 3>({-1, -1, -1}) || std::min({data[0], data[1], data[2]}) > 0;
+  }
+  value_type operator[](const ArrayIndex &axis) const {
+    assert(axis >= 0 && axis < 3);
+    return data[axis];
+  }
+  value_type &operator[](const ArrayIndex &axis) {
+    assert(axis >= 0 && axis < 3);
+    return data[axis];
+  }
+  bool operator==(const OversampleFactors &that) const { return data == that.data; }
+  bool operator!=(const OversampleFactors &that) const { return data != that.data; }
+  friend std::ostream &operator<<(std::ostream &stream, const OversampleFactors &os) {
+    stream << os[0] << "," << os[1] << "," << os[2];
+    return stream;
+  }
+  static const OversampleFactors Unity;
+  static const OversampleFactors Auto;
+
+private:
+  std::array<value_type, 3> data;
+};
 
 //! \addtogroup interp
 // @{
@@ -125,34 +182,23 @@ public:
   Reslice(const ImageType &original,
           const HeaderType &reference,
           const transform_type &transform = NoTransform,
-          const oversample_type &oversample = AutoOverSample,
+          const OversampleFactors &oversample = OversampleFactors::Auto,
           const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value())
       : interp(original, value_when_out_of_bounds),
         x{0, 0, 0},
         dim{reference.size(0), reference.size(1), reference.size(2)},
         vox{reference.spacing(0), reference.spacing(1), reference.spacing(2)},
         transform_(reference.transform()),
+        OS(oversample),
         direct_transform(Transform(original).scanner2voxel * transform * Transform(reference).voxel2scanner) {
     using namespace Eigen;
     assert(ndim() >= 3);
 
     const bool is_nearest = std::is_same<typename Interp::Nearest<ImageType>, decltype(interp)>::value;
 
-    if (!oversample.empty()) { // oversample explicitly set
-      assert(oversample.size() == 3);
-      if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
-        throw Exception("oversample factors must be greater than zero");
-      if (is_nearest && (oversample[0] != 1 || oversample[1] != 1 || oversample[2] != 1)) {
-        WARN("oversampling factors ignored for nearest neighbour interpolation");
-        OS = {1, 1, 1};
-      } else {
-        OS[0] = oversample[0];
-        OS[1] = oversample[1];
-        OS[2] = oversample[2];
-      }
-    } else { // oversample is default
+    if (oversample == OversampleFactors::Auto) {
       if (is_nearest) {
-        OS = {1, 1, 1};
+        OS = OversampleFactors::Unity;
       } else {
         const Vector3d y = direct_transform * Vector3d(0.0, 0.0, 0.0);
         Vector3d x0 = direct_transform * Vector3d(1.0, 0.0, 0.0);
@@ -162,9 +208,12 @@ public:
         x0 = direct_transform * Vector3d(0.0, 0.0, 1.0);
         OS[2] = std::ceil((1.0 - std::numeric_limits<default_type>::epsilon()) * (y - x0).norm());
       }
+    } else if (is_nearest && OS != OversampleFactors::Unity) {
+      WARN("oversampling factors ignored for nearest neighbour interpolation");
+      OS = OversampleFactors::Unity;
     }
 
-    if (OS[0] * OS[1] * OS[2] > 1) {
+    if (OS.product() > 1) {
       INFO("using oversampling factors [ " + str(OS[0]) + " " + str(OS[1]) + " " + str(OS[2]) + " ]");
       oversampling = true;
       norm = 1.0;
@@ -230,7 +279,7 @@ private:
   const std::array<VoxelIndex, 3> dim;
   const std::array<default_type, 3> vox;
   bool oversampling;
-  std::array<size_t, 3> OS;
+  OversampleFactors OS;
   std::array<default_type, 3> from;
   std::array<default_type, 3> inc;
   default_type norm;

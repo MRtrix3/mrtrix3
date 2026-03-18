@@ -63,7 +63,7 @@ public:
       : Base(in),
         interp_type(MR::Interp::interp_type::CUBIC),
         transformation(Adapter::NoTransform),
-        oversampling(Adapter::AutoOverSample),
+        oversampling(Adapter::OversampleFactors::Auto),
         out_of_bounds_value(std::nullopt) {}
 
   ~Resize() {}
@@ -119,18 +119,7 @@ public:
     set_voxel_size(new_voxel_size);
   }
 
-  void set_oversample(Adapter::oversample_type oversample) {
-    if (oversample.size() == 1)
-      oversample.resize(3, oversample[0]);
-    else if (oversample.size() != 3 and !oversample.empty())
-      throw Exception("FIXME oversample requires either a vector of a 0 (auto), 1 integer, or 3 integers; got " +
-                      str(oversample.size()));
-    for (auto f : oversample) {
-      if (f < 1)
-        throw Exception("oversample factors must be positive integers");
-    }
-    oversampling = oversample;
-  }
+  void set_oversample(const Adapter::OversampleFactors &oversample) { oversampling = oversample; }
 
   void set_interp_type(const MR::Interp::interp_type type) { interp_type = type; }
 
@@ -165,7 +154,7 @@ public:
 protected:
   MR::Interp::interp_type interp_type;
   transform_type transformation;
-  Adapter::oversample_type oversampling;
+  Adapter::OversampleFactors oversampling;
   std::optional<default_type> out_of_bounds_value;
 };
 //! @}

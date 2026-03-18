@@ -219,10 +219,10 @@ void run() {
         MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
 
     // over-sampling
-    Adapter::oversample_type oversample = Adapter::AutoOverSample;
+    Adapter::OversampleFactors oversample = Adapter::OversampleFactors::Auto;
     auto opt = get_options("oversample");
     if (!opt.empty())
-      oversample = parse_ints<Adapter::oversample_type::value_type>(opt[0][0]);
+      oversample = Adapter::OversampleFactors(parse_ints<Adapter::OversampleFactors::value_type>(opt[0][0]));
 
     Header template_header;
     opt = get_options("template");

@@ -168,7 +168,7 @@ public:
         Filter::reslice<Interp::Nearest>(parameters.im2_mask,
                                          cc_mask,
                                          parameters.transformation.get_transform_half_inverse(),
-                                         Adapter::AutoOverSample);
+                                         Adapter::OversampleFactors::Auto);
       else if (parameters.im1_mask.valid() and parameters.im2_mask.valid()) {
         Adapter::Reslice<Interp::Nearest, Im1MaskType> mask_reslicer1(
             parameters.im1_mask, cc_mask_header, parameters.transformation.get_transform_half());
@@ -186,13 +186,13 @@ public:
     Adapter::Reslice<Interp::Linear, Im1Type> interp1(parameters.im1_image,
                                                       midway_header,
                                                       parameters.transformation.get_transform_half(),
-                                                      Adapter::NoOverSample,
+                                                      Adapter::OversampleFactors::Unity,
                                                       std::numeric_limits<typename Im1Type::value_type>::quiet_NaN());
 
     Adapter::Reslice<Interp::Linear, Im2Type> interp2(parameters.im2_image,
                                                       midway_header,
                                                       parameters.transformation.get_transform_half_inverse(),
-                                                      Adapter::NoOverSample,
+                                                      Adapter::OversampleFactors::Unity,
                                                       std::numeric_limits<typename Im2Type::value_type>::quiet_NaN());
 
     const auto extent = parameters.get_extent();

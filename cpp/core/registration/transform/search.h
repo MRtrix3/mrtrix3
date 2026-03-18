@@ -123,9 +123,10 @@ public:
     }
     image2_midway = Image<default_type>::create(im2_path, image2_midway_header);
 
-    Filter::reslice<Interp::Cubic>(im1, image1_midway, local_trafo.get_transform_half(), Adapter::AutoOverSample, 0.0);
     Filter::reslice<Interp::Cubic>(
-        im2, image2_midway, local_trafo.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
+        im1, image1_midway, local_trafo.get_transform_half(), Adapter::OversampleFactors::Auto, 0.0);
+    Filter::reslice<Interp::Cubic>(
+        im2, image2_midway, local_trafo.get_transform_half_inverse(), Adapter::OversampleFactors::Auto, 0.0);
   }
 
   void run(bool debug = false) {

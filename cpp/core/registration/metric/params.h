@@ -154,10 +154,16 @@ public:
     header.keyval()["trafo2"] = str(trafo2.matrix());
     auto check = Image<default_type>::create(image_path, header);
 
-    Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(
-        im1_image, midway_image, trafo1, Adapter::NoOverSample, std::numeric_limits<Im1ValueType>::quiet_NaN());
-    Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(
-        im2_image, midway_image, trafo2, Adapter::NoOverSample, std::numeric_limits<Im2ValueType>::quiet_NaN());
+    Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(im1_image,
+                                                                midway_image,
+                                                                trafo1,
+                                                                Adapter::OversampleFactors::Unity,
+                                                                std::numeric_limits<Im1ValueType>::quiet_NaN());
+    Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(im2_image,
+                                                                midway_image,
+                                                                trafo2,
+                                                                Adapter::OversampleFactors::Unity,
+                                                                std::numeric_limits<Im2ValueType>::quiet_NaN());
 
     auto T = MR::Transform(midway_image).voxel2scanner;
     Eigen::Vector3d midway_point, voxel_pos, im1_point, im2_point;

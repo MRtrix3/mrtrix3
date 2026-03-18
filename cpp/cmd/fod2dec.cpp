@@ -308,7 +308,7 @@ void run() {
     out_img = Image<value_type>::create(argument[1], out_hdr);
 
     if (needtoslice)
-      Filter::reslice<Interp::Cubic>(dec_img, out_img, Adapter::NoTransform, Adapter::AutoOverSample, UNIT);
+      Filter::reslice<Interp::Cubic>(dec_img, out_img, Adapter::NoTransform, Adapter::OversampleFactors::Auto, UNIT);
     else
       copy(dec_img, out_img);
   }

@@ -249,7 +249,7 @@ void apply_warp(Image<float> &input,
                 Image<default_type> &warp,
                 const MR::Interp::interp_type interp,
                 const float out_of_bounds_value,
-                const Adapter::oversample_type &oversample,
+                const Adapter::OversampleFactors &oversample,
                 const bool jacobian_modulate = false) {
   switch (interp) {
   case MR::Interp::interp_type::NEAREST:
@@ -577,24 +577,14 @@ void run() {
   }
 
   // over-sampling
-  Adapter::oversample_type oversample = Adapter::AutoOverSample;
+  Adapter::OversampleFactors oversample =
+      interp == MR::Interp::interp_type::NEAREST ? Adapter::OversampleFactors::Unity : Adapter::OversampleFactors::Auto;
   opt = get_options("oversample");
   if (!opt.empty()) {
     if (!template_header.valid() && !warp)
       throw Exception("-oversample option applies only to regridding using the template option"
                       " or to non-linear transformations");
-    oversample = parse_ints<Adapter::oversample_type::value_type>(opt[0][0]);
-    if (oversample.size() == 1)
-      oversample.resize(3, oversample[0]);
-    else if (oversample.size() != 3)
-      throw Exception("-oversample option requires either a single integer,"
-                      " or a comma-separated list of 3 integers");
-    for (const auto x : oversample)
-      if (x < 1)
-        throw Exception("-oversample factors must be positive integers");
-  } else if (interp == MR::Interp::interp_type::NEAREST) {
-    // default for nearest-neighbour is no oversampling
-    oversample = {1, 1, 1};
+    oversample = Adapter::OversampleFactors(parse_ints<Adapter::OversampleFactors::value_type>(opt[0][0]));
   }
 
   // Out of bounds value

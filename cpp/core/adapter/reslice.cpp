@@ -18,6 +18,8 @@
 
 namespace MR::Adapter {
 const transform_type NoTransform = transform_type::Identity();
-const oversample_type AutoOverSample;
-const oversample_type NoOverSample(3, 1);
+// const oversample_type AutoOverSample;
+// const oversample_type NoOverSample(3, 1);
+const OversampleFactors OversampleFactors::Auto({-1, -1, -1});
+const OversampleFactors OversampleFactors::Unity(1);
 } // namespace MR::Adapter
