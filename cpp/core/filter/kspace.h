@@ -117,7 +117,7 @@ public:
         inner_excluding_axis.push_back(a);
     }
     windowND.reset();
-    const size_t N = windowND.size(axis);
+    const size_t N = static_cast<size_t>(windowND.size(axis));
     for (auto l = Loop(inner_excluding_axis)(windowND); l; ++l) {
       for (VoxelIndex n = 0; n != N; ++n) {
         windowND.index(axis) = n;
@@ -135,7 +135,7 @@ public:
     for (auto l = Loop(window)(window); l; ++l)
       window.value() = 1.0;
     for (auto axis : inner_axes) {
-      const size_t N = header.size(axis);
+      const size_t N = static_cast<size_t>(header.size(axis));
       Eigen::Array<double, Eigen::Dynamic, 1> window1d = Eigen::Array<double, Eigen::Dynamic, 1>::Ones(N);
       const default_type transition_lower = 0.5 - 0.5 * cosine_frac;
       const default_type transition_upper = 0.5 + 0.5 * cosine_frac;
@@ -159,7 +159,7 @@ public:
     for (auto l = Loop(window)(window); l; ++l)
       window.value() = 1.0;
     for (auto axis : inner_axes) {
-      const size_t N = header.size(axis);
+      const size_t N = static_cast<size_t>(header.size(axis));
       Eigen::Array<double, Eigen::Dynamic, 1> window1d(N);
       for (StdIndex n_centred = 0; n_centred != N; ++n_centred) {
         StdIndex n = n_centred + (N + 2) / 2;
@@ -185,7 +185,7 @@ public:
     for (auto l = Loop(window)(window); l; ++l)
       window.value() = 1.0;
     for (auto axis : inner_axes) {
-      const size_t N = header.size(axis);
+      const size_t N = static_cast<size_t>(header.size(axis));
       Eigen::Array<double, Eigen::Dynamic, 1> window1d(N);
       for (StdIndex n = 0; n != N; ++n)
         window1d[n] = Math::pow2(std::cos(Math::pi * n / N));
@@ -203,7 +203,7 @@ public:
     for (auto l = Loop(window)(window); l; ++l)
       window.value() = 1.0;
     for (auto axis : inner_axes) {
-      const size_t N = header.size(axis);
+      const size_t N = static_cast<size_t>(header.size(axis));
       Eigen::Array<double, Eigen::Dynamic, 1> window1d(N);
       for (StdIndex n = 0; n != N; ++n)
         window1d[n] = std::exp(-0.5 * Math::pow2(n / (sigma * N)));

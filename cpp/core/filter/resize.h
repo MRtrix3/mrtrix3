@@ -78,7 +78,7 @@ public:
       throw Exception("the voxel size must be defined using a value for all three dimensions.");
 
     Eigen::Vector3d original_extent;
-    for (size_t j = 0; j < 3; ++j) {
+    for (StdIndex j = 0; j < 3; ++j) {
       if (voxel_size[j] <= 0.0)
         throw Exception("the voxel size must be larger than zero");
       original_extent[j] = axes_[j].size * axes_[j].spacing;

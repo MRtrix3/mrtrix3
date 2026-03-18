@@ -23,6 +23,7 @@
 #include "exception.h"
 #include "math/rng.h"
 #include "thread.h"
+#include "types.h"
 #include <algorithm> // std::shuffle
 #include <random>
 #include <tuple>
@@ -38,14 +39,14 @@ template <int N, class Functor, class... ImageType> struct RandomThreadedLoopRun
   typename std::remove_reference<Functor>::type func;
   double density;
   Math::RNG::Uniform<double> rng;
-  const std::vector<size_t> sizes;
+  const std::vector<VoxelIndex> sizes;
   std::tuple<ImageType...> vox;
 
   RandomThreadedLoopRunInner(const Axes::Subset &outer_axes,
                              const Axes::Subset &inner_axes,
                              const Functor &functor,
                              const double voxel_density,
-                             const std::vector<size_t> sizes,
+                             const std::vector<VoxelIndex> sizes,
                              ImageType &...voxels)
       : outer_axes(outer_axes),
         loop(Loop(inner_axes)),
@@ -81,7 +82,7 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
   std::vector<VoxelIndex> idx;
   std::vector<VoxelIndex>::iterator it;
   std::vector<VoxelIndex>::iterator stop;
-  const std::vector<size_t> sizes;
+  const std::vector<VoxelIndex> sizes;
   // ImageType& image;
   // RandomEngine& engine;
   // size_t max_cnt;
@@ -92,7 +93,7 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
                              const Axes::Subset &inner_axes,
                              const Functor &functor,
                              const double voxel_density,
-                             const std::vector<size_t> &sizes,
+                             const std::vector<VoxelIndex> &sizes,
                              ImageType &...voxels)
       : outer_axes(outer_axes),
         inner(inner_axes),

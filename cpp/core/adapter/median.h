@@ -51,10 +51,9 @@ public:
     const std::array<VoxelIndex, 3> from = {index(0) < halfextent[0] ? 0 : index(0) - halfextent[0],
                                             index(1) < halfextent[1] ? 0 : index(1) - halfextent[1],
                                             index(2) < halfextent[2] ? 0 : index(2) - halfextent[2]};
-    const std::array<VoxelIndex, 3> to = {
-        index(0) >= size(0) - halfextent[0] ? static_cast<VoxelIndex>(size(0)) : index(0) + halfextent[0] + 1,
-        index(1) >= size(1) - halfextent[1] ? static_cast<VoxelIndex>(size(1)) : index(1) + halfextent[1] + 1,
-        index(2) >= size(2) - halfextent[2] ? static_cast<VoxelIndex>(size(2)) : index(2) + halfextent[2] + 1};
+    const std::array<VoxelIndex, 3> to = {index(0) >= size(0) - halfextent[0] ? size(0) : index(0) + halfextent[0] + 1,
+                                          index(1) >= size(1) - halfextent[1] ? size(1) : index(1) + halfextent[1] + 1,
+                                          index(2) >= size(2) - halfextent[2] ? size(2) : index(2) + halfextent[2] + 1};
 
     values.clear();
 

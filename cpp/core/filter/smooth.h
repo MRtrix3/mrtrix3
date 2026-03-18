@@ -71,17 +71,17 @@ public:
   //! This must be set as a single value to be used for the first 3 dimensions
   //! or separate values, one for each dimension. (Default: 1 voxel)
   void set_stdev(const std::vector<default_type> &std_dev) {
-    for (size_t i = 0; i < std_dev.size(); ++i)
+    for (StdIndex i = 0; i < std_dev.size(); ++i)
       if (stdev[i] < 0.0)
         throw Exception("the Gaussian stdev values cannot be negative");
     if (std_dev.size() == 1) {
-      for (unsigned int i = 0; i < 3; i++)
+      for (StdIndex i = 0; i < 3; i++)
         stdev[i] = std_dev[0];
     } else {
       if (std_dev.size() != 3)
         throw Exception(
             "Please supply a single standard deviation value, or three values (one for each spatial dimension)");
-      for (unsigned int i = 0; i < 3; i++)
+      for (StdIndex i = 0; i < 3; i++)
         stdev[i] = std_dev[i];
     }
   }

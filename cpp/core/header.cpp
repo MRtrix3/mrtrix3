@@ -381,7 +381,7 @@ Header Header::create(std::string_view image_name, const Header &template_header
     if (!Pdim.empty()) {
       ArrayIndex n = 0;
       Stride::Symbolic::value_type next_stride = 0;
-      for (size_t i = 0; i < H.ndim(); ++i) {
+      for (ArrayIndex i = 0; i < H.ndim(); ++i) {
         if (H.stride(i) != Stride::Symbolic::invalid) {
           ++n;
           next_stride = std::max(next_stride, MR::abs(H.stride(i)));

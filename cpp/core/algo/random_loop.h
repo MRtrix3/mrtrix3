@@ -32,7 +32,7 @@ public:
   Random_loop(ImageType &in,
               RandomEngine &random_engine,
               const ArrayIndex axis = 0,
-              const size_t number_iterations = std::numeric_limits<ssize_t>::max())
+              const size_t number_iterations = std::numeric_limits<size_t>::max())
       : image(in),
         engine(random_engine),
         ax(axis),

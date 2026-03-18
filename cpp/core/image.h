@@ -65,7 +65,7 @@ public:
   FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
 
   FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
-  FORCE_INLINE size_t size(const ArrayIndex axis) const { return buffer->size(axis); }
+  FORCE_INLINE VoxelIndex size(const ArrayIndex axis) const { return buffer->size(axis); }
   FORCE_INLINE default_type spacing(const ArrayIndex axis) const { return buffer->spacing(axis); }
   FORCE_INLINE Stride::Actual::value_type stride(const ArrayIndex axis) const { return strides[axis]; } // TODO Refactor
 
@@ -261,7 +261,7 @@ template <typename ValueType> struct TmpImage : public ImageBase<TmpImage<ValueT
   bool valid() const { return true; }
   const std::string name() const { return "direct IO buffer"; }
   FORCE_INLINE size_t ndim() const { return b.ndim(); }
-  FORCE_INLINE size_t size(const ArrayIndex axis) const { return b.size(axis); }
+  FORCE_INLINE VoxelIndex size(const ArrayIndex axis) const { return b.size(axis); }
   FORCE_INLINE Stride::Actual::value_type stride(const ArrayIndex axis) const { return strides[axis]; }
 
   FORCE_INLINE VoxelIndex get_index(const ArrayIndex axis) const { return x[axis]; }
@@ -375,7 +375,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 
   bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
   const Stride::Actual current_actual(Stride::Actual(*this));
-  std::vector<size_t> sizes(ndim());
+  std::vector<VoxelIndex> sizes(ndim());
   for (ArrayIndex axis = 0; axis != ndim(); ++axis)
     sizes[axis] = size(axis);
   const Stride::Actual with_actual(with_symbolic.empty() ? current_actual : Stride::Actual(with_symbolic, sizes));

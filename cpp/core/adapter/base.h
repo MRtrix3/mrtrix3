@@ -49,7 +49,7 @@ public:
   FORCE_INLINE virtual bool valid() const { return parent_.valid(); }
 
   FORCE_INLINE virtual size_t ndim() const { return parent_.ndim(); }
-  FORCE_INLINE virtual size_t size(const ArrayIndex axis) const { return parent_.size(axis); }
+  FORCE_INLINE virtual VoxelIndex size(const ArrayIndex axis) const { return parent_.size(axis); }
   FORCE_INLINE virtual default_type spacing(const ArrayIndex axis) const { return parent_.spacing(axis); }
   FORCE_INLINE virtual Stride::Actual::value_type stride(const ArrayIndex axis) const { return parent_.stride(axis); }
   FORCE_INLINE virtual const transform_type &transform() const { return parent_.transform(); }

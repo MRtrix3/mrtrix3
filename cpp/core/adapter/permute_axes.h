@@ -46,7 +46,7 @@ public:
   }
 
   size_t ndim() const override { return axes_.size(); }
-  size_t size(const ArrayIndex axis) const override { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
+  VoxelIndex size(const ArrayIndex axis) const override { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
   default_type spacing(const ArrayIndex axis) const override {
     return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent().spacing(axes_[axis]);
   }

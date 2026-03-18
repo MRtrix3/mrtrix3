@@ -48,7 +48,7 @@ public:
   class Axis {
   public:
     Axis() noexcept : size(1), spacing(std::numeric_limits<default_type>::quiet_NaN()) {}
-    size_t size;
+    VoxelIndex size;
     default_type spacing;
   };
 
@@ -269,9 +269,9 @@ public:
   NDimProxy ndim() { return {axes_, strides_}; }
 
   //! get the number of voxels across axis
-  const size_t &size(const ArrayIndex axis) const;
+  const VoxelIndex &size(const ArrayIndex axis) const;
   //! get/set the number of voxels across axis
-  size_t &size(const ArrayIndex axis);
+  VoxelIndex &size(const ArrayIndex axis);
 
   //! get the voxel size along axis
   const default_type &spacing(const ArrayIndex axis) const;
@@ -433,8 +433,8 @@ protected:
 // Can't be a static member function due to memory alignment requirements of std::vector<>
 Header concatenate(const std::vector<Header> &headers, const ArrayIndex axis, const bool permit_datatype_mismatch);
 
-inline const size_t &Header::size(const ArrayIndex axis) const { return axes_[axis].size; }
-inline size_t &Header::size(const ArrayIndex axis) { return axes_[axis].size; }
+inline const VoxelIndex &Header::size(const ArrayIndex axis) const { return axes_[axis].size; }
+inline VoxelIndex &Header::size(const ArrayIndex axis) { return axes_[axis].size; }
 
 inline const default_type &Header::spacing(const ArrayIndex axis) const { return axes_[axis].spacing; }
 inline default_type &Header::spacing(const ArrayIndex axis) { return axes_[axis].spacing; }

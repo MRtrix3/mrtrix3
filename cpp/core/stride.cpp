@@ -643,7 +643,7 @@ Symbolic Symbolic::canonical(const size_t num_axes) {
 
 Actual::Actual(const Actual::vector_type &data) : Base(data) {}
 
-Actual::Actual(const Symbolic &symbolic, const std::vector<size_t> &sizes)
+Actual::Actual(const Symbolic &symbolic, const std::vector<VoxelIndex> &sizes)
     : Base<value_type>(symbolic.size(), invalid) {
   assert(symbolic.is_sanitised());
   assert(symbolic.size() == sizes.size());

@@ -56,7 +56,7 @@ public:
         return 0.0;
 
     const VoxelIndex from = (pos < radius) ? VoxelIndex(0) : pos - radius;
-    const VoxelIndex to = (pos + radius) >= size(axis) ? static_cast<VoxelIndex>(size(axis) - 1) : pos + radius;
+    const VoxelIndex to = (pos + radius) >= size(axis) ? size(axis) - 1 : pos + radius;
 
     value_type result = 0.0;
     value_type av_weights = 0.0;

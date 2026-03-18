@@ -28,7 +28,7 @@ template <class ImageType>
 Image<typename ImageType::value_type> smooth(ImageType &input, const default_type scale_factor) {
   Filter::Smooth smooth_filter(input);
   std::vector<default_type> stdev(3);
-  for (size_t dim = 0; dim < 3; ++dim)
+  for (ArrayIndex dim = 0; dim < 3; ++dim)
     stdev[dim] = input.spacing(dim) / (2.0 * scale_factor);
   smooth_filter.set_stdev(stdev);
   DEBUG("creating scratch image for smoothing input image...");
@@ -45,9 +45,9 @@ ImageType multi_resolution_lmax(ImageType &input,
                                 const default_type scale_factor,
                                 const bool do_reorientation = false,
                                 const uint32_t lmax = 0) {
-  std::vector<uint32_t> from(input.ndim(), 0);
-  std::vector<uint32_t> size(input.ndim());
-  for (size_t dim = 0; dim < input.ndim(); ++dim)
+  std::vector<VoxelIndex> from(input.ndim(), 0);
+  std::vector<VoxelIndex> size(input.ndim());
+  for (ArrayIndex dim = 0; dim < input.ndim(); ++dim)
     size[dim] = input.size(dim);
   if (do_reorientation)
     size[3] = Math::SH::NforL(lmax);

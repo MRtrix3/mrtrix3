@@ -35,7 +35,7 @@ public:
   }
 
   size_t ndim() const { return d.size(); }
-  size_t size(const ArrayIndex axis) const { return d[axis]; }
+  VoxelIndex size(const ArrayIndex axis) const { return d[axis]; }
 
   const VoxelIndex &index(const ArrayIndex axis) const { return p[axis]; }
   VoxelIndex &index(const ArrayIndex axis) { return p[axis]; }
@@ -49,7 +49,7 @@ public:
   }
 
 private:
-  std::vector<ArrayIndex> d;
+  std::vector<VoxelIndex> d;
   std::vector<VoxelIndex> p;
 
   void value() const { assert(0); }

@@ -54,7 +54,7 @@ public:
   }
 
   size_t ndim() const override { return size_.size(); }
-  size_t size(const ArrayIndex axis) const override { return size_[axis]; }
+  VoxelIndex size(const ArrayIndex axis) const override { return size_[axis]; }
   const transform_type &transform() const override { return transform_; }
 
   VoxelIndex get_index(const ArrayIndex axis) const override { return parent().index(axis) - from_[axis]; }

@@ -168,7 +168,7 @@ public:
       INFO("using oversampling factors [ " + str(OS[0]) + " " + str(OS[1]) + " " + str(OS[2]) + " ]");
       oversampling = true;
       norm = 1.0;
-      for (size_t i = 0; i < 3; ++i) {
+      for (StdIndex i = 0; i < 3; ++i) {
         inc[i] = 1.0 / static_cast<default_type>(OS[i]);
         from[i] = 0.5 * (inc[i] - 1.0);
         norm *= OS[i];
@@ -180,7 +180,7 @@ public:
 
   size_t ndim() const { return interp.ndim(); }
   bool valid() const { return interp.valid(); }
-  size_t size(const ArrayIndex axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
+  VoxelIndex size(const ArrayIndex axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
   default_type spacing(const ArrayIndex axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
   const transform_type &transform() const { return transform_; }
   std::string_view name() const { return interp.name(); }
@@ -189,7 +189,7 @@ public:
 
   void reset() {
     x = {0, 0, 0};
-    for (size_t n = 3; n < interp.ndim(); ++n)
+    for (ArrayIndex n = 3; n < interp.ndim(); ++n)
       interp.index(n) = 0;
   }
 
@@ -227,7 +227,7 @@ public:
 private:
   Interpolator<ImageType> interp;
   std::array<VoxelIndex, 3> x;
-  const std::array<size_t, 3> dim;
+  const std::array<VoxelIndex, 3> dim;
   const std::array<default_type, 3> vox;
   bool oversampling;
   std::array<size_t, 3> OS;

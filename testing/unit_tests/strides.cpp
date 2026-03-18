@@ -22,6 +22,7 @@
 #include "exception.h"
 #include "mrtrix.h"
 #include "stride.h"
+#include "types.h"
 
 using namespace MR;
 
@@ -608,7 +609,7 @@ TEST_F(StrideActualTest, ConstructFromVector) {
 
 TEST_F(StrideActualTest, ConstructFromSymbolicAndSizes) {
   Stride::Symbolic symbolic({1, 2, 3, 4});
-  std::vector<size_t> sizes{10, 20, 30, 40};
+  std::vector<VoxelIndex> sizes{10, 20, 30, 40};
   Stride::Actual actual(symbolic, sizes);
   EXPECT_EQ(actual.size(), 4);
   EXPECT_EQ(actual[0], 1);
@@ -1001,7 +1002,7 @@ class StrideIntegrationTest : public ::testing::Test {};
 TEST_F(StrideIntegrationTest, SymbolicToActualConsistency) {
   // New implementation
   Stride::Symbolic symbolic_new({1, 2, 3, 4});
-  std::vector<size_t> sizes{10, 20, 30, 40};
+  std::vector<VoxelIndex> sizes{10, 20, 30, 40};
   Stride::Actual actual_new(symbolic_new, sizes);
 
   // Legacy implementation
@@ -1287,10 +1288,11 @@ TEST_F(StrideDemonstrationTest, PermutationToSymbolic) {
 }
 
 TEST_F(StrideDemonstrationTest, SymbolicToActual) {
-  std::vector<size_t> sizes({32, 32, 20, 10});
+  std::vector<size_t> sizes_legacy({32, 32, 20, 10});
+  std::vector<VoxelIndex> sizes_new({32, 32, 20, 10});
   std::vector<ssize_t> strides({-2, -3, 4, 1});
   Stride::Symbolic symbolic({-2, -3, 4, 1});
-  MockHeader header(sizes, strides);
+  MockHeader header(sizes_legacy, strides);
   {
     Stride::Actual actual(header);
     EXPECT_EQ(actual[0], -10);
@@ -1299,7 +1301,7 @@ TEST_F(StrideDemonstrationTest, SymbolicToActual) {
     EXPECT_EQ(actual[3], 1);
   }
   {
-    Stride::Actual actual(symbolic, sizes);
+    Stride::Actual actual(symbolic, sizes_new);
     EXPECT_EQ(actual[0], -10);
     EXPECT_EQ(actual[1], -320);
     EXPECT_EQ(actual[2], 10240);

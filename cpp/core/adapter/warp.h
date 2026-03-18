@@ -67,7 +67,7 @@ public:
 
   size_t ndim() const { return interp.ndim(); }
   bool valid() const { return interp.valid(); }
-  size_t size(const ArrayIndex axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
+  VoxelIndex size(const ArrayIndex axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
   default_type spacing(const ArrayIndex axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
   std::string_view name() const { return interp.name(); }
 
@@ -110,7 +110,7 @@ private:
   Interpolator<ImageType> interp;
   WarpType warp;
   std::array<VoxelIndex, 3> x;
-  const std::array<size_t, 3> dim;
+  const std::array<VoxelIndex, 3> dim;
   const std::array<default_type, 3> vox;
   const value_type value_when_out_of_bounds;
   const bool jac_modulate;

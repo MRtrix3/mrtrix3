@@ -52,7 +52,7 @@ public:
     current_pos = 0;
   }
 
-  size_t size(const ArrayIndex axis) const { return (axis == extract_axis ? nsize : base_type::size(axis)); }
+  VoxelIndex size(const ArrayIndex axis) const { return (axis == extract_axis ? nsize : base_type::size(axis)); }
 
   const transform_type &transform() const { return trans; }
 
@@ -83,7 +83,7 @@ public:
 private:
   const ArrayIndex extract_axis;
   std::vector<VoxelIndex> indices;
-  const ArrayIndex nsize;
+  const VoxelIndex nsize;
   transform_type trans;
   VoxelIndex current_pos;
 };
@@ -108,7 +108,7 @@ public:
       sizes.push_back(i.size());
   }
 
-  size_t size(const ArrayIndex axis) const { return sizes[axis]; }
+  VoxelIndex size(const ArrayIndex axis) const { return sizes[axis]; }
 
   const transform_type &transform() const { return trans; }
 
@@ -133,7 +133,7 @@ public:
 private:
   std::vector<VoxelIndex> current_pos;
   std::vector<std::vector<VoxelIndex>> indices;
-  std::vector<ArrayIndex> sizes;
+  std::vector<VoxelIndex> sizes;
   transform_type trans;
 };
 

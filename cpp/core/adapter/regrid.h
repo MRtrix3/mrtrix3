@@ -37,8 +37,7 @@ public:
         index_invalid_lower_upper([&] {
           std::vector<std::vector<VoxelIndex>> v;
           for (size_t d = 0; d < from_.size(); ++d) {
-            v.push_back(std::vector<VoxelIndex>{from_[d] < 0 ? -from_[d] - 1 : -1,
-                                                static_cast<VoxelIndex>(original.size(d)) - from_[d]});
+            v.push_back(std::vector<VoxelIndex>{from_[d] < 0 ? -from_[d] - 1 : -1, original.size(d) - from_[d]});
           }
           return v;
         }()),
@@ -70,7 +69,7 @@ public:
   }
 
   size_t ndim() const override { return size_.size(); }
-  size_t size(const ArrayIndex axis) const override { return size_[axis]; }
+  VoxelIndex size(const ArrayIndex axis) const override { return size_[axis]; }
   const transform_type &transform() const override { return transform_; }
 
   VoxelIndex get_index(const ArrayIndex axis) const override {

@@ -64,7 +64,7 @@ public:
   }
 
   size_t ndim() const { return dim.size(); }
-  size_t size(const ArrayIndex axis) const { return dim[axis]; }
+  VoxelIndex size(const ArrayIndex axis) const { return dim[axis]; }
 
   const VoxelIndex &index(const ArrayIndex axis) const { return pos[axis]; }
   VoxelIndex &index(const ArrayIndex axis) { return pos[axis]; }
@@ -108,7 +108,7 @@ public:
   }
 
 private:
-  std::vector<size_t> dim;
+  std::vector<VoxelIndex> dim;
   std::vector<VoxelIndex> offset;
   std::vector<VoxelIndex> pos_orig;
   CuboidExtent ext;

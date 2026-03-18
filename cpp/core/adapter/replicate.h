@@ -35,7 +35,7 @@ public:
   Replicate(ImageType &original, const Header &replication_template)
       : base_type(original),
         header_(replication_template),
-        pos_(std::max<size_t>(parent().ndim(), header_.ndim()), VoxelIndex(0)) {
+        pos_(static_cast<VoxelIndex>(std::max(parent().ndim(), static_cast<size_t>(header_.ndim()))), VoxelIndex(0)) {
     for (ArrayIndex n = 0; n < std::min<ArrayIndex>(parent().ndim(), header_.ndim()); ++n) {
       if (n < parent().ndim())
         parent().index(n) = 0;
@@ -45,7 +45,7 @@ public:
   }
 
   size_t ndim() const override { return header_.ndim(); }
-  size_t size(const ArrayIndex axis) const override { return header_.size(axis); }
+  VoxelIndex size(const ArrayIndex axis) const override { return header_.size(axis); }
   default_type spacing(const ArrayIndex axis) const override { return header_.spacing(axis); }
   Stride::Actual::value_type stride(const ArrayIndex axis) const override {
     return axis < parent().ndim() ? parent().stride(axis) : Stride::Actual::value_type(0);

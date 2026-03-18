@@ -557,7 +557,7 @@ public:
   Actual() = delete;
   template <class HeaderType> explicit Actual(const HeaderType &header);
   template <class HeaderType> explicit Actual(const Symbolic &symbolic, const HeaderType &header);
-  explicit Actual(const Symbolic &symbolic, const std::vector<size_t> &sizes);
+  explicit Actual(const Symbolic &symbolic, const std::vector<ArrayIndex> &sizes);
 
   using Base::operator=;
 
@@ -573,7 +573,7 @@ public:
   Symbolic symbolic() const;
 
 private:
-  template <class HeaderType> std::vector<size_t> get_sizes(const HeaderType &) const;
+  template <class HeaderType> std::vector<ArrayIndex> get_sizes(const HeaderType &) const;
 };
 
 // TODO Consider a class that stores stride information as specified by the user at the command-line
@@ -600,8 +600,8 @@ Actual::Actual(const HeaderType &image) : Actual(Stride::Symbolic(image), get_si
 
 template <class HeaderType> bool Actual::match(const HeaderType &image) const { return *this == Actual(image); }
 
-template <class HeaderType> std::vector<size_t> Actual::get_sizes(const HeaderType &image) const {
-  std::vector<size_t> result(image.ndim());
+template <class HeaderType> std::vector<VoxelIndex> Actual::get_sizes(const HeaderType &image) const {
+  std::vector<VoxelIndex> result(image.ndim());
   for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(image.ndim()); ++axis)
     result[axis] = image.size(axis);
   return result;
