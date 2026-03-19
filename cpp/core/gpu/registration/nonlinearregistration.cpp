@@ -29,6 +29,8 @@
 #include "transform.h"
 
 #include <Eigen/Core>
+#include <Eigen/LU>
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include <algorithm>
 #include <array>
@@ -83,6 +85,8 @@ struct alignas(16) ExponentiateInitUniforms {
 };
 static_assert(sizeof(ExponentiateInitUniforms) % 16 == 0, "ExponentiateInitUniforms must be 16-byte aligned.");
 
+constexpr uint32_t vector_texture_components = 4U;
+
 class BackwardWarpThreadKernel {
 public:
   BackwardWarpThreadKernel(MR::Image<float> &backward_displacement,
@@ -116,6 +120,52 @@ uint32_t compute_exponentiation_steps(float max_velocity_norm_voxels) {
   const uint32_t rounded_steps = required_steps > 0.0F ? static_cast<uint32_t>(required_steps) : 0U;
   // Force an even number of squaring steps so displacement ping-pong always ends in displacement1.
   return (rounded_steps % 2U) == 0U ? rounded_steps : (rounded_steps + 1U);
+}
+
+Texture make_initial_affine_velocity_texture(const MR::transform_type &initial_affine,
+                                             const TextureSpec &vector_texture_spec,
+                                             const VoxelScannerMatrices &voxel_scanner_matrices,
+                                             const ComputeContext &context) {
+  const Eigen::Matrix4f affine_matrix = MR::EigenHelpers::to_homogeneous_mat4f(initial_affine);
+  if (!affine_matrix.allFinite()) {
+    throw MR::Exception("Iinitial affine contains non-finite values.");
+  }
+
+  const Eigen::Matrix3f affine_linear = affine_matrix.block<3, 3>(0, 0);
+  const float determinant = affine_linear.determinant();
+  const Eigen::FullPivLU<Eigen::Matrix4f> affine_lu(affine_matrix);
+  if (!std::isfinite(determinant) || determinant <= 0.0F || !affine_lu.isInvertible()) {
+    throw MR::Exception("Initial affine must be invertible and orientation-preserving.");
+  }
+
+  const Eigen::Matrix4f log_affine = affine_matrix.log();
+  if (!log_affine.allFinite()) {
+    throw MR::Exception("Initial affine must have a finite real matrix logarithm.");
+  }
+
+  const Eigen::Map<const Eigen::Matrix4f> fixed_voxel_to_scanner(voxel_scanner_matrices.voxel_to_scanner_fixed.data());
+  const size_t voxel_count =
+      static_cast<size_t>(vector_texture_spec.width) * vector_texture_spec.height * vector_texture_spec.depth;
+  std::vector<float> initial_velocity_host(voxel_count * vector_texture_components, 0.0F);
+
+  for (uint32_t z = 0U; z < vector_texture_spec.depth; ++z) {
+    for (uint32_t y = 0U; y < vector_texture_spec.height; ++y) {
+      for (uint32_t x = 0U; x < vector_texture_spec.width; ++x) {
+        const Eigen::Vector4f fixed_voxel(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), 1.0F);
+        const Eigen::Vector4f fixed_scanner = fixed_voxel_to_scanner * fixed_voxel;
+        const Eigen::Vector3f velocity_scanner = (log_affine * fixed_scanner).head<3>();
+        const size_t linear_index =
+            ((((static_cast<size_t>(z) * vector_texture_spec.height) + y) * vector_texture_spec.width) + x) *
+            vector_texture_components;
+        initial_velocity_host[linear_index + 0U] = velocity_scanner.x();
+        initial_velocity_host[linear_index + 1U] = velocity_scanner.y();
+        initial_velocity_host[linear_index + 2U] = velocity_scanner.z();
+      }
+    }
+  }
+
+  return context.new_texture_from_host_memory(
+      vector_texture_spec, tcb::span<const float>(initial_velocity_host.data(), initial_velocity_host.size()));
 }
 
 // Performs the scaling and squaring steps to exponentiate the velocity field, writing the output to the displacement
@@ -496,6 +546,11 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                                                                           {"outputVelocity", velocity1},
                                                                           {"linearSampler", linear_sampler}}});
       context.dispatch_kernel(upsample_kernel, dispatch_grid);
+    } else if (level == 0U && config.initial_affine) {
+      INFO("Non-linear registration: initialising from supplied affine transform.");
+      const Texture initial_velocity = make_initial_affine_velocity_texture(
+          *config.initial_affine, vector_texture_spec, voxel_scanner_matrices, context);
+      context.copy_texture_to_texture(initial_velocity, velocity1, {});
     }
 
     bool converged_this_level = false;

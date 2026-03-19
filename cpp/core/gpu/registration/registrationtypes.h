@@ -154,6 +154,7 @@ struct NonLinearRegistrationConfig {
   std::vector<ChannelConfig> channels;
   NonLinearMetric metric;
   uint32_t max_iterations = 500;
+  std::optional<transform_type> initial_affine;
 };
 
 struct NonLinearRegistrationResult {

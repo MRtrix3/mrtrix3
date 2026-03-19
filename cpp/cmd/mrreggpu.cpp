@@ -271,9 +271,9 @@ void run() {
     throw Exception("nl_warp output is only valid when using nonlinear registration.");
   }
 
-  std::optional<GlobalRegistrationType> transform_type;
+  std::optional<GlobalRegistrationType> global_transform_type;
   if (transform_model == TransformModel::Global) {
-    transform_type = GlobalRegistrationType::Affine;
+    global_transform_type = GlobalRegistrationType::Affine;
   }
 
   MetricType metric_type = default_metric_type;
@@ -319,9 +319,12 @@ void run() {
 
   Eigen::Vector3d centre;
   InitialGuess initial_guess;
+  std::optional<MR::transform_type> initial_affine;
   if (!init_matrix_option.empty()) {
     // TODO: compute centre from images. Also check what's the correct thing to do in this case.
-    initial_guess = File::Matrix::load_transform(init_matrix_option[0][0], centre);
+    const MR::transform_type init_transform = File::Matrix::load_transform(init_matrix_option[0][0], centre);
+    initial_guess = init_transform;
+    initial_affine = init_transform;
   } else {
     const InitTranslationChoice init_translation =
         from_name<InitTranslationChoice>(get_option_value<std::string>("init_translation", "mass"));
@@ -424,6 +427,7 @@ void run() {
         .channels = channels,
         .metric = nonlinear_metric,
         .max_iterations = max_iterations,
+        .initial_affine = initial_affine,
     };
     auto gpu_compute_context = gpu_context_request.get();
     const NonLinearRegistrationResult nonlinear_result =
@@ -518,7 +522,7 @@ void run() {
 
   const GlobalRegistrationConfig registration_config{
       .channels = channels,
-      .transformation_type = *transform_type,
+      .transformation_type = *global_transform_type,
       .initial_guess = initial_guess,
       .metric = metric,
       .max_iterations = max_iterations,
