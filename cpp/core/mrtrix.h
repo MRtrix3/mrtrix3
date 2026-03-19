@@ -396,9 +396,10 @@ template <typename Enum> inline std::vector<std::string> lower_case_enum_names()
 }
 
 // Returns a concatenated string of the enum lowercase names, separated by the specified delimiter.
-template <typename Enum> inline std::string join_enum(std::string_view delimeter = ",") {
+// Default delimiter is a comma followed by a space.
+template <typename Enum> inline std::string join_enum(std::string_view delimiter = ", ") {
   const auto names = lower_case_enum_names<Enum>();
-  return join(std::vector<std::string>(names.begin(), names.end()), delimeter);
+  return join(std::vector<std::string>(names.begin(), names.end()), delimiter);
 }
 
 // Returns the case-sensitive name of the enum value.
