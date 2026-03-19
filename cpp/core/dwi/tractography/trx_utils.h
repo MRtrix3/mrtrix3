@@ -173,6 +173,60 @@ inline GroupNodeMapping build_group_node_mapping(const std::vector<std::string> 
   return mapping;
 }
 
+// Overload that uses a LUT to recover numeric node-ID ordering.
+// The LUT maps node_id → LUT_node; we invert to name → node_id and match
+// stripped group names against the LUT names. This produces a matrix with
+// rows/columns ordered by node index, matching tck2connectome output.
+template <typename LUT_type>
+inline GroupNodeMapping
+build_group_node_mapping(const std::vector<std::string> &group_names, const std::string &prefix, const LUT_type &lut) {
+  GroupNodeMapping mapping;
+  if (group_names.empty())
+    return mapping;
+
+  // Build reverse map: sanitized LUT name → node_id
+  // (sanitize the same way trxlabel does — spaces and special chars become '_')
+  auto sanitize = [](std::string name) {
+    for (char &c : name) {
+      if (c == ' ' || c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' || c == '"' || c == '<' || c == '>')
+        c = '_';
+    }
+    return name;
+  };
+
+  std::map<std::string, uint32_t> name_to_node;
+  uint32_t max_id = 0;
+  for (const auto &[node_id, entry] : lut) {
+    const std::string sanitized = sanitize(entry.get_name());
+    name_to_node[sanitized] = static_cast<uint32_t>(node_id);
+    if (static_cast<uint32_t>(node_id) > max_id)
+      max_id = static_cast<uint32_t>(node_id);
+  }
+
+  mapping.integer_names = true;
+  mapping.max_node_index = max_id;
+  mapping.ordered_display_names.assign(static_cast<size_t>(max_id) + 1, "");
+
+  // Populate display names from LUT (all entries, even those with no groups)
+  for (const auto &[node_id, entry] : lut) {
+    const std::string sanitized = sanitize(entry.get_name());
+    mapping.ordered_display_names[static_cast<size_t>(node_id)] = sanitized;
+  }
+
+  // Map each group to its LUT node ID
+  for (const auto &name : group_names) {
+    const std::string stripped = prefix.empty() ? name : name.substr(prefix.size());
+    auto it = name_to_node.find(stripped);
+    if (it != name_to_node.end()) {
+      mapping.group_to_node[name] = it->second;
+    } else {
+      WARN("Group '" + name + "' (stripped: '" + stripped + "') not found in LUT; skipping");
+    }
+  }
+
+  return mapping;
+}
+
 inline std::vector<std::string> collect_group_names(const trx::TrxFile<float> &trx, const std::string &prefix) {
   std::vector<std::string> names;
   for (const auto &[name, _] : trx.groups) {

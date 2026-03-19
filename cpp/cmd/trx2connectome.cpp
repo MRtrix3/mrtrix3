@@ -26,6 +26,7 @@
 #include "types.h"
 
 #include "connectome/connectome.h"
+#include "connectome/lut.h"
 #include "connectome/mat2vec.h"
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapped_track.h"
@@ -87,6 +88,13 @@ void usage() {
                             "the prefix (and trailing underscore) is stripped from node names in the output")
     + Argument ("prefix").type_text()
 
+  + Option ("lut", "lookup table mapping node names to numeric indices "
+                   "(supports FreeSurfer, AAL, ITK-SNAP, and MRtrix LUT formats); "
+                   "when provided, the output matrix rows and columns are ordered by node index "
+                   "rather than alphabetically, matching tck2connectome output ordering. "
+                   "Requires -group_prefix")
+    + Argument ("path").type_file_in()
+
   + MR::DWI::Tractography::TrackWeightsInOption
 
   + MR::DWI::Tractography::Connectome::EdgeStatisticOption
@@ -122,23 +130,45 @@ void execute(const node_t max_node_index,
     for (size_t i = 0; i < streamline_groups.size(); ++i) {
       const auto &grps = streamline_groups[i];
       const float w = weights.empty() ? 1.0f : weights[i];
-      // Each streamline's group list contains one entry per endpoint assignment.
-      // Deduplicate and take the first two distinct nodes as the edge endpoints;
-      // using Mapped_track_nodepair ensures exactly one edge per streamline
-      // (Mapped_track_nodelist would add spurious self-connections).
+      // Deduplicate node memberships for this streamline.
+      // For a single-atlas run, a streamline has at most 2 unique nodes (one per
+      // endpoint), producing one edge — identical to tck2connectome behaviour.
+      // For a combined-atlas run, a streamline may have 4 unique nodes (2 per atlas),
+      // so we emit one edge per unique pair to populate all atlas-block sub-matrices.
       std::vector<node_t> unique_grps;
       for (const auto n : grps) {
         if (std::find(unique_grps.begin(), unique_grps.end(), n) == unique_grps.end())
           unique_grps.push_back(n);
       }
-      const node_t n1 = unique_grps.size() >= 1 ? unique_grps[0] : node_t(0);
-      const node_t n2 = unique_grps.size() >= 2 ? unique_grps[1] : node_t(0);
-      Mapped_track_nodepair mapped;
-      mapped.set_track_index(i);
-      mapped.set_factor(1.0f);
-      mapped.set_weight(w);
-      mapped.set_nodes(NodePair(n1, n2));
-      connectome(mapped);
+      if (unique_grps.empty()) {
+        // Unassigned streamline — record as (0, 0)
+        Mapped_track_nodepair mapped;
+        mapped.set_track_index(i);
+        mapped.set_factor(1.0f);
+        mapped.set_weight(w);
+        mapped.set_nodes(NodePair(node_t(0), node_t(0)));
+        connectome(mapped);
+      } else if (unique_grps.size() == 1) {
+        // One endpoint assigned — record as (node, 0)
+        Mapped_track_nodepair mapped;
+        mapped.set_track_index(i);
+        mapped.set_factor(1.0f);
+        mapped.set_weight(w);
+        mapped.set_nodes(NodePair(unique_grps[0], node_t(0)));
+        connectome(mapped);
+      } else {
+        // Two or more unique nodes: emit one edge per unique pair.
+        for (size_t j = 0; j < unique_grps.size(); ++j) {
+          for (size_t k = j + 1; k < unique_grps.size(); ++k) {
+            Mapped_track_nodepair mapped;
+            mapped.set_track_index(i);
+            mapped.set_factor(1.0f);
+            mapped.set_weight(w);
+            mapped.set_nodes(NodePair(unique_grps[j], unique_grps[k]));
+            connectome(mapped);
+          }
+        }
+      }
       ++progress;
     }
   }
@@ -178,12 +208,24 @@ void run() {
       group_prefix = std::string(opt[0][0]) + "_";
   }
 
+  // Load LUT if provided (requires -group_prefix)
+  std::unique_ptr<MR::Connectome::LUT> lut;
+  {
+    auto opt = get_options("lut");
+    if (!opt.empty()) {
+      if (group_prefix.empty())
+        throw Exception("-lut requires -group_prefix to identify which groups to match against the lookup table");
+      lut = std::make_unique<MR::Connectome::LUT>(std::string(opt[0][0]));
+    }
+  }
+
   std::vector<std::string> group_names = collect_group_names(*trx, group_prefix);
 
   if (group_names.empty())
     throw Exception("No groups match the specified prefix '" + group_prefix + "'; check the group names with tckinfo");
 
-  GroupNodeMapping mapping = build_group_node_mapping(group_names, group_prefix);
+  GroupNodeMapping mapping = lut ? build_group_node_mapping(group_names, group_prefix, *lut)
+                                 : build_group_node_mapping(group_names, group_prefix);
   const node_t max_node_index = static_cast<node_t>(mapping.max_node_index);
 
   const auto streamline_groups_u32 = invert_group_memberships(*trx, mapping.group_to_node);
