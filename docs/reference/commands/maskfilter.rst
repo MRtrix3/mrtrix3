@@ -16,7 +16,7 @@ Usage
     maskfilter [ options ]  input filter output
 
 -  *input*: the input mask.
--  *filter*: the name of the filter to be applied; options are: clean, connect, dilate, erode, fill, median
+-  *filter*: the name of the filter to be applied; options are: clean, connect, dilate, erode, fill, median.
 -  *output*: the output mask.
 
 Description
