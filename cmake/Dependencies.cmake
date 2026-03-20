@@ -83,21 +83,29 @@ target_include_directories(nifti INTERFACE "${NIFTI_INCLUDE_DIRS}")
 # TRX Format
 if(MRTRIX_USE_SYSTEM_TRXCPP)
     find_package(trx-cpp CONFIG REQUIRED)
-elseif(MRTRIX_TRXCPP_SOURCE_DIR)
-    FetchContent_Declare(
-        trx-cpp
-        DOWNLOAD_EXTRACT_TIMESTAMP ON
-        GIT_REPOSITORY file://${MRTRIX_TRXCPP_SOURCE_DIR}
-        GIT_TAG HEAD
-    )
-    FetchContent_MakeAvailable(trx-cpp)
 else()
-    FetchContent_Declare(
-        trx-cpp
-        DOWNLOAD_EXTRACT_TIMESTAMP ON
-        GIT_REPOSITORY https://github.com/tee-ar-ex/trx-cpp.git
-        GIT_TAG main
-    )
+    # Tell trx-cpp to use MRtrix3's Eigen target directly, skipping its own
+    # Eigen discovery. This works because Eigen3::Eigen is already defined
+    # above (either from system or FetchContent).
+    set(TRX_EIGEN3_TARGET Eigen3::Eigen)
+    set(TRX_BUILD_EXAMPLES OFF)
+    set(TRX_ENABLE_INSTALL OFF)
+    set(TRX_ENABLE_NIFTI OFF)
+    if(MRTRIX_TRXCPP_SOURCE_DIR)
+        FetchContent_Declare(
+            trx-cpp
+            DOWNLOAD_EXTRACT_TIMESTAMP ON
+            GIT_REPOSITORY file://${MRTRIX_TRXCPP_SOURCE_DIR}
+            GIT_TAG HEAD
+        )
+    else()
+        FetchContent_Declare(
+            trx-cpp
+            DOWNLOAD_EXTRACT_TIMESTAMP ON
+            GIT_REPOSITORY https://github.com/tee-ar-ex/trx-cpp.git
+            GIT_TAG main
+        )
+    endif()
     FetchContent_MakeAvailable(trx-cpp)
 endif()
 
