@@ -46,7 +46,7 @@ void main(
     var normSq = 0.0F;
     if (globalId.x < dims.x && globalId.y < dims.y && globalId.z < dims.z) {
         let velocityScanner = velocityTexture.Load(int32_t4(globalId, 0)).xyz;
-        let velocityTargetVoxel = mul(float4(velocityScanner, 0.0F), voxelScannerMatrices.targetScannerToVoxel).xyz;
+        let velocityTargetVoxel = mul(voxelScannerMatrices.targetScannerToVoxel, float4(velocityScanner, 0.0F)).xyz;
         normSq = dot(velocityTargetVoxel, velocityTargetVoxel);
     }
 
