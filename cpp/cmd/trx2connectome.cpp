@@ -193,7 +193,7 @@ void run() {
   if (!is_trx(tracks_path))
     throw Exception("Input must be a TRX file; use trxlabel first to add group assignments");
 
-  auto trx = load_trx(tracks_path);
+  auto trx = load_trx_header_only(tracks_path);
   if (!trx)
     throw Exception("Failed to load TRX file: " + tracks_path);
 

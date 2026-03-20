@@ -64,7 +64,7 @@ void run() {
       throw Exception("Use -field to specify the dpv field to validate when the tracks argument is a TRX file");
 
     const std::string field_name(field_opt[0][0]);
-    auto trx = TRX::load_trx(tck_path);
+    auto trx = TRX::load_trx_header_only(tck_path);
     if (!trx)
       throw Exception("Failed to load TRX file: " + tck_path);
 

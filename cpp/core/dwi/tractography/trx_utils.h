@@ -59,48 +59,33 @@ inline bool is_trx_field_name(std::string_view input_path, std::string_view outp
          output_arg.find('\\') == std::string_view::npos;
 }
 
-// Load a TRX file, auto-detecting zip vs directory format, and expose positions
-// as float32.
-//
-// For non-float32 positions, conversion is performed in bounded chunks directly
-// into the loaded float32 matrix to avoid allocating a second full-size copy.
+// Load a TRX file with positions guaranteed as float32.
+// For float16/float64 files, delegates to trx::load_float32_positions() which
+// performs chunked in-place conversion into owned storage — no segfault, no
+// double-size allocation.
+// Use this whenever streamline coordinates will be read or written.
 inline std::unique_ptr<trx::TrxFile<float>> load_trx(std::string_view path) {
   const std::string filename(path);
   const auto dtype = trx::detect_positions_scalar_type(filename, trx::TrxScalarType::Float32);
-  if (dtype == trx::TrxScalarType::Float32)
-    return trx::load<float>(filename);
-  if (dtype == trx::TrxScalarType::Float16) {
+  if (dtype == trx::TrxScalarType::Float16)
     WARN("TRX file '" + filename + "' has float16 positions; converting to float32 on load");
-  } else {
+  else if (dtype == trx::TrxScalarType::Float64)
     WARN("TRX file '" + filename + "' has float64 positions; converting to float32 (precision loss)");
-  }
-  auto trx_f32 = trx::load<float>(filename);
-  if (!trx_f32 || !trx_f32->streamlines)
-    return trx_f32;
-  const Eigen::Index n_vertices = static_cast<Eigen::Index>(trx_f32->num_vertices());
-  if (n_vertices <= 0)
-    return trx_f32;
-  const Eigen::Index chunk_rows = static_cast<Eigen::Index>(1) << 20;
-  trx::with_trx_reader(filename, [&](auto &reader, trx::TrxScalarType) -> int {
-    const auto &src = reader->streamlines->_data;
-    if (src.rows() != n_vertices || src.cols() != 3)
-      throw Exception("unexpected TRX positions shape while converting to float32");
-    for (Eigen::Index row0 = 0; row0 < n_vertices; row0 += chunk_rows) {
-      const Eigen::Index row1 = std::min<Eigen::Index>(n_vertices, row0 + chunk_rows);
-      for (Eigen::Index r = row0; r < row1; ++r) {
-        trx_f32->streamlines->_data(r, 0) = static_cast<float>(src(r, 0));
-        trx_f32->streamlines->_data(r, 1) = static_cast<float>(src(r, 1));
-        trx_f32->streamlines->_data(r, 2) = static_cast<float>(src(r, 2));
-      }
-    }
-    return 0;
-  });
-  return trx_f32;
+  return trx::load_float32_positions(filename);
+}
+
+// Load a TRX file for metadata inspection only (groups, dps, dpv field
+// names/shapes, streamline/vertex counts). Positions are mmapped with their
+// native dtype but never read, so this is safe for float16/float64 files and
+// avoids any conversion overhead.
+// Do NOT read streamline coordinates from the returned TrxFile; use load_trx().
+inline std::unique_ptr<trx::TrxFile<float>> load_trx_header_only(std::string_view path) {
+  return trx::load<float>(std::string(path));
 }
 
 // Count streamlines and total vertices in a TRX file
 inline std::pair<size_t, size_t> count_trx(std::string_view path) {
-  auto trx = load_trx(path);
+  auto trx = load_trx_header_only(path);
   if (!trx)
     throw Exception("Failed to load TRX file: " + std::string(path));
   return {trx->num_streamlines(), trx->num_vertices()};
@@ -338,7 +323,7 @@ append_group(std::string_view trx_path, const std::string &name, const std::vect
 // because TrxFile<float> already presents all values as float.
 // Group indices are copied as uint32_t.
 inline void copy_trx_sidecar_data(std::string_view src_path, std::string_view dst_path, bool include_dpv = false) {
-  auto src = load_trx(src_path);
+  auto src = load_trx_header_only(src_path);
   if (!src)
     return;
   const std::string dst(dst_path);
@@ -758,7 +743,7 @@ inline std::vector<float> resolve_dps_weights(std::string_view tractogram_path, 
   }
   if (!is_trx(tractogram_path))
     throw Exception("cannot resolve \"" + field_name_or_path + "\": not an existing file and input is not a TRX file");
-  auto trx = load_trx(tractogram_path);
+  auto trx = load_trx_header_only(tractogram_path);
   auto it = trx->data_per_streamline.find(field_name_or_path);
   if (it == trx->data_per_streamline.end() || !it->second)
     throw Exception("TRX file has no dps field named \"" + field_name_or_path + "\"");
@@ -818,7 +803,7 @@ inline std::vector<float> resolve_dpv_scalars(std::string_view tractogram_path, 
   }
   if (!is_trx(tractogram_path))
     throw Exception("cannot resolve \"" + field_name_or_path + "\": not an existing file and input is not a TRX file");
-  auto trx = load_trx(tractogram_path);
+  auto trx = load_trx_header_only(tractogram_path);
   auto it = trx->data_per_vertex.find(field_name_or_path);
   if (it == trx->data_per_vertex.end() || !it->second)
     throw Exception("TRX file has no dpv field named \"" + field_name_or_path + "\"");
@@ -838,7 +823,7 @@ inline std::vector<float> resolve_dpv_scalars(std::string_view tractogram_path, 
 class TRXScalarReader {
 public:
   TRXScalarReader(std::string_view trx_path, const std::string &field_name) : current_(0) {
-    auto trx = load_trx(trx_path);
+    auto trx = load_trx_header_only(trx_path);
     if (!trx || !trx->streamlines)
       throw Exception("Failed to load TRX file: " + std::string(trx_path));
 

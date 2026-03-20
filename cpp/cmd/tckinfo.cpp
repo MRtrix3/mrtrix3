@@ -56,7 +56,7 @@ void run() {
     std::cout << "  Tracks file: \"" << argument[i] << "\"\n";
 
     if (Tractography::TRX::is_trx(argument[i])) {
-      auto trx = Tractography::TRX::load_trx(argument[i]);
+      auto trx = Tractography::TRX::load_trx_header_only(argument[i]);
       if (!trx)
         throw Exception("Failed to load TRX file: " + std::string(argument[i]));
       Tractography::TRX::print_info(std::cout, *trx, prefix_depth, !prefix_depth_specified);

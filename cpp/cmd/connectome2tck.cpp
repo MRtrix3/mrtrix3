@@ -220,7 +220,7 @@ void usage() {
 //     1-based indices, matching trx2connectome's ordering convention.
 static std::vector<std::vector<node_t>>
 assignments_from_trx_groups(const std::string &trx_path, const std::string &prefix_filter, node_t &max_node_index) {
-  auto trx = load_trx(trx_path);
+  auto trx = load_trx_header_only(trx_path);
   if (!trx || !trx->streamlines)
     throw Exception("Failed to load TRX file: " + trx_path);
   if (trx->groups.empty())

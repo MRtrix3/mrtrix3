@@ -139,7 +139,13 @@ void usage() {
       .allow_multiple()
       + Argument ("name").type_text()
       + Argument ("datatype").type_text()
-      + Argument ("path").type_file_in();
+      + Argument ("path").type_file_in()
+
+    + Option ("positions_datatype",
+        "datatype of the positions array in the output TRX file (float16, float32, or float64). "
+        "Only applies to TRX output. Default: preserves the source datatype for TRX→TRX conversion; "
+        "float32 for all other input formats.")
+      + Argument ("spec").type_text();
 
 }
 // clang-format on
@@ -832,7 +838,23 @@ void run() {
       trx->add_dpv_from_tsf(spec.name, spec.dtype, spec.path);
     }
     try {
-      trx->save(trx_save_path, ZIP_CM_STORE);
+      trx::TrxSaveOptions save_opts;
+      save_opts.compression_standard = ZIP_CM_STORE;
+      {
+        auto opt = get_options("positions_datatype");
+        if (!opt.empty()) {
+          const std::string spec = opt[0][0];
+          if (spec == "float16")
+            save_opts.positions_dtype = trx::TrxScalarType::Float16;
+          else if (spec == "float32")
+            save_opts.positions_dtype = trx::TrxScalarType::Float32;
+          else if (spec == "float64")
+            save_opts.positions_dtype = trx::TrxScalarType::Float64;
+          else
+            throw Exception("Unknown -positions_datatype '" + spec + "'; expected float16, float32, or float64");
+        }
+      }
+      trx->save(trx_save_path, save_opts);
       if (rename_trx_directory) {
         std::error_code ec;
         std::filesystem::remove_all(trx_output, ec);

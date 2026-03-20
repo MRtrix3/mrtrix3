@@ -67,7 +67,7 @@ void run() {
 
     if (DWI::Tractography::TRX::is_trx(path)) {
       // TRX mode: list dpv fields
-      auto trx = DWI::Tractography::TRX::load_trx(path);
+      auto trx = DWI::Tractography::TRX::load_trx_header_only(path);
       if (!trx)
         throw Exception("Failed to load TRX file: " + path);
 
