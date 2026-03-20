@@ -26,6 +26,7 @@
 #include <tcb/span.hpp>
 
 #include <cstdlib>
+#include <dawn/native/DawnNative.h>
 #include <memory>
 #include <slang-com-ptr.h>
 #include <slang.h>
@@ -34,12 +35,14 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <future>
 #include <limits>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -191,6 +194,97 @@ std::string to_string(const wgpu::AdapterType adapter_type) {
 std::future<Slang::ComPtr<slang::IGlobalSession>> request_slang_global_session_async() {
   return SlangCodegen::request_slang_global_session_async();
 }
+
+std::optional<uint32_t> parse_gpu_adapter_index_env() {
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
+  const char *gpu_id_env = std::getenv("MRTRIX_GPU_ID"); // check_syntax off
+  if (gpu_id_env == nullptr) {
+    return std::nullopt;
+  }
+
+  const std::string_view gpu_id_string(gpu_id_env);
+  uint32_t gpu_id = 0;
+  const auto [parsed_to, parse_error] =
+      std::from_chars(gpu_id_string.data(), gpu_id_string.data() + gpu_id_string.size(), gpu_id);
+  if (parse_error != std::errc() || parsed_to != gpu_id_string.data() + gpu_id_string.size()) {
+    throw MR::Exception("Invalid MRTRIX_GPU_ID value: '" + std::string(gpu_id_string) +
+                        "'. Expected a non-negative integer adapter index.");
+  }
+
+  return gpu_id;
+}
+
+wgpu::Adapter request_default_adapter(const wgpu::Instance &instance,
+                                      const wgpu::RequestAdapterOptions &adapter_options) {
+  struct RequestAdapterResult {
+    wgpu::RequestAdapterStatus status = wgpu::RequestAdapterStatus::Error;
+    wgpu::Adapter adapter = nullptr;
+    std::string message;
+  } request_adapter_result;
+
+  const auto adapter_callback = [&request_adapter_result](wgpu::RequestAdapterStatus status,
+                                                          wgpu::Adapter found_adapter,
+                                                          wgpu::StringView message) {
+    request_adapter_result = {status, std::move(found_adapter), std::string(message)};
+  };
+
+  const wgpu::Future adapter_request =
+      instance.RequestAdapter(&adapter_options, wgpu::CallbackMode::WaitAnyOnly, adapter_callback);
+  const wgpu::WaitStatus wait_status = instance.WaitAny(adapter_request, -1);
+
+  if (wait_status == wgpu::WaitStatus::Success) {
+    if (request_adapter_result.status != wgpu::RequestAdapterStatus::Success) {
+      throw MR::Exception("Failed to get adapter: " + request_adapter_result.message);
+    }
+  } else {
+    throw MR::Exception("Failed to get adapter: wgpu::Instance::WaitAny failed");
+  }
+
+  return request_adapter_result.adapter;
+}
+
+struct SelectedAdapter {
+  wgpu::Instance instance = nullptr;
+  wgpu::Adapter adapter = nullptr;
+};
+
+void log_available_adapters(const std::vector<dawn::native::Adapter> &adapters) {
+  INFO("Available GPU adapters:");
+  for (size_t adapter_index = 0; adapter_index < adapters.size(); ++adapter_index) {
+    const wgpu::Adapter adapter(adapters[adapter_index].Get());
+    wgpu::AdapterInfo adapter_info;
+    adapter.GetInfo(&adapter_info);
+
+    INFO("  [" + std::to_string(adapter_index) + "] " + to_string(adapter_info.description));
+    INFO("      details: backend=" + to_string(adapter_info.backendType) +
+         ", type=" + to_string(adapter_info.adapterType) + ", vendor=" + to_string(adapter_info.vendor) +
+         ", architecture=" + to_string(adapter_info.architecture) + ", device=" + to_string(adapter_info.device));
+    INFO("      identifiers: vendor_id=" + std::to_string(adapter_info.vendorID) +
+         ", device_id=" + std::to_string(adapter_info.deviceID));
+  }
+}
+
+SelectedAdapter request_adapter_by_index(const wgpu::InstanceDescriptor &instance_descriptor,
+                                         const wgpu::RequestAdapterOptions &adapter_options,
+                                         const uint32_t adapter_index) {
+  dawn::native::Instance dawn_instance(&instance_descriptor);
+  const std::vector<dawn::native::Adapter> adapters = dawn_instance.EnumerateAdapters(&adapter_options);
+
+  if (adapters.empty()) {
+    throw MR::Exception("Failed to get adapter: no adapters available for the requested backend.");
+  }
+
+  log_available_adapters(adapters);
+  if (adapter_index >= adapters.size()) {
+    throw MR::Exception("Invalid MRTRIX_GPU_ID value: " + std::to_string(adapter_index) + ". Found " +
+                        std::to_string(adapters.size()) + " adapter(s).");
+  }
+
+  return {
+      .instance = wgpu::Instance(dawn_instance.Get()),
+      .adapter = wgpu::Adapter(adapters[adapter_index].Get()),
+  };
+}
 } // namespace
 
 ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSessionInfo>()) {
@@ -222,37 +316,29 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
         .requiredFeatures = instance_features.data(),
     };
 
-    const wgpu::Instance wgpu_instance = wgpu::CreateInstance(&instance_descriptor);
+    wgpu::Instance wgpu_instance;
     wgpu::Adapter wgpu_adapter;
 
-    const wgpu::RequestAdapterOptions adapter_options{.powerPreference = wgpu::PowerPreference::HighPerformance,
-                                                      .backendType = GPUBackendType};
-
-    struct RequestAdapterResult {
-      wgpu::RequestAdapterStatus status = wgpu::RequestAdapterStatus::Error;
-      wgpu::Adapter adapter = nullptr;
-      std::string message;
-    } request_adapter_result;
-
-    const auto adapter_callback = [&request_adapter_result](wgpu::RequestAdapterStatus status,
-                                                            wgpu::Adapter foundAdapter,
-                                                            wgpu::StringView message) {
-      request_adapter_result = {status, std::move(foundAdapter), std::string(message)};
-    };
-
-    const wgpu::Future adapter_request =
-        wgpu_instance.RequestAdapter(&adapter_options, wgpu::CallbackMode::WaitAnyOnly, adapter_callback);
-    const wgpu::WaitStatus wait_status = wgpu_instance.WaitAny(adapter_request, -1);
-
-    if (wait_status == wgpu::WaitStatus::Success) {
-      if (request_adapter_result.status != wgpu::RequestAdapterStatus::Success) {
-        throw MR::Exception("Failed to get adapter: " + request_adapter_result.message);
-      }
+    const std::optional<uint32_t> adapter_index_env = parse_gpu_adapter_index_env();
+    if (adapter_index_env.has_value()) {
+      INFO("Selecting GPU adapter from MRTRIX_GPU_ID=" + std::to_string(adapter_index_env.value()));
+      const wgpu::RequestAdapterOptions adapter_options{
+          .powerPreference = wgpu::PowerPreference::Undefined,
+          .backendType = GPUBackendType,
+      };
+      const SelectedAdapter selected_adapter =
+          request_adapter_by_index(instance_descriptor, adapter_options, adapter_index_env.value());
+      wgpu_instance = selected_adapter.instance;
+      wgpu_adapter = selected_adapter.adapter;
     } else {
-      throw MR::Exception("Failed to get adapter: wgpu::Instance::WaitAny failed");
+      wgpu_instance = wgpu::CreateInstance(&instance_descriptor);
+      const wgpu::RequestAdapterOptions adapter_options{
+          .powerPreference = wgpu::PowerPreference::HighPerformance,
+          .backendType = GPUBackendType,
+      };
+      wgpu_adapter = request_default_adapter(wgpu_instance, adapter_options);
     }
 
-    wgpu_adapter = request_adapter_result.adapter;
     const std::vector<wgpu::FeatureName> required_device_features = {
         wgpu::FeatureName::R8UnormStorage,
         wgpu::FeatureName::Float32Filterable,
