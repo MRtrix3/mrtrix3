@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "fixel/fixel.h"
@@ -55,7 +56,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
   + Argument ("filter", "the filtering operation to perform;"
-                        " options are: " + join_enum<FilterType>() + ".").type_choice<FilterType>()
+                        " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
   + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out();
 
   OPTIONS
@@ -90,7 +91,7 @@ void usage() {
 using value_type = float;
 
 void run() {
-  const FilterType filter_type = enum_from_name<FilterType>(argument[1]);
+  const FilterType filter_type = MR::Enum::from_name<FilterType>(argument[1]);
 
   std::set<std::string> option_list{"cfe_dh",
                                     "cfe_e",
@@ -199,17 +200,17 @@ void run() {
 
   for (const auto &i : option_list) {
     if (!get_options(i).empty())
-      WARN("Option -" + i + " ignored:" + " not relevant to " + lowercase_enum_name(filter_type) + " filter");
+      WARN("Option -" + i + " ignored:" + " not relevant to " + MR::Enum::lowercase_name(filter_type) + " filter");
   }
 
   if (single_file.valid()) {
     auto output_image = Image<float>::create(argument[2], single_file);
-    CONSOLE(std::string("Applying \"") + lowercase_enum_name(filter_type) + "\" operation to fixel data file \"" +
+    CONSOLE(std::string("Applying \"") + MR::Enum::lowercase_name(filter_type) + "\" operation to fixel data file \"" +
             single_file.name() + "\"");
     (*filter)(single_file, output_image);
   } else {
     Fixel::copy_index_and_directions_file(argument[0], argument[2]);
-    ProgressBar progress(std::string("Applying \"") + lowercase_enum_name(filter_type) + "\" operation to " +
+    ProgressBar progress(std::string("Applying \"") + MR::Enum::lowercase_name(filter_type) + "\" operation to " +
                              str(multiple_files.size()) + " fixel data files",
                          multiple_files.size());
     for (auto &H : multiple_files) {

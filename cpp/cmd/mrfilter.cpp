@@ -17,6 +17,7 @@
 #include <complex>
 
 #include "command.h"
+#include "enum.h"
 #include "filter/base.h"
 #include "filter/demodulate.h"
 #include "filter/gradient.h"
@@ -126,7 +127,7 @@ void usage() {
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are: " + join_enum<FilterType>() + "."
+  + "The available filters are: " + MR::Enum::join<FilterType>() + "."
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
@@ -150,8 +151,8 @@ void usage() {
 
 void run() {
 
-  const FilterType filter_index = enum_from_name<FilterType>(argument[1]);
-  const std::string filter_name = lowercase_enum_name(filter_index);
+  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
+  const std::string filter_name = MR::Enum::lowercase_name(filter_index);
 
   switch (filter_index) {
 

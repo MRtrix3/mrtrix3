@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "progressbar.h"
 #include "types.h"
 
@@ -82,7 +83,7 @@ void usage() {
   + Argument ("input", "a text file listing the file names of the input connectomes").type_file_in ()
 
   + Argument ("algorithm", "the algorithm to use in network-based clustering/enhancement."
-                           " Options are: " + join_enum<Algorithm>() + ".").type_choice<Algorithm>()
+                           " Options are: " + MR::Enum::join<Algorithm>() + ".").type_choice<Algorithm>()
 
   + Argument ("design", "the design matrix").type_file_in ()
 
@@ -184,7 +185,7 @@ void run() {
 
   // Initialise enhancement algorithm
   std::shared_ptr<Stats::EnhancerBase> enhancer;
-  switch (enum_from_name<Algorithm>(argument[1])) {
+  switch (MR::Enum::from_name<Algorithm>(argument[1])) {
   case Algorithm::NBS: {
     auto opt = get_options("threshold");
     if (opt.empty())
@@ -196,7 +197,7 @@ void run() {
     enhancer.reset(new Stats::TFCE::Wrapper(base));
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
     if (!get_options("threshold").empty())
-      WARN(lowercase_enum_name(Algorithm::TFNBS) + " is a threshold-free algorithm; -threshold option ignored");
+      WARN(MR::Enum::lowercase_name(Algorithm::TFNBS) + " is a threshold-free algorithm; -threshold option ignored");
   } break;
   case Algorithm::None: {
     enhancer.reset(new MR::Connectome::Enhance::PassThrough());

@@ -17,6 +17,7 @@
 #include "adapter/regrid.h"
 #include "algo/copy.h"
 #include "command.h"
+#include "enum.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
 #include "image.h"
@@ -100,7 +101,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
   + Argument ("operation", "the operation to be performed;"
-                           " one of: " + join_enum<Operation>() + ".").type_choice<Operation>()
+                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -203,8 +204,8 @@ void usage() {
 void run() {
   auto input_header = Header::open(argument[0]);
 
-  const Operation op = enum_from_name<Operation>(argument[1]);
-  const std::string operation_name = lowercase_enum_name(op);
+  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
+  const std::string operation_name = MR::Enum::lowercase_name(op);
 
   // Out of bounds value
   const default_type out_of_bounds_value = get_option_value("fill", 0.0);

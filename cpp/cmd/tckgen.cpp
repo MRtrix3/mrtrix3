@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 
 #include "dwi/tractography/properties.h"
@@ -211,8 +212,8 @@ void usage() {
   + Option ("algorithm",
             "specify the tractography algorithm to use."
             " Valid choices are: "
-            + join_enum<algorithm_t>()
-            + " (default: " + lowercase_enum_name(default_algorithm) + ").")
+            + MR::Enum::join<algorithm_t>()
+            + " (default: " + MR::Enum::lowercase_name(default_algorithm) + ").")
     + Argument ("name").type_choice<algorithm_t>()
 
   + DWI::Tractography::Tracking::TrackOption

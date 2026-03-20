@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "header.h"
 #include "surface/filter/vertex_transform.h"
 #include "surface/mesh.h"
@@ -42,7 +43,7 @@ void usage() {
 
   + Option ("transform", "transform vertices from one coordinate space to another,"
                          " based on a template image;"
-                         " options are: " + join_enum<TransformChoice>() + ".")
+                         " options are: " + MR::Enum::join<TransformChoice>() + ".")
     + Argument ("mode").type_choice<TransformChoice>()
     + Argument ("image").type_image_in();
 
@@ -68,7 +69,7 @@ void run() {
   if (!opt.empty()) {
     auto H = Header::open(opt[0][1]);
     auto transform = std::make_unique<Surface::Filter::VertexTransform>(H);
-    switch (enum_from_name<TransformChoice>(opt[0][0])) {
+    switch (MR::Enum::from_name<TransformChoice>(opt[0][0])) {
     case TransformChoice::First2Real:
       transform->set_first2real();
       break;

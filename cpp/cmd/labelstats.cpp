@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -42,7 +43,7 @@ void usage() {
 
   OPTIONS
   + Option ("output", "output only the field specified;"
-                      " options are: " + join_enum<FieldChoice>() + ".")
+                      " options are: " + MR::Enum::join<FieldChoice>() + ".")
     + Argument ("choice").type_choice<FieldChoice>()
 
   + Option ("voxelspace", "report parcel centres of mass in voxel space"
@@ -84,7 +85,7 @@ void run() {
 
   auto opt = get_options("output");
   if (!opt.empty()) {
-    switch (enum_from_name<FieldChoice>(opt[0][0])) {
+    switch (MR::Enum::from_name<FieldChoice>(opt[0][0])) {
     case FieldChoice::MASS:
       std::cout << masses;
       break;

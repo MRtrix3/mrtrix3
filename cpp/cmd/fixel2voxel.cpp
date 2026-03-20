@@ -16,6 +16,7 @@
 
 #include "apply.h"
 #include "command.h"
+#include "enum.h"
 #include "progressbar.h"
 
 #include "algo/loop.h"
@@ -91,7 +92,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file").type_image_in()
-  + Argument ("operation", "the operation to apply, one of: " + join_enum<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", "the operation to apply, one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
   + Argument ("image_out", "the output scalar image.").type_image_out();
 
   OPTIONS
@@ -448,7 +449,7 @@ void run() {
 
   Image<float> in_directions;
 
-  const Operation op = enum_from_name<Operation>(argument[1]);
+  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
 
   const index_type max_fixels = get_option_value("number", 0);
   if ((max_fixels != 0U) && op == Operation::COUNT)

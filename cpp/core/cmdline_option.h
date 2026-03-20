@@ -23,10 +23,10 @@
 #include <utility>
 #include <vector>
 
+#include "enum.h"
 #include "mrtrix.h"
 #include "types.h"
 
-#include <magic_enum/magic_enum.hpp>
 #include <variant>
 
 namespace MR::App {
@@ -262,7 +262,7 @@ public:
   template <typename Enum> Argument &type_choice() {
     static_assert(std::is_enum_v<Enum>, "Template parameter must be an enum type");
     types.set(ArgTypeFlags::Choice);
-    choices = MR::lower_case_enum_names<Enum>();
+    choices = MR::Enum::lower_case_names<Enum>();
     return *this;
   }
 

@@ -17,6 +17,7 @@
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 #include "math/math.h"
 
@@ -194,7 +195,7 @@ void usage() {
                      " image2: scanner space of image 2;"
                      " average: scanner space of the average affine transformation"
                      " of image 1 and 2;"
-                     " default: " + lowercase_enum_name(default_space) + ".")
+                     " default: " + MR::Enum::lowercase_name(default_space) + ".")
     + Argument ("iteration method").type_choice<space_t>()
 
   + Option ("interp", std::string("set the interpolation method to use when reslicing") +

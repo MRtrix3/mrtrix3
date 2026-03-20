@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "connectome/enhance.h"
+#include "enum.h"
 #include "file/matrix.h"
 
 using namespace MR;
@@ -24,7 +25,7 @@ using namespace MR::Math;
 using namespace App;
 
 enum class Operation { TO_SYMMETRIC, UPPER_TRIANGULAR, LOWER_TRIANGULAR, TRANSPOSE, ZERO_DIAGONAL };
-const std::vector<std::string> operations = lower_case_enum_names<Operation>();
+const std::vector<std::string> operations = MR::Enum::lower_case_names<Operation>();
 
 // clang-format off
 void usage() {
@@ -37,7 +38,7 @@ void usage() {
   + Argument ("input", "the input connectome.").type_file_in()
 
   + Argument ("operation", "the operation to apply,"
-                           " one of: " + join_enum<Operation>() + ".").type_choice<Operation>()
+                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
 
   + Argument ("output", "the output connectome.").type_file_out();
 
@@ -47,10 +48,10 @@ void usage() {
 void run() {
   MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
   MR::Connectome::check(connectome);
-  const Operation op = enum_from_name<Operation>(argument[1]);
+  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
   const std::string_view output_path = argument[2];
 
-  INFO("Applying \'" + lowercase_enum_name(op) + "\' transformation to the input connectome.");
+  INFO("Applying \'" + MR::Enum::lowercase_name(op) + "\' transformation to the input connectome.");
 
   switch (op) {
   case Operation::TO_SYMMETRIC:

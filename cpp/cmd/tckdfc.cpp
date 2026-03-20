@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "exception.h"
 #include "header.h"
 #include "image.h"
@@ -232,7 +233,7 @@ void run() {
       throw Exception("Do not specify both -static and -dynamic options");
 
     // Generate the window filter
-    const WindowShape window_shape = enum_from_name<WindowShape>(opt[0][0]);
+    const WindowShape window_shape = MR::Enum::from_name<WindowShape>(opt[0][0]);
     const ssize_t window_width = opt[0][1];
     if (!(window_width % 2))
       throw Exception("Width of sliding time window must be an odd integer");

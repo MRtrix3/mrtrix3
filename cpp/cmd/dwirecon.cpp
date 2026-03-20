@@ -23,6 +23,7 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "enum.h"
 #include "filter/smooth.h"
 #include "header.h"
 #include "image.h"
@@ -125,7 +126,7 @@ void usage() {
   ARGUMENTS
     + Argument ("input", "the input DWI series").type_image_in()
     + Argument ("operation", "the way in which output DWIs will be reconstructed;"
-                " one of: " + join_enum<Operation>()).type_choice<Operation>()
+                " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
     + Argument ("output", "the output DWI series").type_image_out();
 
   OPTIONS
@@ -928,7 +929,7 @@ void run() {
   header_out.datatype().set_byte_order_native();
   header_out.name() = std::string(argument[2]);
 
-  switch (enum_from_name<Operation>(argument[1])) {
+  switch (MR::Enum::from_name<Operation>(argument[1])) {
 
   case Operation::COMBINE_PAIRS:
     Metadata::PhaseEncoding::clear_scheme(header_out.keyval());

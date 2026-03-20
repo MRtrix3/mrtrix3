@@ -19,6 +19,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/ofstream.h"
 #include "file/path.h"
@@ -64,7 +65,7 @@ void usage() {
 
   OPTIONS
   + Option ("stat_tck", "compute some statistic from the values along each streamline;"
-                        " (options are: " + join_enum<Statistic>() + ")")
+                        " (options are: " + MR::Enum::join<Statistic>() + ")")
     + Argument ("statistic").type_choice<Statistic>()
 
   + Option ("nointerp", "do not use trilinear interpolation when sampling image values")

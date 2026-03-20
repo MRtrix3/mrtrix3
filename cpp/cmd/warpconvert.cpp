@@ -16,6 +16,7 @@
 
 #include "adapter/extract.h"
 #include "command.h"
+#include "enum.h"
 #include "file/nifti_utils.h"
 #include "image.h"
 #include "registration/warp/compose.h"
@@ -53,7 +54,7 @@ void usage() {
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in()
   + Argument ("type", "the conversion type required;"
-                      " valid choices are: " + join_enum<ConversionType>()).type_choice<ConversionType>()
+                      " valid choices are: " + MR::Enum::join<ConversionType>()).type_choice<ConversionType>()
   + Argument ("out", "the output warp image.").type_image_out();
 
   OPTIONS
@@ -83,7 +84,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  const ConversionType type = enum_from_name<ConversionType>(argument[1]);
+  const ConversionType type = MR::Enum::from_name<ConversionType>(argument[1]);
   const bool midway_space = !get_options("midway_space").empty();
   const std::string template_filename = get_option_value<std::string>("template", "");
   const int from = get_option_value("from", 1);

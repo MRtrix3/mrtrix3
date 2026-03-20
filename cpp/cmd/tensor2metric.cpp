@@ -19,6 +19,7 @@
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "progressbar.h"
@@ -77,8 +78,8 @@ void usage() {
 
     + Option("modulate",
              "specify how to modulate the magnitude of the eigenvectors."
-             " Valid choices are: " + join_enum<ModulateChoice>() +
-             " (default = " + lowercase_enum_name(default_modulate_choice) + ").")
+             " Valid choices are: " + MR::Enum::join<ModulateChoice>() +
+             " (default = " + MR::Enum::lowercase_name(default_modulate_choice) + ").")
       + Argument("choice").type_choice<ModulateChoice>()
 
     + Option("cl",

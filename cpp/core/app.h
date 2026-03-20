@@ -28,6 +28,7 @@
 #endif
 
 #include "cmdline_option.h"
+#include "enum.h"
 #include "file/path.h"
 #include "types.h"
 
@@ -386,7 +387,7 @@ template <typename Enum> inline Enum get_option_choice(std::string_view name, co
     return default_value;
   case 1:
     if (opt[0].opt->size() == 1)
-      return enum_from_name<Enum>(std::string_view(opt[0][0]));
+      return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
   default:
     assert(false);
     throw Exception("Internal error parsing command-line option \"-" + name + "\"");

@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "dwi/directions/predefined.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "filter/reslice.h"
@@ -109,8 +110,8 @@ void usage() {
   OPTIONS
   + Option ("type", std::string("the registration type.") +
                     " Valid choices are: "
-                    + join_enum<transformation_t>()
-                    + " (default: " + lowercase_enum_name(default_transformation_type) + ")")
+                    + MR::Enum::join<transformation_t>()
+                    + " (default: " + MR::Enum::lowercase_name(default_transformation_type) + ")")
     + Argument ("choice").type_choice<transformation_t>()
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."

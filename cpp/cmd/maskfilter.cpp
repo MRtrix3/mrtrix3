@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "filter/base.h"
 #include "filter/connected_components.h"
 #include "filter/dilate.h"
@@ -97,7 +98,7 @@ void usage() {
   ARGUMENTS
   + Argument("input", "the input mask.").type_image_in()
   + Argument("filter", "the name of the filter to be applied;"
-                       " options are: " + join_enum<FilterType>() + ".").type_choice<FilterType>()
+                       " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
   + Argument("output", "the output mask.").type_image_out();
 
   OPTIONS
@@ -118,7 +119,7 @@ void run() {
 
   auto input_image = Image<value_type>::open(argument[0]);
 
-  const FilterType filter_index = enum_from_name<FilterType>(argument[1]);
+  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
 
   switch (filter_index) {
   case FilterType::CLEAN: {

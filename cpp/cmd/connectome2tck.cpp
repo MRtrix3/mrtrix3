@@ -18,6 +18,7 @@
 #include <string>
 
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 #include "progressbar.h"
 #include "thread_queue.h"
@@ -52,7 +53,7 @@ const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the
     + Option ("exclusive", "only select tracks that exclusively connect nodes from within the list of nodes of interest")
 
     + Option ("files", "select how the resulting streamlines will be grouped in output files."
-                       " Options are: " + MR::join_enum<FileOutput>(", ") + ". Default: " + MR::lowercase_enum_name(default_file_output) + ".")
+                       " Options are: " + MR::Enum::join<FileOutput>(", ") + ". Default: " + MR::Enum::lowercase_name(default_file_output) + ".")
       + Argument ("option").type_choice<FileOutput>()
 
     + Option ("exemplars", "generate a mean connection exemplar per edge,"

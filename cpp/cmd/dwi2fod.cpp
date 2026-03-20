@@ -18,6 +18,7 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "math/SH.h"
@@ -113,7 +114,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("algorithm", "the algorithm to use for FOD estimation. "
-                             "(options are: " + join_enum<Algorithm>() + ")").type_choice<Algorithm>()
+                             "(options are: " + MR::Enum::join<Algorithm>() + ")").type_choice<Algorithm>()
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
     + Argument ("response odf", "pairs of input tissue response and output ODF images").type_file_in().type_image_out().allow_multiple();
 
@@ -269,7 +270,7 @@ void run() {
   if (opt.size())
     dwi_modelled = Image<float>::create(opt[0][0], header_out);
 
-  const Algorithm algorithm = enum_from_name<Algorithm>(argument[0]);
+  const Algorithm algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
   switch (algorithm) {
   case Algorithm::CSD: {
     if (argument.size() != 4)

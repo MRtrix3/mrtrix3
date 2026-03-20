@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "exception.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -125,7 +126,7 @@ void usage() {
   + OptionGroup ("Threshold application modifiers")
 
   + Option ("comparison", "comparison operator to use when applying the threshold; "
-                          "options are: " + join_enum<operator_type>()
+                          "options are: " + MR::Enum::join<operator_type>()
                           + " (default = \"le\" for -bottom; \"ge\" otherwise)")
     + Argument ("choice").type_choice<operator_type>()
 

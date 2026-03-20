@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "memory.h"
 #include "progressbar.h"
 #include "types.h"
@@ -51,7 +52,7 @@ void usage() {
 
   + Option ("output", "output only the field specified."
                       " Multiple such options can be supplied if required."
-                      " Choices are: " + join_enum<FieldChoice>() + "."
+                      " Choices are: " + MR::Enum::join<FieldChoice>() + "."
                       " Useful for use in scripts.").allow_multiple()
     + Argument ("field").type_choice<FieldChoice>()
 
@@ -195,7 +196,7 @@ void run() {
   std::vector<FieldChoice> fields;
   auto opt = get_options("output");
   for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back(enum_from_name<FieldChoice>(opt[n][0]));
+    fields.push_back(MR::Enum::from_name<FieldChoice>(opt[n][0]));
 
   if (!fields.empty()) {
 

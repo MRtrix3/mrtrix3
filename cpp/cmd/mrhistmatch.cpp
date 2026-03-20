@@ -19,6 +19,7 @@
 
 #include "command.h"
 #include "datatype.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 
@@ -40,7 +41,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("type", "type of histogram matching to perform;"
-                        " options are: " + join_enum<MatchType>() + ".").type_choice<MatchType>()
+                        " options are: " + MR::Enum::join<MatchType>() + ".").type_choice<MatchType>()
     + Argument ("input", "the input image to be modified").type_image_in ()
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();
@@ -200,7 +201,7 @@ void run() {
     check_dimensions(target, mask_target, 0, 3);
   }
 
-  switch (enum_from_name<MatchType>(argument[0])) {
+  switch (MR::Enum::from_name<MatchType>(argument[0])) {
   case MatchType::SCALE:
     match_linear(input, target, mask_input, mask_target, false);
     break;

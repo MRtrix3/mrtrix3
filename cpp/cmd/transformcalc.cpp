@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
@@ -51,7 +52,7 @@ void usage() {
   ARGUMENTS
   + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
-                           " one of: " + join_enum<Operation>(", ") +
+                           " one of: " + MR::Enum::join<Operation>(", ") +
                            " (see description section for details).").type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
@@ -182,7 +183,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
 
 void run() {
   const size_t num_inputs = argument.size() - 2;
-  const Operation op = enum_from_name<Operation>(argument[num_inputs]);
+  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
   const std::string_view output_path = argument.back();
 
   switch (op) {

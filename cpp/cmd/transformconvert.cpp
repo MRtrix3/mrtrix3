@@ -16,6 +16,7 @@
 
 #include "axes.h"
 #include "command.h"
+#include "enum.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
@@ -58,7 +59,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
-                           " one of: " + join_enum<Operation>()).type_choice<Operation>()
+                           " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 }
@@ -177,7 +178,7 @@ void parse_itk_trafo(std::string_view itk_file,
 
 void run() {
   const size_t num_inputs = argument.size() - 2;
-  const Operation op = enum_from_name<Operation>(argument[num_inputs]);
+  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
   const std::string_view output_path = argument.back();
 
   switch (op) {
