@@ -85,16 +85,21 @@ bool solveLnccUpdate(LnccMomentSums sums, out float3 update) {
     let covariance = sums.sumReferenceMoving * invN - meanReference * meanMoving;
     let varianceReference = max(0.0F, sums.sumReferenceSquared * invN - meanReference * meanReference);
     let varianceMoving = max(0.0F, sums.sumMovingSquared * invN - meanMoving * meanMoving);
+    let varianceProduct = varianceReference * varianceMoving;
 
-    let covarianceEps = covariance + kMomentEpsilon;
-    let varianceReferenceEps = varianceReference + kMomentEpsilon;
-    let varianceMovingEps = varianceMoving + kMomentEpsilon;
-    let rho = covarianceEps / sqrt(max(varianceReferenceEps * varianceMovingEps, kMomentEpsilon));
+    // The local LNCC update is ill-conditioned when the window is flat or the
+    // cross-moment vanishes, so skip those voxels rather than biasing rho.
+    if (!(varianceProduct > kMomentEpsilon) || abs(covariance) <= kMomentEpsilon || !(varianceMoving > kMomentEpsilon)) {
+        update = float3(0.0F, 0.0F, 0.0F);
+        return false;
+    }
+
+    let rho = covariance / sqrt(varianceProduct);
     let rhoSq = max(rho * rho, kRhoEpsilon);
 
     let centeredReferenceGrad = sums.sumReferenceGradMoving * invN - meanReference * meanGradMoving;
     let centeredMovingGrad = sums.sumMovingGradMoving * invN - meanMoving * meanGradMoving;
-    let lambda = centeredReferenceGrad / covarianceEps - centeredMovingGrad / varianceMovingEps;
+    let lambda = centeredReferenceGrad / covariance - centeredMovingGrad / varianceMoving;
 
     let lambdaNormSq = dot(lambda, lambda);
     let sigmaRatioSq = kSigmaRatio * kSigmaRatio;

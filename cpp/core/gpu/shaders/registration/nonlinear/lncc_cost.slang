@@ -88,11 +88,15 @@ bool solveLnccCost(LnccMomentSums sums, out float cost)
     let covariance = sums.sumReferenceMoving * invN - meanReference * meanMoving;
     let varianceReference = max(0.0F, sums.sumReferenceSquared * invN - meanReference * meanReference);
     let varianceMoving = max(0.0F, sums.sumMovingSquared * invN - meanMoving * meanMoving);
+    let varianceProduct = varianceReference * varianceMoving;
 
-    let covarianceEps = covariance + kMomentEpsilon;
-    let varianceReferenceEps = varianceReference + kMomentEpsilon;
-    let varianceMovingEps = varianceMoving + kMomentEpsilon;
-    let rho = covarianceEps / sqrt(max(varianceReferenceEps * varianceMovingEps, kMomentEpsilon));
+    // Flat or near-flat windows do not define a stable local correlation.
+    if (!(varianceProduct > kMomentEpsilon)) {
+        cost = 0.0F;
+        return false;
+    }
+
+    let rho = covariance / sqrt(varianceProduct);
     cost = -(rho * rho);
     return true;
 }
