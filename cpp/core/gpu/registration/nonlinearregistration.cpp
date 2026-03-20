@@ -565,6 +565,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     }
 
     bool converged_this_level = false;
+    bool worsened_this_level = false;
     std::vector<float> recent_costs;
     recent_costs.reserve(convergence_window + 1U);
     for (uint32_t iter = 0U; iter < config.max_iterations; ++iter) {
@@ -612,6 +613,14 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         const float denominator =
             absolute_start_cost > convergence_cost_floor ? absolute_start_cost : convergence_cost_floor;
         const float relative_improvement = (window_start_cost - window_end_cost) / denominator;
+        if (relative_improvement < 0.0F) {
+          worsened_this_level = true;
+          CONSOLE("Non-linear registration: objective worsened at level " + std::to_string(level + 1U) + "/" +
+                  std::to_string(num_levels) + " after " + std::to_string(iter + 1U) +
+                  " iterations (relative cost improvement over last " + std::to_string(convergence_window) +
+                  " iterations: " + std::to_string(relative_improvement) + ").");
+          break;
+        }
         if (relative_improvement < convergence_min_relative_improvement) {
           converged_this_level = true;
           CONSOLE("Non-linear registration: convergence reached at level " + std::to_string(level + 1U) + "/" +
@@ -637,7 +646,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
         velocity_is_1 = !velocity_is_1;
       }
     }
-    if (!converged_this_level) {
+    if (!converged_this_level && !worsened_this_level) {
       CONSOLE("Non-linear registration: max iterations reached without convergence at level " +
               std::to_string(level + 1U) + "/" + std::to_string(num_levels) + " (" +
               std::to_string(config.max_iterations) + " iterations).");
