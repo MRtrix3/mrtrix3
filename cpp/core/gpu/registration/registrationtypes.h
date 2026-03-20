@@ -120,6 +120,9 @@ struct NCCMetric {
 using GlobalMetric = std::variant<NMIMetric, SSDMetric, NCCMetric>;
 using NonLinearMetric = std::variant<SSDMetric, NCCMetric>;
 
+constexpr float default_nonlinear_fluid_blur_sigma_voxels = 1.0F;
+constexpr float default_nonlinear_diffusion_blur_sigma_voxels = 1.5F;
+
 enum class MetricType : uint8_t { NMI, SSD, NCC };
 enum class InitTranslationChoice : uint8_t { None, Mass, Geometric };
 enum class InitRotationChoice : uint8_t { None, Search, Moments };
@@ -154,6 +157,8 @@ struct NonLinearRegistrationConfig {
   std::vector<ChannelConfig> channels;
   NonLinearMetric metric;
   uint32_t max_iterations = 500;
+  float fluid_blur_sigma_voxels = default_nonlinear_fluid_blur_sigma_voxels;
+  float diffusion_blur_sigma_voxels = default_nonlinear_diffusion_blur_sigma_voxels;
   std::optional<transform_type> initial_affine;
 };
 

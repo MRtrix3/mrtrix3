@@ -62,10 +62,6 @@ constexpr float lncc_denominator_epsilon = 1.0e-6F;
 // Gaussian kernel truncation factor used to derive the effective radius of the local update kernels from their sigma
 // values.
 constexpr float gaussian_blur_k = 2.0F;
-constexpr float fluid_blur_sigma = 1.0F; // in voxel units
-const uint32_t fluid_blur_radius = static_cast<uint32_t>(std::ceil(gaussian_blur_k * fluid_blur_sigma));
-constexpr float diffusion_blur_sigma = 1.5F; // in voxel units
-const uint32_t diffusion_blur_radius = static_cast<uint32_t>(std::ceil(gaussian_blur_k * diffusion_blur_sigma));
 constexpr float velocity_step_size = 0.85F;
 constexpr float velocity_clamp_max = 0.5F; // in scanner space units (mm)
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
@@ -86,6 +82,10 @@ struct alignas(16) ExponentiateInitUniforms {
 static_assert(sizeof(ExponentiateInitUniforms) % 16 == 0, "ExponentiateInitUniforms must be 16-byte aligned.");
 
 constexpr uint32_t vector_texture_components = 4U;
+
+uint32_t gaussian_blur_radius_from_sigma(float sigma_voxels) {
+  return static_cast<uint32_t>(std::ceil(gaussian_blur_k * sigma_voxels));
+}
 
 class BackwardWarpThreadKernel {
 public:
@@ -238,6 +238,13 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     INFO("Non-linear registration: using LNCC with box radius " + std::to_string(lncc_window_radius));
   }
 
+  if (config.fluid_blur_sigma_voxels < 0.0F) {
+    throw Exception("Non-linear registration: fluid blur sigma must be non-negative.");
+  }
+  if (config.diffusion_blur_sigma_voxels < 0.0F) {
+    throw Exception("Non-linear registration: diffusion blur sigma must be non-negative.");
+  }
+
   const Texture moving_texture = context.new_texture_from_host_image(channel.image1);
   const Texture fixed_texture = context.new_texture_from_host_image(channel.image2);
   std::optional<Texture> moving_mask_texture;
@@ -328,6 +335,10 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
     const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(fixed_level, workgroup_size);
     const DispatchGrid moving_dispatch_grid = DispatchGrid::element_wise_texture(moving_level, workgroup_size);
+    const float fluid_blur_sigma = config.fluid_blur_sigma_voxels;
+    const uint32_t fluid_blur_radius = gaussian_blur_radius_from_sigma(fluid_blur_sigma);
+    const float diffusion_blur_sigma = config.diffusion_blur_sigma_voxels;
+    const uint32_t diffusion_blur_radius = gaussian_blur_radius_from_sigma(diffusion_blur_sigma);
     const GaussianSmoothingParams fluid_smoothing_params{
         .radius = fluid_blur_radius,
         .sigma = fluid_blur_sigma,

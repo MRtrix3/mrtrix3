@@ -189,6 +189,18 @@ HalfwayTransforms compute_halfway_transforms(const transform_type &scanner_trans
          + Option("max_iter", "maximum number of iterations (default: " + std::to_string(default_max_iterations) + ")")
              + Argument("number").type_integer(10, 1000)
 
+         + Option("nl_fluid_sigma",
+                  "Gaussian sigma (in voxel units) for fluid-like smoothing of the nonlinear update field"
+                  " (default: " + std::to_string(default_nonlinear_fluid_blur_sigma_voxels) + ")."
+                  " Set to 0 to disable fluid smoothing.")
+             + Argument("sigma").type_float(0.0)
+
+         + Option("nl_diffusion_sigma",
+                  "Gaussian sigma (in voxel units) for diffusion-like smoothing of the nonlinear velocity field"
+                  " (default: " + std::to_string(default_nonlinear_diffusion_blur_sigma_voxels) + ")."
+                  " Set to 0 to disable diffusion smoothing.")
+             + Argument("sigma").type_float(0.0)
+
          + Option("init_translation",
                   "initialise the translation and centre of rotation;"
                   " Valid choices are:"
@@ -262,9 +274,17 @@ void run() {
 
   const auto global_metric_options = get_options("global_metric");
   const auto nl_metric_options = get_options("nl_metric");
+  const auto nl_fluid_sigma_options = get_options("nl_fluid_sigma");
+  const auto nl_diffusion_sigma_options = get_options("nl_diffusion_sigma");
 
   if (!has_nonlinear_registration && !nl_metric_options.empty()) {
     throw Exception("nl_metric is only valid when using nonlinear registration.");
+  }
+  if (!has_nonlinear_registration && !nl_fluid_sigma_options.empty()) {
+    throw Exception("nl_fluid_sigma is only valid when using nonlinear registration.");
+  }
+  if (!has_nonlinear_registration && !nl_diffusion_sigma_options.empty()) {
+    throw Exception("nl_diffusion_sigma is only valid when using nonlinear registration.");
   }
   const auto nl_warp_option = get_options("nl_warp");
   if (has_global_registration && !nl_warp_option.empty()) {
@@ -289,6 +309,10 @@ void run() {
   }
 
   const uint32_t ncc_window_radius = get_option_value<uint32_t>("ncc_radius", default_ncc_window_radius);
+  const float nonlinear_fluid_sigma =
+      get_option_value<float>("nl_fluid_sigma", default_nonlinear_fluid_blur_sigma_voxels);
+  const float nonlinear_diffusion_sigma =
+      get_option_value<float>("nl_diffusion_sigma", default_nonlinear_diffusion_blur_sigma_voxels);
 
   std::optional<Image<float>> mask1;
   std::optional<Image<float>> mask2;
@@ -427,6 +451,8 @@ void run() {
         .channels = channels,
         .metric = nonlinear_metric,
         .max_iterations = max_iterations,
+        .fluid_blur_sigma_voxels = nonlinear_fluid_sigma,
+        .diffusion_blur_sigma_voxels = nonlinear_diffusion_sigma,
         .initial_affine = initial_affine,
     };
     auto gpu_compute_context = gpu_context_request.get();
