@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify that tckgen can write TRX output directly
+# Generates 100 streamlines and checks the TRX file reports 100 streamlines
+tckgen SIFT_phantom/fods.mif -algo ifod2 \
+    -seed_image SIFT_phantom/mask.mif -mask SIFT_phantom/mask.mif \
+    -minlength 4 -select 100 tmp.trx -force
+tckinfo tmp.trx | grep -q "TRX streamlines:.*100"

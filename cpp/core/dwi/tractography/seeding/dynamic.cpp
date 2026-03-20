@@ -319,7 +319,7 @@ void Dynamic::perform_fixel_masking() {
 }
 
 bool WriteKernelDynamic::operator()(const Tracking::GeneratedTrack &in, Tractography::Streamline<> &out) {
-  out.set_index(writer.count);
+  out.set_index(writer->count);
   out.weight = 1.0F;
   if (!WriteKernel::operator()(in)) {
     out.clear();

@@ -23,14 +23,15 @@
 
 #include "math/median.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/trx_utils.h"
 #include "dwi/tractography/weights.h"
 
 using namespace MR;
 using namespace App;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
+using namespace MR::DWI::Tractography::TRX;
 
 // TODO Make compatible with stats generic options?
 // - Some features would not be compatible due to potential presence of track weights
@@ -45,7 +46,7 @@ void usage() {
   SYNOPSIS = "Calculate statistics on streamlines lengths";
 
   ARGUMENTS
-  + Argument ("tracks_in", "the input track file").type_tracks_in();
+  + Argument ("tracks_in", "the input track file").type_tracks_in().type_directory_in();
 
   OPTIONS
 
@@ -58,7 +59,9 @@ void usage() {
   + Option ("histogram", "output a histogram of streamline lengths")
     + Argument ("path").type_file_out()
 
-  + Option ("dump", "dump the streamlines lengths to a text file")
+  + Option ("dump", "dump the streamlines lengths to a text file,"
+                      " or embed them as a dps field in the input TRX file when a bare field name"
+                      " (no extension) is given and the input is a TRX file")
     + Argument ("path").type_file_out()
 
   + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
@@ -104,9 +107,14 @@ void run() {
   std::vector<LW> all_lengths;
   all_lengths.reserve(header_count);
 
+  // dump is declared outside the reader scope so it is available for -dump TRX field output
+  std::vector<float> dump;
+
   {
     Tractography::Properties properties;
-    Tractography::Reader<float> reader(argument[0], properties);
+    auto wt_opt = get_options("tck_weights_in");
+    const std::string weight_src = wt_opt.empty() ? "" : std::string(wt_opt[0][0]);
+    auto reader = open_tractogram(argument[0], properties, weight_src);
 
     if (properties.find("count") != properties.end())
       header_count = to<size_t>(properties["count"]);
@@ -117,12 +125,11 @@ void run() {
            "widths");
     }
 
-    std::vector<float> dump;
     dump.reserve(header_count);
 
     ProgressBar progress("Reading track file", header_count);
     Streamline<> tck;
-    while (reader(tck)) {
+    while ((*reader)(tck)) {
       ++count;
       const float length = Tractography::length(tck);
       if (std::isfinite(length)) {
@@ -144,9 +151,17 @@ void run() {
       ++progress;
     }
 
+  }
+
+  {
     auto opt = get_options("dump");
-    if (!opt.empty())
-      File::Matrix::save_vector(dump, opt[0][0]);
+    if (!opt.empty()) {
+      const std::string dump_arg(opt[0][0]);
+      if (DWI::Tractography::TRX::is_trx_field_name(argument[0], dump_arg))
+        DWI::Tractography::TRX::append_dps<float>(argument[0], dump_arg, dump);
+      else
+        File::Matrix::save_vector(dump, dump_arg);
+    }
   }
 
   if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
@@ -249,4 +264,5 @@ void run() {
     }
     out << "\n";
   }
+
 }

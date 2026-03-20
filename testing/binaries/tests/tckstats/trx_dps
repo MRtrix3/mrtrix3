@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that -dump with a bare field name appends per-streamline lengths as a
+# dps field in-place to the input TRX file.
+cp SIFT_phantom/tracks.trx tmp_lengths.trx
+tckstats tmp_lengths.trx -dump lengths
+tckinfo tmp_lengths.trx | grep -q "lengths:.*5000"

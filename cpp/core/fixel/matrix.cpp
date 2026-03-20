@@ -27,6 +27,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/trx_utils.h"
 
 namespace MR::Fixel::Matrix {
 
@@ -192,9 +193,12 @@ private:
                               .template get_image<default_type>()                                                      \
                               .with_direct_io({+2, +1});                                                               \
   DWI::Tractography::Properties properties;                                                                            \
-  DWI::Tractography::Reader<float> track_file(track_filename, properties);                                             \
+  auto wt_opt = App::get_options("tck_weights_in");                                                                    \
+  const std::string weight_src = wt_opt.empty() ? "" : std::string(wt_opt[0][0]);                                      \
+  auto track_reader = DWI::Tractography::TRX::open_tractogram(track_filename, properties, weight_src);                 \
   const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]);                     \
-  DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "computing fixel-fixel connectivity matrix"); \
+  DWI::Tractography::Mapping::TrackLoader loader(                                                                      \
+      *track_reader, num_tracks, "computing fixel-fixel connectivity matrix");                                         \
   DWI::Tractography::Mapping::TrackMapperBase mapper(index_image);                                                     \
   mapper.set_upsample_ratio(DWI::Tractography::Mapping::determine_upsample_ratio(index_image, properties, 0.333f));    \
   mapper.set_use_precise_mapping(true);                                                                                \

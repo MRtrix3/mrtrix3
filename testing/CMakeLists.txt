@@ -1,5 +1,5 @@
 if(NOT DEFINED ENV{MRTRIX_BINARIES_DATA_DIR})
-    set(mrtrix_binaries_data_url "https://github.com/mrtrix3/test_data.git")
+    set(mrtrix_binaries_data_url "https://github.com/mattcieslak/test_data.git")
 else()
     set(mrtrix_binaries_data_url $ENV{MRTRIX_BINARIES_DATA_DIR})
     message(STATUS "Using binaries data from $ENV{MRTRIX_BINARIES_DATA_DIR}")
@@ -16,7 +16,7 @@ include(ExternalProject)
 ExternalProject_Add(BinariesTestData
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/binaries_data
     GIT_REPOSITORY ${mrtrix_binaries_data_url}
-    GIT_TAG 3d30c7fff58f9ca0bae5ccfe5565f35aa76b6dc6
+    GIT_TAG e3a85f94bf79b0556d940c9ffde3899eb86d7dd8
     GIT_PROGRESS TRUE
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

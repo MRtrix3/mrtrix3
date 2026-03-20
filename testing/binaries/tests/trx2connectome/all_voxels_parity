@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify that trx2connectome produces correct inter-node connectivity when
+# trxlabel used -assignment_all_voxels. The TRX representation stores group
+# memberships without encoding the assignment mode, so trx2connectome uses
+# endpoint-pair semantics (one edge per streamline, no self-connections).
+# The off-diagonal connectivity must match tck2connectome (default endpoint mode).
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_tck_matrix.csv \
+    -force
+
+trxlabel SIFT_phantom/tracks.trx tmp_labeled_allvox.trx \
+    -nodes SIFT_phantom/parc.mif -assignment_all_voxels -force
+trx2connectome tmp_labeled_allvox.trx tmp_trx_matrix.csv -force
+
+testing_diff_matrix tmp_trx_matrix.csv tmp_tck_matrix.csv

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify that tsfthreshold on a TRX dpv field appends the result as a new dpv field.
+cp tracks.trx tmp_tsfthr.trx
+tcksample tmp_tsfthr.trx tcksample/fa.mif fa
+# Threshold the dpv field in-place (add new field fa_mask)
+tsfthreshold tmp_tsfthr.trx 0.3 tmp_tsfthr.trx -field_in fa -field_out fa_mask -force
+# Verify the new dpv field was added
+tsfinfo tmp_tsfthr.trx 2>&1 | grep -q "fa_mask:"
+# Extract the result as TSF and verify its stream count
+tsfthreshold tmp_tsfthr.trx 0.3 tmp_tsfthr_out.tsf -field_in fa -force
+tsfinfo tmp_tsfthr_out.tsf 2>&1 | grep -q "count:.*500"

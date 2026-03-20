@@ -1,0 +1,24 @@
+#!/bin/bash
+# Verify that connectome2tck TRX mode works with alternative assignment mechanisms.
+# Mirrors the tck2connectome/assignment_forward_search test.
+#
+# Both tck2connectome and trxlabel accept the same -assignment_* options; the
+# forward-search and radial-search methods produce identical results on the SIFT
+# phantom (simple geometry), so the output should still match tck2connectome/out.csv
+# and the extracted edge TCKs should match between paths.
+
+# TCK path with forward search
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_matrix.csv \
+    -out_assignments tmp_asgn.csv \
+    -assignment_forward_search 5 -force
+connectome2tck SIFT_phantom/tracks.tck tmp_asgn.csv tmp_tck_edge12 \
+    -nodes 1,2 -exclusive -files single -force
+
+# TRX path with the same forward search
+trxlabel SIFT_phantom/tracks.trx tmp_labeled.trx \
+    -nodes SIFT_phantom/parc.mif \
+    -assignment_forward_search 5 -force
+connectome2tck tmp_labeled.trx - tmp_trx_edge12 \
+    -nodes 1,2 -exclusive -files single -force
+
+testing_diff_tck tmp_tck_edge12.tck tmp_trx_edge12.tck -unordered

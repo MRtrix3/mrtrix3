@@ -1,0 +1,11 @@
+#!/bin/bash
+# Test adding a data-per-streamline value to a TRX with float64 datatype
+# Also tests writing an uncompressed TRX directory.
+# There are 13 streamlines in gs.tck, so we need 13 values in tmp_dps.txt:
+for n in {0..12}
+do
+   echo "${n}.0" >> tmp_dps.txt
+done
+
+# Test adding a data-per-streamline value to a TRX:
+tckconvert tckconvert/gs.tck tmp_dps_float64.trx -trxdirectory -dps dps float64 tmp_dps.txt -force && [[ -f tmp_dps_float64.trx/dps/dps.float64 ]]

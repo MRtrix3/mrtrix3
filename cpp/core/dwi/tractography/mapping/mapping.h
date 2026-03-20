@@ -43,6 +43,7 @@ size_t determine_upsample_ratio(const Header &, std::string_view, const float);
 size_t determine_upsample_ratio(const Header &, const Tractography::Properties &, const float);
 
 void generate_header(Header &, std::string_view, const std::vector<default_type> &);
+void generate_header(Header &, ReaderInterface<float> &, const std::vector<default_type> &);
 
 void oversample_header(Header &, const std::vector<default_type> &);
 

@@ -21,6 +21,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/trx_utils.h"
 #include "file/matrix.h"
 #include "mrview/mode/base.h"
 #include "mrview/window.h"
@@ -42,7 +43,7 @@ std::string Tractogram::Shader::vertex_shader_source(const Displayable &displaya
                        "layout (location = 1) in vec3 prev_vertex;\n"
                        "layout (location = 2) in vec3 next_vertex;\n";
 
-  if (color_type == TrackColourType::Ends)
+  if (color_type == TrackColourType::Ends || color_type == TrackColourType::Group)
     source += "layout (location = 3) in vec3 end_colour;\n";
   else if (color_type == TrackColourType::ScalarFile)
     source += "layout (location = 3) in float amp;\n";
@@ -71,7 +72,8 @@ std::string Tractogram::Shader::vertex_shader_source(const Displayable &displaya
   if (threshold_type != TrackThresholdType::None)
     source += "out float v_amp;\n";
 
-  if (color_type == TrackColourType::Ends || color_type == TrackColourType::ScalarFile)
+  if (color_type == TrackColourType::Ends || color_type == TrackColourType::Group ||
+      color_type == TrackColourType::ScalarFile)
     source += "out vec3 v_colour;\n";
 
   // Main function
@@ -90,7 +92,7 @@ std::string Tractogram::Shader::vertex_shader_source(const Displayable &displaya
   else if (threshold_type == TrackThresholdType::SeparateFile)
     source += "  v_amp = thresh_amp;\n";
 
-  if (color_type == TrackColourType::Ends)
+  if (color_type == TrackColourType::Ends || color_type == TrackColourType::Group)
     source += "  v_colour = end_colour;\n";
   else if (color_type == TrackColourType::ScalarFile) { // TODO: move to frag shader:
     if (!ColourMap::maps[colourmap].special) {
@@ -131,7 +133,8 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
   if (use_lighting || color_type == TrackColourType::Direction)
     source += "out vec3 g_tangent;\n";
 
-  if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
+  if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends ||
+      color_type == TrackColourType::Group)
     source += "in vec3 v_colour[];\n" // check_syntax off
               "out vec3 fColour;\n";
 
@@ -153,7 +156,8 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
     source += "  g_include = v_include[0];\n";
   if (threshold_type != TrackThresholdType::None)
     source += "  g_amp = v_amp[0];\n";
-  if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
+  if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends ||
+      color_type == TrackColourType::Group)
     source += "  fColour = v_colour[0];\n";
 
   if (use_lighting)
@@ -173,7 +177,8 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
     source += "  g_include = v_include[1];\n";
   if (threshold_type != TrackThresholdType::None)
     source += "  g_amp = v_amp[1];\n";
-  if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
+  if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends ||
+      color_type == TrackColourType::Group)
     source += "  fColour = v_colour[1];\n";
 
   if (use_lighting)
@@ -200,7 +205,8 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
                        "uniform mat4 MV;\n"
                        "out vec3 colour;\n";
 
-  if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
+  if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends ||
+      color_type == TrackColourType::Group)
     source += using_geom ? "in vec3 fColour;\n" : "in vec3 v_colour;\n";
   if (use_lighting || color_type == TrackColourType::Direction)
     source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
@@ -247,6 +253,10 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
     break;
   case TrackColourType::Ends:
     source += using_geom ? "  colour = fColour;\n" : "  colour = v_colour;\n";
+    break;
+  case TrackColourType::Group:
+    source += using_geom ? "  colour = fColour;\n" : "  colour = v_colour;\n";
+    source += "  if (colour.r < 0.0) discard;\n"; // hidden-group sentinel
     break;
   case TrackColourType::Manual:
     source += "  colour = colourmap_colour;\n";
@@ -326,7 +336,10 @@ Tractogram::Tractogram(Tractography &tool, std::string_view filename)
       sample_stride(0),
       vao_dirty(true),
       threshold_min(NaNF),
-      threshold_max(NaNF) {
+      threshold_max(NaNF),
+      colour_buffers_from_groups(false),
+      show_ungrouped(true),
+      group_multi_policy(GroupMultiPolicy::FirstMatch) {
   set_allowed_features(true, true, true);
   colourmap = 1;
   connect(&window(), SIGNAL(fieldOfViewChanged()), this, SLOT(on_FOV_changed()));
@@ -458,6 +471,7 @@ inline void Tractogram::render_streamlines() {
 
       switch (color_type) {
       case TrackColourType::Ends:
+      case TrackColourType::Group:
         gl::BindBuffer(gl::ARRAY_BUFFER, colour_buffers[buf]);
         gl::EnableVertexAttribArray(3);
         gl::VertexAttribPointer(3,
@@ -563,7 +577,18 @@ void Tractogram::load_tracks() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
 
-  DWI::Tractography::Reader<float> file(filename, properties);
+  auto reader = DWI::Tractography::TRX::open_tractogram(filename, properties);
+  // Cache TRX field names while the reader (and its underlying TrxFile) is still alive
+  if (auto *trxr = dynamic_cast<DWI::Tractography::TRX::TRXReader *>(reader.get())) {
+    if (const auto *trx = trxr->get_trx()) {
+      for (const auto &kv : trx->data_per_streamline)
+        cached_trx_dps_names.push_back(kv.first);
+      for (const auto &kv : trx->data_per_vertex)
+        cached_trx_dpv_names.push_back(kv.first);
+      for (const auto &kv : trx->groups)
+        cached_trx_group_names.push_back(kv.first);
+    }
+  }
   DWI::Tractography::Streamline<float> tck;
   std::vector<Eigen::Vector3f> buffer;
   std::vector<GLint> starts;
@@ -572,7 +597,7 @@ void Tractogram::load_tracks() {
 
   on_FOV_changed();
 
-  while (file(tck)) {
+  while ((*reader)(tck)) {
 
     const size_t N = tck.size();
     if (!N)
@@ -603,14 +628,18 @@ void Tractogram::load_tracks() {
   }
   if (!buffer.empty())
     load_tracks_onto_GPU(buffer, starts, sizes, tck_count);
-  file.close();
   GL::assert_context_is_current();
 }
 
 void Tractogram::load_end_colours() {
-  // These data are now retained in memory - no need to re-scan track file
-  if (!colour_buffers.empty())
+  // Colour buffers are reused if already built from endpoint tangents.
+  // If they were built from group colours, erase and rebuild from endpoint tangents.
+  if (!colour_buffers.empty() && !colour_buffers_from_groups)
     return;
+  if (colour_buffers_from_groups) {
+    erase_colour_data();
+    colour_buffers_from_groups = false;
+  }
 
   // Make sure to set graphics context!
   // We're setting up vertex array objects
@@ -636,8 +665,7 @@ void Tractogram::load_end_colours() {
     load_end_colours_onto_GPU(buffer);
   }
   assert(colour_buffers.size() == vertex_buffers.size());
-  // Don't need this now that we've initialised the GPU buffers
-  endpoint_tangents.clear();
+  // Keep endpoint_tangents in memory so group→ends switching can rebuild
   GL::assert_context_is_current();
 }
 
@@ -860,8 +888,9 @@ void Tractogram::erase_threshold_scalar_data() {
 }
 
 void Tractogram::set_color_type(const TrackColourType c) {
-  if ((color_type == TrackColourType::Ends && c == TrackColourType::ScalarFile) ||
-      (color_type == TrackColourType::ScalarFile && c == TrackColourType::Ends))
+  auto uses_colour_buf = [](TrackColourType t) { return t == TrackColourType::Ends || t == TrackColourType::Group; };
+  if (uses_colour_buf(color_type) != uses_colour_buf(c) ||
+      (color_type == TrackColourType::ScalarFile) != (c == TrackColourType::ScalarFile))
     vao_dirty = true;
   color_type = c;
 }
@@ -995,6 +1024,238 @@ void Tractogram::load_threshold_scalars_onto_GPU(std::vector<float> &buffer, siz
   tck_count = 0;
 
   GL::assert_context_is_current();
+}
+
+bool Tractogram::is_trx() const { return DWI::Tractography::TRX::is_trx(filename); }
+
+const std::vector<std::string> &Tractogram::trx_dps_fields() const { return cached_trx_dps_names; }
+const std::vector<std::string> &Tractogram::trx_dpv_fields() const { return cached_trx_dpv_names; }
+const std::vector<std::string> &Tractogram::trx_group_names() const { return cached_trx_group_names; }
+
+trx::TrxFile<float> *Tractogram::get_cached_trx() {
+  if (!cached_trx)
+    cached_trx = DWI::Tractography::TRX::load_trx(filename);
+  return cached_trx.get();
+}
+
+void Tractogram::load_trx_scalar_field(const std::string &field_name, bool is_dpv) {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+
+  erase_intensity_scalar_data();
+  value_min = std::numeric_limits<float>::infinity();
+  value_max = -std::numeric_limits<float>::infinity();
+
+  trx::TrxFile<float> *trx = get_cached_trx();
+  if (!trx || !trx->streamlines)
+    throw Exception("Failed to load TRX file: " + std::string(filename));
+
+  std::vector<float> buffer;
+  size_t global_idx = 0;
+
+  if (!is_dpv) {
+    // DPS: replicate per-streamline scalar to all vertices of that streamline
+    auto it = trx->data_per_streamline.find(field_name);
+    if (it == trx->data_per_streamline.end() || !it->second)
+      throw Exception("TRX file has no dps field named \"" + field_name + "\"");
+    const auto &mat = it->second->_matrix;
+    if (mat.cols() != 1)
+      throw Exception("TRX dps field \"" + field_name + "\" must have exactly 1 column for scalar display");
+    if (mat.rows() != static_cast<Eigen::Index>(trx->num_streamlines())) {
+      throw Exception("TRX dps field \"" + field_name + "\" length (" + str(mat.rows()) +
+                      ") does not match streamline count (" + str(trx->num_streamlines()) + ")");
+    }
+
+    for (size_t buf_idx = 0; buf_idx != vertex_buffers.size(); ++buf_idx) {
+      size_t n = num_tracks_per_buffer[buf_idx];
+      for (size_t ti = 0; ti < n; ++ti, ++global_idx) {
+        const float v = mat(static_cast<Eigen::Index>(global_idx), 0);
+        const size_t len = static_cast<size_t>(original_track_sizes[buf_idx][ti]);
+        for (int i = 0; i < track_padding; ++i)
+          buffer.push_back(v);
+        for (size_t i = 0; i < len; ++i)
+          buffer.push_back(v);
+        for (int i = 0; i < track_padding; ++i)
+          buffer.push_back(v);
+        if (std::isfinite(v)) {
+          value_max = std::max(value_max, v);
+          value_min = std::min(value_min, v);
+        }
+      }
+      load_intensity_scalars_onto_GPU(buffer, n);
+    }
+  } else {
+    // DPV: per-vertex scalar using streamline offsets
+    auto it = trx->data_per_vertex.find(field_name);
+    if (it == trx->data_per_vertex.end() || !it->second)
+      throw Exception("TRX file has no dpv field named \"" + field_name + "\"");
+    const auto &dpv = it->second->_data;
+    if (dpv.cols() != 1)
+      throw Exception("TRX dpv field \"" + field_name + "\" must have exactly 1 column for scalar display");
+    if (dpv.rows() != static_cast<Eigen::Index>(trx->num_vertices())) {
+      throw Exception("TRX dpv field \"" + field_name + "\" length (" + str(dpv.rows()) +
+                      ") does not match vertex count (" + str(trx->num_vertices()) + ")");
+    }
+    const auto &offsets = trx->streamlines->_offsets;
+
+    for (size_t buf_idx = 0; buf_idx != vertex_buffers.size(); ++buf_idx) {
+      size_t n = num_tracks_per_buffer[buf_idx];
+      for (size_t ti = 0; ti < n; ++ti, ++global_idx) {
+        const Eigen::Index si = static_cast<Eigen::Index>(global_idx);
+        const Eigen::Index v0 = offsets(si, 0), v1 = offsets(si + 1, 0);
+        if (v1 <= v0)
+          throw Exception("Invalid streamline offsets encountered while loading TRX dpv field \"" + field_name + "\"");
+        const float front = dpv(v0, 0);
+        const float back = dpv(v1 - 1, 0);
+        for (int i = 0; i < track_padding; ++i)
+          buffer.push_back(front);
+        for (Eigen::Index vi = v0; vi < v1; ++vi) {
+          const float val = dpv(vi, 0);
+          buffer.push_back(val);
+          if (std::isfinite(val)) {
+            value_max = std::max(value_max, val);
+            value_min = std::min(value_min, val);
+          }
+        }
+        for (int i = 0; i < track_padding; ++i)
+          buffer.push_back(back);
+      }
+      load_intensity_scalars_onto_GPU(buffer, n);
+    }
+  }
+
+  // Fall back to [0, 1] if all values were non-finite
+  if (!std::isfinite(value_min) || !std::isfinite(value_max) || value_min >= value_max) {
+    value_min = 0.0f;
+    value_max = 1.0f;
+  }
+  intensity_scalar_filename = field_name;
+  set_windowing(value_min, value_max);
+  if (!std::isfinite(greaterthan))
+    greaterthan = value_max;
+  if (!std::isfinite(lessthan))
+    lessthan = value_min;
+  GL::assert_context_is_current();
+}
+
+void Tractogram::init_group_states() {
+  static const Eigen::Vector3f PALETTE[] = {
+      {0.89f, 0.10f, 0.11f},
+      {0.22f, 0.49f, 0.72f},
+      {0.30f, 0.69f, 0.29f},
+      {0.60f, 0.31f, 0.64f},
+      {1.00f, 0.50f, 0.00f},
+      {1.00f, 1.00f, 0.20f},
+      {0.65f, 0.34f, 0.16f},
+      {0.97f, 0.51f, 0.75f},
+      {0.60f, 0.60f, 0.60f},
+      {0.00f, 0.75f, 0.75f},
+      {0.74f, 0.74f, 0.00f},
+      {0.50f, 0.00f, 0.50f},
+  };
+  static constexpr size_t PALETTE_SIZE = 12;
+
+  group_states.clear();
+  group_order.clear();
+
+  trx::TrxFile<float> *trx = get_cached_trx();
+  if (!trx)
+    return;
+
+  size_t g = 0;
+  for (const auto &kv : trx->groups) {
+    GroupState gs;
+    gs.visible = true;
+    gs.color = PALETTE[g % PALETTE_SIZE];
+    gs.count = kv.second ? static_cast<size_t>(kv.second->_matrix.rows()) : 0;
+    group_states[kv.first] = gs;
+    group_order.push_back(kv.first);
+    ++g;
+  }
+}
+
+void Tractogram::reload_group_colours() {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+
+  erase_colour_data();
+  colour_buffers_from_groups = true;
+
+  static const Eigen::Vector3f HIDDEN(-1.0f, -1.0f, -1.0f);
+  static const Eigen::Vector3f UNGROUPED(0.3f, 0.3f, 0.3f);
+
+  trx::TrxFile<float> *trx = get_cached_trx();
+  const size_t ns = trx ? trx->num_streamlines() : 0;
+  std::vector<Eigen::Vector3f> scolours(ns, HIDDEN);
+
+  if (trx) {
+    // Ungrouped streamlines: those not in any group at all
+    if (show_ungrouped) {
+      std::vector<bool> in_any_group(ns, false);
+      for (const auto &kv : trx->groups) {
+        if (!kv.second)
+          continue;
+        const auto &mat = kv.second->_matrix;
+        for (Eigen::Index i = 0; i < mat.rows(); ++i) {
+          const auto idx = static_cast<size_t>(mat(i, 0));
+          if (idx < ns)
+            in_any_group[idx] = true;
+        }
+      }
+      for (size_t i = 0; i < ns; ++i)
+        if (!in_any_group[i])
+          scolours[i] = UNGROUPED;
+    }
+
+    // Assign group colours; only visible groups participate
+    std::vector<bool> claimed(ns, false);
+    auto apply = [&](const std::string &name) {
+      const auto git = group_states.find(name);
+      if (git == group_states.end() || !git->second.visible)
+        return;
+      const auto tit = trx->groups.find(name);
+      if (tit == trx->groups.end() || !tit->second)
+        return;
+      const Eigen::Vector3f &c = git->second.color;
+      const auto &mat = tit->second->_matrix;
+      for (Eigen::Index i = 0; i < mat.rows(); ++i) {
+        const auto idx = static_cast<size_t>(mat(i, 0));
+        if (idx < ns && !claimed[idx]) {
+          scolours[idx] = c;
+          claimed[idx] = true;
+        }
+      }
+    };
+
+    if (group_multi_policy == GroupMultiPolicy::FirstMatch) {
+      for (const auto &name : group_order)
+        apply(name);
+    } else {
+      for (auto it = group_order.rbegin(); it != group_order.rend(); ++it)
+        apply(*it);
+    }
+  }
+
+  size_t total = 0;
+  for (size_t buf_idx = 0, N = vertex_buffers.size(); buf_idx < N; ++buf_idx) {
+    const size_t n = num_tracks_per_buffer[buf_idx];
+    std::vector<Eigen::Vector3f> buffer;
+    for (size_t ti = 0; ti < n; ++ti) {
+      const Eigen::Vector3f &c = (total < scolours.size()) ? scolours[total] : HIDDEN;
+      ++total;
+      const size_t len = static_cast<size_t>(original_track_sizes[buf_idx][ti]);
+      for (size_t i = 0; i < len + 2 * static_cast<size_t>(track_padding); ++i)
+        buffer.push_back(c);
+    }
+    load_end_colours_onto_GPU(buffer);
+  }
+  GL::assert_context_is_current();
+}
+
+void Tractogram::load_trx_group_colours() {
+  if (group_states.empty())
+    init_group_states();
+  reload_group_colours();
 }
 
 } // namespace MR::GUI::MRView::Tool

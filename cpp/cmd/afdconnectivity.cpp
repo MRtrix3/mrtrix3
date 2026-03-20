@@ -22,6 +22,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/trx_utils.h"
 #include "memory.h"
 #include "mrtrix_version.h"
 
@@ -82,13 +83,13 @@ void usage() {
   ARGUMENTS
   + Argument ("image", "the input FOD image.").type_image_in()
 
-  + Argument ("tracks", "the input track file defining the bundle of interest.").type_tracks_in();
+  + Argument ("tracks", "the input track file defining the bundle of interest.").type_tracks_in().type_directory_in();
 
   OPTIONS
   + Option ("wbft", "provide a whole-brain fibre-tracking data set"
                     " (of which the input track file should be a subset)"
                     ", to improve the estimate of fibre bundle volume in the presence of partial volume")
-    + Argument ("tracks").type_tracks_in()
+    + Argument ("tracks").type_tracks_in().type_directory_in()
 
   + Option ("afd_map", "output a 3D image containing the AFD estimated for each voxel.")
     + Argument ("image").type_image_out()
@@ -163,9 +164,9 @@ private:
 value_type AFDConnectivity::get(std::string_view path) {
 
   Tractography::Properties properties;
-  Tractography::Reader<value_type> reader(path, properties);
+  auto reader = Tractography::TRX::open_tractogram(path, properties);
   const size_t track_count = (properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]));
-  DWI::Tractography::Mapping::TrackLoader loader(reader, track_count, "summing apparent fibre density within track");
+  DWI::Tractography::Mapping::TrackLoader loader(*reader, track_count, "summing apparent fibre density within track");
 
   // If WBFT is provided, this is the sum of (volume/length) across streamlines
   // Otherwise, it's a sum of lengths of all streamlines (for later scaling by mean streamline length)

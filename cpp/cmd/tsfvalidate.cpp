@@ -19,6 +19,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/trx_utils.h"
 #include "progressbar.h"
 #include "types.h"
 
@@ -33,9 +34,18 @@ void usage() {
 
   SYNOPSIS = "Validate a track scalar file against the corresponding track data";
 
+  DESCRIPTION
+  + "For TSF/TCK pairs, performs the standard header and data validation. "
+    "For TRX input, validates that the named dpv field has the correct number of "
+    "vertices (matching the TRX streamline offsets).";
+
   ARGUMENTS
-  + Argument ("tsf", "the input track scalar file").type_file_in()
-  + Argument ("tracks", "the track file on which the TSF is based").type_file_in();
+  + Argument ("tsf", "the input track scalar file, or the TRX tractogram when using -field").type_file_in()
+  + Argument ("tracks", "the track file on which the TSF is based (.tck or .trx)").type_file_in();
+
+  OPTIONS
+  + Option ("field", "name of the dpv field to validate (required when the tracks argument is a TRX file)")
+    + Argument ("name").type_text();
 
 }
 // clang-format on
@@ -43,9 +53,66 @@ void usage() {
 typedef float value_type;
 
 void run() {
+  const std::string tsf_path(argument[0]);
+  const std::string tck_path(argument[1]);
+
+  auto field_opt = get_options("field");
+
+  // TRX mode: validate that the named dpv field vertex count matches num_vertices()
+  if (TRX::is_trx(tck_path)) {
+    if (field_opt.empty())
+      throw Exception("Use -field to specify the dpv field to validate when the tracks argument is a TRX file");
+
+    const std::string field_name(field_opt[0][0]);
+    auto trx = TRX::load_trx_header_only(tck_path);
+    if (!trx)
+      throw Exception("Failed to load TRX file: " + tck_path);
+
+    const size_t n_vertices = trx->num_vertices();
+    const size_t n_streamlines = trx->num_streamlines();
+
+    auto it = trx->data_per_vertex.find(field_name);
+    if (it == trx->data_per_vertex.end() || !it->second)
+      throw Exception("TRX file has no dpv field '" + field_name + "'");
+
+    const size_t dpv_rows = static_cast<size_t>(it->second->_data.rows());
+
+    size_t error_count = 0;
+    if (dpv_rows != n_vertices) {
+      CONSOLE("dpv field '" + field_name + "' has " + str(dpv_rows) + " rows but TRX has " + str(n_vertices) +
+              " vertices");
+      ++error_count;
+    }
+
+    // Also check that per-streamline vertex counts sum to total vertices
+    // (validates that offsets are self-consistent).
+    size_t offset_sum = 0;
+    for (size_t i = 0; i < n_streamlines; ++i) {
+      const size_t start = static_cast<size_t>(trx->streamlines->_offsets(static_cast<Eigen::Index>(i), 0));
+      const size_t end = static_cast<size_t>(trx->streamlines->_offsets(static_cast<Eigen::Index>(i + 1), 0));
+      offset_sum += end - start;
+    }
+    if (offset_sum != n_vertices) {
+      CONSOLE("TRX streamline offsets sum to " + str(offset_sum) + " vertices but num_vertices() reports " +
+              str(n_vertices));
+      ++error_count;
+    }
+
+    if (error_count)
+      throw Exception("Error" + std::string(error_count > 1 ? "s" : "") + " detected");
+    else
+      CONSOLE("TRX dpv field '" + field_name + "' checked OK (" + str(dpv_rows) + " vertices, " + str(n_streamlines) +
+              " streamlines)");
+    return;
+  }
+
+  // TSF/TCK mode: existing validation logic
+  if (!field_opt.empty())
+    WARN("-field is ignored when the tracks argument is a TCK file");
+
   Properties tsf_properties, tck_properties;
-  ScalarReader<value_type> tsf_reader(argument[0], tsf_properties);
-  Reader<value_type> tck_reader(argument[1], tck_properties);
+  ScalarReader<value_type> tsf_reader(tsf_path, tsf_properties);
+  Reader<value_type> tck_reader(tck_path, tck_properties);
   size_t error_count = 0;
 
   Properties::const_iterator tsf_count_field = tsf_properties.find("count");

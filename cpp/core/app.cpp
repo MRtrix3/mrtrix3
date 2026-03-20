@@ -1078,7 +1078,8 @@ void parse() {
       ArgTypeFlags types_not_input_tractogram(i.arg->types);
       types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_tractogram.any()) {
-        if (!Path::has_suffix(text, ".tck"))
+        if (!Path::has_suffix(text, ".tck") && !Path::has_suffix(text, ".trx") &&
+            !(i.arg->types[ArgTypeFlags::DirectoryIn] && Path::is_dir(text)))
           throw Exception("input file \"" + text + "\" is not a valid track file");
       }
     }
@@ -1086,8 +1087,9 @@ void parse() {
       ArgTypeFlags types_not_output_tractogram(i.arg->types);
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_tractogram.any()) {
-        if (!Path::has_suffix(text, ".tck"))
-          throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+        if (!Path::has_suffix(text, ".tck") && !Path::has_suffix(text, ".trx") &&
+            !i.arg->types[ArgTypeFlags::DirectoryOut])
+          throw Exception("output track file \"" + text + "\" must use the .tck or .trx suffix");
       }
     }
   }
@@ -1141,7 +1143,8 @@ void parse() {
         ArgTypeFlags types_not_input_tractogram(arg.types);
         types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_tractogram.any()) {
-          if (!Path::has_suffix(text, ".tck"))
+          if (!Path::has_suffix(text, ".tck") && !Path::has_suffix(text, ".trx") &&
+              !(arg.types[ArgTypeFlags::DirectoryIn] && Path::is_dir(text)))
             throw Exception("input file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
                             " is not a valid track file");
         }
@@ -1150,9 +1153,10 @@ void parse() {
         ArgTypeFlags types_not_output_tractogram(arg.types);
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_tractogram.any()) {
-          if (!Path::has_suffix(text, ".tck"))
+          if (!Path::has_suffix(text, ".tck") && !Path::has_suffix(text, ".trx") &&
+              !arg.types[ArgTypeFlags::DirectoryOut])
             throw Exception("output track file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " must use the .tck suffix");
+                            " must use the .tck or .trx suffix");
         }
       }
     }

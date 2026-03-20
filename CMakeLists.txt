@@ -35,6 +35,8 @@ option(MRTRIX_USE_SYSTEM_GTEST "Use system-installed Google Test library" OFF)
 option(MRTRIX_USE_SYSTEM_DAWN "Use system-installed Dawn library" OFF)
 option(MRTRIX_USE_SYSTEM_SLANG "Use system-installed Slang library" OFF)
 option(MRTRIX_USE_SYSTEM_TCB_SPAN "Use system-installed TCB Span library" OFF)
+option(MRTRIX_USE_SYSTEM_TRXCPP "Use system-installed trx-cpp library" OFF)
+set(MRTRIX_TRXCPP_SOURCE_DIR "" CACHE PATH "Path to a local trx-cpp source tree (overrides GitHub fetch)")
 
 if(MRTRIX_BUILD_TESTS)
     list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")

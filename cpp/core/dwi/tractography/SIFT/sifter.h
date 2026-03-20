@@ -51,6 +51,13 @@ public:
   void perform_filtering();
   void output_filtered_tracks(std::string_view, std::string_view) const;
   void output_selection(std::string_view) const;
+  std::vector<uint32_t> get_selected_indices() const {
+    std::vector<uint32_t> indices;
+    for (track_t i = 0; i != contributions.size(); ++i)
+      if (contributions[i])
+        indices.push_back(static_cast<uint32_t>(i));
+    return indices;
+  }
 
   // CONFIGURATION OPTIONS
   void set_term_number(const track_t i) { term_number = i; }

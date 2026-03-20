@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that tckmap produces matching length-weighted TDI from TRX vs. TCK input.
+# Convert TCK to TRX first to guarantee identical streamline data.
+tckconvert SIFT_phantom/tracks.tck tmp_from_tck.trx -force
+tckmap SIFT_phantom/tracks.tck -template SIFT_phantom/mask.mif \
+    -contrast length tmp_tck_len.mif -force
+tckmap tmp_from_tck.trx -template SIFT_phantom/mask.mif \
+    -contrast length tmp_trx_len.mif -force
+testing_diff_image tmp_tck_len.mif tmp_trx_len.mif -frac 1e-4

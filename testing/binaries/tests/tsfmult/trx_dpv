@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify that tsfmult on TRX dpv fields appends the product as a new dpv field.
+cp tracks.trx tmp_tsfmul.trx
+tcksample tmp_tsfmul.trx tcksample/fa.mif fa
+# Create a binary mask dpv field via threshold
+tsfthreshold tmp_tsfmul.trx 0.3 tmp_tsfmul.trx -field_in fa -field_out fa_mask -force
+# Multiply mask × fa to get masked fa
+tsfmult tmp_tsfmul.trx tmp_tsfmul.trx tmp_tsfmul.trx \
+    -field1 fa_mask -field2 fa -field_out fa_masked -force
+# Verify the masked field was added
+tsfinfo tmp_tsfmul.trx 2>&1 | grep -q "fa_masked:"
+# Regression: TSF/TSF→TSF path still works
+tsfthreshold tcksample/out.tsf 0.3 tmp_tsfmul_mask.tsf -force
+tsfmult tmp_tsfmul_mask.tsf tcksample/out.tsf tmp_tsfmul_ref.tsf -force
+tsfinfo tmp_tsfmul_ref.tsf 2>&1 | grep -q "count:.*500"

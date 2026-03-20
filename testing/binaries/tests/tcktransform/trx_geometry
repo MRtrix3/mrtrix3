@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify that tcktransform on TRX input produces the same warped geometry as
+# on the equivalent TCK input.  Both outputs are compared against the
+# pre-existing TCK reference (tcktransform/out.tck).
+tckconvert tracks.tck tmp_in.trx -force
+tcktransform tmp_in.trx unit_warp.mif tmp_out.tck -force
+testing_diff_tck tmp_out.tck tcktransform/out.tck -distance 1e-4

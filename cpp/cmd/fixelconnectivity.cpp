@@ -48,7 +48,7 @@ void usage() {
   + Argument("fixel_directory",
              "the directory containing the fixels between which connectivity will be quantified").type_directory_in()
   + Argument("tracks",
-             "the tracks used to determine fixel-fixel connectivity").type_tracks_in()
+             "the tracks used to determine fixel-fixel connectivity").type_tracks_in().type_directory_in()
   + Argument("matrix",
              "the output fixel-fixel connectivity matrix directory path").type_directory_out();
 

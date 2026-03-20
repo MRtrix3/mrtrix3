@@ -16,14 +16,17 @@
 
 #include <array>
 #include <cstdio>
-#include <sstream>
+#include <filesystem>
+#include <memory>
 
 #include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/trx_utils.h"
 #include "file/matrix.h"
 #include "file/name_parser.h"
 #include "file/ofstream.h"
+#include "file/path.h"
 #include "raw.h"
 
 using namespace MR;
@@ -49,9 +52,19 @@ void usage() {
   DESCRIPTION
     + "The program currently supports"
       " MRtrix .tck files (input/output),"
+      " TRX .trx files (input/output),"
       " ascii text files (input/output),"
       " VTK polydata files (input/output),"
-      " and RenderMan RIB (export only).";
+      " and RenderMan RIB (export only)."
+
+    + "TRX files can include data per streamline (dps), data per vertex (dpv),"
+      " data per group (dpg), and group membership. By default, tckconvert only"
+      " modifies streamline geometry: these fields are preserved only for TRX->TRX"
+      " conversion and are discarded when converting to other formats that do not"
+      " support them. The -dps and -dpv options can be used to add new TRX data"
+      " entries during conversion. When applying a coordinate transform, only"
+      " the streamline positions are modified; any TRX metadata values are left"
+      " unchanged.";
 
   EXAMPLES
     + Example("Writing multiple ASCII files, one per streamline",
@@ -62,8 +75,8 @@ void usage() {
               " output-0000.txt, output-0001.txt, output-0002.txt, ...");
 
   ARGUMENTS
-    + Argument ("input", "the input track file.").type_tracks_in().type_file_in().type_text()
-    + Argument ("output", "the output track file.").type_tracks_out().type_file_out();
+    + Argument ("input", "the input track file.").type_file_in().type_directory_in()
+    + Argument ("output", "the output track file.").type_file_out().type_directory_out();
 
   OPTIONS
     + Option ("scanner2voxel",
@@ -110,7 +123,29 @@ void usage() {
     + OptionGroup ("Options specific to VTK writer")
 
     + Option ("ascii", "write an ASCII VTK file"
-                       " (binary by default)");
+                       " (binary by default)")
+
+    + OptionGroup ("Options specific to TRX writer")
+
+    + Option ("trxdirectory", "write an uncompressed TRX directory instead of a .trx file")
+
+    + Option ("dps", "add data-per-streamline values from a text file")
+      .allow_multiple()
+      + Argument ("name").type_text()
+      + Argument ("datatype").type_text()
+      + Argument ("path").type_file_in()
+
+    + Option ("dpv", "add data-per-vertex values from a TSF file")
+      .allow_multiple()
+      + Argument ("name").type_text()
+      + Argument ("datatype").type_text()
+      + Argument ("path").type_file_in()
+
+    + Option ("positions_datatype",
+        "datatype of the positions array in the output TRX file (float16, float32, or float64). "
+        "Only applies to TRX output. Default: preserves the source datatype for TRX→TRX conversion; "
+        "float32 for all other input formats.")
+      + Argument ("spec").type_text();
 
 }
 // clang-format on
@@ -328,6 +363,56 @@ private:
   File::NameParser parser;
   std::vector<uint32_t> count;
 };
+
+struct DpsSpec {
+  std::string name;
+  std::string dtype;
+  std::string path;
+};
+
+struct DpvSpec {
+  std::string name;
+  std::string dtype;
+  std::string path;
+};
+
+static std::vector<DpsSpec> get_dps_specs() {
+  std::vector<DpsSpec> specs;
+  for (const auto &opt : get_options("dps")) {
+    if (opt.args.size() != 3) {
+      throw Exception("Option -dps requires 3 arguments: name datatype path");
+    }
+    specs.push_back({std::string(opt[0]), std::string(opt[1]), std::string(opt[2])});
+  }
+  return specs;
+}
+
+static std::vector<DpvSpec> get_dpv_specs() {
+  std::vector<DpvSpec> specs;
+  for (const auto &opt : get_options("dpv")) {
+    if (opt.args.size() != 3) {
+      throw Exception("Option -dpv requires 3 arguments: name datatype path");
+    }
+    specs.push_back({std::string(opt[0]), std::string(opt[1]), std::string(opt[2])});
+  }
+  return specs;
+}
+
+static void apply_transform_to_trx(trx::TrxFile<float> *trx, const transform_type &T) {
+  if (!trx || !trx->streamlines)
+    return;
+  if (T.isApprox(transform_type::Identity()))
+    return;
+  const auto T_float = T.cast<float>();
+  auto &data = trx->streamlines->_data;
+  for (Eigen::Index i = 0; i < data.rows(); ++i) {
+    Eigen::Vector3f pos(data(i, 0), data(i, 1), data(i, 2));
+    pos = T_float * pos;
+    data(i, 0) = pos[0];
+    data(i, 1) = pos[1];
+    data(i, 2) = pos[2];
+  }
+}
 
 class PLYWriter : public WriterInterface<float> {
 public:
@@ -680,15 +765,127 @@ private:
 };
 
 void run() {
+  const bool input_is_trx = TRX::is_trx(argument[0]);
+  const bool write_trx_directory = get_options("trxdirectory").size();
+  const bool output_is_trx = Path::has_suffix(argument[1], ".trx") || write_trx_directory;
+  std::string trx_output = std::string(argument[1]);
+  std::string trx_save_path = trx_output;
+  bool rename_trx_directory = false;
+  if (write_trx_directory) {
+    if (!Path::has_suffix(trx_output, ".trx")) {
+      trx_output += ".trx";
+    }
+    if (Path::has_suffix(trx_output, ".trx")) {
+      trx_save_path = trx_output.substr(0, trx_output.size() - 4);
+      rename_trx_directory = true;
+    }
+  }
+  const auto dps_specs = get_dps_specs();
+  const auto dpv_specs = get_dpv_specs();
+  if (!dps_specs.empty() && !output_is_trx) {
+    throw Exception("Option -dps requires TRX output.");
+  }
+  if (!dpv_specs.empty() && !output_is_trx) {
+    throw Exception("Option -dpv requires TRX output.");
+  }
+
+  // Tranform matrix
+  transform_type T;
+  T.setIdentity();
+  size_t nopts = 0;
+  auto opt = get_options("scanner2voxel");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = MR::Transform(header).scanner2voxel;
+    nopts++;
+  }
+  opt = get_options("scanner2image");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = MR::Transform(header).scanner2image;
+    nopts++;
+  }
+  opt = get_options("voxel2scanner");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = MR::Transform(header).voxel2scanner;
+    nopts++;
+  }
+  opt = get_options("image2scanner");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = MR::Transform(header).image2scanner;
+    nopts++;
+  }
+  if (nopts > 1) {
+    throw Exception("Transform options are mutually exclusive.");
+  }
+
+  if (input_is_trx && output_is_trx) {
+    std::unique_ptr<trx::TrxFile<float>> trx;
+    try {
+      trx = TRX::load_trx(argument[0]);
+    } catch (const std::exception &e) {
+      throw Exception(e.what());
+    }
+    if (!trx)
+      throw Exception("Failed to load TRX input.");
+    apply_transform_to_trx(trx.get(), T);
+    for (const auto &spec : dps_specs) {
+      trx->add_dps_from_text(spec.name, spec.dtype, spec.path);
+    }
+    for (const auto &spec : dpv_specs) {
+      trx->add_dpv_from_tsf(spec.name, spec.dtype, spec.path);
+    }
+    try {
+      trx::TrxSaveOptions save_opts;
+      save_opts.compression_standard = ZIP_CM_STORE;
+      {
+        auto opt = get_options("positions_datatype");
+        if (!opt.empty()) {
+          const std::string spec = opt[0][0];
+          if (spec == "float16")
+            save_opts.positions_dtype = trx::TrxScalarType::Float16;
+          else if (spec == "float32")
+            save_opts.positions_dtype = trx::TrxScalarType::Float32;
+          else if (spec == "float64")
+            save_opts.positions_dtype = trx::TrxScalarType::Float64;
+          else
+            throw Exception("Unknown -positions_datatype '" + spec + "'; expected float16, float32, or float64");
+        }
+      }
+      trx->save(trx_save_path, save_opts);
+      if (rename_trx_directory) {
+        std::error_code ec;
+        std::filesystem::remove_all(trx_output, ec);
+        std::filesystem::rename(trx_save_path, trx_output, ec);
+        if (ec) {
+          throw Exception("Failed to rename TRX directory to " + trx_output + ": " + ec.message());
+        }
+      }
+      trx->close();
+    } catch (const std::exception &e) {
+      if (trx)
+        trx->close();
+      throw Exception(e.what());
+    }
+    return;
+  }
+
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
+  TRX::TRXReader *trx_reader = nullptr;
   if (Path::has_suffix(argument[0], ".tck")) {
     reader.reset(new Reader<float>(argument[0], properties));
   } else if (Path::has_suffix(argument[0], ".txt")) {
     reader.reset(new ASCIIReader(argument[0]));
   } else if (Path::has_suffix(argument[0], ".vtk")) {
     reader.reset(new VTKReader(argument[0]));
+  } else if (input_is_trx) {
+    auto *trx_reader_ptr = new TRX::TRXReader(argument[0]);
+    reader.reset(trx_reader_ptr);
+    trx_reader = trx_reader_ptr;
   } else {
     throw Exception("Unsupported input file type.");
   }
@@ -709,40 +906,49 @@ void run() {
     writer.reset(new RibWriter(argument[1]));
   } else if (Path::has_suffix(argument[1], ".txt")) {
     writer.reset(new ASCIIWriter(argument[1]));
+  } else if (output_is_trx) {
+    size_t nb_streamlines = 0;
+    size_t nb_vertices = 0;
+    Streamline<float> count_tck;
+    std::unique_ptr<ReaderInterface<float>> count_reader;
+    if (Path::has_suffix(argument[0], ".tck")) {
+      count_reader.reset(new Reader<float>(argument[0], properties));
+    } else if (Path::has_suffix(argument[0], ".txt")) {
+      count_reader.reset(new ASCIIReader(argument[0]));
+    } else if (Path::has_suffix(argument[0], ".vtk")) {
+      count_reader.reset(new VTKReader(argument[0]));
+    } else if (input_is_trx) {
+      count_reader.reset(new TRX::TRXReader(argument[0]));
+    } else {
+      throw Exception("Unsupported input file type.");
+    }
+    while ((*count_reader)(count_tck)) {
+      nb_streamlines++;
+      nb_vertices += count_tck.size();
+    }
+    auto *trx_writer = new TRX::TRXWriter(trx_save_path, nb_streamlines, nb_vertices, trx_output, rename_trx_directory);
+    try {
+      for (const auto &spec : dps_specs)
+        trx_writer->get_trx()->add_dps_from_text(spec.name, spec.dtype, spec.path);
+      for (const auto &spec : dpv_specs)
+        trx_writer->get_trx()->add_dpv_from_tsf(spec.name, spec.dtype, spec.path);
+    } catch (const std::exception &e) {
+      throw Exception(e.what());
+    }
+    // Copy TCK properties into the TRX header as "metadata"
+    if (!properties.empty()) {
+      json::object meta;
+      for (const auto &[key, val] : properties)
+        meta[key] = json(val);
+      trx_writer->get_trx()->header = trx::_json_set(trx_writer->get_trx()->header, "metadata", json(meta));
+    }
+    writer.reset(trx_writer);
   } else {
     throw Exception("Unsupported output file type.");
   }
 
-  // Tranform matrix
-  transform_type T;
-  T.setIdentity();
-  size_t nopts = 0;
-  auto opt = get_options("scanner2voxel");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).scanner2voxel;
-    nopts++;
-  }
-  opt = get_options("scanner2image");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).scanner2image;
-    nopts++;
-  }
-  opt = get_options("voxel2scanner");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).voxel2scanner;
-    nopts++;
-  }
-  opt = get_options("image2scanner");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).image2scanner;
-    nopts++;
-  }
-  if (nopts > 1) {
-    throw Exception("Transform options are mutually exclusive.");
+  if (input_is_trx && !output_is_trx && trx_reader && trx_reader->has_metadata()) {
+    WARN("TRX metadata (dps/dpv/dpg/groups) will be discarded when converting to non-TRX formats.");
   }
 
   // Copy

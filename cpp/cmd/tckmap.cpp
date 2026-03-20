@@ -24,8 +24,8 @@
 #include "types.h"
 
 #include "dwi/gradient.h"
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/trx_utils.h"
 #include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/mapping/loader.h"
@@ -43,6 +43,7 @@ using namespace App;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
+using namespace MR::DWI::Tractography::TRX;
 
 // clang-format off
 const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of the output image")
@@ -211,7 +212,7 @@ void usage () {
     "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("tracks", "the input track file.").type_tracks_in().type_directory_in()
   + Argument ("output", "the output track-weighted image").type_image_out();
 
   OPTIONS
@@ -260,7 +261,11 @@ DataType determine_datatype(const DataType current_dt,
 void run() {
 
   Tractography::Properties properties;
-  Tractography::Reader<float> file(argument[0], properties);
+  // Resolve per-streamline weights: for TCK, Reader<float> handles -tck_weights_in itself;
+  // for TRX, open_tractogram (3-arg) injects weights from a dps field or external file.
+  auto wt_opt = get_options("tck_weights_in");
+  const std::string weight_src = wt_opt.empty() ? "" : std::string(wt_opt[0][0]);
+  auto reader = open_tractogram(argument[0], properties, weight_src);
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
@@ -519,7 +524,7 @@ void run() {
   INFO(msg);
 
   // Start initialising members for multi-threaded calculation
-  TrackLoader loader(file, num_tracks);
+  TrackLoader loader(*reader, num_tracks);
 
   std::unique_ptr<TrackMapperTWI> mapper((stat_tck == tck_stat_t::GAUSSIAN)
                                              ? (new Gaussian::TrackMapper(header, contrast))

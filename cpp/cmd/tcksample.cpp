@@ -19,6 +19,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/trx_utils.h"
 #include "file/matrix.h"
 #include "file/ofstream.h"
 #include "file/path.h"
@@ -58,7 +59,9 @@ void usage() {
   ARGUMENTS
   + Argument ("tracks", "the input track file").type_tracks_in()
   + Argument ("image", "the image to be sampled").type_image_in()
-  + Argument ("values", "the output sampled values").type_file_out();
+  + Argument ("values", "the output sampled values (.tsf for per-vertex, text for per-streamline statistics), "
+                        "or a bare field name (no extension) to embed directly in the input TRX file "
+                        "(TRX input only; dpv when no -stat_tck, dps when -stat_tck is given)").type_file_out();
 
   OPTIONS
   + Option ("stat_tck", "compute some statistic from the values along each streamline;"
@@ -331,7 +334,15 @@ public:
     return true;
   }
 
-  void save(std::string_view path) { File::Matrix::save_vector(vector_data, path); }
+  void save(std::string_view path) {
+    if (!path.empty())
+      File::Matrix::save_vector(vector_data, path);
+  }
+
+  void append_to_trx(const std::string &trx_path, const std::string &name) const {
+    std::vector<float> vals(vector_data.data(), vector_data.data() + vector_data.size());
+    DWI::Tractography::TRX::append_dps<float>(trx_path, name, vals);
+  }
 
 private:
   vector_type vector_data;
@@ -339,9 +350,15 @@ private:
 
 class Receiver_NoStatistic : private ReceiverBase {
 public:
-  Receiver_NoStatistic(std::string_view path, const size_t num_tracks, const DWI::Tractography::Properties &properties)
-      : ReceiverBase(num_tracks) {
-    if (Path::has_suffix(path, ".tsf")) {
+  Receiver_NoStatistic(std::string_view path,
+                       const size_t num_tracks,
+                       const DWI::Tractography::Properties &properties,
+                       bool collect_dpv = false)
+      : ReceiverBase(num_tracks), collect_dpv_(collect_dpv) {
+    if (path.empty()) {
+      // Field-only mode: no file output; dpv collection is implicit
+      collect_dpv_ = true;
+    } else if (Path::has_suffix(path, ".tsf")) {
       tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
     } else {
       ascii.reset(new File::OFStream(path));
@@ -361,53 +378,72 @@ public:
           (*ascii) << " " << *i;
       }
       (*ascii) << "\n";
-    } else {
+    } else if (tsf) {
       (*tsf)(in);
     }
+    // else: field-only mode (path empty, no file output; dpv_accum_ collects below)
+    if (collect_dpv_)
+      dpv_accum_.insert(dpv_accum_.end(), in.begin(), in.end());
     ++(*this);
     return true;
+  }
+
+  void append_to_trx(const std::string &trx_path, const std::string &name) const {
+    DWI::Tractography::TRX::append_dpv<float>(trx_path, name, dpv_accum_);
   }
 
 private:
   std::unique_ptr<File::OFStream> ascii;
   std::unique_ptr<DWI::Tractography::ScalarWriter<value_type>> tsf;
+  bool collect_dpv_;
+  std::vector<float> dpv_accum_;
 };
 
 template <class InterpType>
-void execute_nostat(DWI::Tractography::Reader<value_type> &reader,
+void execute_nostat(std::unique_ptr<DWI::Tractography::ReaderInterface<value_type>> &reader_owner,
                     const DWI::Tractography::Properties &properties,
                     const size_t num_tracks,
                     Image<value_type> &image,
-                    std::string_view path) {
+                    std::string_view path,
+                    const std::string &trx_path = "",
+                    const std::string &trx_name = "") {
   SamplerNonPrecise<InterpType> sampler(image, stat_tck::NONE, Image<value_type>());
-  Receiver_NoStatistic receiver(path, num_tracks, properties);
-  Thread::run_ordered_queue(reader,
+  Receiver_NoStatistic receiver(path, num_tracks, properties, !trx_path.empty());
+  Thread::run_ordered_queue(*reader_owner,
                             Thread::batch(DWI::Tractography::Streamline<value_type>()),
                             Thread::multi(sampler),
                             Thread::batch(DWI::Tractography::TrackScalar<value_type>()),
                             receiver);
+  reader_owner.reset(); // release TRX mmap before modifying the same zip file
+  if (!trx_path.empty())
+    receiver.append_to_trx(trx_path, trx_name);
 }
 
 template <class SamplerType>
-void execute(DWI::Tractography::Reader<value_type> &reader,
+void execute(std::unique_ptr<DWI::Tractography::ReaderInterface<value_type>> &reader_owner,
              const size_t num_tracks,
              Image<value_type> &image,
              const stat_tck statistic,
              Image<value_type> &tdi,
-             std::string_view path) {
+             std::string_view path,
+             const std::string &trx_path = "",
+             const std::string &trx_name = "") {
   SamplerType sampler(image, statistic, tdi);
   Receiver_Statistic receiver(num_tracks);
-  Thread::run_ordered_queue(reader,
+  Thread::run_ordered_queue(*reader_owner,
                             Thread::batch(DWI::Tractography::Streamline<value_type>()),
                             Thread::multi(sampler),
                             Thread::batch(std::pair<size_t, value_type>()),
                             receiver);
+  reader_owner.reset(); // release TRX mmap before modifying the same zip file
   receiver.save(path);
+  if (!trx_path.empty())
+    receiver.append_to_trx(trx_path, trx_name);
 }
 
 void run() {
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<value_type> reader(argument[0], properties);
+  auto reader_ptr = DWI::Tractography::TRX::open_tractogram(argument[0], properties);
   auto H = Header::open(argument[1]);
   auto image = H.get_image<value_type>();
 
@@ -424,11 +460,22 @@ void run() {
   if (statistic == stat_tck::NONE && interp == interp_type::PRECISE)
     throw Exception("Precise streamline mapping may only be used with per-streamline statistics");
 
+  // If the output argument is a bare name (no extension) and input is TRX,
+  // embed the result as a dps or dpv field; otherwise write to the given path.
+  std::string trx_path, trx_name;
+  std::string output_path(argument[2]);
+  if (DWI::Tractography::TRX::is_trx_field_name(argument[0], output_path)) {
+    trx_path = std::string(argument[0]);
+    trx_name = output_path;
+    output_path = ""; // suppress file write
+  }
+
   Image<value_type> tdi;
   if (!get_options("use_tdi_fraction").empty()) {
     if (statistic == stat_tck::NONE)
       throw Exception("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
-    DWI::Tractography::Reader<value_type> tdi_reader(argument[0], properties);
+    auto tdi_reader_ptr = DWI::Tractography::TRX::open_tractogram(argument[0], properties);
+    auto &tdi_reader = *tdi_reader_ptr;
     DWI::Tractography::Mapping::TrackMapperBase mapper(H);
     mapper.set_use_precise_mapping(interp == interp_type::PRECISE);
     tdi = Image<value_type>::scratch(H, "TDI scratch image");
@@ -443,10 +490,12 @@ void run() {
   if (statistic == stat_tck::NONE) {
     switch (interp) {
     case interp_type::NEAREST:
-      execute_nostat<Interp::Nearest<Image<value_type>>>(reader, properties, num_tracks, image, argument[2]);
+      execute_nostat<Interp::Nearest<Image<value_type>>>(
+          reader_ptr, properties, num_tracks, image, output_path, trx_path, trx_name);
       break;
     case interp_type::LINEAR:
-      execute_nostat<Interp::Linear<Image<value_type>>>(reader, properties, num_tracks, image, argument[2]);
+      execute_nostat<Interp::Linear<Image<value_type>>>(
+          reader_ptr, properties, num_tracks, image, output_path, trx_path, trx_name);
       break;
     case interp_type::PRECISE:
       throw Exception("Precise streamline mapping may only be used with per-streamline statistics");
@@ -455,14 +504,14 @@ void run() {
     switch (interp) {
     case interp_type::NEAREST:
       execute<SamplerNonPrecise<Interp::Nearest<Image<value_type>>>>(
-          reader, num_tracks, image, statistic, tdi, argument[2]);
+          reader_ptr, num_tracks, image, statistic, tdi, output_path, trx_path, trx_name);
       break;
     case interp_type::LINEAR:
       execute<SamplerNonPrecise<Interp::Linear<Image<value_type>>>>(
-          reader, num_tracks, image, statistic, tdi, argument[2]);
+          reader_ptr, num_tracks, image, statistic, tdi, output_path, trx_path, trx_name);
       break;
     case interp_type::PRECISE:
-      execute<SamplerPrecise>(reader, num_tracks, image, statistic, tdi, argument[2]);
+      execute<SamplerPrecise>(reader_ptr, num_tracks, image, statistic, tdi, output_path, trx_path, trx_name);
       break;
     }
   }

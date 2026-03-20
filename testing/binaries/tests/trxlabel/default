@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify that trxlabel assigns streamlines to groups based on a parcellation image.
+# Uses the SIFT phantom: 4-node parcellation, 5000 streamlines connecting nodes 1-2 and 3-4.
+# After labeling, the TRX should have exactly 4 groups whose combined membership
+# accounts for all streamlines.
+trxlabel SIFT_phantom/tracks.trx tmp.trx -nodes SIFT_phantom/parc.mif -force
+# All 4 nodes should appear as groups
+tckinfo tmp.trx | grep -q "Groups (4)"
+# Spot-check that group "1" and "2" exist (the two nodes for bundle 1)
+tckinfo tmp.trx | grep -q "1:"
+tckinfo tmp.trx | grep -q "2:"

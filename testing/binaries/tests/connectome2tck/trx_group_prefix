@@ -1,0 +1,27 @@
+#!/bin/bash
+# Verify that -group_prefix correctly filters to one atlas when a TRX file has
+# groups from multiple atlases, and that the extracted streamlines match the
+# single-atlas result.
+#
+# The TRX is labeled twice with different prefixes (dk, aal) but the same
+# parcellation image, so both atlases assign identical groups. Extracting with
+# -group_prefix dk should produce the same edge TCK as extracting from an
+# unlabeled (single-atlas) TRX.
+
+# Reference: single-atlas label, no prefix
+trxlabel SIFT_phantom/tracks.trx tmp_single.trx \
+    -nodes SIFT_phantom/parc.mif -force
+connectome2tck tmp_single.trx - tmp_ref_edge12 \
+    -nodes 1,2 -exclusive -files single -force
+
+# Multi-atlas label: same image twice, different prefixes
+trxlabel SIFT_phantom/tracks.trx tmp_multi.trx \
+    -nodes SIFT_phantom/parc.mif -nodes SIFT_phantom/parc.mif \
+    -prefix dk -prefix aal -force
+
+# Extract using only the dk groups; result should match the single-atlas reference
+connectome2tck tmp_multi.trx - tmp_trx_edge12 \
+    -nodes 1,2 -exclusive -files single \
+    -group_prefix dk -force
+
+testing_diff_tck tmp_ref_edge12.tck tmp_trx_edge12.tck -unordered

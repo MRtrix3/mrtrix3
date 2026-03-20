@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that tcksift2 can embed per-streamline weights as a dps field directly
+# in the input TRX file when a bare field name is given as the output argument.
+cp SIFT_phantom/tracks.trx tmp_sift2_trx.trx
+tcksift2 tmp_sift2_trx.trx SIFT_phantom/fods.mif weights
+tckinfo tmp_sift2_trx.trx | grep -q "weights:.*5000"

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify that the trxlabel + trx2connectome pipeline produces the same connectivity
+# matrix as tck2connectome on the same data.
+# Reference: tck2connectome/out.csv (4x4 matrix, edge(1,2)=3384, edge(3,4)=1616)
+trxlabel SIFT_phantom/tracks.trx tmp_labeled.trx -nodes SIFT_phantom/parc.mif -force
+trx2connectome tmp_labeled.trx tmp_matrix.csv -out_node_names tmp_names.txt -force
+testing_diff_matrix tmp_matrix.csv tck2connectome/out.csv
+# Node names should be the 4 numeric node IDs in order
+grep -q "^1$" tmp_names.txt
+grep -q "^4$" tmp_names.txt

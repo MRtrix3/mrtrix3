@@ -1,0 +1,15 @@
+#!/bin/bash
+# Regression: connectome2tck in TRX-group mode ("-" assignments) should match
+# the standard text-assignments workflow for -assignment_all_voxels.
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_allvox_matrix.csv \
+    -assignment_all_voxels -out_assignments tmp_allvox_assignments.txt -force
+
+connectome2tck SIFT_phantom/tracks.tck tmp_allvox_assignments.txt tmp_tck_allvox \
+    -nodes 1,2 -exclusive -files single -force
+
+trxlabel SIFT_phantom/tracks.trx tmp_labeled_allvox.trx \
+    -nodes SIFT_phantom/parc.mif -assignment_all_voxels -force
+connectome2tck tmp_labeled_allvox.trx - tmp_trx_allvox \
+    -nodes 1,2 -exclusive -files single -force
+
+testing_diff_tck tmp_tck_allvox.tck tmp_trx_allvox.tck -unordered

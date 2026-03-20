@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that tcksample embeds per-streamline statistics as a dps field directly
+# in the input TRX file when -stat_tck is given and the output argument has no extension.
+cp tracks.trx tmp_samp_trx.trx
+tcksample tmp_samp_trx.trx tcksample/fa.mif fa_mean -stat_tck mean
+tckinfo tmp_samp_trx.trx | grep -q "fa_mean:"

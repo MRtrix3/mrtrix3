@@ -1,0 +1,19 @@
+#!/bin/bash
+# Verify that tckmap correctly reads per-streamline weights from a TRX dps field.
+# tcksift2 writes weights as a dps field "weights" in-place to the TRX file;
+# tckmap should produce identical output whether weights are supplied as an
+# external text file (-tck_weights_in tmp_weights.csv) or as a dps field name
+# (-tck_weights_in weights).
+cp SIFT_phantom/tracks.trx tmp_weighted.trx
+tcksift2 tmp_weighted.trx SIFT_phantom/fods.mif weights
+
+# Reference: external weights file
+tcksift2 SIFT_phantom/tracks.trx SIFT_phantom/fods.mif tmp_weights.csv
+tckmap SIFT_phantom/tracks.trx -template SIFT_phantom/mask.mif \
+    -tck_weights_in tmp_weights.csv tmp_ref_tdi.mif -force
+
+# Under test: weights resolved from dps field
+tckmap tmp_weighted.trx -template SIFT_phantom/mask.mif \
+    -tck_weights_in weights tmp_dps_tdi.mif -force
+
+testing_diff_image tmp_ref_tdi.mif tmp_dps_tdi.mif -frac 1e-5

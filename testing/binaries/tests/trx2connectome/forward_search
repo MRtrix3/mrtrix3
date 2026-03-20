@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify that trxlabel + trx2connectome with -assignment_forward_search produces
+# the same result as tck2connectome with the same option.
+# The SIFT phantom is simple enough that the forward-search and radial-search
+# assignment methods produce identical results (both reference files are the same).
+trxlabel SIFT_phantom/tracks.trx tmp_labeled.trx \
+    -nodes SIFT_phantom/parc.mif \
+    -assignment_forward_search 5 \
+    -force
+trx2connectome tmp_labeled.trx tmp_matrix.csv -force
+testing_diff_matrix tmp_matrix.csv tck2connectome/out.csv

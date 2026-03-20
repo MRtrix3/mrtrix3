@@ -1,0 +1,17 @@
+#!/bin/bash
+# Verify that -group_prefix correctly filters the connectome to only groups
+# matching the prefix, and that the output matrix matches the full matrix
+# when using a single atlas (all groups share the same prefix).
+trxlabel SIFT_phantom/tracks.trx tmp_labeled.trx \
+    -nodes SIFT_phantom/parc.mif \
+    -prefix myatlas \
+    -force
+trx2connectome tmp_labeled.trx tmp_matrix.csv \
+    -group_prefix myatlas \
+    -out_node_names tmp_names.txt \
+    -force
+# Matrix should still match the reference (same connectivity, same node ordering)
+testing_diff_matrix tmp_matrix.csv tck2connectome/out.csv
+# Node names file should have prefix stripped: "1", "2", "3", "4"
+grep -q "^1$" tmp_names.txt
+grep -q "^4$" tmp_names.txt

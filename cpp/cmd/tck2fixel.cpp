@@ -27,6 +27,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/writer.h"
+#include "dwi/tractography/trx_utils.h"
 
 using namespace MR;
 using namespace App;
@@ -92,7 +93,7 @@ void usage() {
   SYNOPSIS = "Compute a fixel TDI map from a tractogram";
 
   ARGUMENTS
-  + Argument ("tracks",  "the input tracks.").type_tracks_in()
+  + Argument ("tracks",  "the input tracks.").type_tracks_in().type_directory_in()
   + Argument ("fixel_folder_in", "the input fixel folder;"
                                  " used to define the fixels and their directions").type_directory_in()
   + Argument ("fixel_folder_out", "the fixel folder to which the output will be written;"
@@ -151,7 +152,7 @@ void run() {
   std::vector<uint16_t> fixel_TDI(num_fixels, 0.0);
   const std::string track_filename = argument[0];
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> track_file(track_filename, properties);
+  auto track_reader = DWI::Tractography::TRX::open_tractogram(track_filename, properties);
   // Read in tracts, and compute whole-brain fixel-fixel connectivity
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int>(properties["count"]);
   if (!num_tracks)
@@ -159,7 +160,7 @@ void run() {
 
   {
     using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
-    DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "mapping tracks to fixels");
+    DWI::Tractography::Mapping::TrackLoader loader(*track_reader, num_tracks, "mapping tracks to fixels");
     DWI::Tractography::Mapping::TrackMapperBase mapper(index_image);
     mapper.set_upsample_ratio(DWI::Tractography::Mapping::determine_upsample_ratio(index_header, properties, 0.333f));
     mapper.set_use_precise_mapping(true);
@@ -170,8 +171,6 @@ void run() {
                       Thread::batch(SetVoxelDir()),
                       tract_processor);
   }
-  track_file.close();
-
   Header output_header(Fixel::data_header_from_index(index_image));
 
   write_fixel_output(Path::join(output_fixel_folder, argument[3]), fixel_TDI, output_header);

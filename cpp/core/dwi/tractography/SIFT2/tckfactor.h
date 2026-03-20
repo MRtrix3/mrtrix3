@@ -87,6 +87,7 @@ public:
   void report_entropy() const;
 
   void output_factors(std::string_view) const;
+  std::vector<float> get_factors() const;
   void output_coefficients(std::string_view) const;
 
   void output_TD_images(std::string_view, std::string_view, std::string_view) const;

@@ -23,8 +23,8 @@
 #include "thread_queue.h"
 #include "transform.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/trx_utils.h"
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
@@ -38,6 +38,7 @@ using namespace App;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
+using namespace MR::DWI::Tractography::TRX;
 
 const std::vector<std::string> windows = {"rectangle", "triangle", "cosine", "hann", "hamming", "lanczos"};
 
@@ -85,7 +86,7 @@ void usage () {
     " in search of a valid timeseries to sample from the input image.";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("tracks", "the input track file.").type_tracks_in().type_directory_in()
   + Argument ("fmri", "the pre-processed fMRI time series").type_image_in()
   + Argument ("output", "the output TW-dFC image").type_image_out();
 
@@ -286,8 +287,7 @@ void run() {
   Tractography::Properties properties;
   {
     // Just get the properties for now; will re-instantiate the reader multiple times later
-    // TODO Constructor for properties using the file path?
-    Tractography::Reader<float> tck_file(tck_path, properties);
+    TRX::open_tractogram(tck_path, properties);
   }
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
@@ -356,8 +356,8 @@ void run() {
 
   if (is_static) {
 
-    Tractography::Reader<float> tck_file(tck_path, properties);
-    Mapping::TrackLoader loader(tck_file, num_tracks, "Generating (static) TW-dFC image");
+    auto tck_reader = TRX::open_tractogram(tck_path, properties);
+    Mapping::TrackLoader loader(*tck_reader, num_tracks, "Generating (static) TW-dFC image");
     Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
     mapper.set_upsample_ratio(upsample_ratio);
     mapper.add_twdfc_static_image(fmri_image);
@@ -374,8 +374,8 @@ void run() {
     Image<uint32_t> counts;
     if (stat_vox == vox_stat_t::MEAN) {
       counts = Image<uint32_t>::scratch(H_3D, "Track count scratch buffer");
-      Tractography::Reader<float> tck_file(tck_path, properties);
-      Mapping::TrackLoader loader(tck_file, num_tracks, "Calculating initial TDI");
+      auto tck_reader = TRX::open_tractogram(tck_path, properties);
+      Mapping::TrackLoader loader(*tck_reader, num_tracks, "Calculating initial TDI");
       Mapping::TrackMapperBase mapper(H_3D);
       mapper.set_upsample_ratio(upsample_ratio);
       Count_receiver receiver(counts);
@@ -392,8 +392,8 @@ void run() {
 
       {
         LogLevelLatch latch(0);
-        Tractography::Reader<float> tck_file(tck_path, properties);
-        Mapping::TrackLoader loader(tck_file);
+        auto tck_reader = TRX::open_tractogram(tck_path, properties);
+        Mapping::TrackLoader loader(*tck_reader);
         Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
         mapper.set_upsample_ratio(upsample_ratio);
         mapper.add_twdfc_dynamic_image(fmri_image, window, timepoint);
