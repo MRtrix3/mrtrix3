@@ -15,7 +15,7 @@ Usage
 
     mrhistmatch [ options ]  type input target output
 
--  *type*: type of histogram matching to perform; options are: scale,linear,nonlinear
+-  *type*: type of histogram matching to perform; options are: scale, linear, nonlinear.
 -  *input*: the input image to be modified
 -  *target*: the input image from which to derive the target histogram
 -  *output*: the output image

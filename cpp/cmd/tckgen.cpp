@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 
 #include "dwi/tractography/properties.h"
@@ -40,8 +41,6 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> algorithms = {
-    "fact", "ifod1", "ifod2", "nulldist1", "nulldist2", "sd_stream", "seedtest", "tensor_det", "tensor_prob"};
 enum class algorithm_t { FACT, IFOD1, IFOD2, NULLDIST1, NULLDIST2, SD_STREAM, SEEDTEST, TENSOR_DET, TENSOR_PROB };
 constexpr algorithm_t default_algorithm = algorithm_t::IFOD2;
 
@@ -213,9 +212,9 @@ void usage() {
   + Option ("algorithm",
             "specify the tractography algorithm to use."
             " Valid choices are: "
-            + join(algorithms, ", ")
-            + " (default: " + algorithms[static_cast<ssize_t>(default_algorithm)] + ").")
-    + Argument ("name").type_choice(algorithms)
+            + MR::Enum::join<algorithm_t>()
+            + " (default: " + MR::Enum::lowercase_name(default_algorithm) + ").")
+    + Argument ("name").type_choice<algorithm_t>()
 
   + DWI::Tractography::Tracking::TrackOption
 
@@ -249,8 +248,7 @@ void run() {
 
   Properties properties;
 
-  const algorithm_t algorithm =
-      algorithm_t(get_option_value<ssize_t>("algorithm", static_cast<ssize_t>(default_algorithm)));
+  const algorithm_t algorithm = get_option_choice<algorithm_t>("algorithm", default_algorithm);
 
   ACT::load_act_properties(properties);
 

@@ -16,7 +16,7 @@ Usage
     meshfilter [ options ]  input filter output
 
 -  *input*: the input mesh file
--  *filter*: the filter to apply; options are: smooth
+-  *filter*: the filter to apply; options are: smooth.
 -  *output*: the output mesh file
 
 Description

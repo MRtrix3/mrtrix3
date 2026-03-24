@@ -16,6 +16,7 @@
 
 #include "adapter/extract.h"
 #include "command.h"
+#include "enum.h"
 #include "file/nifti_utils.h"
 #include "image.h"
 #include "registration/warp/compose.h"
@@ -25,8 +26,12 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> conversion_types = {
-    "deformation2displacement", "displacement2deformation", "warpfull2deformation", "warpfull2displacement"};
+enum class ConversionType {
+  Deformation2Displacement,
+  Displacement2Deformation,
+  WarpFull2Deformation,
+  WarpFull2Displacement
+};
 
 // clang-format off
 void usage() {
@@ -49,7 +54,7 @@ void usage() {
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in()
   + Argument ("type", "the conversion type required;"
-                      " valid choices are: " + join(conversion_types, ", ")).type_choice(conversion_types)
+                      " valid choices are: " + MR::Enum::join<ConversionType>()).type_choice<ConversionType>()
   + Argument ("out", "the output warp image.").type_image_out();
 
   OPTIONS
@@ -79,13 +84,13 @@ void usage() {
 // clang-format on
 
 void run() {
-  const int type = argument[1];
+  const ConversionType type = MR::Enum::from_name<ConversionType>(argument[1]);
   const bool midway_space = !get_options("midway_space").empty();
   const std::string template_filename = get_option_value<std::string>("template", "");
   const int from = get_option_value("from", 1);
 
-  // deformation2displacement
-  if (type == 0) {
+  switch (type) {
+  case ConversionType::Deformation2Displacement: {
     if (midway_space)
       WARN("-midway_space option ignored with deformation2displacement conversion type");
     if (!get_options("template").empty())
@@ -100,9 +105,9 @@ void run() {
     header.datatype() = DataType::from_command_line(DataType::Float32);
     Image<default_type> displacement = Image<default_type>::create(argument[2], header).with_direct_io();
     Registration::Warp::deformation2displacement(deformation, displacement);
-
-    // displacement2deformation
-  } else if (type == 1) {
+    break;
+  }
+  case ConversionType::Displacement2Deformation: {
     auto displacement = Image<default_type>::open(argument[0]).with_direct_io(3);
     Registration::Warp::check_warp(displacement);
 
@@ -117,9 +122,10 @@ void run() {
     header.datatype() = DataType::from_command_line(DataType::Float32);
     Image<default_type> deformation = Image<default_type>::create(argument[2], header).with_direct_io();
     Registration::Warp::displacement2deformation(displacement, deformation);
-
-    // warpfull2deformation & warpfull2displacement
-  } else if (type == 2 || type == 3) {
+    break;
+  }
+  case ConversionType::WarpFull2Deformation:
+  case ConversionType::WarpFull2Displacement: {
     if (!Path::is_mrtrix_image(argument[0]) &&                  //
         !(Path::has_suffix(argument[0], {".nii", ".nii.gz"}) && //
           File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
@@ -140,15 +146,16 @@ void run() {
       warp_output = Registration::Warp::compute_full_deformation(warp, template_header, from);
     }
 
-    if (type == 3)
+    if (type == ConversionType::WarpFull2Displacement)
       Registration::Warp::deformation2displacement(warp_output, warp_output);
 
     Header header(warp_output);
     header.datatype() = DataType::from_command_line(DataType::Float32);
     Image<default_type> output = Image<default_type>::create(argument[2], header);
     threaded_copy_with_progress_message("converting warp", warp_output, output);
-
-  } else {
+    break;
+  }
+  default:
     throw Exception("Unsupported warp conversion type");
   }
 }

@@ -23,6 +23,7 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "enum.h"
 #include "filter/smooth.h"
 #include "header.h"
 #include "image.h"
@@ -40,7 +41,7 @@ constexpr default_type condition_number_product_threshold = 1000.0;
 // Other future operations that might be applicable here:
 // - "leave-one-out": Predict each intensity based on all observations excluding that one
 // - SHARD recon
-const std::vector<std::string> operations = {"combine_pairs", "combine_predicted"};
+enum class Operation { COMBINE_PAIRS, COMBINE_PREDICTED };
 constexpr default_type default_combinepredicted_exponent = 1.0;
 
 // clang-format off
@@ -125,7 +126,7 @@ void usage() {
   ARGUMENTS
     + Argument ("input", "the input DWI series").type_image_in()
     + Argument ("operation", "the way in which output DWIs will be reconstructed;"
-                " one of: " + join(operations, ", ")).type_choice(operations)
+                " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
     + Argument ("output", "the output DWI series").type_image_out();
 
   OPTIONS
@@ -928,14 +929,14 @@ void run() {
   header_out.datatype().set_byte_order_native();
   header_out.name() = std::string(argument[2]);
 
-  switch (static_cast<uint64_t>(argument[1])) {
+  switch (MR::Enum::from_name<Operation>(argument[1])) {
 
-  case 0:
+  case Operation::COMBINE_PAIRS:
     Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
     run_combine_pairs(dwi_in, grad_in, pe_in, header_out);
     break;
 
-  case 1:
+  case Operation::COMBINE_PREDICTED:
     // TODO Diagnose errors with predictions
     // Getting very wacky results in test data
     // Consider adding command-line options to save:

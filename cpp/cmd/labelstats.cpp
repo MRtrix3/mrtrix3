@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -28,7 +29,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> field_choices = {"mass", "centre"};
+enum class FieldChoice { MASS, CENTRE };
 
 // clang-format off
 void usage() {
@@ -42,8 +43,8 @@ void usage() {
 
   OPTIONS
   + Option ("output", "output only the field specified;"
-                      " options are: " + join(field_choices, ","))
-    + Argument ("choice").type_choice (field_choices)
+                      " options are: " + MR::Enum::join<FieldChoice>() + ".")
+    + Argument ("choice").type_choice<FieldChoice>()
 
   + Option ("voxelspace", "report parcel centres of mass in voxel space"
                           " rather than scanner space");
@@ -84,11 +85,11 @@ void run() {
 
   auto opt = get_options("output");
   if (!opt.empty()) {
-    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
-    case 0:
+    switch (MR::Enum::from_name<FieldChoice>(opt[0][0])) {
+    case FieldChoice::MASS:
       std::cout << masses;
       break;
-    case 1:
+    case FieldChoice::CENTRE:
       std::cout << coms;
       break;
     default:
