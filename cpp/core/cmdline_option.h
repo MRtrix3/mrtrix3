@@ -23,8 +23,10 @@
 #include <utility>
 #include <vector>
 
+#include "enum.h"
 #include "mrtrix.h"
 #include "types.h"
+
 #include <variant>
 
 namespace MR::App {
@@ -243,6 +245,24 @@ public:
   Argument &type_choice(const std::vector<std::string> &c) {
     types.set(ArgTypeFlags::Choice);
     choices = c;
+    return *this;
+  }
+
+  //! specifies that the argument should be selected from a predefined list of enum values
+  /*! The list of allowed values is automatically generated from the enum type provided as template parameter.
+   * Here is an example usage:
+   * \code
+   * enum class Mode { Standard, Pedantic, Approx };
+   *
+   * ARGUMENTS
+   *   + Argument ("mode", "the mode of operation")
+   *     .type_choice<Mode>();
+   * \endcode
+   * \note Each enum value in the list must be supplied in \b lowercase. */
+  template <typename Enum> Argument &type_choice() {
+    static_assert(std::is_enum_v<Enum>, "Template parameter must be an enum type");
+    types.set(ArgTypeFlags::Choice);
+    choices = MR::Enum::lower_case_names<Enum>();
     return *this;
   }
 

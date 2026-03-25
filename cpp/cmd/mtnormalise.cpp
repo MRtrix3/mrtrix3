@@ -30,8 +30,6 @@ constexpr ssize_t default_main_iterations = 15;
 constexpr ssize_t default_balance_maxiterations = 7;
 constexpr ssize_t default_polynormial_order = 3;
 
-const std::vector<std::string> poly_order_choices = {"0", "1", "2", "3"};
-
 // clang-format off
 void usage() {
 
@@ -84,7 +82,7 @@ void usage() {
                     " An order of 0 is equivalent to not allowing spatial variance"
                     " of the intensity normalisation factor."
                     " (default: " + str(default_polynormial_order) + ")")
-    + Argument("number").type_choice(poly_order_choices)
+    + Argument("number").type_integer(0, 3)
 
   + Option("niter", "set the number of iterations."
                     " The first (and potentially only) entry applies to the main loop."

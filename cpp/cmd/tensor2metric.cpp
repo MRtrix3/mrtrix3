@@ -19,6 +19,7 @@
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "progressbar.h"
@@ -28,7 +29,8 @@ using namespace MR;
 using namespace App;
 
 using value_type = float;
-const std::vector<std::string> modulate_choices = {"none", "fa", "eigval"};
+enum class ModulateChoice { NONE, FA, EIGVAL };
+constexpr ModulateChoice default_modulate_choice = ModulateChoice::FA;
 constexpr ssize_t default_rk_numdirections = 300;
 
 // clang-format off
@@ -76,10 +78,9 @@ void usage() {
 
     + Option("modulate",
              "specify how to modulate the magnitude of the eigenvectors."
-             " Valid choices are:"
-             " none, FA, eigval"
-             " (default = FA).")
-      + Argument("choice").type_choice(modulate_choices)
+             " Valid choices are: " + MR::Enum::join<ModulateChoice>() +
+             " (default = " + MR::Enum::lowercase_name(default_modulate_choice) + ").")
+      + Argument("choice").type_choice<ModulateChoice>()
 
     + Option("cl",
              "compute the linearity metric of the diffusion tensor."
@@ -155,7 +156,7 @@ public:
             Image<value_type> &ak_img,
             Image<value_type> &rk_img,
             std::vector<uint32_t> &vals,
-            int modulate,
+            ModulateChoice modulate,
             Eigen::MatrixXd mk_dirs,
             int rk_ndirs)
       : mask_img(mask_img),
@@ -210,7 +211,7 @@ public:
     }
 
     double fa = 0.0;
-    if (fa_img.valid() || (vector_img.valid() && (modulate == 1)))
+    if (fa_img.valid() || (vector_img.valid() && (modulate == ModulateChoice::FA)))
       fa = DWI::tensor2FA(dt);
 
     /* output fa */
@@ -294,10 +295,18 @@ public:
       auto l = Loop(3)(vector_img);
       for (size_t i = 0; i < vals.size(); i++) {
         double fact = 1.0;
-        if (modulate == 1)
+        switch (modulate) {
+        case ModulateChoice::NONE:
+          break;
+        case ModulateChoice::FA:
           fact = fa;
-        else if (modulate == 2)
+          break;
+        case ModulateChoice::EIGVAL:
           fact = eigval(ith_eig[vals[i]]);
+          break;
+        default:
+          throw Exception("Unsupported modulation mode");
+        }
         vector_img.value() = eigvec(0, ith_eig[vals[i]]) * fact;
         l++;
         vector_img.value() = eigvec(1, ith_eig[vals[i]]) * fact;
@@ -362,7 +371,7 @@ private:
   Image<value_type> ak_img;
   Image<value_type> rk_img;
   std::vector<uint32_t> vals;
-  const int modulate;
+  ModulateChoice modulate;
   Eigen::MatrixXd mk_dirs;
   Eigen::MatrixXd mk_bmat, rk_bmat;
   Eigen::MatrixXd rk_dirs;
@@ -463,7 +472,7 @@ void run() {
         throw Exception("eigenvalue/eigenvector number is out of bounds");
   }
 
-  float modulate = get_option_value("modulate", 1);
+  const ModulateChoice modulate = get_option_choice<ModulateChoice>("modulate", default_modulate_choice);
 
   auto value_img = Image<value_type>();
   opt = get_options("value");

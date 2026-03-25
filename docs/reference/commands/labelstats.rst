@@ -20,7 +20,7 @@ Usage
 Options
 -------
 
--  **-output choice** output only the field specified; options are: mass,centre
+-  **-output choice** output only the field specified; options are: mass, centre.
 
 -  **-voxelspace** report parcel centres of mass in voxel space rather than scanner space
 

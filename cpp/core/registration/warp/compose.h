@@ -72,7 +72,7 @@ public:
     if (!disp2_interp) {
       disp_output.row(3) = disp_input1.row(3);
     } else {
-      const Eigen::Vector3d displacement(Eigen::Vector3d(disp2_interp.row(3)).array() * step);
+      const Eigen::Vector3d displacement(Eigen::Vector3d(disp2_interp.vec3()).array() * step);
       const Eigen::Vector3d new_position = displacement + original_position;
       disp_output.row(3) = new_position - voxel_position;
     }
@@ -105,12 +105,12 @@ public:
     if (!deform1_interp) {
       deform.row(3) = out_of_bounds;
     } else {
-      const Eigen::Vector3d position2 = deform1_interp.row(3);
+      const Eigen::Vector3d position2 = deform1_interp.vec3();
       deform2_interp.scanner(position2);
       if (!deform2_interp) {
         deform.row(3) = out_of_bounds;
       } else {
-        const Eigen::Vector3d position3 = deform2_interp.row(3);
+        const Eigen::Vector3d position3 = deform2_interp.vec3();
         deform.row(3) = linear2 * position3;
       }
     }

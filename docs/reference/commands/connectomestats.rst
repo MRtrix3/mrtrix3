@@ -16,7 +16,7 @@ Usage
     connectomestats [ options ]  input algorithm design contrast output
 
 -  *input*: a text file listing the file names of the input connectomes
--  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, tfnbs, none
+-  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, tfnbs, none.
 -  *design*: the design matrix
 -  *contrast*: the contrast matrix
 -  *output*: the filename prefix for all output.

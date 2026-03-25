@@ -15,6 +15,8 @@
 
 running_dir=$(pwd)
 source_dir=$(realpath $1)
+root_dir_name="$2"
+if [ -z "$root_dir_name" ]; then root_dir_name="mrtrix3"; fi
 tarball_dir=$running_dir/mrtrix_tarball_tmp
 
 set -e
@@ -83,8 +85,11 @@ cp -r $install_dir/* appdir/usr
 
 printf "Creating the tarball.\n"
 
-rm -rf appdir/usr/translations # Remove translations since we don't need them
-cp $source_dir/install_mime_types.sh appdir/usr
-cp $source_dir/set_path appdir/usr
-tar -czf mrtrix.tar.gz -C appdir/usr .
+# Move the packaged files under a top-level directory
+mv appdir/usr "appdir/${root_dir_name}"
+rm -rf "appdir/${root_dir_name}/translations" # Remove translations since we don't need them
+cp "$source_dir/install_mime_types.sh" "appdir/${root_dir_name}"
+cp "$source_dir/set_path" "appdir/${root_dir_name}"
+
+tar -czf mrtrix.tar.gz -C appdir "${root_dir_name}"
 cp mrtrix.tar.gz $running_dir

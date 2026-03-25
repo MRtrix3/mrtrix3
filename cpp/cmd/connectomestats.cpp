@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "progressbar.h"
 #include "types.h"
 
@@ -41,7 +42,7 @@ using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
-const std::vector<std::string> algorithms = {"nbs", "tfnbs", "none"};
+enum class Algorithm { NBS, TFNBS, None };
 
 constexpr default_type default_tfnbs_dh = 0.1;
 constexpr default_type default_tfnbs_e = 0.4;
@@ -82,7 +83,7 @@ void usage() {
   + Argument ("input", "a text file listing the file names of the input connectomes").type_file_in ()
 
   + Argument ("algorithm", "the algorithm to use in network-based clustering/enhancement."
-                           " Options are: " + join(algorithms, ", ")).type_choice (algorithms)
+                           " Options are: " + MR::Enum::join<Algorithm>() + ".").type_choice<Algorithm>()
 
   + Argument ("design", "the design matrix").type_file_in ()
 
@@ -184,21 +185,21 @@ void run() {
 
   // Initialise enhancement algorithm
   std::shared_ptr<Stats::EnhancerBase> enhancer;
-  switch (static_cast<MR::App::ParsedArgument::IntType>(argument[1])) {
-  case 0: {
+  switch (MR::Enum::from_name<Algorithm>(argument[1])) {
+  case Algorithm::NBS: {
     auto opt = get_options("threshold");
     if (opt.empty())
       throw Exception("For NBS algorithm, -threshold option must be provided");
     enhancer.reset(new MR::Connectome::Enhance::NBS(num_nodes, opt[0][0]));
   } break;
-  case 1: {
+  case Algorithm::TFNBS: {
     std::shared_ptr<Stats::TFCE::EnhancerBase> base(new MR::Connectome::Enhance::NBS(num_nodes));
     enhancer.reset(new Stats::TFCE::Wrapper(base));
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
     if (!get_options("threshold").empty())
-      WARN(std::string(argument[1]) + " is a threshold-free algorithm; -threshold option ignored");
+      WARN(MR::Enum::lowercase_name(Algorithm::TFNBS) + " is a threshold-free algorithm; -threshold option ignored");
   } break;
-  case 2: {
+  case Algorithm::None: {
     enhancer.reset(new MR::Connectome::Enhance::PassThrough());
     if (!get_options("threshold").empty())
       WARN("No enhancement algorithm being used; -threshold option ignored");

@@ -55,7 +55,7 @@ Threshold determination modifiers
 Threshold application modifiers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-comparison choice** comparison operator to use when applying the threshold; options are: lt,le,ge,gt (default = "le" for -bottom; "ge" otherwise)
+-  **-comparison choice** comparison operator to use when applying the threshold; options are: lt, le, ge, gt (default = "le" for -bottom; "ge" otherwise)
 
 -  **-invert** invert the output binary mask (equivalent to flipping the operator; provided for backwards compatibility)
 

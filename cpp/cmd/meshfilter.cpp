@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "progressbar.h"
 #include "thread_queue.h"
 
@@ -27,7 +28,8 @@ using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
-const std::vector<std::string> filters = {"smooth"};
+enum class FilterType { SMOOTH };
+const std::vector<std::string> filters = MR::Enum::lower_case_names<FilterType>();
 
 // clang-format off
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
@@ -61,7 +63,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
   + Argument ("filter", "the filter to apply;"
-                        " options are: smooth").type_choice (filters)
+                        " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
   + Argument ("output", "the output mesh file").type_file_out();
 
   OPTIONS
@@ -86,8 +88,8 @@ void run() {
 
   // Apply the relevant filter
   std::unique_ptr<Filter::Base> filter;
-  int filter_index = argument[1];
-  if (filter_index == 0) {
+  const FilterType selected_filter = MR::Enum::from_name<FilterType>(argument[1]);
+  if (selected_filter == FilterType::SMOOTH) {
     const default_type spatial = get_option_value("smooth_spatial", Filter::default_smoothing_spatial_factor);
     const default_type influence = get_option_value("smooth_influence", Filter::default_smoothing_influence_factor);
     const std::string msg = in.size() > 1 ? "Applying smoothing filter to multiple meshes" : "";

@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "exception.h"
 #include "header.h"
 #include "image.h"
@@ -39,7 +40,7 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 
-const std::vector<std::string> windows = {"rectangle", "triangle", "cosine", "hann", "hamming", "lanczos"};
+enum class WindowShape { RECTANGLE, TRIANGLE, COSINE, HANN, HAMMING, LANCZOS };
 
 constexpr default_type maximum_ratio_stepsize_voxelsize = 1.0 / 3.0;
 
@@ -98,7 +99,7 @@ void usage () {
   + Option ("dynamic", "generate a \"dynamic\" (4D) output image;"
                        " must additionally provide the shape and width (in volumes)"
                        " of the sliding window.")
-    + Argument ("shape").type_choice(windows)
+    + Argument ("shape").type_choice<WindowShape>()
     + Argument ("width").type_integer(3)
 
   + OptionGroup ("Options for setting the properties of the output image")
@@ -232,7 +233,7 @@ void run() {
       throw Exception("Do not specify both -static and -dynamic options");
 
     // Generate the window filter
-    const int window_shape = opt[0][0];
+    const WindowShape window_shape = MR::Enum::from_name<WindowShape>(opt[0][0]);
     const ssize_t window_width = opt[0][1];
     if (!(window_width % 2))
       throw Exception("Width of sliding time window must be an odd integer");
@@ -243,31 +244,31 @@ void run() {
 
     switch (window_shape) {
 
-    case 0: // rectangular
+    case WindowShape::RECTANGLE:
       window.assign(window_width, 1.0);
       break;
 
-    case 1: // triangle
+    case WindowShape::TRIANGLE:
       for (ssize_t i = 0; i != window_width; ++i)
         window[i] = 1.0 - (std::fabs(i - centre) / static_cast<default_type>(halfwidth));
       break;
 
-    case 2: // cosine
+    case WindowShape::COSINE:
       for (ssize_t i = 0; i != window_width; ++i)
         window[i] = std::sin(i * Math::pi / static_cast<default_type>(window_width - 1));
       break;
 
-    case 3: // hann
+    case WindowShape::HANN:
       for (ssize_t i = 0; i != window_width; ++i)
         window[i] = 0.5 * (1.0 - std::cos(2.0 * Math::pi * i / static_cast<default_type>(window_width - 1)));
       break;
 
-    case 4: // hamming
+    case WindowShape::HAMMING:
       for (ssize_t i = 0; i != window_width; ++i)
         window[i] = 0.53836 - (0.46164 * std::cos(2.0 * Math::pi * i / static_cast<default_type>(window_width - 1)));
       break;
 
-    case 5: // lanczos
+    case WindowShape::LANCZOS:
       for (ssize_t i = 0; i != window_width; ++i) {
         const default_type v = 2.0 * Math::pi * std::fabs(i - centre) / static_cast<default_type>(window_width - 1);
         window[i] = v ? std::max(0.0, (std::sin(v) / v)) : 1.0;

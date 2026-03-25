@@ -18,6 +18,7 @@
 #include "adapter/reslice.h"
 #include "algo/copy.h"
 #include "command.h"
+#include "enum.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
 #include "image.h"
@@ -33,7 +34,7 @@ using namespace MR;
 using namespace App;
 
 constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
-const std::vector<std::string> operation_choices = {"regrid", "crop", "pad"};
+enum class Operation { REGRID, CROP, PAD };
 
 // clang-format off
 void usage() {
@@ -101,7 +102,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
   + Argument ("operation", "the operation to be performed;"
-                           " one of: " + join(operation_choices, ", ") + ".").type_choice (operation_choices)
+                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -204,13 +205,14 @@ void usage() {
 void run() {
   auto input_header = Header::open(argument[0]);
 
-  const int op = argument[1];
+  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
+  const std::string operation_name = MR::Enum::lowercase_name(op);
 
   // Out of bounds value
   const default_type out_of_bounds_value = get_option_value("fill", 0.0);
 
-  if (op == 0) { // regrid
-    INFO("operation: " + str(operation_choices[op]));
+  if (op == Operation::REGRID) {
+    INFO("operation: " + operation_name);
     Filter::Resize regrid_filter(input_header);
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
@@ -287,9 +289,9 @@ void run() {
     regrid_filter(input, output);
 
   } else { // crop or pad
-    const bool do_crop = op == 1;
+    const bool do_crop = op == Operation::CROP;
     std::string message = do_crop ? "cropping image" : "padding image";
-    INFO("operation: " + str(operation_choices[op]));
+    INFO("operation: " + operation_name);
     const bool crop_unbound = !get_options("crop_unbound").empty();
     if (crop_unbound && !do_crop)
       throw Exception("-crop_unbound only applies only to the crop operation");
@@ -358,7 +360,7 @@ void run() {
     opt = get_options("as");
     if (!opt.empty()) {
       if (crop_pad_option_count)
-        throw Exception(str(operation_choices[op]) + " can be performed using either a mask or a template image");
+        throw Exception(operation_name + " can be performed using either a mask or a template image");
       ++crop_pad_option_count;
 
       Header template_header = Header::open(opt[0][0]);

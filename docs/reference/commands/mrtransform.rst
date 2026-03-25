@@ -72,7 +72,7 @@ Non-linear transformation options
 Fibre orientation distribution handling options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-modulate method** Valid choices are: fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation; jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation  to preserve the total intensity before and after the transformation.
+-  **-modulate method** Valid choices are:  fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation; jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation  to preserve the total intensity before and after the transformation.
 
 -  **-directions file** directions defining the number and orientation of the apodised point spread functions used in FOD reorientation (Default: 300 directions)
 

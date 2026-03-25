@@ -18,6 +18,7 @@
 #include <string>
 
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 #include "progressbar.h"
 #include "thread_queue.h"
@@ -39,7 +40,8 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Connectome;
 
-const std::vector<std::string> file_outputs = {"per_edge", "per_node", "single"};
+enum class FileOutput { PER_EDGE, PER_NODE, SINGLE };
+constexpr FileOutput default_file_output = FileOutput::PER_EDGE;
 
 // clang-format off
 const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the content / format of output files")
@@ -51,8 +53,8 @@ const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the
     + Option ("exclusive", "only select tracks that exclusively connect nodes from within the list of nodes of interest")
 
     + Option ("files", "select how the resulting streamlines will be grouped in output files."
-                       " Options are: per_edge, per_node, single (default: per_edge)")
-      + Argument ("option").type_choice (file_outputs)
+                       " Options are: " + MR::Enum::join<FileOutput>(", ") + ". Default: " + MR::Enum::lowercase_name(default_file_output) + ".")
+      + Argument ("option").type_choice<FileOutput>()
 
     + Option ("exemplars", "generate a mean connection exemplar per edge,"
                            " rather than keeping all streamlines "
@@ -252,7 +254,8 @@ void run() {
   if (exclusive && !manual_node_list)
     WARN("List of nodes of interest not provided; -exclusive option will have no effect");
 
-  const int file_format = get_option_value("files", 0);
+  opt = get_options("files");
+  const FileOutput file_format = get_option_choice<FileOutput>("files", default_file_output);
 
   opt = get_options("exemplars");
   if (!opt.empty()) {
@@ -335,7 +338,7 @@ void run() {
     generator.finalize();
 
     // Get exemplars to the output file(s), depending on the requested format
-    if (file_format == 0) { // One file per edge
+    if (file_format == FileOutput::PER_EDGE) { // One file per edge
       if (exclusive) {
         ProgressBar progress("writing exemplars to files", nodes.size() * (nodes.size() - 1) / 2);
         for (size_t i = 0; i != nodes.size(); ++i) {
@@ -362,14 +365,14 @@ void run() {
           }
         }
       }
-    } else if (file_format == 1) { // One file per node
+    } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
         generator.write(
             *n, prefix + str(*n) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*n) + ".csv") : "");
         ++progress;
       }
-    } else if (file_format == 2) { // Single file
+    } else if (file_format == FileOutput::SINGLE) { // Single file
       std::string path = prefix;
       if (path.rfind(".tck") != path.size() - 4)
         path += ".tck";
@@ -384,7 +387,7 @@ void run() {
     WriterExtraction writer(properties, nodes, exclusive, keep_self);
 
     switch (file_format) {
-    case 0: // One file per edge
+    case FileOutput::PER_EDGE: // One file per edge
       for (size_t i = 0; i != nodes.size(); ++i) {
         const node_t one = nodes[i];
         if (exclusive) {
@@ -406,12 +409,12 @@ void run() {
       }
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
       break;
-    case 1: // One file per node
+    case FileOutput::PER_NODE: // One file per node
       for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
         writer.add(*i, prefix + str(*i) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*i) + ".csv") : "");
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;
-    case 2: // Single file
+    case FileOutput::SINGLE: // Single file
       std::string path = prefix;
       if (path.rfind(".tck") != path.size() - 4)
         path += ".tck";

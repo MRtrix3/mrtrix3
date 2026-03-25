@@ -133,7 +133,7 @@ public:
             permutation.conformed(Stride::Permutation::contiguous_along_axis(in_and_output.ndim(), dim)).order();
         DEBUG("smoothing dimension " + str(dim) + " in place with axis order: " + str(axes));
         SmoothFunctor1D<ImageType> smooth(in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
-        ThreadedLoop(in_and_output, axes, 2).run(smooth, in_and_output);
+        ThreadedLoop(in_and_output, axes, std::min<size_t>(2, axes.size())).run(smooth, in_and_output);
         if (progress)
           ++(*progress);
       }

@@ -235,8 +235,9 @@ public:
     // set all Lagrangian multipliers to zero:
     lambda.setZero();
     lambda_prev.setZero();
-    // set active set empty:
+    // set inequality active set empty:
     active.setZero();
+    // equality constraints always active:
     active.tail(num_eq).setOnes();
 
     // initial estimate of constraint values:

@@ -18,6 +18,7 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "math/SH.h"
@@ -29,7 +30,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> algorithms = {"csd", "msmt_csd"};
+enum class Algorithm { CSD, MSMT_CSD };
 
 // clang-format off
 const OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
@@ -113,7 +114,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("algorithm", "the algorithm to use for FOD estimation. "
-                             "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
+                             "(options are: " + MR::Enum::join<Algorithm>() + ")").type_choice<Algorithm>()
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
     + Argument ("response odf", "pairs of input tissue response and output ODF images").type_file_in().type_image_out().allow_multiple();
 
@@ -269,9 +270,9 @@ void run() {
   if (opt.size())
     dwi_modelled = Image<float>::create(opt[0][0], header_out);
 
-  int algorithm = argument[0];
-  if (algorithm == 0) {
-
+  const Algorithm algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
+  switch (algorithm) {
+  case Algorithm::CSD: {
     if (argument.size() != 4)
       throw Exception("CSD algorithm expects a single input response function and single output FOD image");
 
@@ -294,9 +295,9 @@ void run() {
     CSD_Processor processor(shared, mask, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io(3);
     ThreadedLoop("performing constrained spherical deconvolution", dwi, 0, 3).run(processor, dwi, fod);
-
-  } else if (algorithm == 1) {
-
+    break;
+  }
+  case Algorithm::MSMT_CSD: {
     if (argument.size() % 2)
       throw Exception(
           "MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
@@ -337,8 +338,9 @@ void run() {
                  0,
                  3)
         .run(processor, dwi);
-
-  } else {
-    assert(0);
+    break;
+  }
+  default:
+    throw Exception("Unsupported deconvolution algorithm");
   }
 }

@@ -18,6 +18,8 @@
 
 #include "axes.h"
 #include "command.h"
+#include "enum.h"
+#include "filter/base.h"
 #include "filter/demodulate.h"
 #include "filter/gradient.h"
 #include "filter/median.h"
@@ -32,7 +34,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> filters = {"demodulate", "fft", "gradient", "median", "smooth", "normalise", "zclean"};
+enum class FilterType { DEMODULATE, FFT, GRADIENT, MEDIAN, SMOOTH, NORMALISE, ZCLEAN };
 
 // clang-format off
 const OptionGroup DemodulateOption = OptionGroup ("Options for demodulate filter")
@@ -127,14 +129,13 @@ void usage() {
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are:"
-    " demodulate, fft, gradient, median, smooth, normalise, zclean."
+  + "The available filters are: " + MR::Enum::join<FilterType>() + "."
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
-  + Argument ("filter", "the type of filter to be applied").type_choice (filters)
+  + Argument ("filter", "the type of filter to be applied").type_choice<FilterType>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -152,12 +153,13 @@ void usage() {
 
 void run() {
 
-  const size_t filter_index = argument[1];
+  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
+  const std::string filter_name = MR::Enum::lowercase_name(filter_index);
 
   switch (filter_index) {
 
   // Phase demodulation
-  case 0: {
+  case FilterType::DEMODULATE: {
 
     Header H = Header::open(argument[0]);
     if (!H.datatype().is_complex())
@@ -194,7 +196,7 @@ void run() {
   }
 
   // FFT
-  case 1: {
+  case FilterType::FFT: {
     // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
     //   convert between cfloat and cdouble...
     auto input = Image<cdouble>::open(argument[0]);
@@ -247,7 +249,7 @@ void run() {
   }
 
   // Gradient
-  case 2: {
+  case FilterType::GRADIENT: {
     auto input = Image<float>::open(argument[0]);
     Filter::Gradient filter(input, !get_options("magnitude").empty());
 
@@ -266,7 +268,7 @@ void run() {
         stdev[dim] = filter.spacing(dim);
     }
     filter.compute_wrt_scanner(!get_options("scanner").empty());
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
     filter.set_stdev(stdev);
@@ -276,14 +278,14 @@ void run() {
   }
 
   // Median
-  case 3: {
+  case FilterType::MEDIAN: {
     auto input = Image<float>::open(argument[0]);
     Filter::Median filter(input);
 
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<CuboidExtent::value_type>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
@@ -293,7 +295,7 @@ void run() {
   }
 
   // Smooth
-  case 4: {
+  case FilterType::SMOOTH: {
     auto input = Image<float>::open(argument[0]);
     Filter::Smooth filter(input);
 
@@ -313,7 +315,7 @@ void run() {
     opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<CuboidExtent::value_type>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
@@ -324,14 +326,14 @@ void run() {
   }
 
   // Normalisation
-  case 5: {
+  case FilterType::NORMALISE: {
     auto input = Image<float>::open(argument[0]);
     Filter::Normalise filter(input);
 
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<CuboidExtent::value_type>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 
@@ -341,17 +343,17 @@ void run() {
   }
 
   // Zclean
-  case 6: {
+  case FilterType::ZCLEAN: {
     auto input = Image<float>::open(argument[0]);
     Filter::ZClean filter(input);
 
     auto opt = get_options("maskin");
     if (opt.empty())
-      throw Exception(std::string(argument[1]) + " filter requires initial mask");
+      throw Exception(filter_name + " filter requires initial mask");
     Image<float> maskin = Image<float>::open(opt[0][0]);
     check_dimensions(maskin, input, 0, 3);
 
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
                        " to image " + std::string(argument[0]));
     Stride::set_from_command_line(filter);
 

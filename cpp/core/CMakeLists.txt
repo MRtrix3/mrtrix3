@@ -21,6 +21,14 @@ endif()
 
 file(GLOB_RECURSE HEADLESS_SOURCES *.h *.cpp)
 
+
+if(MRTRIX_ENABLE_GPU)
+    find_package(Dawn CONFIG REQUIRED)
+    find_package(slang CONFIG REQUIRED)
+else()
+    list(FILTER HEADLESS_SOURCES EXCLUDE REGEX "${CMAKE_CURRENT_LIST_DIR}/gpu/.*")
+endif()
+
 find_package(Git QUIET)
 
 # Create version target and library
@@ -110,13 +118,28 @@ target_link_libraries(mrtrix-core PUBLIC
     Threads::Threads
     nlohmann_json::nlohmann_json
     nifti::nifti
+    tcb::span
+    magic_enum::magic_enum
 )
+
+if(MRTRIX_ENABLE_GPU)
+    target_link_libraries(mrtrix-core PUBLIC dawn::webgpu_dawn slang::slang)
+endif()
 
 # On Windows, the libraries need to be in the same directory as the executables
 if(WIN32)
     set_target_properties(mrtrix-core PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
+
+    add_custom_command(TARGET mrtrix-core POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:dawn::webgpu_dawn>
+            $<TARGET_FILE:slang::slang>
+            $<TARGET_FILE_DIR:mrtrix-core>
+        COMMENT "Copying imported dependencies to output directory"
+    )
+
 endif()
 
 install(TARGETS mrtrix-core

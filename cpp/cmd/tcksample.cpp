@@ -19,6 +19,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/ofstream.h"
 #include "file/path.h"
@@ -31,11 +32,13 @@
 #include "ordered_thread_queue.h"
 #include "thread.h"
 
+#include <optional>
+#include <tcb/span.hpp>
+
 using namespace MR;
 using namespace App;
 
-enum stat_tck { MEAN, MEDIAN, MIN, MAX, NONE };
-const std::vector<std::string> statistics = {"mean", "median", "min", "max"};
+enum class Statistic { MEAN, MEDIAN, MIN, MAX };
 
 enum interp_type { NEAREST, LINEAR, PRECISE };
 
@@ -62,8 +65,8 @@ void usage() {
 
   OPTIONS
   + Option ("stat_tck", "compute some statistic from the values along each streamline;"
-                        " (options are: " + join(statistics, ",") + ")")
-    + Argument ("statistic").type_choice (statistics)
+                        " (options are: " + MR::Enum::join<Statistic>() + ")")
+    + Argument ("statistic").type_choice<Statistic>()
 
   + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
 
@@ -116,7 +119,9 @@ protected:
 
 template <class Interp> class SamplerNonPrecise {
 public:
-  SamplerNonPrecise(Image<value_type> &image, const stat_tck statistic, const Image<value_type> &precalc_tdi)
+  SamplerNonPrecise(Image<value_type> &image,
+                    const std::optional<Statistic> statistic,
+                    const Image<value_type> &precalc_tdi)
       : interp(image),
         mapper(precalc_tdi.valid() ? new DWI::Tractography::Mapping::TrackMapperBase(image) : nullptr),
         tdi(precalc_tdi),
@@ -126,13 +131,17 @@ public:
   }
 
   bool operator()(DWI::Tractography::Streamline<value_type> &tck, std::pair<size_t, value_type> &out) {
-    assert(statistic != stat_tck::NONE);
+    if (!statistic.has_value()) {
+      throw Exception("A statistic must be specified if not using precise mapping");
+    }
     out.first = tck.get_index();
 
     DWI::Tractography::TrackScalar<value_type> values;
     (*this)(tck, values);
 
-    if (statistic == MEAN) {
+    const Statistic selected_statistic = statistic.value();
+    switch (selected_statistic) {
+    case Statistic::MEAN: {
       // Take distance between points into account in mean calculation
       //   (Should help down-weight endpoints)
       value_type integral = value_type(0);
@@ -148,23 +157,26 @@ public:
         sum_lengths += length;
       }
       out.second = sum_lengths ? (integral / sum_lengths) : 0.0;
-    } else {
-      if (statistic == MEDIAN) {
-        // Don't bother with a weighted median here
-        std::vector<value_type> data;
-        data.assign(values.data(), values.data() + values.size());
-        out.second = Math::median(data);
-      } else if (statistic == MIN) {
-        out.second = std::numeric_limits<value_type>::infinity();
-        for (size_t i = 0; i != tck.size(); ++i)
-          out.second = std::min(out.second, values[i]);
-      } else if (statistic == MAX) {
-        out.second = -std::numeric_limits<value_type>::infinity();
-        for (size_t i = 0; i != tck.size(); ++i)
-          out.second = std::max(out.second, values[i]);
-      } else {
-        assert(0);
-      }
+      break;
+    }
+    case Statistic::MEDIAN: {
+      // Don't bother with a weighted median here
+      std::vector<value_type> data;
+      const tcb::span<const value_type> values_span(values.data(), values.size());
+      data.assign(values_span.begin(), values_span.end());
+      out.second = Math::median(data);
+      break;
+    }
+    case Statistic::MIN:
+      out.second = std::numeric_limits<value_type>::infinity();
+      for (size_t i = 0; i != tck.size(); ++i)
+        out.second = std::min(out.second, values[i]);
+      break;
+    case Statistic::MAX:
+      out.second = -std::numeric_limits<value_type>::infinity();
+      for (size_t i = 0; i != tck.size(); ++i)
+        out.second = std::max(out.second, values[i]);
+      break;
     }
 
     if (!std::isfinite(out.second))
@@ -190,7 +202,7 @@ private:
   Interp interp;
   std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
   Image<value_type> tdi;
-  const stat_tck statistic;
+  std::optional<Statistic> statistic;
 
   value_type get_tdi_multiplier(const DWI::Tractography::Mapping::Voxel &v) {
     if (!tdi.valid())
@@ -203,12 +215,11 @@ private:
 
 class SamplerPrecise {
 public:
-  SamplerPrecise(Image<value_type> &image, const stat_tck statistic, const Image<value_type> &precalc_tdi)
+  SamplerPrecise(Image<value_type> &image, const Statistic statistic, const Image<value_type> &precalc_tdi)
       : image(image),
         mapper(new DWI::Tractography::Mapping::TrackMapperBase(image)),
         tdi(precalc_tdi),
         statistic(statistic) {
-    assert(statistic != stat_tck::NONE);
     mapper->set_use_precise_mapping(true);
   }
 
@@ -219,7 +230,7 @@ public:
     DWI::Tractography::Mapping::SetVoxel voxels;
     (*mapper)(tck, voxels);
 
-    if (statistic == MEAN) {
+    if (statistic == Statistic::MEAN) {
       value_type integral = value_type(0);
       for (const auto &v : voxels) {
         assign_pos_of(v).to(image);
@@ -227,7 +238,7 @@ public:
         sum_lengths += v.get_length();
       }
       out.second = integral / sum_lengths;
-    } else if (statistic == MEDIAN) {
+    } else if (statistic == Statistic::MEDIAN) {
       // Should be a weighted median...
       // Just use the n.log(n) algorithm
       class WeightSort {
@@ -254,14 +265,14 @@ public:
         }
         prev_value = d.value;
       }
-    } else if (statistic == MIN) {
+    } else if (statistic == Statistic::MIN) {
       out.second = std::numeric_limits<value_type>::infinity();
       for (const auto &v : voxels) {
         assign_pos_of(v).to(image);
         out.second = std::min(out.second, static_cast<value_type>(image.value()) * get_tdi_multiplier(v));
         sum_lengths += v.get_length();
       }
-    } else if (statistic == MAX) {
+    } else if (statistic == Statistic::MAX) {
       out.second = -std::numeric_limits<value_type>::infinity();
       for (const auto &v : voxels) {
         assign_pos_of(v).to(image);
@@ -282,7 +293,7 @@ private:
   Image<value_type> image;
   std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
   Image<value_type> tdi;
-  const stat_tck statistic;
+  Statistic statistic;
 
   value_type get_tdi_multiplier(const DWI::Tractography::Mapping::Voxel &v) {
     if (!tdi.valid())
@@ -379,7 +390,7 @@ void execute_nostat(DWI::Tractography::Reader<value_type> &reader,
                     const size_t num_tracks,
                     Image<value_type> &image,
                     std::string_view path) {
-  SamplerNonPrecise<InterpType> sampler(image, stat_tck::NONE, Image<value_type>());
+  SamplerNonPrecise<InterpType> sampler(image, std::nullopt, Image<value_type>());
   Receiver_NoStatistic receiver(path, num_tracks, properties);
   Thread::run_ordered_queue(reader,
                             Thread::batch(DWI::Tractography::Streamline<value_type>()),
@@ -392,7 +403,7 @@ template <class SamplerType>
 void execute(DWI::Tractography::Reader<value_type> &reader,
              const size_t num_tracks,
              Image<value_type> &image,
-             const stat_tck statistic,
+             const Statistic statistic,
              Image<value_type> &tdi,
              std::string_view path) {
   SamplerType sampler(image, statistic, tdi);
@@ -412,8 +423,8 @@ void run() {
   auto image = H.get_image<value_type>();
 
   auto opt = get_options("stat_tck");
-  const stat_tck statistic =
-      !opt.empty() ? stat_tck(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : stat_tck::NONE;
+  const std::optional<Statistic> statistic =
+      opt.empty() ? std::nullopt : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
   const bool nointerp = !get_options("nointerp").empty();
   const bool precise = !get_options("precise").empty();
   if (nointerp && precise)
@@ -421,12 +432,12 @@ void run() {
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
   const size_t num_tracks = properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]);
 
-  if (statistic == stat_tck::NONE && interp == interp_type::PRECISE)
+  if (!statistic.has_value() && interp == interp_type::PRECISE)
     throw Exception("Precise streamline mapping may only be used with per-streamline statistics");
 
   Image<value_type> tdi;
   if (!get_options("use_tdi_fraction").empty()) {
-    if (statistic == stat_tck::NONE)
+    if (!statistic.has_value())
       throw Exception("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
     DWI::Tractography::Reader<value_type> tdi_reader(argument[0], properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper(H);
@@ -440,7 +451,7 @@ void run() {
                       tdi_fill);
   }
 
-  if (statistic == stat_tck::NONE) {
+  if (!statistic.has_value()) {
     switch (interp) {
     case interp_type::NEAREST:
       execute_nostat<Interp::Nearest<Image<value_type>>>(reader, properties, num_tracks, image, argument[2]);
@@ -452,17 +463,18 @@ void run() {
       throw Exception("Precise streamline mapping may only be used with per-streamline statistics");
     }
   } else {
+    const Statistic selected_statistic = statistic.value();
     switch (interp) {
     case interp_type::NEAREST:
       execute<SamplerNonPrecise<Interp::Nearest<Image<value_type>>>>(
-          reader, num_tracks, image, statistic, tdi, argument[2]);
+          reader, num_tracks, image, selected_statistic, tdi, argument[2]);
       break;
     case interp_type::LINEAR:
       execute<SamplerNonPrecise<Interp::Linear<Image<value_type>>>>(
-          reader, num_tracks, image, statistic, tdi, argument[2]);
+          reader, num_tracks, image, selected_statistic, tdi, argument[2]);
       break;
     case interp_type::PRECISE:
-      execute<SamplerPrecise>(reader, num_tracks, image, statistic, tdi, argument[2]);
+      execute<SamplerPrecise>(reader, num_tracks, image, selected_statistic, tdi, argument[2]);
       break;
     }
   }
