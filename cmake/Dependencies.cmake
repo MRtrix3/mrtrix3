@@ -119,7 +119,7 @@ if(MRTRIX_ENABLE_GPU)
             message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
         endif()
 
-        set(DAWN_VERSION 7495)
+        set(DAWN_VERSION 7750)
 
 
         set(DAWN_BINARIES_URL_PREFIX
