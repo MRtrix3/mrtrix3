@@ -512,7 +512,7 @@ TEST_F(GPUTest, DownloadBufferAsVector) {
   EXPECT_EQ(downloaded, host);
 }
 
-TEST_F(GPUTest, CopyTextureToTextureFull) {
+TEST_F(GPUTest, CopyTextureToTexture_Full) {
   struct TestCase {
     uint32_t channels = 0U;
     TextureFormat format = TextureFormat::R32Float;
@@ -545,7 +545,7 @@ TEST_F(GPUTest, CopyTextureToTextureFull) {
   }
 }
 
-TEST_F(GPUTest, CopyTextureToTextureWithOffsets) {
+TEST_F(GPUTest, CopyTextureToTexture_WithOffsets) {
   const uint32_t width = 5U;
   const uint32_t height = 4U;
   const uint32_t depth = 3U;
@@ -605,7 +605,7 @@ TEST_F(GPUTest, CopyTextureToTextureWithOffsets) {
   }
 }
 
-TEST_F(GPUTest, CopyTextureToTextureWithOffsetsOutOfRangeThrows) {
+TEST_F(GPUTest, CopyTextureToTexture_WithOffsetsOutOfRangeThrows) {
   const TextureSpec texture_spec{
       .width = 4U,
       .height = 4U,
