@@ -340,7 +340,6 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     }
 
     const std::vector<wgpu::FeatureName> required_device_features = {
-        wgpu::FeatureName::R8UnormStorage,
         wgpu::FeatureName::Float32Filterable,
         wgpu::FeatureName::Subgroups,
         // Require for read-write support for RGBA32Float textures in shaders.
