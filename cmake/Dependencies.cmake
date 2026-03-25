@@ -157,7 +157,7 @@ if(MRTRIX_ENABLE_GPU)
 
     if(NOT MRTRIX_USE_SYSTEM_SLANG)
         message(STATUS "Downloading prebuilt binaries for Slang...")
-        set(SLANG_VERSION "2025.22.1" CACHE STRING "Slang version to download from GitHub releases")
+        set(SLANG_VERSION "2026.5.1" CACHE STRING "Slang version to download from GitHub releases")
 
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             set(SLANG_OS "linux")
