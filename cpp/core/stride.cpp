@@ -157,10 +157,17 @@ List __from_command_line(const List &current) {
 
 namespace MR::Stride {
 
-Order::Order(const Permutation &permutation) : Base(permutation.size(), Order::invalid) {
+Order::Order(const Permutation &permutation) {
   assert(permutation.valid());
+  // May have multiple axes labelled under the same permutation;
+  //   sort axis indices numerically in that case
+  std::multimap<ArrayIndex, ArrayIndex> sorter;
   for (ArrayIndex axis = 0; axis != permutation.size(); ++axis)
-    data_[permutation[axis]] = axis;
+    sorter.insert({permutation[axis], axis});
+  ArrayIndex index = 0;
+  for (const auto &item : sorter)
+    data_.push_back(item.second);
+  assert(is_sanitised());
 }
 
 Order::Order(const Symbolic &symbolic) : Order(Permutation(symbolic)) {}
@@ -178,8 +185,6 @@ bool Order::is_canonical() const {
 }
 
 bool Order::is_sanitised() const { return (valid()); }
-
-void Order::sanitise() { throw Exception("Cannot apply sanitise() operation to Stride::Order"); }
 
 bool Order::valid() const {
   if (empty())
@@ -312,11 +317,63 @@ bool Permutation::is_sanitised() const {
   return true;
 }
 
+bool Permutation::valid() const {
+  // If empty, not a valid permutation
+  if (empty())
+    return false;
+  // No negative axis indices
+  if (*std::min_element(data_.begin(), data_.end()) < 0)
+    return false;
+  return true;
+}
+
+void Permutation::conform(const Permutation &permutation) {
+  const std::set<value_type> unique_input(permutation.data_.begin(), permutation.data_.end());
+  std::multimap<ArrayIndex, ArrayIndex> sorter;
+  vector_type result(size(), Permutation::invalid);
+  ArrayIndex index = 0;
+  for (auto input : unique_input) {
+    sorter.clear();
+    for (ArrayIndex axis = 0; axis != size(); ++axis) {
+      if (permutation[axis] == input)
+        sorter.insert({data_[axis], axis});
+    }
+    ArrayIndex previous = Permutation::invalid;
+    for (auto current : sorter) {
+      if (previous == Permutation::invalid) {
+        result[current.second] = index;
+        previous = current.first;
+      } else {
+        result[current.second] = current.first == previous ? index : ++index;
+        previous = current.first;
+      }
+    }
+    ++index;
+  }
+  data_ = result;
+  assert(valid());
+}
+
+Permutation Permutation::conformed(const Permutation &permutation) const {
+  Permutation result(*this);
+  result.conform(permutation);
+  return result;
+}
+
+Permutation Permutation::head(const size_t num_axes) const {
+  assert(num_axes <= size());
+  Permutation::vector_type result(*this);
+  result.resize(num_axes);
+  return Permutation(result);
+}
+
+Order Permutation::order() const { return Order(*this); }
+
 void Permutation::sanitise() {
   std::multimap<value_type, ArrayIndex> sorter;
   for (ArrayIndex index = 0; index != size(); ++index) {
     if (data_[index] == Permutation::invalid)
-      throw Exception("Cannot sanitise a stride permutation that contains invalid values");
+      throw Exception("Cannot sanitise an axis permutation that contains invalid values");
     sorter.insert({data_[index], index});
   }
   std::ostringstream oss;
@@ -328,25 +385,6 @@ void Permutation::sanitise() {
   DEBUG(oss.str());
   assert(is_sanitised());
 }
-
-bool Permutation::valid() const {
-  // If empty, not a valid permutation
-  if (empty())
-    return false;
-  // No negative axis indices
-  if (*std::min_element(data_.begin(), data_.end()) < 0)
-    return false;
-  return true;
-}
-
-Permutation Permutation::head(const size_t num_axes) const {
-  assert(num_axes <= size());
-  Permutation::vector_type result(*this);
-  result.resize(num_axes);
-  return Permutation(result);
-}
-
-Order Permutation::order() const { return Order(*this); }
 
 Permutation Permutation::sanitised() const {
   Permutation result(*this);
@@ -407,7 +445,7 @@ Symbolic::Symbolic(const Header &header) : Symbolic(header.strides()) {}
 
 Symbolic::Symbolic(const Actual &actual) : Base(actual.size(), Symbolic::invalid) {
   std::multimap<Actual::value_type, ArrayIndex> sorter;
-  for (ArrayIndex axis = size() - 1; axis >= 0; --axis)
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
     sorter.insert(
         {actual[axis] == Actual::invalid ? std::numeric_limits<Actual::value_type>::max() : MR::abs(actual[axis]),
          axis});
@@ -415,7 +453,6 @@ Symbolic::Symbolic(const Actual &actual) : Base(actual.size(), Symbolic::invalid
   value_type counter = 0;
   Actual::value_type prev_actual = Actual::invalid;
   std::ostringstream oss;
-  oss << "From actual strides [" << actual << "],";
   for (const auto &item : sorter) {
     if (item.first == prev_actual) {
       data_[item.second] = index * (actual[item.second] < 0 ? -1 : 1);
@@ -426,11 +463,44 @@ Symbolic::Symbolic(const Actual &actual) : Base(actual.size(), Symbolic::invalid
       index = counter;
     }
   }
-  oss << " constructed symbolic strides [" << *this << "]";
-  DEBUG(oss.str());
-  // If Actual contains ties, then Symbolic will no longer be sanitised
-  // assert(is_sanitised());
-  assert(valid());
+  DEBUG("From actual strides [" + str(actual) + "]," +         //
+        " constructed symbolic strides [" + str(*this) + "]"); //
+  // If Actual contains ties, then Symbolic will not be sanitised as ties will be preserved
+  if (actual.is_degenerate()) {
+    assert(valid());
+  } else {
+    assert(is_sanitised());
+  }
+}
+
+Symbolic::Symbolic(const Actual::vector_type &actual, const std::vector<VoxelIndex> &sizes)
+    : Base(actual.size(), Symbolic::invalid) {
+  assert(actual.size() == sizes.size());
+  class Data {
+  public:
+    Data(const ArrayIndex axis, const Actual::value_type stride, const VoxelIndex size)
+        : axis(axis), stride(stride), size(size) {}
+    bool operator<(const Data &that) const {
+      if (MR::abs(stride) != MR::abs(that.stride))
+        return MR::abs(stride) < MR::abs(that.stride);
+      if (size == 1 && that.size > 1)
+        return false;
+      if (size > 1 && that.size == 1)
+        return true;
+      return axis < that.axis;
+    }
+    ArrayIndex axis;
+    Actual::value_type stride;
+    VoxelIndex size;
+  };
+  std::set<Data> sorter;
+  for (ArrayIndex axis = 0; axis != actual.size(); ++axis)
+    sorter.insert({axis, actual[axis], sizes[axis]});
+  Symbolic::value_type counter = 0;
+  for (const auto &item : sorter) {
+    if (item.size > 1)
+      data_[item.axis] = ++counter * (item.stride < 0 ? -1 : 1);
+  }
 }
 
 bool Symbolic::is_canonical() const {
@@ -482,9 +552,9 @@ Symbolic Symbolic::block(const ArrayIndex from_axis, const ArrayIndex to_axis) c
   if (to_axis == -1)
     return Symbolic(vector_type(data_.begin() + from_axis, data_.end()));
   assert(from_axis < to_axis);
-  assert(to_axis < size());
-  return Symbolic(
-      vector_type(data_.begin() + from_axis, data_.begin() + std::min(static_cast<ArrayIndex>(size()), to_axis)));
+  assert(to_axis <= size());
+  return Symbolic(vector_type(data_.begin() + from_axis,                                            //
+                              data_.begin() + std::min(static_cast<ArrayIndex>(size()), to_axis))); //
 }
 
 void Symbolic::conform(const Symbolic &in) {
@@ -515,6 +585,18 @@ Symbolic Symbolic::conformed(const Symbolic &in) const {
   return result;
 }
 
+void Symbolic::demote_unity(const std::vector<VoxelIndex> &sizes) {
+  assert(sizes.size() == size());
+  const bool was_sanitised = is_sanitised();
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    assert(sizes[axis] > 0);
+    if (sizes[axis] == 1)
+      data_[axis] = Symbolic::invalid;
+  }
+  if (was_sanitised)
+    sanitise();
+}
+
 void Symbolic::flip(const ArrayIndex axis) {
   assert(axis >= 0 && axis < size());
   data_[axis] *= -1;
@@ -534,42 +616,23 @@ Order Symbolic::order() const { return permutation().order(); }
 
 Permutation Symbolic::permutation() const { return Permutation(*this); }
 
-void Symbolic::resize(const size_t num_axes) { data_.resize(num_axes, Symbolic::invalid); }
+void Symbolic::resize(const size_t num_axes) {
+  if (num_axes == size())
+    return;
+  if (num_axes > size()) {
+    data_.resize(num_axes, Symbolic::invalid);
+    return;
+  }
+  const bool resanitise = is_sanitised();
+  data_.resize(num_axes);
+  if (resanitise)
+    sanitise();
+}
 
 Symbolic Symbolic::resized(const size_t num_axes) const {
   Symbolic result(*this);
   result.resize(num_axes);
   return result;
-}
-
-void Symbolic::sanitise() {
-  // Key is absolute value of current stride:
-  //   - If currently set to zero,
-  //     then axis will be promoted to as contiguous as possible
-  //     (contingent on earlier axes being the same)
-  //   - If currently non-zero,
-  //     they will be ordered
-  std::multimap<value_type, ArrayIndex> sorter;
-  for (ArrayIndex axis = 0; axis != size(); ++axis) {
-    if (data_[axis] != Symbolic::invalid)
-      sorter.insert({MR::abs(data_[axis]), axis});
-  }
-  vector_type result(size());
-  ArrayIndex counter = 0;
-  for (const auto &item : sorter)
-    result[item.second] = ++counter * (data_[item.second] < 0 ? -1 : 1);
-  for (ArrayIndex axis = 0; axis != size(); ++axis) {
-    if (data_[axis] == Symbolic::invalid)
-      result[axis] = ++counter;
-  }
-  if (result != data_) {
-    std::ostringstream oss;
-    oss << "Symbolic strides [" << *this << "]";
-    data_ = result;
-    oss << " sanitised as [" << *this << "]";
-    DEBUG(oss.str());
-  }
-  assert(is_sanitised());
 }
 
 void Symbolic::reorder(const Permutation &permutation) {
@@ -618,9 +681,61 @@ Symbolic Symbolic::reordered(const Permutation &order) const {
   return result;
 }
 
+void Symbolic::sanitise() {
+  // Key is absolute value of current stride:
+  //   - If currently set to zero,
+  //     then axis will be promoted to as contiguous as possible
+  //     (contingent on earlier axes being the same)
+  //   - If currently non-zero,
+  //     they will be ordered
+  std::multimap<value_type, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] != Symbolic::invalid)
+      sorter.insert({MR::abs(data_[axis]), axis});
+  }
+  vector_type result(size());
+  ArrayIndex counter = 0;
+  for (const auto &item : sorter)
+    result[item.second] = ++counter * (data_[item.second] < 0 ? -1 : 1);
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] == Symbolic::invalid)
+      result[axis] = ++counter;
+  }
+  if (result != data_) {
+    std::ostringstream oss;
+    oss << "Symbolic strides [" << *this << "]";
+    data_ = result;
+    oss << " sanitised as [" << *this << "]";
+    DEBUG(oss.str());
+  }
+  assert(is_sanitised());
+}
+
+void Symbolic::sanitise(const std::vector<VoxelIndex> &sizes) {
+  Permutation::vector_type permutation(size(), 0);
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (sizes[axis] == 1)
+      permutation[axis] = 1;
+  }
+  reorder(Permutation(permutation));
+  sanitise();
+}
+
 Symbolic Symbolic::sanitised() const {
   Symbolic result(*this);
   result.sanitise();
+  return result;
+}
+
+Symbolic Symbolic::sanitised(const std::vector<VoxelIndex> &sizes) const {
+  Symbolic result(*this);
+  result.sanitise(sizes);
+  return result;
+}
+
+Symbolic Symbolic::unity_demoted(const std::vector<VoxelIndex> &sizes) const {
+  Symbolic result(*this);
+  result.demote_unity(sizes);
   return result;
 }
 
@@ -633,21 +748,32 @@ Symbolic Symbolic::canonical(const size_t num_axes) {
   return symbolic;
 }
 
-Actual::Actual(const Actual::vector_type &data) : Base(data) {}
+Actual::Actual() : offset_(0) {}
+
+Actual::Actual(const vector_type &actual, const std::vector<ArrayIndex> &sizes) : Base(actual), offset_(0) {
+  for (ArrayIndex i = 0; i < size(); ++i) {
+    if (data_[i] < 0)
+      offset_ += static_cast<MemIndex>(-data_[i]) * (sizes[i] - 1);
+  }
+}
 
 Actual::Actual(const Symbolic &symbolic, const std::vector<VoxelIndex> &sizes)
-    : Base<value_type>(symbolic.size(), invalid) {
+    : Base<value_type>(symbolic.size(), invalid), offset_(0) {
   assert(symbolic.is_sanitised());
   assert(symbolic.size() == sizes.size());
-  const Order x(symbolic.order());
+  const Permutation permutation(symbolic.unity_demoted(sizes));
+  const Order order(permutation);
   value_type skip = 1;
   for (ArrayIndex i = 0; i < size(); ++i) {
-    data_[x[i]] = symbolic[x[i]] < 0 ? -skip : skip;
-    skip *= sizes[x[i]];
+    data_[order[i]] = symbolic[order[i]] < 0 ? -skip : skip;
+    skip *= sizes[order[i]];
+    if (data_[order[i]] < 0)
+      offset_ += static_cast<MemIndex>(-data_[order[i]]) * (sizes[order[i]] - 1);
   }
   DEBUG("Symbolic strides [" + str(symbolic) + "]" + //
         " actualised using sizes " + str(sizes) +    //
-        " as [" + str(*this) + "]");                 //
+        " as [" + str(*this) + "]" +                 //
+        " with offset " + str(offset_));             //
 }
 
 bool Actual::is_canonical() const {

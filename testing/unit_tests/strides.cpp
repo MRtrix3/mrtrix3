@@ -58,11 +58,21 @@ TEST_F(StrideOrderTest, ConstructFromVector) {
   EXPECT_EQ(order[3], 3);
 }
 
-TEST_F(StrideOrderTest, ConstructFromPermutation) {
+TEST_F(StrideOrderTest, ConstructFromPermutationCanonical) {
   Stride::Permutation perm({0, 1, 2, 3});
   Stride::Order order(perm);
   EXPECT_EQ(order.size(), 4);
   EXPECT_TRUE(order.is_canonical());
+}
+
+TEST_F(StrideOrderTest, ConstructFromPermutationDegenerate) {
+  Stride::Permutation perm({1, 1, 1, 0});
+  Stride::Order order(perm);
+  EXPECT_EQ(order.size(), 4);
+  EXPECT_EQ(order[0], 3);
+  EXPECT_EQ(order[1], 0);
+  EXPECT_EQ(order[2], 1);
+  EXPECT_EQ(order[3], 2);
 }
 
 TEST_F(StrideOrderTest, StatusFunctions) {
@@ -338,7 +348,7 @@ TEST_F(StrideSymbolicTest, ConstructFromVector) {
 }
 
 TEST_F(StrideSymbolicTest, ConstructFromActualNoTies) {
-  Stride::Actual actual({-1, -10, 100, 1000});
+  Stride::Actual actual({-1, -10, 100, 1000}, {10, 10, 10, 10});
   Stride::Symbolic symbolic(actual);
   EXPECT_EQ(symbolic.size(), 4);
   EXPECT_EQ(symbolic[0], -1);
@@ -350,15 +360,16 @@ TEST_F(StrideSymbolicTest, ConstructFromActualNoTies) {
 }
 
 TEST_F(StrideSymbolicTest, ConstructFromActualWithTies) {
-  Stride::Actual actual({-1, -10, 10, 100});
+  Stride::Actual actual({-1, -10, 10, 100}, {10, 10, 1, 10});
   Stride::Symbolic symbolic(actual);
   EXPECT_EQ(symbolic.size(), 4);
   EXPECT_EQ(symbolic[0], -1);
   EXPECT_EQ(symbolic[1], -2);
-  EXPECT_EQ(symbolic[2], 2);
-  EXPECT_EQ(symbolic[3], 4);
+  EXPECT_EQ(symbolic[2], 0);
+  EXPECT_EQ(symbolic[3], 3);
   EXPECT_TRUE(actual.is_degenerate());
-  EXPECT_TRUE(symbolic.is_degenerate());
+  EXPECT_FALSE(actual.is_degenerate());
+  EXPECT_FALSE(symbolic.valid());
 }
 
 TEST_F(StrideSymbolicTest, StatusFunctions) {
@@ -443,7 +454,7 @@ TEST_F(StrideSymbolicTest, Block) {
   EXPECT_DEATH(symbolic.block(-1), "Assertion `from_axis >= 0' failed.");
   EXPECT_DEATH(symbolic.block(5), "Assertion `from_axis < size\\(\\)' failed.");
   EXPECT_DEATH(symbolic.block(2, 2), "Assertion `from_axis < to_axis' failed.");
-  EXPECT_DEATH(symbolic.block(0, 5), "Assertion `to_axis < size\\(\\)' failed.");
+  EXPECT_DEATH(symbolic.block(0, 5), "Assertion `to_axis <= size\\(\\)' failed.");
 }
 
 TEST_F(StrideSymbolicTest, Resize) {
@@ -592,7 +603,7 @@ TEST_F(StrideSymbolicTest, NegativeStrides) {
 class StrideActualTest : public ::testing::Test {};
 
 TEST_F(StrideActualTest, ConstructFromVector) {
-  Stride::Actual actual({1, 10, 100, 1000});
+  Stride::Actual actual({1, 10, 100, 1000}, {10, 10, 10, 10});
   EXPECT_EQ(actual.size(), 4);
   EXPECT_EQ(actual[0], 1);
   EXPECT_EQ(actual[1], 10);
@@ -602,16 +613,14 @@ TEST_F(StrideActualTest, ConstructFromVector) {
 
 TEST_F(StrideActualTest, ConstructFromSymbolicAndSizes) {
   Stride::Symbolic symbolic({1, 2, 3, 4});
-  std::vector<VoxelIndex> sizes{10, 20, 30, 40};
-  Stride::Actual actual(symbolic, sizes);
+  Stride::Actual actual(symbolic, {10, 20, 30, 40});
   EXPECT_EQ(actual.size(), 4);
   EXPECT_EQ(actual[0], 1);
   EXPECT_EQ(actual[1], 10);
   EXPECT_EQ(actual[2], 200);
   EXPECT_EQ(actual[3], 6000);
 
-  sizes.resize(3);
-  EXPECT_DEATH(Stride::Actual(symbolic, sizes), "Assertion `symbolic.size\\(\\) == sizes.size\\(\\)' failed.");
+  EXPECT_DEATH(Stride::Actual(symbolic, {10, 20, 30}), "Assertion `symbolic.size\\(\\) == sizes.size\\(\\)' failed.");
 }
 
 TEST_F(StrideActualTest, ConstructFromMockHeader) {
@@ -624,32 +633,32 @@ TEST_F(StrideActualTest, ConstructFromMockHeader) {
 }
 
 TEST_F(StrideActualTest, StatusFunctions) {
-  Stride::Actual canonical({1, 10, 100, 1000});
+  Stride::Actual canonical({1, 10, 100, 1000}, {10, 10, 10, 10});
   EXPECT_TRUE(canonical.is_canonical());
   EXPECT_FALSE(canonical.is_degenerate());
   EXPECT_TRUE(canonical.is_sanitised());
   EXPECT_TRUE(canonical.valid());
 
   // Perfectly sane result if the third axis were of size 1
-  Stride::Actual duplicate({1, 10, 100, 100});
+  Stride::Actual duplicate({1, 10, 100, 100}, {10, 10, 1, 10});
   EXPECT_TRUE(duplicate.is_canonical());
   EXPECT_TRUE(duplicate.is_degenerate());
   EXPECT_TRUE(duplicate.is_sanitised());
   EXPECT_TRUE(duplicate.valid());
 
-  Stride::Actual permuted({100, 1, 10, 1000});
+  Stride::Actual permuted({100, 1, 10, 1000}, {10, 10, 10, 10});
   EXPECT_FALSE(permuted.is_canonical());
   EXPECT_FALSE(permuted.is_degenerate());
   EXPECT_TRUE(permuted.is_sanitised());
   EXPECT_TRUE(permuted.valid());
 
-  Stride::Actual negative({-1, 10, 100, 1000});
+  Stride::Actual negative({-1, 10, 100, 1000}, {10, 10, 10, 10});
   EXPECT_FALSE(negative.is_canonical());
   EXPECT_FALSE(negative.is_degenerate());
   EXPECT_TRUE(negative.is_sanitised());
   EXPECT_TRUE(negative.valid());
 
-  Stride::Actual invalid_present({0, 10, 100, 1000});
+  Stride::Actual invalid_present({0, 10, 100, 1000}, {10, 10, 10, 10});
   EXPECT_FALSE(invalid_present.is_canonical());
   EXPECT_FALSE(invalid_present.is_degenerate());
   EXPECT_FALSE(invalid_present.is_sanitised());
@@ -657,13 +666,14 @@ TEST_F(StrideActualTest, StatusFunctions) {
 }
 
 TEST_F(StrideActualTest, ToSymbolicCanonical) {
-  Stride::Actual canonical({1, 10, 100, 1000});
+  Stride::Actual canonical({1, 10, 100, 1000}, {10, 10, 10, 10});
   Stride::Symbolic symbolic = canonical.symbolic();
   EXPECT_EQ(symbolic.size(), 4);
   EXPECT_TRUE(symbolic.is_canonical());
 }
+
 TEST_F(StrideActualTest, ToSymbolicNegatives) {
-  Stride::Actual negatives({-1, -10, 100, 1000});
+  Stride::Actual negatives({-1, -10, 100, 1000}, {10, 10, 10, 10});
   Stride::Symbolic symbolic = negatives.symbolic();
   EXPECT_EQ(symbolic.size(), 4);
   EXPECT_EQ(symbolic[0], -1);
@@ -673,7 +683,7 @@ TEST_F(StrideActualTest, ToSymbolicNegatives) {
 }
 
 TEST_F(StrideActualTest, ToSymbolicTies) {
-  Stride::Actual tie({10, 1, 1, 100});
+  Stride::Actual tie({10, 1, 1, 100}, {10, 10, 1, 10});
   Stride::Symbolic symbolic = tie.symbolic();
   EXPECT_EQ(symbolic.size(), 4);
   EXPECT_EQ(symbolic[0], 3);
@@ -684,7 +694,7 @@ TEST_F(StrideActualTest, ToSymbolicTies) {
   EXPECT_TRUE(symbolic.is_degenerate());
 }
 TEST_F(StrideActualTest, ToSymbolicNoncanonical) {
-  Stride::Actual permuted({10, 100, 1000, 1});
+  Stride::Actual permuted({10, 100, 1000, 1}, {10, 10, 10, 10});
   Stride::Symbolic symbolic = permuted.symbolic();
   EXPECT_EQ(symbolic.size(), 4);
   EXPECT_EQ(symbolic[0], 2);
@@ -703,35 +713,19 @@ TEST_F(StrideActualTest, Match) {
   EXPECT_FALSE(actual.match(header3));
 }
 
-// =============================================================================
-// Offset function tests (New implementation)
-// =============================================================================
-
-class StrideOffsetTest : public ::testing::Test {};
-
-TEST_F(StrideOffsetTest, PositiveStrides) {
-  MockHeader header({10, 20, 30}, {1, 10, 200});
-  auto offset = Stride::offset(header);
-  EXPECT_EQ(offset, 0);
+TEST_F(StrideActualTest, OffsetPositiveStrides) {
+  Stride::Actual actual({1, 10, 200}, {10, 20, 30});
+  EXPECT_EQ(actual.offset(), 0);
 }
 
-TEST_F(StrideOffsetTest, NegativeStrides) {
-  MockHeader header({10, 20, 30}, {-1, -10, -200});
-  auto offset = Stride::offset(header);
-  EXPECT_EQ(offset, 9 + 190 + 5800);
+TEST_F(StrideActualTest, OffsetNegativeStrides) {
+  Stride::Actual actual({-1, -10, -200}, {10, 20, 30});
+  EXPECT_EQ(actual.offset(), 9 + 190 + 5800);
 }
 
-TEST_F(StrideOffsetTest, MixedStrides) {
-  MockHeader header({10, 20, 30}, {1, -10, 200});
-  auto offset = Stride::offset(header);
-  EXPECT_EQ(offset, 190);
-}
-
-TEST_F(StrideOffsetTest, WithActualStrides) {
-  MockHeader header({10, 20, 30}, {1, 10, 200});
-  Stride::Actual actual(header);
-  auto offset = Stride::offset(actual, header);
-  EXPECT_EQ(offset, 0);
+TEST_F(StrideActualTest, OffsetMixedStrides) {
+  Stride::Actual actual({1, -10, 200}, {10, 20, 30});
+  EXPECT_EQ(actual.offset(), 190);
 }
 
 // =============================================================================
@@ -1017,11 +1011,15 @@ TEST_F(StrideIntegrationTest, SymbolicToActualConsistency) {
   EXPECT_EQ(actual_new[1], header.stride(1));
   EXPECT_EQ(actual_new[2], header.stride(2));
   EXPECT_EQ(actual_new[3], header.stride(3));
+
+  // Offsets should also match
+  auto offset_legacy = Stride::Legacy::offset(header);
+  EXPECT_EQ(actual_new.offset(), offset_legacy);
 }
 
 TEST_F(StrideIntegrationTest, ActualToSymbolicConsistency) {
   // New implementation
-  Stride::Actual actual_new({1, 10, 200, 6000});
+  Stride::Actual actual_new({1, 10, 200, 6000}, {10, 20, 30, 40});
   Stride::Symbolic symbolic_new = actual_new.symbolic();
 
   // Legacy implementation
@@ -1048,19 +1046,6 @@ TEST_F(StrideIntegrationTest, OrderConsistency) {
   EXPECT_EQ(order_new.size(), order_legacy.size());
   for (size_t i = 0; i < order_new.size(); ++i)
     EXPECT_EQ(order_new[i], order_legacy[i]);
-}
-
-TEST_F(StrideIntegrationTest, OffsetConsistency) {
-  // New implementation
-  MockHeader header1({10, 20, 30}, {-1, -10, -200});
-  auto offset_new = Stride::offset(header1);
-
-  // Legacy implementation
-  MockHeader header2({10, 20, 30}, {-1, -10, -200});
-  auto offset_legacy = Stride::Legacy::offset(header2);
-
-  // Results should match
-  EXPECT_EQ(offset_new, offset_legacy);
 }
 
 // New Stride::Symbolic::sanitise() is _not_ identical to Stride::Legacy::sanitise()
@@ -1137,6 +1122,56 @@ TEST_F(StrideIntegrationTest, NearestMatchConsistency) {
   }
 }
 
+// TODO Compare the new and legacy handling in the presence of unity-sized axes
+TEST_F(StrideIntegrationTest, UnityAxisConsistency) {
+  {
+    std::vector<VoxelIndex> sizes_new({10, 1, 10, 10});
+    Stride::Symbolic symbolic_new({4, 3, 2, 1});
+    Stride::Actual actual_new(symbolic_new, sizes_new);
+    MockHeader header_legacy({10, 1, 10, 10}, {4, 3, 2, 1});
+    Stride::Legacy::actualise(header_legacy);
+    EXPECT_EQ(actual_new[0], header_legacy.stride(0));
+    EXPECT_EQ(actual_new[1], header_legacy.stride(1));
+    EXPECT_EQ(actual_new[2], header_legacy.stride(2));
+    EXPECT_EQ(actual_new[3], header_legacy.stride(3));
+  }
+  {
+    std::vector<VoxelIndex> sizes_new({10, 10, 10, 1});
+    Stride::Symbolic symbolic_new({4, 3, 2, 1});
+    Stride::Actual actual_new(symbolic_new, sizes_new);
+    MockHeader header_legacy({10, 10, 10, 1}, {4, 3, 2, 1});
+    Stride::Legacy::actualise(header_legacy);
+    EXPECT_EQ(actual_new[0], header_legacy.stride(0));
+    EXPECT_EQ(actual_new[1], header_legacy.stride(1));
+    EXPECT_EQ(actual_new[2], header_legacy.stride(2));
+    EXPECT_EQ(actual_new[3], header_legacy.stride(3));
+  }
+  {
+    std::vector<VoxelIndex> sizes_new({10, 1, 10, 10});
+    Stride::Actual actual_new(Stride::Symbolic({4, 3, 2, 1}), sizes_new);
+    Stride::Symbolic symbolic_new(actual_new, sizes_new);
+    MockHeader header_legacy({10, 1, 10, 10}, {100, 100, 10, 1});
+    Stride::Legacy::sanitise(header_legacy);
+    Stride::Legacy::symbolise(header_legacy);
+    EXPECT_EQ(symbolic_new[0], header_legacy.stride(0));
+    EXPECT_EQ(symbolic_new[1], header_legacy.stride(1));
+    EXPECT_EQ(symbolic_new[2], header_legacy.stride(2));
+    EXPECT_EQ(symbolic_new[3], header_legacy.stride(3));
+  }
+  {
+    std::vector<VoxelIndex> sizes_new({10, 10, 10, 1});
+    Stride::Actual actual_new(Stride::Symbolic({4, 3, 2, 1}), sizes_new);
+    Stride::Symbolic symbolic_new(actual_new, sizes_new);
+    MockHeader header_legacy({10, 10, 10, 1}, {100, 10, 1, 1});
+    Stride::Legacy::sanitise(header_legacy);
+    Stride::Legacy::symbolise(header_legacy);
+    EXPECT_EQ(symbolic_new[0], header_legacy.stride(0));
+    EXPECT_EQ(symbolic_new[1], header_legacy.stride(1));
+    EXPECT_EQ(symbolic_new[2], header_legacy.stride(2));
+    EXPECT_EQ(symbolic_new[3], header_legacy.stride(3));
+  }
+}
+
 // =============================================================================
 // Invalid value tests
 // =============================================================================
@@ -1179,7 +1214,7 @@ TEST_F(StrideInvalidValueTest, SymbolicInvalidValues) {
 
 TEST_F(StrideInvalidValueTest, ActualInvalidValues) {
   // Zero strides
-  Stride::Actual with_zero({0, 10, 100});
+  Stride::Actual with_zero({0, 10, 100}, {10, 10, 10});
   EXPECT_FALSE(with_zero.valid());
 }
 
@@ -1192,7 +1227,7 @@ class StrideDemonstrationTest : public ::testing::Test {};
 const Stride::Order true_order({3, 0, 1, 2});
 const Stride::Permutation true_permutation({1, 2, 3, 0});
 const Stride::Symbolic true_symbolic({-2, -3, 4, 1});
-const Stride::Actual true_actual({-10, -320, 10240, 1});
+const Stride::Actual true_actual({-10, -320, 10240, 1}, {32, 32, 20, 10});
 
 TEST_F(StrideDemonstrationTest, ActualToSymbolic) {
   MockHeader header({32, 32, 20, 10}, {-10, -320, 10240, 1});

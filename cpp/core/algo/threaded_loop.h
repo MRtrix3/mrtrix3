@@ -241,13 +241,15 @@ namespace MR {
 
 namespace {
 template <class StrideOrderType> Axes::Subset get_inner_axes(const StrideOrderType &axes, const size_t num_inner_axes) {
+  assert(axes.valid());
   assert(num_inner_axes > 0);
-  return static_cast<Axes::Subset>(axes.head(num_inner_axes));
+  return axes.head(num_inner_axes);
 }
 
 template <class StrideOrderType> Axes::Subset get_outer_axes(const StrideOrderType &axes, const size_t num_inner_axes) {
+  assert(axes.valid());
   assert(num_inner_axes > 0);
-  return static_cast<Axes::Subset>(axes.tail(axes.size() - num_inner_axes));
+  return axes.tail(axes.size() - num_inner_axes);
 }
 
 template <class HeaderType>

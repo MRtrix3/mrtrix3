@@ -152,8 +152,7 @@ public:
    * image in subsequent code.*/
   Image with_direct_io(const Stride::Permutation &with_permutation);
   Image with_direct_io(const ArrayIndex contiguous_axis);
-  Image with_direct_io(const Stride::Symbolic &with_symbolic);
-  Image with_direct_io();
+  Image with_direct_io(std::optional<Stride::Symbolic> with_symbolic = std::nullopt);
 
   //! return RAM address of current voxel
   /*! \note this will only work if image access is direct (i.e. for a
@@ -182,7 +181,7 @@ protected:
   void *data_pointer;
   //! voxel indices
   std::vector<VoxelIndex> x;
-  //! voxel indices
+  //! actualised strides
   Stride::Actual strides;
   //! offset to currently pointed-to voxel
   MemIndex data_offset;
@@ -299,11 +298,11 @@ template <typename ValueType> Image<ValueType> Header::get_image(bool read_write
   return Image<ValueType>(buffer, std::nullopt);
 }
 
-template <typename ValueType>                   //
-FORCE_INLINE Image<ValueType>::Image()          //
-    : data_pointer(nullptr),                    //
-      data_offset(0),                           //
-      strides(Stride::Actual::vector_type()) {} //
+template <typename ValueType>          //
+FORCE_INLINE Image<ValueType>::Image() //
+    : data_pointer(nullptr),           //
+      strides(),                       //
+      data_offset(0) {}                //
 
 template <typename ValueType>
 Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_p,
@@ -312,12 +311,12 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
       data_pointer(buffer->get_data_pointer()),
       x(ndim(), VoxelIndex(0)),
       strides(desired_strides.has_value() ? Stride::Actual(*desired_strides, *buffer) : Stride::Actual(*buffer)),
-      data_offset(Stride::offset(*this)) {
+      data_offset(strides.offset()) {
   assert(buffer);
   assert(data_pointer || buffer->get_io());
   DEBUG("image \"" + name() + "\" initialised" +                 //
-        " with actual strides = " + str(strides) + "," +         //
-        " start = " + str(data_offset) + "," +                   //
+        " with actual strides = " + str(strides) +               //
+        " (offset = " + str(data_offset) + ")," +                //
         " using " + (is_direct_io() ? "" : "in") + "direct IO"); //
 }
 
@@ -328,7 +327,7 @@ template <typename ValueType> Image<ValueType>::~Image() {
       if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
         auto data_buffer = std::move(buffer->data_buffer);
         TmpImage<ValueType> src = {
-            *buffer, data_buffer.get(), std::vector<VoxelIndex>(ndim(), VoxelIndex(0)), strides, Stride::offset(*this)};
+            *buffer, data_buffer.get(), std::vector<VoxelIndex>(ndim(), VoxelIndex(0)), strides, strides.offset()};
         Image<ValueType> dest(buffer);
         threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
       }
@@ -346,8 +345,11 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
   return with_direct_io(Stride::Permutation::contiguous_along_axis(ndim(), contiguous_axis));
 }
 
-template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(const Stride::Symbolic &with_symbolic) {
-  assert(with_symbolic.is_sanitised());
+template <typename ValueType>
+Image<ValueType> Image<ValueType>::with_direct_io(std::optional<Stride::Symbolic> with_symbolic) {
+  if (with_symbolic.has_value()) {
+    assert(with_symbolic->is_sanitised());
+  }
   if (buffer->data_buffer)
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
   if (!buffer->get_io())
@@ -355,14 +357,11 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
   if (!buffer.unique())
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
-  bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1) ||
-                 !(buffer->intensity_offset() == 0.0 && buffer->intensity_scale() == 1.0);
-  const Stride::Actual current_actual(Stride::Actual(*this));
-  std::vector<VoxelIndex> sizes(ndim());
-  for (ArrayIndex axis = 0; axis != ndim(); ++axis)
-    sizes[axis] = size(axis);
-  const Stride::Actual with_actual(with_symbolic.empty() ? current_actual : Stride::Actual(with_symbolic, sizes));
-  preload |= (with_actual != current_actual);
+  const Stride::Actual with_actual(with_symbolic.has_value() ? Stride::Actual(*with_symbolic, Stride::get_sizes(*this))
+                                                             : strides);
+  const bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1) ||
+                       (buffer->intensity_offset() != 0.0) || (buffer->intensity_scale() != 1.0) ||
+                       (with_actual != strides);
 
   if (!preload)
     return *this;
@@ -382,15 +381,11 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
                                 buffer->data_buffer.get(),
                                 std::vector<VoxelIndex>(ndim(), VoxelIndex(0)),
                                 with_actual,
-                                Stride::offset(with_actual, *this)};
+                                with_actual.offset()};
     threaded_copy_with_progress_message("preloading data for \"" + name() + "\"", src, dest);
   }
 
   return Image(buffer, with_actual.symbolic());
-}
-
-template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io() {
-  return with_direct_io(Stride::Symbolic(*this));
 }
 
 template <typename ValueType>
@@ -471,7 +466,7 @@ save(ImageType &&x, std::string_view filename, bool use_multi_threading = true) 
 
 //! display the contents of an image in MRView (for debugging only)
 template <class ImageType> typename enable_if_image_type<ImageType, void>::type display(ImageType &x) {
-  std::string filename = save(x, "-");
+  std::string filename = save(x, File::name_tempfile(".mif"));
   CONSOLE("displaying image \"" + filename + "\"");
   if (system(("bash -c \"mrview " + filename + "\"").c_str()))
     WARN(std::string("error invoking viewer: ") + strerror(errno));

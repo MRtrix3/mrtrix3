@@ -289,7 +289,10 @@ void run() {
         mask_img = mask_hdr.get_image<bool>();
 
       if (do_weighting && !map_hdr) {
+        // TODO Starting with dec_hdr would probably fix;
+        //   but leave problem in place for now to try to resolve
         auto int_hdr = Header(dec_img);
+        // TODO Change to .ndim() = 3?
         int_hdr.size(3) = 1;
         w_img = Image<value_type>::scratch(int_hdr, "FOD integral map");
       }

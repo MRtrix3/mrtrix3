@@ -421,7 +421,7 @@ void run() {
     linear_transform = linear_transform * flip;
   }
 
-  Stride::Symbolic stride(input_header);
+  std::optional<Stride::Symbolic> stride;
 
   // Detect FOD image
   const bool is_possible_fod_image =
@@ -451,7 +451,7 @@ void run() {
     Math::Sphere::spherical2cartesian(directions_az_in, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
-    stride.reorder(Stride::Permutation::volume_contiguous);
+    stride = input_header.strides().reordered(Stride::Permutation::volume_contiguous);
   }
 
   // Intensity / FOD modulation

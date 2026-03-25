@@ -45,16 +45,14 @@ namespace MR::Filter {
 class Smooth : public Base {
 
 public:
-  template <class HeaderType>
-  Smooth(const HeaderType &in) : Base(in), stdev(3, 0.0), stride_permutation(in), zero_boundary(false) {
+  template <class HeaderType> Smooth(const HeaderType &in) : Base(in), stdev(3, 0.0), zero_boundary(false) {
     for (int i = 0; i < 3; i++)
       stdev[i] = in.spacing(i);
     datatype() = DataType::Float32;
   }
 
   template <class HeaderType>
-  Smooth(const HeaderType &in, const std::vector<default_type> &stdev_in)
-      : Base(in), stdev(3, 0.0), stride_permutation(in) {
+  Smooth(const HeaderType &in, const std::vector<default_type> &stdev_in) : Base(in), stdev(3, 0.0) {
     set_stdev(stdev_in);
     datatype() = DataType::Float32;
   }
@@ -127,18 +125,15 @@ public:
       progress.reset(new ProgressBar(message, axes_to_smooth + 1));
     }
 
+    const Stride::Permutation permutation(in_and_output);
+
     for (ArrayIndex dim = 0; dim < 3; dim++) {
       if (stdev[dim] > 0) {
-        Axes::Subset axes(in_and_output.ndim(), dim);
-        ArrayIndex axdim = 1;
-        for (StdIndex i = 0; i < in_and_output.ndim(); ++i) {
-          if (stride_permutation[i] == dim)
-            continue;
-          axes[axdim++] = stride_permutation[i];
-        }
-        DEBUG("smoothing dimension " + str(dim) + " in place with stride order: " + str(axes));
+        const Axes::Subset axes =
+            permutation.conformed(Stride::Permutation::contiguous_along_axis(in_and_output.ndim(), dim)).order();
+        DEBUG("smoothing dimension " + str(dim) + " in place with axis order: " + str(axes));
         SmoothFunctor1D<ImageType> smooth(in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
-        ThreadedLoop(in_and_output, axes, 1).run(smooth, in_and_output);
+        ThreadedLoop(in_and_output, axes, 2).run(smooth, in_and_output);
         if (progress)
           ++(*progress);
       }
@@ -148,7 +143,6 @@ public:
 protected:
   CuboidExtent extent;
   std::vector<default_type> stdev;
-  const Stride::Permutation stride_permutation;
   bool zero_boundary;
 
   template <class ImageType> class SmoothFunctor1D {

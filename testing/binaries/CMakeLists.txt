@@ -262,6 +262,7 @@ add_bash_binary_test(mrconvert/insert_axis)
 add_bash_binary_test(mrconvert/multifile)
 add_bash_binary_test(mrconvert/multifile_singlevoxel)
 add_bash_binary_test(mrconvert/passthrough)
+add_bash_binary_test(mrconvert/pr3259)
 add_bash_binary_test(mrconvert/real2complex)
 add_bash_binary_test(mrconvert/strides)
 

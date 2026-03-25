@@ -33,6 +33,7 @@ public:
   explicit Subset(const Base &that) : Base(that) {}
   Subset head(const ssize_t count) const;
   Subset tail(const ssize_t count) const;
+  bool valid() const { return *std::min_element(begin(), end()) >= 0; }
 };
 
 class permutations_type : public std::array<uint8_t, 3> {

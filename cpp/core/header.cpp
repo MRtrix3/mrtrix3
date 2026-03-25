@@ -476,9 +476,8 @@ std::string Header::description(bool print_all) const {
   desc += "\n";
 
   desc += "  Data strides:      [ ";
-  const Stride::Symbolic strides(*this);
   for (i = 0; i < ndim(); i++)
-    desc += stride(i) ? str(strides[i]) + " " : "? ";
+    desc += stride(i) ? str(static_cast<int>(stride(i))) + " " : "? ";
   desc += "]\n";
 
   if (io) {
@@ -582,7 +581,7 @@ void Header::sanitise_transform() {
 void Header::realign_transform() {
   realignment_.orig_transform_ = transform();
   realignment_.applied_transform_ = Realignment::applied_transform_type::Identity();
-  realignment_.orig_strides_ = Stride::Symbolic(*this);
+  realignment_.orig_strides_ = strides();
   realignment_.orig_keyval_ = keyval();
 
   if (!do_realign_transform)
