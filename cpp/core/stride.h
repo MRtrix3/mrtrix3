@@ -377,7 +377,7 @@ public:
   bool empty() const { return data_.empty(); }
   size_t size() const { return data_.size(); }
 
-  operator const vector_type &() const { return data_; }
+  explicit operator const vector_type &() const { return data_; }
   ValueType operator[](const ArrayIndex index) const {
     assert(index >= 0 && index < size());
     return data_[index];
@@ -450,11 +450,11 @@ public:
   using Base<ArrayIndex>::vector_type;
   static constexpr value_type invalid = -1;
 
+  explicit Order() = default;
+  Order(const Order &) = default;
   explicit Order(const Permutation &permutation);
   explicit Order(const Symbolic &symbolic);
   explicit Order(const vector_type &data);
-  Order(const Order &) = default;
-  explicit Order() = default;
 
   using Base::operator=;
   operator Axes::Subset() const;
@@ -479,12 +479,12 @@ public:
   using Base<ArrayIndex>::vector_type;
   static constexpr value_type invalid = -1;
 
+  explicit Permutation() = default;
+  Permutation(const Permutation &) = default;
   explicit Permutation(const vector_type &data);
   explicit Permutation(const Order &order);
   explicit Permutation(const Symbolic &symbolic);
   explicit Permutation(const Actual &actual);
-  Permutation(const Permutation &) = default;
-  explicit Permutation() = default;
   template <class HeaderType> explicit Permutation(const HeaderType &header);
 
   using Base::operator=;
@@ -520,14 +520,15 @@ public:
 
   // TODO Consider alternative constructor from Actual::vector_type,
   //   so that the terminal message better reflects source of input stride information
+  explicit Symbolic() = default;
+  Symbolic(const Symbolic &) = default;
   explicit Symbolic(const vector_type &in);
   explicit Symbolic(const Permutation &in);
   explicit Symbolic(const Header &header);
-  template <class HeaderType> explicit Symbolic(const HeaderType &image);
   explicit Symbolic(const Actual &actual); // TODO Consider removing?
-  explicit Symbolic(const std::vector<MemIndex> &actual, const std::vector<VoxelIndex> &sizes);
-  Symbolic(const Symbolic &) = default;
-  explicit Symbolic() = default;
+  template <class HeaderType> explicit Symbolic(const HeaderType &image);
+  explicit Symbolic(const std::vector<MemIndex> &actual,
+                    const std::vector<VoxelIndex> &sizes); // TODO Can this be reverted back to an Actual instance?
 
   using Base::operator=;
 
@@ -577,14 +578,19 @@ public:
   explicit Actual(const Symbolic &symbolic, const std::vector<ArrayIndex> &sizes);
   explicit Actual(const vector_type &actual, const std::vector<ArrayIndex> &sizes);
 
-  using Base::operator=;
+  Actual &operator=(const Actual &that) {
+    data_ = that.data_;
+    offset_ = that.offset_;
+    return *this;
+  }
 
   bool is_canonical() const override;
   bool is_degenerate() const override;
   bool is_sanitised() const override { return valid(); }
   bool valid() const override;
 
-  template <class HeaderType> bool match(const HeaderType &) const;
+  template <class HeaderType>
+  typename std::enable_if<MR::is_header_type<HeaderType>::value, bool>::type match(const HeaderType &) const;
   MemIndex offset() const { return offset_; }
   Order order() const;
   Permutation permutation() const;
@@ -594,7 +600,9 @@ private:
   MemIndex offset_;
 };
 
-template <class HeaderType> std::vector<VoxelIndex> get_sizes(const HeaderType &image) {
+template <class HeaderType>
+typename std::enable_if<MR::is_header_type<HeaderType>::value, std::vector<VoxelIndex>>::type
+get_sizes(const HeaderType &image) {
   std::vector<VoxelIndex> result(image.ndim());
   for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(image.ndim()); ++axis)
     result[axis] = image.size(axis);
@@ -655,7 +663,9 @@ template <class HeaderType>
 Actual::Actual(const HeaderType &image)
     : Actual(Stride::Symbolic(image).sanitised(get_sizes(image)), get_sizes(image)) {}
 
-template <class HeaderType> bool Actual::match(const HeaderType &image) const {
+template <class HeaderType>
+typename std::enable_if<MR::is_header_type<HeaderType>::value, bool>::type
+Actual::match(const HeaderType &image) const {
   if (size() != image.ndim())
     return false;
   for (ArrayIndex axis = 0; axis != size(); ++axis) {

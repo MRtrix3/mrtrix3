@@ -310,7 +310,8 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
     : buffer(buffer_p),
       data_pointer(buffer->get_data_pointer()),
       x(ndim(), VoxelIndex(0)),
-      strides(desired_strides.has_value() ? Stride::Actual(*desired_strides, *buffer) : Stride::Actual(*buffer)),
+      strides(desired_strides.has_value() ? Stride::Actual(*desired_strides, Stride::get_sizes(*buffer))
+                                          : Stride::Actual(*buffer)),
       data_offset(strides.offset()) {
   assert(buffer);
   assert(data_pointer || buffer->get_io());
@@ -357,8 +358,9 @@ Image<ValueType> Image<ValueType>::with_direct_io(std::optional<Stride::Symbolic
   if (!buffer.unique())
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
-  const Stride::Actual with_actual(with_symbolic.has_value() ? Stride::Actual(*with_symbolic, Stride::get_sizes(*this))
-                                                             : strides);
+  Stride::Actual with_actual(strides);
+  if (with_symbolic.has_value())
+    with_actual = Stride::Actual(*with_symbolic, Stride::get_sizes(*this));
   const bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1) ||
                        (buffer->intensity_offset() != 0.0) || (buffer->intensity_scale() != 1.0) ||
                        (with_actual != strides);

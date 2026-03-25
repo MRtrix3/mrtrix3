@@ -20,6 +20,7 @@
 #include "axes.h"
 #include "image_helpers.h"
 #include "progressbar.h"
+#include "stride.h"
 
 namespace MR {
 //! \cond skip

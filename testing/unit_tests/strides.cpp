@@ -32,6 +32,7 @@ public:
   MockHeader(const std::vector<size_t> &sizes, const std::vector<ssize_t> &strides)
       : sizes_(sizes), strides_(strides) {}
 
+  std::string name() const { return "Mockheader"; }
   size_t ndim() const { return sizes_.size(); }
   size_t size(size_t axis) const { return sizes_[axis]; }
   ssize_t stride(size_t axis) const { return strides_[axis]; }
@@ -1149,7 +1150,7 @@ TEST_F(StrideIntegrationTest, UnityAxisConsistency) {
   {
     std::vector<VoxelIndex> sizes_new({10, 1, 10, 10});
     Stride::Actual actual_new(Stride::Symbolic({4, 3, 2, 1}), sizes_new);
-    Stride::Symbolic symbolic_new(actual_new, sizes_new);
+    Stride::Symbolic symbolic_new(static_cast<Stride::Actual::vector_type>(actual_new), sizes_new);
     MockHeader header_legacy({10, 1, 10, 10}, {100, 100, 10, 1});
     Stride::Legacy::sanitise(header_legacy);
     Stride::Legacy::symbolise(header_legacy);
@@ -1161,7 +1162,7 @@ TEST_F(StrideIntegrationTest, UnityAxisConsistency) {
   {
     std::vector<VoxelIndex> sizes_new({10, 10, 10, 1});
     Stride::Actual actual_new(Stride::Symbolic({4, 3, 2, 1}), sizes_new);
-    Stride::Symbolic symbolic_new(actual_new, sizes_new);
+    Stride::Symbolic symbolic_new(static_cast<Stride::Actual::vector_type>(actual_new), sizes_new);
     MockHeader header_legacy({10, 10, 10, 1}, {100, 10, 1, 1});
     Stride::Legacy::sanitise(header_legacy);
     Stride::Legacy::symbolise(header_legacy);

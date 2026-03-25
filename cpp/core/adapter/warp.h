@@ -69,7 +69,7 @@ public:
   bool valid() const { return interp.valid(); }
   VoxelIndex size(const ArrayIndex axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
   default_type spacing(const ArrayIndex axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
-  std::string_view name() const { return interp.name(); }
+  std::string name() const { return interp.name(); }
 
   Stride::Actual::value_type stride(const ArrayIndex axis) const { return interp.stride(axis); }
 

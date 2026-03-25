@@ -20,7 +20,6 @@
 #include "axes.h"
 #include "datatype.h"
 #include "debug.h"
-#include "stride.h"
 
 namespace MR {
 
