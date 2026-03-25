@@ -267,7 +267,7 @@ void log_available_adapters(const std::vector<dawn::native::Adapter> &adapters) 
 SelectedAdapter request_adapter_by_index(const wgpu::InstanceDescriptor &instance_descriptor,
                                          const wgpu::RequestAdapterOptions &adapter_options,
                                          const uint32_t adapter_index) {
-  dawn::native::Instance dawn_instance(&instance_descriptor);
+  const dawn::native::Instance dawn_instance(&instance_descriptor);
   const std::vector<dawn::native::Adapter> adapters = dawn_instance.EnumerateAdapters(&adapter_options);
 
   if (adapters.empty()) {
@@ -856,7 +856,8 @@ Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
   // Force the strides to match the memory layout written by download_texture:
   // Channel (if present) is fastest, then X, then Y, then Z.
   for (size_t i = 0; i < texture_dims; ++i) {
-    source_header.stride(i) = has_channel_axis ? i + 2 : i + 1;
+    const ssize_t stride_offset = has_channel_axis ? 2 : 1;
+    source_header.stride(i) = static_cast<ssize_t>(i) + stride_offset;
   }
   if (has_channel_axis) {
     source_header.stride(texture_dims) = 1;
