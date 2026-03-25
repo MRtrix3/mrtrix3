@@ -277,7 +277,9 @@ Permutation::Permutation(const Symbolic &symbolic) : Base(symbolic.size(), Permu
     if (symbolic[axis] == Symbolic::invalid)
       data_[axis] = perm_index;
   }
+#ifdef MRTRIX_DEBUG_STRIDES
   DEBUG("From symbolic strides [" + str(symbolic) + "]," + " constructed permutation [" + str(*this) + "]");
+#endif
 }
 
 Permutation::Permutation(const Actual &actual) : Permutation(Symbolic(actual)) {}
@@ -376,6 +378,7 @@ void Permutation::sanitise() {
       throw Exception("Cannot sanitise an axis permutation that contains invalid values");
     sorter.insert({data_[index], index});
   }
+#ifdef MRTRIX_DEBUG_STRIDES
   std::ostringstream oss;
   oss << "Sanitised permutation [" << *this << "]";
   value_type axis = 0;
@@ -383,6 +386,7 @@ void Permutation::sanitise() {
     data_[sorted.second] = axis++;
   oss << " as [" << *this << "]";
   DEBUG(oss.str());
+#endif
   assert(is_sanitised());
 }
 
@@ -463,8 +467,10 @@ Symbolic::Symbolic(const Actual &actual) : Base(actual.size(), Symbolic::invalid
       index = counter;
     }
   }
+#ifdef MRTRIX_DEBUG_STRIDES
   DEBUG("From actual strides [" + str(actual) + "]," +         //
         " constructed symbolic strides [" + str(*this) + "]"); //
+#endif
   // If Actual contains ties, then Symbolic will not be sanitised as ties will be preserved
   if (actual.is_degenerate()) {
     assert(valid());
@@ -664,6 +670,7 @@ void Symbolic::reorder(const Permutation &permutation) {
   for (ArrayIndex axis = 0; axis != size(); ++axis)
     sorted.emplace_back(Data(axis, data_[axis], permutation[axis]));
   std::sort(sorted.begin(), sorted.end());
+#ifdef MRTRIX_DEBUG_STRIDES
   std::ostringstream oss;
   oss << "Symbolic strides [" << *this << "]"
       << " following application of permutation [" << permutation << "]";
@@ -672,6 +679,7 @@ void Symbolic::reorder(const Permutation &permutation) {
         (order_indexed + 1) * (sorted[order_indexed].current_symbolic < 0 ? -1 : 1);
   oss << " are [" << *this << "]";
   DEBUG(oss.str());
+#endif
   assert(valid());
 }
 
@@ -701,6 +709,7 @@ void Symbolic::sanitise() {
     if (data_[axis] == Symbolic::invalid)
       result[axis] = ++counter;
   }
+#ifdef MRTRIX_DEBUG_STRIDES
   if (result != data_) {
     std::ostringstream oss;
     oss << "Symbolic strides [" << *this << "]";
@@ -708,6 +717,7 @@ void Symbolic::sanitise() {
     oss << " sanitised as [" << *this << "]";
     DEBUG(oss.str());
   }
+#endif
   assert(is_sanitised());
 }
 
@@ -770,10 +780,12 @@ Actual::Actual(const Symbolic &symbolic, const std::vector<VoxelIndex> &sizes)
     if (data_[order[i]] < 0)
       offset_ += static_cast<MemIndex>(-data_[order[i]]) * (sizes[order[i]] - 1);
   }
+#ifdef MRTRIX_DEBUG_STRIDES
   DEBUG("Symbolic strides [" + str(symbolic) + "]" + //
         " actualised using sizes " + str(sizes) +    //
         " as [" + str(*this) + "]" +                 //
         " with offset " + str(offset_));             //
+#endif
 }
 
 bool Actual::is_canonical() const {

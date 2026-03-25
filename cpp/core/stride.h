@@ -29,6 +29,8 @@
 #include "math/math.h"
 #include "types.h"
 
+// #define MRTRIX_DEBUG_STRIDES
+
 //! Functions to handle the memory layout of images
 /*! Strides are typically supplied as a symbolic list of increments,
  * representing the layout of the data in memory. In this symbolic
