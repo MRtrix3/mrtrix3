@@ -36,7 +36,7 @@ namespace MR
         class MaxNormSquaredFunctor { MEMALIGN(MaxNormSquaredFunctor)
           public:
             explicit MaxNormSquaredFunctor (default_type& overall_max_norm_squared) :
-                                            overall_max_norm_squared (overall_max_norm_squared),
+                                            overall_max_norm_squared (&overall_max_norm_squared),
                                             local_max_norm_squared (0.0) { }
 
             MaxNormSquaredFunctor (const MaxNormSquaredFunctor&) = default;
@@ -45,8 +45,8 @@ namespace MR
             MaxNormSquaredFunctor& operator= (MaxNormSquaredFunctor&&) = delete;
 
             ~MaxNormSquaredFunctor () {
-              std::lock_guard<std::mutex> lock (mutex());
-              overall_max_norm_squared = std::max (overall_max_norm_squared, local_max_norm_squared);
+              const std::lock_guard<std::mutex> lock (mutex());
+              *overall_max_norm_squared = std::max (*overall_max_norm_squared, local_max_norm_squared);
             }
 
             void operator() (Image<default_type>& update) {
@@ -63,7 +63,7 @@ namespace MR
               return max_norm_mutex;
             }
 
-            default_type& overall_max_norm_squared;
+            default_type* const overall_max_norm_squared;
             default_type local_max_norm_squared;
         };
 
