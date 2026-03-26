@@ -27,12 +27,37 @@
 #include <cstring>
 #include <memory>
 #include <numeric>
+#include <random>
 #include <string>
 #include <type_traits>
 #include <vector>
 
 using namespace MR;
 using namespace MR::GPU;
+
+namespace {
+std::vector<float> make_test_texture_data(uint32_t width, uint32_t height, uint32_t depth, uint32_t channels) {
+  const size_t voxel_count = static_cast<size_t>(width) * height * depth;
+  std::vector<float> data(voxel_count * channels, 0.0F);
+
+  // Generate random data for each voxel and channel
+  std::mt19937 rng(42); // Fixed seed for reproducibility
+  std::uniform_real_distribution<float> dist(0.0F, 1.0F);
+
+  for (uint32_t z = 0U; z < depth; ++z) {
+    for (uint32_t y = 0U; y < height; ++y) {
+      for (uint32_t x = 0U; x < width; ++x) {
+        const size_t voxel_idx = (static_cast<size_t>(z) * height + y) * width + x;
+        const size_t base = voxel_idx * channels;
+        for (uint32_t c = 0U; c < channels; ++c) {
+          data[base + c] = dist(rng);
+        }
+      }
+    }
+  }
+  return data;
+}
+} // namespace
 
 class GPUTest : public ::testing::Test {
 protected:
@@ -485,4 +510,123 @@ TEST_F(GPUTest, DownloadBufferAsVector) {
   const std::vector<int32_t> downloaded = context.download_buffer_as_vector<int32_t>(buffer);
 
   EXPECT_EQ(downloaded, host);
+}
+
+TEST_F(GPUTest, CopyTextureToTexture_Full) {
+  struct TestCase {
+    uint32_t channels = 0U;
+    TextureFormat format = TextureFormat::R32Float;
+  };
+
+  const std::array<TestCase, 2> test_cases = {{
+      {.channels = 1U, .format = TextureFormat::R32Float},
+      {.channels = 4U, .format = TextureFormat::RGBA32Float},
+  }};
+
+  for (const TestCase &test_case : test_cases) {
+    const uint32_t width = 4U;
+    const uint32_t height = 5U;
+    const uint32_t depth = 3U;
+    const std::vector<float> src_data = make_test_texture_data(width, height, depth, test_case.channels);
+    const TextureSpec texture_spec{.width = width, .height = height, .depth = depth, .format = test_case.format};
+
+    const auto src_texture = context.new_texture_from_host_memory(texture_spec, src_data);
+
+    // Copy to empty texture of same size and format
+    const auto dst_texture = context.new_empty_texture(texture_spec);
+
+    const ComputeContext::TextureCopyInfo copy_info{.width = width, .height = height, .depth = depth};
+    context.copy_texture_to_texture(src_texture, dst_texture, copy_info);
+
+    std::vector<float> downloaded_data(src_data.size(), 0.0F);
+    context.download_texture(dst_texture, downloaded_data);
+
+    EXPECT_EQ(downloaded_data, src_data);
+  }
+}
+
+TEST_F(GPUTest, CopyTextureToTexture_WithOffsets) {
+  const uint32_t width = 5U;
+  const uint32_t height = 4U;
+  const uint32_t depth = 3U;
+
+  const auto linear_index = [width, height](const uint32_t x, const uint32_t y, const uint32_t z) {
+    return static_cast<size_t>(x) +
+           static_cast<size_t>(width) * (static_cast<size_t>(y) + static_cast<size_t>(height) * z);
+  };
+
+  const std::vector<float> src_data = make_test_texture_data(width, height, depth, 1U);
+
+  const std::vector<float> dst_initial(static_cast<size_t>(width) * height * depth, -1.0F);
+
+  const TextureSpec texture_spec{
+      .width = width,
+      .height = height,
+      .depth = depth,
+      .format = TextureFormat::R32Float,
+  };
+
+  const Texture src_texture = context.new_texture_from_host_memory(texture_spec, src_data);
+  const Texture dst_texture = context.new_texture_from_host_memory(texture_spec, dst_initial);
+
+  const ComputeContext::TextureCopyInfo copy_info{
+      .srcX = 1U,
+      .srcY = 1U,
+      .srcZ = 1U,
+      .dstX = 2U,
+      .dstY = 0U,
+      .dstZ = 0U,
+      .width = 2U,
+      .height = 2U,
+      .depth = 2U,
+  };
+  context.copy_texture_to_texture(src_texture, dst_texture, copy_info);
+
+  std::vector<float> downloaded_data(dst_initial.size(), 0.0F);
+  context.download_texture(dst_texture, downloaded_data);
+
+  for (uint32_t z = 0U; z < depth; ++z) {
+    for (uint32_t y = 0U; y < height; ++y) {
+      for (uint32_t x = 0U; x < width; ++x) {
+        const bool is_within_dst_copy_region = x >= copy_info.dstX && x < copy_info.dstX + copy_info.width &&
+                                               y >= copy_info.dstY && y < copy_info.dstY + copy_info.height &&
+                                               z >= copy_info.dstZ && z < copy_info.dstZ + copy_info.depth;
+
+        if (is_within_dst_copy_region) {
+          const uint32_t src_x = copy_info.srcX + (x - copy_info.dstX);
+          const uint32_t src_y = copy_info.srcY + (y - copy_info.dstY);
+          const uint32_t src_z = copy_info.srcZ + (z - copy_info.dstZ);
+          EXPECT_FLOAT_EQ(downloaded_data[linear_index(x, y, z)], src_data[linear_index(src_x, src_y, src_z)]);
+        } else {
+          EXPECT_FLOAT_EQ(downloaded_data[linear_index(x, y, z)], dst_initial[linear_index(x, y, z)]);
+        }
+      }
+    }
+  }
+}
+
+TEST_F(GPUTest, CopyTextureToTexture_WithOffsetsOutOfRangeThrows) {
+  const TextureSpec texture_spec{
+      .width = 4U,
+      .height = 4U,
+      .depth = 2U,
+      .format = TextureFormat::R32Float,
+  };
+
+  const Texture src_texture = context.new_empty_texture(texture_spec);
+  const Texture dst_texture = context.new_empty_texture(texture_spec);
+
+  const ComputeContext::TextureCopyInfo copy_info{
+      .srcX = 3U,
+      .srcY = 1U,
+      .srcZ = 0U,
+      .dstX = 0U,
+      .dstY = 0U,
+      .dstZ = 0U,
+      .width = 2U,
+      .height = 1U,
+      .depth = 1U,
+  };
+
+  EXPECT_THROW(context.copy_texture_to_texture(src_texture, dst_texture, copy_info), Exception);
 }
