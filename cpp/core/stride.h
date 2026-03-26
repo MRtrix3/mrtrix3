@@ -573,10 +573,9 @@ public:
 
   Actual(const Actual &) = default;
   Actual();
-  template <class HeaderType> explicit Actual(const HeaderType &header);
-  template <class HeaderType> explicit Actual(const Symbolic &symbolic, const HeaderType &header);
-  explicit Actual(const Symbolic &symbolic, const std::vector<ArrayIndex> &sizes);
   explicit Actual(const vector_type &actual, const std::vector<ArrayIndex> &sizes);
+  template <class HeaderOrSizes> explicit Actual(const Symbolic &, const HeaderOrSizes &);
+  template <class HeaderType> explicit Actual(const HeaderType &header);
 
   Actual &operator=(const Actual &that) {
     data_ = that.data_;
@@ -658,6 +657,8 @@ template <class HeaderType>
 Actual::Actual(const Symbolic &symbolic, const HeaderType &image) : Actual(symbolic, get_sizes(image)) {
   assert(symbolic.is_sanitised());
 }
+
+template <> Actual::Actual(const Symbolic &symbolic, const std::vector<VoxelIndex> &sizes);
 
 template <class HeaderType>
 Actual::Actual(const HeaderType &image)

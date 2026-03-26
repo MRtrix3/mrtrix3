@@ -361,16 +361,33 @@ TEST_F(StrideSymbolicTest, ConstructFromActualNoTies) {
 }
 
 TEST_F(StrideSymbolicTest, ConstructFromActualWithTies) {
-  Stride::Actual actual({-1, -10, 10, 100}, {10, 10, 1, 10});
-  Stride::Symbolic symbolic(actual);
-  EXPECT_EQ(symbolic.size(), 4);
-  EXPECT_EQ(symbolic[0], -1);
-  EXPECT_EQ(symbolic[1], -2);
-  EXPECT_EQ(symbolic[2], 0);
-  EXPECT_EQ(symbolic[3], 3);
-  EXPECT_TRUE(actual.is_degenerate());
-  EXPECT_FALSE(actual.is_degenerate());
-  EXPECT_FALSE(symbolic.valid());
+  // Construction of Symbolic is agnostic to axis sizes
+  {
+    Stride::Actual actual({-1, -10, 10, 100}, {10, 10, 1, 10});
+    Stride::Symbolic symbolic(actual);
+    EXPECT_EQ(symbolic.size(), 4);
+    EXPECT_EQ(symbolic[0], -1);
+    EXPECT_EQ(symbolic[1], -2);
+    EXPECT_EQ(symbolic[2], 2);
+    EXPECT_EQ(symbolic[3], 4);
+    EXPECT_TRUE(symbolic.is_degenerate());
+    EXPECT_FALSE(symbolic.is_sanitised());
+    EXPECT_TRUE(symbolic.valid());
+  }
+  // Construction of Symbolic takes into account axis sizes
+  {
+    std::vector<VoxelIndex> sizes({10, 10, 1, 10});
+    Stride::Actual::vector_type actual({-1, -10, 10, 100});
+    Stride::Symbolic symbolic(actual, sizes);
+    EXPECT_EQ(symbolic.size(), 4);
+    EXPECT_EQ(symbolic[0], -1);
+    EXPECT_EQ(symbolic[1], -2);
+    EXPECT_EQ(symbolic[2], 0);
+    EXPECT_EQ(symbolic[3], 3);
+    EXPECT_FALSE(symbolic.is_degenerate());
+    EXPECT_FALSE(symbolic.is_sanitised());
+    EXPECT_FALSE(symbolic.valid());
+  }
 }
 
 TEST_F(StrideSymbolicTest, StatusFunctions) {
@@ -614,14 +631,15 @@ TEST_F(StrideActualTest, ConstructFromVector) {
 
 TEST_F(StrideActualTest, ConstructFromSymbolicAndSizes) {
   Stride::Symbolic symbolic({1, 2, 3, 4});
-  Stride::Actual actual(symbolic, {10, 20, 30, 40});
+  Stride::Actual actual(symbolic, std::vector<VoxelIndex>({10, 20, 30, 40}));
   EXPECT_EQ(actual.size(), 4);
   EXPECT_EQ(actual[0], 1);
   EXPECT_EQ(actual[1], 10);
   EXPECT_EQ(actual[2], 200);
   EXPECT_EQ(actual[3], 6000);
 
-  EXPECT_DEATH(Stride::Actual(symbolic, {10, 20, 30}), "Assertion `symbolic.size\\(\\) == sizes.size\\(\\)' failed.");
+  EXPECT_DEATH(Stride::Actual(symbolic, std::vector<VoxelIndex>({10, 20, 30})),
+               "Assertion `symbolic.size\\(\\) == sizes.size\\(\\)' failed.");
 }
 
 TEST_F(StrideActualTest, ConstructFromMockHeader) {

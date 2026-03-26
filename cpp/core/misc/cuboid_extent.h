@@ -68,7 +68,7 @@ private:
     for (auto value : data) {
       if (value < 1)
         throw Exception("Cuboid kernel extent must be positive");
-      if (value & value_type(1) == 0)
+      if ((value & value_type(1)) == 0)
         throw Exception("Cuboid kernel extent must be odd");
     }
   }

@@ -381,9 +381,11 @@ void Permutation::sanitise() {
 #ifdef MRTRIX_DEBUG_STRIDES
   std::ostringstream oss;
   oss << "Sanitised permutation [" << *this << "]";
+#endif
   value_type axis = 0;
   for (const auto &sorted : sorter)
     data_[sorted.second] = axis++;
+#ifdef MRTRIX_DEBUG_STRIDES
   oss << " as [" << *this << "]";
   DEBUG(oss.str());
 #endif
@@ -502,10 +504,20 @@ Symbolic::Symbolic(const Actual::vector_type &actual, const std::vector<VoxelInd
   std::set<Data> sorter;
   for (ArrayIndex axis = 0; axis != actual.size(); ++axis)
     sorter.insert({axis, actual[axis], sizes[axis]});
-  Symbolic::value_type counter = 0;
+  value_type index = 1;
+  value_type counter = 0;
+  Actual::value_type prev_actual = Actual::invalid;
   for (const auto &item : sorter) {
-    if (item.size > 1)
-      data_[item.axis] = ++counter * (item.stride < 0 ? -1 : 1);
+    if (item.size > 1) {
+      if (MR::abs(item.stride) == MR::abs(prev_actual)) {
+        data_[item.axis] = index * (item.stride < 0 ? -1 : 1);
+        ++counter;
+      } else {
+        data_[item.axis] = ++counter * (item.stride < 0 ? -1 : 1);
+        prev_actual = item.stride;
+        index = counter;
+      }
+    }
   }
 }
 
@@ -674,9 +686,11 @@ void Symbolic::reorder(const Permutation &permutation) {
   std::ostringstream oss;
   oss << "Symbolic strides [" << *this << "]"
       << " following application of permutation [" << permutation << "]";
+#endif
   for (ArrayIndex order_indexed = 0; order_indexed != size(); ++order_indexed)
     data_[sorted[order_indexed].axis_index] =
         (order_indexed + 1) * (sorted[order_indexed].current_symbolic < 0 ? -1 : 1);
+#ifdef MRTRIX_DEBUG_STRIDES
   oss << " are [" << *this << "]";
   DEBUG(oss.str());
 #endif
@@ -713,11 +727,11 @@ void Symbolic::sanitise() {
   if (result != data_) {
     std::ostringstream oss;
     oss << "Symbolic strides [" << *this << "]";
-    data_ = result;
-    oss << " sanitised as [" << *this << "]";
+    oss << " sanitised as [" << result << "]";
     DEBUG(oss.str());
   }
 #endif
+  data_ = result;
   assert(is_sanitised());
 }
 
@@ -767,6 +781,7 @@ Actual::Actual(const vector_type &actual, const std::vector<ArrayIndex> &sizes) 
   }
 }
 
+template <>
 Actual::Actual(const Symbolic &symbolic, const std::vector<VoxelIndex> &sizes)
     : Base<value_type>(symbolic.size(), invalid), offset_(0) {
   assert(symbolic.is_sanitised());
