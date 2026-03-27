@@ -1,4 +1,6 @@
 include(FetchContent)
+include(MacOSUniversalSlang)
+
 
 # Eigen
 if(MRTRIX_USE_SYSTEM_EIGEN)
@@ -148,11 +150,14 @@ if(MRTRIX_ENABLE_GPU)
 
     # Slang
 
-    find_package(slang QUIET)
-
-    if(NOT MRTRIX_USE_SYSTEM_SLANG)
+    if(MRTRIX_USE_SYSTEM_SLANG)
+        find_package(slang CONFIG REQUIRED)
+    else()
         message(STATUS "Downloading prebuilt binaries for Slang...")
         set(SLANG_VERSION "2026.5.1" CACHE STRING "Slang version to download from GitHub releases")
+        set(SLANG_DOWNLOAD_URL_PREFIX
+            "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}"
+        )
 
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             set(SLANG_OS "linux")
@@ -162,31 +167,54 @@ if(MRTRIX_ENABLE_GPU)
             set(SLANG_OS "windows")
         endif()
 
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+        set(slang_use_universal FALSE)
+        if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+            set(slang_requested_arches ${CMAKE_OSX_ARCHITECTURES})
+            list(LENGTH slang_requested_arches slang_requested_arch_count)
+
+            if("x86_64" IN_LIST slang_requested_arches AND "arm64" IN_LIST slang_requested_arches)
+                set(slang_use_universal TRUE)
+            elseif(slang_requested_arch_count GREATER 1)
+                message(FATAL_ERROR "Unsupported macOS architecture set for bundled Slang: ${CMAKE_OSX_ARCHITECTURES}")
+            elseif("arm64" IN_LIST slang_requested_arches)
+                set(SLANG_ARCH "aarch64")
+            else()
+                set(SLANG_ARCH "x86_64")
+            endif()
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
             set(SLANG_ARCH "aarch64")
         else()
             set(SLANG_ARCH "x86_64")
         endif()
 
-        set(SLANG_SUBSTRING "-${SLANG_OS}-${SLANG_ARCH}")
+        if(slang_use_universal)
+            message(STATUS "Downloading Slang ${SLANG_VERSION} (macos/x86_64 + macos/aarch64)...")
 
-        set(SLANG_DOWNLOAD_LINK
-          "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}/slang-${SLANG_VERSION}${SLANG_SUBSTRING}.zip"
-        )
+            mrtrix_prepare_universal_slang(
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-macos-x86_64.zip"
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-macos-aarch64.zip"
+                slang_root
+            )
+        else()
+            set(slang_download_url
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-${SLANG_OS}-${SLANG_ARCH}.zip"
+            )
 
-        message(STATUS "Downloading Slang ${SLANG_VERSION} (${SLANG_OS}/${SLANG_ARCH})...")
+            message(STATUS "Downloading Slang ${SLANG_VERSION} (${SLANG_OS}/${SLANG_ARCH})...")
 
-        FetchContent_Declare(
-          slang
-            DOWNLOAD_NO_PROGRESS         1
-            URL                          ${SLANG_DOWNLOAD_LINK}
-        )
-        FetchContent_MakeAvailable(slang)
+            FetchContent_Declare(
+              slang
+                DOWNLOAD_NO_PROGRESS         1
+                URL                          ${slang_download_url}
+            )
+            FetchContent_MakeAvailable(slang)
+            set(slang_root "${slang_SOURCE_DIR}")
+        endif()
 
         if(WIN32)
-            set(slang_DIR_PATH "${slang_SOURCE_DIR}/cmake")
+            set(slang_DIR_PATH "${slang_root}/cmake")
         else()
-            set(slang_DIR_PATH "${slang_SOURCE_DIR}/lib/cmake/slang")
+            set(slang_DIR_PATH "${slang_root}/lib/cmake/slang")
         endif()
 
         set(

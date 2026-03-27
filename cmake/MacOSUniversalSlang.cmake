@@ -1,4 +1,6 @@
-# CMake module to prepare a universal binary version of the Slang library for macOS.
+# CMake helpers for Slang package preparation, including macOS universal binary staging.
+include_guard(GLOBAL)
+
 include(FetchContent)
 
 function(mrtrix_lipo_merge input_x86_64 input_arm64 output_file)
@@ -21,18 +23,16 @@ function(mrtrix_lipo_merge input_x86_64 input_arm64 output_file)
     endif()
 endfunction()
 
-function(mrtrix_prepare_universal_slang slang_version out_var)
-    set(slang_url_base "https://github.com/shader-slang/slang/releases/download/v${slang_version}")
-
+function(mrtrix_prepare_universal_slang slang_x86_64_url slang_aarch64_url out_var)
     FetchContent_Declare(
         slang_x86_64
         DOWNLOAD_NO_PROGRESS 1
-        URL "${slang_url_base}/slang-${slang_version}-macos-x86_64.zip"
+        URL "${slang_x86_64_url}"
     )
     FetchContent_Declare(
         slang_aarch64
         DOWNLOAD_NO_PROGRESS 1
-        URL "${slang_url_base}/slang-${slang_version}-macos-aarch64.zip"
+        URL "${slang_aarch64_url}"
     )
     FetchContent_MakeAvailable(slang_x86_64 slang_aarch64)
 
@@ -70,5 +70,5 @@ function(mrtrix_prepare_universal_slang slang_version out_var)
         endif()
     endforeach()
 
-    set(${out_var} "${staged_dir}/lib/cmake/slang" PARENT_SCOPE)
+    set(${out_var} "${staged_dir}" PARENT_SCOPE)
 endfunction()
