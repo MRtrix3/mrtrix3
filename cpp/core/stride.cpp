@@ -199,8 +199,9 @@ bool Order::valid() const {
 }
 
 Axes::Subset Order::head(const size_t num_axes) const {
-  assert(num_axes >= 0);
-  assert(num_axes <= size());
+  if (num_axes > size())
+    throw Exception("Requested axis order subset (" + str(num_axes) + ")" +
+                    " larger than the number of axes present (" + str(size()) + ")");
   return Axes::Subset(data_.begin(), data_.begin() + num_axes);
 }
 
@@ -216,11 +217,9 @@ Axes::Subset Order::subset(const Axes::Subset &axes) const {
 }
 
 Axes::Subset Order::subset(const ArrayIndex from_axis, const ArrayIndex to_axis) const {
-  assert(from_axis >= 0);
-  if (to_axis != Order::invalid) {
-    assert(to_axis > from_axis);
-    assert(to_axis <= size());
-  }
+  if (from_axis < 0 || (to_axis != Order::invalid && (to_axis <= from_axis || to_axis > size())))
+    throw Exception("Invalid axis range (" + str(from_axis) + " -- " + str(to_axis) + ")" + //
+                    " for extracting subset from " + str(size()) + " ordered axes");        //
   Axes::Subset result;
   for (const auto axis : data_) {
     if (axis >= from_axis && (to_axis == -1 || axis < to_axis))
@@ -230,8 +229,9 @@ Axes::Subset Order::subset(const ArrayIndex from_axis, const ArrayIndex to_axis)
 }
 
 Axes::Subset Order::tail(const size_t num_axes) const {
-  assert(num_axes >= 0);
-  assert(num_axes <= size());
+  if (num_axes > size())
+    throw Exception("Requested axis order subset (" + str(num_axes) + ")" +           //
+                    " larger than the number of axes present (" + str(size()) + ")"); //
   return Axes::Subset(std::vector<value_type>(data_.begin() + (size() - num_axes), data_.end()));
 }
 
@@ -363,7 +363,9 @@ Permutation Permutation::conformed(const Permutation &permutation) const {
 }
 
 Permutation Permutation::head(const size_t num_axes) const {
-  assert(num_axes <= size());
+  if (num_axes > size())
+    throw Exception("Requested axis subset (" + str(num_axes) + ")" +
+                    " larger than the number of axes present in permutation (" + str(size()) + ")");
   Permutation::vector_type result(*this);
   result.resize(num_axes);
   return Permutation(result);
@@ -565,18 +567,19 @@ bool Symbolic::valid() const {
 }
 
 Symbolic Symbolic::block(const ArrayIndex from_axis, const ArrayIndex to_axis) const {
-  assert(from_axis >= 0);
-  assert(from_axis < size());
+  if (from_axis < 0 || from_axis >= size() || (to_axis != -1 && (to_axis <= from_axis || to_axis > size())))
+    throw Exception("Invalid axis range (" + str(from_axis) + " -- " + str(to_axis) + ")" +
+                    " for subset of symbolic strides with " + str(size()) + " axes");
   if (to_axis == -1)
     return Symbolic(vector_type(data_.begin() + from_axis, data_.end()));
-  assert(from_axis < to_axis);
-  assert(to_axis <= size());
   return Symbolic(vector_type(data_.begin() + from_axis,                                            //
                               data_.begin() + std::min(static_cast<ArrayIndex>(size()), to_axis))); //
 }
 
 void Symbolic::conform(const Symbolic &in) {
-  assert(in.size() == size());
+  if (in.size() != size())
+    throw Exception("Mismatch in size between current symbolic strides [" + str(*this) + "]" +
+                    " and requested symbolic strides [" + str(in) + "]");
   const Stride::Permutation perm_in(in);
   const Symbolic reordered_this = reordered(perm_in);
   if (reordered_this == *this)
@@ -616,12 +619,15 @@ void Symbolic::demote_unity(const std::vector<VoxelIndex> &sizes) {
 }
 
 void Symbolic::flip(const ArrayIndex axis) {
-  assert(axis >= 0 && axis < size());
+  if (axis < 0 || axis >= size())
+    throw Exception("Invalid axis index (" + str(axis) + " of " + str(size()) + ") for symbolic stride signflip");
   data_[axis] *= -1;
 }
 
 Symbolic Symbolic::head(const ArrayIndex num_axes) const {
-  assert(num_axes <= size());
+  if (num_axes > size())
+    throw Exception("Requested axis subset (" + str(num_axes) + ")" +                 //
+                    " larger than the number of axes present (" + str(size()) + ")"); //
   return Symbolic(vector_type(data_.begin(), data_.begin() + num_axes));
 }
 
@@ -655,7 +661,9 @@ Symbolic Symbolic::resized(const size_t num_axes) const {
 
 void Symbolic::reorder(const Permutation &permutation) {
 
-  assert(permutation.size() == size());
+  if (permutation.size() != size())
+    throw Exception("Mismatch in size between current symbolic strides [" + str(*this) + ")" +
+                    " and stride permutation [" + str(permutation) + "]");
 
   class Data {
   public:

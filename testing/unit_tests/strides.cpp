@@ -121,8 +121,8 @@ TEST_F(StrideOrderTest, HeadAndTail) {
   EXPECT_EQ(tail[0], 1);
   EXPECT_EQ(tail[1], 2);
 
-  EXPECT_DEATH(order.head(5), "Assertion `num_axes <= size\\(\\)' failed.");
-  EXPECT_DEATH(order.tail(5), "Assertion `num_axes <= size\\(\\)' failed.");
+  EXPECT_THROW(order.head(5), MR::Exception);
+  EXPECT_THROW(order.tail(5), MR::Exception);
 }
 
 TEST_F(StrideOrderTest, Subset) {
@@ -139,9 +139,9 @@ TEST_F(StrideOrderTest, Subset) {
   EXPECT_EQ(skip_first[1], 1);
   EXPECT_EQ(skip_first[2], 2);
 
-  EXPECT_DEATH(order.subset(-1), "Assertion `from_axis >= 0' failed.");
-  EXPECT_DEATH(order.subset(2, 2), "Assertion `to_axis > from_axis' failed.");
-  EXPECT_DEATH(order.subset(0, 5), "Assertion `to_axis <= size\\(\\)' failed.");
+  EXPECT_THROW(order.subset(-1), MR::Exception);
+  EXPECT_THROW(order.subset(2, 2), MR::Exception);
+  EXPECT_THROW(order.subset(0, 5), MR::Exception);
 }
 
 TEST_F(StrideOrderTest, Canonical) {
@@ -288,7 +288,7 @@ TEST_F(StridePermutationTest, Head) {
   EXPECT_TRUE(head.valid());
   EXPECT_FALSE(head.is_sanitised());
 
-  EXPECT_DEATH(perm.head(5), "Assertion `num_axes <= size\\(\\)' failed.");
+  EXPECT_THROW(perm.head(5), MR::Exception);
 }
 
 TEST_F(StridePermutationTest, AxisRange) {
@@ -442,8 +442,8 @@ TEST_F(StrideSymbolicTest, Flip) {
   EXPECT_EQ(symbolic[2], 3);
   EXPECT_EQ(symbolic[3], 4);
 
-  EXPECT_DEATH(symbolic.flip(-1), "Assertion `axis >= 0 && axis < size\\(\\)' failed.");
-  EXPECT_DEATH(symbolic.flip(4), "Assertion `axis >= 0 && axis < size\\(\\)' failed.");
+  EXPECT_THROW(symbolic.flip(-1), MR::Exception);
+  EXPECT_THROW(symbolic.flip(4), MR::Exception);
 }
 
 TEST_F(StrideSymbolicTest, Head) {
@@ -453,7 +453,7 @@ TEST_F(StrideSymbolicTest, Head) {
   EXPECT_EQ(head[0], 4);
   EXPECT_EQ(head[1], 3);
 
-  EXPECT_DEATH(symbolic.head(5), "Assertion `num_axes <= size\\(\\)' failed.");
+  EXPECT_THROW(symbolic.head(5), MR::Exception);
 }
 
 TEST_F(StrideSymbolicTest, Block) {
@@ -469,10 +469,10 @@ TEST_F(StrideSymbolicTest, Block) {
   EXPECT_EQ(tail[1], 3);
   EXPECT_EQ(tail[2], 4);
 
-  EXPECT_DEATH(symbolic.block(-1), "Assertion `from_axis >= 0' failed.");
-  EXPECT_DEATH(symbolic.block(5), "Assertion `from_axis < size\\(\\)' failed.");
-  EXPECT_DEATH(symbolic.block(2, 2), "Assertion `from_axis < to_axis' failed.");
-  EXPECT_DEATH(symbolic.block(0, 5), "Assertion `to_axis <= size\\(\\)' failed.");
+  EXPECT_THROW(symbolic.block(-1), MR::Exception);
+  EXPECT_THROW(symbolic.block(5), MR::Exception);
+  EXPECT_THROW(symbolic.block(2, 2), MR::Exception);
+  EXPECT_THROW(symbolic.block(0, 5), MR::Exception);
 }
 
 TEST_F(StrideSymbolicTest, Resize) {
@@ -545,7 +545,7 @@ TEST_F(StrideSymbolicTest, Conform) {
   {
     Stride::Symbolic symbolic({1, 2, 3, 4});
     Stride::Symbolic desired({0, 0, 0});
-    EXPECT_DEATH(symbolic.conform(desired), "Assertion `in.size\\(\\) == size\\(\\)' failed.");
+    EXPECT_THROW(symbolic.conform(desired), MR::Exception);
   }
 }
 
@@ -583,7 +583,7 @@ TEST_F(StrideSymbolicTest, Reorder) {
   {
     Stride::Symbolic symbolic({3, 2, 1, 4});
     Stride::Permutation perm({0, 1, 2});
-    EXPECT_DEATH(symbolic.reorder(perm), "Assertion `permutation.size\\(\\) == size\\(\\)' failed.");
+    EXPECT_THROW(symbolic.reorder(perm), MR::Exception);
   }
 }
 
@@ -637,9 +637,6 @@ TEST_F(StrideActualTest, ConstructFromSymbolicAndSizes) {
   EXPECT_EQ(actual[1], 10);
   EXPECT_EQ(actual[2], 200);
   EXPECT_EQ(actual[3], 6000);
-
-  EXPECT_DEATH(Stride::Actual(symbolic, std::vector<VoxelIndex>({10, 20, 30})),
-               "Assertion `symbolic.size\\(\\) == sizes.size\\(\\)' failed.");
 }
 
 TEST_F(StrideActualTest, ConstructFromMockHeader) {

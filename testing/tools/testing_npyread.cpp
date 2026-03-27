@@ -129,7 +129,7 @@ bool check_datatype(void *address, const File::NPY::ReadInfo &info) {
 } // namespace
 
 bool verify_advanced(std::string_view filepath, const File::NPY::ReadInfo &info) {
-  File::MMap mmap({filepath, info.data_offset}, false);
+  File::MMap mmap({filepath, static_cast<off_t>(info.data_offset)}, false);
   return check_datatype(mmap.address(), info);
 }
 
