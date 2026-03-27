@@ -135,12 +135,7 @@ if(MRTRIX_ENABLE_GPU)
         )
         FetchContent_MakeAvailable(dawn)
 
-        # On Linux, Dawn prebuilt packages use lib64; others use lib
-        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-            set(DAWN_LIB_DIR_NAME "lib64")
-        else()
-            set(DAWN_LIB_DIR_NAME "lib")
-        endif()
+        set(DAWN_LIB_DIR_NAME "lib")
         set(
           Dawn_DIR
           "${dawn_SOURCE_DIR}/${DAWN_LIB_DIR_NAME}/cmake/Dawn"
