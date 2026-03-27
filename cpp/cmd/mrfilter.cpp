@@ -358,7 +358,7 @@ void run() {
     Stride::set_from_command_line(filter);
 
     filter.set_voxels_to_bridge(get_option_value("bridge", 4));
-    filter.set_zlim(get_option_value("zlower", 2.5), get_option_value("zupper", 2.5));
+    filter.set_zlim(get_option_value("zlower", 2.5F), get_option_value("zupper", 2.5F));
 
     auto output = Image<float>::create(argument[2], filter);
     filter(input, maskin, output);

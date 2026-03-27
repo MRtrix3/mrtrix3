@@ -247,9 +247,8 @@ template <class MatrixType> void Writer<MatrixType>::save(std::string_view path)
       if (!App::overwrite_files &&
           (Path::is_file(Path::join(path, "index.mif")) || Path::is_file(Path::join(path, "fixels.mif")) ||
            Path::is_file(Path::join(path, "values.mif"))))
-        throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path +
-                        "\": "
-                        "one or more files already exists (use -force to override)");
+        throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path + "\": " + //
+                        "one or more files already exists (use -force to override)");        //
     } else {
       if (App::overwrite_files) {
         File::remove(path);

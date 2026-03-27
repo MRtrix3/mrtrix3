@@ -168,11 +168,10 @@ void print_spacing(const Header &header) {
 
 void print_strides(const Header &header) {
   std::string buffer;
-  const Stride::Symbolic symbolic(header);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
       buffer += " ";
-    buffer += header.stride(i) ? str(symbolic[i]) : "?";
+    buffer += header.stride(i) == Stride::Symbolic::invalid ? "?" : str(static_cast<int>(header.stride(i)));
   }
   std::cout << buffer << "\n";
 }

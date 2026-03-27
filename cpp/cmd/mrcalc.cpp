@@ -447,7 +447,7 @@ public:
 class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
 public:
   ThreadLocalStorage(const Axes::Subset &axes, const std::vector<VoxelIndex> &sizes)
-      : iter(nullptr), axes(axes), sizes(sizes) {}
+      : iter(nullptr), axes(axes), sizes(sizes), current(0) {}
 
   void load(Chunk &chunk, Image<complex_type> &image) {
     for (size_t n = 0; n < image.ndim(); ++n)
