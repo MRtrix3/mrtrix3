@@ -25,6 +25,7 @@
 #include "math/math.h"
 #include "math/median.h"
 #include "metadata/phase_encoding.h"
+#include <array>
 
 #include <limits>
 
@@ -352,7 +353,14 @@ class ImageKernel : public ImageKernelBase { NOMEMALIGN
 };
 
 
-
+Eigen::Matrix<double, 4, 4> get_transform(const Header& header) {
+    Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
+    Eigen::Matrix<double, 4, 4> matrix;   // default_type is usually double
+    matrix.topLeftCorner<3,4>() = header.transform().matrix(); // 3x4 affine
+    matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
+    std::cout << matrix.format(fmt) << "\n";
+    return matrix;
+}
 
 void run ()
 {
@@ -374,6 +382,7 @@ void run ()
       throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");
 
     Header header_out (image_in);
+
 
     if (axis == 3) {
       try {
@@ -413,13 +422,28 @@ void run ()
     if (num_inputs < 2)
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
-    // Pre-load all image headers
     vector<Header> headers_in (num_inputs);
+
 
     // Header of first input image is the template to which all other input images are compared
     headers_in[0] = Header::open (argument[0]);
     Header header (headers_in[0]);
     header.datatype() = DataType::from_command_line (DataType::Float32);
+
+
+    // load all image headers
+    for (size_t i = 0; i < headers_in.size(); ++i) {
+      // following format as seen in get_transform, taken from mrinfo
+        Eigen::Matrix<double, 4, 4> Ti = get_transform(headers_in[i]);
+
+        for (size_t j = 0; j < headers_in.size(); ++j) {
+            Eigen::Matrix<double, 4, 4> Tj = get_transform(headers_in[j]);
+            if (!Ti.isApprox(Tj, 1e-6)) {
+                throw Exception("Header transform" + std::to_string(i) +
+                                    " is different from header " + std::to_string(j));
+            }
+        }
+    }
 
     // Wipe any excess unary-dimensional axes
     if ( ! get_options ("keep_unary_axes").size() ) {
