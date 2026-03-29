@@ -42,7 +42,12 @@ void usage ()
   + Option ("fa",
             "compute the fractional anisotropy (FA) of the diffusion tensor.")
   + Argument ("image").type_image_out()
-
+  + Option ("na",
+            "compute the norm of anistropy (NA) of the diffusion tensor.")
+  + Argument ("image").type_image_out()
+  + Option ("mo",
+            "compute the mode of anisotropy (MO) of the diffusion tensor.")
+  + Argument ("image").type_image_out()
   + Option ("ad",
             "compute the axial diffusivity (AD) of the diffusion tensor. "
             "(equivalent to the principal eigenvalue)")
@@ -102,6 +107,10 @@ void usage ()
   + "Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. "
     "Geometrical diffusion measures for MRI from tensor basis analysis. "
     "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
+  +
+    "Ennis, D. B., & Kindlmann, G. (2006). Orthogonal tensor invariants and"
+    "the analysis of diffusion tensor magnetic resonance images."
+    "Magnetic resonance in medicine, 55(1), 136–146.";
 }
 
 class Processor { MEMALIGN(Processor)
@@ -109,6 +118,8 @@ class Processor { MEMALIGN(Processor)
     Processor (Image<bool>& mask_img,
         Image<value_type>& adc_img,
         Image<value_type>& fa_img,
+        Image<value_type>& mo_img,
+        Image<value_type>& na_img,
         Image<value_type>& ad_img,
         Image<value_type>& rd_img,
         Image<value_type>& cl_img,
@@ -121,6 +132,8 @@ class Processor { MEMALIGN(Processor)
       mask_img (mask_img),
       adc_img (adc_img),
       fa_img (fa_img),
+      mo_img (mo_img),
+      na_img (na_img),
       ad_img (ad_img),
       rd_img (rd_img),
       cl_img (cl_img),
@@ -164,7 +177,7 @@ class Processor { MEMALIGN(Processor)
         fa_img.value() = fa;
       }
 
-      bool need_eigenvalues = value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
+      bool need_eigenvalues = value_img.valid() || vector_img.valid() || ad_img.valid() || na_img.valid() || mo_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
 
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
       if (need_eigenvalues || vector_img.valid()) {
@@ -178,6 +191,7 @@ class Processor { MEMALIGN(Processor)
         es = Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d>(M, vector_img.valid() ? Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly);
       }
 
+
       Eigen::Vector3d eigval;
       ssize_t ith_eig[3] = { 2, 1, 0 };
       if (need_eigenvalues) {
@@ -185,6 +199,37 @@ class Processor { MEMALIGN(Processor)
         ith_eig[0] = 0; ith_eig[1] = 1; ith_eig[2] = 2;
         std::sort (std::begin (ith_eig), std::end (ith_eig),
             [&eigval](size_t a, size_t b) { return abs(eigval[a]) > abs(eigval[b]); });
+      }
+
+      // new section added here
+      double mo = 0.0;
+      if (mo_img.valid() || (vector_img.valid() )) {
+        const double l1 = eigval(0);
+        const double l2 = eigval(1);
+        const double l3 = eigval(2);
+
+
+        mo = DWI::eigen2MO(l1,l2,l3);
+        //std::cout << "mo: " << mo << std::endl;
+      }
+      /* output mo */
+      if (mo_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (mo_img);
+        mo_img.value() = mo;
+      }
+
+      double na = 0.0;
+      if (na_img.valid() || (vector_img.valid() )) {
+        const double l1 = eigval(0);
+        const double l2 = eigval(1);
+        const double l3 = eigval(2);
+
+        na = DWI::eigen2NA(l1,l2,l3);
+      }
+      /* output na */
+      if (na_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (na_img);
+        na_img.value() = na;
       }
 
       /* output value */
@@ -253,6 +298,8 @@ class Processor { MEMALIGN(Processor)
     Image<bool> mask_img;
     Image<value_type> adc_img;
     Image<value_type> fa_img;
+    Image<value_type> mo_img;
+    Image<value_type> na_img;
     Image<value_type> ad_img;
     Image<value_type> rd_img;
     Image<value_type> cl_img;
@@ -263,11 +310,6 @@ class Processor { MEMALIGN(Processor)
     vector<uint32_t> vals;
     int modulate;
 };
-
-
-
-
-
 
 
 
@@ -301,6 +343,22 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     fa_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
+  }
+
+  auto mo_img = Image<value_type>();
+  opt = get_options ("mo");
+  if (opt.size()) {
+    header.ndim() = 3;
+    mo_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
+  }
+
+  auto na_img = Image<value_type>();
+  opt = get_options ("na");
+  if (opt.size()) {
+    header.ndim() = 3;
+    na_img = Image<value_type>::create (opt[0][0], header);
     metric_count++;
   }
 
@@ -382,5 +440,5 @@ void run ()
     throw Exception ("No output specified; must request at least one metric of interest using the available command-line options");
 
   ThreadedLoop (std::string("computing metric") + (metric_count > 1 ? "s" : ""), dt_img, 0, 3)
-    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
+    .run (Processor (mask_img, adc_img, fa_img, mo_img, na_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
 }

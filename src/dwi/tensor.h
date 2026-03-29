@@ -103,6 +103,19 @@ namespace MR
              T (0.0);
     }
 
+    template <class Scalar> inline Scalar eigen2MO (const Scalar l1, const Scalar l2, const Scalar l3)
+    {
+      const Scalar md = (l1+l2+l3)/3.0;
+      const Scalar na = std::sqrt((l1-md)*(l1-md)+(l2-md)*(l2-md)+(l3-md)*(l3-md));
+
+      return 3.0*std::sqrt(6.0)*((l1-md)*(l2-md)*(l3-md)/(na*na*na));
+    }
+
+    template <class Scalar> inline Scalar eigen2NA (const Scalar l1, const Scalar l2, const Scalar l3)
+    {
+      const Scalar md = (l1+l2+l3)/3.0;
+      return std::sqrt((l1-md)*(l1-md)+(l2-md)*(l2-md)+(l3-md)*(l3-md));
+    }
 
     template <class VectorType> inline typename VectorType::Scalar tensor2RA (const VectorType& dt)
     {
