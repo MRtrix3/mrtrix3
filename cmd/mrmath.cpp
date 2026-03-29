@@ -358,7 +358,9 @@ Eigen::Matrix<double, 4, 4> get_transform(const Header& header) {
     Eigen::Matrix<double, 4, 4> matrix;   // default_type is usually double
     matrix.topLeftCorner<3,4>() = header.transform().matrix(); // 3x4 affine
     matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
-    std::cout << matrix.format(fmt) << "\n";
+
+    //for debugging
+    //std::cout << matrix.format(fmt) << std::endl;
     return matrix;
 }
 
@@ -432,15 +434,23 @@ void run ()
 
 
     // load all image headers
-    for (size_t i = 0; i < headers_in.size(); ++i) {
-      // following format as seen in get_transform, taken from mrinfo
-        Eigen::Matrix<double, 4, 4> Ti = get_transform(headers_in[i]);
+    // Load headers
+    //vector<Header> headers_in(num_inputs);
+    for (size_t i = 0; i < num_inputs; ++i) {
+        headers_in[i] = Header::open(argument[i]);
+    }
 
-        for (size_t j = 0; j < headers_in.size(); ++j) {
-            Eigen::Matrix<double, 4, 4> Tj = get_transform(headers_in[j]);
+    // Compare all headers
+    // this can be a bit repetitive, should find more efficient way to do the comparisons
+    for (size_t i = 0; i < headers_in.size(); ++i) {
+        const Eigen::Matrix<double, 4, 4> Ti = get_transform(headers_in[i]);
+        for (size_t j = 0; j < headers_in.size(); ++j) {  // j > i avoids redundant checks
+            const Eigen::Matrix<double, 4, 4> Tj = get_transform(headers_in[j]);
+            //std::cout << "i" << i << std::endl;
+            //std::cout << "j" << j << std::endl;
             if (!Ti.isApprox(Tj, 1e-6)) {
-                throw Exception("Header transform" + std::to_string(i) +
-                                    " is different from header " + std::to_string(j));
+                throw Exception("Header transform " + std::to_string(i) +
+                                " differs from header transform " + std::to_string(j));
             }
         }
     }
