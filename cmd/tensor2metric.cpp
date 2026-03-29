@@ -107,7 +107,7 @@ void usage ()
   + "Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. "
     "Geometrical diffusion measures for MRI from tensor basis analysis. "
     "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
-  +
+  + "* If using -na or -mo options: \n"
     "Ennis, D. B., & Kindlmann, G. (2006). Orthogonal tensor invariants and"
     "the analysis of diffusion tensor magnetic resonance images."
     "Magnetic resonance in medicine, 55(1), 136–146.";
@@ -201,16 +201,15 @@ class Processor { MEMALIGN(Processor)
             [&eigval](size_t a, size_t b) { return abs(eigval[a]) > abs(eigval[b]); });
       }
 
-      // new section added here
+
       double mo = 0.0;
-      if (mo_img.valid() || (vector_img.valid() )) {
+      if (mo_img.valid()) {
         const double l1 = eigval(0);
         const double l2 = eigval(1);
         const double l3 = eigval(2);
 
 
         mo = DWI::eigen2MO(l1,l2,l3);
-        //std::cout << "mo: " << mo << std::endl;
       }
       /* output mo */
       if (mo_img.valid()) {
@@ -218,18 +217,10 @@ class Processor { MEMALIGN(Processor)
         mo_img.value() = mo;
       }
 
-      double na = 0.0;
-      if (na_img.valid() || (vector_img.valid() )) {
-        const double l1 = eigval(0);
-        const double l2 = eigval(1);
-        const double l3 = eigval(2);
-
-        na = DWI::eigen2NA(l1,l2,l3);
-      }
       /* output na */
       if (na_img.valid()) {
         assign_pos_of (dt_img, 0, 3).to (na_img);
-        na_img.value() = na;
+        na_img.value() = DWI::tensor2NA(eigval(0),eigval(1),eigval(2));;
       }
 
       /* output value */
