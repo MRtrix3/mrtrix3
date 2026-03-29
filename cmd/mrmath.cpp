@@ -444,10 +444,9 @@ void run ()
     // this can be a bit repetitive, should find more efficient way to do the comparisons
     for (size_t i = 0; i < headers_in.size(); ++i) {
         const Eigen::Matrix<double, 4, 4> Ti = get_transform(headers_in[i]);
-        for (size_t j = 0; j < headers_in.size(); ++j) {  // j > i avoids redundant checks
+        for (size_t j = 1; j < headers_in.size(); ++j) {  // j > i avoids redundant checks
             const Eigen::Matrix<double, 4, 4> Tj = get_transform(headers_in[j]);
-            //std::cout << "i" << i << std::endl;
-            //std::cout << "j" << j << std::endl;
+
             if (!Ti.isApprox(Tj, 1e-6)) {
                 throw Exception("Header transform " + std::to_string(i) +
                                 " differs from header transform " + std::to_string(j));
