@@ -170,15 +170,15 @@ jobs:
       - name: Run Linux build
         if: matrix.platform == 'linux'
         run: |
-          ./packaging/package-linux-tarball.sh .
+          ./packaging/package-linux-tarball.sh . "${{ steps.out.outputs.output_name }}"
           mv mrtrix.tar.gz ${{ steps.out.outputs.output_name }}.${{ matrix.artifact_ext }}
 
       - name: Run macOS build
         if: matrix.platform == 'macos'
         run: |
           cd ./packaging/macos
-          ./build ${{ needs.prepare.outputs.branch }}
-          mv ./mrtrix3-macos-${{ needs.prepare.outputs.branch }}.${{ matrix.artifact_ext }} ../../${{ steps.out.outputs.output_name }}.${{ matrix.artifact_ext }}
+          ./build "${{ needs.prepare.outputs.branch }}" "${{ steps.out.outputs.output_name }}"
+          mv "./${{ steps.out.outputs.output_name }}.${{ matrix.artifact_ext }}" "../../${{ steps.out.outputs.output_name }}.${{ matrix.artifact_ext }}"
 
       - name: Run Windows build
         if: matrix.platform == 'windows'
