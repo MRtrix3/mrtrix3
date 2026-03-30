@@ -48,7 +48,7 @@ jobs:
       - name: Determine if there are new commits since last nightly
         id: changes
         run: |
-          RECENT="$(git log --oneline --merges | grep -E 'Merge pull request #[0-9]+ from [^ ]+/' | head -n 15 || true)"
+          RECENT="$(git log --merges --format='%h|%s|%b' | sed -n -E 's/^([0-9a-f]+)\|Merge pull request #([0-9]+) [^|]+\|(.*)$/\1 MRtrix3#\2: \3/p' | head -n 15 || true)"
 
           if [ -n "$RECENT" ]; then
             {
