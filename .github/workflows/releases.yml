@@ -108,6 +108,8 @@ jobs:
             runs_on: windows-latest
             artifact_ext: tar.zst
     runs-on: ${{ matrix.runs_on }}
+    env:
+      MRTRIX_IGNORE_VERSION_MISMATCH: ${{ github.event_name == 'schedule' && '1' || '' }}
     steps:
       - name: Set up MSYS2 for Windows
         if: matrix.platform == 'windows'
