@@ -159,6 +159,11 @@ jobs:
           version: '6.7.0'
           set-env: true
 
+      - name: Remove non-release tags for Linux build
+        if: matrix.platform == 'linux'
+        run: |
+          git tag -l 'nightly-dev' | xargs -r git tag -d
+
       - name: Install dependencies on macOS
         if: matrix.platform == 'macos'
         run: brew install numpy cmake qt pkg-config libpng ninja
