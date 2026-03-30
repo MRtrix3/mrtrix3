@@ -123,16 +123,23 @@ HalfwayTransforms compute_halfway_transforms(const transform_type &scanner_trans
 // clang-format off
  // NOLINTBEGIN(readability-implicit-bool-conversion)
  void usage() {
-     AUTHOR = "Daljit Singh",
-         SYNOPSIS = "Affine image registration on the GPU.";
+    AUTHOR = "Daljit Singh",
+    SYNOPSIS = "GPU driven non-linear registration computes warps to map from both image1->image2 and image2->image1."
+              " Based on Symmetric Log-Domain Diffeomorphic Registration: A Demons-based Approach by Vercauteren et al (2009)."
+              " Warps are output as deformation fields, where warp1 can be used to transform image1->image2 and warp2 to transform image2->image1."
+              " The algorithm support both LNCC (local normalized cross correlation) and SSD (sum of squared differences) metrics for non-linear registration.";
 
+    REFERENCES
+        + "Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009). "
+          "Symmetric log-domain diffeomorphic registration: A demons-based approach. "
+          "International conference on medical image computing and computer-assisted intervention, pp. 754-761. ";
+                
      ARGUMENTS
          + Argument ("image1 image2", "input image 1 ('moving') and input image 2 ('template')").type_image_in()
          + Argument ("contrast1 contrast2",
                     "optional list of additional input images used as additional contrasts."
                     " Can be used multiple times."
                     " contrastX and imageX must share the same coordinate system.").type_image_in().optional().allow_multiple();
-
 
      OPTIONS
          + Option ("transformed", "image1 transformed to image2 space after registration."
