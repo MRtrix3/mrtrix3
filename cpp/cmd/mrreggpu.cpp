@@ -201,6 +201,18 @@ HalfwayTransforms compute_halfway_transforms(const transform_type &scanner_trans
                   " Set to 0 to disable diffusion smoothing.")
              + Argument("sigma").type_float(0.0)
 
+         + Option("nl_ncc_update_target_voxels",
+                  "For nonlinear registration, target maximum LNCC update magnitude in voxel units used"
+                  " when renormalising the LNCC update field before the update is applied"
+                  " (default: " + std::to_string(default_nonlinear_ncc_update_target_voxels) + ")."
+                  " Larger values imply more aggressive updates, which can increase the risk of overshooting.")
+             + Argument("rate").type_float(0.0)
+
+         + Option("nl_bch_terms",
+                  "Number of Baker-Campbell-Hausdorff terms to retain when composing each nonlinear update."
+                  " (default: " + std::to_string(default_nonlinear_svf_bch_terms) + ").")
+             + Argument("terms").type_integer(1, 2)
+
          + Option("init_translation",
                   "initialise the translation and centre of rotation;"
                   " Valid choices are:"
@@ -276,6 +288,8 @@ void run() {
   const auto nl_metric_options = get_options("nl_metric");
   const auto nl_fluid_sigma_options = get_options("nl_fluid_sigma");
   const auto nl_diffusion_sigma_options = get_options("nl_diffusion_sigma");
+  const auto nl_ncc_update_target_voxels_options = get_options("nl_ncc_update_target_voxels");
+  const auto nl_bch_terms_options = get_options("nl_bch_terms");
 
   if (!has_nonlinear_registration && !nl_metric_options.empty()) {
     throw Exception("nl_metric is only valid when using nonlinear registration.");
@@ -285,6 +299,12 @@ void run() {
   }
   if (!has_nonlinear_registration && !nl_diffusion_sigma_options.empty()) {
     throw Exception("nl_diffusion_sigma is only valid when using nonlinear registration.");
+  }
+  if (!has_nonlinear_registration && !nl_ncc_update_target_voxels_options.empty()) {
+    throw Exception("nl_ncc_update_target_voxels is only valid when using nonlinear registration.");
+  }
+  if (!has_nonlinear_registration && !nl_bch_terms_options.empty()) {
+    throw Exception("nl_bch_terms is only valid when using nonlinear registration.");
   }
   const auto nl_warp_option = get_options("nl_warp");
   if (has_global_registration && !nl_warp_option.empty()) {
@@ -306,6 +326,10 @@ void run() {
   if (has_nonlinear_registration) {
     const std::string default_nonlinear_metric = "ncc";
     nonlinear_metric_type = from_name<MetricType>(get_option_value<std::string>("nl_metric", default_nonlinear_metric));
+    if (*nonlinear_metric_type != MetricType::NCC && !nl_ncc_update_target_voxels_options.empty()) {
+      throw Exception(
+          "nl_ncc_update_target_voxels is only valid when using nonlinear registration with nl_metric ncc.");
+    }
   }
 
   const uint32_t ncc_window_radius = get_option_value<uint32_t>("ncc_radius", default_ncc_window_radius);
@@ -313,6 +337,9 @@ void run() {
       get_option_value<float>("nl_fluid_sigma", default_nonlinear_fluid_blur_sigma_voxels);
   const float nonlinear_diffusion_sigma =
       get_option_value<float>("nl_diffusion_sigma", default_nonlinear_diffusion_blur_sigma_voxels);
+  const float nonlinear_ncc_update_target_voxels =
+      get_option_value<float>("nl_ncc_update_target_voxels", default_nonlinear_ncc_update_target_voxels);
+  const uint32_t nonlinear_svf_bch_terms = get_option_value<uint32_t>("nl_bch_terms", default_nonlinear_svf_bch_terms);
 
   std::optional<Image<float>> mask1;
   std::optional<Image<float>> mask2;
@@ -453,6 +480,8 @@ void run() {
         .max_iterations = max_iterations,
         .fluid_blur_sigma_voxels = nonlinear_fluid_sigma,
         .diffusion_blur_sigma_voxels = nonlinear_diffusion_sigma,
+        .ncc_update_target_voxels = nonlinear_ncc_update_target_voxels,
+        .svf_bch_terms = nonlinear_svf_bch_terms,
         .initial_affine = initial_affine,
     };
     auto gpu_compute_context = gpu_context_request.get();

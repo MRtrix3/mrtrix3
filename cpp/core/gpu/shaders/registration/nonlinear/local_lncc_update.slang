@@ -13,18 +13,35 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-// Compute per-voxel LNCC updates for symmetric log-demons.
-// For each voxel x, use a local box window W(x).
-// K[phi] is phi convolved with a uniform box kernel over W, evaluated at x.
-// Define local means mu_F = K[F], mu_M = K[M], and centered signals
-// F_c = F - mu_F, M_c = M - mu_M.
-// Then local LNCC moments are:
-//   A = K[F_c * M_c], B = K[F_c^2], C = K[M_c^2], rho = A / sqrt(B * C)
-// where M is the direction-specific moving term and grad(M_c) is its spatial gradient.
-// The LNCC force is:
-//   lambda = K[F_c * grad(M_c)] / A - K[M_c * grad(M_c)] / C
-//   u(x) = -lambda / (|lambda|^2 - (sigma_i^2 / (rho^2 * sigma_x^2)))
-// where kSigmaRatio = sigma_i / sigma_x.
+// We compute a per-voxel LNCC update. Unlike the original diffeomorphic log-demons formulation by Vercauteren
+// (SSD-based) and its LCC variant by Lorenzi et al, the update step computed here is not a Newton-style second order
+// approximation. Instead, we differentiate the local LNCC objective and map that derivative to a local displacement
+// update using the moving-image spatial gradient, yielding a first-order ascent direction. Empirically, this appears to
+// produce good convergence behaviour but better behaved deformations. For each voxel, we first compute the local LNCC
+// moments by summing over a window around the voxel. Let R and M denote the fixed and moving intensities in the window,
+// and mu_R and mu_M their respective local means. Then the centered intensities are
+//   R_c = R - mu_R,  M_c = M - mu_M.
+// The local normalized cross-correlation moments are then
+//   A = K[R_c * M_c],  B = K[R_c^2],  C = K[M_c^2],  rho = A / sqrt(B * C).
+// We optimise rho directly. For the center sample j of the window, only the moving term depends on the local
+// displacement update u, so
+//   dA/dM_j = R_c(j) / N,
+//   dB/dM_j = 0,
+//   dC/dM_j = 2 M_c(j) / N,
+// where N is the number of valid samples in the window. Differentiating rho gives
+//   d(rho) / dM_j = 1 / (N * sqrt(B * C)) * (R_c(j) - (A / C) * M_c(j)).
+// A small displacement perturbs the moving intensity by
+//   dM_j ~= grad(M)_j^T du,
+// so the ascent direction in scanner coordinates is
+//   grad_u(rho) = 1 / (N * sqrt(B * C)) * (R_c(j) - (A / C) * M_c(j)) * grad(M)_j.
+// In the code:
+//   covariance -> A
+//   varianceReference -> B
+//   varianceMoving -> C
+//   centeredReferenceValue -> R_c(j)
+//   centeredMovingValue -> M_c(j)
+//   gradMovingScanner -> grad(M)_j
+// The final update is assembled as scale * scalar * gradMovingScanner.
 // Both updates are represented in scanner-space units (mm).
 
 import texture_utils;
@@ -34,10 +51,7 @@ extern static const uint32_t kWorkgroupSizeX = 8U;
 extern static const uint32_t kWorkgroupSizeY = 4U;
 extern static const uint32_t kWorkgroupSizeZ = 4U;
 extern static const uint32_t kWindowRadius = 2U;
-extern static const float kSigmaRatio;
 extern static const float kMomentEpsilon;
-extern static const float kRhoEpsilon;
-extern static const float kDenominatorEpsilon;
 extern static const float kMaxUpdateMagnitude = 0.0F;
 extern static const uint32_t kUseFixedMask;
 extern static const uint32_t kUseMovingMask;
@@ -53,9 +67,6 @@ struct LnccMomentSums {
     float sumReferenceSquared;
     float sumMovingSquared;
     float sumReferenceMoving;
-    float3 sumGradMoving;
-    float3 sumReferenceGradMoving;
-    float3 sumMovingGradMoving;
     float sumWeights;
 };
 
@@ -65,13 +76,14 @@ LnccMomentSums initLnccMomentSums() {
                           0.0F,
                           0.0F,
                           0.0F,
-                          float3(0.0F, 0.0F, 0.0F),
-                          float3(0.0F, 0.0F, 0.0F),
-                          float3(0.0F, 0.0F, 0.0F),
                           0.0F);
 }
 
-bool solveLnccUpdate(LnccMomentSums sums, out float3 update) {
+bool solveLnccUpdate(LnccMomentSums sums,
+                     float referenceValue,
+                     float movingValue,
+                     float3 gradMovingScanner,
+                     out float3 update) {
     if (!(sums.sumWeights > 0.0F)) {
         update = float3(0.0F, 0.0F, 0.0F);
         return false;
@@ -80,38 +92,20 @@ bool solveLnccUpdate(LnccMomentSums sums, out float3 update) {
     let invN = 1.0F / sums.sumWeights;
     let meanReference = sums.sumReference * invN;
     let meanMoving = sums.sumMoving * invN;
-    let meanGradMoving = sums.sumGradMoving * invN;
-
     let covariance = sums.sumReferenceMoving * invN - meanReference * meanMoving;
     let varianceReference = max(0.0F, sums.sumReferenceSquared * invN - meanReference * meanReference);
     let varianceMoving = max(0.0F, sums.sumMovingSquared * invN - meanMoving * meanMoving);
-    let varianceProduct = varianceReference * varianceMoving;
-
-    // The local LNCC update is ill-conditioned when the window is flat or the
-    // cross-moment vanishes, so skip those voxels rather than biasing rho.
-    if (!(varianceProduct > kMomentEpsilon) || abs(covariance) <= kMomentEpsilon || !(varianceMoving > kMomentEpsilon)) {
+    if (!(varianceReference > kMomentEpsilon) || !(varianceMoving > kMomentEpsilon)) {
         update = float3(0.0F, 0.0F, 0.0F);
         return false;
     }
 
-    let rho = covariance / sqrt(varianceProduct);
-    let rhoSq = max(rho * rho, kRhoEpsilon);
+    let centeredReferenceValue = referenceValue - meanReference;
+    let centeredMovingValue = movingValue - meanMoving;
+    let scale = 1.0F / (sums.sumWeights * sqrt(varianceReference * varianceMoving));
+    let scalar = centeredReferenceValue - (covariance / varianceMoving) * centeredMovingValue;
 
-    let centeredReferenceGrad = sums.sumReferenceGradMoving * invN - meanReference * meanGradMoving;
-    let centeredMovingGrad = sums.sumMovingGradMoving * invN - meanMoving * meanGradMoving;
-    let lambda = centeredReferenceGrad / covariance - centeredMovingGrad / varianceMoving;
-
-    let lambdaNormSq = dot(lambda, lambda);
-    let sigmaRatioSq = kSigmaRatio * kSigmaRatio;
-    let denominator = lambdaNormSq - sigmaRatioSq / rhoSq;
-    // The closed-form solve is stable only in the locally convex regime
-    // (equivalently denominator < 0 in this parameterisation).
-    if (denominator >= -kDenominatorEpsilon) {
-        update = float3(0.0F, 0.0F, 0.0F);
-        return false;
-    }
-
-    var candidateUpdate = -lambda / denominator;
+    var candidateUpdate = scale * scalar * gradMovingScanner;
     if (kMaxUpdateMagnitude > 0.0F) {
         let updateNorm = length(candidateUpdate);
         if (updateNorm > kMaxUpdateMagnitude) {
@@ -166,12 +160,8 @@ void lnccFilterAlongAxis(
     int32_t3 axisOffset,
     Texture3D<float4> inputMoments1,
     Texture3D<float4> inputMoments2,
-    Texture3D<float4> inputMoments3,
-    Texture3D<float4> inputMoments4,
     WTexture3D<float4> outputMoments1,
-    WTexture3D<float4> outputMoments2,
-    WTexture3D<float4> outputMoments3,
-    WTexture3D<float4> outputMoments4)
+    WTexture3D<float4> outputMoments2)
 {
     if (globalId.x >= filterDims.x || globalId.y >= filterDims.y || globalId.z >= filterDims.z) {
         return;
@@ -182,8 +172,6 @@ void lnccFilterAlongAxis(
 
     var sumMoments1 = float4(0.0F, 0.0F, 0.0F, 0.0F);
     var sumMoments2 = float4(0.0F, 0.0F, 0.0F, 0.0F);
-    var sumMoments3 = float4(0.0F, 0.0F, 0.0F, 0.0F);
-    var sumMoments4 = float4(0.0F, 0.0F, 0.0F, 0.0F);
 
     for (int32_t i = -radius; i <= radius; ++i) {
         let sampleCoord = baseCoord + axisOffset * i;
@@ -194,14 +182,10 @@ void lnccFilterAlongAxis(
         let texelCoord = int32_t4(sampleCoord, 0);
         sumMoments1 += inputMoments1.Load(texelCoord);
         sumMoments2 += inputMoments2.Load(texelCoord);
-        sumMoments3 += inputMoments3.Load(texelCoord);
-        sumMoments4 += inputMoments4.Load(texelCoord);
     }
 
     outputMoments1.Store(globalId, sumMoments1);
     outputMoments2.Store(globalId, sumMoments2);
-    outputMoments3.Store(globalId, sumMoments3);
-    outputMoments4.Store(globalId, sumMoments4);
 }
 
 void lnccAccumulateZSlabs(
@@ -209,8 +193,6 @@ void lnccAccumulateZSlabs(
     uint32_t3 textureDims,
     Texture3D<float4> inputMoments1,
     Texture3D<float4> inputMoments2,
-    Texture3D<float4> inputMoments3,
-    Texture3D<float4> inputMoments4,
     inout LnccMomentSums sums)
 {
     let radius = int32_t(kWindowRadius);
@@ -224,17 +206,12 @@ void lnccAccumulateZSlabs(
         let texelCoord = int32_t4(sliceCoord, 0);
         let moments1 = inputMoments1.Load(texelCoord);
         let moments2 = inputMoments2.Load(texelCoord);
-        let moments3 = inputMoments3.Load(texelCoord);
-        let moments4 = inputMoments4.Load(texelCoord);
 
         sums.sumReference += moments1.x;
         sums.sumMoving += moments1.y;
         sums.sumReferenceSquared += moments1.z;
         sums.sumMovingSquared += moments1.w;
         sums.sumReferenceMoving += moments2.x;
-        sums.sumGradMoving += float3(moments2.z, moments2.w, moments3.x);
-        sums.sumReferenceGradMoving += float3(moments3.y, moments3.z, moments3.w);
-        sums.sumMovingGradMoving += moments4.xyz;
         sums.sumWeights += moments2.y;
     }
 }
@@ -252,9 +229,7 @@ void lnccUpdatePrepareRawMomentsForward(
     SamplerState linearSampler,
     ConstantBuffer<UpdateSlabUniforms> slabUniforms,
     WTexture3D<float4> outputMoments1,
-    WTexture3D<float4> outputMoments2,
-    WTexture3D<float4> outputMoments3,
-    WTexture3D<float4> outputMoments4)
+    WTexture3D<float4> outputMoments2)
 {
     let slabDims = textureSize(outputMoments1);
     if (!inBoundsIndex(int32_t3(globalId), slabDims)) {
@@ -267,8 +242,6 @@ void lnccUpdatePrepareRawMomentsForward(
     if (!inBoundsIndex(globalCoord, fixedDims)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
@@ -282,8 +255,6 @@ void lnccUpdatePrepareRawMomentsForward(
     if (!fixedMaskField.maskAccepts(fixedVoxel, kUseFixedMask != 0U)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
     var warpedMovingVoxel = float3(0.0F, 0.0F, 0.0F);
@@ -297,22 +268,16 @@ void lnccUpdatePrepareRawMomentsForward(
             warpedMovingVoxel)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
     if (!movingMaskField.maskAccepts(warpedMovingVoxel, kUseMovingMask != 0U)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
     let referenceValue = fixedField.sampleWithZeroBorder(fixedVoxel);
     let movingValue = movingField.sampleWithZeroBorder(warpedMovingVoxel);
-    let gradMovingVoxel = movingField.spatialGradient(warpedMovingVoxel);
-    let gradMovingScanner = mul(float4(gradMovingVoxel, 0.0F), voxelScannerMatrices.sourceScannerToVoxel).xyz;
 
     let R = referenceValue;
     let M = movingValue;
@@ -320,13 +285,9 @@ void lnccUpdatePrepareRawMomentsForward(
     let M2 = M * M;
     let RM = R * M;
     let W = 1.0F;
-    let RGrad = R * gradMovingScanner;
-    let MGrad = M * gradMovingScanner;
 
     outputMoments1.Store(globalId, float4(R, M, R2, M2));
-    outputMoments2.Store(globalId, float4(RM, W, gradMovingScanner.x, gradMovingScanner.y));
-    outputMoments3.Store(globalId, float4(gradMovingScanner.z, RGrad.x, RGrad.y, RGrad.z));
-    outputMoments4.Store(globalId, float4(MGrad.x, MGrad.y, MGrad.z, 0.0F));
+    outputMoments2.Store(globalId, float4(RM, W, 0.0F, 0.0F));
 }
 
 [shader("compute")]
@@ -342,9 +303,7 @@ void lnccUpdatePrepareRawMomentsBackward(
     SamplerState linearSampler,
     ConstantBuffer<UpdateSlabUniforms> slabUniforms,
     WTexture3D<float4> outputMoments1,
-    WTexture3D<float4> outputMoments2,
-    WTexture3D<float4> outputMoments3,
-    WTexture3D<float4> outputMoments4)
+    WTexture3D<float4> outputMoments2)
 {
     let slabDims = textureSize(outputMoments1);
     if (!inBoundsIndex(int32_t3(globalId), slabDims)) {
@@ -357,8 +316,6 @@ void lnccUpdatePrepareRawMomentsBackward(
     if (!inBoundsIndex(globalCoord, movingDims)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
@@ -373,8 +330,6 @@ void lnccUpdatePrepareRawMomentsBackward(
     if (!movingMaskField.maskAccepts(movingVoxel, kUseMovingMask != 0U)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
     var movedFixedVoxel = float3(0.0F, 0.0F, 0.0F);
@@ -387,22 +342,16 @@ void lnccUpdatePrepareRawMomentsBackward(
             movedFixedVoxel)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
     if (!fixedMaskField.maskAccepts(movedFixedVoxel, kUseFixedMask != 0U)) {
         outputMoments1.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         outputMoments2.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments3.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
-        outputMoments4.Store(globalId, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
 
     let referenceValue = movingField.sampleWithZeroBorder(movingVoxel);
     let movingValue = fixedField.sampleWithZeroBorder(movedFixedVoxel);
-    let gradMovingVoxel = fixedField.spatialGradient(movedFixedVoxel);
-    let gradMovingScanner = mul(float4(gradMovingVoxel, 0.0F), voxelScannerMatrices.targetScannerToVoxel).xyz;
 
     let R = referenceValue;
     let M = movingValue;
@@ -410,13 +359,9 @@ void lnccUpdatePrepareRawMomentsBackward(
     let M2 = M * M;
     let RM = R * M;
     let W = 1.0F;
-    let RGrad = R * gradMovingScanner;
-    let MGrad = M * gradMovingScanner;
 
     outputMoments1.Store(globalId, float4(R, M, R2, M2));
-    outputMoments2.Store(globalId, float4(RM, W, gradMovingScanner.x, gradMovingScanner.y));
-    outputMoments3.Store(globalId, float4(gradMovingScanner.z, RGrad.x, RGrad.y, RGrad.z));
-    outputMoments4.Store(globalId, float4(MGrad.x, MGrad.y, MGrad.z, 0.0F));
+    outputMoments2.Store(globalId, float4(RM, W, 0.0F, 0.0F));
 }
 
 [shader("compute")]
@@ -426,12 +371,8 @@ void lnccUpdateFilterXPass(
     Texture3D<float> latticeImage, // only used for dimensions
     Texture3D<float4> inputMoments1,
     Texture3D<float4> inputMoments2,
-    Texture3D<float4> inputMoments3,
-    Texture3D<float4> inputMoments4,
     WTexture3D<float4> outputMoments1,
-    WTexture3D<float4> outputMoments2,
-    WTexture3D<float4> outputMoments3,
-    WTexture3D<float4> outputMoments4)
+    WTexture3D<float4> outputMoments2)
 {
     let latticeDims = textureSize(latticeImage);
     let scratchDims = textureSize(inputMoments1);
@@ -441,12 +382,8 @@ void lnccUpdateFilterXPass(
                         int32_t3(1, 0, 0),
                         inputMoments1,
                         inputMoments2,
-                        inputMoments3,
-                        inputMoments4,
                         outputMoments1,
-                        outputMoments2,
-                        outputMoments3,
-                        outputMoments4);
+                        outputMoments2);
 }
 
 [shader("compute")]
@@ -456,12 +393,8 @@ void lnccUpdateFilterYPass(
     Texture3D<float> latticeImage, // only used for dimensions
     Texture3D<float4> inputMoments1,
     Texture3D<float4> inputMoments2,
-    Texture3D<float4> inputMoments3,
-    Texture3D<float4> inputMoments4,
     WTexture3D<float4> outputMoments1,
-    WTexture3D<float4> outputMoments2,
-    WTexture3D<float4> outputMoments3,
-    WTexture3D<float4> outputMoments4)
+    WTexture3D<float4> outputMoments2)
 {
     let latticeDims = textureSize(latticeImage);
     let scratchDims = textureSize(inputMoments1);
@@ -471,12 +404,8 @@ void lnccUpdateFilterYPass(
                         int32_t3(0, 1, 0),
                         inputMoments1,
                         inputMoments2,
-                        inputMoments3,
-                        inputMoments4,
                         outputMoments1,
-                        outputMoments2,
-                        outputMoments3,
-                        outputMoments4);
+                        outputMoments2);
 }
 
 [shader("compute")]
@@ -492,8 +421,6 @@ void lnccUpdateForwardReduceZ(
     SamplerState linearSampler,
     Texture3D<float4> xyFilteredMoments1,
     Texture3D<float4> xyFilteredMoments2,
-    Texture3D<float4> xyFilteredMoments3,
-    Texture3D<float4> xyFilteredMoments4,
     WTexture3D<float4> outputUpdate)
 {
     static_assert(kWindowRadius > 0U, "LNCC update doesn't make sense for a window radius of 0.");
@@ -533,12 +460,16 @@ void lnccUpdateForwardReduceZ(
                          slabDims,
                          xyFilteredMoments1,
                          xyFilteredMoments2,
-                         xyFilteredMoments3,
-                         xyFilteredMoments4,
                          sums);
 
+    let movingField = VoxelSamplingField(movingImage, linearSampler);
+    let referenceValue = fixedImage.Load(int32_t4(globalCoord, 0));
+    let movingValue = movingField.sampleWithZeroBorder(centerWarpedMovingVoxel);
+    let gradMovingVoxel = movingField.spatialGradient(centerWarpedMovingVoxel);
+    let gradMovingScanner = mul(float4(gradMovingVoxel, 0.0F), voxelScannerMatrices.sourceScannerToVoxel).xyz;
+
     var update = float3(0.0F, 0.0F, 0.0F);
-    if (!solveLnccUpdate(sums, update)) {
+    if (!solveLnccUpdate(sums, referenceValue, movingValue, gradMovingScanner, update)) {
         outputUpdate.Store(outputCoord, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }
@@ -559,8 +490,6 @@ void lnccUpdateBackwardReduceZ(
     ConstantBuffer<UpdateSlabUniforms> slabUniforms,
     Texture3D<float4> xyFilteredMoments1,
     Texture3D<float4> xyFilteredMoments2,
-    Texture3D<float4> xyFilteredMoments3,
-    Texture3D<float4> xyFilteredMoments4,
     WTexture3D<float4> outputUpdate)
 {
     static_assert(kWindowRadius > 0U, "LNCC update doesn't make sense for a window radius of 0.");
@@ -580,6 +509,8 @@ void lnccUpdateBackwardReduceZ(
     let outputCoord = uint32_t3(globalId.x, globalId.y, uint32_t(globalZ));
 
     let fixedDims = textureSize(fixedImage);
+    let fixedField = VoxelSamplingField(fixedImage, linearSampler);
+    let movingField = VoxelSamplingField(movingImage, linearSampler);
     let displacementField = VoxelSamplingFieldFloat4(displacement, linearSampler);
     var centerMovedFixedVoxel = float3(0.0F, 0.0F, 0.0F);
     if (!mapMovingVoxelToMovedFixedVoxel(
@@ -600,12 +531,15 @@ void lnccUpdateBackwardReduceZ(
                          slabDims,
                          xyFilteredMoments1,
                          xyFilteredMoments2,
-                         xyFilteredMoments3,
-                         xyFilteredMoments4,
                          sums);
 
+    let referenceValue = movingField.sampleWithZeroBorder(float3(float(globalCoord.x), float(globalCoord.y), float(globalCoord.z)));
+    let movingValue = fixedField.sampleWithZeroBorder(centerMovedFixedVoxel);
+    let gradMovingVoxel = fixedField.spatialGradient(centerMovedFixedVoxel);
+    let gradMovingScanner = mul(float4(gradMovingVoxel, 0.0F), voxelScannerMatrices.targetScannerToVoxel).xyz;
+
     var update = float3(0.0F, 0.0F, 0.0F);
-    if (!solveLnccUpdate(sums, update)) {
+    if (!solveLnccUpdate(sums, referenceValue, movingValue, gradMovingScanner, update)) {
         outputUpdate.Store(outputCoord, float4(0.0F, 0.0F, 0.0F, 0.0F));
         return;
     }

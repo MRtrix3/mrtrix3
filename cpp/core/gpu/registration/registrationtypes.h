@@ -122,6 +122,8 @@ using NonLinearMetric = std::variant<SSDMetric, NCCMetric>;
 
 constexpr float default_nonlinear_fluid_blur_sigma_voxels = 1.0F;
 constexpr float default_nonlinear_diffusion_blur_sigma_voxels = 1.5F;
+constexpr float default_nonlinear_ncc_update_target_voxels = 2.0F;
+constexpr uint32_t default_nonlinear_svf_bch_terms = 2U;
 
 enum class MetricType : uint8_t { NMI, SSD, NCC };
 enum class InitTranslationChoice : uint8_t { None, Mass, Geometric };
@@ -159,6 +161,8 @@ struct NonLinearRegistrationConfig {
   uint32_t max_iterations = 500;
   float fluid_blur_sigma_voxels = default_nonlinear_fluid_blur_sigma_voxels;
   float diffusion_blur_sigma_voxels = default_nonlinear_diffusion_blur_sigma_voxels;
+  float ncc_update_target_voxels = default_nonlinear_ncc_update_target_voxels;
+  uint32_t svf_bch_terms = default_nonlinear_svf_bch_terms;
   std::optional<transform_type> initial_affine;
 };
 

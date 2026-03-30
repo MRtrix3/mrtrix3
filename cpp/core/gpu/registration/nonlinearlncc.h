@@ -27,10 +27,7 @@ namespace MR::GPU {
 
 struct NonlinearLnccPipelineConfig {
   uint32_t window_radius = 1U;
-  float sigma_ratio = 0.0F;
   float moment_epsilon = 0.0F;
-  float rho_epsilon = 0.0F;
-  float denominator_epsilon = 0.0F;
   float max_update_magnitude = 0.0F;
 
   TextureSpec fixed_moments_texture_spec{};
@@ -116,18 +113,13 @@ private:
   struct UpdateScratchTextures {
     UpdateScratchTextures(const ComputeContext &context, const NonlinearLnccPipelineConfig &config);
 
-    // We use a shared scrach pool made of RGBAF32 textures for both cost and update passes.
+    // We use a shared scratch pool made of RGBAF32 textures for both cost and update passes.
     // A ping-pong strategy is used for the separable box filtering steps.
-    // LNCC cost only consumes moments 1-2 (gradient channels ignored);
-    // LNCC update consumes moments 1-4 for the update solve.
+    // Both LNCC cost and update consume the same two scalar-moment textures.
     Texture moments_ping_1;
     Texture moments_ping_2;
-    Texture moments_ping_3;
-    Texture moments_ping_4;
     Texture moments_pong_1;
     Texture moments_pong_2;
-    Texture moments_pong_3;
-    Texture moments_pong_4;
   };
 
   // Resources for LNCC local update computation
@@ -151,12 +143,8 @@ private:
     DispatchGrid filter_y_dispatch_grid;
     Texture moments_ping_1;
     Texture moments_ping_2;
-    Texture moments_ping_3;
-    Texture moments_ping_4;
     Texture moments_pong_1;
     Texture moments_pong_2;
-    Texture moments_pong_3;
-    Texture moments_pong_4;
     Kernel prepare_raw_moments_kernel;
     Kernel filter_x_kernel;
     Kernel filter_y_kernel;

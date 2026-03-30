@@ -62,10 +62,7 @@ struct UpdateSlabDispatchUniforms {
 
 ShaderEntry::ShaderConstantMap lncc_update_constants(const NonlinearLnccPipelineConfig &config) {
   return {{"kWindowRadius", config.window_radius},
-          {"kSigmaRatio", config.sigma_ratio},
           {"kMomentEpsilon", config.moment_epsilon},
-          {"kRhoEpsilon", config.rho_epsilon},
-          {"kDenominatorEpsilon", config.denominator_epsilon},
           {"kMaxUpdateMagnitude", config.max_update_magnitude}};
 }
 
@@ -207,16 +204,12 @@ NonlinearLnccPipeline::CostPhaseResources::CostPhaseResources(const ComputeConte
 NonlinearLnccPipeline::UpdateScratchTextures::UpdateScratchTextures(const ComputeContext &context,
                                                                     const NonlinearLnccPipelineConfig &config) {
   const TextureSpec scratch_spec = make_update_scratch_texture_spec(config);
-  // 8 RGBA moment textures for staged X/Y filtering.
+  // 4 RGBA moment textures for staged X/Y filtering.
   // The same set is reused for both directions and for cost/update phases.
   moments_ping_1 = context.new_empty_texture(scratch_spec);
   moments_ping_2 = context.new_empty_texture(scratch_spec);
-  moments_ping_3 = context.new_empty_texture(scratch_spec);
-  moments_ping_4 = context.new_empty_texture(scratch_spec);
   moments_pong_1 = context.new_empty_texture(scratch_spec);
   moments_pong_2 = context.new_empty_texture(scratch_spec);
-  moments_pong_3 = context.new_empty_texture(scratch_spec);
-  moments_pong_4 = context.new_empty_texture(scratch_spec);
 }
 
 NonlinearLnccPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeContext &context,
@@ -238,21 +231,14 @@ NonlinearLnccPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeC
           workgroup_size)),
       moments_ping_1(scratch.moments_ping_1),
       moments_ping_2(scratch.moments_ping_2),
-      moments_ping_3(scratch.moments_ping_3),
-      moments_ping_4(scratch.moments_ping_4),
       moments_pong_1(scratch.moments_pong_1),
-      moments_pong_2(scratch.moments_pong_2),
-      moments_pong_3(scratch.moments_pong_3),
-      moments_pong_4(scratch.moments_pong_4) {
+      moments_pong_2(scratch.moments_pong_2) {
   const ShaderEntry prepare_shader{
       .shader_source = ShaderFile{"shaders/registration/nonlinear/local_lncc_update.slang"},
       .entryPoint = std::string(prepare_entry_point),
       .workgroup_size = workgroup_size,
       .constants = {{"kWindowRadius", config.window_radius},
-                    {"kSigmaRatio", config.sigma_ratio},
                     {"kMomentEpsilon", config.moment_epsilon},
-                    {"kRhoEpsilon", config.rho_epsilon},
-                    {"kDenominatorEpsilon", config.denominator_epsilon},
                     {"kMaxUpdateMagnitude", config.max_update_magnitude},
                     {"kUseFixedMask", static_cast<uint32_t>(config.fixed_mask.has_value())},
                     {"kUseMovingMask", static_cast<uint32_t>(config.moving_mask.has_value())}},
@@ -269,8 +255,6 @@ NonlinearLnccPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeC
                                                        {"slabUniforms", slab_uniforms_buffer},
                                                        {"outputMoments1", moments_ping_1},
                                                        {"outputMoments2", moments_ping_2},
-                                                       {"outputMoments3", moments_ping_3},
-                                                       {"outputMoments4", moments_ping_4},
                                                    }});
 
   const ShaderEntry filter_x_shader{
@@ -283,12 +267,8 @@ NonlinearLnccPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeC
                                             {"latticeImage", lattice_image},
                                             {"inputMoments1", moments_ping_1},
                                             {"inputMoments2", moments_ping_2},
-                                            {"inputMoments3", moments_ping_3},
-                                            {"inputMoments4", moments_ping_4},
                                             {"outputMoments1", moments_pong_1},
                                             {"outputMoments2", moments_pong_2},
-                                            {"outputMoments3", moments_pong_3},
-                                            {"outputMoments4", moments_pong_4},
                                         }});
 
   const ShaderEntry filter_y_shader{
@@ -301,12 +281,8 @@ NonlinearLnccPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeC
                                             {"latticeImage", lattice_image},
                                             {"inputMoments1", moments_pong_1},
                                             {"inputMoments2", moments_pong_2},
-                                            {"inputMoments3", moments_pong_3},
-                                            {"inputMoments4", moments_pong_4},
                                             {"outputMoments1", moments_ping_1},
                                             {"outputMoments2", moments_ping_2},
-                                            {"outputMoments3", moments_ping_3},
-                                            {"outputMoments4", moments_ping_4},
                                         }});
 
   const ShaderEntry reduce_shader{
@@ -326,8 +302,6 @@ NonlinearLnccPipeline::UpdatePhaseResources::UpdatePhaseResources(const ComputeC
                                             {"slabUniforms", slab_uniforms_buffer},
                                             {"xyFilteredMoments1", moments_ping_1},
                                             {"xyFilteredMoments2", moments_ping_2},
-                                            {"xyFilteredMoments3", moments_ping_3},
-                                            {"xyFilteredMoments4", moments_ping_4},
                                             {"outputUpdate", output_update},
                                         }});
   filter_x_dispatch_grid = DispatchGrid::element_wise(

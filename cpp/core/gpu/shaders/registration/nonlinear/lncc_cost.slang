@@ -19,7 +19,7 @@
 // - lnccPrepareRawMomentsForward / lnccPrepareRawMomentsBackward
 // - lnccCostFilterXPass / lnccCostFilterYPass
 // - lnccCostForwardReduceZ / lnccCostBackwardReduceZ
-// LNCC = Cov(r, m)^2 / sqrt(Var(r) * Var(m))
+// LNCC = Cov(r, m) / sqrt(Var(r) * Var(m))
 // where r is the reference (fixed) image and m is the moving image.
 // Cov(r, m) = 1/N Σ_i r_i * m_i - mu_r * mu_m
 // Var(r) = 1/N Σ_i r_i^2 - mu_r^2
@@ -97,7 +97,7 @@ bool solveLnccCost(LnccMomentSums sums, out float cost)
     }
 
     let rho = covariance / sqrt(varianceProduct);
-    cost = -(rho * rho);
+    cost = -rho;
     return true;
 }
 

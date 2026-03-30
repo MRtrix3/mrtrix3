@@ -54,11 +54,7 @@ constexpr float exponentiation_max_velocity_norm_voxels = 0.5F;
 constexpr float update_alpha = 1.0F;
 constexpr float update_epsilon = 1.0e-5F;
 constexpr float update_max_magnitude = 0.5F; // in scanner space units (mm)
-// Larger values make updates more conservative; smaller values allow more aggressive updates.
-constexpr float lncc_sigma_ratio = 0.25F;
 constexpr float lncc_moment_epsilon = 1.0e-6F;
-constexpr float lncc_rho_epsilon = 1.0e-6F;
-constexpr float lncc_denominator_epsilon = 1.0e-6F;
 // Gaussian kernel truncation factor used to derive the effective radius of the local update kernels from their sigma
 // values.
 constexpr float gaussian_blur_k = 2.0F;
@@ -66,7 +62,7 @@ constexpr float velocity_step_size = 0.85F;
 constexpr float velocity_clamp_max = 0.5F; // in scanner space units (mm)
 constexpr float velocity_clamp_epsilon = 1.0e-6F;
 constexpr uint32_t num_levels = 3U;
-constexpr uint32_t convergence_window = 5U;
+constexpr uint32_t convergence_window = 4U;
 constexpr float convergence_min_relative_improvement = 1.0e-4F;
 constexpr float convergence_cost_floor = 1.0e-6F;
 struct DispatchGridUniforms {
@@ -80,6 +76,12 @@ struct alignas(16) ExponentiateInitUniforms {
   std::array<uint32_t, 2> padding = {0U, 0U};
 };
 static_assert(sizeof(ExponentiateInitUniforms) % 16 == 0, "ExponentiateInitUniforms must be 16-byte aligned.");
+
+struct alignas(16) ApplyVelocityUpdateUniforms {
+  float dynamic_scale = 1.0F;
+  std::array<uint32_t, 3> padding = {0U, 0U, 0U};
+};
+static_assert(sizeof(ApplyVelocityUpdateUniforms) % 16 == 0, "ApplyVelocityUpdateUniforms must be 16-byte aligned.");
 
 constexpr uint32_t vector_texture_components = 4U;
 
@@ -210,6 +212,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   //    - resample backward update from moving lattice to fixed lattice using exp(v)
   //    - combine updates as u = 0.5 * (u_fwd - u_bwd)
   //    - regularise u via Gaussian smoothing (fluid-like regularisation)
+  //    - optionally rescale u so its maximum effective LNCC step matches the configured voxel target
   //    - apply u to velocity
   //    - regularise velocity via Gaussian smoothing (diffusion-like regularisation)
   //    - evaluate convergence using symmetric metric: 0.5 * (cost_fwd + cost_bwd)
@@ -218,6 +221,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   // - Symmetric Log-Domain Diffeomorphic Registration: A Demons-based Approach by Vercauteren et al.
   // - Diffeomorphic demons: Efficient non-parametric image registration by Vercauteren et al.
   // - An ITK Implementation of the Symmetric Log-Domain Diffeomorphic Demons Algorithm by Dru & Vercauteren.
+  // - LCC-Demons: A robust and accurate symmetric diffeomorphic registration algorithm by Lorenzi et al.
 
   if (config.channels.empty()) {
     throw Exception("At least one channel must be provided for registration");
@@ -227,6 +231,8 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
   const NCCMetric *const ncc_metric = std::get_if<NCCMetric>(&config.metric);
   const bool use_lncc_metric = ncc_metric != nullptr;
+  const bool use_ncc_update_normalisation = use_lncc_metric;
+  const float ncc_update_target_voxels = config.ncc_update_target_voxels;
   const uint32_t lncc_window_radius = use_lncc_metric ? ncc_metric->window_radius : 0U;
   if (use_lncc_metric && lncc_window_radius == 0U) {
     throw Exception("Non-linear registration: NCC metric requires ncc_radius >= 1.");
@@ -243,6 +249,12 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
   }
   if (config.diffusion_blur_sigma_voxels < 0.0F) {
     throw Exception("Non-linear registration: diffusion blur sigma must be non-negative.");
+  }
+  if (config.ncc_update_target_voxels < 0.0F) {
+    throw Exception("Non-linear registration: NCC update target must be non-negative.");
+  }
+  if (config.svf_bch_terms < 1U || config.svf_bch_terms > 2U) {
+    throw Exception("Non-linear registration: SVF BCH terms must be either 1 or 2.");
   }
 
   const Texture moving_texture = context.new_texture_from_host_image(channel.image1);
@@ -417,16 +429,27 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                 {"kStepSize", velocity_step_size},
                 {"kMaxUpdateMagnitude", velocity_clamp_max},
                 {"kClampEpsilon", velocity_clamp_epsilon},
+                {"kBchTerms", config.svf_bch_terms},
             },
     };
+    const Buffer<std::byte> apply_update_uniforms_buffer =
+        context.new_buffer_from_host_object(ApplyVelocityUpdateUniforms{}, BufferType::UniformBuffer);
     const Texture &velocity_update_field = use_fluid_smoothing ? smoothed_update_field : symmetric_update_field;
     const Kernel apply_update_12 = context.new_kernel({
         .compute_shader = apply_update_shader,
-        .bindings_map = {{"velocity", velocity1}, {"update", velocity_update_field}, {"outputVelocity", velocity2}},
+        .bindings_map = {{"uniforms", apply_update_uniforms_buffer},
+                         {"velocity", velocity1},
+                         {"update", velocity_update_field},
+                         {"voxelScannerMatrices", voxel_scanner_buffer},
+                         {"outputVelocity", velocity2}},
     });
     const Kernel apply_update_21 = context.new_kernel({
         .compute_shader = apply_update_shader,
-        .bindings_map = {{"velocity", velocity2}, {"update", velocity_update_field}, {"outputVelocity", velocity1}},
+        .bindings_map = {{"uniforms", apply_update_uniforms_buffer},
+                         {"velocity", velocity2},
+                         {"update", velocity_update_field},
+                         {"voxelScannerMatrices", voxel_scanner_buffer},
+                         {"outputVelocity", velocity1}},
     });
 
     const DispatchGrid backward_cost_dispatch_grid = moving_dispatch_grid;
@@ -466,10 +489,7 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
     if (use_lncc_metric) {
       const NonlinearLnccPipelineConfig lncc_pipeline_config{
           .window_radius = lncc_window_radius,
-          .sigma_ratio = lncc_sigma_ratio,
           .moment_epsilon = lncc_moment_epsilon,
-          .rho_epsilon = lncc_rho_epsilon,
-          .denominator_epsilon = lncc_denominator_epsilon,
           .max_update_magnitude = update_max_magnitude,
           .fixed_moments_texture_spec = vector_texture_spec,
           .moving_moments_texture_spec = moving_vector_texture_spec,
@@ -520,14 +540,23 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
                          {"voxelScannerMatrices", voxel_scanner_buffer},
                          {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}},
     });
-    const auto evaluate_exponentiation_steps = [&](const Kernel &velocity_max_norm_kernel) {
-      context.dispatch_kernel(velocity_max_norm_kernel, dispatch_grid);
+    const Kernel update_max_norm_kernel = context.new_kernel({
+        .compute_shader = velocity_max_norm_shader,
+        .bindings_map = {{"uniforms", forward_dispatch_uniforms_buffer},
+                         {"velocityTexture", velocity_update_field},
+                         {"voxelScannerMatrices", voxel_scanner_buffer},
+                         {"maxNormSqPartials", velocity_max_norm_sq_partials_buffer}},
+    });
+    const auto evaluate_max_norm_voxels = [&](const Kernel &max_norm_kernel) {
+      context.dispatch_kernel(max_norm_kernel, dispatch_grid);
       const std::vector<float> partial_max_norm_sq =
           context.download_buffer_as_vector(velocity_max_norm_sq_partials_buffer);
       const auto max_norm_sq_it = std::max_element(partial_max_norm_sq.begin(), partial_max_norm_sq.end());
       const float max_norm_sq = max_norm_sq_it == partial_max_norm_sq.end() ? 0.0F : *max_norm_sq_it;
-      const float max_norm = std::sqrt(std::max(0.0F, max_norm_sq));
-      return compute_exponentiation_steps(max_norm);
+      return std::sqrt(std::max(0.0F, max_norm_sq));
+    };
+    const auto evaluate_exponentiation_steps = [&](const Kernel &velocity_max_norm_kernel) {
+      return compute_exponentiation_steps(evaluate_max_norm_voxels(velocity_max_norm_kernel));
     };
     const auto exponentiate_from_kernel = [&](const Kernel &exp_init_kernel, uint32_t num_steps, float velocity_sign) {
       const ExponentiateInitUniforms exp_init_uniforms{
@@ -635,6 +664,22 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       if (fluid_update_blur) {
         fluid_update_blur->run(context);
       }
+      float update_scale_factor = 1.0F;
+      if (use_ncc_update_normalisation) {
+        // For LNCC, the raw update magnitude is not directly tied to a stable physical step size.
+        // Measure the maximum norm of the current update field in target-voxel units, then choose a
+        // global rescaling so that the largest effective update after multiplying by velocity_step_size
+        // is driven toward ncc_update_target_voxels for this iteration.
+        const float update_max_norm_voxels = evaluate_max_norm_voxels(update_max_norm_kernel);
+        if (update_max_norm_voxels > 0.0F) {
+          const float effective_step = velocity_step_size * update_max_norm_voxels;
+          if (effective_step > 0.0F) {
+            update_scale_factor = ncc_update_target_voxels / effective_step;
+          }
+        }
+      }
+      context.write_object_to_buffer(apply_update_uniforms_buffer,
+                                     ApplyVelocityUpdateUniforms{.dynamic_scale = update_scale_factor});
       const Kernel &apply_update_kernel = velocity_is_1 ? apply_update_12 : apply_update_21;
       context.dispatch_kernel(apply_update_kernel, dispatch_grid);
 
