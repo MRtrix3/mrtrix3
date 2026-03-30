@@ -35,15 +35,12 @@
 #include "image_helpers.h"
 #include "interp/cubic.h"
 #include "magic_enum/magic_enum.hpp"
-#include "math/average_space.h"
 #include "mrtrix.h"
 #include "types.h"
 
 #include <Eigen/Core>
-#include <Eigen/Geometry>
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -95,29 +92,6 @@ const std::vector<std::string> supported_registration_modes = lowercase_enum_nam
 const std::vector<std::string> supported_init_translations = lowercase_enum_names<InitTranslationChoice>();
 const std::vector<std::string> supported_init_rotations = lowercase_enum_names<InitRotationChoice>();
 
-struct HalfwayTransforms {
-  transform_type half;
-  transform_type half_inverse;
-  Eigen::Matrix4d half_matrix;
-  Eigen::Matrix4d half_inverse_matrix;
-};
-
-HalfwayTransforms compute_halfway_transforms(const transform_type &scanner_transform) {
-  const Eigen::Matrix4d matrix = EigenHelpers::to_homogeneous_mat4d(scanner_transform);
-  const double det = matrix.block<3, 3>(0, 0).determinant();
-  if (!std::isfinite(det) || det <= 0.0) {
-    throw Exception("Cannot compute halfway transform: non-invertible or reflected transform.");
-  }
-  const Eigen::Matrix4d half_matrix = matrix.sqrt();
-  const Eigen::Matrix4d half_inverse_matrix = half_matrix.inverse();
-  return HalfwayTransforms{
-      .half = EigenHelpers::from_homogeneous_mat4d(half_matrix),
-      .half_inverse = EigenHelpers::from_homogeneous_mat4d(half_inverse_matrix),
-      .half_matrix = half_matrix,
-      .half_inverse_matrix = half_inverse_matrix,
-  };
-}
-
 } // namespace
 
 // clang-format off
@@ -156,19 +130,7 @@ HalfwayTransforms compute_halfway_transforms(const transform_type &scanner_trans
              + Argument("warp1").type_image_out()
              + Argument("warp2").type_image_out()
 
-         + Option ("transformed_midway", "image1 and image2 after registration transformed and regridded to the midway space."
-                                        " Note that -transformed_midway needs to be repeated for each contrast.")
-             .allow_multiple()
-             + Argument("image1_transformed").type_image_out()
-             + Argument("image2_transformed").type_image_out()
-
          + Option ("matrix", "write the transformation matrix used for reslicing image1 into image2 space.")
-             + Argument("filename").type_file_out()
-
-         + Option ("matrix_1tomidway", "write the transformation matrix used for reslicing image1 into midway space.")
-             + Argument("filename").type_file_out()
-
-         + Option ("matrix_2tomidway", "write the transformation matrix used for reslicing image2 into midway space.")
              + Argument("filename").type_file_out()
 
          + Option ("type", "type of transform (global, nonlinear)")
@@ -455,15 +417,8 @@ void run() {
 
   if (has_nonlinear_registration) {
     const std::string matrix_filename = get_option_value<std::string>("matrix", "");
-    const std::string matrix_1tomid_filename = get_option_value<std::string>("matrix_1tomidway", "");
-    const std::string matrix_2tomid_filename = get_option_value<std::string>("matrix_2tomidway", "");
-    if (!matrix_filename.empty() || !matrix_1tomid_filename.empty() || !matrix_2tomid_filename.empty()) {
+    if (!matrix_filename.empty()) {
       throw Exception("Matrix outputs are not yet supported when using nonlinear registration.");
-    }
-
-    const auto transformed_midway_option = get_options("transformed_midway");
-    if (!transformed_midway_option.empty()) {
-      throw Exception("transformed_midway outputs are not yet supported when using nonlinear registration.");
     }
 
     NonLinearMetric nonlinear_metric;
@@ -594,8 +549,6 @@ void run() {
   const RegistrationResult registration_result = GPU::run_registration(registration_config, gpu_compute_context);
 
   const std::string matrix_filename = get_option_value<std::string>("matrix", "");
-  const std::string matrix_1tomid_filename = get_option_value<std::string>("matrix_1tomidway", "");
-  const std::string matrix_2tomid_filename = get_option_value<std::string>("matrix_2tomidway", "");
 
   const auto transformed_option = get_options("transformed");
   std::vector<std::filesystem::path> transformed_filenames;
@@ -615,51 +568,9 @@ void run() {
     }
   }
 
-  const auto transformed_midway_option = get_options("transformed_midway");
-  std::vector<std::filesystem::path> transformed_midway1_filenames;
-  std::vector<std::filesystem::path> transformed_midway2_filenames;
-  if (!transformed_midway_option.empty()) {
-    if (transformed_midway_option.size() > header_pairs.size()) {
-      throw Exception("Number of -transformed_midway images exceeds number of contrasts");
-    }
-    if (transformed_midway_option.size() < header_pairs.size()) {
-      WARN("Number of -transformed_midway images is less than number of contrasts.");
-    }
-    for (size_t i = 0; i < transformed_midway_option.size(); ++i) {
-      if (transformed_midway_option[i].args.size() != 2U) {
-        throw Exception("Each -transformed_midway option requires two output images.");
-      }
-      const std::filesystem::path output1_path(transformed_midway_option[i][0]);
-      const std::filesystem::path output2_path(transformed_midway_option[i][1]);
-      transformed_midway1_filenames.push_back(output1_path);
-      transformed_midway2_filenames.push_back(output2_path);
-      const auto input1_path = std::filesystem::path(header_pairs[i].header1.name());
-      const auto input2_path = std::filesystem::path(header_pairs[i].header2.name());
-      INFO(input1_path.filename().string() + ", transformed to midway space, will be saved to " +
-           output1_path.string());
-      INFO(input2_path.filename().string() + ", transformed to midway space, will be saved to " +
-           output2_path.string());
-    }
-  }
-
-  const bool needs_halfway_transforms =
-      !transformed_midway1_filenames.empty() || !matrix_1tomid_filename.empty() || !matrix_2tomid_filename.empty();
-  std::optional<HalfwayTransforms> halfway_transforms;
-  if (needs_halfway_transforms) {
-    halfway_transforms = compute_halfway_transforms(registration_result.transformation);
-  }
-
-  if (!matrix_filename.empty() || !matrix_1tomid_filename.empty() || !matrix_2tomid_filename.empty()) {
+  if (!matrix_filename.empty()) {
     const Eigen::Vector3d centre = image_centre_scanner_space(header_pairs.front().header1);
-    if (!matrix_filename.empty()) {
-      File::Matrix::save_transform(registration_result.transformation, centre, matrix_filename);
-    }
-    if (!matrix_1tomid_filename.empty()) {
-      File::Matrix::save_transform(halfway_transforms->half, centre, matrix_1tomid_filename);
-    }
-    if (!matrix_2tomid_filename.empty()) {
-      File::Matrix::save_transform(halfway_transforms->half_inverse, centre, matrix_2tomid_filename);
-    }
+    File::Matrix::save_transform(registration_result.transformation, centre, matrix_filename);
   }
 
   if (!transformed_filenames.empty()) {
@@ -674,32 +585,6 @@ void run() {
 
       Filter::reslice<Interp::Cubic>(
           input_image, output_image, registration_result.transformation, Adapter::AutoOverSample, 0.0F);
-    }
-  }
-
-  if (!transformed_midway1_filenames.empty()) {
-    // Compute midpioint transforms in scanner space and then build a midway output header that can hold both images
-    using ProjectiveTransform = Eigen::Transform<default_type, 3, Eigen::Projective>;
-    const ProjectiveTransform half_projective(halfway_transforms->half_matrix);
-    const ProjectiveTransform half_inverse_projective(halfway_transforms->half_inverse_matrix);
-
-    const size_t transforms_to_write = std::min(transformed_midway1_filenames.size(), header_pairs.size());
-    for (size_t idx = 0; idx < transforms_to_write; ++idx) {
-      const auto &[header1, header2] = header_pairs[idx];
-      Header output_header = compute_minimum_average_header(header1, header2, half_inverse_projective, half_projective);
-      output_header.datatype() = DataType::from<float>();
-
-      Image<float> input_image1 = Image<float>::open(header1.name());
-      auto output_image1 =
-          Image<float>::create(transformed_midway1_filenames[idx].string(), output_header).with_direct_io();
-      Filter::reslice<Interp::Cubic>(
-          input_image1, output_image1, halfway_transforms->half, Adapter::AutoOverSample, 0.0F);
-
-      Image<float> input_image2 = Image<float>::open(header2.name());
-      auto output_image2 =
-          Image<float>::create(transformed_midway2_filenames[idx].string(), output_header).with_direct_io();
-      Filter::reslice<Interp::Cubic>(
-          input_image2, output_image2, halfway_transforms->half_inverse, Adapter::AutoOverSample, 0.0F);
     }
   }
 }
