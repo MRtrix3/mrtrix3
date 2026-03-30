@@ -182,20 +182,3 @@ public typealias TexelSamplingFieldFloat3 = VectorVolumeSamplingField<SamplingCo
 public typealias TexelSamplingFieldFloat4 = VectorVolumeSamplingField<SamplingCoordinateSystem.Texel, float4>;
 public typealias VoxelSamplingFieldFloat3 = VectorVolumeSamplingField<SamplingCoordinateSystem.Voxel, float3>;
 public typealias VoxelSamplingFieldFloat4 = VectorVolumeSamplingField<SamplingCoordinateSystem.Voxel, float4>;
-
-
-public struct GradientSamplingField {
-    Texture3D<float4> gradientImage;
-    uint3 dimensions;
-    SamplerState sampler;
-
-    public __init(Texture3D<float4> img, SamplerState smpl) {
-        gradientImage = img;
-        sampler = smpl;
-        gradientImage.GetDimensions(dimensions.x, dimensions.y, dimensions.z);
-    }
-
-    public float3 sample(float3 coord) {
-        return gradientImage.SampleLevel(sampler, coord / float3(dimensions), 0.0F).rgb;
-    }
-}
