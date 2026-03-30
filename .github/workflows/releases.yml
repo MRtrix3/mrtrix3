@@ -67,13 +67,13 @@ jobs:
             exit 0
           fi
 
-          # Nightly run: compare HEAD of dev vs nightly tag
+          # Nightly run: compare HEAD of dev vs nightly-dev tag
           git fetch --tags origin
 
-          if git rev-parse refs/tags/nightly >/dev/null 2>&1; then
-            LOG="$(git log --oneline refs/tags/nightly..HEAD || true)"
+          if git rev-parse refs/tags/nightly-dev >/dev/null 2>&1; then
+            LOG="$(git log --oneline refs/tags/nightly-dev..HEAD || true)"
           else
-            # If nightly tag doesn't exist yet, treat all recent commits as "new"
+            # If nightly-dev tag doesn't exist yet, treat all recent commits as "new"
             LOG="$(git log --oneline HEAD~50..HEAD || true)"
           fi
 
@@ -228,22 +228,22 @@ jobs:
           } > "$NOTES_FILE"
 
           # Ensure the nightly release exists and update its notes
-          if gh release view nightly >/dev/null 2>&1; then
-            gh release edit nightly --notes-file "$NOTES_FILE"
+          if gh release view nightly-dev >/dev/null 2>&1; then
+            gh release edit nightly-dev --notes-file "$NOTES_FILE"
           else
-            gh release create nightly --title "Nightly build" --notes-file "$NOTES_FILE"
+            gh release create nightly-dev --title "Nightly dev build" --notes-file "$NOTES_FILE"
           fi
 
           # Remove existing assets so we only keep artifacts from the latest run
-          EXISTING_ASSETS="$(gh release view nightly --json assets --jq '.assets[].name' || true)"
+          EXISTING_ASSETS="$(gh release view nightly-dev --json assets --jq '.assets[].name' || true)"
           if [ -n "$EXISTING_ASSETS" ]; then
             printf '%s\n' "$EXISTING_ASSETS" | while IFS= read -r asset; do
               [ -z "$asset" ] && continue
-              gh release delete-asset nightly "$asset" --yes
+              gh release delete-asset nightly-dev "$asset" --yes
             done
           fi
 
-          gh release upload nightly dist/*/* --clobber
+          gh release upload nightly-dev dist/*/* --clobber
 
       - name: Move nightly tag forward
         env:
@@ -256,5 +256,5 @@ jobs:
           git fetch origin
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -f nightly "$NIGHTLY_COMMIT"
-          git push origin refs/tags/nightly --force
+          git tag -f nightly-dev "$NIGHTLY_COMMIT"
+          git push origin refs/tags/nightly-dev --force
