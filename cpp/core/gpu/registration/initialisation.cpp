@@ -117,6 +117,43 @@ bool compute_sorted_eigenvectors(const Eigen::Matrix3f &matrix,
   }
   return eigenvectors.allFinite() && eigenvalues.allFinite();
 }
+
+void make_right_handed(Eigen::Matrix3f &basis) {
+  if (basis.determinant() < 0.0F) {
+    basis.col(2) *= -1.0F;
+  }
+}
+
+Eigen::Matrix3f best_moment_rotation(Eigen::Matrix3f target_basis, Eigen::Matrix3f moving_basis) {
+  make_right_handed(target_basis);
+  make_right_handed(moving_basis);
+
+  const std::array<Eigen::Vector3f, 4> sign_patterns = {
+      Eigen::Vector3f(1.0F, 1.0F, 1.0F),
+      Eigen::Vector3f(1.0F, -1.0F, -1.0F),
+      Eigen::Vector3f(-1.0F, 1.0F, -1.0F),
+      Eigen::Vector3f(-1.0F, -1.0F, 1.0F),
+  };
+
+  float best_trace = -1.0F;
+  Eigen::Matrix3f best_rotation = Eigen::Matrix3f::Identity();
+
+  for (const auto &signs : sign_patterns) {
+    Eigen::Matrix3f signed_moving_basis = moving_basis;
+    for (int32_t axis = 0; axis < 3; ++axis) {
+      signed_moving_basis.col(axis) *= signs[axis];
+    }
+
+    const Eigen::Matrix3f rotation = signed_moving_basis * target_basis.transpose();
+    const float trace = rotation.trace();
+    if (trace > best_trace) {
+      best_trace = trace;
+      best_rotation = rotation;
+    }
+  }
+
+  return best_rotation;
+}
 } // namespace
 
 namespace MR::GPU {
@@ -279,8 +316,32 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
     break;
   }
   case InitRotationChoice::Moments: {
-    // TODO: implement moment-based initial rotation
-    throw std::logic_error("Moment-based initial rotation is not yet implemented.");
+    INFO("Computing initial rotation using image moments.");
+
+    const Eigen::Map<const Eigen::Matrix4f> voxel_to_scanner_moving(
+        voxel_scanner_matrices.voxel_to_scanner_moving.data());
+    const auto com_moving =
+        EigenHelpers::to_vector3f(centerOfMass(moving_texture, context, transform_type::Identity(), moving_mask));
+    const Eigen::Vector4f com_moving_scanner = voxel_to_scanner_moving * com_moving.homogeneous();
+
+    const Eigen::Matrix3f target_moments = computeScannerMoments(
+        target_texture, context, voxel_to_scanner_fixed, com_target_scanner.head<3>(), target_mask);
+    const Eigen::Matrix3f moving_moments = computeScannerMoments(
+        moving_texture, context, voxel_to_scanner_moving, com_moving_scanner.head<3>(), moving_mask);
+
+    Eigen::Matrix3f target_basis;
+    Eigen::Matrix3f moving_basis;
+    Eigen::Vector3f target_eigenvalues;
+    Eigen::Vector3f moving_eigenvalues;
+    if (!compute_sorted_eigenvectors(target_moments, target_basis, target_eigenvalues) ||
+        !compute_sorted_eigenvectors(moving_moments, moving_basis, moving_eigenvalues)) {
+      throw std::runtime_error("Failed to compute principal axes for moment-based initial rotation.");
+    }
+
+    const Eigen::Matrix3f rotation_matrix = best_moment_rotation(target_basis, moving_basis);
+    const Eigen::AngleAxisf angle_axis(rotation_matrix);
+    initial_transform.set_rotation(angle_axis.axis() * angle_axis.angle());
+    break;
   }
   }
 
