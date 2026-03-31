@@ -18,10 +18,12 @@
 
 #include "command.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "memory.h"
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
+#include "fixel/helpers.h"
 #include "math/math.h"
 #include "math/median.h"
 #include "metadata/phase_encoding.h"
@@ -352,18 +354,6 @@ class ImageKernel : public ImageKernelBase { NOMEMALIGN
     Image<Operation> image;
 };
 
-
-Eigen::Matrix<double, 4, 4> get_transform(const Header& header) {
-    Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
-    Eigen::Matrix<double, 4, 4> matrix;   // default_type is usually double
-    matrix.topLeftCorner<3,4>() = header.transform().matrix(); // 3x4 affine
-    matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
-
-    //for debugging
-    //std::cout << matrix.format(fmt) << std::endl;
-    return matrix;
-}
-
 void run ()
 {
   const size_t num_inputs = argument.size() - 2;
@@ -384,7 +374,6 @@ void run ()
       throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");
 
     Header header_out (image_in);
-
 
     if (axis == 3) {
       try {
@@ -426,74 +415,60 @@ void run ()
 
     vector<Header> headers_in (num_inputs);
 
-
     // Header of first input image is the template to which all other input images are compared
     headers_in[0] = Header::open (argument[0]);
-    Header header (headers_in[0]);
-    header.datatype() = DataType::from_command_line (DataType::Float32);
+    Header header_out (headers_in[0]);
+    header_out.datatype() = DataType::from_command_line (DataType::Float32);
 
-
-    // load all image headers
-    // Load headers
-    //vector<Header> headers_in(num_inputs);
-    for (size_t i = 0; i < num_inputs; ++i) {
-        headers_in[i] = Header::open(argument[i]);
+    // find dimensionality of output image once unary-dimensional axes are optionally removed
+    size_t ndim_out = header_out.ndim();
+    if (!get_options ("keep_unary_axes").size() ) {
+      while (header_out.size (ndim_out - 1) == 1)
+        --ndim_out;
     }
 
-    // Compare all headers
-    // this can be a bit repetitive, should find more efficient way to do the comparisons
-    for (size_t i = 0; i < headers_in.size(); ++i) {
-        const Eigen::Matrix<double, 4, 4> Ti = get_transform(headers_in[i]);
-        for (size_t j = 1; j < headers_in.size(); ++j) {  // j > i avoids redundant checks
-            const Eigen::Matrix<double, 4, 4> Tj = get_transform(headers_in[j]);
-
-            if (!Ti.isApprox(Tj, 1e-6)) {
-                throw Exception("Header transform " + std::to_string(i) +
-                                " differs from header transform " + std::to_string(j));
-            }
-        }
+    // load all image headers,
+    //   and verify that dimensions of all input images adequately match
+    for (size_t i = 1; i < num_inputs; ++i) {
+      headers_in[i] = Header::open(argument[i]);
+      if (headers_in[i].ndim() < header_out.ndim())
+        throw Exception ("Image " + headers_in[i].name() + " has fewer axes" + //
+                         " than first input image " + headers_in[i].name());   //
+      if (header_out.ndim() >= 3 &&                                       //
+          !Fixel::is_data_file(header_out) &&                             //
+          !Fixel::is_data_file(headers_in[i]) &&                          //
+          !voxel_grids_match_in_scanner_space(headers_in[i], header_out)) //
+        throw Exception("Header transform of image " + headers_in[i].name() +         //
+                        " differs from that of first image " + headers_in[i].name()); //
+      if (!dimensions_match(headers_in[i], header_out, 0, ndim_out))
+        throw Exception ("Dimensions of image " + headers_in[i].name() +                      //
+                         " do not match those of first input image " + headers_in[0].name()); //
+      for (size_t axis = ndim_out; axis != headers_in[i].ndim(); ++axis) {
+        if (headers_in[i].size(axis) != 1)
+          throw Exception ("Image " + headers_in[i].name() + " has axis with non-unary dimension"
+                           " beyond first input image " + headers_in[0].name());
+      }
+      header_out.merge_keyval(headers_in[i].keyval());
     }
 
     // Wipe any excess unary-dimensional axes
-    if ( ! get_options ("keep_unary_axes").size() ) {
-      while (header.size (header.ndim() - 1) == 1)
-        header.ndim() = header.ndim() - 1;
-    }
-
-    // Verify that dimensions of all input images adequately match
-    for (size_t i = 1; i != num_inputs; ++i) {
-      const std::string path = argument[i];
-      // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
-      headers_in[i] = Header::open (path);
-      const Header& temp (headers_in[i]);
-      if (temp.ndim() < header.ndim())
-        throw Exception ("Image " + path + " has fewer axes than first input image " + header.name());
-      for (size_t axis = 0; axis != header.ndim(); ++axis) {
-        if (temp.size(axis) != header.size(axis))
-          throw Exception ("Dimensions of image " + path + " do not match those of first input image " + header.name());
-      }
-      for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
-        if (temp.size(axis) != 1)
-          throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
-      }
-      header.merge_keyval (temp.keyval());
-    }
+    header_out.ndim() = ndim_out;
 
     // Instantiate a kernel depending on the operation requested
     std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
-      case 0:  kernel.reset (new ImageKernel<Mean>    (header)); break;
-      case 1:  kernel.reset (new ImageKernel<Median>  (header)); break;
-      case 2:  kernel.reset (new ImageKernel<Sum>     (header)); break;
-      case 3:  kernel.reset (new ImageKernel<Product> (header)); break;
-      case 4:  kernel.reset (new ImageKernel<RMS>     (header)); break;
-      case 5:  kernel.reset (new ImageKernel<NORM2>   (header)); break;
-      case 6:  kernel.reset (new ImageKernel<Var>     (header)); break;
-      case 7:  kernel.reset (new ImageKernel<Std>     (header)); break;
-      case 8:  kernel.reset (new ImageKernel<Min>     (header)); break;
-      case 9:  kernel.reset (new ImageKernel<Max>     (header)); break;
-      case 10:  kernel.reset (new ImageKernel<AbsMax>  (header)); break;
-      case 11: kernel.reset (new ImageKernel<MagMax>  (header)); break;
+      case 0:  kernel.reset (new ImageKernel<Mean>    (header_out)); break;
+      case 1:  kernel.reset (new ImageKernel<Median>  (header_out)); break;
+      case 2:  kernel.reset (new ImageKernel<Sum>     (header_out)); break;
+      case 3:  kernel.reset (new ImageKernel<Product> (header_out)); break;
+      case 4:  kernel.reset (new ImageKernel<RMS>     (header_out)); break;
+      case 5:  kernel.reset (new ImageKernel<NORM2>   (header_out)); break;
+      case 6:  kernel.reset (new ImageKernel<Var>     (header_out)); break;
+      case 7:  kernel.reset (new ImageKernel<Std>     (header_out)); break;
+      case 8:  kernel.reset (new ImageKernel<Min>     (header_out)); break;
+      case 9:  kernel.reset (new ImageKernel<Max>     (header_out)); break;
+      case 10:  kernel.reset (new ImageKernel<AbsMax>  (header_out)); break;
+      case 11: kernel.reset (new ImageKernel<MagMax>  (header_out)); break;
       default: assert (0);
     }
 
@@ -509,7 +484,7 @@ void run ()
       }
     }
 
-    auto out = Header::create (output_path, header).get_image<value_type>();
+    auto out = Header::create (output_path, header_out).get_image<value_type>();
     kernel->write_back (out);
   }
 
