@@ -287,9 +287,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
 
   for (uint32_t level = 0U; level < num_levels; ++level) {
     INFO("Non-linear registration: processing level " + std::to_string(level + 1U) + "/" + std::to_string(num_levels));
-    // Synchronize at level boundaries, then ask Dawn to release unused memory from the previous level before allocating
-    // resources for the current level. On some hardware (e.g. AMD Radeon RX 590), this can help reduce peak memory
-    // usage.
     if (level > 0U) {
       moving_pyramid[level - 1U] = {};
       fixed_pyramid[level - 1U] = {};
@@ -299,8 +296,6 @@ NonLinearRegistrationResult run_nonlinear_registration(const NonLinearRegistrati
       if (!fixed_mask_pyramid.empty()) {
         fixed_mask_pyramid[level - 1U] = {};
       }
-      context.reduce_memory_usage();
-      context.wait_for_all_queue_operations();
     }
 
     const Texture &moving_level = moving_pyramid[level];
