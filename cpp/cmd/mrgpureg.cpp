@@ -82,13 +82,13 @@ template <typename Enum> Enum from_name(std::string_view name) {
 }
 
 constexpr float default_max_search_angle = 45.0F;
-constexpr TransformModel default_registration_mode = TransformModel::Global;
+constexpr GlobalRegistrationType default_global_registration_type = GlobalRegistrationType::Affine;
 constexpr MetricType default_metric_type = MetricType::NMI;
 constexpr uint32_t default_ncc_window_radius = 2U;
 constexpr uint32_t default_max_iterations = 500;
 const std::vector<std::string> supported_global_metric_types = lowercase_enum_names<MetricType>();
 const std::vector<std::string> supported_nonlinear_metric_types = {"ssd", "ncc"};
-const std::vector<std::string> supported_registration_modes = lowercase_enum_names<TransformModel>();
+const std::vector<std::string> supported_registration_modes = {"rigid", "affine", "nonlinear"};
 const std::vector<std::string> supported_init_translations = lowercase_enum_names<InitTranslationChoice>();
 const std::vector<std::string> supported_init_rotations = lowercase_enum_names<InitRotationChoice>();
 
@@ -133,7 +133,7 @@ const std::vector<std::string> supported_init_rotations = lowercase_enum_names<I
          + Option ("matrix", "write the transformation matrix used for reslicing image1 into image2 space.")
              + Argument("filename").type_file_out()
 
-         + Option ("type", "type of transform (global, nonlinear)")
+         + Option ("type", "type of transform (rigid, affine, nonlinear)")
              + Argument("name").type_choice(supported_registration_modes)
 
          + Option ("global_metric", "similarity metric to use for rigid/affine registrations (nmi, ssd, ncc)")
@@ -248,10 +248,10 @@ void run() {
     check_3D_nonunity(header2);
   }
 
-  const TransformModel transform_model =
-      from_name<TransformModel>(get_option_value<std::string>("type", enum_name_lowercase(default_registration_mode)));
-  const bool has_global_registration = (transform_model == TransformModel::Global);
-  const bool has_nonlinear_registration = (transform_model == TransformModel::NonLinear);
+  const std::string registration_mode =
+      get_option_value<std::string>("type", enum_name_lowercase(default_global_registration_type));
+  const bool has_nonlinear_registration = MR::lowercase(registration_mode) == "nonlinear";
+  const bool has_global_registration = !has_nonlinear_registration;
 
   const auto global_metric_options = get_options("global_metric");
   const auto nl_metric_options = get_options("nl_metric");
@@ -281,8 +281,8 @@ void run() {
   }
 
   std::optional<GlobalRegistrationType> global_transform_type;
-  if (transform_model == TransformModel::Global) {
-    global_transform_type = GlobalRegistrationType::Affine;
+  if (has_global_registration) {
+    global_transform_type = from_name<GlobalRegistrationType>(registration_mode);
   }
 
   MetricType metric_type = default_metric_type;
