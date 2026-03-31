@@ -131,10 +131,10 @@ enum class InitRotationChoice : uint8_t { None, Search, Moments };
 
 struct InitialisationOptions {
   InitTranslationChoice translation_choice = InitTranslationChoice::Mass;
-  InitRotationChoice rotation_choice = InitRotationChoice::None;
+  InitRotationChoice rotation_choice = InitRotationChoice::Search;
   GlobalMetric cost_metric = NMIMetric{};
   // Limits the maximum sampled rotation angle (degrees) for search-based initialisation.
-  float max_search_angle_degrees = 90.0F;
+  float max_search_angle_degrees = 180.0F;
 };
 
 using InitialGuess = std::variant<transform_type, InitialisationOptions>;
