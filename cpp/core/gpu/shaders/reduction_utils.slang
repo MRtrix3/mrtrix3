@@ -166,6 +166,7 @@ interface IReduceWaveOp<T>
     inline static T waveReduce(T value);
 }
 
+// Performs a wave reduction using the provided operation, and then combines the results across the wave using the provided reduce function.
 public struct ISumArrayWaveOp<T, let N : uint32_t> : IReduceWaveOp<Array<T, N>> where T : __BuiltinArithmeticType {
     inline static Array<T, N> identityElement() { return Array<T, N>(); }
     inline static Array<T, N> waveReduce(Array<T, N> array) {
@@ -186,6 +187,11 @@ uint32_t wgslWorkgroupUniformLoad(uint32_t value)
     __intrinsic_asm "workgroupUniformLoad(&$0)";
 }
 
+// Performs a reduction across the entire workgroup using wave intrinsics.
+// Other than being more efficient, using this approach rather workgroupReduce allows for 
+// a decrease in shared memory usage, which can potentially increase occupance and thus performance.
+// NOTE: the argument `waveIndex` should be generated using an atomic increment to ensure that each wave
+// gets a unique index. This won't be necessary when https://github.com/shader-slang/slang/issues/8913 is resolved.
 [ForceInline]
 public DataType workgroupReduceWithWaves<DataType, Operation : IReduceWaveOp<DataType>>
 (__ref DataType threadValue, __ref DataType[] wavePartials, uint32_t numWaves, uint32_t waveIndex, uint32_t localIndex)
