@@ -83,7 +83,8 @@ template <typename Enum> Enum from_name(std::string_view name) {
 
 constexpr float default_max_search_angle = 45.0F;
 constexpr GlobalRegistrationType default_global_registration_type = GlobalRegistrationType::Affine;
-constexpr MetricType default_metric_type = MetricType::NMI;
+constexpr MetricType default_global_metric_type = MetricType::NMI;
+constexpr MetricType default_nonlinear_metric_type = MetricType::NCC;
 constexpr uint32_t default_ncc_window_radius = 2U;
 constexpr uint32_t default_max_iterations = 500;
 const std::vector<std::string> supported_global_metric_types = lowercase_enum_names<MetricType>();
@@ -206,7 +207,8 @@ NonLinearMetric make_nonlinear_metric(MetricType metric_type, uint32_t ncc_windo
          // TODO: Should we mention that using a large window radius (> 3) is not recommended
          // as it's computationally expensive and usually does not improve results?
          + Option("ncc_radius",
-              "window radius (in voxels) for the NCC metric; set to 0 for global NCC (default: " +
+              "window radius (in voxels) for the NCC metric; a radius R uses a cubic window with side length 2R+1;"
+              " set to 0 for global NCC (default: " +
                 std::to_string(default_ncc_window_radius) + ").")
            + Argument("radius").type_integer(0, 15)
 
@@ -342,16 +344,16 @@ void run() {
     throw Exception("nl_warp output is only valid when using nonlinear registration.");
   }
 
-  MetricType metric_type = default_metric_type;
+  MetricType metric_type = default_global_metric_type;
   if (has_global_registration) {
-    metric_type =
-        from_name<MetricType>(get_option_value<std::string>("global_metric", enum_name_lowercase(default_metric_type)));
+    metric_type = from_name<MetricType>(
+        get_option_value<std::string>("global_metric", enum_name_lowercase(default_global_metric_type)));
   }
 
   std::optional<MetricType> nonlinear_metric_type;
   if (has_nonlinear_registration) {
-    const std::string default_nonlinear_metric = "ncc";
-    nonlinear_metric_type = from_name<MetricType>(get_option_value<std::string>("nl_metric", default_nonlinear_metric));
+    nonlinear_metric_type = from_name<MetricType>(
+        get_option_value<std::string>("nl_metric", enum_name_lowercase(default_nonlinear_metric_type)));
     if (*nonlinear_metric_type != MetricType::NCC && !nl_ncc_update_target_voxels_options.empty()) {
       throw Exception(
           "nl_ncc_update_target_voxels is only valid when using nonlinear registration with nl_metric ncc.");
