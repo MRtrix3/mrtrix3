@@ -25,6 +25,7 @@
 #include <Eigen/Core>
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -49,7 +50,7 @@ Coordinate3D centerOfMass(const Texture &texture,
   const WorkgroupSize workgroupSize{.x = 8, .y = 8, .z = 4};
 
   const Buffer<uint32_t> weightedPositionBuffer = context.new_empty_buffer<uint32_t>(3);
-  const Buffer<float> totalWeightBuffer = context.new_empty_buffer<float>(1);
+  const Buffer<uint32_t> totalWeightBuffer = context.new_empty_buffer<uint32_t>(1);
 
   const KernelSpec centerOfMassKernelSpec{
       .compute_shader =
@@ -69,12 +70,11 @@ Coordinate3D centerOfMass(const Texture &texture,
   context.dispatch_kernel(centerOfMassKernel, dispatch_grid);
 
   std::array<uint32_t, 3> weightedPositionValues{};
-  uint32_t totalWeightValue;
+  uint32_t totalWeightValue{};
 
   context.download_buffer<uint32_t>(weightedPositionBuffer, weightedPositionValues);
-  context.download_buffer(totalWeightBuffer, &totalWeightValue, sizeof(float));
+  context.download_buffer<uint32_t>(totalWeightBuffer, &totalWeightValue, sizeof(totalWeightValue));
 
-  // Now reinterpret the downloaded data as float
   std::array<float, 3> weightedPosition;
   weightedPosition[0] = *reinterpret_cast<float *>(&weightedPositionValues[0]);
   weightedPosition[1] = *reinterpret_cast<float *>(&weightedPositionValues[1]);
@@ -82,8 +82,15 @@ Coordinate3D centerOfMass(const Texture &texture,
 
   const float totalWeight = *reinterpret_cast<float *>(&totalWeightValue);
 
+  if (!std::isfinite(totalWeight) || totalWeight == 0.0F) {
+    throw Exception("Center of mass computation produced an invalid total weight: " + std::to_string(totalWeight));
+  }
+
   const auto center = Eigen::Vector4f(
       weightedPosition[0] / totalWeight, weightedPosition[1] / totalWeight, weightedPosition[2] / totalWeight, 1.0F);
+  if (!center.allFinite()) {
+    throw Exception("Center of mass computation produced non-finite coordinates.");
+  }
 
   assert(center.x() >= 0 && center.x() <= texture.spec.width && center.y() >= 0 && center.y() <= texture.spec.height &&
          center.z() >= 0 && center.z() <= texture.spec.depth && "Center of mass is out of the bounds of the image");
@@ -164,11 +171,7 @@ Texture transformTexture(const Texture &texture,
                        {"linearSampler", context.new_linear_sampler()}}};
 
   const Kernel transformKernel = context.new_kernel(transformKernelSpec);
-  const DispatchGrid dispatch_grid{
-      .x = Utils::nextMultipleOf(texture.spec.width / workgroupSize.x, workgroupSize.x),
-      .y = Utils::nextMultipleOf(texture.spec.height / workgroupSize.y, workgroupSize.y),
-      .z = Utils::nextMultipleOf(texture.spec.depth / workgroupSize.z, workgroupSize.z),
-  };
+  const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(outputTexture, workgroupSize);
 
   context.dispatch_kernel(transformKernel, dispatch_grid);
 
@@ -189,11 +192,7 @@ Texture downsampleTexture(const Texture &texture, const ComputeContext &context)
                                                           .workgroup_size = workgroupSize},
                                        .bindings_map = {{"inputTexture", texture}, {"outputTexture", outputTexture}}};
   const Kernel transformKernel = context.new_kernel(transformKernelSpec);
-  const DispatchGrid dispatch_grid{
-      .x = Utils::nextMultipleOf(outputTextureSpec.width / workgroupSize.x, workgroupSize.x),
-      .y = Utils::nextMultipleOf(outputTextureSpec.height / workgroupSize.y, workgroupSize.y),
-      .z = Utils::nextMultipleOf(outputTextureSpec.depth / workgroupSize.z, workgroupSize.z),
-  };
+  const DispatchGrid dispatch_grid = DispatchGrid::element_wise_texture(outputTexture, workgroupSize);
 
   context.dispatch_kernel(transformKernel, dispatch_grid);
 
