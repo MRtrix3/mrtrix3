@@ -37,15 +37,19 @@ struct RotationSearchCalculator {
   std::function<IterationResult()> get_result;
 };
 
+using RotationSearchTransformBuilder = std::function<GlobalTransform(const std::array<float, 3> &)>;
+
 Eigen::Vector3f search_best_rotation(const GlobalTransform &initial_transform,
                                      tcb::span<const std::array<float, 3>> samples,
                                      const std::function<RotationSearchCalculator()> &make_calculator,
+                                     const RotationSearchTransformBuilder &build_transform,
                                      const RotationSearchParams &params,
                                      const std::function<void(float, const std::array<float, 3> &)> &on_update);
 
 Eigen::Vector3f search_best_rotation(const GlobalTransform &initial_transform,
                                      tcb::span<const std::array<float, 3>> samples,
                                      const std::function<RotationSearchCalculator()> &make_calculator,
+                                     const RotationSearchTransformBuilder &build_transform,
                                      const RotationSearchParams &params);
 
 } // namespace MR::GPU

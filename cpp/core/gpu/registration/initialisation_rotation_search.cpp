@@ -32,6 +32,7 @@ namespace MR::GPU {
 Eigen::Vector3f search_best_rotation(const GlobalTransform &initial_transform,
                                      tcb::span<const std::array<float, 3>> samples,
                                      const std::function<RotationSearchCalculator()> &make_calculator,
+                                     const RotationSearchTransformBuilder &build_transform,
                                      const RotationSearchParams &params,
                                      const std::function<void(float, const std::array<float, 3> &)> &on_update) {
   if (params.parallel_calculators == 0 || samples.empty()) {
@@ -76,12 +77,14 @@ Eigen::Vector3f search_best_rotation(const GlobalTransform &initial_transform,
 
     for (size_t local_index = 0; local_index < chunk_size; ++local_index) {
       const auto &sample = samples[chunk_start + local_index];
-      auto params = base_params;
-      params[3] = sample[0];
-      params[4] = sample[1];
-      params[5] = sample[2];
-      const GlobalTransform candidate_transform(
-          tcb::span<const float>(params.data(), param_count), initial_transform.type(), initial_transform.pivot());
+      const GlobalTransform candidate_transform = build_transform ? build_transform(sample) : [&]() {
+        auto params = base_params;
+        params[3] = sample[0];
+        params[4] = sample[1];
+        params[5] = sample[2];
+        return GlobalTransform(
+            tcb::span<const float>(params.data(), param_count), initial_transform.type(), initial_transform.pivot());
+      }();
       calculators[local_index].update(candidate_transform);
     }
 
@@ -97,9 +100,14 @@ Eigen::Vector3f search_best_rotation(const GlobalTransform &initial_transform,
 Eigen::Vector3f search_best_rotation(const GlobalTransform &initial_transform,
                                      tcb::span<const std::array<float, 3>> samples,
                                      const std::function<RotationSearchCalculator()> &make_calculator,
+                                     const RotationSearchTransformBuilder &build_transform,
                                      const RotationSearchParams &params) {
-  return search_best_rotation(
-      initial_transform, samples, make_calculator, params, std::function<void(float, const std::array<float, 3> &)>());
+  return search_best_rotation(initial_transform,
+                              samples,
+                              make_calculator,
+                              build_transform,
+                              params,
+                              std::function<void(float, const std::array<float, 3> &)>());
 }
 
 } // namespace MR::GPU

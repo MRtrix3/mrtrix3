@@ -38,6 +38,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -51,17 +52,13 @@ using vec3 = std::array<float, 3>;
 namespace {
 
 // Returns `num_samples` axis-angle vectors stored as {x, y, z} where the vector direction
-// is the rotation axis (unit length) and the vector magnitude is the rotation angle theta.
-// Angles are in radians.
+// is the rotation axis (unit length).
 // See https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
-std::vector<vec3> fibonacci_sphere_samples(int32_t num_samples, float min_angle, float max_angle) {
+std::vector<vec3> fibonacci_sphere_axes(int32_t num_samples) {
   std::vector<vec3> out;
   if (num_samples <= 0) {
     throw std::invalid_argument("num_samples must be positive");
   }
-
-  if (min_angle > max_angle)
-    std::swap(min_angle, max_angle);
 
   const int32_t n = num_samples;
 
@@ -70,7 +67,7 @@ std::vector<vec3> fibonacci_sphere_samples(int32_t num_samples, float min_angle,
 
   out.reserve(n);
 
-  for (int i = 0; i < n; ++i) {
+  for (int32_t i = 0; i < n; ++i) {
     // y in [-1, 1]. If n == 1, place at north pole (y = 1).
     const double y = (n == 1) ? 1.0 : 1.0 - ((2.0 * i) / static_cast<double>(n - 1));
     const double radius = std::sqrt(std::max(0.0, 1.0 - (y * y)));
@@ -79,15 +76,62 @@ std::vector<vec3> fibonacci_sphere_samples(int32_t num_samples, float min_angle,
     const double x = std::cos(phi) * radius;
     const double z = std::sin(phi) * radius;
 
-    // compute angle for this sample using lerp in [min_angle, max_angle]
-    const double t = (n == 1) ? 0.5 : (static_cast<double>(i) / static_cast<double>(n - 1));
-    const double angle =
-        static_cast<double>(min_angle) + (t * (static_cast<double>(max_angle) - static_cast<double>(min_angle)));
-
-    // axis-angle vector = unit_axis * angle
-    const std::array axis = {
-        static_cast<float>(x * angle), static_cast<float>(y * angle), static_cast<float>(z * angle)};
+    const std::array axis = {static_cast<float>(x), static_cast<float>(y), static_cast<float>(z)};
     out.push_back(axis);
+  }
+
+  return out;
+}
+
+std::vector<float> evenly_spaced_angles(int32_t num_shells, float min_angle, float max_angle) {
+  std::vector<float> out;
+  if (num_shells <= 0) {
+    throw std::invalid_argument("num_shells must be positive");
+  }
+
+  if (min_angle > max_angle) {
+    std::swap(min_angle, max_angle);
+  }
+
+  out.reserve(static_cast<size_t>(num_shells));
+  if (num_shells == 1) {
+    out.push_back(max_angle);
+    return out;
+  }
+
+  for (int32_t shell_index = 0; shell_index < num_shells; ++shell_index) {
+    const float t = static_cast<float>(shell_index) / static_cast<float>(num_shells - 1);
+    out.push_back(min_angle + (t * (max_angle - min_angle)));
+  }
+
+  return out;
+}
+
+std::vector<vec3>
+axis_angle_grid_samples(int32_t num_axes, int32_t num_angle_shells, float min_angle, float max_angle) {
+  if (num_axes <= 0) {
+    throw std::invalid_argument("num_axes must be positive");
+  }
+
+  const auto axes = fibonacci_sphere_axes(num_axes);
+  const auto angles = evenly_spaced_angles(num_angle_shells, min_angle, max_angle);
+
+  std::vector<vec3> out;
+  out.reserve(1U + (axes.size() * angles.size()));
+
+  const bool include_identity = min_angle <= std::numeric_limits<float>::epsilon();
+  if (include_identity) {
+    out.push_back({0.0F, 0.0F, 0.0F});
+  }
+
+  for (const float angle : angles) {
+    if (include_identity && angle <= std::numeric_limits<float>::epsilon()) {
+      continue;
+    }
+
+    for (const auto &axis : axes) {
+      out.push_back({axis[0] * angle, axis[1] * angle, axis[2] * angle});
+    }
   }
 
   return out;
@@ -154,6 +198,15 @@ Eigen::Matrix3f best_moment_rotation(Eigen::Matrix3f target_basis, Eigen::Matrix
 
   return best_rotation;
 }
+
+Eigen::Vector3f geometric_centre_scanner_space(const MR::GPU::Texture &texture,
+                                               const Eigen::Matrix4f &voxel_to_scanner) {
+  const Eigen::Vector4f centre_voxel((static_cast<float>(texture.spec.width) - 1.0F) * 0.5F,
+                                     (static_cast<float>(texture.spec.height) - 1.0F) * 0.5F,
+                                     (static_cast<float>(texture.spec.depth) - 1.0F) * 0.5F,
+                                     1.0F);
+  return (voxel_to_scanner * centre_voxel).head<3>();
+}
 } // namespace
 
 namespace MR::GPU {
@@ -168,7 +221,12 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
   const auto com_target =
       EigenHelpers::to_vector3f(centerOfMass(target_texture, context, transform_type::Identity(), target_mask));
   const Eigen::Map<const Eigen::Matrix4f> voxel_to_scanner_fixed(voxel_scanner_matrices.voxel_to_scanner_fixed.data());
+  const Eigen::Map<const Eigen::Matrix4f> voxel_to_scanner_moving(
+      voxel_scanner_matrices.voxel_to_scanner_moving.data());
   const Eigen::Vector4f com_target_scanner = voxel_to_scanner_fixed * com_target.homogeneous();
+  const Eigen::Vector3f moving_geometric_centre_scanner =
+      geometric_centre_scanner_space(moving_texture, voxel_to_scanner_moving);
+  Eigen::Vector3f rotation_search_anchor_scanner = moving_geometric_centre_scanner;
 
   const std::array<float, 6> rigid_identity = {0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F};
   GlobalTransform initial_transform(rigid_identity, GlobalRegistrationType::Rigid, com_target_scanner.head<3>());
@@ -180,31 +238,20 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
     INFO("Computing initial translation using center of mass.");
     const auto com_moving =
         EigenHelpers::to_vector3f(centerOfMass(moving_texture, context, transform_type::Identity(), moving_mask));
-    const Eigen::Map<const Eigen::Matrix4f> voxel_to_scanner_moving(
-        voxel_scanner_matrices.voxel_to_scanner_moving.data());
     const Eigen::Vector4f com_moving_scanner = voxel_to_scanner_moving * com_moving.homogeneous();
 
     initial_transform.set_translation(com_moving_scanner.head<3>() - com_target_scanner.head<3>());
+    rotation_search_anchor_scanner = com_moving_scanner.head<3>();
     break;
   }
   case InitTranslationChoice::Geometric: {
     INFO("Computing initial translation using geometric center.");
-    const Eigen::Vector4f geom_moving_voxel((static_cast<float>(moving_texture.spec.width) - 1.0F) * 0.5F,
-                                            (static_cast<float>(moving_texture.spec.height) - 1.0F) * 0.5F,
-                                            (static_cast<float>(moving_texture.spec.depth) - 1.0F) * 0.5F,
-                                            1.0F);
-    const Eigen::Vector4f geom_target_voxel((static_cast<float>(target_texture.spec.width) - 1.0F) * 0.5F,
-                                            (static_cast<float>(target_texture.spec.height) - 1.0F) * 0.5F,
-                                            (static_cast<float>(target_texture.spec.depth) - 1.0F) * 0.5F,
-                                            1.0F);
+    const Eigen::Vector3f geom_moving_scanner = moving_geometric_centre_scanner;
+    const Eigen::Vector3f geom_target_scanner = geometric_centre_scanner_space(target_texture, voxel_to_scanner_fixed);
 
-    const Eigen::Map<const Eigen::Matrix4f> voxel_scanner_fixed(voxel_scanner_matrices.voxel_to_scanner_fixed.data());
-    const Eigen::Map<const Eigen::Matrix4f> voxel_scanner_moving(voxel_scanner_matrices.voxel_to_scanner_moving.data());
-    const Eigen::Vector4f geom_moving_scanner = voxel_scanner_moving * geom_moving_voxel;
-    const Eigen::Vector4f geom_target_scanner = voxel_scanner_fixed * geom_target_voxel;
-
-    initial_transform.set_translation(geom_moving_scanner.head<3>() - geom_target_scanner.head<3>());
-    initial_transform.set_pivot(Eigen::Vector3f(geom_target_scanner.head<3>()));
+    initial_transform.set_translation(geom_moving_scanner - geom_target_scanner);
+    initial_transform.set_pivot(geom_target_scanner);
+    rotation_search_anchor_scanner = geom_moving_scanner;
     break;
   }
   }
@@ -268,16 +315,16 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
 
     constexpr float pi = MR::Math::pi;
     const float max_angle_rad = std::clamp(options.max_search_angle_degrees, 0.0F, 180.0F) * (pi / 180.0F);
-    const auto samples = fibonacci_sphere_samples(500, 0.0F, max_angle_rad);
-
-    const auto rotation_angle = [](const std::array<float, 3> &axis) {
-      return std::sqrt(std::inner_product(axis.cbegin(), axis.cend(), axis.cbegin(), 0.0F));
-    };
+    constexpr int32_t coarse_rotation_search_axis_count = 96;
+    constexpr int32_t coarse_rotation_search_angle_shell_count = 25;
+    const auto samples = axis_angle_grid_samples(
+        coarse_rotation_search_axis_count, coarse_rotation_search_angle_shell_count, 0.0F, max_angle_rad);
 
     INFO("max_search_angle_degrees=" + std::to_string(options.max_search_angle_degrees) +
          " max_angle_rad=" + std::to_string(max_angle_rad));
-    INFO("sample[0] norm=" + std::to_string(rotation_angle(samples[0])) +
-         " sample[last] norm=" + std::to_string(rotation_angle(samples.back())));
+    INFO("rotation search sampling " + std::to_string(coarse_rotation_search_axis_count) + " axes across " +
+         std::to_string(coarse_rotation_search_angle_shell_count) + " angle shells (" + std::to_string(samples.size()) +
+         " total axis-angle candidates)");
 
     const auto make_rotation_calculator = [&]() -> RotationSearchCalculator {
       auto calculator = std::make_shared<Calculator>(make_calculator());
@@ -285,6 +332,24 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
           .update = [calculator](const GlobalTransform &transform) { calculator->update(transform); },
           .get_result = [calculator]() { return calculator->get_result(); },
       };
+    };
+
+    const Eigen::Vector3f search_anchor_scanner = rotation_search_anchor_scanner;
+    const Eigen::Vector3f target_anchor_scanner =
+        (initial_transform.to_affine_compact() * search_anchor_scanner.cast<double>()).cast<float>();
+    const auto build_search_transform = [&](const std::array<float, 3> &sample) {
+      std::array<float, 6> candidate_params{};
+      candidate_params[3] = sample[0];
+      candidate_params[4] = sample[1];
+      candidate_params[5] = sample[2];
+
+      GlobalTransform candidate_transform(tcb::span<const float>(candidate_params.data(), candidate_params.size()),
+                                          initial_transform.type(),
+                                          initial_transform.pivot());
+      const Eigen::Vector3f rotated_anchor_scanner =
+          (candidate_transform.to_affine_compact() * search_anchor_scanner.cast<double>()).cast<float>();
+      candidate_transform.set_translation(target_anchor_scanner - rotated_anchor_scanner);
+      return candidate_transform;
     };
 
     const RotationSearchParams search_params{
@@ -297,29 +362,19 @@ GlobalTransform initialise_transformation(const InitialisationConfig &config, co
         search_best_rotation(initial_transform,
                              sample_span,
                              make_rotation_calculator,
+                             build_search_transform,
                              search_params,
                              [&](float best_cost, const std::array<float, 3> &best_rotation) {
                                INFO("New best initial rotation found with cost " + std::to_string(best_cost) +
                                     " at axis-angle {" + std::to_string(best_rotation[0]) + ", " +
                                     std::to_string(best_rotation[1]) + ", " + std::to_string(best_rotation[2]) + "}");
                              });
-
-    std::array<float, 12> params{};
-    const auto current_params = initial_transform.parameters();
-    std::copy(current_params.begin(), current_params.end(), params.begin());
-    params[3] = best_rotation[0];
-    params[4] = best_rotation[1];
-    params[5] = best_rotation[2];
-    initial_transform = GlobalTransform(tcb::span<const float>(params.data(), initial_transform.param_count()),
-                                        initial_transform.type(),
-                                        initial_transform.pivot());
+    initial_transform = build_search_transform({best_rotation[0], best_rotation[1], best_rotation[2]});
     break;
   }
   case InitRotationChoice::Moments: {
     INFO("Computing initial rotation using image moments.");
 
-    const Eigen::Map<const Eigen::Matrix4f> voxel_to_scanner_moving(
-        voxel_scanner_matrices.voxel_to_scanner_moving.data());
     const auto com_moving =
         EigenHelpers::to_vector3f(centerOfMass(moving_texture, context, transform_type::Identity(), moving_mask));
     const Eigen::Vector4f com_moving_scanner = voxel_to_scanner_moving * com_moving.homogeneous();
