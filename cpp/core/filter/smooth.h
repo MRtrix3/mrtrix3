@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -151,7 +151,7 @@ public:
         }
         DEBUG("smoothing dimension " + str(dim) + " in place with stride order: " + str(axes));
         SmoothFunctor1D<ImageType> smooth(in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
-        ThreadedLoop(in_and_output, axes, 1).run(smooth, in_and_output);
+        ThreadedLoop(in_and_output, axes, std::min<size_t>(2, axes.size())).run(smooth, in_and_output);
         if (progress)
           ++(*progress);
       }

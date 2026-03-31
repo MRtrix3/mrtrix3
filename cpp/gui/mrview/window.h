@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -258,7 +258,7 @@ private:
   bool snap_to_image_axes_and_voxel;
   std::string current_folder;
 
-  float background_colour[3];
+  Eigen::Array3f background_colour;
 
   Tool::CameraInteractor *camera_interactor;
 

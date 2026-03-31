@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <array>
 
 #include "crosshair.h"
 #include "gui.h"
@@ -142,7 +144,7 @@ public:
 
 protected:
   GL::mat4 MV, iMV, P, iP, MVP, iMVP;
-  GLint viewport[4];
+  std::array<GLint, 4> viewport;
 };
 
 class Projection : public ModelViewProjection {

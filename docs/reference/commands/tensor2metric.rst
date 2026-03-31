@@ -39,7 +39,7 @@ Diffusion Tensor Imaging
 
 -  **-num sequence** specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues can be specified as a number sequence. For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors (default = 1).
 
--  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. Valid choices are: none, FA, eigval (default = FA).
+-  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. Valid choices are: none, fa, eigval (default = fa).
 
 -  **-cl image** compute the linearity metric of the diffusion tensor. (one of the three Westin shape metrics)
 
@@ -97,7 +97,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be) and Thijs Dhollander (thijs.dhollander@gmail.com) and J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

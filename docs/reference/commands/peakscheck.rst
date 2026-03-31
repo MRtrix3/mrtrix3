@@ -31,7 +31,7 @@ Options
 
 - **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
 
-- **-format choice** The format in which peak orientations are specified; one of: spherical,unitspherical,3vector,unit3vector
+- **-format choice** The format in which peak orientations are specified; one of: spherical,unitspherical,cartesian,unitcartesian
 
 - **-reference choice** The a priori expected references axes against which the input orientations are defined; one of: xyz,ijk,fsl
 
@@ -82,7 +82,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

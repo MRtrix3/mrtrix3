@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -96,16 +97,25 @@ public:
 
   double getText() const { return Text; }
 
-  double getTint() const { return Tint; }
+  double getTint() const {
+    std::lock_guard<std::mutex> lock(mutex);
+    return Tint;
+  }
 
   void setTint(double temp) {
     std::lock_guard<std::mutex> lock(mutex);
     Tint = temp;
   }
 
-  double getEextTotal() const { return EextTot; }
+  double getEextTotal() const {
+    std::lock_guard<std::mutex> lock(mutex);
+    return EextTot;
+  }
 
-  double getEintTotal() const { return EintTot; }
+  double getEintTotal() const {
+    std::lock_guard<std::mutex> lock(mutex);
+    return EintTot;
+  }
 
   void incEextTotal(double d) {
     std::lock_guard<std::mutex> lock(mutex);
@@ -215,13 +225,13 @@ public:
   friend std::ostream &operator<<(std::ostream &o, Stats const &stats);
 
 protected:
-  std::mutex mutex;
+  mutable std::mutex mutex;
   double Text, Tint;
   double EextTot, EintTot;
   double alpha;
 
-  unsigned long n_gen[5];
-  unsigned long n_acc[5];
+  std::array<unsigned long, 5> n_gen;
+  std::array<unsigned long, 5> n_acc;
   unsigned long n_iter;
   const uint64_t n_max;
 

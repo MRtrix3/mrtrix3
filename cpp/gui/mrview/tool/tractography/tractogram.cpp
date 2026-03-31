@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,9 @@
  */
 
 #include "mrview/tool/tractography/tractogram.h"
+
+#include <cstdint>
+
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
@@ -25,7 +28,8 @@
 #include "progressbar.h"
 #include "projection.h"
 
-const size_t MAX_BUFFER_SIZE = 2796200; // number of points to fill 32MB
+const size_t MAX_BUFFER_SIZE = 2796200;                      // number of points to fill 32MB
+constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFu; // Primitive restart index for UNSIGNED_INT
 
 namespace MR::GUI::MRView::Tool {
 const int Tractogram::track_padding;
@@ -113,22 +117,22 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
                        "uniform float downscale_factor;\n"
                        "uniform mat4 MV;\n"
 
-                       "in vec3 v_tangent[];\n"
-                       "in vec2 v_end[];\n";
+                       "in vec3 v_tangent[];\n" // check_syntax off
+                       "in vec2 v_end[];\n";    // check_syntax off
 
   if (threshold_type != TrackThresholdType::None)
-    source += "in float v_amp[];\n"
+    source += "in float v_amp[];\n" // check_syntax off
               "out float g_amp;\n";
 
   if (do_crop_to_slab)
-    source += "in float v_include[];\n"
+    source += "in float v_include[];\n" // check_syntax off
               "out float g_include;\n";
 
   if (use_lighting || color_type == TrackColourType::Direction)
     source += "out vec3 g_tangent;\n";
 
   if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
-    source += "in vec3 v_colour[];\n"
+    source += "in vec3 v_colour[];\n" // check_syntax off
               "out vec3 fColour;\n";
 
   if (use_lighting)
@@ -341,6 +345,8 @@ Tractogram::~Tractogram() {
     gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
   if (!threshold_scalar_buffers.empty())
     gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
+  if (!element_buffers.empty())
+    gl::DeleteBuffers(element_buffers.size(), &element_buffers[0]);
   GL::assert_context_is_current();
 }
 
@@ -379,7 +385,7 @@ void Tractogram::render(const Projection &transform) {
 
   if (tractography_tool.use_lighting) {
     gl::UniformMatrix4fv(gl::GetUniformLocation(track_shader, "MV"), 1, gl::FALSE_, transform.modelview());
-    gl::Uniform3fv(gl::GetUniformLocation(track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos);
+    gl::Uniform3fv(gl::GetUniformLocation(track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos.data());
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "ambient"), tractography_tool.lighting->ambient);
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "diffuse"), tractography_tool.lighting->diffuse);
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "specular"), tractography_tool.lighting->specular);
@@ -389,10 +395,11 @@ void Tractogram::render(const Projection &transform) {
   if (!std::isfinite(original_fov)) {
     // set line thickness once upon loading, but don't touch it after that:
     // it shouldn't change when the background image changes
-    default_type dim[] = {window().image()->header().size(0) * window().image()->header().spacing(0),
-                          window().image()->header().size(1) * window().image()->header().spacing(1),
-                          window().image()->header().size(2) * window().image()->header().spacing(2)};
-    original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0f / 3.0f);
+    const std::array<default_type, 3> dim = {
+        window().image()->header().size(0) * window().image()->header().spacing(0),  //
+        window().image()->header().size(1) * window().image()->header().spacing(1),  //
+        window().image()->header().size(2) * window().image()->header().spacing(2)}; //
+    original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0F / 3.0F);
   }
 
   float line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3f * line_thickness) *
@@ -509,7 +516,16 @@ inline void Tractogram::render_streamlines() {
 
     auto mode = geometry_type == TrackGeometryType::Points ? gl::POINTS : gl::LINE_STRIP;
 
-    gl::MultiDrawArrays(mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+    if (mode == gl::POINTS) {
+      gl::MultiDrawArrays(mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+    } else if (element_counts[buf] > 0 && element_buffers[buf] != 0) {
+      // Use the EBO stored with this VAO to render all tracks in this chunk
+      gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, element_buffers[buf]);
+      gl::Enable(gl::PRIMITIVE_RESTART);
+      gl::PrimitiveRestartIndex(PRIMITIVE_RESTART_SENTINEL);
+      gl::DrawElements(gl::LINE_STRIP, element_counts[buf], gl::UNSIGNED_INT, nullptr);
+      gl::Disable(gl::PRIMITIVE_RESTART);
+    }
   }
 
   vao_dirty = false;
@@ -892,6 +908,34 @@ void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
   original_track_starts.push_back(starts);
   original_track_sizes.push_back(sizes);
   num_tracks_per_buffer.push_back(tck_count);
+
+  // Build an index buffer for this chunk of tracks
+  std::vector<uint32_t> chunk_indices;
+  for (size_t t = 0; t < sizes.size(); ++t) {
+    const GLint start = starts[t];
+    const GLint n = sizes[t];
+    if (n < 2)
+      continue;
+    for (GLint k = 0; k < n; ++k)
+      chunk_indices.push_back(static_cast<uint32_t>(start + k));
+    chunk_indices.push_back(PRIMITIVE_RESTART_SENTINEL);
+  }
+
+  if (!chunk_indices.empty()) {
+    GLuint ebo = 0;
+    gl::GenBuffers(1, &ebo);
+    // bind to the VAO so that ELEMENT_ARRAY_BUFFER is part of VAO state
+    gl::BindVertexArray(vertex_array_object);
+    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+    gl::BufferData(
+        gl::ELEMENT_ARRAY_BUFFER, chunk_indices.size() * sizeof(uint32_t), chunk_indices.data(), gl::STATIC_DRAW);
+    element_buffers.push_back(ebo);
+    element_counts.push_back(static_cast<GLsizei>(chunk_indices.size()));
+  } else {
+    // keep arrays aligned with other per-chunk vectors
+    element_buffers.push_back(0);
+    element_counts.push_back(0);
+  }
 
   buffer.clear();
   starts.clear();

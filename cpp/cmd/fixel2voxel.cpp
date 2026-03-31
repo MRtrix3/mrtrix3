@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include "apply.h"
 #include "command.h"
+#include "enum.h"
 #include "progressbar.h"
 
 #include "algo/loop.h"
@@ -37,19 +38,21 @@ using namespace App;
 
 using Fixel::index_type;
 
-const std::vector<std::string> operations = {"mean",
-                                             "sum",
-                                             "product",
-                                             "min",
-                                             "max",
-                                             "absmax",
-                                             "magmax",
-                                             "count",
-                                             "complexity",
-                                             "sf",
-                                             "dec_unit",
-                                             "dec_scaled",
-                                             "none"};
+enum class Operation {
+  MEAN,
+  SUM,
+  PRODUCT,
+  MIN,
+  MAX,
+  ABSMAX,
+  MAGMAX,
+  COUNT,
+  COMPLEXITY,
+  SF,
+  DEC_UNIT,
+  DEC_SCALED,
+  NONE
+};
 
 // clang-format off
 
@@ -89,7 +92,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file").type_image_in()
-  + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice(operations)
+  + Argument ("operation", "the operation to apply, one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
   + Argument ("image_out", "the output scalar image.").type_image_out();
 
   OPTIONS
@@ -446,10 +449,10 @@ void run() {
 
   Image<float> in_directions;
 
-  const int op = argument[1];
+  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
 
   const index_type max_fixels = get_option_value("number", 0);
-  if (max_fixels && op == 7)
+  if ((max_fixels != 0U) && op == Operation::COUNT)
     throw Exception(
         "\"count\" statistic is meaningless if constraining the number of fixels per voxel using the -number option");
 
@@ -457,13 +460,13 @@ void run() {
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
   H_out.keyval().erase(Fixel::n_fixels_key);
-  if (op == 7) { // count
+  if (op == Operation::COUNT) {
     H_out.ndim() = 3;
     H_out.datatype() = DataType::UInt8;
-  } else if (op == 10 || op == 11) { // dec
+  } else if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) { // dec
     H_out.ndim() = 4;
     H_out.size(3) = 3;
-  } else if (op == 12) { // none
+  } else if (op == Operation::NONE) { // none
     H_out.ndim() = 4;
     if (max_fixels) {
       H_out.size(3) = max_fixels;
@@ -480,7 +483,7 @@ void run() {
     H_out.ndim() = 3;
   }
 
-  if (op == 10 || op == 11) // dec
+  if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) // dec
     in_directions =
         Fixel::find_directions_header(Fixel::get_fixel_directory(in_data.name())).get_image<float>().with_direct_io();
 
@@ -491,15 +494,27 @@ void run() {
     check_dimensions(in_data, in_vol);
   }
 
-  if (op == 2 || op == 3 || op == 4 || op == 5 || op == 6 || op == 7 || op == 8 || op == 9 || op == 12) {
+  switch (op) {
+  case Operation::PRODUCT:
+  case Operation::MIN:
+  case Operation::MAX:
+  case Operation::ABSMAX:
+  case Operation::MAGMAX:
+  case Operation::COUNT:
+  case Operation::COMPLEXITY:
+  case Operation::SF:
+  case Operation::NONE:
     if (in_vol.valid())
       WARN("Option -weighted has no meaningful interpretation for the operation specified; ignoring");
+    break;
+  default:
+    break;
   }
 
   opt = get_options("fill");
   float fill_value = 0.0;
   if (!opt.empty()) {
-    if (op == 12) {
+    if (op == Operation::NONE) {
       fill_value = opt[0][0];
     } else {
       WARN("Option -fill ignored; only applicable to \"none\" operation");
@@ -511,48 +526,43 @@ void run() {
   auto loop = ThreadedLoop("converting sparse fixel data to scalar image", in_index_image, 0, 3);
 
   switch (op) {
-  case 0:
+  case Operation::MEAN:
     loop.run(Mean(in_data, max_fixels, in_vol), in_index_image, out);
     break;
-  case 1:
+  case Operation::SUM:
     loop.run(Sum(in_data, max_fixels, in_vol), in_index_image, out);
     break;
-  case 2:
+  case Operation::PRODUCT:
     loop.run(Product(in_data, max_fixels), in_index_image, out);
     break;
-  case 3:
+  case Operation::MIN:
     loop.run(Min(in_data, max_fixels), in_index_image, out);
     break;
-  case 4:
+  case Operation::MAX:
     loop.run(Max(in_data, max_fixels), in_index_image, out);
     break;
-  case 5:
+  case Operation::ABSMAX:
     loop.run(AbsMax(in_data, max_fixels), in_index_image, out);
     break;
-  case 6:
+  case Operation::MAGMAX:
     loop.run(MagMax(in_data, max_fixels), in_index_image, out);
     break;
-  case 7:
-    loop.run(
-        [](Image<index_type> &index, Image<float> &out) { // count
-          out.value() = index.value();
-        },
-        in_index_image,
-        out);
+  case Operation::COUNT:
+    loop.run([](Image<index_type> &index, Image<float> &out) { out.value() = index.value(); }, in_index_image, out);
     break;
-  case 8:
+  case Operation::COMPLEXITY:
     loop.run(Complexity(in_data, max_fixels), in_index_image, out);
     break;
-  case 9:
+  case Operation::SF:
     loop.run(SF(in_data, max_fixels), in_index_image, out);
     break;
-  case 10:
+  case Operation::DEC_UNIT:
     loop.run(DEC_unit(in_data, max_fixels, in_vol, in_directions), in_index_image, out);
     break;
-  case 11:
+  case Operation::DEC_SCALED:
     loop.run(DEC_scaled(in_data, max_fixels, in_vol, in_directions), in_index_image, out);
     break;
-  case 12:
+  case Operation::NONE:
     loop.run(::None(in_data, max_fixels, fill_value), in_index_image, out);
     break;
   }

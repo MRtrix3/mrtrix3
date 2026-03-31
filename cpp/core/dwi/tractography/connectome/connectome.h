@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "app.h"
 #include "image.h"
@@ -37,6 +38,7 @@ class Tck2nodes_base;
 class Metric;
 
 extern const std::vector<std::string> assignment_options;
+extern const std::string tck2nodes_description;
 extern const App::OptionGroup AssignmentOptions;
 std::unique_ptr<Tck2nodes_base> load_assignment_mode(Image<node_t> &);
 

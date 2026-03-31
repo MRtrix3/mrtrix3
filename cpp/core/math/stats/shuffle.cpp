@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,7 +67,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
 
   if (include_nonstationarity) {
     result + Option("nonstationarity",
-                    "perform non-stationarity correction")
+                    "perform empirical non-parametric non-stationarity correction")
            + Option("skew_nonstationarity",
                     "specify the skew parameter for empirical statistic calculation"
                     " (default for this command is " + str(default_skew) + ")")

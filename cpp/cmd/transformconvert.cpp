@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include "axes.h"
 #include "command.h"
+#include "enum.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
@@ -27,7 +28,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> operations = {"flirt_import", "itk_import"};
+enum class Operation { FLIRT_IMPORT, ITK_IMPORT };
 
 // clang-format off
 void usage() {
@@ -58,7 +59,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
-                           " one of: " + join(operations, ", ")).type_choice (operations)
+                           " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 }
@@ -177,11 +178,11 @@ void parse_itk_trafo(std::string_view itk_file,
 
 void run() {
   const size_t num_inputs = argument.size() - 2;
-  const int op = argument[num_inputs];
+  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
   const std::string_view output_path = argument.back();
 
   switch (op) {
-  case 0: { // flirt_import
+  case Operation::FLIRT_IMPORT: {
     if (num_inputs != 3)
       throw Exception("flirt_import requires 3 inputs");
     transform_type transform = File::Matrix::load_transform(argument[0]);
@@ -202,7 +203,7 @@ void run() {
     File::Matrix::save_transform(forward_transform.inverse(), output_path);
     break;
   }
-  case 1: { // ITK import
+  case Operation::ITK_IMPORT: {
     if (num_inputs != 1)
       throw Exception("itk_import requires 1 input, " + str(num_inputs) + " provided.");
 

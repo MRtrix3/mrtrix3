@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 11.00 CACHE STRING "")
-project(mrtrix3 LANGUAGES CXX VERSION 3.0.7)
+project(mrtrix3 LANGUAGES CXX VERSION 3.0.8)
 
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
     message(WARNING "It is recommended to use the Ninja generator to build MRtrix3. "
@@ -26,6 +26,7 @@ option(MRTRIX_PYTHON_SOFTLINK "Build directory softlink to Python source code ra
 option(MRTRIX_BUILD_STATIC "Build MRtrix's library statically" OFF)
 option(MRTRIX_USE_LLD "Use lld as the linker" OFF)
 option(MRTRIX_ENABLE_GPU "Enable GPU computing features" ON)
+option(MRTRIX_IGNORE_VERSION_MISMATCH "Ignore version mismatch between git tag and MRtrix base version" OFF)
 
 option(MRTRIX_USE_SYSTEM_EIGEN "Use system-installed Eigen3 library" OFF)
 option(MRTRIX_USE_SYSTEM_JSON "Use system-installed Json for Modern C++ library" OFF)
@@ -35,11 +36,10 @@ option(MRTRIX_USE_SYSTEM_DAWN "Use system-installed Dawn library" OFF)
 option(MRTRIX_USE_SYSTEM_SLANG "Use system-installed Slang library" OFF)
 option(MRTRIX_USE_SYSTEM_MAGIC_ENUM "Use system-installed Magic Enum library" OFF)
 option(MRTRIX_USE_SYSTEM_TCB_SPAN "Use system-installed TCB Span library" OFF)
+option(MRTRIX_USE_SYSTEM_MAGIC_ENUM "Use system-installed Magic Enum library" OFF)
 
 if(MRTRIX_BUILD_TESTS)
-    if(CMAKE_VERSION VERSION_GREATER 3.17)
-        list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
-    endif()
+    list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
     enable_testing()
 endif()
 

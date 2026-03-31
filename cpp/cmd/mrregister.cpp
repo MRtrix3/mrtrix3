@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "dwi/directions/predefined.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "filter/reslice.h"
@@ -39,8 +40,6 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> transformation_choices = {
-    "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear"};
 enum class transformation_t {
   RIGID,
   AFFINE,
@@ -111,9 +110,9 @@ void usage() {
   OPTIONS
   + Option ("type", std::string("the registration type.") +
                     " Valid choices are: "
-                    + join(transformation_choices, ", ")
-                    + " (default: " + transformation_choices[static_cast<ssize_t>(default_transformation_type)] + ")")
-    + Argument ("choice").type_choice (transformation_choices)
+                    + MR::Enum::join<transformation_t>()
+                    + " (default: " + MR::Enum::lowercase_name(default_transformation_type) + ")")
+    + Argument ("choice").type_choice<transformation_t>()
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
                            " Note that -transformed needs to be repeated for each contrast"
@@ -180,8 +179,7 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
-  const transformation_t registration_type =
-      transformation_t(get_option_value("type", static_cast<ssize_t>(default_transformation_type)));
+  const transformation_t registration_type = get_option_choice<transformation_t>("type", default_transformation_type);
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;

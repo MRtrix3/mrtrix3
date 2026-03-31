@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -211,7 +211,7 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
 
   connect(lighting, SIGNAL(changed()), this, SLOT(updateGL()));
 
-  renderer = new DWI::Renderer((QOpenGLWidget *)Window::main->glarea);
+  renderer = new DWI::Renderer(static_cast<QOpenGLWidget *>(Window::main->glarea));
   renderer->initGL();
   colour_button->setColor(renderer->get_colour());
 

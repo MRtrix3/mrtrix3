@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,8 +25,6 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> modes = {"2d", "3d"};
-
 // clang-format off
 void usage() {
 
@@ -41,7 +39,7 @@ void usage() {
       " (see reference below for details)."
 
     + "By default, the original 2D slice-wise version is used."
-      " If the -mode 3d option is provided,"
+      " If the -dimensionality option is set greater than 2,"
       " the program will run the 3D version as proposed by Bautista et al."
       " (also in the reference list below)."
 
@@ -78,14 +76,14 @@ void usage() {
 
 
   OPTIONS
-  + Option ("mode",
-            "specify the mode of operation."
-            " Valid choices are: 2d, 3d (default: 2d)."
-            " The 2d mode corresponds to the original slice-wise approach as propoosed by Kellner et al.,"
+  + Option ("dimensionality",
+            "specify the dimensionality of operation."
+            " Valid choices are: 2, 3 (default: 2)."
+            " A value of 2 corresponds to the original slice-wise approach as proposed by Kellner et al.,"
             " appropriate for images acquired using 2D stack-of-slices approaches."
-            " The 3d mode corresponds to the 3D volume-wise extension proposed by Bautista et al.,"
+            " Values greater than 2 select the 3D volume-wise extension proposed by Bautista et al.,"
             " which is appropriate for images acquired using 3D Fourier encoding.")
-    + Argument ("type").type_choice(modes)
+    + Argument ("value").type_integer(2, 3)
 
   + Option ("axes",
             "select the slice axes"
@@ -137,7 +135,7 @@ void run() {
       DataType::from_command_line(header.datatype().is_complex() ? DataType::CFloat32 : DataType::Float32);
   auto out = Image<complex_type>::create(argument[1], header);
 
-  int mode = get_option_value("mode", 0);
+  int dimensionality = get_option_value("dimensionality", 2);
 
   std::vector<size_t> slice_axes = {0, 1};
   auto opt = get_options("axes");
@@ -145,7 +143,7 @@ void run() {
   if (!opt.empty()) {
     std::vector<uint32_t> axes = parse_ints<uint32_t>(opt[0][0]);
     if (axes == std::vector<uint32_t>({0, 1, 2})) {
-      mode = 1;
+      dimensionality = 3;
     } else {
       if (axes.size() != 2)
         throw Exception("slice axes must be specified as a comma-separated 2-vector");
@@ -159,7 +157,7 @@ void run() {
 
   auto slice_encoding_it = header.keyval().find("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
-    if (mode == 1) {
+    if (dimensionality > 2) {
       WARN("running 3D volume-wise unringing,"                            //
            " but image header contains \"SliceEncodingDirection\" field;" //
            " if data were acquired using multi-slice encoding,"           //
@@ -204,7 +202,7 @@ void run() {
     }
   }
 
-  if (mode == 1) {
+  if (dimensionality > 2) {
     Degibbs::unring3D(in, out, minW, maxW, nshifts);
     return;
   }

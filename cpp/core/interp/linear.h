@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <complex>
 #include <type_traits>
 
@@ -137,9 +138,9 @@ public:
         f[i] = 0.0;
     }
 
-    coef_type x_weights[2] = {coef_type(1 - f[0]), coef_type(f[0])};
-    coef_type y_weights[2] = {coef_type(1 - f[1]), coef_type(f[1])};
-    coef_type z_weights[2] = {coef_type(1 - f[2]), coef_type(f[2])};
+    const std::array<coef_type, 2> x_weights = {coef_type(1 - f[0]), coef_type(f[0])};
+    const std::array<coef_type, 2> y_weights = {coef_type(1 - f[1]), coef_type(f[1])};
+    const std::array<coef_type, 2> z_weights = {coef_type(1 - f[2]), coef_type(f[2])};
 
     size_t i(0);
     for (ssize_t z = 0; z < 2; ++z) {
@@ -196,32 +197,49 @@ public:
 
   //! Read interpolated values from volumes along axis >= 3
   /*! See file interp/base.h for details. */
-  Eigen::Matrix<value_type, Eigen::Dynamic, 1> row(size_t axis) {
+  template <int N = Eigen::Dynamic> FORCE_INLINE Eigen::Matrix<value_type, N, 1> row(size_t axis) {
+    using Vec = Eigen::Matrix<value_type, N, 1>;
+
+    if constexpr (N != Eigen::Dynamic) {
+      assert(ImageType::size(axis) == N);
+    }
+
     if (Base<ImageType>::out_of_bounds) {
-      Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row(ImageType::size(axis));
-      out_of_bounds_row.setOnes();
-      out_of_bounds_row *= Base<ImageType>::out_of_bounds_value;
-      return out_of_bounds_row;
+      Vec out;
+      if constexpr (N == Eigen::Dynamic) {
+        out = Vec::Constant(ImageType::size(axis), Base<ImageType>::out_of_bounds_value);
+      } else {
+        out.setConstant(Base<ImageType>::out_of_bounds_value);
+      }
+      return out;
     }
 
     const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>());
 
-    Eigen::Matrix<value_type, Eigen::Dynamic, 8> coeff_matrix(ImageType::size(3), 8);
+    Vec out;
+    if constexpr (N == Eigen::Dynamic) {
+      out = Vec::Zero(ImageType::size(axis));
+    } else {
+      out = Vec::Zero();
+    }
 
-    size_t i(0);
+    size_t i = 0;
     for (ssize_t z = 0; z < 2; ++z) {
       ImageType::index(2) = clamp(c[2] + z, ImageType::size(2));
       for (ssize_t y = 0; y < 2; ++y) {
         ImageType::index(1) = clamp(c[1] + y, ImageType::size(1));
         for (ssize_t x = 0; x < 2; ++x) {
           ImageType::index(0) = clamp(c[0] + x, ImageType::size(0));
-          coeff_matrix.col(i++) = ImageType::row(axis);
+          out.noalias() += Vec(ImageType::row(axis)) * factors[i++];
         }
       }
     }
 
-    return coeff_matrix * factors;
+    return out;
   }
+
+  //! Convenience wrapper for row<3>(3) to avoid dynamic allocation when only 3 values are required
+  FORCE_INLINE Eigen::Matrix<value_type, 3, 1> vec3() { return row<3>(3); }
 
 protected:
   Eigen::Matrix<coef_type, 8, 1> factors;
@@ -260,13 +278,13 @@ public:
         f[i] = 0.0;
     }
 
-    coef_type x_weights[2] = {coef_type(1 - f[0]), coef_type(f[0])};
-    coef_type y_weights[2] = {coef_type(1 - f[1]), coef_type(f[1])};
-    coef_type z_weights[2] = {coef_type(1 - f[2]), coef_type(f[2])};
+    const std::array<coef_type, 2> x_weights = {coef_type(1 - f[0]), coef_type(f[0])};
+    const std::array<coef_type, 2> y_weights = {coef_type(1 - f[1]), coef_type(f[1])};
+    const std::array<coef_type, 2> z_weights = {coef_type(1 - f[2]), coef_type(f[2])};
 
     // For linear interpolation gradient weighting is independent of direction
     // i.e. Simply looking at finite difference
-    coef_type diff_weights[2] = {-0.5, 0.5};
+    const std::array<coef_type, 2> diff_weights = {-0.5, 0.5};
 
     size_t i(0);
     for (ssize_t z = 0; z < 2; ++z) {
@@ -415,13 +433,13 @@ public:
         f[i] = 0.0;
     }
 
-    coef_type x_weights[2] = {coef_type(1 - f[0]), coef_type(f[0])};
-    coef_type y_weights[2] = {coef_type(1 - f[1]), coef_type(f[1])};
-    coef_type z_weights[2] = {coef_type(1 - f[2]), coef_type(f[2])};
+    const std::array<coef_type, 2> x_weights = {coef_type(1 - f[0]), coef_type(f[0])};
+    const std::array<coef_type, 2> y_weights = {coef_type(1 - f[1]), coef_type(f[1])};
+    const std::array<coef_type, 2> z_weights = {coef_type(1 - f[2]), coef_type(f[2])};
 
     // For linear interpolation gradient weighting is independent of direction
     // i.e. Simply looking at finite difference
-    coef_type diff_weights[2] = {coef_type(-0.5), coef_type(0.5)};
+    const std::array<coef_type, 2> diff_weights = {coef_type(-0.5), coef_type(0.5)};
 
     size_t i(0);
     for (ssize_t z = 0; z < 2; ++z) {

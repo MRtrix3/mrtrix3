@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -119,7 +119,7 @@ void Cube::generate() {
   index_buffer.gen();
   index_buffer.bind();
   num_indices = polygons.size();
-  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, num_indices, polygons.data(), gl::STATIC_DRAW);
+  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, num_indices * sizeof(GLuint), polygons.data(), gl::STATIC_DRAW);
 }
 
 } // namespace MR::GUI::Shapes

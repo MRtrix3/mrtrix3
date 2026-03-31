@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,9 +46,6 @@ void usage() {
       " with the SH coefficients of the signal in each shell stored"
       " at different indices along the 5th dimension."
     + Math::SH::encoding_description;
-
-  DESCRIPTION
-  + Math::SH::encoding_description;
 
   ARGUMENTS
     + Argument ("odf response", "pairs of input ODF image and corresponding responses").type_image_in().type_file_in().allow_multiple()

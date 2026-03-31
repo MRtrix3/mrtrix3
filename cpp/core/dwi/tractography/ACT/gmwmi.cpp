@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #include "dwi/tractography/ACT/gmwmi.h"
+
+#include <array>
 
 namespace MR::DWI::Tractography::ACT {
 
@@ -194,11 +196,7 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
   const Eigen::Vector3f extrap((end ? (tck[last] - tck[last - 1]) : (tck[0] - tck[1])) + curvature);
   const Eigen::Vector3f p_extrap(p_end + extrap);
 
-  Eigen::Vector3f domain[4];
-  domain[0] = (end ? tck[last - 2] : tck[2]);
-  domain[1] = p_prev;
-  domain[2] = p_end;
-  domain[3] = p_extrap;
+  const std::array<Eigen::Vector3f, 4> domain{end ? tck[last - 2] : tck[2], p_prev, p_end, p_extrap};
 
   Math::Hermite<float> hermite(hermite_tension);
 

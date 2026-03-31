@@ -1,4 +1,6 @@
 include(FetchContent)
+include(MacOSUniversalSlang)
+
 
 # Eigen
 if(MRTRIX_USE_SYSTEM_EIGEN)
@@ -42,11 +44,11 @@ endif()
 
 # Nifti headers
 if(MRTRIX_USE_SYSTEM_NIFTI)
-    find_path(NIFTI1_INCLUDE_DIR
+    find_path(NIFTI1_INCLUDE_DIR 
         NAMES nifti1.h
         PATHS ${NIFTI_DIR} /usr/include /usr/local/include
     )
-    find_path(NIFTI2_INCLUDE_DIR
+    find_path(NIFTI2_INCLUDE_DIR 
         NAMES nifti2.h
         PATHS ${NIFTI_DIR} /usr/include /usr/local/include
     )
@@ -60,25 +62,19 @@ if(MRTRIX_USE_SYSTEM_NIFTI)
 else()
     set(NIFTI1_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti1.h")
     set(NIFTI2_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h")
-    # DOWNLOAD_NO_EXTRACT for FetchContent is only available in CMake 3.18 and later
-    if(CMAKE_VERSION VERSION_LESS 3.18)
-        file(DOWNLOAD ${NIFTI1_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti1.h")
-        file(DOWNLOAD ${NIFTI2_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti2.h")
-        set(NIFTI_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/nifti")
-    else()
-        FetchContent_Declare(
-            nifti1
-            DOWNLOAD_NO_EXTRACT ON
-            URL ${NIFTI1_URL}
-        )
-        FetchContent_Declare(
-            nifti2
-            DOWNLOAD_NO_EXTRACT ON
-            URL ${NIFTI2_URL}
-        )
-        FetchContent_MakeAvailable(nifti1 nifti2)
-        set(NIFTI_INCLUDE_DIRS "${nifti1_SOURCE_DIR};${nifti2_SOURCE_DIR}")
-    endif()
+
+    FetchContent_Declare(
+        nifti1
+        DOWNLOAD_NO_EXTRACT ON
+        URL ${NIFTI1_URL}
+    )
+    FetchContent_Declare(
+        nifti2
+        DOWNLOAD_NO_EXTRACT ON
+        URL ${NIFTI2_URL}
+    )
+    FetchContent_MakeAvailable(nifti1 nifti2)
+    set(NIFTI_INCLUDE_DIRS "${nifti1_SOURCE_DIR};${nifti2_SOURCE_DIR}")
 endif()
 
 add_library(nifti INTERFACE)
@@ -125,7 +121,7 @@ if(MRTRIX_ENABLE_GPU)
             message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
         endif()
 
-        set(DAWN_VERSION 7495)
+        set(DAWN_VERSION 7750)
 
 
         set(DAWN_BINARIES_URL_PREFIX
@@ -141,12 +137,7 @@ if(MRTRIX_ENABLE_GPU)
         )
         FetchContent_MakeAvailable(dawn)
 
-        # On Linux, Dawn prebuilt packages use lib64; others use lib
-        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-            set(DAWN_LIB_DIR_NAME "lib64")
-        else()
-            set(DAWN_LIB_DIR_NAME "lib")
-        endif()
+        set(DAWN_LIB_DIR_NAME "lib")
         set(
           Dawn_DIR
           "${dawn_SOURCE_DIR}/${DAWN_LIB_DIR_NAME}/cmake/Dawn"
@@ -159,11 +150,14 @@ if(MRTRIX_ENABLE_GPU)
 
     # Slang
 
-    find_package(slang QUIET)
-
-    if(NOT MRTRIX_USE_SYSTEM_SLANG)
+    if(MRTRIX_USE_SYSTEM_SLANG)
+        find_package(slang CONFIG REQUIRED)
+    else()
         message(STATUS "Downloading prebuilt binaries for Slang...")
-        set(SLANG_VERSION "2025.22.1" CACHE STRING "Slang version to download from GitHub releases")
+        set(SLANG_VERSION "2026.5.1" CACHE STRING "Slang version to download from GitHub releases")
+        set(SLANG_DOWNLOAD_URL_PREFIX
+            "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}"
+        )
 
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             set(SLANG_OS "linux")
@@ -173,31 +167,54 @@ if(MRTRIX_ENABLE_GPU)
             set(SLANG_OS "windows")
         endif()
 
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+        set(slang_use_universal FALSE)
+        if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+            set(slang_requested_arches ${CMAKE_OSX_ARCHITECTURES})
+            list(LENGTH slang_requested_arches slang_requested_arch_count)
+
+            if("x86_64" IN_LIST slang_requested_arches AND "arm64" IN_LIST slang_requested_arches)
+                set(slang_use_universal TRUE)
+            elseif(slang_requested_arch_count GREATER 1)
+                message(FATAL_ERROR "Unsupported macOS architecture set for bundled Slang: ${CMAKE_OSX_ARCHITECTURES}")
+            elseif("arm64" IN_LIST slang_requested_arches)
+                set(SLANG_ARCH "aarch64")
+            else()
+                set(SLANG_ARCH "x86_64")
+            endif()
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
             set(SLANG_ARCH "aarch64")
         else()
             set(SLANG_ARCH "x86_64")
         endif()
 
-        set(SLANG_SUBSTRING "-${SLANG_OS}-${SLANG_ARCH}")
+        if(slang_use_universal)
+            message(STATUS "Downloading Slang ${SLANG_VERSION} (macos/x86_64 + macos/aarch64)...")
 
-        set(SLANG_DOWNLOAD_LINK
-          "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}/slang-${SLANG_VERSION}${SLANG_SUBSTRING}.zip"
-        )
+            mrtrix_prepare_universal_slang(
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-macos-x86_64.zip"
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-macos-aarch64.zip"
+                slang_root
+            )
+        else()
+            set(slang_download_url
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-${SLANG_OS}-${SLANG_ARCH}.zip"
+            )
 
-        message(STATUS "Downloading Slang ${SLANG_VERSION} (${SLANG_OS}/${SLANG_ARCH})...")
+            message(STATUS "Downloading Slang ${SLANG_VERSION} (${SLANG_OS}/${SLANG_ARCH})...")
 
-        FetchContent_Declare(
-          slang
-            DOWNLOAD_NO_PROGRESS         1
-            URL                          ${SLANG_DOWNLOAD_LINK}
-        )
-        FetchContent_MakeAvailable(slang)
+            FetchContent_Declare(
+              slang
+                DOWNLOAD_NO_PROGRESS         1
+                URL                          ${slang_download_url}
+            )
+            FetchContent_MakeAvailable(slang)
+            set(slang_root "${slang_SOURCE_DIR}")
+        endif()
 
         if(WIN32)
-            set(slang_DIR_PATH "${slang_SOURCE_DIR}/cmake")
+            set(slang_DIR_PATH "${slang_root}/cmake")
         else()
-            set(slang_DIR_PATH "${slang_SOURCE_DIR}/lib/cmake/slang")
+            set(slang_DIR_PATH "${slang_root}/lib/cmake/slang")
         endif()
 
         set(
@@ -237,10 +254,11 @@ else()
 endif()
 
 # magic_enum
+set(MAGIC_ENUM_VERSION 0.9.7)
 if(MRTRIX_USE_SYSTEM_MAGIC_ENUM)
-    find_package(magic_enum 0.9.7 CONFIG REQUIRED)
+    find_package(magic_enum ${MAGIC_ENUM_VERSION} CONFIG REQUIRED)
 else()
-    set(magic_enum_url "https://github.com/Neargye/magic_enum/archive/refs/tags/v0.9.7.tar.gz")
+    set(magic_enum_url "https://github.com/Neargye/magic_enum/archive/refs/tags/v${MAGIC_ENUM_VERSION}.tar.gz")
     FetchContent_Declare(
         magic_enum
         DOWNLOAD_EXTRACT_TIMESTAMP ON

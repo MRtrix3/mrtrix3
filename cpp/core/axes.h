@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,10 +40,7 @@ using flips_type = std::array<bool, 3>;
 class Shuffle {
 public:
   Shuffle() : permutations(), flips({false, false, false}) {}
-  bool is_identity() const {
-    return (permutations.is_identity() && //
-            !flips[0] && !flips[1] && !flips[2]);
-  }
+  bool is_identity() const { return (permutations.is_identity() && !std::max(flips.begin(), flips.end())); }
   bool valid() const { return permutations.valid(); }
   permutations_type permutations;
   flips_type flips;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 
 #include "command.h"
 #include "datatype.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 
@@ -29,7 +30,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> choices = {"scale", "linear", "nonlinear"};
+enum class MatchType { SCALE, LINEAR, NONLINEAR };
 
 // clang-format off
 void usage() {
@@ -40,7 +41,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("type", "type of histogram matching to perform;"
-                        " options are: " + join(choices, ",")).type_choice (choices)
+                        " options are: " + MR::Enum::join<MatchType>() + ".").type_choice<MatchType>()
     + Argument ("input", "the input image to be modified").type_image_in ()
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();
@@ -200,14 +201,14 @@ void run() {
     check_dimensions(target, mask_target, 0, 3);
   }
 
-  switch (static_cast<MR::App::ParsedArgument::IntType>(argument[0])) {
-  case 0: // Scale
+  switch (MR::Enum::from_name<MatchType>(argument[0])) {
+  case MatchType::SCALE:
     match_linear(input, target, mask_input, mask_target, false);
     break;
-  case 1: // Linear
+  case MatchType::LINEAR:
     match_linear(input, target, mask_input, mask_target, true);
     break;
-  case 2: // Non-linear
+  case MatchType::NONLINEAR:
     match_nonlinear(input, target, mask_input, mask_target, get_option_value("bins", 0));
     break;
   default:

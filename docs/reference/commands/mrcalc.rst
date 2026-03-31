@@ -55,6 +55,12 @@ Example usages
 
     This applies the spherical harmonic basis scaling factor: 1.0/sqrt(4*pi), such that a single-tissue voxel containing the same intensities as the response function of that tissue should contain the value 1.0.
 
+-   *Produce a complex datatype image from Siemens magnitude & phase series*::
+
+        $ mrcalc DWI_MAG/ DWI_PHASE/ pi 4096 -div -mult -polar dwi_complex.mif
+
+    Phase images from Siemens scanners are typically not provided in Radians units, but rather contain values in the range [-4096, +4094]. This command usage pre-multiplies these phase values by (pi/4096) to get them into units of Radians, prior to using the -polar option that combines magnitude & phase components at its input to produce complex data.
+
 Options
 -------
 
@@ -228,7 +234,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

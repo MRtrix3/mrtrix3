@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <iomanip>
 #include <sstream>
 
@@ -149,9 +150,9 @@ typedef struct {
   int32_t sequence_type; // see SEQUENCE* constants
   float32 echo_spacing;
   float32 echo_train_len; // length of the echo train
-  float32 read_dir[3];    // read-out direction in RAS coords
-  float32 pe_dir[3];      // phase-encode direction in RAS coords
-  float32 slice_dir[3];   // slice direction in RAS coords
+  float32 read_dir[3];    // read-out direction in RAS coords; check_syntax off
+  float32 pe_dir[3];      // phase-encode direction in RAS coords; check_syntax off
+  float32 slice_dir[3];   // slice direction in RAS coords; check_syntax off
   int32_t label;          // index into CLUT
   char name[strlen];      // human-readable description of frame contents; check_syntax off
   int32_t dof;            // for stat maps (e.g. # of subjects)
@@ -586,7 +587,7 @@ template <class Output> void write_header(const Header &H, Output &out) {
   store<float32>(H.spacing(axes[1]), out); // spacing_y
   store<float32>(H.spacing(axes[2]), out); // spacing_z
 
-  float32 c[3] = {0.0f, 0.0f, 0.0f};
+  std::array<float32, 3> c = {0.0F, 0.0F, 0.0F};
   for (size_t i = 0; i != 3; ++i) {
     default_type offset = M(i, 3);
     for (size_t j = 0; j != 3; ++j)

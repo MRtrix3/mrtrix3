@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -87,11 +87,11 @@ public:
            " but there may have been an error in generation of input images)");                    //
     }
     if (inadequate_volume_count > 0) {
-      WARN("A total of " + str(excess_volume_count) + " voxels were outside the brain in the input image," + //
-           " the user provided non-zero partial volume fractions in at least one input volume," +            //
-           " but the sum of partial volume fractions across user-provided images was less than one" +        //
-           " (these were auto-scaled to sum to one," +                                                       //
-           " but there may have been an error in generation of input images)");                              //
+      WARN("A total of " + str(inadequate_volume_count) + " voxels were outside the brain in the input image," + //
+           " the user provided non-zero partial volume fractions in at least one input volume," +                //
+           " but the sum of partial volume fractions across user-provided images was less than one" +            //
+           " (these were auto-scaled to sum to one," +                                                           //
+           " but there may have been an error in generation of input images)");                                  //
     }
   }
 

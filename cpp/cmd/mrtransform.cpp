@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,11 +40,13 @@
 #include "registration/warp/compose.h"
 #include "registration/warp/helpers.h"
 
+#include <optional>
+
 using namespace MR;
 using namespace App;
 
 constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
-const std::vector<std::string> modulation_choices = {"fod", "jac"};
+enum class Modulation { FOD, JAC };
 
 // clang-format off
 void usage() {
@@ -202,7 +204,7 @@ void usage() {
     + OptionGroup ("Fibre orientation distribution handling options")
 
     + Option ("modulate",
-        "Valid choices are:"
+        "Valid choices are: "
         " fod:"
         " modulate FODs during reorientation"
         " to preserve the apparent fibre density across fibre bundle widths"
@@ -211,7 +213,7 @@ void usage() {
         " modulate the image intensity with the determinant of the Jacobian"
         " of the warp of linear transformation "
         " to preserve the total intensity before and after the transformation.")
-      + Argument ("method").type_choice(modulation_choices)
+      + Argument ("method").type_choice<Modulation>()
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions"
@@ -455,8 +457,11 @@ void run() {
 
   // Intensity / FOD modulation
   opt = get_options("modulate");
-  const bool modulate_fod = !opt.empty() && static_cast<int>(opt[0][0]) == 0;
-  const bool modulate_jac = !opt.empty() && static_cast<int>(opt[0][0]) == 1;
+  const std::optional<Modulation> modulation =
+      opt.empty() ? std::nullopt
+                  : std::optional<Modulation>(get_option_choice<Modulation>("modulate", Modulation::FOD));
+  const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
+  const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 
   const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)

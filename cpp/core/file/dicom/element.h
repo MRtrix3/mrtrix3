@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -113,7 +113,7 @@ public:
 
   uint32_t tag() const {
     union __DICOM_group_element_pair__ {
-      uint16_t s[2];
+      uint16_t s[2]; // check_syntax off
       uint32_t i;
     } val = {{
 #if MRTRIX_BYTE_ORDER_BIG_ENDIAN
