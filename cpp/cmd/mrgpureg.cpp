@@ -88,9 +88,70 @@ constexpr uint32_t default_ncc_window_radius = 2U;
 constexpr uint32_t default_max_iterations = 500;
 const std::vector<std::string> supported_global_metric_types = lowercase_enum_names<MetricType>();
 const std::vector<std::string> supported_nonlinear_metric_types = {"ssd", "ncc"};
-const std::vector<std::string> supported_registration_modes = {"rigid", "affine", "nonlinear"};
+const std::vector<std::string> supported_registration_modes = {
+    "rigid", "affine", "nonlinear", "rigid_affine", "rigid_affine_nonlinear"};
 const std::vector<std::string> supported_init_translations = lowercase_enum_names<InitTranslationChoice>();
 const std::vector<std::string> supported_init_rotations = lowercase_enum_names<InitRotationChoice>();
+
+struct RegistrationStages {
+  bool run_rigid = false;
+  bool run_affine = false;
+  bool run_nonlinear = false;
+
+  bool has_global_registration() const { return run_rigid || run_affine; }
+};
+
+RegistrationStages parse_registration_stages(std::string_view name) {
+  const auto mode = MR::lowercase(std::string(name));
+  if (mode == "rigid") {
+    return RegistrationStages{.run_rigid = true};
+  }
+  if (mode == "affine") {
+    return RegistrationStages{.run_affine = true};
+  }
+  if (mode == "nonlinear") {
+    return RegistrationStages{.run_nonlinear = true};
+  }
+  if (mode == "rigid_affine") {
+    return RegistrationStages{.run_rigid = true, .run_affine = true};
+  }
+  if (mode == "rigid_affine_nonlinear") {
+    return RegistrationStages{.run_rigid = true, .run_affine = true, .run_nonlinear = true};
+  }
+
+  std::string error = "Unsupported value '" + std::string(name) + "'. Supported values are: ";
+  for (const auto &supported_mode : supported_registration_modes) {
+    error += supported_mode + ", ";
+  }
+  throw Exception(error);
+}
+
+GlobalMetric make_global_metric(MetricType metric_type, uint32_t ncc_window_radius) {
+  switch (metric_type) {
+  case MetricType::NMI:
+    return NMIMetric{};
+  case MetricType::SSD:
+    return SSDMetric{};
+  case MetricType::NCC:
+    return NCCMetric{.window_radius = ncc_window_radius};
+  default:
+    throw Exception("Unsupported metric type");
+  }
+}
+
+NonLinearMetric make_nonlinear_metric(MetricType metric_type, uint32_t ncc_window_radius) {
+  switch (metric_type) {
+  case MetricType::SSD:
+    return SSDMetric{};
+  case MetricType::NCC:
+    if (ncc_window_radius == 0U) {
+      throw Exception("Non-linear registration with NCC metric requires ncc_radius >= 1.");
+    }
+    return NCCMetric{.window_radius = ncc_window_radius};
+  default:
+    throw Exception("Unsupported nonlinear metric type");
+  }
+}
 
 } // namespace
 
@@ -133,7 +194,7 @@ const std::vector<std::string> supported_init_rotations = lowercase_enum_names<I
          + Option ("matrix", "write the transformation matrix used for reslicing image1 into image2 space.")
              + Argument("filename").type_file_out()
 
-         + Option ("type", "type of transform (rigid, affine, nonlinear)")
+         + Option ("type", "type of transform (rigid, affine, nonlinear, rigid_affine, rigid_affine_nonlinear)")
              + Argument("name").type_choice(supported_registration_modes)
 
          + Option ("global_metric", "similarity metric to use for rigid/affine registrations (nmi, ssd, ncc)")
@@ -248,10 +309,11 @@ void run() {
     check_3D_nonunity(header2);
   }
 
-  const std::string registration_mode =
+  const std::string registration_mode_name =
       get_option_value<std::string>("type", enum_name_lowercase(default_global_registration_type));
-  const bool has_nonlinear_registration = MR::lowercase(registration_mode) == "nonlinear";
-  const bool has_global_registration = !has_nonlinear_registration;
+  const RegistrationStages registration_stages = parse_registration_stages(registration_mode_name);
+  const bool has_nonlinear_registration = registration_stages.run_nonlinear;
+  const bool has_global_registration = registration_stages.has_global_registration();
 
   const auto global_metric_options = get_options("global_metric");
   const auto nl_metric_options = get_options("nl_metric");
@@ -276,13 +338,8 @@ void run() {
     throw Exception("nl_bch_terms is only valid when using nonlinear registration.");
   }
   const auto nl_warp_option = get_options("nl_warp");
-  if (has_global_registration && !nl_warp_option.empty()) {
+  if (!has_nonlinear_registration && !nl_warp_option.empty()) {
     throw Exception("nl_warp output is only valid when using nonlinear registration.");
-  }
-
-  std::optional<GlobalRegistrationType> global_transform_type;
-  if (has_global_registration) {
-    global_transform_type = from_name<GlobalRegistrationType>(registration_mode);
   }
 
   MetricType metric_type = default_metric_type;
@@ -337,39 +394,26 @@ void run() {
 
   const auto init_matrix_option = get_options("init_matrix");
 
-  Eigen::Vector3d centre;
-  InitialGuess initial_guess;
+  std::optional<InitialGuess> initial_guess;
   std::optional<MR::transform_type> initial_affine;
   if (!init_matrix_option.empty()) {
     // TODO: compute centre from images. Also check what's the correct thing to do in this case.
+    Eigen::Vector3d centre;
     const MR::transform_type init_transform = File::Matrix::load_transform(init_matrix_option[0][0], centre);
-    initial_guess = init_transform;
+    if (has_global_registration) {
+      initial_guess = init_transform;
+    }
     initial_affine = init_transform;
-  } else {
+  } else if (has_global_registration) {
     const InitTranslationChoice init_translation =
         from_name<InitTranslationChoice>(get_option_value<std::string>("init_translation", "mass"));
     const InitRotationChoice init_rotation =
         from_name<InitRotationChoice>(get_option_value<std::string>("init_rotation", "none"));
     const float init_rotation_max_angle = get_option_value<float>("init_rotation_max_angle", default_max_search_angle);
-    GlobalMetric init_metric;
-    switch (metric_type) {
-    case MetricType::NMI:
-      init_metric = NMIMetric{};
-      break;
-    case MetricType::SSD:
-      init_metric = SSDMetric{};
-      break;
-    case MetricType::NCC:
-      init_metric = NCCMetric{.window_radius = ncc_window_radius};
-      break;
-    default:
-      throw Exception("Unsupported metric type");
-    }
-
     initial_guess = InitialisationOptions{
         .translation_choice = init_translation,
         .rotation_choice = init_rotation,
-        .cost_metric = init_metric,
+        .cost_metric = make_global_metric(metric_type, ncc_window_radius),
         .max_search_angle_degrees = init_rotation_max_angle,
     };
   }
@@ -415,30 +459,92 @@ void run() {
     ++index;
   }
 
+  const std::string matrix_filename = get_option_value<std::string>("matrix", "");
+  if (has_nonlinear_registration && !matrix_filename.empty()) {
+    throw Exception("Matrix outputs are not yet supported when using nonlinear registration.");
+  }
+
+  const auto transformed_option = get_options("transformed");
+  std::vector<std::filesystem::path> transformed_filenames;
+  if (!transformed_option.empty()) {
+    if (transformed_option.size() > header_pairs.size()) {
+      throw Exception("Number of -transformed images exceeds number of contrasts");
+    }
+    if (transformed_option.size() < header_pairs.size()) {
+      WARN("Number of -transformed images is less than number of contrasts.");
+    }
+    for (size_t i = 0; i < transformed_option.size(); ++i) {
+      const std::filesystem::path output_path(transformed_option[i][0]);
+      transformed_filenames.push_back(output_path);
+      const auto input1_path = std::filesystem::path(header_pairs[i].header1.name());
+      INFO(input1_path.filename().string() + ", transformed to space of image2, will be saved to " +
+           output_path.string());
+    }
+  }
+
+  std::string warp1_filename;
+  std::string warp2_filename;
+  if (!nl_warp_option.empty()) {
+    warp1_filename = std::string(nl_warp_option[0][0]);
+    warp2_filename = std::string(nl_warp_option[0][1]);
+  }
+
+  std::optional<GlobalMetric> global_metric;
+  if (has_global_registration) {
+    global_metric = make_global_metric(metric_type, ncc_window_radius);
+  }
+
+  std::optional<NonLinearMetric> nonlinear_metric;
   if (has_nonlinear_registration) {
-    const std::string matrix_filename = get_option_value<std::string>("matrix", "");
-    if (!matrix_filename.empty()) {
-      throw Exception("Matrix outputs are not yet supported when using nonlinear registration.");
-    }
+    nonlinear_metric = make_nonlinear_metric(*nonlinear_metric_type, ncc_window_radius);
+  }
 
-    NonLinearMetric nonlinear_metric;
-    switch (*nonlinear_metric_type) {
-    case MetricType::SSD:
-      nonlinear_metric = SSDMetric{};
-      break;
-    case MetricType::NCC:
-      if (ncc_window_radius == 0U) {
-        throw Exception("Non-linear registration with NCC metric requires ncc_radius >= 1.");
-      }
-      nonlinear_metric = NCCMetric{.window_radius = ncc_window_radius};
-      break;
-    default:
-      throw Exception("Unsupported nonlinear metric type");
-    }
+  auto gpu_compute_context = gpu_context_request.get();
+  std::optional<RegistrationResult> registration_result;
 
+  if (registration_stages.run_rigid) {
+    if (!initial_guess || !global_metric) {
+      throw Exception("Rigid registration could not be initialised.");
+    }
+    CONSOLE("Running rigid registration stage.");
+    const GlobalRegistrationConfig rigid_config{
+        .channels = channels,
+        .transformation_type = GlobalRegistrationType::Rigid,
+        .initial_guess = *initial_guess,
+        .metric = *global_metric,
+        .max_iterations = max_iterations,
+    };
+    registration_result = GPU::run_registration(rigid_config, gpu_compute_context);
+  }
+
+  if (registration_stages.run_affine) {
+    if (!global_metric || (!registration_result && !initial_guess)) {
+      throw Exception("Affine registration could not be initialised.");
+    }
+    const InitialGuess affine_initial_guess =
+        registration_result ? InitialGuess{registration_result->transformation} : *initial_guess;
+    CONSOLE("Running affine registration stage.");
+    const GlobalRegistrationConfig affine_config{
+        .channels = channels,
+        .transformation_type = GlobalRegistrationType::Affine,
+        .initial_guess = affine_initial_guess,
+        .metric = *global_metric,
+        .max_iterations = max_iterations,
+    };
+    registration_result = GPU::run_registration(affine_config, gpu_compute_context);
+  }
+
+  if (registration_result) {
+    initial_affine = registration_result->transformation;
+  }
+
+  if (has_nonlinear_registration) {
+    if (!nonlinear_metric) {
+      throw Exception("Non-linear registration could not be initialised.");
+    }
     const NonLinearRegistrationConfig nonlinear_config{
         .channels = channels,
-        .metric = nonlinear_metric,
+        .metric = *nonlinear_metric,
         .max_iterations = max_iterations,
         .fluid_blur_sigma_voxels = nonlinear_fluid_sigma,
         .diffusion_blur_sigma_voxels = nonlinear_diffusion_sigma,
@@ -446,34 +552,8 @@ void run() {
         .svf_bch_terms = nonlinear_svf_bch_terms,
         .initial_affine = initial_affine,
     };
-    auto gpu_compute_context = gpu_context_request.get();
     const NonLinearRegistrationResult nonlinear_result =
         GPU::run_nonlinear_registration(nonlinear_config, gpu_compute_context);
-
-    const auto transformed_option = get_options("transformed");
-    std::vector<std::filesystem::path> transformed_filenames;
-    if (!transformed_option.empty()) {
-      if (transformed_option.size() > header_pairs.size()) {
-        throw Exception("Number of -transformed images exceeds number of contrasts");
-      }
-      if (transformed_option.size() < header_pairs.size()) {
-        WARN("Number of -transformed images is less than number of contrasts.");
-      }
-      for (size_t i = 0; i < transformed_option.size(); ++i) {
-        const std::filesystem::path output_path(transformed_option[i][0]);
-        transformed_filenames.push_back(output_path);
-        const auto input1_path = std::filesystem::path(header_pairs[i].header1.name());
-        INFO(input1_path.filename().string() + ", transformed to space of image2, will be saved to " +
-             output_path.string());
-      }
-    }
-
-    std::string warp1_filename;
-    std::string warp2_filename;
-    if (!nl_warp_option.empty()) {
-      warp1_filename = std::string(nl_warp_option[0][0]);
-      warp2_filename = std::string(nl_warp_option[0][1]);
-    }
 
     std::optional<Image<float>> warp1_image;
     if (!warp1_filename.empty() || !transformed_filenames.empty()) {
@@ -518,59 +598,13 @@ void run() {
     return;
   }
 
-  if (!has_global_registration) {
+  if (!registration_result) {
     throw Exception("Registration type is not supported.");
-  }
-
-  GlobalMetric metric;
-  switch (metric_type) {
-  case MetricType::NMI:
-    metric = NMIMetric{};
-    break;
-  case MetricType::SSD:
-    metric = SSDMetric{};
-    break;
-  case MetricType::NCC:
-    metric = NCCMetric{.window_radius = ncc_window_radius};
-    break;
-  default:
-    throw Exception("Unsupported metric type");
-  }
-
-  const GlobalRegistrationConfig registration_config{
-      .channels = channels,
-      .transformation_type = *global_transform_type,
-      .initial_guess = initial_guess,
-      .metric = metric,
-      .max_iterations = max_iterations,
-  };
-
-  auto gpu_compute_context = gpu_context_request.get();
-  const RegistrationResult registration_result = GPU::run_registration(registration_config, gpu_compute_context);
-
-  const std::string matrix_filename = get_option_value<std::string>("matrix", "");
-
-  const auto transformed_option = get_options("transformed");
-  std::vector<std::filesystem::path> transformed_filenames;
-  if (!transformed_option.empty()) {
-    if (transformed_option.size() > header_pairs.size()) {
-      throw Exception("Number of -transformed images exceeds number of contrasts");
-    }
-    if (transformed_option.size() < header_pairs.size()) {
-      WARN("Number of -transformed images is less than number of contrasts.");
-    }
-    for (size_t i = 0; i < transformed_option.size(); ++i) {
-      const std::filesystem::path output_path(transformed_option[i][0]);
-      transformed_filenames.push_back(output_path);
-      const auto input1_path = std::filesystem::path(header_pairs[i].header1.name());
-      INFO(input1_path.filename().string() + ", transformed to space of image2, will be saved to " +
-           output_path.string());
-    }
   }
 
   if (!matrix_filename.empty()) {
     const Eigen::Vector3d centre = image_centre_scanner_space(header_pairs.front().header1);
-    File::Matrix::save_transform(registration_result.transformation, centre, matrix_filename);
+    File::Matrix::save_transform(registration_result->transformation, centre, matrix_filename);
   }
 
   if (!transformed_filenames.empty()) {
@@ -584,7 +618,7 @@ void run() {
       auto output_image = Image<float>::create(transformed_filenames[idx].string(), output_header).with_direct_io();
 
       Filter::reslice<Interp::Cubic>(
-          input_image, output_image, registration_result.transformation, Adapter::AutoOverSample, 0.0F);
+          input_image, output_image, registration_result->transformation, Adapter::AutoOverSample, 0.0F);
     }
   }
 }
