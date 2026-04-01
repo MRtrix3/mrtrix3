@@ -85,8 +85,7 @@ void warp(ImageTypeSource &source,
                        (jacobian_modulate ? " with Jacobian intensity modulation" : ""),
                    interp,
                    0,
-                   3,
-                   1)
+                   3)
           .run(CopyKernel4D(), interp, destination);
     else
       threaded_copy_with_progress_message("warping \"" + source.name() + "\"" +
@@ -103,8 +102,7 @@ void warp(ImageTypeSource &source,
                        (jacobian_modulate ? " with Jacobian intensity modulation" : ""),
                    interp,
                    0,
-                   3,
-                   1)
+                   3)
           .run(CopyKernel4D(), interp, destination);
     else
       threaded_copy_with_progress_message("warping \"" + source.name() + "\"" +
@@ -112,8 +110,7 @@ void warp(ImageTypeSource &source,
                                           interp,
                                           destination,
                                           0,
-                                          destination.ndim(),
-                                          2);
+                                          destination.ndim());
   }
 }
 

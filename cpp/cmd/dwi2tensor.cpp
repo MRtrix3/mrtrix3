@@ -344,5 +344,5 @@ void run() {
   }
 
   auto dwi = header_in.get_image<value_type>();
-  ThreadedLoop("computing tensors", dwi, 0, 3).run(processor(A, Aneq, ols, iter, mask, b0, dt, dkt, predict), dwi);
+  ThreadedLoop("computing tensors", dwi, 0, 3, 1).run(processor(A, Aneq, ols, iter, mask, b0, dt, dkt, predict), dwi);
 }

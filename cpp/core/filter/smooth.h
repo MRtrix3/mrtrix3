@@ -151,7 +151,7 @@ public:
         }
         DEBUG("smoothing dimension " + str(dim) + " in place with stride order: " + str(axes));
         SmoothFunctor1D<ImageType> smooth(in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
-        ThreadedLoop(in_and_output, axes, std::min<size_t>(2, axes.size())).run(smooth, in_and_output);
+        ThreadedLoop(in_and_output, axes).run(smooth, in_and_output);
         if (progress)
           ++(*progress);
       }
