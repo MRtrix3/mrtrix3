@@ -304,24 +304,16 @@ public:
       }
     }
 
-    double mo = 0.0;
-    if (mo_img.valid()) {
-      const double l1 = eigval(0);
-      const double l2 = eigval(1);
-      const double l3 = eigval(2);
-      mo = DWI::eigen2MO(l1, l2, l3);
-      // std::cout << "mo: " << mo << std::endl;
-    }
     /* output mo */
     if (mo_img.valid()) {
       assign_pos_of(dt_img, 0, 3).to(mo_img);
-      mo_img.value() = mo;
+      mo_img.value() = DWI::eigen2MO(eigval);
     }
 
     /* output na */
     if (na_img.valid()) {
       assign_pos_of(dt_img, 0, 3).to(na_img);
-      na_img.value() = DWI::eigen2NA(eigval(0), eigval(1), eigval(2));
+      na_img.value() = DWI::eigen2NA(eigval);
       ;
     }
 

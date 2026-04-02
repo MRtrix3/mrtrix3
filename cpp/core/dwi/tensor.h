@@ -89,11 +89,13 @@ inline void dwi2tensor(VectorTypeOut &dt, const MatrixType &binv, VectorTypeIn &
 }
 
 template <class VectorType> inline typename VectorType::Scalar tensor2ADC(const VectorType &dt) {
+  assert(dt.size() == 6);
   using T = typename VectorType::Scalar;
   return (dt[0] + dt[1] + dt[2]) / T(3.0);
 }
 
 template <class VectorType> inline typename VectorType::Scalar tensor2FA(const VectorType &dt) {
+  assert(dt.size() == 6);
   using T = typename VectorType::Scalar;
   T trace = tensor2ADC(dt);
   const std::array<T, 3> a = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
@@ -106,6 +108,7 @@ template <class VectorType> inline typename VectorType::Scalar tensor2FA(const V
 }
 
 template <class VectorType> inline typename VectorType::Scalar tensor2RA(const VectorType &dt) {
+  assert(dt.size() == 6);
   using T = typename VectorType::Scalar;
   T trace = tensor2ADC(dt);
   const std::array<T, 3> a = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
@@ -116,15 +119,15 @@ template <class VectorType> inline typename VectorType::Scalar tensor2RA(const V
                : T(0.0);
 }
 
-template <class Scalar> inline Scalar eigen2MO(const Scalar l1, const Scalar l2, const Scalar l3) {
-  const Scalar md = (l1 + l2 + l3) / 3.0;
-  const Scalar na = std::sqrt((l1 - md) * (l1 - md) + (l2 - md) * (l2 - md) + (l3 - md) * (l3 - md));
-  return 3.0 * std::sqrt(6.0) * ((l1 - md) * (l2 - md) * (l3 - md) / Math::pow3(na));
+template <class VectorType> inline typename VectorType::Scalar eigen2MO(const VectorType &eig) {
+  assert(eig.size() == 3);
+  const Eigen::Matrix<typename VectorType::Scalar, 3, 1> eigval_minus_md = (eig.array() - eig.mean()).matrix();
+  return 3.0 * std::sqrt(6.0) * eigval_minus_md.prod() / Math::pow3(eigval_minus_md.norm());
 }
 
-template <class Scalar> inline Scalar eigen2NA(const Scalar l1, const Scalar l2, const Scalar l3) {
-  const Scalar md = (l1 + l2 + l3) / 3.0;
-  return std::sqrt(Math::pow2(l1 - md) + Math::pow2(l2 - md) + Math::pow2(l3 - md));
+template <class VectorType> inline typename VectorType::Scalar eigen2NA(const VectorType &eig) {
+  assert(eig.size() == 3);
+  return (eig.array() - eig.mean()).matrix().norm();
 }
 
 } // namespace MR::DWI
