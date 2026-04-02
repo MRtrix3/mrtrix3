@@ -21,7 +21,7 @@ Usage
 Options
 -------
 
--  **-tiles value** specify the number of tiles in any direction
+-  **-tiles value** specify the number of tiles in any direction (default: 5)
 
 -  **-invert** invert output binary mask.
 

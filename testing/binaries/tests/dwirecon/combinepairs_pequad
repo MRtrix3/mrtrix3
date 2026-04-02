@@ -1,0 +1,17 @@
+# Verify operation of "dwirecon" command for:
+# - "combine_pairs" option:
+#   identifies volumes with phase encoding equal in readout time but opposing in polarity,
+#   and does a weighted recombination of them based on the local Jacobians
+# - *Four* input phase encoding directions
+
+mrcat \
+    $(mrconvert dwirecon/AP_preproc.mif -coord 3 0:6 -) \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:6 -) \
+    $(mrconvert dwirecon/PA_preproc.mif -coord 3 0:6 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 0:6 -) \
+    -axis 3 \
+    - | \
+dwirecon - combine_pairs \
+    -field dwirecon/field.mif \
+    - | \
+testing_diff_image - dwirecon/combine_pairs/pequad.mif -frac 1e-5

@@ -1,7 +1,7 @@
 .. _fixels_dixels:
 
-"Fixels" (and "Dixels")
-=======================
+"Fixels" (and "Dixels" and "Peaks")
+===================================
 
 Internally we have created a couple of new terms that we find
 invaluable when discussing diffusion MRI processing methods and
@@ -140,6 +140,11 @@ Some observations / contexts in which the term 'dixel' may be useful:
    on accumulating these directions / samples. So this process can be
    thought of as converting the FOD from a continuous SH representation,
    to a dixel representation, then finally to a fixel representation.
+
+'Peak': *Local ODF maxima*
+--------------------------
+
+
 
 .. NOTE::
 

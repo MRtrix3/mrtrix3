@@ -1,0 +1,20 @@
+#!/bin/bash
+# This test encapsulates several concepts:
+# - Multi-contrast registration
+# - FOD_based registration
+#   (which applies only to one of the two contrasts)
+# - Synthesis of a (multi-contrast) image pair where the affine transformation between them is known
+#   (since they arise from the same origin images where a known affine transformation is applied to only one),
+#   and verification that the transformation estimated by mrregister matches what was applied to the input data
+#   (by composing the applied transformation and the estimated inverse transformation
+#   and ensuring that the result is close to the identity affine transformation)
+mrtransform dwi2fod/msmt_csd/wm.mif -linear moving2template.txt tmp-wmtemplate.mif -reorient_fod yes -force
+mrtransform dwi2fod/msmt_csd/gm.mif -linear moving2template.txt tmp-gmtemplate.mif -force
+
+mrregister -type rigid_affine -nthreads 0 -force \
+tmp-wmtemplate.mif dwi2fod/msmt_csd/wm.mif \
+tmp-gmtemplate.mif dwi2fod/msmt_csd/gm.mif \
+-affine tmpaffine.txt
+
+transformcompose moving2template.txt tmpaffine.txt tmpidentity.txt -force
+testing_diff_matrix mrregister/identity.txt tmpidentity.txt -abs 0.06

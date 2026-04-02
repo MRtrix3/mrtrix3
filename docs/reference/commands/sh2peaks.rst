@@ -16,14 +16,16 @@ Usage
     sh2peaks [ options ]  SH output
 
 -  *SH*: the input image of SH coefficients.
--  *output*: the output image. Each volume corresponds to the x, y & z component of each peak direction vector in turn.
+-  *output*: the output peaks image
 
 Description
 -----------
 
-Peaks of the spherical harmonic function in each voxel are located by commencing a Newton search along each of a set of pre-specified directions
+Peaks of the spherical harmonic function in each voxel are located by commencing a Newton search along each of a set of pre-specified directions.
 
-The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
+Within the output image, each successive triplet of volumes encodes the x, y & z components of a 3-vector; their directions in 3D space encode the orientation of the identified peaks, while the norm of each vector encodes the magnitude of the peaks.
+
+The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
 https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 
 Options

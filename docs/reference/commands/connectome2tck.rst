@@ -61,7 +61,7 @@ Example usages
 
         $ connectome2tck tracks.tck assignments.txt exemplars.tck -files single -exemplars nodes.mif
 
-    This produces the track file that is required as input when attempting to display connectome edges using the streamlines or streamtubes geometries within the meview connectome tool.
+    This produces the track file that is required as input when attempting to display connectome edges using the streamlines or streamtubes geometries within the mrview connectome tool.
 
 Options
 -------
@@ -73,7 +73,7 @@ Options for determining the content / format of output files
 
 -  **-exclusive** only select tracks that exclusively connect nodes from within the list of nodes of interest
 
--  **-files option** select how the resulting streamlines will be grouped in output files. Options are: per_edge, per_node, single (default: per_edge)
+-  **-files option** select how the resulting streamlines will be grouped in output files. Options are: per_edge, per_node, single. Default: per_edge.
 
 -  **-exemplars image** generate a mean connection exemplar per edge, rather than keeping all streamlines (the parcellation node image must be provided in order to constrain the exemplar endpoints)
 

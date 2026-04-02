@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify command operation under default usage
+responsemean BIDS/sub-02/dwi/sub-02_tissue-WM_response.txt BIDS/sub-03/dwi/sub-03_tissue-WM_response.txt tmp.txt -force
+testing_diff_matrix tmp.txt responsemean/out.txt -abs 0.001

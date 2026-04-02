@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.branch }}
-      
+
       - name: Set env vars
         id: envs
         run: |
@@ -114,7 +114,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.branch }}
-      
+
       - name: Set env vars
         id: envs
         run: |

@@ -6,7 +6,7 @@ fixel2voxel
 Synopsis
 --------
 
-Convert a fixel-based sparse-data image into some form of scalar image
+Aggregate content from a fixel data file into a voxel scalar image
 
 Usage
 --------
@@ -35,6 +35,9 @@ Fixel data can be reduced to voxel data in a number of ways:
 - A 4D image containing all fixel data values in each voxel unmodified: none
 
 The -weighted option deals with the case where there is some per-fixel metric of interest that you wish to collapse into a single scalar measure per voxel, but each fixel possesses a different volume, and you wish for those fixels with greater volume to have a greater influence on the calculation than fixels with lesser volume. For instance, when estimating a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's mean axon diameter should be weigthed by its relative volume within the voxel in the calculation of that voxel mean.
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
@@ -76,7 +79,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

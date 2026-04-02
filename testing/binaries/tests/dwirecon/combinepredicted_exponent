@@ -1,0 +1,33 @@
+# Verify operation of "dwirecon" command for:
+# - "combine_predicted" option:
+#   each volume undergoes a weighted mean with a prediction generated
+#   from volumes with phase encodings other than that used for acquisition of that volume
+# - *Two* input phase encoding directions
+# - Demonstrating influence of option -exponent
+
+mrcat \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:13 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 13:end -) \
+    -axis 3 \
+    tmp.mif -force
+
+# 1. With an exponent of -infinity,
+#    the weight of the empirical data is always 1.0,
+#    with the exception of anywhere where the Jacobian is negative
+#    (which shouldn't be present in the sample data)
+dwirecon tmp.mif combine_predicted \
+    -field dwirecon/field.mif \
+    -exponent -inf \
+    - | \
+testing_diff_image - tmp.mif -frac 1e-5
+
+# 2. With an exponent of +infinity,
+#    anywhere that the Jacobian is less than one,
+#    the weight ascribed to the empirical data will be zero,
+#    and therefore values will be 100% imputed from predictions
+#    in approximately half of the image
+dwirecon tmp.mif combine_predicted \
+    -field dwirecon/field.mif \
+    -exponent inf \
+    - | \
+testing_diff_image - dwirecon/combine_predicted/exponentinf.mif -frac 1e-5

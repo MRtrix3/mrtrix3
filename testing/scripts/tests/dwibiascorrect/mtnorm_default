@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify correct operation of "dwibiascorrect mtnorm" algorithm
+#   under wholly default configuration
+dwibiascorrect mtnorm BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-bias tmpbias.mif -force
+
+testing_diff_image tmpout.mif dwibiascorrect/mtnorm/default_out.mif.gz -frac 1e-5
+testing_diff_image tmpbias.mif dwibiascorrect/mtnorm/default_bias.mif.gz -frac 1e-5

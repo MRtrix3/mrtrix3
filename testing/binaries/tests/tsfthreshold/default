@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify default operation of command
+# Outcome is compared to that calculated using a prior software version
+tsfthreshold afd.tsf 0.2 tmp.tsf -force
+testing_diff_tsf tmp.tsf tsfthreshold/out.tsf

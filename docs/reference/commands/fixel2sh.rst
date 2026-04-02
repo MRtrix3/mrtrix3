@@ -6,7 +6,7 @@ fixel2sh
 Synopsis
 --------
 
-Convert a fixel-based sparse-data image into an spherical harmonic image
+Generate spherical harmonics decompositions that mimic the content of a fixel data file
 
 Usage
 --------
@@ -23,8 +23,11 @@ Description
 
 This command generates spherical harmonic data from fixels that can be visualised using the ODF tool in MRview. The output ODF lobes are scaled according to the values in the input fixel image.
 
-The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
+The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
 https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
@@ -59,7 +62,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

@@ -1,0 +1,108 @@
+#!/bin/bash
+# Test operation of the -rpe_split mode
+
+# Similarly to the tests for new command dwirecon,
+#   generate data corresponding to a split reversed phase encoding acquisition
+#   by extracting volumes from data intended for -rpe_all
+
+# Split method 1: interleaved volumes
+#   (but grab the lead b=0 from both)
+mrcat \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-1_dwi.nii.gz \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-1_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-1_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-1_dwi.json -) \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-2_dwi.nii.gz \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-2_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-2_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-2_dwi.json -) \
+    -axis 3 \
+    - | \
+mrconvert - \
+    -coord 3 0,31,1,33,3,35,5,37,7,39,9,41,11,43,13,45,15,47,17,49,19,51,21,53,23,55,25,57,27,59,29,61 \
+    tmp_in1.mif -force
+
+# Split method 2: First half from first phase encoding direction,
+#   second half from second phase encoding direction
+#   (but make sure to grab the first b=0 from both)
+mrcat \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-1_dwi.nii.gz \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-1_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-1_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-1_dwi.json \
+        -coord 3 0:15 -) \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-2_dwi.nii.gz \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-2_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-2_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-2_dwi.json \
+        -coord 3 0,16:end -) \
+    -axis 3 \
+    tmp_in2.mif -force
+
+# Split method 3:
+#   Two phase encoding directions appear in succession,
+#   but the number of volumes within them is not quite identical
+#   (this precludes the use of -rpe_split,
+#   but should be possible to process using -rpe_header
+#   and still have dwirecon combine_predicted invoked)
+#   This is achieved by omitting the last volume of the second acquisition
+mrcat \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-1_dwi.nii.gz \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-1_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-1_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-1_dwi.json \
+        -coord 3 0:15 -) \
+    $(mrconvert BIDS/sub-05/dwi/sub-05_acq-2_dwi.nii.gz \
+        -fslgrad BIDS/sub-05/dwi/sub-05_acq-2_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-2_dwi.bval \
+        -json_import BIDS/sub-05/dwi/sub-05_acq-2_dwi.json \
+        -coord 3 0,16:29 -) \
+    -axis 3 \
+    tmp_in3.mif -force
+
+
+# Executions:
+# Note that in all cases,
+#   the basic features of the image header should match that obtained when using -rpe_all
+# In some circumstances,
+#   we also need to change some of the volume orderings
+#   in order to properly match the expectation from -rpe_all:
+# - Split method 1:
+#   Remove second volume,
+#   as this is the one that was inserted to facilitate susceptibility field estimation
+# - Split method 2:
+#   Remove volume index 16,
+#   as this is where the b=0 from the second series will be inserted
+
+# Using -rpe_split
+# Only split method 2 can be processed here
+#   (enforced interpretation of input data based on presence of -rpe_split)
+dwifslpreproc tmp_in2.mif \
+    -rpe_split \
+    -pe_dir pa -readout_time 0.1 \
+    - | \
+mrconvert - \
+    -coord 3 0:15,17:end \
+    - | \
+testing_diff_header - dwifslpreproc/rpeall.mif.gz
+
+# Using -rpe_header
+dwifslpreproc tmp_in1.mif \
+    -rpe_header \
+    - | \
+mrconvert - \
+    -coord 3 0,2:end \
+    - | \
+testing_diff_header - dwifslpreproc/rpeall.mif.gz
+
+dwifslpreproc tmp_in2.mif \
+    -rpe_header \
+    - | \
+mrconvert - \
+    -coord 3 0:15,17:end \
+    - | \
+testing_diff_header - dwifslpreproc/rpeall.mif.gz
+
+dwifslpreproc tmp_in3.mif \
+    -rpe_header \
+    - | \
+mrconvert - \
+    -coord 3 0:15,17:end \
+    - | \
+testing_diff_header - \
+    $(mrconvert dwifslpreproc/rpeall.mif.gz \
+        -coord 3 0:29 -)

@@ -164,6 +164,7 @@ Table of Contents
 
    dwi_preprocessing/denoising
    dwi_preprocessing/dwifslpreproc
+   dwi_preprocessing/masking
 
 .. toctree::
    :maxdepth: 1

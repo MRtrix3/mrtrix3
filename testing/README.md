@@ -1,307 +1,267 @@
 # Testing
 
-Add tests here for MRtrix3 commands to ensure that the output is consistent
-with expectation. If you intend to help with development of MRtrix3, it is
-recommended you run the enclosed tests regularly to ensure your changes do not
-introduce regressions. 
+Add tests here for MRtrix3 commands to ensure that the output is consistent with expectation.
+If you perform any modifications to MRtrix3,
+it will be necessary to ensure that existing tests still pass before any changes can be merged;
+further, if adding new commands or functionalities,
+it is highly recommended that new tests be added to evaluate such.
 
-Recommended command to fully test everything is working:
+## Running tests
+
+### Build configuration
+
+In order for it to be possible to execute tests,
+`cmake` must be instructed at configure time to build the requisite tools
+using the `cmake` variable "`MRTRIX_BUILD_TESTS`":
 ```ShellSession
-./configure && ./build && ./run_tests 
-```
-Look in `testing.log` for details of any failures encountered. 
-
-## To run the tests
-
-Simply run the `./run_tests` script from within the MRtrix3 toplevel folder:
-```ShellSession
-./run_tests
-```
-        
-This will fetch the testing data as a submodule from a separate dedicated repo,
-build the testing executables, then run the tests. All activities are logged to
-the `testing.log` file - take a look in there for details of any failures.
-
-Note that the `./run_tests` script will _not_ build the executables to be tested.
-This is to allow developers to build and test individual commands without
-needing to rebuild all other commands. If you want to test all commands, make
-sure you run `./build` first.
-
-### Running tests for a single command
-
-You can run a test for a single command simply by adding the name of the
-command as the argument:
-
-```ShellSession
-./run_tests mrconvert
-
+cmake -B build -DMRTRIX_BUILD_TESTS=ON ...
+cmake --build build
 ```
 
-This means you don't need to build everything to test one particular command.
-For example, this is a construct I commonly use:
+Subsequent instructions here are written
+assuming that the `cmake` build directory is named "`build`".
+
+### Execution of all tests
+
+To run tests,
+use command `ctest` (an executable bundled with CMake),
+executing from inside the `cmake` build directroy:
 ```ShellSession
-./build release/bin/mrconvert && ./run_tests mrconvert
+cd build
+ctest
 ```
+
+Note that some tests involve the invocation of commands
+that are not a part of the *MRtrix3* software.
+As such, these tests may fail on some system configuration,
+but this is not necessarily indicative of an issue with *MRtrix3* source code.
+
+### Test execution via labels
+
+The *MRtrix3* tests are assigned multiple labels that allow one to nominate
+an appropriate subset of tests to be executed by `ctest`.
+
+The following test labels are ascribed to tests as appropriate
+to facilitate appropriate batch testing:
+
+```ShellSession
+cd build
+ctest -L binary # Runs all C++ binary command tests
+ctest -L script # Runs all Python command tests
+ctest -L unittest # Runs all unit tests
+ctest -L pythonci # Runs a small subset of Python command tests suitable for Continuous Integration (CI) testing
+```
+
+For each command in *MRtrix3*,
+a corresponding test label is constructed using the name of that command,
+which contains all tests for that command:
+
+```ShellSession
+cd build
+ctest -L mrconvert # Runs all tests of the C++ command mrconvert
+ctest -L dwi2response # Runs all tests of the Python command dwi2response
+```
+
+### Advanced usage
+
+-   You can choose to rerun only those tests that previously failed
+    by specifying the `--rerun-failed` option.
+
+-   You don't need to build every command to test one particular command.
+    For example, you can do this:
+    ```ShellSession
+    cmake --build build --target mrconvert testing_tools
+    cd build
+    ctest -L bin_mrconvert
+    ```
+
+    Note that, in addition to the command you want to test,
+    you also need to build target "`testing_tools`"
+    (an umbrella target that builds the tools needed to evaluate the outputs generated
+    by commands when conducting tests).
+
+-   Regular expressions can be used to select a subset of tests:
+    ```ShellScript
+    cd build
+    ctest -R 5ttgen_hsvs # Run only the tests of specifically the "HSVS" algorithm of the 5ttgen command
+    ```
+
+-   Environment variables "`MRTRIX_BINARIES_DATA_DIR`" and "`MRTRIX_SCRIPTS_DATA_DIR`"
+    can be used to specify alternative locations to be used by `cmake`
+    to clone the appropriate versions of those data within the build directory.
+    By setting these to contain local filesystem locations,
+    internet traffic will be reduced if deleting build directories or using multiple build configurations;
+    it additionally enables the execution of `ctest` utilising updated test data
+    prior to pushing the updated test data to GitHub
+    (see "Adding test data" step 7 below).
 
 ## Adding tests
- 
-Add a script to the `tests/` folder. Each line of these scripts constitutes a
-single test, and will be run as a single unit. Use `&&` and `||` bash
-constructs if needed to create compound commands. Each of these lines should
-return a zero exit code if successful. You can test the output of your commands
-against your expected output using the `testing_diff_image` command (note other
-commands are available to check various types of output - look in `testing/cmd`
-for the full list). 
 
+A new text file should be added to one of the following locations,
+depending on the nature of the test to be added:
 
-Note that this script will be invoked directly in the context set up by the
-`run_tests` script, so does not need to be executable, or to set up any
-redirection, or to uses a hash-bang line to specify the interpreter.  Just add
-commands to be run, and if any of them produce a non-zero exit code, this will
-be caught by the `run_tests` script.  All commands will also be logged. 
+```
+testing/binaries/tests/cmdname/
+testing/scripts/tests/cmdname/
+testing/unit_tests/
+```
 
-The testing will consider each line of the test scripts to correspond to an
-individual test, and report as such. If any of your tests need multiple
-commands, simply list them all on the same line, separated by semicolons or
-other constructs such as `&&` or `||`. Look within existing test scripts for
-examples.
+"`cmdname`" in these examples should be replaced with the name of the *MRtrix3* command
+for which a new test is being added.
+The name of the file should communicate the nature of the test being performed.
+The test should be constructed in such a way
+that a non-zero return code is yielded if an error is encountered
+or the data produced does not conform to expectation.
+Directory `testing/tools/` provides a set of commands
+that can be useful for detecting divergence of the output produced by a command
+from that produced by an earlier version of the software.
 
-#### Temporary files 
+Note that this script will be invoked directly parsed by the build system.
+It therefore does not need to be executable,
+no redirection setup is necessary, 
+and no hash-bang line is required to specify the interpreter.
+Just add commands to be run, and if any of them produce a non-zero exit code,
+this will be reported when running `ctest`.
+All command outputs will also be logged. 
 
-If your tests need to create temporary files, make sure they are prefixed with
-'tmp' and are not placed in subfolders - the run_tests script will make sure
-these are deleted prior to running the next set of tests. 
+## Temporary files 
+
+If your tests need to create temporary files,
+make sure that they are prefixed with "`tmp`" and are not placed in subfolders;
+any such content will be deleted prior to running the next set of tests. 
 
 ## Adding test data
 
-If needed, you can add test data to the [test_data
-repo](https://github.com/MRtrix3/test_data), preferably within its own
-subfolder if you don't anticipate these data will be suitable for testing other
-commands. Please keep the size of these data small to ensure this repository
-doesn't grow too large. In general, you really don't need large images to
-verify correct operation.
+If necessary, new data can be added to the testing suite,
+in the form of exemplar input data
+and/or data produced by the command and manually verified to be correct
+in order to detect any future regression of such.
 
-These data are included as a _submodule_ within the main MRtrix3 repository, as
-a means of ensuring that the version of the data used for the tests is recorded
-within the main repo, while keeping its history separate, and hence on a
-separate repository. This separation helps to keep the size of the main
-repository small, and avoid large downloads for users. The downside is that
-making changes to the test data is more complicated. For [here a full introduction
-into git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules).
+As with the tests themselves,
+the appropriate location for such data depends on the nature of the test:
 
-To add data, you will need to:
+-   C++ binary commands: [`test_data` repo](https://github.com/MRtrix3/test_data).
 
-- add your data to the [test_data repo](https://github.com/MRtrix3/test_data);
+-   Python commands: [`script_test_data` repo](https://github.com/MRtrix3/script_test_data).
 
-- update the main MRtrix3 repo to reflect the new version of the data needed
-  for the tests.
+-   Unit tests: Some limited data exist in `testing/data/`;
+    consult with the package maintainers if you believe this may be suitable for your use case.
 
-**Note:** if you need to _modify_ exising data in a way that would break
-existing tests, you will need to be very careful with how you do this - see the
-relevant section below for details.
+Test data should be kept as small as possible whilst fulfilling the test requirements,
+to minimise both the size of the repositories and the computational expense of the tests.
+For C++ binaries, images of only a small zoomed FoV are frequently used;
+for Python commands that necessitate whole-brain data,
+images of reduced spatial resolution are commonly used.
 
-#### Adding the data to the [test_data repo](https://github.com/MRtrix3/test_data) repository
+Data used for testing will be downloaded at build time.
+Each test when executed has its working directory set
+to the root path of the corresponding data within the build directory;
+in this way, the contents of each test script can reference these data
+using paths relative to that root.
 
-This can be done using a number of approaches:
+Proper integration of changes to the software and corresponding changes to test data
+can be tricky where the changes occur across different repositories.
+The following instructions are recommendations from @Lestropie
+following years of experience with this mechanism.
+In the following instructions,
+"source code repository" is in reference to [`github.com/MRtrix3/mrtrix3`](https://github.com/MRtrix3/mrtrix3),
+and "data repository" is in reference to either [`github.com/MRtrix3/test_data`](https://github.com/MRtrix3/test_data)
+or [`github.com/MRtrix3/script_test_data`](https://github.com/MRtrix3/script_test_data)
+depending on the nature of the proposed modification.
 
-1. Using the GitHub website
+1.  Determine the target branch for the source code repository for your modifications.
+    As per the [contributing guidelines](https://github.com/MRtrix3/mrtrix3/CONTRIBUTING.md),
+    the suitable target branch for a Pull Request depends on the nature
+    of the change being proposed.
 
-  Probably the simplest approach is simply to upload your new data via the [GitHub
-  interface](https://github.com/MRtrix3/test_data/upload/master). This will
-  commit directly to the `master` branch of the  [test_data
-  repo](https://github.com/MRtrix3/test_data). 
+2.  Determine the data repository for which test data will need to be modified.
+    This will depend on the language in which the command under modification / being added is written.
 
-2. From a separate standalone repo:
+3.  Independently obtain the following two commit hash identifiers:
 
-  Simply clone the [test_data repo](https://github.com/MRtrix3/test_data), add
-  your data, commit, and push:
+    1.  Within file `testing/CMakeLists.txt` in the source code repository,
+        the version of the test data repository that is currently downloaded
+        whenever executing tests for the target source branch.
 
-  ```ShellSession
-  $ git clone git@github.com:MRtrix3/test_data.git
-  $ cd test_data
-  $ git add your_data.mif
-  $ git commit 
-  $ git push
-  ```
-  
-  You can delete the standalone repo once you have pushed your changes. 
-  
-3. Directly within the MRtrix3 installation
-  
-  Adding data can be done by pushing commits on the `master` branch of the
-  submodule within the MRtrix3 folder. Note that you will need to have run
-  `./run_tests` at least once to initialise the submodule. For this to work, you
-  will need to override the default URL for the [test_data
-  submodule](https://github.com/MRtrix3/test_data) in your local
-  installation, since the default URL is the public HTTPS version, which is
-  read-only. This only needs to be done once, using the following instructions: 
-  
-  ```ShellSession
-  $ git config submodule.testing/data.url git@github.com:MRtrix3/test_data.git
-  $ rm -rf testing/data .git/modules/testing/
-  $ ./run_tests
-  ```
-  After this, you should be able to add data by committing directly to the
-  `master` branch. Note that by default, the submodule will be in detached HEAD
-  state, since it is locked to the specific version specified in the main MRtrix3
-  folder. Remember to checkout `master` before committing:
-  
-  ```ShellSession
-  $ cd testing/data
-  $ git checkout master
-  $ git add your_data.mif
-  $ git commit 
-  $ git push
-  ```
-  
-#### Updating the main MRtrix3 repo to make use of the latest commits
+    2.  Within the data repository,
+        the branch of the same name as the target branch in the source code repository.
 
-Once your new data have been committed to the [test_data
-repo](https://github.com/MRtrix3/test_data), all you need to do is tell the
-main MRtrix3 repository to record the new SHA1 for the latest version of the
-test data.
+    If these identifiers do *not* match,
+    then it is highly recommended that this be rectified before proceeding.
+    It is best to attempt to trace the source of the discrepancy
+    rather than simply moving a branch from one commit to another,
+    as divergences are harder to detect and resolve here
+    then when dealing with only a single `git` repository.
 
-The first thing to do is ensure your main MRtrix3 repo has already initialised
-the `testing/data` submodule. The simplest way to do this is to just run
-`./run_tests` (you can abort as soon as the 'fetching test data... OK' line has
-completed). Alternatively, you can run the relevant command directly yourself:
-```ShellSession
-$ git submodule update --init
-```
+4.  Clone the relevant data repository
+    (if you do not yet have such a clone).
 
-At this point, you can update the submodule with the latest version on the [test_data
-repo](https://github.com/MRtrix3/test_data):
-```ShellSession
-$ git submodule update --remote
-```
-**Note:** this will record the SHA1 of the current `master` branch on the
-[test_data repo](https://github.com/MRtrix3/test_data). See the next section
-if you need to record any other branch or SHA1.
+5.  Within your clone of the relevant data repository,
+    create a new branch based off of the branch identified in step 3.2.
+    It is highly recommended to give this branch in the data repository
+    the same name as the relevant branch in the source code repository.
 
-At this point, it's good practice to check your git status, and make sure
-everything makes sense. For example, assuming I'd just added some test data,
-and modified the tests for `mrconvert`:
-```ShellSession
-$ git status
-On branch master
-Your branch is up-to-date with 'github/master'.
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git checkout -- <file>..." to discard changes in working directory)
+6.  Create a commit adding or modifying test data.
 
-        modified:   testing/data (new commits)
-        modified:   testing/tests/mrconvert
+7.  Push the updated branch to GitHub.
+    Note that if `cmake` is configured to use local clones
+    of the test data repositories rather than GitHub
+    (as explained in "Running tests" -> "Advanced usage" above),
+    then this step will not be necessary for verifying test suite success
+    on your local machine;
+    test data changes will however nevertheless eventually
+    need to be pushed to GitHub
+    in order for other developers,
+    or indeed Continuous Integration (CI) checks,
+    to be able to acquire the updated data.
 
-no changes added to commit (use "git add" and/or "git commit -a")
-```
+8.  In your clone of the source code repository:
 
-If everything looks in order, you can add these to the staging area:
-```ShellSession
-$ git add testing/data 
-$ git add testing/tests/mrconvert
-```
-then commit and push:
-```ShellSession
-$ git commit
-$ git push
-```
-At this point, you can check whether things are working correctly by running
-the `./run_tests` scripts, and checking that the expected checksum shows up
-afterwards when running:
-```ShellSession
-$ git submodule
- b6d0e018d0bad96edec423b81ef1b006a94932fb testing/data (b6d0e01)
-```
-It should show the expected version, _without_ a leading `+` sign.
+    1.  In file `testing/CMakeLists.txt`,
+        find the invocation of the ExternalProject_Add() function
+        corresponding to the relevant data repository,
+        and change the content of argument "`GIT_TAG`"
+        to reflect the commit created by step 6.
 
+    2.  Make any other additions or modifications to tests
+        that do not involve modification of test *data*.
 
-## What to do when modifying existing test data  
+    3.  Create a commit that includes changes from both steps 8.1 and 8.2,
+        and push the updated source code repository branch to GitHub.
 
-Generally, _adding_ data to the [test_data
-repo](https://github.com/MRtrix3/test_data) is straightforward, and has no
-consequences for existing tests. However, there may be cases where changes in
-the code modify the output of some commands, and the test data therefore
-needs to be updated to match. If these modifications are pushed to the `master`
-branch of the [test_data repo](https://github.com/MRtrix3/test_data),
-everything will be fine initially, since the `master` branch will still pull in
-the specific SHA1 commit that was recorded at the time.  However, problems will
-occur if other developers also push data to the [test_data
-repo](https://github.com/MRtrix3/test_data) _after_ that point,
-since these changes will most likely be pushed to its `master` branch, on top
-of the earlier modifications. 
+9.  Ensure that within the Pull Request,
+    no merge conflict occurs at the location modified by step 8.1.
+    A merge conflict here indicates that on the target source branch,
+    there has been evolution of the test data accessed by that branch
+    in parallel to the test data changes made in step 6.
+    Resolving this necessitates explicit merging of changes
+    between the corresponding branches in the test data repository,
+    followed by repeating step 8.1 and 8.3 to access the result of this merge.
 
-For example, imagine the following situation:
+10. After the relevant Pull Request on the source code repository is merged:
 
-- Jack fixes a critical bug in `dwi2fod` that leads to big change in the
-  expected output, and commits these changes to branch `dwi2fod_bug_fix`.
+    1.  For the data repository branch that has the same name
+        as the target branch of the Pull Request,
+        do a *force push* that results in that branch
+        pointing to the same version of the test data
+        that is now accessed by the updated source code.
 
-- Jack then modifies the data used in the `dwi2fod` tests in the [test_data
-  repo](https://github.com/MRtrix3/test_data), pushes these to its `master`
-  branch, and records the new updated SHA1 into the `dwi2fod_bug_fix` branch.
+    2.  Delete from GitHub the branch on the data repository
+        that had the same name as the feature branch merged by the Pull Request.
 
-- later on, Gill adds a new command to her own branch `featureX`
+By following this sequence,
+the branches contained within each test data repository should be limited to:
 
-- Gill adds tests for hew new command, along with new test data. Following the
-  instructions, she pushes this additional data onto the `master` branch of the
-[test_data repo](https://github.com/MRtrix3/test_data).
+-   A `master` branch,
+    corresponding to the very same commit that is accessed
+    by the `master` branch of the source code repository;
 
-- Gill's tests now fail, because her version of the test data now also
-  includes Jack's modifications, but her `featureX` branch does not include
-Jack's corresponding modifications to the code in `dwi2fod_bug_fix`. 
+-   A `dev` branch,
+    corresponding to the very same commit that is accessed
+    by the `dev` branch of the source code repository;
 
-So this is clearly not the best outcome...
-
-#### Solution: push modifications to separate branch
-
-To avoid these issues, the best thing to do is to push any changes that
-_modify_ existing data to a separate branch on the [test_data
-repo](https://github.com/MRtrix3/test_data), and merge these to `master` when
-the corresponding branch on the main MRtrix3 repo has also been merged. This
-allows other developers to keep pushing additional data to `master` without
-anything breaking.
-
-> Technically, there is no reason to merge the branch on the [test_data
-> repo](https://github.com/MRtrix3/test_data) to `master` since `run_tests`
-> will pull in the relevant commit via its SHA1 checksum. However, merging to
-> `master` ensures that the branch can be deleted without risk of losing the
-> relevant commit.
-
-To do this, developers need to push their changes to a different branch than
-`master` on the [test_data repo](https://github.com/MRtrix3/test_data). This
-can be done using for example:
-```ShellSession
-$ git clone git@github.com:MRtrix3/test_data.git
-$ cd test_data
-$ git checkout -b dwi2fod_bug_fix
-# make changes to test data...
-$ git commit -a
-$ git push origin dwi2fod_bug_fix
-```
-At that point, the modifications should be on the `dwi2fod_bug_fix` branch
-only. So far so good.
-
-The next difficulty is updating the main MRtrix3 repo with that particular
-branch. As mentioned above, `git submodule update --remote` will pull in the
-current `master` branch, so we need to do something else. The solution is to
-manually checkout the relevant branch. First, make sure the submodule has been
-initialised (either run `./run_tests` or `git submodule update --init` as per
-instructions above). Then:
-```ShellSession
-$ cd testing/data
-$ git fetch
-$ git checkout dwi2fod_bug_fix
-```
-At which point you can go back to the toplevel folder of the main repo, and
-commit these changes as before:
-```ShellSession
-$ cd ../..
-$ git add testing/data
-$ git commit 
-$ git push
-```
-
-
-
-
-
-
+-   Additional branches corresponding only to those active branches
+    where corresponding test data changes are necessary,
+    ideally with the same branch name as that of the source code branch,
+    and with the tip of that branch kept up to date with the commit hash
+    that is downloaded when building that source code branch.

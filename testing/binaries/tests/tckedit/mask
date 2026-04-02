@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify basic operation of the -mask command-line option
+# Unlike the -include and -exclude options,
+#   which select or omit entire streamlines,
+#   the -mask option operates on a per-vertex basis
+tckedit tckedit/in.tck -mask tckedit/mask.mif tmp.tck -force
+testing_diff_tck tmp.tck tckedit/mask.tck
+
+tckedit tckedit/in.tck -mask tckedit/mask.mif -inverse tmp.tck -force
+testing_diff_tck tmp.tck tckedit/invmask.tck

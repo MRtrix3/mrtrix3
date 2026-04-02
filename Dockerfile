@@ -53,6 +53,8 @@ WORKDIR /opt/freesurfer
 RUN curl -fsSLO https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/distribution/FreeSurferColorLUT.txt
 
 # Download minified FSL (6.0.7.7)
+# TODO May be separate evolution of this dependency that needs to be addressed
+#   (or do #2684 / #2601)
 FROM base-builder AS fsl-installer
 WORKDIR /opt/fsl
 RUN curl -fsSL https://osf.io/ph9ex/download \
@@ -80,7 +82,6 @@ RUN apt-get -qq update \
         libqt5widgets5 \
         libquadmath0 \
         libtiff5-dev \
-        python3 \
         python3-distutils \
         procps \
     && rm -rf /var/lib/apt/lists/*

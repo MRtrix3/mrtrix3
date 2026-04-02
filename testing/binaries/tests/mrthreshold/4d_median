@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify command operation when the input image is 4D,
+#   and the median value within each volume is used to determine the binarisation threshold for that volume
+mrthreshold dwi.mif - -percentile 50 | \
+testing_diff_image - mrthreshold/4d_median.mif

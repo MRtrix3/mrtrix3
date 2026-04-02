@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify capability to write streamlines data to text files
+rm -f tmp-*.txt
+tckedit tracks.tck -number 10 tmp.tck -nthreads 0 -force
+tckconvert tmp.tck tmp-[].txt
+cat tmp-*.txt > tmp-all.txt
+testing_diff_matrix tmp-all.txt tckconvert/out2-all.txt -abs 1e-4

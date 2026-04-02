@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify operation of the command when provided with multi-shell input
+#   and performing an _unconstrained_ Diffusion Kurtosis Tensor (DKT) fit
+# Ensure that outputs match those generated using a prior software version
+dwi2tensor dwi_ms.mif tmp_ms_dt.mif \
+-b0 tmp_ms_b0.mif \
+-dkt tmp_ms_dkt.mif \
+-force
+
+testing_diff_image tmp_ms_b0.mif dwi2tensor/ms_b0.mif -frac 1e-5
+testing_diff_image tmp_ms_dt.mif dwi2tensor/ms_dt.mif -frac 1e-5
+testing_diff_image tmp_ms_dkt.mif dwi2tensor/ms_dkt.mif -frac 1e-5
+

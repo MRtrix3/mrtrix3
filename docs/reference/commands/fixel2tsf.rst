@@ -16,13 +16,16 @@ Usage
     fixel2tsf [ options ]  fixel_in tracks tsf
 
 -  *fixel_in*: the input fixel data file (within the fixel directory)
--  *tracks*: the input track file 
+-  *tracks*: the input track file
 -  *tsf*: the output track scalar file
 
 Description
 -----------
 
 This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
