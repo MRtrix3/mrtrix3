@@ -25,6 +25,8 @@ Options
 
 -  **-angle value** the max angle threshold for assigning streamline tangents to fixels (default: 45 degrees)
 
+-  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
@@ -53,7 +55,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

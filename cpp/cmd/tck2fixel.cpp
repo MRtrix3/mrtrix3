@@ -14,7 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "algo/loop.h"
+#include <set>
+
 #include "command.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -23,7 +24,6 @@
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/loop.h"
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
