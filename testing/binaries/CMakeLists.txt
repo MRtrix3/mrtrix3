@@ -403,6 +403,10 @@ add_bash_binary_test(shconv/msmt)
 add_bash_binary_test(tck2connectome/assignment_forward_search)
 add_bash_binary_test(tck2connectome/default)
 
+add_bash_binary_test(tck2fixel/default)
+add_bash_binary_test(tck2fixel/phantom_unweighted)
+add_bash_binary_test(tck2fixel/phantom_weighted)
+
 add_bash_binary_test(tckconvert/rib_write)
 add_bash_binary_test(tckconvert/scanner2voxel)
 add_bash_binary_test(tckconvert/text_read_range)
