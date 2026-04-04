@@ -404,6 +404,7 @@ add_bash_binary_test(tck2connectome/assignment_forward_search)
 add_bash_binary_test(tck2connectome/default)
 
 add_bash_binary_test(tck2fixel/default)
+add_bash_binary_test(tck2fixel/phantom_precise)
 add_bash_binary_test(tck2fixel/phantom_unweighted)
 add_bash_binary_test(tck2fixel/phantom_weighted)
 

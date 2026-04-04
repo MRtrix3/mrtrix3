@@ -25,6 +25,8 @@ Options
 
 -  **-angle value** the max angle threshold for assigning streamline tangents to fixels (default: 45 degrees)
 
+-  **-precise** utilise the precise length of streamline-voxel intersections rather than simply the number of streamlines / sum of streamline weights
+
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 
 Standard options

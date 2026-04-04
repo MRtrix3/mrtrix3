@@ -45,11 +45,13 @@ public:
   TrackProcessor(Image<index_type> &fixel_indexer,
                  Image<float> &fixel_directions,
                  const size_t upsample_ratio,
+                 const bool precise,
                  const float angular_threshold,
                  std::shared_ptr<MutexProtected<VectorType>> fixel_TDI)
       : mapper(fixel_indexer),
         fixel_indexer(fixel_indexer),
         fixel_directions(fixel_directions),
+        precise(precise),
         angular_threshold_dp(std::cos(angular_threshold * (Math::pi / 180.0))),
         global_fixel_TDI(fixel_TDI),
         local_fixel_TDI(VectorType::Zero(fixel_TDI->lock()->size())) {
@@ -61,6 +63,7 @@ public:
       : mapper(that.mapper),
         fixel_indexer(that.fixel_indexer),
         fixel_directions(that.fixel_directions),
+        precise(that.precise),
         angular_threshold_dp(that.angular_threshold_dp),
         global_fixel_TDI(that.global_fixel_TDI),
         local_fixel_TDI(VectorType::Zero(that.local_fixel_TDI.size())) {}
@@ -74,8 +77,8 @@ public:
     SetVoxelDir visitations;
     mapper(in, visitations);
     // For each voxel tract tangent, assign to a fixel
-    // Ensure that a streamline is not assigned to a fixel more than once
-    std::set<index_type> fixels;
+    // For each fixel, sum the intersection lengths
+    std::map<index_type, float> fixels;
     for (SetVoxelDir::const_iterator i = visitations.begin(); i != visitations.end(); ++i) {
       assign_pos_of(*i).to(fixel_indexer);
       fixel_indexer.index(3) = 0;
@@ -94,15 +97,20 @@ public:
             closest_fixel_index = j;
           }
         }
-        if (largest_dp > angular_threshold_dp)
-          fixels.insert(closest_fixel_index);
+        if (largest_dp > angular_threshold_dp) {
+          auto existing = fixels.find(closest_fixel_index);
+          if (existing == fixels.end())
+            fixels.insert({closest_fixel_index, i->get_length()});
+          else
+            existing->second += i->get_length();
+        }
       }
     }
     for (auto f : fixels) {
       if constexpr (std::is_integral_v<ValueType>)
-        ++local_fixel_TDI[f];
+        ++local_fixel_TDI[f.first];
       else
-        local_fixel_TDI[f] += static_cast<ValueType>(in.weight);
+        local_fixel_TDI[f.first] += static_cast<ValueType>(in.weight) * (precise ? f.second : 1.0F);
     }
     return true;
   }
@@ -111,6 +119,7 @@ private:
   DWI::Tractography::Mapping::TrackMapperBase mapper;
   Image<index_type> fixel_indexer;
   Image<float> fixel_directions;
+  const bool precise;
   const float angular_threshold_dp;
   std::weak_ptr<MutexProtected<VectorType>> global_fixel_TDI;
   VectorType local_fixel_TDI;
@@ -137,6 +146,9 @@ void usage() {
                      " (default: " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
     + Argument ("value").type_float(0.0, 90.0)
 
+  + Option ("precise", "utilise the precise length of streamline-voxel intersections"
+                       " rather than simply the number of streamlines / sum of streamline weights")
+
   + DWI::Tractography::TrackWeightsInOption;
 }
 // clang-format on
@@ -147,12 +159,17 @@ void run(DWI::Tractography::Mapping::TrackLoader &loader,
          Image<float> &directions_image,
          const size_t num_fixels,
          const size_t upsample_ratio,
+         const bool precise,
          const float angular_threshold,
          std::string_view output_path) {
+  if constexpr (std::is_integral_v<ValueType>) {
+    assert(!precise);
+  }
   auto fixel_TDI = std::make_shared<MutexProtected<Eigen::Array<ValueType, Eigen::Dynamic, 1>>>(
       Eigen::Array<ValueType, Eigen::Dynamic, 1>::Zero(num_fixels));
   {
-    TrackProcessor<ValueType> processor(index_image, directions_image, upsample_ratio, angular_threshold, fixel_TDI);
+    TrackProcessor<ValueType> processor(
+        index_image, directions_image, upsample_ratio, precise, angular_threshold, fixel_TDI);
     Thread::run_queue(loader, Thread::batch(DWI::Tractography::Streamline<float>()), Thread::multi(processor));
   }
   {
@@ -175,6 +192,7 @@ void run() {
   const index_type num_fixels = Fixel::get_number_of_fixels(index_header);
 
   const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);
+  const bool precise = !get_options("precise").empty();
 
   const std::string output_fixel_folder = argument[2];
   Fixel::copy_index_and_directions_file(input_fixel_folder, output_fixel_folder);
@@ -186,14 +204,16 @@ void run() {
   if (!num_tracks)
     throw Exception("no tracks found in input file");
   const size_t upsample_ratio =
-      DWI::Tractography::Mapping::determine_upsample_ratio(index_header, properties, 1.0F / 3.0F);
+      DWI::Tractography::Mapping::determine_upsample_ratio(index_header, properties, precise ? 0.1F : (1.0F / 3.0F));
 
   DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "mapping tracks to fixels");
   const std::string output_path = Path::join(output_fixel_folder, argument[3]);
 
-  if (get_options("tck_weights_in").empty()) {
-    run<uint32_t>(loader, index_image, directions_image, num_fixels, upsample_ratio, angular_threshold, output_path);
+  if (get_options("tck_weights_in").empty() && !precise) {
+    run<uint32_t>(
+        loader, index_image, directions_image, num_fixels, upsample_ratio, precise, angular_threshold, output_path);
   } else {
-    run<float>(loader, index_image, directions_image, num_fixels, upsample_ratio, angular_threshold, output_path);
+    run<float>(
+        loader, index_image, directions_image, num_fixels, upsample_ratio, precise, angular_threshold, output_path);
   }
 }
