@@ -15,109 +15,54 @@
  */
 
 #include "command.h"
-#include "dwi/tractography/file.h"
-#include "dwi/tractography/properties.h"
-#include "dwi/tractography/scalar_file.h"
-#include "dwi/tractography/streamline.h"
-#include "progressbar.h"
-#include "types.h"
+#include "mrtrix.h"
+
+#include "dwi/tractography/validate.h"
 
 using namespace MR;
-using namespace MR::DWI::Tractography;
 using namespace App;
+using namespace MR::DWI::Tractography;
 
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Validate a track scalar file against the corresponding track data";
+  SYNOPSIS = "Validate a track scalar file against its corresponding tractogram";
+
+  DESCRIPTION
+  + "This command checks that a track scalar file (.tsf) is consistent with"
+    " the tractogram (.tck) from which it was derived."
+    " The following conditions are verified:"
+
+  + "1. Both files must contain a \"timestamp\" field in their headers,"
+    " and the two timestamps must be identical."
+    " The timestamp is copied from the tractogram into the scalar file when"
+    " the scalar file is created, so a mismatch indicates that the scalar file"
+    " was not produced from the supplied tractogram."
+
+  + "2. The track scalar file header must contain a \"count\" field."
+
+  + "3. The value of the \"count\" field in the track scalar file header must"
+    " match the number of scalar sequences actually present in the file."
+
+  + "4. The number of scalar sequences in the track scalar file must equal"
+    " the number of streamlines in the tractogram."
+
+  + "5. For every streamline, the number of scalar values in the corresponding"
+    " scalar sequence must equal the number of vertices in the streamline.";
 
   ARGUMENTS
-  + Argument ("tsf", "the input track scalar file").type_file_in()
-  + Argument ("tracks", "the track file on which the TSF is based").type_file_in();
-
+  + Argument ("tsf",    "the input track scalar file").type_file_in()
+  + Argument ("tracks", "the tractogram from which the track scalar file was derived").type_tracks_in();
 }
 // clang-format on
 
-typedef float value_type;
-
 void run() {
-  Properties tsf_properties, tck_properties;
-  ScalarReader<value_type> tsf_reader(argument[0], tsf_properties);
-  Reader<value_type> tck_reader(argument[1], tck_properties);
-  size_t error_count = 0;
-
-  Properties::const_iterator tsf_count_field = tsf_properties.find("count");
-  Properties::const_iterator tck_count_field = tck_properties.find("count");
-  size_t tsf_header_count = 0, tck_header_count = 0;
-  if (tsf_count_field == tsf_properties.end() || tck_count_field == tck_properties.end()) {
-    WARN("Unable to verify equal track counts: \"count\" field absent from file header");
-  } else {
-    tsf_header_count = to<size_t>(tsf_count_field->second);
-    tck_header_count = to<size_t>(tck_count_field->second);
-    if (tsf_header_count != tck_header_count) {
-      CONSOLE("\"count\" fields in file headers do not match");
-      ++error_count;
-    }
-  }
-
-  Properties::const_iterator tsf_timestamp_field = tsf_properties.find("timestamp");
-  Properties::const_iterator tck_timestamp_field = tck_properties.find("timestamp");
-  if (tsf_timestamp_field == tsf_properties.end() || tck_timestamp_field == tck_properties.end()) {
-    WARN("Unable to verify equal file timestamps: \"timestamp\" field absent from file header");
-  } else if (tsf_timestamp_field->second != tck_timestamp_field->second) {
-    CONSOLE("\"timestamp\" fields in file headers do not match");
-    ++error_count;
-  }
-
-  Streamline<value_type> track;
-  TrackScalar<value_type> scalar;
-  size_t tck_counter = 0, tsf_counter = 0, length_mismatch_count = 0;
-
-  {
-    ProgressBar progress("Validating track scalar file", tck_header_count);
-    while (tck_reader(track)) {
-      ++tck_counter;
-      if (tsf_reader(scalar)) {
-        ++tsf_counter;
-        if (track.size() != scalar.size())
-          ++length_mismatch_count;
-      }
-      ++progress;
-    }
-
-    while (tsf_reader(scalar)) {
-      ++tsf_counter;
-      ++progress;
-    }
-  }
-
-  if (tsf_header_count && tsf_counter != tsf_header_count) {
-    CONSOLE("Actual number of tracks counted in scalar file (" + str(tsf_counter) +
-            ") does not match number reported in header (" + str(tsf_header_count) + ")");
-    ++error_count;
-  }
-  if (tck_header_count && tck_counter != tck_header_count) {
-    CONSOLE("Actual number of tracks counted in track file (" + str(tck_counter) +
-            ") does not match number reported in header (" + str(tck_header_count) + ")");
-    ++error_count;
-  }
-  if (tck_counter != tsf_counter) {
-    CONSOLE("Actual number of tracks counter in scalar file (" + str(tsf_counter) +
-            ") does not match actual number of tracks counted in track file (" + str(tck_counter) + ")");
-    ++error_count;
-  }
-  if (length_mismatch_count) {
-    CONSOLE(str(length_mismatch_count) + " track" + (length_mismatch_count == 1 ? " was" : "s were") +
-            " detected with different lengths between track and scalar data");
-    ++error_count;
-  }
-  if (error_count > 1) {
-    throw Exception("Multiple errors detected");
-  } else if (error_count) {
-    throw Exception("Error detected");
-  } else {
-    CONSOLE("Track scalar file data checked OK");
-  }
+  // validate_tsf() throws an Exception with a descriptive message on any failure.
+  validate_tsf(argument[0], argument[1]);
+  CONSOLE("Track scalar file \"" + std::string(argument[0]) +
+          "\""
+          " is valid with respect to tractogram \"" +
+          std::string(argument[1]) + "\"");
 }
