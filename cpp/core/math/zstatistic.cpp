@@ -37,7 +37,7 @@ default_type F2z_upper(const default_type G, const size_t rank, const default_ty
                                             1, 0.5 * static_cast<default_type>(rank)),
                                         Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant(1, x))(0, 0)
 #else
-                       Math::betaincreg(0.5 * dof, 0.5 * default_type(rank), x)
+                       Math::betaincreg(0.5 * dof, 0.5 * static_cast<default_type>(rank), x)
 #endif
          );
 }
@@ -60,9 +60,11 @@ default_type F2z_lower(const default_type oneoverG, const size_t rank, const def
 }
 } // namespace
 
-default_type t2z(const default_type stat, const size_t dof) { return v2z(stat, default_type(dof)); }
+default_type t2z(const default_type stat, const size_t dof) { return v2z(stat, static_cast<default_type>(dof)); }
 
-default_type F2z(const default_type F, const size_t rank, const size_t dof) { return G2z(F, rank, default_type(dof)); }
+default_type F2z(const default_type F, const size_t rank, const size_t dof) {
+  return G2z(F, rank, static_cast<default_type>(dof));
+}
 
 default_type v2z(const default_type v, const default_type dof) {
   const default_type x = dof / (Math::pow2(v) + dof);
@@ -124,7 +126,7 @@ default_type Zstatistic::LookupBase::interp(const default_type stat,
                                             const default_type offset,
                                             const default_type scale,
                                             const array_type &data,
-                                            std::function<default_type(default_type)> func) const {
+                                            std::function<default_type(default_type)> func) const { // check_syntax off
   const default_type index_float = (stat - offset) * scale;
   if (index_float >= 1.0 && index_float < data.size() - 2) {
     const ssize_t index_int(static_cast<ssize_t>(std::floor(index_float)));

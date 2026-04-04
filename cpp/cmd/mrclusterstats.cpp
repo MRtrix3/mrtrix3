@@ -113,7 +113,7 @@ void write_output(const VectorType &data, const Voxel2Vector &v2v, std::string_v
 
 template <class VectorType>
 void write_output(
-    const VectorType &data, const Voxel2Vector &v2v, Image<bool> mask, const std::string &path, const Header &header) {
+    const VectorType &data, const Voxel2Vector &v2v, Image<bool> mask, std::string_view path, const Header &header) {
   auto image = Image<float>::create(path, header);
   for (size_t i = 0; i != v2v.size(); i++) {
     assign_pos_of(v2v[i]).to(image, mask);

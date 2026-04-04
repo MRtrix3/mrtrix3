@@ -555,7 +555,7 @@ TestFixedHomoscedastic::Shared::Shared(
   for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
     XtX.emplace_back(partitions[ih].X.transpose() * partitions[ih].X);
     dof.push_back(measurements.rows() - partitions[ih].rank_x - partitions[ih].rank_z);
-    one_over_dof.push_back(1.0 / default_type(dof[ih]));
+    one_over_dof.push_back(1.0 / static_cast<default_type>(dof[ih]));
 #ifdef GLM_TEST_DEBUG
     VAR(ih);
     VAR(hypotheses[ih].matrix());
@@ -571,21 +571,21 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(
     const measurements_matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses)
     : TestBase(measurements, design, hypotheses),
 #ifdef NDEBUG
-      Sy(measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
-      lambdas(design.cols(), std::min(measurements.cols(), ssize_t(batch_size()))),
-      residuals(measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
-      sse(std::min(measurements.cols(), ssize_t(batch_size())))
+      Sy(measurements.rows(), std::min(measurements.cols(), static_cast<ssize_t>(batch_size()))),
+      lambdas(design.cols(), std::min(measurements.cols(), static_cast<ssize_t>(batch_size()))),
+      residuals(measurements.rows(), std::min(measurements.cols(), static_cast<ssize_t>(batch_size()))),
+      sse(std::min(measurements.cols(), static_cast<ssize_t>(batch_size())))
 #else
       Sy(matrix_type::Constant(measurements.rows(),
-                                std::min(measurements.cols(), ssize_t(batch_size())),
+                                std::min(measurements.cols(), static_cast<ssize_t>(batch_size())),
                                 std::numeric_limits<default_type>::signaling_NaN())),
       lambdas(matrix_type::Constant(design.cols(),
-                                    std::min(measurements.cols(), ssize_t(batch_size())),
+                                    std::min(measurements.cols(), static_cast<ssize_t>(batch_size())),
                                     std::numeric_limits<default_type>::signaling_NaN())),
       residuals(matrix_type::Constant(measurements.rows(),
-                                      std::min(measurements.cols(), ssize_t(batch_size())),
+                                      std::min(measurements.cols(), static_cast<ssize_t>(batch_size())),
                                       std::numeric_limits<default_type>::signaling_NaN())),
-      sse(vector_type::Constant(std::min(measurements.cols(), ssize_t(batch_size())),
+      sse(vector_type::Constant(std::min(measurements.cols(), static_cast<ssize_t>(batch_size())),
                                 std::numeric_limits<default_type>::signaling_NaN()))
 #endif
 {
@@ -754,20 +754,20 @@ TestFixedHeteroscedastic::TestFixedHeteroscedastic(const measurements_matrix_typ
                                                     const index_array_type &variance_groups)
     : TestBase(measurements, design, hypotheses),
 #ifdef NDEBUG
-      Sy(measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
-      lambdas(design.cols(), std::min(measurements.cols(), ssize_t(batch_size()))),
-      sq_residuals(measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
+      Sy(measurements.rows(), std::min(measurements.cols(), static_cast<ssize_t>(batch_size()))),
+      lambdas(design.cols(), std::min(measurements.cols(), static_cast<ssize_t>(batch_size()))),
+      sq_residuals(measurements.rows(), std::min(measurements.cols(), static_cast<ssize_t>(batch_size()))),
       W(measurements.rows())
 
 #else
       Sy(matrix_type::Constant(measurements.rows(),
-                                std::min(measurements.cols(), ssize_t(batch_size())),
+                                std::min(measurements.cols(), static_cast<ssize_t>(batch_size())),
                                 std::numeric_limits<default_type>::signaling_NaN())),
       lambdas(matrix_type::Constant(design.cols(),
-                                    std::min(measurements.cols(), ssize_t(batch_size())),
+                                    std::min(measurements.cols(), static_cast<ssize_t>(batch_size())),
                                     std::numeric_limits<default_type>::signaling_NaN())),
       sq_residuals(decltype(sq_residuals)::Constant(measurements.rows(),
-                                                    std::min(measurements.cols(), ssize_t(batch_size())),
+                                                    std::min(measurements.cols(), static_cast<ssize_t>(batch_size())),
                                                     std::numeric_limits<default_type>::signaling_NaN())),
       W(decltype(W)::Constant(measurements.rows(), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
