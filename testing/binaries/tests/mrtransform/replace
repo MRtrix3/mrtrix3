@@ -1,0 +1,10 @@
+#!/bin/bash
+# Test replacing the image header transformation,
+#   where the source of the new transformation is a text file
+# Note that the operation as performed here does not make particular sense,
+#   since the replacement affine transformation is a difference between two images
+#   rather than an absolute position;
+#   it nevertheless suffices for testing the command functionality
+#   as long as the output generated using a prior software version has been manually verified
+mrtransform moving.mif.gz -replace moving2template.txt - | \
+testing_diff_image - mrtransform/out3.mif.gz -frac 1e-5

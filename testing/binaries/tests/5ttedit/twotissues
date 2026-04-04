@@ -1,0 +1,15 @@
+#!/bin/bash
+# Test re-introduction of two tissues at once
+# There is at least one voxel where the partial volumes of both of these tissues is non-zero
+mrconvert 5ttedit/in.mif tmp_in[].mif -force
+
+mrcalc tmp_in0.mif 0 -lt tmp_zero.mif -force
+
+mrmath tmp_in0.mif tmp_in2.mif tmp_in3.mif sum tmp_sumexc14.mif -force
+
+mrcat tmp_in0.mif tmp_zero.mif tmp_in2.mif tmp_in3.mif tmp_zero.mif -axis 3 - | \
+    mrcalc tmp_sumexc14.mif 0 -gt - tmp_sumexc14.mif -div 0.0 -if tmp_5ttexc14.mif -force
+5ttcheck tmp_5ttexc14.mif
+
+5ttedit tmp_5ttexc14.mif -sgm tmp_in1.mif -path tmp_in4.mif - | \
+    testing_diff_image - 5ttedit/in.mif -abs 1e-5

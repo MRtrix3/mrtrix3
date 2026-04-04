@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify command operation when the input image is 4D,
+#   and a 3D input image is input to the -mask option
+# The same set of voxels will be reused for automatic threshold determination
+#   for each volume individually
+mrthreshold dwi.mif - -mask mask.mif | \
+testing_diff_image - mrthreshold/4d_default_masked.mif

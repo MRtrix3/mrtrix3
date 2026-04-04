@@ -1,0 +1,30 @@
+# Tests pertaining to the preservation or omission of diffusion gradient tables
+#   upon merging of image headers
+# Related to #3027.
+
+# If two diffusion gradient tables are not an exact string match,
+#   but are more-or-less identical,
+#   then it should be possible to merge those two headers and preserve dw_scheme
+# This is simulated here by truncating ust the last character
+#   from the last entry in the table
+mrinfo dwi.mif -dwgrad > tmp.txt
+truncate -s-1 tmp.txt
+mrconvert dwi.mif -grad tmp.txt - | \
+    mrcalc - dwi.mif -add 0.5 -mult - | \
+    mrinfo - -dwgrad
+
+# If, when merging two image headers,
+#   they both contain a diffusion gradient table,
+#   but are distinctly different from one another,
+#   then the contents of the gradient table should be lost
+#   when that merge takes place.
+# That is simulated here by flipping an image along one axis
+#   (which causes a corresponding reflection of the gradient table),
+#   then merging the resulting header back with the original image
+if [ mrtransform dwi.mif -flip 0 - | \
+     mrcalc - dwi.mif -add 0.5 -mult - | \
+     mrinfo - -property dw_scheme ]; then 
+    exit 1
+else
+    exit 0
+fi

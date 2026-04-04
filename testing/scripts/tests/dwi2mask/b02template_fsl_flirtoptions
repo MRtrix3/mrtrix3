@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify operation of "dwi2mask b02template" command, when:
+# - Chosen software is "fsl",
+#   which invokes FSL commands flirt and fnirt
+# - Command-line option "-flirt_options" is used to pass command-line options
+#   down to FSL command flirt
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software fsl \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-flirt_options "-cost normmi -dof 12"

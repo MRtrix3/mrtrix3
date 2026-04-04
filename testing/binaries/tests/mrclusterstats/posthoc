@@ -1,0 +1,18 @@
+#!/bin/bash
+# Ensure operation of the -posthoc option
+rm -rf tmp/
+mkdir tmp/
+
+mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp/ \
+    -ttests mrclusterstats/contrast.txt \
+    -posthoc mrclusterstats/posthoc.mif
+
+for i in abs_effect beta0 beta1 std_dev std_effect tfce tvalue Zstat; do
+    testing_diff_image tmp_posthoc/$i.mif mrclusterstats/posthoc/$i.mif -abs 1e-6 || exit 1;
+done
+
+# Ensure that the statistical significance mask matches
+#   the synthetic effect that was introduced in the data
+mrcalc tmp/fwe_1mpvalue.mif 0.95 -gt - | \
+testing_diff_image - mrclusterstats/posthoc.mif
+

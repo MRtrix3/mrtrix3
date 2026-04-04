@@ -1,0 +1,31 @@
+#!/bin/bash
+# Verify that option -output_stats is operational
+# 1. Without ACT
+tckgen SIFT_phantom/fods.mif tmp.tck \
+    -seed_image SIFT_phantom/mask.mif \
+    -mask SIFT_phantom/mask.mif \
+    -minlength 4 \
+    -select 100 \
+    -output_stats tmp.json \
+    -force
+
+# Make sure ACT-related entries don't appear
+! grep "(Failed to traverse white matter|Poor structural termination|Longer than maximum length|enter_cgm|enter_csf|exit_sgm|term_in_sgm)" tmp.json
+
+# 2. With ACT
+tckgen SIFT_phantom/fods.mif tmp.tck \
+    -seed_image SIFT_phantom/mask.mif \
+    -act SIFT_phantom/5tt.mif \
+    -minlength 4 \
+    -select 100 \
+    -output_stats tmp.json \
+    -force
+
+# Make sure all ACT-related entries appear
+grep "Failed to traverse white matter" tmp.json
+grep "Poor structural termination" tmp.json
+grep "Longer than maximum length" tmp.json
+grep "enter_cgm" tmp.json
+grep "enter_csf" tmp.json
+grep "exit_sgm" tmp.json
+grep "term_in_sgm" tmp.json

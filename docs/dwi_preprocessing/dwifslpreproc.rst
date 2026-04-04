@@ -111,7 +111,39 @@ your particular data.
         $ mrcat 002_-_ep2dse_phaseAP/ 003_-_ep2dse_phasePA/ b0s.mif -axis 3
         $ dwifslpreproc 004_-_DWI_phaseAP/ dwi_preprocessed.mif -pe_dir AP -rpe_pair -se_epi b0s.mif [ -readout_time 0.1 ]
 
-3. **Reversed phase encoding for all DWIs**
+3. **Split DWIs between two phase encoding directions**
+
+  The complete diffusion gradient table for an experiment is split exactly in half.
+  There are two executions of the acqiusition sequence,
+  each of which possesses a fixed phase encoding direction internally,
+  but the polarity of phase encoding is reversed in the second acquisition.
+  During the first execution of the sequence,
+  only the first half of the gradient table is acquired;
+  in the second execution the second half of the gradient table is then acquired.
+  This can provide some of the benefits of the more precedented approach
+  of acquiring all DWI volumes with reversed phase encoding,
+  but without necessitating a doubling of total acquisition time.
+
+  *Example DICOM image data*:
+
+  .. code-block:: console
+
+        002_-_DWI_dirs1to32_AP/
+        003_-_DWI_dirs33to64_PA/
+
+  *Usage*:
+
+  .. code-block:: console
+
+        $ mrcat 002_-_DWI_dirs1to32_AP/ 003_-_DWI_dirs33to64_PA/ all_DWIs.mif -axis 3
+        $ dwifslpreproc all_DWIs.mif dwi_preprocessed.mif -pe_dir ap -rpe_split
+
+  The phase encoding direction nominated using the ``-pe_dir`` option
+  is that of the *first half* of the volumes in the concatenated DWI series;
+  this usage then asserts that the second half of the volumes in that series
+  has phase encoding of opposite polarity but equal *k*-space readout speed.
+
+4. **Reversed phase encoding for all DWIs**
 
   For all diffusion gradient directions & *b*-values, two image volumes are
   obtained, with the opposite phase encoding direction with respect to one
@@ -146,7 +178,7 @@ your particular data.
   and it is desired to instead use those images to estimate the inhomogeneity
   field only, the ``-se_epi`` option can be used.
 
-4. **Arbitrary phase encoding acquisition**
+5. **Arbitrary phase encoding acquisition**
 
   In cases where either:
 
@@ -157,7 +189,9 @@ your particular data.
     without user intervention, and therefore phase encoding information must be
     provided using data files associated with the input images (such as `JSON
     <http://www.json.org/>`_ files in the `BIDS standard
-    <http://bids.neuroimaging.io/>`_),
+    <http://bids.neuroimaging.io/>`_);
+
+  - One of the above designs is not exactly adhered to,
 
   it is possible for the ``dwifslpreproc`` script to automatically determine the
   appropriate steps to perform based on the phase encoding configuration of the
@@ -183,7 +217,7 @@ your particular data.
     may go awry. Results should therefore be checked manually if using /
     testing this mechanism.
 
-When one of the options 1-3 are used, internally the ``dwifslpreproc`` script
+When one of the options 1-4 are used, internally the ``dwifslpreproc`` script
 *generates the effective phase encoding table* given the user's images and
 command-line input; this is what is passed to ``topup`` / ``applytopup`` /
 ``eddy``. If one of these options is used, but there is actually phase encoding
@@ -192,7 +226,6 @@ user's phase encoding specification against the header contents, and produce a
 warning if it detects a mismatch (since either the phase encoding design is not
 what you think it is, or the import of phase encoding information from DICOM is
 awry; either warrants further investigation).
-
 
 Configuring FSL commands ``topup`` and ``eddy``
 -----------------------------------------------
@@ -228,9 +261,6 @@ online FSL documentation:
     beginning or end of the string, like thus::
 
         dwifslpreproc ... -eddy_options " --repol" ...
-
-
-
 
 Using ``eddy``'s slice-to-volume motion correction capability
 -------------------------------------------------------------

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Ensure correct operation of the "5ttgen fsl" command
+#   where image piping is used for both input and output images
+mrconvert BIDS/sub-01/anat/sub-01_T1w.nii.gz - | \
+5ttgen fsl - - | \
+mrconvert - ../tmp/5ttgen/fsl/default.mif -force

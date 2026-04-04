@@ -1,0 +1,6 @@
+#!/bin/bash
+# Basic evaluation of command operation with no special command-line options
+# Output of command is compared to that generated using a prior software version
+rm -rf tmp_fixel
+peaks2fixel peaks.mif tmp_fixel
+testing_diff_fixel tmp_fixel peaks2fixel

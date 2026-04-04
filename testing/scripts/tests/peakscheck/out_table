@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify operation of the "peakscheck" command
+#   under default usage,
+#   with the input image being of the default format,
+#   but specifying the -out_table option,
+#   which prints more comprehensive and tabulated data to file
+peakscheck peakscheck/posdet_xyz3vector.mif \
+    -number 100 \
+    -threshold 0.0 \
+    -out_table tmp.tsv -force
+
+# 118 variants by default,
+#   plus comment containing the command history string,
+#   plus the column header
+(( $(echo "120 == $(wc -l tmp.tsv | cut -d' ' -f1)" | bc) ))

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify "regrid" operation when performing upsampling (via the -scale option)
+#   but using sinc interpolation rather than the default
+# Compare the output to that genreeated from an obsolete command (mrresize)
+#   from an earlier version of the software
+mrgrid dwi.mif regrid -scale 1.6 -datatype float32 -interp sinc - | \
+testing_diff_image - mrresize/out4.mif -voxel 1e-4

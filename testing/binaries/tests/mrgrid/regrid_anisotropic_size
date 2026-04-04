@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify "regrid" operation when resampling onto an anisotropic voxel grid,
+#   where that output grid is determined using command-line option "-size",
+#   which modifies the number of voxels to be contained within the same FoV as the input image
+# Outcome is compared against that generated using an obsolete command (mrresize)
+#   from an earlier version of the software.
+mrgrid dwi.mif regrid -size 13,7,15 -datatype float32 - | \
+testing_diff_image - mrresize/out7.mif -voxel 1e-5

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify operation when the inverse of a linear transformation is specified
+# The tolerance on the comparison is modulated based on the intensity of the expected output image
+mrcalc mrtransform/out4.mif.gz -abs 1e-5 -mult - | \
+mrfilter - smooth tmp.mif -force
+
+mrtransform template.mif.gz -template moving.mif.gz -interp linear -inverse -linear moving2template.txt - | \
+testing_diff_image - mrtransform/out4.mif.gz -image tmp.mif

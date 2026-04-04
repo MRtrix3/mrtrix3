@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify "5ttgen freesurfer" operation when the -sgm_amyg_hipp option is specified
+5ttgen freesurfer BIDS/sub-01/anat/aparc+aseg.mgz tmp.mif -sgm_amyg_hipp -force
+testing_diff_image tmp.mif 5ttgen/freesurfer/sgm_amyg_hipp.mif.gz

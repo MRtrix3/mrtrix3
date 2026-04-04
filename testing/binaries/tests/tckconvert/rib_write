@@ -1,0 +1,7 @@
+#!/bin/bash
+# Do basic assurance that writing of RIB files executes to completion
+# Only a very basic sanity check of completeness of the output .rib file is provided
+echo 1 2 3 > tmp.txt
+tckconvert -force -quiet tmp.txt tmp.tck
+tckconvert -quiet -force tmp.tck tmp.rib
+[ $(wc -l < tmp.rib ) == 4 ]
