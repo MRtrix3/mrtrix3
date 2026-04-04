@@ -67,7 +67,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
   if (include_nonstationarity) {
 
     result
-    + Option("nonstationarity", "perform non-stationarity correction")
+    + Option("nonstationarity", "perform empirical non-stationarity correction")
 
     + Option("skew_nonstationarity",
              "specify the skew parameter for empirical statistic calculation"

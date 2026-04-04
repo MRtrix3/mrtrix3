@@ -318,7 +318,7 @@ List of MRtrix3 configuration file options
 
 .. option:: GLMBatchSize
 
-    *default: 1024*
+    *default: 16384*
 
      Where the GLM design matrix is fixed across all elements,
      this is the number of elements for which data shuffling and model
