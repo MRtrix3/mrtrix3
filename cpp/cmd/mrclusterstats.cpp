@@ -213,16 +213,19 @@ void run() {
       throw Exception("Post-hoc mask image \"" + posthoc_path + "\" is not 3D");
     if (!dimensions_match(mask_header, mask_inference_image, 0, 3))
       throw Exception("Post-hoc image \"" + posthoc_path + "\" does not match mask image");
+    mask_inference.setZero();
     size_t mask_mismatch_count = 0;
-    for (auto l = Loop(mask_header)(mask_processing_image, mask_inference_image); l; ++l) {
+    for (auto l = Loop(mask_header)(mask_inference_image); l; ++l) {
       if (mask_inference_image.value()) {
         const std::array<ssize_t, 3> pos{
             mask_inference_image.index(0), mask_inference_image.index(1), mask_inference_image.index(2)};
         const Voxel2Vector::index_t index = (*v2v)(pos);
-        mask_inference[index] = true;
-        ++mask_infer_voxels;
-        if (!mask_processing_image.value())
+        if (index == Voxel2Vector::invalid) {
           ++mask_mismatch_count;
+        } else {
+          mask_inference[index] = true;
+          ++mask_infer_voxels;
+        }
       }
     }
     CONSOLE("Number of voxels in post-hoc analysis mask: " + str(mask_infer_voxels));
@@ -233,7 +236,7 @@ void run() {
     }
   } else {
     mask_inference = element_mask_type::Ones(num_voxels);
-    // mask_infer_voxels = num_voxels;
+    // mask_infer_voxels = num_voxels; // unused
     mask_inference_image = Image<bool>::scratch(mask_header, "scratch posthoc mask image");
     copy(mask_processing_image, mask_inference_image);
   }

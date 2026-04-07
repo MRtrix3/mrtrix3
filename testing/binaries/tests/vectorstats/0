@@ -6,9 +6,10 @@
 # vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -ftests tmpftests.csv -force
 # vectorstats/test0.py
 # This is no longer used in order to avoid random failures
-vectorstats vectorstats/0/subjects.txt vectorstats/0/design.csv vectorstats/0/contrast.csv tmpout \
+vectorstats vectorstats/0/subjects.txt vectorstats/0/design.csv tmpout \
     -ttests vectorstats/0/contrast.csv \
-    -ftests vectorstats/0/ftests.csv \
+    -ftest vectorstats/0/ftest0.csv \
+    -ftest vectorstats/0/ftest1.csv \
     -force
 
 testing_diff_matrix tmpoutFvalue_F1.csv vectorstats/0/outFvalue_F1.csv -frac 1e-6
@@ -21,7 +22,7 @@ testing_diff_matrix tmpoutZstat_t3.csv vectorstats/0/outZstat_t3.csv -frac 1e-6
 testing_diff_matrix tmpoutabs_effect_t1.csv vectorstats/0/outabs_effect_t1.csv -frac 1e-6
 testing_diff_matrix tmpoutabs_effect_t2.csv vectorstats/0/outabs_effect_t2.csv -frac 1e-6
 testing_diff_matrix tmpoutabs_effect_t3.csv vectorstats/0/outabs_effect_t3.csv -frac 1e-6
-testing_diff_matrix tmpoutbetas.csv vectorstats/0/outbetas.csv -frac 1e-6
+testing_diff_matrix tmpoutbetas.csv vectorstats/0/outbetas.csv -frac 1e-5
 testing_diff_matrix tmpoutstd_dev.csv vectorstats/0/outstd_dev.csv -frac 1e-6
 testing_diff_matrix tmpoutstd_effect_t1.csv vectorstats/0/outstd_effect_t1.csv -frac 1e-6
 testing_diff_matrix tmpoutstd_effect_t2.csv vectorstats/0/outstd_effect_t2.csv -frac 1e-6

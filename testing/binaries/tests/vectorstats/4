@@ -5,7 +5,7 @@
 # N=16 SNR=5 vectorstats/gen4.py
 # vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -errors ise -force
 # vectorstats/test4.py
-vectorstats vectorstats/4/subjects.txt vectorstats/4/design.csv tmpout
+vectorstats vectorstats/4/subjects.txt vectorstats/4/design.csv tmpout \
     -ttests vectorstats/4/contrast.csv \
     -errors ise \
     -force

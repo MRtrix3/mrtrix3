@@ -79,7 +79,7 @@ public:
             const matrix_type &default_enhanced_statistics,
             const element_mask_type &mask,
             matrix_type &null_dist,
-            count_matrix_type &global_null_dist_contributions,
+            count_matrix_type &global_nulldist_contributions,
             count_matrix_type &global_uncorrected_pvalue_counter);
 
   Processor(const Processor &that);
@@ -98,10 +98,10 @@ protected:
   matrix_type zstatistics;
   matrix_type enhanced_statistics;
   matrix_type &null_dist;
-  count_matrix_type &global_null_dist_contributions;
-  count_matrix_type null_dist_contribution_counter;
+  count_matrix_type &global_nulldist_contributions;
+  count_matrix_type local_nulldist_contributions;
   count_matrix_type &global_uncorrected_pvalue_counter;
-  count_matrix_type uncorrected_pvalue_counter;
+  count_matrix_type local_uncorrected_pvalue_counter;
   std::shared_ptr<std::mutex> mutex;
 };
 
@@ -127,8 +127,8 @@ void run_permutations(const std::unique_ptr<Math::Stats::GLM::TestBase> &stats_c
                       const matrix_type &default_enhanced_statistics,
                       const bool fwe_strong,
                       const element_mask_type &mask,
-                      matrix_type &perm_dist,
-                      count_matrix_type &perm_dist_contributions,
+                      matrix_type &null_dist,
+                      count_matrix_type &nulldist_contributions,
                       matrix_type &uncorrected_pvalues);
 
 //! @}

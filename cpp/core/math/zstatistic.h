@@ -23,14 +23,20 @@
 
 namespace MR::Math {
 
-default_type t2z(const default_type stat, const size_t dof);
-default_type F2z(const default_type stat, const size_t rank, const size_t dof);
-default_type v2z(const default_type stat, const default_type dof);
-default_type G2z(const default_type stat, const size_t rank, const default_type dof);
+default_type t2z(const default_type t, const size_t dof);
+default_type F2z(const default_type F, const size_t rank, const size_t dof);
+default_type v2z(const default_type v, const default_type dof);
+default_type G2z(const default_type G, const size_t rank, const default_type dof);
 
 class Zstatistic {
 public:
   Zstatistic() {}
+  // TODO Rather than lazy-loading,
+  //   ensure that all possible combinations are loaded at construction;
+  //   requires looping over all unique hypothesis ranks,
+  //   and in the variable design matrix case looping over all dofs
+  // TODO Possible corruption here
+  //   once there's more than one lookup table of a given type?
 
   // Convert a t-statistic to a z-statistic
   default_type t2z(const default_type t, const size_t dof) const;
@@ -54,7 +60,7 @@ protected:
                         const default_type offset,
                         const default_type scale,
                         const array_type &data,
-                        std::function<default_type(default_type)> func) const; // check_syntax off
+                        std::function<default_type(default_type)> func) const;
   };
 
   class Lookup_t2z : public LookupBase {

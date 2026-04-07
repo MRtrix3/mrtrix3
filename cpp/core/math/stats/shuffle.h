@@ -51,13 +51,13 @@ public:
 
   // First version reads command-line options in order to determine parameters prior to running initialise();
   //   second and third versions more-or-less call initialise() directly
-  Shuffler(const index_type num_rows, const bool is_nonstationarity, const std::string msg = "");
+  Shuffler(const index_type num_rows, const bool is_nonstationarity, std::string_view msg = "");
 
   Shuffler(const index_type num_rows,
            const index_type num_shuffles,
            const error_t error_types,
            const bool is_nonstationarity,
-           const std::string msg = "");
+           std::string_view msg = "");
 
   Shuffler(const index_type num_rows,
            const index_type num_shuffles,
@@ -65,7 +65,7 @@ public:
            const bool is_nonstationarity,
            const index_array_type &eb_within,
            const index_array_type &eb_whole,
-           const std::string msg = "");
+           std::string_view msg = "");
 
   // Don't store the full set of shuffling matrices;
   //   generate each as it is required, based on the more compressed representations

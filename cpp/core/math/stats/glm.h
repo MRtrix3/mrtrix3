@@ -27,7 +27,7 @@
 #include "math/zstatistic.h"
 #include "types.h"
 
-#define MRTRIX_USE_ZSTATISTIC_LOOKUP
+// #define MRTRIX_USE_ZSTATISTIC_LOOKUP
 
 namespace MR::Math::Stats::GLM {
 
@@ -204,6 +204,9 @@ void all_stats(const measurements_matrix_type &measurements,
 // Only exists to permit the use of a base class pointer in the TestBase class
 class SharedBase {
 public:
+  SharedBase() = default;
+  SharedBase(const SharedBase &) = default;
+  SharedBase(SharedBase &&) = default;
   virtual ~SharedBase() {}
 };
 
@@ -250,7 +253,7 @@ public:
 
   // This gets utilised within the multi-threading back-end to clone derived classes
   //   based on a pointer to this base class
-  virtual std::unique_ptr<TestBase> __clone() const = 0;
+  virtual std::unique_ptr<TestBase> _clone() const = 0;
 
   /*! Compute the statistics, including conversion to Z-score
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -270,7 +273,7 @@ protected:
   const matrix_type &M;
   const std::vector<Hypothesis> &c;
 
-  std::shared_ptr<SharedBase> shared;
+  std::shared_ptr<const SharedBase> shared;
 };
 
 /** \addtogroup Statistics
@@ -287,18 +290,20 @@ protected:
  */
 class TestFixedHomoscedastic : public TestBase {
 public:
-  class Shared : public SharedBase,
-                 public SharedFixedBase
+  class Shared final : public SharedBase,
+                       public SharedFixedBase
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
       ,
-                 public SharedHomoscedasticBase
+                       public SharedHomoscedasticBase
 #endif
   {
   public:
     Shared(const measurements_matrix_type &measurements,
            const matrix_type &design,
            const std::vector<Hypothesis> &hypotheses);
-    ~Shared() {}
+    Shared() = delete;
+    Shared(const Shared &) = delete;
+    ~Shared() final {}
     std::vector<matrix_type> XtX;
     std::vector<size_t> dof;
     std::vector<default_type> one_over_dof;
@@ -315,7 +320,7 @@ public:
 
   TestFixedHomoscedastic(const TestFixedHomoscedastic &that);
 
-  std::unique_ptr<TestBase> __clone() const final;
+  std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -349,13 +354,15 @@ protected:
  */
 class TestFixedHeteroscedastic : public TestBase {
 public:
-  class Shared : public SharedBase, public SharedFixedBase, public SharedHeteroscedasticBase {
+  class Shared final : public SharedBase, public SharedFixedBase, public SharedHeteroscedasticBase {
   public:
     Shared(const measurements_matrix_type &measurements,
            const matrix_type &design,
            const std::vector<Hypothesis> &hypotheses,
            const index_array_type &variance_groups);
-    ~Shared() {}
+    Shared() = delete;
+    Shared(const Shared &) = delete;
+    ~Shared() final {}
     std::vector<size_t> inputs_per_vg;
     vector_type Rnn_sums;
     vector_type inv_Rnn_sums;
@@ -375,7 +382,9 @@ public:
 
   TestFixedHeteroscedastic(const TestFixedHeteroscedastic &that);
 
-  std::unique_ptr<TestBase> __clone() const final;
+  ~TestFixedHeteroscedastic() = default;
+
+  std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -409,7 +418,9 @@ public:
 
   TestVariableBase(const TestVariableBase &that);
 
-  std::unique_ptr<TestBase> __clone() const override = 0;
+  ~TestVariableBase() = default;
+
+  std::unique_ptr<TestBase> _clone() const override = 0;
 
   virtual index_type num_importers() const = 0;
 
@@ -444,16 +455,18 @@ protected:
  */
 class TestVariableHomoscedastic : public TestVariableBase {
 public:
-  class Shared : public SharedBase,
-                 public SharedVariableBase
+  class Shared final : public SharedBase,
+                       public SharedVariableBase
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
       ,
-                 public SharedHomoscedasticBase
+                       public SharedHomoscedasticBase
 #endif
   {
   public:
     Shared(const std::vector<CohortDataImport> &importers, const bool nans_in_data, const bool nans_in_columns);
-    ~Shared() {}
+    Shared() = delete;
+    Shared(const Shared &) = delete;
+    ~Shared() final {}
   };
 
   TestVariableHomoscedastic(const measurements_matrix_type &measurements,
@@ -465,7 +478,9 @@ public:
 
   TestVariableHomoscedastic(const TestVariableHomoscedastic &that);
 
-  std::unique_ptr<TestBase> __clone() const final;
+  ~TestVariableHomoscedastic() = default;
+
+  std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -503,14 +518,16 @@ protected:
  */
 class TestVariableHeteroscedastic : public TestVariableBase {
 public:
-  class Shared : public SharedBase, public SharedVariableBase, public SharedHeteroscedasticBase {
+  class Shared final : public SharedBase, public SharedVariableBase, public SharedHeteroscedasticBase {
   public:
     Shared(const std::vector<Hypothesis> &hypotheses,
            const index_array_type &variance_groups,
            const std::vector<CohortDataImport> &importers,
            const bool nans_in_data,
            const bool nans_in_columns);
-    ~Shared() {}
+    Shared() = delete;
+    Shared(const Shared &) = delete;
+    ~Shared() final {}
   };
 
   TestVariableHeteroscedastic(const measurements_matrix_type &measurements,
@@ -523,7 +540,9 @@ public:
 
   TestVariableHeteroscedastic(const TestVariableHeteroscedastic &that);
 
-  std::unique_ptr<TestBase> __clone() const final;
+  ~TestVariableHeteroscedastic() = default;
+
+  std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)

@@ -60,7 +60,7 @@ default_type F2z_lower(const default_type oneoverG, const size_t rank, const def
 }
 } // namespace
 
-default_type t2z(const default_type stat, const size_t dof) { return v2z(stat, static_cast<default_type>(dof)); }
+default_type t2z(const default_type t, const size_t dof) { return v2z(t, static_cast<default_type>(dof)); }
 
 default_type F2z(const default_type F, const size_t rank, const size_t dof) {
   return G2z(F, rank, static_cast<default_type>(dof));
@@ -83,7 +83,7 @@ default_type v2z(const default_type v, const default_type dof) {
 
 default_type G2z(const default_type G, const size_t rank, const default_type dof) {
   assert(G >= 0.0);
-  if (!G)
+  if (G == default_type(0))
     return -std::numeric_limits<default_type>::infinity();
   if (G >= 1.0)
     return F2z_upper(G, rank, dof);
@@ -126,7 +126,7 @@ default_type Zstatistic::LookupBase::interp(const default_type stat,
                                             const default_type offset,
                                             const default_type scale,
                                             const array_type &data,
-                                            std::function<default_type(default_type)> func) const { // check_syntax off
+                                            std::function<default_type(default_type)> func) const {
   const default_type index_float = (stat - offset) * scale;
   if (index_float >= 1.0 && index_float < data.size() - 2) {
     const ssize_t index_int(static_cast<ssize_t>(std::floor(index_float)));
@@ -183,7 +183,7 @@ Zstatistic::Lookup_t2z::Lookup_t2z(const size_t dof) : dof(dof), offset(-t2z_max
 }
 
 default_type Zstatistic::Lookup_t2z::operator()(const default_type t) const {
-  auto func = [&](const default_type in) { return Math::t2z(in, dof); };
+  static auto func = [&](const default_type in) { return Math::t2z(in, dof); };
   return interp(t, offset, scale, data, func);
 }
 
@@ -267,8 +267,8 @@ Zstatistic::Lookup_F2z::Lookup_F2z(const size_t rank, const size_t dof)
 }
 
 default_type Zstatistic::Lookup_F2z::operator()(const default_type F) const {
-  auto func_upper = [&](const default_type in) { return F2z_upper(in, rank, static_cast<default_type>(dof)); };
-  auto func_lower = [&](const default_type in) { return F2z_lower(in, rank, static_cast<default_type>(dof)); };
+  static auto func_upper = [&](const default_type in) { return F2z_upper(in, rank, static_cast<default_type>(dof)); };
+  static auto func_lower = [&](const default_type in) { return F2z_lower(in, rank, static_cast<default_type>(dof)); };
   if (F >= 1.0)
     return interp(F, offset_upper, scale_upper, data_upper, func_upper);
   else

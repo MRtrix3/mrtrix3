@@ -95,7 +95,7 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
 }
 // clang-format on
 
-Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, const std::string msg)
+Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std::string_view msg)
     : rows(num_rows),
       nshuffles(is_nonstationarity ? default_numshuffles_nonstationarity : default_numshuffles_nulldist),
       counter(0) {
@@ -172,7 +172,7 @@ Shuffler::Shuffler(const index_type num_rows,
                    const index_type num_shuffles,
                    const error_t error_types,
                    const bool is_nonstationarity,
-                   const std::string msg)
+                   std::string_view msg)
     : Shuffler(num_rows, num_shuffles, error_types, is_nonstationarity, index_array_type(), index_array_type(), msg) {}
 
 Shuffler::Shuffler(const index_type num_rows,
@@ -181,10 +181,10 @@ Shuffler::Shuffler(const index_type num_rows,
                    const bool is_nonstationarity,
                    const index_array_type &eb_within,
                    const index_array_type &eb_whole,
-                   const std::string msg)
+                   std::string_view msg)
     : rows(num_rows), nshuffles(num_shuffles) {
   initialise(error_types, true, is_nonstationarity, eb_within, eb_whole);
-  if (msg.size())
+  if (!msg.empty())
     progress.reset(new ProgressBar(msg, nshuffles));
 }
 

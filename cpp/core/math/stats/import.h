@@ -84,7 +84,7 @@ public:
    * @param index for a particular element being tested (data will be acquired for
    * all subjects for that element)
    */
-  measurements_vector_type operator()(const index_type index) const;
+  measurements_vector_type operator()(const index_type element_index) const;
 
   operator bool() const { return !files.empty(); }
   index_type size() const { return files.size(); }

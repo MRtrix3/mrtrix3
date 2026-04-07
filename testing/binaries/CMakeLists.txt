@@ -235,7 +235,6 @@ add_bash_binary_test(mrcat/singlevoxel)
 
 add_bash_binary_test(mrclusterstats/clustersize)
 add_bash_binary_test(mrclusterstats/default)
-add_bash_binary_test(mrclusterstats/legacy)
 add_bash_binary_test(mrclusterstats/masked)
 add_bash_binary_test(mrclusterstats/posthoc)
 

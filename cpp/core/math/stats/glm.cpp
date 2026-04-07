@@ -589,7 +589,7 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(
                                 std::numeric_limits<default_type>::signaling_NaN()))
 #endif
 {
-  shared = std::make_shared<Shared>(measurements, design, hypotheses);
+  shared = std::make_shared<const Shared>(measurements, design, hypotheses);
   for (index_type ih = 0; ih != hypotheses.size(); ++ih)
 #ifdef NDEBUG
     betas.emplace_back(matrix_type(hypotheses[ih].matrix().rows(), 1));
@@ -626,7 +626,7 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(const TestFixedHomoscedastic &tha
 #endif
 }
 
-std::unique_ptr<TestBase> TestFixedHomoscedastic::__clone() const {
+std::unique_ptr<TestBase> TestFixedHomoscedastic::_clone() const {
   return std::make_unique<TestFixedHomoscedastic>(*this);
 }
 
@@ -693,11 +693,12 @@ void TestFixedHomoscedastic::operator()(
       for (index_type ie = 0; ie != this_batch_size; ++ie) {
         betas[ih].noalias() = c[ih].matrix() * lambdas.col(ie);
         const default_type F = ((betas[ih].transpose() * S().XtX[ih] * betas[ih])(0, 0) / c[ih].rank()) /
-                                (S().one_over_dof[ih] * sse[ie]);
+                               (S().one_over_dof[ih] * sse[ie]);
         if (!std::isfinite(F)) {
           stats(ie + iestart, ih) = zstats(ie + iestart, ih) = value_type(0);
         } else if (c[ih].is_F()) {
           stats(ie + iestart, ih) = F;
+
           zstats(ie + iestart, ih) =
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
               S().
@@ -771,7 +772,7 @@ TestFixedHeteroscedastic::TestFixedHeteroscedastic(const measurements_matrix_typ
       W(decltype(W)::Constant(measurements.rows(), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
 {
-  shared = std::make_shared<Shared>(measurements, design, hypotheses, variance_groups);
+  shared = std::make_shared<const Shared>(measurements, design, hypotheses, variance_groups);
   // Require shared to have been constructed first
 #ifdef NDEBUG
   sse_per_vg.resize(num_variance_groups(), std::min(num_elements(), batch_size()));
@@ -813,9 +814,8 @@ TestFixedHeteroscedastic::TestFixedHeteroscedastic(const TestFixedHeteroscedasti
 {
 }
 
-std::unique_ptr<TestBase> TestFixedHeteroscedastic::__clone() const {
-  std::unique_ptr<TestBase> result(new TestFixedHeteroscedastic(*this));
-  return result;
+std::unique_ptr<TestBase> TestFixedHeteroscedastic::_clone() const {
+  return std::make_unique<TestFixedHeteroscedastic>(*this);
 }
 
 void TestFixedHeteroscedastic::operator()(
@@ -1078,7 +1078,7 @@ void TestVariableBase::apply_mask(const index_type ie, const shuffle_matrix_type
     for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
       if (element_mask[in_index]) {
         Mfull_masked.block(out_index, 0, 1, M.cols()) = M.row(in_index);
-        if (num_importers())
+        if (num_importers() > index_type(0))
           Mfull_masked.block(out_index, M.cols(), 1, extra_column_data.cols()) =
               extra_column_data.row(in_index).cast<default_type>();
         y_masked[out_index++] = y(in_index, ie);
@@ -1087,7 +1087,7 @@ void TestVariableBase::apply_mask(const index_type ie, const shuffle_matrix_type
         //   in the column corresponding to in_row needs to be removed
         //   from the permutation matrix
         for (Eigen::Index perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
-          if (shuffling_matrix(perm_row, in_index))
+          if (shuffling_matrix(perm_row, in_index) != int8_t(0))
             permuted_mask[perm_row] = false;
         }
       }
@@ -1126,13 +1126,7 @@ void TestVariableBase::apply_mask(const index_type ie, const shuffle_matrix_type
 
 TestVariableHomoscedastic::Shared::Shared(
     const std::vector<CohortDataImport> &importers, const bool nans_in_data, const bool nans_in_columns)
-    : SharedVariableBase(importers, nans_in_data, nans_in_columns)
-#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
-      ,
-      SharedHomoscedasticBase()
-#endif
-{
-}
+    : SharedVariableBase(importers, nans_in_data, nans_in_columns) {}
 
 TestVariableHomoscedastic::TestVariableHomoscedastic(const measurements_matrix_type &measurements,
                                                       const matrix_type &design,
@@ -1141,7 +1135,7 @@ TestVariableHomoscedastic::TestVariableHomoscedastic(const measurements_matrix_t
                                                       const bool nans_in_data,
                                                       const bool nans_in_columns)
     : TestVariableBase(measurements, design, hypotheses, importers) {
-  shared.reset(new Shared(importers, nans_in_data, nans_in_columns));
+  shared = std::make_shared<const Shared>(importers, nans_in_data, nans_in_columns);
   for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
 #ifdef NDEBUG
     XtX.emplace_back(hypotheses[ih].matrix().rows(), hypotheses[ih].matrix().rows());
@@ -1170,9 +1164,8 @@ TestVariableHomoscedastic::TestVariableHomoscedastic(const TestVariableHomosceda
   }
 }
 
-std::unique_ptr<TestBase> TestVariableHomoscedastic::__clone() const {
-  std::unique_ptr<TestBase> result(new TestVariableHomoscedastic(*this));
-  return result;
+std::unique_ptr<TestBase> TestVariableHomoscedastic::_clone() const {
+  return std::make_unique<TestVariableHomoscedastic>(*this);
 }
 
 void TestVariableHomoscedastic::operator()(
@@ -1208,7 +1201,7 @@ void TestVariableHomoscedastic::operator()(
     //     that contain non-zero values in those columns
     //
     set_mask(S(), ie);
-    const index_type finite_count = element_mask.sum();
+    const index_type finite_count = element_mask.count();
 #ifdef GLM_TEST_DEBUG
     VAR(element_mask.size());
     VAR(finite_count);
@@ -1258,8 +1251,8 @@ void TestVariableHomoscedastic::operator()(
         for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
 
           const auto partition = c[ih].partition(Mfull_masked.topRows(finite_count));
-          dof(ie, ih) = finite_count - partition.rank_x - partition.rank_z;
-          if (dof(ie, ih) < 1) {
+          dof(ie, ih) = static_cast<value_type>(finite_count - partition.rank_x - partition.rank_z);
+          if (dof(ie, ih) < value_type(1)) {
             stats(ie, ih) = zstats(ie, ih) = dof(ie, ih) = value_type(0);
           } else {
             XtX[ih].noalias() = partition.X.transpose() * partition.X;
@@ -1297,7 +1290,7 @@ void TestVariableHomoscedastic::operator()(
 #else
                   Math::
 #endif
-                  F2z(F, c[ih].rank(), dof(ie, ih));
+                  F2z(F, c[ih].rank(), static_cast<size_t>(dof(ie, ih)));
             } else {
               assert(beta[ih].rows() == 1);
               stats(ie, ih) = std::sqrt(F) * (beta[ih].sum() > 0 ? 1.0 : -1.0);
@@ -1307,7 +1300,7 @@ void TestVariableHomoscedastic::operator()(
 #else
                   Math::
 #endif
-                  t2z(stats(ie, ih), dof(ie, ih));
+                  t2z(stats(ie, ih), static_cast<size_t>(dof(ie, ih)));
             }
 
           } // End checking for sufficient degrees of freedom
@@ -1346,7 +1339,7 @@ TestVariableHeteroscedastic::TestVariableHeteroscedastic(const measurements_matr
       sq_residuals(vector_type::Constant(measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
 #endif
       VG_masked(measurements.rows()) {
-  shared.reset(new Shared(hypotheses, variance_groups, importers, nans_in_data, nans_in_columns));
+  shared = std::make_shared<const Shared>(hypotheses, variance_groups, importers, nans_in_data, nans_in_columns);
   // Require shared to have been initialised
 #ifdef NDEBUG
   sse_per_vg.resize(num_variance_groups());
@@ -1383,9 +1376,8 @@ TestVariableHeteroscedastic::TestVariableHeteroscedastic(const TestVariableHeter
 {
 }
 
-std::unique_ptr<TestBase> TestVariableHeteroscedastic::__clone() const {
-  std::unique_ptr<TestBase> result(new TestVariableHeteroscedastic(*this));
-  return result;
+std::unique_ptr<TestBase> TestVariableHeteroscedastic::_clone() const {
+  return std::make_unique<TestVariableHeteroscedastic>(*this);
 }
 
 void TestVariableHeteroscedastic::operator()(
@@ -1398,7 +1390,7 @@ void TestVariableHeteroscedastic::operator()(
     for (index_type col = 0; col != num_importers(); ++col)
       extra_column_data.col(col) = S().importers[col](ie);
     set_mask(S(), ie);
-    const index_type finite_count = element_mask.sum();
+    const index_type finite_count = element_mask.count();
     if (finite_count < std::min(num_inputs(), 2 * num_factors())) {
       stats.row(ie).setZero();
       zstats.row(ie).setZero();

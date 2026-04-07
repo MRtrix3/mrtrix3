@@ -18,10 +18,10 @@
 
 namespace MR::Math::Stats {
 
-measurements_vector_type CohortDataImport::operator()(const index_type element) const {
+measurements_vector_type CohortDataImport::operator()(const index_type element_index) const {
   measurements_vector_type result(files.size());
   for (index_type i = 0; i != files.size(); ++i)
-    result[i] = (*files[i])[element]; // Get the intensity for just a particular element from this input data file
+    result[i] = (*files[i])[element_index]; // Get the intensity for just a particular element from this input data file
   return result;
 }
 

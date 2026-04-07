@@ -8,7 +8,7 @@ mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phanto
     -posthoc mrclusterstats/posthoc.mif
 
 for i in abs_effect beta0 beta1 std_dev std_effect tfce tvalue Zstat; do
-    testing_diff_image tmp_posthoc/$i.mif mrclusterstats/posthoc/$i.mif -abs 1e-6 || exit 1;
+    testing_diff_image tmp/$i.mif mrclusterstats/posthoc/$i.mif -abs 1e-6 || exit 1;
 done
 
 # Ensure that the statistical significance mask matches

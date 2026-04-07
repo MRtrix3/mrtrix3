@@ -245,7 +245,7 @@ void run() {
   } else {
     mask_inference_image = Image<bool>::scratch(mask_header, "scratch fixel inference mask");
     copy(mask_processing_image, mask_inference_image);
-    // mask_infer_fixels = mask_proc_fixels;
+    // mask_infer_fixels = mask_proc_fixels; // unused
   }
   mask_processing_image.reset();
   mask_inference_image.reset();
@@ -331,7 +331,7 @@ void run() {
   Fixel::index_type num_unconnected_fixels = 0;
   for (Fixel::index_type f = 0; f != num_fixels; ++f) {
     mask_processing_image.index(0) = f;
-    if (mask_processing_image.value() && matrix.size(f) == 0u)
+    if (mask_processing_image.value() && matrix.size(f) == 0U)
       ++num_unconnected_fixels;
   }
   if (num_unconnected_fixels) {
