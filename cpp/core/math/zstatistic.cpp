@@ -16,6 +16,8 @@
 
 #include "math/zstatistic.h"
 
+#include <mutex>
+
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/hermite.h"
@@ -92,30 +94,38 @@ default_type G2z(const default_type G, const size_t rank, const default_type dof
 }
 
 default_type Zstatistic::t2z(const default_type t, const size_t dof) const {
-  auto it = t2z_data.find(dof);
-  if (it == t2z_data.end()) {
-    std::lock_guard<std::mutex> lock(mutex);
-    // Need to check again for presence of lookup table
-    //   now that we have the lock
-    it = t2z_data.find(dof);
+  {
+    std::shared_lock lock(mutex);
+    auto it = t2z_data.find(dof);
+    if (it != t2z_data.end())
+      return (it->second)(t);
+  }
+  {
+    std::unique_lock lock(mutex);
+    auto it = t2z_data.find(dof);
     if (it == t2z_data.end())
       it = t2z_data.emplace(dof, Lookup_t2z(dof)).first;
+    return (it->second)(t);
   }
-  return (it->second)(t);
 }
 
 default_type Zstatistic::F2z(const default_type F, const size_t rank, const size_t dof) const {
   const auto pair = std::make_pair(rank, dof);
-  auto it = F2z_data.find(pair);
-  if (it == F2z_data.end()) {
-    std::lock_guard<std::mutex> lock(mutex);
+  {
+    std::shared_lock lock(mutex);
+    auto it = F2z_data.find(pair);
+    if (it != F2z_data.end())
+      return (it->second)(F);
+  }
+  {
+    std::unique_lock lock(mutex);
     // Need to check again for presence of lookup table
     //   now that we have the lock
-    it = F2z_data.find(pair);
+    auto it = F2z_data.find(pair);
     if (it == F2z_data.end())
       it = F2z_data.emplace(pair, Lookup_F2z(rank, dof)).first;
+    return (it->second)(F);
   }
-  return (it->second)(F);
 }
 
 // Function that will determine an interpolated value using
@@ -183,7 +193,7 @@ Zstatistic::Lookup_t2z::Lookup_t2z(const size_t dof) : dof(dof), offset(-t2z_max
 }
 
 default_type Zstatistic::Lookup_t2z::operator()(const default_type t) const {
-  static auto func = [&](const default_type in) { return Math::t2z(in, dof); };
+  auto func = [&](const default_type in) { return Math::t2z(in, dof); };
   return interp(t, offset, scale, data, func);
 }
 

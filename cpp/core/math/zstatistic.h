@@ -17,7 +17,7 @@
 #pragma once
 
 #include <map>
-#include <mutex>
+#include <shared_mutex>
 
 #include "math/stats/typedefs.h"
 
@@ -31,12 +31,8 @@ default_type G2z(const default_type G, const size_t rank, const default_type dof
 class Zstatistic {
 public:
   Zstatistic() {}
-  // TODO Rather than lazy-loading,
-  //   ensure that all possible combinations are loaded at construction;
-  //   requires looping over all unique hypothesis ranks,
-  //   and in the variable design matrix case looping over all dofs
-  // TODO Possible corruption here
-  //   once there's more than one lookup table of a given type?
+  Zstatistic(const Zstatistic &) = delete;
+  Zstatistic &operator=(const Zstatistic &) = delete;
 
   // Convert a t-statistic to a z-statistic
   default_type t2z(const default_type t, const size_t dof) const;
@@ -90,7 +86,7 @@ protected:
 
   mutable std::map<size_t, Lookup_t2z> t2z_data;
   mutable std::map<std::pair<size_t, size_t>, Lookup_F2z> F2z_data;
-  mutable std::mutex mutex;
+  mutable std::shared_mutex mutex;
 };
 
 } // namespace MR::Math

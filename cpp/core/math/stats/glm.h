@@ -27,7 +27,7 @@
 #include "math/zstatistic.h"
 #include "types.h"
 
-// #define MRTRIX_USE_ZSTATISTIC_LOOKUP
+#define MRTRIX_USE_ZSTATISTIC_LOOKUP
 
 namespace MR::Math::Stats::GLM {
 
