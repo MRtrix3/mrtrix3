@@ -205,8 +205,10 @@ void all_stats(const measurements_matrix_type &measurements,
 class SharedBase {
 public:
   SharedBase() = default;
-  SharedBase(const SharedBase &) = default;
-  SharedBase(SharedBase &&) = default;
+  SharedBase(const SharedBase &) = delete;
+  SharedBase(SharedBase &&) = delete;
+  SharedBase &operator=(const SharedBase &) = delete;
+  SharedBase &operator=(SharedBase &&) = delete;
   virtual ~SharedBase() {}
 };
 
@@ -288,7 +290,7 @@ protected:
  *   - When the data are considered to be homoscedastic; that is, the variance is
  *     equivalent across all inputs.
  */
-class TestFixedHomoscedastic : public TestBase {
+class TestFixedHomoscedastic final : public TestBase {
 public:
   class Shared final : public SharedBase,
                        public SharedFixedBase
@@ -303,6 +305,9 @@ public:
            const std::vector<Hypothesis> &hypotheses);
     Shared() = delete;
     Shared(const Shared &) = delete;
+    Shared(Shared &&) = delete;
+    Shared &operator=(const Shared &) = delete;
+    Shared &operator=(Shared &&) = delete;
     ~Shared() final {}
     std::vector<matrix_type> XtX;
     std::vector<size_t> dof;
@@ -320,6 +325,8 @@ public:
 
   TestFixedHomoscedastic(const TestFixedHomoscedastic &that);
 
+  ~TestFixedHomoscedastic() final = default;
+
   std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
@@ -333,7 +340,7 @@ public:
 
   const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
-protected:
+private:
   // Temporaries
   matrix_type Sy, lambdas, residuals;
   std::vector<matrix_type> betas;
@@ -352,7 +359,7 @@ protected:
  *     between all observations, but these can be placed into "variance groups", within which
  *     all observations can be considered to have the same variance.
  */
-class TestFixedHeteroscedastic : public TestBase {
+class TestFixedHeteroscedastic final : public TestBase {
 public:
   class Shared final : public SharedBase, public SharedFixedBase, public SharedHeteroscedasticBase {
   public:
@@ -362,6 +369,9 @@ public:
            const index_array_type &variance_groups);
     Shared() = delete;
     Shared(const Shared &) = delete;
+    Shared(Shared &&) = delete;
+    Shared &operator=(const Shared &) = delete;
+    Shared &operator=(Shared &&) = delete;
     ~Shared() final {}
     std::vector<size_t> inputs_per_vg;
     vector_type Rnn_sums;
@@ -382,7 +392,7 @@ public:
 
   TestFixedHeteroscedastic(const TestFixedHeteroscedastic &that);
 
-  ~TestFixedHeteroscedastic() = default;
+  ~TestFixedHeteroscedastic() final = default;
 
   std::unique_ptr<TestBase> _clone() const final;
 
@@ -398,7 +408,7 @@ public:
 
   const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
-protected:
+private:
   // Temporaries
   matrix_type Sy;
   matrix_type lambdas;
@@ -418,7 +428,7 @@ public:
 
   TestVariableBase(const TestVariableBase &that);
 
-  ~TestVariableBase() = default;
+  ~TestVariableBase() override = default;
 
   std::unique_ptr<TestBase> _clone() const override = 0;
 
@@ -453,7 +463,7 @@ protected:
  *   - Input data are considered to be homoscedastic; that is, the variance is
  *     equivalent across all inputs.
  */
-class TestVariableHomoscedastic : public TestVariableBase {
+class TestVariableHomoscedastic final : public TestVariableBase {
 public:
   class Shared final : public SharedBase,
                        public SharedVariableBase
@@ -466,6 +476,9 @@ public:
     Shared(const std::vector<CohortDataImport> &importers, const bool nans_in_data, const bool nans_in_columns);
     Shared() = delete;
     Shared(const Shared &) = delete;
+    Shared(Shared &&) = delete;
+    Shared &operator=(const Shared &) = delete;
+    Shared &operator=(Shared &&) = delete;
     ~Shared() final {}
   };
 
@@ -478,7 +491,7 @@ public:
 
   TestVariableHomoscedastic(const TestVariableHomoscedastic &that);
 
-  ~TestVariableHomoscedastic() = default;
+  ~TestVariableHomoscedastic() final = default;
 
   std::unique_ptr<TestBase> _clone() const final;
 
@@ -497,7 +510,7 @@ public:
 
   const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
-protected:
+private:
   std::vector<matrix_type> XtX, beta;
 };
 
@@ -516,7 +529,7 @@ protected:
  *     between all observations, but these can be placed into "variance groups", within which
  *     all observations can be considered to have the same variance.
  */
-class TestVariableHeteroscedastic : public TestVariableBase {
+class TestVariableHeteroscedastic final : public TestVariableBase {
 public:
   class Shared final : public SharedBase, public SharedVariableBase, public SharedHeteroscedasticBase {
   public:
@@ -527,6 +540,9 @@ public:
            const bool nans_in_columns);
     Shared() = delete;
     Shared(const Shared &) = delete;
+    Shared(Shared &&) = delete;
+    Shared &operator=(const Shared &) = delete;
+    Shared &operator=(Shared &&) = delete;
     ~Shared() final {}
   };
 
@@ -540,7 +556,7 @@ public:
 
   TestVariableHeteroscedastic(const TestVariableHeteroscedastic &that);
 
-  ~TestVariableHeteroscedastic() = default;
+  ~TestVariableHeteroscedastic() final = default;
 
   std::unique_ptr<TestBase> _clone() const final;
 
@@ -560,7 +576,7 @@ public:
 
   const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
-protected:
+private:
   // Temporaries
   vector_type W, sq_residuals, sse_per_vg, Rnn_sums, Wterms;
   index_array_type VG_masked, VG_counts;

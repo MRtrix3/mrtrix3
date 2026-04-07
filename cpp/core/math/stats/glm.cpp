@@ -312,7 +312,7 @@ void all_stats(const measurements_matrix_type &measurements,
 
 void all_stats(const measurements_matrix_type &measurements,
                 const matrix_type &fixed_design,
-                const std::vector<CohortDataImport> &extra_data,
+                const std::vector<CohortDataImport> &extra_columns,
                 const std::vector<Hypothesis> &hypotheses,
                 const index_array_type &variance_groups,
                 vector_type &cond,
@@ -320,7 +320,7 @@ void all_stats(const measurements_matrix_type &measurements,
                 matrix_type &abs_effect_size,
                 matrix_type &std_effect_size,
                 matrix_type &stdev) {
-  if (extra_data.empty() && measurements.allFinite()) {
+  if (extra_columns.empty() && measurements.allFinite()) {
     all_stats(
         measurements, fixed_design, hypotheses, variance_groups, betas, abs_effect_size, std_effect_size, stdev);
     return;
@@ -353,7 +353,7 @@ void all_stats(const measurements_matrix_type &measurements,
   public:
     Functor(const measurements_matrix_type &data,
             const matrix_type &design_fixed,
-            const std::vector<CohortDataImport> &extra_data,
+            const std::vector<CohortDataImport> &extra_columns,
             const std::vector<Hypothesis> &hypotheses,
             const index_array_type &variance_groups,
             vector_type &cond,
@@ -363,7 +363,7 @@ void all_stats(const measurements_matrix_type &measurements,
             matrix_type &stdev)
         : data(data),
           design_fixed(design_fixed),
-          extra_data(extra_data),
+          extra_columns(extra_columns),
           hypotheses(hypotheses),
           variance_groups(variance_groups),
           global_cond(cond),
@@ -372,16 +372,16 @@ void all_stats(const measurements_matrix_type &measurements,
           global_std_effect_size(std_effect_size),
           global_stdev(stdev),
           num_vgs(variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1) {
-      assert(design_fixed.cols() + extra_data.size() == hypotheses[0].cols());
+      assert(design_fixed.cols() + extra_columns.size() == hypotheses[0].cols());
     }
     bool operator()(const index_type &element_index) {
       const measurements_matrix_type element_data = data.col(element_index);
-      matrix_type element_design(design_fixed.rows(), design_fixed.cols() + extra_data.size());
+      matrix_type element_design(design_fixed.rows(), design_fixed.cols() + extra_columns.size());
       element_design.leftCols(design_fixed.cols()) = design_fixed;
       // For each element-wise design matrix column,
       //   acquire the data for this particular element, without permutation
-      for (index_type col = 0; col != extra_data.size(); ++col)
-        element_design.col(design_fixed.cols() + col) = (extra_data[col])(element_index).cast<default_type>();
+      for (index_type col = 0; col != extra_columns.size(); ++col)
+        element_design.col(design_fixed.cols() + col) = (extra_columns[col])(element_index).cast<default_type>();
       // For each element-wise design matrix, remove any NaN values
       //   present in either the input data or imported from the element-wise design matrix column data
       index_type valid_rows = 0;
@@ -449,7 +449,7 @@ void all_stats(const measurements_matrix_type &measurements,
   private:
     const measurements_matrix_type &data;
     const matrix_type &design_fixed;
-    const std::vector<CohortDataImport> &extra_data;
+    const std::vector<CohortDataImport> &extra_columns;
     const std::vector<Hypothesis> &hypotheses;
     const index_array_type &variance_groups;
     vector_type &global_cond;
@@ -476,7 +476,7 @@ void all_stats(const measurements_matrix_type &measurements,
   Source source(measurements.cols());
   Functor functor(measurements,
                   fixed_design,
-                  extra_data,
+                  extra_columns,
                   hypotheses,
                   variance_groups,
                   cond,
