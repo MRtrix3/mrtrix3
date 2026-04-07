@@ -332,16 +332,16 @@ void run() {
   std::unique_ptr<GLM::TestBase> glm_test;
   if (variable_design_matrix) {
     if (variance_groups.size() > 0)
-      glm_test.reset(new GLM::TestVariableHeteroscedastic(
-          data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns));
+      glm_test = std::make_unique<GLM::TestVariableHeteroscedastic>(
+          data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns);
     else
-      glm_test.reset(
-          new GLM::TestVariableHomoscedastic(data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns));
+      glm_test = std::make_unique<GLM::TestVariableHomoscedastic>(
+          data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns);
   } else {
     if (variance_groups.size() > 0)
-      glm_test.reset(new GLM::TestFixedHeteroscedastic(data, design, hypotheses, variance_groups));
+      glm_test = std::make_unique<GLM::TestFixedHeteroscedastic>(data, design, hypotheses, variance_groups);
     else
-      glm_test.reset(new GLM::TestFixedHomoscedastic(data, design, hypotheses));
+      glm_test = std::make_unique<GLM::TestFixedHomoscedastic>(data, design, hypotheses);
   }
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic

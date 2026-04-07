@@ -223,7 +223,7 @@ void run() {
   Image<bool> mask_inference_image;
   opt = get_options("posthoc");
   Fixel::index_type mask_infer_fixels = 0;
-  if (opt.size()) {
+  if (!opt.empty()) {
     mask_inference_image = Image<bool>::open(opt[0][0]);
     Fixel::check_data_file(mask_inference_image);
     if (!Fixel::fixels_match(index_header, mask_inference_image))
@@ -237,7 +237,7 @@ void run() {
       }
     }
     CONSOLE("Number of fixels in post-hoc analysis mask: " + str(mask_infer_fixels));
-    if (mask_mismatch_count) {
+    if (mask_mismatch_count > Fixel::index_type(0)) {
       WARN("There are " + str(mask_mismatch_count) +
            " fixels in the post-hoc mask that are absent from the processing mask; "
            "post-hoc inference cannot and will not be performed in those fixels");
@@ -245,7 +245,7 @@ void run() {
   } else {
     mask_inference_image = Image<bool>::scratch(mask_header, "scratch fixel inference mask");
     copy(mask_processing_image, mask_inference_image);
-    mask_infer_fixels = mask_proc_fixels;
+    // mask_infer_fixels = mask_proc_fixels;
   }
   mask_processing_image.reset();
   mask_inference_image.reset();
@@ -315,7 +315,7 @@ void run() {
 
   // Load fixel-fixel connectivity matrix
   // This is based on the processing mask, *not* the inference mask
-  Fixel::Matrix::Reader matrix(argument[3], mask_processing_image);
+  const Fixel::Matrix::Reader matrix(argument[3], mask_processing_image);
 
   const std::string output_fixel_directory = argument[4];
   Fixel::copy_index_and_directions_file(input_fixel_directory, output_fixel_directory);
@@ -331,7 +331,7 @@ void run() {
   Fixel::index_type num_unconnected_fixels = 0;
   for (Fixel::index_type f = 0; f != num_fixels; ++f) {
     mask_processing_image.index(0) = f;
-    if (mask_processing_image.value() && !matrix.size(f))
+    if (mask_processing_image.value() && matrix.size(f) == 0u)
       ++num_unconnected_fixels;
   }
   if (num_unconnected_fixels) {
@@ -439,20 +439,22 @@ void run() {
   std::unique_ptr<Math::Stats::GLM::TestBase> glm_test;
   if (variable_design_matrix) {
     if (variance_groups.size())
-      glm_test.reset(new Math::Stats::GLM::TestVariableHeteroscedastic(
-          data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns));
+      glm_test = std::make_unique<Math::Stats::GLM::TestVariableHeteroscedastic>(
+          data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns);
     else
-      glm_test.reset(new Math::Stats::GLM::TestVariableHomoscedastic(
-          data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns));
+      glm_test = std::make_unique<Math::Stats::GLM::TestVariableHomoscedastic>(
+          data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns);
   } else {
     if (variance_groups.size())
-      glm_test.reset(new Math::Stats::GLM::TestFixedHeteroscedastic(data, design, hypotheses, variance_groups));
+      glm_test =
+          std::make_unique<Math::Stats::GLM::TestFixedHeteroscedastic>(data, design, hypotheses, variance_groups);
     else
-      glm_test.reset(new Math::Stats::GLM::TestFixedHomoscedastic(data, design, hypotheses));
+      glm_test = std::make_unique<Math::Stats::GLM::TestFixedHomoscedastic>(data, design, hypotheses);
   }
 
   // Construct the class for performing fixel-based statistical enhancement
-  std::shared_ptr<Stats::EnhancerBase> cfe_integrator(new Stats::CFE(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
+  const std::shared_ptr<Stats::EnhancerBase> cfe_integrator(
+      std::make_shared<Stats::CFE>(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;

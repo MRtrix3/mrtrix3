@@ -20,6 +20,7 @@
 
 namespace MR::Math::Stats {
 
-matrix_type fwe_pvalue(const matrix_type &null_dist, const matrix_type &stats, const element_mask_type &mask);
+matrix_type
+fwe_pvalue(const matrix_type &null_distributions, const matrix_type &statistics, const element_mask_type &mask);
 
 }

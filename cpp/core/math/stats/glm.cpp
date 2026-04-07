@@ -542,7 +542,7 @@ SharedHeteroscedasticBase::SharedHeteroscedasticBase(const std::vector<Hypothesi
                                                      const index_array_type &variance_groups)
     : VG(variance_groups),
       num_vgs(variance_groups.maxCoeff() + 1),
-      gamma_weights(vector_type::Zero(hypotheses.size())) {
+      gamma_weights(vector_type::Zero(static_cast<Eigen::Index>(hypotheses.size()))) {
   for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
     const index_type s = hypotheses[ih].rank();
     gamma_weights[ih] = 2.0 * (s - 1) / static_cast<default_type>(s * (s + 2));
@@ -589,7 +589,7 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(
                                 std::numeric_limits<default_type>::signaling_NaN()))
 #endif
 {
-  shared.reset(new Shared(measurements, design, hypotheses));
+  shared = std::make_shared<Shared>(measurements, design, hypotheses);
   for (index_type ih = 0; ih != hypotheses.size(); ++ih)
 #ifdef NDEBUG
     betas.emplace_back(matrix_type(hypotheses[ih].matrix().rows(), 1));
@@ -603,14 +603,14 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(const TestFixedHomoscedastic &tha
     : TestBase(that),
 #ifdef NDEBUG
       Sy(num_inputs(), std::min(num_elements(), batch_size())),
-      lambdas(num_factors(), std::min(num_elements(), batch_size())),
+      lambdas(TestBase::num_factors(), std::min(num_elements(), batch_size())),
       residuals(num_inputs(), std::min(num_elements(), batch_size())),
       sse(std::min(num_elements(), batch_size()))
 #else
       Sy(matrix_type::Constant(
           num_inputs(), std::min(num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
       lambdas(matrix_type::Constant(
-          num_factors(), std::min(num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+          TestBase::num_factors(), std::min(num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
       residuals(matrix_type::Constant(
           num_inputs(), std::min(num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
       sse(vector_type::Constant(std::min(num_elements(), batch_size()),
@@ -627,8 +627,7 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(const TestFixedHomoscedastic &tha
 }
 
 std::unique_ptr<TestBase> TestFixedHomoscedastic::__clone() const {
-  std::unique_ptr<TestBase> result(new TestFixedHomoscedastic(*this));
-  return result;
+  return std::make_unique<TestFixedHomoscedastic>(*this);
 }
 
 void TestFixedHomoscedastic::operator()(
@@ -729,7 +728,7 @@ TestFixedHeteroscedastic::Shared::Shared(const measurements_matrix_type &measure
     : SharedFixedBase(measurements, design, hypotheses),
       SharedHeteroscedasticBase(hypotheses, variance_groups),
       inputs_per_vg(num_vgs, 0),
-      Rnn_sums(vector_type::Zero(num_vgs)) {
+      Rnn_sums(vector_type::Zero(static_cast<Eigen::Index>(num_vgs))) {
   // Pre-calculate whatever can be pre-calculated for G-statistic
   for (index_type input = 0; input != measurements.rows(); ++input) {
     // Number of inputs belonging to each VG
@@ -772,7 +771,7 @@ TestFixedHeteroscedastic::TestFixedHeteroscedastic(const measurements_matrix_typ
       W(decltype(W)::Constant(measurements.rows(), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
 {
-  shared.reset(new Shared(measurements, design, hypotheses, variance_groups));
+  shared = std::make_shared<Shared>(measurements, design, hypotheses, variance_groups);
   // Require shared to have been constructed first
 #ifdef NDEBUG
   sse_per_vg.resize(num_variance_groups(), std::min(num_elements(), batch_size()));
@@ -920,7 +919,7 @@ void TestFixedHeteroscedastic::operator()(
           //   - the value inserted in W for that particular VG
           //   - the number of inputs that are a part of that VG
           gamma += S().inv_Rnn_sums[vg_index] *
-                    Math::pow2(1.0 - ((Wterms(vg_index, ie) * S().inputs_per_vg[vg_index]) / W_trace));
+                    Math::pow2(1.0 - ((Wterms(vg_index, ie) * static_cast<value_type>(S().inputs_per_vg[vg_index])) / W_trace));
         gamma = 1.0 + (S().gamma_weights[ih] * gamma);
 #ifdef GLM_TEST_DEBUG
         VAR(gamma);
@@ -1060,13 +1059,13 @@ template void TestVariableBase::set_mask(const TestVariableHomoscedastic::Shared
 template void TestVariableBase::set_mask(const TestVariableHeteroscedastic::Shared &, const index_type);
 
 void TestVariableBase::apply_mask(const index_type ie, const shuffle_matrix_type &shuffling_matrix) {
-  const index_type finite_count = element_mask.sum();
+  const index_type finite_count = element_mask.count();
   // Do we need to reduce the size of our matrices / vectors
   //   based on the presence of non-finite values?
   if (finite_count == num_inputs()) {
 
     Mfull_masked.block(0, 0, num_inputs(), M.cols()) = M;
-    if (num_importers())
+    if (num_importers() > index_type(0))
       Mfull_masked.block(0, M.cols(), num_inputs(), extra_column_data.cols()) =
           extra_column_data.cast<default_type>();
     shuffling_matrix_masked = shuffling_matrix;

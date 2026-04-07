@@ -216,7 +216,7 @@ void run() {
     size_t mask_mismatch_count = 0;
     for (auto l = Loop(mask_header)(mask_processing_image, mask_inference_image); l; ++l) {
       if (mask_inference_image.value()) {
-        std::array<ssize_t, 3> pos{
+        const std::array<ssize_t, 3> pos{
             mask_inference_image.index(0), mask_inference_image.index(1), mask_inference_image.index(2)};
         const Voxel2Vector::index_t index = (*v2v)(pos);
         mask_inference[index] = true;
@@ -226,14 +226,14 @@ void run() {
       }
     }
     CONSOLE("Number of voxels in post-hoc analysis mask: " + str(mask_infer_voxels));
-    if (mask_mismatch_count) {
+    if (mask_mismatch_count > size_t(0)) {
       WARN("There are " + str(mask_mismatch_count) +
            " voxels in the post-hoc mask that are absent from the processing mask; "
            "post-hoc inference cannot and will not be performed in those voxels");
     }
   } else {
     mask_inference = element_mask_type::Ones(num_voxels);
-    mask_infer_voxels = num_voxels;
+    // mask_infer_voxels = num_voxels;
     mask_inference_image = Image<bool>::scratch(mask_header, "scratch posthoc mask image");
     copy(mask_processing_image, mask_inference_image);
   }
@@ -370,16 +370,16 @@ void run() {
   std::unique_ptr<GLM::TestBase> glm_test;
   if (variable_design_matrix) {
     if (variance_groups.size() > 0)
-      glm_test.reset(new GLM::TestVariableHeteroscedastic(
-          data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns));
+      glm_test = std::make_unique<GLM::TestVariableHeteroscedastic>(
+          data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns);
     else
-      glm_test.reset(
-          new GLM::TestVariableHomoscedastic(data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns));
+      glm_test = std::make_unique<GLM::TestVariableHomoscedastic>(
+          data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns);
   } else {
     if (variance_groups.size() > 0)
-      glm_test.reset(new GLM::TestFixedHeteroscedastic(data, design, hypotheses, variance_groups));
+      glm_test = std::make_unique<GLM::TestFixedHeteroscedastic>(data, design, hypotheses, variance_groups);
     else
-      glm_test.reset(new GLM::TestFixedHomoscedastic(data, design, hypotheses));
+      glm_test = std::make_unique<GLM::TestFixedHomoscedastic>(data, design, hypotheses);
   }
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;
