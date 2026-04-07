@@ -277,8 +277,8 @@ Zstatistic::Lookup_F2z::Lookup_F2z(const size_t rank, const size_t dof)
 }
 
 default_type Zstatistic::Lookup_F2z::operator()(const default_type F) const {
-  static auto func_upper = [&](const default_type in) { return F2z_upper(in, rank, static_cast<default_type>(dof)); };
-  static auto func_lower = [&](const default_type in) { return F2z_lower(in, rank, static_cast<default_type>(dof)); };
+  auto func_upper = [&](const default_type in) { return F2z_upper(in, rank, static_cast<default_type>(dof)); };
+  auto func_lower = [&](const default_type in) { return F2z_lower(in, rank, static_cast<default_type>(dof)); };
   if (F >= 1.0)
     return interp(F, offset_upper, scale_upper, data_upper, func_upper);
   else
