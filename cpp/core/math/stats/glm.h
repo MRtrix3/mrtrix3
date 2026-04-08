@@ -33,6 +33,8 @@ namespace MR::Math::Stats::GLM {
 
 extern const std::string column_ones_description;
 
+constexpr default_type condnumber_warning_threshold = 100.0;
+
 App::OptionGroup glm_options(std::string_view element_name);
 
 index_type batch_size();
@@ -96,6 +98,7 @@ private:
 };
 
 void check_design(const matrix_type &, const bool);
+void check_design(const vector_type &);
 
 index_array_type load_variance_groups(const index_type num_inputs);
 

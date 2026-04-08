@@ -252,7 +252,7 @@ void run() {
       CONSOLE("Non-finite values detected in element-wise design matrix columns;"             //
               " individual rows will be removed from edge-wise design matrices accordingly"); //
   }
-  check_design(design, !extra_columns.empty());
+  Math::Stats::GLM::check_design(design, !extra_columns.empty());
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups(design.rows());
@@ -294,6 +294,9 @@ void run() {
 
     Math::Stats::GLM::all_stats(
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
+
+    if (variable_design_matrix)
+      Math::Stats::GLM::check_design(cond);
 
     ProgressBar progress("outputting beta coefficients, effect size and standard deviation",
                          num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));

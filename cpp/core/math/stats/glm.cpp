@@ -21,6 +21,7 @@
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/welch_satterthwaite.h"
+#include "math/welford.h"
 #include "thread_queue.h"
 
 // #define GLM_ALL_STATS_DEBUG
@@ -97,7 +98,7 @@ void check_design(const matrix_type &design, const bool extra_factors) {
     }
   } else {
     const default_type cond = Math::condition_number(design);
-    if (cond > 100.0) {
+    if (cond > condnumber_warning_threshold) {
       if (extra_factors) {
         CONSOLE("Design matrix conditioning is poor (condition number: " + str(cond, 6) +
                 ") before the addition of element-wise columns");
@@ -109,6 +110,17 @@ void check_design(const matrix_type &design, const bool extra_factors) {
       CONSOLE(std::string("Design matrix condition number") + (extra_factors ? " (without element-wise columns)" : "") +
               ": " + str(cond, 6));
     }
+  }
+}
+
+void check_design(const vector_type &cond) {
+  const auto mv = MR::Math::welford(cond.array());
+  const default_type max = cond.array().maxCoeff();
+  CONSOLE("Condition number distribution: " + str(mv.mean) + " +/- " + str(std::sqrt(mv.std())) + //
+          " [" + str(cond.array().minCoeff()) + " -- " + str(max) + "]");                         //
+  if (std::min(max, mv.mean + 2.0 * mv.std()) > condnumber_warning_threshold) {
+    WARN("Design matrix condition number high even with inclusion of element-wise design matrix columns;"
+          " check condition number map and restrict analysis if necessary");
   }
 }
 
@@ -392,9 +404,7 @@ void all_stats(const measurements_matrix_type &measurements,
       default_type condition_number = 0.0;
       if (valid_rows == data.rows()) { // No NaNs present
         condition_number = Math::condition_number(element_design);
-        if (!std::isfinite(condition_number) || condition_number > 1e5) {
-          zero();
-        } else {
+        if (element_design.colPivHouseholderQr().rank() >= data.rows()) {
           Math::Stats::GLM::all_stats(element_data,
                                       element_design,
                                       hypotheses,
@@ -403,6 +413,8 @@ void all_stats(const measurements_matrix_type &measurements,
                                       local_abs_effect_size,
                                       local_std_effect_size,
                                       local_stdev);
+        } else {
+          zero();
         }
       } else if (valid_rows >= element_design.cols()) {
         // Need to reduce the data and design matrices to contain only finite data
@@ -423,9 +435,7 @@ void all_stats(const measurements_matrix_type &measurements,
         assert(element_data_finite.allFinite());
         assert(element_design_finite.allFinite());
         condition_number = Math::condition_number(element_design_finite);
-        if (!std::isfinite(condition_number) || condition_number > 1e5) {
-          zero();
-        } else {
+        if (element_design_finite.colPivHouseholderQr().rank() >= data.rows()) {
           Math::Stats::GLM::all_stats(element_data_finite,
                                       element_design_finite,
                                       hypotheses,
@@ -434,6 +444,8 @@ void all_stats(const measurements_matrix_type &measurements,
                                       local_abs_effect_size,
                                       local_std_effect_size,
                                       local_stdev);
+        } else {
+          zero();
         }
       } else { // Insufficient data to fit model at all
         zero();
@@ -1210,106 +1222,100 @@ void TestVariableHomoscedastic::operator()(
     // If the number of finite elements is _not_ equal to the number of inputs
     //   (i.e. at least one input has been removed), there needs to be a
     //   more stringent criterion met in order to proceed with the test.
-    if (finite_count < std::min(num_inputs(), 2 * num_factors())) {
+    if (finite_count < num_factors()) {
       stats.row(ie).setZero();
       zstats.row(ie).setZero();
       dof.row(ie).fill(std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
-    } else {
-      apply_mask(ie, shuffling_matrix);
-      assert(Mfull_masked.topRows(finite_count).allFinite());
+      continue;
+    }
 
-      // Test condition number of NaN-masked & data-filled design matrix;
-      //   need to skip statistical testing if it is too poor
-      // TODO Condition number testing may be quite slow;
-      //   would a rank calculation with tolerance be faster?
-      // TODO JacobiSVD refuses to run on an Eigen::Block due to member "Options" not being defined
-      const default_type condition_number = Math::condition_number(Mfull_masked.topRows(finite_count).eval());
-#ifdef GLM_TEST_DEBUG
-      VAR(condition_number);
+    apply_mask(ie, shuffling_matrix);
+    assert(Mfull_masked.topRows(finite_count).allFinite());
+
+    const size_t finite_rank = Mfull_masked.topRows(finite_count).colPivHouseholderQr().rank();
+// #ifdef GLM_TEST_DEBUG
+//       VAR(finite_rank);
+// #endif
+    if (finite_rank < num_factors()) {
+      stats.row(ie).fill(0.0);
+      zstats.row(ie).fill(0.0);
+      dof.row(ie).fill(std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
+      continue;
+    }
+
+    pinvMfull_masked.leftCols(finite_count).noalias() = Math::pinv(Mfull_masked.topRows(finite_count));
+#ifndef NDEBUG
+    pinvMfull_masked.rightCols(num_inputs() - finite_count)
+        .fill(std::numeric_limits<default_type>::signaling_NaN());
 #endif
-      if (!std::isfinite(condition_number) || condition_number > 1e5) {
-        stats.row(ie).fill(0.0);
-        zstats.row(ie).fill(0.0);
-        dof.row(ie).fill(std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
+    Rm.topLeftCorner(finite_count, finite_count).noalias() =
+        matrix_type::Identity(finite_count, finite_count) -
+        (Mfull_masked.topRows(finite_count) * pinvMfull_masked.leftCols(finite_count));
+#ifndef NDEBUG
+    Rm.bottomRows(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
+    Rm.rightCols(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
+#endif
+
+    // We now have our permutation (shuffling) matrix and design matrix prepared,
+    //   and can commence regressing the partitioned model of each hypothesis
+    for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
+
+      const auto partition = c[ih].partition(Mfull_masked.topRows(finite_count));
+      dof(ie, ih) = static_cast<value_type>(finite_count - partition.rank_x - partition.rank_z);
+      if (dof(ie, ih) < value_type(1)) {
+        stats(ie, ih) = zstats(ie, ih) = dof(ie, ih) = value_type(0);
       } else {
-
-        pinvMfull_masked.leftCols(finite_count).noalias() = Math::pinv(Mfull_masked.topRows(finite_count));
-#ifndef NDEBUG
-        pinvMfull_masked.rightCols(num_inputs() - finite_count)
-            .fill(std::numeric_limits<default_type>::signaling_NaN());
-#endif
-        Rm.topLeftCorner(finite_count, finite_count).noalias() =
-            matrix_type::Identity(finite_count, finite_count) -
-            (Mfull_masked.topRows(finite_count) * pinvMfull_masked.leftCols(finite_count));
-#ifndef NDEBUG
-        Rm.bottomRows(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
-        Rm.rightCols(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
-#endif
-
-        // We now have our permutation (shuffling) matrix and design matrix prepared,
-        //   and can commence regressing the partitioned model of each hypothesis
-        for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
-
-          const auto partition = c[ih].partition(Mfull_masked.topRows(finite_count));
-          dof(ie, ih) = static_cast<value_type>(finite_count - partition.rank_x - partition.rank_z);
-          if (dof(ie, ih) < value_type(1)) {
-            stats(ie, ih) = zstats(ie, ih) = dof(ie, ih) = value_type(0);
-          } else {
-            XtX[ih].noalias() = partition.X.transpose() * partition.X;
+        XtX[ih].noalias() = partition.X.transpose() * partition.X;
 #ifdef GLM_TEST_DEBUG
-            VAR(XtX[ih].rows());
-            VAR(XtX[ih].cols());
+        VAR(XtX[ih].rows());
+        VAR(XtX[ih].cols());
 #endif
-            // Now that we have the individual hypothesis model partition for these data,
-            //   the rest of this function should proceed similarly to the fixed
-            //   design matrix case
-            Sy.head(finite_count) =
-                shuffling_matrix_masked.topLeftCorner(finite_count, finite_count).cast<default_type>() *
-                partition.Rz * y_masked.head(finite_count).matrix().cast<default_type>();
-            lambda = pinvMfull_masked.leftCols(finite_count) * Sy.head(finite_count).matrix();
-            beta[ih].noalias() = c[ih].matrix() * lambda.matrix();
+        // Now that we have the individual hypothesis model partition for these data,
+        //   the rest of this function should proceed similarly to the fixed
+        //   design matrix case
+        Sy.head(finite_count) =
+            shuffling_matrix_masked.topLeftCorner(finite_count, finite_count).cast<default_type>() *
+            partition.Rz * y_masked.head(finite_count).matrix().cast<default_type>();
+        lambda = pinvMfull_masked.leftCols(finite_count) * Sy.head(finite_count).matrix();
+        beta[ih].noalias() = c[ih].matrix() * lambda.matrix();
 #ifdef GLM_TEST_DEBUG
-            VAR(Sy.size());
-            VAR(lambda.size());
-            VAR(beta[ih].rows());
-            VAR(beta[ih].cols());
+        VAR(Sy.size());
+        VAR(lambda.size());
+        VAR(beta[ih].rows());
+        VAR(beta[ih].cols());
 #endif
-            const default_type sse =
-                (Rm.topLeftCorner(finite_count, finite_count) * Sy.head(finite_count).matrix()).squaredNorm();
+        const default_type sse =
+            (Rm.topLeftCorner(finite_count, finite_count) * Sy.head(finite_count).matrix()).squaredNorm();
 
-            const default_type F =
-                ((beta[ih].transpose() * XtX[ih] * beta[ih])(0, 0) / c[ih].rank()) / (sse / dof(ie, ih));
+        const default_type F =
+            ((beta[ih].transpose() * XtX[ih] * beta[ih])(0, 0) / c[ih].rank()) / (sse / dof(ie, ih));
 
-            if (!std::isfinite(F)) {
-              stats(ie, ih) = zstats(ie, ih) = value_type(0);
-            } else if (c[ih].is_F()) {
-              stats(ie, ih) = F;
-              zstats(ie, ih) =
+        if (!std::isfinite(F)) {
+          stats(ie, ih) = zstats(ie, ih) = value_type(0);
+        } else if (c[ih].is_F()) {
+          stats(ie, ih) = F;
+          zstats(ie, ih) =
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
-                  S().
+              S().
 #else
-                  Math::
+              Math::
 #endif
-                  F2z(F, c[ih].rank(), static_cast<size_t>(dof(ie, ih)));
-            } else {
-              assert(beta[ih].rows() == 1);
-              stats(ie, ih) = std::sqrt(F) * (beta[ih].sum() > 0 ? 1.0 : -1.0);
-              zstats(ie, ih) =
+              F2z(F, c[ih].rank(), static_cast<size_t>(dof(ie, ih)));
+        } else {
+          assert(beta[ih].rows() == 1);
+          stats(ie, ih) = std::sqrt(F) * (beta[ih].sum() > 0 ? 1.0 : -1.0);
+          zstats(ie, ih) =
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
-                  S().
+              S().
 #else
-                  Math::
+              Math::
 #endif
-                  t2z(stats(ie, ih), static_cast<size_t>(dof(ie, ih)));
-            }
+              t2z(stats(ie, ih), static_cast<size_t>(dof(ie, ih)));
+        }
 
-          } // End checking for sufficient degrees of freedom
+      } // End checking for sufficient degrees of freedom
 
-        } // End looping over hypotheses
-
-      } // End checking for adequate condition number after NaN removal
-
-    } // End checking for adequate number of remaining inputs after NaN removal
+    } // End looping over hypotheses
 
   } // End looping over elements
 
@@ -1391,115 +1397,112 @@ void TestVariableHeteroscedastic::operator()(
       extra_column_data.col(col) = S().importers[col](ie);
     set_mask(S(), ie);
     const index_type finite_count = element_mask.count();
-    if (finite_count < std::min(num_inputs(), 2 * num_factors())) {
+    if (finite_count < num_factors()) {
       stats.row(ie).setZero();
       zstats.row(ie).setZero();
-    } else {
-      apply_mask(ie, shuffling_matrix);
-      const default_type condition_number = Math::condition_number(Mfull_masked.topRows(finite_count).eval());
-      if (!std::isfinite(condition_number) || condition_number > 1e5) {
-        stats.row(ie).fill(0.0);
-        zstats.row(ie).fill(0.0);
+      continue;
+    }
+    apply_mask(ie, shuffling_matrix);
+    const size_t finite_rank = Mfull_masked.topRows(finite_count).colPivHouseholderQr().rank();
+    if (finite_rank < num_factors()) {
+      stats.row(ie).fill(0.0);
+      zstats.row(ie).fill(0.0);
+      continue;
+    }
+    VG_counts.setZero();
+    index_type out_index = 0;
+    for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
+      if (element_mask[in_index]) {
+        VG_masked[out_index++] = S().VG[in_index];
+        VG_counts[S().VG[in_index]]++;
+      }
+    }
+    assert(out_index == finite_count);
+    if (VG_counts.minCoeff() <= 1) {
+      stats.row(ie).fill(0.0);
+      zstats.row(ie).fill(0.0);
+      continue;
+    }
+    pinvMfull_masked.leftCols(finite_count) = Math::pinv(Mfull_masked.topRows(finite_count));
+#ifndef NDEBUG
+    pinvMfull_masked.rightCols(num_inputs() - finite_count)
+        .fill(std::numeric_limits<default_type>::signaling_NaN());
+#endif
+    Rm.topLeftCorner(finite_count, finite_count).noalias() =
+        matrix_type::Identity(finite_count, finite_count) -
+        (Mfull_masked.topRows(finite_count) * pinvMfull_masked.leftCols(finite_count));
+#ifndef NDEBUG
+    Rm.bottomRows(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
+    Rm.rightCols(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
+#endif
+    for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
+      const auto partition = c[ih].partition(Mfull_masked.topRows(finite_count));
+
+      // At this point the implementation diverges from the TestVariableHomoscedastic case,
+      //   more closely mimicing the TestFixedHeteroscedastic case
+      Sy.head(finite_count) =
+          shuffling_matrix_masked.topLeftCorner(finite_count, finite_count).cast<default_type>() *
+          partition.Rz * y_masked.head(finite_count).matrix().cast<default_type>();
+#ifndef NDEBUG
+      Sy.tail(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
+#endif
+      lambda = pinvMfull_masked.leftCols(finite_count) * Sy.head(finite_count).matrix();
+      sq_residuals.head(finite_count) =
+          (Rm.topLeftCorner(finite_count, finite_count) * Sy.head(finite_count).matrix()).array().square();
+#ifndef NDEBUG
+      sq_residuals.tail(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
+#endif
+      sse_per_vg.setZero();
+      Rnn_sums.setZero();
+      for (index_type input = 0; input != finite_count; ++input) {
+        sse_per_vg[VG_masked[input]] += sq_residuals[input];
+        Rnn_sums[VG_masked[input]] += Rm.diagonal()[input];
+      }
+      Wterms = sse_per_vg.inverse() * Rnn_sums;
+      for (index_type vg = 0; vg != num_variance_groups(); ++vg) {
+        if (!std::isfinite(Wterms[vg]))
+          Wterms[vg] = 0.0;
+      }
+      default_type W_trace(0.0);
+      for (index_type input = 0; input != finite_count; ++input) {
+        W[input] = Wterms[VG_masked[input]];
+        W_trace += W[input];
+      }
+
+      const default_type numerator =
+          lambda.matrix().transpose() * c[ih].matrix().transpose() *
+          (c[ih].matrix() *
+            (Mfull_masked.topRows(finite_count).transpose() * W.matrix().head(finite_count).asDiagonal() *
+            Mfull_masked.topRows(finite_count))
+                .inverse() *
+            c[ih].matrix().transpose())
+              .inverse() *
+          c[ih].matrix() * lambda.matrix();
+
+      default_type gamma(0.0);
+      for (index_type vg_index = 0; vg_index != num_variance_groups(); ++vg_index)
+        gamma += Math::pow2(1.0 - ((Wterms[vg_index] * VG_counts[vg_index]) / W_trace)) / Rnn_sums[vg_index];
+      gamma = 1.0 + (S().gamma_weights[ih] * gamma);
+
+      const default_type denominator = gamma * c[ih].rank();
+      const default_type G = numerator / denominator;
+
+      if (!std::isfinite(G)) {
+        stats(ie, ih) = zstats(ie, ih) = value_type(0);
       } else {
-        VG_counts.setZero();
-        index_type out_index = 0;
-        for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
-          if (element_mask[in_index]) {
-            VG_masked[out_index++] = S().VG[in_index];
-            VG_counts[S().VG[in_index]]++;
-          }
-        }
-        assert(out_index == finite_count);
-        if (VG_counts.minCoeff() <= 1) {
-          stats.row(ie).fill(0.0);
-          zstats.row(ie).fill(0.0);
+        stats(ie, ih) =
+            c[ih].is_F() ? G : std::sqrt(G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
+        if (c[ih].is_F() && c[ih].rank() > 1) {
+          const default_type dof = 2.0 * static_cast<default_type>(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
+          zstats(ie, ih) = Math::G2z(G, c[ih].rank(), dof);
         } else {
-          pinvMfull_masked.leftCols(finite_count) = Math::pinv(Mfull_masked.topRows(finite_count));
-#ifndef NDEBUG
-          pinvMfull_masked.rightCols(num_inputs() - finite_count)
-              .fill(std::numeric_limits<default_type>::signaling_NaN());
-#endif
-          Rm.topLeftCorner(finite_count, finite_count).noalias() =
-              matrix_type::Identity(finite_count, finite_count) -
-              (Mfull_masked.topRows(finite_count) * pinvMfull_masked.leftCols(finite_count));
-#ifndef NDEBUG
-          Rm.bottomRows(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
-          Rm.rightCols(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
-#endif
-          for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
-            const auto partition = c[ih].partition(Mfull_masked.topRows(finite_count));
+          const default_type dof = Math::welch_satterthwaite(Wterms.inverse(), VG_counts);
+          zstats(ie, ih) = c[ih].is_F() ? Math::G2z(G, c[ih].rank(), dof) : Math::v2z(stats(ie, ih), dof);
+        } // End switching for F-test with rank > 1
 
-            // At this point the implementation diverges from the TestVariableHomoscedastic case,
-            //   more closely mimicing the TestFixedHeteroscedastic case
-            Sy.head(finite_count) =
-                shuffling_matrix_masked.topLeftCorner(finite_count, finite_count).cast<default_type>() *
-                partition.Rz * y_masked.head(finite_count).matrix().cast<default_type>();
-#ifndef NDEBUG
-            Sy.tail(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
-#endif
-            lambda = pinvMfull_masked.leftCols(finite_count) * Sy.head(finite_count).matrix();
-            sq_residuals.head(finite_count) =
-                (Rm.topLeftCorner(finite_count, finite_count) * Sy.head(finite_count).matrix()).array().square();
-#ifndef NDEBUG
-            sq_residuals.tail(num_inputs() - finite_count).fill(std::numeric_limits<default_type>::signaling_NaN());
-#endif
-            sse_per_vg.setZero();
-            Rnn_sums.setZero();
-            for (index_type input = 0; input != finite_count; ++input) {
-              sse_per_vg[VG_masked[input]] += sq_residuals[input];
-              Rnn_sums[VG_masked[input]] += Rm.diagonal()[input];
-            }
-            Wterms = sse_per_vg.inverse() * Rnn_sums;
-            for (index_type vg = 0; vg != num_variance_groups(); ++vg) {
-              if (!std::isfinite(Wterms[vg]))
-                Wterms[vg] = 0.0;
-            }
-            default_type W_trace(0.0);
-            for (index_type input = 0; input != finite_count; ++input) {
-              W[input] = Wterms[VG_masked[input]];
-              W_trace += W[input];
-            }
+      } // End checking for G being finite
 
-            const default_type numerator =
-                lambda.matrix().transpose() * c[ih].matrix().transpose() *
-                (c[ih].matrix() *
-                  (Mfull_masked.topRows(finite_count).transpose() * W.matrix().head(finite_count).asDiagonal() *
-                  Mfull_masked.topRows(finite_count))
-                      .inverse() *
-                  c[ih].matrix().transpose())
-                    .inverse() *
-                c[ih].matrix() * lambda.matrix();
-
-            default_type gamma(0.0);
-            for (index_type vg_index = 0; vg_index != num_variance_groups(); ++vg_index)
-              gamma += Math::pow2(1.0 - ((Wterms[vg_index] * VG_counts[vg_index]) / W_trace)) / Rnn_sums[vg_index];
-            gamma = 1.0 + (S().gamma_weights[ih] * gamma);
-
-            const default_type denominator = gamma * c[ih].rank();
-            const default_type G = numerator / denominator;
-
-            if (!std::isfinite(G)) {
-              stats(ie, ih) = zstats(ie, ih) = value_type(0);
-            } else {
-              stats(ie, ih) =
-                  c[ih].is_F() ? G : std::sqrt(G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
-              if (c[ih].is_F() && c[ih].rank() > 1) {
-                const default_type dof = 2.0 * static_cast<default_type>(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
-                zstats(ie, ih) = Math::G2z(G, c[ih].rank(), dof);
-              } else {
-                const default_type dof = Math::welch_satterthwaite(Wterms.inverse(), VG_counts);
-                zstats(ie, ih) = c[ih].is_F() ? Math::G2z(G, c[ih].rank(), dof) : Math::v2z(stats(ie, ih), dof);
-              } // End switching for F-test with rank > 1
-
-            } // End checking for G being finite
-
-          } // End looping over hypotheses for this element
-
-        } // End check for preservation of at least two elements in each VG
-
-      } // End checking for adequate condition number after NaN removal
-
-    } // End checking for adequate number of remaining inputs after NaN removal
+    } // End looping over hypotheses for this element
 
   } // End looping over elements
 }
