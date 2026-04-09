@@ -102,7 +102,7 @@ public:
           if (existing == fixels.end())
             fixels.insert({closest_fixel_index, i->get_length()});
           else
-            existing->second += i->get_length();
+            existing->second += static_cast<float>(i->get_length());
         }
       }
     }

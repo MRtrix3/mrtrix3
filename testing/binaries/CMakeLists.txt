@@ -473,6 +473,7 @@ add_bash_binary_test(tensor2metric/dkt)
 add_bash_binary_test(tensor2metric/eigenvalues)
 add_bash_binary_test(tensor2metric/eigenvectors)
 add_bash_binary_test(tensor2metric/fa)
+add_bash_binary_test(tensor2metric/mo_na)
 
 add_bash_binary_test(transformcalc/average)
 add_bash_binary_test(transformcalc/header)
